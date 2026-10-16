@@ -91,6 +91,7 @@ import { normalizarMedio } from '@/lib/finanzas/medios';
 import { cn } from '@/lib/utils';
 import { GraficoDeRecaudo } from './GraficoDeRecaudo';
 import { ComparativaDelMes, VsMesAnterior, type SentidoDeLaCifra } from './ComparativaDelMes';
+import { useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr';
 
 const formateadorDeNumero = new Intl.NumberFormat('es-CO');
 
@@ -165,7 +166,14 @@ export function porMedioAgrupado(
 export function definicionDeLoQueLlego(
   r: Pick<ResumenDeRecaudo, 'pagadoDeLasCuotasDelMesCop'>,
   month: string,
+  locale: 'es' | 'en' = 'es',
 ): string {
+  if (locale === 'en') {
+    const base = 'Cash receipts dated in the month, for whatever installment.';
+    return typeof r.pagadoDeLasCuotasDelMesCop === 'number'
+      ? `${base} ${formatCurrency(r.pagadoDeLasCuotasDelMesCop)} has already come in for the ${nombreDelMes(month, 'en')} installments, this month or earlier.`
+      : base;
+  }
   const base = 'Recibos de caja con fecha en el mes, de la cuota que sea.';
   return typeof r.pagadoDeLasCuotasDelMesCop === 'number'
     ? `${base} A las cuotas de ${nombreDelMes(month)} ya entraron ${formatCurrency(r.pagadoDeLasCuotasDelMesCop)}, en este mes o antes.`
@@ -241,6 +249,11 @@ export function serieParaLaTabla(serie: readonly PuntoDeLaSerie[]): PuntoDeLaSer
 }
 
 export function Recaudo() {
+  const tr = useTr();
+  const locale = useLocaleDelPanel();
+  const en = locale === 'en';
+  /** «cuota»/«installment» con su número gramatical. */
+  const cuotas = (n: number) => (en ? (n === 1 ? 'installment' : 'installments') : plural(n, 'cuota', 'cuotas'));
   const [month, setMonth] = useState(() => mesActual());
   const { resumen, serie, cargando, error, recargar } = useRecaudo(month);
   const comparativaDelMes = useComparativaDelRecaudo(month);
@@ -290,7 +303,7 @@ export function Recaudo() {
             variant="secondary"
             size="sm"
             hideArrow
-            aria-label="Mes anterior"
+            aria-label={tr("Mes anterior")}
             onClick={() => setMonth(sumarMeses(month, -1))}
           >
             <CaretLeft className="h-4 w-4" aria-hidden="true" />
@@ -299,14 +312,14 @@ export function Recaudo() {
             {/* El mes nuevo entra con un fundido; las cifras de abajo cuentan
                 desde las del mes anterior. */}
             <Appear as="span" key={month} direction="none">
-            {conMayusculaInicial(nombreDelMes(month))}
+            {conMayusculaInicial(nombreDelMes(month, locale))}
             </Appear>
           </p>
           <Button
             variant="secondary"
             size="sm"
             hideArrow
-            aria-label="Mes siguiente"
+            aria-label={tr("Mes siguiente")}
             disabled={!puedeAvanzar}
             onClick={() => puedeAvanzar && setMonth(siguiente)}
           >
@@ -315,18 +328,18 @@ export function Recaudo() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cartera/cobros">Ver cobros del mes</Link>
+            <Link href="/panel/inmobiliaria/pagos/cartera/cobros">{tr("Ver cobros del mes")}</Link>
           </Button>
           {/* 🔴 Juan (15-10-2026): «¿dónde se ven los recibos de caja que se generaron?». */}
           <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/recibos">Ver los recibos</Link>
+            <Link href="/panel/inmobiliaria/pagos/recibos">{tr("Ver los recibos")}</Link>
           </Button>
           <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cartera">Ver cartera</Link>
+            <Link href="/panel/inmobiliaria/pagos/cartera">{tr("Ver cartera")}</Link>
           </Button>
           <Button asChild variant="secondary" size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/dispersiones/lotes">
-              Lotes al banco
+              {tr("Lotes al banco")}
               <ArrowRight className="ml-1 h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
@@ -339,7 +352,7 @@ export function Recaudo() {
       <EstadoDeDatos
         cargando={cargando && !resumen}
         error={error}
-        queEs="el recaudo"
+        queEs={tr("el recaudo")}
         onReintentar={recargar}
         esqueleto={
           <div className="flex items-center justify-center py-16">
@@ -361,12 +374,10 @@ export function Recaudo() {
                 data-testid="mes-sin-movimiento"
               >
                 <span>
-                  Nada que contar en {nombreDelMes(month)}: ningún contrato tiene cuota de este
-                  mes, y no hubo cobros, recibos ni giros con fecha en él. Si la plata entró, se
-                  registra con un recibo de caja.
+                  {tr("Nada que contar en")} {nombreDelMes(month, locale)}{tr(": ningún contrato tiene cuota de este mes, y no hubo cobros, recibos ni giros con fecha en él. Si la plata entró, se registra con un recibo de caja.")}
                 </span>
                 <Link href="/panel/inmobiliaria/pagos" className="font-medium text-primary underline-offset-2 hover:underline">
-                  Ir a la deuda del mes
+                  {tr("Ir a la deuda del mes")}
                 </Link>
             </Presence>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" data-testid="cifras">
@@ -375,14 +386,18 @@ export function Recaudo() {
                   contrato: no hay que emitir nada para que haya deuda. */}
               <Cifra
                 id="se-debe"
-                etiqueta="Se debe"
+                etiqueta={tr("Se debe")}
                 valor={resumen.deudaDelMesCop}
                 comparacion={vs('se-debe', 'seDebe', 'neutro', resumen.deudaDelMesCop)}
-                definicion={`Lo pactado en las ${numero(resumen.cuotasDelMes)} ${plural(resumen.cuotasDelMes, 'cuota', 'cuotas')} de ${nombreDelMes(month)}, pagadas o no. Nace con el contrato; nadie tiene que generarlo.`}
+                definicion={
+                  en
+                    ? `What was agreed in the ${numero(resumen.cuotasDelMes)} ${cuotas(resumen.cuotasDelMes)} for ${nombreDelMes(month, 'en')}, paid or not. It's born with the lease; no one has to generate it.`
+                    : `Lo pactado en las ${numero(resumen.cuotasDelMes)} ${plural(resumen.cuotasDelMes, 'cuota', 'cuotas')} de ${nombreDelMes(month)}, pagadas o no. Nace con el contrato; nadie tiene que generarlo.`
+                }
               />
               <Cifra
                 id="llego"
-                etiqueta="Llegó"
+                etiqueta={tr("Llegó")}
                 valor={resumen.recaudadoCop}
                 comparacion={vs('llego', 'llego', 'subirEsBueno', resumen.recaudadoCop)}
                 /* 🔴 PG-09 (03-10-2026): hablaba de «cobros de este mes»
@@ -390,11 +405,11 @@ export function Recaudo() {
                    en las CUOTAS. Ahora dice lo pagado de las cuotas del mes
                    (`pagadoDeLasCuotasDelMesCop`, entrara cuando entrara); con un
                    back sin ese campo, sólo qué son los recibos. */
-                definicion={definicionDeLoQueLlego(resumen, month)}
+                definicion={definicionDeLoQueLlego(resumen, month, locale)}
               />
               <Cifra
                 id="pendiente"
-                etiqueta="Pendiente"
+                etiqueta={tr("Pendiente")}
                 valor={resumen.pendienteCop}
                 tono={resumen.pendienteCop > 0 ? 'warning' : undefined}
                 comparacion={vs('pendiente', 'falta', 'subirEsMalo', resumen.pendienteCop)}
@@ -403,26 +418,34 @@ export function Recaudo() {
                    millones. Y la cartera se cuenta aparte porque no es lo
                    mismo: lo vencido dentro del plazo del contrato es deuda,
                    no cartera. */
-                definicion={`Saldo de ${numero(resumen.cuotasPendientes)} ${plural(resumen.cuotasPendientes, 'cuota', 'cuotas')} de ${nombreDelMes(month)} sin pagar del todo. En cartera acumulada, con meses anteriores: ${formatCurrency(resumen.enMoraCop)} en ${numero(resumen.cuotasEnCartera)} ${plural(resumen.cuotasEnCartera, 'cuota', 'cuotas')}.`}
+                definicion={
+                  en
+                    ? `Balance of ${numero(resumen.cuotasPendientes)} ${cuotas(resumen.cuotasPendientes)} for ${nombreDelMes(month, 'en')} not fully paid. Accumulated receivables, including earlier months: ${formatCurrency(resumen.enMoraCop)} in ${numero(resumen.cuotasEnCartera)} ${cuotas(resumen.cuotasEnCartera)}.`
+                    : `Saldo de ${numero(resumen.cuotasPendientes)} ${plural(resumen.cuotasPendientes, 'cuota', 'cuotas')} de ${nombreDelMes(month)} sin pagar del todo. En cartera acumulada, con meses anteriores: ${formatCurrency(resumen.enMoraCop)} en ${numero(resumen.cuotasEnCartera)} ${plural(resumen.cuotasEnCartera, 'cuota', 'cuotas')}.`
+                }
               />
               <Cifra
                 id="dispersado"
-                etiqueta="Dispersado"
+                etiqueta={tr("Dispersado")}
                 valor={resumen.dispersadoCop}
                 comparacion={vs('dispersado', 'salio', 'neutro', resumen.dispersadoCop)}
-                definicion={`Lotes pagados y giros uno a uno con fecha en el mes. La inmobiliaria se quedó ${formatCurrency(resumen.comisionesCop)} de comisión.`}
+                definicion={
+                  en
+                    ? `Paid batches and one-off payouts dated in the month. The agency kept ${formatCurrency(resumen.comisionesCop)} in commission.`
+                    : `Lotes pagados y giros uno a uno con fecha en el mes. La inmobiliaria se quedó ${formatCurrency(resumen.comisionesCop)} de comisión.`
+                }
               />
               <Cifra
                 id="disponible"
-                etiqueta="Disponible"
+                etiqueta={tr("Disponible")}
                 valor={resumen.disponibleCop}
                 tono={resumen.disponibleCop < 0 ? 'danger' : undefined}
                 comparacion={vs('disponible', 'queda', 'neutro', resumen.disponibleCop)}
-                definicion={
+                definicion={tr(
                   resumen.disponibleCop < 0
                     ? 'Recaudado menos dispersado y comisiones, acumulado al cierre del mes. Negativo: se giró plata que nunca pasó por un recibo de caja.'
-                    : 'Recaudado menos dispersado y comisiones, acumulado al cierre del mes: lo que hay en la mano y es de terceros.'
-                }
+                    : 'Recaudado menos dispersado y comisiones, acumulado al cierre del mes: lo que hay en la mano y es de terceros.',
+                )}
               />
             </div>
 
@@ -443,12 +466,21 @@ export function Recaudo() {
               data-testid="cuotas-del-mes"
             >
               {resumen.cuotasDelMes === 0 ? (
-                <>Ningún contrato tiene cuota de {nombreDelMes(month)}.</>
+                <>{tr("Ningún contrato tiene cuota de")} {nombreDelMes(month, locale)}.</>
+              ) : en ? (
+                <>
+                  Of the <span className="font-mono tabular-nums">{numero(resumen.cuotasDelMes)}</span>{' '}
+                  {cuotas(resumen.cuotasDelMes)} for {nombreDelMes(month, 'en')},{' '}
+                  <span className="font-mono tabular-nums">{numero(resumen.cuotasPagadas)}</span>{' '}
+                  {resumen.cuotasPagadas === 1 ? 'is paid' : 'are paid'} and{' '}
+                  <span className="font-mono tabular-nums">{numero(resumen.cuotasPendientes)}</span>{' '}
+                  {resumen.cuotasPendientes === 1 ? 'is not fully paid' : 'are not fully paid'}.
+                </>
               ) : (
                 <>
-                  De las{' '}
+                  {tr("De las")}{' '}
                   <span className="font-mono tabular-nums">{numero(resumen.cuotasDelMes)}</span>{' '}
-                  {plural(resumen.cuotasDelMes, 'cuota', 'cuotas')} de {nombreDelMes(month)},{' '}
+                  {plural(resumen.cuotasDelMes, 'cuota', 'cuotas')} {tr("de")} {nombreDelMes(month)},{' '}
                   <span className="font-mono tabular-nums">{numero(resumen.cuotasPagadas)}</span>{' '}
                   {plural(resumen.cuotasPagadas, 'está pagada', 'están pagadas')} y{' '}
                   <span className="font-mono tabular-nums">{numero(resumen.cuotasPendientes)}</span>{' '}
@@ -475,16 +507,16 @@ export function Recaudo() {
             >
               <div className="space-y-1">
                 <h2 id="ultimos-doce-meses" className="text-sm font-semibold text-fg">
-                  Últimos doce meses
+                  {tr("Últimos doce meses")}
                 </h2>
                 <p className="text-xs text-fg-muted">
-                  Lo que se pidió, lo que llegó y lo que salió, mes por mes hasta {nombreDelMes(month)}.
+                  {tr("Lo que se pidió, lo que llegó y lo que salió, mes por mes hasta")} {nombreDelMes(month, locale)}.
                 </p>
               </div>
               {puntos.length > 0 ? (
                 <GraficoDeRecaudo serie={serie ?? []} />
               ) : (
-                <p className="text-body-sm text-fg-muted">Todavía no hay serie para graficar.</p>
+                <p className="text-body-sm text-fg-muted">{tr("Todavía no hay serie para graficar.")}</p>
               )}
             </section>
 
@@ -505,20 +537,19 @@ export function Recaudo() {
                   su nombre, y era el único de los cuatro bloques. */}
               <div className="space-y-1 border-b border-border px-6 py-4">
                 <h2 id="serie-mensual-titulo" className="text-sm font-semibold text-fg">
-                  Mes por mes, en números
+                  {tr("Mes por mes, en números")}
                 </h2>
                 <p className="text-xs text-fg-muted">
-                  Lo mismo que el gráfico de arriba, con las cifras exactas. La fila del mes
-                  elegido va resaltada.
+                  {tr("Lo mismo que el gráfico de arriba, con las cifras exactas. La fila del mes elegido va resaltada.")}
                 </p>
               </div>
               <Table data-testid="serie-mensual">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap">Mes</TableHead>
+                    <TableHead className="whitespace-nowrap">{tr("Mes")}</TableHead>
                     {/* La columna era «Facturado» (cobros emitidos) y quedaba
                         en $0 en toda la serie de la inmobiliaria migrada. */}
-                    <TableHead className="whitespace-nowrap text-right">Se debe</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">{tr("Se debe")}</TableHead>
                     {/* 🔴 PG-10 (QA de Pagos, 03-10-2026): «Recaudado $22.573.888 ·
                         Recaudo sobre lo causado 13 %» en octubre (22,57 ÷ 92,23 es
                         24 %): la columna era la plata con FECHA en el mes y el %
@@ -526,20 +557,20 @@ export function Recaudo() {
                         Ahora el numerador del % va al lado del %, con su nombre,
                         y lo recaudado en el mes dice qué base usa. */}
                     <TableHead className="text-right" data-testid="rotulo-del-numerador">
-                      {rotuloDelNumerador(baseDeLaTasa)}
+                      {tr(rotuloDelNumerador(baseDeLaTasa))}
                     </TableHead>
                     {/* 🔴 El nombre de la fórmula, no «% recaudado»: «Recaudo sobre lo
                         causado» y «Pagado de lo emitido» son dos números distintos. */}
                     <TableHead className="text-right" data-testid="rotulo-de-la-tasa">
-                      {rotuloDeLaTasa}
+                      {tr(rotuloDeLaTasa)}
                     </TableHead>
                     <TableHead className="text-right" data-testid="rotulo-de-lo-recaudado">
-                      Recaudado en el mes
+                      {tr("Recaudado en el mes")}
                       <span className="block font-sans text-caption normal-case tracking-normal text-fg-subtle">
-                        recibos con fecha del mes
+                        {tr("recibos con fecha del mes")}
                       </span>
                     </TableHead>
-                    <TableHead className="whitespace-nowrap text-right">Dispersado</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">{tr("Dispersado")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -547,10 +578,10 @@ export function Recaudo() {
                     <TableRow>
                       <TableCell colSpan={6} className="p-0">
                         <SinDatos
-                          queSon="meses con movimiento"
+                          queSon={tr("meses con movimiento")}
                           icono={Coins}
-                          titulo="Todavía no hay serie"
-                          descripcion="Cuando haya cobros, recibos o giros en algún mes, aparece acá."
+                          titulo={tr("Todavía no hay serie")}
+                          descripcion={tr("Cuando haya cobros, recibos o giros en algún mes, aparece acá.")}
                         />
                       </TableCell>
                     </TableRow>
@@ -569,7 +600,7 @@ export function Recaudo() {
                           data-mes={p.month}
                         >
                           <TableCell className={cn('whitespace-nowrap', enFoco ? 'font-medium text-fg' : 'text-fg')}>
-                            {conMayusculaInicial(nombreDelMes(p.month))}
+                            {conMayusculaInicial(nombreDelMes(p.month, locale))}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
                             {formatCurrency(p.deudaDelMesCop)}
@@ -582,7 +613,7 @@ export function Recaudo() {
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
                             {/* Sin contra qué medir no hay porcentaje: un «0 %» diría que no se recaudó. */}
-                            {pct === null ? sinTasaQueMedir(p) : `${pct} %`}
+                            {pct === null ? tr(sinTasaQueMedir(p)) : `${pct} %`}
                           </TableCell>
                           <TableCell
                             className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted"
@@ -609,19 +640,18 @@ export function Recaudo() {
             >
               <div className="space-y-1 border-b border-border px-6 py-4">
                 <h2 id="por-medio-titulo" className="text-sm font-semibold text-fg">
-                  Cómo entró la plata de {nombreDelMes(month)}
+                  {tr("Cómo entró la plata de")} {nombreDelMes(month, locale)}
                 </h2>
                 <p className="text-xs text-fg-muted">
-                  Los recibos de caja del mes, por medio de pago. El total es la misma cifra
-                  que «Llegó» arriba.
+                  {tr("Los recibos de caja del mes, por medio de pago. El total es la misma cifra que «Llegó» arriba.")}
                 </p>
               </div>
               <Table data-testid="por-medio">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap">Medio de pago</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">Recibos</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">Valor</TableHead>
+                    <TableHead className="whitespace-nowrap">{tr("Medio de pago")}</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">{tr("Recibos")}</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">{tr("Valor")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 {/* Cada mes es un cuerpo nuevo: sus medios de pago entran
@@ -631,17 +661,21 @@ export function Recaudo() {
                     <TableRowAnimada key="vacio">
                       <TableCell colSpan={3} className="p-0" data-testid="sin-recibos">
                         <SinDatos
-                          queSon="recibos de caja"
+                          queSon={tr("recibos de caja")}
                           icono={Receipt}
-                          titulo="Ningún recibo de caja en el mes"
-                          descripcion={`Los recibos con fecha en ${nombreDelMes(month)} aparecen acá, agrupados por cómo entró la plata.`}
+                          titulo={tr("Ningún recibo de caja en el mes")}
+                          descripcion={
+                            en
+                              ? `Receipts dated in ${nombreDelMes(month, 'en')} show up here, grouped by how the money came in.`
+                              : `Los recibos con fecha en ${nombreDelMes(month)} aparecen acá, agrupados por cómo entró la plata.`
+                          }
                         />
                       </TableCell>
                     </TableRowAnimada>
                   ) : (
                     medios.map((m) => (
                       <TableRowAnimada key={m.medio} data-testid="medio-fila">
-                        <TableCell className="text-fg">{m.nombre || nombreDelMedio(m.medio)}</TableCell>
+                        <TableCell className="text-fg">{tr(m.nombre || nombreDelMedio(m.medio))}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums text-fg-muted">{m.cantidad}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums text-fg">
                           {formatCurrency(m.valorCop)}
@@ -653,7 +687,7 @@ export function Recaudo() {
                 {medios.length > 0 && (
                   <TableFooter>
                     <TableRow data-testid="medio-total">
-                      <TableCell className="font-medium text-fg">Total</TableCell>
+                      <TableCell className="font-medium text-fg">{tr("Total")}</TableCell>
                       <TableCell className="text-right font-mono tabular-nums text-fg-muted">
                         {totalDeRecibos.cantidad}
                       </TableCell>

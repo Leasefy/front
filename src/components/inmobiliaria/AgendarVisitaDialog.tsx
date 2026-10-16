@@ -19,6 +19,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { aFechaIso, fechaLocal, hoyLocal } from '@/lib/fechas-locales';
 import { useEquipo, useMiUserId } from '@/lib/agenda/use-equipo';
 import type { PipelineItem, Consignacion } from '@/lib/types/inmobiliaria';
+import { useTr } from '@/lib/i18n/use-tr';
 
 /**
  * 🔴 PL-16 (QA del 04-10-2026): pasar un interesado a «Visita programada»
@@ -36,6 +37,7 @@ export function AgendarVisitaDialog({
   onCerrar: () => void;
   onAgendada: () => void;
 }) {
+  const tr = useTr();
   const { asesores } = useEquipo(!item);
   const miUserId = useMiUserId();
   const [dia, setDia] = useState('');
@@ -122,37 +124,37 @@ export function AgendarVisitaDialog({
     <ResponsiveDialog open={item !== null} onOpenChange={(o) => !o && onCerrar()}>
       <ResponsiveDialogContent className="sm:max-w-lg" data-testid="agendar-visita-del-lead">
         <ResponsiveDialogHeader>
-          <ResponsiveDialogTitle>Agendar la visita de {item?.candidateName}</ResponsiveDialogTitle>
+          <ResponsiveDialogTitle>{tr("Agendar la visita de")} {item?.candidateName}</ResponsiveDialogTitle>
           <p className="text-sm text-fg-muted">
-            Pasa a «Visita programada» y la visita queda en la Agenda con su asesor.
+            {tr("Pasa a «Visita programada» y la visita queda en la Agenda con su asesor.")}
           </p>
         </ResponsiveDialogHeader>
         <div className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-caption text-muted-foreground">Inmueble</label>
+            <label className="mb-1.5 block text-caption text-muted-foreground">{tr("Inmueble")}</label>
             <Combobox
               data-testid="agendar-visita-inmueble"
               value={inmueble || undefined}
               onChange={(v) => setInmueble(v ?? '')}
               options={inmuebles}
-              placeholder="Elige el inmueble"
+              placeholder={tr("Elige el inmueble")}
               searchPlaceholder="Título o dirección"
               contentClassName="z-[400]"
             />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_9rem]">
             <div>
-              <label className="mb-1.5 block text-caption text-muted-foreground">Día</label>
+              <label className="mb-1.5 block text-caption text-muted-foreground">{tr("Día")}</label>
               <DatePicker
                 id="agendar-visita-dia"
                 value={fechaLocal(dia)}
                 onChange={(d) => setDia(d ? aFechaIso(d) : '')}
                 minDate={hoyLocal()}
-                placeholder="Elige el día"
+                placeholder={tr("Elige el día")}
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-caption text-muted-foreground">Hora</label>
+              <label className="mb-1.5 block text-caption text-muted-foreground">{tr("Hora")}</label>
               <TimePicker id="agendar-visita-hora" value={hora} onChange={(h) => setHora(h ?? '')} step={30} />
             </div>
           </div>
@@ -160,20 +162,20 @@ export function AgendarVisitaDialog({
             fullWidth
             value={modalidad}
             onChange={setModalidad}
-            aria-label="Modalidad"
+            aria-label={tr("Modalidad")}
             options={[
               { value: 'IN_PERSON', label: 'Presencial', ariaLabel: 'Presencial' },
               { value: 'VIRTUAL', label: 'Virtual', ariaLabel: 'Virtual' },
             ]}
           />
           <div>
-            <label className="mb-1.5 block text-caption text-muted-foreground">Asesor que la atiende</label>
+            <label className="mb-1.5 block text-caption text-muted-foreground">{tr("Asesor que la atiende")}</label>
             <Combobox
               data-testid="agendar-visita-asesor"
               value={asesor || undefined}
               onChange={(v) => setAsesor(v ?? '')}
               options={asesores.map((a) => ({ value: a.userId, label: a.nombre }))}
-              placeholder="Elige quién la atiende"
+              placeholder={tr("Elige quién la atiende")}
               contentClassName="z-[400]"
             />
           </div>
@@ -181,10 +183,10 @@ export function AgendarVisitaDialog({
         </div>
         <ResponsiveDialogFooter>
           <Button variant="outline" hideArrow onClick={onCerrar} disabled={enviando}>
-            Cancelar
+            {tr("Cancelar")}
           </Button>
           <Button hideArrow disabled={!puede} isLoading={enviando} onClick={() => void agendar()} data-testid="agendar-visita-guardar">
-            Agendar la visita
+            {tr("Agendar la visita")}
           </Button>
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>

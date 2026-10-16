@@ -18,6 +18,7 @@ import type { ReactNode } from 'react'
 import type { Icon } from '@phosphor-icons/react'
 import { Eyebrow, StatStrip } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
+import { useTr } from '@/lib/i18n/use-tr'
 
 /** El Eyebrow de las tres pantallas: dónde estás, en una línea. */
 export const EYEBROW_DE_VINCI = 'Agentes IA · Vinci'
@@ -38,11 +39,12 @@ export function CabeceraDeVinci({
   /** Lo que va ENCIMA del Eyebrow (el «← Volver» del detalle). */
   antes?: ReactNode
 }) {
+  const tr = useTr()
   return (
     <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div className="min-w-0 space-y-1">
         {antes}
-        <Eyebrow>{EYEBROW_DE_VINCI}</Eyebrow>
+        <Eyebrow>{tr(EYEBROW_DE_VINCI)}</Eyebrow>
         <h1 className="text-h2 text-fg">{titulo}</h1>
         {descripcion ? <p className="max-w-2xl text-sm text-fg-muted">{descripcion}</p> : null}
         {children}

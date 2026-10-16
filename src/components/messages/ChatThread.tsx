@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { useApplicationChat } from '@/lib/hooks/useMessages';
+import { useTr } from '@/lib/i18n/use-tr';
 
 interface ChatThreadProps {
   /**
@@ -37,6 +38,7 @@ function formatMessageTime(iso: string): string {
  * send) but sized to live inside drawers/panels without navigating away.
  */
 export function ChatThread({ applicationId, className }: ChatThreadProps) {
+  const tr = useTr();
   const { messages, isLoading, isSending, error, sendMessage, markAsRead } = useApplicationChat(applicationId);
   const [text, setText] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -72,13 +74,13 @@ export function ChatThread({ applicationId, className }: ChatThreadProps) {
       >
         {isLoading ? (
           <div className="flex items-center justify-center py-10">
-            <Spinner size="sm" variant="muted" label="Cargando mensajes" />
+            <Spinner size="sm" variant="muted" label={tr("Cargando mensajes")} />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
             <ChatCircle className="w-6 h-6 text-muted-foreground mb-2" weight="duotone" />
             <p className="text-sm text-muted-foreground">
-              Sin mensajes. Escribe el primero para iniciar la conversación.
+              {tr("Sin mensajes. Escribe el primero para iniciar la conversación.")}
             </p>
           </div>
         ) : (
@@ -121,15 +123,15 @@ export function ChatThread({ applicationId, className }: ChatThreadProps) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
-          placeholder="Escribe un mensaje..."
-          aria-label="Escribe un mensaje"
+          placeholder={tr("Escribe un mensaje...")}
+          aria-label={tr("Escribe un mensaje")}
           className="h-10 rounded-full bg-muted"
         />
         <Button
           size="icon"
           onClick={() => void handleSend()}
           disabled={!text.trim() || isSending}
-          aria-label="Enviar mensaje"
+          aria-label={tr("Enviar mensaje")}
           hideArrow
           className="rounded-full shrink-0"
         >

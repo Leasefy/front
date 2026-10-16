@@ -47,6 +47,7 @@ import { usePendientes, type PendienteItem } from '@/lib/hooks/cobranza/use-pend
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { errorLegible } from '@/lib/cobranza/error-legible'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr'
 
 const NS = 'inmobiliaria.ai.cobranza.pendientes'
 const PENDIENTES_HREF = '/panel/inmobiliaria/pagos/cobranza/pendientes'
@@ -74,14 +75,15 @@ const TIPO_FICHA: Record<string, string> = {
 
 // ── Utilidades ───────────────────────────────────────────────────────────────
 
-function haceCuanto(iso: string): string {
+function haceCuanto(iso: string, en = false): string {
   const seg = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000))
-  if (seg < 60) return `hace ${seg}s`
+  const hace = (x: string) => (en ? `${x} ago` : `hace ${x}`)
+  if (seg < 60) return hace(`${seg}s`)
   const min = Math.round(seg / 60)
-  if (min < 60) return `hace ${min}m`
+  if (min < 60) return hace(`${min}m`)
   const hr = Math.round(min / 60)
-  if (hr < 24) return `hace ${hr}h`
-  return `hace ${Math.round(hr / 24)}d`
+  if (hr < 24) return hace(`${hr}h`)
+  return hace(`${Math.round(hr / 24)}d`)
 }
 
 const COP = plataEnPantalla('es-CO', {
@@ -93,7 +95,9 @@ const COP = plataEnPantalla('es-CO', {
 // ── Fichas del tablero ───────────────────────────────────────────────────────
 
 function Ficha({ item }: { item: PendienteItem }) {
-  const tipo = TIPO_FICHA[item.grupo] ?? item.grupo
+  const tr = useTr()
+  const en = useLocaleDelPanel() === 'en'
+  const tipo = tr(TIPO_FICHA[item.grupo] ?? item.grupo)
   // El título es la persona. Cuando el dato no trae nombre —un deudor
   // borrado, una escalación sin masked id— el motivo o el tipo suben al
   // título y no se repiten abajo.
@@ -118,7 +122,7 @@ function Ficha({ item }: { item: PendienteItem }) {
           <span className="truncate">{meta.join(' · ')}</span>
           <span className="ml-auto inline-flex items-center gap-1 tabular-nums shrink-0">
             <Clock className="w-3 h-3" aria-hidden="true" />
-            {haceCuanto(item.fecha)}
+            {haceCuanto(item.fecha, en)}
           </span>
         </p>
         {/* El motivo textual (lo último que escribió el deudor, la razón de la
@@ -144,6 +148,7 @@ export interface CobranzaTeTocaATiProps {
 }
 
 export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProps) {
+  const tr = useTr();
   const { t } = useI18n()
   const { items, isLoading, error } = usePendientes()
   const { data: reporte } = useDailyReport()
@@ -176,11 +181,14 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
   // durante los segundos que tarda —y en frío tarda varios—: quien la lee
   // cierra la pantalla creyendo que está al día.
   const contando = isLoading && items.length === 0 && !error
+  const en = useLocaleDelPanel() === 'en'
   const frase = contando
-    ? 'Contando lo que espera tu aprobación…'
+    ? tr('Contando lo que espera tu aprobación…')
     : totalQueEspera === 0
-      ? 'Nada espera tu aprobación.'
-      : `${totalQueEspera} ${totalQueEspera === 1 ? 'decisión espera' : 'decisiones esperan'} tu aprobación.`
+      ? tr('Nada espera tu aprobación.')
+      : en
+        ? `${totalQueEspera} ${totalQueEspera === 1 ? 'decision is' : 'decisions are'} waiting for your approval.`
+        : `${totalQueEspera} ${totalQueEspera === 1 ? 'decisión espera' : 'decisiones esperan'} tu aprobación.`
 
   return (
     <section data-testid="cobranza-te-toca" aria-labelledby="cobranza-te-toca-titulo">
@@ -191,13 +199,23 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
       >
         <div className="space-y-0.5">
           <h2 id="cobranza-te-toca-titulo" className="text-base font-semibold text-fg">
-            Te toca a ti
+            {tr("Te toca a ti")}
           </h2>
           <p className="text-sm text-fg-muted max-w-2xl">
             <span className="text-fg font-medium">{frase}</span>{' '}
+            {en ? (
+              <>
+                The agent handled{' '}
+                <span className="font-mono tabular-nums text-fg">{gestionados}</span> of your{' '}
+                <span className="font-mono tabular-nums text-fg">{enMora}</span> overdue {enMora === 1 ? 'case' : 'cases'} today.
+              </>
+            ) : (
+              <>
             El agente gestionó{' '}
             <span className="font-mono tabular-nums text-fg">{gestionados}</span> de {enMora === 1 ? 'tu' : 'tus'}{' '}
             <span className="font-mono tabular-nums text-fg">{enMora}</span> {enMora === 1 ? 'caso' : 'casos'} en mora hoy.
+              </>
+            )}
           </p>
         </div>
 
@@ -216,9 +234,11 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
               : 'border-danger/30 bg-danger-soft text-danger',
           ].join(' ')}
         >
-          {totalQueEspera > 0
-            ? 'Puede que falte algo en este tablero: una de las fuentes no respondió.'
-            : 'No pudimos cargar tus pendientes.'}{' '}
+          {tr(
+            totalQueEspera > 0
+              ? 'Puede que falte algo en este tablero: una de las fuentes no respondió.'
+              : 'No pudimos cargar tus pendientes.',
+          )}{' '}
           <span className="opacity-80">{error ? errorLegible(error) : null}</span>
         </Presence>
 
@@ -277,7 +297,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
                           aria-hidden="true"
                         />
                       )}
-                      <span className="truncate">{col.label}</span>
+                      <span className="truncate">{tr(col.label)}</span>
                       <span
                         className={`ml-auto font-mono tabular-nums text-sm ${vacia ? 'text-fg-muted' : col.tinte}`}
                       >
@@ -287,13 +307,13 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
 
                     {col.id === 'siniestros' && !vacia && (
                       <p className="px-0.5 text-xs text-fg-muted">
-                        Sin tu firma no se radican ante la aseguradora.
+                        {tr("Sin tu firma no se radican ante la aseguradora.")}
                       </p>
                     )}
 
                     {vacia ? (
                       <p className="px-0.5 py-6 text-center text-xs text-fg-muted">
-                        Nada pendiente
+                        {tr("Nada pendiente")}
                       </p>
                     ) : (
                       <Stagger
@@ -335,7 +355,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
 
             <Button asChild variant="outline" size="sm" hideArrow className="w-full sm:w-auto">
               <Link href={PENDIENTES_HREF}>
-                Ver los {totalQueEspera} pendientes
+                {en ? `See the ${totalQueEspera} pending` : <>{tr("Ver los")} {totalQueEspera} {tr("pendientes")}</>}
               </Link>
             </Button>
           </>

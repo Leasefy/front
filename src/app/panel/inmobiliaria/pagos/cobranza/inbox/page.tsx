@@ -59,6 +59,7 @@ import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/M
 import { PauseModal } from '@/components/inmobiliaria/cobranza/intervention/PauseModal'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const LLAMADAS_HREF = `${BASE}/llamadas`
@@ -76,6 +77,8 @@ const FILTRO_OPCIONES: { value: GrupoFiltro; label: string }[] = [
 // ── Contenido ────────────────────────────────────────────────────────────────
 
 function InboxContent() {
+  const tr = useTr();
+  const en = useLocaleDelPanel() === 'en';
   const { locale } = useI18n()
 
   // FUENTE: endpoint unificado de inbox del agente (GET /cobranza/inbox).
@@ -123,14 +126,14 @@ function InboxContent() {
         g.threads.map((th) => ({
           key: th.id,
           debtorId: th.debtorId,
-          inquilino: 'Conversación',
+          inquilino: tr('Conversación'),
           ultimoMensaje: th.lastMessagePreview ?? '',
           grupo: backendLabelToGrupo(th.label),
           canal: th.channel || null,
           recibidoEn: th.lastMessageAt ?? null,
         })),
       ),
-    [groups],
+    [groups, tr],
   )
 
   // Estado de no-leído por threadId (para el badge "Nuevo" y "Marcar leído").
@@ -198,17 +201,20 @@ function InboxContent() {
   // qué va a aparecer aquí sin inventar cifras.
   const resumen = useMemo(() => {
     if (total === 0) {
-      return 'Cuando lleguen respuestas de tus inquilinos, te las resumiré aquí agrupadas por intención: promesas, pagos reportados, solicitudes de acuerdo y las que necesitan tu atención.'
+      return tr('Cuando lleguen respuestas de tus inquilinos, te las resumiré aquí agrupadas por intención: promesas, pagos reportados, solicitudes de acuerdo y las que necesitan tu atención.')
     }
     const partes: string[] = []
     for (const g of INBOX_GRUPOS) {
       const n = counts[g]
       if (n > 0) {
         const meta = INBOX_GRUPO_META[g]
-        partes.push(`${n} ${(n === 1 ? meta.singular : meta.label).toLowerCase()}`)
+        partes.push(`${n} ${tr(n === 1 ? meta.singular : meta.label).toLowerCase()}`)
       }
     }
     const desglose = partes.length > 0 ? ` ${partes.join(', ')}.` : ''
+    if (en) {
+      return `I have ${total} active ${total === 1 ? 'conversation' : 'conversations'}:${desglose}${totalUnread > 0 ? ` ${totalUnread} unread.` : ''}`
+    }
     const sinLeer =
       totalUnread > 0
         ? ` ${totalUnread} sin leer.`
@@ -216,19 +222,16 @@ function InboxContent() {
     return `Tengo ${total} conversación${total === 1 ? '' : 'es'} activa${
       total === 1 ? '' : 's'
     }:${desglose}${sinLeer}`
-  }, [total, counts, totalUnread])
+  }, [total, counts, totalUnread, tr, en])
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <header className="space-y-1">
         <h1 className="text-h2 text-fg">
-          Inbox de conversaciones
+          {tr("Inbox de conversaciones")}
         </h1>
         <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          Las respuestas de tus inquilinos, agrupadas por intención. Cada
-          conversación muestra el último mensaje y la acción sugerida. Los
-          mensajes sin entender y los que requieren humano nunca se responden
-          solos: los atiendes tú.
+          {tr("Las respuestas de tus inquilinos, agrupadas por intención. Cada conversación muestra el último mensaje y la acción sugerida. Los mensajes sin entender y los que requieren humano nunca se responden solos: los atiendes tú.")}
         </p>
       </header>
 
@@ -254,14 +257,14 @@ function InboxContent() {
             respuestas» se partía en dos y se cortaba). */}
         <div className="max-w-full overflow-x-auto [&_button]:whitespace-nowrap" data-testid="inbox-filtro-riel">
           <SegmentedControl<GrupoFiltro>
-            options={FILTRO_OPCIONES}
+            options={FILTRO_OPCIONES.map((o) => ({ ...o, label: tr(o.label) }))}
             value={filtro}
             onChange={setFiltro}
-            aria-label="Filtrar conversaciones por grupo"
+            aria-label={tr("Filtrar conversaciones por grupo")}
           />
         </div>
         <span className="text-xs text-fg-muted tabular-nums shrink-0">
-          <AnimatedNumber value={visibles.length} format={enteroTalCual} /> de {total}
+          <AnimatedNumber value={visibles.length} format={enteroTalCual} /> {tr("de")} {total}
         </span>
       </div>
 
@@ -269,7 +272,7 @@ function InboxContent() {
       <div
         className="flex flex-wrap gap-2"
         role="group"
-        aria-label="Agrupaciones del inbox"
+        aria-label={tr("Agrupaciones del inbox")}
       >
         {INBOX_GRUPOS.map((g) => {
           const meta = INBOX_GRUPO_META[g]
@@ -284,7 +287,7 @@ function InboxContent() {
               icon={<GrupoIcon weight="duotone" aria-hidden="true" />}
               data-testid={`inbox-chip-${g}`}
             >
-              {meta.label}
+              {tr(meta.label)}
               <span className="ml-1 tabular-nums text-fg-muted">
                 <AnimatedNumber value={counts[g]} format={enteroTalCual} />
               </span>
@@ -304,7 +307,7 @@ function InboxContent() {
           <Stagger
             className="space-y-3"
             role="list"
-            aria-label="Inbox de conversaciones"
+            aria-label={tr("Inbox de conversaciones")}
           >
             {pageItems.map((it) => {
               const open = openThreadId === it.key
@@ -362,8 +365,8 @@ function InboxContent() {
       ) : (
         <EmptyState
           icon={Tray}
-          title="Aún no hay conversaciones en el inbox"
-          description="Cuando lleguen respuestas de tus inquilinos por WhatsApp, voz o correo, aparecerán aquí agrupadas por intención. Mientras tanto, encuentras las conversaciones en las llamadas y en el detalle de cada deudor."
+          title={tr("Aún no hay conversaciones en el inbox")}
+          description={tr("Cuando lleguen respuestas de tus inquilinos por WhatsApp, voz o correo, aparecerán aquí agrupadas por intención. Mientras tanto, encuentras las conversaciones en las llamadas y en el detalle de cada deudor.")}
         />
       )}
       </CrossFade>
@@ -380,9 +383,9 @@ function InboxContent() {
             aria-hidden="true"
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-fg">Llamadas</p>
+            <p className="text-sm font-semibold text-fg">{tr("Llamadas")}</p>
             <p className="text-xs text-fg-muted leading-relaxed mt-0.5">
-              Conversaciones de voz y su resultado, con transcripción y QA.
+              {tr("Conversaciones de voz y su resultado, con transcripción y QA.")}
             </p>
           </div>
         </Link>
@@ -396,9 +399,9 @@ function InboxContent() {
             aria-hidden="true"
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-fg">Deudores</p>
+            <p className="text-sm font-semibold text-fg">{tr("Deudores")}</p>
             <p className="text-xs text-fg-muted leading-relaxed mt-0.5">
-              El hilo completo de cada inquilino, con sus mensajes y seguimiento.
+              {tr("El hilo completo de cada inquilino, con sus mensajes y seguimiento.")}
             </p>
           </div>
         </Link>
@@ -406,10 +409,7 @@ function InboxContent() {
 
       {/* Nota honesta de alcance de la fuente */}
       <p className="text-xs text-fg-muted leading-relaxed max-w-2xl">
-        Responder envía una plantilla aprobada por WhatsApp, y sale sólo porque
-        tú la elegiste. Los mensajes sin entender, las disputas y los que
-        requieren humano nunca se responden automáticamente. Un acuerdo siempre
-        requiere tu aprobación explícita.
+        {tr("Responder envía una plantilla aprobada por WhatsApp, y sale sólo porque tú la elegiste. Los mensajes sin entender, las disputas y los que requieren humano nunca se responden automáticamente. Un acuerdo siempre requiere tu aprobación explícita.")}
       </p>
 
       {responderAVivo && (

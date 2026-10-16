@@ -47,6 +47,7 @@ import { baseDeLaLinea, baseDelExtracto, type BaseDelCanonDelExtracto } from '@/
 import { BloqueDeDeducciones } from '@/components/inmobiliaria/deducciones/BloqueDeDeducciones';
 import { useDesbordeHorizontal } from '@/components/ui/use-desborde-horizontal';
 import { estadoDelGiroDeLaLinea, partesDelGiro } from '@/lib/propietarios/estado-del-giro';
+import { useTr } from '@/lib/i18n/use-tr';
 
 interface ExtractoPropietarioProps {
   extracto: ExtractoPropietarioType;
@@ -301,6 +302,7 @@ export function ExtractoPropietario({
   acciones = 'adentro',
   className,
 }: ExtractoPropietarioProps) {
+  const tr = useTr();
   const { t, locale } = useI18n();
   /*
    * Qué queda escondido a cada lado de la tabla. `Table` pone su propio
@@ -378,7 +380,7 @@ export function ExtractoPropietario({
                 {agencyConfig?.name}
               </h1>
               <p className="text-sm text-muted-foreground">
-                NIT: {agencyConfig?.nit}
+                {tr("NIT:")} {agencyConfig?.nit}
               </p>
               <p className="text-sm text-muted-foreground">
                 {[agencyConfig?.address, agencyConfig?.city].filter(Boolean).join(', ')}
@@ -493,7 +495,7 @@ export function ExtractoPropietario({
                   {/* P-23: el % va debajo de la comisión (una columna menos: la
                       tabla no cabía en el diálogo y Neto, fija, tapaba esto). */}
                   <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thCommission')}</TableHead>
-                  <TableHead className="text-right">Conceptos</TableHead>
+                  <TableHead className="text-right">{tr("Conceptos")}</TableHead>
                   <TableHead className={cn('text-right', celdaFija('derecha', 'cabecera-o-pie'))}>
                     {t('inmobiliaria.propietario.extracto.thNet')}
                     <FileteDeColumnaFija columna="neto" visible={desborde.haciaLaDerecha} />
@@ -737,7 +739,7 @@ export function ExtractoPropietario({
               {/* 🔴 22-09: el IVA de la comisión, entre la comisión y el neto. */}
               {(extracto.totals.totalIvaComision ?? 0) > 0 && (
                 <div className="flex items-center justify-between" data-testid="extracto-iva-comision">
-                  <span className="text-sm text-muted-foreground">IVA de la comisión</span>
+                  <span className="text-sm text-muted-foreground">{tr("IVA de la comisión")}</span>
                   <span className="text-sm font-medium font-mono tabular-nums text-primary">
                     -{formatCurrency(extracto.totals.totalIvaComision ?? 0)}
                   </span>
@@ -745,7 +747,7 @@ export function ExtractoPropietario({
               )}
               {(extracto.totals.totalRetencionesComision ?? 0) > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Retenido sobre la comisión</span>
+                  <span className="text-sm text-muted-foreground">{tr("Retenido sobre la comisión")}</span>
                   <span className="text-sm font-medium font-mono tabular-nums text-foreground">
                     {formatCurrency(extracto.totals.totalRetencionesComision ?? 0)}
                   </span>
@@ -753,7 +755,7 @@ export function ExtractoPropietario({
               )}
               {extracto.totals.totalConceptosAFavor > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Conceptos a su favor</span>
+                  <span className="text-sm text-muted-foreground">{tr("Conceptos a su favor")}</span>
                   <span className="text-sm font-medium text-foreground">
                     {formatCurrency(extracto.totals.totalConceptosAFavor)}
                   </span>
@@ -761,7 +763,7 @@ export function ExtractoPropietario({
               )}
               {extracto.totals.totalConceptosACargo > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Conceptos a su cargo</span>
+                  <span className="text-sm text-muted-foreground">{tr("Conceptos a su cargo")}</span>
                   <span className="text-sm font-medium text-destructive">
                     -{formatCurrency(extracto.totals.totalConceptosACargo)}
                   </span>
@@ -802,8 +804,7 @@ export function ExtractoPropietario({
                   <strong className="text-foreground">
                     {formatCurrency(extracto.totals.totalDeTerceros)}
                   </strong>{' '}
-                  de administración y otros conceptos que no son del
-                  propietario: se giran a la copropiedad o a quien corresponda.
+                  {tr("de administración y otros conceptos que no son del propietario: se giran a la copropiedad o a quien corresponda.")}
                 </p>
               )}
             </div>
@@ -832,7 +833,7 @@ export function ExtractoPropietario({
 
       {/* Print Footer */}
       <div className="hidden print:block p-6 text-center text-xs text-muted-foreground border-t border-border">
-        <p>{agencyConfig?.name} - NIT {agencyConfig?.nit}</p>
+        <p>{agencyConfig?.name} {tr("- NIT")} {agencyConfig?.nit}</p>
         <p>{[agencyConfig?.address, agencyConfig?.city].filter(Boolean).join(', ')}</p>
         <p className="mt-2">{t('inmobiliaria.propietario.extracto.documentGenerated')} {formatDate(extracto.generatedAt, locale)}</p>
       </div>

@@ -5,6 +5,7 @@ import { MonoLabel } from '@leasefy/cadence'
 import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece'
 import { useI18n } from '@/lib/i18n'
 import { type CarteraStage, stageColorClasses, STAGE_LABELS_ES, STAGE_LABELS_EN } from '@/lib/cartera'
+import { useTr } from '@/lib/i18n/use-tr'
 
 /** «12,5 %» (antes «12.5%»: punto decimal y sin espacio). */
 const porcentajeEnEs = (pct: number): string =>
@@ -16,6 +17,7 @@ interface CobranzaFunnelChartProps {
 }
 
 export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunnelChartProps) {
+  const tr = useTr();
   const { t, locale } = useI18n()
 
   const total = stages.reduce((sum, s) => sum + s.count, 0)
@@ -55,7 +57,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
           {t('inmobiliaria.ai.cobranza.overview.funnel.title')}
         </h3>
         <p className="text-xs text-fg-muted">
-          Qué porcentaje de tus casos está en cada etapa de mora.
+          {tr("Qué porcentaje de tus casos está en cada etapa de mora.")}
         </p>
       </div>
 

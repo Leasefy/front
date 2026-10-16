@@ -29,6 +29,7 @@ import { useRef, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { AnimatedNumber, enterTransition, usePrefersReducedMotion } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
+import { useTr } from '@/lib/i18n/use-tr'
 
 export interface KpiValorProps {
   cargando: boolean
@@ -47,6 +48,7 @@ function formatoComoElValor(valor: number): (n: number) => string {
 }
 
 export function KpiValor({ cargando, fallo, children, className }: KpiValorProps) {
+  const tr = useTr();
   const reducido = usePrefersReducedMotion()
   const estado = cargando ? 'cargando' : fallo ? 'fallo' : 'ok'
   const primerEstado = useRef(estado)
@@ -63,7 +65,7 @@ export function KpiValor({ cargando, fallo, children, className }: KpiValorProps
         data-testid="kpi-valor"
         data-estado="cargando"
         aria-busy="true"
-        aria-label="Cargando"
+        aria-label={tr("Cargando")}
       />
     )
   }
@@ -75,10 +77,10 @@ export function KpiValor({ cargando, fallo, children, className }: KpiValorProps
         className={cn('text-fg-subtle', className)}
         data-testid="kpi-valor"
         data-estado="fallo"
-        title="No se pudo traer este dato"
+        title={tr("No se pudo traer este dato")}
       >
         <span aria-hidden="true">{KPI_SIN_DATO}</span>
-        <span className="sr-only">No se pudo traer este dato</span>
+        <span className="sr-only">{tr("No se pudo traer este dato")}</span>
       </motion.span>
     )
   }

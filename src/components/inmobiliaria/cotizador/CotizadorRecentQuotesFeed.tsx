@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/format'
 import { SinDatos } from '@/components/estado/SinDatos'
 import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotizador-overview'
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
+import { useTr } from '@/lib/i18n/use-tr'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -66,6 +67,7 @@ export function CotizadorRecentQuotesFeed({
   quotes,
   isLoading = false,
 }: CotizadorRecentQuotesFeedProps) {
+  const tr = useTr();
   const { t } = useI18n()
 
   // El vacío va sin padding propio: `SinDatos` trae el suyo y es el mismo
@@ -80,7 +82,7 @@ export function CotizadorRecentQuotesFeed({
           Cargando → vacío → lista: cada estado entra con su fundido. */}
       <CrossFade swapKey={isLoading && quotes.length === 0 ? 'cargando' : vacio ? 'vacio' : 'lista'}>
       {isLoading && quotes.length === 0 ? (
-        <ul className="divide-y divide-border" role="status" aria-label="Cargando">
+        <ul className="divide-y divide-border" role="status" aria-label={tr("Cargando")}>
           {[1, 2, 3].map((i) => (
             <li key={`esqueleto-${i}`} className="flex items-center justify-between py-3">
               <div className="space-y-1.5">
@@ -90,7 +92,7 @@ export function CotizadorRecentQuotesFeed({
               <div className="h-5 w-16 rounded-full bg-surface-muted animate-pulse" />
             </li>
           ))}
-          <span className="sr-only">Cargando…</span>
+          <span className="sr-only">{tr("Cargando…")}</span>
         </ul>
       ) : vacio ? (
         // El vacío de la casa: círculo gris, título, una línea. Antes era un
@@ -126,10 +128,10 @@ export function CotizadorRecentQuotesFeed({
                       de cédula es solo una referencia técnica → "Ref. {hash}" */}
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-medium text-fg">
-                      {q.ciudad} · {formatCOP(q.canonCop)}/mes
+                      {q.ciudad} · {formatCOP(q.canonCop)}{tr("/mes")}
                     </span>
                     <span className="text-xs font-mono text-fg-muted">
-                      Ref. {q.cedulaHashPrefix8}
+                      {tr("Ref.")} {q.cedulaHashPrefix8}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">

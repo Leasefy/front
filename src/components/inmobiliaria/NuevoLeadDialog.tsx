@@ -82,6 +82,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { useEquipo } from '@/lib/agenda/use-equipo';
 import { useCrm } from '@/lib/hooks/use-crm';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
+import { useTr } from '@/lib/i18n/use-tr';
 
 type Campo =
   | 'consignacionId'
@@ -270,6 +271,7 @@ interface NuevoLeadDialogProps {
 }
 
 export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }: NuevoLeadDialogProps) {
+  const tr = useTr();
   const [consignacionId, setConsignacionId] = useState('');
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
@@ -405,9 +407,9 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
     <Dialog open={abierto} onOpenChange={(a) => !a && !enviando && onCerrar()}>
       <DialogContent data-testid="nuevo-lead-dialog">
         <DialogHeader>
-          <DialogTitle>Nuevo interesado</DialogTitle>
+          <DialogTitle>{tr("Nuevo interesado")}</DialogTitle>
           <DialogDescription>
-            Anota a quien preguntó por un inmueble. Entra al embudo como «Interesado».
+            {tr("Anota a quien preguntó por un inmueble. Entra al embudo como «Interesado».")}
           </DialogDescription>
         </DialogHeader>
 
@@ -416,13 +418,12 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
         <div className="space-y-4">
           {consignaciones.length === 0 ? (
             <p className="text-sm text-fg-muted" data-testid="nuevo-lead-sin-inmuebles">
-              Todavía no tienes inmuebles consignados. Un lead se anota sobre uno: consigna el
-              primero y vuelve acá.
+              {tr("Todavía no tienes inmuebles consignados. Un lead se anota sobre uno: consigna el primero y vuelve acá.")}
             </p>
           ) : (
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-fg" htmlFor="nuevo-lead-inmueble">
-                Inmueble
+                {tr("Inmueble")}
               </label>
               {/* PL-07: con código y dirección, con buscador, y sólo los que
                   se pueden ofrecer (ni arrendados ni borradores). */}
@@ -436,7 +437,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
                     value: c.id,
                     label: `${c.propertyCode != null ? `#${c.propertyCode} · ` : ''}${c.propertyTitle} · ${c.propertyAddress}`,
                   }))}
-                placeholder="Elige un inmueble"
+                placeholder={tr("Elige un inmueble")}
                 searchPlaceholder="Código, título o dirección"
                 contentClassName="z-[400]"
               />
@@ -447,7 +448,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
           {/* 🔴 B-07: el origen, de la lista de la inmobiliaria. */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-fg" htmlFor="nuevo-lead-origen">
-              ¿De dónde vino?
+              {tr("¿De dónde vino?")}
             </label>
             {conCrm ? (
               <>
@@ -468,7 +469,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
                 <ErrorDelCampo
                   id={idDelError('origen')}
                   mensaje={mensajeDe('origen')}
-                  pista="Con esto se sabe qué portal vale la pena pagar."
+                  pista={tr("Con esto se sabe qué portal vale la pena pagar.")}
                 />
               </>
             ) : (
@@ -482,7 +483,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-fg" htmlFor="nuevo-lead-nombre">
-              Nombre
+              {tr("Nombre")}
             </label>
             <Input
               id="nuevo-lead-nombre"
@@ -491,7 +492,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
                 setNombre(e.target.value);
                 setTocado(true);
               }}
-              placeholder="Ana Restrepo"
+              placeholder={tr("Ana Restrepo")}
               maxLength={120}
               {...aria('candidateName')}
             />
@@ -500,7 +501,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-fg" htmlFor="nuevo-lead-correo">
-              Correo <span className="font-normal text-fg-subtle">(opcional)</span>
+              {tr("Correo")} <span className="font-normal text-fg-subtle">{tr("(opcional)")}</span>
             </label>
             <Input
               id="nuevo-lead-correo"
@@ -516,7 +517,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-fg" htmlFor="nuevo-lead-telefono">
-              Teléfono <span className="font-normal text-fg-subtle">(opcional)</span>
+              {tr("Teléfono")} <span className="font-normal text-fg-subtle">{tr("(opcional)")}</span>
             </label>
             <Input
               id="nuevo-lead-telefono"
@@ -536,9 +537,9 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
           {conCrm ? (
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-fg" htmlFor="nuevo-lead-documento">
-                Documento{' '}
+                {tr("Documento")}{' '}
                 <span className="font-normal text-fg-subtle">
-                  (o el teléfono, hace falta uno)
+                  {tr("(o el teléfono, hace falta uno)")}
                 </span>
               </label>
               <Input
@@ -562,7 +563,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
           {conCrm ? (
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-fg" htmlFor="nuevo-lead-presupuesto">
-                Presupuesto al mes <span className="font-normal text-fg-subtle">(opcional)</span>
+                {tr("Presupuesto al mes")} <span className="font-normal text-fg-subtle">{tr("(opcional)")}</span>
               </label>
               <Input
                 id="nuevo-lead-presupuesto"
@@ -597,14 +598,14 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
           {asesores.length > 0 && (
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-fg">
-                Asesor <span className="font-normal text-fg-subtle">(opcional: si no, le toca al del inmueble o al del turno)</span>
+                {tr("Asesor")} <span className="font-normal text-fg-subtle">{tr("(opcional: si no, le toca al del inmueble o al del turno)")}</span>
               </label>
               <Combobox
                 data-testid="nuevo-lead-asesor"
                 value={asesor || undefined}
                 onChange={(v) => setAsesor(v ?? '')}
                 options={asesores.map((a) => ({ value: a.userId, label: a.nombre }))}
-                placeholder="Lo decide la regla del turno"
+                placeholder={tr("Lo decide la regla del turno")}
                 contentClassName="z-[400]"
               />
             </div>
@@ -619,7 +620,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCerrar} disabled={enviando}>
-            Cancelar
+            {tr("Cancelar")}
           </Button>
           <Button
             type="button"
@@ -629,7 +630,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
             isLoading={enviando}
             data-testid="nuevo-lead-guardar"
           >
-            Cargar lead
+            {tr("Cargar lead")}
           </Button>
         </DialogFooter>
       </DialogContent>

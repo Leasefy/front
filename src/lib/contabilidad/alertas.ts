@@ -98,6 +98,8 @@ export interface EntradaDeAlertas {
    * se pudo preguntar.
    */
   cuentasActivas?: number | null;
+  /** Lo que la conciliación aprobó (4×1000, comisiones, retenciones) y no tiene asiento (CONTA-1). */
+  diferencias?: { total: number; valorCop: number } | null;
 }
 
 export type AlertaContable =
@@ -117,7 +119,8 @@ export type AlertaContable =
   | { tipo: 'RUBROS_INCOMPLETOS'; faltantes: string[] }
   | { tipo: 'FACTURAS_SIN_CAUSAR'; sinCausar: number; totalCop: number }
   | { tipo: 'LOTES_POR_APROBAR'; porAprobar: number; totalCop: number }
-  | { tipo: 'EXOGENA_SIN_VISTO_BUENO'; anio: number; sinVistoBueno: number; conBloqueos: number };
+  | { tipo: 'EXOGENA_SIN_VISTO_BUENO'; anio: number; sinVistoBueno: number; conBloqueos: number }
+  | { tipo: 'DIFERENCIAS_SIN_ASIENTO'; total: number; valorCop: number };
 
 /**
  * Qué alertas corresponden a lo que se sabe. Lo que no llegó (`null`) no
@@ -130,6 +133,12 @@ export function alertasDeContabilidad(entrada: EntradaDeAlertas): AlertaContable
 
   if (entrada.balance && !entrada.balance.cuadra) {
     alertas.push({ tipo: 'NO_CUADRA', diferenciaCop: entrada.balance.diferenciaCop });
+  }
+
+  // CONTA-1 (QA de agentes 17-10): los gastos del banco conciliados sin cuenta
+  // quedaban sin asiento y la portada no lo decía (sólo Configuración).
+  if (entrada.diferencias && entrada.diferencias.total > 0) {
+    alertas.push({ tipo: 'DIFERENCIAS_SIN_ASIENTO', ...entrada.diferencias });
   }
 
   const f = entrada.faltantes;
@@ -309,6 +318,15 @@ export function describirAlerta(
         detalle:
           'Una factura registrada y sin causar no está en el libro: no aparece en el P&G ni en la exógena, y el proveedor ya está esperando el pago.',
         accion: { tipo: 'ir', label: 'Ver las facturas', href: `${BASE}/gastos?estado=BORRADOR` },
+      };
+    case 'DIFERENCIAS_SIN_ASIENTO':
+      return {
+        clave: 'diferencias-sin-asiento',
+        severidad: 'warning',
+        titulo: `${plural(alerta.total, 'gasto del banco conciliado', 'gastos del banco conciliados')} sin asiento por ${formatoDeMonto(alerta.valorCop)}`,
+        detalle:
+          'Son el 4×1000, las comisiones y lo que la conciliación aprobó como diferencia. Se asientan cuando eliges sus cuentas en Costos de la plata y das «Asentarlas».',
+        accion: { tipo: 'ir', label: 'Elegir las cuentas', href: '/panel/inmobiliaria/configuracion/costos-de-la-plata' },
       };
     case 'LOTES_POR_APROBAR':
       return {

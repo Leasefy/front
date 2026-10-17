@@ -63,12 +63,14 @@ import {
   type Icon,
   Bank,
   WarningCircle,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
 import { AnimatePresence } from 'framer-motion'
 import { Chip, StaggerItem } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { TablePagination } from '@/components/ui/pagination'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
@@ -83,6 +85,8 @@ import { normalizarDirectorDeLaAccion } from '@/lib/api/piloto-director'
 import { ordenarBandeja } from '@/lib/piloto/director'
 import { PorQueEnLaFila } from './PilotoDirectorPorQue'
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada'
+import { agenteDeLaAutonomia, nombreDelAgente } from '@/lib/agentes/equipo'
+import { coincideConLaBusqueda, grupoDeLaFila } from './bandeja-filtros'
 
 const POR_PAGINA = 10
 
@@ -104,13 +108,19 @@ const FUENTE_META: Record<string, { icon: Icon; label: string }> = {
   pago_en_revision: { icon: WarningCircle, label: 'Pagos sin aplicar' },
 }
 
-function metaDe(fuente: string): { icon: Icon; label: string } {
-  return (
-    FUENTE_META[fuente] ?? {
-      icon: Tray,
-      label: fuente.replaceAll('_', ' ').replace(/^./, (c) => c.toUpperCase()),
-    }
-  )
+function metaDe(
+  fuente: string,
+  t?: (key: string, params?: Record<string, string | number>) => string,
+): { icon: Icon; label: string } {
+  const propia = FUENTE_META[fuente]
+  if (propia) return propia
+  // CONTR-3: lo retenido se agrupa por agente (`grupoDeLaFila`): su nombre.
+  const agente = t ? agenteDeLaAutonomia(fuente) : null
+  if (agente && t) return { icon: HandPalm, label: nombreDelAgente(agente, t) }
+  return {
+    icon: Tray,
+    label: fuente.replaceAll('_', ' ').replace(/^./, (c) => c.toUpperCase()),
+  }
 }
 
 /**
@@ -167,13 +177,17 @@ export function PilotoBandeja({
 }: PilotoBandejaProps) {
   const { t } = useI18n()
   const [fuenteFiltro, setFuenteFiltro] = useState<string | null>(null)
+  const [busqueda, setBusqueda] = useState('')
   const [pagina, setPagina] = useState(1)
   const [enVuelo, setEnVuelo] = useState<string | null>(null)
 
   /** Conteo por fuente para los chips — sobre TODO, no sobre lo filtrado. */
   const grupos = useMemo(() => {
     const cuenta = new Map<string, number>()
-    for (const i of items) cuenta.set(i.fuente, (cuenta.get(i.fuente) ?? 0) + 1)
+    for (const i of items) {
+      const grupo = grupoDeLaFila(i)
+      cuenta.set(grupo, (cuenta.get(grupo) ?? 0) + 1)
+    }
     return [...cuenta.entries()].sort((a, b) => b[1] - a[1])
   }, [items])
 
@@ -183,11 +197,15 @@ export function PilotoBandeja({
    * se normaliza acá: uno a medias (sin `porQue`) cuenta como sin director.
    */
   const visibles = useMemo(() => {
-    const filtrados = fuenteFiltro ? items.filter((i) => i.fuente === fuenteFiltro) : items
+    const filtrados = items.filter(
+      (i) =>
+        (!fuenteFiltro || grupoDeLaFila(i) === fuenteFiltro) &&
+        coincideConLaBusqueda(i, busqueda),
+    )
     return ordenarBandeja(
       filtrados.map((i) => ({ ...i, director: normalizarDirectorDeLaAccion(i.director) })),
     )
-  }, [items, fuenteFiltro])
+  }, [items, fuenteFiltro, busqueda])
 
   const totalPaginas = Math.max(1, Math.ceil(visibles.length / POR_PAGINA))
   const paginaSegura = Math.min(pagina, totalPaginas)
@@ -217,7 +235,14 @@ export function PilotoBandeja({
     [onRefetch, t],
   )
 
-  const hayFiltro = fuenteFiltro !== null
+  const hayFiltro = fuenteFiltro !== null || busqueda.trim() !== ''
+  const limpiarFiltros = () => {
+    setFuenteFiltro(null)
+    setBusqueda('')
+    setPagina(1)
+  }
+  // La búsqueda aparece cuando la lista ya no cabe en una página.
+  const conBusqueda = items.length > POR_PAGINA
 
   return (
     <Card className="overflow-hidden">
@@ -254,12 +279,35 @@ export function PilotoBandeja({
         )}
       </div>
 
-      {/* Filtros por tipo de decisión — con el conteo adentro del chip */}
+      {/* CONTR-3: buscar por texto cuando la lista no cabe en una página */}
+      {!isLoading && !error && conBusqueda && (
+        <div className="border-b border-border px-5 pt-4">
+          <div className="relative w-full sm:max-w-sm">
+            <MagnifyingGlass
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+              aria-hidden="true"
+            />
+            <Input
+              className="pl-9"
+              placeholder={t('inmobiliaria.piloto.bandeja.buscarPlaceholder')}
+              aria-label={t('inmobiliaria.piloto.bandeja.buscarAria')}
+              value={busqueda}
+              onChange={(e) => {
+                setBusqueda(e.target.value)
+                setPagina(1)
+              }}
+              data-testid="piloto-bandeja-buscar"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Filtros por agente o tipo de decisión — con el conteo adentro del chip */}
       {!isLoading && !error && grupos.length > 1 && (
         <fieldset className="flex flex-wrap items-center gap-2 border-b border-border px-5 py-4">
           <legend className="sr-only">{t('inmobiliaria.piloto.bandeja.filtrarPorTipo')}</legend>
           {grupos.map(([fuente, n]) => {
-            const meta = metaDe(fuente)
+            const meta = metaDe(fuente, t)
             const FuenteIcon = meta.icon
             const activo = fuenteFiltro === fuente
             return (
@@ -283,10 +331,7 @@ export function PilotoBandeja({
               variant="link"
               size="sm"
               hideArrow
-              onClick={() => {
-                setFuenteFiltro(null)
-                setPagina(1)
-              }}
+              onClick={limpiarFiltros}
             >
               {t('inmobiliaria.piloto.bandeja.limpiar')}
             </Button>
@@ -323,10 +368,7 @@ export function PilotoBandeja({
                 hayFiltros
                 queSon={t('inmobiliaria.piloto.bandeja.decisiones')}
                 icono={Tray}
-                onLimpiarFiltros={() => {
-                  setFuenteFiltro(null)
-                  setPagina(1)
-                }}
+                onLimpiarFiltros={limpiarFiltros}
               />
             </div>
           ) : (

@@ -82,11 +82,26 @@ export interface NuevaSolicitudInput {
 // ---------------------------------------------------------------------------
 
 /**
+ * AVALI-3 (QA de agentes 17-10; Nico: «una cuenta, dos portales»): quien es
+ * propietario Y además inquilino entra al portal del propietario con su cuenta
+ * de inquilino. Desde ahí las pantallas piden `comoPropietario`, y el back
+ * responde con las solicitudes de SUS inmuebles (`?como=propietario`). Para
+ * una cuenta de propietario no cambia nada.
+ */
+export interface ComoQuien {
+  comoPropietario?: boolean;
+}
+
+function conComo(ruta: string, o?: ComoQuien): string {
+  return o?.comoPropietario ? `${ruta}${ruta.includes('?') ? '&' : '?'}como=propietario` : ruta;
+}
+
+/**
  * GET /pqrs/mine — own-scoped list. Degrades to `[]` on not-live (404/403/0),
  * an honest empty history; NEVER a fabricated row. Any other error is rethrown.
  */
-async function listMine(): Promise<SolicitudPqrs[]> {
-  return (await listMineConDisponibilidad()).items;
+async function listMine(o?: ComoQuien): Promise<SolicitudPqrs[]> {
+  return (await listMineConDisponibilidad(o)).items;
 }
 
 /**
@@ -98,10 +113,10 @@ async function listMine(): Promise<SolicitudPqrs[]> {
  * distinguir «no has radicado nada» de «todavía no se puede radicar». Con
  * `disponible: false` el botón se apaga ANTES de que la persona escriba.
  */
-async function listMineConDisponibilidad(): Promise<MisSolicitudes> {
+async function listMineConDisponibilidad(o?: ComoQuien): Promise<MisSolicitudes> {
   try {
     return leerMisSolicitudes(
-      await apiClient.get<SolicitudPqrs[] | RespuestaDeMisSolicitudes>('/pqrs/mine'),
+      await apiClient.get<SolicitudPqrs[] | RespuestaDeMisSolicitudes>(conComo('/pqrs/mine', o)),
     );
   } catch (err) {
     if (isEndpointUnavailable(err)) return { items: [], disponible: false, contratos: [] };
@@ -170,8 +185,8 @@ function leerMisSolicitudes(
  * raw fetch-by-id from a route param, so a tenant cannot probe a foreign id
  * (anti-IDOR, PITFALLS 4).
  */
-async function getMine(id: string): Promise<SolicitudPqrs | null> {
-  const all = await listMine();
+async function getMine(id: string, o?: ComoQuien): Promise<SolicitudPqrs | null> {
+  const all = await listMine(o);
   return all.find((s) => s.id === id) ?? null;
 }
 
@@ -181,9 +196,9 @@ async function getMine(id: string): Promise<SolicitudPqrs | null> {
  * throws `PqrsUnavailableError` so the UI stays on "Próximamente" and never
  * fabricates a radicado. Any other error is rethrown.
  */
-async function create(input: NuevaSolicitudInput): Promise<SolicitudPqrs> {
+async function create(input: NuevaSolicitudInput, o?: ComoQuien): Promise<SolicitudPqrs> {
   try {
-    return await apiClient.post<SolicitudPqrs>('/pqrs', input);
+    return await apiClient.post<SolicitudPqrs>(conComo('/pqrs', o), input);
   } catch (err) {
     if (isEndpointUnavailable(err)) throw new PqrsUnavailableError();
     throw err;
@@ -210,13 +225,17 @@ async function approveCotizacion(id: string): Promise<SolicitudPqrs> {
 }
 
 /** SO-18: una foto o un PDF a MI solicitud, ya radicada. */
-async function subirAdjunto(id: string, archivo: File) {
-  return subirAdjuntoDePqrs(`/pqrs/${id}/adjuntos`, archivo);
+async function subirAdjunto(id: string, archivo: File, o?: ComoQuien) {
+  return subirAdjuntoDePqrs(conComo(`/pqrs/${id}/adjuntos`, o), archivo);
 }
 
 /** Abrir un adjunto de mi solicitud (URL firmada de una hora). */
-async function abrirAdjunto(id: string, adjuntoId: string): Promise<{ url: string; nombre: string }> {
-  return apiClient.get<{ url: string; nombre: string }>(`/pqrs/${id}/adjuntos/${adjuntoId}`);
+async function abrirAdjunto(
+  id: string,
+  adjuntoId: string,
+  o?: ComoQuien,
+): Promise<{ url: string; nombre: string }> {
+  return apiClient.get<{ url: string; nombre: string }>(conComo(`/pqrs/${id}/adjuntos/${adjuntoId}`, o));
 }
 
 export const pqrsApi = {

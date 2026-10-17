@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Target, ClipboardText, Scroll, Receipt } from '@phosphor-icons/react';
+import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Target, ClipboardText, Scroll, Receipt, ArrowsLeftRight } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
@@ -11,6 +11,7 @@ import { useUnreadMessages } from '@/lib/hooks/useMessages';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
+import { useTambienEsPropietario } from '@/lib/hooks/useTambienEsPropietario';
 
 // Define the setup steps (2 steps: basic info + preferences. Income is collected during application)
 const TENANT_SETUP_STEPS: ProfileCompletionStep[] = [
@@ -26,6 +27,9 @@ const ONBOARDING_STORAGE_KEY = 'plan_onboarding_tenant';
 function useTenantNavItems() {
   const { t, locale } = useI18n();
   const { unreadCount } = useUnreadMessages();
+  // AVALI-3 (Nico, 17-10): la misma cuenta entra también a su portal de
+  // propietario si es dueño de un inmueble que administra una inmobiliaria.
+  const tambienPropietario = useTambienEsPropietario();
 
   return [
     { label: t('nav.panel'), href: '/inquilino', icon: SquaresFour, exact: true },
@@ -55,6 +59,9 @@ function useTenantNavItems() {
     // Sin badge fijo: el 2 estaba escrito a mano. Ahora el conteo sale de
     // useUnreadMessages (polling), así el sidebar nunca promete no-leídos falsos.
     { label: t('nav.messages'), href: '/inquilino/mensajes', icon: Chat, badge: unreadCount > 0 ? unreadCount : undefined },
+    ...(tambienPropietario
+      ? [{ label: locale === 'es' ? 'Mi portal de propietario' : 'My owner portal', href: '/panel', icon: ArrowsLeftRight }]
+      : []),
     // Sin «Notificaciones»: viven en la campana del header, igual que en el
     // panel de la inmobiliaria (Nico, 2026-09-15). La pantalla completa sigue
     // en /inquilino/notificaciones, a un clic desde «Ver todas».

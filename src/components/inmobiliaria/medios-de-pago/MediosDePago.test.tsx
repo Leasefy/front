@@ -280,6 +280,30 @@ describe('MediosDePago — el editor', () => {
     expect(document.body.textContent).toContain('El banco es obligatorio para un medio de tipo Transferencia bancaria.');
   });
 
+  // CONC-2 (QA de agentes 17-10): el aviso salía al final del cajón, fuera de
+  // la vista; «Crear medio» parecía no hacer nada.
+  it('lo que falta va debajo de CADA campo, marcado, y el foco va al primero', async () => {
+    listarMock.mockResolvedValueOnce([]);
+    await montar();
+    await clic(botonConTexto('Crear un medio'));
+    escribir('#medio-nombre', 'Transferencia');
+    await clic(botonConTexto('Crear medio'));
+    await act(async () => {
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+    });
+    expect(crearMock).not.toHaveBeenCalled();
+    expect($('#medio-banco').getAttribute('aria-invalid')).toBe('true');
+    expect($('#medio-numeroDeCuenta').getAttribute('aria-invalid')).toBe('true');
+    expect($('#medio-banco-error').textContent).toContain('El banco es obligatorio');
+    expect($('#medio-tipoDeCuenta-error').textContent).toContain('El tipo de cuenta es obligatorio');
+    expect($('#medio-numeroDeCuenta-error').textContent).toContain('El número de cuenta es obligatorio');
+    expect(document.activeElement?.id).toBe('medio-banco');
+    // Escribir el banco quita SU error, no los demás.
+    escribir('#medio-banco', 'Bancolombia');
+    expect($('#medio-banco').getAttribute('aria-invalid')).toBeNull();
+    expect($('#medio-numeroDeCuenta-error').textContent).toContain('El número de cuenta es obligatorio');
+  });
+
   it('un 400 del back se muestra adentro del modal y el modal sigue abierto', async () => {
     listarMock.mockResolvedValueOnce([]);
     crearMock.mockRejectedValueOnce(new Error('El enlace de pago tiene que empezar con https://'));

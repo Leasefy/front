@@ -67,11 +67,12 @@ import { matchingApi } from '@/lib/api/crm.service'
 import { useCrm } from '@/lib/hooks/use-crm'
 import { mensajeDeUnaOpcion } from '@/lib/matching/el-mensaje-para-el-interesado'
 import { useLocaleDelPanel, useTr, type Tr } from '@/lib/i18n/use-tr'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 type Direccion = 'interesado' | 'inmueble'
 
 function pesos(n: number | null | undefined): string {
-  return n === null || n === undefined ? '—' : `$${n.toLocaleString('es-CO')}`
+  return n === null || n === undefined ? '—' : `$${n.toLocaleString(localeDeLasCifras())}`
 }
 
 /** La barra del puntaje. Acompaña a las razones; nunca las reemplaza. */

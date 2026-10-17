@@ -28,6 +28,7 @@ import {
   type InteresesPorEmitir,
 } from '@/lib/api/facturacion-por-mes.service'
 import { aQuienSeFactura, cuantos, numerosQueSalen, sinLaRutaDeFacturacion } from '@/lib/facturacion/por-facturar'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 export interface FacturasDeInteresesProps {
   /** Se llama después de emitir, para que «Por facturar» relea lo suyo. */
@@ -72,11 +73,11 @@ export function FacturasDeIntereses({ onEmitidas }: FacturasDeInteresesProps) {
         ? numeros
           ? `¿Emitir la factura de intereses ${numeros}?`
           : '¿Emitir la factura de intereses?'
-        : `¿Emitir ${ids.length.toLocaleString('es-CO')} facturas de intereses?`,
+        : `¿Emitir ${ids.length.toLocaleString(localeDeLasCifras())} facturas de intereses?`,
       descripcion: una
         ? `A nombre de ${una.terceroNombre}, por ${formatCurrency(una.totalCop)}: los intereses de ${mesLegible(una.mes)} que ya pagó. Una factura emitida no se borra.`
         : `Por ${formatCurrency(total)}${numeros ? `, numeradas de la ${numeros.replace(' a ', ' a la ')}` : ''}. Una factura emitida no se borra.`,
-      accion: una ? 'Emitir la factura' : `Emitir ${ids.length.toLocaleString('es-CO')} facturas`,
+      accion: una ? 'Emitir la factura' : `Emitir ${ids.length.toLocaleString(localeDeLasCifras())} facturas`,
     })
     if (!ok) return
     setEmitiendo(ids.length === 1 ? ids[0] : 'todas')
@@ -128,7 +129,7 @@ export function FacturasDeIntereses({ onEmitidas }: FacturasDeInteresesProps) {
           <Receipt className="h-4 w-4" weight="bold" />
           {datos.facturas.length === 1
             ? 'Emitir la factura de intereses'
-            : `Emitir las ${datos.facturas.length.toLocaleString('es-CO')}`}
+            : `Emitir las ${datos.facturas.length.toLocaleString(localeDeLasCifras())}`}
         </Button>
       </div>
 

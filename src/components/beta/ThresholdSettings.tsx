@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 // ============================================================================
 // Helpers
@@ -18,7 +19,7 @@ import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 
 /** Format a number as COP with dots as thousands separator */
 function formatCOP(value: number): string {
-  return `$${value.toLocaleString('es-CO')} COP`;
+  return `$${value.toLocaleString(localeDeLasCifras())} COP`;
 }
 
 /** Clamp a value between min and max */

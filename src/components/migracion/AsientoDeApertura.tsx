@@ -62,6 +62,7 @@ import { formatCurrencyEnDocumento } from "@/lib/format";
 import { cierreDelAnioAnterior } from "@/lib/migracion/balance-de-apertura";
 import { TablePagination } from "@/components/ui/pagination";
 import { PAGE_SIZE_OPTIONS, useTablePagination } from "@/lib/hooks/use-table-pagination";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
 /** La plata de los saldos: con sus centavos si los trae, nunca redondeada. */
 const plataDeLosSaldos = (valor: number) => formatCurrencyEnDocumento(valor, false);
@@ -306,7 +307,7 @@ export function AsientoDeApertura({
           >
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <p className="text-sm text-fg">
-              Ya había {(registrado.asientosMigradosHastaElCorte ?? 0).toLocaleString("es-CO")}{" "}
+              Ya había {(registrado.asientosMigradosHastaElCorte ?? 0).toLocaleString(localeDeLasCifras())}{" "}
               {registrado.asientosMigradosHastaElCorte === 1 ? "asiento" : "asientos"} del libro
               diario migrado con fecha hasta el {fechaLarga(registrado.fecha)}. Esos movimientos
               ya están dentro de estos saldos: revísalos en Contabilidad y reversa los que
@@ -392,7 +393,7 @@ export function AsientoDeApertura({
         >
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
           <p className="min-w-0 flex-1 text-sm text-fg">
-            {delBalance.lineas.toLocaleString("es-CO")} líneas del balance
+            {delBalance.lineas.toLocaleString(localeDeLasCifras())} líneas del balance
             {delBalance.archivo ? ` «${delBalance.archivo}»` : ""}. Revisa que la fecha de
             corte sea la del balance: {esFechaContable(fecha) ? fechaLarga(fecha) : "sin fecha"}.
           </p>

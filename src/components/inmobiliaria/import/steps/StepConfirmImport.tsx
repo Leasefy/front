@@ -87,6 +87,7 @@ import {
   type EstadoDeLoteInmuebles,
   type MotivosDelLoteInmuebles,
 } from "@/lib/api/inmuebles-importacion.service";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
 /**
  * StepConfirmImport — WU-6: wires the durable backend (WU-4,
@@ -853,7 +854,7 @@ function StepConfirmImportCuerpo({
         const e = await inmueblesImportacionApi.estadoDeLote(loteEnSubida);
         if (e.total !== dtos.length) {
           setError(
-            `El archivo tiene ${dtos.length.toLocaleString("es-CO")} filas y la carga que dejaste a medias tenía ${e.total.toLocaleString("es-CO")}. Sube el mismo archivo para continuar.`,
+            `El archivo tiene ${dtos.length.toLocaleString(localeDeLasCifras())} filas y la carga que dejaste a medias tenía ${e.total.toLocaleString(localeDeLasCifras())}. Sube el mismo archivo para continuar.`,
           );
           return;
         }
@@ -915,7 +916,7 @@ function StepConfirmImportCuerpo({
 
       if (r.detenidaPorPersona) {
         toast.info("Subida detenida", {
-          description: `Llegaron ${(r.estado?.recibidas ?? 0).toLocaleString("es-CO")} de ${totalAEnviar.toLocaleString("es-CO")} filas. Nada se pierde: toca «Continuar subiendo» cuando quieras.`,
+          description: `Llegaron ${(r.estado?.recibidas ?? 0).toLocaleString(localeDeLasCifras())} de ${totalAEnviar.toLocaleString(localeDeLasCifras())} filas. Nada se pierde: toca «Continuar subiendo» cuando quieras.`,
         });
         return;
       }
@@ -987,7 +988,7 @@ function StepConfirmImportCuerpo({
       if (r.detenidaPorPersona) {
         setUbicacionEnPausa(true);
         toast.info("Búsqueda detenida", {
-          description: `Van ${r.ubicadas.toLocaleString("es-CO")} de ${r.total.toLocaleString("es-CO")} direcciones, ya guardadas. Toca «Continuar ubicando» cuando quieras.`,
+          description: `Van ${r.ubicadas.toLocaleString(localeDeLasCifras())} de ${r.total.toLocaleString(localeDeLasCifras())} direcciones, ya guardadas. Toca «Continuar ubicando» cuando quieras.`,
         });
       } else if (r.terminada) {
         /*
@@ -1407,7 +1408,7 @@ function StepConfirmImportCuerpo({
       <FileArrowUp className="w-4 h-4" />
       {subiendo
         ? "Subiendo..."
-        : `Subir ${totalAEnviar.toLocaleString("es-CO")} ${totalAEnviar === 1 ? "inmueble" : "inmuebles"} y ubicar direcciones`}
+        : `Subir ${totalAEnviar.toLocaleString(localeDeLasCifras())} ${totalAEnviar === 1 ? "inmueble" : "inmuebles"} y ubicar direcciones`}
     </Button>
   );
 
@@ -1428,7 +1429,7 @@ function StepConfirmImportCuerpo({
           <p className="text-sm font-medium text-danger">
             {nFallidas === 1
               ? "1 inmueble no se pudo crear"
-              : `${nFallidas.toLocaleString("es-CO")} inmuebles no se pudieron crear`}
+              : `${nFallidas.toLocaleString(localeDeLasCifras())} inmuebles no se pudieron crear`}
           </p>
           {!creandoActivo ? (
             <Button
@@ -1479,7 +1480,7 @@ function StepConfirmImportCuerpo({
             </ul>
             {filasFallidas.length > 0 && filasFallidas.length < nFallidas ? (
               <p className="text-xs text-fg-muted">
-                Mostramos {filasFallidas.length} de {nFallidas.toLocaleString("es-CO")}.
+                Mostramos {filasFallidas.length} de {nFallidas.toLocaleString(localeDeLasCifras())}.
               </p>
             ) : null}
           </>
@@ -1535,7 +1536,7 @@ function StepConfirmImportCuerpo({
           {(resumenLote?.pendientes ?? 0) > 0 && (
             <div className="space-y-2" data-testid="quedan-por-revisar">
               <p className="text-sm text-warning">
-                Quedan {(resumenLote?.pendientes ?? 0).toLocaleString("es-CO")}{" "}
+                Quedan {(resumenLote?.pendientes ?? 0).toLocaleString(localeDeLasCifras())}{" "}
                 {resumenLote?.pendientes === 1 ? "fila" : "filas"} con datos por
                 corregir. No frenan nada: puedes arreglarlas ahora o dejarlas fuera.
               </p>
@@ -1716,10 +1717,10 @@ function StepConfirmImportCuerpo({
         >
           <p className="text-sm text-fg">
             <span className="font-mono text-2xl font-semibold tabular-nums">
-              {hechas.toLocaleString("es-CO")}
+              {hechas.toLocaleString(localeDeLasCifras())}
             </span>{" "}
             de{" "}
-            <span className="font-mono tabular-nums">{total.toLocaleString("es-CO")}</span>{" "}
+            <span className="font-mono tabular-nums">{total.toLocaleString(localeDeLasCifras())}</span>{" "}
             creadas
             {/* Nico, 2026-09-11: «debemos mostrar acá el % en que va de avance».
                 La vista de T-0131 lo había perdido: el «N de M» solo no dice
@@ -1734,7 +1735,7 @@ function StepConfirmImportCuerpo({
           <Progress value={pct} size="xs" />
           {(creacion?.pendientes ?? 0) > 0 && creandoActivo ? (
             <p className="text-xs text-fg-muted">
-              Faltan {(creacion?.pendientes ?? 0).toLocaleString("es-CO")}.
+              Faltan {(creacion?.pendientes ?? 0).toLocaleString(localeDeLasCifras())}.
             </p>
           ) : null}
         </div>
@@ -1764,7 +1765,7 @@ function StepConfirmImportCuerpo({
         {(resumenLote?.pendientes ?? 0) > 0 && !creandoEnElServidor ? (
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm text-fg-muted">
-              Además quedan {(resumenLote?.pendientes ?? 0).toLocaleString("es-CO")} filas con datos por
+              Además quedan {(resumenLote?.pendientes ?? 0).toLocaleString(localeDeLasCifras())} filas con datos por
               corregir.
             </p>
             <Button
@@ -1811,9 +1812,9 @@ function StepConfirmImportCuerpo({
             </p>
             <p className="text-sm text-fg-muted">
               Llegaron{" "}
-              <span className="font-mono tabular-nums">{recibidas.toLocaleString("es-CO")}</span>{" "}
+              <span className="font-mono tabular-nums">{recibidas.toLocaleString(localeDeLasCifras())}</span>{" "}
               de{" "}
-              <span className="font-mono tabular-nums">{totalDelLote.toLocaleString("es-CO")}</span>{" "}
+              <span className="font-mono tabular-nums">{totalDelLote.toLocaleString(localeDeLasCifras())}</span>{" "}
               filas.{" "}
               {subiendo
                 ? "Deja esta página abierta hasta que termine."
@@ -1833,7 +1834,7 @@ function StepConfirmImportCuerpo({
                 ) : (
                   <p className="text-sm text-fg-muted" data-testid="subida-pide-el-archivo">
                     Para seguir, vuelve con «Anterior» al paso de subir el archivo, selecciona el
-                    MISMO archivo (tiene que tener {totalDelLote.toLocaleString("es-CO")} filas) y
+                    MISMO archivo (tiene que tener {totalDelLote.toLocaleString(localeDeLasCifras())} filas) y
                     avanza hasta acá: retomamos desde donde quedó.
                   </p>
                 )}
@@ -1864,11 +1865,11 @@ function StepConfirmImportCuerpo({
             </p>
             <p className="text-sm text-fg-muted">
               <span className="font-mono tabular-nums">
-                {(ub?.ubicadas ?? 0).toLocaleString("es-CO")}
+                {(ub?.ubicadas ?? 0).toLocaleString(localeDeLasCifras())}
               </span>{" "}
               de{" "}
               <span className="font-mono tabular-nums">
-                {(ub?.total ?? totalDelLote).toLocaleString("es-CO")}
+                {(ub?.total ?? totalDelLote).toLocaleString(localeDeLasCifras())}
               </span>{" "}
               ubicadas, y se guardan de a 50. Las busca esta página: mantenla abierta mientras
               tanto. Si la cierras, la carga queda guardada y sigues desde donde quedó.
@@ -2040,13 +2041,13 @@ function StepConfirmImportCuerpo({
         <div>
           <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
             {yaSeCrearonAlgunas
-              ? `Faltan ${listas.toLocaleString("es-CO")} por crear`
+              ? `Faltan ${listas.toLocaleString(localeDeLasCifras())} por crear`
               : "Todo listo para crear"}
           </h2>
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
             {listas === 1 ? "Se crea" : "Se crean"}{" "}
             <span className="font-mono tabular-nums font-medium text-fg">
-              {listas.toLocaleString("es-CO")}
+              {listas.toLocaleString(localeDeLasCifras())}
             </span>{" "}
             {listas === 1 ? "inmueble" : "inmuebles"} en un solo proceso del servidor. Puedes cerrar
             esta página: {listas === 1 ? "lo creamos aunque te vayas." : "las seguimos creando."}
@@ -2056,11 +2057,11 @@ function StepConfirmImportCuerpo({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-md bg-success-soft p-4">
             <MonoLabel className="block text-xs text-success mb-1">Listas para crear</MonoLabel>
-            <p className="text-2xl font-bold text-success">{listas.toLocaleString("es-CO")}</p>
+            <p className="text-2xl font-bold text-success">{listas.toLocaleString(localeDeLasCifras())}</p>
           </div>
           <div className="rounded-md bg-surface-muted dark:bg-ink p-4">
             <MonoLabel className="block text-xs text-fg-muted mb-1">Por revisar (no se tocan)</MonoLabel>
-            <p className="text-2xl font-bold text-fg-muted">{porRevisar.toLocaleString("es-CO")}</p>
+            <p className="text-2xl font-bold text-fg-muted">{porRevisar.toLocaleString(localeDeLasCifras())}</p>
           </div>
         </div>
 
@@ -2076,7 +2077,7 @@ function StepConfirmImportCuerpo({
           <p className="text-sm text-fg-muted" data-testid="listas-sin-canon">
             {sinCanonAlCrear === 1
               ? "1 inmueble se crea con el canon por confirmar"
-              : `${sinCanonAlCrear.toLocaleString("es-CO")} inmuebles se crean con el canon por confirmar`}
+              : `${sinCanonAlCrear.toLocaleString(localeDeLasCifras())} inmuebles se crean con el canon por confirmar`}
             : no se usa para contratos, cobros ni facturas hasta que lo pongas a mano en el inmueble.
           </p>
         ) : null}
@@ -2084,7 +2085,7 @@ function StepConfirmImportCuerpo({
           <p className="text-sm text-fg-muted" data-testid="listas-sin-precio-de-venta">
             {alCrear.sinPrecioDeVenta === 1
               ? "1 venta se crea con el precio por completar"
-              : `${alCrear.sinPrecioDeVenta.toLocaleString("es-CO")} ventas se crean con el precio por completar`}
+              : `${alCrear.sinPrecioDeVenta.toLocaleString(localeDeLasCifras())} ventas se crean con el precio por completar`}
             : no se publica hasta que le pongas el precio de venta en el inmueble.
           </p>
         ) : null}
@@ -2123,7 +2124,7 @@ function StepConfirmImportCuerpo({
             data-testid="crear-todas"
           >
             {yaSeCrearonAlgunas
-              ? `Crear las ${listas.toLocaleString("es-CO")} que faltan`
+              ? `Crear las ${listas.toLocaleString(localeDeLasCifras())} que faltan`
               : "Crear todas"}
           </Button>
         </div>
@@ -2341,7 +2342,7 @@ function StepConfirmImportCuerpo({
           <div className="flex flex-col items-end gap-1">
             <p className="text-sm text-fg-muted" data-testid="listas-para-crear">
               <span className="font-mono font-medium tabular-nums text-fg">
-                {listas.toLocaleString("es-CO")}
+                {listas.toLocaleString(localeDeLasCifras())}
               </span>{" "}
               {listas === 1 ? "lista para crear" : "listas para crear"}
             </p>
@@ -2585,7 +2586,7 @@ export function lineaDeCreados(
   nCreadas: number,
 ): string {
   const n = typeof creacion?.nuevos === 'number' ? creacion.nuevos : nCreadas
-  const cifra = n.toLocaleString('es-CO')
+  const cifra = n.toLocaleString(localeDeLasCifras())
   if (typeof creacion?.nuevos === 'number') {
     return n === 1 ? 'Se creó 1 inmueble nuevo en tu portafolio' : `Se crearon ${cifra} inmuebles nuevos en tu portafolio`
   }
@@ -2603,14 +2604,14 @@ export function detalleDeReusados(
     partes.push(
       yaEstaban === 1
         ? '1 ya estaba en tu portafolio con el mismo código: no se duplicó.'
-        : `${yaEstaban.toLocaleString('es-CO')} ya estaban en tu portafolio con el mismo código: no se duplicaron.`,
+        : `${yaEstaban.toLocaleString(localeDeLasCifras())} ya estaban en tu portafolio con el mismo código: no se duplicaron.`,
     )
   }
   if (repetidas > 0) {
     partes.push(
       repetidas === 1
         ? '1 fila repetía el código de otra fila del archivo: quedaron en el mismo inmueble.'
-        : `${repetidas.toLocaleString('es-CO')} filas repetían el código de otra fila del archivo: quedaron en el mismo inmueble.`,
+        : `${repetidas.toLocaleString(localeDeLasCifras())} filas repetían el código de otra fila del archivo: quedaron en el mismo inmueble.`,
     )
   }
   return partes.length > 0 ? partes.join(' ') : null
@@ -2622,7 +2623,7 @@ export function detalleDeReusados(
  * de siempre con el total.
  */
 export function fraseDelCanonPorConfirmar(total: number, listas: number | null): string {
-  const n = (x: number) => x.toLocaleString("es-CO");
+  const n = (x: number) => x.toLocaleString(localeDeLasCifras());
   if (listas === null) {
     return total === 1
       ? "1 inmueble no trae canon: se crea con el canon por confirmar."

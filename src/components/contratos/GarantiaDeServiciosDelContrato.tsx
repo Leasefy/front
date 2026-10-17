@@ -39,8 +39,9 @@ import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 import { diaLegible } from '@/lib/mandato/textos';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 import { CampoDeMes } from '@/components/ui/campo-de-mes';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
-const PESOS = plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+const PESOS = plataEnPantalla(localeDeLasCifras, { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 const NOMBRE_DEL_TIPO: Record<TipoDeMovimientoDeGarantia, string> = {
   RECAUDO: 'Recaudo al inquilino',

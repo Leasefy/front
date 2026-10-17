@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useId, useMemo, useSyncExternalStore } from 'react';
 import { fechaRelativa } from './fecha-relativa';
 import type { Locale, I18nContextValue, TranslationParams, Translations } from './types';
 import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '@/lib/format';
@@ -9,6 +9,7 @@ import en from './locales/en.json';
 import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
 import { hayPlataConCentavos, suscribirseALaConfigDePlata } from '@/lib/plata/con-centavos';
 import { CLAVE_DEL_IDIOMA_DEL_PANEL } from './idioma-del-panel';
+import { avisarIdiomaDeLasCifras, soltarIdiomaDeLasCifras } from './idioma-de-las-cifras';
 
 const translations: Record<Locale, Translations> = { es, en };
 
@@ -165,6 +166,13 @@ export function I18nProvider({ children, defaultLocale = DEFAULT_LOCALE }: I18nP
     }),
     [locale, setLocale, t, formatCurrency, formatNumber, formatDate, formatRelativeDate]
   );
+
+  // La plata y los números sin idioma (`formatCurrency` de `lib/format`) siguen
+  // al panel: se avisa en el render, antes que los hijos, con el idioma que se
+  // está pintando (`idioma-de-las-cifras.ts`; Nico, 16-10-2026).
+  const quien = useId();
+  avisarIdiomaDeLasCifras(isHydrated ? locale : defaultLocale, quien);
+  useEffect(() => () => soltarIdiomaDeLasCifras(quien), [quien]);
 
   // Prevent hydration mismatch by rendering default locale until hydrated
   if (!isHydrated) {

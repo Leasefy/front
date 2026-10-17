@@ -32,6 +32,7 @@ import type { PuntoDeLaSerie } from '@/lib/api/recaudo.types';
 import { formatCurrency } from '@/lib/format';
 import { mesCorto } from '@/lib/recaudo/meses';
 import { useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 const COLOR = {
   seDebe: '#C9C5BE',
@@ -53,12 +54,12 @@ export function abreviarCop(valor: number): string {
   const signo = valor < 0 ? '-' : '';
   if (abs >= 1_000_000) {
     const m = abs / 1_000_000;
-    return `${signo}$ ${m.toLocaleString('es-CO', { maximumFractionDigits: m >= 10 ? 0 : 1 })} M`;
+    return `${signo}$ ${m.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: m >= 10 ? 0 : 1 })} M`;
   }
   if (abs >= 1_000) {
-    return `${signo}$ ${Math.round(abs / 1_000).toLocaleString('es-CO')} k`;
+    return `${signo}$ ${Math.round(abs / 1_000).toLocaleString(localeDeLasCifras())} k`;
   }
-  return `${signo}$ ${abs.toLocaleString('es-CO')}`;
+  return `${signo}$ ${abs.toLocaleString(localeDeLasCifras())}`;
 }
 
 interface Props {

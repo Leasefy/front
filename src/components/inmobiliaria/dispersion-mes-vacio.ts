@@ -25,13 +25,14 @@
 
 import type { PorQueElMesVieneVacio } from '@/lib/types/inmobiliaria';
 import { mesEnTitulo, nombreDelMes } from '@/lib/utils/mes';
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
 export interface MotivoDelMesVacio {
   titulo: string;
   detalle: string;
 }
 
-const numero = new Intl.NumberFormat('es-CO');
+const numero = cifrasDeLaPantalla();
 
 /** «1 cuota de propietario» / «761 cuotas de propietario». */
 function cuotas(n: number): string {

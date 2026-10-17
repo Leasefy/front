@@ -26,6 +26,7 @@ import type {
   EstadoDeLaResolucion,
   FacturaDelMes,
 } from '@/lib/api/facturacion-por-mes.service'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 // ── Qué se puede emitir ─────────────────────────────────────────────────────
 
@@ -214,7 +215,7 @@ export function rutaDelEscenario(f: Pick<FacturaDelMes, 'contractId'>): string {
 
 /** `7000` → «70», `3333` → «33,33». */
 export function porcentajeDeLaParte(bps: number): string {
-  return (bps / 100).toLocaleString('es-CO', { maximumFractionDigits: 2 })
+  return (bps / 100).toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 2 })
 }
 
 /**
@@ -395,5 +396,5 @@ export function faltaEnLaBase(que: string): string {
 
 /** «1 documento», «2 documentos». */
 export function cuantos(n: number, singular: string, plural: string): string {
-  return `${n.toLocaleString('es-CO')} ${n === 1 ? singular : plural}`
+  return `${n.toLocaleString(localeDeLasCifras())} ${n === 1 ? singular : plural}`
 }

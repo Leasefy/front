@@ -42,6 +42,7 @@ import { useI18n } from '@/lib/i18n';
 import { nombreDelMes } from '@/lib/recaudo/meses';
 import { cn } from '@/lib/utils';
 import { GraficoDiaADia } from './GraficoDiaADia';
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
 const C = 'inmobiliaria.recaudo.comparativa';
 
@@ -54,7 +55,7 @@ function conMayuscula(texto: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
-const formateadorDePct = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 1 });
+const formateadorDePct = cifrasDeLaPantalla({ maximumFractionDigits: 1 });
 
 /** «+12,3 %», «−27,8 %», «0 %». El signo va escrito: el color no va solo. */
 export function formatearPct(pct: number): string {

@@ -19,6 +19,7 @@
 
 import type { ParsedSSEEvent } from '@/lib/cotizador/sse-schemas'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 // ---------------------------------------------------------------------------
 // Projected types
@@ -223,7 +224,7 @@ export function buildMatrizRows(carriers: CarrierState[]): MatrizRow[] {
 
 export function formatPrimaCop(prima: number | null | undefined): string | null {
   if (prima == null) return null
-  return new Intl.NumberFormat('es-CO', {
+  return formatoDeCifras(localeDeLasCifras(), {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,
@@ -239,5 +240,5 @@ export function formatLatency(latencyMs: number | null | undefined): string | nu
   if (latencyMs < 1000) return '< 1 s'
   const seconds = latencyMs / 1000
   const rounded = Math.round(seconds * 10) / 10
-  return `${rounded.toLocaleString('es-CO')} s`
+  return `${rounded.toLocaleString(localeDeLasCifras())} s`
 }

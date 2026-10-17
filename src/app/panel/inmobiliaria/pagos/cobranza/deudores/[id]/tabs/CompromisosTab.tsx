@@ -29,6 +29,7 @@ import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { cobranzaManualApi } from '@/lib/api/cobranza-manual.service'
 import { NOMBRE_DEL_ESTADO_DE_LA_PROMESA, type EntradaDelHistorial } from '@/lib/api/cobranza-manual.types'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 void React
 
@@ -86,7 +87,7 @@ function etiqueta(mapa: Record<string, string>, slug: string): string {
   return mapa[slug] ?? slug.replaceAll('_', ' ')
 }
 
-const COP = plataEnPantalla('es-CO', {
+const COP = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

@@ -172,6 +172,7 @@ import {
 import { Collapse, SegmentedControl } from '@leasefy/cadence'
 import { PrefacturasDelRango, finDeAnio } from './PrefacturasDelRango'
 import { FacturasDeIntereses } from './FacturasDeIntereses'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /**
  * El rango de fechas que trae el nombre de un renglón migrado de Nui
@@ -870,7 +871,7 @@ function TablaDeFacturas({
             />
             <span>
               <span className="font-mono tabular-nums">
-                {sinEscenario.length.toLocaleString('es-CO')}
+                {sinEscenario.length.toLocaleString(localeDeLasCifras())}
               </span>{' '}
               {sinEscenario.length === 1
                 ? 'factura del mes no se puede emitir: su contrato no tiene el escenario tributario confirmado y saldría sin los impuestos que lleva.'
@@ -898,7 +899,7 @@ function TablaDeFacturas({
         >
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" weight="fill" aria-hidden="true" />
           <p>
-            <span className="font-mono tabular-nums">{mora.enMora.toLocaleString('es-CO')}</span>{' '}
+            <span className="font-mono tabular-nums">{mora.enMora.toLocaleString(localeDeLasCifras())}</span>{' '}
             {mora.enMora === 1
               ? 'cuota de este mes está en mora.'
               : 'cuotas de este mes están en mora.'}{' '}
@@ -1536,7 +1537,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             accion: numeros ? `Emitir la ${numeros}` : 'Emitir la factura',
           }
         : {
-            titulo: `¿Emitir ${claves.length.toLocaleString('es-CO')} facturas ${
+            titulo: `¿Emitir ${claves.length.toLocaleString(localeDeLasCifras())} facturas ${
               aQuien === 'INQUILINO' ? 'de inquilinos' : 'de propietarios'
             } de ${mesLegible(mes)}?`,
             descripcion: (
@@ -1547,12 +1548,12 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
                 </span>
                 {numeros ? `, numeradas de la ${numeros.replace(' a ', ' a la ')}` : ''}.
                 {numerosQueFaltan !== null
-                  ? ` La resolución sólo alcanza para ${resolucionDeLaVista?.disponibles.toLocaleString('es-CO')}: las demás van a fallar por rango agotado.`
+                  ? ` La resolución sólo alcanza para ${resolucionDeLaVista?.disponibles.toLocaleString(localeDeLasCifras())}: las demás van a fallar por rango agotado.`
                   : ''}{' '}
                 {irreversible}
               </>
             ),
-            accion: `Emitir ${claves.length.toLocaleString('es-CO')} facturas`,
+            accion: `Emitir ${claves.length.toLocaleString(localeDeLasCifras())} facturas`,
           },
     )
     if (ok) await generar(claves)
@@ -1728,21 +1729,21 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           <p className="text-caption text-fg-muted" data-testid="facturacion-fuera-de-la-tanda">
             {[
               yaEmitidas > 0
-                ? `${yaEmitidas.toLocaleString('es-CO')} ${yaEmitidas === 1 ? 'ya está emitida' : 'ya están emitidas'}`
+                ? `${yaEmitidas.toLocaleString(localeDeLasCifras())} ${yaEmitidas === 1 ? 'ya está emitida' : 'ya están emitidas'}`
                 : null,
               noEmitibles > 0
-                ? `${noEmitibles.toLocaleString('es-CO')} todavía no se ${noEmitibles === 1 ? 'puede' : 'pueden'} emitir`
+                ? `${noEmitibles.toLocaleString(localeDeLasCifras())} todavía no se ${noEmitibles === 1 ? 'puede' : 'pueden'} emitir`
                 : null,
             ]
               .filter(Boolean)
               .join(' y ')}{' '}
-            de las {filasDeLaVista.length.toLocaleString('es-CO')} del mes.
+            de las {filasDeLaVista.length.toLocaleString(localeDeLasCifras())} del mes.
           </p>
         )}
         {/* El mes no queda facturado con una sola tanda: lo dice acá. */}
         {marcadasEnLaOtra > 0 && (
           <p className="text-caption text-fg-muted" data-testid="facturacion-marcadas-en-la-otra">
-            Y {marcadasEnLaOtra.toLocaleString('es-CO')}{' '}
+            Y {marcadasEnLaOtra.toLocaleString(localeDeLasCifras())}{' '}
             {marcadasEnLaOtra === 1 ? 'marcada' : 'marcadas'} en la pestaña de{' '}
             <button
               type="button"
@@ -1770,15 +1771,15 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               data-testid="facturacion-rango-corto"
             >
               La resolución sólo tiene{' '}
-              {(resolucionDeLaVista?.disponibles ?? 0).toLocaleString('es-CO')}{' '}
+              {(resolucionDeLaVista?.disponibles ?? 0).toLocaleString(localeDeLasCifras())}{' '}
               {resolucionDeLaVista?.disponibles === 1 ? 'número' : 'números'} y
-              tienes {marcadasEnTotal.toLocaleString('es-CO')}{' '}
+              tienes {marcadasEnTotal.toLocaleString(localeDeLasCifras())}{' '}
               {marcadasEnTotal === 1 ? 'marcada' : 'marcadas'}
               {mismaBolsa && marcadasEnLaOtra > 0 ? ' entre las dos pestañas' : ''}: se
               numeran las primeras y{' '}
               {numerosQueFaltan === 1
                 ? 'la otra va a fallar'
-                : `las ${numerosQueFaltan.toLocaleString('es-CO')} restantes van a fallar`}{' '}
+                : `las ${numerosQueFaltan.toLocaleString(localeDeLasCifras())} restantes van a fallar`}{' '}
               por rango agotado.{' '}
               {onIrAResolucion && (
                 <button
@@ -1998,7 +1999,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
         {datos && (
           <p className="text-body-sm text-fg-muted" data-testid="facturacion-resumen">
             <span className="font-medium text-fg tabular-nums">
-              {datos.totales.contratos.toLocaleString('es-CO')}{' '}
+              {datos.totales.contratos.toLocaleString(localeDeLasCifras())}{' '}
               {datos.totales.contratos === 1 ? 'contrato' : 'contratos'}
             </span>{' '}
             {datos.totales.meses === 1
@@ -2078,7 +2079,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
                     <span className="flex items-center gap-2 whitespace-nowrap">
                       Inquilinos
                       <span className="tabular-nums text-fg-muted">
-                        {delMes.inquilinos.length.toLocaleString('es-CO')}
+                        {delMes.inquilinos.length.toLocaleString(localeDeLasCifras())}
                       </span>
                     </span>
                   ),
@@ -2090,7 +2091,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
                     <span className="flex items-center gap-2 whitespace-nowrap">
                       Propietarios
                       <span className="tabular-nums text-fg-muted">
-                        {delMes.propietarios.length.toLocaleString('es-CO')}
+                        {delMes.propietarios.length.toLocaleString(localeDeLasCifras())}
                       </span>
                     </span>
                   ),

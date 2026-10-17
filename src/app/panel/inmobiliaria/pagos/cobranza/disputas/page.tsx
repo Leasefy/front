@@ -61,6 +61,7 @@ import {
   DebtorPicker,
   type PickedDebtor,
 } from '@/components/inmobiliaria/cobranza/DebtorPicker'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const DEUDORES_HREF = `${BASE}/deudores`
@@ -182,7 +183,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
   /** Lo que se le dice a la persona debajo de cada campo: el tope del cliente o lo del micro. */
   const errorDelMotivo =
     reasonLen > REASON_MAX
-      ? `El motivo puede tener hasta ${REASON_MAX.toLocaleString('es-CO')} caracteres.`
+      ? `El motivo puede tener hasta ${REASON_MAX.toLocaleString(localeDeLasCifras())} caracteres.`
       : erroresDelServidor.reason
   const errorDelMonto = !montoOk
     ? 'El monto debe ser un número mayor o igual a cero.'

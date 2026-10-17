@@ -74,6 +74,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 // ─── Negotiation draft ──────────────────────────────────────────────────────
 
@@ -203,7 +204,7 @@ function difieren(
   return keys.some((k) => JSON.stringify(saved[k]) !== JSON.stringify(draft[k]))
 }
 
-const pesos = plataEnPantalla('es-CO', {
+const pesos = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

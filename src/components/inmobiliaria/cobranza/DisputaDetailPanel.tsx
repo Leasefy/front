@@ -40,6 +40,7 @@ import {
   outcomeLabel,
 } from '@/lib/cobranza/dispute-vocab'
 import { CrossFade, Presence } from '@leasefy/cadence'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /** El mismo tope del micro (`resolutionNote: z.string().trim().min(1).max(2000)`). */
 const NOTE_MAX = 2000
@@ -160,7 +161,7 @@ export function DisputaDetailPanel({
 
   const errorDeLaNota =
     noteLen > NOTE_MAX
-      ? `La nota puede tener hasta ${NOTE_MAX.toLocaleString('es-CO')} caracteres.`
+      ? `La nota puede tener hasta ${NOTE_MAX.toLocaleString(localeDeLasCifras())} caracteres.`
       : erroresDelServidor.resolutionNote
 
   // Movimiento: elegir otra disputa cambia el panel con un fundido

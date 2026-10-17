@@ -7,6 +7,7 @@
  * el documento» — con el singular que le toca cuando es una sola.
  */
 import type { CodigoDeError, MotivosDelLote } from '@/lib/api/migracion-terceros.service';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** [una sola fila, varias filas]. El número ya viene formateado. */
 const FRASES: Record<CodigoDeError, [string, (n: string) => string]> = {
@@ -60,8 +61,8 @@ const FRASES: Record<CodigoDeError, [string, (n: string) => string]> = {
 /** «A las 2.895 que les falta el documento». Un código nuevo del back se nombra tal cual. */
 export function fraseDelMotivo(codigo: CodigoDeError, filas: number): string {
   const frase = FRASES[codigo];
-  if (!frase) return `A las ${filas.toLocaleString('es-CO')} con el motivo ${codigo}`;
-  return filas === 1 ? frase[0] : frase[1](filas.toLocaleString('es-CO'));
+  if (!frase) return `A las ${filas.toLocaleString(localeDeLasCifras())} con el motivo ${codigo}`;
+  return filas === 1 ? frase[0] : frase[1](filas.toLocaleString(localeDeLasCifras()));
 }
 
 /** Los motivos con filas, de más a menos: lo que más pesa va primero. */

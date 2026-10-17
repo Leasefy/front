@@ -159,9 +159,17 @@ export function leerPensamientoGuardado(v: unknown): PensamientoGuardado | null 
 
 // ── Cifras ──────────────────────────────────────────────────────────────────
 
-/** Como la escribe el micro: miles con punto, `$` si es plata. */
-export function cifraEnTexto(cifra: number, formato: 'numero' | 'moneda' = 'numero'): string {
-  const n = Math.round(cifra).toLocaleString('es-CO');
+/**
+ * Como la escribe el micro: miles con punto, `$` si es plata. Con el panel en
+ * inglés el micro traduce el texto y la escribe al estilo de EE. UU. («$985,507,187»;
+ * Nico, 16-10-2026): `locale` `'en-US'`.
+ */
+export function cifraEnTexto(
+  cifra: number,
+  formato: 'numero' | 'moneda' = 'numero',
+  locale: 'es-CO' | 'en-US' = 'es-CO'
+): string {
+  const n = Math.round(cifra).toLocaleString(locale);
   return formato === 'moneda' ? `$${n}` : n;
 }
 
@@ -172,13 +180,18 @@ export function cifraEnTexto(cifra: number, formato: 'numero' | 'moneda' = 'nume
  */
 export function partirPorLaCifra(
   r: ResultadoDelPaso
-): { antes: string; cifra: number; formato: 'numero' | 'moneda'; despues: string } | null {
+): { antes: string; cifra: number; formato: 'numero' | 'moneda'; locale: 'es-CO' | 'en-US'; despues: string } | null {
   if (r.cifra === undefined) return null;
   const formato = r.formato ?? 'numero';
-  const escrita = cifraEnTexto(r.cifra, formato);
-  const i = r.texto.indexOf(escrita);
-  if (i === -1) return null;
-  return { antes: r.texto.slice(0, i), cifra: r.cifra, formato, despues: r.texto.slice(i + escrita.length) };
+  // En español, o traducido al inglés (si la traducción falló, llega en
+  // español aunque el panel esté en inglés): la cifra se cuenta en el MISMO
+  // formato en que viene escrita, para que el número y su frase digan igual.
+  for (const locale of ['es-CO', 'en-US'] as const) {
+    const escrita = cifraEnTexto(r.cifra, formato, locale);
+    const i = r.texto.indexOf(escrita);
+    if (i !== -1) return { antes: r.texto.slice(0, i), cifra: r.cifra, formato, locale, despues: r.texto.slice(i + escrita.length) };
+  }
+  return null;
 }
 
 // ── El tiempo ───────────────────────────────────────────────────────────────

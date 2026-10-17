@@ -80,12 +80,13 @@ import type {
 import { nombreDelMes } from '@/lib/recaudo/meses';
 // CB-17: la plata de Contabilidad con UN formato («$ 1.234.567», «−$ 119.100»).
 import { plata as formatCurrency, textoDelBack } from '@/lib/contabilidad/plata';
+import { cifrasDeLaPantalla, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** CB-R17: por qué «Descargar PDF» está apagado: sin documento el certificado no sirve. */
 export const MOTIVO_SIN_PDF =
   'Sin el documento del propietario en su ficha, el certificado no sirve para declarar: complétalo primero.';
 
-const NUMERO = new Intl.NumberFormat('es-CO');
+const NUMERO = cifrasDeLaPantalla();
 
 /**
  * CB-32: «N.º 1» si el número es sólo la cifra; si trae prefijo, tal cual. El
@@ -410,7 +411,7 @@ export function CertificadoDeRetencionesPanel() {
                 <CifraDeTexto
                   id="propietarios"
                   etiqueta="Propietarios"
-                  texto={datos.totales.propietarios.toLocaleString('es-CO')}
+                  texto={datos.totales.propietarios.toLocaleString(localeDeLasCifras())}
                   definicion="Cuántos propietarios tienen algo que certificar este año."
                 />
               </div>
@@ -466,7 +467,7 @@ export function CertificadoDeRetencionesPanel() {
                                 {/* CB-R17: con copropietarios, cada uno con su parte. */}
                                 {typeof f.participacionPct === 'number' && f.participacionPct < 100 ? (
                                   <span data-testid={`parte-${f.propietarioId}`}>
-                                    {' · '}su parte: {f.participacionPct.toLocaleString('es-CO')} %
+                                    {' · '}su parte: {f.participacionPct.toLocaleString(localeDeLasCifras())} %
                                   </span>
                                 ) : null}
                               </span>

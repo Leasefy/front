@@ -55,6 +55,7 @@ import { RangoDeFechas } from '../RangoDeFechas';
 import { DescargarElInforme } from './DescargarElInforme';
 import { tablasDelAuxiliarPorTercero } from '@/lib/contabilidad/tablas-de-los-informes';
 import { Bloqueos, Nota, TarjetaDeInforme } from '../piezas';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** Los tipos de tercero que el libro usa, tal como se asientan. */
 const TIPOS = [
@@ -234,7 +235,7 @@ export function AuxiliarPorTercero() {
             {auxiliar.sinTercero.movimientos > 0 ? (
               <>
                 <p className="font-medium">
-                  {auxiliar.sinTercero.movimientos.toLocaleString('es-CO')} movimientos sin tercero
+                  {auxiliar.sinTercero.movimientos.toLocaleString(localeDeLasCifras())} movimientos sin tercero
                 </p>
                 <p>
                   Un movimiento a la 2815 sin tercero es un asiento que no cumple el régimen de
@@ -333,8 +334,8 @@ export function AuxiliarPorTercero() {
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3">
             <p className="text-caption text-fg-muted" data-testid="pagina-de-terceros">
-              {auxiliar.terceros.length.toLocaleString('es-CO')} de{' '}
-              {auxiliar.total.toLocaleString('es-CO')}
+              {auxiliar.terceros.length.toLocaleString(localeDeLasCifras())} de{' '}
+              {auxiliar.total.toLocaleString(localeDeLasCifras())}
             </p>
             <div className="flex gap-2">
               <Button

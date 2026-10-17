@@ -26,6 +26,7 @@ import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { SIN_MEDIR, textoDeTasa } from '@/lib/tasas';
 import type { OccupancyData } from '@/lib/data/mock-reports';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 interface OccupancyReportProps {
   data: OccupancyData;
@@ -83,7 +84,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
           color="blue"
           subtitle={
             summary.outOfCatalog > 0
-              ? `${summary.outOfCatalog.toLocaleString('es-CO')} fuera del catálogo`
+              ? `${summary.outOfCatalog.toLocaleString(localeDeLasCifras())} fuera del catálogo`
               : undefined
           }
         />

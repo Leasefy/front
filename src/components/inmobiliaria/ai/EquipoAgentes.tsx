@@ -38,6 +38,7 @@ import { AGENT_WORKSPACES } from '@/lib/nav/agentWorkspaceNav'
 import { useI18n } from '@/lib/i18n'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { relativeTime, workspaceVocab, type TranslateFn } from './ColaHumana'
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras'
 
 const NS = 'inmobiliaria.ai.workspace.equipo'
 
@@ -103,7 +104,7 @@ export function colaHref(agente: AgenteId): string {
   return agente === 'cobranza' ? `${base}/escalaciones` : `${base}/cola`
 }
 
-const numberFormatter = new Intl.NumberFormat('es-CO')
+const numberFormatter = cifrasDeLaPantalla()
 
 // ── Props ───────────────────────────────────────────────────────────────────
 

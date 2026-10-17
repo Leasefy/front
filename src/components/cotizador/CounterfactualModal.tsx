@@ -22,6 +22,7 @@
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 void React
 import { Minus, Plus, Spinner } from '@phosphor-icons/react'
@@ -89,7 +90,7 @@ function clampCanon(original: number): { min: number; max: number } {
 }
 
 function formatCop(v: number): string {
-  return new Intl.NumberFormat('es-CO', {
+  return formatoDeCifras(localeDeLasCifras(), {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,

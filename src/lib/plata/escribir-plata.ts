@@ -26,6 +26,7 @@
 import { hayPlataConCentavos } from './con-centavos';
 import { aCentavos } from './plata';
 import { traeCentavosGuardados } from './centavos-guardados';
+import { formatoDeCifras, type FormatoDeCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /**
  * El espacio entre el «$» y la cifra (Nico, 04-10-2026: la casa escribe
@@ -94,12 +95,32 @@ export interface FormatoDePlata {
  *   const COP = plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
  *   COP.format(2500000)    // «$ 2.500.000», como antes
  *   COP.format(1234567.29) // «$ 1.234.567,29»
+ *
+ * Con `localeDeLasCifras` (la FUNCIÓN, de `lib/i18n/idioma-de-las-cifras`) en
+ * vez de `'es-CO'` sigue al idioma del panel: con el panel en inglés, «$ 2,500,000»
+ * (Nico, 16-10-2026). Un documento o un mensaje para afuera sigue con `'es-CO'`.
  */
-export function plataEnPantalla(locale: string, opcionesDeHoy: Intl.NumberFormatOptions): FormatoDePlata {
-  const sinCentavos = new Intl.NumberFormat(locale, opcionesDeHoy);
-  const conCentavos = new Intl.NumberFormat(locale, { ...opcionesDeHoy, ...CON_DOS_DECIMALES });
+export function plataEnPantalla(
+  locale: string | (() => string),
+  opcionesDeHoy: Intl.NumberFormatOptions,
+): FormatoDePlata {
+  const porIdioma = new Map<string, { sinCentavos: FormatoDeCifras; conCentavos: FormatoDeCifras }>();
+  const formatos = (l: string) => {
+    let f = porIdioma.get(l);
+    if (!f) {
+      f = {
+        sinCentavos: formatoDeCifras(l, opcionesDeHoy),
+        conCentavos: formatoDeCifras(l, { ...opcionesDeHoy, ...CON_DOS_DECIMALES }),
+      };
+      porIdioma.set(l, f);
+    }
+    return f;
+  };
   return {
-    format: (valor: number) => (seMuestranLosCentavos(valor) ? conCentavos : sinCentavos).format(valor),
+    format: (valor: number) => {
+      const f = formatos(typeof locale === 'function' ? locale() : locale);
+      return (seMuestranLosCentavos(valor) ? f.conCentavos : f.sinCentavos).format(valor);
+    },
   };
 }
 

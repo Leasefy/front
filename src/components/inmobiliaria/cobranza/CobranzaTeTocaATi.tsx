@@ -49,6 +49,7 @@ import { errorLegible } from '@/lib/cobranza/error-legible'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr'
 import { textoDelAviso } from '@/lib/cobranza/aviso-del-reporte'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const NS = 'inmobiliaria.ai.cobranza.pendientes'
 const PENDIENTES_HREF = '/panel/inmobiliaria/pagos/cobranza/pendientes'
@@ -87,7 +88,7 @@ function haceCuanto(iso: string, en = false): string {
   return hace(`${Math.round(hr / 24)}d`)
 }
 
-const COP = plataEnPantalla('es-CO', {
+const COP = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

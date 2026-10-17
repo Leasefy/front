@@ -56,6 +56,7 @@ import {
   type OwnerReportStatus,
 } from '@/lib/hooks/cobranza/use-owner-reports'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const PROPIETARIOS_HREF = '/panel/inmobiliaria/propietarios'
@@ -106,7 +107,7 @@ const BACKEND_ESTADO: Record<OwnerReportStatus, ReporteEstado> = {
   sent: 'enviado',
 }
 
-const COP = plataEnPantalla('es-CO', {
+const COP = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

@@ -32,6 +32,7 @@ import type { AgentOverviewResponse, KpiFormat } from '@/lib/api/agent-workspace
 import type { AgenteId } from '@/lib/api/work-item';
 import { fechaEnFrase } from '@/lib/api/facturacion-por-mes.service';
 import { useDesempenoDeLosAgentes, type DesempenoDelAgente } from '@/lib/hooks/ai/use-desempeno-de-los-agentes';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** Los agentes que ya guardan su actividad en el micro, en el orden del menú. */
 const AGENTES_CON_SALA: { agente: AgenteId; nombre: string; hace: string }[] = [
@@ -45,8 +46,8 @@ const AGENTES_CON_SALA: { agente: AgenteId; nombre: string; hace: string }[] = [
 /** La plata como en la casa («$1.500.000»), el porcentaje con su espacio («66,7 %»). */
 function cifra(valor: number, formato: KpiFormat): string {
   if (formato === 'cop') return formatCurrency(valor);
-  if (formato === 'percent') return `${(valor * 100).toLocaleString('es-CO', { maximumFractionDigits: 1 })} %`;
-  return valor.toLocaleString('es-CO');
+  if (formato === 'percent') return `${(valor * 100).toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 1 })} %`;
+  return valor.toLocaleString(localeDeLasCifras());
 }
 
 const EN_CURSO = new Set(['detectado', 'sugerido', 'en_revision', 'aprobado', 'ejecutando']);
@@ -70,7 +71,7 @@ function cifrasDelAgente(data: AgentOverviewResponse): { etiqueta: string; valor
   const enCurso = data.pipeline
     .filter((p) => EN_CURSO.has(p.estado) && !fuera?.has(p.estado))
     .reduce((n, p) => n + p.count, 0);
-  const cifras = enCurso > 0 ? [{ etiqueta: 'Casos en curso', valor: enCurso.toLocaleString('es-CO') }] : [];
+  const cifras = enCurso > 0 ? [{ etiqueta: 'Casos en curso', valor: enCurso.toLocaleString(localeDeLasCifras()) }] : [];
   for (const k of data.kpis) cifras.push({ etiqueta: k.label, valor: cifra(k.value, k.format) });
   return cifras.slice(0, 3);
 }
@@ -172,7 +173,7 @@ const QUE_HACE: Record<string, string> = {
 };
 
 function cifrasDeLasAcciones(d: DesempenoDelAgente, dias: number, recortado: boolean): { etiqueta: string; valor: string }[] {
-  const n = (x: number) => (recortado ? `${x.toLocaleString('es-CO')} o más` : x.toLocaleString('es-CO'));
+  const n = (x: number) => (recortado ? `${x.toLocaleString(localeDeLasCifras())} o más` : x.toLocaleString(localeDeLasCifras()));
   const filas: { etiqueta: string; valor: string; x: number }[] = [
     { etiqueta: `Hechas en ${dias} días`, valor: n(d.hechas), x: d.hechas },
     { etiqueta: 'Esperan tu decisión', valor: String(d.esperan), x: d.esperan },

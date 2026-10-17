@@ -25,8 +25,9 @@ import { ApiError } from "@/lib/api/client";
 import { contabilidadApi, type CargaAbierta } from "@/lib/api/contabilidad.service";
 
 import { mensajeDeContabilidad } from "./contabilidad-errores";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
-const numero = (n: number) => n.toLocaleString("es-CO");
+const numero = (n: number) => n.toLocaleString(localeDeLasCifras());
 
 function fechaDeCarga(iso: string): string {
   const d = new Date(iso);

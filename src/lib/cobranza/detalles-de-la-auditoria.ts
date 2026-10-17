@@ -15,6 +15,7 @@ export interface DetalleLegible {
 
 import { stageDisplayName, type CarteraStage } from '@/lib/cartera'
 import { ESPACIO_DE_LA_PLATA } from '@/lib/plata/escribir-plata'
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /**
  * Claves que ya se pintan aparte (la cédula, enmascarada por `Mask`) y las
@@ -182,7 +183,7 @@ const DIA = /^\d{4}-\d{2}-\d{2}$/
 export function valorLegible(valor: unknown): string {
   if (valor === null || valor === undefined || valor === '') return '—'
   if (typeof valor === 'boolean') return valor ? 'Sí' : 'No'
-  if (typeof valor === 'number') return new Intl.NumberFormat('es-CO').format(valor)
+  if (typeof valor === 'number') return formatoDeCifras(localeDeLasCifras()).format(valor)
   if (typeof valor === 'string') {
     if (INSTANTE.test(valor)) {
       const d = new Date(valor)
@@ -214,7 +215,7 @@ export function valorDeLaClave(clave: string, valor: unknown): string {
     if (traduccion) return traduccion
   }
   if (snake.endsWith('_cop') && typeof valor === 'number' && Number.isFinite(valor)) {
-    return `$${ESPACIO_DE_LA_PLATA}${new Intl.NumberFormat('es-CO').format(valor)}`
+    return `$${ESPACIO_DE_LA_PLATA}${formatoDeCifras(localeDeLasCifras()).format(valor)}`
   }
   if (valor && typeof valor === 'object' && !Array.isArray(valor)) {
     const partes = Object.entries(valor as Record<string, unknown>)

@@ -57,6 +57,7 @@ import {
   revisarLasFilas,
 } from '@/lib/captacion/limites-de-la-captacion'
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /**
  * Las tres que publica un organismo, más «propia». El código viaja al back como
@@ -192,8 +193,8 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
        */
       toast.success(
         r.revisados.revisados === 0
-          ? `Lista cargada: ${r.lista.filas.toLocaleString('es-CO')} registros.`
-          : `Lista cargada: ${r.lista.filas.toLocaleString('es-CO')} registros. Se revisaron ${r.revisados.revisados} terceros: ${r.revisados.bloqueados} quedaron bloqueados y ${r.revisados.liberados} sin coincidencias.`,
+          ? `Lista cargada: ${r.lista.filas.toLocaleString(localeDeLasCifras())} registros.`
+          : `Lista cargada: ${r.lista.filas.toLocaleString(localeDeLasCifras())} registros. Se revisaron ${r.revisados.revisados} terceros: ${r.revisados.bloqueados} quedaron bloqueados y ${r.revisados.liberados} sin coincidencias.`,
       )
       limpiar()
       onOpenChange(false)
@@ -341,7 +342,7 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
               <>
                 <p className="text-sm text-fg">
                   <span className="font-mono font-semibold tabular-nums">
-                    {leido.filas.length.toLocaleString('es-CO')}
+                    {leido.filas.length.toLocaleString(localeDeLasCifras())}
                   </span>{' '}
                   registros en «{leido.nombreDelArchivo}». El nombre sale de la
                   columna «{leido.columnas.nombre}»
@@ -352,7 +353,7 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
                 </p>
                 {leido.descartadas > 0 && (
                   <p className="text-caption text-fg-muted">
-                    {leido.descartadas.toLocaleString('es-CO')} filas se
+                    {leido.descartadas.toLocaleString(localeDeLasCifras())} filas se
                     descartaron por no tener nombre.
                   </p>
                 )}
@@ -360,7 +361,7 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
                   <p className="text-caption text-fg-muted" data-testid="lista-detalles-recortados">
                     {leido.detallesRecortados === 1
                       ? 'Un detalle pasaba de 500 caracteres y se recortó'
-                      : `${leido.detallesRecortados.toLocaleString('es-CO')} detalles pasaban de 500 caracteres y se recortaron`}
+                      : `${leido.detallesRecortados.toLocaleString(localeDeLasCifras())} detalles pasaban de 500 caracteres y se recortaron`}
                     : es una nota, no se compara contra nadie.
                   </p>
                 )}

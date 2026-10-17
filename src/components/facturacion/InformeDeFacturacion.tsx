@@ -25,8 +25,9 @@ import { cn } from '@/lib/utils'
 import { quedaronPendientes, type ResultadoDeLaCorrida } from './facturasPorTandas'
 import { motivoParaNoDescargarLote, useDescargarFacturas, vaPorElCentro } from './useDescargarFacturas'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
-const numero = (n: number) => n.toLocaleString('es-CO')
+const numero = (n: number) => n.toLocaleString(localeDeLasCifras())
 const facturas = (n: number) => `${numero(n)} ${n === 1 ? 'factura' : 'facturas'}`
 
 /**

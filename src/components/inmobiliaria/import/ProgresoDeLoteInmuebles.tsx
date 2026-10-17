@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { abrirCentroDeProcesos } from '@/lib/api/procesos.service';
 import { Progress } from '@/components/ui/progress';
 import type { EstadoDeLoteInmuebles } from '@/lib/api/inmuebles-importacion.service';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 export function ProgresoDeLoteInmuebles({
   estado,
@@ -54,7 +55,7 @@ export function ProgresoDeLoteInmuebles({
         <Queue className="h-5 w-5 text-primary" aria-hidden="true" />
         <p className="text-sm font-medium text-fg">
           {total > 0
-            ? `Estamos preparando los ${total.toLocaleString('es-CO')} inmuebles de tu importación`
+            ? `Estamos preparando los ${total.toLocaleString(localeDeLasCifras())} inmuebles de tu importación`
             : 'Estamos preparando tu importación'}
         </p>
       </div>
@@ -80,8 +81,8 @@ export function ProgresoDeLoteInmuebles({
         <div className="space-y-1.5" data-testid="lote-inmuebles-avance">
           <Progress value={porcentaje} size="sm" aria-label="Avance de la carga" />
           <p className="text-caption text-fg-muted">
-            <span className="font-mono tabular-nums">{procesadas.toLocaleString('es-CO')}</span> de{' '}
-            <span className="font-mono tabular-nums">{total.toLocaleString('es-CO')}</span> filas revisadas.
+            <span className="font-mono tabular-nums">{procesadas.toLocaleString(localeDeLasCifras())}</span> de{' '}
+            <span className="font-mono tabular-nums">{total.toLocaleString(localeDeLasCifras())}</span> filas revisadas.
             Cuando termine, la revisión aparece aquí.
           </p>
         </div>

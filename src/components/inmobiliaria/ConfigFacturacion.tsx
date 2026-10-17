@@ -24,6 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { formatCurrency as formatCOP, formatDate } from '@/lib/format';
+import { idiomaDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -169,7 +170,8 @@ export function ConfigFacturacion({
       return { amount: t('inmobiliaria.config.billing.customPrice'), period: '' };
     }
     return {
-      amount: formatCOP(currentPlan.price.monthly),
+      // Pantalla: sigue al idioma del panel (el correo a Leasefy no lleva cifras).
+      amount: formatCOP(currentPlan.price.monthly, idiomaDeLasCifras()),
       period: t('inmobiliaria.config.billing.perMonth'),
     };
   }, [currentPlan, t]);
@@ -594,7 +596,7 @@ export function ConfigFacturacion({
                     </TableCell>
                     <TableCell className="py-3 px-4">
                       <span className="text-sm font-medium text-foreground">
-                        {formatCOP(invoice.amount)}
+                        {formatCOP(invoice.amount, idiomaDeLasCifras())}
                       </span>
                     </TableCell>
                     <TableCell className="py-3 px-4">

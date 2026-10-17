@@ -92,8 +92,9 @@ import { cn } from '@/lib/utils';
 import { GraficoDeRecaudo } from './GraficoDeRecaudo';
 import { ComparativaDelMes, VsMesAnterior, type SentidoDeLaCifra } from './ComparativaDelMes';
 import { useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr';
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras'
 
-const formateadorDeNumero = new Intl.NumberFormat('es-CO');
+const formateadorDeNumero = cifrasDeLaPantalla();
 
 /** Un conteo con separador de miles: «30.951». */
 function numero(n: number): string {

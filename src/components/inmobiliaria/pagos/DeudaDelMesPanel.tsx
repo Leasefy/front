@@ -137,11 +137,12 @@ import { CLAVE_DE_MORA, RUTA_DE_REGLAS_DE_MORA, sumarIntereses } from '@/compone
 import { mesEnTitulo, nombreDelMes } from '@/lib/utils/mes'
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import { cn } from '@/lib/utils'
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras'
 
 /** A-04: el mismo destino de «Fijar los días de plazo» de toda la app (foco en el campo). */
 const RUTA_PARA_FIJAR_EL_PLAZO = '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo'
 
-const numberFormatter = new Intl.NumberFormat('es-CO')
+const numberFormatter = cifrasDeLaPantalla()
 
 /** PG-R18: cuántos meses por venir ofrece el selector (como «Por pagar»: el mes en curso + 3). */
 export const MESES_HACIA_ADELANTE = 3

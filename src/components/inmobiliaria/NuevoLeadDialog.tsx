@@ -83,6 +83,7 @@ import { useEquipo } from '@/lib/agenda/use-equipo';
 import { useCrm } from '@/lib/hooks/use-crm';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
 import { useTr } from '@/lib/i18n/use-tr';
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
 type Campo =
   | 'consignacionId'
@@ -134,7 +135,7 @@ function soloDigitos(texto: string): string {
   return texto.replace(/\D/g, '');
 }
 
-const PESOS = new Intl.NumberFormat('es-CO', {
+const PESOS = cifrasDeLaPantalla({
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

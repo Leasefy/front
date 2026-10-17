@@ -151,6 +151,7 @@ import { EN_CURSO_EN_EL_CENTRO } from '@/components/procesos/estado-del-proceso'
 import { DetalleDeAsiento } from './asientos/DetalleDeAsiento';
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
 import { leerFallo } from '@/lib/errores/traductor-de-errores';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const BASE = '/panel/inmobiliaria/contabilidad';
 
@@ -1006,7 +1007,7 @@ const REVISIONES: { consulta: ConsultaDeLaPortada; que: string }[] = [
 ];
 
 function plural(n: number, singular: string, varios: string): string {
-  return `${n.toLocaleString('es-CO')} ${n === 1 ? singular : varios}`;
+  return `${n.toLocaleString(localeDeLasCifras())} ${n === 1 ? singular : varios}`;
 }
 
 /** «2 cobros, 1 recibo de caja y 3 lotes de giros». */
@@ -1142,7 +1143,7 @@ export function HubDeContabilidad() {
                   className="font-mono font-semibold tabular-nums text-fg"
                   title={trozo.rotulo}
                 >
-                  {trozo.valor === null ? '—' : trozo.valor.toLocaleString('es-CO')}
+                  {trozo.valor === null ? '—' : trozo.valor.toLocaleString(localeDeLasCifras())}
                 </strong>
               ),
             )}

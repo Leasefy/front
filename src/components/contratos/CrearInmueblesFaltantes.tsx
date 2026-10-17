@@ -59,6 +59,7 @@ import {
 import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras'
 
 const ID_DE_LA_CIUDAD = 'ciudad-inmuebles-faltantes'
 
@@ -355,7 +356,7 @@ interface GrupoDeNotas {
 const MOTIVOS_INFORMATIVOS = new Set(['Ya tiene inmueble.', 'Fila descartada.'])
 
 const EJEMPLOS_VISIBLES = 5
-const nf = new Intl.NumberFormat('es-CO')
+const nf = cifrasDeLaPantalla()
 
 /** Agrupa por texto del motivo; los problemas reales primero. */
 function agruparNotas(notas: Nota[]): GrupoDeNotas[] {

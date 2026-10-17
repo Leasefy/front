@@ -52,6 +52,7 @@ import { MonoLabel } from '@leasefy/cadence'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { sinDeudores } from '@/lib/cobranza/reporte-sin-deudores'
 import { textoDelAviso } from '@/lib/cobranza/aviso-del-reporte'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /**
  * N-11 (QA-PAGOS-95, 05-10-2026): el reporte decía «PKR», «100.0%» y
@@ -59,7 +60,7 @@ import { textoDelAviso } from '@/lib/cobranza/aviso-del-reporte'
  */
 function porcentajeLegible(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return '—'
-  return `${n.toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`
+  return `${n.toLocaleString(localeDeLasCifras(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`
 }
 
 function diaDelReporte(dia: string, locale: string): string {
@@ -83,7 +84,7 @@ function diaCorto(iso: string, locale: string): string {
   })
 }
 
-const COP_FORMATTER = plataEnPantalla('es-CO', {
+const COP_FORMATTER = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -262,8 +263,8 @@ function ReporteViewerContent() {
               pista={
                 morosidadBase
                   ? t('inmobiliaria.ai.cobranza.reporte.kpis.morosidadBase', {
-                      enMora: morosidadBase.inquilinos_en_mora.toLocaleString('es-CO'),
-                      conContrato: morosidadBase.inquilinos_con_contrato.toLocaleString('es-CO'),
+                      enMora: morosidadBase.inquilinos_en_mora.toLocaleString(localeDeLasCifras()),
+                      conContrato: morosidadBase.inquilinos_con_contrato.toLocaleString(localeDeLasCifras()),
                     })
                   : undefined
               }

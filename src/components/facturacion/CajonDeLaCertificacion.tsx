@@ -48,6 +48,7 @@ import { comoCsv } from './certificacion-en-csv'
 import { CampoDeFecha } from './CampoDeFecha'
 import { formatCurrency } from '@/lib/format'
 import { BotonPdfDeLaCertificacion } from './BotonPdfDeLaCertificacion'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /** Cuántos resultados se muestran: es un buscador, no un listado. */
 const CUANTOS_RESULTADOS = 8
@@ -143,7 +144,7 @@ export function CajonDeLaCertificacion({
       setUltima(c)
       toast.success(
         // FA-23: «1 factura», no «1 facturas».
-        `Certificación de ${c.propietario.nombre} generada (${c.facturasContadas.toLocaleString('es-CO')} ${c.facturasContadas === 1 ? 'factura' : 'facturas'})`,
+        `Certificación de ${c.propietario.nombre} generada (${c.facturasContadas.toLocaleString(localeDeLasCifras())} ${c.facturasContadas === 1 ? 'factura' : 'facturas'})`,
       )
       await onGenerada()
     } catch (e) {
@@ -287,7 +288,7 @@ export function CajonDeLaCertificacion({
               {[
                 [
                   'Facturas',
-                  `${ultima.facturasContadas.toLocaleString('es-CO')} ${ultima.facturasContadas === 1 ? 'factura' : 'facturas'}`,
+                  `${ultima.facturasContadas.toLocaleString(localeDeLasCifras())} ${ultima.facturasContadas === 1 ? 'factura' : 'facturas'}`,
                 ],
                 // FA-R28: la plata con un solo formato en toda la sección.
                 ['Base', formatCurrency(ultima.baseCop)],

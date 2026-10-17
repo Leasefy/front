@@ -49,6 +49,7 @@ import type {
   BriefingSection,
   Reintentable,
 } from '@/lib/types/beta-chat';
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 // ── Backend contract (mirror of the agent's agency-ai-hub-chat[-stream]) ──────
 
@@ -846,7 +847,7 @@ const SECTION_DEFAULTS: Record<string, { icon: string; color: string }> = {
 };
 
 function formatCop(amount: number): string {
-  return new Intl.NumberFormat('es-CO', {
+  return formatoDeCifras(localeDeLasCifras(), {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,

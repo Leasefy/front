@@ -10,6 +10,7 @@
  */
 
 import type { InquilinoDelContrato } from '@/lib/types/contract'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const BPS_TOTAL = 10_000
 
@@ -56,7 +57,7 @@ export function porcentajeDeTexto(texto: string): number {
 
 /** `3333` -> `"33,33"`, `5000` -> `"50"` (para el campo y para el texto corrido). */
 export function textoDelPorcentaje(bps: number): string {
-  return (bps / 100).toLocaleString('es-CO', { maximumFractionDigits: 2 })
+  return (bps / 100).toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 2 })
 }
 
 /** Por qué no se puede guardar todavía, o `null` si está listo. */

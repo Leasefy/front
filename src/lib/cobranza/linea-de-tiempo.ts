@@ -18,6 +18,7 @@ import { callOutcomeLabel, channelLabel, paymentChannelLabel } from '@/lib/cobra
 import { laHizoUnaPersona, motivoDeLaTransicion } from '@/lib/cobranza/transicion-vocab'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import type { EntradaDelHistorial } from '@/lib/api/cobranza-manual.types'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 export interface EventoDelMicro {
   event_type: string
@@ -49,7 +50,7 @@ function nombreDeLaEtapa(v: unknown, locale: string): string | null {
 }
 
 function cop(n: number): string {
-  return plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n)
+  return plataEnPantalla(localeDeLasCifras, { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n)
 }
 
 /** «19 de octubre de 2026»: el día civil tal cual, sin correrlo por el huso. */

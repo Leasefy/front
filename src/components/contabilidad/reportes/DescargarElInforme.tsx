@@ -87,7 +87,8 @@ export function DescargarElInforme({ informe, periodo, tablas, disabled }: Props
   }, [imprimiendo, informe, periodo]);
 
   const celda = (c: TablaDelInforme['filas'][number][number]) =>
-    typeof c === 'number' ? plata(c) : (c ?? '');
+    // El informe se descarga en español: la plata, como en Colombia.
+    typeof c === 'number' ? plata(c, 'es') : (c ?? '');
 
   return (
     <>

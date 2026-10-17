@@ -6,10 +6,11 @@ import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece
 import { useI18n } from '@/lib/i18n'
 import { type CarteraStage, stageColorClasses, STAGE_LABELS_ES, STAGE_LABELS_EN } from '@/lib/cartera'
 import { useTr } from '@/lib/i18n/use-tr'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /** «12,5 %» (antes «12.5%»: punto decimal y sin espacio). */
 const porcentajeEnEs = (pct: number): string =>
-  `${pct.toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}\u00a0%`
+  `${pct.toLocaleString(localeDeLasCifras(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}\u00a0%`
 
 interface CobranzaFunnelChartProps {
   stages: Array<{ stage: CarteraStage; count: number }>

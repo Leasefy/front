@@ -33,6 +33,7 @@ import {
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { PESOS, QUE_ES_LA_MODALIDAD, diaLegible } from '@/lib/mandato/textos';
 import { EsqueletoDeSeccion } from './piezas';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 type Borrador = Omit<CobroAlArrendar, 'id'> & { id?: string; clave: string };
 
@@ -346,7 +347,7 @@ function IvaDeLaComision({
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        La tarifa ({config.ivaDeLaComision.ivaPorcentaje.toLocaleString('es-CO')} %) se edita en Perfil, en
+        La tarifa ({config.ivaDeLaComision.ivaPorcentaje.toLocaleString(localeDeLasCifras())} %) se edita en Perfil, en
         «Impuestos y retenciones». Confírmalo con tu contador.
       </p>
     </section>

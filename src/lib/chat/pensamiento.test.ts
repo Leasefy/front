@@ -108,6 +108,7 @@ describe('la cifra del resultado', () => {
       antes: '',
       cifra: 985_507_187,
       formato: 'moneda',
+      locale: 'es-CO',
       despues: ' en 561 clientes',
     });
     expect(partirPorLaCifra({ texto: '2 coincidencias: un inquilino y un propietario', cifra: 2 })).toMatchObject({
@@ -176,18 +177,20 @@ describe('el tiempo y el lector de pantalla', () => {
 
 /**
  * Nico (16-10-2026): con el panel en inglés el micro traduce el pensamiento.
- * La cifra llega tal cual (el panel escribe la plata como en Colombia) y «el
- * especialista de X» como «the X specialist»: el panel la cuenta y le pone el
- * nombre igual.
+ * La cifra llega con los separadores del inglés (el panel en inglés escribe la
+ * plata al estilo de EE. UU.) y «el especialista de X» como «the X specialist»:
+ * el panel la cuenta en ese formato y le pone el nombre igual.
  */
 describe('el pensamiento que llega en inglés', () => {
-  it('la cifra, que llega tal cual, se cuenta igual', () => {
-    expect(partirPorLaCifra({ texto: '$985.507.187 across 561 clients', cifra: 985_507_187, formato: 'moneda' })).toEqual({
+  it('la cifra con comas también se cuenta, y en su formato', () => {
+    expect(partirPorLaCifra({ texto: '$985,507,187 across 561 clients', cifra: 985_507_187, formato: 'moneda' })).toEqual({
       antes: '',
       cifra: 985_507_187,
       formato: 'moneda',
+      locale: 'en-US',
       despues: ' across 561 clients',
     });
+    expect(cifraEnTexto(31_850_000, 'moneda', 'en-US')).toBe('$31,850,000');
   });
 
   it('«the X specialist» lleva el nombre del equipo', () => {

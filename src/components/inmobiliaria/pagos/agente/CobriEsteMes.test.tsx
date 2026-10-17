@@ -22,9 +22,11 @@ const h = vi.hoisted(() => ({
     recargar: vi.fn(async () => {}),
   },
   links: vi.fn(),
+  enLaBandeja: { porCuota: new Map<string, string>(), ids: [] as string[], total: 0 },
 }))
 
 vi.mock('@/lib/hooks/use-payu', () => ({ useResumenDePayu: () => h.resumen }))
+vi.mock('@/lib/hooks/use-cobros-en-la-bandeja', () => ({ useCobrosEnLaBandeja: () => h.enLaBandeja }))
 // La lista tiene su propia prueba (`LinksDePago.test.tsx`): acá importa qué le llega.
 vi.mock('@/components/inmobiliaria/pagos/payu/LinksDePago', () => ({
   LinksDePago: (props: { titulo?: string; descripcion?: string | null; resumen?: React.ReactNode; mes?: string }) => {
@@ -67,6 +69,7 @@ beforeEach(() => {
   h.resumen.error = null
   h.resumen.recargar.mockClear()
   h.links.mockClear()
+  h.enLaBandeja = { porCuota: new Map(), ids: [], total: 0 }
   contenedor = document.createElement('div')
   document.body.appendChild(contenedor)
   root = createRoot(contenedor)
@@ -109,6 +112,30 @@ describe('Cobri dentro de «Agente de pagos»', () => {
       fallo?.querySelector('button')?.click()
     })
     expect(h.resumen.recargar).toHaveBeenCalled()
+  })
+
+  it('🔴 COBRI-4: dice cuántos links esperan aprobación, con el camino a la Bandeja, y le pasa la lista a cada cuota', () => {
+    h.resumen.data = RESUMEN
+    render()
+    // Sin nada en la Bandeja, ni una palabra.
+    expect(q('[data-testid="cobri-espera-aprobacion"]')).toBeNull()
+
+    const porCuota = new Map([['c-1', 'hold:d-1']])
+    h.enLaBandeja = { porCuota, ids: ['hold:d-1'], total: 1 }
+    render()
+    const aviso = q('[data-testid="cobri-espera-aprobacion"]')
+    expect(aviso?.textContent).toContain('Un link de pago espera tu aprobación')
+    // Uno solo: el enlace abre ESE caso, no la Bandeja entera.
+    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/piloto?item=hold%3Ad-1')
+    expect(aviso?.querySelector('a')?.textContent).toContain('Revisar y aprobar')
+    expect(h.links).toHaveBeenLastCalledWith(expect.objectContaining({ esperanEnLaBandeja: porCuota }))
+
+    h.enLaBandeja = { porCuota, ids: ['hold:d-1', 'hold:d-2', 'hold:d-3'], total: 3 }
+    render()
+    const varios = q('[data-testid="cobri-espera-aprobacion"]')
+    expect(varios?.textContent).toContain('3 links de pago esperan tu aprobación')
+    expect(varios?.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/piloto?bandeja=1')
+    expect(varios?.querySelector('a')?.textContent).toContain('Abrir la Bandeja')
   })
 
   it('cuándo escribe se dice UNA vez: los tres avisos y el tope', () => {

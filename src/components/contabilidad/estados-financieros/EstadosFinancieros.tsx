@@ -91,6 +91,7 @@ import { SIN_MEDIR } from '@/lib/tasas';
 import { cn } from '@/lib/utils';
 import { Monto } from '../Monto';
 import { Bloqueos, Nota } from '../piezas';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 export type Informe = 'pyg' | 'balance';
 
@@ -496,7 +497,7 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
               {pyg.movimientosSinSede > 0 && sedeId ? (
                 <Nota testId="movimientos-sin-sede">
                   <p>
-                    {pyg.movimientosSinSede.toLocaleString('es-CO')} movimientos no tienen sede, así
+                    {pyg.movimientosSinSede.toLocaleString(localeDeLasCifras())} movimientos no tienen sede, así
                     que no están en este informe filtrado. Aparecen sólo en el consolidado.
                   </p>
                 </Nota>

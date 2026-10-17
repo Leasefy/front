@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { EstadoDeLote } from "@/lib/api/contracts.service";
 import { Progress } from "@/components/ui/progress";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
 export function ProgresoDeLote({
   estado,
@@ -83,7 +84,7 @@ export function ProgresoDeLote({
         <Queue className="h-5 w-5 text-primary" aria-hidden="true" />
         <p className="text-sm font-medium text-foreground">
           {total > 0
-            ? `Estamos preparando los ${total.toLocaleString("es-CO")} contratos de tu migración`
+            ? `Estamos preparando los ${total.toLocaleString(localeDeLasCifras())} contratos de tu migración`
             : "Estamos preparando tu migración"}
         </p>
       </div>
@@ -92,8 +93,8 @@ export function ProgresoDeLote({
         <div className="space-y-1.5" data-testid="lote-avance">
           <Progress value={porcentaje} size="sm" aria-label="Avance de la carga" />
           <p className="text-caption text-muted-foreground">
-            <span className="font-mono tabular-nums">{procesadas.toLocaleString("es-CO")}</span> de{" "}
-            <span className="font-mono tabular-nums">{total.toLocaleString("es-CO")}</span> filas revisadas.
+            <span className="font-mono tabular-nums">{procesadas.toLocaleString(localeDeLasCifras())}</span> de{" "}
+            <span className="font-mono tabular-nums">{total.toLocaleString(localeDeLasCifras())}</span> filas revisadas.
             Cuando termine, la lista de trabajo aparece aquí.
           </p>
         </div>

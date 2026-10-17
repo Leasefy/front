@@ -34,6 +34,7 @@ import { Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { PropertyCard } from '@/components/property/PropertyCard'
 import { propertiesApi } from '@/lib/api/properties.service'
+import { useEnlace, useTx } from '@/lib/idioma/use-idioma'
 import type { Property } from '@/lib/types/property'
 
 /** Cuántas se muestran de vitrina. El resto está en el explorador. */
@@ -50,6 +51,8 @@ const CUANTAS_PEDIDAS = 18
 export function MarketplaceSection() {
   const [inmuebles, setInmuebles] = useState<Property[] | null>(null)
   const [fallo, setFallo] = useState(false)
+  const tx = useTx()
+  const enlace = useEnlace()
 
   useEffect(() => {
     let cancelado = false
@@ -81,10 +84,12 @@ export function MarketplaceSection() {
             que tenía acá no numeraba ninguna secuencia real. Un marcador
             ordinal sólo se gana su lugar cuando el orden dice algo. */}
         <div className="mkt-head">
-          <h2 className="h-big">Encuentra tu próximo arriendo.</h2>
+          <h2 className="h-big">{tx('Encuentra tu próximo arriendo.', 'Find your next rental.')}</h2>
           <p className="lead">
-            Inmuebles de inmobiliarias que ya operan con Leasefy. Te postulas una sola vez y con
-            esa aprobación te alcanzan todos los que entren en tu presupuesto.
+            {tx(
+              'Inmuebles de inmobiliarias que ya operan con Leasefy. Te postulas una sola vez y con esa aprobación te alcanzan todos los que entren en tu presupuesto.',
+              'Properties from agencies that already run on Leasefy. You apply once, and that approval covers every one that fits your budget.',
+            )}
           </p>
         </div>
 
@@ -113,11 +118,11 @@ export function MarketplaceSection() {
         )}
 
         <div className="mkt-cta">
-          <a className="btn primary lg" href="/propiedades">
-            Ver todos los inmuebles <span className="ar">→</span>
+          <a className="btn primary lg" href={enlace('/propiedades')}>
+            {tx('Ver todos los inmuebles', 'See all properties')} <span className="ar">→</span>
           </a>
           <a className="btn outline lg" href="/aprobacion">
-            Conoce tu tope de arriendo
+            {tx('Conoce tu tope de arriendo', 'Find out how much rent you qualify for')}
           </a>
         </div>
       </div>

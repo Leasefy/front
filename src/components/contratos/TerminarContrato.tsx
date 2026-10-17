@@ -51,6 +51,7 @@ import { diaLegible, mesLegible } from "@/lib/mandato/textos";
 import { hoyEnColombia } from "@/lib/fechas/fecha-de-la-casa";
 import { plataEnPantalla } from "@/lib/plata/escribir-plata";
 import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
 /** `2026-09-15` — hoy, como lo espera un `<input type="date">`. */
 function hoyComoInput(): string {
@@ -59,7 +60,7 @@ function hoyComoInput(): string {
   return hoyEnColombia();
 }
 
-const PESOS = plataEnPantalla("es-CO", {
+const PESOS = plataEnPantalla(localeDeLasCifras, {
   style: "currency",
   currency: "COP",
   maximumFractionDigits: 0,

@@ -27,6 +27,7 @@ import {
   CAJONES_DEL_INMUEBLE,
   type CajonDelInmueble,
 } from '@/lib/inmobiliaria/cajon-del-inmueble';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 export interface ConsignacionFiltersState {
   search: string;
@@ -318,7 +319,7 @@ export function ConsignacionFilters({
           data-testid="cajon-all"
         >
           {t('inmobiliaria.consignaciones.filters.all')}
-          {total === null ? '' : ` ${total.toLocaleString('es-CO')}`}
+          {total === null ? '' : ` ${total.toLocaleString(localeDeLasCifras())}`}
         </Chip>
         {CAJONES_DEL_INMUEBLE.map((cajon) => (
           <Chip
@@ -329,7 +330,7 @@ export function ConsignacionFilters({
             data-testid={`cajon-${cajon}`}
           >
             {t(ROTULO_DEL_CAJON[cajon])}
-            {conteo === null ? '' : ` ${conteo[cajon].toLocaleString('es-CO')}`}
+            {conteo === null ? '' : ` ${conteo[cajon].toLocaleString(localeDeLasCifras())}`}
           </Chip>
         ))}
         {/* COMERCIAL (Nico, 04-10-2026): las vacantes largas y los mandatos
@@ -345,7 +346,7 @@ export function ConsignacionFilters({
                 className="whitespace-nowrap"
                 data-testid={`filtro-${f.id}`}
               >
-                {f.rotulo} {conteoComercial[f.id].toLocaleString('es-CO')}
+                {f.rotulo} {conteoComercial[f.id].toLocaleString(localeDeLasCifras())}
               </Chip>
             ))}
           </>

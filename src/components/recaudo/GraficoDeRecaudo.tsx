@@ -31,6 +31,8 @@ import {
 import type { PuntoDeLaSerie } from '@/lib/api/recaudo.types';
 import { formatCurrency } from '@/lib/format';
 import { mesCorto } from '@/lib/recaudo/meses';
+import { useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 const COLOR = {
   seDebe: '#C9C5BE',
@@ -52,12 +54,12 @@ export function abreviarCop(valor: number): string {
   const signo = valor < 0 ? '-' : '';
   if (abs >= 1_000_000) {
     const m = abs / 1_000_000;
-    return `${signo}$ ${m.toLocaleString('es-CO', { maximumFractionDigits: m >= 10 ? 0 : 1 })} M`;
+    return `${signo}$ ${m.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: m >= 10 ? 0 : 1 })} M`;
   }
   if (abs >= 1_000) {
-    return `${signo}$ ${Math.round(abs / 1_000).toLocaleString('es-CO')} k`;
+    return `${signo}$ ${Math.round(abs / 1_000).toLocaleString(localeDeLasCifras())} k`;
   }
-  return `${signo}$ ${abs.toLocaleString('es-CO')}`;
+  return `${signo}$ ${abs.toLocaleString(localeDeLasCifras())}`;
 }
 
 interface Props {
@@ -65,7 +67,9 @@ interface Props {
 }
 
 export function GraficoDeRecaudo({ serie }: Props) {
-  const datos = serie.map((p) => ({ ...p, etiqueta: mesCorto(p.month) }));
+  const tr = useTr();
+  const locale = useLocaleDelPanel();
+  const datos = serie.map((p) => ({ ...p, etiqueta: mesCorto(p.month, locale) }));
 
   return (
     <div className="h-[260px] w-full font-mono text-xs" data-testid="grafico-de-recaudo">
@@ -89,7 +93,7 @@ export function GraficoDeRecaudo({ serie }: Props) {
             cursor={{ fill: COLOR.grilla, opacity: 0.4 }}
             formatter={(valor, nombre) => [
               formatCurrency(Number(valor)),
-              NOMBRE[String(nombre) as keyof typeof NOMBRE] ?? String(nombre),
+              tr(NOMBRE[String(nombre) as keyof typeof NOMBRE] ?? String(nombre)),
             ]}
             labelFormatter={(etiqueta) => String(etiqueta)}
             contentStyle={{
@@ -102,7 +106,7 @@ export function GraficoDeRecaudo({ serie }: Props) {
           <Legend
             iconType="square"
             iconSize={10}
-            formatter={(valor) => NOMBRE[String(valor) as keyof typeof NOMBRE] ?? String(valor)}
+            formatter={(valor) => tr(NOMBRE[String(valor) as keyof typeof NOMBRE] ?? String(valor))}
             wrapperStyle={{ fontSize: 11 }}
           />
           <Bar dataKey="deudaDelMesCop" fill={COLOR.seDebe} radius={[3, 3, 0, 0]} isAnimationActive={false} />

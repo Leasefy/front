@@ -15,6 +15,7 @@
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 import { MAX_COP_POR_MOVIMIENTO, type MovimientoNuevo } from '@/lib/api/contabilidad.service';
 import { aCentavos } from '@/lib/plata/plata';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** A quién se le imputa un saldo de cartera o de terceros. */
 export type TipoDeTerceroDeApertura = 'PROPIETARIO' | 'ARRENDATARIO';
@@ -115,7 +116,7 @@ export function fraseDelDescuadre(totales: { debitos: number; creditos: number; 
   const plata = (n: number) => {
     const v = Math.abs(n);
     const conCentavos = Math.round(v * 100) % 100 !== 0;
-    return `$${v.toLocaleString('es-CO', { minimumFractionDigits: conCentavos ? 2 : 0, maximumFractionDigits: 2 })}`;
+    return `$${v.toLocaleString(localeDeLasCifras(), { minimumFractionDigits: conCentavos ? 2 : 0, maximumFractionDigits: 2 })}`;
   };
   const falta = totales.diferencia > 0 ? 'créditos' : 'débitos';
   return `No cuadra: faltan ${plata(totales.diferencia)} en ${falta} para que los dos totales sean iguales (débitos ${plata(totales.debitos)}, créditos ${plata(totales.creditos)}).`;

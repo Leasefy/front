@@ -25,6 +25,7 @@
  */
 
 import type { EntidadDelChat, TipoDeEntidad } from '@/lib/chat/bloques';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 // ── La intención (espejo de `ai-hub/en-el-chat/intencion.ts` del micro) ─────
 
@@ -410,7 +411,7 @@ export function textoDelFormulario(f: FormularioEnElHilo, valores: Record<string
       if (c.tipo === 'fecha' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return fechaCivilLarga(v);
       if (c.tipo === 'moneda') {
         const n = Number(v.replace(/[^\d]/g, ''));
-        return Number.isFinite(n) && n > 0 ? `$${n.toLocaleString('es-CO')}` : v;
+        return Number.isFinite(n) && n > 0 ? `$${n.toLocaleString(localeDeLasCifras())}` : v;
       }
       return v;
     })

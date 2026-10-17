@@ -26,6 +26,7 @@ import {
   MENSAJES_DE_LA_FACTURACION,
   NUMERO_MAXIMO_DE_LA_RESOLUCION,
 } from './limites-de-la-facturacion'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 export type CampoDeLaResolucion =
   | 'fechaResolucion'
@@ -97,7 +98,7 @@ export function erroresDeLaResolucion(
     hasta < desde &&
     errores.hasta === undefined
   ) {
-    errores.hasta = `El rango termina antes de empezar: «hasta» no puede ser menor que ${desde.toLocaleString('es-CO')}.`
+    errores.hasta = `El rango termina antes de empezar: «hasta» no puede ser menor que ${desde.toLocaleString(localeDeLasCifras())}.`
   }
 
   const ultimoTexto = (form.ultimoNumeroUsado ?? '').trim()

@@ -7,6 +7,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Spinner } from '@/components/ui/spinner';
 import { estaSinSenal, useSinSenal } from '@/lib/hooks/use-sin-senal';
 import type { AgencyRole } from '@/lib/auth/agency-roles';
+import { useTr } from '@/lib/i18n/use-tr';
 
 interface PageGuardProps {
   /** Module key from effectivePermissions (e.g. "dispersiones", "analytics") */
@@ -49,6 +50,7 @@ interface PageGuardProps {
  * never fire for unauthorized users.
  */
 export function PageGuard({ module, modulos, action = 'view', adminOnly = false, roles, seccion, children }: PageGuardProps) {
+  const tr = useTr();
   const { canAccess, isAdmin, isLoading, agencyRole, permisosDelBack, refetch } = usePermissions();
   const sinSenal = useSinSenal();
 
@@ -115,8 +117,7 @@ export function PageGuard({ module, modulos, action = 'view', adminOnly = false,
         <div className="px-4 pt-4 md:px-6 md:pt-6" data-testid="permisos-sin-verificar">
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-warning-soft px-3 py-2 text-sm text-warning">
             <span>
-              No pudimos verificar tus permisos: el servidor no respondió. Te mostramos la pantalla; si algo no te
-              corresponde, te lo diremos al intentarlo.
+              {tr("No pudimos verificar tus permisos: el servidor no respondió. Te mostramos la pantalla; si algo no te corresponde, te lo diremos al intentarlo.")}
             </span>
             <button
               type="button"
@@ -124,7 +125,7 @@ export function PageGuard({ module, modulos, action = 'view', adminOnly = false,
               onClick={() => void refetch()}
               data-testid="permisos-reintentar"
             >
-              Reintentar
+              {tr("Reintentar")}
             </button>
           </div>
         </div>
@@ -166,7 +167,7 @@ export function PageGuard({ module, modulos, action = 'view', adminOnly = false,
     return (
       <div className="flex items-center justify-center py-24">
         {/* Dentro del panel va el spinner, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
-        <Spinner size="md" variant="muted" label="Cargando" />
+        <Spinner size="md" variant="muted" label={tr("Cargando")} />
       </div>
     );
   }

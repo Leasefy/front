@@ -186,6 +186,9 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
 
   const onIntervention = useCallback(() => {
     void refetch()
+    // QA-AGENTES 16-10: forzar la etapa con la línea de tiempo abierta no la
+    // refrescaba (sólo el tiempo real, que no siempre llega).
+    setTimelineRefetchKey((n) => n + 1)
   }, [refetch])
 
   // Write back ?tab=… on tab change (shallow).
@@ -268,9 +271,13 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                   daysBadgeClasses(data.daysInStage)
                 }
               >
-                {/* QA-IA-95 (IA-B-09): «1 día en la etapa», no «1 d». */}
-                <AnimatedNumber value={data.daysInStage} format={(n) => String(Math.round(n))} />
-                {Math.round(data.daysInStage) === 1 ? ' día en la etapa' : ' días en la etapa'}
+                {/* QA-IA-95 (IA-B-09): «1 día en la etapa», no «1 d». QA-AGENTES
+                    16-10: en un flex el espacio del texto se perdía («0días»): número
+                    y texto van juntos en un span normal. */}
+                <span>
+                  <AnimatedNumber value={data.daysInStage} format={(n) => String(Math.round(n))} />
+                  {Math.round(data.daysInStage) === 1 ? ' día en la etapa' : ' días en la etapa'}
+                </span>
               </span>
             )}
             <Presence as="span" show={Boolean(data?.isPaused)} direction="none" initial={false}>

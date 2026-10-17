@@ -25,13 +25,14 @@ import {
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import type { RecentQuote } from '@/lib/hooks/cotizador/use-carrier-recent-quotes'
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
 function formatCOP(value: number): string {
-  return new Intl.NumberFormat('es-CO', {
+  return formatoDeCifras(localeDeLasCifras(), {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,

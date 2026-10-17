@@ -78,6 +78,7 @@ import {
   type HojaYEncabezado,
 } from "./encabezado-del-archivo";
 import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
 /** Sentinel: Radix `Select` no admite `value=""`. */
 const IGNORAR = "__ignorar__";
@@ -447,7 +448,7 @@ export function ImportarCuentas({
             leyendo
               ? "leyendo\u2026"
               : filas.length > 0
-                ? `${filas.length.toLocaleString("es-CO")} ${filas.length === 1 ? "fila" : "filas"}`
+                ? `${filas.length.toLocaleString(localeDeLasCifras())} ${filas.length === 1 ? "fila" : "filas"}`
                 : undefined
           }
           inputProps={getInputProps()}

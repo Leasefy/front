@@ -11,6 +11,7 @@
  */
 
 import type { components } from '@/lib/api/generated/agent'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 export type AcuerdoGeneral = components['schemas']['CobranzaAcuerdoGeneral']
 
@@ -30,7 +31,7 @@ export const ETAPAS_ES: Record<EtapaCartera, string> = {
 export const ETAPAS_EN_ORDEN: EtapaCartera[] = ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'SX']
 
 function pesos(n: number): string {
-  return `$${n.toLocaleString('es-CO')}`
+  return `$${n.toLocaleString(localeDeLasCifras())}`
 }
 
 /**

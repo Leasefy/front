@@ -94,13 +94,14 @@ import { HojaDelLibro } from "./ImportarCuentas";
 import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
 import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
 import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
 /** Sentinel: Radix `Select` no admite `value=""`. */
 const IGNORAR = "__ignorar__";
 const MAX_FILAS_EN_PANTALLA = 50;
 const RUTA_DEL_PASO_4 = "/panel/inmobiliaria/migracion/puc";
 
-const numero = (n: number) => n.toLocaleString("es-CO");
+const numero = (n: number) => n.toLocaleString(localeDeLasCifras());
 
 export function MigrarAsientos({
   onAplicado,
@@ -544,7 +545,7 @@ export function MigrarAsientos({
                 leyendo
                   ? "leyendo\u2026"
                   : filas.length > 0
-                    ? `${filas.length.toLocaleString("es-CO")} ${filas.length === 1 ? "fila" : "filas"}`
+                    ? `${filas.length.toLocaleString(localeDeLasCifras())} ${filas.length === 1 ? "fila" : "filas"}`
                     : undefined
               }
               inputProps={getInputProps()}
@@ -972,19 +973,19 @@ function Revision({
             sueltas (el molde de la casa). */}
         <p className="max-w-prose text-body text-fg" data-testid="resumen-de-revision">
           El archivo trae{" "}
-          <span className="font-mono tabular-nums">{revision.total.toLocaleString("es-CO")}</span>{" "}
+          <span className="font-mono tabular-nums">{revision.total.toLocaleString(localeDeLasCifras())}</span>{" "}
           {revision.total === 1 ? "asiento" : "asientos"}:{" "}
           <span className={revision.listas > 0 ? "text-success" : undefined}>
-            <span className="font-mono tabular-nums">{revision.listas.toLocaleString("es-CO")}</span>{" "}
+            <span className="font-mono tabular-nums">{revision.listas.toLocaleString(localeDeLasCifras())}</span>{" "}
             {revision.listas === 1 ? "listo" : "listos"} para entrar
           </span>
           {", "}
           <span className={revision.rechazadas > 0 ? "text-danger" : undefined}>
-            <span className="font-mono tabular-nums">{revision.rechazadas.toLocaleString("es-CO")}</span>{" "}
+            <span className="font-mono tabular-nums">{revision.rechazadas.toLocaleString(localeDeLasCifras())}</span>{" "}
             con problemas
           </span>{" "}
           y{" "}
-          <span className="font-mono tabular-nums">{revision.yaMigradas.toLocaleString("es-CO")}</span>{" "}
+          <span className="font-mono tabular-nums">{revision.yaMigradas.toLocaleString(localeDeLasCifras())}</span>{" "}
           ya {revision.yaMigradas === 1 ? "migrado" : "migrados"} antes.
         </p>
         <p className="text-caption text-fg-subtle">

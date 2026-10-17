@@ -37,7 +37,6 @@ import {
   PaperPlaneTilt,
   PenNib,
 } from '@phosphor-icons/react';
-import { useI18n } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -47,6 +46,7 @@ import type {
   RenovacionStatus,
 } from '@/lib/types/inmobiliaria';
 import { getRenovacionStatusColor, getRenovacionStatusLabel } from '@/lib/types/inmobiliaria';
+import { formatCurrency as plataEnEspanol } from '@/lib/format';
 import { agencyApi, renovacionesApi } from '@/lib/api/inmobiliaria.service';
 import { ApiError } from '@/lib/api/client';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
@@ -182,7 +182,6 @@ export function CuerpoDeRenovacion({
   onNoteAdd,
   hoy,
 }: Omit<RenovacionWorkflowProps, 'open'>) {
-  const { locale, formatCurrency } = useI18n();
   const elHoy = useMemo(() => hoy ?? new Date(), [hoy]);
 
   const terminada = renovacion.status === 'terminated';
@@ -240,8 +239,10 @@ export function CuerpoDeRenovacion({
         leaseEndDate: renovacion.leaseEndDate,
         newRent,
         agencyName: agencia.nombre,
-        locale,
-        formatCurrency,
+        // El mensaje va al inquilino, en español: la fecha y la plata como en
+        // Colombia aunque el panel esté en inglés (Nico, 16-10-2026).
+        locale: 'es',
+        formatCurrency: (n: number) => plataEnEspanol(n, 'es'),
       }),
     [
       renovacion.tenantName,
@@ -249,8 +250,6 @@ export function CuerpoDeRenovacion({
       renovacion.leaseEndDate,
       newRent,
       agencia.nombre,
-      locale,
-      formatCurrency,
     ],
   );
   const [mensajeEditado, setMensajeEditado] = useState<string | null>(null);

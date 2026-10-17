@@ -103,6 +103,7 @@ import { AccionConMotivo, Bloqueos, Nota, VistoBuenoDelContador } from '../pieza
 import { usePuedeEscribir, usePuedeExportarContabilidad } from '../use-puede-escribir';
 import { ConceptosDeExogena } from './ConceptosDeExogena';
 import { ConfiguracionDeExogena } from './ConfiguracionDeExogena';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** Cuántas filas del formato se dibujan: un 1647 tiene 1.733. */
 const FILAS_EN_PANTALLA = 50;
@@ -277,7 +278,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
               </select>
             </label>
             <p className="text-caption text-fg-muted" data-testid="totales-del-anio">
-              {totales.filas.toLocaleString('es-CO')} filas en los seis formatos ·{' '}
+              {totales.filas.toLocaleString(localeDeLasCifras())} filas en los seis formatos ·{' '}
               <Monto valor={totales.totalCop} className="text-caption" />
             </p>
           </div>
@@ -337,7 +338,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
                     </p>
                     <p className="text-caption text-fg-muted">{DE_DONDE_SALE[f.formato]}</p>
                     <p className="text-caption text-fg-muted">
-                      {f.filas.toLocaleString('es-CO')}{' '}
+                      {f.filas.toLocaleString(localeDeLasCifras())}{' '}
                       {f.filas === 1 ? 'fila' : 'filas'} ·{' '}
                       <Monto valor={f.totalCop} className="text-caption" />
                       {f.aprobadoAt ? ` · visto bueno el ${diaLegible(f.aprobadoAt)}` : ''}
@@ -470,7 +471,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
         >
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="text-sm font-semibold text-fg">
-              Formato {abierto.formato} · {abierto.filas.length.toLocaleString('es-CO')} filas
+              Formato {abierto.formato} · {abierto.filas.length.toLocaleString(localeDeLasCifras())} filas
             </h3>
             <Button
               variant="link"
@@ -487,7 +488,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
           {abierto.filas.length > FILAS_EN_PANTALLA ? (
             <p className="text-caption text-fg-muted" data-testid="tope-de-filas">
               Se muestran las primeras {FILAS_EN_PANTALLA} de{' '}
-              {abierto.filas.length.toLocaleString('es-CO')}. El CSV lleva todas.
+              {abierto.filas.length.toLocaleString(localeDeLasCifras())}. El CSV lleva todas.
             </p>
           ) : null}
 

@@ -52,6 +52,7 @@ import {
   type InmuebleParaElDescuento,
 } from './RegistrarDescuentoDialog';
 import { SoporteDeLaDeduccion } from './SoporteDeLaDeduccion';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 const TONO: Record<EstadoDeLaDeduccion, 'warning' | 'default' | 'success' | 'secondary'> = {
   PENDIENTE: 'warning',
@@ -190,7 +191,7 @@ export function DeduccionesDelPropietario({
                         {d.participacionBps < 10_000 && (
                           <p className="text-xs text-fg-muted">
                             {t(k('suParte'), {
-                              porcentaje: `${(d.participacionBps / 100).toLocaleString('es-CO')} %`,
+                              porcentaje: `${(d.participacionBps / 100).toLocaleString(localeDeLasCifras())} %`,
                               total: formatCurrency(d.valorTotalCop),
                             })}
                           </p>

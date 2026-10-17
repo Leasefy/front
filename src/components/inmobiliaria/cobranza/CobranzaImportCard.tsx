@@ -30,6 +30,7 @@ import {
   type CarteraImportSummary,
 } from '@/lib/hooks/cobranza/use-cartera-import'
 import { CrossFade } from '@leasefy/cadence'
+import { useTr } from '@/lib/i18n/use-tr'
 
 export interface CobranzaImportCardProps {
   /** Se invoca tras un import exitoso (p.ej. para refrescar la lista/overview). */
@@ -45,6 +46,7 @@ export function CobranzaImportCard({
   onImported,
   className,
 }: CobranzaImportCardProps) {
+  const tr = useTr();
   const { status, summary, message, importFile, reset } = useCarteraImport()
   const inputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -87,20 +89,17 @@ export function CobranzaImportCard({
         </div>
         <div className="flex-1 min-w-0 space-y-0.5">
           <h2 className="text-base font-semibold text-foreground">
-            Importar cartera
+            {tr("Importar cartera")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Sube un archivo CSV con tus deudores: cédula, nombre, teléfono,
-            saldo y{' '}
+            {tr("Sube un archivo CSV con tus deudores: cédula, nombre, teléfono, saldo y")}{' '}
             <strong className="font-medium text-foreground">
-              fecha de vencimiento
+              {tr("fecha de vencimiento")}
             </strong>
-            . Reconocemos los nombres de columna más comunes. Se crean o
-            actualizan sin duplicar y no se contacta a nadie al importar.
+            {tr(". Reconocemos los nombres de columna más comunes. Se crean o actualizan sin duplicar y no se contacta a nadie al importar.")}
           </p>
           <p className="text-xs text-muted-foreground">
-            Sin fecha de vencimiento no se puede calcular la mora: esas filas
-            entran como deudor, pero no pasan a cobranza.
+            {tr("Sin fecha de vencimiento no se puede calcular la mora: esas filas entran como deudor, pero no pasan a cobranza.")}
           </p>
         </div>
       </div>
@@ -121,7 +120,7 @@ export function CobranzaImportCard({
             {file ? (
               <span className="font-medium text-fg">{file.name}</span>
             ) : (
-              <span className="text-fg-muted">Elige el archivo CSV de tu cartera</span>
+              <span className="text-fg-muted">{tr("Elige el archivo CSV de tu cartera")}</span>
             )}
           </span>
           <span className="shrink-0 text-xs font-medium text-primary">{file ? 'Cambiar' : 'Buscar archivo'}</span>
@@ -132,7 +131,7 @@ export function CobranzaImportCard({
             accept={ACCEPT}
             onChange={handlePick}
             disabled={isUploading}
-            aria-label="Elegir archivo CSV de cartera"
+            aria-label={tr("Elegir archivo CSV de cartera")}
             className="sr-only"
           />
         </label>
@@ -143,7 +142,7 @@ export function CobranzaImportCard({
           isLoading={isUploading}
           className="shrink-0"
         >
-          Importar cartera
+          {tr("Importar cartera")}
         </Button>
       </div>
 
@@ -152,7 +151,7 @@ export function CobranzaImportCard({
       <CrossFade swapKey={`${status}-${file ? 'archivo' : 'nada'}`}>
       {file && status === 'idle' && (
         <p className="mt-2 text-xs text-muted-foreground truncate">
-          Listo para subir
+          {tr("Listo para subir")}
         </p>
       )}
 
@@ -179,22 +178,22 @@ export function CobranzaImportCard({
       {status === 'done' && summary && (
         <div className="mt-3 space-y-3">
           <div className="grid grid-cols-3 gap-2">
-            <ImportStat label="Creados" value={summary.creados} tone="ok" />
+            <ImportStat label={tr("Creados")} value={summary.creados} tone="ok" />
             <ImportStat
-              label="Actualizados"
+              label={tr("Actualizados")}
               value={summary.actualizados}
               tone="info"
             />
             <ImportStat
-              label="Omitidos"
+              label={tr("Omitidos")}
               value={summary.omitidos}
               tone={summary.omitidos > 0 ? 'warn' : 'muted'}
             />
           </div>
 
           <p className="text-xs text-muted-foreground">
-            {summary.totalRecibidos} fila
-            {summary.totalRecibidos === 1 ? '' : 's'} recibida
+            {summary.totalRecibidos} {tr("fila")}
+            {summary.totalRecibidos === 1 ? '' : 's'} {tr("recibida")}
             {summary.totalRecibidos === 1 ? '' : 's'}
             {summary.truncado
               ? ' · se procesó solo el límite máximo permitido por archivo'
@@ -218,17 +217,14 @@ export function CobranzaImportCard({
               />
               <div>
                 <p className="text-sm font-medium text-warning">
-                  Revisa el formato de las fechas
+                  {tr("Revisa el formato de las fechas")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Leímos «{summary.vencimiento.columna}» como{' '}
+                  {tr("Leímos «")}{summary.vencimiento.columna}{tr("» como")}{' '}
                   {summary.vencimiento.orden === 'dmy'
                     ? 'día/mes/año'
                     : 'mes/día/año'}
-                  , pero ninguna fila lo confirma (todos los días son 12 o
-                  menos). Si tu archivo usa el otro orden, los vencimientos
-                  quedaron corridos. Para evitarlo, escribe las fechas como
-                  AAAA-MM-DD.
+                  {tr(", pero ninguna fila lo confirma (todos los días son 12 o menos). Si tu archivo usa el otro orden, los vencimientos quedaron corridos. Para evitarlo, escribe las fechas como AAAA-MM-DD.")}
                 </p>
               </div>
             </div>
@@ -243,16 +239,12 @@ export function CobranzaImportCard({
                 />
                 <div>
                   <p className="text-sm font-medium text-warning">
-                    {summary.sinVencimiento} fila
-                    {summary.sinVencimiento === 1 ? '' : 's'} con saldo pero sin
-                    fecha de vencimiento
+                    {summary.sinVencimiento} {tr("fila")}
+                    {summary.sinVencimiento === 1 ? '' : 's'} {tr("con saldo pero sin fecha de vencimiento")}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {summary.sinVencimiento === 1 ? 'Entró' : 'Entraron'} como
-                    deudor, pero sin vencimiento no hay días de mora que
-                    calcular, así que no{' '}
-                    {summary.sinVencimiento === 1 ? 'pasa' : 'pasan'} a
-                    cobranza. Agrega la fecha y vuelve a subir el archivo.
+                    {summary.sinVencimiento === 1 ? 'Entró' : 'Entraron'} {tr("como deudor, pero sin vencimiento no hay días de mora que calcular, así que no")}{' '}
+                    {summary.sinVencimiento === 1 ? 'pasa' : 'pasan'} {tr("a cobranza. Agrega la fecha y vuelve a subir el archivo.")}
                   </p>
                 </div>
               </div>
@@ -261,8 +253,8 @@ export function CobranzaImportCard({
           {summary.errores.length > 0 && (
             <details className="rounded-md border border-border bg-surface-muted px-3 py-2.5">
               <summary className="cursor-pointer text-sm font-medium text-foreground">
-                {summary.errores.length} fila
-                {summary.errores.length === 1 ? '' : 's'} con error
+                {summary.errores.length} {tr("fila")}
+                {summary.errores.length === 1 ? '' : 's'} {tr("con error")}
               </summary>
               <ul className="mt-2 space-y-1 max-h-40 overflow-y-auto">
                 {summary.errores.slice(0, 50).map((e) => (
@@ -270,7 +262,7 @@ export function CobranzaImportCard({
                     key={e.rowIndex}
                     className="text-xs text-muted-foreground"
                   >
-                    Fila {e.rowIndex + 1}: {e.error}
+                    {tr("Fila")} {e.rowIndex + 1}: {e.error}
                   </li>
                 ))}
               </ul>
@@ -282,8 +274,7 @@ export function CobranzaImportCard({
             summary.errores.length > 0 &&
             summary.errores[0]?.error?.toLowerCase().includes('migr') && (
               <p className="text-xs text-muted-foreground">
-                La importación aún no está disponible: requiere desplegar la
-                migración del backend.
+                {tr("La importación aún no está disponible: requiere desplegar la migración del backend.")}
               </p>
             )}
 
@@ -294,7 +285,7 @@ export function CobranzaImportCard({
             onClick={handleClear}
             className="px-0 h-auto"
           >
-            Importar otro archivo
+            {tr("Importar otro archivo")}
           </Button>
         </div>
       )}

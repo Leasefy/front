@@ -57,8 +57,9 @@ import {
 import { SIN_MEDIR, tasaEnPantalla } from '@/lib/tasas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
-const NUMERO = new Intl.NumberFormat('es-CO');
+const NUMERO = cifrasDeLaPantalla();
 
 /** Cómo se lee cada etapa de cobranza. Lo que no esté, se muestra tal cual. */
 const NOMBRE_DE_LA_ETAPA: Record<string, string> = {

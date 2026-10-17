@@ -56,6 +56,8 @@ import { usePaymentsFunnelRealtime } from '@/lib/hooks/cobranza/use-payments-fun
 import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
+import { esEnlaceDePagoSimulado } from '@/lib/cobranza/enlace-simulado'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 void React
 
@@ -68,7 +70,7 @@ const REJECT_REASONS: RejectReasonSlug[] = [
   'other',
 ]
 
-const copFormat = plataEnPantalla('es-CO', {
+const copFormat = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -607,7 +609,17 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
           🔴 PRUEBAS-PAGOS (03-10-2026): sólo con el plan APROBADO. La oferta
           ya trae su enlace antes de aprobar, y la tarjeta verde «Plan
           aprobado» salía debajo de «Primero apruébalo» en un plan sin aprobar. */}
-      {wompiLink && estaAprobado && (
+      {wompiLink && estaAprobado && esEnlaceDePagoSimulado(wompiLink) && (
+        // QA-AGENTES 16-10: el doble del micro (`stub.leasefy`) salía como
+        // «Abrir enlace Wompi →»: un enlace que no lleva a ningún lado.
+        <section className="rounded-md border border-border bg-surface-muted p-4" data-testid="enlace-de-pago-simulado">
+          <div className="text-sm font-medium text-fg">Plan aprobado.</div>
+          <p className="mt-1 text-sm text-fg-muted">
+            En este entorno el pago en línea es simulado: no hay un enlace de Wompi para mandarle al inquilino.
+          </p>
+        </section>
+      )}
+      {wompiLink && estaAprobado && !esEnlaceDePagoSimulado(wompiLink) && (
         <section className="rounded-md border border-success/30 bg-success-soft p-4">
           <div className="text-sm font-medium text-success">
             {t('inmobiliaria.ai.cobranza.planes.wompiLinkTitle')}

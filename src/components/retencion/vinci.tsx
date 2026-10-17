@@ -8,6 +8,7 @@
  */
 import { Badge } from '@/components/ui/badge'
 import type { DetalleDeLaOferta, ModoDelPiloto, Poblacion, SenalDeVinci, TipoDeOferta } from '@/lib/types/retencion'
+import { useTr } from '@/lib/i18n/use-tr'
 
 export const NOMBRE_DEL_MODO: Record<ModoDelPiloto, string> = {
   sombra: 'Manual',
@@ -79,11 +80,11 @@ export const QUE_ES_CADA_DECISION: Record<string, string> = {
   oferta: 'Oferta de retención',
 }
 
-export function fechaYHora(iso: string | null | undefined): string {
+export function fechaYHora(iso: string | null | undefined, locale: 'es' | 'en' = 'es'): string {
   if (!iso) return '—'
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleString('es-CO', {
+  return d.toLocaleString(locale === 'en' ? 'en-US' : 'es-CO', {
     timeZone: 'America/Bogota',
     day: 'numeric',
     month: 'short',
@@ -97,6 +98,7 @@ export const POR_QUE_EN_COBRANZA = 'Más de 60 días de mora: lo lleva cobranza 
 
 /** «72/100» en mono, y si pasa el umbral, «En riesgo»; si pasó a cobranza, «En cobranza». */
 export function PuntajeDeVinci({ puntaje, enRiesgo, enCobranza }: { puntaje: number; enRiesgo: boolean; enCobranza?: boolean }) {
+  const tr = useTr();
   return (
     <span className="inline-flex items-center gap-2" data-testid="vinci-puntaje">
       <span>
@@ -104,11 +106,11 @@ export function PuntajeDeVinci({ puntaje, enRiesgo, enCobranza }: { puntaje: num
         <span className="text-sm text-fg-muted">/100</span>
       </span>
       {enCobranza ? (
-        <Badge variant="warning" title={POR_QUE_EN_COBRANZA}>
-          En cobranza
+        <Badge variant="warning" title={tr(POR_QUE_EN_COBRANZA)}>
+          {tr("En cobranza")}
         </Badge>
       ) : enRiesgo ? (
-        <Badge variant="destructive">En riesgo</Badge>
+        <Badge variant="destructive">{tr("En riesgo")}</Badge>
       ) : null}
     </span>
   )
@@ -130,8 +132,9 @@ export function DesgloseDelPuntaje({
   /** Sin la fila del puntaje: para la pantalla que ya lo dice en su franja (no repetirlo). */
   sinTotal?: boolean
 }) {
+  const tr = useTr();
   if (senales.length === 0) {
-    return <p className="text-sm text-fg-muted">Sin señales: al día, sin PQRS ni mantenimientos abiertos, lejos del fin.</p>
+    return <p className="text-sm text-fg-muted">{tr("Sin señales: al día, sin PQRS ni mantenimientos abiertos, lejos del fin.")}</p>
   }
   return (
     <div data-testid="vinci-desglose">
@@ -146,7 +149,7 @@ export function DesgloseDelPuntaje({
         ))}
         {sinTotal ? null : (
           <li className="flex items-baseline justify-between gap-4 bg-surface-muted/40 px-4 py-2.5">
-            <span className="text-sm font-medium text-fg">Puntaje</span>
+            <span className="text-sm font-medium text-fg">{tr("Puntaje")}</span>
             <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-fg">
               {puntaje}
               <span className="text-fg-muted">/100</span>
@@ -155,7 +158,7 @@ export function DesgloseDelPuntaje({
         )}
       </ul>
       {suma !== undefined && suma > puntaje ? (
-        <p className="mt-2 text-caption text-fg-muted">Las señales suman {suma}; el puntaje tiene tope en 100.</p>
+        <p className="mt-2 text-caption text-fg-muted">{tr("Las señales suman")} {suma}{tr("; el puntaje tiene tope en 100.")}</p>
       ) : null}
     </div>
   )

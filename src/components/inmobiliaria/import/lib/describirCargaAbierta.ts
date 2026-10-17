@@ -18,6 +18,7 @@
  */
 
 import type { EstadoDeLoteInmuebles } from '@/lib/api/inmuebles-importacion.service';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 export interface CargaDescrita {
   /** «hoy 5:29 p. m.», «ayer 6:23 p. m.» o «10 sep, 6:23 p. m.». */
@@ -158,7 +159,7 @@ export function ubicacionCompleta(lote: EstadoDeLoteInmuebles): boolean {
   return lote.fase === 'UBICANDO' && u !== undefined && u.ubicadas >= u.total;
 }
 
-const n = (x: number) => x.toLocaleString('es-CO');
+const n = (x: number) => x.toLocaleString(localeDeLasCifras());
 
 function describirAvance(
   lote: EstadoDeLoteInmuebles,

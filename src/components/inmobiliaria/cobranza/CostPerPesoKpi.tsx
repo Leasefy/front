@@ -19,6 +19,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'rec
 import { CurrencyDollar } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { EmptyState } from '@/components/data-display/EmptyState';
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
 // ─── Type ─────────────────────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ interface CostPerPesoKpiProps {
  * (los dos lados en COP): se dice «$ X por cada $ 1.000.000 recuperados».
  * Antes se pintaba ese cociente como dólares («US$0.01 por $1.000.000»).
  */
-const copFmt = new Intl.NumberFormat('es-CO', {
+const copFmt = cifrasDeLaPantalla({
   style: 'currency',
   currency: 'COP',
   minimumFractionDigits: 0,

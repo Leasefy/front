@@ -74,12 +74,31 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 // ─── Negotiation draft ──────────────────────────────────────────────────────
 
 const PAYMENT_PLAN_OPTIONS = [1, 3, 6, 9, 12, 18, 24, 36]
 const CRM_PROVIDERS = ['wasi', 'domus', 'webprop', 'sinco'] as const
 const ERP_PROVIDERS = ['alegra', 'alegra_full', 'siigo_full', 'world_office'] as const
+
+/**
+ * QA-AGENTES 16-10 (lab): los selectores mostraban el valor técnico («wasi»,
+ * «alegra_full», «world_office»). Lo que es cada ERP sale de
+ * `agent/src/erp/provider.ts`.
+ */
+const NOMBRE_DEL_CRM: Record<(typeof CRM_PROVIDERS)[number], string> = {
+  wasi: 'Wasi',
+  domus: 'Domus',
+  webprop: 'Webprop',
+  sinco: 'Sinco',
+}
+const NOMBRE_DEL_ERP: Record<(typeof ERP_PROVIDERS)[number], string> = {
+  alegra: 'Alegra (sólo facturas)',
+  alegra_full: 'Alegra (sincronización completa)',
+  siigo_full: 'Siigo (sincronización completa)',
+  world_office: 'World Office (sincronización completa)',
+}
 const BILLING_MODELS = ['performance', 'subscription', 'hybrid'] as const
 
 /**
@@ -185,7 +204,7 @@ function difieren(
   return keys.some((k) => JSON.stringify(saved[k]) !== JSON.stringify(draft[k]))
 }
 
-const pesos = plataEnPantalla('es-CO', {
+const pesos = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -593,7 +612,7 @@ function CobranzaConfiguracionContent() {
                 <SelectContent>
                   {CRM_PROVIDERS.map((p) => (
                     <SelectItem key={p} value={p}>
-                      {p}
+                      {NOMBRE_DEL_CRM[p]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -614,7 +633,7 @@ function CobranzaConfiguracionContent() {
                 <SelectContent>
                   {ERP_PROVIDERS.map((p) => (
                     <SelectItem key={p} value={p}>
-                      {p}
+                      {NOMBRE_DEL_ERP[p]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -763,12 +782,16 @@ function CobranzaConfiguracionContent() {
           </p>
         </div>
         <div className="border-t border-border-faint" />
+        {/* QA-AGENTES 16-10: decía «07:00–19:00» y «1 contacto por canal por
+            semana». El micro abre a las 8 (P-10 de Nico, 23-09; la ley permite
+            desde las 7) y el Art. 3 se lee como un solo canal por semana ISO
+            (`compliance/schedule.ts` y `frequency.ts`). */}
         <ul className="text-sm text-foreground list-disc pl-5 space-y-1">
-          <li>Lunes a viernes: 07:00–19:00</li>
+          <li>Lunes a viernes: 08:00–19:00 (la ley permite desde las 07:00; el agente empieza a las 8)</li>
           <li>Sábados: 08:00–15:00</li>
           <li>Sin contacto domingos ni festivos</li>
-          <li>Máximo 1 contacto por día</li>
-          <li>Máximo 1 contacto por canal por semana</li>
+          <li>Máximo 1 contacto por día, sumando todos los canales</li>
+          <li>Un solo canal por semana (de lunes a domingo)</li>
         </ul>
       </section>
 

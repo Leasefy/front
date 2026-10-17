@@ -52,6 +52,7 @@ import {
   type ComoSeTokeniza,
   type EstadoDelAutopago,
 } from '@/lib/api/autopago.service';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 interface AutopagoSectionProps {
   /** El CONTRATO del arriendo activo. `null` mientras no haya. */
@@ -68,7 +69,7 @@ const ESTADO_EN_PALABRAS: Record<string, string> = {
 };
 
 function pesos(valorCop: number): string {
-  return `$${valorCop.toLocaleString('es-CO')}`;
+  return `$${valorCop.toLocaleString(localeDeLasCifras())}`;
 }
 
 export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) {

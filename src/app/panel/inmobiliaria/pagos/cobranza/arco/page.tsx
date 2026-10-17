@@ -306,7 +306,13 @@ function RequestsTable({
               </TableCell>
 
               <TableCell className="min-w-[180px] px-4 py-3">
-                <p className="text-sm font-medium text-fg">{row.requesterName}</p>
+                {/* QA-AGENTES 16-10: el nombre también abre la solicitud (sólo abría el ícono del final). */}
+                <Link
+                  href={`/panel/inmobiliaria/pagos/cobranza/arco/${row.id}`}
+                  className="text-sm font-medium text-fg hover:underline"
+                >
+                  {row.requesterName}
+                </Link>
                 {/* La cédula sólo existe hasheada; ver `cedulaRef`. */}
                 <p
                   className="mt-0.5 font-mono text-[11px] uppercase tracking-wide text-fg-subtle"

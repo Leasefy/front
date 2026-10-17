@@ -22,7 +22,8 @@
  */
 
 import { useState } from 'react'
-import { ChatCircleText, WarningCircle } from '@phosphor-icons/react'
+import Link from 'next/link'
+import { ArrowRight, ChatCircleText, HandPalm, WarningCircle } from '@phosphor-icons/react'
 
 import {
   PildoraDelAgente,
@@ -31,6 +32,7 @@ import {
 } from '@/components/inmobiliaria/agentes/EstadoDelAgente'
 import { LinksDePago } from '@/components/inmobiliaria/pagos/payu/LinksDePago'
 import { Button } from '@/components/ui/button'
+import { useCobrosEnLaBandeja } from '@/lib/hooks/use-cobros-en-la-bandeja'
 import { useResumenDePayu, type Lectura } from '@/lib/hooks/use-payu'
 import { fraseDelMesDePayu } from '@/lib/payu/frases'
 import { mesActual } from '@/lib/recaudo/meses'
@@ -107,9 +109,47 @@ function FraseDelMes({ lectura }: { lectura: Lectura<ResumenDeLinksDePago> }) {
   )
 }
 
+/**
+ * COBRI-4 (QA de los agentes, 16-10-2026): con Cobri en Copiloto (o en
+ * Automático por encima del tope por acción), el aviso de cada cuota espera un
+ * clic en la Bandeja del Piloto. Se dice aquí, arriba de la lista, con el
+ * camino a la Bandeja, sin afirmar el modo: el porqué lo dice el caso.
+ * Con uno solo, el enlace abre ESE caso: la Bandeja va de la más vieja a la
+ * más nueva y el de Cobri quedaba en la página 23.
+ */
+function EsperanTuAprobacion({ ids }: { ids: readonly string[] }) {
+  const total = ids.length
+  if (total === 0) return null
+  const href =
+    total === 1
+      ? `/panel/inmobiliaria/piloto?item=${encodeURIComponent(ids[0])}`
+      : '/panel/inmobiliaria/piloto?bandeja=1'
+  return (
+    <div
+      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-warning-soft px-4 py-3"
+      data-testid="cobri-espera-aprobacion"
+    >
+      <p className="flex items-start gap-3 text-body-sm text-fg">
+        <HandPalm className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
+        {total === 1
+          ? 'Un link de pago espera tu aprobación para salir: Cobri no lo manda sin tu clic.'
+          : `${total} links de pago esperan tu aprobación para salir: Cobri no los manda sin tu clic.`}
+      </p>
+      <Link
+        href={href}
+        className="inline-flex items-center gap-1 text-body-sm font-medium text-primary hover:underline"
+      >
+        {total === 1 ? 'Revisar y aprobar' : 'Abrir la Bandeja'}
+        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+      </Link>
+    </div>
+  )
+}
+
 export function CobriEsteMes() {
   const [mes, setMes] = useState(() => mesActual())
   const resumen = useResumenDePayu(mes)
+  const enLaBandeja = useCobrosEnLaBandeja()
 
   return (
     <section aria-labelledby="cobri-este-mes" className="space-y-4" data-testid="cobri-este-mes">
@@ -128,12 +168,15 @@ export function CobriEsteMes() {
 
       <CuandoEscribe />
 
+      <EsperanTuAprobacion ids={enLaBandeja.ids} />
+
       <LinksDePago
         mes={mes}
         onCambiarMes={setMes}
         titulo="El link de cada cuota"
         descripcion={null}
         resumen={<FraseDelMes lectura={resumen} />}
+        esperanEnLaBandeja={enLaBandeja.porCuota}
       />
     </section>
   )

@@ -20,6 +20,7 @@ import type {
 } from '@/lib/api/conciliacion-bancaria.types';
 import { plata } from './formato';
 import { aCentavos, restar, sumar } from '@/lib/plata/plata';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** Dónde se registran las cuentas de la inmobiliaria. */
 export const RUTA_DE_LOS_MEDIOS_DE_PAGO = '/panel/inmobiliaria/configuracion/medios-de-pago';
@@ -123,8 +124,8 @@ export function partesDelResultado(r: ResultadoDeCarga): string[] {
 /** El porcentaje conciliado de una cuenta, para la cabecera. */
 export function porcentajeLegible(i: Pick<IndicadoresDeLaCuenta, 'porcentajePorNumero' | 'porcentajePorValor'>): string {
   if (i.porcentajePorNumero === null || i.porcentajePorValor === null) return 'Sin entradas';
-  const n = i.porcentajePorNumero.toLocaleString('es-CO', { maximumFractionDigits: 1 });
-  const v = i.porcentajePorValor.toLocaleString('es-CO', { maximumFractionDigits: 1 });
+  const n = i.porcentajePorNumero.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 1 });
+  const v = i.porcentajePorValor.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 1 });
   return `${n} % por número · ${v} % por valor`;
 }
 

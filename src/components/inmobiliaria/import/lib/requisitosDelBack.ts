@@ -17,6 +17,7 @@
 
 import type { ImportProperty } from './importTypes';
 import { cleanNumericValue } from './valorNumerico';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** Campos editables que pueden bloquear la creación. */
 export type CampoRequerido =
@@ -368,7 +369,7 @@ export function avisosDeValor(p: ImportProperty): string[] {
 }
 
 function formatearPesos(valor: number): string {
-  return `$${valor.toLocaleString('es-CO')}`;
+  return `$${valor.toLocaleString(localeDeLasCifras())}`;
 }
 
 /**

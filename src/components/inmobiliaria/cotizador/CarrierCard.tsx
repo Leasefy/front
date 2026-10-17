@@ -7,6 +7,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { useI18n } from '@/lib/i18n'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 import { AnimatedNumber, CrossFade, StaggerItem } from '@leasefy/cadence'
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 // ---------------------------------------------------------------------------
 // Color helpers
@@ -100,7 +101,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
   const statusLabel = t(`inmobiliaria.ai.cotizador.detail.carrier.${carrier.status}Label`)
 
   const formatoCop = (n: number) =>
-    new Intl.NumberFormat('es-CO', {
+    formatoDeCifras(localeDeLasCifras(), {
       style: 'currency',
       currency: 'COP',
       minimumFractionDigits: 0,

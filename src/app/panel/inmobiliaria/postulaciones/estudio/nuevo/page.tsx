@@ -38,6 +38,7 @@ import {
 import { Switch } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const NS = 'inmobiliaria.ai.estudio'
 
@@ -99,7 +100,7 @@ function EstudioNuevo() {
     const admin = Number.parseFloat(form.administracion) || 0
     const total = canon + admin
     if (total <= 0) return ''
-    return new Intl.NumberFormat('es-CO', {
+    return formatoDeCifras(localeDeLasCifras(), {
       style: 'currency',
       currency: 'COP',
       maximumFractionDigits: 0,

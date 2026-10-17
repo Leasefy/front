@@ -20,11 +20,12 @@ import { Input } from '@/components/ui/input'
 import type { Respaldo, ErroresDeRespaldo } from '@/lib/inmobiliaria/respaldo'
 import type { ProtectionOption } from '@/lib/api/applications.types'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const OTRA = '__otra__'
 
 function moneda(n: number): string {
-  return plataEnPantalla('es-CO', {
+  return plataEnPantalla(localeDeLasCifras, {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,

@@ -1,3 +1,4 @@
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras'
 /**
  * Los topes de lo que una persona escribe en la conciliación, atajados ANTES
  * de enviar (02-10-2026, tanda 2 de errores, A6).
@@ -39,7 +40,7 @@ export interface LiquidacionEscrita {
   otherDeductionsCop: string
 }
 
-const MONTO = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 })
+const MONTO = cifrasDeLaPantalla({ maximumFractionDigits: 0 })
 
 /**
  * Lo que está mal en la liquidación ANTES de enviarla, por campo. Vacío =

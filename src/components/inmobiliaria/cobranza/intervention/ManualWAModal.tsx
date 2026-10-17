@@ -43,7 +43,7 @@ import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 import type { paths } from '@/lib/api/generated/agent'
 import { construirVistaPrevia } from '@/lib/cobranza/wa-preview'
-import { construirPrefillWA } from '@/lib/cobranza/wa-prefill'
+import { construirPrefillWA, prefillDeLaCuotaVencida, type CuotaMasVieja } from '@/lib/cobranza/wa-prefill'
 import {
   Select,
   SelectContent,
@@ -60,6 +60,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { CrossFade, Presence } from '@leasefy/cadence'
+import { useTr } from '@/lib/i18n/use-tr'
 
 void React
 
@@ -127,6 +128,7 @@ export function ManualWAModal({
   prefill,
   onSuccess,
 }: ManualWAModalProps) {
+  const tr = useTr();
   const { t } = useI18n()
   const { agency } = useAuth()
   const agencyId = agency?.id ?? null
@@ -155,6 +157,30 @@ export function ManualWAModal({
 
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   const envMissing = !agentUrl || !agencyId
+
+  // QA-AGENTES 16-10 (MORI-7): la cuota más vieja del deudor, para el
+  // recordatorio («del mes de X venció el Y por COP Z»). Se lee aquí y no en
+  // cada pantalla que abre el modal (ficha, bandeja, promesas). Si no llega,
+  // los campos quedan para escribir, como antes.
+  const [cuotaMasVieja, setCuotaMasVieja] = useState<CuotaMasVieja | null>(null)
+  useEffect(() => {
+    if (!open || envMissing) return
+    let vivo = true
+    setCuotaMasVieja(null)
+    void (async () => {
+      try {
+        const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}`)
+        if (!res.ok) return
+        const json = (await res.json()) as { deudaMasVieja?: CuotaMasVieja | null }
+        if (vivo) setCuotaMasVieja(json.deudaMasVieja ?? null)
+      } catch {
+        // Sin la cuota, el modal funciona igual.
+      }
+    })()
+    return () => {
+      vivo = false
+    }
+  }, [open, envMissing, agentUrl, agencyId, debtorId])
 
   // Fetch templates when modal opens
   useEffect(() => {
@@ -220,14 +246,19 @@ export function ManualWAModal({
       setVariables({})
       return
     }
+    // La plata y las fechas de la cuota, SÓLO en la plantilla que nombra un mes
+    // vencido: `amount_cop` en otra es lo pagado o lo prometido.
+    const deLaCuota = selectedTemplate.variables.includes('overdue_month')
+      ? prefillDeLaCuotaVencida(cuotaMasVieja)
+      : {}
     const next: Record<string, string> = {}
     for (const v of selectedTemplate.variables) {
-      next[v] = valoresConocidos[v] ?? ''
+      next[v] = (prefill ?? {})[v] ?? deLaCuota[v] ?? valoresConocidos[v] ?? ''
     }
     setVariables(next)
     setConfirmacion(null)
     setConfirmados({})
-  }, [selectedTemplate, valoresConocidos])
+  }, [selectedTemplate, valoresConocidos, cuotaMasVieja, prefill])
 
   const vacias = selectedTemplate ? variablesVacias(selectedTemplate.variables, variables) : []
 
@@ -423,17 +454,17 @@ export function ManualWAModal({
           <p>{confirmacion?.pregunta}</p>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" hideArrow onClick={() => setConfirmacion(null)} disabled={submitting}>
-              No mandarlo
+              {tr("No mandarlo")}
             </Button>
             <Button size="sm" hideArrow onClick={() => confirmacion && void handleSubmit(confirmacion.campo)} isLoading={submitting} data-testid="wa-mandar-igual">
-              Mandarlo igual
+              {tr("Mandarlo igual")}
             </Button>
           </div>
         </Presence>
 
         {vacias.length > 0 && !envMissing && templates.length > 0 && (
           <p className="text-[11px] text-warning" data-testid="wa-faltan-datos">
-            {vacias.length === 1 ? 'Falta 1 dato del mensaje' : `Faltan ${vacias.length} datos del mensaje`}: complétalo para poder enviarlo.
+            {vacias.length === 1 ? 'Falta 1 dato del mensaje' : `Faltan ${vacias.length} datos del mensaje`}{tr(": complétalo para poder enviarlo.")}
           </p>
         )}
 

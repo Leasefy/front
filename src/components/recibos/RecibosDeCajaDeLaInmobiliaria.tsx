@@ -62,6 +62,7 @@ import { formatCurrency } from '@/lib/format'
 import { diaLegible } from '@/lib/mandato/textos'
 import { nombreDelMes } from '@/lib/utils/mes'
 import { cn } from '@/lib/utils'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const POR_PAGINA = [25, 50, 100]
 const ESTADOS: Array<{ id: EstadoDeLosRecibos; nombre: string }> = [
@@ -131,7 +132,7 @@ export function RecibosDeCajaDeLaInmobiliaria() {
   const resumen = useMemo(() => {
     if (!datos) return null
     const n = datos.total
-    return `${n.toLocaleString('es-CO')} ${n === 1 ? 'recibo' : 'recibos'} · ${formatCurrency(datos.totalCop)} recibidos${
+    return `${n.toLocaleString(localeDeLasCifras())} ${n === 1 ? 'recibo' : 'recibos'} · ${formatCurrency(datos.totalCop)} recibidos${
       estado === 'anulados' ? '' : ' (sin contar los anulados)'
     }`
   }, [datos, estado])

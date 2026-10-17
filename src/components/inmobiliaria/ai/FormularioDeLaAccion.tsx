@@ -64,6 +64,7 @@ import {
   type ErroresDeLaAccion,
   type ValoresDeLaAccion,
 } from './campos-de-la-accion'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
@@ -275,8 +276,8 @@ export function FormularioDeLaAccion({
                     )}
                     data-testid={`contador-${campo.nombre}`}
                   >
-                    {largoDelTexto(valores[campo.nombre]).toLocaleString('es-CO')} /{' '}
-                    {campo.maximo.toLocaleString('es-CO')}
+                    {largoDelTexto(valores[campo.nombre]).toLocaleString(localeDeLasCifras())} /{' '}
+                    {campo.maximo.toLocaleString(localeDeLasCifras())}
                   </span>
                 )}
               </div>

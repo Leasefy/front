@@ -35,6 +35,7 @@ import { SIN_MEDIR } from '@/lib/tasas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { cn } from '@/lib/utils';
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 // ── El cartel del módulo no habilitado ──────────────────────────────────────
 
@@ -404,7 +405,7 @@ export function etiquetaDelPeriodo(mes: string, quincena: number | null): string
 /** Centésimas a texto: 750 → «7,5». */
 export function deCentesimas(centesimas: number | null): string {
   if (centesimas == null) return '';
-  return (centesimas / 100).toLocaleString('es-CO', {
+  return (centesimas / 100).toLocaleString(localeDeLasCifras(), {
     maximumFractionDigits: 2,
   });
 }

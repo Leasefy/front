@@ -25,6 +25,8 @@ export type CanalDeCobranza = (typeof CANALES_DE_COBRANZA)[number];
  */
 export const MOTIVOS_DE_EXCLUSION = [
   'YA_PAGO',
+  // COBRI-12 (16-10-2026): pagó por el link de Cobri y el pago está en revisión.
+  'PAGO_EN_REVISION',
   'AUN_NO_VENCE',
   'DENTRO_DEL_PLAZO',
   'PLAZO_SIN_FIJAR',
@@ -154,6 +156,7 @@ export interface ResultadoDelEnvio {
 /** Cómo se lee cada motivo de exclusión en el resumen de la pantalla. */
 export const ETIQUETA_DEL_MOTIVO: Record<MotivoDeExclusion, string> = {
   YA_PAGO: 'Ya pagaron',
+  PAGO_EN_REVISION: 'Pagaron por el link y el pago está en revisión',
   AUN_NO_VENCE: 'Todavía no les vence',
   DENTRO_DEL_PLAZO: 'Dentro del plazo del contrato',
   PLAZO_SIN_FIJAR: 'Plazo sin fijar',

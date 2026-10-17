@@ -20,6 +20,7 @@ import type {
   EvaluationResult,
   IntegrityFlag,
 } from '@/lib/api/applications.types'
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 export interface CandidatoComparado {
   candidato: LandlordCandidate
@@ -87,7 +88,7 @@ function pesos(flags: IntegrityFlag[] | undefined): { alta: number; media: numbe
 }
 
 function moneda(n: number): string {
-  return new Intl.NumberFormat('es-CO', {
+  return formatoDeCifras(localeDeLasCifras(), {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,

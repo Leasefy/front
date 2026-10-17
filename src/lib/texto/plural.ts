@@ -1,3 +1,4 @@
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 /**
  * Contar cosas en español, sin escribir «1 disponibles».
  *
@@ -48,5 +49,5 @@ export function contar(
 ): string {
   const palabra =
     cuantos === 1 ? singular : (pluralExplicito ?? plural(singular));
-  return `${cuantos.toLocaleString('es-CO')} ${palabra}`;
+  return `${cuantos.toLocaleString(localeDeLasCifras())} ${palabra}`;
 }

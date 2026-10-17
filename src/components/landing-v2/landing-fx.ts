@@ -475,7 +475,9 @@ export function initLandingFx(): () => void {
     var rf = document.getElementById('rfill');
     var ctr = document.getElementById('hwctr');
     var tagEl = document.getElementById('hwtag');
-    var TAGS = [['CRM',0],['Agente AI',1],['Agente AI',1],['Agente AI',1],['ERP',0],['ERP',0]];
+    /* En /en la etiqueta va en inglés: el idioma lo dice el <html lang> (16-10-2026). */
+    var AGENTE = document.documentElement.lang === 'en' ? 'AI agent' : 'Agente AI';
+    var TAGS = [['CRM',0],[AGENTE,1],[AGENTE,1],[AGENTE,1],['ERP',0],['ERP',0]];
     var cur = -1, raf = 0;
     function setActive(i){
       if(i === cur) return;

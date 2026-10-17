@@ -8,12 +8,20 @@ import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
 import { plataQueNoEsNumero } from '@/lib/plata/plata-que-no-es-numero';
 import { ESPACIO_DE_LA_PLATA, decimalesEnDocumento, decimalesEnPantalla } from '@/lib/plata/escribir-plata';
 import { traeCentavosGuardados } from '@/lib/plata/centavos-guardados';
+import { idiomaDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 type SupportedLocale = 'es-CO' | 'en-US';
 
 function getLocaleString(locale?: 'es' | 'en'): SupportedLocale {
   return locale === 'en' ? 'en-US' : 'es-CO';
 }
+
+/**
+ * Sin idioma, la plata y los números de PANTALLA siguen al panel: con el panel
+ * en inglés, «$ 5,450,000» (Nico, 16-10-2026; `idioma-de-las-cifras.ts`). Lo que
+ * sale para afuera pasa `'es'` explícito.
+ */
+const deLaPantalla = (locale?: 'es' | 'en'): SupportedLocale => getLocaleString(locale ?? idiomaDeLasCifras());
 
 /**
  * Formats a number as currency. Null-safe: si `amount` viene null/undefined/NaN,
@@ -25,13 +33,15 @@ function getLocaleString(locale?: 'es' | 'en'): SupportedLocale {
  *
  * P8 a (C3-FRONT): en pantalla los centavos SÓLO si el valor los tiene; un
  * entero sale exactamente como siempre (`lib/plata/escribir-plata.ts`).
+ * Sin `locale`, el idioma del panel (`idioma-de-las-cifras.ts`); un texto para
+ * un inquilino o un propietario pasa `'es'`.
  * @example formatCurrency(2500000) → "$ 2.500.000"
  * @example formatCurrency(1234567.29) → "$ 1.234.567,29"
  */
 export function formatCurrency(amount: number | null | undefined, locale?: 'es' | 'en'): string {
   plataQueNoEsNumero('formatCurrency', amount);
   const safe = typeof amount === 'number' && !Number.isNaN(amount) ? amount : 0;
-  return '$' + ESPACIO_DE_LA_PLATA + safe.toLocaleString(getLocaleString(locale), decimalesEnPantalla(safe));
+  return '$' + ESPACIO_DE_LA_PLATA + safe.toLocaleString(deLaPantalla(locale), decimalesEnPantalla(safe));
 }
 
 /**
@@ -39,6 +49,9 @@ export function formatCurrency(amount: number | null | undefined, locale?: 'es' 
  * Con `conCentavos` —la llave del área del documento— SIEMPRE dos decimales
  * («$ 2.500.000,00»); sin ella, igual que `formatCurrency` (al peso, como
  * siempre, con la plata entera de hoy).
+ *
+ * Un documento sale en español aunque quien lo genere tenga el panel en
+ * inglés: sin `locale`, como en Colombia.
  */
 export function formatCurrencyEnDocumento(
   amount: number | null | undefined,
@@ -46,19 +59,20 @@ export function formatCurrencyEnDocumento(
   locale?: 'es' | 'en',
 ): string {
   // C4 (Q3 a): sin la llave, al peso como siempre, salvo centavos GUARDADOS.
-  if (!conCentavos && !traeCentavosGuardados(amount)) return formatCurrency(amount, locale);
+  if (!conCentavos && !traeCentavosGuardados(amount)) return formatCurrency(amount, locale ?? 'es');
   plataQueNoEsNumero('formatCurrencyEnDocumento', amount);
   const safe = typeof amount === 'number' && !Number.isNaN(amount) ? amount : 0;
   return '$' + ESPACIO_DE_LA_PLATA + safe.toLocaleString(getLocaleString(locale), decimalesEnDocumento(safe, true));
 }
 
 /**
- * Formats a number with locale-appropriate separators. Null-safe.
+ * Formats a number with locale-appropriate separators. Null-safe. Sin
+ * `locale`, el idioma del panel (como `formatCurrency`).
  * @example formatNumber(2500000) → "2.500.000"
  */
 export function formatNumber(value: number | null | undefined, locale?: 'es' | 'en'): string {
   const safe = typeof value === 'number' && !Number.isNaN(value) ? value : 0;
-  return safe.toLocaleString(getLocaleString(locale));
+  return safe.toLocaleString(deLaPantalla(locale));
 }
 
 /**

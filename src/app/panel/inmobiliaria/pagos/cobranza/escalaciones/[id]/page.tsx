@@ -18,7 +18,10 @@ import { ArrowLeft, Phone, FileText, User } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
-import { escalationReasonLabel } from '@/lib/cobranza/call-vocab'
+import { callOutcomeLabel, escalationReasonLabel } from '@/lib/cobranza/call-vocab'
+import { cuandoPaso } from '@/lib/cobranza/vocabulario-de-la-auditoria'
+import { detallesLegibles } from '@/lib/cobranza/detalles-de-la-auditoria'
+import { TEMPLATES } from '@/lib/constants/cobranza/escalation-templates'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useEscalationDetail } from '@/lib/hooks/cobranza/use-escalation-detail'
@@ -29,6 +32,17 @@ import { Button, Badge } from '@/components/ui'
 import { CrossFade, MonoLabel, Presence } from '@leasefy/cadence'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
+
+/**
+ * QA-AGENTES 16-10: la ficha decía «resolved», «resolved_at»,
+ * «resolution_category: other», fechas «16/10/2026, 13:24:52» y pintaba dos
+ * tarjetas vacías (llamada «—», estado del agente sin nada).
+ */
+const ESTADO_DEL_ESCALAMIENTO: Record<string, string> = {
+  open: 'Abierta',
+  assigned: 'Asignada',
+  resolved: 'Resuelta',
+}
 
 function EscalationDetailContent() {
   const params = useParams()
@@ -152,13 +166,14 @@ function EscalationDetailContent() {
               {t(`inmobiliaria.ai.cobranza.escalaciones.urgency.${data.urgency}`)}
             </Badge>
             <Badge variant="secondary">
-              {data.status}
+              {locale.startsWith('es') ? ESTADO_DEL_ESCALAMIENTO[data.status] ?? data.status : data.status}
             </Badge>
           </div>
         </div>
       </div>
 
-      {/* Card 1 — Linked call */}
+      {/* Card 1 — Linked call (sólo si hay una) */}
+      {data.linked_call && (
       <section className="rounded-lg border border-border bg-card p-4 space-y-2">
         <MonoLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
           <Phone className="w-3.5 h-3.5" aria-hidden="true" />
@@ -170,17 +185,18 @@ function EscalationDetailContent() {
             className="block text-sm text-primary hover:underline"
           >
             <div className="space-y-1">
-              <p className="font-medium tabular-nums">{data.linked_call.id}</p>
-              <p className="text-xs text-muted-foreground tabular-nums">
-                {new Date(data.linked_call.initiatedAt).toLocaleString(locale)} ·{' '}
-                {data.linked_call.outcome ?? '—'}
+              <p className="font-medium">{locale.startsWith('es') ? 'Ver la llamada' : 'View call'}</p>
+              <p className="text-xs text-muted-foreground">
+                {locale.startsWith('es')
+                  ? cuandoPaso(data.linked_call.initiatedAt)
+                  : new Date(data.linked_call.initiatedAt).toLocaleString(locale)}
+                {data.linked_call.outcome ? ` · ${callOutcomeLabel(data.linked_call.outcome)}` : ''}
               </p>
             </div>
           </Link>
-        ) : (
-          <p className="text-sm text-muted-foreground">—</p>
-        )}
+        ) : null}
       </section>
+      )}
 
       {/* Card 2 — Reason */}
       <section className="rounded-lg border border-border bg-card p-4 space-y-2">
@@ -193,7 +209,8 @@ function EscalationDetailContent() {
         </p>
       </section>
 
-      {/* Card 3 — Agent state trace (collapsible) */}
+      {/* Card 3 — Agent state trace (collapsible; sólo si el agente dejó una) */}
+      {data.state_trace_json != null && (
       <section className="rounded-lg border border-border bg-card p-4 space-y-2">
         <details>
           <summary className="cursor-pointer list-none">
@@ -201,13 +218,17 @@ function EscalationDetailContent() {
               {t('inmobiliaria.ai.cobranza.escalaciones.detail.stateTrace')}
             </MonoLabel>
           </summary>
-          <pre className="mt-3 text-[11px] bg-muted/50 rounded-sm p-3 overflow-x-auto font-mono text-foreground">
-            {data.state_trace_json
-              ? JSON.stringify(data.state_trace_json, null, 2)
-              : '—'}
-          </pre>
+          <dl className="mt-3 space-y-1 text-sm">
+            {detallesLegibles(data.state_trace_json).map((d) => (
+              <div key={d.clave} className="flex flex-wrap gap-x-2">
+                <dt className="text-muted-foreground">{d.clave}:</dt>
+                <dd className="text-foreground">{d.valor}</dd>
+              </div>
+            ))}
+          </dl>
         </details>
       </section>
+      )}
 
       {/* Card 4 — Assignee + timing */}
       <section className="rounded-lg border border-border bg-card p-4 space-y-2">
@@ -226,27 +247,38 @@ function EscalationDetailContent() {
             <dt className="text-xs text-muted-foreground">
               {t('inmobiliaria.ai.cobranza.escalaciones.detail.timing')}
             </dt>
-            <dd className="text-foreground tabular-nums font-mono text-xs">
+            <dd className="text-foreground">
               {data.assigned_at
-                ? new Date(data.assigned_at).toLocaleString(locale)
+                ? locale.startsWith('es')
+                  ? cuandoPaso(data.assigned_at)
+                  : new Date(data.assigned_at).toLocaleString(locale)
                 : '—'}
             </dd>
           </div>
           {data.resolved_at && (
             <>
               <div>
-                <dt className="text-xs text-muted-foreground">resolved_at</dt>
-                <dd className="text-foreground tabular-nums font-mono text-xs">
-                  {new Date(data.resolved_at).toLocaleString(locale)}
+                <dt className="text-xs text-muted-foreground">
+                  {locale.startsWith('es') ? 'Resuelta el' : 'Resolved at'}
+                </dt>
+                <dd className="text-foreground">
+                  {locale.startsWith('es') ? cuandoPaso(data.resolved_at) : new Date(data.resolved_at).toLocaleString(locale)}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground">resolution_category</dt>
-                <dd className="text-foreground">{data.resolution_category ?? '—'}</dd>
+                <dt className="text-xs text-muted-foreground">
+                  {locale.startsWith('es') ? 'Cómo se resolvió' : 'Resolution'}
+                </dt>
+                <dd className="text-foreground">
+                  {(() => {
+                    const plantilla = TEMPLATES.find((tpl) => tpl.id === data.resolution_category)
+                    return plantilla ? t(plantilla.labelKey) : data.resolution_category ?? '—'
+                  })()}
+                </dd>
               </div>
               {data.resolution_text && (
                 <div className="col-span-2">
-                  <dt className="text-xs text-muted-foreground">resolution_text</dt>
+                  <dt className="text-xs text-muted-foreground">{locale.startsWith('es') ? 'Nota' : 'Note'}</dt>
                   <dd className="text-foreground text-sm whitespace-pre-wrap">
                     {data.resolution_text}
                   </dd>

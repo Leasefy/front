@@ -96,3 +96,15 @@ describe('🔴 CB-05: lo que se ve es lo que se guarda', () => {
     expect(cuotasDelAcuerdo(1_000_000, 0, '2026-11-05')).toEqual([])
   })
 })
+
+describe('QA-AGENTES 16-10: la inicial que no cabe se dice antes de guardar', () => {
+  const plata = (n: number) => `$ ${n.toLocaleString('es-CO')}`
+  it('más que la deuda, igual a la deuda (con cuotas) o bien', async () => {
+    const { errorDeLaCuotaInicial } = await import('./cuotas-del-acuerdo')
+    expect(errorDeLaCuotaInicial({ inicial: 5_000_000, total: 4_200_000, cuotas: 2, plata })).toMatch(/no puede pasar del total del acuerdo/)
+    expect(errorDeLaCuotaInicial({ inicial: 4_200_000, total: 4_200_000, cuotas: 2, plata })).toMatch(/no queda nada para las cuotas/)
+    expect(errorDeLaCuotaInicial({ inicial: 1_400_000, total: 4_200_000, cuotas: 2, plata })).toBeNull()
+    // Pago único: la inicial ES el total.
+    expect(errorDeLaCuotaInicial({ inicial: 4_200_000, total: 4_200_000, cuotas: 0, plata })).toBeNull()
+  })
+})

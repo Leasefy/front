@@ -51,6 +51,7 @@ import type {
   SmartMatchingResponse,
   PreScoringStudy,
 } from '@/lib/api/applications.types';
+import { useTr, useLocaleDeFechas } from '@/lib/i18n/use-tr';
 
 // ============================================================================
 // Props
@@ -244,6 +245,8 @@ interface CuerpoDelCandidatoProps {
 }
 
 function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCandidatoProps) {
+  const fechas = useLocaleDeFechas();
+  const tr = useTr();
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -435,15 +438,15 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
         <SheetBody className="space-y-6">
           {/* Status */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-fg-muted">Estado:</span>
+            <span className="text-sm text-fg-muted">{tr("Estado:")}</span>
             <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-foreground">
-              {STATUS_LABELS[candidate.status]}
+              {tr(STATUS_LABELS[candidate.status])}
             </span>
             {/* 🔴 El estudio es opcional (Nico, 04-10-2026): qué falta, a la
                 vista antes de decidir. */}
             <ChipDeLaMarcaDelEstudio marca={candidate.marcaDelEstudio} />
             <span className="text-sm text-fg-muted ml-auto">
-              Postulado el {new Date(candidate.submittedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
+              {tr("Postulado el")} {new Date(candidate.submittedAt).toLocaleDateString(fechas, { day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
           </div>
 
@@ -456,12 +459,12 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm text-foreground">
-                    {existingContract ? 'Contrato en curso' : 'Candidato aprobado'}
+                    {tr(existingContract ? 'Contrato en curso' : 'Candidato aprobado')}
                   </p>
                   <p className="text-xs text-fg-muted mt-0.5">
-                    {existingContract
+                    {tr(existingContract
                       ? 'Ya hay un contrato creado para esta aplicación.'
-                      : 'Ya puedes crear el contrato y enviarlo para firma.'}
+                      : 'Ya puedes crear el contrato y enviarlo para firma.')}
                   </p>
                 </div>
               </div>
@@ -470,7 +473,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   href={`/panel/inmobiliaria/contratos/${existingContract.id}`}
                   className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-surface dark:bg-ink border border-success/30 hover:bg-success-soft text-success text-sm font-semibold transition-colors"
                 >
-                  Ver contrato
+                  {tr("Ver contrato")}
                   <ArrowUpRight className="w-4 h-4" />
                 </Link>
               ) : (
@@ -478,7 +481,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   href={`/panel/inmobiliaria/contratos/nuevo?applicationId=${candidate.id}`}
                   className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-success hover:bg-success text-white text-sm font-semibold transition-colors"
                 >
-                  Crear contrato
+                  {tr("Crear contrato")}
                   <ArrowUpRight className="w-4 h-4" />
                 </Link>
               )}
@@ -493,9 +496,9 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   <XCircle className="w-5 h-5 text-danger" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-sm text-foreground">Proceso de contrato cerrado</p>
+                  <p className="font-semibold text-sm text-foreground">{tr("Proceso de contrato cerrado")}</p>
                   <p className="text-xs text-fg-muted mt-0.5">
-                    El contrato se canceló o fue rechazado definitivamente. Para reintentar con este candidato, necesitas una nueva aplicación.
+                    {tr("El contrato se canceló o fue rechazado definitivamente. Para reintentar con este candidato, necesitas una nueva aplicación.")}
                   </p>
                 </div>
               </div>
@@ -504,7 +507,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   href={`/panel/inmobiliaria/contratos/${existingContract.id}`}
                   className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-surface dark:bg-ink border border-danger/30 hover:bg-danger-soft text-danger text-sm font-semibold transition-colors"
                 >
-                  Ver contrato cancelado
+                  {tr("Ver contrato cancelado")}
                   <ArrowUpRight className="w-4 h-4" />
                 </Link>
               )}
@@ -524,8 +527,8 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 <ShieldCheck className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm text-foreground">Estudio de asegurabilidad</h3>
-                <p className="text-xs text-fg-muted">El estudio con que se postuló, si lo hizo: es opcional</p>
+                <h3 className="font-semibold text-sm text-foreground">{tr("Estudio de asegurabilidad")}</h3>
+                <p className="text-xs text-fg-muted">{tr("El estudio con que se postuló, si lo hizo: es opcional")}</p>
               </div>
             </div>
             <PreScoringStudyPanel study={candidate.preScoringStudy} />
@@ -545,8 +548,8 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 <Robot className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm text-foreground">Análisis de riesgo con IA</h3>
-                <p className="text-xs text-fg-muted">Generado por el agente de evaluación de riesgo</p>
+                <h3 className="font-semibold text-sm text-foreground">{tr("Análisis de riesgo con IA")}</h3>
+                <p className="text-xs text-fg-muted">{tr("Generado por el agente de evaluación de riesgo")}</p>
               </div>
             </div>
 
@@ -558,7 +561,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
               <div className="rounded-lg bg-surface-muted p-3 border border-border">
                 {/* El puntaje no está prendido (Nico, 04-10-2026): no se
                     promete uno que no va a llegar. */}
-                <p className="text-xs text-fg-muted">Sin puntaje.</p>
+                <p className="text-xs text-fg-muted">{tr("Sin puntaje.")}</p>
               </div>
             ) : evaluacionDesactualizada(evaluation) ? (
               <AvisoDeEvaluacionDesactualizada />
@@ -588,7 +591,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                         {totalScore}
                         <span className="ml-0.5 text-sm font-normal text-fg-muted">/100</span>
                       </p>
-                      <p className="mt-1.5 text-xs text-fg-muted">{LEVEL_DESCRIPTIONS[level]}</p>
+                      <p className="mt-1.5 text-xs text-fg-muted">{tr(LEVEL_DESCRIPTIONS[level] ?? '')}</p>
                     </div>
                   </div>
                 )}
@@ -599,8 +602,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   <p className="flex items-start gap-2 rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger">
                     <WarningCircle className="mt-px h-4 w-4 flex-shrink-0" />
                     <span>
-                      <span className="font-semibold">Pide revisión manual.</span> El agente
-                      encontró inconsistencias entre los documentos — están listadas abajo.
+                      <span className="font-semibold">{tr("Pide revisión manual.")}</span> {tr("El agente encontró inconsistencias entre los documentos — están listadas abajo.")}
                     </span>
                   </p>
                 )}
@@ -620,12 +622,12 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   */}
                 {desglose && (
                   <div className="space-y-3">
-                    <p className="text-overline text-fg-subtle">Cómo se compone</p>
+                    <p className="text-overline text-fg-subtle">{tr("Cómo se compone")}</p>
                     <div className="space-y-2.5">
                       {desglose.main.map(([key, factor]) => (
                         <FactorDelScore
                           key={key}
-                          etiqueta={SCORE_BREAKDOWN_LABELS[key] ?? key}
+                          etiqueta={tr(SCORE_BREAKDOWN_LABELS[key] ?? key)}
                           valor={factor.value}
                           peso={factor.weight}
                           detalle={
@@ -642,29 +644,29 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 {/* Respaldo: evaluaciones viejas, sin `score_breakdown`. */}
                 {!desglose && evaluation?.subscores && (
                   <div className="space-y-3">
-                    <p className="text-overline text-fg-subtle">Cómo se compone</p>
+                    <p className="text-overline text-fg-subtle">{tr("Cómo se compone")}</p>
                     <div className="space-y-2.5">
                       {evaluation.subscores.financialStability !== undefined && (
                         <FactorDelScore
-                          etiqueta="Estabilidad financiera"
+                          etiqueta={tr("Estabilidad financiera")}
                           valor={evaluation.subscores.financialStability}
                         />
                       )}
                       {evaluation.subscores.rentalHistory !== undefined && (
                         <FactorDelScore
-                          etiqueta="Historial de arriendo"
+                          etiqueta={tr("Historial de arriendo")}
                           valor={evaluation.subscores.rentalHistory}
                         />
                       )}
                       {evaluation.subscores.documentVerification !== undefined && (
                         <FactorDelScore
-                          etiqueta="Verificación de documentos"
+                          etiqueta={tr("Verificación de documentos")}
                           valor={evaluation.subscores.documentVerification}
                         />
                       )}
                       {evaluation.subscores.personalProfile !== undefined && (
                         <FactorDelScore
-                          etiqueta="Perfil personal"
+                          etiqueta={tr("Perfil personal")}
                           valor={evaluation.subscores.personalProfile}
                         />
                       )}
@@ -677,11 +679,11 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   <div className="rounded-lg bg-surface-muted p-3 flex items-start gap-2 border border-border">
                     <recommendation.icon className={cn('w-5 h-5 flex-shrink-0 mt-0.5', recommendation.color)} />
                     <div>
-                      <p className="text-xs text-fg-muted">Recomendación del agente</p>
-                      <p className={cn('text-sm font-semibold', recommendation.color)}>{recommendation.label}</p>
+                      <p className="text-xs text-fg-muted">{tr("Recomendación del agente")}</p>
+                      <p className={cn('text-sm font-semibold', recommendation.color)}>{tr(recommendation.label)}</p>
                       {evaluation?.confidence !== undefined && (
                         <p className="text-xs text-fg-muted mt-0.5">
-                          Confianza: {Math.round(evaluation.confidence * 100)}%
+                          {tr("Confianza:")} {Math.round(evaluation.confidence * 100)}%
                         </p>
                       )}
                     </div>
@@ -693,7 +695,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   <div className="rounded-lg bg-surface-muted p-3 border border-border">
                     <p className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
                       <Sparkle className="w-3.5 h-3.5" />
-                      Resumen
+                      {tr("Resumen")}
                     </p>
                     <p className="text-sm text-foreground">{evaluation.summary}</p>
                   </div>
@@ -702,7 +704,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 {/* Reasoning */}
                 {evaluation?.reasoning && evaluation.reasoning.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-foreground mb-2">Razonamiento</p>
+                    <p className="text-xs font-semibold text-foreground mb-2">{tr("Razonamiento")}</p>
                     <ul className="space-y-1.5">
                       {evaluation.reasoning.map((r, i) => (
                         <li key={i} className="text-xs text-fg-muted flex items-start gap-2">
@@ -719,7 +721,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   <div className="space-y-2">
                     <p className="text-xs font-semibold text-foreground flex items-center gap-1">
                       <WarningCircle className="w-3.5 h-3.5" />
-                      Alertas de integridad
+                      {tr("Alertas de integridad")}
                     </p>
                     {evaluation.integrity_flags.map((flag, i) => (
                       <IntegrityFlagCard key={i} flag={flag} />
@@ -732,7 +734,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   <div className="rounded-lg bg-warning-soft border border-warning/30 p-3">
                     <p className="text-xs font-semibold text-warning mb-2 flex items-center gap-1">
                       <WarningCircle className="w-3.5 h-3.5" />
-                      Alertas detectadas
+                      {tr("Alertas detectadas")}
                     </p>
                     <ul className="space-y-1">
                       {evaluation.flags.map((f, i) => (
@@ -745,7 +747,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 {/* Observations — soft non-blocking warnings */}
                 {evaluation?.observations && evaluation.observations.length > 0 && (
                   <div className="space-y-1.5">
-                    <p className="text-xs font-semibold text-foreground">Observaciones</p>
+                    <p className="text-xs font-semibold text-foreground">{tr("Observaciones")}</p>
                     {evaluation.observations.map((obs, i) => (
                       <ObservationCard key={i} observation={obs} />
                     ))}
@@ -754,7 +756,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
 
                 {!level && !evaluation && !aiError && (
                   <p className="text-xs text-fg-muted">
-                    Aún no hay análisis disponible.
+                    {tr("Aún no hay análisis disponible.")}
                   </p>
                 )}
               </>
@@ -769,8 +771,8 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                   <MagnifyingGlass className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm text-foreground">Inmuebles compatibles</h3>
-                  <p className="text-xs text-fg-muted">Otras propiedades de tu portafolio que le podrían calzar</p>
+                  <h3 className="font-semibold text-sm text-foreground">{tr("Inmuebles compatibles")}</h3>
+                  <p className="text-xs text-fg-muted">{tr("Otras propiedades de tu portafolio que le podrían calzar")}</p>
                 </div>
               </div>
               <Button
@@ -783,7 +785,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 className="gap-1.5"
               >
                 {!isMatching && <MagnifyingGlass className="w-3.5 h-3.5" />}
-                {isMatching ? 'Buscando...' : 'Buscar compatibles'}
+                {tr(isMatching ? 'Buscando...' : 'Buscar compatibles')}
               </Button>
             </div>
 
@@ -798,14 +800,14 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
               <>
                 {matchingResults.candidateProfile && (
                   <div className="rounded-lg bg-muted p-3 text-xs space-y-1">
-                    <p className="font-semibold text-foreground">Perfil detectado del candidato:</p>
+                    <p className="font-semibold text-foreground">{tr("Perfil detectado del candidato:")}</p>
                     <p className="text-fg-muted">
-                      Ingresos: <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.monthlyIncome)}</span> · Presupuesto máx: <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.maxBudget)}</span>
+                      {tr("Ingresos:")} <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.monthlyIncome)}</span> {tr("· Presupuesto máx:")} <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.maxBudget)}</span>
                     </p>
                     {matchingResults.candidateProfile.preferredLocations &&
                       matchingResults.candidateProfile.preferredLocations.length > 0 && (
                         <p className="text-fg-muted">
-                          Zonas preferidas: <span className="text-foreground">{matchingResults.candidateProfile.preferredLocations.join(', ')}</span>
+                          {tr("Zonas preferidas:")} <span className="text-foreground">{matchingResults.candidateProfile.preferredLocations.join(', ')}</span>
                         </p>
                       )}
                   </div>
@@ -828,14 +830,14 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                             {r.property.title}
                           </p>
                           <p className="text-xs text-fg-muted">
-                            {r.property.neighborhood}, {r.property.city} · {r.property.bedrooms} hab · {formatCurrency(r.property.monthlyRent)}/mes
+                            {r.property.neighborhood}, {r.property.city} · {r.property.bedrooms} {tr("hab ·")} {formatCurrency(r.property.monthlyRent)}{tr("/mes")}
                           </p>
                         </div>
                         <div className="flex flex-col items-center flex-shrink-0">
                           <div className="px-2 py-0.5 rounded-full bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle text-xs font-bold">
                             {r.compatibilityScore}%
                           </div>
-                          <p className="text-[10px] text-fg-muted mt-0.5">match</p>
+                          <p className="text-[10px] text-fg-muted mt-0.5">{tr("match")}</p>
                         </div>
                         <ArrowUpRight className="w-4 h-4 text-fg-muted group-hover:text-fg-muted dark:text-fg-subtle dark:group-hover:text-fg-muted dark:text-fg-subtle transition-colors" />
                       </Link>
@@ -847,11 +849,11 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                     el usuario cree que el correo ya salió. */}
                 {matchingResults.results.length > 0 && (
                   <p className="text-xs text-fg-muted" data-testid="matching-a-donde-van">
-                    Si hay al menos un calce del 70 %, Matching le prepara las opciones al candidato: en copiloto quedan en{' '}
+                    {tr("Si hay al menos un calce del 70 %, Matching le prepara las opciones al candidato: en copiloto quedan en")}{' '}
                     <Link href="/panel/inmobiliaria/postulaciones/matching/cola" className="font-medium text-fg underline-offset-2 hover:underline">
-                      su cola
+                      {tr("su cola")}
                     </Link>{' '}
-                    para tu visto bueno; en autónomo salen solas por correo.
+                    {tr("para tu visto bueno; en autónomo salen solas por correo.")}
                   </p>
                 )}
               </>
@@ -859,7 +861,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
 
             {!matchingResults && !isMatching && !matchingError && (
               <p className="text-xs text-fg-muted">
-                Haz clic en &ldquo;Buscar compatibles&rdquo; para que el agente analice tu portafolio y te sugiera propiedades que le podrían calzar mejor a este candidato.
+                {tr("Haz clic en “Buscar compatibles” para que el agente analice tu portafolio y te sugiera propiedades que le podrían calzar mejor a este candidato.")}
               </p>
             )}
           </section>
@@ -874,8 +876,8 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 <FileText className="w-4 h-4 text-fg-muted" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm text-foreground">Documentos adjuntos</h3>
-                <p className="text-xs text-fg-muted">Archivos cargados por el candidato</p>
+                <h3 className="font-semibold text-sm text-foreground">{tr("Documentos adjuntos")}</h3>
+                <p className="text-xs text-fg-muted">{tr("Archivos cargados por el candidato")}</p>
               </div>
             </div>
 
@@ -884,14 +886,14 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                   <WarningCircle className="w-3.5 h-3.5 text-danger" />
-                  Alertas del agente de verificación
+                  {tr("Alertas del agente de verificación")}
                 </p>
                 {evaluation.integrity_flags.map((flag, i) => (
                   <IntegrityFlagCard key={i} flag={flag} />
                 ))}
                 <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2">
                   <p className="text-xs text-warning">
-                    La verificación final es responsabilidad de tu equipo. Revisa los documentos originales antes de tomar una decisión.
+                    {tr("La verificación final es responsabilidad de tu equipo. Revisa los documentos originales antes de tomar una decisión.")}
                   </p>
                 </div>
               </div>
@@ -905,7 +907,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
             ) : docsError ? (
               <div className="flex items-start gap-2 text-xs text-fg-muted">
                 <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <span>No se pudieron cargar los documentos.</span>
+                <span>{tr("No se pudieron cargar los documentos.")}</span>
               </div>
             ) : documents.length === 0 ? (
               /* El vacío canónico del panel (círculo gris + título + frase),
@@ -913,8 +915,8 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                  sección del cajón y el `py-12` de fábrica la estiraba. */
               <EmptyState
                 icon={FileText}
-                title="Sin documentos"
-                description="Este candidato no tiene documentos adjuntos aún."
+                title={tr("Sin documentos")}
+                description={tr("Este candidato no tiene documentos adjuntos aún.")}
                 className="py-6"
               />
             ) : (
@@ -928,7 +930,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
 
           {/* Messages — chat with the candidate without leaving the drawer */}
           <section className="space-y-3">
-            <h3 className="font-semibold text-sm text-foreground">Mensajes</h3>
+            <h3 className="font-semibold text-sm text-foreground">{tr("Mensajes")}</h3>
             <ChatThread applicationId={candidate.id} />
           </section>
 
@@ -950,8 +952,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 <span className="flex items-start gap-2 text-danger">
                   <WarningCircle className="w-4 h-4 flex-shrink-0 mt-px" />
                   <span>
-                    El análisis marcó inconsistencias en los documentos. Revisa las alertas de
-                    integridad antes de decidir.
+                    {tr("El análisis marcó inconsistencias en los documentos. Revisa las alertas de integridad antes de decidir.")}
                   </span>
                 </span>
               ) : undefined
@@ -960,14 +961,14 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
               canReject ? (
                 <Button variant="secondary" hideArrow onClick={() => onAction('reject', candidate)}>
                   <X weight="bold" className="w-4 h-4" aria-hidden="true" />
-                  Rechazar
+                  {tr("Rechazar")}
                 </Button>
               ) : undefined
             }
           >
             {canRequestInfo && (
               <Button variant="secondary" hideArrow onClick={() => onAction('request-info', candidate)}>
-                Pedir info
+                {tr("Pedir info")}
               </Button>
             )}
             {/* Aprobar, SIEMPRE la última: es la acción que cierra el paso. */}
@@ -979,7 +980,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 onClick={() => onAction('approve', candidate)}
                 className="bg-success text-white hover:bg-success/90"
               >
-                Aprobar
+                {tr("Aprobar")}
               </Button>
             )}
           </SheetFooter>
@@ -1019,6 +1020,7 @@ export function evaluacionDesactualizada(
 }
 
 export function AvisoDeEvaluacionDesactualizada() {
+  const tr = useTr();
   return (
     <div
       className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm"
@@ -1026,20 +1028,20 @@ export function AvisoDeEvaluacionDesactualizada() {
     >
       <WarningCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
       <span>
-        <span className="font-semibold">Hay que volver a evaluarlo.</span> El candidato
-        cambió sus datos después del estudio, así que el puntaje anterior ya no vale. Pide
-        un estudio nuevo; no se exige subir documentos otra vez.
+        <span className="font-semibold">{tr("Hay que volver a evaluarlo.")}</span> {tr("El candidato cambió sus datos después del estudio, así que el puntaje anterior ya no vale. Pide un estudio nuevo; no se exige subir documentos otra vez.")}
       </span>
     </div>
   );
 }
 
 export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null | undefined }) {
+  const fechas = useLocaleDeFechas();
+  const tr = useTr();
   if (!study) {
     return (
       <div className="rounded-lg bg-surface-muted p-3 border border-border" data-testid="prescoring-panel-empty">
         <p className="text-xs text-fg-muted">
-          El candidato se postuló sin un estudio de preescoring registrado para esta postulación.
+          {tr("El candidato se postuló sin un estudio de preescoring registrado para esta postulación.")}
         </p>
       </div>
     );
@@ -1064,12 +1066,12 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
         >
           <XCircle className="w-3.5 h-3.5 text-danger flex-shrink-0 mt-0.5" aria-hidden="true" />
           <p className="text-xs text-danger">
-            Este estudio no encontró ninguna aseguradora que respalde al candidato.
+            {tr("Este estudio no encontró ninguna aseguradora que respalde al candidato.")}
           </p>
         </div>
         {carriers.length > 0 && (
           <div className="space-y-2">
-            <p className="text-caption font-semibold text-foreground">Aseguradoras evaluadas</p>
+            <p className="text-caption font-semibold text-foreground">{tr("Aseguradoras evaluadas")}</p>
             {carriers.map((carrier) => (
               <div
                 key={carrier.name}
@@ -1079,7 +1081,7 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
                 <span className="text-caption text-foreground truncate">{carrier.name}</span>
                 <span className="inline-flex items-center gap-1 text-caption font-medium text-danger">
                   <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
-                  No viable
+                  {tr("No viable")}
                 </span>
               </div>
             ))}
@@ -1100,7 +1102,7 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
       >
         <Info className="w-3.5 h-3.5 text-fg-muted flex-shrink-0 mt-0.5" aria-hidden="true" />
         <p className="text-xs text-fg-muted">
-          El estudio de preescoring de este candidato está en curso. Todavía no hay resultado.
+          {tr("El estudio de preescoring de este candidato está en curso. Todavía no hay resultado.")}
         </p>
       </div>
     );
@@ -1115,14 +1117,14 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
         <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2 flex items-start gap-2" data-testid="prescoring-expired-badge">
           <Info className="w-3.5 h-3.5 text-warning flex-shrink-0 mt-0.5" aria-hidden="true" />
           <p className="text-xs text-warning">
-            El estudio venció, pero el resultado sigue siendo válido para esta postulación.
+            {tr("El estudio venció, pero el resultado sigue siendo válido para esta postulación.")}
           </p>
         </div>
       )}
 
       {study.maxAsegurableCop != null ? (
         <div>
-          <p className="text-xs text-fg-muted">Monto máximo asegurable</p>
+          <p className="text-xs text-fg-muted">{tr("Monto máximo asegurable")}</p>
           <p className="text-2xl font-bold text-foreground font-mono tabular-nums">
             {formatCurrency(study.maxAsegurableCop)}
           </p>
@@ -1132,17 +1134,17 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
             decide la inmobiliaria, sin registro ni aviso obligatorio.
           */}
           <p className="text-xs text-fg-muted mt-1" data-testid="prescoring-tope-informativo">
-            Dato informativo: si el canon del inmueble lo supera, la inmobiliaria decide si arrienda igual.
+            {tr("Dato informativo: si el canon del inmueble lo supera, la inmobiliaria decide si arrienda igual.")}
           </p>
         </div>
       ) : (
-        <p className="text-xs text-fg-muted">Este estudio no registró un monto máximo asegurable.</p>
+        <p className="text-xs text-fg-muted">{tr("Este estudio no registró un monto máximo asegurable.")}</p>
       )}
 
       {study.completedAt && (
         <p className="text-xs text-fg-muted">
-          Completado el{' '}
-          {new Date(study.completedAt).toLocaleDateString('es-CO', {
+          {tr("Completado el")}{' '}
+          {new Date(study.completedAt).toLocaleDateString(fechas, {
             day: 'numeric',
             month: 'long',
             year: 'numeric',
@@ -1152,7 +1154,7 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
 
       {carriers.length > 0 ? (
         <div className="space-y-2">
-          <p className="text-caption font-semibold text-foreground">Aseguradoras evaluadas</p>
+          <p className="text-caption font-semibold text-foreground">{tr("Aseguradoras evaluadas")}</p>
           {carriers.map((carrier) => (
             <div
               key={carrier.name}
@@ -1175,7 +1177,7 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
                     data-testid="prescoring-carrier-no-cover"
                   >
                     <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
-                    Sin cobertura
+                    {tr("Sin cobertura")}
                   </span>
                 )}
                 <span className={cn('inline-flex items-center gap-1 text-xs font-medium', carrier.viable ? 'text-success' : 'text-danger')}>
@@ -1192,7 +1194,7 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
         </div>
       ) : (
         <p className="text-xs text-fg-muted" data-testid="prescoring-ceiling-only-note">
-          El detalle por aseguradora no está disponible para este estudio; se muestra el monto máximo asegurable global.
+          {tr("El detalle por aseguradora no está disponible para este estudio; se muestra el monto máximo asegurable global.")}
         </p>
       )}
     </div>
@@ -1218,13 +1220,14 @@ function FactorDelScore({
   peso?: number;
   detalle?: React.ReactNode;
 }) {
+  const tr = useTr();
   return (
     <div>
       <div className="flex items-baseline gap-3">
         <span className="min-w-0 flex-1 truncate text-xs text-foreground">{etiqueta}</span>
         {peso !== undefined && (
           <span className="shrink-0 text-[11px] text-fg-subtle">
-            pesa <span className="font-mono tabular-nums">{peso}%</span>
+            {tr("pesa")} <span className="font-mono tabular-nums">{peso}%</span>
           </span>
         )}
         <span className="w-9 shrink-0 text-right font-mono text-sm font-semibold text-foreground tabular-nums">
@@ -1255,15 +1258,16 @@ function DetalleDeCredito({
 }: {
   detalle: NonNullable<PartitionedScoreBreakdown['creditDetail']>;
 }) {
+  const tr = useTr();
   const { bureau, asegurabilidad, bureauUnavailable } = detalle;
   return (
     <div className="mt-2 ml-3 space-y-1.5 border-l border-border pl-3">
       {bureau && (
         <div className="flex items-baseline gap-2">
-          <span className="min-w-0 flex-1 truncate text-[11px] text-fg-muted">Buró de crédito</span>
+          <span className="min-w-0 flex-1 truncate text-[11px] text-fg-muted">{tr("Buró de crédito")}</span>
           {bureauUnavailable ? (
             <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">
-              Sin dato — el buró no respondió
+              {tr("Sin dato — el buró no respondió")}
             </span>
           ) : (
             <span className="shrink-0 font-mono text-[11px] tabular-nums text-foreground">
@@ -1274,7 +1278,7 @@ function DetalleDeCredito({
       )}
       {asegurabilidad && (
         <div className="flex items-baseline gap-2">
-          <span className="min-w-0 flex-1 truncate text-[11px] text-fg-muted">Asegurabilidad</span>
+          <span className="min-w-0 flex-1 truncate text-[11px] text-fg-muted">{tr("Asegurabilidad")}</span>
           <span className="shrink-0 font-mono text-[11px] tabular-nums text-foreground">
             {asegurabilidad.value}
           </span>
@@ -1282,8 +1286,7 @@ function DetalleDeCredito({
       )}
       {bureauUnavailable && (
         <p className="text-[11px] leading-snug text-warning">
-          El crédito se calculó con la mitad de la información, así que este puntaje está por
-          debajo de lo que le corresponde.
+          {tr("El crédito se calculó con la mitad de la información, así que este puntaje está por debajo de lo que le corresponde.")}
         </p>
       )}
     </div>
@@ -1411,8 +1414,9 @@ export function explicarAlerta(flag: IntegrityFlag): AlertaExplicada | null {
 }
 
 function IntegrityFlagCard({ flag }: { flag: IntegrityFlag }) {
-  const message = INTEGRITY_FLAG_MESSAGES[flag.code] ?? flag.detail;
-  const docLabel = flag.doc_type ? (DOC_TYPE_LABELS[flag.doc_type] ?? flag.doc_type) : null;
+  const tr = useTr();
+  const message = INTEGRITY_FLAG_MESSAGES[flag.code] ? tr(INTEGRITY_FLAG_MESSAGES[flag.code]) : flag.detail;
+  const docLabel = flag.doc_type ? tr(DOC_TYPE_LABELS[flag.doc_type] ?? flag.doc_type) : null;
   const explicacion = explicarAlerta(flag);
   const hayDetalleCrudo = Boolean(flag.detail) && flag.detail !== message;
 
@@ -1479,7 +1483,7 @@ function IntegrityFlagCard({ flag }: { flag: IntegrityFlag }) {
                 tono.texto,
               )}
             >
-              Ver detalle técnico
+              {tr("Ver detalle técnico")}
             </summary>
             <p className={cn('mt-1 font-mono text-[11px] leading-relaxed opacity-80', tono.texto)}>
               {flag.detail}
@@ -1513,7 +1517,8 @@ function ValorEnfrentado({
 }
 
 function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId: string }) {
-  const label = DOC_TYPE_LABELS[doc.type] ?? doc.type;
+  const tr = useTr();
+  const label = tr(DOC_TYPE_LABELS[doc.type] ?? doc.type);
   const sizeKb = doc.size ? `${Math.round(doc.size / 1024)} KB` : null;
   const isPdf = doc.mimeType === 'application/pdf' || doc.fileName?.endsWith('.pdf');
   const [isOpening, setIsOpening] = useState(false);
@@ -1578,8 +1583,8 @@ function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId:
         size="sm"
         onClick={handleOpen}
         disabled={isOpening}
-        aria-label="Ver / descargar"
-        title="Ver / descargar"
+        aria-label={tr("Ver / descargar")}
+        title={tr("Ver / descargar")}
         className="flex-shrink-0"
         icon={isOpening ? <DSSpinner size="xs" variant="current" /> : <DownloadSimple className="w-3.5 h-3.5" />}
       />

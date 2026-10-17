@@ -31,6 +31,7 @@
  */
 
 import { aCentavos } from '@/lib/plata/plata';
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** Sin tildes, minúsculas, espacios colapsados. */
 function normalizar(v: unknown): string {
@@ -484,7 +485,7 @@ export function repartoEnBps(valores: number[]): number[] {
 
 /** `5900` → `«59 %»`, `3333` → `«33,33 %»`. Para pintar un reparto. */
 export function bpsComoPorcentaje(bps: number): string {
-  return `${new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 }).format(bps / 100)} %`;
+  return `${formatoDeCifras(localeDeLasCifras(), { maximumFractionDigits: 2 }).format(bps / 100)} %`;
 }
 
 /** `«26,766»` → 26766. Un consecutivo del export trae miles con coma. */

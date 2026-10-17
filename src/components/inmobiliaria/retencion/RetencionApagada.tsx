@@ -11,6 +11,7 @@
  */
 import { HeartStraight } from '@phosphor-icons/react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { useTr } from '@/lib/i18n/use-tr'
 
 const LO_QUE_HARIA = [
   'Revisar a tus propietarios e inmuebles y decirte quién está en riesgo de salir del portafolio.',
@@ -19,15 +20,16 @@ const LO_QUE_HARIA = [
 ]
 
 export function RetencionApagada({ className }: { className?: string }) {
+  const tr = useTr();
   return (
     <div className={className} data-testid="retencion-apagada">
       <EmptyState
         icon={HeartStraight}
-        title="Retención no está activada todavía para tu inmobiliaria."
-        description="Para activarla, escríbele a tu contacto de Leasefy."
+        title={tr("Retención no está activada todavía para tu inmobiliaria.")}
+        description={tr("Para activarla, escríbele a tu contacto de Leasefy.")}
       >
         <div>
-          <p className="text-sm font-medium text-fg">Cuando esté activa, Retención va a:</p>
+          <p className="text-sm font-medium text-fg">{tr("Cuando esté activa, Retención va a:")}</p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-fg-muted">
             {LO_QUE_HARIA.map((t) => (
               <li key={t}>{t}</li>

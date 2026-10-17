@@ -1,3 +1,4 @@
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 /**
  * QA-CONT-95 C-09 (ronda 3): qué archivo se acepta como «PDF del contrato» y
  * qué se le dice a la persona cuando no — en palabras y con el nombre y el
@@ -14,7 +15,7 @@ function esPdf(file: Pick<File, 'type' | 'name'>): boolean {
 }
 
 function megas(bytes: number): string {
-  return (bytes / (1024 * 1024)).toLocaleString('es-CO', {
+  return (bytes / (1024 * 1024)).toLocaleString(localeDeLasCifras(), {
     maximumFractionDigits: 1,
     minimumFractionDigits: 1,
   });

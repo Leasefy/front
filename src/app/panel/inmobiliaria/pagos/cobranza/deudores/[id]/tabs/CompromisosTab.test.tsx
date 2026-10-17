@@ -17,7 +17,14 @@ import { act } from 'react'
 
 void React
 
-const { compromisosMock } = vi.hoisted(() => ({ compromisosMock: vi.fn() }))
+const { compromisosMock, historialMock } = vi.hoisted(() => ({
+  compromisosMock: vi.fn(),
+  historialMock: vi.fn(async () => ({ historial: [] as unknown[] })),
+}))
+
+vi.mock('@/lib/api/cobranza-manual.service', () => ({
+  cobranzaManualApi: { historial: (...a: unknown[]) => historialMock(...(a as [])) },
+}))
 
 vi.mock('@/lib/hooks/cobranza/use-debtor-compromisos', () => ({
   useDebtorCompromisos: () => compromisosMock(),
@@ -150,5 +157,40 @@ describe('CompromisosTab', () => {
 
     expect(container.textContent).toContain('inmobiliaria.ai.cobranza.detail.compromisos.empty')
     expect(container.textContent).toContain('promesas de pago')
+  })
+})
+
+// QA-AGENTES 16-10 (lab): la promesa que registró el EQUIPO (gestión del back)
+// no salía acá: «Sin compromisos registrados» con una promesa pendiente.
+describe('las promesas que registró el equipo', () => {
+  it('salen en la pestaña aunque el agente no tenga ninguna', async () => {
+    conDatos()
+    historialMock.mockResolvedValueOnce({
+      historial: [
+        {
+          id: 'g1',
+          origen: 'equipo',
+          cuando: '2026-10-16T13:43:00.000Z',
+          tipo: 'LLAMADA',
+          tipoTexto: 'Llamada',
+          resultado: 'PROMETIO_PAGAR',
+          resultadoTexto: 'Prometió pagar',
+          comentario: null,
+          quien: 'Ana Administradora Lab',
+          promesa: { fecha: '2026-10-19', montoCop: 1_400_000, estado: 'PENDIENTE', abonadoCop: 0, faltaCop: 1_400_000 },
+        },
+        { id: 'g2', origen: 'equipo', cuando: '2026-10-16T13:00:00.000Z', tipo: 'NOTA', tipoTexto: 'Nota', resultado: null, resultadoTexto: null, comentario: 'x', quien: 'Ana', promesa: null },
+      ],
+    })
+    render()
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    const t = container.textContent ?? ''
+    expect(t).toContain('Promesas que registró tu equipo')
+    expect(t).toContain('19 de octubre de 2026')
+    expect(t).toContain('Pendiente')
+    expect(t).not.toContain('inmobiliaria.ai.cobranza.detail.compromisos.empty')
+    expect(container.querySelectorAll('[data-testid="compromisos-del-equipo"] li')).toHaveLength(1)
   })
 })

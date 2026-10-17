@@ -38,6 +38,7 @@ import {
   ResponsiveDialogDescription,
   ResponsiveDialogFooter,
 } from '@/components/ui/responsive-dialog';
+import { useTr } from '@/lib/i18n/use-tr';
 
 export type ActionType = 'approve' | 'reject' | 'request-info';
 
@@ -108,6 +109,7 @@ export function AccionDePostulacion({
    */
   aviso?: string | null;
 }) {
+  const tr = useTr();
   const cfg = ACTION_CONFIG[type];
   const avisoDeAprobar = type === 'approve' && aviso ? aviso : null;
   const [text, setText] = useState('');
@@ -218,7 +220,7 @@ export function AccionDePostulacion({
               disabled={isSubmitting}
               className="flex-1"
             >
-              Cancelar
+              {tr("Cancelar")}
             </Button>
             <Button
               type="submit"

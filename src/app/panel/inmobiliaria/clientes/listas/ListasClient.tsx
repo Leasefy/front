@@ -52,6 +52,7 @@ import { usePermissions } from '@/lib/hooks/usePermissions'
 import { useCrm } from '@/lib/hooks/use-crm'
 import { CajonDeLaLista } from './CajonDeLaLista'
 import { CajonDeLaConsulta } from './CajonDeLaConsulta'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /** Cómo se lee cada estado, y con qué tono. Sólo uno es rojo. */
 const ROTULO: Record<
@@ -213,7 +214,7 @@ export function ListasClient() {
               <strong className="font-mono tabular-nums text-fg">{listas.length}</strong>{' '}
               {listas.length === 1 ? 'lista' : 'listas'} con{' '}
               <strong className="font-mono tabular-nums text-fg">
-                {registros.toLocaleString('es-CO')}
+                {registros.toLocaleString(localeDeLasCifras())}
               </strong>{' '}
               registros. Se consultó a{' '}
               <strong className="font-mono tabular-nums text-fg">{consultas.length}</strong>{' '}
@@ -427,7 +428,7 @@ export function ListasClient() {
                           </p>
                           <p className="text-caption text-fg-muted">
                             <span className="font-mono tabular-nums">
-                              {l.filas.toLocaleString('es-CO')}
+                              {l.filas.toLocaleString(localeDeLasCifras())}
                             </span>{' '}
                             registros · de {l.vigenteDesde.slice(0, 10)}
                             {l.fuente ? ` · ${l.fuente}` : ''}

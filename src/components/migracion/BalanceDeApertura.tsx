@@ -73,6 +73,7 @@ import {
 } from "./encabezado-del-archivo";
 import { HojaDelLibro } from "./ImportarCuentas";
 import { mensajeDeContabilidad } from "./contabilidad-errores";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
 const IGNORAR = "__ignorar__";
 
@@ -80,7 +81,7 @@ const IGNORAR = "__ignorar__";
 export const MAX_LINEAS_DE_LA_APERTURA = 5_000;
 
 const plata = (valor: number) => formatCurrencyEnDocumento(valor, false);
-const numero = (n: number) => n.toLocaleString("es-CO");
+const numero = (n: number) => n.toLocaleString(localeDeLasCifras());
 /** «1 inquilino no tiene» / «3 inquilinos no tienen». */
 const segun = (n: number, uno: string, varios: string) => `${numero(n)} ${n === 1 ? uno : varios}`;
 

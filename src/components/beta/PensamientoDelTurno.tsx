@@ -52,8 +52,9 @@ const ESTADO_DEL_ORBE: Record<PasoDelPensamiento['estado'], EstadoDelOrbe> = {
   fallo: 'fallo',
 };
 
-const formatoDeLaCifra = (formato: 'numero' | 'moneda') => (n: number) => {
-  const s = Math.round(n).toLocaleString('es-CO');
+// En el formato en que vino escrita la cifra (español, o el inglés del panel en inglés).
+const formatoDeLaCifra = (formato: 'numero' | 'moneda', locale: 'es-CO' | 'en-US') => (n: number) => {
+  const s = Math.round(n).toLocaleString(locale);
   return formato === 'moneda' ? `$${s}` : s;
 };
 
@@ -68,7 +69,7 @@ function Resultado({ r, agente }: { r: ResultadoDelPaso; agente?: string }) {
       <AnimatedNumber
         value={partes.cifra}
         from={0}
-        format={formatoDeLaCifra(partes.formato)}
+        format={formatoDeLaCifra(partes.formato, partes.locale)}
         // Proporcional, como el resto del texto del chat: con cifras tabulares
         // los puntos de miles quedaban anchos («$48 . 600 . 000»).
         className="font-medium text-fg proportional-nums"

@@ -49,6 +49,13 @@ describe('resumenAcuerdo', () => {
     expect(resumenAcuerdo({ ...base, allowedPaymentPlans: [12, 3, 6] })).toContain('en 3, 6 o 12')
   })
 
+  // QA-AGENTES 16-10 (lab, Portofino): la frase y el aviso se contradecían.
+  it('con el plazo máximo en 0 no promete cuotas; con 6, sólo las que caben', () => {
+    expect(resumenAcuerdo({ ...base, maxPlanMonths: 0 })).toContain('sin plazos a cuotas')
+    expect(resumenAcuerdo({ ...base, maxPlanMonths: 0 })).not.toMatch(/en 3, 6 o 12/)
+    expect(resumenAcuerdo({ ...base, maxPlanMonths: 6 })).toContain('en 3 o 6 cuotas')
+  })
+
   it('singular en el intento', () => {
     expect(resumenAcuerdo({ ...base, negotiationMaxAttempts: 1 })).toContain('hasta 1 intento.')
   })

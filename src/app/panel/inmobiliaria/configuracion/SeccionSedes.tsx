@@ -47,8 +47,9 @@ import { toast } from '@/components/ui/toast';
 import { finanzasApi } from '@/lib/api/finanzas.service';
 import type { Sede, Sedes } from '@/lib/api/finanzas.types';
 import { EsqueletoDeSeccion, VacioDeSeccion } from './piezas';
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
-const NUMERO = new Intl.NumberFormat('es-CO');
+const NUMERO = cifrasDeLaPantalla();
 
 export function SeccionSedes() {
   const [datos, setDatos] = useState<Sedes | null>(null);

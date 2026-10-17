@@ -44,6 +44,7 @@ import { SIN_MEDIR, anchoDeBarra, tasaMedida, textoDeTasa } from '@/lib/tasas';
 import { claveDelRotulo, fraseDeLasCifras, tasaDelTablero } from '@/lib/tasa-de-recaudo';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** El número tal cual se escribía antes (`{value}`): sin separador de miles. */
 const enteroTalCual = (n: number) => String(Math.round(n));
@@ -377,7 +378,7 @@ function ResumenDelNegocio() {
   const tasaDeOcupacion = tasaMedida(kpis.propertiesRented, enCatalogo);
   // Con 1.944 inmuebles afuera, «1944» sin separador se lee mal en una
   // subtítulo de tarjeta. El resto del panel ya formatea así.
-  const miles = (n: number) => n.toLocaleString('es-CO');
+  const miles = (n: number) => n.toLocaleString(localeDeLasCifras());
 
   /*
    * 🔴 «1 disponibles» (21-09-2026). El subtítulo salía de una clave de i18n

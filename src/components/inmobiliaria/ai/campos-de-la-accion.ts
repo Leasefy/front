@@ -1,4 +1,5 @@
 import type { CampoDeLaAccion, WorkItemAction } from '@/lib/api/work-item'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /**
  * Los campos que una acción de la cola humana DECLARA (02-10-2026): validar
@@ -86,7 +87,7 @@ export function largoDelTexto(valor: string | undefined): number {
   return (valor ?? '').trim().length
 }
 
-const enMiles = (n: number) => n.toLocaleString('es-CO')
+const enMiles = (n: number) => n.toLocaleString(localeDeLasCifras())
 
 /**
  * El error de UN campo, o `undefined` si está bien. Con las mismas reglas que

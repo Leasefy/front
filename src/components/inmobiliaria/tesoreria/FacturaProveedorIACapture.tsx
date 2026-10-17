@@ -45,6 +45,7 @@ import type {
 } from '@/lib/api/ap.types';
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 interface FacturaProveedorIACaptureProps {
   agencyId: string;
@@ -801,7 +802,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
                       </span>
                       {it.valorCop !== null ? (
                         <span className="font-mono tabular-nums text-muted-foreground flex-shrink-0">
-                          {plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(it.valorCop)}
+                          {plataEnPantalla(localeDeLasCifras, { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(it.valorCop)}
                         </span>
                       ) : null}
                     </li>

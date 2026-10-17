@@ -72,6 +72,7 @@ import { CargasDeComprobantesAbiertas } from "./CargasDeComprobantesAbiertas";
 import { ComprobantesSinContrato } from "./ComprobantesSinContrato";
 import { mensajeDeContabilidad } from "./contabilidad-errores";
 import { fraseDelArchivoVacio, leerTablaDelArchivo } from "./encabezado-del-archivo";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
 /**
  * 🔴 QA-MIG-B (04-10): el lector por trozos es de TEXTO. Un Excel (.xlsx es
@@ -435,8 +436,8 @@ export function DocumentosContables({
           <div className="flex items-start gap-2">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
             <p className="text-sm text-fg">
-              Para continuar «{continuar.lote}» ({continuar.procesados.toLocaleString("es-CO")} de{" "}
-              {continuar.esperados.toLocaleString("es-CO")} comprobantes ya cargados), elige{" "}
+              Para continuar «{continuar.lote}» ({continuar.procesados.toLocaleString(localeDeLasCifras())} de{" "}
+              {continuar.esperados.toLocaleString(localeDeLasCifras())} comprobantes ya cargados), elige{" "}
               <strong>el mismo archivo</strong>. Seguimos desde donde quedó.
             </p>
           </div>
@@ -458,9 +459,9 @@ export function DocumentosContables({
           peso={archivo.size}
           detalle={
             ocupado
-              ? `leyendo\u2026 ${leidas.toLocaleString("es-CO")} filas`
+              ? `leyendo\u2026 ${leidas.toLocaleString(localeDeLasCifras())} filas`
               : leidas > 0
-                ? `${leidas.toLocaleString("es-CO")} ${leidas === 1 ? "fila" : "filas"}`
+                ? `${leidas.toLocaleString(localeDeLasCifras())} ${leidas === 1 ? "fila" : "filas"}`
                 : undefined
           }
           inputProps={getInputProps()}
@@ -501,13 +502,13 @@ export function DocumentosContables({
         >
           <p className="text-sm text-fg">
             {fase === "leyendo" ? "Revisando" : "Migrando"}{" "}
-            <span className="font-mono tabular-nums">{leidas.toLocaleString("es-CO")}</span>
+            <span className="font-mono tabular-nums">{leidas.toLocaleString(localeDeLasCifras())}</span>
             {fase === "migrando" && totalDelArchivo.current > 0
-              ? ` de ${totalDelArchivo.current.toLocaleString("es-CO")}`
+              ? ` de ${totalDelArchivo.current.toLocaleString(localeDeLasCifras())}`
               : ""}{" "}
             comprobantes… Tu avance se va guardando.
             {saltados > 0
-              ? ` Los primeros ${saltados.toLocaleString("es-CO")} ya estaban cargados: seguimos desde ahí.`
+              ? ` Los primeros ${saltados.toLocaleString(localeDeLasCifras())} ya estaban cargados: seguimos desde ahí.`
               : ""}
           </p>
           <Button
@@ -586,8 +587,8 @@ function ResumenDeDocumentos({
           <CheckCircle className="h-4 w-4 text-success" weight="fill" />
         ) : null}
         {yaSeEscribio
-          ? `Se migraron ${acumulado.migrados.toLocaleString("es-CO")} comprobantes`
-          : `Así quedarían tus ${acumulado.total.toLocaleString("es-CO")} comprobantes`}
+          ? `Se migraron ${acumulado.migrados.toLocaleString(localeDeLasCifras())} comprobantes`
+          : `Así quedarían tus ${acumulado.total.toLocaleString(localeDeLasCifras())} comprobantes`}
       </h3>
       {!yaSeEscribio ? (
         <p className="mt-0.5 text-caption text-fg-subtle">Todavía no se escribió nada.</p>
@@ -597,17 +598,17 @@ function ResumenDeDocumentos({
           sueltas (el molde de la casa). */}
       <p className="mt-3 max-w-prose text-body text-fg">
         Entran{" "}
-        <span className="font-mono tabular-nums">{acumulado.listos.toLocaleString("es-CO")}</span>
+        <span className="font-mono tabular-nums">{acumulado.listos.toLocaleString(localeDeLasCifras())}</span>
         {", "}
-        <span className="font-mono tabular-nums">{acumulado.yaMigrados.toLocaleString("es-CO")}</span>{" "}
+        <span className="font-mono tabular-nums">{acumulado.yaMigrados.toLocaleString(localeDeLasCifras())}</span>{" "}
         ya estaban y{" "}
         <span className={acumulado.rechazados > 0 ? "text-danger" : undefined}>
-          <span className="font-mono tabular-nums">{acumulado.rechazados.toLocaleString("es-CO")}</span>{" "}
+          <span className="font-mono tabular-nums">{acumulado.rechazados.toLocaleString(localeDeLasCifras())}</span>{" "}
           se {acumulado.rechazados === 1 ? "rechaza" : "rechazan"}
         </span>
         {"; "}
         <span className={conContrato > 0 ? "text-success" : undefined}>
-          <span className="font-mono tabular-nums">{conContrato.toLocaleString("es-CO")}</span>{" "}
+          <span className="font-mono tabular-nums">{conContrato.toLocaleString(localeDeLasCifras())}</span>{" "}
           {conContrato === 1 ? "queda" : "quedan"} con contrato
         </span>
         .
@@ -616,7 +617,7 @@ function ResumenDeDocumentos({
       <div className="mt-4 space-y-1 text-sm">
         <p className="text-fg">
           <span className="font-mono tabular-nums">
-            {acumulado.porDocumento.toLocaleString("es-CO")}
+            {acumulado.porDocumento.toLocaleString(localeDeLasCifras())}
           </span>{" "}
           <span className="text-fg-muted">
             {/* QA-MIGRACION-95: con uno, en singular («1 quedó colgado…»). */}
@@ -626,7 +627,7 @@ function ResumenDeDocumentos({
         </p>
         <p className="text-fg">
           <span className="font-mono tabular-nums">
-            {acumulado.porNombre.toLocaleString("es-CO")}
+            {acumulado.porNombre.toLocaleString(localeDeLasCifras())}
           </span>{" "}
           <span className="text-fg-muted">
             por el nombre del tercero, cuando el concepto no traía documento.
@@ -634,7 +635,7 @@ function ResumenDeDocumentos({
         </p>
         <p className="text-fg" data-testid="documentos-por-numero-de-contrato">
           <span className="font-mono tabular-nums">
-            {acumulado.porNumeroDeContrato.toLocaleString("es-CO")}
+            {acumulado.porNumeroDeContrato.toLocaleString(localeDeLasCifras())}
           </span>{" "}
           <span className="text-fg-muted">
             porque el concepto dice «CONTRATO N» y ése es el número del contrato
@@ -643,7 +644,7 @@ function ResumenDeDocumentos({
         </p>
         <p className="text-fg" data-testid="documentos-por-codigo-de-inmueble">
           <span className="font-mono tabular-nums">
-            {acumulado.porCodigoDeInmueble.toLocaleString("es-CO")}
+            {acumulado.porCodigoDeInmueble.toLocaleString(localeDeLasCifras())}
           </span>{" "}
           <span className="text-fg-muted">
             porque el concepto dice el código del inmueble («COD. 127») y ese
@@ -652,7 +653,7 @@ function ResumenDeDocumentos({
         </p>
         <p className="text-fg" data-testid="documentos-solo-inmueble">
           <span className="font-mono tabular-nums">
-            {acumulado.soloInmueble.toLocaleString("es-CO")}
+            {acumulado.soloInmueble.toLocaleString(localeDeLasCifras())}
           </span>{" "}
           <span className="text-fg-muted">
             {acumulado.soloInmueble === 1
@@ -662,7 +663,7 @@ function ResumenDeDocumentos({
         </p>
         <p className="text-fg">
           <span className="font-mono tabular-nums">
-            {acumulado.sinContrato.toLocaleString("es-CO")}
+            {acumulado.sinContrato.toLocaleString(localeDeLasCifras())}
           </span>{" "}
           <span className="text-fg-muted">
             {acumulado.sinContrato === 1
@@ -688,7 +689,7 @@ function ResumenDeDocumentos({
                   <TableRow key={motivo}>
                     <TableCell className="text-sm">{motivo}</TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">
-                      {cuantas.toLocaleString("es-CO")}
+                      {cuantas.toLocaleString(localeDeLasCifras())}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -708,7 +709,7 @@ function ResumenDeDocumentos({
           >
             {acumulado.listos === 0
               ? "No hay comprobantes nuevos que migrar"
-              : `Migrar ${acumulado.listos.toLocaleString("es-CO")} comprobantes`}
+              : `Migrar ${acumulado.listos.toLocaleString(localeDeLasCifras())} comprobantes`}
           </Button>
         </div>
       ) : null}

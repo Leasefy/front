@@ -20,6 +20,7 @@ import { confirmar } from '@/components/ui/confirmar'
 import { toast } from '@/components/ui/toast'
 import { landlordApplicationsApi } from '@/lib/api/applications.service'
 import { avisarDelBloque, hacerEnBloque } from '@/lib/masivas/en-bloque'
+import { useTr } from '@/lib/i18n/use-tr'
 
 const plural = (n: number, uno: string, varios: string) => (n === 1 ? `1 ${uno}` : `${n} ${varios}`)
 const MINIMO = 5
@@ -44,6 +45,7 @@ export function PostulacionesMarcadas({
   onQuitar: () => void
   onCambiaron: () => void
 }) {
+  const tr = useTr();
   const [ocupado, setOcupado] = useState(false)
   const texto = useRef('')
   const vivas = abiertas(marcadas)
@@ -117,11 +119,11 @@ export function PostulacionesMarcadas({
     >
       <Button variant="ghost" size="sm" hideArrow disabled={ocupado || nada} onClick={() => void hacer('reject')} data-testid="rechazar-marcadas">
         <XCircle className="h-4 w-4" />
-        Rechazar
+        {tr("Rechazar")}
       </Button>
       <Button size="sm" hideArrow disabled={ocupado || nada} onClick={() => void hacer('requestInfo')} data-testid="pedir-info-marcadas">
         <ChatCircleText className="h-4 w-4" />
-        Pedir información
+        {tr("Pedir información")}
       </Button>
     </BarraDeAccionesMasivas>
   )

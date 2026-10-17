@@ -149,6 +149,7 @@ import {
   MENSAJES_DE_LA_MIGRACION,
 } from "@/components/migracion/limites-de-la-migracion";
 import { usePlataConCentavos } from "@/lib/plata/use-plata-con-centavos";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   direccionInmueble: "Dirección del inmueble",
@@ -1361,7 +1362,7 @@ export function MigrarContratos({
                       {" · "}
                       <Clock className="h-3 w-3" />
                       {l.total != null
-                        ? `procesando ${(l.procesadas ?? l.pendientes + l.listos).toLocaleString("es-CO")} / ${l.total.toLocaleString("es-CO")}`
+                        ? `procesando ${(l.procesadas ?? l.pendientes + l.listos).toLocaleString(localeDeLasCifras())} / ${l.total.toLocaleString(localeDeLasCifras())}`
                         : "procesando"}
                     </span>
                   ) : (
@@ -1543,7 +1544,7 @@ export function MigrarContratos({
               leyendo
                 ? "leyendo\u2026"
                 : filas.length > 0
-                  ? `${filas.length.toLocaleString("es-CO")} ${filas.length === 1 ? "contrato" : "contratos"}`
+                  ? `${filas.length.toLocaleString(localeDeLasCifras())} ${filas.length === 1 ? "contrato" : "contratos"}`
                   : undefined
             }
             inputProps={getInputProps()}

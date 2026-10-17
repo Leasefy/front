@@ -18,6 +18,9 @@ const NOMBRES = [
   'diciembre',
 ];
 
+/** En el panel en inglés (16-10-2026). */
+const NOMBRES_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
 const FORMATO = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export function esMesValido(month: string): boolean {
@@ -42,16 +45,22 @@ export function sumarMeses(month: string, n: number): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
-/** «septiembre de 2026». */
-export function nombreDelMes(month: string): string {
+/** «septiembre de 2026»; en inglés, «September 2026». */
+export function nombreDelMes(month: string, locale: 'es' | 'en' = 'es'): string {
   const [y, m] = month.split('-').map(Number);
-  return `${NOMBRES[m - 1]} de ${y}`;
+  return locale === 'en' ? `${NOMBRES_EN[m - 1]} ${y}` : `${NOMBRES[m - 1]} de ${y}`;
 }
 
-/** «sep 26», para el eje del gráfico. */
-export function mesCorto(month: string): string {
+/** «sep 26», para el eje del gráfico; en inglés, «Sep 26». */
+export function mesCorto(month: string, locale: 'es' | 'en' = 'es'): string {
   const [y, m] = month.split('-').map(Number);
-  return `${NOMBRES[m - 1].slice(0, 3)} ${String(y).slice(2)}`;
+  return `${locale === 'en' ? NOMBRES_EN[m - 1].slice(0, 3) : NOMBRES[m - 1].slice(0, 3)} ${String(y).slice(2)}`;
+}
+
+/** Sólo el nombre del mes: «septiembre» / «September». */
+export function soloElMes(month: string, locale: 'es' | 'en' = 'es'): string {
+  const m = Number(month.split('-')[1]);
+  return locale === 'en' ? NOMBRES_EN[m - 1] : NOMBRES[m - 1];
 }
 
 /** Un mes es «futuro» si viene después del actual: ahí no hay nada que ver. */

@@ -5875,7 +5875,7 @@
         "select": "Select",
         "noQuotes": "No quotes",
         "noQuotesDesc": "No quotes available for this repair",
-        "requestQuote": "Request quote",
+        "requestQuote": "Add quote",
         "requestMoreToCompare": "Request more quotes to compare",
         "newQuote": "New quote",
         "quoteSelected": "Quote selected",

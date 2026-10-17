@@ -5910,7 +5910,7 @@
         "select": "Seleccionar",
         "noQuotes": "Sin cotizaciones",
         "noQuotesDesc": "No hay cotizaciones disponibles para esta reparación",
-        "requestQuote": "Solicitar cotización",
+        "requestQuote": "Agregar cotización",
         "requestMoreToCompare": "Solicita más cotizaciones para comparar",
         "newQuote": "Nueva cotización",
         "quoteSelected": "Cotización seleccionada",

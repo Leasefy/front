@@ -115,6 +115,8 @@ function Pulso({ activo, className }: { activo: boolean; className?: string }) {
 // ── La tarjeta de un agente ────────────────────────────────────────────────
 
 export interface TripulanteConPopoverProps {
+  /** Casos suyos que esperan en la Bandeja (CONTR-2). */
+  esperan?: number
   m: MiembroDeLaTripulacion
   pilotoEncendido: boolean
   /** Cuántas acciones hizo hoy (del feed). `null` = sin dato: no se dice. */
@@ -128,7 +130,7 @@ export interface TripulanteConPopoverProps {
   onAbiertoChange?: (abierto: boolean) => void
 }
 
-export function TripulanteConPopover({ m, pilotoEncendido, accionesHoy, control, abierto: abiertoDeAfuera, onAbiertoChange }: TripulanteConPopoverProps) {
+export function TripulanteConPopover({ m, pilotoEncendido, accionesHoy, esperan = 0, control, abierto: abiertoDeAfuera, onAbiertoChange }: TripulanteConPopoverProps) {
   const { t } = useI18n()
   const nombre = useNombreDeAgente()(m.agente)
   const reducido = usePrefersReducedMotion()
@@ -150,7 +152,9 @@ export function TripulanteConPopover({ m, pilotoEncendido, accionesHoy, control,
   // UNA línea de «lo último» (el texto entero está en el panel).
   const linea = m.ultimo
     ? m.ultimo.titulo
-    : !m.corre
+    : esperan > 0
+      ? TEXTOS.tripulacion.esperan(esperan)
+      : !m.corre
       ? (m.porQueNoCorre ?? TEXTOS.tripulacion.apagado)
       : m.actua
         ? TEXTOS.tripulacion.sinActividad
@@ -227,7 +231,7 @@ export function TripulanteConPopover({ m, pilotoEncendido, accionesHoy, control,
         data-testid={`popover-agente-${m.agente}`}
       >
         <EntradaDelPanel>
-          <DetalleDelAgente m={m} nombre={nombre} modo={modo} accionesHoy={accionesHoy} control={control} />
+          <DetalleDelAgente m={m} nombre={nombre} modo={modo} accionesHoy={accionesHoy} esperan={esperan} control={control} />
         </EntradaDelPanel>
       </PopoverContent>
     </Popover>
@@ -239,8 +243,10 @@ function DetalleDelAgente({
   nombre,
   modo,
   accionesHoy,
+  esperan = 0,
   control,
 }: {
+  esperan?: number
   m: MiembroDeLaTripulacion
   nombre: string
   modo: string
@@ -300,6 +306,8 @@ function DetalleDelAgente({
                 <span className="line-clamp-2">{m.ultimo.titulo}</span>
                 <span className="font-mono tabular-nums text-fg-subtle">{relativeTime(m.ultimo.at, t)}</span>
               </>
+            ) : esperan > 0 ? (
+              TEXTOS.tripulacion.esperan(esperan)
             ) : (
               TEXTOS.agente.sinAcciones
             )}

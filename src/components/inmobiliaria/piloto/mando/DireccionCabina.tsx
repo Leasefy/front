@@ -640,6 +640,9 @@ export function Tripulacion({
 }) {
   // Cuántas acciones lleva hoy cada uno (del feed, sin lo que hicieron las personas). Sin feed: sin dato.
   const hoyPorAgente = ind.solosHoy ? new Map(ind.solosHoy.porAgente.map((s) => [s.agente, s.n])) : null
+  // CONTR-2 (QA de agentes 17-10): la tarjeta de Contratos decía «Sin acciones
+  // recientes» con una prórroga suya esperando en la Bandeja.
+  const esperanPorAgente = esperanPorAgenteDe(datos.bandeja.data?.items ?? null)
   // UN solo panel abierto a la vez (Nico, 21:48: salían dos apilados).
   const [abierto, setAbierto] = useState<string | null>(null)
   return (
@@ -658,6 +661,7 @@ export function Tripulacion({
                   m={m}
                   pilotoEncendido={ind.activo === true}
                   accionesHoy={hoyPorAgente ? (hoyPorAgente.get(m.agente) ?? 0) : null}
+                  esperan={esperanPorAgente?.get(m.agente) ?? 0}
                   {...(acciones?.agentes ? { control: acciones.agentes } : {})}
                   abierto={abierto === m.agente}
                   onAbiertoChange={(o) => setAbierto((actual) => (o ? m.agente : actual === m.agente ? null : actual))}
@@ -669,4 +673,12 @@ export function Tripulacion({
       </EnPieza>
     </div>
   )
+}
+
+/** Cuántos casos de cada agente esperan en la Bandeja (`null` = la Bandeja no cargó). */
+export function esperanPorAgenteDe(items: readonly { agente: string }[] | null): Map<string, number> | null {
+  if (!items) return null
+  const m = new Map<string, number>()
+  for (const it of items) m.set(it.agente, (m.get(it.agente) ?? 0) + 1)
+  return m
 }

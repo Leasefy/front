@@ -80,8 +80,10 @@ export interface LinkDePagoDeCuota {
   /**
    * OPCIONAL (COBRI-12, QA de los agentes 16-10): el inquilino pagó por el
    * link pero el pago no se pudo aplicar a la cuota, que sigue debiéndose.
+   * `linkId` (un back anterior no lo manda): el caso de la Bandeja del Piloto
+   * es `pagorev:<linkId>`, con «Reintentar aplicar».
    */
-  pagoSinAplicar?: { motivo: string } | null;
+  pagoSinAplicar?: { motivo: string; linkId?: string } | null;
 }
 
 /** Un aviso de Cobri que no salió, como lo manda el back (ya sin lo técnico). */

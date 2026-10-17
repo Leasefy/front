@@ -62,6 +62,7 @@ import {
   HandPalm,
   type Icon,
   Bank,
+  WarningCircle,
 } from '@phosphor-icons/react'
 import { AnimatePresence } from 'framer-motion'
 import { Chip, StaggerItem } from '@leasefy/cadence'
@@ -99,6 +100,8 @@ const FUENTE_META: Record<string, { icon: Icon; label: string }> = {
   retenido: { icon: HandPalm, label: 'Retenidos' },
   // El extracto del banco esperando recibo (vive en el ERP; el micro lee la foto).
   conciliacion: { icon: Bank, label: 'Conciliación' },
+  // COBRI-12: pagó por el link de Cobri y el pago no se aplicó a la cuota.
+  pago_en_revision: { icon: WarningCircle, label: 'Pagos sin aplicar' },
 }
 
 function metaDe(fuente: string): { icon: Icon; label: string } {

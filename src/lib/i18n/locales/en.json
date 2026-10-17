@@ -2979,6 +2979,7 @@
         },
         "contrato": "Contract {{numero}}",
         "revisarYAprobar": "Review and approve",
+        "resolverEnLaBandeja": "Resolve in the Inbox",
         "verLink": "View the link",
         "verLinkAria": "View {{inquilino}}'s payment link (opens in a new tab)",
         "conteoUno": "1 installment",

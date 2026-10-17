@@ -323,7 +323,10 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
   it('🔴 COBRI-12: pagó por el link pero el pago no se aplicó a la cuota → «Pago en revisión», con el motivo', async () => {
     const motivo = 'El cobro de octubre de 2026 ya respalda otra cuota del contrato. Desde caja no se puede corregir: avísale a soporte.';
     get.mockResolvedValue(
-      pagina([{ ...LOS_CINCO[2], pagada: false, pagoSinAplicar: { motivo } }, { ...LOS_CINCO[2], cuotaId: 'c-bien', pagada: true, pagoSinAplicar: null }]),
+      pagina([
+        { ...LOS_CINCO[2], pagada: false, pagoSinAplicar: { motivo, linkId: 'l-1' } },
+        { ...LOS_CINCO[2], cuotaId: 'c-bien', pagada: true, pagoSinAplicar: null },
+      ]),
     );
     await montar(<LinksDePago mes="2026-10" />);
     expect(fila('c-pagado')?.querySelector('[data-testid="pago-sin-aplicar"]')?.textContent).toBe(
@@ -337,6 +340,11 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
     expect(fila('c-bien')?.querySelector('[data-testid="pago-sin-aplicar"]')).toBeNull();
     expect(fila('c-bien')?.querySelector('[data-testid="estado-del-link"]')?.textContent).toBe('Pagado');
     expect(fila('c-bien')?.querySelector('[data-testid="estado-del-link"]')?.hasAttribute('data-en-revision')).toBe(false);
+    // El caso espera en la Bandeja con «Reintentar aplicar»: el enlace lo abre.
+    expect(fila('c-pagado')?.querySelector('[data-testid="resolver-pago-sin-aplicar"]')?.getAttribute('href')).toBe(
+      `/panel/inmobiliaria/piloto?item=${encodeURIComponent('pagorev:l-1')}`,
+    );
+    expect(fila('c-bien')?.querySelector('[data-testid="resolver-pago-sin-aplicar"]')).toBeNull();
   });
 
   it('en el teléfono es una lista, no una tabla que haya que correr', async () => {

@@ -3014,6 +3014,7 @@
         },
         "contrato": "Contrato {{numero}}",
         "revisarYAprobar": "Revisar y aprobar",
+        "resolverEnLaBandeja": "Resolver en la Bandeja",
         "verLink": "Ver el link",
         "verLinkAria": "Ver el link de pago de {{inquilino}} (se abre en otra pestaña)",
         "conteoUno": "1 cuota",

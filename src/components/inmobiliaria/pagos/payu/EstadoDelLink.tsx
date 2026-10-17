@@ -180,10 +180,23 @@ export function EstadoDelLink({
       {detalle && <p className="text-caption text-fg-muted">{detalle}</p>}
       {/* COBRI-12: pagó por el link pero el pago no se aplicó a la cuota. */}
       {estado === 'pagado' && link.pagoSinAplicar && (
-        <p className="flex items-start gap-1.5 text-caption text-fg" data-testid="pago-sin-aplicar">
-          <WarningCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-danger" weight="bold" aria-hidden="true" />
-          {t(`${P}.detalle.pagoSinAplicar`, { motivo: link.pagoSinAplicar.motivo })}
-        </p>
+        <>
+          <p className="flex items-start gap-1.5 text-caption text-fg" data-testid="pago-sin-aplicar">
+            <WarningCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-danger" weight="bold" aria-hidden="true" />
+            {t(`${P}.detalle.pagoSinAplicar`, { motivo: link.pagoSinAplicar.motivo })}
+          </p>
+          {/* Nico, 16-10: el caso espera en la Bandeja, con «Reintentar aplicar». */}
+          {link.pagoSinAplicar.linkId && (
+            <Link
+              href={`/panel/inmobiliaria/piloto?item=${encodeURIComponent(`pagorev:${link.pagoSinAplicar.linkId}`)}`}
+              className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:underline"
+              data-testid="resolver-pago-sin-aplicar"
+            >
+              {t(`${P}.resolverEnLaBandeja`)}
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          )}
+        </>
       )}
       {/* COBRI-9: el último aviso que no salió, con su porqué (si la cuota debe). */}
       {link.noSalio && estado !== 'pagado' && !link.pagada && (

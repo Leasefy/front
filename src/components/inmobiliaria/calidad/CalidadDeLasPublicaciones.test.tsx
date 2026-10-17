@@ -126,7 +126,9 @@ describe('Niti apagado', () => {
     expect(pildora()?.textContent).toContain('Apagado');
     const apagado = q('[data-testid="calidad-apagado"]')?.textContent ?? '';
     expect(apagado).toContain('Lo prende el equipo técnico de Leasefy');
-    expect(apagado).toContain('no audita tus inmuebles');
+    // NITI-1 (QA de agentes 17-10): apagado no niega lo que ya dejó en la Bandeja.
+    expect(apagado).toContain('no hace pasadas nuevas');
+    expect(apagado).toContain('sigue en la Bandeja');
     expect(h.api.inmuebles).not.toHaveBeenCalled();
     // Apagado no es un fallo: ni alerta, ni «Intentar de nuevo», ni cifras.
     expect(q('[role="alert"]')).toBeNull();

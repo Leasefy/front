@@ -11204,7 +11204,7 @@
       "fotosIARevisadas": "reviewed",
       "fotosIAGasto": "Estimated spend {{gasto}} of {{tope}}",
       "apagadoTitulo": "Leasefy's technical team turns it on",
-      "apagadoDescripcion": "Until then it doesn't audit your properties or suggest fixes. Once it's on, you'll see your properties here from worst to best: what they need before publishing, their issues and the photos it flags.",
+      "apagadoDescripcion": "Until then it runs no new passes and suggests no new fixes; what it proposed before it was turned off stays in the Inbox until you resolve it. Once it's on, you'll see your properties here from worst to best: what they need before publishing, their issues and the photos it flags.",
       "errorPasadaTitulo": "Niti's last run failed",
       "filtroAria": "Filter audited properties",
       "filtro": {

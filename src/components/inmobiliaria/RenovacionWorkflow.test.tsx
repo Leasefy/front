@@ -16,6 +16,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import type { Renovacion } from '@/lib/types/inmobiliaria';
+import { avisarIdiomaDeLasCifras, soltarIdiomaDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -202,19 +203,20 @@ describe('la propuesta', () => {
     await montar();
     const mensaje = porTestId<HTMLTextAreaElement>('renovacion-mensaje');
     expect(mensaje?.value).toContain('Estimado/a Mateo Pérez Jaramillo');
-    expect(mensaje?.value).toContain('$1.550.000');
+    // El mensaje va al inquilino en español, con la plata de `lib/format` (espacio duro), aunque el panel esté en inglés.
+    expect(mensaje?.value).toContain('$\u00a01.550.000');
     expect(mensaje?.value).toContain('Atentamente,\nPortofino Inmobiliaria');
     expect(porTestId('renovacion-restaurar')).toBeNull();
 
     await escribir(porTestId<HTMLInputElement>('renovacion-canon'), '1600000');
-    expect(porTestId<HTMLTextAreaElement>('renovacion-mensaje')?.value).toContain('$1.600.000');
+    expect(porTestId<HTMLTextAreaElement>('renovacion-mensaje')?.value).toContain('$\u00a01.600.000');
 
     await escribir(porTestId<HTMLTextAreaElement>('renovacion-mensaje'), 'Hola Mateo, te escribo yo.');
     await escribir(porTestId<HTMLInputElement>('renovacion-canon'), '1650000');
     expect(porTestId<HTMLTextAreaElement>('renovacion-mensaje')?.value).toBe('Hola Mateo, te escribo yo.');
 
     await clic(porTestId('renovacion-restaurar'));
-    expect(porTestId<HTMLTextAreaElement>('renovacion-mensaje')?.value).toContain('$1.650.000');
+    expect(porTestId<HTMLTextAreaElement>('renovacion-mensaje')?.value).toContain('$\u00a01.650.000');
     expect(porTestId('renovacion-restaurar')).toBeNull();
   });
 
@@ -237,11 +239,24 @@ describe('la propuesta', () => {
     expect(porTestId('renovacion-enviar')?.textContent).toContain('Marcar como enviada');
   });
 
+  it('con el panel en inglés, el mensaje al inquilino sigue en español: la plata y la fecha como en Colombia', async () => {
+    avisarIdiomaDeLasCifras('en', 'prueba-renovacion');
+    try {
+      await montar();
+      const mensaje = porTestId<HTMLTextAreaElement>('renovacion-mensaje')?.value ?? '';
+      expect(mensaje).toContain('$ 1.550.000');
+      expect(mensaje).not.toContain('1,550,000');
+      expect(mensaje).toMatch(/vence el \d+ de [a-z]+ de \d{4}/);
+    } finally {
+      soltarIdiomaDeLasCifras('prueba-renovacion');
+    }
+  });
+
   it('WhatsApp abre el chat con el mensaje listo; sin teléfono, el botón está apagado', async () => {
     await montar();
     const enlace = porTestId<HTMLAnchorElement>('renovacion-whatsapp');
     expect(enlace?.getAttribute('href')).toContain('https://wa.me/573132543924?text=');
-    expect(enlace?.getAttribute('href')).toContain(encodeURIComponent('$1.550.000'));
+    expect(enlace?.getAttribute('href')).toContain(encodeURIComponent('$\u00a01.550.000'));
 
     await act(async () => {
       root?.unmount();
@@ -258,7 +273,7 @@ describe('la propuesta', () => {
     await clic(porTestId('renovacion-enviar'));
 
     expect(onSendNotification).toHaveBeenCalledWith(
-      expect.stringContaining('$1.629.050'),
+      expect.stringContaining('$\u00a01.629.050'),
       1_629_050,
       0,
       5.1,

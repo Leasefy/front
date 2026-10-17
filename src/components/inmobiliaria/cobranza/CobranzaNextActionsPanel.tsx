@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui'
 import { type CarteraStage, stageColorClasses, stageDisplayName } from '@/lib/cartera'
 import type { CarteraOverviewResponse } from '@/lib/hooks/cobranza/use-cartera-overview'
+import { useTr } from '@/lib/i18n/use-tr'
 
 interface CobranzaNextActionsPanelProps {
   actions: CarteraOverviewResponse['nextActions']
@@ -49,6 +50,7 @@ function StageBadge({ stage }: { stage: string }) {
 }
 
 export function CobranzaNextActionsPanel({ actions, isLoading = false }: CobranzaNextActionsPanelProps) {
+  const tr = useTr();
   const { t } = useI18n()
   const router = useRouter()
 
@@ -65,8 +67,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
         {t('inmobiliaria.ai.cobranza.overview.nextActions.empty')}
       </p>
       <p className="text-xs text-fg-muted max-w-xs">
-        El agente programa los contactos solo; acá aparecen a medida que los
-        agenda.
+        {tr("El agente programa los contactos solo; acá aparecen a medida que los agenda.")}
       </p>
     </div>
   )

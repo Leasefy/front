@@ -44,8 +44,9 @@ import {
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { AVISO_CANON_POR_DEFECTO } from '@/lib/inmuebles/canon-por-confirmar';
 import { etiquetaDeFaltante, etiquetaDelGrupoDeFaltante } from './lib/faltantesInmuebles';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
-const N = (n: number) => n.toLocaleString('es-CO');
+const N = (n: number) => n.toLocaleString(localeDeLasCifras());
 
 type TipoDeCampo = 'texto' | 'numero' | 'fecha' | 'opciones';
 

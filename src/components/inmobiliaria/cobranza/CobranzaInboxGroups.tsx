@@ -42,6 +42,9 @@ import {
 import { Button } from '@/components/ui'
 import { Badge, type BadgeProps } from '@/components/ui/badge'
 import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { useTr } from '@/lib/i18n/use-tr'
+import { useTraducirMensajes } from '@/lib/i18n/use-traducir-mensajes'
+import { BotonTraducirLaConversacion, MarcaDeTraducido } from '@/components/messages/BotonTraducirLaConversacion'
 
 // ── Grupos del inbox ──────────────────────────────────────────────────────────
 
@@ -220,6 +223,7 @@ export function InboxItemCard({
   recibidoTexto = null,
   onTomarControl,
 }: InboxItemCardProps) {
+  const tr = useTr();
   const meta = INBOX_GRUPO_META[item.grupo]
   const GrupoIcon = meta.icon
 
@@ -240,12 +244,12 @@ export function InboxItemCard({
           </span>
           <Presence show={unread} as="span" direction="none" initial={false} className="shrink-0">
             <Badge variant="default" className="shrink-0">
-              Nuevo
+              {tr("Nuevo")}
             </Badge>
           </Presence>
           <Badge variant={GRUPO_BADGE_VARIANT[item.grupo]} className="gap-1 shrink-0">
             <GrupoIcon className="w-3 h-3" weight="duotone" aria-hidden="true" />
-            {meta.label}
+            {tr(meta.label)}
           </Badge>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -260,7 +264,7 @@ export function InboxItemCard({
 
       {/* Último mensaje */}
       <p className="text-sm text-fg-muted leading-relaxed">
-        <span className="font-medium text-fg">Último mensaje:</span>{' '}
+        <span className="font-medium text-fg">{tr("Último mensaje:")}</span>{' '}
         {item.ultimoMensaje ? truncate(item.ultimoMensaje, 160) : VACIO}
       </p>
 
@@ -276,13 +280,13 @@ export function InboxItemCard({
             onClick={onOpenThread}
             aria-expanded={isOpen}
           >
-            {isOpen ? 'Ocultar conversación' : 'Ver conversación'}
+            {tr(isOpen ? 'Ocultar conversación' : 'Ver conversación')}
           </Button>
         )}
 
         {/* "Abrir" = cross-link real al detalle del deudor */}
         <Button asChild variant="ghost" size="sm" hideArrow>
-          <Link href={deudorHref}>Abrir deudor</Link>
+          <Link href={deudorHref}>{tr("Abrir deudor")}</Link>
         </Button>
 
         {/*
@@ -305,9 +309,9 @@ export function InboxItemCard({
             size="sm"
             hideArrow
             onClick={onTomarControl}
-            title="Pausar al agente en este deudor para atenderlo tú"
+            title={tr("Pausar al agente en este deudor para atenderlo tú")}
           >
-            Tomar control
+            {tr("Tomar control")}
           </Button>
         )}
       </div>
@@ -363,6 +367,12 @@ export function InboxThreadPanel({
   formatRecibido,
   onResponder,
 }: InboxThreadPanelProps) {
+  const tr = useTr();
+  // Con el panel en inglés, «Translate» traduce lo que escribieron (Nico,
+  // 16-10-2026): se ve tal como lo escribieron hasta que alguien lo pide.
+  const traduccion = useTraducirMensajes(
+    React.useMemo(() => messages.map((m) => ({ id: m.id, texto: m.body ?? '' })), [messages]),
+  )
   // Movimiento: cada estado en un `CrossFade` con su clave (cargando →
   // conversación, → sin mensajes); los mensajes entran escalonados.
   if (isLoading) {
@@ -372,7 +382,7 @@ export function InboxThreadPanel({
         className="rounded-lg border border-border bg-surface-muted p-4 text-sm text-fg-muted"
         role="status"
       >
-        Cargando conversación…
+        {tr("Cargando conversación…")}
       </div>
       </CrossFade>
     )
@@ -382,7 +392,7 @@ export function InboxThreadPanel({
     return (
       <CrossFade swapKey="sin-mensajes">
       <div className="rounded-lg border border-border bg-surface-muted p-4 text-sm text-fg-muted">
-        Esta conversación todavía no tiene mensajes para mostrar.
+        {tr("Esta conversación todavía no tiene mensajes para mostrar.")}
       </div>
       </CrossFade>
     )
@@ -391,7 +401,7 @@ export function InboxThreadPanel({
   return (
     <CrossFade swapKey="conversacion">
     <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-3">
-      <Stagger as="ul" className="space-y-2.5" aria-label="Mensajes de la conversación">
+      <Stagger as="ul" className="space-y-2.5" aria-label={tr("Mensajes de la conversación")}>
         {messages.map((m) => {
           const inbound = m.direction === 'inbound'
           return (
@@ -408,12 +418,13 @@ export function InboxThreadPanel({
                 }`}
               >
                 <p className="text-xs font-medium text-fg-muted mb-0.5">
-                  {inbound ? 'Inquilino' : 'Agencia'}
+                  {tr(inbound ? 'Inquilino' : 'Agencia')}
                   {m.channel ? ` · ${m.channel}` : ''}
                 </p>
                 <p className="text-sm text-fg leading-relaxed whitespace-pre-wrap break-words">
-                  {m.body || VACIO}
+                  {traduccion.textoDe(m.id, m.body) || VACIO}
                 </p>
+                {traduccion.estaTraducido(m.id, m.body) ? <MarcaDeTraducido /> : null}
                 {formatRecibido && (
                   <p className="text-xs text-fg-muted mt-1">
                     {formatRecibido(m.occurredAt)}
@@ -426,6 +437,7 @@ export function InboxThreadPanel({
       </Stagger>
 
       <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
+        <BotonTraducirLaConversacion traduccion={traduccion} />
         {onMarkRead && (
           <Button
             variant="outline"
@@ -433,9 +445,9 @@ export function InboxThreadPanel({
             hideArrow
             onClick={onMarkRead}
             disabled={marcandoLeido || !unread}
-            title={unread ? 'Marcar como leído' : 'Sin mensajes nuevos'}
+            title={tr(unread ? 'Marcar como leído' : 'Sin mensajes nuevos')}
           >
-            {marcandoLeido ? 'Marcando…' : 'Marcar leído'}
+            {tr(marcandoLeido ? 'Marcando…' : 'Marcar leído')}
           </Button>
         )}
         {onResponder && (
@@ -443,9 +455,9 @@ export function InboxThreadPanel({
             size="sm"
             hideArrow
             onClick={onResponder}
-            title="Enviar una plantilla aprobada por WhatsApp"
+            title={tr("Enviar una plantilla aprobada por WhatsApp")}
           >
-            Responder
+            {tr("Responder")}
           </Button>
         )}
       </div>

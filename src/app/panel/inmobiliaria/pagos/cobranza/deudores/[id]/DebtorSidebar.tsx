@@ -134,7 +134,13 @@ export function DebtorSidebar({
           {data.carterapausedUntil
             ? t(`${NS}.detail.sidebar.paused`).replace(
                 '{{date}}',
-                new Date(data.carterapausedUntil).toLocaleDateString(locale),
+                // «23 de octubre de 2026», como el aviso al pausar (antes «23/10/2026»).
+                new Date(data.carterapausedUntil).toLocaleDateString(locale === 'en' ? 'en-US' : 'es-CO', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  timeZone: 'America/Bogota',
+                }),
               )
             : null}
       </Presence>

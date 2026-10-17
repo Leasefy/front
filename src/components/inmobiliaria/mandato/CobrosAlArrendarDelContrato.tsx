@@ -22,6 +22,7 @@ import { toast } from '@/components/ui/toast';
 import { mandatoApi, type CobrosAlArrendarDelContrato as Datos } from '@/lib/api/mandato.service';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { PESOS } from '@/lib/mandato/textos';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 export function CobrosAlArrendarDelContrato({
   contractId,
@@ -129,7 +130,7 @@ export function CobrosAlArrendarDelContrato({
                         <span className="block text-sm text-foreground">{c.nombre}</span>
                         <span className="block text-xs text-muted-foreground">
                           {c.tipo === 'PORCENTAJE_PRIMER_CANON'
-                            ? `${c.valor.toLocaleString('es-CO')} % del primer canon`
+                            ? `${c.valor.toLocaleString(localeDeLasCifras())} % del primer canon`
                             : 'valor fijo'}
                           {c.opcional ? ' · opcional' : ' · siempre'}
                         </span>

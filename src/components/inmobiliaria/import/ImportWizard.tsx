@@ -47,6 +47,7 @@ import { inmueblesImportacionApi } from '@/lib/api/inmuebles-importacion.service
 import { CargasAMedias } from './CargasAMedias';
 import { useCargasAbiertasDeInmuebles } from '@/lib/hooks/use-cargas-abiertas-de-inmuebles';
 import type { EstadoDeLoteInmuebles } from '@/lib/api/inmuebles-importacion.service';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /*
  * T-0131 — lo que la persona ve: SIEMPRE cuatro pasos. Los tres primeros
@@ -526,11 +527,11 @@ export function ImportWizard({
           <p className="min-w-0 text-sm text-fg">
             Seguimos la carga que dejaste a medias: llegaron{' '}
             <span className="font-mono tabular-nums">
-              {wizardState.subidaRetomada.recibidas.toLocaleString('es-CO')}
+              {wizardState.subidaRetomada.recibidas.toLocaleString(localeDeLasCifras())}
             </span>{' '}
             de{' '}
             <span className="font-mono tabular-nums">
-              {wizardState.subidaRetomada.total.toLocaleString('es-CO')}
+              {wizardState.subidaRetomada.total.toLocaleString(localeDeLasCifras())}
             </span>{' '}
             filas. Selecciona el MISMO archivo y avanza hasta el último paso: retomamos desde
             donde quedó.

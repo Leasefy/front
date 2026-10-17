@@ -133,6 +133,7 @@ import {
 import { AvanceDeRetomar, type FaseDeRetomar } from './AvanceDeRetomar';
 import { FilaDeTercero, type ResultadoDeAccion } from './FilaDeTercero';
 import { TercerosYaCargados, type EstadoDeLoCargado } from './TercerosYaCargados';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** Sentinel de Radix: un `<Select>` no admite `value=""`. */
 const IGNORAR = '__ignorar__';
@@ -216,17 +217,17 @@ function avisoDeMasivo(cambios: CambiosMasivos, n: number, listasAhora?: number)
   if (cambios.sinCorreoRepetido) {
     const listas = listasAhora ?? n;
     return (
-      `${listas.toLocaleString('es-CO')} ${listas === 1 ? 'fila quedó lista' : 'filas quedaron listas'} para crearse sin el correo repetido: ` +
+      `${listas.toLocaleString(localeDeLasCifras())} ${listas === 1 ? 'fila quedó lista' : 'filas quedaron listas'} para crearse sin el correo repetido: ` +
       'el correo quedó en sus notas y la cuenta del portal nace cuando les pongas el suyo. Créalas con el botón de arriba.'
     );
   }
   if (cambios.reintentar) {
     const listas = listasAhora ?? n;
     return (
-      `${listas.toLocaleString('es-CO')} ${listas === 1 ? 'fila quedó lista' : 'filas quedaron listas'} para crearse otra vez: ` +
+      `${listas.toLocaleString(localeDeLasCifras())} ${listas === 1 ? 'fila quedó lista' : 'filas quedaron listas'} para crearse otra vez: ` +
       'créalas con el botón de arriba.' +
       (listasAhora !== undefined && n > listasAhora
-        ? ` Las otras ${(n - listasAhora).toLocaleString('es-CO')} siguen acá porque les falta algo más.`
+        ? ` Las otras ${(n - listasAhora).toLocaleString(localeDeLasCifras())} siguen acá porque les falta algo más.`
         : '')
     );
   }
@@ -236,16 +237,16 @@ function avisoDeMasivo(cambios: CambiosMasivos, n: number, listasAhora?: number)
       `${listas} ${listas === 1 ? 'fila quedó lista' : 'filas quedaron listas'} para crearse con datos por completar: ` +
       'crea las fichas con el botón de arriba y completa lo que falte después, desde Propietarios o Inquilinos.' +
       (listasAhora !== undefined && n > listasAhora
-        ? ` Las otras ${(n - listasAhora).toLocaleString('es-CO')} siguen acá porque les falta algo más.`
+        ? ` Las otras ${(n - listasAhora).toLocaleString(localeDeLasCifras())} siguen acá porque les falta algo más.`
         : '')
     );
   }
   if (cambios.campos) {
     return cambios.sobrescribir
-      ? `Se aplicó el valor a ${n.toLocaleString('es-CO')} ${filas}, también donde ya había otro.`
-      : `Se aplicó el valor por defecto a ${n.toLocaleString('es-CO')} ${filas}: sólo se llenó lo que estaba vacío.`;
+      ? `Se aplicó el valor a ${n.toLocaleString(localeDeLasCifras())} ${filas}, también donde ya había otro.`
+      : `Se aplicó el valor por defecto a ${n.toLocaleString(localeDeLasCifras())} ${filas}: sólo se llenó lo que estaba vacío.`;
   }
-  return `Se aplicó el cambio a ${n.toLocaleString('es-CO')} ${filas}.`;
+  return `Se aplicó el cambio a ${n.toLocaleString(localeDeLasCifras())} ${filas}.`;
 }
 
 /**
@@ -1122,7 +1123,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                 if (r.interrumpida) {
                   // Lo ya aplicado quedó aplicado: repetir la acción sigue donde quedó.
                   setError(
-                    `Se cortó a mitad: ${r.interrumpida.motivo} Alcanzaron a procesarse ${r.procesadas.toLocaleString('es-CO')} de ${r.totalAlEmpezar.toLocaleString('es-CO')}; lo hecho quedó hecho. Repite la acción y sigue con lo que falta.`,
+                    `Se cortó a mitad: ${r.interrumpida.motivo} Alcanzaron a procesarse ${r.procesadas.toLocaleString(localeDeLasCifras())} de ${r.totalAlEmpezar.toLocaleString(localeDeLasCifras())}; lo hecho quedó hecho. Repite la acción y sigue con lo que falta.`,
                   );
                 } else if (r.fallidas.length > 0) {
                   setAlcance(SOLO_IDS);
@@ -1545,7 +1546,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               leyendo
                 ? 'leyendo\u2026'
                 : filas.length > 0
-                  ? `${filas.length.toLocaleString('es-CO')} ${filas.length === 1 ? 'fila' : 'filas'}`
+                  ? `${filas.length.toLocaleString(localeDeLasCifras())} ${filas.length === 1 ? 'fila' : 'filas'}`
                   : undefined
             }
             inputProps={getInputProps()}
@@ -1783,10 +1784,10 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           {demasiadasFilas ? (
             <p className="text-sm text-danger">
               El archivo tiene{' '}
-              <span className="font-mono tabular-nums">{filas.length.toLocaleString('es-CO')}</span>{' '}
+              <span className="font-mono tabular-nums">{filas.length.toLocaleString(localeDeLasCifras())}</span>{' '}
               filas y el máximo por carga es{' '}
               <span className="font-mono tabular-nums">
-                {MAX_FILAS_POR_LOTE.toLocaleString('es-CO')}
+                {MAX_FILAS_POR_LOTE.toLocaleString(localeDeLasCifras())}
               </span>
               . Pártelo en dos archivos.
             </p>
@@ -2376,7 +2377,7 @@ function ListaDeTrabajo({
                       onClick={() => onAlcanceCambia({ tipo: 'todas' })}
                       data-testid="seleccionar-todas"
                     >
-                      Seleccionar las {totalPendientes.toLocaleString('es-CO')} de la carga
+                      Seleccionar las {totalPendientes.toLocaleString(localeDeLasCifras())} de la carga
                     </Button>
                   ) : null}
                 </div>
@@ -2607,7 +2608,7 @@ function ResolucionMasiva({
     >
       <div className="space-y-0.5">
         <p className="text-sm font-medium text-fg">
-          <span className="font-mono tabular-nums">{cantidad.toLocaleString('es-CO')}</span>{' '}
+          <span className="font-mono tabular-nums">{cantidad.toLocaleString(localeDeLasCifras())}</span>{' '}
           {cantidad === 1 ? 'fila seleccionada' : 'filas seleccionadas'}
           {porFiltro ? ' en toda la carga' : ''}
         </p>
@@ -2647,7 +2648,7 @@ function ResolucionMasiva({
             }}
             data-testid="masivo-reintentar-boton"
           >
-            Volver a intentar {cantidad === 1 ? 'la fila' : `las ${cantidad.toLocaleString('es-CO')}`}
+            Volver a intentar {cantidad === 1 ? 'la fila' : `las ${cantidad.toLocaleString(localeDeLasCifras())}`}
           </Button>
         </div>
       ) : null}
@@ -2673,7 +2674,7 @@ function ResolucionMasiva({
             }}
             data-testid="masivo-sin-correo-boton"
           >
-            Crear {cantidad === 1 ? 'la fila' : `las ${cantidad.toLocaleString('es-CO')}`} sin el correo repetido
+            Crear {cantidad === 1 ? 'la fila' : `las ${cantidad.toLocaleString(localeDeLasCifras())}`} sin el correo repetido
           </Button>
         </div>
       ) : null}
@@ -2766,7 +2767,7 @@ function ResolucionMasiva({
             }}
             data-testid="masivo-aplicar-valor"
           >
-            {sobrescribir ? 'Reemplazar en' : 'Aplicar a'} {cantidad === 1 ? 'la fila' : `las ${cantidad.toLocaleString('es-CO')}`}
+            {sobrescribir ? 'Reemplazar en' : 'Aplicar a'} {cantidad === 1 ? 'la fila' : `las ${cantidad.toLocaleString(localeDeLasCifras())}`}
           </Button>
         </div>
 
@@ -2824,8 +2825,8 @@ function ResolucionMasiva({
               : completables === 0
                 ? 'Ninguna de éstas se puede crear así: tienen otro problema que hay que resolver.'
                 : completables === cantidad
-                  ? `Alcanza a ${completables === 1 ? 'la fila' : `las ${completables.toLocaleString('es-CO')}`}.`
-                  : `Alcanza a ${completables.toLocaleString('es-CO')} de ${cantidad.toLocaleString('es-CO')}: las que sólo les falta el documento o su tipo. Las demás siguen acá.`}
+                  ? `Alcanza a ${completables === 1 ? 'la fila' : `las ${completables.toLocaleString(localeDeLasCifras())}`}.`
+                  : `Alcanza a ${completables.toLocaleString(localeDeLasCifras())} de ${cantidad.toLocaleString(localeDeLasCifras())}: las que sólo les falta el documento o su tipo. Las demás siguen acá.`}
           </span>
         </div>
       </div>
@@ -2855,10 +2856,10 @@ function ResolucionMasiva({
           <p className="text-caption text-fg">
             Procesadas{' '}
             <span className="font-mono tabular-nums">
-              {progreso.procesadas.toLocaleString('es-CO')}
+              {progreso.procesadas.toLocaleString(localeDeLasCifras())}
             </span>{' '}
             de{' '}
-            <span className="font-mono tabular-nums">{progreso.total.toLocaleString('es-CO')}</span>.
+            <span className="font-mono tabular-nums">{progreso.total.toLocaleString(localeDeLasCifras())}</span>.
             No cierres esta pestaña: si se corta, lo hecho queda hecho y repites la acción.
           </p>
         </div>
@@ -2923,7 +2924,7 @@ function ResolucionMasiva({
         ) : null}
         {cargando && enVuelo === 'descartar' ? (
           <p className="basis-full text-caption text-fg-muted" data-testid="masivo-progreso">
-            {`Descartando ${cantidad.toLocaleString('es-CO')} ${filas}…`}
+            {`Descartando ${cantidad.toLocaleString(localeDeLasCifras())} ${filas}…`}
           </p>
         ) : null}
         <span className="flex-1" />
@@ -2936,7 +2937,7 @@ function ResolucionMasiva({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {`¿No traer ${cantidad.toLocaleString('es-CO')} ${filas}?`}
+              {`¿No traer ${cantidad.toLocaleString(localeDeLasCifras())} ${filas}?`}
             </AlertDialogTitle>
             <AlertDialogDescription>
               Salen de la carga y no se crea ninguna ficha con ellas; queda el rastro de que se

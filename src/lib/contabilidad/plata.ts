@@ -18,10 +18,13 @@
 
 import { formatCurrency } from '@/lib/format';
 
-/** «$ 1.234.567» · «−$ 119.100» · «$ 0». */
-export function plata(valor: number): string {
-  if (!Number.isFinite(valor)) return formatCurrency(0);
-  return valor < 0 ? `−${formatCurrency(Math.abs(valor))}` : formatCurrency(valor);
+/**
+ * «$ 1.234.567» · «−$ 119.100» · «$ 0». En pantalla sigue al idioma del panel;
+ * un informe que se descarga pasa 'es' (sale como en Colombia).
+ */
+export function plata(valor: number, locale?: 'es' | 'en'): string {
+  if (!Number.isFinite(valor)) return formatCurrency(0, locale);
+  return valor < 0 ? `−${formatCurrency(Math.abs(valor), locale)}` : formatCurrency(valor, locale);
 }
 
 /**

@@ -57,12 +57,13 @@ import {
 } from '@/lib/api/cuentas-de-las-diferencias';
 import { EsqueletoDeSeccion } from './piezas';
 import { ESPACIO_DE_LA_PLATA, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** P8 a («centavos en todo»): los centavos sólo si los hay (el 4×1000 los trae, P4 a). CE-01 (QA-PAGOS-95 r2): «$ » con espacio duro. */
 function plata(cop: number): string {
   return seMuestranLosCentavos(cop)
-    ? `$${ESPACIO_DE_LA_PLATA}${cop.toLocaleString('es-CO', decimalesEnPantalla(cop))}`
-    : `$${ESPACIO_DE_LA_PLATA}${Math.round(cop).toLocaleString('es-CO')}`;
+    ? `$${ESPACIO_DE_LA_PLATA}${cop.toLocaleString(localeDeLasCifras(), decimalesEnPantalla(cop))}`
+    : `$${ESPACIO_DE_LA_PLATA}${Math.round(cop).toLocaleString(localeDeLasCifras())}`;
 }
 
 /** Lo que dice el toast después de «Asentarlas» (seguimiento 6). */

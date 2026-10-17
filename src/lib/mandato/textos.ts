@@ -12,6 +12,7 @@ import type {
   ModalidadResuelta,
 } from '@/lib/api/mandato.service';
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 export const NOMBRE_DE_LA_MODALIDAD: Record<ModalidadDeLaLiquidacion, string> = {
   GARANTIZADO: 'Garantizado',
@@ -51,7 +52,7 @@ export function interesesEnPalabras(d: DestinoResuelto | null | undefined): stri
   const porque = d.fuente === 'MODALIDAD' ? ' (sigue a la modalidad)' : '';
   if (d.destino === 'PROPIETARIO') return `Del propietario${porque}`;
   if (d.destino === 'REPARTO') {
-    return `Reparto: ${d.porcentajeAlPropietario.toLocaleString('es-CO')} % al propietario`;
+    return `Reparto: ${d.porcentajeAlPropietario.toLocaleString(localeDeLasCifras())} % al propietario`;
   }
   return `De la inmobiliaria${porque}`;
 }
@@ -64,7 +65,7 @@ export const ESTADO_DEL_CAMBIO_DE_CUENTA: Record<EstadoDelCambioDeCuenta, string
   ANULADO: 'Anulado',
 };
 
-export const PESOS = plataEnPantalla('es-CO', {
+export const PESOS = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

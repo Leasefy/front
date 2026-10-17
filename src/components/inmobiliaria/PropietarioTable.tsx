@@ -57,13 +57,14 @@ import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { plataOculta as laPlataEstaOculta, tipoDeDocumentoEnPalabras } from '@/lib/propietarios/lo-que-muestra-la-lista';
 import { datosPendientesDelPropietario, detalleDelAtraso, girosDelPropietario } from '@/lib/propietarios/giros-del-propietario';
 import { documentoDelPropietarioConDv } from '@/lib/propietarios/documento-con-dv';
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
 type SortField = CampoDeOrden;
 
 /** Las columnas de plata: con la plata oculta (P-21) no se ordenan ni dicen nada. */
 const COLUMNAS_DE_PLATA: ReadonlySet<SortField> = new Set(['totalMonthlyRent', 'pendingBalance', 'lastPaymentDate']);
 
-const NUMERO = new Intl.NumberFormat('es-CO');
+const NUMERO = cifrasDeLaPantalla();
 
 /**
  * P-21 (QA de Propietarios, 03-10): el monto que el back no le mostró a quien

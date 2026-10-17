@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { IconButton, Chip, Collapse, Presence } from '@leasefy/cadence';
 import type { DispersionStatus } from '@/lib/types/inmobiliaria';
+import { useTr } from '@/lib/i18n/use-tr';
 
 export interface DispersionFiltersState {
   month: string; // '2026-02'
@@ -82,6 +83,7 @@ export function DispersionFilters({
   propietarios,
   statusCounts,
 }: DispersionFiltersProps) {
+  const tr = useTr();
   const { t, locale } = useI18n();
   const [showFilters, setShowFilters] = useState(false);
   const [searchInput, setSearchInput] = useState(filters.search || '');
@@ -156,7 +158,7 @@ export function DispersionFilters({
                 setSearchInput('');
                 updateFilter('search', '');
               }}
-              aria-label="Limpiar búsqueda"
+              aria-label={tr("Limpiar búsqueda")}
               icon={<X className="w-4 h-4 text-muted-foreground" />}
             />
           </Presence>

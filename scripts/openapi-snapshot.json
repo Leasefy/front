@@ -24,6 +24,10 @@
       "description": "Agency-scoped CRUD (members, policy, billing)"
     },
     {
+      "name": "mensajes",
+      "description": "AI-assisted message drafting for an open conversation thread (draft only, nothing is sent or saved)"
+    },
+    {
       "name": "experiments",
       "description": "A/B experiments — variant assignment, lifecycle transitions, and per-arm KPI report (agency-scoped)"
     },
@@ -94,6 +98,14 @@
     {
       "name": "piloto",
       "description": "Piloto surfaces of the AI hub: inbox, activity, briefing, pulso, preparación, work-item detail, per-agent autonomy + governance editors, held-decision approve/discard, and the bank-reconciliation rail (PILOTO_CONCILIACION_ENABLED). Agency bearer JWT."
+    },
+    {
+      "name": "pagos",
+      "description": "Payments held for review in the piloto: retry the payment link or mark it as applied by hand (agency bearer JWT)"
+    },
+    {
+      "name": "idioma",
+      "description": "Panel language: translate agency-facing text on demand (agency bearer JWT)"
     },
     {
       "name": "costos",
@@ -6655,6 +6667,32 @@
           "kpis": {
             "$ref": "#/components/schemas/CobranzaDebtorDetailKpis"
           },
+          "deudaMasVieja": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "periodo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "vence": {
+                "type": "string"
+              },
+              "saldoCop": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "periodo",
+              "vence",
+              "saldoCop"
+            ]
+          },
           "generatedAt": {
             "type": "string"
           }
@@ -6674,6 +6712,7 @@
           "creditBalanceCop",
           "sidebar",
           "kpis",
+          "deudaMasVieja",
           "generatedAt"
         ]
       },
@@ -9231,6 +9270,12 @@
               "string",
               "null"
             ]
+          },
+          "created_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -10857,6 +10902,9 @@
             "type": "string"
           },
           "persisted": {
+            "type": "boolean"
+          },
+          "escalationClosed": {
             "type": "boolean"
           }
         },
@@ -14778,6 +14826,9 @@
           },
           "director": {
             "$ref": "#/components/schemas/PilotoDirectorEnLaBandeja"
+          },
+          "cuotaId": {
+            "type": "string"
           }
         },
         "required": [
@@ -16417,6 +16468,44 @@
           "reciboIds"
         ],
         "additionalProperties": false
+      },
+      "PilotoPagoEnRevisionResponse": {
+        "type": "object",
+        "properties": {
+          "resultado": {
+            "type": "string",
+            "enum": [
+              "CONCILIADO",
+              "YA_ESTABA"
+            ]
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "resultado",
+          "mensaje"
+        ]
+      },
+      "PilotoPagoEnRevisionAManoResponse": {
+        "type": "object",
+        "properties": {
+          "resultado": {
+            "type": "string",
+            "enum": [
+              "RESUELTO",
+              "YA_ESTABA"
+            ]
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "resultado",
+          "mensaje"
+        ]
       },
       "ConciliacionAgenteAnalisis": {
         "type": "object",
@@ -23452,6 +23541,116 @@
         },
         "required": [
           "documentos"
+        ]
+      },
+      "MensajeRedactado": {
+        "type": "object",
+        "properties": {
+          "texto": {
+            "type": "string"
+          },
+          "nota": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tokensUsed": {
+            "type": "object",
+            "properties": {
+              "input": {
+                "type": "number"
+              },
+              "output": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "input",
+              "output"
+            ]
+          },
+          "estimatedCostCop": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "texto",
+          "nota",
+          "tokensUsed",
+          "estimatedCostCop"
+        ]
+      },
+      "PedidoDeRedaccionDeMensaje": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "perfil": {
+            "type": "string",
+            "enum": [
+              "inquilino",
+              "propietario",
+              "prospecto",
+              "otro"
+            ],
+            "default": "otro"
+          },
+          "inmobiliaria": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 160
+          },
+          "mensajes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "deLaInmobiliaria": {
+                  "type": "boolean"
+                },
+                "texto": {
+                  "type": "string",
+                  "maxLength": 4000
+                }
+              },
+              "required": [
+                "deLaInmobiliaria",
+                "texto"
+              ]
+            },
+            "maxItems": 60,
+            "default": []
+          },
+          "datos": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "instruccion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "borrador": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "nombre"
         ]
       },
       "ApAgingResponse": {
@@ -31139,6 +31338,52 @@
         ],
         "additionalProperties": false
       },
+      "TraducirResponse": {
+        "type": "object",
+        "properties": {
+          "traducciones": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "traducidos": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "traducciones",
+          "traducidos"
+        ]
+      },
+      "TraducirError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "TraducirBody": {
+        "type": "object",
+        "properties": {
+          "textos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "minItems": 1,
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "textos"
+        ]
+      },
       "AseguradoraQuote": {
         "type": "object",
         "properties": {
@@ -32700,186 +32945,6 @@
         "required": [
           "success",
           "error"
-        ]
-      },
-      "CalidadPublicacionResponse": {
-        "type": "object",
-        "properties": {
-          "cola": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "consignacionId": {
-                  "type": "string"
-                },
-                "qualityScore": {
-                  "type": [
-                    "number",
-                    "null"
-                  ]
-                },
-                "issues": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "code": {
-                        "type": "string"
-                      },
-                      "severity": {
-                        "type": "string"
-                      },
-                      "campo": {
-                        "type": "string"
-                      },
-                      "detalle": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "severity",
-                      "detalle"
-                    ]
-                  }
-                },
-                "lastAuditedAt": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              },
-              "required": [
-                "consignacionId",
-                "qualityScore",
-                "issues",
-                "lastAuditedAt"
-              ]
-            }
-          },
-          "total": {
-            "type": "integer"
-          },
-          "generatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "cola",
-          "total",
-          "generatedAt"
-        ]
-      },
-      "MensajeRedactado": {
-        "type": "object",
-        "properties": {
-          "texto": {
-            "type": "string"
-          },
-          "nota": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "tokensUsed": {
-            "type": "object",
-            "properties": {
-              "input": {
-                "type": "number"
-              },
-              "output": {
-                "type": "number"
-              }
-            },
-            "required": [
-              "input",
-              "output"
-            ]
-          },
-          "estimatedCostCop": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "texto",
-          "nota",
-          "tokensUsed",
-          "estimatedCostCop"
-        ]
-      },
-      "PedidoDeRedaccionDeMensaje": {
-        "type": "object",
-        "properties": {
-          "nombre": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 120
-          },
-          "perfil": {
-            "type": "string",
-            "enum": [
-              "inquilino",
-              "propietario",
-              "prospecto",
-              "otro"
-            ],
-            "default": "otro"
-          },
-          "inmobiliaria": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 160
-          },
-          "mensajes": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "deLaInmobiliaria": {
-                  "type": "boolean"
-                },
-                "texto": {
-                  "type": "string",
-                  "maxLength": 4000
-                }
-              },
-              "required": [
-                "deLaInmobiliaria",
-                "texto"
-              ]
-            },
-            "maxItems": 60,
-            "default": []
-          },
-          "datos": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string",
-              "maxLength": 200
-            }
-          },
-          "instruccion": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 500
-          },
-          "borrador": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 2000
-          }
-        },
-        "required": [
-          "nombre"
         ]
       }
     },
@@ -44379,8 +44444,7 @@
           },
           {
             "schema": {
-              "type": "string",
-              "minLength": 8
+              "type": "string"
             },
             "required": false,
             "name": "q",
@@ -55100,6 +55164,204 @@
         }
       }
     },
+    "/api/agency/{agencyId}/piloto/pagos-en-revision/{linkId}/reintentar": {
+      "post": {
+        "operationId": "pilotoReintentarPagoEnRevision",
+        "summary": "Piloto — aplicar otra vez un pago por link de Cobri que no se aplicó a la cuota",
+        "tags": [
+          "agency",
+          "piloto",
+          "pagos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "linkId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aplicado (o ya estaba)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPagoEnRevisionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin membresía o sin el permiso cobros:create del ERP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ese pago no es de esta inmobiliaria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Sigue sin aplicarse (con el porqué), o se está aplicando ahora",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "El back no respondió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El micro no está conectado al ERP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/pagos-en-revision/{linkId}/aplicado-a-mano": {
+      "post": {
+        "operationId": "pilotoPagoEnRevisionAplicadoAMano",
+        "summary": "Piloto — «Ya quedó aplicado»: cerrar un pago de Cobri que una persona registró a mano",
+        "tags": [
+          "agency",
+          "piloto",
+          "pagos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "linkId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resuelto (o ya estaba)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPagoEnRevisionAManoResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin membresía o sin el permiso cobros:create del ERP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ese pago no es de esta inmobiliaria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La cuota todavía debe: no se puede dar por resuelto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "El back no respondió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El micro no está conectado al ERP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agency/{agencyId}/piloto/conciliacion/movimientos/{id}/agente": {
       "get": {
         "operationId": "conciliacionAgenteAnalizarMovimiento",
@@ -64058,6 +64320,300 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApBillExtractDbError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/mensajes/redactar": {
+      "post": {
+        "operationId": "redactarMensaje",
+        "summary": "Escribir con IA: un borrador de mensaje para el hilo abierto",
+        "description": "Con los últimos mensajes del hilo, lo que se sabe de la persona y (opcional) qué quiere decir, devuelve un borrador. No envía ni guarda nada. Nunca inventa montos, fechas ni cuentas: lo que falta sale como [completar].",
+        "tags": [
+          "agency",
+          "mensajes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PedidoDeRedaccionDeMensaje"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "El borrador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MensajeRedactado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sólo quien escribe mensajes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiados pedidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "No se pudo escribir",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Escribir con IA no está disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -79278,6 +79834,85 @@
         }
       }
     },
+    "/api/agency/{agencyId}/traducir": {
+      "post": {
+        "operationId": "postTraducir",
+        "summary": "Translate what a person wrote (a tenant WhatsApp, a team note) into English, on demand",
+        "description": "The \"Translate\" button of the English panel. Only what the person asks for is translated (claude-haiku-4-5); nothing is cached. Positions that could not be translated come back unchanged.",
+        "tags": [
+          "agency",
+          "idioma"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TraducirBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The texts in English",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraducirResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing / invalid bearer JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraducirError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not an active member of the agency",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraducirError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "AI cap reached (code: tope_de_ia)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraducirError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cotizador/quote": {
       "post": {
         "operationId": "cotizadorQuoteCreate",
@@ -81694,554 +82329,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CotizadorAdminPrescoringErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/agency/{agencyId}/calidad/publicaciones": {
-      "get": {
-        "operationId": "listCalidadPublicaciones",
-        "summary": "Cola de calidad de publicaciones (worst-first).",
-        "tags": [
-          "agency",
-          "calidad-publicacion"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "example": "11111111-1111-4111-8111-111111111111"
-            },
-            "required": true,
-            "name": "agencyId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 500,
-              "default": 100
-            },
-            "required": false,
-            "name": "limit",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Cola de calidad",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CalidadPublicacionResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Feature no habilitada",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CalidadPublicacionError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "DB no disponible",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CalidadPublicacionError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/agency/{agencyId}/calidad/estado": {
-      "get": {
-        "operationId": "getCalidadEstado",
-        "summary": "Resumen de calidad + propuestas por estado.",
-        "tags": [
-          "agency",
-          "calidad-publicacion"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "example": "11111111-1111-4111-8111-111111111111"
-            },
-            "required": true,
-            "name": "agencyId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Resumen",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "totalAudited": {
-                      "type": "integer"
-                    },
-                    "avgScore": {
-                      "type": [
-                        "number",
-                        "null"
-                      ]
-                    },
-                    "criticos": {
-                      "type": "integer"
-                    },
-                    "posibleTomado": {
-                      "type": "integer"
-                    },
-                    "porCodigo": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "number"
-                      }
-                    },
-                    "propuestasPorEstado": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "number"
-                      }
-                    },
-                    "generatedAt": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "totalAudited",
-                    "avgScore",
-                    "criticos",
-                    "posibleTomado",
-                    "porCodigo",
-                    "propuestasPorEstado",
-                    "generatedAt"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Feature no habilitada",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CalidadV2Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/agency/{agencyId}/calidad/propietario/respuesta": {
-      "post": {
-        "operationId": "ingestCalidadPropietario",
-        "summary": "Ingesta la respuesta del propietario (disponibilidad / cambios).",
-        "tags": [
-          "agency",
-          "calidad-publicacion"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "example": "11111111-1111-4111-8111-111111111111"
-            },
-            "required": true,
-            "name": "agencyId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "consignacionId": {
-                    "type": "string",
-                    "format": "uuid"
-                  },
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "available",
-                      "rented",
-                      "unknown"
-                    ]
-                  },
-                  "changesRequirePhotos": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "consignacionId"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Ingerido",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "updated": {
-                      "type": "boolean"
-                    },
-                    "proposedPause": {
-                      "type": "boolean"
-                    },
-                    "tasksEmitted": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "updated",
-                    "proposedPause",
-                    "tasksEmitted"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Feature no habilitada",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CalidadV2Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/agency/{agencyId}/mensajes/redactar": {
-      "post": {
-        "operationId": "redactarMensaje",
-        "summary": "Escribir con IA: un borrador de mensaje para el hilo abierto",
-        "description": "Con los últimos mensajes del hilo, lo que se sabe de la persona y (opcional) qué quiere decir, devuelve un borrador. No envía ni guarda nada. Nunca inventa montos, fechas ni cuentas: lo que falta sale como [completar].",
-        "tags": [
-          "agency",
-          "mensajes"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "agencyId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PedidoDeRedaccionDeMensaje"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "El borrador",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MensajeRedactado"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Datos inválidos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "statusCode": {
-                      "type": "integer"
-                    },
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      ]
-                    },
-                    "campos": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/SobreDeErrorCampo"
-                      }
-                    },
-                    "referencia": {
-                      "type": "string"
-                    },
-                    "servicio": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Sólo quien escribe mensajes",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "statusCode": {
-                      "type": "integer"
-                    },
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      ]
-                    },
-                    "campos": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/SobreDeErrorCampo"
-                      }
-                    },
-                    "referencia": {
-                      "type": "string"
-                    },
-                    "servicio": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Demasiados pedidos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "statusCode": {
-                      "type": "integer"
-                    },
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      ]
-                    },
-                    "campos": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/SobreDeErrorCampo"
-                      }
-                    },
-                    "referencia": {
-                      "type": "string"
-                    },
-                    "servicio": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "No se pudo escribir",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "statusCode": {
-                      "type": "integer"
-                    },
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      ]
-                    },
-                    "campos": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/SobreDeErrorCampo"
-                      }
-                    },
-                    "referencia": {
-                      "type": "string"
-                    },
-                    "servicio": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Escribir con IA no está disponible",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "statusCode": {
-                      "type": "integer"
-                    },
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      ]
-                    },
-                    "campos": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/SobreDeErrorCampo"
-                      }
-                    },
-                    "referencia": {
-                      "type": "string"
-                    },
-                    "servicio": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
                 }
               }
             }

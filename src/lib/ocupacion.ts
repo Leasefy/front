@@ -1,3 +1,4 @@
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 /**
  * 🔴 LA OCUPACIÓN DEL PORTAFOLIO — la copia del front de las dos reglas.
  *
@@ -131,7 +132,7 @@ export function comoSeLeeLaOcupacion(datos: {
   enCatalogo: number;
   fueraDelCatalogo?: number;
 }): string {
-  const miles = (n: number) => n.toLocaleString('es-CO');
+  const miles = (n: number) => n.toLocaleString(localeDeLasCifras());
   const partes = [
     `${miles(datos.arrendados)} arrendados de ${miles(datos.enCatalogo)} en catálogo`,
   ];

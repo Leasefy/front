@@ -14,10 +14,11 @@
  */
 
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 export function formatCanon(value: number | null | undefined): string {
   if (value == null) return 'Sin definir';
-  return plataEnPantalla('es-CO', {
+  return plataEnPantalla(localeDeLasCifras, {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,

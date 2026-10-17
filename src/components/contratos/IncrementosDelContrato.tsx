@@ -35,8 +35,9 @@ import { errorDelPorcentajeDelIncremento } from "@/lib/contratos/limites-del-con
 import { plataEnPantalla } from "@/lib/plata/escribir-plata";
 import { diaLegible } from '@/lib/mandato/textos';
 import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
-const PESOS = plataEnPantalla("es-CO", {
+const PESOS = plataEnPantalla(localeDeLasCifras, {
   style: "currency",
   currency: "COP",
   maximumFractionDigits: 0,
@@ -610,5 +611,5 @@ function Aniversario({
 
 /** QA-CONT-95: «5,1» con coma decimal (es-CO), no «5.1». */
 export function porcentajeLegible(valor: number): string {
-  return valor.toLocaleString('es-CO', { maximumFractionDigits: 3 });
+  return valor.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 3 });
 }

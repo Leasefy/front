@@ -25,6 +25,7 @@ import { CrossFade, MotionIndicator } from '@leasefy/cadence';
 import { GridFour } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { EmptyState } from '@/components/data-display/EmptyState';
+import { useTr } from '@/lib/i18n/use-tr';
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -76,6 +77,7 @@ function cellBgColor(count: number, positiveRate: number, max: number): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
+  const tr = useTr();
   const { t, locale } = useI18n();
 
   // Tap-to-inspect: the selected cell's details render in a summary line
@@ -95,7 +97,7 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
       <EmptyState
         icon={GridFour}
         title={t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.heatmap.title')}
-        description="Sin datos suficientes todavía"
+        description={tr("Sin datos suficientes todavía")}
       />
     );
   }

@@ -19,6 +19,7 @@
 import type { BadgeProps } from '@/components/ui'
 import type { CobranzaPromiseItem } from '@/lib/hooks/cobranza/use-promises'
 import type { PlanDePagoItem } from '@/lib/hooks/cobranza/use-payment-plans'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /**
  * Variantes del ADAPTADOR local (`@/components/ui`), no las de Cadence crudo.
@@ -127,7 +128,7 @@ export function filaDePromesa(p: CobranzaPromiseItem): AcuerdoRow {
 }
 
 function pesosDelAcuerdo(valor: number): string {
-  return `$${Math.round(valor).toLocaleString('es-CO')}`
+  return `$${Math.round(valor).toLocaleString(localeDeLasCifras())}`
 }
 
 /**

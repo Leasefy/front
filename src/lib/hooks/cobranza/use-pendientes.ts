@@ -43,6 +43,7 @@ import {
 } from '@/lib/hooks/cobranza/use-daily-report'
 import { useCobranzaInbox } from '@/lib/hooks/cobranza/use-inbox'
 import { escalationReasonLabel } from '@/lib/cobranza/call-vocab'
+import { useTr } from '@/lib/i18n/use-tr'
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -151,6 +152,7 @@ function escalationUrgencyToPrioridad(
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
 export function usePendientes(): UsePendientesResult {
+  const tr = useTr()
   const escalaciones = useEscalations()
   const cartas = useLegalArtifacts({ status: 'pending_human_review' })
   const siniestros = useInsuranceClaims({ status: 'pending_human_review' })
@@ -243,7 +245,7 @@ export function usePendientes(): UsePendientesResult {
         grupo: 'planes',
         prioridad: 'media',
         titulo: plan.debtorName,
-        reason: 'Acuerdo de pago esperando tu aprobación',
+        reason: tr('Acuerdo de pago esperando tu aprobación'),
         kind: null,
         montoCop: plan.totalDueCop,
         dueDate: plan.proximaCuota?.vence ?? null,
@@ -303,6 +305,7 @@ export function usePendientes(): UsePendientesResult {
       return new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
     })
   }, [
+    tr,
     escalaciones.data,
     cartas.data,
     siniestros.data,

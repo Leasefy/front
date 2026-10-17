@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/lib/auth/use-auth'
+import { useTx } from '@/lib/idioma/use-idioma'
 import { getRoleHomeRoute } from '@/lib/auth/role-routes'
 
 interface LandingAuthCtaProps {
@@ -28,6 +29,7 @@ const VARIANT_CLASS: Record<NonNullable<LandingAuthCtaProps['variant']>, string>
  * `HuecoDeBotonDeSesion`.
  */
 export function LandingAuthCta({ variant = 'header' }: LandingAuthCtaProps) {
+  const tx = useTx()
   const { user, isAuthenticated, isLoading, confirmacionDeLaSesion } = useAuth()
   const className = VARIANT_CLASS[variant]
 
@@ -39,20 +41,20 @@ export function LandingAuthCta({ variant = 'header' }: LandingAuthCtaProps) {
    * sesión confirmada, y el panel ya no rebota al login mientras confirma.
    */
   if (isLoading && confirmacionDeLaSesion !== 'sin-confirmar') {
-    return <HuecoDeBotonDeSesion className={className} texto="Iniciar sesión" />
+    return <HuecoDeBotonDeSesion className={className} texto={tx('Iniciar sesión', 'Log in')} />
   }
 
   if (!isLoading && isAuthenticated && user) {
     return (
       <a className={className} href={getRoleHomeRoute(user.role)}>
-        Ir al panel
+        {tx('Ir al panel', 'Go to dashboard')}
       </a>
     )
   }
 
   return (
     <a className={className} href="/auth">
-      Iniciar sesión
+      {tx('Iniciar sesión', 'Log in')}
     </a>
   )
 }

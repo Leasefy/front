@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,7 +10,9 @@ import { motionDuration, motionEase, Stagger, StaggerItem } from '@leasefy/caden
 import { ArrowLeft, Check, Copy, Globe, MagnifyingGlass, Sparkle } from '@phosphor-icons/react';
 
 import { OrbeDeAgente } from '@/components/agentes/OrbeDeAgente';
+import { tieneCoordenadas } from '@/components/map/coordenadas';
 import { PropertyCard } from '@/components/property/PropertyCard';
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { ApiError } from '@/lib/api/client';
 import { marketplaceApi, type PaginaDeInmobiliaria as Pagina } from '@/lib/api/marketplace.service';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -34,6 +37,13 @@ import {
   Tira,
 } from './piezas';
 import { portadaDe } from '@/lib/marketplace/portadas';
+import { cn } from '@/lib/utils';
+
+// El mapa de MapLibre toca `window`: sólo en el navegador.
+const PropertyMap = dynamic(() => import('@/components/map').then((m) => ({ default: m.PropertyMap })), {
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-surface-muted" />,
+});
 
 /**
  * ══ LA PÁGINA DE LA INMOBILIARIA · leasefy.co/i/<nombre> (Nico, 09-10-2026) ═
@@ -216,12 +226,51 @@ export function PaginaDeLaInmobiliaria({ nombre }: { nombre: string }) {
   return <Contenido pagina={pagina} />;
 }
 
+/**
+ * Las dos opiniones que se ven sin abrir nada: la primera que la recomienda y
+ * la primera que no, en el orden en que llegan (las más nuevas primero). Sin
+ * ninguna en contra, las dos primeras.
+ */
+export function muestrasDeLasOpiniones<T extends { recomienda: boolean }>(todas: readonly T[]): T[] {
+  const si = todas.find((o) => o.recomienda);
+  const no = todas.find((o) => !o.recomienda);
+  if (si && no) return todas.filter((o) => o === si || o === no);
+  return todas.slice(0, 2);
+}
+
+/** Las tarjetas de «Sus inmuebles» que caben en la página; el resto, en el buscador. */
+const SE_VEN_AQUI = 9;
+
 /** Ya cargada: su cabecera, su chat, lo que dicen de ella, sus videos y sus inmuebles. */
 function Contenido({ pagina }: { pagina: Pagina }) {
-  const [todasLasOpiniones, setTodasLasOpiniones] = useState(false);
+  const [opinionesAbiertas, setOpinionesAbiertas] = useState(false);
   const { properties: suyos, meta } = useProperties(useMemo(() => ({ agencyId: pagina.id, limit: 100 }), [pagina.id]));
   const sugerencias = useMemo(() => sugerenciasDelCatalogo(suyos, 4).map((s) => s.texto), [suyos]);
-  const opiniones = todasLasOpiniones ? pagina.opiniones : pagina.opiniones.slice(0, 3);
+  const muestras = useMemo(() => muestrasDeLasOpiniones(pagina.opiniones), [pagina.opiniones]);
+  // Debajo de su chat, dónde están sus inmuebles (Nico, 16-10-2026: «sigue
+  // quedando mucho espacio ahí en la izquierda… sumar algo»). Sólo los que
+  // tienen ubicación; sin ninguno, no hay mapa.
+  const ubicados = useMemo(() => suyos.filter((p) => tieneCoordenadas(p.latitude, p.longitude)), [suyos]);
+  const barrios = useMemo(
+    () => [...new Set(ubicados.map((p) => p.neighborhood?.trim() || p.city?.trim()).filter((b): b is string => !!b))].slice(0, 4),
+    [ubicados],
+  );
+  // Tocar un precio lleva a su tarjeta en «Sus inmuebles» y la marca.
+  // Si su tarjeta no está entre las que se ven aquí, abre su ficha.
+  const router = useRouter();
+  const [resaltado, setResaltado] = useState<string | null>(null);
+  const alElegirEnElMapa = useCallback(
+    (id: string) => {
+      const tarjeta = document.getElementById(`inmueble-${id}`);
+      if (!tarjeta) {
+        router.push(`/propiedades/${id}`);
+        return;
+      }
+      setResaltado(id);
+      tarjeta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    },
+    [router],
+  );
   const totalSuyos = meta?.total ?? pagina.inmuebles;
   // Sus videos en el reproductor propio (Nico, 09-10-2026), con su inmueble y su precio.
   const [videoAbierto, setVideoAbierto] = useState<number | null>(null);
@@ -246,41 +295,72 @@ function Contenido({ pagina }: { pagina: Pagina }) {
       <Cabecera p={pagina} />
 
       <div className="mx-auto mt-10 grid max-w-[1280px] grid-cols-1 gap-8 px-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-        {/* Su chat: la página ES su chat. */}
-        {/* `self-start`: sin eso se estiraba al alto de las opiniones y quedaba
-            un hueco blanco debajo de la caja (QA del marketplace, 10-10-2026). */}
-        <section
-          className="self-start rounded-xl border border-border bg-surface p-5 shadow-sm md:p-7"
-          aria-label={`Pregúntale a ${pagina.nombre}`}
-        >
-          <div className="flex items-center gap-3">
-            <OrbeDeAgente agente="orquestador" tamano={44} decorativo />
-            <div>
-              <h2 className="font-heading text-[20px] font-semibold text-fg">Pregúntale a {pagina.nombre}</h2>
-              <p className="text-[13.5px] text-fg-muted">
-                Conoce sus <span className="font-mono tabular-nums">{numero(pagina.inmuebles)}</span>{' '}
-                {pagina.inmuebles === 1 ? 'inmueble' : 'inmuebles'} y responde a cualquier hora. Nunca se inventa uno.
-              </p>
+        {/* Su chat (la página ES su chat) y, debajo, el mapa de sus inmuebles,
+            que crece hasta el alto de la columna de la derecha. El chat no se
+            estira: estirado quedaba un hueco blanco adentro de la caja (QA del
+            marketplace, 10-10-2026). */}
+        <div className="flex min-w-0 flex-col gap-6">
+          <section
+            className="rounded-xl border border-border bg-surface p-5 shadow-sm md:p-7"
+            aria-label={`Pregúntale a ${pagina.nombre}`}
+          >
+            <div className="flex items-center gap-3">
+              <OrbeDeAgente agente="orquestador" tamano={44} decorativo />
+              <div>
+                <h2 className="font-heading text-[20px] font-semibold text-fg">Pregúntale a {pagina.nombre}</h2>
+                <p className="text-[13.5px] text-fg-muted">
+                  Conoce sus <span className="font-mono tabular-nums">{numero(pagina.inmuebles)}</span>{' '}
+                  {pagina.inmuebles === 1 ? 'inmueble' : 'inmuebles'} y responde a cualquier hora. Nunca se inventa uno.
+                </p>
+              </div>
             </div>
-          </div>
-          <ChatDeLaInmobiliaria inmobiliaria={{ id: pagina.id, nombre: pagina.nombre }} sugerencias={sugerencias} />
-        </section>
+            <ChatDeLaInmobiliaria inmobiliaria={{ id: pagina.id, nombre: pagina.nombre }} sugerencias={sugerencias} />
+          </section>
+          {ubicados.length > 0 && (
+            <section
+              className="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm"
+              aria-labelledby="donde-estan"
+              data-testid="mapa-de-sus-inmuebles"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-4 md:px-7">
+                <div className="min-w-0">
+                  <h2 id="donde-estan" className="font-heading text-[17px] font-semibold text-fg">
+                    Dónde están sus inmuebles
+                  </h2>
+                  {barrios.length > 0 && <p className="truncate text-[13px] text-fg-muted">{barrios.join(' · ')}</p>}
+                </div>
+                <span className="text-[12.5px] text-fg-subtle">Toca un precio para verlo</span>
+              </div>
+              <div className="relative min-h-[220px] flex-1 border-t border-border">
+                <PropertyMap
+                  properties={ubicados}
+                  selectedPropertyId={resaltado}
+                  onPropertySelect={alElegirEnElMapa}
+                  className="absolute inset-0"
+                />
+              </div>
+            </section>
+          )}
+        </div>
 
-        {/* Lo que dicen de ella. */}
+        {/* Lo que dicen de ella: el resumen y DOS muestras, una que la
+            recomienda y una que no si la hay (Nico, 16-10-2026). Todas, en un
+            cajón: abrirlas aquí empujaba la página entera. */}
         <div className="space-y-4">
           <LaRecomendarias r={pagina.recomendacion} />
-          {opiniones.length > 0 && (
-            <div className="space-y-3">
-              {opiniones.map((o) => (
+          {muestras.length > 0 && (
+            <div className="space-y-3" data-testid="opiniones">
+              {muestras.map((o) => (
                 <TarjetaDeOpinion key={o.id} o={o} />
               ))}
-              {pagina.opiniones.length > 3 && !todasLasOpiniones && (
+              {pagina.opiniones.length > muestras.length && (
                 <button
                   type="button"
-                  onClick={() => setTodasLasOpiniones(true)}
+                  onClick={() => setOpinionesAbiertas(true)}
+                  aria-haspopup="dialog"
                   className="text-[13.5px] font-medium text-primary hover:underline"
                 >
-                  Ver las {pagina.opiniones.length} opiniones
+                  Ver las {numero(pagina.opiniones.length)} opiniones
                 </button>
               )}
             </div>
@@ -306,25 +386,24 @@ function Contenido({ pagina }: { pagina: Pagina }) {
       )}
 
       <section className="mx-auto mt-12 max-w-[1280px] px-4 md:px-6" aria-labelledby="sus-inmuebles">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 id="sus-inmuebles" className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-fg">
-            Sus inmuebles
-          </h2>
-          {totalSuyos > 0 && (
-            <Link
-              href={`/propiedades?${escribirBusqueda({ inmobiliaria: pagina.id })}&vista=lista`}
-              className="inline-flex items-center gap-1.5 text-[14px] font-medium text-primary hover:underline"
-            >
-              <MagnifyingGlass className="h-4 w-4" aria-hidden />
-              Ver {totalSuyos === 1 ? 'el inmueble' : `los ${totalSuyos}`} con mapa
-            </Link>
-          )}
-        </div>
+        {/* Sin «Ver los N con mapa» arriba: el mapa ya está debajo de su chat
+            (Nico, 16-10-2026: «saca esto si ya metiste lo del mapa»). */}
+        <h2 id="sus-inmuebles" className="font-heading text-[22px] font-semibold tracking-[-0.02em] text-fg">
+          Sus inmuebles
+        </h2>
         {suyos.length > 0 ? (
           <Stagger className="mt-4 grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr))]">
-            {suyos.slice(0, 9).map((p) => (
+            {suyos.slice(0, SE_VEN_AQUI).map((p) => (
               <StaggerItem key={p.id}>
-                <PropertyCard property={p} />
+                <div
+                  id={`inmueble-${p.id}`}
+                  className={cn(
+                    'rounded-xl transition-shadow duration-base',
+                    resaltado === p.id && 'ring-2 ring-primary ring-offset-4 ring-offset-background',
+                  )}
+                >
+                  <PropertyCard property={p} />
+                </div>
               </StaggerItem>
             ))}
           </Stagger>
@@ -333,11 +412,34 @@ function Contenido({ pagina }: { pagina: Pagina }) {
             {pagina.nombre} no tiene inmuebles publicados ahora. Síguela y te aviso cuando publique.
           </p>
         )}
+        {totalSuyos > SE_VEN_AQUI && (
+          <Link
+            href={`/propiedades?${escribirBusqueda({ inmobiliaria: pagina.id })}&vista=lista`}
+            className="mt-5 inline-flex items-center gap-1.5 text-[14px] font-medium text-primary hover:underline"
+          >
+            <MagnifyingGlass className="h-4 w-4" aria-hidden />
+            Ver los {numero(totalSuyos)} inmuebles de {pagina.nombre}
+          </Link>
+        )}
         <p className="mt-6 flex items-center gap-1.5 text-[13px] text-fg-muted">
           <Sparkle className="h-4 w-4 text-primary" weight="fill" aria-hidden />
           Lo que {pagina.nombre} publica aquí sale también en el buscador de Leasefy.
         </p>
       </section>
+
+      <Sheet open={opinionesAbiertas} onOpenChange={setOpinionesAbiertas}>
+        <SheetContent side="right" size="md">
+          <SheetHeader
+            title={`Lo que dicen de ${pagina.nombre}`}
+            description={`${numero(pagina.opiniones.length)} ${pagina.opiniones.length === 1 ? 'opinión' : 'opiniones'} de quienes firmaron un contrato con ella en Leasefy`}
+          />
+          <SheetBody className="space-y-3" data-testid="todas-las-opiniones">
+            {pagina.opiniones.map((o) => (
+              <TarjetaDeOpinion key={o.id} o={o} />
+            ))}
+          </SheetBody>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

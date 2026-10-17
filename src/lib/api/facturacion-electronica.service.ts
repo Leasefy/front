@@ -39,6 +39,7 @@
 
 import { apiClient } from './client'
 import { ESPACIO_DE_LA_PLATA, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const BASE = '/inmobiliaria/facturacion'
 
@@ -807,6 +808,6 @@ export const facturacionElectronicaService = {
 /** `$1.234.567`, como todo el resto del panel (P8 a: `$1.234.567,29` si trae centavos). */
 export function pesos(valor: number): string {
   return seMuestranLosCentavos(valor)
-    ? `$${ESPACIO_DE_LA_PLATA}${valor.toLocaleString('es-CO', decimalesEnPantalla(valor))}`
-    : `$${ESPACIO_DE_LA_PLATA}${Math.round(valor).toLocaleString('es-CO')}`
+    ? `$${ESPACIO_DE_LA_PLATA}${valor.toLocaleString(localeDeLasCifras(), decimalesEnPantalla(valor))}`
+    : `$${ESPACIO_DE_LA_PLATA}${Math.round(valor).toLocaleString(localeDeLasCifras())}`
 }

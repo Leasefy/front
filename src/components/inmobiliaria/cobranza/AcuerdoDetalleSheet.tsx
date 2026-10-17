@@ -148,9 +148,10 @@ function CuerpoDelAcuerdo({ acuerdo }: { acuerdo: AcuerdoRow }) {
                 </span>
               </span>
             ) : (
-              /* El payload de planes no trae la fecha; decirlo, no inventarla. */
+              /* El payload de planes no trae la fecha; decirlo, no inventarla
+                 (QA-AGENTES 16-10: decía «no expone», palabra de sistemas). */
               <span className="text-fg-muted">
-                Este plan no expone una fecha de vencimiento.
+                Sin fecha registrada en el acuerdo.
               </span>
             )}
           </Dato>

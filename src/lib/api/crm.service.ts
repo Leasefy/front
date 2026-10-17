@@ -570,6 +570,8 @@ export const matchingApi = {
       configurados: boolean
       /** 🔴 G-02: esto NO se configura, y la pantalla lo dice. */
       requisitos: string[]
+      /** Los mismos, en inglés, para el panel en inglés (16-10-2026; un back anterior no los manda). */
+      requisitosEn?: string[]
     }>(`${BASE}/matching/pesos`),
 
   guardarPesos: (body: Partial<PesosDelMatching>) =>
@@ -581,11 +583,15 @@ export const matchingApi = {
       busca: { presupuestoCop: number | null; topeAsegurableCop: number | null }
       /** `true` = lo dijo el interesado; `false` = se dedujo del inmueble. */
       presupuestoDicho: boolean
-      falta: { code: string; message: string } | null
+      falta: { code: string; message: string; messageEn?: string } | null
       opciones: {
         propertyId: string
         puntaje: number
         porQue: string[]
+        /** Las mismas razones en inglés, para la PANTALLA del panel en inglés; el mensaje al interesado usa `porQue`. */
+        porQueEn?: string[]
+        marca?: string | null
+        marcaEn?: string | null
         inmueble: {
           title: string
           neighborhood: string | null
@@ -601,12 +607,16 @@ export const matchingApi = {
     apiClient.get<{
       ofrecible: boolean
       motivo: string | null
+      motivoEn?: string | null
       leads: {
         pipelineItemId: string
         nombre: string
         correo: string | null
         puntaje: number
         porQue: string[]
+        porQueEn?: string[]
+        marca?: string | null
+        marcaEn?: string | null
       }[]
     }>(`${BASE}/matching/inmuebles/${propertyId}`),
 }

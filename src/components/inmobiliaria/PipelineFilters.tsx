@@ -18,6 +18,7 @@ import {
 import { Chip, DatePicker, IconButton, Presence } from '@leasefy/cadence';
 import { aFechaIso, fechaLocal } from '@/lib/fechas-locales';
 import type { Agente, Consignacion } from '@/lib/types/inmobiliaria';
+import { useTr } from '@/lib/i18n/use-tr';
 
 export interface PipelineFiltersState {
   agenteId?: string;
@@ -47,6 +48,7 @@ export function PipelineFilters({
   filters,
   onFilterChange,
 }: PipelineFiltersProps) {
+  const tr = useTr();
   const { t } = useI18n();
 
   const DATE_PRESETS = [
@@ -172,7 +174,7 @@ export function PipelineFilters({
             variant="ghost"
             size="sm"
             onClick={() => updateFilter('search', undefined)}
-            aria-label="Limpiar búsqueda"
+            aria-label={tr("Limpiar búsqueda")}
             className="text-muted-foreground"
             icon={<X className="w-4 h-4" />}
           />
@@ -280,7 +282,7 @@ export function PipelineFilters({
             id="pipeline-desde"
             value={fechaLocal(filters.dateFrom ?? null)}
             onChange={(d) => updateFilter('dateFrom', d ? aFechaIso(d) : undefined)}
-            placeholder="Desde"
+            placeholder={tr("Desde")}
             className="w-40"
           />
           <span className="text-muted-foreground text-sm">{t('inmobiliaria.pipeline.to')}</span>
@@ -288,7 +290,7 @@ export function PipelineFilters({
             id="pipeline-hasta"
             value={fechaLocal(filters.dateTo ?? null)}
             onChange={(d) => updateFilter('dateTo', d ? aFechaIso(d) : undefined)}
-            placeholder="Hasta"
+            placeholder={tr("Hasta")}
             className="w-40"
           />
         </div>

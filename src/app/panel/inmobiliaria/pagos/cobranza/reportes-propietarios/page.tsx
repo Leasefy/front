@@ -56,6 +56,7 @@ import {
   type OwnerReportStatus,
 } from '@/lib/hooks/cobranza/use-owner-reports'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const PROPIETARIOS_HREF = '/panel/inmobiliaria/propietarios'
@@ -106,7 +107,7 @@ const BACKEND_ESTADO: Record<OwnerReportStatus, ReporteEstado> = {
   sent: 'enviado',
 }
 
-const COP = plataEnPantalla('es-CO', {
+const COP = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -436,17 +437,19 @@ function ReportesPropietariosContent() {
     // Confirmación humana explícita antes de marcar como enviado al propietario.
     // Con el modal del sistema, no con el diálogo del navegador (02-10-2026).
     const ok = await confirmar({
-      titulo: `¿Aprobar y enviar el reporte a ${seleccionado.propietario}?`,
+      // QA-AGENTES 16-10 (MORI-33): Leasefy todavía no le manda el reporte al
+      // propietario (ni correo ni PDF); el botón decía «enviar» y nada salía.
+      titulo: `¿Aprobar el reporte para ${seleccionado.propietario}?`,
       descripcion:
-        'Confirmas que lo revisaste. El reporte queda aprobado y marcado como enviado al propietario.',
-      accion: 'Aprobar y enviar',
+        'Confirmas que lo revisaste y que se lo mandaste al propietario: Leasefy todavía no lo envía por ti. Queda aprobado y marcado como enviado.',
+      accion: 'Aprobar y marcar como enviado',
       icono: <PaperPlaneTilt weight="bold" />,
     })
     if (!ok) return
     setActionMsg(null)
     const updated = await approve(seleccionado.id, true)
     if (updated) {
-      setActionMsg('Reporte aprobado y marcado como enviado al propietario.')
+      setActionMsg('Reporte aprobado y marcado como enviado.')
     }
   }
 
@@ -517,14 +520,19 @@ function ReportesPropietariosContent() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         {/* Columna izquierda — lista de reportes preparados */}
         <section className="space-y-3" aria-label="Reportes preparados">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-fg">Reportes preparados</h2>
-            <SegmentedControl
-              options={estadoOptions}
-              value={estadoFilter}
-              onChange={onFilterChange}
-              aria-label="Filtrar por estado"
-            />
+          {/* QA-AGENTES 16-10: a 390 px los cuatro filtros no cabían al lado del
+              título («Por aprobar» partido) y arrastraban las tarjetas: en el
+              celular van debajo, en su riel. */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <h2 className="whitespace-nowrap text-base font-semibold text-fg">Reportes preparados</h2>
+            <div className="-mx-1 max-w-full overflow-x-auto whitespace-nowrap px-1">
+              <SegmentedControl
+                options={estadoOptions}
+                value={estadoFilter}
+                onChange={onFilterChange}
+                aria-label="Filtrar por estado"
+              />
+            </div>
           </div>
 
           {isLoading && !hayReales ? (
@@ -583,7 +591,7 @@ function ReportesPropietariosContent() {
                       ? 'Disponible al generar un reporte real'
                       : yaEnviado
                         ? 'Este reporte ya fue enviado'
-                        : 'Aprobar y enviar al propietario'
+                        : 'Aprobar y marcar como enviado al propietario'
                   }
                 >
                   {isApproving ? (
@@ -591,7 +599,7 @@ function ReportesPropietariosContent() {
                   ) : (
                     <PaperPlaneTilt className="w-3.5 h-3.5" aria-hidden="true" />
                   )}
-                  {yaEnviado ? 'Enviado' : 'Aprobar y enviar'}
+                  {yaEnviado ? 'Enviado' : 'Aprobar'}
                 </Button>
 
                 {/* Generar borrador (POST generate) — necesita un deudor real */}

@@ -9,6 +9,7 @@
  */
 
 import { cn } from '@/lib/utils'
+import { useTr } from '@/lib/i18n/use-tr'
 
 function Barra({ className }: { className?: string }) {
   return (
@@ -28,11 +29,12 @@ export function EsqueletoTabla({
   filas?: number
   className?: string
 }) {
+  const tr = useTr();
   return (
     <div
       className={cn('overflow-hidden rounded-lg border border-border bg-card', className)}
       role="status"
-      aria-label="Cargando"
+      aria-label={tr("Cargando")}
       data-testid="esqueleto-tabla"
     >
       <div className="border-b border-border px-4 py-3">
@@ -54,7 +56,7 @@ export function EsqueletoTabla({
           </div>
         </div>
       ))}
-      <span className="sr-only">Cargando…</span>
+      <span className="sr-only">{tr("Cargando…")}</span>
     </div>
   )
 }
@@ -66,11 +68,12 @@ export function EsqueletoTarjetas({
   cantidad?: number
   className?: string
 }) {
+  const tr = useTr();
   return (
     <div
       className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3', className)}
       role="status"
-      aria-label="Cargando"
+      aria-label={tr("Cargando")}
       data-testid="esqueleto-tarjetas"
     >
       {Array.from({ length: cantidad }).map((_, i) => (
@@ -80,7 +83,7 @@ export function EsqueletoTarjetas({
           <Barra className="w-1/2" />
         </div>
       ))}
-      <span className="sr-only">Cargando…</span>
+      <span className="sr-only">{tr("Cargando…")}</span>
     </div>
   )
 }
@@ -93,11 +96,12 @@ export function EsqueletoIndicadores({
   cantidad?: number
   className?: string
 }) {
+  const tr = useTr();
   return (
     <div
       className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-4', className)}
       role="status"
-      aria-label="Cargando"
+      aria-label={tr("Cargando")}
       data-testid="esqueleto-indicadores"
     >
       {Array.from({ length: cantidad }).map((_, i) => (
@@ -106,7 +110,7 @@ export function EsqueletoIndicadores({
           <Barra className="h-7 w-28" />
         </div>
       ))}
-      <span className="sr-only">Cargando…</span>
+      <span className="sr-only">{tr("Cargando…")}</span>
     </div>
   )
 }

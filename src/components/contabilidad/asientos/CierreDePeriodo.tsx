@@ -50,6 +50,7 @@ import { aTextoDeDia, diaDe, diaLegible } from '@/lib/contabilidad/fechas';
 import { elPeriodoEnUnaFrase, estadoDelPeriodo } from '@/lib/contabilidad/el-periodo-en-una-frase';
 import { CampoDeDia } from '../CampoDeDia';
 import { Reapertura } from './Reapertura';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 export interface CierreDePeriodoProps {
   cierre: Cierre | null;
@@ -82,7 +83,7 @@ export function fraseDeLoSinAsentar(
     s.lotes ? `${s.lotes} ${s.lotes === 1 ? 'lote' : 'lotes'}` : null,
     s.cobros ? `${s.cobros} ${s.cobros === 1 ? 'cobro' : 'cobros'}` : null,
   ].filter(Boolean);
-  const cuantos = s.total === 1 ? 'Hay 1 movimiento sin asiento' : `Hay ${s.total.toLocaleString('es-CO')} movimientos sin asiento`;
+  const cuantos = s.total === 1 ? 'Hay 1 movimiento sin asiento' : `Hay ${s.total.toLocaleString(localeDeLasCifras())} movimientos sin asiento`;
   // CB-B-25 (QA-FACT-CONTA-95 r2): y cuánta plata es, si el back la sabe.
   const cuanto =
     typeof s.valorCop === 'number' && s.valorCop > 0 ? ` por ${plata(s.valorCop)}` : '';
@@ -170,7 +171,7 @@ export function CierreDePeriodo({
         description:
           r.cerrados === 1
             ? '1 asiento quedó bloqueado.'
-            : `${r.cerrados.toLocaleString('es-CO')} asientos quedaron bloqueados.`,
+            : `${r.cerrados.toLocaleString(localeDeLasCifras())} asientos quedaron bloqueados.`,
       });
       // Back 26beefbc: lo que quedó sin asiento adentro del período, se dice.
       if (r.sinAsentar && r.sinAsentar.total > 0) {

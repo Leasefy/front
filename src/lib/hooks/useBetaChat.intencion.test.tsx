@@ -109,6 +109,31 @@ async function mandar(s: ReturnType<typeof montar>, texto: string, intencion?: R
 }
 
 describe('un botón del hilo es un mensaje de la persona con su intención', () => {
+  // QA-AGENTES 16-10 (lab): «Prorrogar el contrato vencido (Ley 820 art. 6): 12»
+  // arrancaba con «Revisar tu cartera · Paso 1 de 3», un paso que con un botón
+  // el micro no hace (va directo a la ficha).
+  it('con un botón el turno no arranca diciendo «Revisar tu cartera»; escrito a mano, sí', async () => {
+    const s = montar();
+    act(() =>
+      s.actual.sendMessage('Prorrogar el contrato vencido (Ley 820 art. 6): 12', {
+        intencion: { accion: 'prorrogar_contrato', entidad: CONTRATO, datos: { meses: 12 } } as never,
+      }),
+    );
+    expect(s.actual.turnSteps.map((p) => [p.id, p.status])).toEqual([
+      ['entender', 'running'],
+      ['redactar', 'pending'],
+    ]);
+    await esperarA(() => ultimo(s, 'assistant')?.status === 'complete' && !s.actual.isStreaming);
+    act(() => s.actual.sendMessage('¿cómo va la cartera?'));
+    expect(s.actual.turnSteps.map((p) => [p.id, p.status])).toEqual([
+      ['cartera', 'running'],
+      ['entender', 'pending'],
+      ['redactar', 'pending'],
+    ]);
+    await esperarA(() => ultimo(s, 'assistant')?.status === 'complete' && !s.actual.isStreaming);
+    s.soltar();
+  });
+
   it('el texto queda en el hilo y la intención viaja en el cuerpo del stream', async () => {
     const s = montar();
     const intencion = { accion: 'ver', entidad: { tipo: 'contrato', id: '24' } };

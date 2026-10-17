@@ -26,6 +26,7 @@ import type { EstadoDeProceso, FiltrosDeProcesos, Proceso, TipoDeProceso } from 
 import { useCentroDeProcesos } from '@/lib/hooks/use-centro-de-procesos'
 import { FilaDeProceso } from './FilaDeProceso'
 import { NOMBRE_DEL_ESTADO, NOMBRE_DEL_TIPO, TIPOS_DE_LA_MIGRACION } from './estado-del-proceso'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const POR_PAGINA = 30
 const TODOS = 'todos'
@@ -40,7 +41,7 @@ export function fraseDelHistorial(opciones: {
   hayMas: boolean
 }): string {
   const de = opciones.veTodos ? 'Los procesos de todo el equipo' : 'Los procesos que lanzaste'
-  const cuantos = `${opciones.cuantos.toLocaleString('es-CO')}${opciones.hayMas ? ' o más' : ''}`
+  const cuantos = `${opciones.cuantos.toLocaleString(localeDeLasCifras())}${opciones.hayMas ? ' o más' : ''}`
   const vivos =
     opciones.activos === 0
       ? 'ninguno está corriendo ahora'

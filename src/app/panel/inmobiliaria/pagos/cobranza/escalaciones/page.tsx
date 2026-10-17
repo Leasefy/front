@@ -133,9 +133,12 @@ function EscalacionesContent() {
       0,
       Math.round((Date.now() - new Date(data.generatedAt).getTime()) / 1000),
     )
-    if (sec < 60) return locale.startsWith('es') ? `hace ${sec}s` : `${sec}s ago`
-    const min = Math.round(sec / 60)
-    return locale.startsWith('es') ? `hace ${min}m` : `${min}m ago`
+    // «Actualizado hace un momento» (antes «hace 0s», suelto bajo el título).
+    if (sec < 60) return locale.startsWith('es') ? 'Actualizado hace un momento' : 'Updated just now'
+    const min = Math.round(sec / 60) // redondeo: no es plata
+    return locale.startsWith('es')
+      ? `Actualizado hace ${min} ${min === 1 ? 'minuto' : 'minutos'}`
+      : `Updated ${min}m ago`
   }, [data?.generatedAt, locale])
 
   // ARIA live region — announces newly-arrived open escalations to screen

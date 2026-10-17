@@ -53,6 +53,7 @@ import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { errorDeLaReferenciaDelGiro } from '@/lib/dispersiones/limites-de-las-dispersiones';
+import { useTr } from '@/lib/i18n/use-tr';
 
 interface DispersionDetailProps {
   isOpen: boolean;
@@ -277,6 +278,7 @@ export function DispersionDetail({
   usuarioActualId,
   onDescartar,
 }: DispersionDetailProps) {
+  const tr = useTr();
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [referencia, setReferencia] = React.useState('');
   const [errorDeReferencia, setErrorDeReferencia] = React.useState<string | null>(null);
@@ -528,8 +530,7 @@ export function DispersionDetail({
    */
   const ayudaDelPie = ofreceLote ? (
     <p className="text-caption text-muted-foreground" data-testid="dispersion-por-lote">
-      Tu inmobiliaria aprueba y gira las dispersiones por lote, con código: esta se aprueba en
-      Lotes, no desde acá.
+      {tr("Tu inmobiliaria aprueba y gira las dispersiones por lote, con código: esta se aprueba en Lotes, no desde acá.")}
     </p>
   ) : conReferencia && esQuienAprobo ? (
     <p
@@ -537,8 +538,7 @@ export function DispersionDetail({
       data-testid="dispersion-aprobador-no-gira"
       className="text-caption text-warning"
     >
-      Tú aprobaste esta dispersión: la referencia del giro la carga otra persona del
-      equipo. Es el segundo par de ojos sobre la plata del propietario.
+      {tr("Tú aprobaste esta dispersión: la referencia del giro la carga otra persona del equipo. Es el segundo par de ojos sobre la plata del propietario.")}
     </p>
   ) : undefined;
 
@@ -602,7 +602,7 @@ export function DispersionDetail({
                   <ContactAction
                     icon={WhatsappLogo}
                     href={`https://wa.me/${propietario.phone.replace(/\D/g, '')}`}
-                    label="WhatsApp"
+                    label={tr("WhatsApp")}
                     className="bg-success-soft hover:bg-success-soft text-success dark:bg-success/30 dark:hover:bg-success/50 dark:text-success"
                   />
                 )}
@@ -634,15 +634,14 @@ export function DispersionDetail({
                  carga en vez de un dato que falta pedirle. */
               <AlertaAccionable
                 severidad="danger"
-                titulo="Sin cuenta bancaria: no se le puede girar"
+                titulo={tr("Sin cuenta bancaria: no se le puede girar")}
                 accion={{
                   label: 'Cargar cuenta bancaria',
                   href: `/panel/inmobiliaria/propietarios/${dispersion.propietarioId}?volver=${encodeURIComponent('/panel/inmobiliaria/pagos/dispersiones')}`,
                 }}
                 data-testid="dispersion-sin-cuenta"
               >
-                Pídele al propietario banco, tipo, número y titular, y cargalos en su ficha. Hasta entonces
-                este giro queda esperando.
+                {tr("Pídele al propietario banco, tipo, número y titular, y cargalos en su ficha. Hasta entonces este giro queda esperando.")}
               </AlertaAccionable>
             ) : (
             <div className="grid grid-cols-2 gap-4">
@@ -1008,7 +1007,7 @@ export function DispersionDetail({
             data-testid="dispersion-descartar"
           >
             <Trash className="w-4 h-4 mr-2" />
-            Descartar
+            {tr("Descartar")}
           </Button>
         )}
 
@@ -1018,7 +1017,7 @@ export function DispersionDetail({
           <Button asChild hideArrow className="gap-2">
             <Link href={rutaDeLotesDelMes(dispersion.month)} data-testid="dispersion-ir-a-lotes">
               <Bank className="w-4 h-4" />
-              Ir a Lotes
+              {tr("Ir a Lotes")}
             </Link>
           </Button>
         )}

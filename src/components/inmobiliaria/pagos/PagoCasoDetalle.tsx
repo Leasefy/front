@@ -48,6 +48,7 @@ import {
 } from '@/components/inmobiliaria/ai/ColaHumana'
 import { PagoEstadoBadge } from '@/components/inmobiliaria/pagos/PagoEstadoBadge'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 // ── Estado accionable ─────────────────────────────────────────────────────────
 // Mismos estados accionables que el detalle transversal: en el resto
@@ -253,7 +254,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
               </span>
               {typeof item.amountCop === 'number' && (
                 <span className="text-sm font-semibold text-fg tabular-nums">
-                  {plataEnPantalla('es-CO', {
+                  {plataEnPantalla(localeDeLasCifras, {
                     style: 'currency',
                     currency: 'COP',
                     maximumFractionDigits: 0,

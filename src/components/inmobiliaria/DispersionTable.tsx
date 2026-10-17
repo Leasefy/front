@@ -40,6 +40,7 @@ import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import { enmascarar } from '@/components/inmobiliaria/medios-de-pago/legible';
 import { baseDeLasDispersiones, type BaseDelCanonDelExtracto } from '@/lib/propietarios/base-del-canon';
+import { useTr } from '@/lib/i18n/use-tr';
 
 /**
  * 🔴 N-39 (QA-PAGOS-95 r2): lo que se GIRA de una dispersión — entero o nada.
@@ -128,6 +129,7 @@ export function DispersionTable({
   showSummary = false,
   clave,
 }: DispersionTableProps) {
+  const tr = useTr();
   const { t, formatDate, formatCurrency } = useI18n();
   const baseDelCanon = useMemo(() => baseDeLasDispersiones(dispersiones), [dispersiones]);
   const [sortField, setSortField] = useState<SortField>('month');
@@ -406,7 +408,7 @@ export function DispersionTable({
                         size="sm"
                         icon={<DotsThree className="w-5 h-5" weight="bold" />}
                         onClick={(e) => e.stopPropagation()}
-                        aria-label="Acciones"
+                        aria-label={tr("Acciones")}
                       />
                     </DropdownListTrigger>
                     <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>

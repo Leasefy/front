@@ -47,6 +47,7 @@ import {
 import type { ResolucionesDeLaAgencia } from '@/lib/api/facturacion-por-mes.service'
 import { TIPOS_EN_ORDEN } from '@/lib/api/facturacion-electronica.service'
 import { sinLaRutaDeFacturacion } from '@/lib/facturacion/por-facturar'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /** «a, b y c». */
 function enUnaFrase(nombres: readonly string[]): string {
@@ -221,7 +222,7 @@ export function NumeracionPorTipo({ datos }: NumeracionPorTipoProps) {
                     {t.prefijo || '—'}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
-                    {t.puedeNumerar ? t.disponibles.toLocaleString('es-CO') : '—'}
+                    {t.puedeNumerar ? t.disponibles.toLocaleString(localeDeLasCifras()) : '—'}
                   </TableCell>
                   <TableCell className="whitespace-nowrap font-mono tabular-nums text-fg">
                     {t.siguiente ?? '—'}

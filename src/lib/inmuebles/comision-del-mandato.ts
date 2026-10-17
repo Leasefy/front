@@ -1,4 +1,5 @@
 import type { Consignacion } from '@/lib/types/inmobiliaria';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /**
  * Cómo se escribe la comisión de un mandato en pantalla (QA 22-09).
@@ -19,7 +20,7 @@ export const COMISION_NO_VENIA = 'No venía en el archivo';
 function conPorcentaje(n: number | null | undefined): string {
   // Sin número no hay porcentaje que decir (una respuesta vieja o incompleta).
   if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
-  return `${n.toLocaleString('es-CO', { maximumFractionDigits: 2 })} %`;
+  return `${n.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 2 })} %`;
 }
 
 export function textoDeLaComision(

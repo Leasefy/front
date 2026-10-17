@@ -34,13 +34,16 @@ import { toast } from '@/components/ui/toast';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { formatCurrency } from '@/lib/format';
 import { estudiosApi, type EstudioVigente } from '@/lib/api/estudios.service';
+import { useLocaleDeFechas, useTr } from '@/lib/i18n/use-tr';
 
-function dia(iso: string | null): string {
+function dia(iso: string | null, fechas: 'es-CO' | 'en-US' = 'es-CO'): string {
   if (!iso) return '';
-  return new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+  return new Date(iso).toLocaleDateString(fechas, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 export function EstudioPagadoALaInmobiliaria({ applicationId }: { applicationId: string }) {
+  const tr = useTr();
+  const fechas = useLocaleDeFechas();
   const permisos = usePermissionsContextSafe();
   const [estado, setEstado] = useState<EstudioVigente | null>(null);
   const [registrando, setRegistrando] = useState(false);
@@ -111,22 +114,22 @@ export function EstudioPagadoALaInmobiliaria({ applicationId }: { applicationId:
     <div className="rounded-md border border-border bg-surface-muted p-3 space-y-2" data-testid="estudio-pagado">
       <p className="flex items-center gap-2 text-xs font-semibold text-foreground">
         <Receipt className="h-3.5 w-3.5" aria-hidden="true" />
-        Estudio pagado a la inmobiliaria
+        {tr("Estudio pagado a la inmobiliaria")}
       </p>
       {estado?.vigente ? (
         <p className="text-xs text-fg-muted" data-testid="estudio-vigente">
-          Ya pagó el estudio (recibo #{estado.numeroRecibo}, el {dia(estado.pagadoEl)}). Le sirve hasta el{' '}
-          {dia(estado.vigenteHasta)} para cualquier inmueble de la inmobiliaria: no se le vuelve a cobrar.
+          {tr("Ya pagó el estudio (recibo #")}{estado.numeroRecibo}{tr(", el")} {dia(estado.pagadoEl, fechas)}{tr("). Le sirve hasta el")}{' '}
+          {dia(estado.vigenteHasta, fechas)} {tr("para cualquier inmueble de la inmobiliaria: no se le vuelve a cobrar.")}
         </p>
       ) : (
         <p className="text-xs text-fg-muted" data-testid="estudio-sin-pago">
-          No tiene un estudio pagado y vigente acá. El estudio lo paga el solicitante, no se devuelve y le sirve{' '}
-          {estado?.vigenciaDias ?? 60} días para cualquier inmueble de la inmobiliaria.
+          {tr("No tiene un estudio pagado y vigente acá. El estudio lo paga el solicitante, no se devuelve y le sirve")}{' '}
+          {estado?.vigenciaDias ?? 60} {tr("días para cualquier inmueble de la inmobiliaria.")}
         </p>
       )}
       {!estado?.vigente && puedeCobrar && !abierto && (
         <Button size="sm" variant="outline" hideArrow onClick={() => setAbierto(true)} data-testid="estudio-registrar">
-          Registrar el pago del estudio
+          {tr("Registrar el pago del estudio")}
         </Button>
       )}
       {abierto && (
@@ -136,7 +139,7 @@ export function EstudioPagadoALaInmobiliaria({ applicationId }: { applicationId:
               id="estudio-valor"
               className="w-full rounded-md border border-border bg-surface p-2 text-sm"
               inputMode="numeric"
-              placeholder="Valor pagado"
+              placeholder={tr("Valor pagado")}
               value={valor}
               onChange={(e) => {
                 setValor(e.target.value);
@@ -154,18 +157,18 @@ export function EstudioPagadoALaInmobiliaria({ applicationId }: { applicationId:
             onChange={(e) => setMedio(e.target.value)}
             data-testid="estudio-medio"
           >
-            <option value="transferencia">Transferencia</option>
-            <option value="efectivo">Efectivo</option>
-            <option value="tarjeta">Tarjeta</option>
-            <option value="pse">PSE</option>
-            <option value="cheque">Cheque</option>
-            <option value="otro">Otro</option>
+            <option value="transferencia">{tr("Transferencia")}</option>
+            <option value="efectivo">{tr("Efectivo")}</option>
+            <option value="tarjeta">{tr("Tarjeta")}</option>
+            <option value="pse">{tr("PSE")}</option>
+            <option value="cheque">{tr("Cheque")}</option>
+            <option value="otro">{tr("Otro")}</option>
           </select>
           <div>
             <input
               id="estudio-referencia"
               className="w-full rounded-md border border-border bg-surface p-2 text-sm"
-              placeholder="Referencia (opcional)"
+              placeholder={tr("Referencia (opcional)")}
               value={referencia}
               maxLength={MAX_LARGO_REFERENCIA_DEL_PAGO}
               onChange={(e) => {
@@ -188,7 +191,7 @@ export function EstudioPagadoALaInmobiliaria({ applicationId }: { applicationId:
               {registrando ? 'Registrando…' : 'Emitir recibo y factura'}
             </Button>
             <Button size="sm" variant="ghost" hideArrow onClick={() => setAbierto(false)} disabled={registrando}>
-              Cancelar
+              {tr("Cancelar")}
             </Button>
           </div>
         </div>

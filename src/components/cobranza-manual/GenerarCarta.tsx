@@ -32,7 +32,7 @@ import { useAuth } from '@/lib/auth'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { descargarBlob } from '@/lib/reportes/exportables'
 import { cobranzaManualApi, generarCartaAMano, revisarCartaAMano } from '@/lib/api/cobranza-manual.service'
-import type { CampoDeLaCarta, DatosDeLaCarta } from '@/lib/api/cobranza-manual.types'
+import type { CampoDeLaCarta, ContratoDeLaPersona, DatosDeLaCarta } from '@/lib/api/cobranza-manual.types'
 
 const ETIQUETAS: Readonly<Record<CampoDeLaCarta, string>> = {
   ciudad: 'Ciudad desde la que se escribe la carta',
@@ -42,6 +42,36 @@ const ETIQUETAS: Readonly<Record<CampoDeLaCarta, string>> = {
 }
 
 type Etapa = 'leyendo' | 'datos' | 'error'
+
+/**
+ * Qué se muestra al abrir: lo que sabe el micro, lo que falta y lo que se
+ * propone del contrato (para revisar).
+ *
+ * 🔴 QA-AGENTES 16-10 (lab, contrato #1894): el micro «sabe» como dirección la
+ * ETIQUETA de la cuota, que es el título de la publicación («Apartamento en
+ * Bellavista, Caldas»), y la carta legal salía con eso. Si el contrato tiene la
+ * dirección real y es otra, la dirección pasa a los campos para revisar, ya
+ * escrita con la del contrato.
+ */
+export function datosAlAbrir(
+  carta: { faltan: ReadonlyArray<{ campo: CampoDeLaCarta }>; conocidos: Partial<Record<CampoDeLaCarta, string>> },
+  contrato: Pick<ContratoDeLaPersona, 'numero' | 'direccion'> | null,
+): { faltan: CampoDeLaCarta[]; conocidos: Partial<Record<CampoDeLaCarta, string>>; datos: DatosDeLaCarta } {
+  const faltan = carta.faltan.map((f) => f.campo)
+  const direccion = contrato?.direccion?.trim() || null
+  const sabida = carta.conocidos.direccionInmueble?.trim() || null
+  const revisarDireccion = direccion !== null && sabida !== null && sabida !== direccion
+  const conocidos = { ...carta.conocidos }
+  if (revisarDireccion) delete conocidos.direccionInmueble
+  return {
+    faltan: revisarDireccion ? [...faltan, 'direccionInmueble'] : faltan,
+    conocidos,
+    datos: {
+      ...(contrato?.numero ? { numContrato: contrato.numero } : {}),
+      ...(direccion && (revisarDireccion || sabida === null) ? { direccionInmueble: direccion } : {}),
+    },
+  }
+}
 
 export function GenerarCarta({
   abierto,
@@ -88,14 +118,10 @@ export function GenerarCarta({
         if (!vivo) return
         const contrato =
           persona?.persona.contratos.find((c) => c.vigente) ?? persona?.persona.contratos[0] ?? null
-        setFaltan(carta.faltan.map((f) => f.campo))
-        setConocidos(carta.conocidos)
-        setDatos({
-          ...(contrato?.numero ? { numContrato: contrato.numero } : {}),
-          ...(contrato?.direccion && !carta.conocidos.direccionInmueble
-            ? { direccionInmueble: contrato.direccion }
-            : {}),
-        })
+        const alAbrir = datosAlAbrir(carta, contrato)
+        setFaltan(alAbrir.faltan)
+        setConocidos(alAbrir.conocidos)
+        setDatos(alAbrir.datos)
         setEtapa('datos')
       } catch (err) {
         if (!vivo) return
@@ -173,7 +199,14 @@ export function GenerarCarta({
               {faltan.length > 0 ? (
                 <div className="space-y-3">
                   <p className="text-sm text-fg">
-                    {faltan.length === 1 ? 'Falta un dato para la carta:' : 'Faltan estos datos para la carta:'}
+                    {/* Lo que el contrato ya propone no «falta»: se revisa. */}
+                    {vacios.length === 0
+                      ? faltan.length === 1
+                        ? 'Revisa este dato antes de descargar:'
+                        : 'Revisa estos datos antes de descargar:'
+                      : faltan.length === 1
+                        ? 'Falta un dato para la carta:'
+                        : 'Faltan estos datos para la carta:'}
                   </p>
                   {faltan.map((c) => (
                     <div key={c} className="space-y-1.5">

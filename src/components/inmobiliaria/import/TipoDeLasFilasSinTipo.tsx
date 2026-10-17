@@ -19,6 +19,7 @@ import {
   type MotivosDelLoteInmuebles,
 } from '@/lib/api/inmuebles-importacion.service';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 export const TIPOS_DE_INMUEBLE: { valor: string; etiqueta: string }[] = [
   { valor: 'APARTMENT', etiqueta: 'Apartamento' },
@@ -36,7 +37,7 @@ export function etiquetaDelTipo(valor: string): string {
   return TIPOS_DE_INMUEBLE.find((t) => t.valor === valor)?.etiqueta ?? valor;
 }
 
-const filas = (n: number) => (n === 1 ? '1 fila' : `${n.toLocaleString('es-CO')} filas`);
+const filas = (n: number) => (n === 1 ? '1 fila' : `${n.toLocaleString(localeDeLasCifras())} filas`);
 
 type SinTipo = NonNullable<MotivosDelLoteInmuebles['sinTipo']>;
 
@@ -113,7 +114,7 @@ export function TipoDeLasFilasSinTipo({
           <p className="text-sm text-fg">
             {sinTipo.conSugerencia === 1
               ? '1 fila dice el tipo en la dirección (por ejemplo «APTO 201» o «CASA 51»).'
-              : `${sinTipo.conSugerencia.toLocaleString('es-CO')} filas dicen el tipo en la dirección (por ejemplo «APTO 201» o «CASA 51»).`}{' '}
+              : `${sinTipo.conSugerencia.toLocaleString(localeDeLasCifras())} filas dicen el tipo en la dirección (por ejemplo «APTO 201» o «CASA 51»).`}{' '}
             <span className="text-fg-muted">Cada una lo ve en su fila antes de usarlo.</span>
           </p>
           <Button
@@ -188,7 +189,7 @@ export function TipoDeLasFilasSinTipo({
                       )
                     }
                   >
-                    {trabajando === `clase:${clave}` ? 'Poniendo…' : `Poner a las ${g.filas.toLocaleString('es-CO')}`}
+                    {trabajando === `clase:${clave}` ? 'Poniendo…' : `Poner a las ${g.filas.toLocaleString(localeDeLasCifras())}`}
                   </Button>
                 </div>
               </li>

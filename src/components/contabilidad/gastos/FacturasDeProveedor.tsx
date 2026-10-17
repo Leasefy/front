@@ -102,6 +102,7 @@ import { PagarFactura } from './PagarFactura';
 import { egresoDeLaFacturaEnPalabras, sePuedePagar } from '@/lib/contabilidad/pagar-factura';
 import { CampoDeDia } from '../CampoDeDia';
 import { FormularioDeFactura } from './FormularioDeFactura';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** El valor de «todas» en los `Select` del DS (Radix no acepta `''`). */
 const TODOS = '__todos__';
@@ -403,7 +404,7 @@ export function FacturasDeProveedor({
           <div>
             <dt className="text-caption text-fg-muted">Facturas</dt>
             <dd className="font-mono text-lg tabular-nums text-fg">
-              {pagina.total.toLocaleString('es-CO')}
+              {pagina.total.toLocaleString(localeDeLasCifras())}
             </dd>
           </div>
           <div>

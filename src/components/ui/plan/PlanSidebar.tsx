@@ -54,6 +54,7 @@ import {
   motionTransition,
 } from '@leasefy/cadence';
 import { TarjetaDelPerfil } from './TarjetaDelPerfil';
+import { useTr } from '@/lib/i18n/use-tr';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mobile sidebar opener — module-level pub-sub.
@@ -167,6 +168,7 @@ function displayLabel(item: NavItem): string {
  * SidebarItem keeps rendering its numeric `count` untouched.
  */
 function TrailingPills({ item, enLaActiva = false }: { item: NavItem; enLaActiva?: boolean }) {
+  const tr = useTr();
   if (!item.ai && !item.tag) return null;
   return (
     <span className="flex items-center gap-1.5">
@@ -179,12 +181,12 @@ function TrailingPills({ item, enLaActiva = false }: { item: NavItem; enLaActiva
             enLaActiva ? 'bg-surface text-[color:var(--menu-activa-tinta)]' : 'bg-primary-soft text-primary',
           )}
         >
-          IA
+          {tr('IA')}
         </span>
       )}
       {item.tag && (
         <span className="text-[9px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-warning-soft text-warning">
-          {item.tag}
+          {tr(item.tag)}
         </span>
       )}
     </span>
@@ -867,6 +869,7 @@ export function SidebarContent({
   const pathname = rutaActual ?? pathnameReal;
   const router = useRouter();
   const { user, logout } = useAuth();
+  const tr = useTr();
 
   // Dismissible invite card — hidden persists across sessions via localStorage.
   // Read in an effect (not the initializer) to avoid an SSR hydration mismatch.
@@ -1018,7 +1021,7 @@ export function SidebarContent({
           {onSearchClick ? (
             <SidebarSearch
               readOnly
-              placeholder={searchPlaceholder ?? 'Buscar'}
+              placeholder={tr(searchPlaceholder ?? 'Buscar')}
               className="cursor-pointer"
               onMouseDown={(e) => {
                 e.preventDefault();
@@ -1120,7 +1123,7 @@ export function SidebarContent({
           <Link
             href="/ayuda"
             onClick={onItemClick}
-            title="Ayuda"
+            title={tr('Ayuda')}
             className="flex items-center justify-center px-2.5 py-2.5 rounded-full text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
           >
             <Question className="w-[18px] h-[18px]" />
@@ -1135,7 +1138,7 @@ export function SidebarContent({
               <button
                 type="button"
                 onClick={dismissInvite}
-                aria-label="Ocultar tarjeta de invitación"
+                aria-label={tr('Ocultar tarjeta de invitación')}
                 className="absolute top-1.5 right-1.5 z-10 flex items-center justify-center w-5 h-5 rounded-full text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
               >
                 <X className="w-3 h-3" />
@@ -1165,7 +1168,7 @@ export function SidebarContent({
               className="flex flex-1 items-center gap-3 px-3 py-2 rounded-full text-[13px] text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
             >
               <Question className="w-[18px] h-[18px]" />
-              <span>Ayuda</span>
+              <span>{tr('Ayuda')}</span>
             </Link>
             <SidebarThemeToggle />
           </div>

@@ -22,6 +22,7 @@ import type { DispersionSummary } from '@/lib/types/inmobiliaria';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { RUTA_LOTES } from '@/lib/api/dispersiones-errores';
 import { BarraDeAvance } from '@/components/inmobiliaria/pagos/BarraDeAvance';
+import { useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr';
 
 interface DispersionResumenProps {
   summary: DispersionSummary;
@@ -63,6 +64,7 @@ function getProgressColor(rate: number | null): string {
 
 /** El aviso de totales estimados, con su reintento. */
 function AvisoResumenEstimado({ onReintentar }: { onReintentar: () => void | Promise<unknown> }) {
+  const tr = useTr();
   const [intentando, setIntentando] = React.useState(false);
   const reintentar = async () => {
     if (intentando) return;
@@ -81,8 +83,7 @@ function AvisoResumenEstimado({ onReintentar }: { onReintentar: () => void | Pro
     >
       <Warning weight="fill" className="h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
       <p className="min-w-0 flex-1 text-fg">
-        <strong className="font-semibold">Totales estimados</strong> con lo que hay en pantalla: el
-        resumen del mes no cargó.
+        <strong className="font-semibold">{tr("Totales estimados")}</strong> {tr("con lo que hay en pantalla: el resumen del mes no cargó.")}
       </p>
       <Button
         type="button"
@@ -113,6 +114,7 @@ export function DispersionResumen({
   estimado,
   className,
 }: DispersionResumenProps) {
+  const tr = useTr();
   const { t, formatCurrency } = useI18n();
   const totalDispersions = summary.dispersionsPending + summary.dispersionsCompleted + summary.dispersionsFailed;
   // Sin una sola dispersión el avance no existe: `null`, no 0.
@@ -121,7 +123,7 @@ export function DispersionResumen({
   // Format month for display
   // `new Date('2026-08-01')` es medianoche UTC: en Colombia retrocede al 31
   // de julio y el título decía «julio» sobre datos de agosto.
-  const monthDisplay = nombreDelMes(summary.month);
+  const monthDisplay = nombreDelMes(summary.month, useLocaleDelPanel());
 
   const hasPending = summary.dispersionsPending > 0;
   const hasFailed = summary.dispersionsFailed > 0;
@@ -263,7 +265,7 @@ export function DispersionResumen({
         <div className="px-6 py-4 bg-muted/30 border-t border-border flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
             {apruebaPorLote
-              ? 'Tu inmobiliaria aprueba las dispersiones por lote, con código.'
+              ? tr('Tu inmobiliaria aprueba las dispersiones por lote, con código.')
               : summary.dispersionsPending !== 1
                 ? t('inmobiliaria.dispersiones.resumen.pendingToProcessPlural', { count: summary.dispersionsPending })
                 : t('inmobiliaria.dispersiones.resumen.pendingToProcess', { count: summary.dispersionsPending })}
@@ -283,7 +285,7 @@ export function DispersionResumen({
               <Button asChild size="sm" className="gap-2" hideArrow>
                 <Link href={RUTA_LOTES} data-testid="resumen-ir-a-lotes">
                   <Bank className="w-4 h-4" />
-                  Ir a Lotes
+                  {tr("Ir a Lotes")}
                 </Link>
               </Button>
             ) : (
@@ -297,7 +299,7 @@ export function DispersionResumen({
                   <PaperPlaneTilt className="w-4 h-4" weight="fill" />
                   {/* Decía «Procesar todas»: lo que hace es APROBAR —el giro
                       lo anota otra persona, con la referencia del banco—. */}
-                  Aprobar todas
+                  {tr("Aprobar todas")}
                 </Button>
               )
             )}

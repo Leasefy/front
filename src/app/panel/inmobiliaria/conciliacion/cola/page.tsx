@@ -77,6 +77,7 @@ import {
   BULK_CONFIRM_HIGH_CONFIDENCE_FLOOR,
 } from '@/lib/hooks/conciliacion/use-conciliacion-bulk'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 // ── Taxonomía de excepciones (los 7 caseTypes, set cerrado) ──────────────────
 // Copy en español literal (contrato §9 — ES-first, sin keys t() nuevas).
@@ -127,7 +128,7 @@ const COLUMNAS = [
 // ── Formato ──────────────────────────────────────────────────────────────────
 
 function fmtCop(val: number): string {
-  return plataEnPantalla('es-CO', {
+  return plataEnPantalla(localeDeLasCifras, {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,

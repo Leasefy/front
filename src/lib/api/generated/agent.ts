@@ -5235,6 +5235,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/piloto/pagos-en-revision/{linkId}/reintentar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto — aplicar otra vez un pago por link de Cobri que no se aplicó a la cuota */
+        post: operations["pilotoReintentarPagoEnRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/pagos-en-revision/{linkId}/aplicado-a-mano": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto — «Ya quedó aplicado»: cerrar un pago de Cobri que una persona registró a mano */
+        post: operations["pilotoPagoEnRevisionAplicadoAMano"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/piloto/conciliacion/movimientos/{id}/agente": {
         parameters: {
             query?: never;
@@ -6910,6 +6944,26 @@ export interface paths {
          * @description Lee una o más fotos/PDFs de la misma factura con Claude, empareja el proveedor por NIT/nombre, sube el primer documento a Storage y devuelve una sugerencia para POST /ap/bills. No persiste la factura.
          */
         post: operations["extractApBill"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/mensajes/redactar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Escribir con IA: un borrador de mensaje para el hilo abierto
+         * @description Con los últimos mensajes del hilo, lo que se sabe de la persona y (opcional) qué quiere decir, devuelve un borrador. No envía ni guarda nada. Nunca inventa montos, fechas ni cuentas: lo que falta sale como [completar].
+         */
+        post: operations["redactarMensaje"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9022,6 +9076,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/traducir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Translate what a person wrote (a tenant WhatsApp, a team note) into English, on demand
+         * @description The "Translate" button of the English panel. Only what the person asks for is translated (claude-haiku-4-5); nothing is cached. Positions that could not be translated come back unchanged.
+         */
+        post: operations["postTraducir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cotizador/quote": {
         parameters: {
             query?: never;
@@ -9363,77 +9437,6 @@ export interface paths {
         head?: never;
         /** Partial update of the tenant's pre-scoring TTL config. Merges over the current config — patching only one field leaves the other untouched. At least one field is required. */
         patch: operations["cotizadorAdminPrescoringConfigUpdate"];
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/calidad/publicaciones": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Cola de calidad de publicaciones (worst-first). */
-        get: operations["listCalidadPublicaciones"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/calidad/estado": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Resumen de calidad + propuestas por estado. */
-        get: operations["getCalidadEstado"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/calidad/propietario/respuesta": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Ingesta la respuesta del propietario (disponibilidad / cambios). */
-        post: operations["ingestCalidadPropietario"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/mensajes/redactar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Escribir con IA: un borrador de mensaje para el hilo abierto
-         * @description Con los últimos mensajes del hilo, lo que se sabe de la persona y (opcional) qué quiere decir, devuelve un borrador. No envía ni guarda nada. Nunca inventa montos, fechas ni cuentas: lo que falta sale como [completar].
-         */
-        post: operations["redactarMensaje"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
 }
@@ -11010,6 +11013,11 @@ export interface components {
             creditBalanceCop: number | null;
             sidebar: components["schemas"]["CobranzaDebtorDetailSidebar"];
             kpis: components["schemas"]["CobranzaDebtorDetailKpis"];
+            deudaMasVieja: {
+                periodo: string | null;
+                vence: string;
+                saldoCop: number;
+            } | null;
             generatedAt: string;
         };
         CobranzaDebtorDetailError: {
@@ -11568,6 +11576,7 @@ export interface components {
             calls_outside_window_critical_at_least: number;
             is_rollback_of_version?: number | null;
             created_at?: string | null;
+            created_by_name?: string | null;
         };
         CobranzaDailyReportThresholdsHistory: {
             items: components["schemas"]["CobranzaDailyReportThresholds"][];
@@ -11945,6 +11954,7 @@ export interface components {
             resolved_by_user_id: string;
             recommendation: string;
             persisted: boolean;
+            escalationClosed?: boolean;
         };
         CobranzaDisputeResolveBody: {
             /** @enum {string} */
@@ -12909,6 +12919,7 @@ export interface components {
             accion?: components["schemas"]["PilotoInboxAccion"];
             motivo?: string;
             director?: components["schemas"]["PilotoDirectorEnLaBandeja"];
+            cuotaId?: string;
         };
         PilotoInboxResponse: {
             items: components["schemas"]["PilotoInboxItem"][];
@@ -13276,6 +13287,16 @@ export interface components {
         };
         PilotoConciliacionConciliarConRecibosBody: {
             reciboIds: string[];
+        };
+        PilotoPagoEnRevisionResponse: {
+            /** @enum {string} */
+            resultado: "CONCILIADO" | "YA_ESTABA";
+            mensaje: string;
+        };
+        PilotoPagoEnRevisionAManoResponse: {
+            /** @enum {string} */
+            resultado: "RESUELTO" | "YA_ESTABA";
+            mensaje: string;
         };
         ConciliacionAgenteAnalisis: {
             movimientoId: string;
@@ -14885,6 +14906,34 @@ export interface components {
         };
         ApBillExtractRequest: {
             documentos: components["schemas"]["ApBillExtractDocumento"][];
+        };
+        MensajeRedactado: {
+            texto: string;
+            nota: string | null;
+            tokensUsed: {
+                input: number;
+                output: number;
+            };
+            estimatedCostCop: number;
+        };
+        PedidoDeRedaccionDeMensaje: {
+            nombre: string;
+            /**
+             * @default otro
+             * @enum {string}
+             */
+            perfil: "inquilino" | "propietario" | "prospecto" | "otro";
+            inmobiliaria?: string | null;
+            /** @default [] */
+            mensajes: {
+                deLaInmobiliaria: boolean;
+                texto: string;
+            }[];
+            datos?: {
+                [key: string]: string;
+            };
+            instruccion?: string | null;
+            borrador?: string | null;
         };
         ApAgingResponse: {
             asOf: string;
@@ -16739,6 +16788,16 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        TraducirResponse: {
+            traducciones: string[];
+            traducidos: number;
+        };
+        TraducirError: {
+            error: string;
+        };
+        TraducirBody: {
+            textos: string[];
+        };
         /** @description Per-carrier quote result (Phase 20 D-20-15 8-carrier set). */
         AseguradoraQuote: {
             /** @enum {string} */
@@ -17151,49 +17210,6 @@ export interface components {
             campos?: components["schemas"]["SobreDeErrorCampo"][];
             referencia?: string;
             servicio?: string;
-        };
-        CalidadPublicacionResponse: {
-            cola: {
-                consignacionId: string;
-                qualityScore: number | null;
-                issues: {
-                    code: string;
-                    severity: string;
-                    campo?: string;
-                    detalle: string;
-                }[];
-                lastAuditedAt: string | null;
-            }[];
-            total: number;
-            generatedAt: string;
-        };
-        MensajeRedactado: {
-            texto: string;
-            nota: string | null;
-            tokensUsed: {
-                input: number;
-                output: number;
-            };
-            estimatedCostCop: number;
-        };
-        PedidoDeRedaccionDeMensaje: {
-            nombre: string;
-            /**
-             * @default otro
-             * @enum {string}
-             */
-            perfil: "inquilino" | "propietario" | "prospecto" | "otro";
-            inmobiliaria?: string | null;
-            /** @default [] */
-            mensajes: {
-                deLaInmobiliaria: boolean;
-                texto: string;
-            }[];
-            datos?: {
-                [key: string]: string;
-            };
-            instruccion?: string | null;
-            borrador?: string | null;
         };
     };
     responses: never;
@@ -27092,6 +27108,142 @@ export interface operations {
             };
         };
     };
+    pilotoReintentarPagoEnRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                linkId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aplicado (o ya estaba) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPagoEnRevisionResponse"];
+                };
+            };
+            /** @description Sin membresía o sin el permiso cobros:create del ERP */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Ese pago no es de esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Sigue sin aplicarse (con el porqué), o se está aplicando ahora */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El back no respondió */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El micro no está conectado al ERP */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+        };
+    };
+    pilotoPagoEnRevisionAplicadoAMano: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                linkId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resuelto (o ya estaba) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPagoEnRevisionAManoResponse"];
+                };
+            };
+            /** @description Sin membresía o sin el permiso cobros:create del ERP */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Ese pago no es de esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description La cuota todavía debe: no se puede dar por resuelto */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El back no respondió */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description El micro no está conectado al ERP */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+        };
+    };
     conciliacionAgenteAnalizarMovimiento: {
         parameters: {
             query?: never;
@@ -31605,6 +31757,117 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApBillExtractDbError"];
+                };
+            };
+        };
+    };
+    redactarMensaje: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PedidoDeRedaccionDeMensaje"];
+            };
+        };
+        responses: {
+            /** @description El borrador */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MensajeRedactado"];
+                };
+            };
+            /** @description Datos inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Sólo quien escribe mensajes */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Demasiados pedidos */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description No se pudo escribir */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Escribir con IA no está disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
                 };
             };
         };
@@ -39483,6 +39746,59 @@ export interface operations {
             };
         };
     };
+    postTraducir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TraducirBody"];
+            };
+        };
+        responses: {
+            /** @description The texts in English */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraducirResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraducirError"];
+                };
+            };
+            /** @description Not an active member of the agency */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraducirError"];
+                };
+            };
+            /** @description AI cap reached (code: tope_de_ia) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraducirError"];
+                };
+            };
+        };
+    };
     cotizadorQuoteCreate: {
         parameters: {
             query?: {
@@ -40824,247 +41140,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CotizadorAdminPrescoringErrorResponse"];
-                };
-            };
-        };
-    };
-    listCalidadPublicaciones: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cola de calidad */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CalidadPublicacionResponse"];
-                };
-            };
-            /** @description Feature no habilitada */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CalidadPublicacionError"];
-                };
-            };
-            /** @description DB no disponible */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CalidadPublicacionError"];
-                };
-            };
-        };
-    };
-    getCalidadEstado: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Resumen */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        totalAudited: number;
-                        avgScore: number | null;
-                        criticos: number;
-                        posibleTomado: number;
-                        porCodigo: {
-                            [key: string]: number;
-                        };
-                        propuestasPorEstado: {
-                            [key: string]: number;
-                        };
-                        generatedAt: string;
-                    };
-                };
-            };
-            /** @description Feature no habilitada */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CalidadV2Error"];
-                };
-            };
-        };
-    };
-    ingestCalidadPropietario: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    consignacionId: string;
-                    /** @enum {string} */
-                    status?: "available" | "rented" | "unknown";
-                    changesRequirePhotos?: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Ingerido */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        updated: boolean;
-                        proposedPause: boolean;
-                        tasksEmitted: number;
-                    };
-                };
-            };
-            /** @description Feature no habilitada */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CalidadV2Error"];
-                };
-            };
-        };
-    };
-    redactarMensaje: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PedidoDeRedaccionDeMensaje"];
-            };
-        };
-        responses: {
-            /** @description El borrador */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MensajeRedactado"];
-                };
-            };
-            /** @description Datos inválidos */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                        statusCode?: number;
-                        code?: string;
-                        message?: string | string[];
-                        campos?: components["schemas"]["SobreDeErrorCampo"][];
-                        referencia?: string;
-                        servicio?: string;
-                    };
-                };
-            };
-            /** @description Sólo quien escribe mensajes */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                        statusCode?: number;
-                        code?: string;
-                        message?: string | string[];
-                        campos?: components["schemas"]["SobreDeErrorCampo"][];
-                        referencia?: string;
-                        servicio?: string;
-                    };
-                };
-            };
-            /** @description Demasiados pedidos */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                        statusCode?: number;
-                        code?: string;
-                        message?: string | string[];
-                        campos?: components["schemas"]["SobreDeErrorCampo"][];
-                        referencia?: string;
-                        servicio?: string;
-                    };
-                };
-            };
-            /** @description No se pudo escribir */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                        statusCode?: number;
-                        code?: string;
-                        message?: string | string[];
-                        campos?: components["schemas"]["SobreDeErrorCampo"][];
-                        referencia?: string;
-                        servicio?: string;
-                    };
-                };
-            };
-            /** @description Escribir con IA no está disponible */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                        statusCode?: number;
-                        code?: string;
-                        message?: string | string[];
-                        campos?: components["schemas"]["SobreDeErrorCampo"][];
-                        referencia?: string;
-                        servicio?: string;
-                    };
                 };
             };
         };

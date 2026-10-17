@@ -27,10 +27,11 @@ import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { usePaymentDetail } from '@/lib/hooks/cobranza/use-payment-detail'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const BACK_HREF = '/panel/inmobiliaria/pagos/cobranza/pagos'
 
-const copFormat = plataEnPantalla('es-CO', {
+const copFormat = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

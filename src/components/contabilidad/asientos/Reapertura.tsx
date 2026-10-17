@@ -65,6 +65,7 @@ import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-error
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { diaLegible } from '@/lib/contabilidad/fechas';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** `2026-10-04T05:02:50Z` → «4 de octubre de 2026, 12:02 a. m.» (hora de Colombia). */
 function momentoLegible(iso: string): string {
@@ -343,7 +344,7 @@ export function Reapertura({
                 <ClockCounterClockwise className="h-3.5 w-3.5 text-fg-muted" aria-hidden="true" />
                 Bitácora de reaperturas
                 <span className="font-mono tabular-nums text-fg-muted">
-                  · {bitacora.reaperturas.length.toLocaleString('es-CO')}
+                  · {bitacora.reaperturas.length.toLocaleString(localeDeLasCifras())}
                 </span>
               </p>
               {bitacora.reaperturas.length > 1 ? (

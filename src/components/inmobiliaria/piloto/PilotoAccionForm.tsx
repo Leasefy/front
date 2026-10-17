@@ -56,6 +56,7 @@ import { useI18n } from '@/lib/i18n'
 import type { AccionCampo, InboxAccion } from '@/lib/api/piloto'
 // QA-IA-95 (PI-16): la plata que escribe el micro («$1.950.000») se pinta con el espacio de la casa.
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 export interface PilotoAccionFormProps {
   accion: InboxAccion
@@ -94,7 +95,7 @@ function completo(campo: AccionCampo, valor: unknown): boolean {
 /** La ayuda gris bajo un texto con mínimo, como el modal de escalaciones. */
 function pistaDelMinimo(campo: AccionCampo): string | undefined {
   if (campo.tipo !== 'texto' || typeof campo.minLargo !== 'number' || campo.minLargo <= 1) return undefined
-  return `Mínimo ${campo.minLargo.toLocaleString('es-CO')} caracteres`
+  return `Mínimo ${campo.minLargo.toLocaleString(localeDeLasCifras())} caracteres`
 }
 
 export function PilotoAccionForm({

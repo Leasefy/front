@@ -34,6 +34,7 @@ import type { IndicadoresDelMando } from './indicadores'
 import { Cifra, EnPieza, Medidor, pesos, TONO, unir, useNombreDeAgente, type Tono } from './piezas'
 import { TEXTOS } from './textos'
 import type { DatosDelMando } from './tipos'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const T = TEXTOS.tendencias
 
@@ -139,12 +140,12 @@ export function TarjetaDelNegocio({ ind, datos, className }: { ind: IndicadoresD
                   <Medidor
                     tamano={104}
                     valor={ind.recaudo.pct === null ? null : ind.recaudo.pct / 100}
-                    centro={ind.recaudo.pct === null ? '—' : <Cifra valor={ind.recaudo.pct} formato={(v) => `${v.toLocaleString('es-CO', { maximumFractionDigits: 1 })}\u00a0%`} />}
+                    centro={ind.recaudo.pct === null ? '—' : <Cifra valor={ind.recaudo.pct} formato={(v) => `${v.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 1 })}\u00a0%`} />}
                     etiqueta={T.recaudo}
                     descripcion={
                       ind.recaudo.pct === null
                         ? `${T.recaudo}: ${T.recaudoSinDato}`
-                        : `${T.recaudo}: ${ind.recaudo.pct.toLocaleString('es-CO', { maximumFractionDigits: 1 })}\u00a0%, ${t(claveDelRotulo(ind.recaudo.base))}`
+                        : `${T.recaudo}: ${ind.recaudo.pct.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 1 })}\u00a0%, ${t(claveDelRotulo(ind.recaudo.base))}`
                     }
                   />
                 </div>
@@ -187,7 +188,7 @@ export function TarjetaDelNegocio({ ind, datos, className }: { ind: IndicadoresD
                             : ind.mora.cambio < 0
                               ? T.moraBaja(pesos(-ind.mora.cambio), ind.mora.diasDeLaSerie)
                               : T.moraIgual(ind.mora.diasDeLaSerie)}
-                          {ind.mora.dias !== null ? ` · ${T.moraNota(`${ind.mora.dias.toLocaleString('es-CO', { maximumFractionDigits: 1 })} ${ind.mora.dias === 1 ? 'día' : 'días'}`)}` : ''}
+                          {ind.mora.dias !== null ? ` · ${T.moraNota(`${ind.mora.dias.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 1 })} ${ind.mora.dias === 1 ? 'día' : 'días'}`)}` : ''}
                         </span>
                       </p>
                     </div>

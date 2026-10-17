@@ -51,6 +51,8 @@ import {
 import { MonoLabel } from '@leasefy/cadence'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { sinDeudores } from '@/lib/cobranza/reporte-sin-deudores'
+import { textoDelAviso } from '@/lib/cobranza/aviso-del-reporte'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /**
  * N-11 (QA-PAGOS-95, 05-10-2026): el reporte decía «PKR», «100.0%» y
@@ -58,7 +60,7 @@ import { sinDeudores } from '@/lib/cobranza/reporte-sin-deudores'
  */
 function porcentajeLegible(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return '—'
-  return `${n.toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`
+  return `${n.toLocaleString(localeDeLasCifras(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`
 }
 
 function diaDelReporte(dia: string, locale: string): string {
@@ -71,7 +73,18 @@ function diaDelReporte(dia: string, locale: string): string {
   })
 }
 
-const COP_FORMATTER = plataEnPantalla('es-CO', {
+/** «16 de octubre»: el último contacto, en palabras (antes «16/10/2026»). */
+function diaCorto(iso: string, locale: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString(locale.startsWith('es') ? 'es-CO' : 'en-US', {
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'America/Bogota',
+  })
+}
+
+const COP_FORMATTER = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -138,6 +151,13 @@ function ReporteViewerContent() {
   }, [data])
 
   const morosidadValue = data?.summary.indice_morosidad_pct ?? null
+  /*
+   * MORI-22 (QA-AGENTES 16-10): decía «Índice de morosidad 100 %» con UN
+   * inquilino en mora de 728: el micro dividía entre los casos de cobranza.
+   * Ahora mide inquilinos en mora sobre inquilinos con contrato vigente, y la
+   * tarjeta dice de dónde sale («1 de 728…»).
+   */
+  const morosidadBase = data?.summary.morosidad_base ?? null
   const callsOutside = data?.summary.calls_outside_window_count ?? null
 
   const onExportCsv = async () => {
@@ -228,15 +248,26 @@ function ReporteViewerContent() {
         <>
           {/* 1. KPI tile row */}
           <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* MORI-22: era «% recuperado» y medía las PROMESAS cumplidas
+                (lo mismo que su umbral); sin promesas vencidas, sin cifra. */}
             <KpiTile
-              label={locale.startsWith('es') ? '% recuperado' : t('inmobiliaria.ai.cobranza.reporte.kpis.pkr')}
+              label={t('inmobiliaria.ai.cobranza.reporte.kpis.pkr')}
               value={porcentajeLegible(pkrValue)}
               alert={pkrValue != null && pkrValue < pkrAlertBelow}
+              pista={pkrValue == null ? t('inmobiliaria.ai.cobranza.reporte.kpis.pkrSinPromesas') : undefined}
             />
             <KpiTile
               label={t('inmobiliaria.ai.cobranza.reporte.kpis.morosidad')}
               value={porcentajeLegible(morosidadValue)}
               alert={morosidadValue != null && morosidadValue > morosidadAlertAbove}
+              pista={
+                morosidadBase
+                  ? t('inmobiliaria.ai.cobranza.reporte.kpis.morosidadBase', {
+                      enMora: morosidadBase.inquilinos_en_mora.toLocaleString(localeDeLasCifras()),
+                      conContrato: morosidadBase.inquilinos_con_contrato.toLocaleString(localeDeLasCifras()),
+                    })
+                  : undefined
+              }
             />
             <KpiTile
               label={t('inmobiliaria.ai.cobranza.reporte.kpis.outsideHours')}
@@ -278,7 +309,7 @@ function ReporteViewerContent() {
                       alert.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
                     ].join(' ')}
                   >
-                    {alert.message_es}
+                    {textoDelAviso(alert, locale)}
                   </p>
                 </StaggerItem>
               ))}
@@ -289,7 +320,7 @@ function ReporteViewerContent() {
           <section className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-muted/20">
               <MonoLabel>
-                {t('inmobiliaria.ai.cobranza.reporte.topDebtors.heading')} · Top {topN}
+                {t('inmobiliaria.ai.cobranza.reporte.topDebtors.heading')}
               </MonoLabel>
             </div>
             {data.top_debtors.length === 0 ? (
@@ -304,7 +335,7 @@ function ReporteViewerContent() {
                       {locale.startsWith('es') ? 'Deudor' : 'Debtor'}
                     </TableHead>
                     <TableHead className="text-right">
-                      DPD
+                      {t('inmobiliaria.ai.cobranza.reporte.topDebtors.diasDeMora')}
                     </TableHead>
                     <TableHead className="text-right">
                       {locale.startsWith('es') ? 'Saldo' : 'Balance'}
@@ -339,9 +370,7 @@ function ReporteViewerContent() {
                         {COP_FORMATTER.format(d.balance_cop)}
                       </TableCell>
                       <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-muted-foreground">
-                        {d.last_contact_at
-                          ? new Date(d.last_contact_at).toLocaleDateString(locale)
-                          : '—'}
+                        {d.last_contact_at ? diaCorto(d.last_contact_at, locale) : '—'}
                       </TableCell>
                     </TableRowAnimada>
                   ))}
@@ -361,7 +390,8 @@ function ReporteViewerContent() {
                 size="sm"
                 hideArrow
                 onClick={() => void onExportCsv()}
-                disabled={!agencyId}
+                // Sin días guardados, el CSV saldría sólo con el encabezado.
+                disabled={!agencyId || history.length === 0}
               >
                 <Download className="w-3.5 h-3.5" aria-hidden="true" />
                 {t('inmobiliaria.ai.cobranza.reporte.history.exportCsv')}
@@ -377,7 +407,9 @@ function ReporteViewerContent() {
                 <Spinner />
               </div>
             ) : history.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">—</p>
+              <p className="text-sm text-muted-foreground text-center py-6">
+                {t('inmobiliaria.ai.cobranza.reporte.history.empty')}
+              </p>
             ) : (
               <>
                 <Table>
@@ -387,7 +419,7 @@ function ReporteViewerContent() {
                         {locale.startsWith('es') ? 'Fecha' : 'Date'}
                       </TableHead>
                       <TableHead className="text-right">
-                        {locale.startsWith('es') ? '% recuperado' : 'Recovered %'}
+                        {t('inmobiliaria.ai.cobranza.reporte.kpis.pkr')}
                       </TableHead>
                       <TableHead className="text-right">
                         {locale.startsWith('es') ? 'Morosidad' : 'Delinquency'}
@@ -449,11 +481,16 @@ function KpiTile({
   label,
   value,
   alert,
+  pista,
 }: {
   label: string
   value: string
   alert: boolean
+  /** De dónde sale la cifra, o por qué no hay. */
+  pista?: string
 }) {
+  // Sin cifra («—») no es una buena noticia: va en gris, no en verde.
+  const sinCifra = value === '—'
   return (
     <div
       className={[
@@ -471,11 +508,14 @@ function KpiTile({
           'mt-2 text-3xl font-mono tabular-nums',
           alert
             ? 'text-danger font-bold'
-            : 'text-success',
+            : sinCifra
+              ? 'text-muted-foreground'
+              : 'text-success',
         ].join(' ')}
       >
         {value}
       </p>
+      {pista && <p className="mt-1 text-xs text-muted-foreground">{pista}</p>}
     </div>
   )
 }

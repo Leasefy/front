@@ -1,3 +1,4 @@
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 /**
  * Los topes de la captación (listas restrictivas) en el cliente (02-10-2026).
  *
@@ -77,7 +78,7 @@ export interface RevisionDeLasFilas<F extends FilaParaRevisar> {
   error: string | null
 }
 
-const filaLegible = (i: number) => `la fila ${(i + 1).toLocaleString('es-CO')}`
+const filaLegible = (i: number) => `la fila ${(i + 1).toLocaleString(localeDeLasCifras())}`
 
 /**
  * Lo que el back rechazaría de las filas, ANTES de mandarlas.
@@ -118,12 +119,12 @@ export function revisarLasFilas<F extends FilaParaRevisar>(filas: readonly F[]):
   const problemas: string[] = []
   if (nombresLargos > 0) {
     problemas.push(
-      `${nombresLargos === 1 ? 'Un registro trae' : `${nombresLargos.toLocaleString('es-CO')} registros traen`} un nombre de más de ${MAX_LARGO_DEL_NOMBRE_EN_LA_LISTA} caracteres (desde ${filaLegible(primerNombreLargo)}). Revisa que la columna del nombre sea la correcta.`,
+      `${nombresLargos === 1 ? 'Un registro trae' : `${nombresLargos.toLocaleString(localeDeLasCifras())} registros traen`} un nombre de más de ${MAX_LARGO_DEL_NOMBRE_EN_LA_LISTA} caracteres (desde ${filaLegible(primerNombreLargo)}). Revisa que la columna del nombre sea la correcta.`,
     )
   }
   if (documentosLargos > 0) {
     problemas.push(
-      `${documentosLargos === 1 ? 'Un registro trae' : `${documentosLargos.toLocaleString('es-CO')} registros traen`} un documento de más de ${MAX_LARGO_DEL_DOCUMENTO_EN_LA_LISTA} caracteres (desde ${filaLegible(primerDocumentoLargo)}). Revisa que la columna del documento sea la correcta.`,
+      `${documentosLargos === 1 ? 'Un registro trae' : `${documentosLargos.toLocaleString(localeDeLasCifras())} registros traen`} un documento de más de ${MAX_LARGO_DEL_DOCUMENTO_EN_LA_LISTA} caracteres (desde ${filaLegible(primerDocumentoLargo)}). Revisa que la columna del documento sea la correcta.`,
     )
   }
   return {

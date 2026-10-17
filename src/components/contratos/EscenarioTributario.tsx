@@ -41,6 +41,7 @@ import type {
   EscenarioTributarioDelContrato,
   ImpuestoDelEscenario,
 } from '@/lib/types/contract'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 interface Props {
   contract: Pick<Contract, 'escenarioTributario'> & { id?: string }
@@ -72,7 +73,7 @@ const SOBRE: Record<ImpuestoDelEscenario['base'], string> = {
 
 /** El porcentaje con coma decimal, como se escribe en Colombia. */
 function porcentaje(n: number): string {
-  return `${n.toLocaleString('es-CO', { maximumFractionDigits: 2 })} %`
+  return `${n.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 2 })} %`
 }
 
 export function EscenarioTributario({

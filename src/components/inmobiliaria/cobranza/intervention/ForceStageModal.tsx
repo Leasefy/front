@@ -11,6 +11,7 @@
 
 import * as React from 'react'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { falloDelMicro } from '@/lib/api/fallo-del-micro'
@@ -136,6 +137,8 @@ export function ForceStageModal({
         },
       )
       if (!res.ok) throw await falloDelMicro(res)
+      // Antes se cerraba sin decir nada.
+      toast.success(`Etapa cambiada a ${stageDisplayName(target as CarteraStage, locale)}. Quedó registrado quién lo hizo.`)
       onSuccess()
       onClose()
     } catch (err) {

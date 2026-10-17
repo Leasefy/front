@@ -48,6 +48,7 @@ import { useMiUserId } from '@/lib/agenda/use-equipo';
 import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
+import { useTr } from '@/lib/i18n/use-tr';
 
 interface PipelineDetailProps {
   isOpen: boolean;
@@ -157,6 +158,7 @@ function getNextStage(currentStage: PipelineStage): PipelineStage | null {
 
 // Risk level badge component
 function RiskBadge({ score, level }: { score?: number; level?: string }) {
+  const tr = useTr();
   if (!score && !level) return null;
 
   const colors: Record<string, string> = {
@@ -170,7 +172,7 @@ function RiskBadge({ score, level }: { score?: number; level?: string }) {
   return (
     <div className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium', colors[level || 'E'])}>
       {level && <span className="font-bold">{level}</span>}
-      {score && <span className="opacity-75">({score} pts)</span>}
+      {score && <span className="opacity-75">({score} {tr("pts)")}</span>}
     </div>
   );
 }
@@ -189,6 +191,7 @@ export function PipelineDetail({
   equipo = [],
   onCambio,
 }: PipelineDetailProps) {
+  const tr = useTr();
   const { t, formatDate: formatDateI18n } = useI18n();
   const [reasignando, setReasignando] = useState(false);
   const miUserId = useMiUserId();
@@ -267,7 +270,7 @@ export function PipelineDetail({
     }
 
     toast.success(t('inmobiliaria.pipeline.stageUpdated'), {
-      description: t('inmobiliaria.pipeline.movedTo', { name: item.candidateName, stage: nextStageInfo?.labelEs || '' }),
+      description: t('inmobiliaria.pipeline.movedTo', { name: item.candidateName, stage: tr(nextStageInfo?.labelEs || '') }),
     });
 
     setIsMoving(false);
@@ -369,7 +372,7 @@ export function PipelineDetail({
             // entra ya y la vieja se va encima (`popLayout`).
             <CrossFade as="span" swapKey={item.stage} mode="popLayout" className="inline-flex shrink-0">
               <span className={cn('shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold', stageInfo?.color)}>
-                {stageInfo?.labelEs}
+                {tr(stageInfo?.labelEs ?? '')}
               </span>
             </CrossFade>
           }
@@ -432,7 +435,7 @@ export function PipelineDetail({
                 className="flex w-full items-center justify-between px-4 py-3 border-t border-border text-sm font-medium text-primary hover:bg-muted/50 transition-colors"
                 data-testid="lead-enlace-postularse"
               >
-                <span>Copiar el enlace para que se postule</span>
+                <span>{tr("Copiar el enlace para que se postule")}</span>
                 <Copy className="w-4 h-4" />
               </button>
             )}
@@ -515,13 +518,13 @@ export function PipelineDetail({
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.currentStage')}</span>
                 <span className={cn('px-2.5 py-1 rounded-sm text-xs font-medium', stageInfo?.color)}>
-                  {stageInfo?.labelEs}
+                  {tr(stageInfo?.labelEs ?? '')}
                 </span>
               </div>
 
               {/* PL-11/PL-12: quién lo atiende, y cambiarlo desde acá. */}
               <div className="flex items-center justify-between gap-3 px-4 py-3" data-testid="lead-asesor">
-                <span className="shrink-0 text-sm text-muted-foreground">Asesor</span>
+                <span className="shrink-0 text-sm text-muted-foreground">{tr("Asesor")}</span>
                 {puedeEditar && equipo.some((m) => m.asesor) ? (
                   <div className="w-56 max-w-full">
                     <Combobox
@@ -529,7 +532,7 @@ export function PipelineDetail({
                       value={item.agenteId || undefined}
                       onChange={(v) => void reasignar(v ?? undefined)}
                       options={equipo.filter((m) => m.asesor).map((m) => ({ value: m.userId, label: m.nombre }))}
-                      placeholder="Sin asignar"
+                      placeholder={tr("Sin asignar")}
                       disabled={reasignando}
                     />
                   </div>
@@ -611,7 +614,7 @@ export function PipelineDetail({
                                 hito.esActual ? 'text-foreground' : 'text-muted-foreground'
                               )}
                             >
-                              {infoDeLaEtapa?.labelEs ??
+                              {infoDeLaEtapa?.labelEs ? tr(infoDeLaEtapa.labelEs) :
                                 t('inmobiliaria.pipeline.enteredPipeline')}
                             </span>
                             {/* Los días sólo se afirman donde están medidos: la
@@ -656,7 +659,7 @@ export function PipelineDetail({
           <div className="space-y-3">
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <Buildings className="w-3.5 h-3.5" />
-              Captación
+              {tr("Captación")}
             </h4>
             <CaptacionDelLead pipelineItemId={item.id} puedeEditar={puedeEditar} />
           </div>
@@ -720,7 +723,7 @@ export function PipelineDetail({
                   t('inmobiliaria.pipeline.moving')
                 ) : (
                   <>
-                    {t('inmobiliaria.pipeline.moveTo')} {nextStageInfo?.labelEs}
+                    {t('inmobiliaria.pipeline.moveTo')} {tr(nextStageInfo?.labelEs ?? '')}
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}

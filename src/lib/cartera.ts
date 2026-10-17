@@ -58,12 +58,16 @@ export function stageDayRange(stage: CarteraStage, locale: string): string | nul
 /**
  * La etapa no es una etiqueta: es el plan de contacto que el agente va a
  * ejecutar. Un operador que ve «S2» en un desplegable no tiene forma de saber
- * que está eligiendo «llamar los días 20, 30 y 40», y menos que S4 y S5
- * significan que el agente DEJA de llamar.
+ * qué está eligiendo, y menos que S4 y S5 significan que el agente DEJA de
+ * llamar.
  *
  * Espejo de `CADENCE_CALENDAR` en
- * `agent/src/cartera/cadence-orchestrator.ts`. Los días se cuentan desde el
- * primer vencimiento impago (negativos = antes de la fecha de pago).
+ * `agent/src/cartera/cadence-orchestrator.ts`. 🔴 QA-AGENTES 16-10: desde el
+ * 30-08 (Nico) el micro llama UNA VEZ AL DÍA en mora hasta acuerdo o promesa
+ * (entradas `daily`; el WhatsApp es el respaldo de quien no acepta llamadas) y
+ * acá seguía el calendario viejo («una sola llamada, el día 50»). Los días se
+ * cuentan desde el primer día de mora, cuando se acaba el plazo de pago
+ * (`v_debtor_delinquency`; negativos = antes de la fecha de pago).
  *
  * ⚠️ Dos cosas que este texto NO dice, a propósito:
  *  - Los correos del calendario (S1 día 3, S2 día 35) están detrás de
@@ -74,20 +78,20 @@ export function stageDayRange(stage: CarteraStage, locale: string): string | nul
  *    por defecto, no como una garantía.
  */
 export const STAGE_ACCIONES_ES: Record<CarteraStage, string> = {
-  S0: 'Avisa ANTES de que venza: WhatsApp y llamada 7 y 3 días antes, y una llamada el día del vencimiento.',
-  S1: 'WhatsApp el día 1 de mora, y llamadas los días 5 y 12.',
-  S2: 'Llama los días 20, 30 y 40. El día 25 avisa por WhatsApp que la deuda puede reportarse a centrales de riesgo.',
-  S3: 'Una sola llamada, el día 50, para anunciar la carta pre-jurídica.',
+  S0: 'Avisa ANTES de que venza: llama 7 y 3 días antes y el día del vencimiento (ese día insiste hasta que contesten). Si la persona no acepta llamadas, le escribe por WhatsApp.',
+  S1: 'Llama una vez al día desde el primer día de mora, hasta que haya un acuerdo o una promesa de pago. Si la persona no acepta llamadas, le escribe por WhatsApp.',
+  S2: 'Sigue llamando una vez al día hasta que haya un acuerdo o una promesa de pago. Si la persona no acepta llamadas, le escribe por WhatsApp.',
+  S3: 'Sigue llamando una vez al día hasta que haya un acuerdo o una promesa de pago; la llamada del día 50 anuncia la carta prejurídica. Si la persona no acepta llamadas, le escribe por WhatsApp.',
   S4: 'El agente DEJA de gestionar. El caso queda en manos de la aseguradora.',
   S5: 'El agente DEJA de gestionar. El caso queda en manos del equipo jurídico.',
   SX: 'Sólo llama al fiador, y únicamente si hay uno registrado. Al deudor no lo contacta.',
 }
 
 export const STAGE_ACCIONES_EN: Record<CarteraStage, string> = {
-  S0: 'Reaches out BEFORE the due date: WhatsApp and a call 7 and 3 days ahead, plus a call on the due date.',
-  S1: 'WhatsApp on day 1 of delinquency, then calls on days 5 and 12.',
-  S2: 'Calls on days 20, 30 and 40. On day 25 it warns over WhatsApp that the debt may be reported to credit bureaus.',
-  S3: 'A single call, on day 50, announcing the pre-judicial letter.',
+  S0: 'Reaches out BEFORE the due date: calls 7 and 3 days ahead and on the due date (that day it keeps trying until someone answers). If the person does not accept calls, it writes over WhatsApp.',
+  S1: 'Calls once a day from the first day of delinquency until there is a payment agreement or promise. If the person does not accept calls, it writes over WhatsApp.',
+  S2: 'Keeps calling once a day until there is a payment agreement or promise. If the person does not accept calls, it writes over WhatsApp.',
+  S3: 'Keeps calling once a day until there is a payment agreement or promise; the call on day 50 announces the pre-judicial letter. If the person does not accept calls, it writes over WhatsApp.',
   S4: 'The agent STOPS working the case. The insurer takes over.',
   S5: 'The agent STOPS working the case. The legal team takes over.',
   SX: 'Only calls the guarantor, and only if one is on file. The debtor is not contacted.',

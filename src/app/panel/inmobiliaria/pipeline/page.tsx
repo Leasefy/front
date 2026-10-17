@@ -42,12 +42,14 @@ import { tasaMedida, textoDeTasa } from '@/lib/tasas';
 import { useSearchParams } from 'next/navigation';
 import { AgendarVisitaDialog } from '@/components/inmobiliaria/AgendarVisitaDialog';
 import { useEquipo } from '@/lib/agenda/use-equipo';
+import { useTr } from '@/lib/i18n/use-tr';
 
 /**
  * Pipeline Page - Kanban board for managing the rental pipeline
  * Route: /panel/inmobiliaria/pipeline
  */
 function PipelineContent() {
+  const tr = useTr();
   const { t } = useI18n();
 
   // Fetch data from API
@@ -386,7 +388,7 @@ function PipelineContent() {
                 data-testid="pipeline-nuevo-lead"
               >
                 <Plus className="w-4 h-4" />
-                Nuevo interesado
+                {tr("Nuevo interesado")}
               </Button>
             </PermissionGate>
           </div>
@@ -414,8 +416,8 @@ function PipelineContent() {
               hayFiltros={hayFiltros}
               queSon="interesados"
               icono={Funnel}
-              titulo="Todavía no hay interesados en el embudo"
-              descripcion="Entran solos cuando alguien pide una visita o se postula a uno de tus inmuebles. El que te llega por teléfono lo puedes cargar a mano."
+              titulo={tr("Todavía no hay interesados en el embudo")}
+              descripcion={tr("Entran solos cuando alguien pide una visita o se postula a uno de tus inmuebles. El que te llega por teléfono lo puedes cargar a mano.")}
               crear={
                 puedeCrear
                   ? { label: 'Nuevo interesado', onClick: () => setCreandoLead(true) }

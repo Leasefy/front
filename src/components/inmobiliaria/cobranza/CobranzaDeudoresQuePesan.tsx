@@ -31,11 +31,13 @@ import {
   TableRow,
   TableRowAnimada,
 } from '@/components/ui/table'
+import { useTr } from '@/lib/i18n/use-tr'
 
 const CASOS_HREF = '/panel/inmobiliaria/pagos/cobranza/deudores'
 const TOP_N = 5
 
 export function CobranzaDeudoresQuePesan() {
+  const tr = useTr();
   const { formatCurrency } = useI18n()
   const { data, isLoading } = useDailyReport()
 
@@ -50,24 +52,24 @@ export function CobranzaDeudoresQuePesan() {
       className="rounded-lg border border-border bg-card overflow-hidden"
     >
       <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-fg">Los que más pesan</h3>
+        <h3 className="text-sm font-semibold text-fg">{tr("Los que más pesan")}</h3>
         <Link
           href={CASOS_HREF}
           className="text-xs text-fg-muted hover:text-fg underline underline-offset-2"
         >
-          Ver todos los casos
+          {tr("Ver todos los casos")}
         </Link>
       </div>
       <Table>
         <TableHeader>
           {/* El encabezado no es una fila sobre la que se pueda actuar: sin hover. */}
           <TableRow className="hover:bg-transparent">
-            <TableHead scope="col">Deudor</TableHead>
+            <TableHead scope="col">{tr("Deudor")}</TableHead>
             <TableHead scope="col" numeric>
-              Días de mora
+              {tr("Días de mora")}
             </TableHead>
             <TableHead scope="col" numeric>
-              Saldo
+              {tr("Saldo")}
             </TableHead>
           </TableRow>
         </TableHeader>

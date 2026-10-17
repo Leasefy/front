@@ -259,6 +259,30 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
     }
   };
 
+  /** CONC-12 (Nico, 17-10): la línea que paga el arriendo de dos inquilinos. */
+  const conciliarElPar = async (m: MovimientoBancario) => {
+    if (!m.par) return;
+    marcar(m.id, true);
+    try {
+      await conciliacionBancariaApi.conciliarConVariosClientes(
+        m.id,
+        m.par.partes.map((p) => ({ tenantId: p.tenantId, valorCop: p.valorCop })),
+      );
+      const nombres = m.par.partes.map((p) => p.tenantName ?? p.propertyTitle);
+      toast.success(`Conciliado: un recibo a ${nombres.slice(0, -1).join(', ')} y otro a ${nombres[nombres.length - 1]}.`);
+      await cargar();
+    } catch (error) {
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo conciliar el pago de los dos.',
+          accion: 'conciliar el pago de los dos inquilinos',
+        }),
+      );
+    } finally {
+      marcar(m.id, false);
+    }
+  };
+
   /**
    * La plata va contra la DEUDA del cliente, no contra un cobro elegido: la
    * deuda nace con el contrato, así que el back la reparte de la cuota más
@@ -491,6 +515,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
                       setConCliente(mov);
                       setClienteElegido(null);
                     }}
+                    onConciliarElPar={(mov) => void conciliarElPar(mov)}
                     onIgnorar={(mov) => {
                       setIgnorando(mov);
                       setMotivo('');

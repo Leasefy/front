@@ -33,6 +33,7 @@ import { PipelineCard, NombresDeAgentesContext } from './PipelineCard';
 import { mensajeDelRechazoDelMotivo } from '@/components/inmobiliaria/agenda/MotivoDialog';
 import { MotivoDePerdidaDialog } from '@/components/inmobiliaria/MotivoDePerdidaDialog';
 import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
+import { useTr } from '@/lib/i18n/use-tr';
 
 // ============================================================================
 // Types
@@ -149,6 +150,7 @@ function DroppableColumn({
   maxVisibleCards = 3,
   puedeMover = true,
 }: DroppableColumnProps) {
+  const tr = useTr();
   const { t } = useI18n();
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   // «Ver todo»: el cajón con todos los leads de la columna. Portal, foco, Esc,
@@ -198,7 +200,7 @@ function DroppableColumn({
 
           {/* Stage label */}
           <h3 className="font-semibold text-sm text-foreground">
-            {stageInfo?.labelEs || stage}
+            {tr(stageInfo?.labelEs || stage)}
           </h3>
 
           {/* Count badge */}
@@ -330,7 +332,7 @@ function DroppableColumn({
                 )}
               />
             }
-            title={stageInfo?.labelEs || stage}
+            title={tr(stageInfo?.labelEs || stage)}
             description={`${items.length} ${items.length === 1 ? t('inmobiliaria.pipeline.leadSingular') : t('inmobiliaria.pipeline.leadPlural')}`}
           />
 

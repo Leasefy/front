@@ -27,6 +27,7 @@ import {
 import { ChartBar } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { EmptyState } from '@/components/data-display/EmptyState';
+import { useTr } from '@/lib/i18n/use-tr';
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -83,6 +84,7 @@ function pivotRows(rows: ChannelMixRow[]): PivotedRow[] {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function CadenceChannelMixChart({ data }: CadenceChannelMixChartProps) {
+  const tr = useTr();
   const { t } = useI18n();
 
   // Branch A — agency-gate: page-level gate handles this
@@ -96,7 +98,7 @@ export function CadenceChannelMixChart({ data }: CadenceChannelMixChartProps) {
       <EmptyState
         icon={ChartBar}
         title={t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.channelMix.title')}
-        description="Sin datos suficientes todavía"
+        description={tr("Sin datos suficientes todavía")}
       />
     );
   }

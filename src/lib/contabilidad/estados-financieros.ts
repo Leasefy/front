@@ -37,6 +37,7 @@ import type {
   LibroMayor,
   SinAsentar,
 } from '@/lib/api/estados-financieros.service';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /**
  * La frase del canon, con estas palabras — el RESPALDO de la que manda el back
@@ -236,7 +237,7 @@ export function margenLegible(margenPct: number | null, sinMedir: string): strin
   if (margenPct === null || !Number.isFinite(margenPct)) return sinMedir;
   // QA-FACT-CONTA-95: el número de la casa — coma decimal, «−» y espacio
   // antes del «%» («−385,6 %»; decía «-385.6%»).
-  const cifra = Math.abs(margenPct).toLocaleString('es-CO', {
+  const cifra = Math.abs(margenPct).toLocaleString(localeDeLasCifras(), {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });

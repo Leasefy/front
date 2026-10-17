@@ -38,6 +38,7 @@ import {
 } from "@/lib/api/contabilidad.service";
 
 import { mensajeDeContabilidad } from "./contabilidad-errores";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
 const CLASES: { clase: ClaseDeComprobante; titulo: string }[] = [
   { clase: "factura", titulo: "Facturas" },
@@ -68,7 +69,7 @@ const ORDEN_DE_MOTIVOS: MotivoSinContrato[] = [
   "CONCEPTO_SIN_TERCERO",
 ];
 
-const n = (valor: number) => valor.toLocaleString("es-CO");
+const n = (valor: number) => valor.toLocaleString(localeDeLasCifras());
 
 export function ComprobantesSinContrato({
   version = 0,

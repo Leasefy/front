@@ -1,3 +1,4 @@
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 /**
  * Los topes de la carga de inmuebles y sus frases, del lado del cliente
  * (02-10-2026).
@@ -18,14 +19,14 @@ export const PRECIO_DE_VENTA_MAXIMO_COP = 100_000_000_000;
 /** 1.000.000 m² (100 hectáreas): la carga trae fincas. */
 export const AREA_MAXIMA_M2 = 1_000_000;
 
-const pesos = (n: number) => `$${n.toLocaleString('es-CO')}`;
+const pesos = (n: number) => `$${n.toLocaleString(localeDeLasCifras())}`;
 
 export const MENSAJES_DE_LA_IMPORTACION = {
   canonMaximo: `El canon no puede pasar de ${pesos(CANON_MAXIMO_COP)} al mes. Revisa que no sobren ceros.`,
   canonMinimo: 'El canon debe ser mayor que cero. Si no lo sabes, déjalo vacío.',
   precioDeVentaMaximo: `El precio de venta no puede pasar de ${pesos(PRECIO_DE_VENTA_MAXIMO_COP)}. Revisa que no sobren ceros.`,
   precioDeVentaMinimo: 'El precio de venta debe ser mayor que cero.',
-  areaMaxima: `El área no puede pasar de ${AREA_MAXIMA_M2.toLocaleString('es-CO')} m². Revisa que no sobren ceros.`,
+  areaMaxima: `El área no puede pasar de ${AREA_MAXIMA_M2.toLocaleString(localeDeLasCifras())} m². Revisa que no sobren ceros.`,
   areaNegativa: 'El área no puede ser negativa.',
 } as const;
 

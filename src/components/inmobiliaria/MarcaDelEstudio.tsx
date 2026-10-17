@@ -12,6 +12,7 @@
 import { cn } from '@/lib/utils'
 import type { MarcaDelEstudio } from '@/lib/api/applications.types'
 import { textoDeLaMarca } from '@/lib/postulaciones/marca-del-estudio'
+import { useTr } from '@/lib/i18n/use-tr'
 
 export function ChipDeLaMarcaDelEstudio({
   marca,
@@ -23,6 +24,7 @@ export function ChipDeLaMarcaDelEstudio({
   conEstudio?: boolean
   className?: string
 }) {
+  const tr = useTr();
   // `undefined` = el servidor todavía no manda la marca: no se afirma nada
   // («Con estudio» sería inventarlo). `null` = la mandó y no hay nada que marcar.
   if (marca === undefined) {
@@ -37,7 +39,7 @@ export function ChipDeLaMarcaDelEstudio({
         data-testid="marca-del-estudio"
         data-marca="ninguna"
       >
-        Con estudio
+        {tr("Con estudio")}
       </span>
     )
   }

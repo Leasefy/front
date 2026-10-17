@@ -47,11 +47,13 @@ import { RecoveryRateChart } from '@/components/inmobiliaria/cobranza/RecoveryRa
 import { TopObjectionsTable } from '@/components/inmobiliaria/cobranza/TopObjectionsTable'
 import { CadenceChannelMixChart } from '@/components/inmobiliaria/cobranza/CadenceChannelMixChart'
 import { HeatmapGrid24x7 } from '@/components/inmobiliaria/cobranza/HeatmapGrid24x7'
+import { useTr } from '@/lib/i18n/use-tr'
 
 /** Mínimo de llamadas en 30 días que el backend exige para que haya analítica. */
 const MIN_LLAMADAS_30D = 5
 
 export function CobranzaAnaliticaResumen() {
+  const tr = useTr();
   const { isLoading, error, data, refetch } = useCobranzaAnalytics()
 
   const gate = data?.agencyGate
@@ -89,14 +91,14 @@ export function CobranzaAnaliticaResumen() {
    */
   if (error && !isLoading) {
     return (
-      <section aria-label="Cómo lo está logrando" className="space-y-3">
-        <h2 className="text-base font-semibold text-fg">Cómo lo está logrando</h2>
+      <section aria-label={tr("Cómo lo está logrando")} className="space-y-3">
+        <h2 className="text-base font-semibold text-fg">{tr("Cómo lo está logrando")}</h2>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-sm text-fg-muted">
-            No pudimos traer la analítica del agente.
+            {tr("No pudimos traer la analítica del agente.")}
           </p>
           <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()}>
-            Intentar de nuevo
+            {tr("Intentar de nuevo")}
           </Button>
         </div>
       </section>
@@ -111,8 +113,8 @@ export function CobranzaAnaliticaResumen() {
   }
 
   return (
-    <section aria-label="Cómo lo está logrando" className="space-y-3">
-      <h2 className="text-base font-semibold text-fg">Cómo lo está logrando</h2>
+    <section aria-label={tr("Cómo lo está logrando")} className="space-y-3">
+      <h2 className="text-base font-semibold text-fg">{tr("Cómo lo está logrando")}</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 [&>*:only-child]:md:col-span-2">
         {hayRecuperacion && (

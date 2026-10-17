@@ -127,6 +127,11 @@ const DECLARADOS: ReadonlyArray<Uso & { motivo: string }> = [
     src: 'src',
     motivo: '`FotoDeMarca` sólo recibe `FOTO_DE_LA_BIENVENIDA` o `FOTO_DEL_CIERRE`, constantes del mismo archivo.',
   },
+  {
+    archivo: 'src/components/landing-v2/marketplace/VitrinaViva.tsx',
+    src: 'foto',
+    motivo: 'Recorre `FOTOS_DE_MUESTRA`: seis archivos fijos de `public/marketplace/portadas/`, con el índice en módulo de su largo.',
+  },
 ];
 
 const clave = (u: Uso) => `${u.archivo} :: ${u.src}`;

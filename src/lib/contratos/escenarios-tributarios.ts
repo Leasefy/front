@@ -51,6 +51,7 @@
  */
 
 import { alCentavo, restar, sumar } from '@/lib/plata/plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 export type TipoPersona = 'NATURAL' | 'JURIDICA'
 
@@ -234,8 +235,8 @@ export function liquidar(op: Operacion): Liquidacion {
     )
   } else if (op.baseCop < baseMinimaCop) {
     motivos.push(
-      `Sin retención en la fuente: la base ($${op.baseCop.toLocaleString('es-CO')}) ` +
-        `no llega al mínimo de ${minimoUvt} UVT ($${baseMinimaCop.toLocaleString('es-CO')}).`,
+      `Sin retención en la fuente: la base ($${op.baseCop.toLocaleString(localeDeLasCifras())}) ` +
+        `no llega al mínimo de ${minimoUvt} UVT ($${baseMinimaCop.toLocaleString(localeDeLasCifras())}).`,
     )
   } else {
     rfCop = alPeso((op.baseCop * tarifaRf) / 100)

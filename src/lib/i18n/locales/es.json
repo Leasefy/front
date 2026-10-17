@@ -2980,7 +2980,8 @@
           "enviado": "Enviado",
           "pagado": "Pagado",
           "vencido": "Vencido",
-          "fallido": "Pago fallido"
+          "fallido": "Pago fallido",
+          "enRevision": "Pago en revisión"
         },
         "detalle": {
           "ninguno": "Cobri todavía no le ha escrito por esta cuota.",
@@ -2988,7 +2989,12 @@
           "enMoraPorOtra": "El inquilino debe una cuota anterior en mora: mientras tanto Cobri no le escribe, la lleva cobranza.",
           "pagada": "Ya está paga: Cobri no tiene nada que cobrar por esta cuota.",
           "vencido": "El link venció sin pago. Cobri ya no escribe por esta cuota: la sigue cobranza.",
-          "fallido": "El inquilino intentó pagar y la pasarela no aprobó el pago."
+          "fallido": "El inquilino intentó pagar y la pasarela no aprobó el pago. El link sigue sirviendo para volver a intentar.",
+          "esperaAprobacion": "Cobri lo dejó listo y espera tu aprobación para mandarlo por WhatsApp.",
+          "siguienteEsperaAprobacion": "El siguiente aviso de Cobri, con este mismo link, espera tu aprobación para salir por WhatsApp.",
+          "noSalio": "No salió el aviso «{{hito}}»: {{porQue}}.",
+          "noSalioDefinitivo": "No salió el aviso «{{hito}}»: {{porQue}}. Ese aviso ya no se vuelve a intentar.",
+          "pagoSinAplicar": "El pago entró por el link, pero no se aplicó a la cuota y sigue debiéndose: {{motivo}}"
         },
         "pagadoEl": "Pagado el {{fecha}}",
         "ultimoAviso": "Último aviso: {{fecha}}",
@@ -3007,6 +3013,8 @@
           "link": "Link de pago"
         },
         "contrato": "Contrato {{numero}}",
+        "revisarYAprobar": "Revisar y aprobar",
+        "resolverEnLaBandeja": "Resolver en la Bandeja",
         "verLink": "Ver el link",
         "verLinkAria": "Ver el link de pago de {{inquilino}} (se abre en otra pestaña)",
         "conteoUno": "1 cuota",
@@ -6119,6 +6127,12 @@
         "cobranza": "Cobranza",
         "cotizador": "Asegurabilidad",
         "detalle": "Detalle",
+        "paginas": {
+          "equipo": "Equipo IA de cobranza",
+          "inbox": "Inbox de conversaciones",
+          "promesas": "Promesas de pago",
+          "resultados": "Resultados del agente"
+        },
         "mantenimiento": "Mantenimiento"
       },
       "volverA": {
@@ -7267,7 +7281,7 @@
             "paused": "En pausa"
           },
           "tabs": {
-            "timeline": "Timeline",
+            "timeline": "Historial",
             "llamadas": "Llamadas",
             "memos": "Memos",
             "compromisos": "Compromisos",
@@ -7280,14 +7294,14 @@
             "title": "Próximos pasos",
             "nextAction": "Próxima acción",
             "noNextAction": "Sin acción programada",
-            "contactAttempts": "Intentos restantes",
-            "paused": "En pausa hasta {{date}}",
+            "contactAttempts": "Intentos de contacto hechos",
+            "paused": "En pausa hasta el {{date}}",
             "openSidebar": "Ver detalles",
             "closeSidebar": "Cerrar"
           },
           "timeline": {
-            "loading": "Cargando timeline…",
-            "error": "Error cargando timeline",
+            "loading": "Cargando el historial…",
+            "error": "No pudimos cargar el historial",
             "errorRetry": "Reintentar",
             "empty": "Sin eventos registrados",
             "eventStageTransition": "Cambio de etapa",
@@ -7360,7 +7374,7 @@
               "accessDenied": "Acceso denegado",
               "currentLabel": "Etapa actual",
               "effectLabel": "Qué pasa si confirmas",
-              "effectNote": "Los días se cuentan desde el primer vencimiento impago. Este es el calendario por defecto; si tu inmobiliaria configuró el suyo, manda ese.",
+              "effectNote": "Los días se cuentan desde el primer día de mora, cuando se acaba el plazo de pago. Este es el calendario por defecto; si tu inmobiliaria configuró el suyo, manda ese.",
               "reasonTooShort": "Escribe al menos 10 caracteres.",
               "targetPlaceholder": "Elige la etapa…",
               "targetMissing": "Elige a qué etapa la quieres mover."
@@ -7604,7 +7618,7 @@
           },
           "comparisonHeader": {
             "campo": "Campo",
-            "propuesto": "Propuesto por IA",
+            "propuesto": "Propuesto",
             "limite": "Límite agencia"
           },
           "comparison": {
@@ -7809,7 +7823,7 @@
           },
           "detail": {
             "linkedCall": "Llamada asociada",
-            "reason": "Motivo del agente",
+            "reason": "Motivo",
             "stateTrace": "Estado del agente al escalar",
             "assignee": "Asignada a",
             "timing": "Tiempos"
@@ -7858,7 +7872,7 @@
             "actor": "Actor",
             "action": "Acción",
             "dateRange": "Rango de fechas",
-            "search": "Cédula (hash) o ID de cotización"
+            "search": "Cédula o referencia del caso"
           },
           "actions": {
             "acknowledge": "Reconocer",
@@ -7894,37 +7908,41 @@
         "reporte": {
           "pageTitle": "Reporte diario",
           "kpis": {
-            "pkr": "PKR (% recuperado)",
+            "pkr": "Promesas cumplidas (7 días)",
             "morosidad": "Índice de morosidad",
-            "outsideHours": "Llamadas fuera de horario"
+            "outsideHours": "Llamadas fuera de horario",
+            "pkrSinPromesas": "Ninguna promesa venció en los últimos 7 días.",
+            "morosidadBase": "{{enMora}} de {{conContrato}} inquilinos con contrato vigente"
           },
           "topDebtors": {
-            "heading": "Top deudores",
-            "empty": "No hay deudores destacados hoy"
+            "heading": "Los que más deben",
+            "empty": "No hay deudores destacados hoy",
+            "diasDeMora": "Días de mora"
           },
           "history": {
             "heading": "Histórico (últimos 30 días)",
-            "exportCsv": "Exportar CSV"
+            "exportCsv": "Exportar CSV",
+            "empty": "Todavía no hay reportes de días anteriores. Se guarda uno cada día."
           },
           "thresholds": {
             "pageTitle": "Umbrales del reporte",
             "fields": {
-              "topN": "Top-N deudores a mostrar",
-              "moraBoundaries": "Cortes de días de mora",
-              "pkrAlertBelow": "Alerta si PKR cae por debajo de (%)",
-              "morosidadAlertAbove": "Alerta si morosidad supera (%)",
-              "violationsAtLeast": "Mínimo de violaciones para alertar",
-              "callsOutsideAtLeast": "Mínimo de llamadas fuera de horario para alertar"
+              "topN": "Cuántos deudores mostrar (los que más deben)",
+              "moraBoundaries": "Cortes de días de mora, separados por coma",
+              "pkrAlertBelow": "Avisar si las promesas cumplidas bajan de (%)",
+              "morosidadAlertAbove": "Avisar si la morosidad pasa de (%)",
+              "violationsAtLeast": "Avisar desde cuántas faltas a la Ley 2300",
+              "callsOutsideAtLeast": "Avisar desde cuántas llamadas fuera de horario"
             },
             "submit": "Guardar umbrales",
-            "versionsHeading": "Versiones anteriores",
+            "versionsHeading": "Historial de versiones",
             "rollbackConfirm": "¿Confirmas reversar a la versión {{version}}?",
             "rolledBackToast": "Umbrales reversados a la versión {{version}}",
             "empty": {
-              "title": "Usando thresholds por defecto",
+              "title": "Usando los umbrales por defecto",
               "description": "Ajusta los umbrales según las políticas de tu inmobiliaria.",
               "cta": {
-                "label": "Editar thresholds"
+                "label": "Editar los umbrales"
               }
             }
           },
@@ -7936,7 +7954,7 @@
           },
           "empty": {
             "title": "Aún no hay datos para el reporte diario",
-            "description": "El reporte se genera cada noche a partir de la actividad del día.",
+            "description": "El reporte se arma cada mañana con la actividad de la cobranza.",
             "cta": {
               "label": "Configurar suscripción"
             }
@@ -8045,7 +8063,7 @@
         },
         "arco": {
           "empty": {
-            "title": "Sin solicitudes ARCO pendientes",
+            "title": "Sin solicitudes de Habeas Data pendientes",
             "description": "Las solicitudes Ley 1581 aparecerán acá."
           }
         },
@@ -8180,8 +8198,8 @@
         "reject": "Rechazar solicitud",
         "viewAudit": "Ver en auditoría",
         "counselGate": {
-          "title": "Requiere revisión de asesor",
-          "description": "Esta función requiere activación por el equipo de Leasefy y confirmación de asesor jurídico. Contacta a compliance@leasefy.co para habilitar la resolución de solicitudes ARCO."
+          "title": "Falta la revisión del abogado",
+          "description": "Responder solicitudes de Habeas Data se habilita cuando el abogado de Leasefy apruebe las respuestas. Escríbenos a compliance@leasefy.co para habilitarlo. Mientras tanto puedes tomar la solicitud y ampliar el plazo."
         },
         "dialog": {
           "reject": {
@@ -8192,7 +8210,7 @@
           }
         },
         "empty": {
-          "title": "Sin solicitudes ARCO",
+          "title": "Sin solicitudes de Habeas Data",
           "body": "Cuando alguien pida ver, corregir, eliminar u oponerse al uso de sus datos, la solicitud aparece acá con su plazo.",
           "filteredTitle": "Sin solicitudes de este tipo",
           "filteredBody": "No hay solicitudes de {type} en este momento."
@@ -8718,6 +8736,7 @@
           "matching": "Matching",
           "avaluos": "Avalúos",
           "gerente": "Gerente",
+          "director": "Director",
           "equipo": "Tu equipo",
           "piloto": "Piloto automático",
           "retencion": "Retención",

@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { useI18n } from '@/lib/i18n'
 import { relativeTime } from '@/lib/cartera'
 import { ChartLineUp } from '@phosphor-icons/react'
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 interface QuoteHeaderProps {
   quoteId: string
@@ -45,7 +46,7 @@ export function QuoteHeader({
       : `${cedula}•••`
 
   const canonFormatted = canonCop
-    ? new Intl.NumberFormat('es-CO', {
+    ? formatoDeCifras(localeDeLasCifras(), {
         style: 'currency',
         currency: 'COP',
         minimumFractionDigits: 0,

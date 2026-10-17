@@ -31,8 +31,9 @@ import { contabilidadApi, type CargaAbierta } from "@/lib/api/contabilidad.servi
 import { REGLA_DE_CORRECCION } from "@/lib/migracion/regla-de-correccion";
 
 import { mensajeDeContabilidad } from "./contabilidad-errores";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
-const numero = (n: number) => n.toLocaleString("es-CO");
+const numero = (n: number) => n.toLocaleString(localeDeLasCifras());
 
 function fechaDeCarga(iso: string): string {
   const d = new Date(iso);

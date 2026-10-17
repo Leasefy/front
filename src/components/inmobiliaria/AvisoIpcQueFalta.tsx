@@ -24,6 +24,7 @@ import { Warning } from '@phosphor-icons/react';
 import { renovacionAutomaticaApi, type IpcQueFalta } from '@/lib/api/renovacion-automatica.service';
 import { hrefDeSeccion } from '@/app/panel/inmobiliaria/configuracion/secciones';
 import { ANCLA_IPC_POR_ANIO } from './ConfigIpcPorAnio';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 export function AvisoIpcQueFalta() {
   const [dato, setDato] = useState<IpcQueFalta | null>(null);
@@ -64,7 +65,7 @@ export function AvisoIpcQueFalta() {
       <Warning className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
       <div>
         <p className="text-sm font-medium text-warning">
-          <span className="tabular-nums">{contratos.toLocaleString('es-CO')}</span>{' '}
+          <span className="tabular-nums">{contratos.toLocaleString(localeDeLasCifras())}</span>{' '}
           {uno ? 'contrato se renueva' : 'contratos se renuevan'} sin incremento: falta el IPC {dato.anioDelIpc}
         </p>
         <p className="text-body-sm text-fg-muted mt-0.5">

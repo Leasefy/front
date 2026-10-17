@@ -2945,7 +2945,8 @@
           "enviado": "Sent",
           "pagado": "Paid",
           "vencido": "Expired",
-          "fallido": "Payment failed"
+          "fallido": "Payment failed",
+          "enRevision": "Payment under review"
         },
         "detalle": {
           "ninguno": "Cobri has not written about this installment yet.",
@@ -2953,7 +2954,12 @@
           "enMoraPorOtra": "The tenant owes an earlier overdue installment: until then Cobri does not write to them; collections takes it.",
           "pagada": "Already paid: Cobri has nothing to collect for this installment.",
           "vencido": "The link expired unpaid. Cobri no longer writes about this installment: collections takes it from here.",
-          "fallido": "The tenant tried to pay and the payment gateway did not approve it."
+          "fallido": "The tenant tried to pay and the payment gateway did not approve it. The link still works to try again.",
+          "esperaAprobacion": "Cobri has it ready and is waiting for your approval to send it by WhatsApp.",
+          "siguienteEsperaAprobacion": "Cobri's next notice, with this same link, is waiting for your approval to go out by WhatsApp.",
+          "noSalio": "The «{{hito}}» notice did not go out: {{porQue}}.",
+          "noSalioDefinitivo": "The «{{hito}}» notice did not go out: {{porQue}}. That notice will not be retried.",
+          "pagoSinAplicar": "The payment came in through the link, but it was not applied to the installment, which is still owed: {{motivo}}"
         },
         "pagadoEl": "Paid on {{fecha}}",
         "ultimoAviso": "Last reminder: {{fecha}}",
@@ -2972,6 +2978,8 @@
           "link": "Payment link"
         },
         "contrato": "Contract {{numero}}",
+        "revisarYAprobar": "Review and approve",
+        "resolverEnLaBandeja": "Resolve in the Inbox",
         "verLink": "View the link",
         "verLinkAria": "View {{inquilino}}'s payment link (opens in a new tab)",
         "conteoUno": "1 installment",
@@ -6084,6 +6092,12 @@
         "cobranza": "Collections",
         "cotizador": "Insurability",
         "detalle": "Detail",
+        "paginas": {
+          "equipo": "Collections AI team",
+          "inbox": "Conversations inbox",
+          "promesas": "Payment promises",
+          "resultados": "Agent results"
+        },
         "mantenimiento": "Maintenance"
       },
       "volverA": {
@@ -7245,7 +7259,7 @@
             "title": "Next steps",
             "nextAction": "Next action",
             "noNextAction": "No scheduled action",
-            "contactAttempts": "Contact attempts left",
+            "contactAttempts": "Contact attempts made",
             "paused": "Paused until {{date}}",
             "openSidebar": "View details",
             "closeSidebar": "Close"
@@ -7325,7 +7339,7 @@
               "accessDenied": "Access denied",
               "currentLabel": "Current stage",
               "effectLabel": "What happens if you confirm",
-              "effectNote": "Days are counted from the first unpaid due date. This is the default calendar; if your agency configured its own, that one wins.",
+              "effectNote": "Days are counted from the first day of delinquency, when the payment grace period ends. This is the default calendar; if your agency configured its own, that one wins.",
               "reasonTooShort": "Write at least 10 characters.",
               "targetPlaceholder": "Pick a stage…",
               "targetMissing": "Pick the stage you want to move it to."
@@ -7569,7 +7583,7 @@
           },
           "comparisonHeader": {
             "campo": "Field",
-            "propuesto": "AI Proposed",
+            "propuesto": "Proposed",
             "limite": "Agency Limit"
           },
           "comparison": {
@@ -7823,7 +7837,7 @@
             "actor": "Actor",
             "action": "Action",
             "dateRange": "Date range",
-            "search": "Cédula (hash) or quote ID"
+            "search": "ID number or case reference"
           },
           "actions": {
             "acknowledge": "Acknowledge",
@@ -7859,17 +7873,21 @@
         "reporte": {
           "pageTitle": "Daily report",
           "kpis": {
-            "pkr": "PKR (% recovered)",
+            "pkr": "Promises kept (7 days)",
             "morosidad": "Delinquency index",
-            "outsideHours": "Outside-hours calls"
+            "outsideHours": "Outside-hours calls",
+            "pkrSinPromesas": "No promises came due in the last 7 days.",
+            "morosidadBase": "{{enMora}} of {{conContrato}} tenants with an active lease"
           },
           "topDebtors": {
-            "heading": "Top debtors",
-            "empty": "No notable debtors today"
+            "heading": "Largest balances",
+            "empty": "No notable debtors today",
+            "diasDeMora": "Days past due"
           },
           "history": {
             "heading": "History (last 30 days)",
-            "exportCsv": "Export CSV"
+            "exportCsv": "Export CSV",
+            "empty": "No reports from previous days yet. One is saved every day."
           },
           "thresholds": {
             "pageTitle": "Report thresholds",
@@ -7882,7 +7900,7 @@
               "callsOutsideAtLeast": "Minimum outside-hours calls to alert"
             },
             "submit": "Save thresholds",
-            "versionsHeading": "Previous versions",
+            "versionsHeading": "Version history",
             "rollbackConfirm": "Confirm rollback to version {{version}}?",
             "rolledBackToast": "Thresholds rolled back to version {{version}}",
             "empty": {
@@ -7901,7 +7919,7 @@
           },
           "empty": {
             "title": "No data for the daily report yet",
-            "description": "The report is generated nightly from the day's activity.",
+            "description": "The report is built every morning from collections activity.",
             "cta": {
               "label": "Set up subscription"
             }
@@ -8683,6 +8701,8 @@
           "matching": "Matching",
           "avaluos": "Appraisals",
           "gerente": "Manager",
+          "director": "Director",
+          "equipo": "Your team",
           "piloto": "Autopilot",
           "retencion": "Retention",
           "calidad": "Niti · quality",

@@ -79,8 +79,9 @@ import {
 import { mesActual } from '@/lib/recaudo/meses';
 // CB-17: la plata de Contabilidad con UN formato («$ 1.234.567», «−$ 119.100»).
 import { plata as formatCurrency } from '@/lib/contabilidad/plata';
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
-const NUMERO = new Intl.NumberFormat('es-CO');
+const NUMERO = cifrasDeLaPantalla();
 
 const TONO_DEL_ESTADO: Record<EstadoDeLaProvision, 'warning' | 'success' | 'secondary'> = {
   PROPUESTA: 'warning',

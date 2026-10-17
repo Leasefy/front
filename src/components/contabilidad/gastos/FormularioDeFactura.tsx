@@ -121,6 +121,7 @@ import {
   propuestaDelProveedor,
   retefuentePropuesta,
 } from '@/lib/contabilidad/propuesta-del-proveedor';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /** «A mano» / «sin rubro» / «sin sede» en los `Select` del DS (Radix no acepta `''`). */
 const NINGUNO = '__ninguno__';
@@ -921,7 +922,7 @@ export function FormularioDeFactura({
                       : liquidacion
                         ? 'La calcula Leasefy con el registro del proveedor y la base mínima. Escríbela sólo si es otra.'
                         : retefuentePct !== null
-                          ? `Propuesta: ${retefuentePct.toLocaleString('es-CO')} % de la base, del registro del proveedor.`
+                          ? `Propuesta: ${retefuentePct.toLocaleString(localeDeLasCifras())} % de la base, del registro del proveedor.`
                           : undefined
                   }
                 />

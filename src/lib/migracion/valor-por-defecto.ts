@@ -1,3 +1,4 @@
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 /**
  * QA-MIGRACION-95 (mig95-contable, 06-10-2026) — TE-08: las frases de «Poner
  * un valor por defecto» en la migración de terceros. Con «También reemplazar
@@ -17,7 +18,7 @@ export function explicacionDelValorPorDefecto(sobrescribir: boolean): string {
 export function avisoDeReemplazo(cantidad: number): string {
   return cantidad === 1
     ? 'Ojo: se pierde el valor que ya traía la fila.'
-    : `Ojo: se pierde el valor que ya traían las ${cantidad.toLocaleString('es-CO')}.`;
+    : `Ojo: se pierde el valor que ya traían las ${cantidad.toLocaleString(localeDeLasCifras())}.`;
 }
 
 /**

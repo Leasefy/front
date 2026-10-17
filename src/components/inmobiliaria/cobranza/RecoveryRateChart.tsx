@@ -30,6 +30,7 @@ import { useI18n } from '@/lib/i18n';
 import { ChartLine } from '@phosphor-icons/react';
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge';
 import { EmptyState } from '@/components/data-display/EmptyState';
+import { useTr } from '@/lib/i18n/use-tr';
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -88,6 +89,7 @@ function pivotRows(rows: RecoveryRateRow[]): PivotedRow[] {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
+  const tr = useTr();
   const { t } = useI18n();
 
   // Branch A — agency-gate: full empty-state badge
@@ -108,7 +110,7 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
       <EmptyState
         icon={ChartLine}
         title={t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.title')}
-        description="Sin datos suficientes todavía"
+        description={tr("Sin datos suficientes todavía")}
       />
     );
   }

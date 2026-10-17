@@ -133,8 +133,8 @@ export function AcuerdosGeneralesTabla() {
           <h2 className="text-sm font-semibold text-fg">Acuerdos generales</h2>
           <p className="text-xs text-fg-muted max-w-xl leading-relaxed">
             Las reglas que el agente cierra solo: «si el deudor cabe acá, tómalo
-            y no me preguntes». Sin ninguno, el agente usa las condiciones que
-            trae Leasefy por etapa de mora.
+            y no me preguntes». Sin ninguno sólo se acepta el pago total: sin
+            descuento y sin cuotas, ni del agente ni en un acuerdo armado a mano.
           </p>
         </div>
         {/* Secundario: el primario de la pantalla es «Nuevo acuerdo». Dos pills
@@ -199,9 +199,13 @@ export function AcuerdosGeneralesTabla() {
             Todavía no escribiste ningún acuerdo general
           </p>
           <p className="text-xs text-fg-muted max-w-md">
-            Mientras tanto el agente negocia con las condiciones que trae Leasefy
-            para cada etapa de mora. Escribe uno cuando quieras que ofrezca algo
-            distinto.
+            {/* QA-AGENTES 16-10: decía que el agente negociaba «con las condiciones
+                que trae Leasefy por etapa». Desde la regla del 18-09 (micro
+                459b5783) sin acuerdo general es pago total: sin descuento y sin
+                cuotas, también en un acuerdo armado a mano. */}
+            Mientras tanto sólo se acepta el pago total: sin descuento y sin
+            cuotas, también en los acuerdos que armes a mano. Escribe uno para
+            permitir cuotas o descuentos.
           </p>
           {canEdit && (
             <Button asChild size="sm" variant="outline" hideArrow className="mt-2">

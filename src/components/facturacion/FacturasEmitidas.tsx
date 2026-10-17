@@ -99,6 +99,7 @@ import {
   facturacionElectronicaService,
   type NotaDebito,
 } from '@/lib/api/facturacion-electronica.service'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const CONCEPTOS: ConceptoDeNotaCredito[] = [
   'ANULACION',
@@ -563,8 +564,8 @@ export function FacturasEmitidas({ mes, vista }: Props) {
             </div>
             <p className="text-caption text-fg-muted tabular-nums" data-testid="ventas-alcance">
               {busqueda.trim() === ''
-                ? `${facturas.length.toLocaleString('es-CO')} ${facturas.length === 1 ? 'factura' : 'facturas'} en el mes`
-                : `${ventas.length.toLocaleString('es-CO')} de ${facturas.length.toLocaleString('es-CO')} facturas`}
+                ? `${facturas.length.toLocaleString(localeDeLasCifras())} ${facturas.length === 1 ? 'factura' : 'facturas'} en el mes`
+                : `${ventas.length.toLocaleString(localeDeLasCifras())} de ${facturas.length.toLocaleString(localeDeLasCifras())} facturas`}
             </p>
           </div>
         )}

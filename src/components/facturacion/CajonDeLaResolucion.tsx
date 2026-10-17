@@ -53,6 +53,7 @@ import {
   erroresDeLaResolucion,
   hayErrores,
 } from '@/lib/facturacion/errores-de-la-resolucion'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /** Los campos que pueden traer un error (del navegador o del back). */
 type CampoConError =
@@ -512,7 +513,7 @@ export function CajonDeLaResolucion({
                     className="font-medium text-primary underline-offset-4 hover:underline"
                     data-testid="resolucion-usar-sugerencia"
                   >
-                    Usar el {sugerencia.ultimoNumeroPropuesto.toLocaleString('es-CO')}
+                    Usar el {sugerencia.ultimoNumeroPropuesto.toLocaleString(localeDeLasCifras())}
                   </button>
                 </p>
               )}

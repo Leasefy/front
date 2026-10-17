@@ -1,4 +1,5 @@
 import { ESPACIO_DE_LA_PLATA, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 /**
  * Cuando al propietario NO le queda plata: «queda debiendo».
  *
@@ -28,8 +29,8 @@ import { ESPACIO_DE_LA_PLATA, decimalesEnPantalla, seMuestranLosCentavos } from 
  */
 export function pesos(valorCop: number): string {
   return seMuestranLosCentavos(valorCop)
-    ? `$${ESPACIO_DE_LA_PLATA}${valorCop.toLocaleString('es-CO', decimalesEnPantalla(valorCop))}`
-    : `$${ESPACIO_DE_LA_PLATA}${Math.round(valorCop).toLocaleString('es-CO')}`
+    ? `$${ESPACIO_DE_LA_PLATA}${valorCop.toLocaleString(localeDeLasCifras(), decimalesEnPantalla(valorCop))}`
+    : `$${ESPACIO_DE_LA_PLATA}${Math.round(valorCop).toLocaleString(localeDeLasCifras())}`
 }
 
 export interface NetoDelPropietario {

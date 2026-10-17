@@ -42,19 +42,20 @@ import { useI18n } from '@/lib/i18n';
 import { nombreDelMes } from '@/lib/recaudo/meses';
 import { cn } from '@/lib/utils';
 import { GraficoDiaADia } from './GraficoDiaADia';
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
 const C = 'inmobiliaria.recaudo.comparativa';
 
-/** «agosto», sin el año: para «10 de agosto» y «sin comparación con agosto». */
-export function soloElMes(month: string): string {
-  return nombreDelMes(month).replace(/ de \d{4}$/, '');
+/** «agosto», sin el año: para «10 de agosto» y «sin comparación con agosto». En inglés, «August». */
+export function soloElMes(month: string, locale: 'es' | 'en' = 'es'): string {
+  return nombreDelMes(month, locale).replace(/( de)? \d{4}$/, '');
 }
 
 function conMayuscula(texto: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
-const formateadorDePct = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 1 });
+const formateadorDePct = cifrasDeLaPantalla({ maximumFractionDigits: 1 });
 
 /** «+12,3 %», «−27,8 %», «0 %». El signo va escrito: el color no va solo. */
 export function formatearPct(pct: number): string {
@@ -67,11 +68,11 @@ function tasaEnPct(tasa: number): string {
   return `${Math.round(tasa * 100)} %`;
 }
 
-/** «junio, julio y agosto». */
-function listaDeMeses(meses: string[]): string {
-  const nombres = meses.map(soloElMes);
+/** «junio, julio y agosto»; en inglés, «June, July and August». */
+function listaDeMeses(meses: string[], locale: 'es' | 'en' = 'es'): string {
+  const nombres = meses.map((m) => soloElMes(m, locale));
   if (nombres.length <= 1) return nombres.join('');
-  return `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`;
+  return `${nombres.slice(0, -1).join(', ')} ${locale === 'en' ? 'and' : 'y'} ${nombres[nombres.length - 1]}`;
 }
 
 /**
@@ -112,7 +113,7 @@ export function VsMesAnterior({
   /** La cifra grande de la tarjeta; si el corte da otra, se dice cuál. */
   valorMostrado: number;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   if (!comparativa) {
     if (!fallo) return null;
     return (
@@ -123,7 +124,7 @@ export function VsMesAnterior({
   }
 
   const v: VariacionDeLaCifra = comparativa.vsMesAnterior[cifra];
-  const mesAnterior = soloElMes(comparativa.mesAnterior);
+  const mesAnterior = soloElMes(comparativa.mesAnterior, locale);
   if (v.pct === null) {
     return (
       <p className="text-caption text-fg-muted" data-testid={`vs-${id}`} data-estado="sin-comparacion">
@@ -175,7 +176,7 @@ export function TarjetaDeProyeccion({
   proyeccion: ProyeccionDelCierre;
   month: string;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const cerrado = p.estado === 'MES_CERRADO';
   const cifra = p.cierreCop === null ? null : formatCurrency(p.cierreCop);
 
@@ -216,7 +217,7 @@ export function TarjetaDeProyeccion({
               llego: formatCurrency(p.llegoCop),
               porVencer: formatCurrency(p.porVencerCop),
               tasa: tasaEnPct(p.tasa),
-              meses: listaDeMeses(p.historia.map((h) => h.month)),
+              meses: listaDeMeses(p.historia.map((h) => h.month), locale),
               cierre: formatCurrency(p.cierreCop ?? 0),
             })}
           </p>
@@ -247,7 +248,7 @@ export function TarjetaDeProyeccion({
 
       {cerrado && (
         <p className="text-caption text-fg-muted">
-          {t(`${C}.proyeccion.cerrado`, { mes: conMayuscula(soloElMes(month)) })}
+          {t(`${C}.proyeccion.cerrado`, { mes: conMayuscula(soloElMes(month, locale)) })}
         </p>
       )}
     </section>
@@ -271,8 +272,8 @@ export function ComparativaDelMes({
   error: unknown;
   onReintentar: () => void | Promise<unknown>;
 }) {
-  const { t } = useI18n();
-  const mes = soloElMes(month);
+  const { t, locale } = useI18n();
+  const mes = soloElMes(month, locale);
 
   return (
     <EstadoDeDatos
@@ -297,8 +298,8 @@ export function ComparativaDelMes({
 }
 
 function CuerpoDelGrafico({ comparativa: c, mes }: { comparativa: Comparativa; mes: string }) {
-  const { t } = useI18n();
-  const mesAnterior = soloElMes(c.mesAnterior);
+  const { t, locale } = useI18n();
+  const mesAnterior = soloElMes(c.mesAnterior, locale);
   const hayRecibos = c.dias.some((d) => (d.esteMesCop ?? 0) > 0 || (d.mesAnteriorCop ?? 0) > 0);
   const llego = c.vsMesAnterior.llego;
   const resumen = t(`${C}.diaADia.resumen`, {

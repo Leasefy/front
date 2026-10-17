@@ -72,13 +72,14 @@ import { avisoDeMesesQueFaltan, esMesValido, mesesAtras, mesesQueFaltan } from '
 import { mesActual, nombreDelMes } from '@/lib/recaudo/meses';
 import { CampoDeMes } from '@/components/ui/campo-de-mes';
 import { ariaDelCampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** Cuántos meses se miran por defecto. Dos años: lo que tarda un juicio. */
 const MESES_POR_DEFECTO = 23;
 
 /** «24,86 %» — el porcentaje como lo certifica la Superfinanciera. */
 export function porcentaje(valor: number, decimales = 2): string {
-  return `${valor.toLocaleString('es-CO', {
+  return `${valor.toLocaleString(localeDeLasCifras(), {
     minimumFractionDigits: decimales,
     maximumFractionDigits: decimales,
   })} %`;

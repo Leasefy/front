@@ -1,3 +1,14 @@
+"use client";
+
+import { useIdioma } from "@/lib/idioma/use-idioma";
+
+/** Las capturas que también existen con el panel en inglés (`<nombre>-en.webp`). */
+export const CAPTURAS_EN_INGLES = new Set<string>([
+  "/landing-v2/producto/crm-pipeline.webp",
+  "/landing-v2/producto/erp-recaudo.webp",
+  "/landing-v2/producto/home-chat.webp",
+]);
+
 /**
  * Un pedazo de una pantalla REAL del panel (Nico, 12-10-2026: «¿por qué a nada
  * de esto le colocaste las imágenes reales del producto?»). Las capturas son
@@ -26,13 +37,16 @@ interface PedazoRealProps {
 
 export function PedazoReal({ src, alt, foco, oscuro = false, className }: PedazoRealProps) {
   const { x, y, w, h } = foco;
+  // En /en, la captura del panel en inglés si existe (16-10-2026).
+  const idioma = useIdioma();
+  const archivo = idioma === "en" && CAPTURAS_EN_INGLES.has(src) ? src.replace(/\.webp$/, "-en.webp") : src;
   return (
     <figure
       className={["preal", oscuro ? "preal--oscuro" : "", className ?? ""].join(" ").trim()}
       style={{ aspectRatio: `${(w * 16) / (h * 10)}` }}
     >
       <img
-        src={src}
+        src={archivo}
         alt={alt}
         loading="lazy"
         decoding="async"

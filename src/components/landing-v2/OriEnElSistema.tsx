@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AgentOrb, type AgentOrbPaletteName, type AgentOrbState } from "@leasefy/cadence";
 import { ORBE_DEL_ORQUESTADOR } from "@/lib/agentes/nombre-del-orquestador";
+import { useIdioma } from "@/lib/idioma/use-idioma";
 
 /**
  * «Un solo sistema»: Ori a la derecha de «La operación de hoy» (Nico,
@@ -28,6 +29,9 @@ interface AgenteAlrededor {
   semilla: string;
   /** Lo que acaba de hacer (el renglón de abajo los va contando uno a uno). */
   hace: string;
+  /** Lo mismo en /en; el nombre sólo cambia cuando no es propio («Conciliación» → «Reconciliation»). */
+  haceEn: string;
+  nombreEn?: string;
 }
 
 /*
@@ -37,28 +41,28 @@ interface AgenteAlrededor {
  * que tienen nombre propio adentro y los demás afuera.
  */
 const ORBITA_DE_ADENTRO: readonly AgenteAlrededor[] = [
-  { nombre: "Mori", paleta: "coral", semilla: "cobranza", hace: "Le escribió por WhatsApp a 4 en mora" },
-  { nombre: "Cobri", paleta: "jade", semilla: "pagos", hace: "Envió 12 links de pago de octubre" },
-  { nombre: "Vinci", paleta: "amethyst", semilla: "retencion", hace: "Vio a 2 propietarios con ganas de irse" },
-  { nombre: "Niti", paleta: "marigold", semilla: "calidad", hace: "Arregló 3 fichas para publicar" },
-  { nombre: "Imana", paleta: "orchid", semilla: "prospectos", hace: "Le respondió a 6 interesados nuevos" },
-  { nombre: "Fixi", paleta: "tangerine", semilla: "mantenimiento", hace: "Pidió 2 cotizaciones de plomería" },
-  { nombre: "Avali", paleta: "peach", semilla: "aprobaciones", hace: "Le pidió el visto bueno a un propietario" },
-  { nombre: "Vidi", paleta: "glacier", semilla: "inspeccion", hace: "Revisó las fotos de un inventario" },
+  { nombre: "Mori", paleta: "coral", semilla: "cobranza", hace: "Le escribió por WhatsApp a 4 en mora", haceEn: "Messaged 4 late payers on WhatsApp" },
+  { nombre: "Cobri", paleta: "jade", semilla: "pagos", hace: "Envió 12 links de pago de octubre", haceEn: "Sent 12 October payment links" },
+  { nombre: "Vinci", paleta: "amethyst", semilla: "retencion", hace: "Vio a 2 propietarios con ganas de irse", haceEn: "Spotted 2 owners thinking of leaving" },
+  { nombre: "Niti", paleta: "marigold", semilla: "calidad", hace: "Arregló 3 fichas para publicar", haceEn: "Fixed 3 listings before publishing" },
+  { nombre: "Imana", paleta: "orchid", semilla: "prospectos", hace: "Le respondió a 6 interesados nuevos", haceEn: "Replied to 6 new prospects" },
+  { nombre: "Fixi", paleta: "tangerine", semilla: "mantenimiento", hace: "Pidió 2 cotizaciones de plomería", haceEn: "Asked for 2 plumbing quotes" },
+  { nombre: "Avali", paleta: "peach", semilla: "aprobaciones", hace: "Le pidió el visto bueno a un propietario", haceEn: "Asked an owner for sign-off" },
+  { nombre: "Vidi", paleta: "glacier", semilla: "inspeccion", hace: "Revisó las fotos de un inventario", haceEn: "Checked the photos of an inventory" },
 ];
 const ORBITA_DE_AFUERA: readonly AgenteAlrededor[] = [
-  { nombre: "Conciliación", paleta: "lagoon", semilla: "conciliacion", hace: "Cruzó 118 movimientos del banco" },
-  { nombre: "Contratos", paleta: "indigo", semilla: "contratos", hace: "Avisó 3 contratos que vencen este mes" },
-  { nombre: "Propietarios", paleta: "terracotta", semilla: "propietarios", hace: "Dejó listo el pago del viernes" },
-  { nombre: "Facturación", paleta: "mint", semilla: "facturacion", hace: "Emitió las facturas de octubre" },
-  { nombre: "Contabilidad", paleta: "slate", semilla: "contabilidad", hace: "Causó los asientos del día" },
-  { nombre: "Matching", paleta: "lime", semilla: "matching", hace: "Le encontró 3 opciones a un interesado" },
-  { nombre: "Estudio", paleta: "rose", semilla: "estudio", hace: "Estudió a 2 candidatos" },
-  { nombre: "Asegurabilidad", paleta: "sky", semilla: "cotizador", hace: "Cotizó con 3 aseguradoras a la vez" },
-  { nombre: "Avalúos", paleta: "copper", semilla: "avaluos", hace: "Recomendó el canon de un apartamento" },
-  { nombre: "Documentos", paleta: "sand", semilla: "documentos", hace: "Ordenó los soportes de un contrato" },
-  { nombre: "Reportes", paleta: "plum", semilla: "reportes", hace: "Armó el informe de la semana" },
-  { nombre: "Comunicación", paleta: "ocean", semilla: "comunicacion", hace: "Avisó un corte de agua al edificio" },
+  { nombre: "Conciliación", paleta: "lagoon", semilla: "conciliacion", hace: "Cruzó 118 movimientos del banco", haceEn: "Matched 118 bank transactions", nombreEn: "Reconciliation" },
+  { nombre: "Contratos", paleta: "indigo", semilla: "contratos", hace: "Avisó 3 contratos que vencen este mes", haceEn: "Flagged 3 leases ending this month", nombreEn: "Leases" },
+  { nombre: "Propietarios", paleta: "terracotta", semilla: "propietarios", hace: "Dejó listo el pago del viernes", haceEn: "Got Friday's payout ready", nombreEn: "Owners" },
+  { nombre: "Facturación", paleta: "mint", semilla: "facturacion", hace: "Emitió las facturas de octubre", haceEn: "Issued the October invoices", nombreEn: "Invoicing" },
+  { nombre: "Contabilidad", paleta: "slate", semilla: "contabilidad", hace: "Causó los asientos del día", haceEn: "Posted the day's journal entries", nombreEn: "Accounting" },
+  { nombre: "Matching", paleta: "lime", semilla: "matching", hace: "Le encontró 3 opciones a un interesado", haceEn: "Found 3 options for a prospect" },
+  { nombre: "Estudio", paleta: "rose", semilla: "estudio", hace: "Estudió a 2 candidatos", haceEn: "Screened 2 applicants", nombreEn: "Screening" },
+  { nombre: "Asegurabilidad", paleta: "sky", semilla: "cotizador", hace: "Cotizó con 3 aseguradoras a la vez", haceEn: "Got quotes from 3 insurers at once", nombreEn: "Insurability" },
+  { nombre: "Avalúos", paleta: "copper", semilla: "avaluos", hace: "Recomendó el canon de un apartamento", haceEn: "Recommended the rent for an apartment", nombreEn: "Appraisals" },
+  { nombre: "Documentos", paleta: "sand", semilla: "documentos", hace: "Ordenó los soportes de un contrato", haceEn: "Filed the paperwork for a lease", nombreEn: "Documents" },
+  { nombre: "Reportes", paleta: "plum", semilla: "reportes", hace: "Armó el informe de la semana", haceEn: "Put together the weekly report", nombreEn: "Reports" },
+  { nombre: "Comunicación", paleta: "ocean", semilla: "comunicacion", hace: "Avisó un corte de agua al edificio", haceEn: "Told a building about a water outage", nombreEn: "Communications" },
 ];
 const EQUIPO = [...ORBITA_DE_ADENTRO, ...ORBITA_DE_AFUERA];
 /** Lo que se revela al bajar, en orden: la órbita de adentro, la de afuera y la explicación. */
@@ -78,6 +82,8 @@ export function OriEnElSistema() {
   const [palabras, setPalabras] = useState<string[]>([]);
   const [estado, setEstado] = useState<AgentOrbState>("idle");
   const [quieto, setQuieto] = useState(false);
+  const en = useIdioma() === "en";
+  const nombreDe = (a: AgenteAlrededor) => (en ? (a.nombreEn ?? a.nombre) : a.nombre);
   // El renglón de abajo: un agente a la vez y lo que acaba de hacer.
   const [turno, setTurno] = useState(0);
   useEffect(() => {
@@ -257,7 +263,7 @@ export function OriEnElSistema() {
       >
         <span className="oc-ori-erguido">
           <AgentOrb palette={a.paleta} seed={a.semilla} variant="agent" state="working" size={26} label={null} still />
-          <b>{a.nombre}</b>
+          <b>{nombreDe(a)}</b>
         </span>
       </span>
     ));
@@ -305,12 +311,21 @@ export function OriEnElSistema() {
         }}
       >
         <p>
-          <b>Ori</b> coordina a {EQUIPO.length} agentes: cada uno lleva una parte de tu operación y Ori los pone a
-          trabajar juntos.
+          {en ? (
+            <>
+              <b>Ori</b> coordinates {EQUIPO.length} agents: each one handles part of your operation and Ori gets them working
+              together.
+            </>
+          ) : (
+            <>
+              <b>Ori</b> coordina a {EQUIPO.length} agentes: cada uno lleva una parte de tu operación y Ori los pone a
+              trabajar juntos.
+            </>
+          )}
         </p>
         <p className="oc-ori-ahora" key={actual.nombre}>
           <AgentOrb palette={actual.paleta} seed={actual.semilla} variant="agent" state="working" size={16} label={null} still />
-          <b>{actual.nombre}</b> · {actual.hace}
+          <b>{nombreDe(actual)}</b> · {en ? actual.haceEn : actual.hace}
         </p>
       </div>
     </div>

@@ -141,6 +141,69 @@ const PAYMENT_CHANNEL_LABELS: Record<string, string> = {
 const ESCALATION_REASON_LABELS: Record<string, string> = {
   forced_transition_escalate_human: 'El agente pidió pasar a una persona',
   fraud_signal_confirmed: 'Señal de fraude confirmada',
+  // 🔴 QA-AGENTES 16-10 (MORI-29): los que escribe el micro y la pantalla
+  // pintaba como «Otro (whatsapp_inbound_free_text)», «Otro (dispute)»…
+  dispute: 'Se abrió una disputa: revisa el saldo antes de seguir cobrando',
+  whatsapp_inbound_free_text: 'Escribió por WhatsApp algo que Mori no supo responder',
+  whatsapp_inbound_location: 'Mandó una ubicación por WhatsApp',
+  whatsapp_inbound_contact: 'Mandó un contacto por WhatsApp',
+  whatsapp_inbound_unknown_button: 'Tocó un botón de WhatsApp que Mori no reconoce',
+  whatsapp_inbound_need_plan: 'Pidió un acuerdo de pago por WhatsApp',
+  whatsapp_inbound_media: 'Mandó un archivo por WhatsApp (foto, audio o documento)',
+  whatsapp_inbound_sin_cobro: 'Escribió por WhatsApp con la cobranza en pausa o el canal cerrado',
+  whatsapp_payment_link_send_failed: 'No le llegó el link de pago por WhatsApp',
+  whatsapp_cierre_sin_envio: 'Quedó un acuerdo por WhatsApp pero no le llegó la constancia',
+  whatsapp_identidad_sin_envio: 'Mori no pudo pedirle por WhatsApp que confirme su identidad',
+  whatsapp_comprobante_de_pago: 'Mandó un comprobante de pago por WhatsApp',
+  whatsapp_respuesta_bloqueada_por_la_cerca: 'Mori frenó su respuesta por WhatsApp porque no cumplía las reglas',
+  whatsapp_conductor_sin_respuesta: 'Mori no pudo responder por WhatsApp',
+  whatsapp_pide_enlace_de_pago: 'Pidió el link de pago por WhatsApp',
+  voz_exclusion_sin_titular_revisar_numero:
+    'En una llamada, alguien que no es el titular pidió que no llamen a ese número',
+}
+
+/**
+ * Lo que pasó en la llamada, por el efecto del caso (`playbook_<id>_<efecto>`,
+ * `playbookEscalationReason` del micro).
+ */
+const EFECTO_DEL_CASO: Record<string, string> = {
+  register_only: 'dejó una nota para el equipo',
+  pause_collection: 'pausó el cobro de ese valor hasta verificarlo',
+  escalate_human: 'pidió que lo revise una persona',
+  escalate_legal: 'el caso va para jurídico',
+  flag_vulnerable: 'el inquilino está en una situación difícil: sin presión',
+  suppress_channel: 'no quiere que lo contacten por ese número',
+  opt_out: 'pidió que no lo contacten',
+  halt_case: 'se detuvo toda la cobranza del caso',
+  fraud_flag: 'posible suplantación: la cobranza queda congelada',
+}
+
+/**
+ * Lo que Mori le prometió al inquilino y no quedó programado
+ * (`accion_<tipo>_sin_encolar`, `playbook-effects.ts` del micro).
+ */
+const ACCION_PROMETIDA: Record<string, string> = {
+  enviar_estado_de_cuenta: 'mandarle el estado de cuenta',
+  abrir_ticket_de_mantenimiento: 'abrir una solicitud de mantenimiento',
+  solicitar_paz_y_salvo: 'revisar su paz y salvo',
+  solicitar_debito_automatico: 'ayudarle con el débito automático',
+  enviar_acuerdo: 'mandarle el acuerdo por escrito',
+  agendar_retoma: 'volver a contactarlo en la fecha que pidió',
+  registrar_preferencia_de_persona: 'que lo atienda una persona del equipo',
+}
+
+function motivoConPartes(slug: string): string | null {
+  const caso = /^playbook_\d{3}_([a-z_]+)$/.exec(slug)
+  if (caso) {
+    const efecto = EFECTO_DEL_CASO[caso[1]]
+    return efecto ? `En la llamada: ${efecto}` : null
+  }
+  const accion = /^accion_([a-z_]+)_sin_encolar$/.exec(slug)
+  if (accion) {
+    const que = ACCION_PROMETIDA[accion[1]]
+    return que ? `Mori prometió ${que} y hay que hacerlo a mano` : null
+  }
+  return null
 }
 
 // ── Lookup ───────────────────────────────────────────────────────────────────
@@ -208,7 +271,7 @@ export function escalationReasonLabel(reason: string | null | undefined): string
   if (!reason) return null
   const limpio = reason.trim()
   if (!limpio) return null
-  const conocido = ESCALATION_REASON_LABELS[limpio]
+  const conocido = ESCALATION_REASON_LABELS[limpio] ?? motivoConPartes(limpio)
   if (conocido) return conocido
   return /^[a-z0-9_]+$/.test(limpio) ? `Otro (${limpio})` : limpio
 }

@@ -59,9 +59,18 @@ export interface LinksDePagoProps {
    */
   titulo?: string;
   descripcion?: string | null;
+  /** COBRI-4: cuotaId → el caso de la Bandeja que espera aprobar su aviso. */
+  esperanEnLaBandeja?: ReadonlyMap<string, string>;
 }
 
-export function LinksDePago({ mes: mesDeAfuera, onCambiarMes, resumen, titulo, descripcion }: LinksDePagoProps) {
+export function LinksDePago({
+  mes: mesDeAfuera,
+  onCambiarMes,
+  resumen,
+  titulo,
+  descripcion,
+  esperanEnLaBandeja,
+}: LinksDePagoProps) {
   const { t, locale } = useI18n();
   const idDelTitulo = useId();
   const esMovil = useIsMobile();
@@ -182,9 +191,9 @@ export function LinksDePago({ mes: mesDeAfuera, onCambiarMes, resumen, titulo, d
       >
         {data &&
           (esMovil ? (
-            <ListaDeLinks items={data.items} />
+            <ListaDeLinks items={data.items} esperanEnLaBandeja={esperanEnLaBandeja} />
           ) : (
-            <TablaDeLinks items={data.items} />
+            <TablaDeLinks items={data.items} esperanEnLaBandeja={esperanEnLaBandeja} />
           ))}
       </EstadoDeDatos>
 
@@ -216,7 +225,12 @@ function Cuota({ link }: { link: LinkDePagoDeCuota }) {
   );
 }
 
-function TablaDeLinks({ items }: { items: LinkDePagoDeCuota[] }) {
+interface FilasProps {
+  items: LinkDePagoDeCuota[];
+  esperanEnLaBandeja?: ReadonlyMap<string, string>;
+}
+
+function TablaDeLinks({ items, esperanEnLaBandeja }: FilasProps) {
   const { t, locale } = useI18n();
   const localeCorto = locale === 'en' ? 'en' : 'es';
   return (
@@ -242,7 +256,7 @@ function TablaDeLinks({ items }: { items: LinkDePagoDeCuota[] }) {
               {formatCurrency(l.montoCop, localeCorto)}
             </TableCell>
             <TableCell className="align-top">
-              <EstadoDelLink link={l} />
+              <EstadoDelLink link={l} esperaEnLaBandeja={esperanEnLaBandeja?.get(l.cuotaId)} />
             </TableCell>
           </TableRow>
         ))}
@@ -252,7 +266,7 @@ function TablaDeLinks({ items }: { items: LinkDePagoDeCuota[] }) {
 }
 
 /** En el teléfono, una fila por cuota en vez de una tabla que hay que correr. */
-function ListaDeLinks({ items }: { items: LinkDePagoDeCuota[] }) {
+function ListaDeLinks({ items, esperanEnLaBandeja }: FilasProps) {
   const { t, locale } = useI18n();
   const localeCorto = locale === 'en' ? 'en' : 'es';
   return (
@@ -269,7 +283,7 @@ function ListaDeLinks({ items }: { items: LinkDePagoDeCuota[] }) {
             {t('inmobiliaria.cobros.linksDePago.columnas.vence')}{' '}
             <span className="font-mono tabular-nums">{formatDate(l.fechaDeVencimiento, localeCorto)}</span>
           </p>
-          <EstadoDelLink link={l} />
+          <EstadoDelLink link={l} esperaEnLaBandeja={esperanEnLaBandeja?.get(l.cuotaId)} />
         </li>
       ))}
     </ul>

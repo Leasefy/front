@@ -1,3 +1,4 @@
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 /**
  * faltantesInmuebles — Spanish labels for the `faltantes` vocabulary the
  * durable import backend reports per row (wu-4-report.md §6).
@@ -163,7 +164,7 @@ export function valorDelCampoInmueble(campo: string, texto: string): string {
   const t = texto.trim();
   if (!t) return 'vacío';
   if (CAMPOS_DE_PLATA.has(campo) && /^\d+$/.test(t)) {
-    return `$${Number(t).toLocaleString('es-CO')}`;
+    return `$${Number(t).toLocaleString(localeDeLasCifras())}`;
   }
   if (t.startsWith('[') || t.startsWith('{')) {
     try {
@@ -203,7 +204,7 @@ export function fraseDeLaPlataConCentavos(datos: {
   for (const [campo, etiqueta, minuscula] of columnas) {
     const v = datos[campo]
     if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0 || Number.isInteger(v)) continue
-    const cifra = v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const cifra = v.toLocaleString(localeDeLasCifras(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     return `${etiqueta} del archivo trae centavos ($ ${cifra}) y tu plataforma todavía no guarda centavos: escribe ${minuscula} al peso en la fila, o pide que se activen los centavos. No se redondea por ti.`
   }
   return null

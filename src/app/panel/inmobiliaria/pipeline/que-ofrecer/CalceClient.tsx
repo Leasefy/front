@@ -66,18 +66,21 @@ import { toast } from '@/components/ui/toast'
 import { matchingApi } from '@/lib/api/crm.service'
 import { useCrm } from '@/lib/hooks/use-crm'
 import { mensajeDeUnaOpcion } from '@/lib/matching/el-mensaje-para-el-interesado'
+import { useLocaleDelPanel, useTr, type Tr } from '@/lib/i18n/use-tr'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 type Direccion = 'interesado' | 'inmueble'
 
 function pesos(n: number | null | undefined): string {
-  return n === null || n === undefined ? '—' : `$${n.toLocaleString('es-CO')}`
+  return n === null || n === undefined ? '—' : `$${n.toLocaleString(localeDeLasCifras())}`
 }
 
 /** La barra del puntaje. Acompaña a las razones; nunca las reemplaza. */
 function Puntaje({ valor }: { valor: number }) {
+  const tr = useTr()
   const acotado = Math.max(0, Math.min(100, Math.round(valor)))
   return (
-    <span className="flex items-center gap-2" aria-label={`Calce del ${acotado} por ciento`}>
+    <span className="flex items-center gap-2" aria-label={tr('Calce del {n} por ciento', { n: acotado })}>
       <span className="bg-surface-muted h-1.5 w-16 overflow-hidden rounded-full" aria-hidden="true">
         <span
           className="bg-primary block h-full rounded-full"
@@ -109,9 +112,21 @@ function Razones({ porQue }: { porQue: readonly string[] }) {
  * presupuesto y la opción sale marcada. Es para el asesor: NUNCA va en el
  * mensaje al interesado. Un back anterior no la manda: no se pinta nada.
  */
-function marcaDe(x: unknown): string | null {
-  const m = (x as { marca?: unknown } | null)?.marca
+function marcaDe(x: unknown, en = false): string | null {
+  const o = x as { marca?: unknown; marcaEn?: unknown } | null
+  const m = en && typeof o?.marcaEn === 'string' && o.marcaEn.trim() ? o.marcaEn : o?.marca
   return typeof m === 'string' && m.trim() ? m : null
+}
+
+/**
+ * Lo que escribe el back, en el idioma del panel (Nico, 16-10-2026: «si el
+ * usuario colocó la plataforma en inglés debe de contestar en inglés»). Con el
+ * panel en inglés, la versión `…En` que manda el back; un back anterior no la
+ * manda y queda el español. Sólo para la PANTALLA: el mensaje que se copia para
+ * el interesado se arma siempre con el español, que es su idioma.
+ */
+function enSuIdioma<T>(en: boolean, es: T, ingles: T | null | undefined): T {
+  return en && ingles !== null && ingles !== undefined ? ingles : es
 }
 
 function MarcaDelEstudio({ texto, testId }: { texto: string | null; testId: string }) {
@@ -130,22 +145,24 @@ function sinTope(tope: number | null | undefined): boolean {
   return tope === null || tope === undefined || tope <= 0
 }
 
-async function copiar(texto: string) {
+async function copiar(texto: string, tr: Tr = (es) => es) {
   try {
     await navigator.clipboard.writeText(texto)
-    toast.success('Mensaje copiado', {
-      description: 'Pégalo en tu WhatsApp o en el correo.',
+    toast.success(tr('Mensaje copiado'), {
+      description: tr('Pégalo en tu WhatsApp o en el correo.'),
     })
   } catch {
     // El portapapeles se niega en contextos no seguros y cuando el permiso
     // está cortado. Decirlo es mejor que un botón que no hace nada.
-    toast.error('No pudimos copiarlo', {
-      description: 'Tu navegador no nos dejó usar el portapapeles.',
+    toast.error(tr('No pudimos copiarlo'), {
+      description: tr('Tu navegador no nos dejó usar el portapapeles.'),
     })
   }
 }
 
 export function CalceClient() {
+  const tr = useTr();
+  const en = useLocaleDelPanel() === 'en';
   const [direccion, setDireccion] = useState<Direccion>('interesado')
   const [leadId, setLeadId] = useState('')
   const [propertyId, setPropertyId] = useState('')
@@ -192,16 +209,15 @@ export function CalceClient() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Qué ofrecer</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{tr("Qué ofrecer")}</h1>
         <p className="text-fg-muted text-sm">
-          A un interesado, los inmuebles que le sirven. A un inmueble que se libera, los
-          interesados a los que les sirve — con el porqué listo para mandar.
+          {tr("A un interesado, los inmuebles que le sirven. A un inmueble que se libera, los interesados a los que les sirve — con el porqué listo para mandar.")}
         </p>
       </header>
 
       {/* Las dos direcciones son la MISMA pregunta mirada desde los dos lados. */}
       <SegmentedControl<Direccion>
-        aria-label="Desde dónde quieres buscar"
+        aria-label={tr("Desde dónde quieres buscar")}
         value={direccion}
         onChange={setDireccion}
         options={[
@@ -210,7 +226,7 @@ export function CalceClient() {
             label: (
               <span className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Tengo un interesado
+                {tr("Tengo un interesado")}
               </span>
             ),
             ariaLabel: 'Tengo un interesado',
@@ -220,10 +236,10 @@ export function CalceClient() {
             label: (
               <span className="flex items-center gap-2">
                 <House className="h-4 w-4" />
-                Se liberó un inmueble
+                {tr("Se liberó un inmueble")}
               </span>
             ),
-            ariaLabel: 'Se liberó un inmueble',
+            ariaLabel: tr('Se liberó un inmueble'),
           },
         ]}
       />
@@ -232,7 +248,7 @@ export function CalceClient() {
         <Card>
           <CardContent className="space-y-4 pt-6">
             <div className="space-y-1.5">
-              <Label htmlFor="lead-id">¿A quién le vas a ofrecer?</Label>
+              <Label htmlFor="lead-id">{tr("¿A quién le vas a ofrecer?")}</Label>
               <select
                 id="lead-id"
                 value={leadId}
@@ -242,9 +258,9 @@ export function CalceClient() {
                 className="border-border bg-background h-10 w-full rounded-md border px-3 text-sm"
               >
                 <option value="">
-                  {leadsDelTablero.length === 0
+                  {tr(leadsDelTablero.length === 0
                     ? 'Todavía no hay leads en el tablero'
-                    : 'Elige un interesado…'}
+                    : 'Elige un interesado…')}
                 </option>
                 {leadsDelTablero.map((l) => (
                   <option key={l.id} value={l.id}>
@@ -259,8 +275,8 @@ export function CalceClient() {
               /* Un vacío con salida: de acá se va a crear el primer lead. */
               <EmptyState
                 icon={Users}
-                title="Todavía no hay a quién ofrecerle"
-                description="Cuando entre un interesado al tablero, acá te digo qué inmuebles le sirven."
+                title={tr("Todavía no hay a quién ofrecerle")}
+                description={tr("Cuando entre un interesado al tablero, acá te digo qué inmuebles le sirven.")}
                 action={{
                   label: 'Ir al pipeline',
                   href: '/panel/inmobiliaria/pipeline',
@@ -268,7 +284,7 @@ export function CalceClient() {
               />
             ) : !leadId.trim() ? (
               <p className="text-fg-muted text-sm">
-                Elige un interesado y te muestro qué inmuebles le calzan, y por qué.
+                {tr("Elige un interesado y te muestro qué inmuebles le calzan, y por qué.")}
               </p>
             ) : delLead.noHabilitado ? (
               <p className="text-fg-muted text-sm" data-testid="calce-no-habilitado">
@@ -289,12 +305,12 @@ export function CalceClient() {
                     {/* Qué busca, que es lo que explica el resto de la pantalla. */}
                     <div className="border-border-faint bg-surface-muted/40 rounded-lg border px-4 py-3">
                       <p className="text-sm">
-                        <strong>{delLead.datos.lead.nombre}</strong> · presupuesto{' '}
+                        <strong>{delLead.datos.lead.nombre}</strong> {tr("· presupuesto")}{' '}
                         {pesos(delLead.datos.busca.presupuestoCop)}{' '}
                         {delLead.datos.presupuestoDicho ? (
-                          <Badge variant="secondary">lo dijo él</Badge>
+                          <Badge variant="secondary">{tr("lo dijo él")}</Badge>
                         ) : (
-                          <Badge variant="outline">deducido del inmueble</Badge>
+                          <Badge variant="outline">{tr("deducido del inmueble")}</Badge>
                         )}{' '}
                         ·{' '}
                         {sinTope(delLead.datos.busca.topeAsegurableCop) ? (
@@ -302,7 +318,7 @@ export function CalceClient() {
                             {delLead.datos.busca.topeAsegurableCop === 0 ? 'sin respaldo' : 'sin estudio'}
                           </Badge>
                         ) : (
-                          <>tope asegurable {pesos(delLead.datos.busca.topeAsegurableCop)}</>
+                          <>{tr("tope asegurable")} {pesos(delLead.datos.busca.topeAsegurableCop)}</>
                         )}
                       </p>
                     </div>
@@ -314,29 +330,27 @@ export function CalceClient() {
                         className="border-border-faint bg-surface-muted/40 rounded-lg border px-4 py-3 text-sm"
                         data-testid="sugerencia-del-estudio"
                       >
-                        No tiene estudio de arrendamiento: le ofrecemos por su presupuesto. Sugiérele
-                        hacerlo: con su estudio la inmobiliaria sabe hasta cuánto lo respaldan y
-                        responde más rápido.
+                        {tr("No tiene estudio de arrendamiento: le ofrecemos por su presupuesto. Sugiérele hacerlo: con su estudio la inmobiliaria sabe hasta cuánto lo respaldan y responde más rápido.")}
                       </p>
                     ) : null}
 
                     {/* 🔴 Un requisito que falta NO es «sin resultados». */}
                     {delLead.datos.falta ? (
                       <div className="border-warning/40 bg-warning-soft/30 rounded-lg border p-4" data-testid="falta-requisito">
-                        <p className="text-sm font-medium">Todavía no se le puede mandar nada</p>
+                        <p className="text-sm font-medium">{tr("Todavía no se le puede mandar nada")}</p>
                         <p className="text-fg-muted mt-1 text-sm">
-                          {delLead.datos.falta.message}
+                          {enSuIdioma(en, delLead.datos.falta.message, delLead.datos.falta.messageEn)}
                         </p>
                       </div>
                     ) : opciones.length === 0 ? (
                       <EmptyState
                         icon={MagicWand}
-                        title="Ningún inmueble le calza hoy"
-                        description={
+                        title={tr("Ningún inmueble le calza hoy")}
+                        description={tr(
                           sinTope(delLead.datos.busca.topeAsegurableCop)
                             ? 'Con su presupuesto, nada del portafolio le entra hoy. Cuando se libere uno que sí, aparece acá.'
-                            : 'Con su presupuesto y su tope, nada del portafolio pasa los requisitos. Cuando se libere uno que sí, aparece acá.'
-                        }
+                            : 'Con su presupuesto y su tope, nada del portafolio pasa los requisitos. Cuando se libere uno que sí, aparece acá.',
+                        )}
                       />
                     ) : (
                       /* Otro interesado: los inmuebles que le calzan entran escalonados. */
@@ -359,11 +373,11 @@ export function CalceClient() {
                               <p className="text-fg-muted text-sm">
                                 {pesos(o.inmueble?.monthlyRent ?? null)}
                                 {o.inmueble?.adminFee
-                                  ? ` + ${pesos(o.inmueble.adminFee)} de administración`
+                                  ? tr(' + {plata} de administración', { plata: pesos(o.inmueble.adminFee) })
                                   : ''}
                               </p>
-                              <Razones porQue={o.porQue} />
-                              <MarcaDelEstudio texto={marcaDe(o)} testId={`marca-${o.propertyId}`} />
+                              <Razones porQue={enSuIdioma(en, o.porQue, o.porQueEn)} />
+                              <MarcaDelEstudio texto={marcaDe(o, en)} testId={`marca-${o.propertyId}`} />
                             </div>
                             <div className="flex shrink-0 flex-col items-end gap-2">
                               <Puntaje valor={o.puntaje} />
@@ -384,11 +398,12 @@ export function CalceClient() {
                                       habitaciones: o.inmueble?.bedrooms ?? null,
                                       porQue: o.porQue,
                                     }),
+                                    tr,
                                   )
                                 }
                               >
                                 <Copy className="h-4 w-4" />
-                                Copiar el mensaje
+                                {tr("Copiar el mensaje")}
                               </Button>
                             </div>
                           </StaggerItem>
@@ -405,7 +420,7 @@ export function CalceClient() {
         <Card>
           <CardContent className="space-y-4 pt-6">
             <div className="space-y-1.5">
-              <Label htmlFor="property-id">¿Cuál inmueble se liberó?</Label>
+              <Label htmlFor="property-id">{tr("¿Cuál inmueble se liberó?")}</Label>
               <select
                 id="property-id"
                 value={propertyId}
@@ -415,9 +430,9 @@ export function CalceClient() {
                 className="border-border bg-background h-10 w-full rounded-md border px-3 text-sm"
               >
                 <option value="">
-                  {inmuebles.length === 0
+                  {tr(inmuebles.length === 0
                     ? 'Todavía no hay inmuebles en el tablero'
-                    : 'Elige un inmueble…'}
+                    : 'Elige un inmueble…')}
                 </option>
                 {inmuebles.map((i) => (
                   <option key={i.id} value={i.id}>
@@ -430,13 +445,13 @@ export function CalceClient() {
             {inmuebles.length === 0 ? (
               <EmptyState
                 icon={House}
-                title="Todavía no hay inmuebles en el tablero"
-                description="Los inmuebles de esta lista salen de los leads del pipeline: son los que alguien está mirando."
+                title={tr("Todavía no hay inmuebles en el tablero")}
+                description={tr("Los inmuebles de esta lista salen de los leads del pipeline: son los que alguien está mirando.")}
                 action={{ label: 'Ir al pipeline', href: '/panel/inmobiliaria/pipeline' }}
               />
             ) : !propertyId.trim() ? (
               <p className="text-fg-muted text-sm">
-                Elige un inmueble y te muestro a qué interesados abiertos les sirve.
+                {tr("Elige un inmueble y te muestro a qué interesados abiertos les sirve.")}
               </p>
             ) : (
               <EstadoDeDatos
@@ -453,13 +468,13 @@ export function CalceClient() {
                       className="border-warning/40 bg-warning-soft/30 rounded-lg border p-4"
                       data-testid="no-ofrecible"
                     >
-                      <p className="text-sm">{delInmueble.datos.motivo}</p>
+                      <p className="text-sm">{enSuIdioma(en, delInmueble.datos.motivo, delInmueble.datos.motivoEn)}</p>
                     </div>
                   ) : leads.length === 0 ? (
                     <EmptyState
                       icon={MagicWand}
-                      title="A ningún lead abierto le calza"
-                      description="Ninguno de los interesados abiertos pasa los requisitos para este inmueble."
+                      title={tr("A ningún lead abierto le calza")}
+                      description={tr("Ninguno de los interesados abiertos pasa los requisitos para este inmueble.")}
                     />
                   ) : (
                     /* Otro inmueble: los leads que le calzan entran escalonados. */
@@ -479,8 +494,8 @@ export function CalceClient() {
                                 </span>
                               ) : null}
                             </p>
-                            <Razones porQue={l.porQue} />
-                            <MarcaDelEstudio texto={marcaDe(l)} testId={`marca-lead-${l.pipelineItemId}`} />
+                            <Razones porQue={enSuIdioma(en, l.porQue, l.porQueEn)} />
+                            <MarcaDelEstudio texto={marcaDe(l, en)} testId={`marca-lead-${l.pipelineItemId}`} />
                           </div>
                           <div className="flex shrink-0 items-center gap-3">
                             <Puntaje valor={l.puntaje} />
@@ -496,7 +511,7 @@ export function CalceClient() {
                                 setDireccion('interesado')
                               }}
                             >
-                              Ver qué ofrecerle
+                              {tr("Ver qué ofrecerle")}
                               <ArrowRight className="h-4 w-4" />
                             </Button>
                           </div>
@@ -517,15 +532,15 @@ export function CalceClient() {
           desde el 21-09 se abre encima con `ParaEntenderMas` y la devuelve
           intacta al cerrarla. */}
       <ParaEntenderMas
-        etiqueta="Cómo se decide"
-        titulo="Cómo se decide un calce"
-        descripcion="Dos cosas distintas: lo que un inmueble tiene que cumplir para aparecer, y cuánto pesa cada coincidencia en el orden."
+        etiqueta={tr("Cómo se decide")}
+        titulo={tr("Cómo se decide un calce")}
+        descripcion={tr("Dos cosas distintas: lo que un inmueble tiene que cumplir para aparecer, y cuánto pesa cada coincidencia en el orden.")}
       >
         <div className="space-y-3">
           <div>
-            <p className="text-sm font-medium">Requisitos (no se configuran)</p>
+            <p className="text-sm font-medium">{tr("Requisitos (no se configuran)")}</p>
             <ul className="text-fg-muted list-disc pl-5 text-sm">
-              {(config.datos?.requisitos ?? []).map((r) => (
+              {(enSuIdioma(en, config.datos?.requisitos, config.datos?.requisitosEn) ?? []).map((r) => (
                 <li key={r}>{r}</li>
               ))}
             </ul>
@@ -533,7 +548,7 @@ export function CalceClient() {
           {config.datos?.pesos ? (
             <div>
               <p className="text-sm font-medium">
-                Pesos {config.datos.configurados ? '' : '(los de por defecto)'}
+                {tr("Pesos")} {config.datos.configurados ? '' : tr('(los de por defecto)')}
               </p>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {Object.entries(config.datos.pesos).map(([k, v]) => (
@@ -545,11 +560,9 @@ export function CalceClient() {
             </div>
           ) : null}
           <p className="text-fg-muted text-xs">
-            Los pesos se cambian en la configuración de la inmobiliaria, no acá: moverlos desde
-            la pantalla de trabajo invita a ajustarlos hasta que salga el inmueble que uno
-            quería vender.{' '}
+            {tr("Los pesos se cambian en la configuración de la inmobiliaria, no acá: moverlos desde la pantalla de trabajo invita a ajustarlos hasta que salga el inmueble que uno quería vender.")}{' '}
             <Link href="/panel/inmobiliaria/configuracion" className="text-primary underline">
-              Ir a configuración
+              {tr("Ir a configuración")}
             </Link>
           </p>
         </div>

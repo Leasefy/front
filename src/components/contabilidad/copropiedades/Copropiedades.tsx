@@ -50,6 +50,7 @@ import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formular
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { cn } from '@/lib/utils';
 import { FaltaLaMigracion, Nota, TarjetaDeInforme } from '../piezas';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 const COLUMNAS = 4;
 
@@ -248,7 +249,7 @@ export function Copropiedades() {
                         </span>
                       </TableCell>
                       <TableCell numeric className="tabular-nums">
-                        {c.inmuebles.toLocaleString('es-CO')}
+                        {c.inmuebles.toLocaleString(localeDeLasCifras())}
                       </TableCell>
                     </TableRowAnimada>
                   ))

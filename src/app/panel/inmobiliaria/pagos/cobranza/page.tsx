@@ -36,6 +36,7 @@ import { Button } from '@/components/ui'
 import { CrossFade, Presence } from '@leasefy/cadence'
 import { CARTERA_STAGES } from '@/lib/cartera'
 import type { CarteraStage } from '@/lib/cartera'
+import { useTr } from '@/lib/i18n/use-tr'
 
 // PermissionsContext has no tenantId field — backend derives tenant from JWT.
 // Pass empty string; Supabase Realtime will silently not connect until tenant is available.
@@ -89,6 +90,7 @@ function ComoFuncionaCobranza() {
 }
 
 export default function CobranzaOverviewPage() {
+  const tr = useTr();
   const { t } = useI18n()
   const router = useRouter()
 
@@ -320,10 +322,10 @@ export default function CobranzaOverviewPage() {
         className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-warning-soft px-4 py-2.5"
       >
           <p className="text-sm text-fg">
-            No se pudo actualizar el panorama de tu cartera: lo que ves es de la última carga.
+            {tr("No se pudo actualizar el panorama de tu cartera: lo que ves es de la última carga.")}
           </p>
           <Button variant="outline" size="sm" onClick={() => void refetch()}>
-            Intentar de nuevo
+            {tr("Intentar de nuevo")}
           </Button>
       </Presence>
 
@@ -345,14 +347,14 @@ export default function CobranzaOverviewPage() {
             sección le faltara algo (screenshot de Nico, 2026-08-25). */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <h2 id="cobranza-agente" className="text-lg font-semibold text-fg">
-            Lo que hizo el agente
+            {tr("Lo que hizo el agente")}
           </h2>
           {/* Solo el reporte diario: la analítica se fusionó en esta misma
               pantalla, así que enlazarla sería mandar a la gente a donde ya está. */}
           <Button asChild variant="secondary" size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/cobranza/reporte">
               <Scales className="w-4 h-4" aria-hidden="true" />
-              Ver reporte diario
+              {tr("Ver reporte diario")}
             </Link>
           </Button>
         </div>
@@ -367,7 +369,7 @@ export default function CobranzaOverviewPage() {
           pregunta desde tres lugares distintos de la página. */}
       <section className="space-y-4" aria-labelledby="cobranza-cartera">
         <h2 id="cobranza-cartera" className="text-lg font-semibold text-fg">
-          Tu cartera
+          {tr("Tu cartera")}
         </h2>
 
         {/* Etapas — tablist con roving tabindex (D-38-13) */}
@@ -424,7 +426,7 @@ export default function CobranzaOverviewPage() {
       {/* ═══ 4. ACTIVIDAD ══════════════════════════════════════════════════ */}
       <section className="space-y-4" aria-labelledby="cobranza-actividad">
         <h2 id="cobranza-actividad" className="text-lg font-semibold text-fg">
-          Actividad
+          {tr("Actividad")}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-3">

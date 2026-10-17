@@ -13,19 +13,20 @@
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { usePlazoSinFijar } from '@/lib/hooks/use-plazo-sin-fijar'
 import { FIJAR_EL_PLAZO_HREF } from '@/lib/api/cobranza-secuencia.types'
+import { useTr } from '@/lib/i18n/use-tr'
 
 export function AvisoPlazoSinFijarEnCobranza() {
+  const tr = useTr();
   const sinFijar = usePlazoSinFijar()
   if (!sinFijar) return null
   return (
     <AlertaAccionable
       severidad="warning"
-      titulo="Tu inmobiliaria no ha fijado sus días de plazo: las cuotas vencidas no entran a la cobranza hasta fijarlos."
+      titulo={tr("Tu inmobiliaria no ha fijado sus días de plazo: las cuotas vencidas no entran a la cobranza hasta fijarlos.")}
       accion={{ label: 'Fijar los días de plazo', href: FIJAR_EL_PLAZO_HREF }}
       data-testid="cobranza-plazo-sin-fijar"
     >
-      Son los días después del vencimiento en los que todavía no corre la mora (el sugerido es 5). Mientras no
-      los fijes, no se cobra interés y el agente no gestiona esas cuotas.
+      {tr("Son los días después del vencimiento en los que todavía no corre la mora (el sugerido es 5). Mientras no los fijes, no se cobra interés y el agente no gestiona esas cuotas.")}
     </AlertaAccionable>
   )
 }

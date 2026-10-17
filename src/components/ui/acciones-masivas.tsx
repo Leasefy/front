@@ -64,6 +64,7 @@ import {
 } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 export interface BarraDeAccionesMasivasProps {
   /** Cuántas filas están marcadas ahora mismo. */
@@ -152,7 +153,7 @@ export function BarraDeAccionesMasivas({
   const cuantas = (
     <AnimatedNumber
       value={marcadas}
-      format={(n) => Math.round(n).toLocaleString('es-CO')}
+      format={(n) => Math.round(n).toLocaleString(localeDeLasCifras())}
       data-testid={`${testid}-cuantas`}
     />
   )

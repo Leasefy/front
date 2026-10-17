@@ -29,6 +29,7 @@ import {
   usePrefersReducedMotion,
 } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 export type FaseDeRetomar = 'poniendo-al-dia' | 'leyendo';
 
@@ -53,7 +54,7 @@ export interface AvanceDeRetomarProps {
 }
 
 function cifra(n: number): string {
-  return n.toLocaleString('es-CO');
+  return n.toLocaleString(localeDeLasCifras());
 }
 
 function textoDelPaso(fase: FaseDeRetomar, filas: number, puestasAlDia: number | null): string {

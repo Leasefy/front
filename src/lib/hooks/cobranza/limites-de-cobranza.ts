@@ -1,3 +1,4 @@
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 /**
  * Los topes de los formularios de cobranza, con la misma frase que dice el
  * servidor (02-10-2026, tanda 2 de errores, A6).
@@ -56,7 +57,7 @@ export function erroresDelReglaje(borrador: {
   for (const campo of ['mensajeDelRecordatorio', 'mensajeDelAviso'] as const) {
     const texto = borrador[campo]
     if (typeof texto === 'string' && texto.length > LARGO_DEL_TEXTO_DEL_REGLAJE) {
-      errores[campo] = `El texto puede tener hasta ${LARGO_DEL_TEXTO_DEL_REGLAJE.toLocaleString('es-CO')} caracteres.`
+      errores[campo] = `El texto puede tener hasta ${LARGO_DEL_TEXTO_DEL_REGLAJE.toLocaleString(localeDeLasCifras())} caracteres.`
     }
   }
   return errores
@@ -94,7 +95,7 @@ function fueraDe(valor: number | null, { min, max }: { min: number; max: number 
 }
 
 function cifra(n: number): string {
-  return n.toLocaleString('es-CO')
+  return n.toLocaleString(localeDeLasCifras())
 }
 
 /**

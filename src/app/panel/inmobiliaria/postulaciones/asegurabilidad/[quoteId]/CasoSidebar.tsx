@@ -18,6 +18,7 @@
 import { useI18n } from '@/lib/i18n'
 import type { QuoteMetadata } from '@/lib/hooks/cotizador/use-quote-metadata'
 import type { FinalVerdict } from '@/lib/cotizador/verdict-derive'
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const NS = 'inmobiliaria.ai.cotizador'
 
@@ -64,7 +65,7 @@ export function CasoSidebar({ metadata, finalVerdict, isConnected }: CasoSidebar
 
   const canon =
     metadata?.canonCop != null
-      ? new Intl.NumberFormat('es-CO', {
+      ? formatoDeCifras(localeDeLasCifras(), {
           style: 'currency',
           currency: 'COP',
           minimumFractionDigits: 0,

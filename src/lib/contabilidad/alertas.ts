@@ -31,6 +31,7 @@
 import type { AsientosFaltantes, Cierre, EventoContable } from '@/lib/api/contabilidad.service';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import { diaDe } from './fechas';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** QA-FACT-CONTA-95 (CB-J-04): el día de la casa en una frase, largo: «30 de septiembre de 2026». */
 export function diaEnFrase(valor: string): string {
@@ -216,7 +217,7 @@ export interface AlertaDescrita {
 const BASE = '/panel/inmobiliaria/contabilidad';
 
 function plural(n: number, singular: string, pluralTexto: string): string {
-  return `${n.toLocaleString('es-CO')} ${n === 1 ? singular : pluralTexto}`;
+  return `${n.toLocaleString(localeDeLasCifras())} ${n === 1 ? singular : pluralTexto}`;
 }
 
 function desglose(a: Extract<AlertaContable, { tipo: 'SIN_ASIENTO' }>): string {

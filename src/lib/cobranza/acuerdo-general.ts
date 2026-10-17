@@ -13,6 +13,7 @@
  */
 
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /** El subconjunto de la política que forma el acuerdo general. */
 export interface AcuerdoGeneral {
@@ -23,7 +24,7 @@ export interface AcuerdoGeneral {
   allowedPaymentPlans: number[]
 }
 
-const pesos = plataEnPantalla('es-CO', {
+const pesos = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -45,7 +46,11 @@ export function resumenAcuerdo(d: AcuerdoGeneral): string {
       : 'sin descuento',
   )
 
-  const planes = [...d.allowedPaymentPlans].sort((a, b) => a - b)
+  // QA-AGENTES 16-10 (lab): con el plazo máximo en 0 la frase decía «en 3, 6 o
+  // 12 cuotas» y el aviso de abajo, que no puede armar ningún cronograma. Lo que
+  // el agente cierra SOLO son los plazos marcados que caben en el máximo (los
+  // demás los escala, ver `avisosDelAcuerdo`).
+  const planes = [...d.allowedPaymentPlans].filter((m) => m <= d.maxPlanMonths).sort((a, b) => a - b)
   if (planes.length > 0) {
     const enMeses = planes.map(String)
     const ultimo = enMeses.pop()

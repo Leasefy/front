@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
+import { useTr } from '@/lib/i18n/use-tr';
 
 // Risk level colors for badge
 const RISK_LEVEL_COLORS: Record<string, { bg: string; text: string }> = {
@@ -52,6 +53,7 @@ export function PipelineCard({
   isDragging = false,
   dragHandleProps,
 }: PipelineCardProps) {
+  const tr = useTr();
   const { t, formatDate: formatDateI18n } = useI18n();
   const stageInfo = getPipelineStageInfo(item.stage);
   const nombreDelAgente = useContext(NombresDeAgentesContext)[item.agenteId];
@@ -214,7 +216,7 @@ export function PipelineCard({
                     'text-[10px] mt-0.5',
                     isOverdue ? 'font-medium' : 'opacity-70'
                   )}>
-                    {isOverdue ? t('inmobiliaria.pipeline.overdue') + ': ' : ''}
+                    {isOverdue ? t('inmobiliaria.pipeline.overdue') + ' ' : ''}
                     {formatDateI18n(new Date(item.nextActionDate), { day: 'numeric', month: 'short' })}
                   </p>
                 )}
@@ -230,7 +232,7 @@ export function PipelineCard({
             'px-2 py-1 rounded-full text-[10px] font-medium',
             stageInfo?.color || 'bg-muted text-muted-foreground'
           )}>
-            {stageInfo?.labelEs || item.stage}
+            {tr(stageInfo?.labelEs || item.stage)}
           </span>
 
           {/* Assigned Agent (small text) */}

@@ -69,24 +69,6 @@ function ComplianceOverviewContent() {
     )
   }
 
-  // Phase 38-05a: page-level EmptyState when no compliance issues at all
-  // ("truly empty" = no open Habeas Data + no outside-hours violations)
-  const hasAnyIssues =
-    !!data &&
-    (data.habeas_data.open_requests.length > 0 ||
-      data.ley_2300.weekly_outside_hours_count > 0)
-  if (!isLoading && data && !error && !hasAnyIssues) {
-    return (
-      <CrossFade swapKey="vacio">
-      <EmptyState
-        icon={ShieldCheck}
-        title={t('inmobiliaria.ai.cobranza.compliance.empty.title')}
-        description={t('inmobiliaria.ai.cobranza.compliance.empty.description')}
-      />
-      </CrossFade>
-    )
-  }
-
   const subPages = [
     {
       href: '/panel/inmobiliaria/pagos/cobranza/compliance/ley-2300',
@@ -104,6 +86,48 @@ function ComplianceOverviewContent() {
       Icon: FileText,
     },
   ]
+
+  /**
+   * Las tres páginas de Cumplimiento. MORI-25 (QA-AGENTES 16-10): sin
+   * alertas la pantalla era SÓLO el vacío, y la Auditoría (pausas, cambios de
+   * etapa, cartas…), los intentos de la Ley 2300 y el Opt-out quedaban sin
+   * camino: no son pestaña. Van también debajo del vacío.
+   */
+  const tarjetasDeSubpaginas = (
+    <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {subPages.map(({ href, title, Icon }) => (
+        <Link
+          key={href}
+          href={href}
+          className="rounded-lg border border-border bg-card p-4 hover:border-primary hover:bg-accent/30 transition-colors flex items-center gap-3"
+        >
+          <Icon className="w-5 h-5 text-primary" aria-hidden="true" />
+          <span className="text-sm font-medium text-foreground">{title}</span>
+        </Link>
+      ))}
+    </section>
+  )
+
+  // Phase 38-05a: page-level EmptyState when no compliance issues at all
+  // ("truly empty" = no open Habeas Data + no outside-hours violations)
+  const hasAnyIssues =
+    !!data &&
+    (data.habeas_data.open_requests.length > 0 ||
+      data.ley_2300.weekly_outside_hours_count > 0)
+  if (!isLoading && data && !error && !hasAnyIssues) {
+    return (
+      <CrossFade swapKey="vacio">
+      <div className="p-4 md:p-6 space-y-6">
+        <EmptyState
+          icon={ShieldCheck}
+          title={t('inmobiliaria.ai.cobranza.compliance.empty.title')}
+          description={t('inmobiliaria.ai.cobranza.compliance.empty.description')}
+        />
+        {tarjetasDeSubpaginas}
+      </div>
+      </CrossFade>
+    )
+  }
 
   return (
     <CrossFade swapKey="panel">
@@ -290,18 +314,7 @@ function ComplianceOverviewContent() {
           </section>
 
           {/* Section 5: Sub-page nav cards */}
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {subPages.map(({ href, title, Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className="rounded-lg border border-border bg-card p-4 hover:border-primary hover:bg-accent/30 transition-colors flex items-center gap-3"
-              >
-                <Icon className="w-5 h-5 text-primary" aria-hidden="true" />
-                <span className="text-sm font-medium text-foreground">{title}</span>
-              </Link>
-            ))}
-          </section>
+          {tarjetasDeSubpaginas}
         </>
       )}
     </div>

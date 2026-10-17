@@ -35,6 +35,7 @@ import { LlamadaDetalleSheet } from '@/components/inmobiliaria/cobranza/LlamadaD
 import { summaryOutcomeLabel } from '@/lib/cobranza/call-vocab'
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 void React
 
@@ -64,7 +65,7 @@ const EMOCION: Record<string, string> = {
   distressed: 'Angustiado',
 }
 
-const COP = plataEnPantalla('es-CO', {
+const COP = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

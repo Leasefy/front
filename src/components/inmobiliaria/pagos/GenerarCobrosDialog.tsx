@@ -52,6 +52,7 @@ import {
 } from '@/lib/api/inmobiliaria.service'
 import { mesEnTitulo, nombreDelMes } from '@/lib/utils/mes'
 import { useI18n } from '@/lib/i18n'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /**
  * ¿El back RECHAZÓ la corrida (un 4xx que dice por qué)? (02-10-2026)
@@ -273,7 +274,7 @@ export function GenerarCobrosDialog({
               <DialogTitle>La corrida de {titulo} terminó</DialogTitle>
               {typeof resultado.created === 'number' ? (
                 <DialogDescription>
-                  <span className="tabular-nums">{resultado.created.toLocaleString('es-CO')}</span>{' '}
+                  <span className="tabular-nums">{resultado.created.toLocaleString(localeDeLasCifras())}</span>{' '}
                   {resultado.created === 1 ? 'cobro generado.' : 'cobros generados.'}
                 </DialogDescription>
               ) : null}
@@ -309,7 +310,7 @@ export function GenerarCobrosDialog({
             <p className="mt-3 text-body-sm text-fg-muted" data-testid="dentro-de-otra-cuota">
               {resultado!.dentroDeOtraCuota!.cuantos === 1
                 ? `1 inmueble se cobra por trimestre y ${titulo} va en la cuota de otro mes: no se le generó cobro.`
-                : `${resultado!.dentroDeOtraCuota!.cuantos.toLocaleString('es-CO')} inmuebles se cobran por trimestre y ${titulo} va en la cuota de otro mes: no se les generó cobro.`}
+                : `${resultado!.dentroDeOtraCuota!.cuantos.toLocaleString(localeDeLasCifras())} inmuebles se cobran por trimestre y ${titulo} va en la cuota de otro mes: no se les generó cobro.`}
             </p>
           ) : null}
           </Appear>

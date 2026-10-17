@@ -20,6 +20,7 @@ import { SealCheck, CheckCircle } from '@phosphor-icons/react'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 import { useI18n } from '@/lib/i18n'
 import type { MaintenanceTicketDetail } from '@/lib/types/mantenimiento'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 interface AprobacionPanelProps {
   aprobacion: MaintenanceTicketDetail['aprobacion']
@@ -29,7 +30,7 @@ const ROOT = 'inmobiliaria.ai.mantenimiento'
 
 /** Full COP with es-CO grouping (no decimals). */
 function formatCOP(value: number): string {
-  return `$${value.toLocaleString('es-CO')}`
+  return `$${value.toLocaleString(localeDeLasCifras())}`
 }
 
 export function AprobacionPanel({ aprobacion }: AprobacionPanelProps) {

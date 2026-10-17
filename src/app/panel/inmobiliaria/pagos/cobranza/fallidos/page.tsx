@@ -41,6 +41,11 @@ import {
   clasificarMotivo,
 } from '@/components/inmobiliaria/pagos/PagoFallidoTabla'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
+import { useLinksDeCobriQueNoSePagaron, type LinksQueNoSePagaron } from '@/lib/hooks/use-links-de-cobri-que-no-se-pagaron'
+import { useCobrosEnLaBandeja } from '@/lib/hooks/use-cobros-en-la-bandeja'
+import { EstadoDelLink } from '@/components/inmobiliaria/pagos/payu/EstadoDelLink'
+import { formatCurrency, formatDate } from '@/lib/format'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { CrossFade, Presence } from '@leasefy/cadence'
 
 // ── Acciones masivas (visión §7) ──────────────────────────────────────────────
@@ -55,9 +60,74 @@ const ACCIONES_MASIVAS: { label: string; icon: Icon }[] = [
   { label: 'Enviar a cobranza', icon: Headset },
 ]
 
+/**
+ * COBRI-7 (QA de los agentes en el lab, 16-10-2026): los links de pago de Cobri
+ * cuyo pago la pasarela no aprobó o que vencieron sin pago. Antes la pantalla
+ * decía «Sin pagos fallidos» con un pago de Cobri rechazado. Cobri no reenvía a
+ * pedido: el próximo aviso de la cuota sale solo, y el link fallido sigue
+ * sirviendo para volver a intentar.
+ */
+function LinksDeCobriQueNoSePagaron({
+  lectura,
+  esperanEnLaBandeja,
+}: {
+  lectura: LinksQueNoSePagaron
+  /** cuotaId → el caso de la Bandeja que espera aprobar su siguiente aviso. */
+  esperanEnLaBandeja: ReadonlyMap<string, string>
+}) {
+  if (lectura.cargando && lectura.items.length === 0) return null
+  if (lectura.error) {
+    return (
+      <Card className="p-5 flex flex-wrap items-center justify-between gap-3" data-testid="cobri-fallidos-error">
+        <p className="text-sm text-fg-muted">
+          {mensajeParaLaPersona(lectura.error, {
+            porDefecto: 'No pudimos leer los links de pago de Cobri.',
+            accion: 'leer los links de pago de Cobri',
+          })}
+        </p>
+        <Button variant="outline" size="sm" hideArrow onClick={() => void lectura.recargar()}>
+          Intentar de nuevo
+        </Button>
+      </Card>
+    )
+  }
+  if (lectura.items.length === 0) return null
+  return (
+    <Card className="p-0 overflow-hidden" data-testid="cobri-fallidos">
+      <div className="space-y-1 border-b border-border px-5 py-4">
+        <h2 className="text-base font-semibold text-fg">Links de pago de Cobri que no se pagaron</h2>
+        <p className="text-sm text-fg-muted max-w-2xl">
+          {lectura.total === 1 ? 'Un link de Cobri que no se pagó' : `${lectura.total} links de Cobri que no se pagaron`}, de
+          cuotas que vencen entre el mes pasado y el próximo. Cobri no los reenvía a pedido: el siguiente aviso de cada
+          cuota lleva el mismo link mientras siga vivo y, después del tercero, la cuota la sigue cobranza.
+        </p>
+      </div>
+      <ul className="divide-y divide-border-faint">
+        {lectura.items.map((l) => (
+          <li key={l.cuotaId} className="space-y-2 px-5 py-4" data-testid={`cobri-fallido-${l.cuotaId}`}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-medium text-fg">{l.inquilino}</p>
+                <p className="text-xs text-fg-muted">
+                  Contrato {l.contratoNumero} · {l.inmueble} · vence{' '}
+                  <span className="font-mono tabular-nums">{formatDate(l.fechaDeVencimiento, 'es')}</span>
+                </p>
+              </div>
+              <p className="whitespace-nowrap font-mono tabular-nums text-fg">{formatCurrency(l.montoCop, 'es')}</p>
+            </div>
+            <EstadoDelLink link={l} esperaEnLaBandeja={esperanEnLaBandeja.get(l.cuotaId)} />
+          </li>
+        ))}
+      </ul>
+    </Card>
+  )
+}
+
 function PagosFallidos() {
   const router = useRouter()
   const { items, isLoading, error, runAction } = useAgentWorkItems('pagos')
+  const deCobri = useLinksDeCobriQueNoSePagaron()
+  const enLaBandeja = useCobrosEnLaBandeja()
 
   // Deriva los fallidos de la cola real + cuenta por motivo para el banner.
   const { fallidos, conteo } = useMemo(() => {
@@ -88,7 +158,7 @@ function PagosFallidos() {
         {/* KPI: total de fallidos */}
         <div className="shrink-0 rounded-lg border border-border bg-card px-4 py-3 text-center">
           <p className="text-2xl font-semibold text-fg tabular-nums">
-            {isLoading ? '—' : total}
+            {isLoading || deCobri.cargando ? '—' : total + deCobri.total}
           </p>
           <p className="text-xs text-fg-muted">Pagos fallidos</p>
         </div>
@@ -143,9 +213,12 @@ function PagosFallidos() {
         </div>
       </Card>
 
+      <LinksDeCobriQueNoSePagaron lectura={deCobri} esperanEnLaBandeja={enLaBandeja.porCuota} />
+
       {/* Tabla de fallidos / estados de carga, error y vacío: cada estado
-          entra con su fundido (`CrossFade`). */}
-      <CrossFade swapKey={isLoading ? 'cargando' : error ? 'fallo' : total === 0 ? 'vacio' : 'tabla'}>
+          entra con su fundido (`CrossFade`). Con links de Cobri arriba, la cola
+          vacía no dice «Sin pagos fallidos» (COBRI-7). */}
+      <CrossFade swapKey={isLoading ? 'cargando' : error ? 'fallo' : total === 0 ? (deCobri.items.length > 0 ? 'nada' : 'vacio') : 'tabla'}>
       {isLoading ? (
         <div className="space-y-2" aria-busy="true">
           {[0, 1, 2].map((i) => (
@@ -161,7 +234,7 @@ function PagosFallidos() {
           title="No pudimos cargar los pagos fallidos"
           description="Hubo un problema al consultar la cola del agente. Vuelve a intentarlo en un momento."
         />
-      ) : total === 0 ? (
+      ) : total === 0 && deCobri.items.length > 0 ? null : total === 0 ? (
         <EmptyState
           icon={XCircle}
           title="Sin pagos fallidos"

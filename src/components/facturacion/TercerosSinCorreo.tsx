@@ -55,6 +55,7 @@ import {
   type ClaseDeTercero,
   type TercerosSinCorreo as Datos,
 } from '@/lib/api/facturacion-electronica.service'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /** Radix reserva `''` para «sin selección», así que «Todos» lleva su clave. */
 const TODOS = 'TODOS'
@@ -124,8 +125,8 @@ export function TercerosSinCorreo() {
                   «queda esperando en un enlace»: el WhatsApp no sale y el
                   enlace no existe (FA-R19). */}
               {datos.sinCorreo === 0
-                ? `${datos.total === 1 ? 'Tu tercero tiene' : `Todos tus ${datos.total.toLocaleString('es-CO')} terceros tienen`} correo: sus facturas se les mandan por correo.`
-                : `${datos.sinCorreo.toLocaleString('es-CO')} de ${datos.total.toLocaleString('es-CO')} terceros no ${datos.sinCorreo === 1 ? 'tiene' : 'tienen'} correo: sus facturas quedan sin entregar, y la aceptación tácita no corre, hasta que lo completes.`}
+                ? `${datos.total === 1 ? 'Tu tercero tiene' : `Todos tus ${datos.total.toLocaleString(localeDeLasCifras())} terceros tienen`} correo: sus facturas se les mandan por correo.`
+                : `${datos.sinCorreo.toLocaleString(localeDeLasCifras())} de ${datos.total.toLocaleString(localeDeLasCifras())} terceros no ${datos.sinCorreo === 1 ? 'tiene' : 'tienen'} correo: sus facturas quedan sin entregar, y la aceptación tácita no corre, hasta que lo completes.`}
             </p>
             <p className="text-caption text-fg-muted">
               {datos.exigido

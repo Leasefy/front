@@ -85,6 +85,7 @@ import { traeErroresPorCampo } from '@/lib/errores/errores-en-el-formulario';
 import { nombreDelMes } from '@/lib/utils/mes';
 import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
 import { CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
+import { useTr } from '@/lib/i18n/use-tr';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -131,6 +132,7 @@ interface InformeDeAprobacion {
  * Las dispersiones se auto-refrescan vía useAutoRefresh (30s + focus/visibility).
  */
 function DispersionesContent() {
+  const tr = useTr();
   const { t, locale } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -798,7 +800,7 @@ function DispersionesContent() {
           <Button asChild variant="secondary" hideArrow>
             <Link href={RUTA_LOTES}>
               <Bank className="w-4 h-4" />
-              Lotes al banco
+              {tr("Lotes al banco")}
             </Link>
           </Button>
           <Button asChild hideArrow>
@@ -917,7 +919,7 @@ function DispersionesContent() {
                 queSon={hayFiltros ? 'resultados' : 'dispersiones'}
                 icono={PaperPlaneTilt}
                 titulo={`Todavía no hay dispersiones de ${monthDisplay}`}
-                descripcion="Se arman con la cuota del propietario de cada contrato, haya pagado el inquilino o no. Genéralas desde el asistente."
+                descripcion={tr("Se arman con la cuota del propietario de cada contrato, haya pagado el inquilino o no. Genéralas desde el asistente.")}
                 crear={{
                   label: t('inmobiliaria.dispersiones.wizard.title'),
                   href: '/panel/inmobiliaria/pagos/dispersiones/generar',
@@ -1004,16 +1006,15 @@ function DispersionesContent() {
         <AlertDialogContent variant="confirm" icon={<Trash weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              ¿Descartas la liquidación de {porDescartar?.propietarioName ?? ''} de{' '}
+              {tr("¿Descartas la liquidación de")} {porDescartar?.propietarioName ?? ''} {tr("de")}{' '}
               {porDescartar ? nombreDelMes(porDescartar.month) : ''}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Se borra la liquidación y sus cuotas vuelven a estar por girar. No le llega
-              nada al propietario. Si hace falta, la vuelves a generar.
+              {tr("Se borra la liquidación y sus cuotas vuelven a estar por girar. No le llega nada al propietario. Si hace falta, la vuelves a generar.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={descartando}>Volver</AlertDialogCancel>
+            <AlertDialogCancel disabled={descartando}>{tr("Volver")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
@@ -1038,17 +1039,16 @@ function DispersionesContent() {
         <AlertDialogContent variant="confirm" icon={<Stamp weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Vas a aprobar {pendientesEnPantalla.length}{' '}
-              {pendientesEnPantalla.length === 1 ? 'dispersión' : 'dispersiones'} por{' '}
-              {formatCurrency(plataPendienteEnPantalla)}. ¿Seguimos?
+              {tr("Vas a aprobar")} {pendientesEnPantalla.length}{' '}
+              {pendientesEnPantalla.length === 1 ? 'dispersión' : 'dispersiones'} {tr("por")}{' '}
+              {formatCurrency(plataPendienteEnPantalla)}{tr(". ¿Seguimos?")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Son las pendientes que ves en la lista de {monthDisplay}. Cada una queda lista para
-              que otra persona anote la referencia del giro; el sistema no transfiere plata.
+              {tr("Son las pendientes que ves en la lista de")} {monthDisplay}{tr(". Cada una queda lista para que otra persona anote la referencia del giro; el sistema no transfiere plata.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={aprobandoTodas}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={aprobandoTodas}>{tr("Cancelar")}</AlertDialogCancel>
             <AlertDialogAction
               data-testid="confirmar-aprobar-todas"
               loading={aprobandoTodas}

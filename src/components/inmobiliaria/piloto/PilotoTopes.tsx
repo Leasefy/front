@@ -36,6 +36,7 @@ import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formular
 import { leerFallo } from '@/lib/errores/traductor-de-errores'
 import { formatCurrency } from '@/lib/format'
 import type { CambiosDePreferencias, PilotoPreferenciasResponse, RangoDePreferencia } from '@/lib/api/piloto'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 type Campo = 'topeMontoCop' | 'topeDestinatarios' | 'graciaSegundos'
 const CAMPOS: Campo[] = ['topeMontoCop', 'topeDestinatarios', 'graciaSegundos']
@@ -159,7 +160,7 @@ export function PilotoTopes({ data, isLoading, error, notAvailable, guardando, o
 
   const rango = (c: Campo) => {
     const r = data.rangos[c]
-    const f = (n: number) => (c === 'topeMontoCop' ? formatCurrency(n) : n.toLocaleString('es-CO'))
+    const f = (n: number) => (c === 'topeMontoCop' ? formatCurrency(n) : n.toLocaleString(localeDeLasCifras()))
     return t('inmobiliaria.piloto.topes.fueraDeRango', { min: f(r.min), max: f(r.max) })
   }
 

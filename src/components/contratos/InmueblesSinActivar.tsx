@@ -32,6 +32,7 @@ import { Buildings } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { inmueblesImportacionApi } from "@/lib/api/inmuebles-importacion.service";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
 export interface InmueblesSinActivarProps {
   /** Cuántos contratos del lote se quedaron sin inmueble, si se sabe. */
@@ -73,7 +74,7 @@ export function InmueblesSinActivar({
       <Buildings className="h-5 w-5 shrink-0 text-warning" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-fg">
-          Tienes {listas.toLocaleString("es-CO")}{" "}
+          Tienes {listas.toLocaleString(localeDeLasCifras())}{" "}
           {listas === 1 ? "inmueble preparado" : "inmuebles preparados"} y sin
           activar
         </p>

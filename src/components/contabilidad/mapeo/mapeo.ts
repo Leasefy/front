@@ -9,6 +9,7 @@ import type {
   MapeoContable,
   MapeoDeEvento,
 } from '@/lib/api/contabilidad.service';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 export const NOMBRE_DEL_LADO: Record<LadoDelEvento, string> = {
   DEBE: 'Débito',
@@ -77,7 +78,7 @@ export function fraseDelCambio(
   const antes = ev.cuenta ? ` Hasta hoy iba a ${ev.cuenta.codigo} · ${ev.cuenta.nombre}.` : '';
   const cuantos =
     typeof ev.movimientos === 'number' && ev.movimientos > 0
-      ? ` Los ${ev.movimientos.toLocaleString('es-CO')} movimientos que ya asentó no se mueven: siguen en la cuenta de antes.`
+      ? ` Los ${ev.movimientos.toLocaleString(localeDeLasCifras())} movimientos que ya asentó no se mueven: siguen en la cuenta de antes.`
       : ' Lo que ya está en el libro no se mueve: sigue en la cuenta de antes.';
   return `Desde hoy, «${ev.nombre}» se asienta en ${destino}.${antes}${cuantos}`;
 }

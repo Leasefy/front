@@ -21,6 +21,7 @@ import {
   rolEnPalabras,
 } from '@/lib/movimientos/en-palabras';
 import { cn } from '@/lib/utils';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 const TONO = { exito: 'success', negado: 'warning', error: 'destructive' } as const;
 
@@ -160,7 +161,7 @@ export function CajonDelMovimiento({
                 </Dato>
                 <Dato etiqueta="Tardó">
                   <span className="font-mono">
-                    {m.duracionMs !== null ? `${m.duracionMs.toLocaleString('es-CO')} ms` : '—'}
+                    {m.duracionMs !== null ? `${m.duracionMs.toLocaleString(localeDeLasCifras())} ms` : '—'}
                   </span>
                 </Dato>
                 <div className="sm:col-span-2">

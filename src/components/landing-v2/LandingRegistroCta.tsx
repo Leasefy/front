@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/lib/auth/use-auth'
+import { useTx } from '@/lib/idioma/use-idioma'
 import { getRoleHomeRoute } from '@/lib/auth/role-routes'
 import { HuecoDeBotonDeSesion } from './LandingAuthCta'
 
@@ -34,13 +35,14 @@ const VARIANT_CLASS: Record<LandingRegistroCtaProps['variant'], string> = {
  * (QA 01-10-2026: «Empezar ahora» aparecía y desaparecía solo).
  */
 export function LandingRegistroCta({ variant }: LandingRegistroCtaProps) {
+  const tx = useTx()
   const { user, isAuthenticated, isLoading, confirmacionDeLaSesion } = useAuth()
   const className = VARIANT_CLASS[variant]
 
   // 🔴 LOGIN-BUCLE: pasado el tope de una sesión guardada sin confirmar, el
   // hueco no se queda para siempre (mismo criterio que LandingAuthCta).
   if (isLoading && confirmacionDeLaSesion !== 'sin-confirmar') {
-    return <HuecoDeBotonDeSesion className={className} texto="Empezar ahora" />
+    return <HuecoDeBotonDeSesion className={className} texto={tx('Empezar ahora', 'Get started')} />
   }
   const authenticated = !isLoading && isAuthenticated && !!user
 
@@ -48,7 +50,7 @@ export function LandingRegistroCta({ variant }: LandingRegistroCtaProps) {
     if (variant === 'banner') {
       return (
         <a className={className} href={getRoleHomeRoute(user!.role)}>
-          Ir al panel
+          {tx('Ir al panel', 'Go to dashboard')}
         </a>
       )
     }
@@ -57,7 +59,7 @@ export function LandingRegistroCta({ variant }: LandingRegistroCtaProps) {
 
   return (
     <a className={className} href="/auth?mode=register">
-      Empezar ahora
+      {tx('Empezar ahora', 'Get started')}
     </a>
   )
 }

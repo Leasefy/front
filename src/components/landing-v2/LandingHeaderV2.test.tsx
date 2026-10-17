@@ -29,6 +29,22 @@ vi.mock('@/lib/auth/use-auth', () => ({
   useAuth: () => authState,
 }))
 
+// El catálogo del marketplace (el número al lado de «Marketplace» y las
+// inmobiliarias de la franja), sin red.
+vi.mock('@/lib/api/properties.service', () => ({
+  propertiesApi: {
+    list: () =>
+      Promise.resolve({
+        data: [
+          { id: 'a', status: 'available', images: ['x.jpg'], agencyName: 'Teja Roja Arriendos', neighborhood: 'Laureles', city: 'Medellín' },
+          { id: 'b', status: 'available', images: ['y.jpg'], agencyName: 'Teja Roja Arriendos', neighborhood: 'Belén', city: 'Medellín' },
+          { id: 'c', status: 'available', images: ['z.jpg'], agencyName: 'Cuadra Arriendos', neighborhood: null, city: 'Envigado' },
+        ],
+        meta: { total: 3 },
+      }),
+  },
+}))
+
 import { LandingHeaderV2 } from './LandingHeaderV2'
 
 let container: HTMLDivElement
@@ -56,11 +72,26 @@ function montar(props: Parameters<typeof LandingHeaderV2>[0] = {}) {
   })
 }
 
+// Los enlaces de lo público llevan el idioma de la página (ES/EN, 16-10-2026):
+// sin proveedor, español → «/es/...». `/publicar` y el panel no llevan prefijo.
 describe('LandingHeaderV2', () => {
   it('trae los mismos enlaces del nav de la landing', () => {
     montar({ fxExterno: true })
     const rutas = [...container.querySelectorAll('nav.main a')].map((a) => a.getAttribute('href'))
-    expect(rutas).toEqual(['#producto', '/propiedades', '/publicar', '/avaluo', '/blog', '/contacto'])
+    expect(rutas).toEqual(['/es/propiedades', '/publicar', '#producto', '/es/avaluo', '/es/blog', '/es/contacto'])
+  })
+
+  it('el marketplace va primero y se llama igual en todas partes (Nico, 16-10-2026)', () => {
+    // «cuando entren al marketplace que no cambie la disposición de los
+    // elementos en la topbar»: el menú de /propiedades es el del home.
+    montar({ fxExterno: true })
+    const enLaLanding = [...container.querySelectorAll('nav.main a')].map((a) => a.textContent?.trim())
+    act(() => root.unmount())
+    root = createRoot(container)
+    montar({ activo: 'inmuebles' })
+    const enElMarketplace = [...container.querySelectorAll('nav.main a')].map((a) => a.textContent?.trim())
+    expect(enElMarketplace).toEqual(enLaLanding)
+    expect(enLaLanding.slice(0, 2)).toEqual([expect.stringContaining('Marketplace'), 'Publicar gratis'])
   })
 
   describe('dónde estás', () => {
@@ -69,8 +100,8 @@ describe('LandingHeaderV2', () => {
       // pantalla ya anuncian, así que el estado se declara una sola vez.
       montar({ activo: 'inmuebles', fxExterno: true })
       const activo = container.querySelector('nav.main a[aria-current="page"]')
-      expect(activo?.getAttribute('href')).toBe('/propiedades')
-      expect(activo?.textContent).toContain('Buscar inmueble')
+      expect(activo?.getAttribute('href')).toBe('/es/propiedades')
+      expect(activo?.textContent).toContain('Marketplace')
     })
 
     it('marca uno solo POR NAVEGACIÓN', () => {
@@ -113,7 +144,7 @@ describe('LandingHeaderV2', () => {
       const enMovil = [...container.querySelectorAll('#mmenu nav a')].map((a) =>
         a.getAttribute('href'),
       )
-      expect(enMovil).toContain('/propiedades')
+      expect(enMovil).toContain('/es/propiedades')
     })
 
     it('también marca dónde estás', () => {
@@ -122,7 +153,7 @@ describe('LandingHeaderV2', () => {
       // En un teléfono, el menú ES el nav.
       montar({ activo: 'inmuebles', fxExterno: true })
       const activo = container.querySelector('#mmenu nav a[aria-current="page"]')
-      expect(activo?.getAttribute('href')).toBe('/propiedades')
+      expect(activo?.getAttribute('href')).toBe('/es/propiedades')
     })
   })
   describe('a quien le sirve "Buscar inmueble"', () => {
@@ -138,28 +169,28 @@ describe('LandingHeaderV2', () => {
 
     it('el visitante anonimo lo ve — es la puerta al marketplace', () => {
       montar({ fxExterno: true })
-      expect(container.querySelector('nav.main a[href="/propiedades"]')).not.toBeNull()
-      expect(container.querySelector('#mmenu nav a[href="/propiedades"]')).not.toBeNull()
+      expect(container.querySelector('nav.main a[href="/es/propiedades"]')).not.toBeNull()
+      expect(container.querySelector('#mmenu nav a[href="/es/propiedades"]')).not.toBeNull()
     })
 
     it('el inquilino lo ve — es exactamente su caso de uso', () => {
       entrarComo('tenant')
       montar({ fxExterno: true })
-      expect(container.querySelector('nav.main a[href="/propiedades"]')).not.toBeNull()
-      expect(container.querySelector('#mmenu nav a[href="/propiedades"]')).not.toBeNull()
+      expect(container.querySelector('nav.main a[href="/es/propiedades"]')).not.toBeNull()
+      expect(container.querySelector('#mmenu nav a[href="/es/propiedades"]')).not.toBeNull()
     })
 
     it('la inmobiliaria con sesion TAMBIEN lo ve, en escritorio y en movil (Juan, 15-10)', () => {
       entrarComo('agency')
       montar({ fxExterno: true })
-      expect(container.querySelector('nav.main a[href="/propiedades"]')).not.toBeNull()
-      expect(container.querySelector('#mmenu nav a[href="/propiedades"]')).not.toBeNull()
+      expect(container.querySelector('nav.main a[href="/es/propiedades"]')).not.toBeNull()
+      expect(container.querySelector('#mmenu nav a[href="/es/propiedades"]')).not.toBeNull()
     })
 
     it('tambien quien esta parado en contexto de inmobiliaria', () => {
       entrarComo('tenant', 'agency')
       montar({ fxExterno: true })
-      expect(container.querySelector('nav.main a[href="/propiedades"]')).not.toBeNull()
+      expect(container.querySelector('nav.main a[href="/es/propiedades"]')).not.toBeNull()
     })
 
     it('mientras la sesion carga no lo esconde — no parpadea el nav', () => {
@@ -167,7 +198,7 @@ describe('LandingHeaderV2', () => {
       authState.isAuthenticated = false
       authState.user = null
       montar({ fxExterno: true })
-      expect(container.querySelector('nav.main a[href="/propiedades"]')).not.toBeNull()
+      expect(container.querySelector('nav.main a[href="/es/propiedades"]')).not.toBeNull()
     })
 
     it('al esconder «Publicar», el menu movil sigue numerado 01..06 sin huecos («Planes» oculto, 12-10)', () => {
@@ -185,7 +216,7 @@ describe('LandingHeaderV2', () => {
       montar({ fxExterno: true })
       const enlaces = [...container.querySelectorAll('#mmenu nav a')]
       expect(enlaces.map((a) => a.querySelector('.n')?.textContent)).toEqual(['01', '02', '03', '04', '05', '06', '07'])
-      expect(enlaces[0]?.getAttribute('href')).toBe('/propiedades')
+      expect(enlaces[0]?.getAttribute('href')).toBe('/es/propiedades')
     })
 
     it('la inmobiliaria SÍ ve «Publicar inmueble», y la lleva a publicar desde su panel (Nico, 09-10)', () => {
@@ -272,9 +303,9 @@ describe('LandingHeaderV2', () => {
       // suave del home las siga atendiendo.
       montar()
       const rutas = [...container.querySelectorAll('nav.main a')].map((a) => a.getAttribute('href'))
-      expect(rutas).toEqual(['/#producto', '/propiedades', '/publicar', '/avaluo', '/blog', '/contacto'])
+      expect(rutas).toEqual(['/es/propiedades', '/publicar', '/es#producto', '/es/avaluo', '/es/blog', '/es/contacto'])
       const movil = [...container.querySelectorAll('#mmenu nav a')].map((a) => a.getAttribute('href'))
-      expect(movil).toContain('/#producto')
+      expect(movil).toContain('/es#producto')
     })
 
     it('«Ver planes» está oculto por ahora (Nico, 12-10-2026)', () => {

@@ -48,6 +48,7 @@ import { landlordApplicationsApi } from '@/lib/api/applications.service'
 import type { AllCandidatesItem, LandlordApplicationStatus } from '@/lib/api/applications.types'
 import { ChipDeLaMarcaDelEstudio } from '@/components/inmobiliaria/MarcaDelEstudio'
 import { avisoAlAprobar } from '@/lib/postulaciones/marca-del-estudio'
+import { useLocaleDeFechas, useTr } from '@/lib/i18n/use-tr'
 
 // ─── Status display (mirrors propiedades/candidatos pages) ────────────────────
 
@@ -160,12 +161,12 @@ function StatTile({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, fechas: 'es-CO' | 'en-US' = 'es-CO'): string {
   if (!iso) return '—'
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
   // La fecha de la casa: «4 de octubre de 2026» (no «04 de oct de 2026»).
-  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Bogota' })
+  return d.toLocaleDateString(fechas, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Bogota' })
 }
 
 function initials(name: string): string {
@@ -174,6 +175,8 @@ function initials(name: string): string {
 }
 
 function PostulacionesContenido() {
+  const tr = useTr();
+  const fechas = useLocaleDeFechas();
   const indicadorDelFiltro = `${useId()}-filtro`
   const [items, setItems] = useState<AllCandidatesItem[]>([])
   const [filter, setFilter] = useState<FilterKey>('ALL')
@@ -319,9 +322,9 @@ function PostulacionesContenido() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-h2 text-fg">Postulaciones</h1>
+        <h1 className="text-h2 text-fg">{tr("Postulaciones")}</h1>
         <p className="text-sm text-fg-muted mt-0.5 line-clamp-2 max-w-2xl">
-          Postulaciones de inquilinos a tus propiedades. Haz clic en una para revisarla y decidir.
+          {tr("Postulaciones de inquilinos a tus propiedades. Haz clic en una para revisarla y decidir.")}
         </p>
       </div>
 
@@ -333,13 +336,13 @@ function PostulacionesContenido() {
         data-testid="refresco-fallido"
         className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 text-sm text-fg"
       >
-          <span>No pudimos actualizar la lista. Lo que ves es de la última vez que cargó.</span>
+          <span>{tr("No pudimos actualizar la lista. Lo que ves es de la última vez que cargó.")}</span>
           <button
             type="button"
             onClick={() => void load()}
             className="font-medium text-primary hover:underline"
           >
-            Reintentar
+            {tr("Reintentar")}
           </button>
       </Presence>
 
@@ -373,8 +376,8 @@ function PostulacionesContenido() {
               sumarle otro abría un hueco de media pantalla antes del mapa. */}
           <EmptyState
             icon={ClipboardText}
-            title="Todavía no te ha llegado ninguna postulación"
-            description="Cuando alguien se postule a una de tus propiedades, aparece acá con su estado y si tiene estudio de arrendamiento."
+            title={tr("Todavía no te ha llegado ninguna postulación")}
+            description={tr("Cuando alguien se postule a una de tus propiedades, aparece acá con su estado y si tiene estudio de arrendamiento.")}
           />
           {/* 🔴 21-09: acá estaba el mapa de ONCE tarjetas, desplegado, ocupando
               la pantalla entera de una lista vacía. Nico: «eso ahí expuesto…
@@ -383,9 +386,9 @@ function PostulacionesContenido() {
               el recorrido completo lo pide. */}
           <div className="flex justify-center border-t border-border px-6 py-4">
             <ParaEntenderMas
-              etiqueta="Cómo funciona una postulación"
-              titulo="El recorrido completo de una postulación"
-              descripcion="Los primeros seis pasos los hace el inquilino; del séptimo en adelante, tú."
+              etiqueta={tr("Cómo funciona una postulación")}
+              titulo={tr("El recorrido completo de una postulación")}
+              descripcion={tr("Los primeros seis pasos los hace el inquilino; del séptimo en adelante, tú.")}
               ancho="ancho"
             >
               <RecorridoMapa />
@@ -400,7 +403,7 @@ function PostulacionesContenido() {
               <StatTile
                 key={f.key}
                 value={countFor(f.statuses)}
-                label={f.label}
+                label={tr(f.label)}
                 tone={f.tone}
                 icon={f.icon}
                 active={filter === f.key}
@@ -419,7 +422,7 @@ function PostulacionesContenido() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar por candidato, email o propiedad..."
+                  placeholder={tr("Buscar por candidato, email o propiedad...")}
                   className="pl-9 pr-9"
                 />
                 {search && (
@@ -427,7 +430,7 @@ function PostulacionesContenido() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setSearch('')}
-                    aria-label="Limpiar búsqueda"
+                    aria-label={tr("Limpiar búsqueda")}
                     icon={<X className="w-3.5 h-3.5" />}
                     className="absolute right-2 top-1/2 -translate-y-1/2 z-10"
                   />
@@ -436,12 +439,12 @@ function PostulacionesContenido() {
 
               {/* Status filter (selector excluyente, sincronizado con las tarjetas) */}
               <SegmentedControl<FilterKey>
-                aria-label="Filtrar por estado"
+                aria-label={tr("Filtrar por estado")}
                 value={filter}
                 onChange={setFilter}
                 options={FILTERS.map((f) => ({
                   value: f.key,
-                  label: f.key === 'ALL' ? 'Todas' : f.label,
+                  label: tr(f.key === 'ALL' ? 'Todas' : f.label),
                 }))}
               />
             </div>
@@ -449,7 +452,7 @@ function PostulacionesContenido() {
             {visibleItems.length === 0 ? (
               <EmptyState
                 icon={ClipboardText}
-                title="Sin postulaciones"
+                title={tr("Sin postulaciones")}
                 description={
                   search || filter !== 'ALL'
                     ? 'Ninguna postulación coincide con los filtros'
@@ -466,15 +469,15 @@ function PostulacionesContenido() {
                         <CasillaDeLaPagina ids={pageItems.map((p) => p.id)} marcadas={marcadas} onMarcar={marcar} queSon="postulaciones" />
                       </TableHead>
                     )}
-                    <TableHead>Candidato</TableHead>
-                    <TableHead>Propiedad</TableHead>
-                    <TableHead>Estado</TableHead>
+                    <TableHead>{tr("Candidato")}</TableHead>
+                    <TableHead>{tr("Propiedad")}</TableHead>
+                    <TableHead>{tr("Estado")}</TableHead>
                     {/* 🔴 El estudio es opcional (Nico, 04-10-2026): quien se
                         postuló sin él (o con el canon por encima de su
                         respaldo) se ve marcado acá. */}
-                    <TableHead>Estudio</TableHead>
-                    {hayPuntaje && <TableHead>Puntaje</TableHead>}
-                    <TableHead>Fecha</TableHead>
+                    <TableHead>{tr("Estudio")}</TableHead>
+                    {hayPuntaje && <TableHead>{tr("Puntaje")}</TableHead>}
+                    <TableHead>{tr("Fecha")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 {/* Filtrar, buscar, paginar o decidir: las filas entran
@@ -521,7 +524,7 @@ function PostulacionesContenido() {
                                   title={listaCorta.get(c.id)!.razones.join(' ')}
                                   data-testid={`lista-corta-${c.id}`}
                                 >
-                                  Lista corta · {listaCorta.get(c.id)!.puesto}.º
+                                  {tr("Lista corta ·")} {listaCorta.get(c.id)!.puesto}.º
                                 </span>
                               )}
                             </div>
@@ -536,7 +539,7 @@ function PostulacionesContenido() {
                               statusCfg.text,
                             )}
                           >
-                            {statusCfg.label}
+                            {tr(statusCfg.label)}
                           </span>
                         </TableCell>
                         <TableCell>
@@ -554,11 +557,11 @@ function PostulacionesContenido() {
                                 {c.riskScore.totalScore} · {c.riskScore.level}
                               </span>
                             ) : (
-                              <span className="text-fg-muted">Sin puntaje</span>
+                              <span className="text-fg-muted">{tr("Sin puntaje")}</span>
                             )}
                           </TableCell>
                         )}
-                        <TableCell className="text-fg-muted">{formatDate(c.submittedAt)}</TableCell>
+                        <TableCell className="text-fg-muted">{formatDate(c.submittedAt, fechas)}</TableCell>
                       </TableRowAnimada>
                     )
                   })}
@@ -597,9 +600,9 @@ function PostulacionesContenido() {
               lugar. El modal lo muestra encima y lo devuelve intacto. */}
           <div className="border-t border-border pt-6">
             <ParaEntenderMas
-              etiqueta="Cómo funciona el recorrido"
-              titulo="El recorrido completo de una postulación"
-              descripcion="Los primeros seis pasos los hace el inquilino; del séptimo en adelante, tú."
+              etiqueta={tr("Cómo funciona el recorrido")}
+              titulo={tr("El recorrido completo de una postulación")}
+              descripcion={tr("Los primeros seis pasos los hace el inquilino; del séptimo en adelante, tú.")}
               ancho="ancho"
             >
               <RecorridoMapa />

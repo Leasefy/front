@@ -9,6 +9,7 @@ import type {
   PaginaDeMovimientos,
   ResultadoDelMovimiento,
 } from '@/lib/api/movimientos.service';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /**
  * El módulo sale de la RUTA del back (`lotes-de-dispersion`, `contabilidad`,
@@ -98,7 +99,7 @@ export function rangoDelMes(mes: string): { desde: string; hasta: string } {
   return { desde: `${mes}-01`, hasta: `${mes}-${String(ultimo).padStart(2, '0')}` };
 }
 
-const miles = (n: number) => n.toLocaleString('es-CO');
+const miles = (n: number) => n.toLocaleString(localeDeLasCifras());
 const plural = (n: number, uno: string, varios: string) => (n === 1 ? uno : varios);
 
 /**

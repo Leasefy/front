@@ -58,7 +58,7 @@ import {
 } from '@/components/ui'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
-import { cuotasDelAcuerdo } from '@/lib/cobranza/cuotas-del-acuerdo'
+import { cuotasDelAcuerdo, errorDeLaCuotaInicial } from '@/lib/cobranza/cuotas-del-acuerdo'
 import {
   usePaymentsFunnel,
   type PaymentsFunnelItem,
@@ -212,7 +212,9 @@ function AcuerdoPropuestoCard({
       </div>
 
       {/* Desglose de condiciones */}
-      <dl className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border">
+      {/* 2 × 2: la vista previa es media columna del diálogo; en 4 columnas
+          «$ 4.200.000» se cortaba («$ 4.200.00»). */}
+      <dl className="grid grid-cols-2 gap-px bg-border">
         <div className="bg-card p-4 space-y-0.5">
           <dt className="text-xs text-fg-muted">Deuda total</dt>
           <dd className="text-sm font-semibold tabular-nums text-fg">
@@ -254,6 +256,8 @@ function AcuerdoPropuestoCard({
               </li>
             ))}
           </ul>
+        ) : numCuotas > 0 ? (
+          <p className="text-sm text-fg-muted">La cuota inicial ya cubre toda la deuda: no queda nada para las cuotas.</p>
         ) : (
           <p className="text-sm text-fg-muted">Pago único: se paga entero con el enlace de pago.</p>
         )}
@@ -382,10 +386,11 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
   // Con cuotas hacen falta la inicial y la fecha de la primera (lo que se ve es
   // lo que se guarda); sin cuotas, la inicial es el total.
   const faltaLoDeLasCuotas = cuotas > 0 && (inicial <= 0 || primerPago.length < 10)
+  const inicialQueNoCabe = errorDeLaCuotaInicial({ inicial, total, cuotas, plata: (n) => copFormat(n, formatCurrency) })
   // Se puede guardar la propuesta cuando hay deudor + deuda total válida y los
   // intereses no superan el total (regla del motor).
   const canSubmit =
-    debtorId !== '' && total > 0 && interesesNum >= 0 && interesesNum <= total && !faltaLoDeLasCuotas
+    debtorId !== '' && total > 0 && interesesNum >= 0 && interesesNum <= total && !faltaLoDeLasCuotas && !inicialQueNoCabe
 
   async function handleSubmit() {
     if (!selectedDebtor || total <= 0) return
@@ -528,14 +533,14 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
               placeholder={cuotas === 0 ? 'Sin cuotas: es el total' : 'Ej. 600.000'}
               value={cuotas === 0 ? (total > 0 ? formatMiles(total) : '') : cuotaInicial}
               disabled={cuotas === 0}
-              aria-invalid={reparto?.porCampo.initialAmountCop ? true : undefined}
-              aria-describedby={reparto?.porCampo.initialAmountCop ? 'acuerdo-inicial-error' : undefined}
+              aria-invalid={reparto?.porCampo.initialAmountCop || inicialQueNoCabe ? true : undefined}
+              aria-describedby={reparto?.porCampo.initialAmountCop || inicialQueNoCabe ? 'acuerdo-inicial-error' : undefined}
               onChange={(e) => {
                 setCuotaInicial(reformatearMiles(e.target.value))
                 clearFeedback()
               }}
             />
-            <ErrorDelCampo id="acuerdo-inicial-error" mensaje={reparto?.porCampo.initialAmountCop} />
+            <ErrorDelCampo id="acuerdo-inicial-error" mensaje={reparto?.porCampo.initialAmountCop ?? inicialQueNoCabe ?? undefined} />
           </div>
 
           <div className="space-y-1.5">

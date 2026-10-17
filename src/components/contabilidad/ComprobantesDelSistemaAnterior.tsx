@@ -104,6 +104,7 @@ import {
 } from '@/lib/api/contabilidad.service'
 import { diaLegible } from '@/lib/contabilidad/fechas'
 import { formatCurrency } from '@/lib/format'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /**
  * De qué cosa son los comprobantes: de un contrato o de un inmueble. Uno de
@@ -249,7 +250,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
             className="font-mono text-sm tabular-nums text-fg-muted"
             data-testid="comprobantes-total"
           >
-            {totalGeneral.toLocaleString('es-CO')}
+            {totalGeneral.toLocaleString(localeDeLasCifras())}
           </span>
         ) : null}
       </div>
@@ -292,7 +293,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
               onChange={setClase}
               options={visibles.map((p) => ({
                 value: p.clase,
-                ariaLabel: `${p.etiqueta}: ${enPantalla[p.clase].toLocaleString('es-CO')}`,
+                ariaLabel: `${p.etiqueta}: ${enPantalla[p.clase].toLocaleString(localeDeLasCifras())}`,
                 label: (
                   <span
                     className="flex items-center gap-1.5 whitespace-nowrap"
@@ -314,7 +315,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
                       className="tabular-nums opacity-60"
                       data-testid={`conteo-${p.clase}`}
                     >
-                      {enPantalla[p.clase].toLocaleString('es-CO')}
+                      {enPantalla[p.clase].toLocaleString(localeDeLasCifras())}
                     </span>
                   </span>
                 ),
@@ -366,8 +367,8 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
 
             {recortado ? (
               <p className="text-caption text-fg-muted" data-testid="comprobantes-recortados">
-                Se muestran los {historia!.mostrados.toLocaleString('es-CO')} más recientes
-                de {historia!.total.toLocaleString('es-CO')} en esta pestaña. Los demás están
+                Se muestran los {historia!.mostrados.toLocaleString(localeDeLasCifras())} más recientes
+                de {historia!.total.toLocaleString(localeDeLasCifras())} en esta pestaña. Los demás están
                 guardados —no se perdió ninguno—, pero acá sólo caben estos.
               </p>
             ) : null}

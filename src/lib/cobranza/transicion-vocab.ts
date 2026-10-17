@@ -26,6 +26,7 @@ const MOTIVOS: Record<string, string> = {
   skip_explicito_operador: 'Una persona lo marcó como ilocalizable',
   skip_comportamental: 'No contesta por ningún canal: ilocalizable',
   pago_total: 'Pagó todo lo que debía',
+  plan_defaulted: 'Incumplió el acuerdo de pago',
   sin_cambio: 'Sin cambio',
   'sin_deuda:dejo_de_estar_en_mora_en_la_plataforma': 'Ya no tiene deuda en mora',
 }

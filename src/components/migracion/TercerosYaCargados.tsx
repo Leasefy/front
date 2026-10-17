@@ -52,6 +52,7 @@ import { COLOMBIAN_BANKS } from '@/lib/types/payment-accounts';
 import { cn } from '@/lib/utils';
 
 import { FichaDelPropietario } from './FichaDelPropietario';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 const POR_PAGINA = 10;
 const TAMANOS_DE_PAGINA = [10, 25, 50];
@@ -372,14 +373,14 @@ function MarcoDeLoCargado({
             ) : (
               <>
                 <span className="text-fg">
-                  <span className="font-mono tabular-nums">{total.toLocaleString('es-CO')}</span>{' '}
+                  <span className="font-mono tabular-nums">{total.toLocaleString(localeDeLasCifras())}</span>{' '}
                   {total === 1 ? palabras.uno : palabras.varios}
                 </span>
                 {incompletos ? (
                   <>
                     {' · '}
                     <span className="text-warning">
-                      <span className="font-mono tabular-nums">{incompletos.toLocaleString('es-CO')}</span>{' '}
+                      <span className="font-mono tabular-nums">{incompletos.toLocaleString(localeDeLasCifras())}</span>{' '}
                       con datos por completar
                     </span>
                   </>

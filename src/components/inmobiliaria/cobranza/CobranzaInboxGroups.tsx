@@ -43,6 +43,8 @@ import { Button } from '@/components/ui'
 import { Badge, type BadgeProps } from '@/components/ui/badge'
 import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useTr } from '@/lib/i18n/use-tr'
+import { useTraducirMensajes } from '@/lib/i18n/use-traducir-mensajes'
+import { BotonTraducirLaConversacion, MarcaDeTraducido } from '@/components/messages/BotonTraducirLaConversacion'
 
 // ── Grupos del inbox ──────────────────────────────────────────────────────────
 
@@ -366,6 +368,11 @@ export function InboxThreadPanel({
   onResponder,
 }: InboxThreadPanelProps) {
   const tr = useTr();
+  // Con el panel en inglés, «Translate» traduce lo que escribieron (Nico,
+  // 16-10-2026): se ve tal como lo escribieron hasta que alguien lo pide.
+  const traduccion = useTraducirMensajes(
+    React.useMemo(() => messages.map((m) => ({ id: m.id, texto: m.body ?? '' })), [messages]),
+  )
   // Movimiento: cada estado en un `CrossFade` con su clave (cargando →
   // conversación, → sin mensajes); los mensajes entran escalonados.
   if (isLoading) {
@@ -415,8 +422,9 @@ export function InboxThreadPanel({
                   {m.channel ? ` · ${m.channel}` : ''}
                 </p>
                 <p className="text-sm text-fg leading-relaxed whitespace-pre-wrap break-words">
-                  {m.body || VACIO}
+                  {traduccion.textoDe(m.id, m.body) || VACIO}
                 </p>
+                {traduccion.estaTraducido(m.id, m.body) ? <MarcaDeTraducido /> : null}
                 {formatRecibido && (
                   <p className="text-xs text-fg-muted mt-1">
                     {formatRecibido(m.occurredAt)}
@@ -429,6 +437,7 @@ export function InboxThreadPanel({
       </Stagger>
 
       <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
+        <BotonTraducirLaConversacion traduccion={traduccion} />
         {onMarkRead && (
           <Button
             variant="outline"

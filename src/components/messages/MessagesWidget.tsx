@@ -63,6 +63,8 @@ import { PlantillasDeMensajePopover } from '@/components/messages/PlantillasDeMe
 import { EscribirConIaPopover, HUECO_DEL_BORRADOR } from '@/components/messages/EscribirConIaPopover';
 import type { PedidoDeRedaccion } from '@/lib/api/redactar-mensaje.service';
 import { PendientesDelHiloPopover } from '@/components/messages/PendientesDelHiloPopover';
+import { BotonTraducirLaConversacion, MarcaDeTraducido } from '@/components/messages/BotonTraducirLaConversacion';
+import { useTraducirMensajes } from '@/lib/i18n/use-traducir-mensajes';
 import { mesEnCurso } from '@/components/messages/pendientes-a-mensaje';
 import { separadoresDeDia } from '@/components/messages/dia-del-mensaje';
 import { PQRS_SLA_BUSINESS_DAYS } from '@/lib/constants/response-sla';
@@ -308,6 +310,12 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     markAsRead,
     canalDeWhatsapp,
   } = useChat(selectedConversationId);
+
+  // Con el panel en inglés, «Translate» traduce lo que escribieron (Nico,
+  // 16-10-2026): se ve tal como lo escribieron hasta que alguien lo pide.
+  const traduccion = useTraducirMensajes(
+    useMemo(() => messages.map((m) => ({ id: m.id, texto: m.content ?? '' })), [messages]),
+  );
 
   // Copy por actor (tenant ve "propietarios", landlord/agency ve "inquilinos").
   const isTenant = actor === 'tenant';
@@ -1105,6 +1113,11 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       {enPanelDeInmobiliaria && canalDeWhatsapp && canalDeWhatsapp.motivo !== 'no_aplica' && (
                         <AvisoDeWhatsapp canal={canalDeWhatsapp} locale={locale} />
                       )}
+                      {enPanelDeInmobiliaria && traduccion.disponible && (
+                        <div className="flex justify-end border-b border-border px-6 py-1.5">
+                          <BotonTraducirLaConversacion traduccion={traduccion} />
+                        </div>
+                      )}
                       <div className="flex-1 overflow-y-auto p-6 bg-muted/30">
                         {isLoadingMessages ? (
                           <MessagesSkeleton />
@@ -1211,7 +1224,8 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                           <InsigniaDePerfil perfil={message.perfil} conIcono={false} />
                                         </div>
                                       )}
-                                    <p className="text-sm leading-relaxed">{message.content}</p>
+                                    <p className="text-sm leading-relaxed">{traduccion.textoDe(message.id, message.content)}</p>
+                                    {traduccion.estaTraducido(message.id, message.content) ? <MarcaDeTraducido /> : null}
                                     <div
                                       className={cn(
                                         'flex items-center justify-end gap-1.5 mt-1.5',

@@ -21,6 +21,7 @@ import {
   textoParaUnAviso,
 } from '@/lib/conexion/servicio-no-disponible'
 import { CODIGO_PLAN_REQUERIDO } from '@/lib/errores/codigos-del-plan'
+import { cabeceraDelIdiomaDelPanel } from '@/lib/i18n/idioma-del-panel'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
 
@@ -504,6 +505,9 @@ function errorDeLaRespuesta(status: number, errorBody: Record<string, unknown>):
 function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    // El idioma del panel (Nico, 16-10-2026): con `en`, el back escribe en
+    // inglés lo que la persona lee. Ver `lib/i18n/idioma-del-panel.ts`.
+    'Accept-Language': cabeceraDelIdiomaDelPanel(),
   }
 
   if (_accessToken) {
@@ -539,7 +543,7 @@ async function request<T>(
 
   const tokenUsado = token ?? getAccessToken()
   const headers: Record<string, string> = token
-    ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+    ? { 'Content-Type': 'application/json', 'Accept-Language': cabeceraDelIdiomaDelPanel(), 'Authorization': `Bearer ${token}` }
     : getAuthHeaders()
   if (cabecerasExtra) Object.assign(headers, cabecerasExtra)
 

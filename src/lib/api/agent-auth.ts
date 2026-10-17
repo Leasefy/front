@@ -12,9 +12,12 @@
  *   fetch(url, { method: 'POST', headers: agentAuthHeaders({ 'content-type': 'application/json' }), body })
  */
 import { getAccessToken } from './client';
+import { cabeceraDelIdiomaDelPanel } from '@/lib/i18n/idioma-del-panel';
 
 export function agentAuthHeaders(extra?: HeadersInit): Headers {
   const headers = new Headers(extra);
   headers.set('Authorization', `Bearer ${getAccessToken() ?? ''}`);
+  // El idioma del panel: con `en`, el micro contesta en inglés (Nico, 16-10-2026).
+  if (!headers.has('Accept-Language')) headers.set('Accept-Language', cabeceraDelIdiomaDelPanel());
   return headers;
 }

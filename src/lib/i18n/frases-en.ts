@@ -641,4 +641,9 @@ export const FRASES_EN: Record<string, string> = {
   "Buscar compatibles": "Find matches",
   "Todos": "All",
   "Requiere humano": "Needs a person",
+  "Traducir": "Translate",
+  "Ver el original": "Show original",
+  "Traduciendo…": "Translating…",
+  "Traducido": "Translated",
+  "No se pudo traducir. Prueba de nuevo.": "Couldn't translate. Try again.",
 }

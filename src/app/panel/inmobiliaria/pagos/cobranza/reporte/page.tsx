@@ -51,6 +51,7 @@ import {
 import { MonoLabel } from '@leasefy/cadence'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { sinDeudores } from '@/lib/cobranza/reporte-sin-deudores'
+import { textoDelAviso } from '@/lib/cobranza/aviso-del-reporte'
 
 /**
  * N-11 (QA-PAGOS-95, 05-10-2026): el reporte decía «PKR», «100.0%» y
@@ -307,7 +308,7 @@ function ReporteViewerContent() {
                       alert.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
                     ].join(' ')}
                   >
-                    {alert.message_es}
+                    {textoDelAviso(alert, locale)}
                   </p>
                 </StaggerItem>
               ))}

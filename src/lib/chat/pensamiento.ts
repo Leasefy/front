@@ -213,6 +213,24 @@ export const NOMBRE_FUNCIONAL_DEL_MICRO: Readonly<Record<string, string>> = {
   comunicacion: 'comunicación',
 };
 
+/**
+ * Cómo llega esa frase con el panel en inglés: «the payments specialist». Espejo
+ * de `ESPECIALISTA_EN` del micro (`src/lib/idioma/plantilla.ts`): el micro la
+ * aparta antes de traducir para que llegue siempre igual (Nico, 16-10-2026).
+ */
+export const NOMBRE_FUNCIONAL_EN: Readonly<Record<string, string>> = {
+  reportes: 'reports',
+  cobranza: 'collections',
+  pagos: 'payments',
+  conciliacion: 'reconciliation',
+  cotizador: 'insurability',
+  estudio: 'candidate screening',
+  matching: 'matching',
+  avaluo: 'appraisals',
+  documentos: 'documents',
+  comunicacion: 'communications',
+};
+
 const escapar = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
@@ -231,11 +249,17 @@ export function conNombreDelEquipo(
   if (!agente || !funcional) return frase;
   const nombre = nombreDelAgente(agente, t);
   const de = `especialista de ${escapar(funcional)}`;
-  return frase
+  const enIngles = clave ? NOMBRE_FUNCIONAL_EN[clave] : undefined;
+  const conNombre = frase
     .replace(new RegExp(`\\bal ${de}\\b`, 'gu'), `a ${nombre}`)
     .replace(new RegExp(`\\bdel ${de}\\b`, 'gu'), `de ${nombre}`)
     .replace(new RegExp(`\\b[Ee]l ${de}\\b`, 'gu'), nombre)
     .replace(new RegExp(`\\b${de}\\b`, 'gu'), nombre);
+  if (!enIngles) return conNombre;
+  const specialist = `${escapar(enIngles)} specialist`;
+  return conNombre
+    .replace(new RegExp(`\\b[Tt]he ${specialist}\\b`, 'gu'), nombre)
+    .replace(new RegExp(`\\b${specialist}\\b`, 'gu'), nombre);
 }
 
 /** Los especialistas que trabajaron en el turno, cada uno una vez, en orden. */

@@ -48,6 +48,7 @@ import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { errorLegible } from '@/lib/cobranza/error-legible'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr'
+import { textoDelAviso } from '@/lib/cobranza/aviso-del-reporte'
 
 const NS = 'inmobiliaria.ai.cobranza.pendientes'
 const PENDIENTES_HREF = '/panel/inmobiliaria/pagos/cobranza/pendientes'
@@ -347,7 +348,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
                     ].join(' ')}
                   >
                     <Warning className="w-3.5 h-3.5 shrink-0" weight="fill" aria-hidden="true" />
-                    {a.message_es}
+                    {textoDelAviso(a, en ? 'en' : 'es')}
                   </p>
                 ))}
               </div>

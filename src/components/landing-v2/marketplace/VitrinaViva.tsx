@@ -36,9 +36,10 @@ function useLengua() {
 }
 
 function Foto({ p, sizes, prioridad, pronto }: { p: Property; sizes: string; prioridad?: boolean; pronto?: boolean }) {
-  return (
+  const src = primeraFoto(p);
+  return src ? (
     <Image
-      src={primeraFoto(p)!}
+      src={src}
       alt=""
       fill
       sizes={sizes}
@@ -46,7 +47,7 @@ function Foto({ p, sizes, prioridad, pronto }: { p: Property; sizes: string; pri
       loading={prioridad ? undefined : pronto ? 'eager' : 'lazy'}
       style={{ objectFit: 'cover' }}
     />
-  );
+  ) : null;
 }
 
 /* ── El boleto del hero ─────────────────────────────────────────────────── */

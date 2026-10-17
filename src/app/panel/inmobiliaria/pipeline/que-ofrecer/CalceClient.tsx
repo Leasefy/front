@@ -66,7 +66,7 @@ import { toast } from '@/components/ui/toast'
 import { matchingApi } from '@/lib/api/crm.service'
 import { useCrm } from '@/lib/hooks/use-crm'
 import { mensajeDeUnaOpcion } from '@/lib/matching/el-mensaje-para-el-interesado'
-import { useTr, type Tr } from '@/lib/i18n/use-tr'
+import { useLocaleDelPanel, useTr, type Tr } from '@/lib/i18n/use-tr'
 
 type Direccion = 'interesado' | 'inmueble'
 
@@ -111,9 +111,21 @@ function Razones({ porQue }: { porQue: readonly string[] }) {
  * presupuesto y la opción sale marcada. Es para el asesor: NUNCA va en el
  * mensaje al interesado. Un back anterior no la manda: no se pinta nada.
  */
-function marcaDe(x: unknown): string | null {
-  const m = (x as { marca?: unknown } | null)?.marca
+function marcaDe(x: unknown, en = false): string | null {
+  const o = x as { marca?: unknown; marcaEn?: unknown } | null
+  const m = en && typeof o?.marcaEn === 'string' && o.marcaEn.trim() ? o.marcaEn : o?.marca
   return typeof m === 'string' && m.trim() ? m : null
+}
+
+/**
+ * Lo que escribe el back, en el idioma del panel (Nico, 16-10-2026: «si el
+ * usuario colocó la plataforma en inglés debe de contestar en inglés»). Con el
+ * panel en inglés, la versión `…En` que manda el back; un back anterior no la
+ * manda y queda el español. Sólo para la PANTALLA: el mensaje que se copia para
+ * el interesado se arma siempre con el español, que es su idioma.
+ */
+function enSuIdioma<T>(en: boolean, es: T, ingles: T | null | undefined): T {
+  return en && ingles !== null && ingles !== undefined ? ingles : es
 }
 
 function MarcaDelEstudio({ texto, testId }: { texto: string | null; testId: string }) {
@@ -149,6 +161,7 @@ async function copiar(texto: string, tr: Tr = (es) => es) {
 
 export function CalceClient() {
   const tr = useTr();
+  const en = useLocaleDelPanel() === 'en';
   const [direccion, setDireccion] = useState<Direccion>('interesado')
   const [leadId, setLeadId] = useState('')
   const [propertyId, setPropertyId] = useState('')
@@ -325,7 +338,7 @@ export function CalceClient() {
                       <div className="border-warning/40 bg-warning-soft/30 rounded-lg border p-4" data-testid="falta-requisito">
                         <p className="text-sm font-medium">{tr("Todavía no se le puede mandar nada")}</p>
                         <p className="text-fg-muted mt-1 text-sm">
-                          {delLead.datos.falta.message}
+                          {enSuIdioma(en, delLead.datos.falta.message, delLead.datos.falta.messageEn)}
                         </p>
                       </div>
                     ) : opciones.length === 0 ? (
@@ -362,8 +375,8 @@ export function CalceClient() {
                                   ? tr(' + {plata} de administración', { plata: pesos(o.inmueble.adminFee) })
                                   : ''}
                               </p>
-                              <Razones porQue={o.porQue} />
-                              <MarcaDelEstudio texto={marcaDe(o)} testId={`marca-${o.propertyId}`} />
+                              <Razones porQue={enSuIdioma(en, o.porQue, o.porQueEn)} />
+                              <MarcaDelEstudio texto={marcaDe(o, en)} testId={`marca-${o.propertyId}`} />
                             </div>
                             <div className="flex shrink-0 flex-col items-end gap-2">
                               <Puntaje valor={o.puntaje} />
@@ -454,7 +467,7 @@ export function CalceClient() {
                       className="border-warning/40 bg-warning-soft/30 rounded-lg border p-4"
                       data-testid="no-ofrecible"
                     >
-                      <p className="text-sm">{delInmueble.datos.motivo}</p>
+                      <p className="text-sm">{enSuIdioma(en, delInmueble.datos.motivo, delInmueble.datos.motivoEn)}</p>
                     </div>
                   ) : leads.length === 0 ? (
                     <EmptyState
@@ -480,8 +493,8 @@ export function CalceClient() {
                                 </span>
                               ) : null}
                             </p>
-                            <Razones porQue={l.porQue} />
-                            <MarcaDelEstudio texto={marcaDe(l)} testId={`marca-lead-${l.pipelineItemId}`} />
+                            <Razones porQue={enSuIdioma(en, l.porQue, l.porQueEn)} />
+                            <MarcaDelEstudio texto={marcaDe(l, en)} testId={`marca-lead-${l.pipelineItemId}`} />
                           </div>
                           <div className="flex shrink-0 items-center gap-3">
                             <Puntaje valor={l.puntaje} />
@@ -526,7 +539,7 @@ export function CalceClient() {
           <div>
             <p className="text-sm font-medium">{tr("Requisitos (no se configuran)")}</p>
             <ul className="text-fg-muted list-disc pl-5 text-sm">
-              {(config.datos?.requisitos ?? []).map((r) => (
+              {(enSuIdioma(en, config.datos?.requisitos, config.datos?.requisitosEn) ?? []).map((r) => (
                 <li key={r}>{r}</li>
               ))}
             </ul>

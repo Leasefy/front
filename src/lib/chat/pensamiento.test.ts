@@ -173,3 +173,27 @@ describe('el tiempo y el lector de pantalla', () => {
     expect(lineaParaLectores(conVivo, t)).toBe('Le pido a Cobri: “x”…');
   });
 });
+
+/**
+ * Nico (16-10-2026): con el panel en inglés el micro traduce el pensamiento.
+ * La cifra llega tal cual (el panel escribe la plata como en Colombia) y «el
+ * especialista de X» como «the X specialist»: el panel la cuenta y le pone el
+ * nombre igual.
+ */
+describe('el pensamiento que llega en inglés', () => {
+  it('la cifra, que llega tal cual, se cuenta igual', () => {
+    expect(partirPorLaCifra({ texto: '$985.507.187 across 561 clients', cifra: 985_507_187, formato: 'moneda' })).toEqual({
+      antes: '',
+      cifra: 985_507_187,
+      formato: 'moneda',
+      despues: ' across 561 clients',
+    });
+  });
+
+  it('«the X specialist» lleva el nombre del equipo', () => {
+    expect(conNombreDelEquipo("I'm asking the payments specialist: “October payments”…", 'pagos', t)).toBe(
+      "I'm asking Cobri: “October payments”…"
+    );
+    expect(conNombreDelEquipo("The collections specialist couldn't finish", 'cobranza', t)).toBe("Mori couldn't finish");
+  });
+});

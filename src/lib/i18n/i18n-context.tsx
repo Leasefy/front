@@ -8,10 +8,12 @@ import es from './locales/es.json';
 import en from './locales/en.json';
 import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
 import { hayPlataConCentavos, suscribirseALaConfigDePlata } from '@/lib/plata/con-centavos';
+import { CLAVE_DEL_IDIOMA_DEL_PANEL } from './idioma-del-panel';
 
 const translations: Record<Locale, Translations> = { es, en };
 
-const STORAGE_KEY = 'leasefy-locale';
+// La misma que leen las llamadas al back y al micro (`idioma-del-panel.ts`).
+const STORAGE_KEY = CLAVE_DEL_IDIOMA_DEL_PANEL;
 const DEFAULT_LOCALE: Locale = 'es';
 
 const I18nContext = createContext<I18nContextValue | undefined>(undefined);

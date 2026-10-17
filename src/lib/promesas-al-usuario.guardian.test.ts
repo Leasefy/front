@@ -270,6 +270,13 @@ const LAS_QUE_NO_DICEN_PROXIMAMENTE: Record<string, Promesa> = {
 
 // ═══════════════════════════════════════════════════════════════════════════
 
+/**
+ * `frases-en.ts` es el inglés del panel (16-10-2026): traduce lo que dicen las
+ * pantallas, no promete nada por sí mismo. La promesa vive —y se declara— en la
+ * pantalla que llama `tr('Próximamente')`.
+ */
+const esElDiccionarioEnIngles = (ruta: string) => ruta.endsWith(join('lib', 'i18n', 'frases-en.ts'));
+
 function archivos(dir: string, salida: string[] = []): string[] {
   for (const entrada of readdirSync(dir)) {
     const ruta = join(dir, entrada);
@@ -277,7 +284,7 @@ function archivos(dir: string, salida: string[] = []): string[] {
       // Lo generado del OpenAPI no es una promesa del producto: es la copia de
       // la descripción de una ruta.
       if (!ruta.includes(join('api', 'generated'))) archivos(ruta, salida);
-    } else if (/\.tsx?$/.test(ruta) && !/\.test\.tsx?$/.test(ruta)) {
+    } else if (/\.tsx?$/.test(ruta) && !/\.test\.tsx?$/.test(ruta) && !esElDiccionarioEnIngles(ruta)) {
       salida.push(ruta);
     }
   }

@@ -220,7 +220,7 @@ function AuditContent() {
           <h1 className="text-h2 font-heading text-foreground mt-2">
             {t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle')}
           </h1>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-caption text-muted-foreground">
             {locale.startsWith('es')
               ? 'Lo que pasó en la cobranza, quién lo hizo y cuándo. Es sólo lectura y los datos personales no se muestran aquí.'
               : 'Forensic read-only view — PII is never revealable on this page.'}
@@ -275,7 +275,7 @@ function AuditContent() {
               size="sm"
               onClick={onResetActor}
               hideArrow
-              className="mt-1 h-auto p-0 text-xs"
+              className="mt-1 h-auto p-0 text-caption"
             >
               {locale.startsWith('es') ? 'limpiar' : 'clear'}
             </Button>
@@ -334,7 +334,7 @@ function AuditContent() {
                   setAction(undefined)
                 }}
                 hideArrow
-                className="h-auto p-0 px-2 text-xs"
+                className="h-auto p-0 px-2 text-caption"
               >
                 {locale.startsWith('es') ? 'lista' : 'list'}
               </Button>
@@ -384,7 +384,7 @@ function AuditContent() {
             className="w-full font-mono"
           />
           {!qValid && (
-            <p className="mt-1 text-xs text-warning">
+            <p className="mt-1 text-caption text-warning">
               {locale.startsWith('es')
                 ? 'Escribe la cédula completa o al menos 8 caracteres de la referencia.'
                 : 'Type the full ID number or at least 8 characters of the reference.'}
@@ -457,23 +457,23 @@ function AuditContent() {
                   <TableRowAnimada key={row.id} className="align-top">
                     {/* MORI-26 (QA-AGENTES 16-10): el día en palabras, la acción y
                         «sobre qué» en español, con enlace al caso o al acuerdo. */}
-                    <TableCell className="px-3 py-2 text-xs text-foreground whitespace-nowrap">
+                    <TableCell className="px-3 py-2 text-caption text-foreground whitespace-nowrap">
                       {cuandoPaso(row.occurred_at)}
                     </TableCell>
-                    <TableCell className="px-3 py-2 text-xs text-foreground whitespace-nowrap">
+                    <TableCell className="px-3 py-2 text-caption text-foreground whitespace-nowrap">
                       {/* Sin `actor_id` la celda quedaba en blanco bajo el
                           encabezado «Actor». No actuó nadie: actuó el sistema,
                           y `actor_type` lo dice. */}
                       {actorLegible(row.actor_id) ?? ACTOR_SISTEMA[row.actor_type] ?? row.actor_type}
                     </TableCell>
-                    <TableCell className="px-3 py-2 text-xs">
+                    <TableCell className="px-3 py-2 text-caption">
                       {accionConNombre(row.action) ? (
                         <span className="text-foreground">{accionLegible(row.action)}</span>
                       ) : (
                         <Badge variant="primary">{row.action}</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                    <TableCell className="px-3 py-2 text-caption text-muted-foreground whitespace-nowrap">
                       <div>{entidadLegible(row.entity_type)}</div>
                       {/* `entity_id` es nullable en el contrato: hay acciones
                           que no apuntan a una entidad. El tipo escrito a mano

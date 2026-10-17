@@ -131,7 +131,7 @@ function SuscripcionContent() {
           />
 
           {whatsappDeLaInmobiliaria === false && (
-            <p className="text-xs text-muted-foreground" data-testid="whatsapp-de-la-inmobiliaria-apagado">
+            <p className="text-caption text-muted-foreground" data-testid="whatsapp-de-la-inmobiliaria-apagado">
               Tu inmobiliaria todavía no envía el reporte por WhatsApp: mientras no lo prenda, sólo llega por correo.
               {isAdmin && (
                 <>
@@ -145,7 +145,7 @@ function SuscripcionContent() {
           )}
 
           {/* Habeas Data / autodeterminación rationale (D-34-06) */}
-          <div className="rounded-lg border border-border bg-muted/20 p-3 text-xs text-muted-foreground leading-relaxed">
+          <div className="rounded-lg border border-border bg-muted/20 p-3 text-caption text-muted-foreground leading-relaxed">
             {locale.startsWith('es')
               ? 'Tu suscripción es individual: sólo tú puedes prenderla o apagarla, como lo pide la Ley de Habeas Data. Los administradores ven cuántos del equipo lo reciben, pero no pueden suscribir a nadie.'
               : 'Your subscription is individual. Only you can enable or disable it, per Colombia\'s Habeas Data law and the informational self-determination principle. Admins can see the aggregate count but CANNOT force-subscribe anyone.'}
@@ -158,7 +158,7 @@ function SuscripcionContent() {
                 {locale.startsWith('es') ? 'Cuántos del equipo lo reciben' : 'How many on the team get it'}
               </MonoLabel>
               {!statsSupported ? (
-                <p className="text-xs font-mono text-muted-foreground">
+                <p className="text-caption font-mono text-muted-foreground">
                   {locale.startsWith('es')
                     ? 'No pudimos contar a tu equipo.'
                     : "We couldn't count your team."}
@@ -185,7 +185,7 @@ function SuscripcionContent() {
                   </p>
                 </>
               ) : (
-                <p className="text-xs font-mono text-muted-foreground">…</p>
+                <p className="text-caption font-mono text-muted-foreground">…</p>
               )}
             </div>
           )}

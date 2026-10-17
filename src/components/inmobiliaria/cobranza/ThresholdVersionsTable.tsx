@@ -188,10 +188,10 @@ export function ThresholdVersionsTable({
                         </MonoLabel>
                       )}
                     </TableCell>
-                    <TableCell className="px-3 py-2 text-xs text-muted-foreground">
+                    <TableCell className="px-3 py-2 text-caption text-muted-foreground">
                       {v.created_at ? cuandoSeGuardo(v.created_at, locale) : '—'}
                     </TableCell>
-                    <TableCell className="px-3 py-2 text-xs text-foreground">
+                    <TableCell className="px-3 py-2 text-caption text-foreground">
                       {quienLaGuardo(v)}
                     </TableCell>
                     <TableCell className="px-3 py-2">
@@ -202,7 +202,7 @@ export function ThresholdVersionsTable({
                             : `Restored v${v.is_rollback_of_version}`}
                         </Badge>
                       ) : (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-caption text-muted-foreground">
                           {locale.startsWith('es') ? 'Cambio' : 'Edit'}
                         </span>
                       )}

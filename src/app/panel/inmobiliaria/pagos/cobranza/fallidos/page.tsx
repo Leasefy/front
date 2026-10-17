@@ -108,7 +108,7 @@ function LinksDeCobriQueNoSePagaron({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-medium text-fg">{l.inquilino}</p>
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   Contrato {l.contratoNumero} · {l.inmueble} · vence{' '}
                   <span className="font-mono tabular-nums">{formatDate(l.fechaDeVencimiento, 'es')}</span>
                 </p>
@@ -160,7 +160,7 @@ function PagosFallidos() {
           <p className="text-2xl font-semibold text-fg tabular-nums">
             {isLoading || deCobri.cargando ? '—' : total + deCobri.total}
           </p>
-          <p className="text-xs text-fg-muted">Pagos fallidos</p>
+          <p className="text-caption text-fg-muted">Pagos fallidos</p>
         </div>
       </header>
 

@@ -13,6 +13,7 @@ import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { useContract, useContractPreview, useContractActions, useSignedPdfUrl } from '@/lib/hooks/useContracts';
+import { textoDelCierre } from '@/lib/contratos/texto-del-cierre';
 import { isPermissionError } from '@/lib/contratos/fallo-de-accion';
 import { motivoDelFalloDelContrato } from '@/lib/contratos/errores-del-contrato';
 import { debeReiniciarOtp } from '@/lib/contratos/otp-errors';
@@ -103,7 +104,14 @@ function FirmarContratoContent() {
         signatureData,
         otpVerificationToken,
       });
-      setContract(updated);
+      // CONTR-5 (QA 17-10): la respuesta de la firma no trae por qué el
+      // contrato no tiene tabla de cuotas (eso lo arma `GET /contracts/:id`);
+      // se conserva lo que ya se sabía para no anunciar cuotas que no nacieron.
+      setContract({
+        ...updated,
+        comisionSinDefinir: updated.comisionSinDefinir ?? contract.comisionSinDefinir,
+        sinTablaDeCuotas: updated.sinTablaDeCuotas ?? contract.sinTablaDeCuotas,
+      });
       setSigned(true);
       // CR-28 · QA-CONT-95: sin «Proceso completado» cuando falta activarlo.
       toast.success(updated.status === 'active' ? 'Contrato firmado y activo.' : 'Contrato firmado.');
@@ -214,9 +222,7 @@ function FirmarContratoContent() {
               quien firmó esperando una respuesta que no iba a llegar.
             */}
             <p className="text-sm text-success mt-1" data-testid="firmado-cierre">
-              {contract.status === 'active'
-                ? 'Firmaron las dos partes y el contrato ya está activo: nacieron sus cuotas. El PDF final incluye las dos firmas con su certificado.'
-                : 'Firmaron las dos partes. El contrato se activa en su fecha de inicio. El PDF final incluye las dos firmas con su certificado.'}
+              {textoDelCierre(contract)}
             </p>
           </div>
           <Button

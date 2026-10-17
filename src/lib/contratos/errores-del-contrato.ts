@@ -37,6 +37,9 @@ export type CampoDelContrato =
   | 'nombre'
   | 'documento'
   | 'correo'
+  // CONTR-6/7 (QA 17-10): la comisión si el inmueble no la tiene, y el uso.
+  | 'comisionPorcentaje'
+  | 'usoInmueble'
 
 export const CAMPOS_DEL_CONTRATO: readonly CampoDelContrato[] = [
   'startDate',
@@ -52,6 +55,8 @@ export const CAMPOS_DEL_CONTRATO: readonly CampoDelContrato[] = [
   'nombre',
   'documento',
   'correo',
+  'comisionPorcentaje',
+  'usoInmueble',
 ]
 
 /**

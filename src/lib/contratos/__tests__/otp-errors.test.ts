@@ -24,6 +24,36 @@ describe('describirErrorDeOtp — contract.md §3.3', () => {
     expect(d.channels).toEqual(channels)
   })
 
+  // CONTR-4 (QA 17-10): la forma REAL del cuerpo — el back anida lo
+  // estructurado en `details` y el cliente guarda el cuerpo entero.
+  it('🔴 con el cuerpo tal como llega del back (`details`), lee la espera, los intentos y los canales', () => {
+    const espera = new ApiError(429, 'Ya enviamos un código hace poco. Espera 16 segundos antes de pedir otro.', 'CODIGO_EN_ESPERA', {
+      statusCode: 429,
+      code: 'CODIGO_EN_ESPERA',
+      details: { segundos: 16 },
+      reintentarEnSegundos: null,
+    })
+    expect(describirErrorDeOtp(espera).segundosDeEspera).toBe(16)
+
+    const incorrecto = new ApiError(400, 'Código incorrecto.', 'CODIGO_INCORRECTO', {
+      statusCode: 400,
+      details: { intentosRestantes: 2 },
+    })
+    expect(describirErrorDeOtp(incorrecto).intentosRestantes).toBe(2)
+
+    const channels = [{ channel: 'EMAIL' as const, status: 'FAILED' as const, destination: null, reason: 'SEND_ERROR' as const }]
+    const sinEntregar = new ApiError(400, 'No pudimos entregar el código.', 'CODIGO_NO_ENTREGADO', {
+      statusCode: 400,
+      details: { channels },
+    })
+    expect(describirErrorDeOtp(sinEntregar).channels).toEqual(channels)
+  })
+
+  it('un 429 sin `details` usa la espera que puso el cliente (`reintentarEnSegundos`)', () => {
+    const err = new ApiError(429, 'Espera.', 'CODIGO_EN_ESPERA', { reintentarEnSegundos: 9 })
+    expect(describirErrorDeOtp(err).segundosDeEspera).toBe(9)
+  })
+
   it('un código sin detalle estructurado (CODIGO_VENCIDO) sólo trae el mensaje', () => {
     const err = new ApiError(400, 'El código venció.', 'CODIGO_VENCIDO')
     const d = describirErrorDeOtp(err)

@@ -324,8 +324,23 @@ export interface SalioEnUnArchivoAnulado {
   motivoDeLaAnulacion: string | null;
 }
 
+/**
+ * PROP-3 (QA de agentes 17-10): un pago del lote que va a la cuenta de OTRA
+ * persona. `nombreDelTitular: null` = nadie sabe su nombre (el archivo de la
+ * inmobiliaria sólo traía su cédula).
+ */
+export interface CuentaDeOtraPersona {
+  itemId: string;
+  propietarioNombre: string;
+  tipoDocumento: string;
+  documento: string;
+  nombreDelTitular: string | null;
+}
+
 export interface VistaDelLote {
   lote: LoteDeDispersion;
+  /** PROP-3: los pagos a la cuenta de otra persona. Opcional: back anterior. */
+  cuentasDeOtraPersona?: CuentaDeOtraPersona[];
   /**
    * Desde qué banco se gira y, por lo tanto, en qué formato sale el archivo.
    * `null` = el lote se armó sin preguntarlo (su archivo no sale).

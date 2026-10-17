@@ -89,6 +89,11 @@ import {
   getUrgencyColor,
 } from '@/lib/types/inmobiliaria';
 
+/** Una renovación cerrada ya no espera nada: sale de «Todos los estados». */
+export function estaCerrada(status: string): boolean {
+  return status === 'completed' || status === 'terminated';
+}
+
 type SortField = 'propertyTitle' | 'tenantName' | 'propietarioName' | 'daysUntilExpiry' | 'status' | 'currentRent';
 type SortDirection = 'asc' | 'desc';
 /*
@@ -230,19 +235,29 @@ export function RenovacionesTable({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [busqueda, setBusqueda] = useState('');
 
+  /*
+   * CONTR-9 (QA de agentes 17-10): «sigue acá hasta que se cierra». Con «Todos
+   * los estados» sólo las abiertas, y los cajones cuentan ésas; una cerrada
+   * (completada, no renueva) se ve eligiendo su estado.
+   */
+  const visibles = useMemo(
+    () => (statusFilter === 'all' ? data.filter((r) => !estaCerrada(r.status)) : data),
+    [data, statusFilter],
+  );
+
   const bucketCounts = useMemo(
     () => ({
-      all: data.length,
-      '0-30': data.filter((r) => r.urgencyBucket === '0-30').length,
-      '31-60': data.filter((r) => r.urgencyBucket === '31-60').length,
-      '61-90': data.filter((r) => r.urgencyBucket === '61-90').length,
-      '90+': data.filter((r) => r.urgencyBucket === '90+').length,
+      all: visibles.length,
+      '0-30': visibles.filter((r) => r.urgencyBucket === '0-30').length,
+      '31-60': visibles.filter((r) => r.urgencyBucket === '31-60').length,
+      '61-90': visibles.filter((r) => r.urgencyBucket === '61-90').length,
+      '90+': visibles.filter((r) => r.urgencyBucket === '90+').length,
     }),
-    [data],
+    [visibles],
   );
 
   const filtradas = useMemo(() => {
-    let result = [...data];
+    let result = [...visibles];
     if (bucketFilter !== 'all') {
       result = result.filter((item) => item.urgencyBucket === bucketFilter);
     }
@@ -287,7 +302,7 @@ export function RenovacionesTable({
       return 0;
     });
     return result;
-  }, [data, bucketFilter, statusFilter, busqueda, sortField, sortDirection]);
+  }, [visibles, bucketFilter, statusFilter, busqueda, sortField, sortDirection]);
 
   /*
    * Paginado de presentación: `useRenovaciones()` trae todas y crecen con la

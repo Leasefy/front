@@ -124,6 +124,7 @@ import {
   notaDelLote,
 } from '@/lib/doble-control/el-administrador';
 import { laApruebaOtraPorElMonto } from '@/lib/dispersiones/segunda-persona-por-monto';
+import { titularDelPago } from '@/lib/dispersiones/titular-del-pago';
 
 type Dialogo =
   | 'pedirAprobacion'
@@ -776,7 +777,17 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
               <TableBody>
                 {pagos.pageItems.map((item) => (
                   <TableRow key={item.id} data-excluido={item.motivoDeExclusion !== null}>
-                    <TableCell className="font-medium text-fg">{item.nombreTitular}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const t = titularDelPago(item, vista.cuentasDeOtraPersona);
+                        return (
+                          <div data-testid={t.deOtraPersona ? 'pago-a-otra-persona' : undefined}>
+                            <p className="font-medium text-fg">{t.titular}</p>
+                            {t.detalle ? <p className="text-xs text-fg-muted">{t.detalle}</p> : null}
+                          </div>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell className="font-mono text-xs">
                       {item.tipoDocumento} {item.documento || '—'}
                     </TableCell>

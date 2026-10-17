@@ -886,7 +886,7 @@ function PedirCambioDeCuenta({
       toast.success('Reparto pedido.', {
         description:
           r.cambio.envioEstado === 'SIMULADO'
-            ? 'El envío de correos está apagado en este entorno: no le llegó nada al propietario.'
+            ? 'El correo está apagado en esta copia de pruebas de Leasefy: no le llegó nada al propietario.'
             : `Le pedimos confirmar el reparto al propietario por correo (${r.cambio.destinoEnmascarado ?? ''}).`,
       });
       onPedido(r.enlaceDePrueba);
@@ -935,7 +935,7 @@ function PedirCambioDeCuenta({
       toast.success('Cambio pedido.', {
         description:
           r.cambio.envioEstado === 'SIMULADO'
-            ? 'El envío de correos está apagado en este entorno: no le llegó nada al propietario.'
+            ? 'El correo está apagado en esta copia de pruebas de Leasefy: no le llegó nada al propietario.'
             : `Le pedimos confirmar al propietario por correo (${r.cambio.destinoEnmascarado ?? ''}).`,
       });
       onPedido(r.enlaceDePrueba);

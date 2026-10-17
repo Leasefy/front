@@ -1201,6 +1201,15 @@ export interface SolicitudMantenimiento {
   id: string;
   /** PI-28: la PQRS del portal de la que salió («Reparación / mantenimiento»), si salió de una. */
   pqrs?: { id: string; radicado: string } | null;
+  /**
+   * FIXI-2 (QA de agentes 17-10): quién la reportó, si se sabe (la PQRS de la
+   * que salió o el alta en el panel). `null`/ausente: el historial no le pone
+   * autor, nunca el inquilino por defecto.
+   */
+  reportadaPor?: {
+    nombre: string | null;
+    quien: 'INMOBILIARIA' | 'INQUILINO' | 'PROPIETARIO' | 'TERCERO';
+  } | null;
   consignacionId: string;
   propertyId: string;
   propietarioId: string;

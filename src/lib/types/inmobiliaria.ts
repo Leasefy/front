@@ -1428,7 +1428,7 @@ export interface ExtractoPropietario {
    * no se movió nada», y las dos se leen igual: en blanco.
    */
   sinMovimiento: {
-    codigo: 'SIN_INMUEBLES' | 'SIN_MOVIMIENTO_DEL_MES';
+    codigo: 'SIN_INMUEBLES' | 'SIN_MOVIMIENTO_DEL_MES' | 'MES_DEL_SISTEMA_ANTERIOR';
     mensaje: string;
   } | null;
 

@@ -13,9 +13,8 @@
  * datos / no hay fallidos → <EmptyState> honesto. Las operaciones profundas viven
  * en /cobros — acá se cross-linkea, NUNCA se duplica esa tabla.
  *
- * T-323: ninguna acción auto-rechaza. Cada acción masiva sin endpoint real es un
- * placeholder honesto deshabilitado ("Próximamente"); la acción por fila usa la
- * acción real del WorkItem o el mismo placeholder. CERO hex inline (tokens DS).
+ * T-323: ninguna acción auto-rechaza. COBRI-13 (Nico 18-10): las acciones masivas
+ * funcionan sobre los links de Cobri que se marcan (`LinksFallidosDeCobri`). CERO hex inline (tokens DS).
  */
 
 import { useMemo } from 'react'
@@ -24,104 +23,22 @@ import Link from 'next/link'
 import {
   XCircle,
   Robot,
-  ArrowsClockwise,
-  LinkSimple,
-  Bank,
-  ClipboardText,
-  Headset,
   ArrowSquareOut,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { Button, Card, EmptyState } from '@/components/ui'
+import { EmptyState } from '@/components/ui'
 import {
   PagoFallidoTabla,
   esPagoFallido,
   clasificarMotivo,
 } from '@/components/inmobiliaria/pagos/PagoFallidoTabla'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
-import { useLinksDeCobriQueNoSePagaron, type LinksQueNoSePagaron } from '@/lib/hooks/use-links-de-cobri-que-no-se-pagaron'
+import { useLinksDeCobriQueNoSePagaron } from '@/lib/hooks/use-links-de-cobri-que-no-se-pagaron'
 import { useCobrosEnLaBandeja } from '@/lib/hooks/use-cobros-en-la-bandeja'
-import { EstadoDelLink } from '@/components/inmobiliaria/pagos/payu/EstadoDelLink'
-import { formatCurrency, formatDate } from '@/lib/format'
-import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { LinksFallidosDeCobri } from '@/components/inmobiliaria/pagos/LinksFallidosDeCobri'
 import { CrossFade, Presence } from '@leasefy/cadence'
-
-// ── Acciones masivas (visión §7) ──────────────────────────────────────────────
-// No hay endpoint de operación en lote → todas son placeholders honestos
-// deshabilitados ("Próximamente"). T-323: nunca un botón que finja funcionar.
-
-const ACCIONES_MASIVAS: { label: string; icon: Icon }[] = [
-  { label: 'Reenviar links', icon: LinkSimple },
-  { label: 'Generar links nuevos', icon: ArrowsClockwise },
-  { label: 'Enviar instrucciones de transferencia', icon: Bank },
-  { label: 'Marcar en seguimiento', icon: ClipboardText },
-  { label: 'Enviar a cobranza', icon: Headset },
-]
-
-/**
- * COBRI-7 (QA de los agentes en el lab, 16-10-2026): los links de pago de Cobri
- * cuyo pago la pasarela no aprobó o que vencieron sin pago. Antes la pantalla
- * decía «Sin pagos fallidos» con un pago de Cobri rechazado. Cobri no reenvía a
- * pedido: el próximo aviso de la cuota sale solo, y el link fallido sigue
- * sirviendo para volver a intentar.
- */
-function LinksDeCobriQueNoSePagaron({
-  lectura,
-  esperanEnLaBandeja,
-}: {
-  lectura: LinksQueNoSePagaron
-  /** cuotaId → el caso de la Bandeja que espera aprobar su siguiente aviso. */
-  esperanEnLaBandeja: ReadonlyMap<string, string>
-}) {
-  if (lectura.cargando && lectura.items.length === 0) return null
-  if (lectura.error) {
-    return (
-      <Card className="p-5 flex flex-wrap items-center justify-between gap-3" data-testid="cobri-fallidos-error">
-        <p className="text-sm text-fg-muted">
-          {mensajeParaLaPersona(lectura.error, {
-            porDefecto: 'No pudimos leer los links de pago de Cobri.',
-            accion: 'leer los links de pago de Cobri',
-          })}
-        </p>
-        <Button variant="outline" size="sm" hideArrow onClick={() => void lectura.recargar()}>
-          Intentar de nuevo
-        </Button>
-      </Card>
-    )
-  }
-  if (lectura.items.length === 0) return null
-  return (
-    <Card className="p-0 overflow-hidden" data-testid="cobri-fallidos">
-      <div className="space-y-1 border-b border-border px-5 py-4">
-        <h2 className="text-base font-semibold text-fg">Links de pago de Cobri que no se pagaron</h2>
-        <p className="text-sm text-fg-muted max-w-2xl">
-          {lectura.total === 1 ? 'Un link de Cobri que no se pagó' : `${lectura.total} links de Cobri que no se pagaron`}, de
-          cuotas que vencen entre el mes pasado y el próximo. Cobri no los reenvía a pedido: el siguiente aviso de cada
-          cuota lleva el mismo link mientras siga vivo y, después del tercero, la cuota la sigue cobranza.
-        </p>
-      </div>
-      <ul className="divide-y divide-border-faint">
-        {lectura.items.map((l) => (
-          <li key={l.cuotaId} className="space-y-2 px-5 py-4" data-testid={`cobri-fallido-${l.cuotaId}`}>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-medium text-fg">{l.inquilino}</p>
-                <p className="text-caption text-fg-muted">
-                  Contrato {l.contratoNumero} · {l.inmueble} · vence{' '}
-                  <span className="font-mono tabular-nums">{formatDate(l.fechaDeVencimiento, 'es')}</span>
-                </p>
-              </div>
-              <p className="whitespace-nowrap font-mono tabular-nums text-fg">{formatCurrency(l.montoCop, 'es')}</p>
-            </div>
-            <EstadoDelLink link={l} esperaEnLaBandeja={esperanEnLaBandeja.get(l.cuotaId)} />
-          </li>
-        ))}
-      </ul>
-    </Card>
-  )
-}
 
 function PagosFallidos() {
   const router = useRouter()
@@ -188,32 +105,8 @@ function PagosFallidos() {
           </div>
       </Presence>
 
-      {/* Acciones masivas — placeholders honestos (sin endpoint de lote) */}
-      <Card className="p-5 space-y-3">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-fg">Acciones masivas</h2>
-          <p className="text-sm text-fg-muted">
-            Aplica una recuperación a todos los fallidos de una vez. Disponibles próximamente.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {ACCIONES_MASIVAS.map(({ label, icon: ActionIcon }) => (
-            <Button
-              key={label}
-              size="sm"
-              variant="outline"
-              hideArrow
-              disabled
-              title="Próximamente"
-            >
-              <ActionIcon className="h-4 w-4" aria-hidden="true" />
-              {label}
-            </Button>
-          ))}
-        </div>
-      </Card>
-
-      <LinksDeCobriQueNoSePagaron lectura={deCobri} esperanEnLaBandeja={enLaBandeja.porCuota} />
+      {/* COBRI-13 (Nico 18-10): las acciones masivas de verdad, sobre los links de Cobri que se marcan. */}
+      <LinksFallidosDeCobri lectura={deCobri} esperanEnLaBandeja={enLaBandeja.porCuota} />
 
       {/* Tabla de fallidos / estados de carga, error y vacío: cada estado
           entra con su fundido (`CrossFade`). Con links de Cobri arriba, la cola

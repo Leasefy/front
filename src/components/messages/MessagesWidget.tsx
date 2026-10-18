@@ -270,7 +270,8 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   const [radicarDesdeMensaje, setRadicarDesdeMensaje] = useState<Partial<PqrsFormulario> | null>(null);
   // «Nuevo mensaje»: hasta acá la bandeja no podía iniciar ninguna
   // conversación — sólo se llenaba si el otro escribía primero.
-  const [nuevoMensajeAbierto, setNuevoMensajeAbierto] = useState(false);
+  // «Escribirle a la inmobiliaria» del Inicio del inquilino llega con `?nuevo=1`.
+  const [nuevoMensajeAbierto, setNuevoMensajeAbierto] = useState(() => searchParams.get('nuevo') === '1');
   /**
    * Las variables que una plantilla NO pudo reemplazar.
    *
@@ -1576,7 +1577,11 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
 
       <NuevoMensajeDrawer
         abierto={nuevoMensajeAbierto}
-        onCerrar={() => setNuevoMensajeAbierto(false)}
+        onCerrar={() => {
+          setNuevoMensajeAbierto(false);
+          // Que recargar no lo vuelva a abrir.
+          if (searchParams.get('nuevo') === '1') router.replace(pathname ?? '/');
+        }}
         onHiloAbierto={alAbrirHiloNuevo}
       />
       {enPanelDeInmobiliaria && (

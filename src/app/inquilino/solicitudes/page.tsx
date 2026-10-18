@@ -19,7 +19,7 @@
  * dark:bg-bg` + `max-w-7xl`). Buttons sentence case (DESIGN §4).
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CrossFade, StaggerItem } from '@leasefy/cadence';
@@ -185,6 +185,21 @@ export default function SolicitudesPage() {
       ? 'Para radicar desde acá necesitas un contrato vigente con tu inmobiliaria: escríbele a tu inmobiliaria.'
       : 'To submit a request here you need an active lease with your property manager: write to them.';
   const [modalOpen, setModalOpen] = useState(false);
+  /*
+   * «Reportar un daño» del Inicio del arrendatario llega con `?nueva=1`: abre la
+   * solicitud nueva cuando ya cargó (si se puede radicar) y quita el parámetro,
+   * para que recargar no la vuelva a abrir.
+   */
+  const [pidioNueva, setPidioNueva] = useState(false);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('nueva') === '1') setPidioNueva(true);
+  }, []);
+  useEffect(() => {
+    if (!pidioNueva || isLoading || isOnboardingLoading) return;
+    setPidioNueva(false);
+    window.history.replaceState(null, '', window.location.pathname);
+    if (!sinRadicar) setModalOpen(true);
+  }, [pidioNueva, isLoading, isOnboardingLoading, sinRadicar]);
 
   // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
   const entrada = useEntradaTrasCargar(isOnboardingLoading || isLoading);

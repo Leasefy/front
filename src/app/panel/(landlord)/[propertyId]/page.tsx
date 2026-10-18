@@ -30,6 +30,7 @@ import { landlordApi } from '@/lib/api/landlord.service';
 import { useVisits } from '@/lib/hooks/useVisits';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { getContractTypeLabel } from '@/lib/types/contract';
+import { estadoCivilEnPalabras } from '@/lib/types/application';
 import { VISIT_STATUS_LABELS } from '@/lib/types/visit';
 import type { Visit, VisitStatus } from '@/lib/types/visit';
 import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
@@ -426,7 +427,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
           {selectedCandidate.maritalStatus && (
             <div className="flex justify-between">
               <span className="text-plan-secondary">Estado civil</span>
-              <span className="text-plan-primary">{selectedCandidate.maritalStatus}</span>
+              <span className="text-plan-primary">{estadoCivilEnPalabras(selectedCandidate.maritalStatus)}</span>
             </div>
           )}
         </div>

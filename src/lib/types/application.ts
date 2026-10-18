@@ -16,9 +16,20 @@ export const DOCUMENT_TYPES = [
 export const MARITAL_STATUS_OPTIONS = [
   { value: 'single', label: 'Soltero/a' },
   { value: 'married', label: 'Casado/a' },
+  { value: 'free_union', label: 'Unión libre' },
   { value: 'divorced', label: 'Divorciado/a' },
   { value: 'widowed', label: 'Viudo/a' },
 ] as const;
+
+/**
+ * El estado civil en palabras («married» → «Casado/a»). Un valor que no está
+ * en la lista sale tal cual: no se inventa otro (QA de agentes 18-10: la ficha
+ * del propietario mostraba «married»).
+ */
+export function estadoCivilEnPalabras(valor: string | null | undefined): string | null {
+  if (!valor) return null;
+  return MARITAL_STATUS_OPTIONS.find((o) => o.value === valor)?.label ?? valor;
+}
 
 export const EMPLOYMENT_STATUS_OPTIONS = [
   { value: 'employed', label: 'Empleado' },
@@ -54,7 +65,7 @@ export const INDUSTRY_OPTIONS = [
 // ============================================================================
 
 export type DocumentType = 'cc' | 'ce' | 'passport';
-export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed';
+export type MaritalStatus = 'single' | 'married' | 'free_union' | 'divorced' | 'widowed';
 export type EmploymentStatus = 'employed' | 'self-employed' | 'unemployed' | 'retired' | 'student';
 export type ContractType = 'indefinite' | 'fixed-term' | 'contractor' | 'freelance';
 export type ApplicationStatus = 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected';

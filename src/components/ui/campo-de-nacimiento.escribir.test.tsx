@@ -76,6 +76,21 @@ describe('CampoDeNacimiento — se escribe de corrido (DD / MM / AAAA)', () => {
     expect(ultimo).toBe('1988-12-14');
   });
 
+  // POST-3 (18-10): con el cero adelante, «03» quedaba «3» (el tope lo pasaba a
+  // número), no saltaba al Mes y la siguiente cifra caía en el Día: «03051990»
+  // quedaba 30/12/990.
+  it('«03» «05» «1990» con el cero adelante queda 03/05/1990', () => {
+    act(() => campo('Día').focus());
+    teclear('03');
+    expect(campo('Día').value).toBe('03');
+    expect(document.activeElement).toBe(campo('Mes'));
+    teclear('05');
+    expect(campo('Mes').value).toBe('05');
+    expect(document.activeElement).toBe(campo('Año'));
+    teclear('1990');
+    expect(ultimo).toBe('1990-05-03');
+  });
+
   it('un día de más se ajusta al tope (45 → 31), no se pierde', () => {
     act(() => campo('Día').focus());
     teclear('45');

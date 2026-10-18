@@ -176,6 +176,7 @@ describe('leerLineasDeCartera (T-0168)', () => {
     const muchas = Array.from({ length: MAX_LINEAS_DE_CARTERA + 1 }, (_, i) => fila(BUENA, i + 1))
     const r = leerLineasDeCartera(muchas, MAPEO, OPC)
     expect(r.demasiadas).toBe(true)
+    expect(r.mandables).toBe(MAX_LINEAS_DE_CARTERA + 1)
     expect(r.lineas).toEqual([])
   })
 

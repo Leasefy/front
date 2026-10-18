@@ -72,6 +72,18 @@ vi.mock('@/lib/api/contabilidad.service', async () => {
   return { ...actual, contabilidadApi: { ...actual.contabilidadApi, ...api } };
 });
 
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
+
+/* La tarjeta de cartera pregunta la fecha de corte al montarse. */
+vi.mock('@/lib/api/contracts.service', () => ({
+  contractsApi: {
+    migracion: {
+      fechaDeCorte: vi.fn().mockResolvedValue({ fecha: '2026-03-01', editable: true, motivo: null }),
+      carteraPorFactura: vi.fn(),
+    },
+  },
+}));
+
 import { RegistrosContables } from './RegistrosContables';
 
 const CUENTA: CuentaPuc = {

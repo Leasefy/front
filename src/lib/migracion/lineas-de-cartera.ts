@@ -61,6 +61,8 @@ export interface LecturaDeLaCartera {
   fraseDeFechas: string | null
   /** More than `MAX_LINEAS_DE_CARTERA` sendable rows: nothing is sent. */
   demasiadas: boolean
+  /** How many rows could be sent (also when there are too many). */
+  mandables: number
 }
 
 export interface OpcionesDeFecha {
@@ -210,7 +212,7 @@ export function leerLineasDeCartera(
   })
 
   if (lineas.length > MAX_LINEAS_DE_CARTERA) {
-    return { lineas: [], problemas, conFechaDeFactura, fraseDeFechas, demasiadas: true }
+    return { lineas: [], problemas, conFechaDeFactura, fraseDeFechas, demasiadas: true, mandables: lineas.length }
   }
-  return { lineas, problemas, conFechaDeFactura, fraseDeFechas, demasiadas: false }
+  return { lineas, problemas, conFechaDeFactura, fraseDeFechas, demasiadas: false, mandables: lineas.length }
 }

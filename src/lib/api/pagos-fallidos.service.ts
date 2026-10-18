@@ -4,7 +4,7 @@
  */
 import { apiClient } from '@/lib/api/client'
 
-export type AccionDeLosFallidos = 'reenviar' | 'generar' | 'seguimiento' | 'quitar_seguimiento' | 'cobranza'
+export type AccionDeLosFallidos = 'reenviar' | 'generar' | 'seguimiento' | 'quitar_seguimiento' | 'cobranza' | 'transferencia'
 
 export interface ResultadoDeUnaCuota {
   cuotaId: string

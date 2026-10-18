@@ -103,14 +103,9 @@ const EN_PANTALLA: Record<string, Promesa> = {
   // `/:planId` lo pide la ruta del servidor de la sesión de pago.
   // `app/inquilino/casos/page.tsx` salió de acá el 04-10-2026 (QA-INQ-95, PI-30):
   // ya no promete push ni WhatsApp; dice que los avisos quedan en la campana.
-  'app/panel/inmobiliaria/pagos/cobranza/fallidos/page.tsx': {
-    estado: 'FALTA',
-    de: 'back',
-    nota:
-      'Las acciones EN LOTE sobre pagos fallidos (reintentar todos, mandar el link ' +
-      'a todos). No hay endpoint de operación por lote; la acción por FILA sí es ' +
-      'real y sale del WorkItem.',
-  },
+  // `app/panel/inmobiliaria/pagos/cobranza/fallidos/page.tsx` salió de acá el
+  // 18-10-2026 (COBRI-13): las acciones en lote ya son reales
+  // (`POST /inmobiliaria/pagos-fallidos/acciones`), también la transferencia.
   'app/panel/inmobiliaria/postulaciones/estudio/[id]/tabs/ReporteTab.tsx': {
     estado: 'FALTA',
     de: 'back',

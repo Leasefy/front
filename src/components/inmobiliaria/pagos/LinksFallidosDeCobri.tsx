@@ -10,6 +10,10 @@
  *     vivo se reenvía: dos links vivos = pago doble).
  *   · Marcar / quitar seguimiento — pausa a Cobri y a Reti para esa cuota.
  *   · Enviar a cobranza — respeta el plazo (Mori la toma al cumplirse).
+ *   · Enviar instrucciones de transferencia — por CORREO, sólo si la Ley 2300
+ *     lo deja (Nico 18-10, «Correo si la ley lo deja»: un solo canal por
+ *     semana; si esta semana ya se le escribió por WhatsApp no sale y la fila
+ *     dice desde cuándo).
  *
  * Lo que le escribe al inquilino sale por Cobri en el horario de ley y con la
  * Ley 2300 (un contacto al día): por eso se confirma antes y la fila lo dice.
@@ -32,16 +36,34 @@ interface Boton {
   accion: AccionDeLosFallidos
   label: string
   icon: Icon
-  /** Le escribe al inquilino: se confirma antes. */
-  escribe?: boolean
+  /** Lo que se le dice antes de hacerlo (le escribe al inquilino o lo pasa a cobranza). Sin esto, se hace directo. */
+  confirmacion?: string
+  /** El botón de la confirmación, cuando `label` no cabe al lado de «Cancelar» (el cuadro mide 420 px). */
+  confirmarCon?: string
 }
 
+const POR_WHATSAPP =
+  'Cobri le escribe por WhatsApp a cada inquilino en el horario de ley. Si hoy ya se le escribió a alguno, la Ley 2300 no deja salir el suyo y su fila lo dice.'
+
 const BOTONES: Boton[] = [
-  { accion: 'reenviar', label: 'Reenviar links', icon: LinkSimple, escribe: true },
-  { accion: 'generar', label: 'Generar links nuevos', icon: ArrowsClockwise, escribe: true },
+  { accion: 'reenviar', label: 'Reenviar links', icon: LinkSimple, confirmacion: POR_WHATSAPP },
+  { accion: 'generar', label: 'Generar links nuevos', icon: ArrowsClockwise, confirmacion: POR_WHATSAPP },
   { accion: 'seguimiento', label: 'Marcar en seguimiento', icon: ClipboardText },
   { accion: 'quitar_seguimiento', label: 'Quitar seguimiento', icon: XCircle },
-  { accion: 'cobranza', label: 'Enviar a cobranza', icon: Headset },
+  {
+    accion: 'cobranza',
+    label: 'Enviar a cobranza',
+    icon: Headset,
+    confirmacion: 'Si ya pasó el plazo, Mori la toma ya; si no, la toma el día en que se cumple.',
+  },
+  {
+    accion: 'transferencia',
+    label: 'Enviar instrucciones de transferencia',
+    icon: Bank,
+    confirmarCon: 'Enviar por correo',
+    confirmacion:
+      'Cobri le manda por correo la cuenta de la inmobiliaria, el valor y la referencia. La Ley 2300 deja un solo canal por semana: si esta semana ya se le escribió por WhatsApp, no sale y su fila dice desde cuándo. Si sale, esta semana Cobri ya no le escribe por WhatsApp.',
+  },
 ]
 
 export function LinksFallidosDeCobri({
@@ -89,13 +111,11 @@ export function LinksFallidosDeCobri({
   async function pedir(b: Boton) {
     const cuotas = [...marcadas]
     if (cuotas.length === 0) return
-    if (b.escribe || b.accion === 'cobranza') {
+    if (b.confirmacion) {
       const ok = await confirmar({
         titulo: tr('¿{accion} para {n}?', { accion: tr(b.label), n: cuotas.length === 1 ? tr('1 cuota') : tr('{n} cuotas', { n: cuotas.length }) }),
-        descripcion: b.escribe
-          ? tr('Cobri le escribe por WhatsApp a cada inquilino en el horario de ley. Si hoy ya se le escribió a alguno, la Ley 2300 no deja salir el suyo y su fila lo dice.')
-          : tr('Si ya pasó el plazo, Mori la toma ya; si no, la toma el día en que se cumple.'),
-        accion: tr(b.label),
+        descripcion: tr(b.confirmacion),
+        accion: tr(b.confirmarCon ?? b.label),
       })
       if (!ok) return
     }
@@ -125,7 +145,7 @@ export function LinksFallidosDeCobri({
         <div className="space-y-1">
           <h2 className="text-base font-semibold text-fg">{tr('Links de pago de Cobri que no se pagaron')}</h2>
           <p className="text-sm text-fg-muted max-w-2xl">
-            {tr('Marca las cuotas y elige qué hacer. Lo que le escribe al inquilino sale por Cobri en el horario de ley y con la Ley 2300 (un contacto al día).')}
+            {tr('Marca las cuotas y elige qué hacer. Lo que le escribe al inquilino sale por Cobri en el horario de ley y con la Ley 2300 (un contacto al día y un solo canal por semana).')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2" data-testid="acciones-masivas">
@@ -153,16 +173,6 @@ export function LinksFallidosDeCobri({
               {tr(b.label)}
             </Button>
           ))}
-          <Button
-            size="sm"
-            variant="outline"
-            hideArrow
-            disabled
-            title={tr('Todavía no: el correo con la cuenta de la inmobiliaria tiene que salir por Cobri, con la Ley 2300.')}
-          >
-            <Bank className="h-4 w-4" aria-hidden="true" />
-            {tr('Enviar instrucciones de transferencia')}
-          </Button>
         </div>
       </div>
       <ul className="divide-y divide-border-faint">

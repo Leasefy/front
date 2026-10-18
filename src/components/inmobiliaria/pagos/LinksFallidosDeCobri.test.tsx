@@ -11,7 +11,8 @@ import { act } from 'react'
 
 const aplicar = vi.fn()
 vi.mock('@/lib/api/pagos-fallidos.service', () => ({ pagosFallidosApi: { aplicar: (...a: unknown[]) => aplicar(...a) } }))
-vi.mock('@/components/ui/confirmar', () => ({ confirmar: vi.fn(async () => true) }))
+const confirmar = vi.fn(async (_: { titulo: string; descripcion: string; accion: string }) => true)
+vi.mock('@/components/ui/confirmar', () => ({ confirmar: (o: { titulo: string; descripcion: string; accion: string }) => confirmar(o) }))
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k, locale: 'es', formatCurrency: (n: number) => `$ ${n}` }),
   useOptionalI18n: () => ({ t: (k: string) => k, locale: 'es' }),
@@ -59,5 +60,25 @@ describe('LinksFallidosDeCobri — COBRI-13', () => {
     expect(aplicar).toHaveBeenCalledWith('quitar_seguimiento', ['q-1'])
     expect(cont.textContent).toContain('Sin seguimiento: Cobri vuelve a sus avisos.')
     expect(recargar).toHaveBeenCalled()
+  })
+
+  it('«Enviar instrucciones de transferencia» ya funciona: avisa la regla de un canal por semana y la fila dice desde cuándo', async () => {
+    aplicar.mockResolvedValue([
+      {
+        cuotaId: 'q-1',
+        resultado: 'no',
+        mensaje: 'No salió: esta semana ya se le contactó por otro canal (la Ley 2300 permite uno por semana). Se puede pedir otra vez el lunes 19 de octubre a las 8:00 a. m.',
+      },
+    ])
+    pintar()
+    expect(boton('Enviar instrucciones de transferencia').disabled).toBe(true)
+    await act(async () => { (cont.querySelector('[data-testid="marcar-q-1"]') as HTMLElement).click() })
+    expect(boton('Enviar instrucciones de transferencia').disabled).toBe(false)
+    await act(async () => { boton('Enviar instrucciones de transferencia').click() })
+    expect(confirmar.mock.calls[0][0].descripcion).toContain('un solo canal por semana')
+    // El cuadro mide 420 px: el texto largo empujaba «Cancelar» fuera del borde.
+    expect(confirmar.mock.calls[0][0].accion).toBe('Enviar por correo')
+    expect(aplicar).toHaveBeenCalledWith('transferencia', ['q-1'])
+    expect(cont.querySelector('[data-testid="resultado-q-1"]')?.textContent).toContain('Se puede pedir otra vez el lunes 19 de octubre')
   })
 })

@@ -94,7 +94,8 @@ describe('<BloqueDeCategoria>', () => {
         },
       ],
       [{ kind: 'seccion', seccion: 'INFERENCE' }, (c) => expect(c).toContain('border-dashed')],
-      [{ kind: 'seccion', seccion: 'RECOMMENDATION' }, (c) => expect(c).toContain('border-l-4')],
+      // Nico (18-10-2026): la recomendación ya no lleva la línea gruesa; la distinguen su etiqueta y su icono.
+      [{ kind: 'seccion', seccion: 'RECOMMENDATION' }, (c) => expect(c).not.toContain('border-l-4')],
     ]
     for (const [origen, bordes] of casos) {
       montar(

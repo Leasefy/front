@@ -10,9 +10,9 @@
  *
  * Choque UI-SPEC §6.3 ↔ D13-9 (P2, manda el CONTEXT): el UI-SPEC rotula las seis secciones; D13-9 fija tres categorías
  * visibles. La etiqueta PRINCIPAL es la categoría (`data-categoria`); la sección sobrevive como sub-etiqueta
- * (CONOCIMIENTO / MEMORIA / ACCIÓN), como icono y como `data-seccion`. El BORDE va por categoría (dato sólido,
- * inferencia discontinuo, recomendación con énfasis a la izquierda) y el FONDO por sección (la memoria en pozo): misma
- * categoría ⇒ mismo borde, y ninguna se distingue solo por color (docs/DESIGN.md §7).
+ * (CONOCIMIENTO / MEMORIA / ACCIÓN), como icono y como `data-seccion`. El BORDE va por categoría (dato y recomendación
+ * sólido, inferencia discontinuo; Nico, 18-10-2026, quitó la línea gruesa de la recomendación: la distinguen su etiqueta y
+ * su icono) y el FONDO por sección (la memoria en pozo); ninguna se distingue solo por color (docs/DESIGN.md §7).
  *
  * Un bloque sin hijos y sin razón de vacío no se pinta (no se inventa relleno).
  */
@@ -68,7 +68,8 @@ const SUBETIQUETA_DE_SECCION = {
 const BORDE_DE_CATEGORIA = {
   dato: 'border border-border',
   inferencia: 'border border-dashed border-border-strong',
-  recomendacion: 'border border-border border-l-4 border-l-border-strong',
+  // Nico (18-10-2026): sin la línea gruesa a la izquierda; la recomendación se dice con su etiqueta y su icono.
+  recomendacion: 'border border-border',
 } as const satisfies Record<CategoriaVisible, string>
 
 const FONDO_DE_SECCION = {

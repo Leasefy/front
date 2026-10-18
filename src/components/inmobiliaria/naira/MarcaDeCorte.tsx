@@ -59,7 +59,7 @@ export function MarcaDeCorte({ asOf, ahora }: MarcaDeCorteProps): JSX.Element {
   return (
     <span
       data-naira-asof={asOf}
-      className="inline-flex items-baseline gap-1 whitespace-nowrap text-overline tabular-nums text-fg-muted"
+      className="inline-flex flex-wrap items-baseline gap-x-1 text-overline tabular-nums text-fg-muted"
     >
       <span className="uppercase tracking-widest">{t('inmobiliaria.ai.naira.corte.prefijo')}</span>
       <time

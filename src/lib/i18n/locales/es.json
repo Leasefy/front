@@ -10336,6 +10336,48 @@
             "sin_veredicto": "Sin veredicto del día"
           }
         },
+        "cambiosDeModo": {
+          "titulo": "Cambios de modo que propone Naira",
+          "bajada": "Naira mira cómo trabaja cada agente y te propone el modo que le corresponde. Nada cambia hasta que una persona lo aprueba.",
+          "titulos": {
+            "subir": "Pasar a {{agente}} a {{modo}}",
+            "bajar": "Volver a {{agente}} a {{modo}}",
+            "manual": "Pasar a {{agente}} a {{modo}}"
+          },
+          "porque": {
+            "subir": "En los últimos {{dias}} días le aprobaron {{aprobadas}} y le descartaron {{descartadas}}; nada se deshizo. Te ahorraría unos {{aprobadas}} clics al mes.",
+            "bajar": "En los últimos {{dias}} días hizo {{solas}} cosas solo y {{mal}} salieron mal (fallaron o se deshicieron).",
+            "manual": "{{esperando}} propuestas suyas esperan hace más de {{dias}} días sin respuesta. En Manual prepara lo mismo, pero deja de avisarte."
+          },
+          "hoy": "Hoy está en {{modo}}.",
+          "aprobar": "Aprobar",
+          "rechazar": "Rechazar",
+          "estados": {
+            "abierto": "Por decidir",
+            "aprobado": "Aprobado",
+            "rechazado": "Rechazado",
+            "vencido": "Venció",
+            "aplicado": "Aplicado",
+            "no_aplicado": "No se aplicó"
+          },
+          "razones": {
+            "modo_cambiado": "Alguien ya le había cambiado el modo: no se tocó nada.",
+            "ya_no_corresponde": "Las cifras cambiaron y Naira ya no lo recomendaba: no se tocó nada.",
+            "no_se_pudo_aplicar": "No se pudo guardar el cambio: no cambió nada. Inténtalo desde el Piloto."
+          },
+          "resultados": {
+            "aplicado": "Listo: cambié el modo. Queda en la Actividad del Piloto.",
+            "rechazado": "Listo: Naira no lo vuelve a proponer en 7 días."
+          },
+          "conflicto": "Otra persona ya la decidió, o venció. Actualicé la lista.",
+          "noDisponible": "No pude hacerlo ahora. Vuelve a intentarlo en un momento.",
+          "recientes": "Decididas en los últimos 30 días",
+          "confirmarSubir": {
+            "titulo": "¿Pasar a {{agente}} a Automático?",
+            "si": "Sí, aprobar",
+            "verificar": "Verificar y aprobar"
+          }
+        },
         "aprobaciones": {
           "titulo": "Aprobaciones",
           "bajada": "Lo que Naira propone hacer. Nada se ejecuta sin que alguien con permiso lo apruebe.",
@@ -10347,6 +10389,20 @@
           "vacioTitulo": "No hay nada por decidir",
           "vacioDescripcion": "Cuando Naira proponga algo, lo verás aquí; al abrirla verás su consecuencia antes de que se ejecute.",
           "ocultasPorRol": "Hay elementos que tu rol no puede ver.",
+          "tabla": {
+            "porDecidir": "Por decidir",
+            "decididas": "Decididas",
+            "que": "Qué propone",
+            "tipo": "Tipo",
+            "para": "Para",
+            "estado": "Estado",
+            "vence": "Vence",
+            "propuesta": "Propuesta",
+            "cambioDeModo": "Cambio de modo",
+            "verDetalle": "Ver el detalle: {{que}}",
+            "sinDecididas": "Todavía no hay nada decidido.",
+            "detalle": "Detalle de la propuesta"
+          },
           "titularConRol": "{{tipo}} · Rol: {{rol}}",
           "titularOtroAgente": "{{tipo}} · Otro agente: {{evento}}",
           "titularExterno": "{{tipo}} · Para: {{aQuien}}",

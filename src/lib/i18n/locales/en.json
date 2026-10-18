@@ -10301,6 +10301,48 @@
             "sin_veredicto": "No verdict for the day"
           }
         },
+        "cambiosDeModo": {
+          "titulo": "Mode changes Naira suggests",
+          "bajada": "Naira watches how each agent works and suggests the mode that fits it. Nothing changes until someone approves it.",
+          "titulos": {
+            "subir": "Move {{agente}} to {{modo}}",
+            "bajar": "Move {{agente}} back to {{modo}}",
+            "manual": "Move {{agente}} to {{modo}}"
+          },
+          "porque": {
+            "subir": "In the last {{dias}} days {{aprobadas}} of its actions were approved and {{descartadas}} discarded; nothing was undone. It would save you about {{aprobadas}} clicks a month.",
+            "bajar": "In the last {{dias}} days it did {{solas}} things on its own and {{mal}} went wrong (failed or were undone).",
+            "manual": "{{esperando}} of its proposals have been waiting for more than {{dias}} days without an answer. In Manual it prepares the same work but stops notifying you."
+          },
+          "hoy": "Today it is in {{modo}}.",
+          "aprobar": "Approve",
+          "rechazar": "Reject",
+          "estados": {
+            "abierto": "To decide",
+            "aprobado": "Approved",
+            "rechazado": "Rejected",
+            "vencido": "Expired",
+            "aplicado": "Applied",
+            "no_aplicado": "Not applied"
+          },
+          "razones": {
+            "modo_cambiado": "Someone had already changed its mode: nothing was touched.",
+            "ya_no_corresponde": "The numbers changed and Naira no longer recommended it: nothing was touched.",
+            "no_se_pudo_aplicar": "The change could not be saved: nothing changed. Try it from the Autopilot."
+          },
+          "resultados": {
+            "aplicado": "Done: I changed the mode. It shows in the Autopilot activity.",
+            "rechazado": "Done: Naira won't suggest it again for 7 days."
+          },
+          "conflicto": "Someone already decided it, or it expired. I refreshed the list.",
+          "noDisponible": "I couldn't do it right now. Try again in a moment.",
+          "recientes": "Decided in the last 30 days",
+          "confirmarSubir": {
+            "titulo": "Move {{agente}} to Automatic?",
+            "si": "Yes, approve",
+            "verificar": "Verify and approve"
+          }
+        },
         "aprobaciones": {
           "titulo": "Approvals",
           "bajada": "What Naira proposes to do. Nothing runs unless someone with permission approves it.",
@@ -10312,6 +10354,20 @@
           "vacioTitulo": "There's nothing to decide",
           "vacioDescripcion": "When Naira proposes something, you'll see it here; when you open it, you'll see its consequence before it runs.",
           "ocultasPorRol": "There are items your role can't see.",
+          "tabla": {
+            "porDecidir": "To decide",
+            "decididas": "Decided",
+            "que": "What it suggests",
+            "tipo": "Type",
+            "para": "For",
+            "estado": "Status",
+            "vence": "Expires",
+            "propuesta": "Suggested",
+            "cambioDeModo": "Mode change",
+            "verDetalle": "See the detail: {{que}}",
+            "sinDecididas": "Nothing has been decided yet.",
+            "detalle": "Suggestion detail"
+          },
           "titularConRol": "{{tipo}} · Role: {{rol}}",
           "titularOtroAgente": "{{tipo}} · Another agent: {{evento}}",
           "titularExterno": "{{tipo}} · To: {{aQuien}}",

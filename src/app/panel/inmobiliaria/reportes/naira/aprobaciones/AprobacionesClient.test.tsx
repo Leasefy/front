@@ -1,9 +1,9 @@
 /**
  * AprobacionesClient.test.tsx — la pestaña Aprobaciones de Naira (13-05, Tarea 4).
  *
- * Qué prueba: el ok pinta las propuestas «Por decidir» y «Recientes» en el orden del servidor, la consecuencia solo con sus
- * cortes al lado (E13-6 de punta a punta) y las tareas como lectura secundaria; nunca se pide el detalle de una propuesta
- * (FG13-14); un 403 al volver a la pestaña no deja nada (FG13-1); las tareas sin `task-view` no se piden y con un 403
+ * Qué prueba: el ok pinta las propuestas en UNA tabla (18-10-2026), pestañas «Por decidir» y «Decididas», en el orden
+ * del servidor, la consecuencia solo con sus cortes al lado (E13-6 de punta a punta) y las tareas como lectura secundaria;
+ * la tabla nunca pide el detalle de una propuesta: lo pide el cajón al abrir la fila (FG13-14); un 403 al volver a la pestaña no deja nada (FG13-1); las tareas sin `task-view` no se piden y con un 403
  * desaparecen sin rastro (UI-SPEC §8.2); cancelar y la bitácora dependen de su acción; el vacío no miente (P13); los
  * conteos de Naira no se escriben (U5); con datos de ejemplo se marca y no se cancela; los enlaces salen del registro; y
  * nada dice quién decidió (B-5).
@@ -18,7 +18,8 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { leer, leerT, leerDetalle, cancelar, permisos } = vi.hoisted(() => ({
+const { leer, leerT, leerDetalle, cancelar, permisos, leerCambios } = vi.hoisted(() => ({
+  leerCambios: vi.fn(async (): Promise<unknown> => ({ kind: 'no_disponible' })),
   leer: vi.fn(),
   leerT: vi.fn(),
   leerDetalle: vi.fn(async () => ({ kind: 'no_disponible' })),
@@ -57,6 +58,10 @@ vi.mock('@/components/ui/popover', () => ({
   PopoverContent: ({ children }: { children?: React.ReactNode }) => <div data-testid="popover">{children}</div>,
 }))
 vi.mock('@/components/ui/toast', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
+vi.mock('@/lib/api/naira/cambios-de-modo', () => ({
+  leerCambiosDeModo: leerCambios,
+  decidirCambioDeModo: vi.fn(async () => ({ kind: 'no_disponible' })),
+}))
 
 import {
   RESPUESTA_ESTRICTA_POR_ENDPOINT,
@@ -66,7 +71,7 @@ import {
   type NairaTasksList,
 } from '@/lib/api/naira/contrato'
 import { EJEMPLOS_DE_NAIRA, USER_IDS_DE_EJEMPLO } from '@/lib/data/mock-naira'
-import { RUTA_DE_NAIRA, rutaDeLaPropuesta, rutaDelLoop } from '@/lib/nav/rutas-de-naira'
+import { RUTA_DE_NAIRA, rutaDelLoop } from '@/lib/nav/rutas-de-naira'
 
 import { AprobacionesClient } from './AprobacionesClient'
 
@@ -158,6 +163,18 @@ function enlaces(texto: string): HTMLAnchorElement[] {
   return Array.from(contenedor.querySelectorAll('a')).filter((a) => (a.textContent ?? '').includes(texto))
 }
 
+const filas = () => contenedor.querySelectorAll('[data-naira-fila]')
+
+/** Radix activa una pestaña con el botón principal del ratón. */
+async function irA(pestana: 'por_decidir' | 'decididas') {
+  const boton = contenedor.querySelector<HTMLElement>(`[data-naira-pestana="${pestana}"]`)
+  await act(async () => {
+    boton?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
+    boton?.click()
+  })
+  await asentar()
+}
+
 const botonCancelar = () => contenedor.querySelector<HTMLButtonElement>('[data-testid="naira-cancelar-tarea"]')
 
 beforeEach(() => {
@@ -196,17 +213,19 @@ describe('AprobacionesClient', () => {
     expect(h1).toHaveLength(1)
     expect(h1[0]?.textContent).toBe('Aprobaciones')
     expect(contenedor.textContent).toContain('Lo que Naira propone hacer. Nada se ejecuta sin que alguien con permiso lo apruebe.')
+    // UNA tabla: por decidir en el orden del servidor (P3, P2); la consecuencia con su corte al lado.
+    expect(contenedor.querySelector('[data-naira-tabla-de-aprobaciones="vence"]')).not.toBeNull()
     const porDecidir = contenedor.querySelector('[data-naira-grupo="por_decidir"]')
-    const hrefs = Array.from(porDecidir?.querySelectorAll('article a[href]') ?? []).map((a) => a.getAttribute('href'))
-    expect(hrefs).toEqual([rutaDeLaPropuesta('PROP-TOKEN-3'), rutaDeLaPropuesta('PROP-TOKEN-2')])
-    const recientes = contenedor.querySelector('[data-naira-grupo="recientes"]')
-    expect(Array.from(recientes?.querySelectorAll('article a[href]') ?? []).map((a) => a.getAttribute('href'))).toEqual([
-      rutaDeLaPropuesta('PROP-TOKEN-1'),
-    ])
-    const tarjeta2 = porDecidir?.querySelectorAll('article')[1]
-    const consecuencia = tarjeta2?.querySelector('[data-naira-consecuencia-del-listado]')
+    const suyas = Array.from(porDecidir?.querySelectorAll('[data-naira-fila="accion"]') ?? [])
+    expect(suyas.map((f) => f.getAttribute('data-naira-propuesta'))).toEqual(['pendiente', 'vencible'])
+    const consecuencia = suyas[1]?.querySelector('[data-naira-consecuencia-del-listado]')
     expect(consecuencia?.textContent).toBe('CONSECUENCIA-VISIBLE 2468')
     expect(consecuencia?.nextElementSibling?.querySelector(`[data-naira-asof="${CORTE}"]`)).not.toBeNull()
+    expect(contenedor.querySelector('[data-naira-pestana="por_decidir"]')?.textContent).toContain('2')
+    expect(contenedor.querySelector('[data-naira-pestana="decididas"]')?.textContent).toContain('1')
+    await irA('decididas')
+    const recientes = contenedor.querySelector('[data-naira-grupo="recientes"]')
+    expect(Array.from(recientes?.querySelectorAll('[data-naira-fila="accion"]') ?? []).map((f) => f.getAttribute('data-naira-propuesta'))).toEqual(['aprobada'])
     const seccion = contenedor.querySelector('[data-naira-tareas]')
     expect(seccion?.querySelector('h2')?.textContent).toBe('Tareas creadas por Naira')
     const fila = seccion?.querySelector('[data-naira-tarea="abierta"]')
@@ -219,23 +238,31 @@ describe('AprobacionesClient', () => {
     expect(leerT).toHaveBeenCalledWith('AGY-1')
   })
 
-  it('[N13:detalle-solo-al-abrir] la pestaña nunca pide el detalle de una propuesta', async () => {
+  it('[N13:detalle-solo-al-abrir] la tabla nunca pide el detalle de una propuesta: lo pide el cajón al abrir la fila', async () => {
     responder(LISTA)
     responderTareas(TAREAS)
     await montar()
     await volverAlFoco()
     expect(leer).toHaveBeenCalledTimes(2)
-    const revisar = enlaces('Revisar propuesta')
-    expect(revisar.length).toBe(3)
+    const lasFilas = Array.from(filas()) as HTMLElement[]
+    expect(lasFilas.length).toBe(2)
     act(() => {
-      for (const a of revisar) {
-        for (const tipo of ['mouseover', 'mouseenter', 'focus', 'focusin']) a.dispatchEvent(new Event(tipo, { bubbles: true }))
-        a.focus()
+      for (const f of lasFilas) {
+        for (const tipo of ['mouseover', 'mouseenter', 'focus', 'focusin']) f.dispatchEvent(new Event(tipo, { bubbles: true }))
+        f.focus()
       }
     })
     await asentar()
     expect(leerDetalle).toHaveBeenCalledTimes(0)
-    for (const a of revisar) expect(a.getAttribute('data-prefetch')).toBe('false')
+    expect(enlaces('Revisar propuesta')).toHaveLength(0)
+    // Abrir la fila ES abrir la ficha: recién ahí se pide el detalle, una vez.
+    await act(async () => {
+      lasFilas[0]?.click()
+    })
+    await asentar()
+    expect(leerDetalle).toHaveBeenCalledTimes(1)
+    expect(leerDetalle).toHaveBeenCalledWith('AGY-1', 'PROP-TOKEN-3')
+    expect(document.querySelector('[data-naira-cajon-de-aprobacion="accion"]')).not.toBeNull()
   })
 
   it('[N13:listado-sin-consecuencia] la consecuencia sin un corte válido no aparece', async () => {
@@ -251,7 +278,7 @@ describe('AprobacionesClient', () => {
     responder(LISTA)
     responderTareas(TAREAS)
     await montar()
-    expect(contenedor.innerHTML).toContain('PROP-TOKEN-3')
+    expect(filas().length).toBeGreaterThan(0)
     leer.mockImplementation(async () => ({ kind: 'sin_permiso' }))
     await volverAlFoco()
     const cartel = contenedor.querySelector('[data-testid="naira-sin-permiso"]')
@@ -261,7 +288,7 @@ describe('AprobacionesClient', () => {
     expect(contenedor.innerHTML).not.toContain('PROP-TOKEN')
     expect(contenedor.innerHTML).not.toContain('TAREA-TOKEN-1')
     expect(contenedor.textContent).not.toContain('Tareas creadas por Naira')
-    expect(contenedor.querySelector('article')).toBeNull()
+    expect(filas()).toHaveLength(0)
     expect(contenedor.querySelector('[data-naira-tareas]')).toBeNull()
     expect(contenedor.querySelector('[data-naira-numero]')).toBeNull()
     expect(leer).toHaveBeenCalledTimes(2)
@@ -282,7 +309,7 @@ describe('AprobacionesClient', () => {
       expect(contenedor.textContent).not.toContain('Tareas creadas por Naira')
       expect(contenedor.innerHTML).not.toContain('TAREA-TOKEN-1')
       expect(contenedor.textContent).not.toContain('Naira no tiene tareas abiertas.')
-      expect(contenedor.querySelectorAll('article').length, fallo.kind).toBe(3)
+      expect(filas().length, fallo.kind).toBe(2)
     }
   })
 
@@ -294,7 +321,7 @@ describe('AprobacionesClient', () => {
     await volverAlFoco()
     expect(leerT).not.toHaveBeenCalled()
     expect(contenedor.querySelector('[data-naira-tareas]')).toBeNull()
-    expect(contenedor.querySelectorAll('article')).toHaveLength(3)
+    expect(filas()).toHaveLength(2)
   })
 
   it('[N13:cancelar-segun-permiso] sin task-cancel no hay «Cancelar tarea»; con él, sí', async () => {
@@ -349,7 +376,8 @@ describe('AprobacionesClient', () => {
     responder(SOLO_RECIENTE)
     await montar()
     expect(contenedor.querySelector('[data-naira-grupo="por_decidir"] [data-testid="naira-aprobaciones-vacio"]')).not.toBeNull()
-    expect(contenedor.querySelectorAll('[data-naira-grupo="recientes"] article')).toHaveLength(1)
+    await irA('decididas')
+    expect(contenedor.querySelectorAll('[data-naira-grupo="recientes"] [data-naira-fila]')).toHaveLength(1)
   })
 
   it('[N13:conteos-sin-numeral] los elementos ocultos se dicen sin número', async () => {
@@ -393,8 +421,15 @@ describe('AprobacionesClient', () => {
     responder(SIN_IDS)
     responderTareas(TAREAS_SIN_LOOP)
     await montar()
-    expect(contenedor.querySelector('article')).not.toBeNull()
+    expect(filas()).toHaveLength(1)
     expect(enlaces('Revisar propuesta')).toHaveLength(0)
+    // Sin id no hay ficha que abrir: tocar la fila no abre nada ni pide nada.
+    await act(async () => {
+      ;(filas()[0] as HTMLElement | undefined)?.click()
+    })
+    await asentar()
+    expect(leerDetalle).not.toHaveBeenCalled()
+    expect(document.querySelector('[data-naira-cajon-de-aprobacion="accion"]')).toBeNull()
     expect(contenedor.querySelector('[data-naira-tarea]')).not.toBeNull()
     expect(enlaces('Ver la bitácora')).toHaveLength(0)
 
@@ -413,8 +448,51 @@ describe('AprobacionesClient', () => {
     responderTareas(TAREAS)
     await montar()
     expect(contenedor.querySelector('[data-testid="naira-apagada"]')).not.toBeNull()
-    expect(contenedor.querySelector('article')).toBeNull()
+    expect(filas()).toHaveLength(0)
     expect(contenedor.querySelector('[data-naira-tareas]')).toBeNull()
+  })
+
+  it('[CAMBIO:en-la-tabla] quien aprueba ve los cambios de modo en la MISMA tabla y su fila abre el cajón con Aprobar', async () => {
+    const CAMBIO = {
+      id: 'MODO-1',
+      agente: 'calidad',
+      nombre: 'Niti (calidad de las publicaciones)',
+      de: 'copiloto',
+      a: 'sombra',
+      regla: 'manual',
+      cifras: { esperando: 60, dias: 7 },
+      porQue: '',
+      propuestoEn: '2026-10-18T16:00:00.000Z',
+      expiraEn: '2099-10-25T16:00:00.000Z',
+      estado: 'abierto',
+      razon: null,
+    }
+    leerCambios.mockImplementation(async () => ({ kind: 'ok', cambios: [CAMBIO] }))
+    permisos.conjunto = new Set(['action-view', 'action-approve-internal', 'task-view'])
+    responder(LISTA)
+    responderTareas(TAREAS)
+    await montar()
+    expect(leerCambios).toHaveBeenCalledWith('AGY-1')
+    const fila = contenedor.querySelector<HTMLElement>('[data-naira-grupo="por_decidir"] [data-naira-fila="modo"]')
+    expect(fila?.textContent).toContain('Pasar a Niti (calidad de las publicaciones) a Manual')
+    expect(fila?.textContent).toContain('Cambio de modo')
+    expect(filas()).toHaveLength(3)
+    await act(async () => {
+      fila?.click()
+    })
+    await asentar()
+    const cajon = document.querySelector('[data-naira-cajon-de-aprobacion="modo"]')
+    expect(cajon?.textContent).toContain('60 propuestas suyas esperan hace más de 7 días')
+    expect(Array.from(cajon?.querySelectorAll('button') ?? []).some((b) => b.textContent?.trim() === 'Aprobar')).toBe(true)
+    expect(leerDetalle).not.toHaveBeenCalled()
+  })
+
+  it('[CAMBIO:sin-permiso] sin permiso de aprobar no se piden los cambios de modo', async () => {
+    leerCambios.mockClear()
+    responder(LISTA)
+    await montar()
+    expect(leerCambios).not.toHaveBeenCalled()
+    expect(contenedor.querySelector('[data-naira-fila="modo"]')).toBeNull()
   })
 
   it('[N13:b5-sin-persona] nada dice quién decidió ni quién canceló', async () => {

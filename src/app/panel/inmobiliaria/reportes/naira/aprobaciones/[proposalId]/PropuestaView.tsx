@@ -42,6 +42,8 @@ export interface PropuestaViewProps {
   readonly hrefDeLaExplicacion: string | null
   /** El `recargar()` de la ficha: «Actualizar propuesta» y «Cargar la versión actual». */
   readonly onRecargar: () => void
+  /** Dentro del cajón de Aprobaciones (18-10-2026): sin el título grande (el cajón trae el suyo). */
+  readonly enCajon?: boolean
 }
 
 export function PropuestaView({
@@ -50,6 +52,7 @@ export function PropuestaView({
   hrefDeLaSenal,
   hrefDeLaExplicacion,
   onRecargar,
+  enCajon = false,
 }: PropuestaViewProps): JSX.Element {
   const { t } = useI18n()
   const [decidida, setDecidida] = useState<'aprobada' | 'rechazada' | null>(null)
@@ -68,9 +71,11 @@ export function PropuestaView({
     <div className="space-y-6">
       <header className="space-y-1">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight leading-tight text-fg">
-            {t('inmobiliaria.ai.naira.propuesta.titulo')}
-          </h1>
+          {enCajon ? null : (
+            <h1 className="text-2xl font-semibold tracking-tight leading-tight text-fg">
+              {t('inmobiliaria.ai.naira.propuesta.titulo')}
+            </h1>
+          )}
           <Badge variant="secondary">{t(CLAVE_DEL_ESTADO_DE_LA_PROPUESTA[estadoMostrado])}</Badge>
         </div>
       </header>

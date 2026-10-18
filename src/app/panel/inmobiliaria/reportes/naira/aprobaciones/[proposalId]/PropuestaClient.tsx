@@ -32,7 +32,12 @@ function EsqueletoDeLaPropuesta(): JSX.Element {
   )
 }
 
-export function PropuestaClient({ proposalId }: { readonly proposalId: string }): JSX.Element {
+/**
+ * `enCajon` (18-10-2026, «todo en una tabla»): la misma ficha dentro del cajón de Aprobaciones, sin el relleno de la
+ * página, sin «Volver a la lista» y sin el título grande. Abrir el cajón ES abrir la ficha (D13-14): recién ahí se pide el
+ * detalle.
+ */
+export function PropuestaClient({ proposalId, enCajon = false }: { readonly proposalId: string; readonly enCajon?: boolean }): JSX.Element {
   const { t } = useI18n()
   const { canAccess } = usePermissionsContext()
   const { estado, recargar } = useNairaPropuesta(proposalId)
@@ -40,7 +45,7 @@ export function PropuestaClient({ proposalId }: { readonly proposalId: string })
   const etiquetaVolver = t('inmobiliaria.ai.naira.propuesta.volverALaLista')
 
   return (
-    <div className="space-y-6 p-6 lg:p-8">
+    <div className={enCajon ? 'space-y-6' : 'space-y-6 p-6 lg:p-8'}>
       <VistaDeNaira
         nombre="propuesta"
         estado={estado}
@@ -52,8 +57,9 @@ export function PropuestaClient({ proposalId }: { readonly proposalId: string })
           const { senal, investigacion } = detalle.razonamiento
           return (
             <div className="space-y-6">
-              <VolverALaLista href={RUTA_DE_APROBACIONES} label={etiquetaVolver} />
+              {enCajon ? null : <VolverALaLista href={RUTA_DE_APROBACIONES} label={etiquetaVolver} />}
               <PropuestaView
+                enCajon={enCajon}
                 key={detalle.huella}
                 proposalId={proposalId}
                 detalle={detalle}

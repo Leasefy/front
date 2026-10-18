@@ -35870,6 +35870,175 @@
         ],
         "additionalProperties": false
       },
+      "NairaCambioDeModo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "agente": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "de": {
+            "type": "string",
+            "enum": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          },
+          "a": {
+            "type": "string",
+            "enum": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          },
+          "regla": {
+            "type": "string",
+            "enum": [
+              "subir",
+              "bajar",
+              "manual"
+            ]
+          },
+          "cifras": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "porQue": {
+            "type": "string"
+          },
+          "propuestoEn": {
+            "type": "string"
+          },
+          "expiraEn": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "abierto",
+              "aprobado",
+              "rechazado",
+              "vencido",
+              "aplicado",
+              "no_aplicado"
+            ]
+          },
+          "razon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "modo_cambiado",
+              "ya_no_corresponde",
+              "no_se_pudo_aplicar"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "agente",
+          "nombre",
+          "de",
+          "a",
+          "regla",
+          "cifras",
+          "porQue",
+          "propuestoEn",
+          "expiraEn",
+          "estado",
+          "razon"
+        ]
+      },
+      "NairaCambiosDeModo": {
+        "type": "object",
+        "properties": {
+          "cambios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NairaCambioDeModo"
+            }
+          }
+        },
+        "required": [
+          "cambios"
+        ]
+      },
+      "NairaCambioDeModoError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "error",
+          "reason"
+        ]
+      },
+      "NairaCambioDeModoDecision": {
+        "type": "object",
+        "properties": {
+          "resultado": {
+            "type": "string",
+            "enum": [
+              "aplicado",
+              "no_aplicado",
+              "rechazado"
+            ]
+          },
+          "razon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "modo_cambiado",
+              "ya_no_corresponde",
+              "no_se_pudo_aplicar"
+            ]
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "resultado",
+          "razon",
+          "mensaje"
+        ]
+      },
+      "NairaCambioDeModoDecisionRequest": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "aprobar",
+              "rechazar"
+            ]
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "additionalProperties": false
+      },
       "AseguradoraQuote": {
         "type": "object",
         "properties": {
@@ -88158,6 +88327,214 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NairaActionsError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/naira/cambios-de-modo": {
+      "get": {
+        "operationId": "getNairaCambiosDeModo",
+        "summary": "Las propuestas de Naira de cambiar el modo de un agente del Piloto (últimos 30 días)",
+        "tags": [
+          "agency",
+          "naira"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Las propuestas, lo abierto primero",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NairaCambiosDeModo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NairaCambioDeModoError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT de agencia o JWT inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NairaCambioDeModoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Fuera de la matriz, o subir a Automático sin el segundo factor de ahora",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NairaCambioDeModoError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Naira apagada para el tenant, o la propuesta no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NairaCambioDeModoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos o Piloto no disponibles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NairaCambioDeModoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/naira/cambios-de-modo/{cambioId}/decision": {
+      "post": {
+        "operationId": "decideNairaCambioDeModo",
+        "summary": "Aprobar o rechazar una propuesta de cambio de modo de Naira (aprobar aplica el modo con tu sesión)",
+        "tags": [
+          "agency",
+          "naira"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "example": "22222222-2222-4222-8222-222222222222"
+            },
+            "required": true,
+            "name": "cambioId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NairaCambioDeModoDecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "La decisión quedó registrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NairaCambioDeModoDecision"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NairaCambioDeModoError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT de agencia o JWT inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NairaCambioDeModoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Fuera de la matriz, o subir a Automático sin el segundo factor de ahora",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NairaCambioDeModoError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Naira apagada para el tenant, o la propuesta no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NairaCambioDeModoError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya decidida o vencida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NairaCambioDeModoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos o Piloto no disponibles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NairaCambioDeModoError"
                 }
               }
             }

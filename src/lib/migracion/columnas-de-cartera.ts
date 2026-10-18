@@ -118,23 +118,6 @@ export const COLUMNAS_DE_CARTERA: readonly (ColumnaDePlantilla & { campo: CampoD
   { campo: 'valor', titulo: 'Saldo pendiente', obligatoria: true, ejemplo: '1500000', alias: ALIAS.valor },
 ]
 
-export const TITULO_DEL_CAMPO: Record<CampoDeCartera, string> = {
-  fechaVencimiento: 'Fecha de vencimiento',
-  fechaFactura: 'Fecha de la factura',
-  documento: 'Documento del inquilino',
-  nombre: 'Nombre del inquilino',
-  concepto: 'Concepto',
-  valor: 'Saldo pendiente',
-}
-
-export const TITULO_DE_LO_QUE_FALTA: Record<CampoQueFalta, string> = {
-  documento: 'el documento del inquilino',
-  nombre: 'el nombre del inquilino',
-  fecha: 'la fecha de vencimiento (o la de la factura)',
-  concepto: 'el concepto',
-  valor: 'el saldo pendiente',
-}
-
 export interface MapeoDeCartera {
   /** El encabezado tal como venía en el archivo. */
   columna: string
@@ -242,6 +225,35 @@ export function remapearCartera(
     if (campo !== null && m.campo === campo) return { ...m, campo: null, exacto: false, esManual: undefined }
     return m
   })
+}
+
+/** Los campos que la pantalla deja elegir, en el orden en que los muestra. */
+export const CAMPOS_DE_CARTERA: readonly CampoDeCartera[] = [
+  'documento',
+  'nombre',
+  'fechaVencimiento',
+  'fechaFactura',
+  'concepto',
+  'valor',
+]
+
+/**
+ * La persona eligió, para un CAMPO, de qué columna sale (o `null` = ninguna).
+ * Es `remapearCartera` visto desde el campo: la pantalla pregunta «¿de dónde
+ * sale el saldo?», no «¿qué es la columna X?».
+ */
+export function elegirColumnaDelCampo(
+  mapeo: readonly MapeoDeCartera[],
+  campo: CampoDeCartera,
+  columna: string | null,
+): MapeoDeCartera[] {
+  if (columna !== null) return remapearCartera(mapeo, columna, campo)
+  return mapeo.map((m) => (m.campo === campo ? { columna: m.columna, campo: null, exacto: false } : m))
+}
+
+/** Los encabezados que se le ofrecen a un campo: nunca uno vacío, ni del propietario para documento/nombre. */
+export function encabezadosParaElCampo(encabezados: readonly string[], campo: CampoDeCartera): string[] {
+  return encabezados.filter((e) => e.trim() !== '' && opcionesParaLaColumna(e).includes(campo))
 }
 
 /** Lo que todavía no se ha señalado, en el orden en que la pantalla lo pide. */

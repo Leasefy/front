@@ -5,6 +5,8 @@ import { puntajeDeEncabezado } from '@/components/migracion/encabezado-del-archi
 import {
   COLUMNAS_DE_CARTERA,
   columnasQueFaltan,
+  elegirColumnaDelCampo,
+  encabezadosParaElCampo,
   esDeUnPropietario,
   mapearColumnasDeCartera,
   opcionesParaLaColumna,
@@ -110,5 +112,26 @@ describe('columnas de la cartera por factura (T-0168)', () => {
     expect(p.obligatorias).toBeGreaterThanOrEqual(4)
     const otra = puntajeDeEncabezado(['x', 'y'], COLUMNAS_DE_CARTERA)
     expect(otra.obligatorias).toBe(0)
+  })
+
+  it('por campo: elegir la columna de un campo suelta la que lo tenía, y null lo deja sin columna', () => {
+    const inicial = mapearColumnasDeCartera([...ENCABEZADOS_DEL_INFORME_DE_CARTERA])
+    const a = elegirColumnaDelCampo(inicial, 'valor', 'Valor Total')
+    expect(a.find((m) => m.campo === 'valor')?.columna).toBe('Valor Total')
+    expect(a.find((m) => m.columna === 'Saldo Pendiente')?.campo).toBeNull()
+    const b = elegirColumnaDelCampo(a, 'valor', null)
+    expect(b.some((m) => m.campo === 'valor')).toBe(false)
+    // Un propietario no puede ser el documento del inquilino.
+    expect(elegirColumnaDelCampo(inicial, 'documento', 'Documento Propietario')).toEqual(inicial)
+  })
+
+  it('los encabezados que se ofrecen para un campo: sin los del propietario en documento y nombre, sin vacíos', () => {
+    const todos = ['', ...ENCABEZADOS_DEL_INFORME_DE_CARTERA]
+    const paraDocumento = encabezadosParaElCampo(todos, 'documento')
+    expect(paraDocumento).toContain('Documento Inquilino')
+    expect(paraDocumento).not.toContain('Documento Propietario')
+    expect(paraDocumento).not.toContain('Nombre Propietario')
+    expect(paraDocumento).not.toContain('')
+    expect(encabezadosParaElCampo(todos, 'concepto')).toContain('Documento Propietario')
   })
 })

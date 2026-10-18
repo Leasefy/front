@@ -10902,6 +10902,9 @@
           },
           "persisted": {
             "type": "boolean"
+          },
+          "escalationClosed": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -14826,6 +14829,9 @@
           },
           "director": {
             "$ref": "#/components/schemas/PilotoDirectorEnLaBandeja"
+          },
+          "cuotaId": {
+            "type": "string"
           }
         },
         "required": [
@@ -16465,6 +16471,44 @@
           "reciboIds"
         ],
         "additionalProperties": false
+      },
+      "PilotoPagoEnRevisionResponse": {
+        "type": "object",
+        "properties": {
+          "resultado": {
+            "type": "string",
+            "enum": [
+              "CONCILIADO",
+              "YA_ESTABA"
+            ]
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "resultado",
+          "mensaje"
+        ]
+      },
+      "PilotoPagoEnRevisionAManoResponse": {
+        "type": "object",
+        "properties": {
+          "resultado": {
+            "type": "string",
+            "enum": [
+              "RESUELTO",
+              "YA_ESTABA"
+            ]
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "resultado",
+          "mensaje"
+        ]
       },
       "ConciliacionAgenteAnalisis": {
         "type": "object",
@@ -36038,6 +36082,52 @@
           "decision"
         ],
         "additionalProperties": false
+      },
+      "TraducirResponse": {
+        "type": "object",
+        "properties": {
+          "traducciones": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "traducidos": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "traducciones",
+          "traducidos"
+        ]
+      },
+      "TraducirError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "TraducirBody": {
+        "type": "object",
+        "properties": {
+          "textos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "minItems": 1,
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "textos"
+        ]
       },
       "AseguradoraQuote": {
         "type": "object",
@@ -59878,6 +59968,204 @@
           },
           "503": {
             "description": "Falta la migración del back (FALTA_UNA_MIGRACION) o el back no tiene la función",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/pagos-en-revision/{linkId}/reintentar": {
+      "post": {
+        "operationId": "pilotoReintentarPagoEnRevision",
+        "summary": "Piloto — aplicar otra vez un pago por link de Cobri que no se aplicó a la cuota",
+        "tags": [
+          "agency",
+          "piloto",
+          "pagos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "linkId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aplicado (o ya estaba)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPagoEnRevisionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin membresía o sin el permiso cobros:create del ERP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ese pago no es de esta inmobiliaria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Sigue sin aplicarse (con el porqué), o se está aplicando ahora",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "El back no respondió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El micro no está conectado al ERP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/pagos-en-revision/{linkId}/aplicado-a-mano": {
+      "post": {
+        "operationId": "pilotoPagoEnRevisionAplicadoAMano",
+        "summary": "Piloto — «Ya quedó aplicado»: cerrar un pago de Cobri que una persona registró a mano",
+        "tags": [
+          "agency",
+          "piloto",
+          "pagos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "linkId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resuelto (o ya estaba)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPagoEnRevisionAManoResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin membresía o sin el permiso cobros:create del ERP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ese pago no es de esta inmobiliaria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La cuota todavía debe: no se puede dar por resuelto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "El back no respondió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El micro no está conectado al ERP",
             "content": {
               "application/json": {
                 "schema": {
@@ -88535,6 +88823,85 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NairaCambioDeModoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/traducir": {
+      "post": {
+        "operationId": "postTraducir",
+        "summary": "Translate what a person wrote (a tenant WhatsApp, a team note) into English, on demand",
+        "description": "The \"Translate\" button of the English panel. Only what the person asks for is translated (claude-haiku-4-5); nothing is cached. Positions that could not be translated come back unchanged.",
+        "tags": [
+          "agency",
+          "idioma"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TraducirBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The texts in English",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraducirResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing / invalid bearer JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraducirError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not an active member of the agency",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraducirError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "AI cap reached (code: tope_de_ia)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraducirError"
                 }
               }
             }

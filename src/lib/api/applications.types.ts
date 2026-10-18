@@ -480,6 +480,8 @@ export interface EvaluationResult {
   };
   /** Detailed score breakdown by factor (replaces subscores) */
   score_breakdown?: ScoreBreakdown;
+  /** La Calificación Leasefy (18-10-2026): documentos + historial de la persona en Leasefy. */
+  calificacion_leasefy?: import('./calificacion-leasefy.service').CalificacionParaLaInmobiliaria;
   // Manual review gate
   /** When true, the landlord CANNOT approve — must review integrity_flags first */
   requires_manual_review?: boolean;

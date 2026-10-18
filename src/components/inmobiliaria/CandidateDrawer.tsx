@@ -1,5 +1,6 @@
 'use client';
 
+import { TarjetaDeCalificacion } from '@/components/calificacion/TarjetaDeCalificacion';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useLenis } from '@/components/providers/SmoothScroll';
@@ -572,6 +573,17 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
               </div>
             ) : (
               <>
+                {/* La Calificación Leasefy (18-10-2026): documentos + historial en Leasefy. */}
+                {evaluation?.calificacion_leasefy?.calificacion && (
+                  <div className="space-y-1.5">
+                    <TarjetaDeCalificacion calificacion={evaluation.calificacion_leasefy.calificacion} className="p-4" />
+                    <p className="text-xs text-fg-subtle">
+                      {evaluation.calificacion_leasefy.alcance === 'TODO_LEASEFY'
+                        ? tr('Con todo su historial en Leasefy.')
+                        : tr('Sólo lo que pasó con tu inmobiliaria: no autorizó compartir su calificación.')}
+                    </p>
+                  </div>
+                )}
                 {/* El score, con el color del nivel sólo en su ficha. */}
                 {level && totalScore !== undefined && levelColor && (
                   <div className="flex items-center gap-4">

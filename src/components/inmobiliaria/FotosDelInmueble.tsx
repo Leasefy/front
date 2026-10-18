@@ -279,7 +279,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
           <div className="space-y-4" data-testid="fotos-vacio">
             <p className="text-sm text-fg-muted">
               Este inmueble todavía no tiene fotos. Sin fotos, en el portal se ve un espacio vacío: sube las de la
-              ficha o las que tomó el agente.
+              ficha o las que tomó el asesor.
             </p>
             <SubidaDeFotos variante="grande" cupo={cupo} maximo={PROPERTY_PHOTO_MAX_COUNT} onArchivos={(a) => void subir(a)} aceptarPegado />
             {/* 🔴 La tercera forma de traerlas, y la que menos trabajo cuesta
@@ -379,7 +379,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
         {!cargando && !error && imagenes.length > 0 && (
           <p className="text-xs text-fg-muted">
             {cupo > 0
-              ? `Caben ${cupo} ${cupo === 1 ? 'foto más' : 'fotos más'}. Arrastralas acá, elígelas o pegalas con Ctrl+V. La primera es la portada.`
+              ? `Caben ${cupo} ${cupo === 1 ? 'foto más' : 'fotos más'}. Arrástralas acá, elígelas o pégalas con Ctrl+V. La primera es la portada.`
               : `Llegaste al máximo de ${PROPERTY_PHOTO_MAX_COUNT} fotos. Quita una para subir otra.`}
           </p>
         )}

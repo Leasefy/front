@@ -103,14 +103,9 @@ const EN_PANTALLA: Record<string, Promesa> = {
   // `/:planId` lo pide la ruta del servidor de la sesión de pago.
   // `app/inquilino/casos/page.tsx` salió de acá el 04-10-2026 (QA-INQ-95, PI-30):
   // ya no promete push ni WhatsApp; dice que los avisos quedan en la campana.
-  'app/panel/inmobiliaria/pagos/cobranza/fallidos/page.tsx': {
-    estado: 'FALTA',
-    de: 'back',
-    nota:
-      'Las acciones EN LOTE sobre pagos fallidos (reintentar todos, mandar el link ' +
-      'a todos). No hay endpoint de operación por lote; la acción por FILA sí es ' +
-      'real y sale del WorkItem.',
-  },
+  // `app/panel/inmobiliaria/pagos/cobranza/fallidos/page.tsx` salió de acá el
+  // 18-10-2026 (COBRI-13): las acciones en lote ya son reales
+  // (`POST /inmobiliaria/pagos-fallidos/acciones`), también la transferencia.
   'app/panel/inmobiliaria/postulaciones/estudio/[id]/tabs/ReporteTab.tsx': {
     estado: 'FALTA',
     de: 'back',
@@ -270,6 +265,13 @@ const LAS_QUE_NO_DICEN_PROXIMAMENTE: Record<string, Promesa> = {
 
 // ═══════════════════════════════════════════════════════════════════════════
 
+/**
+ * `frases-en.ts` es el inglés del panel (16-10-2026): traduce lo que dicen las
+ * pantallas, no promete nada por sí mismo. La promesa vive —y se declara— en la
+ * pantalla que llama `tr('Próximamente')`.
+ */
+const esElDiccionarioEnIngles = (ruta: string) => ruta.endsWith(join('lib', 'i18n', 'frases-en.ts'));
+
 function archivos(dir: string, salida: string[] = []): string[] {
   for (const entrada of readdirSync(dir)) {
     const ruta = join(dir, entrada);
@@ -277,7 +279,7 @@ function archivos(dir: string, salida: string[] = []): string[] {
       // Lo generado del OpenAPI no es una promesa del producto: es la copia de
       // la descripción de una ruta.
       if (!ruta.includes(join('api', 'generated'))) archivos(ruta, salida);
-    } else if (/\.tsx?$/.test(ruta) && !/\.test\.tsx?$/.test(ruta)) {
+    } else if (/\.tsx?$/.test(ruta) && !/\.test\.tsx?$/.test(ruta) && !esElDiccionarioEnIngles(ruta)) {
       salida.push(ruta);
     }
   }

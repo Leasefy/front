@@ -38,6 +38,7 @@ import {
   useEstadoDelServicio,
 } from '@/lib/conexion/servicio-no-disponible'
 import { cn } from '@/lib/utils'
+import { useTr } from '@/lib/i18n/use-tr'
 
 const ICONO: Record<TipoDeFallo, Icon> = {
   noExiste: MagnifyingGlass,
@@ -117,6 +118,7 @@ export function FalloDeCarga({
   enmarcado = true,
   className,
 }: FalloDeCargaProps) {
+  const tr = useTr();
   /*
    * Lo que el FRONT cree de tus permisos, para que el cartel pueda notar el
    * desacuerdo con lo que respondió el servidor. `…Safe` porque este cartel
@@ -258,7 +260,7 @@ export function FalloDeCarga({
         </p>
         {conReferencia && (
           <p className="text-xs text-fg-subtle">
-            Referencia: <span className="font-mono tabular-nums">{referencia}</span>
+            {tr("Referencia:")} <span className="font-mono tabular-nums">{referencia}</span>
           </p>
         )}
       </div>
@@ -291,7 +293,7 @@ export function FalloDeCarga({
                   en el 404. Con returnUrl para volver donde estaba, igual que
                   ProtectedRoute. */}
               <Link href={`/auth?returnUrl=${encodeURIComponent(rutaActual)}`}>
-                Volver a entrar
+                {tr("Volver a entrar")}
               </Link>
             </Button>
           )}
@@ -303,7 +305,7 @@ export function FalloDeCarga({
                   genérico de un 403 le dice a la persona que le pida permiso a
                   un administrador cuando ella lo es. */}
               <Link href="/panel/inmobiliaria/configuracion/seguridad">
-                Ir a activarlo
+                {tr("Ir a activarlo")}
               </Link>
             </Button>
           )}

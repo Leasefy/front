@@ -26,6 +26,7 @@ import type { DirectorHoy, MetaDelDirector, OrdenDelDirector } from '@/lib/api/p
 import type { EstadoDelOrbe } from '@/lib/agentes/agente-que-habla'
 import { restar, sumar } from '@/lib/plata/plata'
 import type { ComoSeMideLaTasa, TasaDeRecaudo } from '@/lib/tasa-de-recaudo'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 export const ZONA = 'America/Bogota'
 const DIA_MS = 86_400_000
@@ -655,7 +656,7 @@ export function tendenciaDeMora(dias: ReadonlyArray<{ fecha: string; valor: numb
 export function horasEnPalabras(h: number): string {
   if (!Number.isFinite(h) || h <= 0) return '0 h'
   if (h < 1) return `${Math.max(1, Math.round(h * 60))}\u00a0min` // redondeo: no es plata
-  return `${h.toLocaleString('es-CO', { maximumFractionDigits: h < 10 ? 1 : 0 })}\u00a0h`
+  return `${h.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: h < 10 ? 1 : 0 })}\u00a0h`
 }
 
 export interface BarraDeAcciones {

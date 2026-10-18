@@ -38,6 +38,7 @@ import { describirCargaAbierta, ubicacionCompleta } from './lib/describirCargaAb
 import { lineaDeLaCarga } from '@/components/migracion/datos-de-la-carga';
 import { leerClaveDeCarga, olvidarClaveDeCarga } from './lib/claveDeCarga';
 import { mensajeDeCarga } from './lib/mensajeDeCarga';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 export function CargasAMedias({
   lotes,
@@ -144,7 +145,7 @@ export function CargasAMedias({
                 {d.porRevisar > 0 ? (
                   <span className="text-fg-muted">
                     {' '}
-                    · {d.porRevisar.toLocaleString('es-CO')} por revisar
+                    · {d.porRevisar.toLocaleString(localeDeLasCifras())} por revisar
                   </span>
                 ) : null}
               </p>

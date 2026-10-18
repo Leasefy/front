@@ -35,8 +35,9 @@ import { errorDelPorcentajeDelIncremento } from "@/lib/contratos/limites-del-con
 import { plataEnPantalla } from "@/lib/plata/escribir-plata";
 import { diaLegible } from '@/lib/mandato/textos';
 import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
-const PESOS = plataEnPantalla("es-CO", {
+const PESOS = plataEnPantalla(localeDeLasCifras, {
   style: "currency",
   currency: "COP",
   maximumFractionDigits: 0,
@@ -188,7 +189,7 @@ export function IncrementosDelContrato({
         </p>
         {datos.correoSaleDeVerdad === false && (
           <p className="mt-1 text-caption text-warning-700 dark:text-warning-100" data-testid="correo-simulado">
-            En este entorno el correo no sale: enviar simula y no deja constancia.
+            El correo está apagado en esta copia de pruebas de Leasefy: enviar la carta no le llega a nadie ni deja constancia. En producción sí se manda.
           </p>
         )}
       </div>
@@ -610,5 +611,5 @@ function Aniversario({
 
 /** QA-CONT-95: «5,1» con coma decimal (es-CO), no «5.1». */
 export function porcentajeLegible(valor: number): string {
-  return valor.toLocaleString('es-CO', { maximumFractionDigits: 3 });
+  return valor.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 3 });
 }

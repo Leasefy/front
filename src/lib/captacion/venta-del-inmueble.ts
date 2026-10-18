@@ -15,6 +15,7 @@ import {
   FECHA_DE_LA_CAPTACION_HASTA,
   esDiaDelCalendario,
 } from './limites-de-la-captacion'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /** El precio de la escritura más alto: el techo de `Property.salePrice`. */
 export const PRECIO_DE_LA_ESCRITURA_MAXIMO_COP = 100_000_000_000
@@ -139,5 +140,5 @@ export function diaEnColombia(iso: string): string {
 
 /** `3` → «3 %»; `2.5` → «2,5 %». */
 export function porcentajeLegible(porcentaje: number): string {
-  return `${porcentaje.toLocaleString('es-CO', { maximumFractionDigits: 2 })} %`
+  return `${porcentaje.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 2 })} %`
 }

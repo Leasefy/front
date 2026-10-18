@@ -25,14 +25,18 @@ import type { components } from '@/lib/api/generated/agent'
 // ----- GET /daily-report/today ---------------------------------------------
 
 export interface DailyReportSummary {
-  pkr_7d_pct?: number
-  pkr_pct?: number
-  indice_morosidad_pct: number
+  /** null: ninguna promesa venció en la semana (MORI-22; antes el micro decía 100). */
+  pkr_7d_pct?: number | null
+  pkr_pct?: number | null
+  /** null: no se pudo medir (MORI-22: inquilinos en mora / con contrato vigente). */
+  indice_morosidad_pct: number | null
   compliance_violations_count?: number
   calls_outside_window_count: number
   payments_today_total_cop?: number
   payments_today_count?: number
-  connect_rate_pct?: number
+  connect_rate_pct?: number | null
+  /** De dónde sale la morosidad («1 de 728»); falta en un reporte anterior a MORI-22. */
+  morosidad_base?: { inquilinos_en_mora: number; inquilinos_con_contrato: number } | null
 }
 
 /** Per-row "next recommended step" narrative (additive — D-client-report). */

@@ -1,6 +1,7 @@
 import type { ChatDataTile } from '@leasefy/cadence';
 import type { ChatSnapshot } from '@/lib/types/beta-chat';
 import { formatCurrency } from '@/lib/format';
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /**
  * La tarjeta «estado de hoy» que va debajo de una respuesta cuando las cifras
@@ -19,7 +20,7 @@ type T = (clave: string, vars?: Record<string, string | number>) => string;
 
 /** COP compacto para un mosaico angosto: 8_420_000 → «$ 8,4 M». */
 export function copCompacto(valor: number): string {
-  return new Intl.NumberFormat('es-CO', {
+  return formatoDeCifras(localeDeLasCifras(), {
     style: 'currency',
     currency: 'COP',
     notation: 'compact',

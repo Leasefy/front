@@ -369,7 +369,7 @@ describe('InvitarAlEquipo — copiar', () => {
 describe('InvitarAlEquipo — correo no enviado', () => {
   it.each([
     ['failed', 'El correo no salió: pásale tú el enlace.', 'Correo no enviado'],
-    ['suppressed', 'Este entorno es de pruebas y no manda correos: pásale tú el enlace.', 'Correo retenido'],
+    ['suppressed', 'Esta copia de pruebas de Leasefy no manda correos: pásale tú el enlace.', 'Correo retenido'],
     ['not_configured', 'El servidor todavía no manda correos: pásale tú el enlace.', 'el servidor no manda correos'],
   ] as const)('%s: el bloque lo dice y la persona sale así en «Con acceso»', async (estado, enElBloque, enLaLista) => {
     acciones.invitar.mockResolvedValue(respuesta({ emailDelivered: false, emailStatus: estado }));

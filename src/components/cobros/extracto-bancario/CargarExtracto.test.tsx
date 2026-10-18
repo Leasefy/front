@@ -395,3 +395,13 @@ describe('🔴 CargarExtracto — los saldos y el período (Fase 1)', () => {
     expect(filas.map((f) => f.saldoCop)).toEqual([11_800_000, 11_755_000]);
   });
 });
+
+// CONC-4 (QA de agentes 17-10): «Quedan 12 por conciliar» al lado de «5 salidas
+// de plata» se leía como el total; arriba decía 17 pendientes.
+describe('entradasPorConciliar', () => {
+  it('dice que son ENTRADAS, con su número gramatical', async () => {
+    const { entradasPorConciliar } = await import('./CargarExtracto');
+    expect(entradasPorConciliar(12)).toBe('12 entradas por conciliar');
+    expect(entradasPorConciliar(1)).toBe('1 entrada por conciliar');
+  });
+});

@@ -47,6 +47,28 @@ import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 
+/**
+ * MORI-23 (QA-AGENTES 16-10): la tabla decía «16/10/2026, 11:02:31», «Por —»
+ * siempre y «EDIT» en inglés. El día en palabras con la hora de Colombia,
+ * quién la guardó (nombre o correo; nunca su id) y el tipo en español.
+ */
+export function cuandoSeGuardo(iso: string, locale: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString(locale.startsWith('es') ? 'es-CO' : 'en-US', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'America/Bogota',
+  })
+}
+
+export function quienLaGuardo(v: Pick<ThresholdRow, 'created_by_name' | 'created_by_email'>): string {
+  return v.created_by_name?.trim() || v.created_by_email?.trim() || '—'
+}
+
 export interface ThresholdVersionsTableProps {
   versions: ThresholdRow[]
   supported: boolean
@@ -123,7 +145,11 @@ export function ThresholdVersionsTable({
       </div>
 
       {versions.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-6">—</p>
+        <p className="text-sm text-muted-foreground text-center py-6">
+          {locale.startsWith('es')
+            ? 'Todavía no has guardado umbrales: el reporte usa los de siempre.'
+            : 'No thresholds saved yet: the report uses the defaults.'}
+        </p>
       ) : (
         <>
           <div className="overflow-x-auto overscroll-contain">
@@ -162,23 +188,23 @@ export function ThresholdVersionsTable({
                         </MonoLabel>
                       )}
                     </TableCell>
-                    <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-muted-foreground">
-                      {v.created_at ? new Date(v.created_at).toLocaleString(locale) : '—'}
+                    <TableCell className="px-3 py-2 text-caption text-muted-foreground">
+                      {v.created_at ? cuandoSeGuardo(v.created_at, locale) : '—'}
                     </TableCell>
-                    <TableCell className="px-3 py-2 text-xs text-foreground">
-                      {v.created_by_email ?? v.created_by_user_id ?? '—'}
+                    <TableCell className="px-3 py-2 text-caption text-foreground">
+                      {quienLaGuardo(v)}
                     </TableCell>
                     <TableCell className="px-3 py-2">
                       {v.is_rollback_of_version != null ? (
                         <Badge variant="warning">
                           {locale.startsWith('es')
-                            ? `Rollback de v${v.is_rollback_of_version}`
-                            : `Rollback of v${v.is_rollback_of_version}`}
+                            ? `Volvió a la v${v.is_rollback_of_version}`
+                            : `Restored v${v.is_rollback_of_version}`}
                         </Badge>
                       ) : (
-                        <MonoLabel className="text-[10px] text-muted-foreground">
-                          edit
-                        </MonoLabel>
+                        <span className="text-caption text-muted-foreground">
+                          {locale.startsWith('es') ? 'Cambio' : 'Edit'}
+                        </span>
                       )}
                     </TableCell>
                     <TableCell className="px-3 py-2 text-right">
@@ -188,7 +214,9 @@ export function ThresholdVersionsTable({
                           size="sm"
                           hideArrow
                           onClick={() => setRollbackConfirmVersion(v.version)}
-                          aria-label={`rollback v${v.version}`}
+                          aria-label={
+                            locale.startsWith('es') ? `Restaurar la versión ${v.version}` : `Restore version ${v.version}`
+                          }
                         >
                           <ArrowCounterClockwise className="w-3 h-3" aria-hidden="true" />
                           {locale.startsWith('es') ? 'Restaurar' : 'Restore'}

@@ -497,10 +497,37 @@ interface AgenteSectionProps {
    */
   isSaleListing?: boolean;
   onReassign?: () => void;
+  /**
+   * QA 17-10 (IMANA-1, Nico «Administradoras también»): quien está a cargo
+   * cuando NO es un asesor de la lista de agentes (una administradora). Sin
+   * esto la tarjeta decía «nadie a cargo» aunque sí hubiera alguien.
+   */
+  encargado?: { nombre: string; rol: string } | null;
 }
 
-export function AgenteSection({ agente, commissionPercent, isSaleListing, onReassign }: AgenteSectionProps) {
+export function AgenteSection({ agente, commissionPercent, isSaleListing, onReassign, encargado }: AgenteSectionProps) {
   const { t } = useI18n();
+
+  if (!agente && encargado) {
+    return (
+      <SectionCard title={t('inmobiliaria.consignaciones.detail.agentTitle')} icon={<Briefcase className="w-4 h-4" />}>
+        <div className="flex items-center gap-3" data-testid="encargado-del-inmueble">
+          <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center">
+            <span className="text-lg font-semibold text-primary">{encargado.nombre.charAt(0).toUpperCase()}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-fg truncate">{encargado.nombre}</h4>
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">{encargado.rol}</p>
+          </div>
+          {onReassign && (
+            <Button variant="outline" size="sm" hideArrow onClick={onReassign}>
+              Cambiar
+            </Button>
+          )}
+        </div>
+      </SectionCard>
+    );
+  }
 
   if (!agente) {
     return (
@@ -517,7 +544,7 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
                 Quien quede a cargo atiende las visitas y responde a los candidatos.
               </p>
               <Button hideArrow className="mt-4" onClick={onReassign}>
-                Asignar agente
+                Asignar asesor
               </Button>
             </>
           )}

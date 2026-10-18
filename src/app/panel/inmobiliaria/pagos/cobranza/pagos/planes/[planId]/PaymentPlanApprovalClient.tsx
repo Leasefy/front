@@ -57,6 +57,7 @@ import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
 import { esEnlaceDePagoSimulado } from '@/lib/cobranza/enlace-simulado'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 void React
 
@@ -69,7 +70,7 @@ const REJECT_REASONS: RejectReasonSlug[] = [
   'other',
 ]
 
-const copFormat = plataEnPantalla('es-CO', {
+const copFormat = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

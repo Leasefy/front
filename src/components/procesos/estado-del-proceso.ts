@@ -5,6 +5,7 @@
  */
 
 import type { EstadoDeProceso, Proceso } from '@/lib/api/procesos.types'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /**
  * 🔴 La migración NO va al centro de procesos (Nico, 01-10 y 06-10): el back
@@ -76,7 +77,7 @@ export function quienLoLanzo(p: Pick<Proceso, 'lanzadoPor' | 'esMio'>): string {
 /** «120 de 800» cuando se sabe el total; nada cuando no. */
 export function avanceEnPalabras(p: Pick<Proceso, 'hechos' | 'total' | 'estado'>): string | null {
   if (p.total == null || p.total <= 0) return null
-  const n = (x: number) => x.toLocaleString('es-CO')
+  const n = (x: number) => x.toLocaleString(localeDeLasCifras())
   return `${n(Math.min(p.hechos, p.total))} de ${n(p.total)}`
 }
 
@@ -102,8 +103,8 @@ export function haceCuanto(iso: string, ahora: number = Date.now()): string {
 export function tamanoDelArchivo(bytes: number | null): string | null {
   if (bytes == null) return null
   if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toLocaleString('es-CO', { maximumFractionDigits: 0 })} KB`
-  return `${(bytes / (1024 * 1024)).toLocaleString('es-CO', { maximumFractionDigits: 1 })} MB`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 0 })} KB`
+  return `${(bytes / (1024 * 1024)).toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 1 })} MB`
 }
 
 // ══ Etapa, resultado y reintento (22-09) ═════════════════════════════════════

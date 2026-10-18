@@ -16,6 +16,7 @@ import { formatCurrency } from '@/lib/format'
 import { PuntajeDeVinci, QUIEN } from '@/components/retencion/vinci'
 import type { CasoDeVinci, PlanDelCaso } from '@/lib/types/retencion'
 import { casoDeRetencion } from '@/lib/nav/rutas-de-retencion'
+import { traducir, useTr, type Tr } from '@/lib/i18n/use-tr'
 
 export const hrefDelCaso = (caseId: string) => casoDeRetencion(caseId)
 
@@ -38,12 +39,13 @@ export function planEnPalabras(plan: PlanDelCaso | null): string {
 }
 
 /** «Inquilino · contrato 123» o «Propietario · 3 inmuebles». */
-export function quienEsElCaso(c: CasoDeVinci): string {
+export function quienEsElCaso(c: CasoDeVinci, tr: Tr = (es, vars) => traducir(es, 'es', vars)): string {
   if (c.poblacion === 'inquilino') {
     const numero = c.contratos[0]?.numero
-    return numero ? `${QUIEN.inquilino} · contrato ${numero}` : QUIEN.inquilino
+    return numero ? tr('Inquilino · contrato {numero}', { numero }) : tr(QUIEN.inquilino)
   }
-  return `${QUIEN.propietario} · ${c.contratos.length} ${c.contratos.length === 1 ? 'inmueble' : 'inmuebles'}`
+  const n = c.contratos.length
+  return tr(n === 1 ? 'Propietario · {n} inmueble' : 'Propietario · {n} inmuebles', { n })
 }
 
 export function TablaDeCasos({
@@ -57,19 +59,20 @@ export function TablaDeCasos({
   /** Lo que se ve sin filas (un `SinDatos`). */
   vacio: ReactNode
 }) {
+  const tr = useTr();
   const router = useRouter()
   if (casos.length === 0) return <>{vacio}</>
   return (
     <Table data-testid="vinci-casos">
       <TableHeader>
         <TableRow>
-          <TableHead className="whitespace-nowrap pl-5">Quién</TableHead>
-          <TableHead className="hidden whitespace-nowrap sm:table-cell">Riesgo</TableHead>
-          <TableHead className="hidden whitespace-nowrap md:table-cell">Por qué</TableHead>
-          <TableHead className="hidden whitespace-nowrap text-right sm:table-cell">Canon en juego</TableHead>
-          {conPlan ? <TableHead className="hidden whitespace-nowrap lg:table-cell">Plan</TableHead> : null}
+          <TableHead className="whitespace-nowrap pl-5">{tr("Quién")}</TableHead>
+          <TableHead className="hidden whitespace-nowrap sm:table-cell">{tr("Riesgo")}</TableHead>
+          <TableHead className="hidden whitespace-nowrap md:table-cell">{tr("Por qué")}</TableHead>
+          <TableHead className="hidden whitespace-nowrap text-right sm:table-cell">{tr("Canon en juego")}</TableHead>
+          {conPlan ? <TableHead className="hidden whitespace-nowrap lg:table-cell">{tr("Plan")}</TableHead> : null}
           <TableHead className="w-10 pr-5">
-            <span className="sr-only">Abrir</span>
+            <span className="sr-only">{tr("Abrir")}</span>
           </TableHead>
         </TableRow>
       </TableHeader>
@@ -88,9 +91,9 @@ export function TablaDeCasos({
                   onClick={(e) => e.stopPropagation()}
                   className="font-medium text-fg hover:underline"
                 >
-                  {c.nombre ?? 'Sin nombre registrado'}
+                  {c.nombre ?? tr('Sin nombre registrado')}
                 </Link>
-                <p className="mt-0.5 text-caption text-fg-muted">{quienEsElCaso(c)}</p>
+                <p className="mt-0.5 text-caption text-fg-muted">{quienEsElCaso(c, tr)}</p>
                 {/* En el teléfono el riesgo va debajo del nombre: como columna
                     propia le dejaba al nombre una palabra por renglón. */}
                 <div className="mt-2 sm:hidden">
@@ -107,7 +110,7 @@ export function TablaDeCasos({
                         .slice(0, 2)
                         .map((s) => `${s.texto} (+${s.puntos})`)
                         .join(' · ')
-                    : 'Sin señales'}
+                    : tr('Sin señales')}
                 </span>
               </TableCell>
               <TableCell className="hidden whitespace-nowrap py-4 text-right font-mono tabular-nums text-fg sm:table-cell">
@@ -115,7 +118,7 @@ export function TablaDeCasos({
               </TableCell>
               {conPlan ? (
                 <TableCell className="hidden whitespace-nowrap py-4 text-sm text-fg-muted lg:table-cell">
-                  {planEnPalabras(c.plan)}
+                  {tr(planEnPalabras(c.plan))}
                 </TableCell>
               ) : null}
               <TableCell className="py-4 pr-5">

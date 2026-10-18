@@ -43,6 +43,11 @@ const { api, gastos, exogena, procesos, toastMock } = vi.hoisted(() => ({
   toastMock: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 
+// CONTA-1: la portada pregunta también lo que la conciliación dejó por asentar.
+vi.mock('@/lib/api/cuentas-de-las-diferencias', () => ({
+  cuentasDeLasDiferenciasApi: { porAsentar: vi.fn().mockResolvedValue({ total: 0, valorCop: 0 }) },
+}));
+
 vi.mock('@/lib/api/contabilidad.service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/api/contabilidad.service')>()),
   contabilidadApi: api,

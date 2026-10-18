@@ -26,6 +26,7 @@ import {
 } from '@/lib/types/inmobiliaria';
 import { ROTULO_DEL_CANON } from '@/lib/propietarios/base-del-canon';
 import { enmascarar } from '@/components/inmobiliaria/medios-de-pago/legible';
+import { useTr, useLocaleDeFechas } from '@/lib/i18n/use-tr';
 
 interface DispersionCardProps {
   dispersion: Dispersion;
@@ -89,6 +90,8 @@ export function DispersionCard({
   onProcess,
   compact = false,
 }: DispersionCardProps) {
+  const fechas = useLocaleDeFechas();
+  const tr = useTr();
   const [showProperties, setShowProperties] = useState(false);
 
   const statusColor = getDispersionStatusColor(dispersion.status);
@@ -192,7 +195,7 @@ export function DispersionCard({
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm text-fg-muted dark:text-fg-subtle mb-0.5">
-              Cuenta de destino
+              {tr("Cuenta de destino")}
             </p>
             <p className="font-medium text-fg truncate text-sm">
               {/* Sin cuenta se dice, no se inventa: es a dónde va la plata. */}
@@ -213,7 +216,7 @@ export function DispersionCard({
         {/* Net Amount - Prominent */}
         <div className="flex items-center justify-between">
           <span className="text-sm text-fg-muted dark:text-fg-subtle">
-            Neto a dispersar
+            {tr("Neto a dispersar")}
           </span>
           <span className="text-xl font-mono font-bold tabular-nums text-success">
             {formatCurrency(dispersion.netToPropietario)}
@@ -229,13 +232,13 @@ export function DispersionCard({
             <span className="font-mono tabular-nums">{formatCurrency(dispersion.totalCollected)}</span>
           </div>
           <div className="flex items-center justify-between text-warning">
-            <span>Comision agencia</span>
+            <span>{tr("Comision agencia")}</span>
             <span className="font-mono tabular-nums">- {formatCurrency(dispersion.totalCommission)}</span>
           </div>
           {/* 🔴 22-09: el IVA de la comisión, en su línea (antes no se nombraba). */}
           {(dispersion.totalIvaComision ?? 0) > 0 && (
             <div className="flex items-center justify-between text-warning" data-testid="tarjeta-iva-comision">
-              <span>IVA de la comisión</span>
+              <span>{tr("IVA de la comisión")}</span>
               <span className="font-mono tabular-nums">- {formatCurrency(dispersion.totalIvaComision ?? 0)}</span>
             </div>
           )}
@@ -260,7 +263,7 @@ export function DispersionCard({
             <span>
               {dispersion.items.length}{' '}
               {dispersion.items.length === 1 ? 'propiedad' : 'propiedades'}{' '}
-              incluidas
+              {tr("incluidas")}
             </span>
           </div>
           <CaretDown
@@ -304,8 +307,8 @@ export function DispersionCard({
               <div className="flex items-center gap-2 text-sm text-success">
                 <CheckCircle className="w-4 h-4" weight="fill" />
                 <span>
-                  Procesado el{' '}
-                  {new Date(dispersion.processedAt).toLocaleDateString('es-CL', {
+                  {tr("Procesado el")}{' '}
+                  {new Date(dispersion.processedAt).toLocaleDateString(fechas, {
                     day: 'numeric',
                     month: 'short',
                     year: 'numeric',
@@ -315,7 +318,7 @@ export function DispersionCard({
               <div className="flex items-center gap-2 text-sm text-fg-muted dark:text-fg-subtle">
                 <Receipt className="w-4 h-4" />
                 <span className="font-mono text-xs">
-                  Ref: {dispersion.transferReference}
+                  {tr("Ref:")} {dispersion.transferReference}
                 </span>
               </div>
             </>
@@ -325,7 +328,7 @@ export function DispersionCard({
         {dispersion.status === 'processing' && (
           <div className="flex items-center gap-2 text-sm text-primary">
             <Spinner size="sm" variant="current" />
-            <span>Procesando transferencia...</span>
+            <span>{tr("Procesando transferencia...")}</span>
           </div>
         )}
 
@@ -333,7 +336,7 @@ export function DispersionCard({
         {dispersion.status === 'pending' && (
           <div className="flex items-center gap-2 text-sm text-warning">
             <CalendarBlank className="w-4 h-4" />
-            <span>Pendiente de procesamiento</span>
+            <span>{tr("Pendiente de procesamiento")}</span>
           </div>
         )}
 
@@ -358,7 +361,7 @@ export function DispersionCard({
             }}
           >
             <PaperPlaneTilt className="w-4 h-4" />
-            Procesar
+            {tr("Procesar")}
           </Button>
         )}
         {dispersion.status === 'failed' && onProcess && (
@@ -373,24 +376,24 @@ export function DispersionCard({
             className="text-warning border-warning/30"
           >
             <CurrencyCircleDollar className="w-4 h-4" />
-            Reintentar
+            {tr("Reintentar")}
           </Button>
         )}
         {dispersion.status === 'completed' && (
           <div className="flex items-center gap-2 text-sm text-success">
             <CheckCircle className="w-4 h-4" weight="fill" />
-            <span>Dispersado</span>
+            <span>{tr("Dispersado")}</span>
           </div>
         )}
         {dispersion.status === 'processing' && (
           <div className="flex items-center gap-2 text-sm text-primary">
             <Spinner size="sm" variant="current" />
-            <span>En proceso</span>
+            <span>{tr("En proceso")}</span>
           </div>
         )}
         {onViewDetail && (
           <div className="flex items-center gap-1 text-sm text-fg-muted dark:text-fg-subtle group-hover:text-primary transition-colors ml-auto">
-            Ver detalle
+            {tr("Ver detalle")}
             <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </div>
         )}

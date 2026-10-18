@@ -11,6 +11,7 @@ import type { OverviewKpi } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { AnimatedNumber, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 export interface EstudioKpiStripProps {
   kpis: OverviewKpi[] | null | undefined
@@ -24,7 +25,7 @@ export function EstudioKpiStrip({ kpis, isLoading, className }: EstudioKpiStripP
   const fmt = (k: OverviewKpi): string => {
     if (k.format === 'cop') return formatCurrency(k.value)
     if (k.format === 'percent') return `${Math.round(k.value * 100)}%`
-    return k.value.toLocaleString('es-CO')
+    return k.value.toLocaleString(localeDeLasCifras())
   }
 
   const items = kpis ?? []

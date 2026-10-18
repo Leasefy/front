@@ -203,8 +203,8 @@ describe('proximoPagoDelPortal', () => {
       ...DOC,
       contratos: [...DOC.contratos, contrato('contrato-60', '60', [fila('2026-10', '2026-10-15', 3_200_000, 'POR_VENCER')])],
     } as unknown as EstadoDeCuenta;
-    expect(proximoPagoDelPortal(conDos, '2026-10-04')).toEqual({ valor: 3_200_000, fecha: '2026-10-15' });
-    expect(proximoPagoDelPortal(conDos, '2026-10-04', 'contrato-53')).toEqual({ valor: 1_650_000, fecha: '2026-11-01' });
+    expect(proximoPagoDelPortal(conDos, '2026-10-04')).toEqual({ valor: 3_200_000, fecha: '2026-10-15', cuantas: 1 });
+    expect(proximoPagoDelPortal(conDos, '2026-10-04', 'contrato-53')).toEqual({ valor: 1_650_000, fecha: '2026-11-01', cuantas: 1 });
     expect(proximoPagoDelPortal(conDos, '2026-10-04', 'otro')).toBeNull();
     expect(proximoPagoDelPortal(conDos, '2026-10-04', null)).toBeNull();
   });

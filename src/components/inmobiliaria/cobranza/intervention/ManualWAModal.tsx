@@ -60,6 +60,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { CrossFade, Presence } from '@leasefy/cadence'
+import { useTr } from '@/lib/i18n/use-tr'
 
 void React
 
@@ -127,6 +128,7 @@ export function ManualWAModal({
   prefill,
   onSuccess,
 }: ManualWAModalProps) {
+  const tr = useTr();
   const { t } = useI18n()
   const { agency } = useAuth()
   const agencyId = agency?.id ?? null
@@ -452,17 +454,17 @@ export function ManualWAModal({
           <p>{confirmacion?.pregunta}</p>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" hideArrow onClick={() => setConfirmacion(null)} disabled={submitting}>
-              No mandarlo
+              {tr("No mandarlo")}
             </Button>
             <Button size="sm" hideArrow onClick={() => confirmacion && void handleSubmit(confirmacion.campo)} isLoading={submitting} data-testid="wa-mandar-igual">
-              Mandarlo igual
+              {tr("Mandarlo igual")}
             </Button>
           </div>
         </Presence>
 
         {vacias.length > 0 && !envMissing && templates.length > 0 && (
           <p className="text-[11px] text-warning" data-testid="wa-faltan-datos">
-            {vacias.length === 1 ? 'Falta 1 dato del mensaje' : `Faltan ${vacias.length} datos del mensaje`}: complétalo para poder enviarlo.
+            {vacias.length === 1 ? 'Falta 1 dato del mensaje' : `Faltan ${vacias.length} datos del mensaje`}{tr(": complétalo para poder enviarlo.")}
           </p>
         )}
 

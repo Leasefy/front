@@ -1,6 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useIdioma } from "@/lib/idioma/use-idioma";
+
+/**
+ * Los clips grabados también con el panel en inglés (`<nombre>-en.*`, 16-10-2026):
+ * en /en se usan esos; los demás siguen con el de siempre.
+ */
+export const CLIPS_EN_INGLES = new Set<string>([
+  "asegurabilidad", "dispersiones", "estudio", "matching", "pipeline", "recaudo", "retencion", "supervisa", "whatsapp",
+]);
 
 /**
  * Un clip del producto REAL en uso (Nico, 12-10-2026: «dale vida a la
@@ -17,7 +26,8 @@ import { useEffect, useRef, useState } from "react";
 export function ClipDelProducto({ nombre, alt, className }: { nombre: string; alt: string; className?: string }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [quieto, setQuieto] = useState(false);
-  const base = `/landing-v2/producto/clips/${nombre}`;
+  const idioma = useIdioma();
+  const base = `/landing-v2/producto/clips/${nombre}${idioma === "en" && CLIPS_EN_INGLES.has(nombre) ? "-en" : ""}`;
 
   useEffect(() => {
     setQuieto(window.matchMedia("(prefers-reduced-motion: reduce)").matches);

@@ -100,6 +100,7 @@ import { NumeracionPorTipo } from './NumeracionPorTipo'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { CajonDeLaResolucion } from './CajonDeLaResolucion'
 import { CajonDelDetalleDeLaResolucion } from './CajonDelDetalleDeLaResolucion'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** El tope del back (`AnularResolucionDto`). */
 export const MAX_MOTIVO_DE_ANULACION = 500
@@ -341,12 +342,12 @@ export function ResolucionDeFacturacion({
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-fg-muted">
                           <span className="font-mono tabular-nums">
-                            {r.desde.toLocaleString('es-CO')}–{r.hasta.toLocaleString('es-CO')}
+                            {r.desde.toLocaleString(localeDeLasCifras())}–{r.hasta.toLocaleString(localeDeLasCifras())}
                           </span>
                           <p className="text-caption">
-                            <span className="font-mono tabular-nums">{r.usados.toLocaleString('es-CO')}</span>{' '}
+                            <span className="font-mono tabular-nums">{r.usados.toLocaleString(localeDeLasCifras())}</span>{' '}
                             {r.usados === 1 ? 'usado' : 'usados'} · quedan{' '}
-                            <span className="font-mono tabular-nums">{r.disponibles.toLocaleString('es-CO')}</span>
+                            <span className="font-mono tabular-nums">{r.disponibles.toLocaleString(localeDeLasCifras())}</span>
                           </p>
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-fg-muted">

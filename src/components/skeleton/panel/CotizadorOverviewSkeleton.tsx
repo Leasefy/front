@@ -1,6 +1,7 @@
 'use client'
 
 import { Skeleton } from '@/components/ui/skeleton'
+import { useTr } from '@/lib/i18n/use-tr'
 
 /**
  * CotizadorOverviewSkeleton — Phase 38 plan 38-04b (D-38-02 hybrid skeletons).
@@ -14,11 +15,12 @@ import { Skeleton } from '@/components/ui/skeleton'
  * mount (operators visit this page hourly per D-38-01).
  */
 export function CotizadorOverviewSkeleton() {
+  const tr = useTr();
   return (
     <main
       data-testid="cotizador-overview-skeleton"
       aria-busy="true"
-      aria-label="Cargando cotizador"
+      aria-label={tr("Cargando cotizador")}
       className="p-6 lg:p-8 space-y-6 animate-pulse"
     >
       {/* Header — title + subtitle + right-side CTA placeholder */}
@@ -45,7 +47,7 @@ export function CotizadorOverviewSkeleton() {
       </div>
 
       {/* Recent quotes feed — heading + 5-row table-like list */}
-      <section aria-label="Cotizaciones recientes" className="space-y-3">
+      <section aria-label={tr("Cotizaciones recientes")} className="space-y-3">
         <Skeleton className="h-5 w-40" />
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 divide-y divide-neutral-100 dark:divide-neutral-800">
           {[0, 1, 2, 3, 4].map((i) => (
@@ -62,7 +64,7 @@ export function CotizadorOverviewSkeleton() {
       </section>
 
       {/* Carriers status — heading + 3-card grid */}
-      <section aria-label="Estado de aseguradoras" className="space-y-3">
+      <section aria-label={tr("Estado de aseguradoras")} className="space-y-3">
         <Skeleton className="h-5 w-36" />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[0, 1, 2].map((i) => (

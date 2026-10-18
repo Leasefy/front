@@ -50,6 +50,7 @@ import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { useRecovery } from '@/lib/hooks/cobranza/use-recovery'
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import type { CarteraOverviewResponse } from '@/lib/hooks/cobranza/use-cartera-overview'
+import { useLocaleDeFechas, useTr } from '@/lib/i18n/use-tr'
 
 interface Metrica {
   key: string
@@ -65,6 +66,14 @@ export interface CobranzaResultadosKpisProps {
 }
 
 export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps) {
+  const tr = useTr();
+  const fechas = useLocaleDeFechas();
+  /** «14 de julio de 2026» / «July 14, 2026» (el día como día, sin corrimiento por la zona). */
+  const fechaEnSuIdioma = (dia: string) => {
+    if (fechas === 'es-CO') return fechaLarga(dia);
+    const [y, m, d] = dia.slice(0, 10).split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  };
   const { formatCurrency, formatNumber } = useI18n()
   const recovery = useRecovery()
   const daily = useDailyReport()
@@ -103,7 +112,7 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
     const sinCarteraHoy = rec?.moraSinCarteraHoy === true
     const deCuantoACuanto =
       rec?.moraDesdePct != null && rec?.moraHastaPct != null && rec?.moraDesdeDia
-        ? `De ${formatNumber(rec.moraDesdePct)} % a ${formatNumber(rec.moraHastaPct)} % desde el ${fechaLarga(rec.moraDesdeDia)}`
+        ? tr('De {desde} % a {hasta} % desde el {dia}', { desde: formatNumber(rec.moraDesdePct), hasta: formatNumber(rec.moraHastaPct), dia: fechaEnSuIdioma(rec.moraDesdeDia) })
         : null
 
     return [
@@ -159,10 +168,10 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
             : deCuantoACuanto
               ? `${deCuantoACuanto}.`
               : mora === 0
-                ? `Sin cambio en ${moraDias} días`
+                ? tr('Sin cambio en {n} días', { n: moraDias })
                 : mora > 0
-                  ? `Bajó en ${moraDias} días`
-                  : `Subió en ${moraDias} días`,
+                  ? tr('Bajó en {n} días', { n: moraDias })
+                  : tr('Subió en {n} días', { n: moraDias }),
       },
       {
         key: 'casos-activos',
@@ -204,17 +213,17 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
         icon: Clock,
         value:
           tiempoRecuperacion != null
-            ? `${formatNumber(tiempoRecuperacion)} ${tiempoRecuperacion === 1 ? 'día' : 'días'}`
+            ? tr(tiempoRecuperacion === 1 ? '{n} día' : '{n} días', { n: formatNumber(tiempoRecuperacion) })
             : null,
         sublabel: 'Desde la gestión hasta el pago',
       },
     ].filter((m): m is Metrica => m.value != null)
-  }, [recovery.data, overview, daily.data, formatCurrency, formatNumber])
+  }, [recovery.data, overview, daily.data, formatCurrency, formatNumber, tr, fechas])
 
   if (metricas.length === 0) return null
 
   return (
-    <section aria-label="Cómo va el agente" className="space-y-3">
+    <section aria-label={tr("Cómo va el agente")} className="space-y-3">
       {/* Sin título ni botón propios: la sección que lo contiene ya se llama
           «Lo que hizo el agente» y ella carga el enlace al reporte diario en
           la fila del título. Cuando esta rejilla vivía con una fila propia
@@ -231,9 +240,9 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
           return (
             <StaggerItem key={m.key} className="min-w-0 [&>*]:h-full">
               <KpiCard
-                label={m.label}
+                label={tr(m.label)}
                 value={m.value as string}
-                sublabel={m.sublabel}
+                sublabel={tr(m.sublabel)}
                 icon={<MetricaIcon weight="duotone" aria-hidden="true" />}
                 data-testid={`cobranza-kpi-${m.key}`}
               />

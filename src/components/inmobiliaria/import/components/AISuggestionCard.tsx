@@ -26,6 +26,7 @@ import {
 } from '@/lib/inmuebles/canon-por-confirmar';
 import { useCamposQueSeQuedan } from '../lib/useCamposQueSeQuedan';
 import type { ImportProperty, AISuggestion, DuenoDelArchivo } from '../lib/importTypes';
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 interface AISuggestionCardProps {
   property: ImportProperty;
@@ -130,7 +131,7 @@ function CampoEditable({
 }
 
 function formatCOP(value: number): string {
-  return new Intl.NumberFormat('es-CO', {
+  return formatoDeCifras(localeDeLasCifras(), {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,

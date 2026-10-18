@@ -44,7 +44,7 @@ export interface AuditLogFilters {
   from?: string
   /** ISO date (YYYY-MM-DD). Default = today. */
   to?: string
-  /** Free-text search ≥ 8 chars (cedula_hash_prefix8 OR entity_id UUID-prefix). */
+  /** La cédula (el micro busca su caso) o ≥ 8 caracteres de una referencia. */
   q?: string
 }
 
@@ -64,7 +64,9 @@ function buildQs(filters: AuditLogFilters, cursor: string | null): string {
   if (filters.action) sp.set('action', filters.action)
   if (filters.from) sp.set('from', filters.from)
   if (filters.to) sp.set('to', filters.to)
-  if (filters.q && filters.q.length >= 8) sp.set('q', filters.q)
+  // MORI-26: también una cédula (con o sin puntos, desde 5 cifras); la página ya
+  // decide qué es válido.
+  if (filters.q && filters.q.length > 0) sp.set('q', filters.q)
   if (cursor) sp.set('cursor', cursor)
   const s = sp.toString()
   return s ? `?${s}` : ''

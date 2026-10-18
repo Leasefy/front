@@ -26,6 +26,7 @@ import { actorLabel, actorMeta } from './TrazaCaso'
 import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece'
 import { AnimatedNumber, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { cifrasDeLaPantalla, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
@@ -45,13 +46,13 @@ const ESTADO_BAR_CLS: Record<WorkItemEstado, string> = {
   fallo: 'bg-danger',
 }
 
-const numberFormatter = new Intl.NumberFormat('es-CO')
-const percentFormatter = new Intl.NumberFormat('es-CO', {
+const numberFormatter = cifrasDeLaPantalla()
+const percentFormatter = cifrasDeLaPantalla({
   style: 'percent',
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 })
-const copFormatter = plataEnPantalla('es-CO', {
+const copFormatter = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

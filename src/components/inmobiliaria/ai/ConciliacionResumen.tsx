@@ -42,9 +42,10 @@ import {
 import type { ConciliacionSummaryResponse } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
 import { AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { cifrasDeLaPantalla, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
-const numberFormatter = new Intl.NumberFormat('es-CO')
-const copFormatter = plataEnPantalla('es-CO', {
+const numberFormatter = cifrasDeLaPantalla()
+const copFormatter = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

@@ -1,3 +1,4 @@
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 /**
  * Tasas que se midieron vs. tasas que nadie midió.
  *
@@ -69,7 +70,7 @@ export function tasaEnPantalla(
   opciones: { conSigno?: boolean } = {},
 ): string {
   if (tasa === null || !Number.isFinite(tasa)) return SIN_MEDIR;
-  const texto = new Intl.NumberFormat('es-CO', {
+  const texto = formatoDeCifras(localeDeLasCifras(), {
     minimumFractionDigits: decimales,
     maximumFractionDigits: decimales,
   }).format(tasa);

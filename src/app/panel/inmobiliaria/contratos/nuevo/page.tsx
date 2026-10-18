@@ -54,6 +54,7 @@ import {
   repartirErroresDelContrato,
   type CampoDelContrato,
 } from '@/lib/contratos/errores-del-contrato';
+import { leerComision, NOMBRE_DEL_USO, usoPorElTipoDelInmueble } from '@/lib/contratos/uso-y-comision-del-manual';
 import { CampoDelTermino as Field } from '@/components/contract/CampoDelTermino';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -169,6 +170,8 @@ const FALTA = {
   endDate: 'la fecha de fin',
   monthlyRent: 'el canon',
   paymentDay: 'el día de pago',
+  // CONTR-6 (QA 17-10): sólo cuando el inmueble no tiene comisión.
+  comisionPorcentaje: 'la comisión de la inmobiliaria',
 } as const;
 /** Los del bloque «partes»: sus errores salen cuando se toca el bloque (como siempre). */
 const DE_LAS_PARTES: ReadonlySet<string> = new Set(['propertyId', 'tenantId', 'nombre', 'documento', 'correo']);
@@ -234,6 +237,14 @@ function NuevoContratoContent() {
    * inmueble; sólo se pregunta cuando responde que no puede (`USO_INDETERMINADO`).
    */
   const [uso, setUso] = useState<UsoDelInmueble | ''>('');
+  /*
+   * CONTR-6 (QA 17-10, Nico «pedirla al crear»): el inmueble elegido no tiene
+   * comisión (su mandato dice `comisionDesconocida`). Sin ella el contrato se
+   * activaba sin tabla de cuotas: se pide aquí, prellenada con la de la
+   * inmobiliaria si la configuró.
+   */
+  const [comisionDesconocida, setComisionDesconocida] = useState(false);
+  const [comisionManual, setComisionManual] = useState('');
   // Los «falta esto» del bloque manual recién después de tocarlo: una pantalla
   // que abre en rojo antes de que la persona haga nada regaña por adelantado.
   const [partesTocadas, setPartesTocadas] = useState(false);
@@ -726,10 +737,16 @@ function NuevoContratoContent() {
     const errorDePlazo = validarDiasDePlazo(form.diasDePlazo);
     if (errorDePlazo) errors.diasDePlazo = errorDePlazo;
     if (esManual) Object.assign(errors, validarPartes(partes));
+    if (esManual && comisionDesconocida) {
+      const { error } = leerComision(comisionManual);
+      if (error) errors.comisionPorcentaje = error;
+    }
     return errors;
   }, [
     form,
     esManual,
+    comisionDesconocida,
+    comisionManual,
     partes,
     pideDeposito,
     armadoPorElSistema,
@@ -850,6 +867,12 @@ function NuevoContratoContent() {
         const creado = await actions.createManual({
           ...terminos,
           propertyId: partes.propertyId,
+          // CONTR-6/7: la comisión si el inmueble no la tiene; el uso sólo si
+          // la persona lo eligió (si no, el back lo saca del tipo del inmueble).
+          ...(comisionDesconocida
+            ? { comisionPorcentaje: leerComision(comisionManual).valor ?? undefined }
+            : {}),
+          ...(uso ? { usoInmueble: uso } : {}),
           ...(partes.inquilino.modo === 'existente'
             ? { tenantId: partes.inquilino.tenantId }
             : {
@@ -945,6 +968,7 @@ function NuevoContratoContent() {
   /** ¿El campo está vacío? (lo que decide si su error espera a que lo dejen). */
   const vacio = (campo: CampoDelContrato): boolean => {
     if (campo === 'pdfFile') return !form.pdfFile;
+    if (campo === 'comisionPorcentaje') return comisionManual.trim() === '';
     const valor = (form as unknown as Record<string, unknown>)[campo];
     return typeof valor !== 'string' || valor.trim() === '';
   };
@@ -1141,6 +1165,12 @@ function NuevoContratoContent() {
               // propietario que lo firmó y no haya que buscarlo otra vez.
               setConsignacionElegida(c.id);
               setInmuebleManualSinCanon(c.canonPorConfirmar ? c.propertyId : null);
+              // CONTR-6: sin comisión en el mandato, se pide; prellenada con la
+              // de la inmobiliaria si la tiene configurada.
+              setComisionDesconocida(c.comisionDesconocida === true);
+              if (c.comisionDesconocida && valoresDelBack?.comisionPorcentaje != null) {
+                setComisionManual((antes) => antes || String(valoresDelBack.comisionPorcentaje).replace('.', ','));
+              }
               // El canon del mandato, si lo hay: una tecla menos y un número
               // que no se contradice con el de la consignación.
               if (!c.canonPorConfirmar && c.monthlyRent != null && c.monthlyRent > 0) {
@@ -1446,6 +1476,60 @@ function NuevoContratoContent() {
                 onChange={(crudo) => updateForm('monthlyRent', crudo)}
               />
             </Field>
+            {esManual && comisionDesconocida && (
+              <Field
+                id={idDelCampoDelContrato('comisionPorcentaje')}
+                label="Comisión de la inmobiliaria (%)"
+                error={errorDe('comisionPorcentaje')}
+                hint="Este inmueble no tiene comisión: sin ella el contrato no tiene tabla de cuotas."
+              >
+                <Input
+                  {...ariaDelCampoDelContrato('comisionPorcentaje', errorDe('comisionPorcentaje'))}
+                  inputMode="decimal"
+                  placeholder="10"
+                  value={comisionManual}
+                  onChange={(e) => {
+                    setComisionManual(e.target.value);
+                    setErroresDelServidor((antes) => {
+                      if (!antes.comisionPorcentaje) return antes;
+                      const { comisionPorcentaje: _quitado, ...resto } = antes;
+                      void _quitado;
+                      return resto;
+                    });
+                  }}
+                  data-testid="contrato-comision"
+                />
+              </Field>
+            )}
+            {/* CONTR-7 (Nico «deducirlo y si no, pedirlo»): el uso sale del tipo
+                del inmueble; si el tipo no lo dice (lote, parqueadero), se pide. */}
+            {esManual && consignacionElegida && !armadoPorElSistema && (
+              usoPorElTipoDelInmueble(tipoDelInmuebleElegido) ? (
+                <p className="text-caption text-fg-muted sm:col-span-2" data-testid="contrato-uso-deducido">
+                  Uso: {NOMBRE_DEL_USO[uso || (usoPorElTipoDelInmueble(tipoDelInmuebleElegido) as UsoDelInmueble)]}, por el tipo del inmueble.
+                </p>
+              ) : (
+                <Field
+                  id={idDelCampoDelContrato('usoInmueble')}
+                  label="Uso del inmueble"
+                  error={errorDe('usoInmueble')}
+                  hint="El tipo del inmueble no dice si es vivienda o comercial. Si no lo eliges, se toma del registro del inmueble."
+                >
+                  <Select value={uso || undefined} onValueChange={(v) => setUso(v as UsoDelInmueble)}>
+                    <SelectTrigger
+                      {...ariaDelCampoDelContrato('usoInmueble', errorDe('usoInmueble'))}
+                      data-testid="contrato-uso-manual"
+                    >
+                      <SelectValue placeholder="Elige vivienda o comercial" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[400]">
+                      <SelectItem value="VIVIENDA">{NOMBRE_DEL_USO.VIVIENDA}</SelectItem>
+                      <SelectItem value="COMERCIAL">{NOMBRE_DEL_USO.COMERCIAL}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )
+            )}
             {pideDeposito && (
               <Field id={idDelCampoDelContrato('deposit')} label="Depósito (COP)" error={errorDe('deposit')} hint="Sólo en comercial: en vivienda la ley no lo permite.">
                 <MoneyInput

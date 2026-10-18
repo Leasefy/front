@@ -52,10 +52,11 @@ import {
   rutaDelEscenario,
   sePuedeEmitirHoy,
 } from '@/lib/facturacion/por-facturar'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** «19 %», «0,4 %». */
 function porcentaje(p: number): string {
-  return `${p.toLocaleString('es-CO', { maximumFractionDigits: 2 })} %`
+  return `${p.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 2 })} %`
 }
 
 /**

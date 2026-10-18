@@ -149,6 +149,20 @@ describe('PilotoCajon — modo ítem', () => {
     expect(document.querySelector('[data-testid="piloto-cajon-accion-0"]')).not.toBeNull()
   })
 
+  // MATCH-2 (QA de agentes 18-10): «Lo que va a hacer» de la lista corta trae
+  // cada candidato como UNA frase sin valor; la etiqueta del DS la cortaba con
+  // «…» y quien aprobaba no leía las razones.
+  it('una fila que es sólo una frase larga se apila y se lee entera (no se corta)', () => {
+    const frase =
+      '2.º Yubinza Eliana Rios Florez — Sin estudio de arrendamiento (es opcional). Declara ganar 2,5 veces lo que cuesta el inmueble al mes; después de sus obligaciones le quedan 1,8 veces. Subió 2 documentos.'
+    estado.detalle = { ...DETALLE, contexto: [{ titulo: 'Lo que va a hacer', filas: [{ label: frase, valor: '' }] }] }
+    render({ tipo: 'item', id: 'acc:1' })
+    const etiqueta = [...document.body.querySelectorAll('span')].find((s) => s.textContent === frase)
+    expect(etiqueta).toBeTruthy()
+    // La fila se apila (como la prosa) y la etiqueta envuelve en vez de cortarse.
+    expect(etiqueta!.parentElement!.querySelector('.prosa')).not.toBeNull()
+  })
+
   it('sin acciones declaradas NO dibuja ningún botón de acción', () => {
     // Cero botones muertos: un plan de pago no se aprueba de un clic porque
     // el endpoint exige el token de concurrencia. Si el micro no la declara,

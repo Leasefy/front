@@ -86,6 +86,7 @@ import {
   SelectorDeTipoDeDocumento,
   etiquetaDelTipoDeDocumento,
 } from './SelectorDeTipoDeDocumento'
+import { CuentaDelDueno } from '@/components/contratos/CuentaDelDueno'
 
 interface Props {
   contract: Contract
@@ -746,6 +747,10 @@ function Propietarios({
                 {documentoParaMostrar(p.documentNumber)}
                 {p.sinFicha ? ' · Dueño según el archivo, sin ficha de propietario en Leasefy' : ''}
               </span>
+              {/* Nico (17-10): su cuenta y «Cambiar cuenta» sin salir del contrato. */}
+              {p.sinFicha ? null : (
+                <CuentaDelDueno propietarioId={p.id} nombre={p.name} documento={p.documentNumber} />
+              )}
             </div>
             {varios ? (
               /* El % y la plata de cada uno, y el chip en el mayoritario — el

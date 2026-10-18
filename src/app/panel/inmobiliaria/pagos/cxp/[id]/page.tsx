@@ -34,6 +34,7 @@ import { Button, Spinner } from '@/components/ui';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /**
  * COLA-03 (QA-PAGOS-95, 05-10-2026): la vuelta es la de las demás fichas
@@ -102,7 +103,7 @@ const STATUS_COLORS: Record<
 function formatCOP(amountStr: string): string {
   const amount = Number(amountStr);
   if (isNaN(amount) || amount === 0) return '$0';
-  return plataEnPantalla('es-CO', {
+  return plataEnPantalla(localeDeLasCifras, {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,

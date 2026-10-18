@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useTr } from '@/lib/i18n/use-tr';
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -52,6 +53,7 @@ interface TopObjectionsTableProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function TopObjectionsTable({ data }: TopObjectionsTableProps) {
+  const tr = useTr();
   const { t } = useI18n();
 
   // Branch A — agency-gate: page-level handles empty state
@@ -69,7 +71,7 @@ export function TopObjectionsTable({ data }: TopObjectionsTableProps) {
         <EmptyState
           icon={ChatTeardropDots}
           title={t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.title')}
-          description="Sin datos suficientes todavía"
+          description={tr("Sin datos suficientes todavía")}
         />
       </div>
     );

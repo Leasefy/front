@@ -1093,7 +1093,9 @@
         "toastOk": "{{label}} · listo",
         "contador": "{{total}} en total",
         "contadorFiltrado": "{{visibles}} de {{total}}",
-        "filtrarPorTipo": "Filtrar por tipo de decisión",
+        "filtrarPorTipo": "Filtrar por agente o tipo de decisión",
+        "buscarPlaceholder": "Inquilino, contrato, inmueble…",
+        "buscarAria": "Buscar en la Bandeja",
         "limpiar": "Ver todo",
         "decisiones": "decisiones",
         "decidir": "Decidir",
@@ -2980,7 +2982,8 @@
           "enviado": "Enviado",
           "pagado": "Pagado",
           "vencido": "Vencido",
-          "fallido": "Pago fallido"
+          "fallido": "Pago fallido",
+          "enRevision": "Pago en revisión"
         },
         "detalle": {
           "ninguno": "Cobri todavía no le ha escrito por esta cuota.",
@@ -2988,7 +2991,12 @@
           "enMoraPorOtra": "El inquilino debe una cuota anterior en mora: mientras tanto Cobri no le escribe, la lleva cobranza.",
           "pagada": "Ya está paga: Cobri no tiene nada que cobrar por esta cuota.",
           "vencido": "El link venció sin pago. Cobri ya no escribe por esta cuota: la sigue cobranza.",
-          "fallido": "El inquilino intentó pagar y la pasarela no aprobó el pago."
+          "fallido": "El inquilino intentó pagar y la pasarela no aprobó el pago. El link sigue sirviendo para volver a intentar.",
+          "esperaAprobacion": "Cobri lo dejó listo y espera tu aprobación para mandarlo por WhatsApp.",
+          "siguienteEsperaAprobacion": "El siguiente aviso de Cobri, con este mismo link, espera tu aprobación para salir por WhatsApp.",
+          "noSalio": "No salió el aviso «{{hito}}»: {{porQue}}.",
+          "noSalioDefinitivo": "No salió el aviso «{{hito}}»: {{porQue}}. Ese aviso ya no se vuelve a intentar.",
+          "pagoSinAplicar": "El pago entró por el link, pero no se aplicó a la cuota y sigue debiéndose: {{motivo}}"
         },
         "pagadoEl": "Pagado el {{fecha}}",
         "ultimoAviso": "Último aviso: {{fecha}}",
@@ -3007,6 +3015,8 @@
           "link": "Link de pago"
         },
         "contrato": "Contrato {{numero}}",
+        "revisarYAprobar": "Revisar y aprobar",
+        "resolverEnLaBandeja": "Resolver en la Bandeja",
         "verLink": "Ver el link",
         "verLinkAria": "Ver el link de pago de {{inquilino}} (se abre en otra pestaña)",
         "conteoUno": "1 cuota",
@@ -4395,8 +4405,8 @@
         "accountTypeChecking": "Corriente",
         "email": "Email",
         "call": "Llamar",
-        "agentTitle": "Agente Asignado",
-        "noAgentAssigned": "No hay agente asignado",
+        "agentTitle": "Asesor a cargo",
+        "noAgentAssigned": "Nadie está a cargo todavía",
         "commissionDistribution": "Distribución de comisión",
         "commissionSplitNotAvailableForSale": "Un inmueble en venta no reparte comisión entre agente e inmobiliaria en este momento.",
         "agentShare": "Agente",
@@ -5510,6 +5520,10 @@
       "adjustFilters": "Intenta ajustar los filtros de búsqueda",
       "noRequestsRegistered": "No hay solicitudes de mantenimiento registradas",
       "tlReported": "Solicitud reportada",
+      "tlReportedByAgency": "{{nombre}} (inmobiliaria)",
+      "tlReportedByTheAgency": "La inmobiliaria",
+      "tlReportedByTenant": "{{nombre}} (inquilino)",
+      "tlReportedByOwner": "{{nombre}} (propietario)",
       "tlQuoteReceived": "Cotización recibida",
       "tlWaitingApproval": "Esperando aprobación",
       "tlSelectedQuote": "Cotización seleccionada",
@@ -5902,7 +5916,7 @@
         "select": "Seleccionar",
         "noQuotes": "Sin cotizaciones",
         "noQuotesDesc": "No hay cotizaciones disponibles para esta reparación",
-        "requestQuote": "Solicitar cotización",
+        "requestQuote": "Agregar cotización",
         "requestMoreToCompare": "Solicita más cotizaciones para comparar",
         "newQuote": "Nueva cotización",
         "quoteSelected": "Cotización seleccionada",
@@ -6121,6 +6135,12 @@
         "cobranza": "Cobranza",
         "cotizador": "Asegurabilidad",
         "detalle": "Detalle",
+        "paginas": {
+          "equipo": "Equipo IA de cobranza",
+          "inbox": "Inbox de conversaciones",
+          "promesas": "Promesas de pago",
+          "resultados": "Resultados del agente"
+        },
         "mantenimiento": "Mantenimiento"
       },
       "volverA": {
@@ -7811,7 +7831,7 @@
           },
           "detail": {
             "linkedCall": "Llamada asociada",
-            "reason": "Motivo del agente",
+            "reason": "Motivo",
             "stateTrace": "Estado del agente al escalar",
             "assignee": "Asignada a",
             "timing": "Tiempos"
@@ -7860,7 +7880,7 @@
             "actor": "Actor",
             "action": "Acción",
             "dateRange": "Rango de fechas",
-            "search": "Cédula (hash) o ID de cotización"
+            "search": "Cédula o referencia del caso"
           },
           "actions": {
             "acknowledge": "Reconocer",
@@ -7896,17 +7916,21 @@
         "reporte": {
           "pageTitle": "Reporte diario",
           "kpis": {
-            "pkr": "PKR (% recuperado)",
+            "pkr": "Promesas cumplidas (7 días)",
             "morosidad": "Índice de morosidad",
-            "outsideHours": "Llamadas fuera de horario"
+            "outsideHours": "Llamadas fuera de horario",
+            "pkrSinPromesas": "Ninguna promesa venció en los últimos 7 días.",
+            "morosidadBase": "{{enMora}} de {{conContrato}} inquilinos con contrato vigente"
           },
           "topDebtors": {
-            "heading": "Top deudores",
-            "empty": "No hay deudores destacados hoy"
+            "heading": "Los que más deben",
+            "empty": "No hay deudores destacados hoy",
+            "diasDeMora": "Días de mora"
           },
           "history": {
             "heading": "Histórico (últimos 30 días)",
-            "exportCsv": "Exportar CSV"
+            "exportCsv": "Exportar CSV",
+            "empty": "Todavía no hay reportes de días anteriores. Se guarda uno cada día."
           },
           "thresholds": {
             "pageTitle": "Umbrales del reporte",
@@ -7919,7 +7943,7 @@
               "callsOutsideAtLeast": "Avisar desde cuántas llamadas fuera de horario"
             },
             "submit": "Guardar umbrales",
-            "versionsHeading": "Versiones anteriores",
+            "versionsHeading": "Historial de versiones",
             "rollbackConfirm": "¿Confirmas reversar a la versión {{version}}?",
             "rolledBackToast": "Umbrales reversados a la versión {{version}}",
             "empty": {
@@ -7938,7 +7962,7 @@
           },
           "empty": {
             "title": "Aún no hay datos para el reporte diario",
-            "description": "El reporte se genera cada noche a partir de la actividad del día.",
+            "description": "El reporte se arma cada mañana con la actividad de la cobranza.",
             "cta": {
               "label": "Configurar suscripción"
             }
@@ -8047,7 +8071,7 @@
         },
         "arco": {
           "empty": {
-            "title": "Sin solicitudes ARCO pendientes",
+            "title": "Sin solicitudes de Habeas Data pendientes",
             "description": "Las solicitudes Ley 1581 aparecerán acá."
           }
         },
@@ -8182,8 +8206,8 @@
         "reject": "Rechazar solicitud",
         "viewAudit": "Ver en auditoría",
         "counselGate": {
-          "title": "Requiere revisión de asesor",
-          "description": "Esta función requiere activación por el equipo de Leasefy y confirmación de asesor jurídico. Contacta a compliance@leasefy.co para habilitar la resolución de solicitudes ARCO."
+          "title": "Falta la revisión del abogado",
+          "description": "Responder solicitudes de Habeas Data se habilita cuando el abogado de Leasefy apruebe las respuestas. Escríbenos a compliance@leasefy.co para habilitarlo. Mientras tanto puedes tomar la solicitud y ampliar el plazo."
         },
         "dialog": {
           "reject": {
@@ -8194,7 +8218,7 @@
           }
         },
         "empty": {
-          "title": "Sin solicitudes ARCO",
+          "title": "Sin solicitudes de Habeas Data",
           "body": "Cuando alguien pida ver, corregir, eliminar u oponerse al uso de sus datos, la solicitud aparece acá con su plazo.",
           "filteredTitle": "Sin solicitudes de este tipo",
           "filteredBody": "No hay solicitudes de {type} en este momento."
@@ -11315,7 +11339,7 @@
       "duracionCita": "Duración de cada visita",
       "horariosGuardados": "Horarios de visita guardados",
       "horarioAgenteTitle": "Horario de visitas",
-      "horarioAgenteDesc": "Un solo horario para todas las propiedades de este agente.",
+      "horarioAgenteDesc": "Un solo horario para todas las propiedades de este asesor.",
       "horarioAgenteGuardado": "Horario aplicado a {count} propiedades",
       "horarioAgenteError": "No se pudo guardar el horario",
       "citaTitle": "Agendar una cita",
@@ -11924,7 +11948,7 @@
       "fotosIARevisadas": "revisadas",
       "fotosIAGasto": "Gasto estimado {{gasto}} de {{tope}}",
       "apagadoTitulo": "Lo prende el equipo técnico de Leasefy",
-      "apagadoDescripcion": "Mientras tanto no audita tus inmuebles ni propone arreglos. Cuando lo prendan, aquí verás tus inmuebles de peor a mejor: qué les falta para publicar, sus problemas y las fotos que señala.",
+      "apagadoDescripcion": "Mientras tanto no hace pasadas nuevas ni propone arreglos nuevos; lo que propuso antes de apagarse sigue en la Bandeja hasta que lo resuelvas. Cuando lo prendan, aquí verás tus inmuebles de peor a mejor: qué les falta para publicar, sus problemas y las fotos que señala.",
       "errorPasadaTitulo": "La última pasada de Niti falló",
       "filtroAria": "Filtrar los inmuebles auditados",
       "filtro": {

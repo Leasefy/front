@@ -26,6 +26,7 @@ import { MagnifyingGlass, Plus, type Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CajaQueEntra } from './entrada-del-estado'
+import { useTr } from '@/lib/i18n/use-tr'
 
 export interface SinDatosProps {
   /**
@@ -70,6 +71,7 @@ export function SinDatos({
   onLimpiarFiltros,
   className,
 }: SinDatosProps) {
+  const tr = useTr();
   const Icono = hayFiltros ? MagnifyingGlass : (IconoDelDominio ?? MagnifyingGlass)
 
   const tituloFinal = hayFiltros
@@ -121,7 +123,7 @@ export function SinDatos({
         <div className="mt-6 flex justify-center">
           {hayFiltros ? (
             <Button variant="outline" onClick={onLimpiarFiltros} data-testid="limpiar-filtros">
-              Quitar los filtros
+              {tr("Quitar los filtros")}
             </Button>
           ) : accion ? (
             accion

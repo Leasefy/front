@@ -17,8 +17,10 @@
  *   34-05 SUMMARY (subscription endpoints, T-34-05-01 mitigation)
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { CrossFade, MonoLabel } from '@leasefy/cadence'
+import { toast } from 'sonner'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -26,6 +28,8 @@ import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useSubscription } from '@/lib/hooks/cobranza/use-subscription'
+import { cuantosDelEquipo, fraseDelGuardado } from '@/lib/cobranza/suscripcion-al-reporte'
+import { useAgencyPolicy } from '@/lib/hooks/cobranza/use-agency-policy'
 import { SubscriptionToggles } from '@/components/inmobiliaria/cobranza/SubscriptionToggles'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 
@@ -43,41 +47,55 @@ function SuscripcionContent() {
   // Admin proxy per plan — anyone who can edit thresholds can see the aggregate
   const isAdmin = canAccess('cobranza', 'edit-thresholds')
 
-  const { data, isLoading, isSaving, error, setToggle } = useSubscription()
+  const { data, isLoading, isSaving, error, setToggle, ultimoGuardado } = useSubscription()
+  // El WhatsApp del reporte lo prende la inmobiliaria (Configuración); sin eso,
+  // el interruptor personal no manda nada y hay que decirlo (MORI-24).
+  const { data: politica } = useAgencyPolicy()
+  const whatsappDeLaInmobiliaria = politica?.dailyReportWhatsappEnabled ?? null
 
   const [stats, setStats] = useState<SubscriptionStats | null>(null)
   const [statsSupported, setStatsSupported] = useState<boolean>(true)
 
-  // TODO(34-05 follow-up): subscription-stats endpoint not yet exposed.
-  // We attempt the GET; on 404 we stub the count to '—' and surface in SUMMARY.
-  useEffect(() => {
-    if (!isAdmin || !agencyId) return
+  const cargarEstadisticas = useCallback(async (): Promise<SubscriptionStats | null | 'sin-ruta'> => {
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
-    if (!agentUrl) return
+    if (!isAdmin || !agencyId || !agentUrl) return null
+    try {
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/subscription-stats`)
+      if (!res.ok) return 'sin-ruta'
+      return (await res.json()) as SubscriptionStats
+    } catch {
+      return 'sin-ruta'
+    }
+  }, [isAdmin, agencyId])
+
+  useEffect(() => {
     let cancelled = false
-    void (async () => {
-      try {
-        const res = await agentFetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/subscription-stats`)
-        if (cancelled) return
-        if (res.status === 404) {
-          setStatsSupported(false)
-          return
-        }
-        if (res.ok) {
-          const json = (await res.json()) as SubscriptionStats
-          setStats(json)
-        } else {
-          setStatsSupported(false)
-        }
-      } catch {
-        setStatsSupported(false)
-      }
-    })()
+    void cargarEstadisticas().then((r) => {
+      if (cancelled || r === null) return
+      if (r === 'sin-ruta') setStatsSupported(false)
+      else setStats(r)
+    })
     return () => {
       cancelled = true
     }
-  }, [isAdmin, agencyId])
+  }, [cargarEstadisticas])
+
+  // MORI-24 (QA-AGENTES 16-10): al apagar, el conteo se quedaba en «1 de 1»
+  // hasta recargar, y nada decía que se había guardado.
+  useEffect(() => {
+    if (!ultimoGuardado) return
+    toast.success(fraseDelGuardado(ultimoGuardado.patch, whatsappDeLaInmobiliaria))
+    let cancelled = false
+    void cargarEstadisticas().then((r) => {
+      if (!cancelled && r && r !== 'sin-ruta') setStats(r)
+    })
+    return () => {
+      cancelled = true
+    }
+    // Sólo cuando hay un guardado nuevo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ultimoGuardado])
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-2xl">
@@ -112,10 +130,24 @@ function SuscripcionContent() {
             onToggle={setToggle}
           />
 
+          {whatsappDeLaInmobiliaria === false && (
+            <p className="text-caption text-muted-foreground" data-testid="whatsapp-de-la-inmobiliaria-apagado">
+              Tu inmobiliaria todavía no envía el reporte por WhatsApp: mientras no lo prenda, sólo llega por correo.
+              {isAdmin && (
+                <>
+                  {' '}
+                  <Link href="/panel/inmobiliaria/pagos/cobranza/configuracion" className="text-primary underline-offset-2 hover:underline">
+                    Se prende en Configuración.
+                  </Link>
+                </>
+              )}
+            </p>
+          )}
+
           {/* Habeas Data / autodeterminación rationale (D-34-06) */}
-          <div className="rounded-lg border border-border bg-muted/20 p-3 text-xs text-muted-foreground leading-relaxed">
+          <div className="rounded-lg border border-border bg-muted/20 p-3 text-caption text-muted-foreground leading-relaxed">
             {locale.startsWith('es')
-              ? 'Tu suscripción es individual. Sólo tú puedes activarla o desactivarla, en cumplimiento de la Ley de Habeas Data y el principio de autodeterminación informativa. Los administradores pueden ver el total agregado pero NO añadir personas por la fuerza.'
+              ? 'Tu suscripción es individual: sólo tú puedes prenderla o apagarla, como lo pide la Ley de Habeas Data. Los administradores ven cuántos del equipo lo reciben, pero no pueden suscribir a nadie.'
               : 'Your subscription is individual. Only you can enable or disable it, per Colombia\'s Habeas Data law and the informational self-determination principle. Admins can see the aggregate count but CANNOT force-subscribe anyone.'}
           </div>
 
@@ -123,33 +155,37 @@ function SuscripcionContent() {
           {isAdmin && (
             <div className="rounded-lg border border-border bg-card p-4 space-y-1">
               <MonoLabel>
-                {locale.startsWith('es') ? 'Vista agregada (admin)' : 'Aggregate view (admin)'}
+                {locale.startsWith('es') ? 'Cuántos del equipo lo reciben' : 'How many on the team get it'}
               </MonoLabel>
               {!statsSupported ? (
-                <p className="text-xs font-mono text-muted-foreground">
+                <p className="text-caption font-mono text-muted-foreground">
                   {locale.startsWith('es')
-                    ? '— (endpoint no disponible)'
-                    : '— (endpoint unavailable)'}
+                    ? 'No pudimos contar a tu equipo.'
+                    : "We couldn't count your team."}
                 </p>
               ) : stats ? (
                 <>
                   <p className="text-sm font-mono tabular-nums text-foreground">
-                    {t('inmobiliaria.ai.cobranza.reporte.subscription.aggregateStat', {
-                      subscribed: String(stats.email_subscribed),
-                      total: String(stats.total_members),
-                    })}{' '}
-                    · email
+                    {locale.startsWith('es')
+                      ? cuantosDelEquipo(stats.email_subscribed, stats.total_members)
+                      : t('inmobiliaria.ai.cobranza.reporte.subscription.aggregateStat', {
+                          subscribed: String(stats.email_subscribed),
+                          total: String(stats.total_members),
+                        })}{' '}
+                    · {locale.startsWith('es') ? 'por correo' : 'by email'}
                   </p>
                   <p className="text-sm font-mono tabular-nums text-foreground">
-                    {t('inmobiliaria.ai.cobranza.reporte.subscription.aggregateStat', {
-                      subscribed: String(stats.whatsapp_subscribed),
-                      total: String(stats.total_members),
-                    })}{' '}
-                    · WhatsApp
+                    {locale.startsWith('es')
+                      ? cuantosDelEquipo(stats.whatsapp_subscribed, stats.total_members)
+                      : t('inmobiliaria.ai.cobranza.reporte.subscription.aggregateStat', {
+                          subscribed: String(stats.whatsapp_subscribed),
+                          total: String(stats.total_members),
+                        })}{' '}
+                    · {locale.startsWith('es') ? 'por WhatsApp' : 'by WhatsApp'}
                   </p>
                 </>
               ) : (
-                <p className="text-xs font-mono text-muted-foreground">…</p>
+                <p className="text-caption font-mono text-muted-foreground">…</p>
               )}
             </div>
           )}

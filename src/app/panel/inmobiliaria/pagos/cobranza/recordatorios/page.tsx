@@ -94,6 +94,7 @@ import { ESPACIO_DE_LA_PLATA, decimalesEnPantalla, seMuestranLosCentavos } from 
 // QA-IA-95 (05-10-2026): el mes en palabras («octubre de 2026»), no «2026-10».
 import { nombreDelMes } from '@/lib/recaudo/meses'
 import { CampoDeMes } from '@/components/ui/campo-de-mes'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const CANALES: { value: CanalDeCobranza; label: string }[] = [
   { value: 'CORREO', label: 'Correo' },
@@ -103,8 +104,8 @@ const CANALES: { value: CanalDeCobranza; label: string }[] = [
 /** P8 a («centavos en todo»): los centavos sólo si los hay. CE-01 (QA-PAGOS-95 r2): «$ » con espacio duro. */
 function pesos(valor: number): string {
   return seMuestranLosCentavos(valor)
-    ? `$${ESPACIO_DE_LA_PLATA}${valor.toLocaleString('es-CO', decimalesEnPantalla(valor))}`
-    : `$${ESPACIO_DE_LA_PLATA}${Math.round(valor).toLocaleString('es-CO')}`
+    ? `$${ESPACIO_DE_LA_PLATA}${valor.toLocaleString(localeDeLasCifras(), decimalesEnPantalla(valor))}`
+    : `$${ESPACIO_DE_LA_PLATA}${Math.round(valor).toLocaleString(localeDeLasCifras())}`
 }
 
 /** `2026-10-04` → `sábado, 4 de octubre`. Sin husos: es un día del calendario. */

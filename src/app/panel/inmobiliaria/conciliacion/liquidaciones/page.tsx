@@ -84,6 +84,7 @@ import {
   type SettlementStatus,
 } from '@/lib/hooks/conciliacion/use-conciliacion-settlements'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 // ── Estado de liquidación (set cerrado) ──────────────────────────────────────
 
@@ -115,7 +116,7 @@ const STATUS_PILL: Record<SettlementStatus, string> = {
 // ── Formato ──────────────────────────────────────────────────────────────────
 
 function fmtCop(val: number): string {
-  return plataEnPantalla('es-CO', {
+  return plataEnPantalla(localeDeLasCifras, {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,

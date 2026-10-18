@@ -19,6 +19,7 @@ import type {
 } from '@/lib/api/documentos.service';
 import { numeroDelContrato } from '@/lib/contratos/numero-del-contrato';
 import { ESPACIO_DE_LA_PLATA, plataEnPantalla } from '@/lib/plata/escribir-plata';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 // ─── Etiquetas ───────────────────────────────────────────────────────────────
 
@@ -259,7 +260,7 @@ export function formatearPorcentaje(valor: number): string {
 
 /** `2500000` → «$ 2.500.000». Pesos enteros. */
 export function formatearPesos(valor: number): string {
-  return `$${ESPACIO_DE_LA_PLATA}${plataEnPantalla('es-CO', { maximumFractionDigits: 0 }).format(valor)}`;
+  return `$${ESPACIO_DE_LA_PLATA}${plataEnPantalla(localeDeLasCifras, { maximumFractionDigits: 0 }).format(valor)}`;
 }
 
 // ─── Puede generarse ─────────────────────────────────────────────────────────

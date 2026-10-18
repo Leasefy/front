@@ -3,6 +3,7 @@
 import { type ReactNode } from 'react';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { Lock } from '@phosphor-icons/react';
+import { useTr } from '@/lib/i18n/use-tr';
 
 interface PermissionGateProps {
   /** Module to check (e.g. 'cobros', 'reportes', 'properties') */
@@ -27,6 +28,7 @@ interface PermissionGateProps {
  * ```
  */
 export function PermissionGate({ module, action, children, fallback }: PermissionGateProps) {
+  const tr = useTr();
   const { canAccess, isLoading } = usePermissions();
 
   // While loading, render nothing to avoid flash
@@ -48,10 +50,10 @@ export function PermissionGate({ module, action, children, fallback }: Permissio
         <Lock weight="duotone" className="h-5 w-5 text-fg-subtle" />
       </div>
       <h3 className="text-sm font-semibold text-fg">
-        Acceso restringido
+        {tr("Acceso restringido")}
       </h3>
       <p className="mt-1.5 max-w-sm text-xs text-fg-subtle">
-        No tienes permiso para acceder a esta seccion. Contacta al administrador de tu agencia.
+        {tr("No tienes permiso para acceder a esta seccion. Contacta al administrador de tu agencia.")}
       </p>
     </div>
   );

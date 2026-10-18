@@ -354,6 +354,10 @@ export interface CrearContratoManualDto extends Omit<CreateContractDto, 'applica
     correo?: string;
     telefono?: string;
   };
+  /** CONTR-6 (QA 17-10): obligatoria si el inmueble no tiene comisión. */
+  comisionPorcentaje?: number;
+  /** CONTR-7: vivienda o comercial; sin mandarlo, el back lo saca del tipo del inmueble. */
+  usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
 }
 
 export interface ContratoManualCreadoBackend {

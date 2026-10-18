@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
+import { useTr } from '@/lib/i18n/use-tr';
+import { diaDeLaProximaAccion, proximaAccionVencida } from '@/lib/pipeline/proxima-accion';
 
 // Risk level colors for badge
 const RISK_LEVEL_COLORS: Record<string, { bg: string; text: string }> = {
@@ -52,13 +54,15 @@ export function PipelineCard({
   isDragging = false,
   dragHandleProps,
 }: PipelineCardProps) {
+  const tr = useTr();
   const { t, formatDate: formatDateI18n } = useI18n();
   const stageInfo = getPipelineStageInfo(item.stage);
   const nombreDelAgente = useContext(NombresDeAgentesContext)[item.agenteId];
   const riskColors = item.riskLevel ? RISK_LEVEL_COLORS[item.riskLevel] : null;
 
-  // Check if overdue
-  const isOverdue = item.nextActionDate && new Date(item.nextActionDate) < new Date();
+  // IMANA-5: la fecha es un DÍA; vencida sólo si ya pasó en Colombia.
+  const isOverdue = proximaAccionVencida(item.nextActionDate);
+  const diaDeLaAccion = diaDeLaProximaAccion(item.nextActionDate);
   const daysWarning = item.daysInStage >= DAYS_WARNING_THRESHOLD;
   const daysCritical = item.daysInStage >= DAYS_CRITICAL_THRESHOLD;
 
@@ -209,13 +213,13 @@ export function PipelineCard({
               <CalendarCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="truncate">{item.nextAction}</p>
-                {item.nextActionDate && (
+                {diaDeLaAccion && (
                   <p className={cn(
                     'text-[10px] mt-0.5',
                     isOverdue ? 'font-medium' : 'opacity-70'
                   )}>
-                    {isOverdue ? t('inmobiliaria.pipeline.overdue') + ': ' : ''}
-                    {formatDateI18n(new Date(item.nextActionDate), { day: 'numeric', month: 'short' })}
+                    {isOverdue ? t('inmobiliaria.pipeline.overdue') + ' ' : ''}
+                    {formatDateI18n(diaDeLaAccion, { day: 'numeric', month: 'short' })}
                   </p>
                 )}
               </div>
@@ -230,7 +234,7 @@ export function PipelineCard({
             'px-2 py-1 rounded-full text-[10px] font-medium',
             stageInfo?.color || 'bg-muted text-muted-foreground'
           )}>
-            {stageInfo?.labelEs || item.stage}
+            {tr(stageInfo?.labelEs || item.stage)}
           </span>
 
           {/* Assigned Agent (small text) */}

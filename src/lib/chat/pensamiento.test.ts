@@ -108,6 +108,7 @@ describe('la cifra del resultado', () => {
       antes: '',
       cifra: 985_507_187,
       formato: 'moneda',
+      locale: 'es-CO',
       despues: ' en 561 clientes',
     });
     expect(partirPorLaCifra({ texto: '2 coincidencias: un inquilino y un propietario', cifra: 2 })).toMatchObject({
@@ -171,5 +172,31 @@ describe('el tiempo y el lector de pantalla', () => {
     expect(lineaParaLectores(pasos, t)).toBe('Tu cartera al 2 de octubre: $48.600.000 en 31 clientes');
     const conVivo = [...pasos, paso({ id: 'b', fase: 'despacho', agente: 'pagos', texto: 'Le pido al especialista de pagos: “x”…' })];
     expect(lineaParaLectores(conVivo, t)).toBe('Le pido a Cobri: “x”…');
+  });
+});
+
+/**
+ * Nico (16-10-2026): con el panel en inglés el micro traduce el pensamiento.
+ * La cifra llega con los separadores del inglés (el panel en inglés escribe la
+ * plata al estilo de EE. UU.) y «el especialista de X» como «the X specialist»:
+ * el panel la cuenta en ese formato y le pone el nombre igual.
+ */
+describe('el pensamiento que llega en inglés', () => {
+  it('la cifra con comas también se cuenta, y en su formato', () => {
+    expect(partirPorLaCifra({ texto: '$985,507,187 across 561 clients', cifra: 985_507_187, formato: 'moneda' })).toEqual({
+      antes: '',
+      cifra: 985_507_187,
+      formato: 'moneda',
+      locale: 'en-US',
+      despues: ' across 561 clients',
+    });
+    expect(cifraEnTexto(31_850_000, 'moneda', 'en-US')).toBe('$31,850,000');
+  });
+
+  it('«the X specialist» lleva el nombre del equipo', () => {
+    expect(conNombreDelEquipo("I'm asking the payments specialist: “October payments”…", 'pagos', t)).toBe(
+      "I'm asking Cobri: “October payments”…"
+    );
+    expect(conNombreDelEquipo("The collections specialist couldn't finish", 'cobranza', t)).toBe("Mori couldn't finish");
   });
 });

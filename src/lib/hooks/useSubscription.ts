@@ -8,6 +8,7 @@ import type { DisplaySubscription, BackendSubscriptionPlan } from '@/lib/api/sub
 import type { PlanId, AgencyPlan, PricingModel } from '@/lib/types/subscription';
 import { AGENCY_PLANS, BASE_EVALUATION_PRICE_COP } from '@/lib/constants/subscription-plans';
 import { consumeMySubscriptionSeed } from '@/lib/auth/bootstrap-seed';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /**
  * Hook to get the current user's subscription.
@@ -142,7 +143,7 @@ function deriveAgencyFeatures(
   } else {
     const priced =
       backend.evaluationCreditPrice > 0
-        ? ` a $${backend.evaluationCreditPrice.toLocaleString('es-CO')} COP c/u`
+        ? ` a $${backend.evaluationCreditPrice.toLocaleString(localeDeLasCifras())} COP c/u`
         : ' incluidas';
     if (evalLimit === null) {
       features.push(`Evaluaciones IA ilimitadas${priced}`);

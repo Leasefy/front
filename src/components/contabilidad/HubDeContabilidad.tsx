@@ -117,6 +117,7 @@ import {
 import { gastosApi } from '@/lib/api/gastos.service';
 import { procesosApi } from '@/lib/api/procesos.service';
 import { exogenaApi } from '@/lib/api/exogena.service';
+import { cuentasDeLasDiferenciasApi } from '@/lib/api/cuentas-de-las-diferencias';
 import {
   alertasDeContabilidad,
   describirAlerta,
@@ -151,6 +152,7 @@ import { EN_CURSO_EN_EL_CENTRO } from '@/components/procesos/estado-del-proceso'
 import { DetalleDeAsiento } from './asientos/DetalleDeAsiento';
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
 import { leerFallo } from '@/lib/errores/traductor-de-errores';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const BASE = '/panel/inmobiliaria/contabilidad';
 
@@ -192,6 +194,8 @@ interface Portada {
   facturas: EstadoDeFacturas | null;
   lotes: EstadoDeLotes | null;
   exogena: EstadoDeExogena | null;
+  /** Gastos del banco conciliados sin asiento (CONC/CONTA-1); `null` = no se pudo saber. */
+  diferencias: { total: number; valorCop: number } | null;
   /** Lo que tiró cada consulta que falló, entero. Ausente = no falló. */
   fallos: Partial<Record<ConsultaDeLaPortada, unknown>>;
 }
@@ -211,6 +215,7 @@ const nadaTodavia = (): Portada => ({
   facturas: null,
   lotes: null,
   exogena: null,
+  diferencias: null,
   fallos: {},
 });
 
@@ -229,7 +234,20 @@ const PEDIDOS: Record<ConsultaDeLaPortada, () => Promise<Parche>> = {
     ).total,
   }),
   cierre: async () => ({ cierre: await contabilidadApi.asientos.cierre() }),
-  faltantes: async () => ({ faltantes: await contabilidadApi.asientos.faltantes() }),
+  faltantes: async () => {
+    // CONTA-1: lo que la conciliación aprobó y no tiene asiento viaja con los
+    // faltantes; si su ruta falla (back viejo), la alerta de siempre sigue.
+    const [faltantes, diferencias] = await Promise.all([
+      contabilidadApi.asientos.faltantes(),
+      Promise.resolve()
+        .then(() => cuentasDeLasDiferenciasApi.porAsentar())
+        .then(
+          (d) => (d && typeof d.total === 'number' ? { total: d.total, valorCop: d.valorCop } : null),
+          () => null,
+        ),
+    ]);
+    return { faltantes, diferencias };
+  },
   balance: async () => {
     const b = await contabilidadApi.reportes.balanceDePrueba({});
     return { balance: { cuadra: b.cuadra, diferenciaCop: b.diferenciaCop } };
@@ -1006,7 +1024,7 @@ const REVISIONES: { consulta: ConsultaDeLaPortada; que: string }[] = [
 ];
 
 function plural(n: number, singular: string, varios: string): string {
-  return `${n.toLocaleString('es-CO')} ${n === 1 ? singular : varios}`;
+  return `${n.toLocaleString(localeDeLasCifras())} ${n === 1 ? singular : varios}`;
 }
 
 /** «2 cobros, 1 recibo de caja y 3 lotes de giros». */
@@ -1041,6 +1059,7 @@ export function HubDeContabilidad() {
         facturas: datos.facturas,
         lotes: datos.lotes,
         exogena: datos.exogena,
+        diferencias: datos.diferencias,
         // QA-FACT-CONTA-95 r2 (CB-A-07): sin plan de cuentas, lo primero es eso.
         cuentasActivas: datos.cuentasActivas,
       }).map((a) => describirAlerta(a, formatCurrency)),
@@ -1142,7 +1161,7 @@ export function HubDeContabilidad() {
                   className="font-mono font-semibold tabular-nums text-fg"
                   title={trozo.rotulo}
                 >
-                  {trozo.valor === null ? '—' : trozo.valor.toLocaleString('es-CO')}
+                  {trozo.valor === null ? '—' : trozo.valor.toLocaleString(localeDeLasCifras())}
                 </strong>
               ),
             )}

@@ -283,3 +283,17 @@ describe('describirAlerta — las cuatro nuevas', () => {
     }
   });
 });
+
+// CONTA-1 (QA de agentes 17-10): 4 gastos del banco conciliados ($25.225) sin
+// asiento y la portada de Contabilidad no lo decía.
+describe('alertasDeContabilidad — gastos del banco sin asiento', () => {
+  const base = { faltantes: null, balance: null, cierre: null, mesAnterior: null };
+  it('con lo que la conciliación aprobó sin asiento, avisa', () => {
+    const a = alertasDeContabilidad({ ...base, diferencias: { total: 4, valorCop: 25_225 } });
+    expect(a).toContainEqual({ tipo: 'DIFERENCIAS_SIN_ASIENTO', total: 4, valorCop: 25_225 });
+  });
+  it('sin nada por asentar (o sin saberlo), no', () => {
+    expect(alertasDeContabilidad({ ...base, diferencias: { total: 0, valorCop: 0 } })).toEqual([]);
+    expect(alertasDeContabilidad({ ...base, diferencias: null })).toEqual([]);
+  });
+});

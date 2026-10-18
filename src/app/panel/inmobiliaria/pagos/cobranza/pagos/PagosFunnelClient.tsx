@@ -68,6 +68,7 @@ import {
   type EstadoVisible,
 } from '@/lib/cobranza/pago-vocab'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 void React
 
@@ -84,7 +85,7 @@ const DATE_WINDOWS: DateWindow[] = ['today', '7d', '30d', '90d', 'mtd']
  */
 const COLUMNAS = 6
 
-const copFormat = plataEnPantalla('es-CO', {
+const copFormat = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

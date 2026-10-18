@@ -37,10 +37,17 @@ export function segundosDeEspera(
   // es el 429 propio de T-0109 (`CODIGO_EN_ESPERA` — reenvío de OTP dentro
   // del cooldown). Se prueba primero el genérico por compatibilidad: si
   // algún día un cuerpo trajera los dos, gana el de siempre.
+  // CONTR-4 (QA 17-10): el back anida los `segundos` de `CODIGO_EN_ESPERA`
+  // en `details`; se leen también de ahí.
+  const detalles =
+    cuerpo && typeof cuerpo === 'object' && (cuerpo as { details?: unknown }).details
+      ? ((cuerpo as { details: { segundos?: unknown } }).details ?? {})
+      : {}
   const delCuerpo =
     cuerpo && typeof cuerpo === 'object'
       ? ((cuerpo as { reintentarEnSegundos?: unknown; segundos?: unknown }).reintentarEnSegundos ??
-         (cuerpo as { segundos?: unknown }).segundos)
+         (cuerpo as { segundos?: unknown }).segundos ??
+         detalles.segundos)
       : undefined
   if (typeof delCuerpo === 'number' && Number.isFinite(delCuerpo) && delCuerpo > 0) {
     return Math.ceil(delCuerpo)

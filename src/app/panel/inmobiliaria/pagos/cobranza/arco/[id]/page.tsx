@@ -86,13 +86,18 @@ function useArcoActionBase(requestId: string): string | null {
  * ancho de sobra y lleva el año completo; la ficha de la derecha son 320px y con
  * el año de cuatro cifras la etiqueta se truncaba.
  */
+// QA-AGENTES 16-10: el timeline con el mes en palabras, sin el año y en 24 h
+// («16 de oct, 13:39»; el año está en la ficha de la derecha): con «16/10/2026, …» o
+// con el año la fila no cabía a 390 px y empujaba la tarjeta. Los dos en la
+// hora de Colombia (un navegador en otra zona movía la hora de una solicitud
+// con plazo legal).
 const timelineDateTime = new Intl.DateTimeFormat('es-CO', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-  hour: 'numeric',
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
   minute: '2-digit',
-  hour12: true,
+  hourCycle: 'h23',
+  timeZone: 'America/Bogota',
 })
 
 const shortDateTime = new Intl.DateTimeFormat('es-CO', {
@@ -102,6 +107,7 @@ const shortDateTime = new Intl.DateTimeFormat('es-CO', {
   hour: 'numeric',
   minute: '2-digit',
   hour12: true,
+  timeZone: 'America/Bogota',
 })
 
 // ─── STATUS TIMELINE ────────────────────────────────────────────────────────────
@@ -973,7 +979,8 @@ function DetalleArco(props: ArcoDetailPageProps) {
       </div>
 
       {/* Two-column layout: left (timeline + resolve panel), right (sidebar) */}
-      <div className="grid md:grid-cols-[1fr_320px] gap-6">
+      {/* `[&>*]:min-w-0`: a 390 px las columnas no se encogían y la ficha se salía (QA-AGENTES 16-10). */}
+      <div className="grid md:grid-cols-[1fr_320px] gap-6 [&>*]:min-w-0">
         {/* LEFT COLUMN */}
         <div className="space-y-4">
           <StatusTimeline

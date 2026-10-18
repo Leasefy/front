@@ -16,6 +16,7 @@ import type { AsientoContable, FiltrosDeAsientos, PaginaDeAsientos } from '@/lib
 import { MAX_LIMITE_DE_ASIENTOS } from '@/lib/api/contabilidad.service';
 import { NOMBRE_DE_ORIGEN } from './asientos';
 import { diaDe } from './fechas';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 export const COLUMNAS_DEL_CSV = [
   'Número',
@@ -90,7 +91,7 @@ export function nombreDelCsv(desde: string, hasta: string, hoy: string): string 
 export class LibroDemasiadoGrande extends Error {
   constructor(public readonly total: number) {
     super(
-      `El rango tiene ${total.toLocaleString('es-CO')} asientos y el archivo admite hasta ${MAX_ASIENTOS_POR_CSV.toLocaleString('es-CO')}. Achica el rango.`,
+      `El rango tiene ${total.toLocaleString(localeDeLasCifras())} asientos y el archivo admite hasta ${MAX_ASIENTOS_POR_CSV.toLocaleString(localeDeLasCifras())}. Achica el rango.`,
     );
     this.name = 'LibroDemasiadoGrande';
   }

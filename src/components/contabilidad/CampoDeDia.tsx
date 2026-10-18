@@ -24,6 +24,7 @@ import { DatePicker } from '@leasefy/cadence';
 
 import { aFechaIso, fechaLocal } from '@/lib/fechas-locales';
 import { cn } from '@/lib/utils';
+import { useTr } from '@/lib/i18n/use-tr';
 
 export interface CampoDeDiaProps {
   /** El `id` del botón: es el del `<label htmlFor>` y el que recibe el foco. */
@@ -73,6 +74,7 @@ export const CampoDeDia = forwardRef<HTMLButtonElement, CampoDeDiaProps>(functio
   className,
   testid,
 }, ref) {
+  const tr = useTr();
   /*
    * El `DatePicker` de Cadence no deja pasar atributos ARIA a su botón; el
    * mensaje de error y «obligatorio» se le ponen acá, al botón mismo (que es
@@ -126,7 +128,7 @@ export const CampoDeDia = forwardRef<HTMLButtonElement, CampoDeDiaProps>(functio
           aria-label={etiquetaDeQuitar}
           data-testid={testid ? `${testid}-quitar` : undefined}
         >
-          Quitar la fecha
+          {tr("Quitar la fecha")}
         </button>
       ) : null}
     </div>

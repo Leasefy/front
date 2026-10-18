@@ -54,6 +54,19 @@ export function mesDeHoy(hoy: Date = new Date()): string {
   return `${hoy.getFullYear()}-${mm}`;
 }
 
+/**
+ * PROP-2 (QA de agentes 17-10): ¿se ofrece «Enviar por correo»? Sólo si quien
+ * mira puede mandarlo Y el extracto trae al menos una propiedad. El mes que
+ * liquidó el sistema anterior (antes de la fecha de cartera) sale vacío, en
+ * $ 0, y se le mandaba igual al propietario.
+ */
+export function sePuedeEnviarElExtracto(
+  puedeEnviar: boolean | undefined,
+  extracto: { lineItems: readonly unknown[] } | null | undefined,
+): boolean {
+  return puedeEnviar !== false && (extracto?.lineItems.length ?? 0) > 0;
+}
+
 export function ExtractoDelPropietarioDialog({
   propietarioId,
   propietarioName,
@@ -183,7 +196,7 @@ export function ExtractoDelPropietarioDialog({
               <ExtractoPropietario
                 extracto={extracto}
                 onDownloadPDF={descargarPdf}
-                onEmail={puedeEnviar ? enviarPorCorreo : undefined}
+                onEmail={sePuedeEnviarElExtracto(puedeEnviar, extracto) ? enviarPorCorreo : undefined}
                 acciones="afuera"
               />
             )}
@@ -198,7 +211,7 @@ export function ExtractoDelPropietarioDialog({
             <AccionesDelExtracto
               extracto={extracto}
               onDownloadPDF={descargarPdf}
-              onEmail={puedeEnviar ? enviarPorCorreo : undefined}
+              onEmail={sePuedeEnviarElExtracto(puedeEnviar, extracto) ? enviarPorCorreo : undefined}
               className="w-full"
             />
           </DialogFooter>

@@ -52,6 +52,7 @@ import type {
 import { formatCurrency } from '@/lib/format';
 import { bpsComoPorcentaje } from '@/lib/migracion/valores-de-origen';
 import { etiquetaDelTipo } from './TipoDeLasFilasSinTipo';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 const TIPOS = [
   { value: 'apartment', label: 'Apartamento' },
@@ -534,7 +535,7 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
                 type="number"
                 placeholder={
                   canonPorConfirmar
-                    ? `Por confirmar${typeof fila.datos.monthlyRent === 'number' ? ` (valor por defecto $${fila.datos.monthlyRent.toLocaleString('es-CO')})` : ''}`
+                    ? `Por confirmar${typeof fila.datos.monthlyRent === 'number' ? ` (valor por defecto $${fila.datos.monthlyRent.toLocaleString(localeDeLasCifras())})` : ''}`
                     : 'Canon mensual'
                 }
                 aria-label="Canon mensual"

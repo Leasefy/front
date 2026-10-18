@@ -71,6 +71,33 @@ export interface LinkDePagoDeCuota {
    * está paga en vez de «Cobri todavía no le ha escrito».
    */
   pagada?: boolean;
+  /**
+   * OPCIONAL (COBRI-9, QA de los agentes 16-10; un back viejo no lo manda): el
+   * último aviso de Cobri que NO salió (Ley 2300, horario, pidió no recibir,
+   * una persona lo deshizo…) si después no salió otro. `null` si no hay.
+   */
+  noSalio?: AvisoDeCobriQueNoSalio | null;
+  /**
+   * OPCIONAL (COBRI-12, QA de los agentes 16-10): el inquilino pagó por el
+   * link pero el pago no se pudo aplicar a la cuota, que sigue debiéndose.
+   * `linkId` (un back anterior no lo manda): el caso de la Bandeja del Piloto
+   * es `pagorev:<linkId>`, con «Reintentar aplicar».
+   */
+  pagoSinAplicar?: { motivo: string; linkId?: string } | null;
+  /** OPCIONAL (COBRI-13): una persona la marcó «en seguimiento» — Cobri y Reti la pausan. */
+  seguimiento?: { por: string; desde: string } | null;
+  /** OPCIONAL (COBRI-13): cuándo la mandaron a cobranza (ISO). */
+  aCobranzaDesde?: string | null;
+}
+
+/** Un aviso de Cobri que no salió, como lo manda el back (ya sin lo técnico). */
+export interface AvisoDeCobriQueNoSalio {
+  hito: string;
+  porQueNo: string;
+  /** No se vuelve a intentar ese aviso. */
+  definitivo: boolean;
+  /** ISO. */
+  cuando: string;
 }
 
 export interface PaginaDeLinksDePago {

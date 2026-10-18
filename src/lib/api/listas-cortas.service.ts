@@ -28,6 +28,13 @@ export const listasCortasApi = {
     const r = await apiClient.get<{ porInmueble?: Record<string, ListaCorta> }>('/inmobiliaria/matching/listas-cortas');
     return r?.porInmueble ?? {};
   },
+  /** MATCH-3: los puestos de la lista corta de UN inmueble (Candidatos del inmueble). */
+  async puestosDelInmueble(propertyId: string): Promise<Map<string, PuestoEnLaListaCorta>> {
+    const r = await apiClient.get<{ listaCorta?: ListaCorta | null }>(
+      `/inmobiliaria/matching/inmuebles/${encodeURIComponent(propertyId)}/lista-corta`,
+    );
+    return r?.listaCorta ? puestosPorPostulacion({ [propertyId]: r.listaCorta }) : new Map();
+  },
 };
 
 /** applicationId → su puesto y por qué, de todas las listas. Puro. */

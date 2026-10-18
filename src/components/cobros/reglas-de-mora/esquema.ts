@@ -25,6 +25,7 @@ import {
   DISPARADORES_DE_REGLA,
   FORMULAS_DE_REGLA,
 } from '@/lib/api/reglas-de-mora.types';
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
 export const esquemaDeRegla = z
   .object({
@@ -231,7 +232,7 @@ export function topeDeUsuraDe(valor: number | string | null | undefined): number
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-const FORMATO_DE_PORCENTAJE = new Intl.NumberFormat('es-CO', {
+const FORMATO_DE_PORCENTAJE = cifrasDeLaPantalla({
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });

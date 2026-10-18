@@ -45,6 +45,7 @@ import {
   type ModalidadDeAdministracion,
 } from '@/lib/api/ciclo-de-vida.service';
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** Los campos de `AceptarSeguroOpcionalDto` que este formulario muestra. */
 type CampoDelSeguro = 'aceptadoPor' | 'aceptadoEl' | 'primaCop';
@@ -72,7 +73,7 @@ const ID_DE_LA_POLIZA: Record<CampoDeLaPoliza, string> = {
   cobertura: 'poliza-cobertura',
 };
 
-const PESOS = plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+const PESOS = plataEnPantalla(localeDeLasCifras, { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 const MODALIDADES: { valor: ModalidadDeAdministracion | ''; nombre: string; ayuda: string }[] = [
   { valor: '', nombre: 'Como hoy', ayuda: 'La administración del mandato, si tiene, se le cobra al inquilino aparte del canon.' },

@@ -1093,7 +1093,9 @@
         "toastOk": "{{label}} · done",
         "contador": "{{total}} total",
         "contadorFiltrado": "{{visibles}} of {{total}}",
-        "filtrarPorTipo": "Filter by decision type",
+        "filtrarPorTipo": "Filter by agent or decision type",
+        "buscarPlaceholder": "Tenant, contract, property…",
+        "buscarAria": "Search the inbox",
         "limpiar": "Show all",
         "decisiones": "decisions",
         "decidir": "Decide",
@@ -2945,7 +2947,8 @@
           "enviado": "Sent",
           "pagado": "Paid",
           "vencido": "Expired",
-          "fallido": "Payment failed"
+          "fallido": "Payment failed",
+          "enRevision": "Payment under review"
         },
         "detalle": {
           "ninguno": "Cobri has not written about this installment yet.",
@@ -2953,7 +2956,12 @@
           "enMoraPorOtra": "The tenant owes an earlier overdue installment: until then Cobri does not write to them; collections takes it.",
           "pagada": "Already paid: Cobri has nothing to collect for this installment.",
           "vencido": "The link expired unpaid. Cobri no longer writes about this installment: collections takes it from here.",
-          "fallido": "The tenant tried to pay and the payment gateway did not approve it."
+          "fallido": "The tenant tried to pay and the payment gateway did not approve it. The link still works to try again.",
+          "esperaAprobacion": "Cobri has it ready and is waiting for your approval to send it by WhatsApp.",
+          "siguienteEsperaAprobacion": "Cobri's next notice, with this same link, is waiting for your approval to go out by WhatsApp.",
+          "noSalio": "The «{{hito}}» notice did not go out: {{porQue}}.",
+          "noSalioDefinitivo": "The «{{hito}}» notice did not go out: {{porQue}}. That notice will not be retried.",
+          "pagoSinAplicar": "The payment came in through the link, but it was not applied to the installment, which is still owed: {{motivo}}"
         },
         "pagadoEl": "Paid on {{fecha}}",
         "ultimoAviso": "Last reminder: {{fecha}}",
@@ -2972,6 +2980,8 @@
           "link": "Payment link"
         },
         "contrato": "Contract {{numero}}",
+        "revisarYAprobar": "Review and approve",
+        "resolverEnLaBandeja": "Resolve in the Inbox",
         "verLink": "View the link",
         "verLinkAria": "View {{inquilino}}'s payment link (opens in a new tab)",
         "conteoUno": "1 installment",
@@ -4360,8 +4370,8 @@
         "accountTypeChecking": "Checking",
         "email": "Email",
         "call": "Call",
-        "agentTitle": "Assigned Agent",
-        "noAgentAssigned": "No agent assigned",
+        "agentTitle": "Advisor in charge",
+        "noAgentAssigned": "No one in charge yet",
         "commissionDistribution": "Commission distribution",
         "commissionSplitNotAvailableForSale": "A property for sale does not split commission between agent and agency at this time.",
         "agentShare": "Agent",
@@ -5475,6 +5485,10 @@
       "adjustFilters": "Try adjusting your search filters",
       "noRequestsRegistered": "No maintenance requests registered",
       "tlReported": "Request reported",
+      "tlReportedByAgency": "{{nombre}} (agency)",
+      "tlReportedByTheAgency": "The agency",
+      "tlReportedByTenant": "{{nombre}} (tenant)",
+      "tlReportedByOwner": "{{nombre}} (owner)",
       "tlQuoteReceived": "Quote received",
       "tlWaitingApproval": "Waiting for approval",
       "tlSelectedQuote": "Selected quote",
@@ -5867,7 +5881,7 @@
         "select": "Select",
         "noQuotes": "No quotes",
         "noQuotesDesc": "No quotes available for this repair",
-        "requestQuote": "Request quote",
+        "requestQuote": "Add quote",
         "requestMoreToCompare": "Request more quotes to compare",
         "newQuote": "New quote",
         "quoteSelected": "Quote selected",
@@ -6086,6 +6100,12 @@
         "cobranza": "Collections",
         "cotizador": "Insurability",
         "detalle": "Detail",
+        "paginas": {
+          "equipo": "Collections AI team",
+          "inbox": "Conversations inbox",
+          "promesas": "Payment promises",
+          "resultados": "Agent results"
+        },
         "mantenimiento": "Maintenance"
       },
       "volverA": {
@@ -7825,7 +7845,7 @@
             "actor": "Actor",
             "action": "Action",
             "dateRange": "Date range",
-            "search": "Cédula (hash) or quote ID"
+            "search": "ID number or case reference"
           },
           "actions": {
             "acknowledge": "Acknowledge",
@@ -7861,17 +7881,21 @@
         "reporte": {
           "pageTitle": "Daily report",
           "kpis": {
-            "pkr": "PKR (% recovered)",
+            "pkr": "Promises kept (7 days)",
             "morosidad": "Delinquency index",
-            "outsideHours": "Outside-hours calls"
+            "outsideHours": "Outside-hours calls",
+            "pkrSinPromesas": "No promises came due in the last 7 days.",
+            "morosidadBase": "{{enMora}} of {{conContrato}} tenants with an active lease"
           },
           "topDebtors": {
-            "heading": "Top debtors",
-            "empty": "No notable debtors today"
+            "heading": "Largest balances",
+            "empty": "No notable debtors today",
+            "diasDeMora": "Days past due"
           },
           "history": {
             "heading": "History (last 30 days)",
-            "exportCsv": "Export CSV"
+            "exportCsv": "Export CSV",
+            "empty": "No reports from previous days yet. One is saved every day."
           },
           "thresholds": {
             "pageTitle": "Report thresholds",
@@ -7884,7 +7908,7 @@
               "callsOutsideAtLeast": "Minimum outside-hours calls to alert"
             },
             "submit": "Save thresholds",
-            "versionsHeading": "Previous versions",
+            "versionsHeading": "Version history",
             "rollbackConfirm": "Confirm rollback to version {{version}}?",
             "rolledBackToast": "Thresholds rolled back to version {{version}}",
             "empty": {
@@ -7903,7 +7927,7 @@
           },
           "empty": {
             "title": "No data for the daily report yet",
-            "description": "The report is generated nightly from the day's activity.",
+            "description": "The report is built every morning from collections activity.",
             "cta": {
               "label": "Set up subscription"
             }
@@ -11889,7 +11913,7 @@
       "fotosIARevisadas": "reviewed",
       "fotosIAGasto": "Estimated spend {{gasto}} of {{tope}}",
       "apagadoTitulo": "Leasefy's technical team turns it on",
-      "apagadoDescripcion": "Until then it doesn't audit your properties or suggest fixes. Once it's on, you'll see your properties here from worst to best: what they need before publishing, their issues and the photos it flags.",
+      "apagadoDescripcion": "Until then it runs no new passes and suggests no new fixes; what it proposed before it was turned off stays in the Inbox until you resolve it. Once it's on, you'll see your properties here from worst to best: what they need before publishing, their issues and the photos it flags.",
       "errorPasadaTitulo": "Niti's last run failed",
       "filtroAria": "Filter audited properties",
       "filtro": {

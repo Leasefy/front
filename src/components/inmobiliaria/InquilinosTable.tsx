@@ -88,6 +88,7 @@ import {
   type FiltroDeEstado,
   type Inquilino,
 } from '@/lib/api/inquilinos.service';
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
 /**
  * La única variante de `/contratos/nuevo` que carga sin postulación: a secas
@@ -230,7 +231,7 @@ export interface BarraDeInquilinosProps {
   conteos?: ConteosDeInquilinos | null;
 }
 
-const NUMERO = new Intl.NumberFormat('es-CO');
+const NUMERO = cifrasDeLaPantalla();
 
 /**
  * Una pestaña con su número al lado.

@@ -32,6 +32,7 @@ import {
   type ResolucionDeFacturacion,
 } from '@/lib/api/facturacion-por-mes.service'
 import { cuantos, sinLaRutaDeFacturacion } from '@/lib/facturacion/por-facturar'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 export interface CajonDelDetalleDeLaResolucionProps {
   /** `null` = cerrado. */
@@ -142,14 +143,14 @@ export function CajonDelDetalleDeLaResolucion({
               </Dato>
               <Dato rotulo="Rango">
                 <span className="font-mono tabular-nums">
-                  {r.desde.toLocaleString('es-CO')}–{r.hasta.toLocaleString('es-CO')}
+                  {r.desde.toLocaleString(localeDeLasCifras())}–{r.hasta.toLocaleString(localeDeLasCifras())}
                 </span>
               </Dato>
               <Dato rotulo="Números usados">
-                <span className="font-mono tabular-nums">{r.usados.toLocaleString('es-CO')}</span>
+                <span className="font-mono tabular-nums">{r.usados.toLocaleString(localeDeLasCifras())}</span>
                 <span className="text-fg-muted">
                   {' '}· quedan{' '}
-                  <span className="font-mono tabular-nums">{r.disponibles.toLocaleString('es-CO')}</span>
+                  <span className="font-mono tabular-nums">{r.disponibles.toLocaleString(localeDeLasCifras())}</span>
                 </span>
               </Dato>
               <Dato rotulo="Vigencia">

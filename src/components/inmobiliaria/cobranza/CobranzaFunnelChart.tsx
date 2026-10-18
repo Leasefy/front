@@ -5,6 +5,12 @@ import { MonoLabel } from '@leasefy/cadence'
 import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece'
 import { useI18n } from '@/lib/i18n'
 import { type CarteraStage, stageColorClasses, STAGE_LABELS_ES, STAGE_LABELS_EN } from '@/lib/cartera'
+import { useTr } from '@/lib/i18n/use-tr'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+
+/** «12,5 %» (antes «12.5%»: punto decimal y sin espacio). */
+const porcentajeEnEs = (pct: number): string =>
+  `${pct.toLocaleString(localeDeLasCifras(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}\u00a0%`
 
 interface CobranzaFunnelChartProps {
   stages: Array<{ stage: CarteraStage; count: number }>
@@ -12,6 +18,7 @@ interface CobranzaFunnelChartProps {
 }
 
 export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunnelChartProps) {
+  const tr = useTr();
   const { t, locale } = useI18n()
 
   const total = stages.reduce((sum, s) => sum + s.count, 0)
@@ -51,7 +58,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
           {t('inmobiliaria.ai.cobranza.overview.funnel.title')}
         </h3>
         <p className="text-xs text-fg-muted">
-          Qué porcentaje de tus casos está en cada etapa de mora.
+          {tr("Qué porcentaje de tus casos está en cada etapa de mora.")}
         </p>
       </div>
 
@@ -70,7 +77,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
             key={stage}
             className={`${colors.bg} flex items-center justify-center overflow-hidden`}
             style={{ flexBasis: `${pct}%`, minWidth: pct > 0 ? '4px' : '0' }}
-            title={`${label}: ${count} (${pct.toFixed(1)}%)`}
+            title={`${label}: ${count} (${porcentajeEnEs(pct)})`}
           />
         ))}
       </BarraQueCrece>
@@ -88,7 +95,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
             key={stage}
             className={`${colors.bg} flex items-center px-3 gap-2`}
             style={{ height: `${Math.max(pct, 4)}px`, width: '100%' }}
-            title={`${label}: ${count} (${pct.toFixed(1)}%)`}
+            title={`${label}: ${count} (${porcentajeEnEs(pct)})`}
           />
         ))}
       </BarraQueCrece>
@@ -102,7 +109,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
                 sabe la taxonomía de memoria. El código queda de apoyo. */}
             <span className="text-fg-muted">{label}</span>
             <MonoLabel className="text-fg-subtle opacity-60">{stage}</MonoLabel>
-            <span className="opacity-70 font-mono tabular-nums">{pct.toFixed(1)}%</span>
+            <span className="opacity-70 font-mono tabular-nums">{porcentajeEnEs(pct)}</span>
           </div>
         ))}
       </div>
@@ -129,7 +136,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
             <tr key={stage}>
               <td>{label} ({stage})</td>
               <td>{count}</td>
-              <td>{pct.toFixed(1)}%</td>
+              <td>{porcentajeEnEs(pct)}</td>
             </tr>
           ))}
         </tbody>

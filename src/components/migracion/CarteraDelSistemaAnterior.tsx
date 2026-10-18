@@ -56,9 +56,10 @@ import { diaLegible } from "@/lib/mandato/textos";
 
 import { fraseDelArchivoVacio, leerTablaDelArchivo, type HojaYEncabezado } from "./encabezado-del-archivo";
 import { HojaDelLibro } from "./ImportarCuentas";
+import { localeDeLasCifras } from "@/lib/i18n/idioma-de-las-cifras";
 
 const IGNORAR = "__ignorar__";
-const numero = (n: number) => n.toLocaleString("es-CO");
+const numero = (n: number) => n.toLocaleString(localeDeLasCifras());
 const MAX_FILAS_A_LA_VISTA = 50;
 
 const NOMBRE_DEL_ESTADO: Record<CargaDeSaldosAnteriores["filas"][number]["estado"], string> = {

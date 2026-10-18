@@ -13,6 +13,7 @@
  */
 
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 /** El subconjunto de la política que forma el acuerdo general. */
 export interface AcuerdoGeneral {
@@ -23,7 +24,7 @@ export interface AcuerdoGeneral {
   allowedPaymentPlans: number[]
 }
 
-const pesos = plataEnPantalla('es-CO', {
+const pesos = plataEnPantalla(localeDeLasCifras, {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

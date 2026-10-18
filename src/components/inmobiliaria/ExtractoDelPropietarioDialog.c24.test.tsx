@@ -32,7 +32,18 @@ const EXTRACTO: Extracto = {
   propietarioName: 'Rentas',
   month: '2026-10',
   generatedAt: '2026-10-03T18:00:00.000Z',
-  lineItems: [],
+  // Con una propiedad: un extracto vacío no se ofrece para enviar (PROP-2).
+  lineItems: [
+    {
+      cuotaId: 'q-1', cobroId: null, contractId: 'ct-1', consignacionId: 'c-1',
+      propertyTitle: 'Apartamento en La Floresta', propertyAddress: 'Cra 42',
+      tenantName: 'Mónica', rentAmount: 720_000, adminAmount: 0, totalAmount: 720_000, paidAmount: 720_000,
+      status: 'PAID', commissionPercent: 0, commissionAmount: 0, netAmount: 720_000, rentCollected: 720_000,
+      conceptosAFavor: 0, conceptosACargo: 0, deTerceros: 0,
+      dispersionId: null, giradoCop: 0, enGiroCop: 0, porGirarCop: 720_000,
+      estadoDelGiro: 'POR_GIRAR', renglones: [],
+    },
+  ],
   sinMovimiento: null,
   totals: {
     totalRent: 0, totalAdmin: 0, totalPaid: 0, totalCommission: 0, totalNet: 0,
@@ -78,5 +89,12 @@ describe('C-24/F-08 · ver el extracto no es mandarlo', () => {
   it('con permiso (o sin decirlo, como antes): sí está «Enviar»', async () => {
     await abrir(true);
     expect(document.body.querySelector('[data-testid="extracto-enviar"]')).not.toBeNull();
+  });
+
+  it('PROP-2 · un extracto sin propiedades (el mes que liquidó el sistema anterior) se ve, pero no se envía', async () => {
+    api.getExtracto.mockReset().mockResolvedValue({ ...EXTRACTO, lineItems: [] });
+    await abrir(true);
+    expect(document.body.querySelector('[data-testid="extracto-descargar"]')).not.toBeNull();
+    expect(document.body.querySelector('[data-testid="extracto-enviar"]')).toBeNull();
   });
 });

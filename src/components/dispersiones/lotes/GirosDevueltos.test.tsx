@@ -410,7 +410,7 @@ describe('🔴 ola E: lo que faltaba del giro devuelto', () => {
       await new Promise((r) => setTimeout(r, 0));
     });
     expect(document.body.querySelector('[data-testid="estado-del-aviso"]')?.textContent).toContain(
-      'envío de correos está apagado',
+      'el correo está apagado en esta copia de pruebas',
     );
     expect(document.body.querySelector('[data-testid="linea-enlazada"]')?.textContent).toContain(
       '17 de septiembre de 2026',

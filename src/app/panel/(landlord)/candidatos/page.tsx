@@ -20,6 +20,7 @@ import { useI18n } from '@/lib/i18n';
 import { Button, Spinner, Card, Badge } from '@/components/ui';
 import { PageHeader, KpiCard, SearchInput, SegmentedControl, MonoLabel } from '@leasefy/cadence';
 import type { Candidate } from '@/lib/types/candidate';
+import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 type StatusFunnel = 'all' | 'new' | 'reviewing' | 'approved' | 'rejected';
 type RiskFunnel = 'all' | 'A' | 'B' | 'C' | 'D';
@@ -37,7 +38,7 @@ interface CandidateRow extends Candidate {
 }
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+  return formatoDeCifras(localeDeLasCifras(), { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 }
 
 // The candidate-detail endpoint does not expose income figures, so they arrive

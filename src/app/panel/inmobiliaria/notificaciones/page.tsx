@@ -19,9 +19,10 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useAvisosAgrupados } from '@/lib/hooks/use-avisos-agrupados';
 import type { GrupoDeAvisos } from '@/lib/api/avisos-agrupados.service';
 import { FILTROS_DE_CATEGORIA } from '@/lib/notificaciones/aviso';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 function plural(n: number, uno: string, varios: string) {
-  return `${n.toLocaleString('es-CO')} ${n === 1 ? uno : varios}`;
+  return `${n.toLocaleString(localeDeLasCifras())} ${n === 1 ? uno : varios}`;
 }
 
 export default function NotificacionesDeLaInmobiliariaPage() {

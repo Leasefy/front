@@ -15,6 +15,7 @@ import type {
   DisparadorDeRegla,
   FormulaDeRegla,
 } from '@/lib/api/reglas-de-mora.types';
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
 export const NOMBRE_DEL_CONCEPTO: Record<ConceptoDeRegla, string> = {
   INTERES_DE_MORA: 'Interés de mora',
@@ -57,7 +58,7 @@ export const EXPLICACION_DE_LA_BASE: Record<BaseDeCalculo, string> = {
   TOTAL_ADEUDADO: 'Todo lo que se debe, recargos previos incluidos. Ojo: compone.',
 };
 
-const FORMATO_DE_PORCENTAJE = new Intl.NumberFormat('es-CO', {
+const FORMATO_DE_PORCENTAJE = cifrasDeLaPantalla({
   minimumFractionDigits: 0,
   maximumFractionDigits: 4,
 });

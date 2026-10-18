@@ -27,6 +27,8 @@ interface Props {
   };
   /** Tras subir un archivo: vuelve a leer el caso. */
   onCambio?: () => void;
+  /** AVALI-3: desde el portal del propietario (cuenta de inquilino que también es propietaria). */
+  comoPropietario?: boolean;
 }
 
 const MEDIO: Record<string, string> = {
@@ -36,7 +38,7 @@ const MEDIO: Record<string, string> = {
   PRESENCIAL: 'en persona',
 };
 
-export function RespuestaYArchivosDelCaso({ caseId, solicitud, onCambio }: Props) {
+export function RespuestaYArchivosDelCaso({ caseId, solicitud, onCambio, comoPropietario }: Props) {
   const [adjuntos, setAdjuntos] = useState(solicitud.adjuntos ?? []);
   const [subiendo, setSubiendo] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -50,7 +52,9 @@ export function RespuestaYArchivosDelCaso({ caseId, solicitud, onCambio }: Props
     }
     setSubiendo(true);
     try {
-      const nuevo = await pqrsApi.subirAdjunto(caseId, archivo);
+      const nuevo = comoPropietario
+        ? await pqrsApi.subirAdjunto(caseId, archivo, { comoPropietario })
+        : await pqrsApi.subirAdjunto(caseId, archivo);
       setAdjuntos((a) => [...a, { id: nuevo.id, nombre: nuevo.nombre, tipo: nuevo.tipo, subidoAt: nuevo.subidoAt }]);
       toast.success(`«${archivo.name}» quedó adjunto a tu solicitud`);
       onCambio?.();
@@ -65,7 +69,9 @@ export function RespuestaYArchivosDelCaso({ caseId, solicitud, onCambio }: Props
 
   async function abrir(id: string) {
     try {
-      const { url } = await pqrsApi.abrirAdjunto(caseId, id);
+      const { url } = comoPropietario
+        ? await pqrsApi.abrirAdjunto(caseId, id, { comoPropietario })
+        : await pqrsApi.abrirAdjunto(caseId, id);
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (e) {
       toast.error('No se pudo abrir el archivo', {

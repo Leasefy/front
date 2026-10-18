@@ -58,6 +58,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { ApiError } from '@/lib/api/client';
 import { camposDelError, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 /** El mismo mínimo que exige el back en el flujo del inquilino. */
 export const MINIMO_DEL_MOTIVO = 10;
@@ -67,7 +68,7 @@ export const MAX_LARGO_DEL_MOTIVO = 500;
 
 /** La frase del tope, la MISMA del back (`MENSAJES_DEL_PIPELINE.motivoLargo`). */
 export function fraseDelMotivoLargo(maximo: number): string {
-  return `El motivo puede tener hasta ${maximo.toLocaleString('es-CO')} caracteres.`;
+  return `El motivo puede tener hasta ${maximo.toLocaleString(localeDeLasCifras())} caracteres.`;
 }
 
 export interface OpcionesDelRechazo {

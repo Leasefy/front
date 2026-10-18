@@ -28,7 +28,8 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { useAuth } from '@/lib/auth'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button, Input } from '@/components/ui'
+import { Button } from '@/components/ui'
+import { CampoDePlata } from '@/components/ui/campo-de-plata'
 import { Textarea } from '@/components/ui/textarea'
 import { Spinner } from '@/components/ui/spinner'
 import { AnimatedNumber, CrossFade, Presence, SegmentedControl, Card } from '@leasefy/cadence'
@@ -60,6 +61,7 @@ import {
   DebtorPicker,
   type PickedDebtor,
 } from '@/components/inmobiliaria/cobranza/DebtorPicker'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const DEUDORES_HREF = `${BASE}/deudores`
@@ -93,10 +95,12 @@ const TOPE = 'calc(4rem + var(--secciones-h, 0px) + var(--workspace-nav-h, 3rem)
 
 type EstadoFiltro = 'todas' | DisputeStatus
 
+// Sin «En revisión» (QA-AGENTES 16-10): ningún camino del micro pone una
+// disputa en ese estado, así que el filtro siempre daba 0. Si alguna llegara
+// así, se ve en «Todas» con su etiqueta.
 const FILTRO_OPCIONES: { value: EstadoFiltro; label: string }[] = [
   { value: 'todas', label: 'Todas' },
   { value: 'open', label: 'Abiertas' },
-  { value: 'in_review', label: 'En revisión' },
   { value: 'resolved', label: 'Resueltas' },
 ]
 
@@ -115,7 +119,7 @@ interface AbrirDisputaModalProps {
 function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps) {
   const [debtor, setDebtor] = useState<PickedDebtor | null>(null)
   const [reason, setReason] = useState('')
-  const [monto, setMonto] = useState('')
+  const [monto, setMonto] = useState<number | undefined>(undefined)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   /** El error de cada campo que mandó el micro en `campos` (un 400). */
@@ -127,8 +131,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
   const debtorIdOk = debtor !== null
   const reasonLen = reason.trim().length
   const reasonOk = reasonLen >= REASON_MIN && reasonLen <= REASON_MAX
-  const montoTrim = monto.trim()
-  const montoNum = montoTrim === '' ? undefined : Number(montoTrim)
+  const montoNum = monto !== undefined && Number.isFinite(monto) ? monto : undefined
   const montoOk =
     montoNum === undefined || (Number.isFinite(montoNum) && montoNum >= 0)
   const canSubmit = debtorIdOk && reasonOk && montoOk && !submitting
@@ -147,7 +150,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
     if (res.ok) {
       setDebtor(null)
       setReason('')
-      setMonto('')
+      setMonto(undefined)
       onClose()
     } else if (res.status === 403) {
       // El 403 del micro no trae un `message` para la persona: se dice acá.
@@ -180,7 +183,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
   /** Lo que se le dice a la persona debajo de cada campo: el tope del cliente o lo del micro. */
   const errorDelMotivo =
     reasonLen > REASON_MAX
-      ? `El motivo puede tener hasta ${REASON_MAX.toLocaleString('es-CO')} caracteres.`
+      ? `El motivo puede tener hasta ${REASON_MAX.toLocaleString(localeDeLasCifras())} caracteres.`
       : erroresDelServidor.reason
   const errorDelMonto = !montoOk
     ? 'El monto debe ser un número mayor o igual a cero.'
@@ -256,16 +259,16 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             >
               Monto en disputa (opcional)
             </label>
-            <Input
+            {/* Sólo números, con formato de pesos (QA-AGENTES 16-10): antes
+                aceptaba «12abc» y «-500» y luego avisaba. */}
+            <CampoDePlata
               id="disputa-monto"
-              inputMode="numeric"
+              areas="cobros_recibos_y_cartera"
               value={monto}
-              onChange={(e) => {
-                setMonto(e.target.value)
+              onChange={(v) => {
+                setMonto(Number.isFinite(v) ? v : undefined)
                 setErroresDelServidor(({ disputedAmount: _, ...resto }) => resto)
               }}
-              placeholder="COP"
-              className="tabular-nums"
               aria-invalid={errorDelMonto ? true : undefined}
               aria-describedby={errorDelMonto ? 'disputa-monto-error' : undefined}
             />
@@ -508,9 +511,11 @@ function DisputasContent() {
         />
         {disputes.length > 0 && (
           <span className="text-xs text-fg-muted tabular-nums">
-            <AnimatedNumber value={counts.open} format={(n) => String(Math.round(n))} /> abiertas ·{' '}
-            <AnimatedNumber value={counts.in_review} format={(n) => String(Math.round(n))} /> en revisión ·{' '}
-            <AnimatedNumber value={counts.resolved} format={(n) => String(Math.round(n))} /> resueltas
+            {/* «1 abierta», no «1 abiertas» (QA-AGENTES 16-10). */}
+            <AnimatedNumber value={counts.open} format={(n) => String(Math.round(n))} />{' '}
+            {counts.open === 1 ? 'abierta' : 'abiertas'} ·{' '}
+            <AnimatedNumber value={counts.resolved} format={(n) => String(Math.round(n))} />{' '}
+            {counts.resolved === 1 ? 'resuelta' : 'resueltas'}
           </span>
         )}
       </div>
@@ -532,7 +537,7 @@ function DisputasContent() {
           }
           primaryCta={
             filtro === 'todas'
-              ? { label: 'Ir a deudores', href: DEUDORES_HREF }
+              ? { label: 'Ir a los casos', href: DEUDORES_HREF }
               : undefined
           }
         />

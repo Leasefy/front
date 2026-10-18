@@ -217,6 +217,8 @@ export interface Application {
   preScoringIdentityApplied?: boolean;
   /** true cuando (además o en cambio) se precargaron datos de una postulación anterior. */
   previousApplicationDataApplied?: boolean;
+  /** true cuando algún dato salió de la CUENTA (`datosDeLaCuenta`, POST-1). */
+  accountDataApplied?: boolean;
   createdAt: string;
   updatedAt: string;
 }

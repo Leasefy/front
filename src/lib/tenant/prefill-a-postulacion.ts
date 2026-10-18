@@ -151,20 +151,37 @@ export function aplicarPrefill(prev: Application, prefill: ApplicationPrefill): 
   const previa: Partial<ApplicationPrefillData> | null = prefill.hasPreviousApplication
     ? prefill
     : null
+  // POST-1 (QA 18-10, Nico «El back trae la cuenta»): la cuenta llena SÓLO lo
+  // que el estudio y la postulación anterior no traen. El tipo y el número del
+  // documento van en pareja: si la identidad ya trae número, el de la cuenta no entra.
+  const cuenta = prefill.datosDeLaCuenta ?? null
+  const docDeLaCuenta = identidad.documentNumber ? null : cuenta
+  const deLaCuenta = {
+    fullName: identidad.fullName ? null : (cuenta?.fullName ?? null),
+    email: identidad.email ? null : (cuenta?.email ?? null),
+    documentType: docDeLaCuenta?.documentType ?? null,
+    documentNumber: docDeLaCuenta?.documentNumber ?? null,
+    dateOfBirth: previa?.dateOfBirth ? null : (cuenta?.dateOfBirth ?? null),
+    phone: previa?.phone ? null : (cuenta?.phone ?? null),
+    currentAddress: previa?.currentAddress ? null : (cuenta?.currentAddress ?? null),
+  }
 
   return {
     ...prev,
     personal: {
       ...prev.personal,
-      fullName: identidad.fullName ?? prev.personal.fullName ?? '',
+      fullName: identidad.fullName ?? deLaCuenta.fullName ?? prev.personal.fullName ?? '',
       documentType:
         (identidad.documentType as Application['personal']['documentType']) ??
+        deLaCuenta.documentType ??
         prev.personal.documentType,
-      documentNumber: identidad.documentNumber ?? prev.personal.documentNumber ?? '',
-      dateOfBirth: previa?.dateOfBirth ?? prev.personal.dateOfBirth ?? '',
-      phone: previa?.phone ?? prev.personal.phone ?? '',
-      email: identidad.email ?? prev.personal.email ?? '',
-      currentAddress: previa?.currentAddress ?? prev.personal.currentAddress ?? '',
+      documentNumber:
+        identidad.documentNumber ?? deLaCuenta.documentNumber ?? prev.personal.documentNumber ?? '',
+      dateOfBirth: previa?.dateOfBirth ?? deLaCuenta.dateOfBirth ?? prev.personal.dateOfBirth ?? '',
+      phone: previa?.phone ?? deLaCuenta.phone ?? prev.personal.phone ?? '',
+      email: identidad.email ?? deLaCuenta.email ?? prev.personal.email ?? '',
+      currentAddress:
+        previa?.currentAddress ?? deLaCuenta.currentAddress ?? prev.personal.currentAddress ?? '',
       timeAtCurrentAddress: previa?.timeAtCurrentAddress ?? prev.personal.timeAtCurrentAddress,
       maritalStatus:
         (previa?.maritalStatus as Application['personal']['maritalStatus']) ??
@@ -208,6 +225,7 @@ export function aplicarPrefill(prev: Application, prefill: ApplicationPrefill): 
     preScoringLockedFields: Array.from(identidad.lockedFields),
     preScoringIdentityApplied: identidad.vieneDelEstudio,
     previousApplicationDataApplied: !!previa,
+    accountDataApplied: Object.values(deLaCuenta).some((v) => v != null && v !== ''),
     prefilledAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }

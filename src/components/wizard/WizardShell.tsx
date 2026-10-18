@@ -92,7 +92,9 @@ export function WizardShell({
     ? application.previousApplicationDataApplied
       ? 'Tu nombre y documento vienen de tu estudio de arrendamiento vigente y no se pueden editar. El resto de tus datos los precargamos de tu postulación anterior — revisa cada paso antes de enviar.'
       : 'Tu nombre y documento vienen de tu estudio de arrendamiento vigente y no se pueden editar. Revisa el resto de los datos antes de enviar.'
-    : 'Precargamos los datos de tu postulación anterior. Revisa cada paso antes de enviar.';
+    : application.previousApplicationDataApplied
+      ? 'Precargamos los datos de tu postulación anterior. Revisa cada paso antes de enviar.'
+      : 'Precargamos lo que ya sabemos de tu cuenta: nombre, correo, celular y documento. Revisa que esté bien antes de seguir.';
 
   /*
    * Hacia dónde va el paso: adelante entra por la derecha, atrás por la

@@ -20,13 +20,18 @@ const { toastMock, assignAgent } = vi.hoisted(() => ({
 
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }))
 vi.mock('@/lib/api/inmobiliaria.service', () => ({ consignacionesApi: { assignAgent } }))
-vi.mock('@/lib/hooks/useInmobiliaria', () => ({
-  useAgentes: () => ({
-    agentes: [{ id: 'm1', userId: 'u1', name: 'Ana Agente', role: 'agent', status: 'active' }],
+vi.mock('@/lib/hooks/use-asesores', () => ({
+  // QA 17-10 (IMANA-1): los mismos que reciben leads, administradoras incluidas.
+  useAsesores: () => ({
+    asesores: [
+      { userId: 'u1', nombre: 'Ana Administradora', rol: 'ADMIN', leadsActivos: 0, ultimoLeadEl: null },
+      { userId: 'u2', nombre: 'Leo Asesor', rol: 'AGENTE', leadsActivos: 2, ultimoLeadEl: null },
+    ],
     isLoading: false,
-    errorCrudo: null,
+    error: null,
     refetch: vi.fn(),
   }),
+  rolDelAsesor: (rol: string) => (rol === 'ADMIN' ? 'Administración' : 'Asesor comercial'),
 }))
 
 import { AsignarAgente } from './AsignarAgente'
@@ -52,13 +57,27 @@ async function asignar() {
     root.render(<AsignarAgente abierto onCerrar={vi.fn()} consignacionId="c1" onAsignado={vi.fn()} />)
   })
   const boton = Array.from(document.body.querySelectorAll('button')).find((b) =>
-    b.textContent?.includes('Ana Agente'),
+    b.textContent?.includes('Ana Administradora'),
   ) as HTMLButtonElement
   await act(async () => {
     boton.click()
     await Promise.resolve()
   })
 }
+
+describe('AsignarAgente — a quién ofrece (QA 17-10, IMANA-1)', () => {
+  it('🔴 la administradora también se puede poner a cargo, con su rol; el título dice «asesor»', async () => {
+    assignAgent.mockResolvedValueOnce({})
+    await asignar()
+    const texto = document.body.textContent ?? ''
+    expect(texto).toContain('Asignar asesor')
+    expect(texto).toContain('Administración')
+    expect(texto).toContain('Leo Asesor')
+    expect(texto).toContain('2 leads abiertos')
+    expect(assignAgent).toHaveBeenCalledWith('c1', 'u1')
+    expect(toastMock.success).toHaveBeenCalledWith('Ana Administradora queda a cargo del inmueble')
+  })
+})
 
 describe('AsignarAgente — cuando asignar falla', () => {
   it('🔴 un 5xx dice «de nuestro lado» con la referencia, no el texto crudo', async () => {
@@ -67,8 +86,8 @@ describe('AsignarAgente — cuando asignar falla', () => {
     )
     await asignar()
     const [titulo, opciones] = toastMock.error.mock.calls[0]
-    expect(titulo).toBe('No pudimos asignar el agente')
-    expect(opciones.description).toMatch(/^No pudimos asignar el agente: algo falló de nuestro lado/)
+    expect(titulo).toBe('No pudimos asignar el asesor')
+    expect(opciones.description).toMatch(/^No pudimos asignar el asesor: algo falló de nuestro lado/)
     expect(opciones.description).toContain('ab12cd34')
   })
 

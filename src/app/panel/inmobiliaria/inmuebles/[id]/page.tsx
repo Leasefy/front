@@ -1,12 +1,13 @@
 'use client';
 import { SituacionComercialDelInmueble } from '@/components/comercial/SituacionComercial';
 import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
+import { useAsesores, rolDelAsesor } from '@/lib/hooks/use-asesores';
 import { CandidatosDelInmueble } from '@/components/inmobiliaria/CandidatosDelInmueble';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CrossFade } from '@leasefy/cadence';
@@ -258,7 +259,15 @@ function ConsignacionDetailContent() {
   const { propietario } = usePropietario(consignacion?.propietarioId);
   // Por `userId` o por `id`: el back guarda el del usuario y `getById`
   // esperaba el del miembro, así que nunca resolvía. Ver el hook.
-  const { agente } = useAgenteDeConsignacion(consignacion?.agenteId);
+  const { agente, isLoading: cargandoAgentes } = useAgenteDeConsignacion(consignacion?.agenteId);
+  // QA 17-10 (IMANA-1): a cargo puede quedar una administradora, que no está
+  // en la lista de agentes: su nombre sale de la de asesores (la de los leads).
+  const { asesores } = useAsesores(Boolean(consignacion?.agenteId) && !cargandoAgentes && !agente);
+  const encargado = useMemo(() => {
+    if (agente || !consignacion?.agenteId) return null;
+    const a = asesores.find((x) => x.userId === consignacion.agenteId);
+    return a ? { nombre: a.nombre?.trim() || 'Sin nombre registrado', rol: rolDelAsesor(a.rol) } : null;
+  }, [agente, asesores, consignacion?.agenteId]);
   // The photos live on the Property entity, not on the consignación
   // (consignacion.propertyThumbnail is never populated by the back — see
   // ledger §2.1). A failed/loading fetch just leaves `property` unset, which
@@ -671,6 +680,7 @@ function ConsignacionDetailContent() {
           <div>
             <AgenteSection
               agente={agente ?? undefined}
+              encargado={encargado}
               commissionPercent={consignacion.commissionPercent}
               isSaleListing={consignacion.listingType === 'sale'}
               onReassign={handleReassignAgent}

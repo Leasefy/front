@@ -1,4 +1,5 @@
 import type { AgencyInviteResult } from '@/lib/types/inmobiliaria';
+import { COPIA_DE_PRUEBAS_SIN_CORREOS } from '@/lib/texto/correo-apagado'
 
 /**
  * Qué decir de una invitación pendiente y del correo que la acompañó.
@@ -49,7 +50,7 @@ export function estadoDeLaInvitacion({
     case 'sent':
       return { texto: 'Invitación enviada', tono: 'enviada' };
     case 'suppressed':
-      return { texto: 'Correo retenido: este entorno es de pruebas', tono: 'aviso' };
+      return { texto: 'Correo retenido: es una copia de pruebas', tono: 'aviso' };
     case 'not_configured':
       return { texto: 'Correo no enviado: el servidor no manda correos', tono: 'aviso' };
     case 'failed':
@@ -68,7 +69,7 @@ export function queDecirDelCorreo(correo: EstadoDelCorreo, email: string): Estad
     case 'sent':
       return { texto: `Le enviamos la invitación a ${email}.`, tono: 'enviada' };
     case 'suppressed':
-      return { texto: 'Este entorno es de pruebas y no manda correos: pásale tú el enlace.', tono: 'aviso' };
+      return { texto: `${COPIA_DE_PRUEBAS_SIN_CORREOS}: pásale tú el enlace.`, tono: 'aviso' };
     case 'not_configured':
       return { texto: 'El servidor todavía no manda correos: pásale tú el enlace.', tono: 'aviso' };
     case 'failed':

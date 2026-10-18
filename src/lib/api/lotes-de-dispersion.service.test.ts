@@ -218,6 +218,13 @@ describe('lotesDeDispersionApi.solicitarAprobacion', () => {
     expect(init.method).toBe('POST');
     expect(init.body).toBeUndefined();
   });
+
+  it('GIRI: con «Ya lo revisé», lo manda en el cuerpo', async () => {
+    const fetchMock = mockFetch({ lote: { ...LOTE, estado: 'APROBADO' }, exigeCodigo: false, motivoDelCodigo: null, expiraAt: null, enviadoA: [] });
+    await lotesDeDispersionApi.solicitarAprobacion(ID, true);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toEqual({ yaLoRevise: true });
+  });
 });
 
 describe('lotesDeDispersionApi.aprobar', () => {

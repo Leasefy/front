@@ -10636,7 +10636,7 @@
       "duracionCita": "Duración de cada visita",
       "horariosGuardados": "Horarios de visita guardados",
       "horarioAgenteTitle": "Horario de visitas",
-      "horarioAgenteDesc": "Un solo horario para todas las propiedades de este agente.",
+      "horarioAgenteDesc": "Un solo horario para todas las propiedades de este asesor.",
       "horarioAgenteGuardado": "Horario aplicado a {count} propiedades",
       "horarioAgenteError": "No se pudo guardar el horario",
       "citaTitle": "Agendar una cita",

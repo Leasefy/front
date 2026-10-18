@@ -49,6 +49,7 @@ import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
 import { useTr } from '@/lib/i18n/use-tr';
+import { diaDeLaProximaAccion } from '@/lib/pipeline/proxima-accion';
 
 interface PipelineDetailProps {
   isOpen: boolean;
@@ -564,12 +565,12 @@ export function PipelineDetail({
                 </div>
               )}
 
-              {item.nextActionDate && (
+              {diaDeLaProximaAccion(item.nextActionDate) && (
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.targetDate')}</span>
                   <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                     <CalendarBlank className="w-4 h-4 text-muted-foreground" />
-                    {formatDateI18n(new Date(item.nextActionDate), { day: 'numeric', month: 'short' })}
+                    {formatDateI18n(diaDeLaProximaAccion(item.nextActionDate)!, { day: 'numeric', month: 'short' })}
                   </span>
                 </div>
               )}

@@ -43,6 +43,21 @@ export interface DisponibilidadDeVisitas {
   agendas?: Record<TipoDeVisita, AvailabilityWindow[]>;
   /** Vacío = no se acepta ninguna, aunque haya horarios cargados. */
   visitTypes: TipoDeVisita[];
+  /**
+   * IMANA-3: el horario del asesor a cargo, cuando él tiene uno: ése MANDA
+   * sobre el del inmueble (es lo que el aviso ofrece). `null`/ausente = manda
+   * el del inmueble (o un back anterior).
+   */
+  delAsesor?: HorarioDelAsesor | null;
+}
+
+/** El horario del asesor que rige las visitas de un inmueble. */
+export interface HorarioDelAsesor {
+  userId: string;
+  /** Su ficha en Equipo (`/configuracion/equipo/:id`), si es de la inmobiliaria. */
+  memberId: string | null;
+  nombre: string;
+  ventanas: AvailabilityWindow[];
 }
 
 /** Qué página del feed se quiere. Sin esto el back devolvía el feed entero. */

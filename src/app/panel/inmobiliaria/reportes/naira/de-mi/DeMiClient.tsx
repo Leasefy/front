@@ -66,7 +66,7 @@ export function DeMiClient(): JSX.Element {
         </div>
         {esGerencia && otros.length > 0 ? (
           <div className="w-64 space-y-1">
-            <label htmlFor="naira-ficha-de" className="text-xs text-fg-muted">
+            <label htmlFor="naira-ficha-de" className="text-caption text-fg-muted">
               {t('inmobiliaria.ai.naira.deMi.verFichaDe')}
             </label>
             <Select value={elegida} onValueChange={setElegida}>

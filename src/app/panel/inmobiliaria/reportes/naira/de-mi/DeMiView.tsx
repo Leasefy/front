@@ -16,9 +16,9 @@ import { fechaLegible } from '@/lib/naira/vocabulario-de-seguimiento'
 function Cifra({ etiqueta, valor, nota }: { readonly etiqueta: string; readonly valor: number; readonly nota?: string }): JSX.Element {
   return (
     <div className="space-y-1 rounded-md border border-border bg-bg p-3">
-      <p className="text-xs text-fg-muted">{etiqueta}</p>
+      <p className="text-caption text-fg-muted">{etiqueta}</p>
       <p className="font-mono text-xl font-semibold text-fg">{valor}</p>
-      {nota ? <p className="text-xs text-fg-muted">{nota}</p> : null}
+      {nota ? <p className="text-caption text-fg-muted">{nota}</p> : null}
     </div>
   )
 }
@@ -51,7 +51,7 @@ export function DeMiView({ ficha }: { readonly ficha: NairaPersonSheet }): JSX.E
             nota={ficha.datos.briefingsPorCanal.map((c) => canal(c.clave) + ': ' + c.n).join(' · ') || undefined}
           />
         </div>
-        <p className="text-xs text-fg-muted">{t('inmobiliaria.ai.naira.deMi.datos.sinPreguntas')}</p>
+        <p className="text-caption text-fg-muted">{t('inmobiliaria.ai.naira.deMi.datos.sinPreguntas')}</p>
       </section>
 
       <section className="space-y-3">
@@ -97,7 +97,7 @@ export function DeMiView({ ficha }: { readonly ficha: NairaPersonSheet }): JSX.E
         )}
       </section>
 
-      <p className="text-xs text-fg-muted">{t('inmobiliaria.ai.naira.deMi.corte', { fecha: diaEnBogota(ficha.corte) })}</p>
+      <p className="text-caption text-fg-muted">{t('inmobiliaria.ai.naira.deMi.corte', { fecha: diaEnBogota(ficha.corte) })}</p>
     </div>
   )
 }

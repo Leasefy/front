@@ -44,8 +44,9 @@ activity feed, execution panel).
 - Cadence (`@leasefy/cadence`, `file:../cadence`): el CI y Vercel clonan el repo hermano `Leasefy/cadence` antes de
   instalar. La rama o tag a clonar sale de `.cadence-ref` (raíz de `front/`, una sola línea); sin el archivo se
   usa `main`. Lo actualiza quien cambia la versión de Cadence que la rama necesita, en el mismo commit que el
-  lockfile; mientras una rama fije un ref, `main` de Cadence no gobierna sus builds. Hoy apunta a `main`
-  (Cadence 1.2.3, que ya incluye `bugs-nico-1`).
+  lockfile; mientras una rama fije un ref, `main` de Cadence no gobierna sus builds. Hoy apunta a `bugs-nico-1`
+  de Cadence (main 1.2.3 + el arreglo del DateField del 18-10: escribir «14» en el Día dejaba «1»); al mezclarla
+  a `main` de Cadence, volver `.cadence-ref` a `main`.
   Una rama fijada nunca se borra mientras una rama de front la fije: primero se actualiza `.cadence-ref`
   (incidente 2026-10-07: el build de Main fallo con clone exit 128).
 

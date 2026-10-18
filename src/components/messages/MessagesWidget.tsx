@@ -51,6 +51,7 @@ import { InsigniaDePerfil } from '@/components/messages/InsigniaDePerfil';
 import {
   AvisoDeWhatsapp,
   EstadoDeWhatsappEnMensaje,
+  estadoDeWhatsappQueVe,
 } from '@/components/messages/CanalDeWhatsappEnElHilo';
 /* `BotonNuevoMensaje` ya NO se importa: era la pastilla primary «Nuevo
    mensaje» que ocupaba una fila entera arriba del buscador. Nico: «podrías
@@ -1246,7 +1247,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                         se pinta nada: el mensaje sólo vivió en
                                         la plataforma. */}
                                     <EstadoDeWhatsappEnMensaje
-                                      estado={message.whatsappEstado}
+                                      estado={estadoDeWhatsappQueVe(message.whatsappEstado, { enPanelDeInmobiliaria })}
                                       error={message.whatsappError}
                                       locale={locale}
                                     />

@@ -86,6 +86,8 @@ function normalizarCeldasDeFecha(
   XLSX: typeof import('xlsx'),
   worksheet: import('xlsx').WorkSheet,
   enterosLargos: ReadonlyMap<string, string> = new Map(),
+  /** T-0168: el libro cuenta los días desde 1904 (Excel para Mac antiguo). */
+  date1904 = false,
 ): void {
   const dosDigitos = (n: number) => String(n).padStart(2, '0');
   for (const direccion of Object.keys(worksheet)) {
@@ -94,7 +96,7 @@ function normalizarCeldasDeFecha(
     if (!celda || typeof celda !== 'object') continue;
 
     if (celda.t === 'n' && typeof celda.z === 'string' && XLSX.SSF.is_date(celda.z)) {
-      const f = XLSX.SSF.parse_date_code(celda.v as number);
+      const f = XLSX.SSF.parse_date_code(celda.v as number, { date1904 });
       if (!f) continue;
       const iso = `${f.y}-${dosDigitos(f.m)}-${dosDigitos(f.d)}`;
       worksheet[direccion] = { t: 's', v: iso, w: iso };
@@ -360,7 +362,7 @@ export async function parseSpreadsheetFile(
 
   if (!esTexto && worksheet) {
     const enterosLargos = await enterosLargosDeLaHoja(XLSX, file, worksheet, targetSheet);
-    normalizarCeldasDeFecha(XLSX, worksheet, enterosLargos);
+    normalizarCeldasDeFecha(XLSX, worksheet, enterosLargos, workbook.Workbook?.WBProps?.date1904 === true);
   }
 
   // La fila de encabezados se lee APARTE de las filas de datos: un archivo de

@@ -4,6 +4,8 @@
  * DetalleDelCambioDeModo — paso 2 (Nico, 18-10-2026), dentro del cajón de Aprobaciones: dice qué cambio, por qué con sus
  * cifras, el modo de hoy y hasta cuándo vale. Aprobar Manual va directo; subir a Automático abre el diálogo del Piloto
  * (segundo factor); rechazar dice que no vuelve en 7 días; lo que no se aplicó dice por qué; lo decidido no tiene botones.
+ * Paso 3: lo que descubrió Naira dice «Lo descubrió Naira», su porqué tal cual y las cifras que citó; frenar se aprueba
+ * directo y dice que lo apagó.
  */
 
 import * as React from 'react'
@@ -39,12 +41,27 @@ const MANUAL: CambioDeModo = {
   regla: 'manual',
   cifras: { esperando: 60, dias: 7 },
   porQue: '',
+  origen: 'regla',
+  porqueDeNaira: null,
   propuestoEn: '2026-10-18T16:00:00.000Z',
   expiraEn: '2026-10-25T16:00:00.000Z',
   estado: 'abierto',
   razon: null,
 }
 const SUBIR: CambioDeModo = { ...MANUAL, id: 'c-2', agente: 'mantenimiento', nombre: 'Fixi (mantenimiento)', a: 'autonomo', regla: 'subir', cifras: { aprobadas: 25, descartadas: 0, dias: 30 } }
+const PORQUE = 'Siete de sus últimas doce inspecciones fallaron por lo mismo: conviene frenarlo y revisar la plantilla.'
+const FRENAR: CambioDeModo = {
+  ...MANUAL,
+  id: 'c-9',
+  agente: 'inspeccion',
+  nombre: 'Vidi (inspección)',
+  a: 'apagado',
+  regla: 'frenar',
+  cifras: { fallo_1_veces: 7, acciones_30d: 12, proceso_2_fallidas_30d: 7 },
+  porQue: `Apagar a Vidi (inspección) para tu inmobiliaria: ${PORQUE}`,
+  origen: 'naira',
+  porqueDeNaira: PORQUE,
+}
 
 beforeEach(() => {
   red.decidir.mockReset()
@@ -118,5 +135,40 @@ describe('el detalle de un cambio de modo (paso 2)', () => {
     expect(texto()).toContain('Naira ya no lo recomendaba')
     expect(boton('Aprobar')).toBeUndefined()
     expect(boton('Rechazar')).toBeUndefined()
+  })
+
+  it('[CAMBIO-F:descubierto] lo de Naira dice «Lo descubrió Naira», su porqué tal cual y las cifras que vio con su nombre', async () => {
+    await montar(FRENAR)
+    expect(document.body.querySelector('[data-naira-descubierto]')?.textContent).toBe('Lo descubrió Naira')
+    expect(texto()).toContain('Apagar a Vidi (inspección) para tu inmobiliaria')
+    expect(texto()).toContain(PORQUE)
+    const cifras = document.body.querySelector('[data-naira-cifras-citadas]')?.textContent ?? ''
+    expect(cifras).toContain('Las cifras que vio')
+    expect(cifras).toContain('Veces que falló por la misma causa7')
+    expect(cifras).toContain('Acciones en 30 días12')
+    expect(cifras).toContain('Fallidas de uno de sus procesos en 30 días7')
+    expect(texto()).toContain('deja de correr para tu inmobiliaria')
+    // Lo de las reglas no lleva la etiqueta ni la lista de cifras.
+    act(() => root.unmount())
+    root = createRoot(container)
+    await montar(MANUAL)
+    expect(document.body.querySelector('[data-naira-descubierto]')).toBeNull()
+    expect(document.body.querySelector('[data-naira-cifras-citadas]')).toBeNull()
+  })
+
+  it('[CAMBIO-F:frenar] frenar se aprueba directo y dice que lo apagó; si ya estaba apagado, lo dice', async () => {
+    red.decidir.mockResolvedValue({ kind: 'ok', resultado: { resultado: 'aplicado', razon: null, mensaje: '' } })
+    await montar(FRENAR)
+    await act(async () => boton('Aprobar')!.click())
+    expect(red.decidir).toHaveBeenCalledWith('AGY-1', 'c-9', 'aprobar')
+    expect(document.body.querySelector('[data-testid="confirmar-automatico"]')).toBeNull()
+    expect(texto()).toContain('Listo: apagué a Vidi (inspección) para tu inmobiliaria.')
+
+    act(() => root.unmount())
+    root = createRoot(container)
+    red.decidir.mockResolvedValue({ kind: 'ok', resultado: { resultado: 'no_aplicado', razon: 'modo_cambiado', mensaje: '' } })
+    await montar({ ...FRENAR, id: 'c-10' })
+    await act(async () => boton('Aprobar')!.click())
+    expect(texto()).toContain('Ya estaba apagado: no se tocó nada.')
   })
 })

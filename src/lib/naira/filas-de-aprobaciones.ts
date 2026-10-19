@@ -10,12 +10,14 @@
 
 import type { CambioDeModo } from '@/lib/api/naira/cambios-de-modo'
 import type { NairaActionSummary } from '@/lib/api/naira/contrato'
+import type { LeccionParaOri } from '@/lib/api/naira/lecciones-para-ori'
 import { CLAVE_DEL_DESTINO_EXTERNO, grupoDeLaPropuesta } from '@/lib/naira/vocabulario-de-aprobaciones'
 import { CLAVE_DEL_ROL } from '@/lib/naira/vocabulario-de-seguimiento'
 
 export type FilaDeAprobacion =
   | { readonly kind: 'accion'; readonly clave: string; readonly accion: NairaActionSummary }
   | { readonly kind: 'modo'; readonly clave: string; readonly cambio: CambioDeModo }
+  | { readonly kind: 'leccion'; readonly clave: string; readonly leccion: LeccionParaOri }
 
 export interface FilasDeAprobaciones {
   readonly porDecidir: readonly FilaDeAprobacion[]
@@ -34,10 +36,20 @@ function intercalar(filas: FilaDeAprobacion[], nueva: FilaDeAprobacion, vaAntes:
   else filas.splice(i, 0, nueva)
 }
 
-const venceEn = (f: FilaDeAprobacion): string => (f.kind === 'accion' ? f.accion.venceEn : f.cambio.expiraEn)
-const propuestaEn = (f: FilaDeAprobacion): string => (f.kind === 'accion' ? f.accion.propuestaEn : f.cambio.propuestoEn)
+/** Cuándo vence; una lección para Ori no vence (`null`). */
+const venceEn = (f: FilaDeAprobacion): string | null => (f.kind === 'accion' ? f.accion.venceEn : f.kind === 'modo' ? f.cambio.expiraEn : null)
+const propuestaEn = (f: FilaDeAprobacion): string =>
+  f.kind === 'accion' ? f.accion.propuestaEn : f.kind === 'modo' ? f.cambio.propuestoEn : f.leccion.propuestaEn
 
-export function filasDeAprobaciones(acciones: readonly NairaActionSummary[], cambios: readonly CambioDeModo[] | null): FilasDeAprobaciones {
+/**
+ * Paso 4 (Nico, 18-10-2026: «Le enseña, el admin confirma», «En Naira → Aprobaciones»): las lecciones que Naira le quiere
+ * enseñar a Ori entran en la misma tabla. No vencen: entre lo por decidir van al final; entre lo decidido, por fecha.
+ */
+export function filasDeAprobaciones(
+  acciones: readonly NairaActionSummary[],
+  cambios: readonly CambioDeModo[] | null,
+  lecciones: readonly LeccionParaOri[] | null = null,
+): FilasDeAprobaciones {
   const porDecidir: FilaDeAprobacion[] = []
   const decididas: FilaDeAprobacion[] = []
   acciones.forEach((accion, i) => {
@@ -47,7 +59,12 @@ export function filasDeAprobaciones(acciones: readonly NairaActionSummary[], cam
   })
   for (const cambio of cambios ?? []) {
     const fila: FilaDeAprobacion = { kind: 'modo', clave: `modo-${cambio.id}`, cambio }
-    if (cambio.estado === 'abierto') intercalar(porDecidir, fila, (a, b) => instante(venceEn(a)) < instante(venceEn(b)))
+    if (cambio.estado === 'abierto') intercalar(porDecidir, fila, (a, b) => instante(venceEn(a) ?? '') < instante(venceEn(b) ?? ''))
+    else intercalar(decididas, fila, (a, b) => instante(propuestaEn(a)) > instante(propuestaEn(b)))
+  }
+  for (const leccion of lecciones ?? []) {
+    const fila: FilaDeAprobacion = { kind: 'leccion', clave: `leccion-${leccion.id}`, leccion }
+    if (leccion.estado === 'por_decidir') porDecidir.push(fila)
     else intercalar(decididas, fila, (a, b) => instante(propuestaEn(a)) > instante(propuestaEn(b)))
   }
   return { porDecidir, decididas }

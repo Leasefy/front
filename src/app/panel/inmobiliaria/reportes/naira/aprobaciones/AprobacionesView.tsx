@@ -24,6 +24,7 @@ import { TablaDeAprobaciones } from '@/components/inmobiliaria/naira/TablaDeApro
 import { EmptyState } from '@/components/ui/empty-state'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { CambioDeModo } from '@/lib/api/naira/cambios-de-modo'
+import type { LeccionParaOri } from '@/lib/api/naira/lecciones-para-ori'
 import type { NairaActionsList, NairaTasksList } from '@/lib/api/naira/contrato'
 import { useI18n } from '@/lib/i18n'
 import { filasDeAprobaciones, type FilaDeAprobacion } from '@/lib/naira/filas-de-aprobaciones'
@@ -32,6 +33,8 @@ export interface AprobacionesViewProps {
   readonly lista: NairaActionsList
   /** Los cambios de modo que propone Naira; `null` = quien mira no puede aprobarlos (o no se pudieron leer). */
   readonly cambios: readonly CambioDeModo[] | null
+  /** Paso 4: lo que Naira le quiere enseñar a Ori; `null` = quien mira no puede aprobarlo (o no se pudo leer). */
+  readonly lecciones?: readonly LeccionParaOri[] | null
   /** `null` ⇒ la sección de tareas NO existe (sin task-view, 403 u otro fallo de su lectura). */
   readonly tareas: { readonly lista: NairaTasksList; readonly origen: OrigenDeLosDatos } | null
   readonly puedeCancelar: boolean
@@ -51,11 +54,11 @@ function Cuenta({ n }: { readonly n: number }): JSX.Element {
   )
 }
 
-export function AprobacionesView({ lista, cambios, tareas, puedeCancelar, hrefDelLoop, onAbrir }: AprobacionesViewProps): JSX.Element {
+export function AprobacionesView({ lista, cambios, lecciones = null, tareas, puedeCancelar, hrefDelLoop, onAbrir }: AprobacionesViewProps): JSX.Element {
   const { t } = useI18n()
   const idTareas = useId()
   const [pestana, setPestana] = useState<Pestana>('por_decidir')
-  const { porDecidir, decididas } = filasDeAprobaciones(lista.acciones, cambios)
+  const { porDecidir, decididas } = filasDeAprobaciones(lista.acciones, cambios, lecciones)
 
   return (
     <div className="space-y-6">

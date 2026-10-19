@@ -10360,13 +10360,59 @@
             "sin_veredicto": "Sin veredicto del día"
           }
         },
+        "leccionesParaOri": {
+          "titulo": "Enseñarle a Ori",
+          "deAprobaciones": "De lo que el equipo decide en Naira → Aprobaciones",
+          "deDonde": "De dónde lo sacó Naira",
+          "delAgente": "De lo que el equipo decide en la Bandeja con {{agente}}.",
+          "delProceso": "En este proceso: {{proceso}}",
+          "sentido": {
+            "aprueban": "El equipo casi siempre lo aprueba.",
+            "descartan": "El equipo casi siempre lo descarta."
+          },
+          "bajada": "Si lo apruebas, Ori lo tiene en cuenta al responder en el chat. Si lo rechazas, Naira no lo vuelve a proponer.",
+          "oriApagado": "Hoy las lecciones del chat están apagadas: lo que apruebes queda aprendido y Ori lo usará cuando se prendan.",
+          "estados": {
+            "por_decidir": "Por decidir",
+            "aprendida": "Aprendida",
+            "descartada": "Descartada"
+          },
+          "decidida": {
+            "aprendida": "Aprendida el {{fecha}}",
+            "descartada": "Descartada el {{fecha}}"
+          },
+          "propuestaEl": "Naira la propuso el {{fecha}}",
+          "aprobar": "Aprobar",
+          "rechazar": "Rechazar",
+          "resultados": {
+            "aprendida": "Listo: Ori ya lo tiene en cuenta al responder.",
+            "aprendidaApagado": "Listo: quedó aprendida. Ori la usará cuando se prendan las lecciones del chat.",
+            "descartada": "Listo: Ori no lo aprende y Naira no lo vuelve a proponer."
+          },
+          "conflicto": "Otra persona ya la decidió. Actualicé la lista.",
+          "noDisponible": "No pude hacerlo ahora. Vuelve a intentarlo en un momento.",
+          "cifras": {
+            "naira": "{{tipo}}: {{estado}} en 30 días",
+            "estadosDeNaira": {
+              "aprobadas": "aprobadas",
+              "rechazadas": "rechazadas",
+              "vencidas": "vencidas sin respuesta"
+            },
+            "cambiosDeModo": {
+              "aplicados": "Cambios de modo aplicados en 30 días",
+              "rechazados": "Cambios de modo rechazados en 30 días",
+              "vencidos": "Cambios de modo vencidos sin respuesta en 30 días"
+            }
+          }
+        },
         "cambiosDeModo": {
           "titulo": "Cambios de modo que propone Naira",
           "bajada": "Naira mira cómo trabaja cada agente y te propone el modo que le corresponde. Nada cambia hasta que una persona lo aprueba.",
           "titulos": {
             "subir": "Pasar a {{agente}} a {{modo}}",
             "bajar": "Volver a {{agente}} a {{modo}}",
-            "manual": "Pasar a {{agente}} a {{modo}}"
+            "manual": "Pasar a {{agente}} a {{modo}}",
+            "frenar": "Apagar a {{agente}} para tu inmobiliaria"
           },
           "porque": {
             "subir": "En los últimos {{dias}} días le aprobaron {{aprobadas}} y le descartaron {{descartadas}}; nada se deshizo. Te ahorraría unos {{aprobadas}} clics al mes.",
@@ -10374,6 +10420,35 @@
             "manual": "{{esperando}} propuestas suyas esperan hace más de {{dias}} días sin respuesta. En Manual prepara lo mismo, pero deja de avisarte."
           },
           "hoy": "Hoy está en {{modo}}.",
+          "descubrio": "Lo descubrió Naira",
+          "cifrasQueVio": "Las cifras que vio",
+          "bajadaFrenar": "Apagado, el agente deja de correr para tu inmobiliaria hasta que alguien lo vuelva a prender desde el Piloto. Nada cambia hasta que una persona lo aprueba.",
+          "cifras": {
+            "acciones_30d": "Acciones en 30 días",
+            "aprobadas_por_una_persona_30d": "Aprobadas por una persona en 30 días",
+            "descartadas_30d": "Descartadas en 30 días",
+            "deshechas_30d": "Deshechas en 30 días",
+            "fallidas_30d": "Fallidas en 30 días",
+            "hechas_solas_7d": "Hechas solas en 7 días",
+            "hechas_solas_que_salieron_mal_7d": "Hechas solas que salieron mal en 7 días",
+            "esperando_hace_mas_de_7d": "Esperando hace más de 7 días",
+            "esperando_ahora": "Esperando ahora",
+            "horas_para_decidir_mediana_30d": "Horas que tarda una persona en decidir (mediana)",
+            "fallo": "Veces que falló por la misma causa",
+            "proceso": {
+              "acciones": "Acciones de uno de sus procesos en 30 días",
+              "descartadas": "Descartadas de uno de sus procesos en 30 días",
+              "deshechas": "Deshechas de uno de sus procesos en 30 días",
+              "fallidas": "Fallidas de uno de sus procesos en 30 días"
+            }
+          },
+          "razonesFrenar": {
+            "modo_cambiado": "Ya estaba apagado: no se tocó nada.",
+            "no_se_pudo_aplicar": "No se pudo apagar: no cambió nada. Inténtalo desde el Piloto."
+          },
+          "razonesDeNaira": {
+            "ya_no_corresponde": "Leasefy tiene el Piloto apagado: por ahora no se puede subir a Automático. No se tocó nada."
+          },
           "aprobar": "Aprobar",
           "rechazar": "Rechazar",
           "estados": {
@@ -10391,7 +10466,8 @@
           },
           "resultados": {
             "aplicado": "Listo: cambié el modo. Queda en la Actividad del Piloto.",
-            "rechazado": "Listo: Naira no lo vuelve a proponer en 7 días."
+            "rechazado": "Listo: Naira no lo vuelve a proponer en 7 días.",
+            "apagado": "Listo: apagué a {{agente}} para tu inmobiliaria. Lo vuelves a prender desde el Piloto; queda en su Actividad."
           },
           "conflicto": "Otra persona ya la decidió, o venció. Actualicé la lista.",
           "noDisponible": "No pude hacerlo ahora. Vuelve a intentarlo en un momento.",
@@ -10423,9 +10499,13 @@
             "vence": "Vence",
             "propuesta": "Propuesta",
             "cambioDeModo": "Cambio de modo",
+            "frenarAgente": "Frenar un agente",
             "verDetalle": "Ver el detalle: {{que}}",
             "sinDecididas": "Todavía no hay nada decidido.",
-            "detalle": "Detalle de la propuesta"
+            "detalle": "Detalle de la propuesta",
+            "leccionParaOri": "Lección para Ori",
+            "ori": "Ori",
+            "noVence": "No vence"
           },
           "titularConRol": "{{tipo}} · Rol: {{rol}}",
           "titularOtroAgente": "{{tipo}} · Otro agente: {{evento}}",

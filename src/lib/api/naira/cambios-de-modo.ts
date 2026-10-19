@@ -11,6 +11,10 @@
  * `SEGUNDO_FACTOR_RECIENTE`, como el selector del Piloto) y el transporte de Naira convierte todo 403 en `sin_permiso`
  * sin mirar el cuerpo. Acá ese 403 es `segundo_factor` y el diálogo `ConfirmarAutomatico` pide las seis cifras.
  * Nunca tira: todo lo que sale mal es un `kind`.
+ *
+ * Paso 3 (Nico, 18-10-2026): también las que DESCUBRIÓ Naira con el modelo (`origen: 'naira'`, con su porqué en
+ * español), que pueden ser frenar un agente (`regla: 'frenar'`, `a: 'apagado'`). Un micro anterior no manda el origen:
+ * se lee como `regla`.
  */
 
 import { z } from 'zod'
@@ -18,6 +22,8 @@ import { z } from 'zod'
 import { agentFetch } from '@/lib/api/agent-fetch'
 
 const Modo = z.enum(['sombra', 'copiloto', 'autonomo'])
+/** El destino: un modo o `apagado` (frenar el agente para la inmobiliaria). */
+const Destino = z.enum(['sombra', 'copiloto', 'autonomo', 'apagado'])
 const Razon = z.enum(['modo_cambiado', 'ya_no_corresponde', 'no_se_pudo_aplicar'])
 
 export const CambioDeModoSchema = z.object({
@@ -25,12 +31,16 @@ export const CambioDeModoSchema = z.object({
   agente: z.string(),
   nombre: z.string(),
   de: Modo,
-  a: Modo,
-  regla: z.enum(['subir', 'bajar', 'manual']),
+  a: Destino,
+  regla: z.enum(['subir', 'bajar', 'manual', 'frenar']),
   /** Las cifras que la justifican; la frase se arma en el idioma del panel. */
   cifras: z.record(z.string(), z.number()),
   /** La misma frase, en español, armada por el micro (respaldo). */
   porQue: z.string(),
+  /** Quién la pidió: las reglas fijas o Naira con el modelo («Lo descubrió Naira»). */
+  origen: z.enum(['regla', 'naira']).default('regla'),
+  /** El porqué en palabras de Naira (sólo las que descubrió ella; en español). */
+  porqueDeNaira: z.string().nullable().default(null),
   propuestoEn: z.string(),
   expiraEn: z.string(),
   estado: z.enum(['abierto', 'aprobado', 'rechazado', 'vencido', 'aplicado', 'no_aplicado']),

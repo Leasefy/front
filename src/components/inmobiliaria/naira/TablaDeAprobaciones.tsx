@@ -6,7 +6,8 @@
  * paginada, tarjetas bajo 768 px y cada fila abre el detalle en un cajón (ahí se aprueba o se rechaza).
  *
  * Columnas: qué propone (con la consecuencia SOLO junto a sus cortes, E13-6), tipo, para quién (un ROL, nunca una
- * persona: B-5), estado y la fecha (vence, entre lo por decidir; cuándo se propuso, entre lo decidido). Abrir una fila no
+ * persona: B-5), estado y la fecha (vence, entre lo por decidir; cuándo se propuso, entre lo decidido). Desde el paso 4
+ * también las lecciones para Ori (no vencen). Abrir una fila no
  * pide nada: el detalle lo pide el cajón al montarse (D13-14). Este archivo no importa hooks de datos.
  */
 
@@ -53,12 +54,34 @@ interface FilaDicha {
 function useDecir(): (fila: FilaDeAprobacion, fecha: 'vence' | 'propuesta') => FilaDicha {
   const { t } = useI18n()
   return (fila, fecha): FilaDicha => {
+    // Paso 4 (Nico, 18-10-2026): lo que Naira le quiere enseñar a Ori. No vence: entre lo por decidir dice «No vence».
+    if (fila.kind === 'leccion') {
+      const l = fila.leccion
+      return {
+        que: t('inmobiliaria.ai.naira.leccionesParaOri.titulo'),
+        segunda: <p className="line-clamp-2 text-caption text-fg-muted">{l.texto}</p>,
+        tipo: t(`${T}.leccionParaOri`),
+        para: t(`${T}.ori`),
+        estado: t(`inmobiliaria.ai.naira.leccionesParaOri.estados.${l.estado}`),
+        fecha: fecha === 'vence' ? t(`${T}.noVence`) : fechaCorta(diaEnColombia(l.propuestaEn)),
+        datos: { 'data-naira-fila': 'leccion', 'data-naira-leccion-para-ori': l.estado },
+      }
+    }
     if (fila.kind === 'modo') {
       const c = fila.cambio
       return {
         que: tituloDelCambioDeModo(t, c),
-        segunda: <p className="line-clamp-2 text-caption text-fg-muted">{porQueDelCambioDeModo(t, c)}</p>,
-        tipo: t(`${T}.cambioDeModo`),
+        segunda: (
+          <>
+            {c.origen === 'naira' ? (
+              <Badge variant="secondary" data-naira-descubierto="">
+                {t('inmobiliaria.ai.naira.cambiosDeModo.descubrio')}
+              </Badge>
+            ) : null}
+            <p className="line-clamp-2 text-caption text-fg-muted">{porQueDelCambioDeModo(t, c)}</p>
+          </>
+        ),
+        tipo: t(c.a === 'apagado' ? `${T}.frenarAgente` : `${T}.cambioDeModo`),
         para: c.nombre.split(' (')[0] ?? c.nombre,
         estado: t(`inmobiliaria.ai.naira.cambiosDeModo.estados.${c.estado}`),
         fecha: fechaCorta(diaEnColombia(fecha === 'vence' ? c.expiraEn : c.propuestoEn)),

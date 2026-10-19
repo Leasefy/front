@@ -27,6 +27,7 @@ const IDENTICAS_PERMITIDAS: Readonly<Record<string, string>> = {
   'inmobiliaria.ai.nav.naira': '«Naira» es nombre propio: se escribe igual en los dos idiomas',
   'inmobiliaria.ai.naira.deMi.canales.whatsapp': '«WhatsApp» es nombre propio: se escribe igual en los dos idiomas',
   'inmobiliaria.ai.naira.tabs.briefing': '«Briefing» es el préstamo que el panel usa igual en español y en inglés',
+  'inmobiliaria.ai.naira.aprobaciones.tabla.ori': '«Ori» es nombre propio (el chat de la inmobiliaria): se escribe igual en los dos idiomas',
 }
 
 function leer(diccionario: unknown, clave: string): unknown {

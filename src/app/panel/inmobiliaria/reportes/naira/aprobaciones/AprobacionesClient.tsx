@@ -20,6 +20,7 @@ import { VistaDeNaira } from '@/components/inmobiliaria/naira/VistaDeNaira'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useNairaCambiosDeModo } from '@/lib/hooks/naira/use-naira-cambios-de-modo'
+import { useNairaLeccionesParaOri } from '@/lib/hooks/naira/use-naira-lecciones-para-ori'
 import { useNairaPropuestas } from '@/lib/hooks/naira/use-naira-propuestas'
 import { useNairaTareas } from '@/lib/hooks/naira/use-naira-tareas'
 import { useI18n } from '@/lib/i18n'
@@ -52,6 +53,13 @@ export function AprobacionesClient(): JSX.Element {
   // Paso 2 (Nico, 18-10-2026): los cambios de modo que propone Naira los ve y los decide quien aprueba (dueño y admin).
   const puedeAprobar = canAccess('naira', 'action-approve-internal')
   const { estado: cambiosDeModo, recargar: recargarCambios } = useNairaCambiosDeModo(puedeAprobar)
+  // Paso 4 (Nico, 18-10-2026: «Le enseña, el admin confirma»): las lecciones para Ori las decide el mismo dueño o admin.
+  const { estado: leccionesParaOri, recargar: recargarLecciones } = useNairaLeccionesParaOri(puedeAprobar)
+  const lecciones = puedeAprobar && leccionesParaOri.kind === 'ok' ? leccionesParaOri : null
+  const recargarLoDeNaira = () => {
+    recargarCambios()
+    recargarLecciones()
+  }
   const tareas = lecturaDeTareas.kind === 'ok' ? { lista: lecturaDeTareas.data, origen: lecturaDeTareas.origen } : null
   // 18-10-2026 («todo en una tabla», «desde el cajón»): la fila abre su detalle aquí; al cerrarlo, todo se vuelve a leer.
   const [abierta, setAbierta] = useState<FilaDeAprobacion | null>(null)
@@ -63,7 +71,7 @@ export function AprobacionesClient(): JSX.Element {
   const cerrar = () => {
     setAbierta(null)
     recargar()
-    recargarCambios()
+    recargarLoDeNaira()
   }
   const hrefDelLoop = (loopId: string) => (puedeVerElSeguimiento && loopId !== '' ? rutaDelLoop(loopId) : null)
 
@@ -80,6 +88,7 @@ export function AprobacionesClient(): JSX.Element {
           <AprobacionesView
             lista={lista}
             cambios={puedeAprobar && cambiosDeModo.kind === 'ok' ? cambiosDeModo.cambios : null}
+            lecciones={lecciones?.lecciones ?? null}
             tareas={tareas}
             puedeCancelar={puedeCancelar}
             hrefDelLoop={hrefDelLoop}
@@ -87,7 +96,7 @@ export function AprobacionesClient(): JSX.Element {
           />
         )}
       />
-      <CajonDeAprobacion fila={abierta} onCerrar={cerrar} onDecidido={recargarCambios} />
+      <CajonDeAprobacion fila={abierta} onCerrar={cerrar} onDecidido={recargarLoDeNaira} oriLasUsa={lecciones?.oriLasUsa ?? false} />
     </div>
   )
 }

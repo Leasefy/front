@@ -3,7 +3,8 @@
 /**
  * CajonDeAprobacion — el detalle de una fila de la tabla de Aprobaciones (Nico, 18-10-2026: «todo en una tabla»,
  * «Desde el cajón»). Una propuesta de acción abre su FICHA de siempre (`PropuestaClient` en modo cajón: recién al abrir se
- * pide el detalle, D13-14, y la decisión va con la huella que se ve); un cambio de modo abre `DetalleDelCambioDeModo`.
+ * pide el detalle, D13-14, y la decisión va con la huella que se ve); un cambio de modo abre `DetalleDelCambioDeModo`; una
+ * lección para Ori (paso 4), `DetalleDeLaLeccionParaOri`.
  * Al cerrarse, la tabla vuelve a leer lo que haya cambiado.
  */
 
@@ -11,6 +12,7 @@ import type { JSX } from 'react'
 
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon'
 import { useI18n } from '@/lib/i18n'
+import { DetalleDeLaLeccionParaOri } from '@/components/inmobiliaria/naira/DetalleDeLaLeccionParaOri'
 import { DetalleDelCambioDeModo, tituloDelCambioDeModo } from '@/components/inmobiliaria/naira/DetalleDelCambioDeModo'
 import { paraDeLaAccion, type FilaDeAprobacion } from '@/lib/naira/filas-de-aprobaciones'
 import { CLAVE_DEL_TIPO_DE_ACCION } from '@/lib/naira/vocabulario-de-aprobaciones'
@@ -22,17 +24,27 @@ export interface CajonDeAprobacionProps {
   readonly onCerrar: () => void
   /** Algo se decidió adentro: la tabla vuelve a leer. */
   readonly onDecidido: () => void
+  /** Si Ori ya usa lo que se aprueba (las lecciones del chat prendidas). */
+  readonly oriLasUsa?: boolean
 }
 
 function Cabecera({ fila }: { readonly fila: FilaDeAprobacion }): JSX.Element {
   const { t } = useI18n()
+  if (fila.kind === 'leccion') {
+    return <CajonCabecera titulo={t('inmobiliaria.ai.naira.leccionesParaOri.titulo')} descripcion={t('inmobiliaria.ai.naira.aprobaciones.tabla.leccionParaOri')} />
+  }
   if (fila.kind === 'modo') {
-    return <CajonCabecera titulo={tituloDelCambioDeModo(t, fila.cambio)} descripcion={t('inmobiliaria.ai.naira.aprobaciones.tabla.cambioDeModo')} />
+    return (
+      <CajonCabecera
+        titulo={tituloDelCambioDeModo(t, fila.cambio)}
+        descripcion={t(`inmobiliaria.ai.naira.aprobaciones.tabla.${fila.cambio.a === 'apagado' ? 'frenarAgente' : 'cambioDeModo'}`)}
+      />
+    )
   }
   return <CajonCabecera titulo={t(CLAVE_DEL_TIPO_DE_ACCION[fila.accion.tipo])} descripcion={paraDeLaAccion(t, fila.accion)} />
 }
 
-export function CajonDeAprobacion({ fila, onCerrar, onDecidido }: CajonDeAprobacionProps): JSX.Element {
+export function CajonDeAprobacion({ fila, onCerrar, onDecidido, oriLasUsa = false }: CajonDeAprobacionProps): JSX.Element {
   return (
     <Cajon
       abierto={fila !== null}
@@ -45,7 +57,9 @@ export function CajonDeAprobacion({ fila, onCerrar, onDecidido }: CajonDeAprobac
       {fila === null ? null : (
         <>
           <Cabecera fila={fila} />
-          {fila.kind === 'modo' ? (
+          {fila.kind === 'leccion' ? (
+            <DetalleDeLaLeccionParaOri key={fila.leccion.id} leccion={fila.leccion} oriLasUsa={oriLasUsa} onDecidido={onDecidido} />
+          ) : fila.kind === 'modo' ? (
             <DetalleDelCambioDeModo key={fila.cambio.id} cambio={fila.cambio} onDecidido={onDecidido} />
           ) : (
             <CajonCuerpo>

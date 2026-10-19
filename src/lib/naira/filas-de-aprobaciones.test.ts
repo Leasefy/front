@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { CambioDeModo } from '@/lib/api/naira/cambios-de-modo'
 import type { NairaActionSummary } from '@/lib/api/naira/contrato'
+import type { LeccionParaOri } from '@/lib/api/naira/lecciones-para-ori'
 import { EJEMPLOS_DE_NAIRA } from '@/lib/data/mock-naira'
 
 import { filasDeAprobaciones, paginaDe } from './filas-de-aprobaciones'
@@ -28,12 +29,28 @@ const cambio = (id: string, estado: CambioDeModo['estado'], expiraEn: string, pr
   regla: 'manual',
   cifras: { esperando: 60, dias: 7 },
   porQue: '',
+  origen: 'regla',
+  porqueDeNaira: null,
   propuestoEn,
   expiraEn,
   estado,
   razon: null,
 })
-const ids = (filas: ReturnType<typeof filasDeAprobaciones>['porDecidir']) => filas.map((f) => (f.kind === 'accion' ? f.accion.proposalId : f.cambio.id))
+const leccion = (id: string, estado: LeccionParaOri['estado'], propuestaEn = '2026-10-10T00:00:00.000Z'): LeccionParaOri => ({
+  id,
+  texto: 'Aquí descartan las inspecciones de salida que prepara Vidi: no las sugieras sin que te lo pidan.',
+  agente: 'inspeccion',
+  nombre: 'Vidi (inspección)',
+  proceso: null,
+  queHaceElProceso: null,
+  sentido: 'descartan',
+  cifras: { descartadas_30d: 14 },
+  estado,
+  propuestaEn,
+  decididaEn: estado === 'por_decidir' ? null : propuestaEn,
+})
+const ids = (filas: ReturnType<typeof filasDeAprobaciones>['porDecidir']) =>
+  filas.map((f) => (f.kind === 'accion' ? f.accion.proposalId : f.kind === 'modo' ? f.cambio.id : f.leccion.id))
 
 describe('filasDeAprobaciones', () => {
   it('separa por decidir y decididas; las acciones quedan en el orden del servidor aunque sus fechas no lo estén', () => {
@@ -60,5 +77,16 @@ describe('filasDeAprobaciones', () => {
     expect(filasDeAprobaciones([], null)).toEqual({ porDecidir: [], decididas: [] })
     expect(paginaDe([1, 2, 3, 4, 5], 2, 2)).toEqual([3, 4])
     expect(paginaDe([1, 2, 3], 0, 2)).toEqual([1, 2])
+  })
+
+  it('[LECC:filas] las lecciones para Ori: por decidir al final (no vencen); decididas, por fecha entre lo demás; sin lecciones, como antes', () => {
+    const acciones = [accion('A1', 'pendiente', '2026-10-16T00:00:00Z'), accion('A2', 'rechazada', '2026-10-01T00:00:00Z', '2026-10-12T00:00:00Z')]
+    const cambios = [cambio('M1', 'abierto', '2026-10-25T00:00:00Z')]
+    const lecciones = [leccion('L1', 'por_decidir', '2026-10-18T00:00:00Z'), leccion('L2', 'aprendida', '2026-10-14T00:00:00Z')]
+    const { porDecidir, decididas } = filasDeAprobaciones(acciones, cambios, lecciones)
+    expect(ids(porDecidir)).toEqual(['A1', 'M1', 'L1'])
+    expect(ids(decididas)).toEqual(['L2', 'A2'])
+    expect(ids(filasDeAprobaciones(acciones, cambios).porDecidir)).toEqual(['A1', 'M1'])
+    expect(ids(filasDeAprobaciones(acciones, cambios, null).decididas)).toEqual(['A2'])
   })
 })

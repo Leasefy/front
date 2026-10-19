@@ -10325,13 +10325,59 @@
             "sin_veredicto": "No verdict for the day"
           }
         },
+        "leccionesParaOri": {
+          "titulo": "Teach Ori",
+          "deAprobaciones": "From what the team decides in Naira → Approvals",
+          "deDonde": "Where Naira got it from",
+          "delAgente": "From what the team decides in the Inbox with {{agente}}.",
+          "delProceso": "In this process: {{proceso}}",
+          "sentido": {
+            "aprueban": "The team almost always approves it.",
+            "descartan": "The team almost always discards it."
+          },
+          "bajada": "If you approve it, Ori takes it into account when answering in the chat. If you reject it, Naira will not suggest it again.",
+          "oriApagado": "Chat lessons are off today: what you approve stays learned and Ori will use it once they are turned on.",
+          "estados": {
+            "por_decidir": "To decide",
+            "aprendida": "Learned",
+            "descartada": "Discarded"
+          },
+          "decidida": {
+            "aprendida": "Learned on {{fecha}}",
+            "descartada": "Discarded on {{fecha}}"
+          },
+          "propuestaEl": "Naira suggested it on {{fecha}}",
+          "aprobar": "Approve",
+          "rechazar": "Reject",
+          "resultados": {
+            "aprendida": "Done: Ori now takes it into account when answering.",
+            "aprendidaApagado": "Done: it is learned. Ori will use it once chat lessons are turned on.",
+            "descartada": "Done: Ori will not learn it and Naira will not suggest it again."
+          },
+          "conflicto": "Someone else already decided it. I refreshed the list.",
+          "noDisponible": "I could not do it right now. Try again in a moment.",
+          "cifras": {
+            "naira": "{{tipo}}: {{estado}} in 30 days",
+            "estadosDeNaira": {
+              "aprobadas": "approved",
+              "rechazadas": "rejected",
+              "vencidas": "expired with no answer"
+            },
+            "cambiosDeModo": {
+              "aplicados": "Mode changes applied in 30 days",
+              "rechazados": "Mode changes rejected in 30 days",
+              "vencidos": "Mode changes expired with no answer in 30 days"
+            }
+          }
+        },
         "cambiosDeModo": {
           "titulo": "Mode changes Naira suggests",
           "bajada": "Naira watches how each agent works and suggests the mode that fits it. Nothing changes until someone approves it.",
           "titulos": {
             "subir": "Move {{agente}} to {{modo}}",
             "bajar": "Move {{agente}} back to {{modo}}",
-            "manual": "Move {{agente}} to {{modo}}"
+            "manual": "Move {{agente}} to {{modo}}",
+            "frenar": "Turn off {{agente}} for your agency"
           },
           "porque": {
             "subir": "In the last {{dias}} days {{aprobadas}} of its actions were approved and {{descartadas}} discarded; nothing was undone. It would save you about {{aprobadas}} clicks a month.",
@@ -10339,6 +10385,35 @@
             "manual": "{{esperando}} of its proposals have been waiting for more than {{dias}} days without an answer. In Manual it prepares the same work but stops notifying you."
           },
           "hoy": "Today it is in {{modo}}.",
+          "descubrio": "Naira found this",
+          "cifrasQueVio": "The numbers it saw",
+          "bajadaFrenar": "Once turned off, the agent stops running for your agency until someone turns it back on from the Autopilot. Nothing changes until someone approves it.",
+          "cifras": {
+            "acciones_30d": "Actions in 30 days",
+            "aprobadas_por_una_persona_30d": "Approved by a person in 30 days",
+            "descartadas_30d": "Discarded in 30 days",
+            "deshechas_30d": "Undone in 30 days",
+            "fallidas_30d": "Failed in 30 days",
+            "hechas_solas_7d": "Done on its own in 7 days",
+            "hechas_solas_que_salieron_mal_7d": "Done on its own that went wrong in 7 days",
+            "esperando_hace_mas_de_7d": "Waiting for more than 7 days",
+            "esperando_ahora": "Waiting now",
+            "horas_para_decidir_mediana_30d": "Hours a person takes to decide (median)",
+            "fallo": "Times it failed for the same reason",
+            "proceso": {
+              "acciones": "Actions of one of its processes in 30 days",
+              "descartadas": "Discarded in one of its processes in 30 days",
+              "deshechas": "Undone in one of its processes in 30 days",
+              "fallidas": "Failed in one of its processes in 30 days"
+            }
+          },
+          "razonesFrenar": {
+            "modo_cambiado": "It was already off: nothing was touched.",
+            "no_se_pudo_aplicar": "It could not be turned off: nothing changed. Try it from the Autopilot."
+          },
+          "razonesDeNaira": {
+            "ya_no_corresponde": "Leasefy has the Autopilot turned off: it cannot move to Automatic for now. Nothing was touched."
+          },
           "aprobar": "Approve",
           "rechazar": "Reject",
           "estados": {
@@ -10356,7 +10431,8 @@
           },
           "resultados": {
             "aplicado": "Done: I changed the mode. It shows in the Autopilot activity.",
-            "rechazado": "Done: Naira won't suggest it again for 7 days."
+            "rechazado": "Done: Naira won't suggest it again for 7 days.",
+            "apagado": "Done: I turned off {{agente}} for your agency. Turn it back on from the Autopilot; it shows in its activity."
           },
           "conflicto": "Someone already decided it, or it expired. I refreshed the list.",
           "noDisponible": "I couldn't do it right now. Try again in a moment.",
@@ -10388,9 +10464,13 @@
             "vence": "Expires",
             "propuesta": "Suggested",
             "cambioDeModo": "Mode change",
+            "frenarAgente": "Stop an agent",
             "verDetalle": "See the detail: {{que}}",
             "sinDecididas": "Nothing has been decided yet.",
-            "detalle": "Suggestion detail"
+            "detalle": "Suggestion detail",
+            "leccionParaOri": "Lesson for Ori",
+            "ori": "Ori",
+            "noVence": "Does not expire"
           },
           "titularConRol": "{{tipo}} · Role: {{rol}}",
           "titularOtroAgente": "{{tipo}} · Another agent: {{evento}}",

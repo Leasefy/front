@@ -18,8 +18,9 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { leer, leerT, leerDetalle, cancelar, permisos, leerCambios } = vi.hoisted(() => ({
+const { leer, leerT, leerDetalle, cancelar, permisos, leerCambios, leerLecciones } = vi.hoisted(() => ({
   leerCambios: vi.fn(async (): Promise<unknown> => ({ kind: 'no_disponible' })),
+  leerLecciones: vi.fn(async (): Promise<unknown> => ({ kind: 'no_disponible' })),
   leer: vi.fn(),
   leerT: vi.fn(),
   leerDetalle: vi.fn(async () => ({ kind: 'no_disponible' })),
@@ -61,6 +62,10 @@ vi.mock('@/components/ui/toast', () => ({ toast: { error: vi.fn(), success: vi.f
 vi.mock('@/lib/api/naira/cambios-de-modo', () => ({
   leerCambiosDeModo: leerCambios,
   decidirCambioDeModo: vi.fn(async () => ({ kind: 'no_disponible' })),
+}))
+vi.mock('@/lib/api/naira/lecciones-para-ori', () => ({
+  leerLeccionesParaOri: leerLecciones,
+  decidirLeccionParaOri: vi.fn(async () => ({ kind: 'no_disponible' })),
 }))
 
 import {
@@ -182,6 +187,8 @@ beforeEach(() => {
   leerT.mockReset()
   leerDetalle.mockClear()
   cancelar.mockClear()
+  leerLecciones.mockReset()
+  leerLecciones.mockImplementation(async () => ({ kind: 'no_disponible' }))
   leer.mockImplementation(async () => ({ kind: 'no_disponible' }))
   leerT.mockImplementation(async () => ({ kind: 'no_disponible' }))
   permisos.conjunto = new Set(['action-view', 'task-view', 'task-cancel', 'open-loops-view'])
@@ -462,6 +469,8 @@ describe('AprobacionesClient', () => {
       regla: 'manual',
       cifras: { esperando: 60, dias: 7 },
       porQue: '',
+      origen: 'regla',
+      porqueDeNaira: null,
       propuestoEn: '2026-10-18T16:00:00.000Z',
       expiraEn: '2099-10-25T16:00:00.000Z',
       estado: 'abierto',
@@ -487,12 +496,86 @@ describe('AprobacionesClient', () => {
     expect(leerDetalle).not.toHaveBeenCalled()
   })
 
+  it('[CAMBIO:descubierto] lo que descubrió Naira va en la misma tabla con «Lo descubrió Naira»; frenar se dice como tal', async () => {
+    const PORQUE = 'Siete de sus últimas doce inspecciones fallaron por lo mismo: conviene frenarlo y revisar la plantilla.'
+    const FRENAR = {
+      id: 'MODO-9',
+      agente: 'inspeccion',
+      nombre: 'Vidi (inspección)',
+      de: 'copiloto',
+      a: 'apagado',
+      regla: 'frenar',
+      cifras: { fallo_1_veces: 7 },
+      porQue: '',
+      origen: 'naira',
+      porqueDeNaira: PORQUE,
+      propuestoEn: '2026-10-18T16:00:00.000Z',
+      expiraEn: '2099-10-25T16:00:00.000Z',
+      estado: 'abierto',
+      razon: null,
+    }
+    leerCambios.mockImplementation(async () => ({ kind: 'ok', cambios: [FRENAR] }))
+    permisos.conjunto = new Set(['action-view', 'action-approve-internal', 'task-view'])
+    responder(LISTA)
+    responderTareas(TAREAS)
+    await montar()
+    const fila = contenedor.querySelector<HTMLElement>('[data-naira-grupo="por_decidir"] [data-naira-fila="modo"]')
+    expect(fila?.textContent).toContain('Apagar a Vidi (inspección) para tu inmobiliaria')
+    expect(fila?.textContent).toContain('Frenar un agente')
+    expect(fila?.querySelector('[data-naira-descubierto]')?.textContent).toBe('Lo descubrió Naira')
+    expect(fila?.textContent).toContain(PORQUE)
+  })
+
   it('[CAMBIO:sin-permiso] sin permiso de aprobar no se piden los cambios de modo', async () => {
     leerCambios.mockClear()
     responder(LISTA)
     await montar()
     expect(leerCambios).not.toHaveBeenCalled()
     expect(contenedor.querySelector('[data-naira-fila="modo"]')).toBeNull()
+  })
+
+  it('[LECC:en-la-tabla] quien aprueba ve «Enseñarle a Ori» en la MISMA tabla (no vence) y su fila abre el cajón con Aprobar', async () => {
+    const TEXTO = 'Aquí descartan las inspecciones de salida que prepara Vidi (14 de 14 en 30 días): no las sugieras sin que te lo pidan.'
+    const LECCION = {
+      id: 'lesson-feedback-naira-0123456789abcdef',
+      texto: TEXTO,
+      agente: 'inspeccion',
+      nombre: 'Vidi (inspección)',
+      proceso: null,
+      queHaceElProceso: null,
+      sentido: 'descartan',
+      cifras: { descartadas_30d: 14 },
+      estado: 'por_decidir',
+      propuestaEn: '2026-10-18T11:38:00.000Z',
+      decididaEn: null,
+    }
+    leerLecciones.mockImplementation(async () => ({ kind: 'ok', lecciones: [LECCION], oriLasUsa: false }))
+    permisos.conjunto = new Set(['action-view', 'action-approve-internal', 'task-view'])
+    responder(LISTA)
+    responderTareas(TAREAS)
+    await montar()
+    expect(leerLecciones).toHaveBeenCalledWith('AGY-1')
+    const fila = contenedor.querySelector<HTMLElement>('[data-naira-grupo="por_decidir"] [data-naira-fila="leccion"]')
+    expect(fila?.textContent).toContain('Enseñarle a Ori')
+    expect(fila?.textContent).toContain(TEXTO)
+    expect(fila?.textContent).toContain('Lección para Ori')
+    expect(fila?.textContent).toContain('No vence')
+    await act(async () => {
+      fila?.click()
+    })
+    await asentar()
+    const cajon = document.querySelector('[data-naira-cajon-de-aprobacion="leccion"]')
+    expect(cajon?.textContent).toContain('De lo que el equipo decide en la Bandeja con Vidi (inspección).')
+    expect(cajon?.querySelector('[data-naira-lecciones-apagadas]')).not.toBeNull()
+    expect(Array.from(cajon?.querySelectorAll('button') ?? []).some((b) => b.textContent?.trim() === 'Aprobar')).toBe(true)
+    expect(leerDetalle).not.toHaveBeenCalled()
+  })
+
+  it('[LECC:sin-permiso] sin permiso de aprobar no se piden las lecciones para Ori', async () => {
+    responder(LISTA)
+    await montar()
+    expect(leerLecciones).not.toHaveBeenCalled()
+    expect(contenedor.querySelector('[data-naira-fila="leccion"]')).toBeNull()
   })
 
   it('[N13:b5-sin-persona] nada dice quién decidió ni quién canceló', async () => {

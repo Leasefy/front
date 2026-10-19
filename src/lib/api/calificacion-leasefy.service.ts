@@ -128,7 +128,13 @@ export interface MiCalificacion {
   calculadaEl?: string;
   consultas: { disponible: boolean; lista: { inmobiliaria: string; cuando: string }[] };
   evaluaciones: { disponible: boolean; lista: EvaluacionDeFin[] };
-  certificados: { disponible: boolean; precioCop: number | null; lista: CertificadoDeLaPersona[] };
+  certificados: {
+    disponible: boolean;
+    precioCop: number | null;
+    /** El pedido más reciente que sigue esperando el pago (el enlace vive 24 h); un back anterior no lo manda. */
+    pendienteId?: string | null;
+    lista: CertificadoDeLaPersona[];
+  };
 }
 
 export type Alcance = 'TODO_LEASEFY' | 'SOLO_ESTA_INMOBILIARIA';

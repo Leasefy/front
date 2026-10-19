@@ -65,7 +65,20 @@ export function fraseDelBack(tr: ReturnType<typeof useTr>, frase: string): strin
     : tr('{n} meses de historial en Leasefy: el historial pesa {h} % y los documentos {d} %.', { n: m[1], h: m[3], d: m[4] });
 }
 
-export function LetraDeLaCalificacion({ letra, grande }: { letra: Letra | null; grande?: boolean }) {
+/**
+ * `etiqueta`: lo que lee un lector de pantalla. Sin ella, la del panel en su
+ * idioma; la página pública (sin el idioma del panel) pasa la suya.
+ */
+export function LetraDeLaCalificacion({
+  letra,
+  grande,
+  etiqueta,
+}: {
+  letra: Letra | null;
+  grande?: boolean;
+  etiqueta?: string;
+}) {
+  const tr = useTr();
   return (
     <span
       className={cn(
@@ -73,7 +86,7 @@ export function LetraDeLaCalificacion({ letra, grande }: { letra: Letra | null; 
         grande ? 'h-16 w-16 text-3xl' : 'h-8 w-8 text-sm',
         letra ? TONO_DE_LA_LETRA[letra] : 'bg-surface-muted text-fg-subtle',
       )}
-      aria-label={letra ? `Letra ${letra}` : 'Sin letra'}
+      aria-label={etiqueta ?? (letra ? tr('Letra {l}', { l: letra }) : tr('Sin letra'))}
     >
       {letra ?? '—'}
     </span>

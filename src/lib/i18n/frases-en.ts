@@ -786,4 +786,11 @@ export const FRASES_EN: Record<string, string> = {
   "No se pudo guardar la evaluación.": "We couldn't save the review.",
   "Con todo su historial en Leasefy.": "With their full history on Leasefy.",
   "Sólo lo que pasó con tu inmobiliaria: no autorizó compartir su calificación.": "Only what happened with your agency: they didn't authorize sharing their rating.",
+  // 19-10-2026: la letra para el lector de pantalla y el pago del certificado al volver de Wompi
+  "Letra {l}": "Grade {l}",
+  "Sin letra": "No grade",
+  "Estamos confirmando tu pago con Wompi…": "We're confirming your payment with Wompi…",
+  "Todavía no vemos tu pago. Si ya pagaste, puede tardar unos minutos: revísalo de nuevo en un rato.": "We don't see your payment yet. If you already paid, it can take a few minutes: check again in a little while.",
+  "Tienes un pago del certificado sin terminar. Si ya pagaste, revisa si quedó listo.": "You have an unfinished certificate payment. If you already paid, check whether it went through.",
+  "Revisar mi pago": "Check my payment",
 }

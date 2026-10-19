@@ -10,8 +10,9 @@
 
 import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Certificate, Eye, Handshake, ShareNetwork, XCircle } from '@phosphor-icons/react';
+import { Certificate, CircleNotch, Eye, Handshake, ShareNetwork, XCircle } from '@phosphor-icons/react';
 import { Presence } from '@leasefy/cadence';
 import { toast } from 'sonner';
 
@@ -32,7 +33,12 @@ import {
 } from '@/lib/api/calificacion-leasefy.service';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useI18n } from '@/lib/i18n';
-import { useLocaleDeFechas, useTr } from '@/lib/i18n/use-tr';
+import { useLocaleDeFechas, useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr';
+import { conIdioma } from '@/lib/idioma/idioma';
+
+/** Cuántas veces y cada cuánto se pregunta si el pago ya quedó (≈ 30 s). */
+const VUELTAS_AL_CONFIRMAR = 10;
+const PAUSA_AL_CONFIRMAR_MS = 3000;
 
 const COMO_TERMINO: Record<ContratoDeLaPersona['termino'], string> = {
   VIGENTE: 'Vigente',
@@ -194,13 +200,18 @@ export default function MiCalificacionPage({
   searchParams: Promise<{ certificado?: string }>;
 }) {
   const tr = useTr();
+  const router = useRouter();
   const { formatCurrency } = useI18n();
   const localeFechas = useLocaleDeFechas();
+  const idiomaDelPanel = useLocaleDelPanel();
   const { certificado } = use(searchParams);
   const [datos, setDatos] = useState<MiCalificacion | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [cargando, setCargando] = useState(true);
   const [comprando, setComprando] = useState(false);
+  // El pago que se está confirmando (al volver de Wompi o con «Revisar mi pago») y el que no se pudo confirmar todavía.
+  const [revisando, setRevisando] = useState<string | null>(certificado ?? null);
+  const [sinConfirmar, setSinConfirmar] = useState<string | null>(null);
   const entrada = useEntradaTrasCargar(cargando);
 
   const cargar = useCallback(() => {
@@ -217,26 +228,44 @@ export default function MiCalificacionPage({
 
   useEffect(cargar, [cargar]);
 
-  // Al volver de Wompi: preguntar unas veces si el certificado ya quedó pagado.
+  // Al volver de Wompi (o con «Revisar mi pago»): preguntar unas veces si el certificado ya quedó pagado. El back,
+  // si el aviso de Wompi no llegó, le pregunta a Wompi; si a los ~30 s sigue sin pago, se dice y se puede volver a revisar.
   useEffect(() => {
-    if (!certificado) return;
+    if (!revisando) return;
     let vueltas = 0;
-    const t = setInterval(async () => {
+    let vivo = true;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const preguntar = async () => {
       vueltas += 1;
       try {
-        const r = await calificacionLeasefyApi.estadoDelCertificado(certificado);
+        const r = await calificacionLeasefyApi.estadoDelCertificado(revisando);
+        if (!vivo) return;
         if (r.estado === 'VIGENTE') {
-          clearInterval(t);
           toast.success(tr('Tu certificado está listo: {c}', { c: r.codigo ?? '' }));
+          setRevisando(null);
+          setSinConfirmar(null);
+          // Sin `?certificado=` en la dirección: al recargar no se vuelve a anunciar.
+          if (certificado) router.replace('/inquilino/calificacion', { scroll: false });
           cargar();
+          return;
         }
       } catch {
         /* se sigue preguntando */
       }
-      if (vueltas >= 10) clearInterval(t);
-    }, 3000);
-    return () => clearInterval(t);
-  }, [certificado, cargar, tr]);
+      if (!vivo) return;
+      if (vueltas >= VUELTAS_AL_CONFIRMAR) {
+        setSinConfirmar(revisando);
+        setRevisando(null);
+        return;
+      }
+      t = setTimeout(() => void preguntar(), PAUSA_AL_CONFIRMAR_MS);
+    };
+    void preguntar();
+    return () => {
+      vivo = false;
+      if (t) clearTimeout(t);
+    };
+  }, [revisando, certificado, cargar, router, tr]);
 
   const comprar = async () => {
     setComprando(true);
@@ -356,13 +385,39 @@ export default function MiCalificacionPage({
                     {c.vencido ? tr('Venció el {d}', { d: fecha(c.venceEl) }) : tr('Vale hasta el {d}', { d: fecha(c.venceEl) })}
                   </span>
                   {c.codigo && (
-                    <Link className="text-xs text-primary hover:underline" href={`/verificar-calificacion/${encodeURIComponent(c.codigo)}`}>
+                    <Link
+                      className="text-xs text-primary hover:underline"
+                      href={conIdioma(`/verificar-calificacion/${encodeURIComponent(c.codigo)}`, idiomaDelPanel)}
+                    >
                       {tr('Ver cómo lo ven')}
                     </Link>
                   )}
                 </li>
               ))}
             </ul>
+          </Presence>
+          <Presence show={revisando !== null}>
+            <p role="status" className="flex items-center gap-2 rounded-md bg-surface-muted px-3 py-2 text-sm text-fg">
+              <CircleNotch className="h-4 w-4 shrink-0 animate-spin text-fg-muted" aria-hidden />
+              {tr('Estamos confirmando tu pago con Wompi…')}
+            </p>
+          </Presence>
+          <Presence show={revisando === null && (sinConfirmar ?? datos.certificados.pendienteId ?? null) !== null}>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-warning-soft px-3 py-2 text-sm text-fg">
+              <p>
+                {sinConfirmar
+                  ? tr('Todavía no vemos tu pago. Si ya pagaste, puede tardar unos minutos: revísalo de nuevo en un rato.')
+                  : tr('Tienes un pago del certificado sin terminar. Si ya pagaste, revisa si quedó listo.')}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
+                onClick={() => setRevisando(sinConfirmar ?? datos.certificados.pendienteId ?? null)}
+              >
+                {tr('Revisar mi pago')}
+              </Button>
+            </div>
           </Presence>
           {datos.certificados.precioCop === null ? (
             <p className="text-sm text-fg-muted">{tr('El certificado todavía no está a la venta.')}</p>

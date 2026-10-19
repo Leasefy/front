@@ -172,7 +172,8 @@ function Recortable({ children }: { children: React.ReactNode }) {
   const [abierto, setAbierto] = useState(false)
   return (
     <span className="block">
-      <span className={abierto ? 'block' : 'line-clamp-4 block'}>{children}</span>
+      {/* Sin `block` cuando está recortado: line-clamp necesita su propio display. */}
+      <span className={abierto ? 'block' : 'line-clamp-4'}>{children}</span>
       <button type="button" className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/50 hover:text-white" onClick={() => setAbierto((x) => !x)}>
         {abierto ? 'ver menos' : 'ver más'}
       </button>

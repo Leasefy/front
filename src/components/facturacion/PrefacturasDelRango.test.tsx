@@ -259,6 +259,8 @@ describe('🔴 FACT-3: «Se puede emitir hoy» sin resolución no cuenta nada de
       root.render(<PrefacturasDelRango datos={datos({ inquilinos: muchas, meses: [mes] })} />);
     });
     expect(host.querySelector('[data-testid="rango-total-facturas"]')?.textContent).toBe('1.388');
+    // FACT-7: el total va a lo ancho en el celular.
+    expect(host.querySelector('[data-testid="rango-total-total"]')?.parentElement?.className).toContain('col-span-2');
     expect(host.querySelector(`[data-testid="rango-mes-${mes.mes}"]`)?.textContent).toContain('1.388 facturas');
     act(() => root.unmount());
     host.remove();

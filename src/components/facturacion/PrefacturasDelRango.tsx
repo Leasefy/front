@@ -191,7 +191,9 @@ function Totales({ datos }: { datos: FacturasPorGenerar }) {
       data-testid="rango-totales"
     >
       {celdas.map((c) => (
-        <div key={c.testid}>
+        // FACT-7 (19-10-2026): a 390 px «$ 1.332.034.147,62» no cabe en media
+        // columna y se cortaba; en el celular el total va a lo ancho.
+        <div key={c.testid} className={c.testid === 'total' ? 'col-span-2 sm:col-span-1' : undefined}>
           <p className="text-label uppercase tracking-wide text-fg-subtle">
             {c.rotulo}
           </p>

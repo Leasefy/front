@@ -113,7 +113,7 @@ export function WizardStep3Review({
         ]
       : []),
   ]
-  const nombre = candidato.nombre.trim() || 'La persona'
+  const nombre = candidato.nombre.trim() || 'la persona'
 
   return (
     <div className="space-y-4">
@@ -143,21 +143,16 @@ export function WizardStep3Review({
             }}
             aria-required="true"
             aria-invalid={intentoSinAutorizacion && !autorizacion ? true : undefined}
-            aria-describedby="cotizador-autorizacion-pista"
             className="mt-0.5"
           />
-          <span className="space-y-1">
-            <span className="block text-sm font-medium text-fg">
-              {tf(`${S}.autorizacion`, `${nombre} me autorizó a consultar su información con las aseguradoras.`, { nombre })}
-            </span>
-            <span id="cotizador-autorizacion-pista" className="block text-xs text-fg-muted">
-              {tf(`${S}.autorizacionPista`, 'Sin esta autorización no consultamos a ninguna aseguradora.')}
-            </span>
+          {/* Nico 19-10: corto, sin explicar de más (⚖️ el abogado puede ajustarlo). */}
+          <span className="text-sm text-fg">
+            {tf(`${S}.autorizacion`, `Tengo la autorización de ${nombre} para esta consulta.`, { nombre })}
           </span>
         </label>
         <Presence show={intentoSinAutorizacion && !autorizacion}>
           <p role="alert" className="mt-2 text-xs text-danger" data-testid="cotizador-autorizacion-falta">
-            {tf(`${S}.autorizacionFalta`, 'Marca la casilla: sin la autorización de la persona no se puede consultar.')}
+            {tf(`${S}.autorizacionFalta`, 'Marca la casilla para consultar.')}
           </p>
         </Presence>
       </div>

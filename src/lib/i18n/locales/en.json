@@ -6213,9 +6213,8 @@
             "aseguradorasRow": "Insurers",
             "aseguradorasTodas": "All enabled",
             "prioridadRow": "Priority",
-            "autorizacion": "{{nombre}} authorized me to check their information with the insurers.",
-            "autorizacionPista": "Without this authorization we don't query any insurer.",
-            "autorizacionFalta": "Check the box: without the person's authorization we can't query."
+            "autorizacion": "I have {{nombre}}'s authorization for this check.",
+            "autorizacionFalta": "Check the box to run the check."
           },
           "restoreBanner": {
             "message": "You have a quote in progress. Continue where you left off?"

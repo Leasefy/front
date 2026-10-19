@@ -6248,9 +6248,8 @@
             "aseguradorasRow": "Aseguradoras",
             "aseguradorasTodas": "Todas las habilitadas",
             "prioridadRow": "Prioridad",
-            "autorizacion": "{{nombre}} me autorizó a consultar su información con las aseguradoras.",
-            "autorizacionPista": "Sin esta autorización no consultamos a ninguna aseguradora.",
-            "autorizacionFalta": "Marca la casilla: sin la autorización de la persona no se puede consultar."
+            "autorizacion": "Tengo la autorización de {{nombre}} para esta consulta.",
+            "autorizacionFalta": "Marca la casilla para consultar."
           },
           "restoreBanner": {
             "message": "Tienes una cotización en progreso. ¿Continuar donde la dejaste?"

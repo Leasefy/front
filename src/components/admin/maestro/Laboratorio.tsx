@@ -41,7 +41,7 @@ function Contador({ nombre, valor, rojo = false }: { nombre: string; valor: stri
   )
 }
 
-export function Laboratorio({ onVerMejoras }: { onVerMejoras: () => void }) {
+export function Laboratorio({ onVerMejoras, onNocheNueva }: { onVerMejoras: () => void; onNocheNueva?: () => void }) {
   const reducido = useReducedMotion() ?? false
   const [corrida, setCorrida] = useState<string | null>(null)
   const [vuelta, setVuelta] = useState(0)
@@ -132,6 +132,8 @@ export function Laboratorio({ onVerMejoras }: { onVerMejoras: () => void }) {
           setEnVivo(null)
           setCorrida(terminada)
           setVuelta((v) => v + 1)
+          // La pantalla de arriba (Por decidir, Mejoras) también se vuelve a leer.
+          onNocheNueva?.()
           return
         }
       } catch {
@@ -300,12 +302,12 @@ export function Laboratorio({ onVerMejoras }: { onVerMejoras: () => void }) {
         {/* Los paneles. */}
         <div className="grid grid-cols-1 gap-2 p-2 sm:p-4 md:grid-cols-2 lg:grid-cols-4">
           <PanelBitacora pasos={visibles} alias={alias} />
-          <PanelAgentes avance={avance} activo={enVivo || !terminado ? (ultimo?.rol ?? null) : null} />
           <PanelEnsayo propuesta={propuesta} />
+          <PanelAgentes avance={avance} activo={enVivo || !terminado ? (ultimo?.rol ?? null) : null} />
           <PanelMesa propuesta={propuesta} onVerMejoras={onVerMejoras} />
           <PanelValidacion propuesta={propuesta} alias={alias} />
-          <PanelIndice propuestas={propuestas} inmobiliarias={data.inmobiliarias} elegida={propuesta?.id ?? null} onElegir={setElegida} />
           <PanelSirvio mediciones={data.mediciones} />
+          <PanelIndice propuestas={propuestas} inmobiliarias={data.inmobiliarias} elegida={propuesta?.id ?? null} onElegir={setElegida} />
           <PanelInsights pasos={visibles} alias={alias} />
         </div>
         <p className="px-4 pb-4 font-mono text-[10px] text-white/35">

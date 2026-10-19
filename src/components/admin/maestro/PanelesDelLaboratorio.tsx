@@ -7,7 +7,7 @@
  * veredicto por inmobiliaria, el índice propuestas × inmobiliarias, el reparto y «¿sirvió?», y los insights.
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
 import type { LaboratorioResponse, PasoDelMaestro, PropuestaDelLaboratorio, RolDelMaestro, VeredictoDelEnsayo } from '@/lib/admin/agent-api'
@@ -127,7 +127,7 @@ function Grilla({ valores, maximo, roja = false, etiqueta }: { valores: Readonly
 export function PanelEnsayo({ propuesta }: { propuesta: PropuestaDelLaboratorio | null }) {
   const e = propuesta?.ensayo ?? null
   return (
-    <Panel titulo="Ensayo / campo de diferencias" nota={e ? `${e.filas.length} inmob. × ${e.dias.length} días` : undefined}>
+    <Panel titulo="Ensayo / campo de diferencias" nota={e ? `${e.filas.length} inmob. × ${e.dias.length} días` : undefined} className="lg:col-span-2">
       {!e ? (
         <p className="font-mono text-[11px] text-white/40">{propuesta ? 'Esta propuesta no tiene ensayo (un «deshacer» sale de la medición).' : 'Elige una propuesta.'}</p>
       ) : (
@@ -164,6 +164,23 @@ export function PanelMesa({ propuesta, onVerMejoras }: { propuesta: PropuestaDel
     )
   }
   const r = propuesta.revision
+  return <Mesa propuesta={propuesta} r={r} onVerMejoras={onVerMejoras} />
+}
+
+/** Un texto largo (la objeción del revisor) recortado a unas líneas, con «ver más». */
+function Recortable({ children }: { children: React.ReactNode }) {
+  const [abierto, setAbierto] = useState(false)
+  return (
+    <span className="block">
+      <span className={abierto ? 'block' : 'line-clamp-4 block'}>{children}</span>
+      <button type="button" className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/50 hover:text-white" onClick={() => setAbierto((x) => !x)}>
+        {abierto ? 'ver menos' : 'ver más'}
+      </button>
+    </span>
+  )
+}
+
+function Mesa({ propuesta, r, onVerMejoras }: { propuesta: PropuestaDelLaboratorio; r: PropuestaDelLaboratorio['revision']; onVerMejoras: () => void }) {
   return (
     <Panel titulo="Mesa del maestro" nota={propuesta.categoria}>
       <div className="space-y-2 text-[12px] leading-relaxed text-white/80">
@@ -171,18 +188,20 @@ export function PanelMesa({ propuesta, onVerMejoras }: { propuesta: PropuestaDel
         <p className={`inline-block border px-1.5 font-mono text-[10px] uppercase tracking-[0.12em] ${propuesta.veredicto === 'por_revisar' ? 'border-[#e84855] text-[#e84855]' : 'border-white/40 text-white/80'}`}>
           {propuesta.veredicto === 'por_revisar' ? `por revisar · ${propuesta.motivos.map((m) => NOMBRE_DEL_MOTIVO[m] ?? m).join(' y ')}` : 'pasa: se puede aprobar'}
         </p>
-        <p className="text-white/65">{propuesta.porque}</p>
+        <div className="text-white/65">
+          <Recortable>{propuesta.porque}</Recortable>
+        </div>
         {propuesta.ensayo ? (
-          <p>
+          <div>
             <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/45">Ensayo · {VEREDICTO[propuesta.ensayo.veredicto].texto}: </span>
-            {propuesta.ensayo.resumen}
-          </p>
+            <Recortable>{propuesta.ensayo.resumen}</Recortable>
+          </div>
         ) : null}
         {r ? (
-          <p>
+          <div>
             <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/45">Revisor: </span>
-            {'noCorrio' in r ? `no la revisó (${r.noCorrio}).` : `${r.aguanta ? 'aguanta' : 'la tumba'} (confianza ${r.confianza}). ${r.objecion}`}
-          </p>
+            <Recortable>{'noCorrio' in r ? `no la revisó (${r.noCorrio}).` : `${r.aguanta ? 'aguanta' : 'la tumba'} (confianza ${r.confianza}). ${r.objecion}`}</Recortable>
+          </div>
         ) : null}
         <button type="button" className="btn btn-on-dark h-8 px-3" onClick={onVerMejoras}>
           {propuesta.estado === 'por_decidir' ? 'Decidir en Mejoras' : 'Ver en Mejoras'}
@@ -307,7 +326,7 @@ export function PanelSirvio({ mediciones }: { mediciones: LaboratorioResponse['m
 export function PanelInsights({ pasos, alias }: { pasos: readonly PasoDelMaestro[]; alias: Readonly<Record<string, string>> }) {
   const insights = pasos.filter((p) => p.paso === 'insight')
   return (
-    <Panel titulo="Insights para Leasefy" nota={insights.length ? `${insights.length}` : undefined}>
+    <Panel titulo="Insights para Leasefy" nota={insights.length ? `${insights.length}` : undefined} className="lg:col-span-2">
       {insights.length === 0 ? (
         <p className="font-mono text-[11px] text-white/40">Sin insights todavía en esta noche.</p>
       ) : (

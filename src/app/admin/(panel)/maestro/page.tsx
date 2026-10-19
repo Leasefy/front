@@ -431,7 +431,7 @@ export default function MaestroPage() {
           ) : null}
 
           {pestana === 'diarios' ? <Diarios /> : null}
-          {pestana === 'laboratorio' ? <Laboratorio onVerMejoras={() => setPestana('mejoras')} /> : null}
+          {pestana === 'laboratorio' ? <Laboratorio onVerMejoras={() => setPestana('mejoras')} onNocheNueva={recargar} /> : null}
         </div>
       ) : null}
     </div>

@@ -4,6 +4,7 @@ import { ElegirInmobiliaria } from './ElegirInmobiliaria';
 import { listarLasInmobiliarias } from './inmobiliaria-del-formulario';
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   // La plantilla del layout raíz ya agrega «| Leasefy».
   title: 'Tus datos personales',
   description: 'Pide ver, corregir o borrar tus datos personales (Habeas Data, Ley 1581 de 2012).',

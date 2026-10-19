@@ -1,9 +1,10 @@
 import { MetadataRoute } from 'next';
 import { IDIOMAS } from '@/lib/idioma/idioma';
 
-// Per-customer avaluo pages (property + owner data). The language middleware
+// Per-customer avaluo pages (property + owner data) and the ARCO / Habeas Data
+// forms (per-agency, personal data, token URLs). The language middleware
 // serves them under /es and /en too, so each is blocked unprefixed AND prefixed.
-const AVALUO_PRIVADAS = ['/avaluo/reporte/', '/avaluo/estado/', '/avaluo/verificar/'];
+const AVALUO_PRIVADAS = ['/avaluo/reporte/', '/avaluo/estado/', '/avaluo/verificar/', '/arco/'];
 const AVALUO_PRIVADAS_POR_IDIOMA = [
   ...AVALUO_PRIVADAS,
   ...IDIOMAS.flatMap((idioma) => AVALUO_PRIVADAS.map((ruta) => `/${idioma}${ruta}`)),

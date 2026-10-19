@@ -761,7 +761,8 @@ la pone en cada contrato con mora desde la fecha de la línea. Contrato congelad
 - **Columnas** (`lib/migracion/columnas-de-cartera.ts`, NO `mapearColumnas`): sólo cinco datos — vencimiento (o fecha
   de la factura), documento y nombre del INQUILINO, concepto y SALDO PENDIENTE. Una columna con `propietario`,
   `arrendador`, `dueño`, `owner` o `beneficiario` jamás es el documento ni el nombre (ni se ofrece en el selector); el monto
-  nunca es «Valor Total». Un `documento`/`nombre` sin decir «inquilino/arrendatario/cliente» no se toma solo. La pantalla
+  nunca es «Valor Total». Una columna de DÍAS («Días de mora», «Días de vencimiento») nunca se toma sola como fecha, y una
+  fecha anterior a 1990 (un serial chico de Excel, un año de 1900) no se lee: queda como problema local. Un `documento`/`nombre` sin decir «inquilino/arrendatario/cliente» no se toma solo. La pantalla
   deja elegir la columna POR CAMPO (`elegirColumnaDelCampo`).
 - **Filas** (`lib/migracion/lineas-de-cartera.ts`): cada fila es una `LineaDeCartera`; las que no se pueden mandar (fecha o
   monto ilegible, documento o concepto vacío, totales, en blanco) quedan como problema LOCAL con su número de fila, porque

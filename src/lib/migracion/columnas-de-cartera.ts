@@ -146,9 +146,12 @@ const hablaDelInquilino = (h: string) => TERMINOS_DE_INQUILINO.some((t) => h.inc
 /** Money columns that are the invoice (or what was paid), never the balance. */
 const NO_ES_EL_SALDO = /abono|pagad|valor total|total factura|subtotal|valor factura|valor bruto/
 
+/** A count of days ("Días de vencimiento", "Días de mora") is a number, never a date. */
+const CUENTA_DE_DIAS = /\bdias?\b|\bmora\b/
+
 const CONTIENE: Record<CampoDeCartera, (h: string, palabras: readonly string[]) => boolean> = {
-  fechaVencimiento: (h) => h.includes('vencim'),
-  fechaFactura: (h) => h.includes('fecha') && h.includes('factur'),
+  fechaVencimiento: (h) => h.includes('vencim') && !CUENTA_DE_DIAS.test(h),
+  fechaFactura: (h) => h.includes('fecha') && h.includes('factur') && !CUENTA_DE_DIAS.test(h),
   documento: (h, palabras) => hablaDelInquilino(h) && palabras.some((p) => TERMINOS_DE_DOCUMENTO.includes(p)),
   nombre: (h, palabras) =>
     hablaDelInquilino(h) && (palabras.includes('nombre') || h.includes('razon social')),

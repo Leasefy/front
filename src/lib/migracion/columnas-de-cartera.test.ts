@@ -134,4 +134,22 @@ describe('columnas de la cartera por factura (T-0168)', () => {
     expect(paraDocumento).not.toContain('')
     expect(encabezadosParaElCampo(todos, 'concepto')).toContain('Documento Propietario')
   })
+
+  it('una columna que cuenta días nunca es la fecha de vencimiento ni la de factura', () => {
+    for (const h of ['Días de Vencimiento', 'Dias vencimiento', 'Días de Mora', 'Días de Mora/Próximos', 'Dias de mora']) {
+      const m = mapearColumnasDeCartera([h, 'Documento Inquilino', 'Nombre Inquilino', 'Concepto', 'Saldo Pendiente'])
+      expect(m.find((x) => x.columna === h)?.campo, h).toBeNull()
+      expect(columnasQueFaltan(m)).toEqual(['fecha'])
+    }
+  })
+
+  it('con el informe real, "Días de Mora/Próximos" no se toma como fecha', () => {
+    const m = mapearColumnasDeCartera([...ENCABEZADOS_DEL_INFORME_DE_CARTERA])
+    expect(m.find((x) => x.columna === 'Días de Mora/Próximos')?.campo).toBeNull()
+  })
+
+  it('una columna de días no le quita la fecha a la que sí lo es', () => {
+    const m = mapearColumnasDeCartera(['Días de Vencimiento', 'Fecha Vencimiento Pago', 'Documento Inquilino', 'Nombre Inquilino', 'Concepto', 'Saldo Pendiente'])
+    expect(m.find((x) => x.campo === 'fechaVencimiento')?.columna).toBe('Fecha Vencimiento Pago')
+  })
 })

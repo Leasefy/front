@@ -64,6 +64,19 @@ describe('fechaDeCartera (T-0168)', () => {
     expect(fechaDeCartera('60', { esXlsx: true, date1904: false })).toBeUndefined()
     expect(fechaDeCartera('99999999', { esXlsx: true, date1904: false })).toBeUndefined()
   })
+
+  it('un entero chico (días de mora) no es una fecha de 1900', () => {
+    const xlsx = { esXlsx: true, date1904: false }
+    expect(fechaDeCartera('45', xlsx)).toBeUndefined()
+    expect(fechaDeCartera(120, xlsx)).toBeUndefined()
+    expect(fechaDeCartera('32873', xlsx)).toBeUndefined() // 1989-12-31
+    expect(fechaDeCartera('32874', xlsx)).toBe('1990-01-01')
+  })
+
+  it('un texto con año anterior a 1990 tampoco se lee', () => {
+    expect(fechaDeCartera('1900-01-05', OPC)).toBeUndefined()
+    expect(fechaDeCartera('05/01/1985', OPC)).toBeUndefined()
+  })
 })
 
 describe('esLibroConSeriales / date1904DelLibro', () => {

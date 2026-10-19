@@ -113,8 +113,17 @@ function serialAFecha(serial: number, date1904: boolean): string | undefined {
   return fecha.toISOString().slice(0, 10)
 }
 
+/** No debt report predates this: an earlier "date" is a count of days or a typo. */
+const PRIMER_ANIO_CREIBLE = 1990
+
 /** One date cell -> `YYYY-MM-DD`, or `undefined` when it cannot be read with certainty. */
 export function fechaDeCartera(celda: unknown, opciones: OpcionesDeFecha): string | undefined {
+  const fecha = leerFecha(celda, opciones)
+  if (fecha === undefined || Number(fecha.slice(0, 4)) < PRIMER_ANIO_CREIBLE) return undefined
+  return fecha
+}
+
+function leerFecha(celda: unknown, opciones: OpcionesDeFecha): string | undefined {
   if (celda instanceof Date) return comoFecha(celda)
   const texto = String(celda ?? '').trim()
   if (!texto) return undefined

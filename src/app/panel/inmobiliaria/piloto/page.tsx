@@ -177,13 +177,16 @@ function PilotoContent() {
    * resolver UN caso (`?item=hold:…`, el «Revisar y aprobar» de Cobri) o a la
    * Bandeja entera (`?bandeja=1`). Sin esto el caso había que buscarlo entre
    * cientos, en la última página. Se lee una vez y se limpia de la URL.
+   * COBRI-6 (18-10-2026): `?actividad=1` abre la Actividad, donde Pagui deja
+   * el resumen de cada mañana (lo enlaza «Agente de pagos»).
    */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const item = params.get('item')
     if (item) setPila([{ tipo: 'item', id: item }])
     else if (params.get('bandeja') === '1') setResumen('bandeja')
-    if (item || params.has('bandeja')) window.history.replaceState(null, '', window.location.pathname)
+    else if (params.get('actividad') === '1') setResumen('actividad')
+    if (item || params.has('bandeja') || params.has('actividad')) window.history.replaceState(null, '', window.location.pathname)
   }, [])
   const acciones = useMemo<AccionesDelMando>(
     () => ({

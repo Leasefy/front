@@ -409,6 +409,9 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
    */
   const sobreElMonto = laApruebaOtraPorElMonto(vista.segundaPersona);
   const loApruebaAlPedir = loApruebaElQueLoArmo(lote, yo, isAdmin) && !sobreElMonto;
+  /** GIRI: el nombre del titular congelado en el lote, para decir de quién es cada motivo. */
+  const nombreDelPropietario = (propietarioId: string) =>
+    lote.items.find((i) => i.propietarioId === propietarioId)?.nombreTitular ?? 'Propietario';
   /** Lo armó y lo aprobó la misma persona (sólo un administrador, P-4). */
   const notaP4 = notaDelLote(lote, yo);
   /*
@@ -498,6 +501,8 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           <Banner variant="info" title="Lo armaste tú y eres administrador" data-testid="lo-apruebas-tu">
             No se te pide que lo confirmes con otra persona ni con un código: con «Aprobar» queda
             aprobado en un solo paso (P-4). En la bitácora queda que fuiste la misma persona.
+            {(vista.revisarConGiri?.length ?? 0) > 0 &&
+              ` Giri pide revisar ${vista.revisarConGiri!.length === 1 ? 'una liquidación' : `${vista.revisarConGiri!.length} liquidaciones`}: al aprobar, marca «Ya lo revisé».`}
           </Banner>
         )}
       {lote.estado === 'APROBADO' && notaP4 && (
@@ -784,6 +789,20 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                           <div data-testid={t.deOtraPersona ? 'pago-a-otra-persona' : undefined}>
                             <p className="font-medium text-fg">{t.titular}</p>
                             {t.detalle ? <p className="text-xs text-fg-muted">{t.detalle}</p> : null}
+                            {(() => {
+                              // GIRI (Nico 18-10): lo que hay que revisar antes de aprobar.
+                              const giri = vista.revisarConGiri?.find((r) => r.dispersionId === item.dispersionId);
+                              return giri ? (
+                                <div className="mt-1 min-w-[13rem] space-y-0.5" data-testid={`giri-item-${item.dispersionId}`}>
+                                  <p className="text-caption font-medium text-warning">Giri: revisar antes de girar</p>
+                                  {giri.motivos.map((m) => (
+                                    <p key={m} className="text-caption text-fg-muted">
+                                      {m}
+                                    </p>
+                                  ))}
+                                </div>
+                              ) : null;
+                            })()}
                           </div>
                         );
                       })()}
@@ -886,6 +905,8 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         lote={lote}
         reenvio={lote.estado === 'ESPERANDO_APROBACION' && !loApruebaAlPedir}
         comoAdministrador={loApruebaAlPedir}
+        revisarConGiri={vista.revisarConGiri ?? []}
+        nombreDe={nombreDelPropietario}
         onCerrar={cerrar}
         onListo={(r) => aplicarLote({ ...lote, ...r.lote, items: lote.items })}
       />
@@ -895,6 +916,8 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         exigeCodigo={exigeCodigo && !loApruebaAlPedir}
         comoAdministrador={loApruebaAlPedir}
         intentosRestantes={intentosRestantes}
+        revisarConGiri={vista.revisarConGiri ?? []}
+        nombreDe={nombreDelPropietario}
         onCerrar={cerrar}
         onListo={aplicarLote}
         onFallo={() => void refetch()}
@@ -1049,27 +1072,79 @@ interface DialogoBase {
   onCerrar: () => void;
 }
 
+type RevisarConGiri = Array<{ dispersionId: string; propietarioId: string; motivos: string[] }>;
+
+/**
+ * GIRI (Nico 18-10, «Avisa y pide confirmar»): lo que Giri marcó en el lote y
+ * la casilla «Ya lo revisé». Lo usan los dos diálogos que aprueban: el de
+ * quien aprueba el lote de otro y el del administrador que aprueba el suyo.
+ */
+function GiriAntesDeAprobar({
+  revisarConGiri,
+  nombreDe,
+  yaLoRevise,
+  onCambio,
+}: {
+  revisarConGiri: RevisarConGiri;
+  nombreDe: (propietarioId: string) => string;
+  yaLoRevise: boolean;
+  onCambio: (v: boolean) => void;
+}) {
+  return (
+    <div className="space-y-2 rounded-lg border border-border bg-surface-muted p-3" data-testid="giri-antes-de-aprobar">
+      <p className="text-sm font-medium text-fg">
+        Giri pide revisar {revisarConGiri.length === 1 ? 'una liquidación' : `${revisarConGiri.length} liquidaciones`}
+      </p>
+      <ul className="space-y-1.5">
+        {revisarConGiri.map((r) => (
+          <li key={r.dispersionId} className="text-xs text-fg-muted">
+            <span className="font-medium text-fg">{nombreDe(r.propietarioId)}:</span> {r.motivos.join(' ')}
+          </li>
+        ))}
+      </ul>
+      <label className="flex items-start gap-2 pt-1" htmlFor="giri-ya-lo-revise">
+        <Checkbox
+          id="giri-ya-lo-revise"
+          data-testid="giri-ya-lo-revise"
+          checked={yaLoRevise}
+          onCheckedChange={(v) => onCambio(v === true)}
+        />
+        <span className="text-xs text-fg-muted">Ya lo revisé. En la bitácora del lote queda que fui yo.</span>
+      </label>
+    </div>
+  );
+}
+
 function PedirAprobacionDialog({
   abierto,
   lote,
   reenvio,
   comoAdministrador = false,
+  revisarConGiri = [],
+  nombreDe = () => 'Propietario',
   onCerrar,
   onListo,
 }: DialogoBase & {
   reenvio: boolean;
   /** P-4: lo armó quien mira y es administrador: este paso lo deja aprobado. */
   comoAdministrador?: boolean;
+  /** GIRI (Nico 18-10): con algo que revisar, el administrador confirma «Ya lo revisé». */
+  revisarConGiri?: RevisarConGiri;
+  nombreDe?: (propietarioId: string) => string;
   onListo: (r: SolicitudDeAprobacion) => void;
 }) {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<SolicitudDeAprobacion | null>(null);
+  const [yaLoRevise, setYaLoRevise] = useState(false);
+  // Sólo cuando ESTE paso lo aprueba: si lo aprueba otra persona, la casilla es suya.
+  const pideRevisar = comoAdministrador && revisarConGiri.length > 0;
 
   useEffect(() => {
     if (!abierto) {
       setError(null);
       setResultado(null);
+      setYaLoRevise(false);
     }
   }, [abierto]);
 
@@ -1077,7 +1152,9 @@ function PedirAprobacionDialog({
     setEnviando(true);
     setError(null);
     try {
-      const r = await lotesDeDispersionApi.solicitarAprobacion(lote.id);
+      const r = pideRevisar
+        ? await lotesDeDispersionApi.solicitarAprobacion(lote.id, yaLoRevise)
+        : await lotesDeDispersionApi.solicitarAprobacion(lote.id);
       setResultado(r);
       onListo(r);
       toast.success(
@@ -1150,6 +1227,14 @@ function PedirAprobacionDialog({
                   le llega un código de 6 dígitos por correo que vence a los 10 minutos.
                 </p>
               )}
+              {pideRevisar && (
+                <GiriAntesDeAprobar
+                  revisarConGiri={revisarConGiri}
+                  nombreDe={nombreDe}
+                  yaLoRevise={yaLoRevise}
+                  onCambio={setYaLoRevise}
+                />
+              )}
               {error && <Banner variant="danger">{error}</Banner>}
             </>
           ) : (
@@ -1201,7 +1286,12 @@ function PedirAprobacionDialog({
               <Button variant="outline" hideArrow onClick={onCerrar} disabled={enviando}>
                 Cancelar
               </Button>
-              <Button onClick={() => void pedir()} isLoading={enviando} hideArrow>
+              <Button
+                onClick={() => void pedir()}
+                isLoading={enviando}
+                disabled={pideRevisar && !yaLoRevise}
+                hideArrow
+              >
                 {comoAdministrador ? 'Aprobar' : reenvio ? 'Reenviar código' : 'Mandar a aprobación'}
               </Button>
             </>
@@ -1222,10 +1312,15 @@ function AprobarDialog({
   exigeCodigo,
   comoAdministrador = false,
   intentosRestantes,
+  revisarConGiri = [],
+  nombreDe = () => 'Propietario',
   onCerrar,
   onListo,
   onFallo,
 }: DialogoBase & {
+  /** GIRI (Nico 18-10): lo que hay que revisar antes de aprobar. Con algo, pide «Ya lo revisé». */
+  revisarConGiri?: RevisarConGiri;
+  nombreDe?: (propietarioId: string) => string;
   exigeCodigo: boolean;
   /** P-4: lo armó quien mira y es administrador: sin código, en un paso. */
   comoAdministrador?: boolean;
@@ -1235,6 +1330,8 @@ function AprobarDialog({
   onFallo: () => void;
 }) {
   const [codigo, setCodigo] = useState('');
+  const [yaLoRevise, setYaLoRevise] = useState(false);
+  const pideRevisar = revisarConGiri.length > 0;
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** El error DEL CÓDIGO, debajo del campo (02-10-2026). */
@@ -1243,6 +1340,7 @@ function AprobarDialog({
   useEffect(() => {
     if (!abierto) {
       setCodigo('');
+      setYaLoRevise(false);
       setError(null);
       setErrorDelCodigo(null);
     }
@@ -1262,7 +1360,10 @@ function AprobarDialog({
     setError(null);
     setErrorDelCodigo(null);
     try {
-      const aprobado = await lotesDeDispersionApi.aprobar(lote.id, exigeCodigo ? codigo : undefined);
+      // GIRI: «Ya lo revisé» sólo viaja si hay algo que revisar.
+      const aprobado = pideRevisar
+        ? await lotesDeDispersionApi.aprobar(lote.id, exigeCodigo ? codigo : undefined, yaLoRevise)
+        : await lotesDeDispersionApi.aprobar(lote.id, exigeCodigo ? codigo : undefined);
       onListo(aprobado);
       toast.success('Lote aprobado', {
         description: 'El resumen salió por correo a quien lo armó y a quien lo aprobó.',
@@ -1340,6 +1441,14 @@ function AprobarDialog({
               aprobación es el segundo par de ojos.
             </p>
           )}
+          {pideRevisar && (
+            <GiriAntesDeAprobar
+              revisarConGiri={revisarConGiri}
+              nombreDe={nombreDe}
+              yaLoRevise={yaLoRevise}
+              onCambio={setYaLoRevise}
+            />
+          )}
           {error && <Banner variant="danger">{error}</Banner>}
         </div>
 
@@ -1347,7 +1456,12 @@ function AprobarDialog({
           <Button variant="outline" hideArrow onClick={onCerrar} disabled={enviando}>
             Cancelar
           </Button>
-          <Button onClick={() => void aprobar()} isLoading={enviando} hideArrow>
+          <Button
+            onClick={() => void aprobar()}
+            isLoading={enviando}
+            disabled={pideRevisar && !yaLoRevise}
+            hideArrow
+          >
             Aprobar
           </Button>
         </DialogFooter>

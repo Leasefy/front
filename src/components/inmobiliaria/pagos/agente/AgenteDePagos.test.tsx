@@ -108,10 +108,13 @@ describe('AgenteDePagos — hoy: interruptor apagado', () => {
     expect(rayas).toHaveLength(0)
   })
 
-  it('presenta a los seis del equipo, cada uno con lo que hace', () => {
+  it('presenta a los seis del equipo, cada uno con lo que hace (COBRI-6: los que corren)', () => {
     render(lectura({}))
-    for (const id of ['gabriela', 'cuenti', 'nicolas', 'valentina', 'samuel', 'sofia']) {
+    for (const id of ['pagui', 'cuenti', 'cobri', 'reti', 'giri', 'noti']) {
       expect(q(`[data-testid="especialista-${id}"]`), id).not.toBeNull()
+    }
+    for (const viejo of ['Gabriela', 'Nicolás', 'Valentina', 'Samuel', 'Sofía']) {
+      expect(contenedor.textContent, viejo).not.toContain(viejo)
     }
   })
 
@@ -121,9 +124,9 @@ describe('AgenteDePagos — hoy: interruptor apagado', () => {
     expect(enlaces).toEqual(
       expect.arrayContaining([
         '/panel/inmobiliaria/pagos/cobranza/fallidos',
-        '/panel/inmobiliaria/pagos/cobranza/recordatorios',
-        '/panel/inmobiliaria/pagos/liquidaciones',
-        '/panel/inmobiliaria/pagos/cartera/cobros',
+        '/panel/inmobiliaria/pagos/dispersiones/lotes',
+        '/panel/inmobiliaria/piloto?bandeja=1',
+        '/panel/inmobiliaria/piloto?actividad=1',
       ]),
     )
     // Ni pestañas propias ni una tabla de pagos fallidos acá adentro.
@@ -135,10 +138,11 @@ describe('AgenteDePagos — hoy: interruptor apagado', () => {
     permisos.agencyRole = 'CONTADOR'
     permisos.modulos = ['cobros'] // sin `cobranza`
     render(lectura({}))
-    const valentina = q('[data-testid="especialista-valentina"]')
-    expect(valentina?.textContent).toContain('Cobranza › Pagos fallidos')
-    expect(valentina?.querySelector('a')).toBeNull()
-    expect(q('[data-testid="especialista-cuenti"] a')?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/cartera/cobros')
+    const reti = q('[data-testid="especialista-reti"]')
+    expect(reti?.textContent).toContain('Cobranza › Pagos fallidos')
+    expect(reti?.querySelector('a')).toBeNull()
+    // Inicio lo ve cualquier miembro: la Bandeja de Cuenti siempre se enlaza.
+    expect(q('[data-testid="especialista-cuenti"] a')?.getAttribute('href')).toBe('/panel/inmobiliaria/piloto?bandeja=1')
   })
 
   it('con todo leído no ofrece «Volver a consultar»: no hay nada sin verificar', () => {
@@ -180,7 +184,7 @@ describe('AgenteDePagos — con las llaves', () => {
     const cobri = q('[data-testid="cobri-este-mes"]')
     expect(cobri).not.toBeNull()
     const pasos = q('[data-testid="paso-leasefy"]')
-    const equipo = q('[data-testid="especialista-gabriela"]')
+    const equipo = q('[data-testid="especialista-pagui"]')
     expect(pasos!.compareDocumentPosition(cobri!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(cobri!.compareDocumentPosition(equipo!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })

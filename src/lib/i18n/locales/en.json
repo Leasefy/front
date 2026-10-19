@@ -8726,7 +8726,8 @@
           "facturacion": "Billing and cash",
           "propietarios": "Owners",
           "contabilidad": "Accounting",
-          "inspeccion": "Inspection"
+          "inspeccion": "Inspection",
+          "pagui": "Pagui · payments summary"
         },
         "rol": {
           "cobrador": "Collector",
@@ -14737,17 +14738,17 @@
     },
     "pagos": {
       "rol": "Payment-link collections",
-      "historia": "Builds each installment's charge with its payment link and sends it to the tenant; watches what fails and prepares each owner's statement.",
+      "historia": "Sends the tenant the payment link for each installment and, with its team (Cuenti, Reti, Giri, Noti and Pagui), checks the charge before it is due, recovers failed payments, reviews each payout to the owner and keeps you posted.",
       "hace": {
-        "cobro": "Creates the installment charge and requests its payment link",
-        "envia": "Sends the charge by WhatsApp or email",
-        "fallidos": "Watches failed payments and suggests what to do with each",
-        "liquidacion": "Computes each owner's settlement and says whether it can be approved or needs review",
-        "cierre": "Reports received payments and builds the end-of-day close"
+        "cobro": "Checks each installment a week before it is due and warns you about the ones that will go out wrong",
+        "envia": "Sends the tenant the payment link by WhatsApp: 3 days before, on the day and 3 days after the due date",
+        "fallidos": "Recovers failed payments case by case: resends the link, sends a new one or the bank transfer instructions, or hands it to collections",
+        "liquidacion": "Reviews each settlement before paying the owner and flags the ones to look at",
+        "cierre": "Notifies you in the bell of failed and incoming payments, and every morning leaves you the team summary"
       },
       "noHace": {
         "link": "Never makes up a link: only real Wompi links through Leasefy",
-        "aprueba": "Doesn't approve settlements: recommends them",
+        "aprueba": "Doesn't approve payouts: sends the odd ones to review",
         "masivo": "Doesn't run bulk actions without your confirmation"
       }
     },

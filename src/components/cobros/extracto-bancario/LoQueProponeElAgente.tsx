@@ -54,6 +54,28 @@ const NOMBRE_DEL_PORQUE: Record<PropuestaDelAgente['porQue'][number]['tipo'], st
   valor: 'Valor',
 };
 
+const normalizarFrase = (t: string) => t.trim().replace(/\s+/g, ' ').toLowerCase();
+
+/**
+ * El micro manda la misma frase en `frases`, en `porQue` («Verificado: …»,
+ * «Valor: …») y en `porQueNoSeAplicaSola`: la tarjeta repetía tres frases
+ * (CONC-13, QA de agentes 17-10). Cada frase se dice UNA vez, donde aparece
+ * primero.
+ */
+export function sinFrasesRepetidas(
+  p: Pick<PropuestaDelAgente, 'frases' | 'porQue' | 'porQueNoSeAplicaSola'>,
+): { porQue: PropuestaDelAgente['porQue']; porQueNoSeAplicaSola: string | null } {
+  const dichas = new Set(p.frases.map(normalizarFrase));
+  const porQue = p.porQue.filter((x) => {
+    const n = normalizarFrase(x.texto);
+    if (dichas.has(n)) return false;
+    dichas.add(n);
+    return true;
+  });
+  const sola = p.porQueNoSeAplicaSola;
+  return { porQue, porQueNoSeAplicaSola: sola && !dichas.has(normalizarFrase(sola)) ? sola : null };
+}
+
 /** «Lo confirmaron 3 personas y el Piloto 1 vez». */
 export function fraseDelAlias(a: NonNullable<PropuestaDelAgente['alias']>): string {
   const personas = a.personas === 1 ? '1 persona' : `${a.personas} personas`;
@@ -274,6 +296,7 @@ function PropuestaDelAgenteFila({
 }) {
   const delAlias = vinoDelAlias(p);
   const clase = claseDelGastoDelBanco(p);
+  const { porQue, porQueNoSeAplicaSola } = sinFrasesRepetidas(p);
   const sePuedeConciliarAqui = clase !== null || (!esSalida && p.accion !== null);
   return (
     <li className="space-y-2 rounded-md border border-border p-3" data-testid={`propuesta-del-agente-${p.ref}`}>
@@ -310,17 +333,17 @@ function PropuestaDelAgenteFila({
           ))}
         </ul>
       )}
-      {p.porQue.length > 0 && (
+      {porQue.length > 0 && (
         <ul className="space-y-0.5 text-caption text-fg-muted" aria-label="Por qué">
-          {p.porQue.map((x, i) => (
+          {porQue.map((x, i) => (
             <li key={i}>
               <span className="font-medium text-fg">{NOMBRE_DEL_PORQUE[x.tipo]}:</span> {x.texto}
             </li>
           ))}
         </ul>
       )}
-      {!p.seAplicaSola && p.porQueNoSeAplicaSola && (
-        <p className="text-caption text-fg-muted">{p.porQueNoSeAplicaSola}</p>
+      {!p.seAplicaSola && porQueNoSeAplicaSola && (
+        <p className="text-caption text-fg-muted">{porQueNoSeAplicaSola}</p>
       )}
       {p.avisos.map((a, i) => (
         <p key={i} className="flex items-start gap-1.5 text-caption text-fg">

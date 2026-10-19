@@ -20,8 +20,26 @@ import {
   sePuedeEmitirHoy,
   seSugiere,
   sinLaRutaDeFacturacion,
+  sinLaRutaDeLasReglasDeMora,
   cuantos,
 } from './por-facturar'
+
+describe('🔴 FACT-2: la ruta de las reglas de mora se vuelve un enlace', () => {
+  it('quita «Configúralas en Pagos → Cartera → Reglas de mora.» y avisa que la nombraba', () => {
+    expect(
+      sinLaRutaDeLasReglasDeMora(
+        'La inmobiliaria no tiene reglas de mora activas: no hay con qué liquidar el interés de esta cuota. Configúralas en Pagos → Cartera → Reglas de mora.',
+      ),
+    ).toEqual({
+      texto: 'La inmobiliaria no tiene reglas de mora activas: no hay con qué liquidar el interés de esta cuota.',
+      nombrabaLaRuta: true,
+    })
+  })
+
+  it('un motivo sin la ruta queda tal cual', () => {
+    expect(sinLaRutaDeLasReglasDeMora('Sin reglas.')).toEqual({ texto: 'Sin reglas.', nombrabaLaRuta: false })
+  })
+})
 
 function fila(over: Partial<FacturaDelMes> = {}): FacturaDelMes {
   return {

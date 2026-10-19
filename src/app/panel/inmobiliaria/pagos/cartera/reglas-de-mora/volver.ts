@@ -12,6 +12,7 @@
 
 const COBROS = '/panel/inmobiliaria/pagos/cartera/cobros';
 const CONTRATOS = '/panel/inmobiliaria/contratos/';
+const FACTURACION = '/panel/inmobiliaria/facturacion';
 
 export interface DestinoDeVolver {
   href: string;
@@ -22,6 +23,11 @@ export function destinoDeVolver(volver: string | null): DestinoDeVolver {
   // El prefijo del contrato ya está dentro del panel: nada de fuera pasa.
   if (volver && volver.startsWith(CONTRATOS)) {
     return { href: volver, label: 'Volver al contrato' };
+  }
+  // FACT-2 (19-10-2026): el aviso de mora de «Por facturar» trae a la persona
+  // hasta acá; vuelve a Facturación. Ruta exacta, sin nada detrás.
+  if (volver === FACTURACION) {
+    return { href: FACTURACION, label: 'Volver a Facturación' };
   }
   return { href: COBROS, label: 'Volver a cobros' };
 }

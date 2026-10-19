@@ -13,9 +13,10 @@
  *      nota de `lib/pagos/equipo-de-pagos.ts`.)
  *   2b. Cobri este mes (08-10-2026, de cambios-nico-10): la frase del mes, cuándo
  *      escribe y el link de cada cuota (`CobriEsteMes`), con el resumen del back.
- *   3. Quién es quién: los seis del equipo, qué hace cada uno y en qué
- *      pantalla del panel se ve su trabajo. Esas pantallas ya existen y
- *      funcionan sin el equipo; acá se ENLAZAN, no se repiten.
+ *   3. Quién es quién: los seis del equipo (COBRI-6, 18-10-2026: Pagui,
+ *      Cuenti, Cobri, Reti, Giri y Noti, los que corren de verdad), qué hace
+ *      cada uno y en qué pantalla del panel se ve su trabajo. Esas pantallas
+ *      ya existen; acá se ENLAZAN, no se repiten.
  *
  * El texto y la lógica de estados viven en `lib/pagos/equipo-de-pagos.ts`; las
  * lecturas, en `useAgenteDePagos`. Este archivo sólo dibuja.
@@ -164,9 +165,10 @@ export function AgenteDePagos({ lectura }: { lectura: AgenteDePagosLectura }) {
           <PildoraDelEstado estado={estado} />
         </div>
         <p className="max-w-2xl text-body-sm text-fg-muted">
-          Seis agentes que preparan y envían el cobro por link de pago, vigilan los pagos que fallan y
-          dejan lista la liquidación de cada propietario. Entran a trabajar cuando Leasefy genera un
-          cobro. La plata se sigue operando en Pagos: este equipo automatiza partes de ese trabajo.
+          Seis agentes que trabajan el cobro por link de pago de punta a punta: revisan cada cuota antes
+          de que venza, le mandan el link al inquilino, recuperan los pagos que fallan, revisan cada giro
+          al propietario antes de aprobarlo, te avisan y cada mañana te dejan el resumen. La plata se
+          sigue operando en Pagos: este equipo automatiza partes de ese trabajo.
         </p>
       </header>
 

@@ -81,44 +81,72 @@ export function etiquetaDelCampo(campo: CampoDelMedio, tipo: TipoDeMedioDePago):
   return ETIQUETA_DEL_CAMPO[campo];
 }
 
-/** Los últimos cuatro a la vista; el resto tapado. */
+/**
+ * Los últimos cuatro a la vista; el resto tapado. Guiones, puntos y espacios
+ * no cuentan: «697-123456-78» es «•••• 5678», no «•••• 6-78» (CONC-3).
+ */
 export function enmascarar(numero: string | null | undefined): string | null {
   if (!numero) return null;
-  const limpio = numero.replace(/\s/g, '');
+  const limpio = numero.replace(/[\s.\-]+/g, '');
   if (limpio.length <= 4) return limpio;
   return `•••• ${limpio.slice(-4)}`;
 }
 
+type DatosQueSeExigen = Pick<NuevoMedioDePago, 'tipo' | 'banco' | 'tipoDeCuenta' | 'numeroDeCuenta' | 'titular' | 'enlace'>;
+
+/** Lo que falta o está mal, con el campo donde se dice. */
+export interface FaltanteDelMedio {
+  campo: CampoDelMedio;
+  mensaje: string;
+}
+
 /**
  * Los mensajes que devuelve el back, letra por letra, para frenar antes de
- * mandar. Devuelve `null` si el medio está completo.
+ * mandar: TODO lo que falta, en el orden del formulario y cada cosa con su
+ * campo. El formulario los pinta debajo de cada campo y enfoca el primero
+ * (CONC-2: antes salía un solo aviso al final del cajón, fuera de la vista, y
+ * «Crear medio» parecía no hacer nada). Vacío = el medio está completo.
  */
-export function faltanteDe(m: Pick<NuevoMedioDePago, 'tipo' | 'banco' | 'tipoDeCuenta' | 'numeroDeCuenta' | 'titular' | 'enlace'>): string | null {
+export function faltantesDe(m: DatosQueSeExigen): FaltanteDelMedio[] {
   const nombreTipo = NOMBRE_DEL_TIPO[m.tipo];
-  const falta = (campo: string) => `${campo} es obligatorio para un medio de tipo ${nombreTipo}.`;
+  const falta = (campo: CampoDelMedio, nombre: string): FaltanteDelMedio => ({
+    campo,
+    mensaje: `${nombre} es obligatorio para un medio de tipo ${nombreTipo}.`,
+  });
   const vacio = (v: string | null | undefined) => !v || v.trim() === '';
   const https = (v: string) => /^https:\/\/\S+$/i.test(v.trim());
+  const out: FaltanteDelMedio[] = [];
   switch (m.tipo) {
     case 'TRANSFERENCIA':
-      if (vacio(m.banco)) return falta('El banco');
-      if (vacio(m.tipoDeCuenta)) return falta('El tipo de cuenta');
-      if (vacio(m.numeroDeCuenta)) return falta('El número de cuenta');
-      if (vacio(m.titular)) return falta('El titular');
-      return null;
+      if (vacio(m.banco)) out.push(falta('banco', 'El banco'));
+      if (vacio(m.tipoDeCuenta)) out.push(falta('tipoDeCuenta', 'El tipo de cuenta'));
+      if (vacio(m.numeroDeCuenta)) out.push(falta('numeroDeCuenta', 'El número de cuenta'));
+      if (vacio(m.titular)) out.push(falta('titular', 'El titular'));
+      return out;
     case 'NEQUI':
     case 'DAVIPLATA':
-      if (vacio(m.numeroDeCuenta)) return falta('El número de celular');
-      return null;
+      if (vacio(m.numeroDeCuenta)) out.push(falta('numeroDeCuenta', 'El número de celular'));
+      return out;
     case 'ENLACE_DE_PAGO':
-      if (vacio(m.enlace)) return falta('El enlace');
-      if (!https(m.enlace!)) {
-        return 'El enlace de pago tiene que empezar con https:// — un enlace sin cifrar no se le manda a un inquilino.';
+      if (vacio(m.enlace)) out.push(falta('enlace', 'El enlace'));
+      else if (!https(m.enlace!)) {
+        out.push({
+          campo: 'enlace',
+          mensaje: 'El enlace de pago tiene que empezar con https:// — un enlace sin cifrar no se le manda a un inquilino.',
+        });
       }
-      return null;
+      return out;
     default:
-      if (!vacio(m.enlace) && !https(m.enlace!)) return 'Si hay un enlace, tiene que empezar con https://.';
-      return null;
+      if (!vacio(m.enlace) && !https(m.enlace!)) {
+        out.push({ campo: 'enlace', mensaje: 'Si hay un enlace, tiene que empezar con https://.' });
+      }
+      return out;
   }
+}
+
+/** Lo primero que falta, en una frase; `null` si el medio está completo. */
+export function faltanteDe(m: DatosQueSeExigen): string | null {
+  return faltantesDe(m)[0]?.mensaje ?? null;
 }
 
 /** La línea que va debajo del nombre en la lista. */

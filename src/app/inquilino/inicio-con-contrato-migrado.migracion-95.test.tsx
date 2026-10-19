@@ -15,7 +15,11 @@ void React;
 
 const contratosMock = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/hooks/use-contratos-del-portal', () => ({ useContratosDelPortal: () => contratosMock() }));
-vi.mock('@/lib/hooks/useResumenDelPortal', () => ({ useResumenDelPortal: () => null, useEstadoDeCuentaDelPortal: () => null }));
+vi.mock('@/lib/hooks/useResumenDelPortal', () => ({
+  useResumenDelPortal: () => null,
+  useEstadoDeCuentaDelPortal: () => null,
+  useEstadoDeCuentaDelPortalConEstado: () => ({ doc: null, cargando: false, fallo: null, reintentar: () => {} }),
+}));
 vi.mock('@/lib/hooks/useProperties', () => ({ useFeaturedProperties: () => ({ properties: [], isLoading: false }) }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => ({ user: { id: 'u1', name: 'Valentina Arango', profileSource: 'backend', onboardingCompleted: true }, isLoading: false }) }));
 vi.mock('@/lib/hooks/use-time-greeting', () => ({ useTimeGreeting: () => ({ greeting: 'Buenas tardes' }) }));
@@ -53,13 +57,15 @@ function montar() {
 }
 
 describe('el inicio del inquilino con contrato migrado (CA-04)', () => {
-  it('no le ofrece «hasta cuánto puedes arrendar» y cuenta su arriendo', () => {
+  it('no le ofrece «hasta cuánto puedes arrendar»: es su Inicio de arrendatario (QA 17-10, Nico)', () => {
     contratosMock.mockReturnValue({ contratos: [{ contratoId: 'c-1' }, { contratoId: 'c-10' }], cargando: false });
     montar();
     expect(host.querySelector('[data-testid="tope-aprobado"]')).toBeNull();
-    const arriendos = [...host.querySelectorAll('a[href="/inquilino/arriendo"]')].map((a) => a.textContent ?? '').join(' ');
-    expect(arriendos).toContain('2');
-    expect(arriendos).toContain('Contratos vigentes');
+    // Nada de «Propiedades para ti» ni de buscar: sus accesos son los de quien arrienda.
+    expect(host.textContent).not.toContain('Propiedades para ti');
+    expect(host.querySelector('a[href="/inquilino/explorar"]')).toBeNull();
+    expect(host.querySelector('a[href="/inquilino/pagos"]')?.textContent).toContain('Pagar mi arriendo');
+    expect(host.querySelector('a[href="/inquilino/solicitudes?nueva=1"]')?.textContent).toContain('Reportar un daño');
   });
   it('sin contratos ni arriendos sigue siendo el inicio de quien llega', () => {
     contratosMock.mockReturnValue({ contratos: [], cargando: false });

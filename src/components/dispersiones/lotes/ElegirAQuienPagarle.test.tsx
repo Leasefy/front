@@ -183,6 +183,30 @@ describe('elegir a quién le pago', () => {
     expect(pie).not.toContain('$ 0 a 0');
   });
 
+  it('🔴 GIRI (Nico 18-10): la fila dice qué revisar antes de girar, y se puede tildar igual', async () => {
+    candidatos.mockResolvedValue(
+      respuesta({
+        candidatos: [
+          {
+            dispersionId: 'd-g',
+            propietarioId: 'p-g',
+            propietarioName: 'Gloria',
+            month: '2026-09',
+            netoCop: 900_000,
+            acumuladoCop: 900_000,
+            entraEnElCupo: true,
+            motivoDeExclusion: null,
+            giri: ['La cuenta del propietario se cambió el 10 de octubre de 2026: hace menos de 30 días.'],
+          },
+        ],
+      }),
+    );
+    await montar();
+    const g = contenedor.querySelector('[data-testid="giri-d-g"]');
+    expect(g?.textContent).toContain('Giri: revisar antes de girar');
+    expect(g?.textContent).toContain('se cambió el 10 de octubre');
+  });
+
   it('avisa a quién le falta la cuenta y no lo deja tildar', async () => {
     candidatos.mockResolvedValue(
       respuesta({

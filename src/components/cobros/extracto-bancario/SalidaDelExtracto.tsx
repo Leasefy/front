@@ -16,6 +16,7 @@
  */
 
 import { useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUUpLeft, Bank, CheckCircle, Robot, ShieldCheck } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
@@ -192,8 +193,13 @@ export function SalidaDelExtracto({ movimiento: m, puedeConciliar, ocupado, onCa
           </ul>
         ) : (
           <p className="text-caption text-fg-muted" data-testid={`salida-sin-propuesta-${m.id}`}>
-            Ningún giro, egreso ni pago registrado calza con esta salida. Si es un cobro del banco, márcala como
-            gasto del banco; si no, ignórala con su motivo.
+            Ningún giro, egreso ni pago registrado calza con esta salida. Si es un pago a un proveedor o un gasto de
+            la inmobiliaria, regístralo en{' '}
+            {/* CONC-9 (QA de agentes 17-10): ignorar un pago a un proveedor lo dejaba fuera de los libros. */}
+            <Link href="/panel/inmobiliaria/contabilidad/egresos" className="underline underline-offset-2 hover:text-fg">
+              Contabilidad → Egresos
+            </Link>{' '}
+            y ahí eliges esta salida. Si es un cobro del banco, márcala como gasto del banco.
           </p>
         )}
         {salida?.evaluacion?.ambigua && (

@@ -26,7 +26,7 @@ export function SolicitudDelPropietario({ id }: { id: string }) {
     setCargando(true);
     setError(null);
     pqrsApi
-      .getMine(id)
+      .getMine(id, { comoPropietario: true })
       .then(setS)
       .catch(setError)
       .finally(() => setCargando(false));
@@ -78,7 +78,7 @@ export function SolicitudDelPropietario({ id }: { id: string }) {
         )}
       </dl>
       {s.descripcion && <p className="whitespace-pre-wrap text-sm text-fg-muted">{s.descripcion}</p>}
-      {caso.solicitud && <RespuestaYArchivosDelCaso caseId={s.id} solicitud={caso.solicitud} onCambio={cargar} />}
+      {caso.solicitud && <RespuestaYArchivosDelCaso caseId={s.id} solicitud={caso.solicitud} onCambio={cargar} comoPropietario />}
       <section className="rounded-lg border border-border bg-surface p-4">
         <h2 className="mb-3 text-sm font-semibold text-fg">Historial</h2>
         <ol className="space-y-2 text-sm">

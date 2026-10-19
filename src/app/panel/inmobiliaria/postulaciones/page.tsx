@@ -40,6 +40,7 @@ import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer'
 // MANOS-2 (04-10-2026): la lista corta que armó matching en el Piloto.
 import { listasCortasApi, puestosPorPostulacion, type PuestoEnLaListaCorta } from '@/lib/api/listas-cortas.service'
+import { MarcaDeListaCorta } from '@/components/inmobiliaria/MarcaDeListaCorta'
 import {
   AccionDePostulacion,
   type ActionType,
@@ -518,15 +519,7 @@ function PostulacionesContenido() {
                             <div className="min-w-0">
                               <p className="font-medium text-fg truncate">{c.tenantName}</p>
                               <p className="text-xs text-fg-muted truncate">{c.tenantEmail}</p>
-                              {listaCorta.get(c.id) && (
-                                <span
-                                  className="mt-0.5 inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary"
-                                  title={listaCorta.get(c.id)!.razones.join(' ')}
-                                  data-testid={`lista-corta-${c.id}`}
-                                >
-                                  {tr("Lista corta ·")} {listaCorta.get(c.id)!.puesto}.º
-                                </span>
-                              )}
+                              <MarcaDeListaCorta puesto={listaCorta.get(c.id)} className="mt-0.5" />
                             </div>
                           </div>
                         </TableCell>

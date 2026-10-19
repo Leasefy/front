@@ -324,8 +324,25 @@ export interface SalioEnUnArchivoAnulado {
   motivoDeLaAnulacion: string | null;
 }
 
+/**
+ * PROP-3 (QA de agentes 17-10): un pago del lote que va a la cuenta de OTRA
+ * persona. `nombreDelTitular: null` = nadie sabe su nombre (el archivo de la
+ * inmobiliaria sólo traía su cédula).
+ */
+export interface CuentaDeOtraPersona {
+  itemId: string;
+  propietarioNombre: string;
+  tipoDocumento: string;
+  documento: string;
+  nombreDelTitular: string | null;
+}
+
 export interface VistaDelLote {
   lote: LoteDeDispersion;
+  /** PROP-3: los pagos a la cuenta de otra persona. Opcional: back anterior. */
+  cuentasDeOtraPersona?: CuentaDeOtraPersona[];
+  /** GIRI (Nico 18-10): las liquidaciones del lote que hay que revisar antes de aprobar. Aditivo. */
+  revisarConGiri?: Array<{ dispersionId: string; propietarioId: string; motivos: string[] }>;
   /**
    * Desde qué banco se gira y, por lo tanto, en qué formato sale el archivo.
    * `null` = el lote se armó sin preguntarlo (su archivo no sale).
@@ -433,6 +450,12 @@ export interface CandidatoDeDispersion {
    * nunca la rechazó.
    */
   rechazoDeWompi?: string | null;
+  /**
+   * GIRI (Nico 18-10): por qué hay que revisar esta liquidación antes de
+   * girarla. Vacío o ausente = Giri no ve nada. No la excluye: aprobar el
+   * lote pide «Ya lo revisé».
+   */
+  giri?: string[];
   /**
    * 🔴 PG-05 (QA de Pagos, 03-10-2026): POR QUÉ no va al archivo, como código.
    * Antes toda exclusión se contaba como «le falta un dato bancario», y Paula

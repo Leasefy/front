@@ -185,6 +185,13 @@ function fechaCorta(iso: string): string {
 function aItemDS(filaCruda: { label: string; valor: string; enfasis?: boolean }): KeyValueItem {
   // QA-IA-95 (PI-16): la plata que escribe el micro («$5.750.000») con el espacio duro de la casa.
   const fila = { ...filaCruda, valor: conLaPlataPegada(filaCruda.valor) }
+  // MATCH-2 (QA 18-10): una fila que es SÓLO una frase (la lista corta de
+  // Matching manda cada candidato con sus razones y sin valor) se apila como
+  // la prosa: la etiqueta del DS lleva `truncate` y se cortaba con «…». El
+  // `<span className="prosa">` vacío es el gancho de WRAP_VALORES.
+  if (!fila.valor.trim() && fila.label.length > LARGO_QUE_YA_ES_PROSA) {
+    return { label: fila.label, value: <span className="prosa" aria-hidden="true" /> }
+  }
   const prosa = fila.valor.length > LARGO_QUE_YA_ES_PROSA
   if (prosa) {
     return {

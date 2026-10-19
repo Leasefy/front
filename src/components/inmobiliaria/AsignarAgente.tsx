@@ -12,7 +12,7 @@
  * El back sí lo tenía: `PUT /inmobiliaria/consignaciones/:id/assign-agent`.
  */
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
 import { Briefcase, Check } from '@phosphor-icons/react';
@@ -26,25 +26,19 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { useAgentes } from '@/lib/hooks/useInmobiliaria';
+import { useAsesores, rolDelAsesor } from '@/lib/hooks/use-asesores';
+import type { AsesorConCarga } from '@/lib/api/crm.service';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
-import type { Agente } from '@/lib/types/inmobiliaria';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
-/** Los tres roles reales de `AgenteRole`. Escribe otros y salía la llave cruda. */
-const ROLE_LABELS: Record<string, string> = {
-  agent: 'Agente',
-  coordinator: 'Coordinador',
-  director: 'Director',
-};
 
 export interface AsignarAgenteProps {
   abierto: boolean;
   onCerrar: () => void;
   /** Id de la CONSIGNACIÓN (el mandato), no del inmueble. */
   consignacionId: string;
-  /** Para marcar el actual y no ofrecerlo como novedad. */
+  /** El `User.id` de quien está a cargo hoy: se marca «Actual». */
   agenteActualId?: string;
   onAsignado: () => void;
 }
@@ -60,37 +54,27 @@ export function AsignarAgente({
      pudimos preguntar», y sólo uno de los dos se puede reintentar. Sin esto la
      lista caída se pintaba como «No tienes agentes activos» — un vacío que
      miente y encima invita a irse a invitar gente que ya existe. */
-  const { agentes, isLoading, errorCrudo, refetch } = useAgentes();
+  /* QA 17-10 (IMANA-1, Nico «Administradoras también»): los MISMOS que
+     reciben leads (administradoras y asesores activos), no sólo el rol Asesor.
+     Ya vienen sólo los activos: uno de baja sería una asignación que nadie
+     atiende. */
+  const { asesores: disponibles, isLoading, error: errorCrudo, refetch } = useAsesores(abierto);
   const [guardando, setGuardando] = useState<string | null>(null);
 
-  /* Sólo los que pueden recibir trabajo hoy. Un agente de baja o inactivo en la
-     lista es una asignación que alguien va a hacer y nadie va a atender. */
-  const disponibles = useMemo(
-    () => (agentes as Agente[]).filter((a) => a.status === 'active'),
-    [agentes],
-  );
-
-  const asignar = async (agente: Agente) => {
-    if (!agente.userId) {
-      // Sin `userId` no hay nada que mandar: el `id` del front es el del
-      // miembro de la agencia y el back guarda el del usuario.
-      toast.error('Ese agente no se puede asignar todavía', {
-        description: 'Su usuario no está enlazado. Pídele a soporte que lo revise.',
-      });
-      return;
-    }
-    setGuardando(agente.id);
+  const asignar = async (asesor: AsesorConCarga) => {
+    const nombre = asesor.nombre?.trim() || 'La persona';
+    setGuardando(asesor.userId);
     try {
-      await consignacionesApi.assignAgent(consignacionId, agente.userId);
-      toast.success(`${agente.name} queda a cargo del inmueble`);
+      await consignacionesApi.assignAgent(consignacionId, asesor.userId);
+      toast.success(`${nombre} queda a cargo del inmueble`);
       onAsignado();
       onCerrar();
     } catch (err) {
       // Por el traductor (sistema de errores, 02-10-2026): el motivo del back
       // si lo dio, un 5xx «de nuestro lado» con la referencia, y «conexión»
       // sólo sin respuesta. Antes iba `err.message` crudo.
-      toast.error('No pudimos asignar el agente', {
-        description: mensajeParaLaPersona(err, { accion: 'asignar el agente' }),
+      toast.error('No pudimos asignar el asesor', {
+        description: mensajeParaLaPersona(err, { accion: 'asignar el asesor' }),
       });
     } finally {
       setGuardando(null);
@@ -101,9 +85,9 @@ export function AsignarAgente({
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
       <DialogContent size="sm">
         <DialogHeader>
-          <DialogTitle>Asignar agente</DialogTitle>
+          <DialogTitle>Asignar asesor</DialogTitle>
           <DialogDescription>
-            Queda a cargo de este inmueble: atiende las visitas y responde a los candidatos.
+            Queda a cargo de este inmueble: atiende las visitas y responde a los interesados.
           </DialogDescription>
         </DialogHeader>
 
@@ -131,7 +115,7 @@ export function AsignarAgente({
               <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface text-fg-muted">
                 <Briefcase className="h-6 w-6" weight="duotone" aria-hidden="true" />
               </span>
-              <p className="text-sm font-medium text-fg">No tienes agentes activos</p>
+              <p className="text-sm font-medium text-fg">No tienes asesores activos</p>
               <p className="mt-1 text-xs text-fg-muted">
                 Invita a alguien a tu equipo y después vuelve a asignarlo acá.
               </p>
@@ -143,9 +127,10 @@ export function AsignarAgente({
         >
           <ul className="max-h-80 space-y-1.5 overflow-y-auto" data-lenis-prevent>
             {disponibles.map((agente) => {
-              const esActual = agente.id === agenteActualId;
+              const esActual = agente.userId === agenteActualId;
+              const nombre = agente.nombre?.trim() || 'Sin nombre registrado';
               return (
-                <li key={agente.id}>
+                <li key={agente.userId}>
                   <button
                     type="button"
                     onClick={() => asignar(agente)}
@@ -159,20 +144,20 @@ export function AsignarAgente({
                     )}
                   >
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-soft text-sm font-semibold text-primary">
-                      {agente.name.charAt(0).toUpperCase()}
+                      {nombre.charAt(0).toUpperCase()}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-fg">
-                        {agente.name}
+                        {nombre}
                       </span>
-                      <span className="block truncate text-xs text-fg-muted">
-                        {ROLE_LABELS[agente.role] ?? agente.role}
-                        {agente.zone && ` · ${agente.zone}`}
+                      <span className="block truncate text-caption text-fg-muted">
+                        {rolDelAsesor(agente.rol)}
+                        {agente.leadsActivos > 0 ? ` · ${agente.leadsActivos} ${agente.leadsActivos === 1 ? 'lead abierto' : 'leads abiertos'}` : ''}
                       </span>
                     </span>
                     {esActual ? (
                       <span className="shrink-0 text-xs font-medium text-primary">Actual</span>
-                    ) : guardando === agente.id ? (
+                    ) : guardando === agente.userId ? (
                       <span className="shrink-0 text-xs text-fg-muted">Asignando…</span>
                     ) : (
                       <Check className="h-4 w-4 shrink-0 text-fg-subtle" />

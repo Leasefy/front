@@ -136,6 +136,15 @@ export function OTPVerification({
   const [sendError, setSendError] = useState<string | null>(null);
   /** T-0109 — `SendOtpResponse.channels`, opcional. `[]` con un back anterior a WU-1. */
   const [channels, setChannels] = useState<OtpChannelResult[]>([]);
+  /**
+   * CONTR-4 (QA 17-10): el envío chocó con la espera de reenvío del back
+   * (CODIGO_EN_ESPERA). Pasa al firmar el inventario justo después del
+   * contrato: el código del contrato salió hace menos de un minuto. No es un
+   * error de la persona: se cuenta la espera en vivo y, al llegar a cero, se
+   * pide el código solo. Antes el diálogo se quedaba con «Espera 16 segundos»
+   * fijo y sin ningún botón: la única salida era Cancelar.
+   */
+  const [esperandoParaEnviar, setEsperandoParaEnviar] = useState(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const hasSentRef = useRef(false);
@@ -159,11 +168,16 @@ export function OTPVerification({
       setStatus('idle');
     } catch (err) {
       const d = describirErrorDeOtp(err, 'enviar el código');
-      setSendError(d.mensaje);
       // CODIGO_EN_ESPERA (reenvío dentro del cooldown, contract.md §3.3):
-      // el back YA está contando ese cooldown — se refleja acá para que
-      // "Reenviar" no vuelva a pegarle antes de tiempo y repita el mismo 429.
-      if (d.segundosDeEspera) setCooldown(d.segundosDeEspera);
+      // el back YA está contando ese cooldown — se refleja acá y, al llegar a
+      // cero, se pide el código solo (CONTR-4). No es un error.
+      if (d.segundosDeEspera) {
+        setCooldown(d.segundosDeEspera);
+        setEsperandoParaEnviar(true);
+        setStatus('idle');
+        return;
+      }
+      setSendError(d.mensaje);
       // CODIGO_NO_ENTREGADO trae el detalle por canal aunque el envío haya
       // fallado — se muestra igual que un envío exitoso, para que la
       // persona vea CUÁL canal falló y por qué.
@@ -188,8 +202,16 @@ export function OTPVerification({
       setCooldown(0);
       setSendError(null);
       setChannels([]);
+      setEsperandoParaEnviar(false);
     }
   }, [isOpen, sendOtp]);
+
+  // CONTR-4: terminada la espera del back, el código se pide solo.
+  useEffect(() => {
+    if (!isOpen || !esperandoParaEnviar || cooldown > 0) return;
+    setEsperandoParaEnviar(false);
+    void sendOtp();
+  }, [isOpen, esperandoParaEnviar, cooldown, sendOtp]);
 
   // Focus primer input después de sentTo llega
   useEffect(() => {
@@ -343,7 +365,10 @@ export function OTPVerification({
           {/* Enviando → los seis dígitos (o el error del envío): uno se cruza
               con el otro. `popLayout`: los dígitos se montan YA (el foco al
               primero llega a los 100 ms) y lo viejo se va por encima. */}
-          <CrossFade swapKey={sendError ? 'error' : sentTo ? 'codigo' : 'enviando'} mode="popLayout">
+          <CrossFade
+            swapKey={sendError ? 'error' : sentTo ? 'codigo' : esperandoParaEnviar ? 'esperando' : 'enviando'}
+            mode="popLayout"
+          >
             {/* Error de envío (antes de poder ingresar código) */}
             {sendError && (
               <div className="flex items-start gap-2 rounded-[14px] border border-danger/30 bg-danger-soft p-3 text-sm text-danger">
@@ -381,8 +406,22 @@ export function OTPVerification({
               </div>
             )}
 
+            {/* CONTR-4: el código anterior salió hace menos de un minuto. */}
+            {!sentTo && !sendError && esperandoParaEnviar && (
+              <div
+                className="flex items-center justify-center gap-2 py-6 text-center text-sm text-fg-muted"
+                data-testid="otp-esperando"
+              >
+                <Spinner size="sm" variant="current" />
+                <span>
+                  Te enviamos un código hace un momento. Pedimos uno nuevo en{' '}
+                  <span className="font-mono tabular-nums font-medium text-fg">{cooldown}s</span>.
+                </span>
+              </div>
+            )}
+
             {/* Loader inicial */}
-            {!sentTo && !sendError && (
+            {!sentTo && !sendError && !esperandoParaEnviar && (
               <div className="flex items-center justify-center gap-2 py-6 text-sm text-fg-muted">
                 <Spinner size="sm" variant="current" />
                 Enviando código a tu correo...

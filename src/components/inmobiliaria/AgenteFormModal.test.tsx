@@ -184,6 +184,44 @@ describe('AgenteFormModal — cuando el back no guarda la invitación', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  it('el 409 «el correo es la cuenta de otra persona» muestra el aviso; «invitar igual» reenvía con mismaPersona (19-10-2026)', async () => {
+    const ApiError = await ApiErrorDe();
+    const mensaje =
+      'Este correo ya es la cuenta de Jose Alejandro Restrepo Velasquez (inquilino). Si Carlos Asesor es otra persona, usa su propio correo.';
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new ApiError(409, mensaje, 'CORREO_DE_OTRA_PERSONA', {
+          statusCode: 409,
+          code: 'CORREO_DE_OTRA_PERSONA',
+          message: mensaje,
+          nombreDeLaCuenta: 'Jose Alejandro Restrepo Velasquez',
+          relacion: 'inquilino',
+          sePuedeInvitarIgual: true,
+        }),
+      )
+      .mockResolvedValueOnce(undefined);
+    const onClose = montarCon(onSubmit);
+    await llenarYEnviar();
+
+    expect(dialogo().querySelector('[data-testid="aviso-del-correo"]')?.textContent).toContain(mensaje);
+    // No va bajo «Email» como los demás 409: tiene su propia salida.
+    expect(errorDe('email')?.textContent ?? '').toBe('');
+    expect(onClose).not.toHaveBeenCalled();
+
+    const invitarIgual = Array.from(dialogo().querySelectorAll('button')).find((b) =>
+      /Es la misma persona, invitar igual/.test(b.textContent ?? ''),
+    )!;
+    await act(async () => {
+      invitarIgual.click();
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    expect(onSubmit).toHaveBeenLastCalledWith(
+      expect.objectContaining({ email: 'carlos@inmobiliaria.co', mismaPersona: true }),
+    );
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('sin respuesta (status 0) habla de la conexión', async () => {
     montarCon(vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
     await llenarYEnviar();

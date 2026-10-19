@@ -39,6 +39,7 @@ import { agencyApi, permissionsApi } from '@/lib/api/inmobiliaria.service';
 import type { AgencyInviteResult, AgencyRole, AgencyUser, UserInvite } from '@/lib/types/inmobiliaria';
 import { EsqueletoDeSeccion } from './piezas';
 import { RAIZ_CONFIGURACION } from './secciones';
+import { COPIA_DE_PRUEBAS_SIN_CORREOS } from '@/lib/texto/correo-apagado'
 
 type Vista = 'miembros' | 'ranking' | 'carga' | 'captaciones';
 
@@ -146,7 +147,7 @@ export function SeccionEquipo() {
             result.emailStatus === 'not_configured'
               ? `${invite.name || invite.email} quedó invitado, pero el servidor todavía no manda correos. Pásale tú el enlace.`
               : result.emailStatus === 'suppressed'
-                ? `${invite.name || invite.email} quedó invitado. Este entorno es de pruebas y no manda correos: pásale tú el enlace.`
+                ? `${invite.name || invite.email} quedó invitado. ${COPIA_DE_PRUEBAS_SIN_CORREOS}: pásale tú el enlace.`
                 : `${invite.name || invite.email} quedó invitado, pero el correo no salió. Pásale tú el enlace.`;
           toast.warning(t('inmobiliaria.config.toasts.inviteEmailNotDelivered'), {
             description: descripcion,
@@ -219,7 +220,7 @@ export function SeccionEquipo() {
               result.emailStatus === 'not_configured'
                 ? `El servidor todavía no tiene correo configurado. El enlace de ${email} es nuevo y sirve: pásaselo tú.`
                 : result.emailStatus === 'suppressed'
-                  ? `Este entorno es de pruebas y no manda correos. El enlace de ${email} es nuevo y sirve: pásaselo tú.`
+                  ? `${COPIA_DE_PRUEBAS_SIN_CORREOS}. El enlace de ${email} es nuevo y sirve: pásaselo tú.`
                   : `El enlace de ${email} es nuevo y sirve. Pásaselo tú.`,
             action: accionDelCorreoCaido(result, user?.email ?? ''),
             duration: 12000,

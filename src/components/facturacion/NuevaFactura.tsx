@@ -168,7 +168,9 @@ import {
   sePuedeEmitirHoy,
   seSugiere,
   sinLaRutaDeFacturacion,
+  sinLaRutaDeLasReglasDeMora,
 } from '@/lib/facturacion/por-facturar'
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { Collapse, SegmentedControl } from '@leasefy/cadence'
 import { PrefacturasDelRango, finDeAnio } from './PrefacturasDelRango'
 import { FacturasDeIntereses } from './FacturasDeIntereses'
@@ -676,6 +678,51 @@ function EstadoDeLaFactura({
   )
 }
 
+const REGLAS_DE_MORA = '/panel/inmobiliaria/pagos/cartera/reglas-de-mora'
+
+/**
+ * La mora del mes, UNA vez arriba de la tabla (FA-03).
+ *
+ * 🔴 FACT-2 (QA de los agentes, 19-10-2026): el motivo del back cierra con
+ * «Configúralas en Pagos → Cartera → Reglas de mora.»: nombraba la pantalla sin
+ * llevar a ella. Quien puede abrirla (`cobros:view`) ve el enlace en lugar de
+ * esa frase, y su «Volver» lo trae de regreso a Facturación; quien no, sigue
+ * leyendo la ruta tal cual, para saber qué pedir.
+ */
+function MoraSinIntereses({ mora, testid }: { mora: ReturnType<typeof moraDelMes>; testid: string }) {
+  const permisos = usePermissionsContextSafe()
+  const puedeAbrirLasReglas = !!permisos && !permisos.isLoading && permisos.canAccess('cobros', 'view')
+  const motivos = mora.motivos.map(sinLaRutaDeLasReglasDeMora)
+  const conEnlace = puedeAbrirLasReglas && motivos.some((m) => m.nombrabaLaRuta)
+  const texto = motivos.map((m, i) => (conEnlace ? m.texto : mora.motivos[i])).filter(Boolean)
+  return (
+    <div
+      className="flex items-start gap-2 border-b border-border bg-surface-muted px-4 py-3 text-sm text-fg"
+      data-testid={`facturacion-${testid}-mora-del-mes`}
+    >
+      <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" weight="fill" aria-hidden="true" />
+      <p>
+        <span className="font-mono tabular-nums">{mora.enMora.toLocaleString(localeDeLasCifras())}</span>{' '}
+        {mora.enMora === 1 ? 'cuota de este mes está en mora.' : 'cuotas de este mes están en mora.'} La factura
+        del mes no lleva intereses: se facturan aparte, cuando se pagan.
+        {texto.map((m) => ` ${m}`).join('')}
+        {conEnlace && (
+          <>
+            {' '}
+            <Link
+              href={`${REGLAS_DE_MORA}?volver=${encodeURIComponent('/panel/inmobiliaria/facturacion')}`}
+              className="font-medium text-primary underline-offset-2 hover:underline"
+              data-testid={`facturacion-${testid}-ir-a-reglas-de-mora`}
+            >
+              Configurar las reglas de mora
+            </Link>
+          </>
+        )}
+      </p>
+    </div>
+  )
+}
+
 function TablaDeFacturas({
   titulo,
   descripcion,
@@ -892,22 +939,7 @@ function TablaDeFacturas({
         </div>
       )}
 
-      {hayMoraSinIntereses && (
-        <div
-          className="flex items-start gap-2 border-b border-border bg-surface-muted px-4 py-3 text-sm text-fg"
-          data-testid={`facturacion-${testid}-mora-del-mes`}
-        >
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" weight="fill" aria-hidden="true" />
-          <p>
-            <span className="font-mono tabular-nums">{mora.enMora.toLocaleString(localeDeLasCifras())}</span>{' '}
-            {mora.enMora === 1
-              ? 'cuota de este mes está en mora.'
-              : 'cuotas de este mes están en mora.'}{' '}
-            La factura del mes no lleva intereses: se facturan aparte, cuando se pagan.
-            {mora.motivos.map((m) => ` ${m}`).join('')}
-          </p>
-        </div>
-      )}
+      {hayMoraSinIntereses && <MoraSinIntereses mora={mora} testid={testid} />}
 
       {/* 🔴 El buscador, DENTRO de la tabla (Nico, 18-09). A su lado, cuántas
           filas quedaron a la vista. */}

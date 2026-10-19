@@ -521,7 +521,7 @@ describe('<MembersStepForm> — reintentar y entorno de pruebas', () => {
     render({ pendingInvites: conUnaFallida })
 
     const aviso = container.querySelector('[data-testid="members-invite-warning"]')
-    expect(aviso?.textContent).toContain('entorno es de pruebas')
+    expect(aviso?.textContent).toContain('copia de pruebas de Leasefy no manda correos')
     expect(container.querySelector('[data-testid="invite-copy-alex.dev+8@leasefy.co"]')).toBeTruthy()
   })
 })

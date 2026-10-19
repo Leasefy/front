@@ -68,6 +68,8 @@ interface NuevaSolicitudModalProps {
   onClose: () => void;
   /** Fired after a real create (+ photo uploads) so the list can refetch. */
   onCreated?: () => void;
+  /** AVALI-3: desde el portal del propietario (cuenta de inquilino que también es propietaria). */
+  comoPropietario?: boolean;
   /** Suggested associations passed straight through to the create body. */
   prefill?: {
     contratoId?: string;
@@ -104,7 +106,7 @@ const TIPO_OPTIONS: { value: PqrsTipo; es: string; en: string }[] = [
   { value: 'solicitud', es: 'Solicitud', en: 'Request' },
 ];
 
-export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contratos = [] }: NuevaSolicitudModalProps) {
+export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contratos = [], comoPropietario }: NuevaSolicitudModalProps) {
   /** SO-27: en el portal del propietario las opciones son sus inmuebles (mandatos). */
   const contratoDelPropietario = (id: string) =>
     contratos.some((c) => c.contratoId === id && c.consignacionId === id);
@@ -230,7 +232,9 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
         ...(prefill?.propiedadId ? { propiedadId: prefill.propiedadId } : {}),
       };
 
-      const creada = await pqrsApi.create(input);
+      const creada = comoPropietario
+        ? await pqrsApi.create(input, { comoPropietario })
+        : await pqrsApi.create(input);
 
       /*
        * SO-18 (PQRS-FIX, 04-10-2026): las fotos y PDF se suben DE VERDAD, una por
@@ -241,7 +245,8 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
       const fallidos: string[] = [];
       for (const archivo of files) {
         try {
-          await pqrsApi.subirAdjunto(creada.id, archivo);
+          if (comoPropietario) await pqrsApi.subirAdjunto(creada.id, archivo, { comoPropietario });
+          else await pqrsApi.subirAdjunto(creada.id, archivo);
         } catch (e) {
           fallidos.push(
             mensajeParaLaPersona(e, {
@@ -295,7 +300,7 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
     } finally {
       setIsSubmitting(false);
     }
-  }, [asunto, descripcion, tipo, files, prefill, locale, onCreated, onClose, contratoId, contratos, variosContratos]);
+  }, [asunto, descripcion, tipo, files, prefill, locale, onCreated, onClose, contratoId, contratos, variosContratos, comoPropietario]);
 
   return (
     <Dialog

@@ -542,11 +542,29 @@ export interface PreScoringIdentity {
   lockedFields?: Array<'fullName' | 'documentType' | 'documentNumber' | 'email'>;
 }
 
+/**
+ * Lo que la CUENTA ya sabe de la persona (POST-1, QA 18-10; Nico «El back trae
+ * la cuenta»). Ortogonal como `preScoringIdentity`: llena SÓLO lo que el
+ * estudio y la postulación anterior no traen, y queda editable. Un back
+ * anterior no lo manda.
+ */
+export interface DatosDeLaCuenta {
+  fullName: string | null;
+  email: string | null;
+  phone: string | null;
+  documentType: 'cc' | 'ce' | 'passport' | null;
+  documentNumber: string | null;
+  /** `AAAA-MM-DD`. */
+  dateOfBirth: string | null;
+  currentAddress: string | null;
+}
+
 /** Returned when the tenant has no previous application to prefill from */
 export interface ApplicationPrefillEmpty {
   hasPreviousApplication: false;
   /** Absent or null → front locks nothing, prefills nothing from this block. */
   preScoringIdentity?: PreScoringIdentity | null;
+  datosDeLaCuenta?: DatosDeLaCuenta | null;
 }
 
 /**
@@ -634,6 +652,7 @@ export interface ApplicationPrefillData {
   documents?: DocumentoReutilizable[];
   /** Absent or null → front locks nothing, prefills nothing from this block. */
   preScoringIdentity?: PreScoringIdentity | null;
+  datosDeLaCuenta?: DatosDeLaCuenta | null;
 }
 
 /** Discriminated union returned by GET /applications/prefill */

@@ -168,6 +168,12 @@ export interface InboxItem {
   motivo?: string
   /** Sólo el cobro de Cobri retenido: la cuota que espera el clic (COBRI-4). */
   cuotaId?: string
+  /**
+   * BANDEJA-AG (QA 19-10): el proceso de la perilla de una decisión del back
+   * (`pagos.recuperar_fallido`…). Con él la Bandeja nombra a quien la propuso
+   * dentro del equipo de pagos (Reti, Cuenti) y no a Cobri en cada fila.
+   */
+  proceso?: string
 }
 
 export interface PilotoInboxResponse {

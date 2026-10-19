@@ -85,6 +85,7 @@ import { diaLegible } from '@/lib/mandato/textos';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { useI18n } from '@/lib/i18n';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { CORREO_APAGADO_EN_PRUEBAS } from '@/lib/texto/correo-apagado';
 
 /**
  * El fallo en palabras y, si es el 503 de la migración, quién la aplica.
@@ -126,7 +127,7 @@ export function avisoEnPalabras(
     case 'ENVIADO':
       return 'Le escribimos al propietario para que sepa que la plata volvió y qué hacer.';
     case 'SIMULADO':
-      return 'El aviso al propietario quedó listo, pero el envío de correos está apagado en este ambiente: no salió.';
+      return `El aviso al propietario quedó listo. ${CORREO_APAGADO_EN_PRUEBAS}`;
     case 'SIN_CORREO':
       return 'El propietario no tiene correo registrado: avísale tú.';
     case 'FALLIDO':

@@ -84,6 +84,10 @@ export interface LinkDePagoDeCuota {
    * es `pagorev:<linkId>`, con «Reintentar aplicar».
    */
   pagoSinAplicar?: { motivo: string; linkId?: string } | null;
+  /** OPCIONAL (COBRI-13): una persona la marcó «en seguimiento» — Cobri y Reti la pausan. */
+  seguimiento?: { por: string; desde: string } | null;
+  /** OPCIONAL (COBRI-13): cuándo la mandaron a cobranza (ISO). */
+  aCobranzaDesde?: string | null;
 }
 
 /** Un aviso de Cobri que no salió, como lo manda el back (ya sin lo técnico). */

@@ -24,6 +24,12 @@ describe('describirMedio y enmascarar', () => {
     ).toBe('Bancolombia · Ahorros · •••• 8901 · Portofino');
     expect(enmascarar('1234')).toBe('1234');
   });
+
+  it('guiones, puntos y espacios no cuentan como dígitos (CONC-3)', () => {
+    expect(enmascarar('697-123456-78')).toBe('•••• 5678');
+    expect(enmascarar('697.123.456.78')).toBe('•••• 5678');
+    expect(enmascarar('697 1234 5678')).toBe('•••• 5678');
+  });
 });
 
 describe('sugerencias', () => {

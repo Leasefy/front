@@ -259,8 +259,9 @@ describe('ExtractoBancario — pendientes', () => {
 
     expect(api.conciliar).toHaveBeenCalledWith('m-1', { tenantId: 'u-9' });
     // El aviso dice QUÉ pasó con la plata, no «listo».
+    // CONC-10: con el número del recibo, como contra un candidato.
     expect(toastMock.success).toHaveBeenCalledWith(
-      '1 recibo emitido y $\u00a0800.000 a favor del cliente.',
+      'Recibo N.º 77 emitido y $\u00a0800.000 a favor del cliente.',
     );
     expect(api.listar).toHaveBeenCalledTimes(2);
   });

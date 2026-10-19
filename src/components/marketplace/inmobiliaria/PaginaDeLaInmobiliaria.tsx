@@ -427,6 +427,19 @@ function Contenido({ pagina }: { pagina: Pagina }) {
         </p>
       </section>
 
+      {/* ARCO-1 (Nico 19-10-2026): su formulario de Habeas Data. Cada
+          inmobiliaria responde por los datos que tiene de cada persona. */}
+      <p className="mx-auto mt-10 max-w-[1280px] px-4 text-[13px] text-fg-muted md:px-6">
+        <Link
+          href={`/arco/${encodeURIComponent(pagina.slug ?? pagina.id)}`}
+          className="font-medium text-primary hover:underline"
+          data-testid="enlace-habeas-data"
+        >
+          Tus datos personales
+        </Link>{' '}
+        en {pagina.nombre}: pide verlos, corregirlos o borrarlos (Habeas Data, Ley 1581 de 2012).
+      </p>
+
       <Sheet open={opinionesAbiertas} onOpenChange={setOpinionesAbiertas}>
         <SheetContent side="right" size="md">
           <SheetHeader

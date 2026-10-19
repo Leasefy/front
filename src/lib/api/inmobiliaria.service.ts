@@ -7,6 +7,7 @@ import type { PorGirarDelBack } from '@/lib/propietarios/por-girar';
 import { ESTADO_AL_BACK, mantenimientoAlBack, mantenimientoDelBack } from './mantenimiento-enums';
 import { actaDelBack, type CuerpoParaCrearElActa } from '@/lib/actas/acta-del-back';
 import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
+import { leerAvisoDelCorreo, type AvisoDelCorreo } from '@/lib/equipo/aviso-del-correo';
 import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
 import type { ComoSeMideLaTasa, TasaDeRecaudo } from '@/lib/tasa-de-recaudo';
@@ -2430,6 +2431,20 @@ export const inmobiliariaConfigApi = {
     };
     // Response merges `emailDelivered` onto the created member.
     return apiClient.post<AgencyInviteResult>(`${BASE}/agency/members`, payload);
+  },
+
+  /**
+   * Lo que frenaría la invitación, ANTES de enviarla (19-10-2026): el correo ya
+   * es la cuenta de otra persona, o ya está activo en otra inmobiliaria.
+   * `null` = nada que decir. Sólo el administrador (el mismo que invita).
+   */
+  async revisarCorreoParaInvitar(correo: string, nombre: string): Promise<AvisoDelCorreo | null> {
+    const params = new URLSearchParams({ correo });
+    if (nombre.trim()) params.set('nombre', nombre.trim());
+    const res = await apiClient.get<{ aviso?: unknown }>(
+      `${BASE}/agency/members/revisar-correo?${params.toString()}`,
+    );
+    return leerAvisoDelCorreo(res?.aviso);
   },
 
   /**

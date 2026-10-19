@@ -101,6 +101,33 @@ function respuesta(status: number, cuerpo: unknown) {
 
 const alerta = () => container.querySelector('[role="alert"]')?.textContent ?? ''
 
+describe('ArcoFormClient — el formulario de una inmobiliaria (ARCO-1)', () => {
+  it('la nombra arriba y le manda su id al micro', async () => {
+    act(() =>
+      root.render(
+        <ArcoFormClient inmobiliaria={{ id: 'bd171c37-91fc-43f8-ac5d-1ace0dc1fe64', nombre: 'Portofino', logoUrl: null }} />,
+      ),
+    )
+    expect(container.querySelector('[data-testid="arco-inmobiliaria"]')?.textContent).toContain('Portofino')
+    expect(container.textContent).toContain('inmobiliaria.ai.arco.public.subtitleDe')
+    fetchMock.mockResolvedValue(respuesta(201, { id: 'x', status: 'pending_email_verification' }))
+    await enviar()
+    const cuerpo = JSON.parse((fetchMock.mock.calls[0] as [string, { body: string }])[1].body)
+    expect(cuerpo).toMatchObject({ agency_id: 'bd171c37-91fc-43f8-ac5d-1ace0dc1fe64', type: 'acceso' })
+  })
+
+  it('sin inmobiliaria no inventa ninguna', async () => {
+    fetchMock.mockResolvedValue(respuesta(201, { id: 'x', status: 'pending_email_verification' }))
+    await enviar()
+    const cuerpo = JSON.parse((fetchMock.mock.calls[0] as [string, { body: string }])[1].body)
+    expect(cuerpo).not.toHaveProperty('agency_id')
+  })
+
+  it('los tipos se dicen en palabras de la persona, no «Acceso/Rectificación»', () => {
+    expect(container.querySelector('[data-opcion="acceso"]')?.textContent).toBe('inmobiliaria.ai.arco.public.tipos.acceso')
+  })
+})
+
 describe('ArcoFormClient — errores', () => {
   it('🔴 un dato mal escrito se ataja antes de mandar, con la frase del micro', async () => {
     await enviar({ nombre: 'L' })

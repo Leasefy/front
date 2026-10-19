@@ -50,6 +50,10 @@ import {
   TableRowAnimada,
 } from '@/components/ui/table'
 import { formatCurrency } from '@/lib/format'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+
+/** FACT-6 (19-10-2026): «1.388 facturas», no «1388». */
+const conteo = (n: number) => n.toLocaleString(localeDeLasCifras())
 import {
   fechaLegible,
   mesLegible,
@@ -113,16 +117,62 @@ export function totalDelMes(mes: MesDelRango): {
   }
 }
 
+/**
+ * 🔴 FACT-3 (QA de los agentes, 19-10-2026): «Se puede emitir hoy · 2 ·
+ * $916.300» con la inmobiliaria SIN ninguna resolución, al lado del aviso que lo
+ * dice y del «Emitir» apagado. El back cuenta lo que cada factura tiene listo,
+ * no si hay con qué numerarla: del lado sin resolución, hoy no sale nada. Con
+ * las dos resoluciones (o un back que no dice la de la comisión), los totales
+ * del back tal cual.
+ */
+export function loQueSeEmiteHoy(datos: FacturasPorGenerar): {
+  cantidad: number
+  totalCop: number
+  /** Listas para emitir, pero su lado no tiene resolución que las numere. */
+  esperanLaResolucion: number
+} {
+  const t = datos.totales
+  const sinLaDelCanon = datos.resolucion?.puedeNumerar === false
+  const sinLaDeLaComision = datos.resolucionDeLaComision?.puedeNumerar === false
+  if (!sinLaDelCanon && !sinLaDeLaComision) {
+    return { cantidad: t.emitiblesHoy, totalCop: t.totalEmitibleHoyCop, esperanLaResolucion: 0 }
+  }
+  const lista = (f: FacturaDelMes) => f.emitible && (f.estado === 'POR_EMITIR' || f.estado === 'GENERADA')
+  const sale: FacturaDelMes[] = []
+  let esperanLaResolucion = 0
+  for (const [filas, sinResolucion] of [
+    [datos.inquilinos, sinLaDelCanon],
+    [datos.propietarios, sinLaDeLaComision],
+  ] as const) {
+    for (const f of filas) {
+      if (!lista(f)) continue
+      if (sinResolucion) esperanLaResolucion += 1
+      else sale.push(f)
+    }
+  }
+  return {
+    cantidad: sale.length,
+    totalCop: sale.reduce((s, f) => s + f.totalCop, 0),
+    esperanLaResolucion,
+  }
+}
+
+/** Ninguno de los dos lados tiene con qué numerar: un mes abierto no «se puede emitir». */
+function sinNingunaResolucion(datos: FacturasPorGenerar): boolean {
+  return datos.resolucion?.puedeNumerar === false && datos.resolucionDeLaComision?.puedeNumerar === false
+}
+
 function Totales({ datos }: { datos: FacturasPorGenerar }) {
   const t = datos.totales
+  const hoy = loQueSeEmiteHoy(datos)
   const celdas: { rotulo: string; valor: string; testid: string }[] = [
     {
       rotulo: 'Facturas',
-      valor: String(datos.inquilinos.length + datos.propietarios.length),
+      valor: conteo(datos.inquilinos.length + datos.propietarios.length),
       testid: 'facturas',
     },
-    { rotulo: 'Meses', valor: String(t.meses), testid: 'meses' },
-    { rotulo: 'Contratos', valor: String(t.contratos), testid: 'contratos' },
+    { rotulo: 'Meses', valor: conteo(t.meses), testid: 'meses' },
+    { rotulo: 'Contratos', valor: conteo(t.contratos), testid: 'contratos' },
     {
       rotulo: 'Total del rango',
       valor: formatCurrency(t.inquilinos.totalCop + t.propietarios.totalCop),
@@ -130,7 +180,7 @@ function Totales({ datos }: { datos: FacturasPorGenerar }) {
     },
     {
       rotulo: 'Se puede emitir hoy',
-      valor: `${t.emitiblesHoy} · ${formatCurrency(t.totalEmitibleHoyCop)}`,
+      valor: `${hoy.cantidad} · ${formatCurrency(hoy.totalCop)}`,
       testid: 'emitibles',
     },
   ]
@@ -141,7 +191,9 @@ function Totales({ datos }: { datos: FacturasPorGenerar }) {
       data-testid="rango-totales"
     >
       {celdas.map((c) => (
-        <div key={c.testid}>
+        // FACT-7 (19-10-2026): a 390 px «$ 1.332.034.147,62» no cabe en media
+        // columna y se cortaba; en el celular el total va a lo ancho.
+        <div key={c.testid} className={c.testid === 'total' ? 'col-span-2 sm:col-span-1' : undefined}>
           <p className="text-label uppercase tracking-wide text-fg-subtle">
             {c.rotulo}
           </p>
@@ -151,6 +203,13 @@ function Totales({ datos }: { datos: FacturasPorGenerar }) {
           >
             {c.valor}
           </p>
+          {c.testid === 'emitibles' && hoy.esperanLaResolucion > 0 && (
+            <p className="mt-0.5 text-caption text-warning" data-testid="rango-esperan-la-resolucion">
+              {hoy.esperanLaResolucion === 1
+                ? '1 lista espera la resolución'
+                : `${hoy.esperanLaResolucion} listas esperan la resolución`}
+            </p>
+          )}
         </div>
       ))}
     </div>
@@ -326,7 +385,15 @@ function MesAMes({ datos }: { datos: FacturasPorGenerar }) {
                     <span className="text-body-sm font-medium text-fg">
                       {mesLegible(m.mes)}
                     </span>
-                    {m.emitible ? (
+                    {m.emitible && sinNingunaResolucion(datos) ? (
+                      // FACT-3: el mes ya empezó, pero no hay con qué numerar.
+                      <span
+                        className="rounded-full bg-warning-50 px-2 py-0.5 text-caption text-warning"
+                        data-testid={`rango-sin-resolucion-${m.mes}`}
+                      >
+                        Falta la resolución
+                      </span>
+                    ) : m.emitible ? (
                       <span
                         className="rounded-full bg-primary-soft px-2 py-0.5 text-caption text-primary"
                         data-testid={`rango-emitible-${m.mes}`}
@@ -343,7 +410,7 @@ function MesAMes({ datos }: { datos: FacturasPorGenerar }) {
                     )}
                   </span>
                   <span className="tabular-nums text-caption text-fg-muted">
-                    {cantidad} {cantidad === 1 ? 'factura' : 'facturas'} ·{' '}
+                    {conteo(cantidad)} {cantidad === 1 ? 'factura' : 'facturas'} ·{' '}
                     {formatCurrency(totalCop)}
                     {(m.terminan?.length ?? 0) > 0 && (
                       <span

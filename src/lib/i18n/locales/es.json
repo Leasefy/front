@@ -8755,7 +8755,8 @@
           "facturacion": "Facturación y caja",
           "propietarios": "Propietarios",
           "contabilidad": "Contabilidad",
-          "inspeccion": "Inspección"
+          "inspeccion": "Inspección",
+          "pagui": "Pagui · resumen de pagos"
         },
         "rol": {
           "cobrador": "Cobrador",

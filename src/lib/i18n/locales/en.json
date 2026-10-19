@@ -8720,7 +8720,8 @@
           "facturacion": "Billing and cash",
           "propietarios": "Owners",
           "contabilidad": "Accounting",
-          "inspeccion": "Inspection"
+          "inspeccion": "Inspection",
+          "pagui": "Pagui · payments summary"
         },
         "rol": {
           "cobrador": "Collector",

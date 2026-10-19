@@ -248,6 +248,22 @@ describe('🔴 FACT-3: «Se puede emitir hoy» sin resolución no cuenta nada de
     expect(loQueSeEmiteHoy(d)).toEqual({ cantidad: 0, totalCop: 0, esperanLaResolucion: 2 });
   });
 
+  it('FACT-6: los conteos llevan separador de miles («1.388 facturas»)', async () => {
+    const muchas = Array.from({ length: 1388 }, (_, i) => factura({ clave: `ct-${i}|2026-09|INQUILINO`, cuotaId: `cu-${i}` }));
+    const base = datos();
+    const mes = { ...base.meses[0], inquilinos: { ...base.meses[0].inquilinos, porEmitir: 1388, emitidas: 0 } };
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    await act(async () => {
+      root.render(<PrefacturasDelRango datos={datos({ inquilinos: muchas, meses: [mes] })} />);
+    });
+    expect(host.querySelector('[data-testid="rango-total-facturas"]')?.textContent).toBe('1.388');
+    expect(host.querySelector(`[data-testid="rango-mes-${mes.mes}"]`)?.textContent).toContain('1.388 facturas');
+    act(() => root.unmount());
+    host.remove();
+  });
+
   it('en pantalla: «0 · $ 0», cuántas esperan la resolución, y el mes dice «Falta la resolución»', async () => {
     const host = document.createElement('div');
     document.body.appendChild(host);

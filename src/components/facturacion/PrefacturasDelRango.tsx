@@ -50,6 +50,10 @@ import {
   TableRowAnimada,
 } from '@/components/ui/table'
 import { formatCurrency } from '@/lib/format'
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+
+/** FACT-6 (19-10-2026): «1.388 facturas», no «1388». */
+const conteo = (n: number) => n.toLocaleString(localeDeLasCifras())
 import {
   fechaLegible,
   mesLegible,
@@ -164,11 +168,11 @@ function Totales({ datos }: { datos: FacturasPorGenerar }) {
   const celdas: { rotulo: string; valor: string; testid: string }[] = [
     {
       rotulo: 'Facturas',
-      valor: String(datos.inquilinos.length + datos.propietarios.length),
+      valor: conteo(datos.inquilinos.length + datos.propietarios.length),
       testid: 'facturas',
     },
-    { rotulo: 'Meses', valor: String(t.meses), testid: 'meses' },
-    { rotulo: 'Contratos', valor: String(t.contratos), testid: 'contratos' },
+    { rotulo: 'Meses', valor: conteo(t.meses), testid: 'meses' },
+    { rotulo: 'Contratos', valor: conteo(t.contratos), testid: 'contratos' },
     {
       rotulo: 'Total del rango',
       valor: formatCurrency(t.inquilinos.totalCop + t.propietarios.totalCop),
@@ -404,7 +408,7 @@ function MesAMes({ datos }: { datos: FacturasPorGenerar }) {
                     )}
                   </span>
                   <span className="tabular-nums text-caption text-fg-muted">
-                    {cantidad} {cantidad === 1 ? 'factura' : 'facturas'} ·{' '}
+                    {conteo(cantidad)} {cantidad === 1 ? 'factura' : 'facturas'} ·{' '}
                     {formatCurrency(totalCop)}
                     {(m.terminan?.length ?? 0) > 0 && (
                       <span

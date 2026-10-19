@@ -30,7 +30,13 @@ function redirectTo(path: string): void {
 
 export async function agentAdminApi<T>(
   path: string,
-  opts: { query?: Record<string, string | number | undefined>; signal?: AbortSignal } = {},
+  opts: {
+    query?: Record<string, string | number | undefined>
+    signal?: AbortSignal
+    /** Por defecto GET. El maestro (19-10-2026) también decide (POST) y ajusta (PUT). */
+    method?: 'GET' | 'POST' | 'PUT'
+    body?: unknown
+  } = {},
 ): Promise<T> {
   const token = getAdminToken()
   if (!token) {
@@ -44,8 +50,11 @@ export async function agentAdminApi<T>(
     url.searchParams.set(k, String(v))
   }
 
+  const conCuerpo = opts.body !== undefined
   const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${token}` },
+    method: opts.method ?? 'GET',
+    headers: { Authorization: `Bearer ${token}`, ...(conCuerpo ? { 'Content-Type': 'application/json' } : {}) },
+    ...(conCuerpo ? { body: JSON.stringify(opts.body) } : {}),
     signal: opts.signal,
   })
 
@@ -249,3 +258,101 @@ export function getChatPreguntas(f: FiltrosDePreguntas & { signal?: AbortSignal 
     ...(f.signal ? { signal: f.signal } : {}),
   })
 }
+
+// ── El maestro de Leasefy (micro de agentes) ─────────────────────────────────
+//
+// Fase 3 y 4 de «Naira lo sabe todo» (Nico, 17 y 19-10-2026): cada noche el maestro lee los diarios de todas las Nairas
+// y deja insights y propuestas de mejora por categoría; Leasefy aprueba cada una y, aprobada, la Naira de cada
+// inmobiliaria de esa categoría la aplica sola.
+
+export type TamanoDelMaestro = 'pequena' | 'mediana' | 'grande'
+export interface AjustesDelMaestro {
+  tamanoPequenaHasta: number
+  tamanoMedianaHasta: number
+}
+export interface InmobiliariaConNombre {
+  id: string
+  nombre: string
+}
+export interface InsightDelMaestro {
+  titulo: string
+  detalle: string
+  tipo: 'producto' | 'agente' | 'chat' | 'operacion'
+  inmobiliarias: InmobiliariaConNombre[]
+}
+export interface NocheDelMaestro {
+  id: string
+  dia: string
+  estado: 'listo' | 'fallo_del_modelo' | 'muy_caro' | 'sin_diarios'
+  modelo: string | null
+  costoUsd: number
+  diarios: number
+  inmobiliarias: number
+  insights: InsightDelMaestro[]
+  /** alias («I3») → nombre, para leer los insights. */
+  alias: Record<string, string>
+  descubiertas: Array<{ id: string; nombre: string; descripcion: string; inmobiliarias: InmobiliariaConNombre[] }>
+  descartadas: Array<{ tipo: string; motivo: string }>
+  creadaEn: string
+}
+export type ContenidoDeLaMejora =
+  | { tipo: 'leccion'; texto: string; agente: string | null }
+  | { tipo: 'modo'; agente: string; modo: 'sombra' | 'copiloto' | 'autonomo' }
+  | { tipo: 'regla'; parametro: string; valor: number }
+export type ResultadoDelReparto = 'aplicado' | 'ya_estaba' | 'falta_la_delegacion' | 'agente_sin_modo' | 'no_se_pudo'
+export interface MejoraDelMaestro {
+  id: string
+  estado: 'por_decidir' | 'rechazada' | 'aprobada' | 'aplicada'
+  contenido: ContenidoDeLaMejora
+  categoria: { dimension: string; valor: string; nombre: string }
+  porque: string
+  evidencia: InmobiliariaConNombre[]
+  alcance: number
+  creadaEn: string
+  decision: { tipo: 'aprobada' | 'rechazada'; quien: string; en: string } | null
+  aplicacion: {
+    en: string
+    porResultado: Partial<Record<ResultadoDelReparto, number>>
+    porInmobiliaria: Array<{ tenantId: string; nombre: string; resultado: ResultadoDelReparto }>
+  } | null
+}
+export interface MaestroResponse {
+  prendido: boolean
+  ajustes: AjustesDelMaestro
+  corridas: NocheDelMaestro[]
+  propuestas: MejoraDelMaestro[]
+  inmobiliarias: Array<InmobiliariaConNombre & { tamano: TamanoDelMaestro | null; ciudad: string | null; negocio: string | null }>
+  generadoEn: string
+}
+export interface DiaDelDiario {
+  tenantId: string
+  nombre: string
+  dia: string
+  version: number
+  bytes: number
+  creadoEn: string
+}
+
+export function getMaestro(signal?: AbortSignal): Promise<MaestroResponse> {
+  return agentAdminApi<MaestroResponse>('/api/admin/maestro', { signal })
+}
+
+export function getDiariosDelMaestro(f: { desde?: string; hasta?: string; signal?: AbortSignal } = {}): Promise<{ desde: string; hasta: string; diarios: DiaDelDiario[] }> {
+  return agentAdminApi('/api/admin/maestro/diarios', { query: { desde: f.desde, hasta: f.hasta }, signal: f.signal })
+}
+
+export function getDiarioDelMaestro(tenantId: string, dia: string, signal?: AbortSignal): Promise<{ nombre: string; dia: string; contenido: Record<string, unknown> }> {
+  return agentAdminApi(`/api/admin/maestro/diarios/${encodeURIComponent(tenantId)}/${encodeURIComponent(dia)}`, { signal })
+}
+
+export function decidirMejoraDelMaestro(
+  id: string,
+  decision: 'aprobar' | 'rechazar',
+): Promise<{ estado: string; mensaje?: string; inmobiliarias?: number; porResultado?: Partial<Record<ResultadoDelReparto, number>>; porInmobiliaria?: Array<{ nombre: string; resultado: ResultadoDelReparto }> }> {
+  return agentAdminApi(`/api/admin/maestro/propuestas/${encodeURIComponent(id)}/decision`, { method: 'POST', body: { decision } })
+}
+
+export function guardarAjustesDelMaestro(a: AjustesDelMaestro): Promise<{ ajustes: AjustesDelMaestro; mensaje: string }> {
+  return agentAdminApi('/api/admin/maestro/ajustes', { method: 'PUT', body: a })
+}
+

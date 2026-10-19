@@ -21,6 +21,7 @@ import { modulosDelPanel, pestanasDelModulo } from '@/lib/nav/arquitectura-del-p
 import {
   AGENTE_GOBERNADO,
   EQUIPO_DE_PAGOS,
+  INICIO,
   estadoDelEquipo,
   pasosParaQueTrabaje,
   type LecturaDelGobierno,
@@ -108,16 +109,20 @@ describe('EQUIPO_DE_PAGOS', () => {
   const APP = join(process.cwd(), 'src/app/panel/inmobiliaria')
   const P = '/panel/inmobiliaria'
 
-  it('son los seis del micro: Gabriela coordina y cinco especialistas', () => {
-    // IA95-10 (Nico, 05-10-2026): el que prepara el cobro es Cuenti; Laura es sólo la voz de cobranza.
-    expect(EQUIPO_DE_PAGOS.map((e) => e.id)).toEqual(['gabriela', 'cuenti', 'nicolas', 'valentina', 'samuel', 'sofia'])
+  it('🔴 COBRI-6 (18-10-2026): son los seis que corren de verdad, con sus nombres inventados', () => {
+    // Nico (16-10): «que corran los cinco con nombres inventados»; Nicolás se fundió en Cobri.
+    expect(EQUIPO_DE_PAGOS.map((e) => e.id)).toEqual(['pagui', 'cuenti', 'cobri', 'reti', 'giri', 'noti'])
+    expect(EQUIPO_DE_PAGOS.map((e) => e.nombre)).toEqual(['Pagui', 'Cuenti', 'Cobri', 'Reti', 'Giri', 'Noti'])
   })
 
-  it('IA95-10: el que prepara el cobro se llama Cuenti; ninguno se llama Laura ni Mariana (Nico, 05-10-2026 22:25: nombres inventados)', () => {
-    expect(EQUIPO_DE_PAGOS.map((e) => e.nombre)).toEqual(['Gabriela', 'Cuenti', 'Nicolás', 'Valentina', 'Samuel', 'Sofía'])
+  it('ninguno se llama como los agentes de modelo que nunca corrieron, ni Laura ni Mariana (IA95-10)', () => {
     const textos = EQUIPO_DE_PAGOS.flatMap((e) => [e.nombre, e.rol, e.queHace, e.sinPantalla ?? ''])
-    for (const t of textos) expect(t).not.toMatch(/Laura|Mariana/)
-    expect(EQUIPO_DE_PAGOS.find((e) => e.id === 'nicolas')?.sinPantalla).toBe('No tiene pantalla propia: trabaja sobre el cobro que preparó Cuenti.')
+    for (const t of textos) expect(t).not.toMatch(/Laura|Mariana|Gabriela|Nicolás|Valentina|Samuel|Sofía/)
+  })
+
+  it('Giri nunca aprueba solo, y Cuenti sólo avisa: lo dicen', () => {
+    expect(EQUIPO_DE_PAGOS.find((e) => e.id === 'giri')?.queHace).toContain('Nunca aprueba solo')
+    expect(EQUIPO_DE_PAGOS.find((e) => e.id === 'cuenti')?.queHace).toContain('te deja un aviso en la Bandeja')
   })
 
   it('quien no tiene pantalla propia lo dice, y quien la tiene no trae ese texto', () => {
@@ -131,8 +136,15 @@ describe('EQUIPO_DE_PAGOS', () => {
     const todas = modulosDelPanel().flatMap((m) => pestanasDelModulo(m))
     for (const e of EQUIPO_DE_PAGOS) {
       if (!e.dondeSeVe) continue
-      const { href, module, roles } = e.dondeSeVe
+      const { module, roles } = e.dondeSeVe
+      const href = e.dondeSeVe.href.split('?')[0]!
       expect(existsSync(join(APP, href.replace(P, ''), 'page.tsx')), href).toBe(true)
+      // Inicio vive en el layout (no en el menú) y entra cualquier miembro: sin gate.
+      if (href === INICIO) {
+        expect(module, href).toBeNull()
+        expect(roles ?? [], href).toEqual([])
+        continue
+      }
       // La pantalla del menú de la que cuelga (la pestaña de Cartera o de
       // Cobranza hereda el gate de su sección).
       const duena = todas
@@ -144,12 +156,13 @@ describe('EQUIPO_DE_PAGOS', () => {
     }
   })
 
-  it('🔴 no repite lo que se mudó: enlaza a Cobranza y a Liquidaciones, nunca a su propia ruta', () => {
+  it('🔴 no repite lo que se mudó: enlaza a Pagos fallidos, a los lotes y a Inicio, nunca a su propia ruta', () => {
     const hrefs = EQUIPO_DE_PAGOS.flatMap((e) => (e.dondeSeVe ? [e.dondeSeVe.href] : []))
     for (const h of hrefs) expect(h.startsWith(`${P}/pagos/agente`), h).toBe(false)
     expect(hrefs).toContain(`${P}/pagos/cobranza/fallidos`)
-    expect(hrefs).toContain(`${P}/pagos/cobranza/recordatorios`)
-    expect(hrefs).toContain(`${P}/pagos/liquidaciones`)
+    expect(hrefs).toContain(`${P}/pagos/dispersiones/lotes`)
+    expect(hrefs).toContain(`${INICIO}?bandeja=1`)
+    expect(hrefs).toContain(`${INICIO}?actividad=1`)
   })
 })
 

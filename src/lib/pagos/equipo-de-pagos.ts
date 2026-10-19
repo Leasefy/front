@@ -14,12 +14,22 @@
  *
  * ── De dónde sale cada frase (verificado, no supuesto) ─────────────────────
  *
- * El equipo está escrito y registrado en el micro, en nuestra rama
- * (`cambios-nico-6`, `git ls-tree 6ddd953b`): `src/mastra/agents/pagos/` con
- * `payu.ts` —el conductor, cuya persona pública es Gabriela
- * (`naming-registry.ts`)— y `laura.ts`, `nicolas.ts`, `valentina.ts`,
- * `samuel.ts`, `sofia.ts`, todos en `src/mastra/index.ts`. Lo que hace cada
- * uno sale de la cabecera y del schema de salida de su archivo.
+ * 🔴 COBRI-6 (QA de los agentes, 18-10-2026). Hasta hoy la pantalla presentaba
+ * a los seis agentes de MODELO del micro (`src/mastra/agents/pagos/`:
+ * Gabriela, Cuenti, Nicolás, Valentina, Samuel y Sofía), que nunca corrieron.
+ * Nico (16-10): «que corran los cinco con nombres inventados». Los que corren
+ * hoy son de reglas fijas, sin modelo, y cada frase sale de su archivo del back:
+ *
+ *   · Pagui  — `agent-payments/payu/pagui/pagui.ts` (el resumen de las 7:00);
+ *   · Cuenti — `agent-payments/payu/cuenti/cuenti.ts` (7 días antes, 3 frenos);
+ *   · Cobri  — `payu-contrato` + `conciliar-link-pagado.service.ts` (Nicolás se
+ *     fundió en Cobri: el que manda el link es Cobri);
+ *   · Reti   — `agent-payments/payu/fallidos/reti.ts` («Según el caso»);
+ *   · Giri   — `inmobiliaria/dispersiones/lotes/giri.ts` (4 frenos, nunca aprueba);
+ *   · Noti   — `agent-payments/payu/noti/noti.ts` (campana + correo del resumen).
+ *
+ * Gabriela, Valentina, Samuel y Sofía se fueron: Gabriela→Pagui, Valentina→Reti,
+ * Samuel→Giri, Sofía→Noti.
  *
  * Qué está encendido NO se escribe acá: se pregunta, con `GET /ai-hub/gobierno`
  * (`fetchPilotoGobierno`): `disponibleGlobal` es el interruptor general del
@@ -38,16 +48,15 @@
 
 import type { Icon } from '@phosphor-icons/react'
 import {
+  Bell,
   ChartBar,
   HandCoins,
   LinkSimple,
   Receipt,
-  UsersThree,
   WarningCircle,
 } from '@phosphor-icons/react'
 
 import type { GobiernoItem } from '@/lib/api/piloto'
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 
 const P = '/panel/inmobiliaria'
 
@@ -65,7 +74,7 @@ export interface DondeSeVe {
 }
 
 export interface Especialista {
-  id: 'gabriela' | 'cuenti' | 'nicolas' | 'valentina' | 'samuel' | 'sofia'
+  id: 'pagui' | 'cuenti' | 'cobri' | 'reti' | 'giri' | 'noti'
   nombre: string
   /** El oficio, en tres o cuatro palabras. */
   rol: string
@@ -77,78 +86,79 @@ export interface Especialista {
   sinPantalla?: string
 }
 
-const CONTADOR = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]
+/**
+ * Inicio (el Piloto) vive en el layout y lo ve cualquier miembro: sus enlaces
+ * van sin gate. `?bandeja=1` y `?actividad=1` abren su cajón.
+ */
+export const INICIO = `${P}/piloto`
 
 export const EQUIPO_DE_PAGOS: readonly Especialista[] = [
   {
-    // `payu.ts`: el ÚNICO punto de entrada; no es especialista, delega.
-    id: 'gabriela',
-    nombre: 'Gabriela',
-    rol: 'Coordina al equipo',
+    // `pagui.ts`: UNA entrada en la Actividad cada mañana; si no pasó nada, no escribe.
+    id: 'pagui',
+    nombre: 'Pagui',
+    rol: 'El resumen de cada mañana',
     queHace:
-      'Recibe cada cobro, decide qué especialista lo trabaja y no deja salir ningún mensaje al inquilino que no pase el filtro de la Ley 2300 y de Habeas Data.',
-    icon: UsersThree,
-    dondeSeVe: null,
-    sinPantalla: 'No tiene pantalla propia: coordina a los demás.',
+      'Cada mañana, a las 7, deja en la Actividad lo que hizo el equipo ayer: los links que salieron y los que se pagaron, qué pasó con los pagos fallidos, los cobros por revisar y los lotes de giros. También dice lo que sigue esperando a una persona.',
+    icon: ChartBar,
+    dondeSeVe: { nombre: 'Inicio › Actividad', href: `${INICIO}?actividad=1`, module: null },
   },
   {
-    // `laura.ts` del micro (el archivo conserva su nombre): tool-light; el ERP
-    // es dueño de emitir la factura. 🔴 IA95-10 (Nico, 05-10-2026: «créale un
-    // nombre así como los otros agentes»): se llamaba «Laura», que es SÓLO la
-    // voz y el WhatsApp de cobranza. Ahora es Cuenti (Nico, 05-10-2026 22:25:
-    // «son nombres inventados como el de Fixi»; como Cobri, Niti o Fixi, sale
-    // de lo que hace: las cuentas del cobro).
+    // `cuenti.ts`: sólo AVISA (`soloAviso`); lo que falta lo arregla una persona.
+    // IA95-10 (Nico, 05-10-2026): nombre inventado, como Cobri, Niti o Fixi.
     id: 'cuenti',
     nombre: 'Cuenti',
-    rol: 'Prepara el cobro',
+    rol: 'Revisa el cobro antes de que venza',
     queHace:
-      'Arma el cobro del período de cada contrato, con sus conceptos y su total. Emitirlo no le toca: lo emite Leasefy cuando se genera el cobro.',
+      'Una semana antes de que venza cada cuota, revisa que el cobro vaya a salir bien. Si le falta el canon, los impuestos del contrato no están confirmados o el inquilino no tiene correo ni celular, te deja un aviso en la Bandeja. Cuando lo arreglas en el contrato, el aviso se cierra solo.',
     icon: Receipt,
-    dondeSeVe: { nombre: 'Cartera › Cobros emitidos', href: `${P}/pagos/cartera/cobros`, module: 'cobros' },
+    dondeSeVe: { nombre: 'Inicio › Bandeja', href: `${INICIO}?bandeja=1`, module: null },
   },
   {
-    // `nicolas.ts`: `generateInvoiceLinkTool` + `sendCobroTool`; el micro nunca toca la pasarela.
-    id: 'nicolas',
-    nombre: 'Nicolás',
-    rol: 'Envía el link de pago',
-    // COBRI-2 (QA de los agentes, 16-10-2026): decía «por WhatsApp, correo o
-    // SMS»; el envío del micro es sólo WhatsApp (correo y SMS no están hechos).
-    // El mismo link va en los correos de aviso de cobro que manda Leasefy.
+    // Cobri (`payu-contrato`): el que manda el link. Nicolás se fundió acá
+    // (COBRI-6). COBRI-2: el envío es sólo por WhatsApp. El pago por el link
+    // emite el recibo y abona la cuota (`conciliar-link-pagado.service.ts`).
+    id: 'cobri',
+    nombre: 'Cobri',
+    rol: 'Manda el link de pago',
     queHace:
-      'Pide el link de pago del cobro y se lo manda al inquilino por WhatsApp. El mismo link va en los correos de aviso de cobro.',
+      'Le manda al inquilino por WhatsApp el link de pago de su cuota: 3 días antes, el día y 3 días después del vencimiento, siempre el mismo link. Cuando el inquilino paga, emite el recibo y abona la cuota solo.',
     icon: LinkSimple,
     dondeSeVe: null,
-    sinPantalla: 'No tiene pantalla propia: trabaja sobre el cobro que preparó Cuenti.',
+    sinPantalla: 'Su trabajo se ve aquí arriba: el link de cada cuota y en qué va.',
   },
   {
-    // `valentina.ts`: sugiere; la ejecución la confirma una persona (D-45-01).
-    id: 'valentina',
-    nombre: 'Valentina',
-    rol: 'Vigila los pagos fallidos',
+    // `reti.ts`: cada paso es la MISMA acción del botón de Pagos fallidos, con
+    // la Ley 2300 y el horario; el modo del Piloto decide si espera un clic.
+    id: 'reti',
+    nombre: 'Reti',
+    rol: 'Recupera los pagos fallidos',
     queHace:
-      'Clasifica por qué falló cada pago y sugiere qué sigue: reenviar el link, mandar uno nuevo, ofrecer otro medio o pasarlo a cobranza. No actúa en bloque sin tu confirmación.',
+      'Cuando un pago por el link falla, decide según el caso: le reenvía el mismo link una vez; si sigue sin pagar, le manda por correo cómo pagar por transferencia; si el link venció, le manda uno nuevo, y si la cuota ya pasó el plazo, la pasa a cobranza. Según tu modo, lo hace solo o te lo deja en la Bandeja.',
     icon: WarningCircle,
     dondeSeVe: { nombre: 'Cobranza › Pagos fallidos', href: `${P}/pagos/cobranza/fallidos`, module: 'cobranza' },
   },
   {
-    // `samuel.ts`: RECOMIENDA; la aprobación la hace una persona (D-46-08).
-    id: 'samuel',
-    nombre: 'Samuel',
-    rol: 'Liquida a los propietarios',
+    // `giri.ts`: manda a REVISAR, nunca aprueba. No lo prende el interruptor
+    // del equipo: revisa cada lote que se arma.
+    id: 'giri',
+    nombre: 'Giri',
+    rol: 'Revisa antes de girar',
     queHace:
-      'Calcula el neto de cada propietario —canon menos comisión, descuentos y retenciones—, detecta lo que frena el giro y recomienda aprobar o revisar. Nunca aprueba solo.',
+      'Antes de girarle al propietario, revisa cada liquidación del lote y marca la que hay que mirar: el inquilino no ha pagado, la cuenta del propietario cambió hace menos de 30 días, los impuestos del contrato no están confirmados o una reparación espera la aprobación del propietario. Nunca aprueba solo: aprobar pide «Ya lo revisé». Revisa cada lote, aunque el equipo esté apagado.',
     icon: HandCoins,
-    dondeSeVe: { nombre: 'Pagos › Liquidaciones', href: `${P}/pagos/liquidaciones`, module: null, roles: CONTADOR },
+    dondeSeVe: { nombre: 'Dispersiones › Lotes al banco', href: `${P}/pagos/dispersiones/lotes`, module: 'dispersiones' },
   },
   {
-    // `sofia.ts`: eventos a notificar + reporte a propietarios + cierre del día.
-    id: 'sofia',
-    nombre: 'Sofía',
-    rol: 'Avisa y reporta',
+    // `noti.ts`: campana a quien puede ver cobros; correo a los administradores.
+    id: 'noti',
+    nombre: 'Noti',
+    rol: 'Te avisa',
     queHace:
-      'Avisa a quien corresponde de cada cobro enviado, pago recibido o pago fallido, y arma el reporte a los propietarios y el cierre del día.',
-    icon: ChartBar,
-    dondeSeVe: { nombre: 'Cobranza › Recordatorios', href: `${P}/pagos/cobranza/recordatorios`, module: 'cobranza' },
+      'Te avisa en la campana cada pago por el link que falla, uno por uno, y cada hora los pagos que entraron, juntos. Le llega a quien tiene permiso de cobros. Cada mañana manda el resumen de Pagui por correo a los administradores; se apaga en Configuración › Notificaciones, en «Pagos y cobros».',
+    icon: Bell,
+    dondeSeVe: null,
+    sinPantalla: 'No tiene pantalla propia: sus avisos llegan a la campana y al correo.',
   },
 ]
 

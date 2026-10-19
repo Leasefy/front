@@ -13989,17 +13989,17 @@
     },
     "pagos": {
       "rol": "Cobros con link de pago",
-      "historia": "Arma el cobro de cada cuota con su link de pago y se lo manda al inquilino; vigila lo que falla y prepara la liquidación de cada propietario.",
+      "historia": "Le manda al inquilino el link de pago de cada cuota y, con su equipo (Cuenti, Reti, Giri, Noti y Pagui), revisa el cobro antes de que venza, recupera los pagos que fallan, revisa cada giro al propietario y te avisa.",
       "hace": {
-        "cobro": "Genera el cobro de la cuota y pide su link de pago",
-        "envia": "Envía el cobro por WhatsApp o correo",
-        "fallidos": "Vigila los pagos fallidos y sugiere qué hacer con cada uno",
-        "liquidacion": "Calcula la liquidación de cada propietario y dice si puede aprobarse o necesita revisión",
-        "cierre": "Avisa de los pagos recibidos y arma el cierre del día"
+        "cobro": "Revisa cada cuota una semana antes de que venza y te avisa la que va a salir mal",
+        "envia": "Le manda al inquilino el link de pago por WhatsApp: 3 días antes, el día y 3 días después del vencimiento",
+        "fallidos": "Recupera los pagos fallidos según el caso: reenvía el link, manda uno nuevo o las instrucciones de transferencia, o lo pasa a cobranza",
+        "liquidacion": "Revisa cada liquidación antes de girarle al propietario y marca la que hay que mirar",
+        "cierre": "Te avisa en la campana los pagos que fallan y los que entran, y cada mañana te deja el resumen del equipo"
       },
       "noHace": {
         "link": "Nunca inventa un link: sólo usa Wompi real a través de Leasefy",
-        "aprueba": "No aprueba liquidaciones: las recomienda",
+        "aprueba": "No aprueba los giros: manda a revisar los que tienen algo raro",
         "masivo": "No ejecuta acciones masivas sin tu confirmación"
       }
     },

@@ -185,9 +185,12 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     reportaA: 'orquestador',
     fuentes: [
       'src/mastra/agents/pagos/payu.ts (el conductor: `name: \'Cobri\'`; el archivo conserva el nombre viejo)',
-      'src/mastra/agents/pagos/{laura,nicolas,valentina,samuel,sofia}.ts',
       'src/mastra/agents/pagos/payments-orientation.ts (lo que contesta en el chat)',
-      'src/piloto/que-hace-cada-modo.ts (pagos, valla de links)',
+      'src/piloto/que-hace-cada-modo.ts (pagos, valla de links; Reti y Cuenti)',
+      // COBRI-6 (18-10-2026): el equipo que corre es del BACK, de reglas fijas
+      // (los de modelo laura/nicolas/valentina/samuel/sofia del micro nunca corrieron).
+      'back: agent-payments/payu/{cuenti/cuenti.ts,fallidos/reti.ts,noti/noti.ts,pagui/pagui.ts}',
+      'back: inmobiliaria/dispersiones/lotes/giri.ts',
     ],
   },
   {

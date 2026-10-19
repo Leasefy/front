@@ -16,6 +16,8 @@ import Link from 'next/link';
 import { Checkbox } from '@/components/ui/checkbox';
 import { apiClient } from '@/lib/api/client';
 import { calificacionLeasefyApi } from '@/lib/api/calificacion-leasefy.service';
+import { useOptionalI18n } from '@/lib/i18n/i18n-context';
+import { useTr } from '@/lib/i18n/use-tr';
 
 export function CasillaDeLaCalificacion({
   marcada,
@@ -24,7 +26,11 @@ export function CasillaDeLaCalificacion({
   marcada: boolean;
   onCambio: (v: boolean) => void;
 }) {
+  const tr = useTr();
+  const idioma = useOptionalI18n()?.locale === 'en' ? 'en' : 'es';
+  /** `null` = todavía no se sabe; sin sesión (un invitado) no se ofrece: no hay cuenta con que autorizar. */
   const [yaAutorizo, setYaAutorizo] = useState<boolean | null>(null);
+  const [sinSesion, setSinSesion] = useState(false);
   const [texto, setTexto] = useState<{ title: string; text: string } | null>(null);
   const [verTexto, setVerTexto] = useState(false);
 
@@ -32,24 +38,24 @@ export function CasillaDeLaCalificacion({
     calificacionLeasefyApi
       .autorizacion()
       .then((a) => setYaAutorizo(a.vigente && !a.hayVersionNueva))
-      .catch(() => setYaAutorizo(false));
+      .catch(() => setSinSesion(true));
     apiClient
-      .get<{ title: string; text: string }>('/legal/consent-text?type=calificacion-leasefy&lang=es')
+      .get<{ title: string; text: string }>(`/legal/consent-text?type=calificacion-leasefy&lang=${idioma}`)
       .then(setTexto)
       .catch(() => setTexto(null));
-  }, []);
+  }, [idioma]);
 
   if (yaAutorizo) {
     return (
       <p className="text-xs text-fg-muted" data-testid="calificacion-ya-autorizada">
-        Tu Calificación Leasefy ya se comparte con las inmobiliarias de Leasefy.{' '}
+        {tr('Tu Calificación Leasefy ya se comparte con las inmobiliarias de Leasefy.')}{' '}
         <Link href="/inquilino/calificacion" className="underline hover:no-underline">
-          Verla
+          {tr('Verla')}
         </Link>
       </p>
     );
   }
-  if (yaAutorizo === null || !texto) return null;
+  if (sinSesion || yaAutorizo === null || !texto) return null;
 
   return (
     <div className="space-y-2" data-testid="casilla-calificacion">
@@ -61,10 +67,9 @@ export function CasillaDeLaCalificacion({
           className="mt-0.5"
         />
         <span className="text-sm text-foreground/70">
-          Opcional: autorizo que mis arriendos en Leasefy cuenten para mi Calificación Leasefy y que las
-          inmobiliarias de Leasefy la consulten.{' '}
+          {tr('Opcional: autorizo que mis arriendos en Leasefy cuenten para mi Calificación Leasefy y que las inmobiliarias de Leasefy la consulten.')}{' '}
           <button type="button" className="underline hover:no-underline" onClick={() => setVerTexto((v) => !v)}>
-            {verTexto ? 'Ocultar el texto' : 'Leer el texto'}
+            {verTexto ? tr('Ocultar el texto') : tr('Leer el texto')}
           </button>
         </span>
       </label>

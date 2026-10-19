@@ -49,6 +49,22 @@ const NOMBRE_DEL_COMPONENTE: Record<ComponenteDelHistorial | ComponenteDeLosDocu
   capacidadDePago: 'Capacidad de pago',
 };
 
+/**
+ * Las frases de `explicacion` vienen del back en español. Las fijas se buscan
+ * tal cual en `frases-en.ts`; la única con números («18 meses de historial en
+ * Leasefy: el historial pesa 55 % y los documentos 45 %.») se reconoce y se
+ * vuelve a armar con sus cifras para que también salga en inglés.
+ */
+const FRASE_DE_LOS_MESES = /^(\d+) (mes|meses) de historial en Leasefy: el historial pesa (\d+) % y los documentos (\d+) %\.$/;
+
+export function fraseDelBack(tr: ReturnType<typeof useTr>, frase: string): string {
+  const m = FRASE_DE_LOS_MESES.exec(frase);
+  if (!m) return tr(frase);
+  return m[2] === 'mes'
+    ? tr('1 mes de historial en Leasefy: el historial pesa {h} % y los documentos {d} %.', { h: m[3], d: m[4] })
+    : tr('{n} meses de historial en Leasefy: el historial pesa {h} % y los documentos {d} %.', { n: m[1], h: m[3], d: m[4] });
+}
+
 export function LetraDeLaCalificacion({ letra, grande }: { letra: Letra | null; grande?: boolean }) {
   return (
     <span
@@ -131,7 +147,7 @@ export function TarjetaDeCalificacion({
           <div className="space-y-1">
             <p className="text-base font-medium text-fg">{tr('Todavía no hay calificación')}</p>
             <p className="max-w-xl text-sm text-fg-muted">
-              {c.explicacion[0] ?? tr('Todavía no hay datos para calificar.')}
+              {c.explicacion[0] ? fraseDelBack(tr, c.explicacion[0]) : tr('Todavía no hay datos para calificar.')}
             </p>
           </div>
         </div>
@@ -169,7 +185,7 @@ export function TarjetaDeCalificacion({
           <div>
             <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">{tr('Historial')}</p>
             <p className="mt-1 font-mono text-sm tabular-nums text-fg">
-              {c.mesesObservados > 0 ? tr('{n} meses', { n: c.mesesObservados }) : tr('Sin historial')}
+              {c.mesesObservados === 1 ? tr('1 mes') : c.mesesObservados > 0 ? tr('{n} meses', { n: c.mesesObservados }) : tr('Sin historial')}
             </p>
           </div>
           <div>
@@ -209,7 +225,7 @@ export function TarjetaDeCalificacion({
           {c.explicacion
             .filter((e) => !c.frenos.some((f) => f.texto === e) && !c.revisiones.some((r) => r.texto === e))
             .map((e) => (
-              <li key={e}>{tr(e)}</li>
+              <li key={e}>{fraseDelBack(tr, e)}</li>
             ))}
         </ul>
       )}

@@ -14,6 +14,17 @@ describe('destinoDeVolver — el «Volver» de Reglas de mora devuelve a donde e
     });
   });
 
+  it('FACT-2: desde «Por facturar» vuelve a Facturación (sólo esa ruta exacta)', () => {
+    expect(destinoDeVolver('/panel/inmobiliaria/facturacion')).toEqual({
+      href: '/panel/inmobiliaria/facturacion',
+      label: 'Volver a Facturación',
+    });
+    expect(destinoDeVolver('/panel/inmobiliaria/facturacion/../x')).toEqual({
+      href: '/panel/inmobiliaria/pagos/cartera/cobros',
+      label: 'Volver a cobros',
+    });
+  });
+
   it('otra ruta del panel que no es un contrato sigue yendo a Cobros', () => {
     expect(destinoDeVolver('/panel/inmobiliaria/inquilinos')).toEqual({
       href: '/panel/inmobiliaria/pagos/cartera/cobros',

@@ -190,7 +190,7 @@ export function TarjetaDeCalificacion({
           </div>
           <div>
             <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">{tr('Pesa el historial')}</p>
-            <p className="mt-1 font-mono text-sm tabular-nums text-fg">{pesoHistorial} %</p>
+            <p className="mt-1 font-mono text-sm tabular-nums text-fg">{tr('{p} %', { p: pesoHistorial })}</p>
           </div>
         </div>
       </div>

@@ -657,6 +657,7 @@ export const FRASES_EN: Record<string, string> = {
   "Historial": "History",
   "{n} meses": "{n} months",
   "1 mes": "1 month",
+  "{p} %": "{p}%",
   "Sin historial": "No history",
   "Pesa el historial": "History weight",
   "Condiciones sugeridas": "Suggested conditions",

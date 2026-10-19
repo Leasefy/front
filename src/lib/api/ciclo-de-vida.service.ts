@@ -229,6 +229,38 @@ export interface CartaEnLaBandeja {
   ultimoIntento: string | null;
 }
 
+/**
+ * La carta tal como sale o tal como salió (`GET /contracts/:id/incrementos/:desde/carta`,
+ * 19-10-2026: «no me salió qué tipo de carta enviamos, y ya la enviamos»; el
+ * CEO de Portofino quería ver qué se envió).
+ */
+export interface CartaParaVer {
+  contractId: string;
+  desde: string;
+  estado: 'POR_ENVIAR' | 'ENVIADA';
+  inquilino: string | null;
+  inmueble: string | null;
+  canonAnteriorCop: number | null;
+  canonNuevoCop: number | null;
+  /** A quién va (por enviar) o a quién fue (enviada). */
+  para: string | null;
+  asunto: string;
+  contenido: string;
+  /** El texto lo guardó una persona: no es el que arma Leasefy hoy. */
+  corregida: boolean;
+  /** El mes del aniversario ya se cobró: la diferencia se suma a la factura siguiente. */
+  reajuste: { valorCop: number; deMes: string; enMes: string } | null;
+  enviada: {
+    at: string | null;
+    por: string | null;
+    medio: MedioDeLaCarta | null;
+    constancia: string | null;
+    soporteNombre: string | null;
+  } | null;
+  correoSaleDeVerdad: boolean;
+  envioHabilitado: boolean;
+}
+
 export interface BandejaDeCartas {
   diasAntes: number;
   disponible: boolean;
@@ -573,6 +605,10 @@ export const cicloDeVidaApi = {
       `/contracts/${contractId}/incrementos/${desde}/carta/revisar`,
       contenido ? { contenido } : {},
     ),
+
+  /** La carta para verla: la que va a salir o la que salió (19-10-2026). */
+  verCarta: (contractId: string, desde: string) =>
+    apiClient.get<CartaParaVer>(`/contracts/${contractId}/incrementos/${desde}/carta`),
 
   /** D6: un clic. El back decide si el correo sale de verdad (`EMAIL_DELIVERY_ENABLED`). */
   enviarCarta: (contractId: string, desde: string, contenido?: string) =>

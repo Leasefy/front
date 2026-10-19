@@ -49,6 +49,10 @@ import { Chip } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { Fila } from '@/components/contratos/BandejaDeCartasDelIncremento';
 import {
+  CartaDelIncrementoCajon,
+  type CartaQueSeAbre,
+} from '@/components/contratos/CartaDelIncrementoCajon';
+import {
   cicloDeVidaApi,
   type BandejaDeCartas,
   type CartaEnLaBandeja,
@@ -86,6 +90,8 @@ function ColaDeCartas() {
   const [datos, setDatos] = useState<BandejaDeCartas | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [busqueda, setBusqueda] = useState('');
+  // 🔴 19-10-2026: la carta se ve (y se envía) en su cajón, nunca a ciegas.
+  const [cartaAbierta, setCartaAbierta] = useState<CartaQueSeAbre | null>(null);
 
   /* El estado llega en la URL: es el camino que abrió la loseta del tablero. */
   const deLaUrl = params?.get('estado') ?? '';
@@ -263,7 +269,13 @@ function ColaDeCartas() {
                     key={`${c.contractId}-${c.desde}`}
                     carta={c}
                     editable={puedeEditar && datos.disponible}
-                    onEnviada={cargar}
+                    onAbrir={(carta) =>
+                      setCartaAbierta({
+                        contractId: carta.contractId,
+                        desde: carta.desde,
+                        titulo: `#${carta.externalId ?? carta.code} · ${carta.inquilino ?? 'Sin inquilino'}`,
+                      })
+                    }
                   />
                 ))}
               </ul>
@@ -284,6 +296,13 @@ function ColaDeCartas() {
           )}
         </section>
       )}
+
+      <CartaDelIncrementoCajon
+        carta={cartaAbierta}
+        onCerrar={() => setCartaAbierta(null)}
+        puedeEnviar={puedeEditar}
+        onEnviada={cargar}
+      />
     </div>
   );
 }

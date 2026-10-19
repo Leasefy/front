@@ -57,6 +57,7 @@ vi.mock('@/components/ui/combobox', () => ({
 vi.mock('@/lib/api/ciclo-de-vida.service', () => ({
   cicloDeVidaApi: {
     enviarCarta: vi.fn(),
+    verCarta: vi.fn(),
     garantiaDeServicios: vi.fn(),
     registrarGarantia: vi.fn(),
     movimientoDeGarantia: vi.fn(),
@@ -80,7 +81,7 @@ import { toast } from '@/components/ui/toast'
 import type { Contract } from '@/lib/types/contract'
 import { InvitarInquilino } from './InvitarInquilino'
 import { VincularInmueble } from './VincularInmueble'
-import { Fila as CartaDeLaBandeja } from './BandejaDeCartasDelIncremento'
+import { CartaDelIncrementoCajon } from './CartaDelIncrementoCajon'
 import { GarantiaDeServiciosDelContrato } from './GarantiaDeServiciosDelContrato'
 import { ComisionableDelConcepto } from '@/components/inmobiliaria/mandato/ComisionableDelConcepto'
 import { CobrosAlArrendarDelContrato } from '@/components/inmobiliaria/mandato/CobrosAlArrendarDelContrato'
@@ -187,39 +188,42 @@ describe('<VincularInmueble>', () => {
   })
 })
 
-describe('la carta del incremento en la bandeja', () => {
-  const carta = {
-    contractId: 'c1',
-    code: 120,
-    externalId: '1850',
-    inquilino: 'Ana Díaz',
-    correoDelInquilino: 'ana@example.com',
-    inmueble: 'Cra 76 # 32-11',
-    desde: '2026-10-01',
-    diasParaElAniversario: 14,
-    estado: 'POR_ENVIAR',
-    alertaRoja: false,
-    origen: 'IPC',
-    porcentaje: 5.1,
-    canonAnteriorCop: 2_000_000,
-    canonNuevoCop: 2_102_000,
-    contenido: 'Señor(a) Ana Díaz…',
-    enviadaAt: null,
-    medio: null,
-    ultimoIntento: null,
-  } as unknown as CartaEnLaBandeja
-  const fila = () => (
-    <ul>
-      <CartaDeLaBandeja carta={carta} editable onEnviada={vi.fn(async () => {})} />
-    </ul>
+describe('la carta del incremento: enviar desde su cajón (19-10-2026)', () => {
+  // La fila ya no envía: abre el cajón con la carta y el cajón la manda.
+  const cajon = () => (
+    <CartaDelIncrementoCajon
+      carta={{ contractId: 'c1', desde: '2026-10-01', titulo: '#1850 · Ana Díaz' }}
+      onCerrar={vi.fn()}
+      puedeEnviar
+      onEnviada={vi.fn(async () => {})}
+    />
   )
+  beforeEach(() => {
+    ciclo.verCarta.mockResolvedValue({
+      contractId: 'c1',
+      desde: '2026-10-01',
+      estado: 'POR_ENVIAR',
+      inquilino: 'Ana Díaz',
+      inmueble: 'Cra 76 # 32-11',
+      canonAnteriorCop: 2_000_000,
+      canonNuevoCop: 2_102_000,
+      para: 'ana@example.com',
+      asunto: 'Incremento del canon de arrendamiento desde el 1 de octubre de 2026',
+      contenido: 'Señor(a) Ana Díaz…',
+      corregida: false,
+      reajuste: null,
+      enviada: null,
+      correoSaleDeVerdad: true,
+      envioHabilitado: true,
+    })
+  })
 
   it('un 5xx va al toast con la referencia; sin respuesta, la conexión', async () => {
     ciclo.enviarCarta.mockRejectedValueOnce(fallo500()).mockRejectedValueOnce(sinRed())
-    await montar(fila())
-    await clic($('enviar-c1'))
+    await montar(cajon())
+    await clic($('enviar-la-carta'))
     esDeNuestroLado(descripcionDelToast(0))
-    await clic($('enviar-c1'))
+    await clic($('enviar-la-carta'))
     expect(descripcionDelToast(1)).toMatch(/conexión/i)
   })
 
@@ -233,9 +237,9 @@ describe('la carta del incremento en la bandeja', () => {
         campos: [{ campo: 'contenido', regla: 'longitud_maxima', mensaje: frase }],
       }),
     )
-    await montar(fila())
-    await clic($('enviar-c1'))
-    expect(document.querySelector('#carta-c1-2026-10-01-texto-error')?.textContent).toBe(frase)
+    await montar(cajon())
+    await clic($('enviar-la-carta'))
+    expect(document.querySelector('#texto-de-la-carta-error')?.textContent).toBe(frase)
     expect(toastError).not.toHaveBeenCalled()
   })
 })

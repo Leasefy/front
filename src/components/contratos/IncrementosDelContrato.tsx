@@ -36,6 +36,10 @@ import { plataEnPantalla } from "@/lib/plata/escribir-plata";
 import { diaLegible } from '@/lib/mandato/textos';
 import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import {
+  CartaDelIncrementoCajon,
+  type CartaQueSeAbre,
+} from "@/components/contratos/CartaDelIncrementoCajon";
 
 const PESOS = plataEnPantalla(localeDeLasCifras, {
   style: "currency",
@@ -102,6 +106,8 @@ export function IncrementosDelContrato({
   const [errorDeLaTasa, setErrorDeLaTasa] = useState<string | undefined>(undefined);
   const enfocar = useFocoAlPrimerError();
   const [ocupado, setOcupado] = useState(false);
+  // 🔴 19-10-2026: la carta se ve en su cajón antes de salir, y una enviada se abre igual.
+  const [cartaAbierta, setCartaAbierta] = useState<CartaQueSeAbre | null>(null);
 
   const cargar = useCallback(async () => {
     try {
@@ -185,7 +191,8 @@ export function IncrementosDelContrato({
           </p>
         )}
         <p className="mt-1 text-caption text-muted-foreground">
-          La carta aparece sola {datos.diasAntesDeLaCarta ?? 30} días antes del aniversario y se envía con un clic.
+          La carta aparece sola {datos.diasAntesDeLaCarta ?? 30} días antes del aniversario. Antes de enviarla se
+          ve tal como le llega al inquilino.
         </p>
         {datos.correoSaleDeVerdad === false && (
           <p className="mt-1 text-caption text-warning-700 dark:text-warning-100" data-testid="correo-simulado">
@@ -277,13 +284,13 @@ export function IncrementosDelContrato({
                   ["contenido"],
                 )
               }
-              onEnviar={(contenido) =>
-                accion(
-                  () => cicloDeVidaApi.enviarCarta(contractId, a.desde, contenido),
-                  "Carta enviada.",
-                  "enviar la carta",
-                  ["contenido"],
-                )
+              onAbrirCarta={(texto) =>
+                setCartaAbierta({
+                  contractId,
+                  desde: a.desde,
+                  titulo: `Aniversario del ${diaLegible(a.desde)}`,
+                  texto,
+                })
               }
               onVerSoporte={() =>
                 void (async () => {
@@ -312,6 +319,13 @@ export function IncrementosDelContrato({
           ))}
         </ul>
       )}
+
+      <CartaDelIncrementoCajon
+        carta={cartaAbierta}
+        onCerrar={() => setCartaAbierta(null)}
+        puedeEnviar={puedeEditar && datos.disponible}
+        onEnviada={cargar}
+      />
     </section>
   );
 }
@@ -331,7 +345,7 @@ function Aniversario({
   onDigitar,
   onGenerarCarta,
   onRevisar,
-  onEnviar,
+  onAbrirCarta,
   onConstancia,
   onVerSoporte,
 }: {
@@ -342,7 +356,8 @@ function Aniversario({
   onDigitar: (body: { porcentaje?: number | null; canonNuevoCop?: number | null }) => Promise<ErroresDelServidor>;
   onGenerarCarta: () => void;
   onRevisar: (contenido?: string) => Promise<ErroresDelServidor>;
-  onEnviar: (contenido?: string) => Promise<ErroresDelServidor>;
+  /** Abre el cajón con la carta: con el texto que se está corrigiendo, si lo hay. */
+  onAbrirCarta: (texto?: string) => void;
   onConstancia: (body: {
     medio: "FISICO" | "WHATSAPP" | "OTRO";
     fecha: string;
@@ -416,6 +431,17 @@ function Aniversario({
           </>
         )}
       </p>
+
+      {enviada && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onAbrirCarta()}
+          data-testid={`ver-carta-enviada-${a.desde}`}
+        >
+          Ver la carta enviada
+        </Button>
+      )}
 
       {a.bandeja?.alertaRoja && (
         <p
@@ -502,11 +528,11 @@ function Aniversario({
             {(enVentana || a.carta) && (
               <Button
                 size="sm"
-                onClick={() => void onEnviar(a.carta ? texto : undefined).then(pintar)}
+                onClick={() => onAbrirCarta(a.carta ? texto : undefined)}
                 disabled={!envioHabilitado}
                 data-testid={`enviar-carta-${a.desde}`}
               >
-                Enviar la carta
+                Ver y enviar la carta
               </Button>
             )}
             {a.carta?.estado === "PENDIENTE_DE_REVISION" && (

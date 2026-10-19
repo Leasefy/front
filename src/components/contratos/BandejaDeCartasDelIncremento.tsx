@@ -29,21 +29,16 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Collapse } from '@leasefy/cadence';
 import Link from 'next/link';
 import { EnvelopeSimple, WarningCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import {
   cicloDeVidaApi,
   type BandejaDeCartas,
   type CartaEnLaBandeja,
 } from '@/lib/api/ciclo-de-vida.service';
-import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
-import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
@@ -224,55 +219,42 @@ function Loseta({
   );
 }
 
+/** Qué carta es, en palabras: lo que Juan no vio antes de enviarla (19-10-2026). */
+export function tipoDeLaCarta(c: Pick<CartaEnLaBandeja, 'origen' | 'porcentaje'>): string {
+  const pct =
+    c.porcentaje != null
+      ? ` del ${c.porcentaje.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 3 })} %`
+      : '';
+  switch (c.origen) {
+    case 'IPC':
+      return `Carta de incremento por IPC${pct} (Ley 820, art. 20)`;
+    case 'RENOVACION':
+      return 'Carta de incremento acordado en la renovación';
+    case 'TASA_PACTADA':
+      return `Carta de incremento pactado en el contrato${pct}`;
+    case 'DIGITADO':
+      return `Carta de incremento digitado para este año${pct}`;
+    default:
+      return 'Carta de incremento del canon';
+  }
+}
+
+/**
+ * Una carta de la cola. 🔴 19-10-2026: ya no se envía desde la fila. «Ver y
+ * enviar la carta» abre el cajón con el correo tal como sale (para, asunto,
+ * texto y la diferencia del mes ya facturado) y desde ahí se envía; una
+ * enviada se abre igual, con cuándo y a quién salió.
+ */
 export function Fila({
   carta,
   editable,
-  onEnviada,
+  onAbrir,
 }: {
   carta: CartaEnLaBandeja;
   editable: boolean;
-  onEnviada: () => Promise<void>;
+  onAbrir: (carta: CartaEnLaBandeja) => void;
 }) {
-  const [abierta, setAbierta] = useState(false);
-  const [texto, setTexto] = useState(carta.contenido);
-  const [ocupado, setOcupado] = useState(false);
-  // Si el back rechaza el texto corregido, se dice debajo del texto.
-  const [errorDelTexto, setErrorDelTexto] = useState<string | undefined>(undefined);
-  const idDelTexto = `carta-${carta.contractId}-${carta.desde}-texto`;
-
-  const enviar = async () => {
-    setOcupado(true);
-    setErrorDelTexto(undefined);
-    try {
-      const r = await cicloDeVidaApi.enviarCarta(
-        carta.contractId,
-        carta.desde,
-        abierta && texto !== carta.contenido ? texto : undefined,
-      );
-      if (r.ultimoEnvio?.resultado === 'SIMULADA') {
-        toast.error('La carta no salió.', { description: r.ultimoEnvio.mensaje });
-      } else {
-        toast.success(r.ultimoEnvio?.mensaje ?? 'Carta enviada.');
-      }
-      await onEnviada();
-    } catch (e) {
-      // Un 400 del texto va bajo el texto; un 409, un 5xx con su referencia o
-      // la red al toast, por el traductor.
-      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
-        campos: ['contenido'],
-        porDefecto: 'No pudimos enviar la carta.',
-        accion: 'enviar la carta',
-      });
-      if (porCampo.contenido) {
-        setAbierta(true);
-        setErrorDelTexto(porCampo.contenido);
-      }
-      if (sueltos.length) toast.error('No se pudo enviar la carta.', { description: sueltos.join(' · ') });
-    } finally {
-      setOcupado(false);
-    }
-  };
-
+  const enviada = carta.estado === 'ENVIADA';
   return (
     <li
       className={`space-y-2 py-3 text-sm ${carta.alertaRoja ? 'rounded-md bg-destructive/5 px-2' : ''}`}
@@ -288,6 +270,10 @@ export function Fila({
         </span>
       </div>
       <p className="text-caption text-muted-foreground">{carta.inmueble}</p>
+      <p className="flex items-center gap-1.5 text-caption text-fg" data-testid={`tipo-de-carta-${carta.contractId}`}>
+        <EnvelopeSimple className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        {tipoDeLaCarta(carta)}
+      </p>
       {carta.alertaRoja ? (
         <p className="flex items-start gap-1.5 text-caption font-medium text-destructive">
           {/* 🔴 Acá había un emoji 🔴 literal, el mismo que uso en los
@@ -296,7 +282,7 @@ export function Fila({
           <WarningCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" weight="fill" aria-hidden="true" />
           <span>Llegó el aniversario ({fechaCorta(carta.desde)}) sin constancia de la carta.</span>
         </p>
-      ) : carta.estado === 'ENVIADA' ? (
+      ) : enviada ? (
         <p className="text-caption text-muted-foreground">
           Enviada el {fechaCorta(carta.enviadaAt)}
           {carta.medio ? ` (${carta.medio.toLowerCase()})` : ''}.
@@ -304,48 +290,30 @@ export function Fila({
       ) : (
         <p className="text-caption text-warning-700 dark:text-warning-100">Faltan {carta.diasParaElAniversario} días para el aniversario.</p>
       )}
-      {carta.ultimoIntento && carta.estado !== 'ENVIADA' && (
+      {carta.ultimoIntento && !enviada && (
         <p className="text-caption text-muted-foreground">Último intento: {fechaCorta(carta.ultimoIntento)}</p>
       )}
-      {!carta.correoDelInquilino && carta.estado !== 'ENVIADA' && (
+      {!carta.correoDelInquilino && !enviada && (
         <p className="text-caption text-muted-foreground">
           Sin correo del inquilino: entrégala por otro medio y registra la constancia en el contrato.
         </p>
       )}
-      {editable && carta.estado !== 'ENVIADA' && (
-        <div className="space-y-2">
-          {/* La carta se abre y se cierra con su altura. */}
-          <Collapse open={abierta} className="space-y-2">
-            <Textarea
-              id={idDelTexto}
-              value={texto}
-              maxLength={10_000}
-              onChange={(e) => {
-                setTexto(e.target.value);
-                setErrorDelTexto(undefined);
-              }}
-              rows={7}
-              aria-label="Texto de la carta"
-              aria-invalid={errorDelTexto ? true : undefined}
-              aria-describedby={`${idDelTexto}-error`}
-            />
-            <ErrorDelCampo id={`${idDelTexto}-error`} mensaje={errorDelTexto} className="mt-0" />
-          </Collapse>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              onClick={() => void enviar()}
-              disabled={ocupado || !carta.correoDelInquilino}
-              data-testid={`enviar-${carta.contractId}`}
-            >
-              Enviar la carta
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setAbierta((v) => !v)}>
-              {abierta ? 'Cerrar la carta' : 'Ver o corregir la carta'}
-            </Button>
-          </div>
-        </div>
-      )}
+      <div className="flex flex-wrap gap-2">
+        {enviada ? (
+          <Button size="sm" variant="outline" onClick={() => onAbrir(carta)} data-testid={`ver-enviada-${carta.contractId}`}>
+            Ver la carta enviada
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant={editable ? 'default' : 'outline'}
+            onClick={() => onAbrir(carta)}
+            data-testid={`ver-y-enviar-${carta.contractId}`}
+          >
+            {editable ? 'Ver y enviar la carta' : 'Ver la carta'}
+          </Button>
+        )}
+      </div>
     </li>
   );
 }

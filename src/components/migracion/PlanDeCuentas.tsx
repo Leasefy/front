@@ -835,7 +835,8 @@ function Nodo({
         >
           {nodo.codigo}
         </span>
-        <span className={`min-w-0 text-sm ${nivel <= 1 ? 'font-medium text-fg' : 'text-fg'}`}>
+        {/* CONTA-3 (19-10-2026): un nombre migrado como «TERCEROS/PINTURAS/REPARACIONES/ASEOS» no tiene espacios y empujaba la página a 390 px. */}
+        <span className={`min-w-0 break-words [overflow-wrap:anywhere] text-sm ${nivel <= 1 ? 'font-medium text-fg' : 'text-fg'}`}>
           {nodo.nombre}
         </span>
         <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-fg-muted">

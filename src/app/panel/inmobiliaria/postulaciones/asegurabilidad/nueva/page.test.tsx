@@ -171,10 +171,9 @@ vi.mock('@/components/inmobiliaria/cotizador/WizardStep3Config', () => ({
     </div>
   ),
   EMPTY_WIZARD_CONFIG: {
-    carrierMode: 'recomendar',
+    carrierMode: 'todas',
     selectedCarriers: [],
     priority: 'probabilidad',
-    runMode: 'automatico',
   },
 }))
 vi.mock('@/components/inmobiliaria/cotizador/WizardStep3Review', () => ({

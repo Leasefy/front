@@ -50,6 +50,11 @@ export const PAGINAS_SIN_PESTANA: Readonly<Record<string, PaginaSinPestana>> = {
     labelKey: 'inmobiliaria.ai.cobranza.compliance.subPages.optOutTitle',
     padres: [],
   },
+  // COTIZ-1 (QA 19-10-2026): «Nueva cotización» decía «Detalle» en la miga.
+  ['/panel/inmobiliaria/postulaciones/asegurabilidad/nueva']: {
+    labelKey: 'inmobiliaria.ai.cotizador.nueva.title',
+    padres: [],
+  },
   // Las de Mori que se abren desde un enlace o por URL (QA-AGENTES 16-10).
   [`${COBRANZA}/escalaciones`]: { labelKey: 'inmobiliaria.ai.cobranza.escalaciones.pageTitle', padres: [] },
   [`${COBRANZA}/analitica`]: { labelKey: 'inmobiliaria.ai.cobranza.analitica.title', padres: [] },

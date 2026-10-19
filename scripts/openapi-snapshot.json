@@ -4992,6 +4992,30 @@
           "re_quote_of": {
             "type": "string",
             "format": "uuid"
+          },
+          "autorizacionConfirmada": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "rapidez",
+              "costo",
+              "cobertura",
+              "probabilidad"
+            ]
+          },
+          "carriers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "maxItems": 20
           }
         },
         "required": [
@@ -5000,7 +5024,8 @@
           "ciudad",
           "canonCop",
           "tipoInmueble",
-          "codeudoresCount"
+          "codeudoresCount",
+          "autorizacionConfirmada"
         ]
       },
       "AgencyCotizadorQuoteDetailResponse": {
@@ -5102,6 +5127,9 @@
           "reasoning_trace_es": {
             "type": "string"
           },
+          "narrative_es": {
+            "type": "string"
+          },
           "cost_cop": {
             "type": "number"
           },
@@ -5113,12 +5141,28 @@
               "tipo",
               "codeudores"
             ]
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "calculado",
+              "recotizar"
+            ]
+          },
+          "hypothetical_carriers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyAskWhyHypotheticalCarrier"
+            }
           }
         },
         "required": [
           "reasoning_trace_es",
+          "narrative_es",
           "cost_cop",
-          "variable_changed"
+          "variable_changed",
+          "modo",
+          "hypothetical_carriers"
         ]
       },
       "AgencyAskWhyError": {
@@ -31581,6 +31625,16 @@
             "items": {
               "type": "string"
             }
+          },
+          "motivo_rechazo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latency_ms": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "required": [
@@ -32880,6 +32934,53 @@
         },
         "required": [
           "nombre"
+        ]
+      },
+      "AgencyAskWhyHypotheticalCarrier": {
+        "type": "object",
+        "properties": {
+          "carrier": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "conditional",
+              "rejected",
+              "error"
+            ]
+          },
+          "prima_mensual_cop": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "condiciones": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "motivo_rechazo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latency_ms": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "carrier",
+          "status",
+          "prima_mensual_cop",
+          "condiciones",
+          "motivo_rechazo",
+          "latency_ms"
         ]
       }
     },

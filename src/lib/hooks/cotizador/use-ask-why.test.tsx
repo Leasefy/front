@@ -61,8 +61,9 @@ describe('useAskWhy', () => {
   it('Test 1 — mutate POSTs correct JSON body to ask-why endpoint', async () => {
     const successBody: AskWhyResult = {
       narrative_es: 'Si el canon fuera mayor…',
-      cost_cop: 3.65,
+      cost_cop: 0,
       hypothetical_carriers: [],
+      modo: 'recotizar',
     }
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify(successBody), { status: 200 }),

@@ -1,34 +1,37 @@
 'use client'
-// Asegurabilidad Tier-B — visión #6 (config de la consulta)
-// New wizard step BEFORE review: carrier selection mode + priority + run mode.
-// Pure UI state — value is owned by the parent and supplied via props/onChange.
-// Backend tolerantly ignores unknown POST fields (carriers[]/priority/mode).
+// Asegurabilidad Tier-B — visión #6 (config de la consulta).
+//
+// 🔴 COTIZ-PASO-3 (QA de los agentes, 19-10-2026; Nico: «construirlo de
+// verdad»). Este paso se mandaba y el micro lo ignoraba. Ahora cada opción hace
+// lo que dice: «Sólo las que elijo» filtra a quién se consulta (`carriers`) y
+// «¿Qué priorizamos?» decide cuál se recomienda (`priority`, `ordenarPorPrioridad`
+// del micro). Se quitaron «Modo de ejecución» (el agente no avanza solo con una
+// aseguradora) y «Que Leasefy recomiende» (no había un perfil detrás: era lo
+// mismo que «Todas»).
 
 import { CheckSquare, Square } from '@phosphor-icons/react'
-import { SegmentedControl, RadioCardGroup, RadioCard, Chip } from '@leasefy/cadence'
+import { RadioCardGroup, RadioCard, Chip, Presence } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui'
 import { useCarrierRegistry } from '@/lib/hooks/cotizador/use-carrier-registry'
+import { aseguradorasQueSePuedenElegir } from '@/lib/cotizador/aseguradoras-que-se-pueden-elegir'
 
 // ── Public value shape (parent owns it) ──────────────────────────────────────
-export type CarrierMode = 'todas' | 'favoritas' | 'recomendar'
+export type CarrierMode = 'todas' | 'favoritas'
 export type QuotePriority = 'rapidez' | 'costo' | 'cobertura' | 'probabilidad'
-export type RunMode = 'automatico' | 'revision'
 
 export interface WizardConfigValue {
   carrierMode: CarrierMode
-  /** Selected carrier names — only meaningful when carrierMode === 'favoritas'. */
+  /** Códigos de las aseguradoras elegidas — sólo cuentan con `carrierMode === 'favoritas'`. */
   selectedCarriers: string[]
   priority: QuotePriority
-  runMode: RunMode
 }
 
 export const EMPTY_WIZARD_CONFIG: WizardConfigValue = {
-  carrierMode: 'recomendar',
+  carrierMode: 'todas',
   selectedCarriers: [],
   priority: 'probabilidad',
-  runMode: 'automatico',
 }
 
 interface WizardStep3ConfigProps {
@@ -41,14 +44,9 @@ interface WizardStep3ConfigProps {
 const CARRIER_MODES: { code: CarrierMode; descKey: string }[] = [
   { code: 'todas', descKey: 'todasDesc' },
   { code: 'favoritas', descKey: 'favoritasDesc' },
-  { code: 'recomendar', descKey: 'recomendarDesc' },
 ]
 
-const PRIORITIES: QuotePriority[] = ['rapidez', 'costo', 'cobertura', 'probabilidad']
-const RUN_MODES: { code: RunMode; descKey: string }[] = [
-  { code: 'automatico', descKey: 'automaticoDesc' },
-  { code: 'revision', descKey: 'revisionDesc' },
-]
+export const PRIORIDADES: QuotePriority[] = ['probabilidad', 'costo', 'cobertura', 'rapidez']
 
 export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardStep3ConfigProps) {
   const { t } = useI18n()
@@ -60,32 +58,16 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
   const K = 'inmobiliaria.ai.cotizador.nueva.config'
 
   const registry = useCarrierRegistry()
-  // Build the favoritas selectable list from the global registry (enabled carriers).
-  const carrierOptions = (registry.data?.global ?? [])
-    .filter(c => c.enabled)
-    .map(c => c.name)
+  const opciones = aseguradorasQueSePuedenElegir(registry.data)
 
   const isFavoritas = value.carrierMode === 'favoritas'
-  // Block proceeding only if "favoritas" is chosen but nothing is selected.
-  const canProceed = !isFavoritas || value.selectedCarriers.length > 0
+  const faltaElegir = isFavoritas && value.selectedCarriers.length === 0
 
-  function setCarrierMode(mode: CarrierMode) {
-    onChange({ ...value, carrierMode: mode })
-  }
-
-  function toggleCarrier(name: string) {
-    const next = value.selectedCarriers.includes(name)
-      ? value.selectedCarriers.filter(n => n !== name)
-      : [...value.selectedCarriers, name]
+  function toggleCarrier(codigo: string) {
+    const next = value.selectedCarriers.includes(codigo)
+      ? value.selectedCarriers.filter(n => n !== codigo)
+      : [...value.selectedCarriers, codigo]
     onChange({ ...value, selectedCarriers: next })
-  }
-
-  function setPriority(p: QuotePriority) {
-    onChange({ ...value, priority: p })
-  }
-
-  function setRunMode(m: RunMode) {
-    onChange({ ...value, runMode: m })
   }
 
   return (
@@ -102,7 +84,7 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
         <RadioCardGroup
           orientation="vertical"
           value={value.carrierMode}
-          onValueChange={(v) => setCarrierMode(v as CarrierMode)}
+          onValueChange={(v) => onChange({ ...value, carrierMode: v as CarrierMode })}
         >
           {CARRIER_MODES.map(({ code, descKey }) => (
             <RadioCard
@@ -114,67 +96,56 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
           ))}
         </RadioCardGroup>
 
-        {/* Multi-select carrier list — only when "favoritas" is chosen */}
-        {isFavoritas && (
-          <div className="mt-2 rounded-lg border border-border bg-surface p-3">
-            {registry.isLoading ? (
-              <p className="flex items-center gap-2 text-sm text-fg-muted">
-                <Spinner size="sm" variant="current" className="shrink-0" aria-hidden />
-                {tf(`${K}.aseguradoras.cargando`, 'Cargando aseguradoras…')}
-              </p>
-            ) : registry.error ? (
-              /* «No hay aseguradoras disponibles, usaremos las que Leasefy
-                 recomiende» sobre una consulta caída tranquiliza con algo que
-                 nadie sabe. Y acá pesa doble: la persona acaba de elegir «mis
-                 favoritas» — si la lista no cargó no está eligiendo nada, está
-                 aceptando el default sin enterarse. */
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm text-fg-muted">
-                  {tf(
-                    `${K}.aseguradoras.errorRegistro`,
-                    'No pudimos traer la lista de aseguradoras.',
-                  )}
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  hideArrow
-                  onClick={() => void registry.refetch()}
-                >
-                  {tf(`${K}.aseguradoras.reintentar`, 'Intentar de nuevo')}
-                </Button>
-              </div>
-            ) : carrierOptions.length === 0 ? (
+        {/* La lista de las habilitadas — sólo con «Sólo las que elijo» */}
+        <Presence show={isFavoritas} className="mt-2 rounded-lg border border-border bg-surface p-3">
+          {registry.isLoading ? (
+            <p className="flex items-center gap-2 text-sm text-fg-muted">
+              <Spinner size="sm" variant="current" className="shrink-0" aria-hidden />
+              {tf(`${K}.aseguradoras.cargando`, 'Cargando aseguradoras…')}
+            </p>
+          ) : registry.error ? (
+            /* Si la lista no cargó, la persona no está eligiendo nada: se dice. */
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-fg-muted">
-                {tf(`${K}.aseguradoras.sinAseguradoras`, 'No hay aseguradoras disponibles. Usaremos las que Leasefy recomiende.')}
+                {tf(`${K}.aseguradoras.errorRegistro`, 'No pudimos traer la lista de aseguradoras.')}
               </p>
-            ) : (
-              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                {carrierOptions.map(name => {
-                  const checked = value.selectedCarriers.includes(name)
-                  return (
-                    <Chip
-                      key={name}
-                      selected={checked}
-                      onClick={() => toggleCarrier(name)}
-                      icon={checked
-                        ? <CheckSquare size={18} weight="duotone" aria-hidden />
-                        : <Square size={18} weight="duotone" aria-hidden />}
-                      className="justify-start"
-                    >
-                      <span className="truncate">{name}</span>
-                    </Chip>
-                  )
-                })}
-              </div>
-            )}
-            {isFavoritas && carrierOptions.length > 0 && value.selectedCarriers.length === 0 && (
-              <p className="mt-2 text-xs text-warning">
-                {tf(`${K}.aseguradoras.seleccionaUna`, 'Selecciona al menos una aseguradora.')}
-              </p>
-            )}
-          </div>
-        )}
+              <Button variant="outline" size="sm" hideArrow onClick={() => void registry.refetch()}>
+                {tf(`${K}.aseguradoras.reintentar`, 'Intentar de nuevo')}
+              </Button>
+            </div>
+          ) : opciones.length === 0 ? (
+            <p className="text-sm text-fg-muted">
+              {tf(
+                `${K}.aseguradoras.sinAseguradoras`,
+                'Tu inmobiliaria no tiene aseguradoras habilitadas. Habilítalas en la pestaña «Aseguradoras».',
+              )}
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2" data-testid="cotizador-aseguradoras-para-elegir">
+              {opciones.map(({ codigo, nombre }) => {
+                const checked = value.selectedCarriers.includes(codigo)
+                return (
+                  <Chip
+                    key={codigo}
+                    selected={checked}
+                    onClick={() => toggleCarrier(codigo)}
+                    icon={checked
+                      ? <CheckSquare size={18} weight="duotone" aria-hidden />
+                      : <Square size={18} weight="duotone" aria-hidden />}
+                    className="justify-start"
+                  >
+                    <span className="truncate">{nombre}</span>
+                  </Chip>
+                )
+              })}
+            </div>
+          )}
+          <Presence show={faltaElegir && opciones.length > 0}>
+            <p className="mt-2 text-xs text-warning" id="cotizador-elige-una">
+              {tf(`${K}.aseguradoras.seleccionaUna`, 'Marca al menos una aseguradora.')}
+            </p>
+          </Presence>
+        </Presence>
       </fieldset>
 
       {/* ── Prioridad ─────────────────────────────────────────────────────── */}
@@ -182,35 +153,23 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
         <legend className="text-sm font-medium text-fg">
           {tf(`${K}.prioridad.titulo`, '¿Qué priorizamos?')}
         </legend>
-        {/* Selector excluyente (UI-DS-CONTRACT §3) */}
-        <SegmentedControl<QuotePriority>
-          fullWidth
-          aria-label={tf(`${K}.prioridad.titulo`, '¿Qué priorizamos?')}
-          value={value.priority}
-          onChange={setPriority}
-          options={PRIORITIES.map(p => ({
-            value: p,
-            label: tf(`${K}.prioridad.${p}`, p),
-          }))}
-        />
-      </fieldset>
-
-      {/* ── Modo ──────────────────────────────────────────────────────────── */}
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-fg">
-          {tf(`${K}.modo.titulo`, 'Modo de ejecución')}
-        </legend>
+        <p className="text-xs text-fg-muted">
+          {tf(`${K}.prioridad.subtitulo`, 'Decide cuál te recomendamos entre las que respalden al candidato.')}
+        </p>
+        {/* Tarjetas con lo que hace cada una (antes: un control segmentado
+            cuyas etiquetas se partían en dos líneas y no decían qué hacían). */}
         <RadioCardGroup
           orientation="vertical"
-          value={value.runMode}
-          onValueChange={(v) => setRunMode(v as RunMode)}
+          value={value.priority}
+          onValueChange={(v) => onChange({ ...value, priority: v as QuotePriority })}
+          className="grid grid-cols-1 gap-2 sm:grid-cols-2"
         >
-          {RUN_MODES.map(({ code, descKey }) => (
+          {PRIORIDADES.map(p => (
             <RadioCard
-              key={code}
-              value={code}
-              label={tf(`${K}.modo.${code}`, code)}
-              description={tf(`${K}.modo.${descKey}`, '')}
+              key={p}
+              value={p}
+              label={tf(`${K}.prioridad.${p}`, p)}
+              description={tf(`${K}.prioridad.${p}Desc`, '')}
             />
           ))}
         </RadioCardGroup>
@@ -221,7 +180,13 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
         <Button variant="secondary" onClick={onBack} className="flex-1" size="lg">
           {tf('inmobiliaria.ai.cotizador.nueva.actions.atras', 'Atrás')}
         </Button>
-        <Button disabled={!canProceed} onClick={onNext} className="flex-1" size="lg">
+        <Button
+          disabled={faltaElegir}
+          aria-describedby={faltaElegir ? 'cotizador-elige-una' : undefined}
+          onClick={onNext}
+          className="flex-1"
+          size="lg"
+        >
           {tf('inmobiliaria.ai.cotizador.nueva.actions.siguiente', 'Siguiente')}
         </Button>
       </div>

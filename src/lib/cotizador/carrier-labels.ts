@@ -126,7 +126,9 @@ export function deriveCarrierLabelsForSet(
       fastest = c
     }
   }
-  if (fastest) pushLabel(map, fastest.carrier, 'mas_rapida')
+  // COTIZ-14 (19-10-2026): «la más rápida» sólo cuando hay con quién comparar.
+  const conPrecio = carriers.filter(isPriced).length
+  if (fastest && conPrecio >= 2) pushLabel(map, fastest.carrier, 'mas_rapida')
 
   // --- menor_costo: min prima among asegurables (approved only) ---
   let cheapest: CarrierState | null = null
@@ -140,7 +142,8 @@ export function deriveCarrierLabelsForSet(
       cheapest = c
     }
   }
-  if (cheapest) pushLabel(map, cheapest.carrier, 'menor_costo')
+  // COTIZ-14: «menor costo» sólo cuando hay al menos dos aprobadas.
+  if (cheapest && carriers.filter(c => c.status === 'approved').length >= 2) pushLabel(map, cheapest.carrier, 'menor_costo')
 
   // --- mejor_cobertura: max coberturaScore among priced (only if exposed) ---
   let broadest: CarrierState | null = null

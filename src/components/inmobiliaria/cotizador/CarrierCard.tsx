@@ -2,6 +2,7 @@
 // Phase 30 plan 30-06 | COTI-UI-03 | XR-05
 // Single carrier state card with entrance animation.
 
+import { nombreDeLaAseguradora } from '@/lib/cotizador/nombre-de-la-aseguradora'
 import { Warning, CheckCircle, XCircle, Question } from '@phosphor-icons/react'
 import { Spinner } from '@/components/ui/spinner'
 import { useI18n } from '@/lib/i18n'
@@ -119,7 +120,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
         colors.bg,
         colors.border,
       ].join(' ')}
-      aria-label={`${carrier.carrier} — ${statusLabel}`}
+      aria-label={`${nombreDeLaAseguradora(carrier.carrier)} — ${statusLabel}`}
     >
       {/* Header row */}
       <div className="flex items-center justify-between gap-2">
@@ -129,7 +130,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
               en una tarjeta angosta el nombre de la aseguradora se truncaba a
               nada. El tiempo de respuesta vive en la tabla comparativa. */}
           <span className="font-heading font-semibold text-foreground truncate">
-            {carrier.carrier ? carrier.carrier.charAt(0).toUpperCase() + carrier.carrier.slice(1) : carrier.carrier}
+            {nombreDeLaAseguradora(carrier.carrier)}
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">

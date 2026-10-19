@@ -1,5 +1,5 @@
 /**
- * Los rótulos de Cobranza y del equipo de pagos le hablan a la inmobiliaria,
+ * Los rótulos de Cobranza le hablan a la inmobiliaria,
  * no a quien programa (QA-IA-B, 04-10-2026).
  *
  * 🔴 Lo que pasaba en el navegador:
@@ -18,13 +18,21 @@
  */
 
 import * as React from 'react'
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
+const { redirigidoA } = vi.hoisted(() => ({ redirigidoA: [] as string[] }))
+vi.mock('next/navigation', () => ({
+  redirect: (url: string) => {
+    redirigidoA.push(url)
+    throw new Error('NEXT_REDIRECT')
+  },
+}))
+
 import RecordatoriosLayout from './recordatorios/layout'
-import CobranzaEquipoLayout from './equipo/layout'
-import PagosEquipoLayout from '../equipo/layout'
+import EquipoDeCobranzaRetirado from './equipo/page'
+import EquipoDePagosRetirado from '../equipo/page'
 
 void React
 
@@ -62,23 +70,19 @@ describe('rótulos de Cobranza sin texto técnico', () => {
     expect(texto).not.toMatch(TEXTO_DE_PROGRAMADOR)
   })
 
-  it('el Equipo IA de cobranza avisa lo ilustrativo en palabras de la inmobiliaria', () => {
-    const texto = pintar(
-      <CobranzaEquipoLayout>
-        <p>contenido</p>
-      </CobranzaEquipoLayout>,
-    )
-    expect(contenedor.querySelector('[data-testid="aviso-datos-de-ejemplo"]')).not.toBeNull()
-    expect(texto).not.toMatch(TEXTO_DE_PROGRAMADOR)
+})
+
+// MORI-37 (Nico 19-10): las dos pantallas del «Equipo IA» eran personas y
+// lotes inventados; se quitaron. Quien tenga la URL guardada aterriza donde
+// está lo de verdad.
+describe('las pantallas inventadas del equipo ya no están', () => {
+  it('«Equipo IA de cobranza» lleva a Cobranza', () => {
+    expect(() => EquipoDeCobranzaRetirado()).toThrow('NEXT_REDIRECT')
+    expect(redirigidoA.at(-1)).toBe('/panel/inmobiliaria/pagos/cobranza')
   })
 
-  it('el Equipo IA de pagos avisa lo ilustrativo en palabras de la inmobiliaria', () => {
-    const texto = pintar(
-      <PagosEquipoLayout>
-        <p>contenido</p>
-      </PagosEquipoLayout>,
-    )
-    expect(contenedor.querySelector('[data-testid="aviso-datos-de-ejemplo"]')).not.toBeNull()
-    expect(texto).not.toMatch(TEXTO_DE_PROGRAMADOR)
+  it('«Equipo IA de pagos» lleva a «Agente de pagos», con el equipo que corre', () => {
+    expect(() => EquipoDePagosRetirado()).toThrow('NEXT_REDIRECT')
+    expect(redirigidoA.at(-1)).toBe('/panel/inmobiliaria/pagos/agente')
   })
 })

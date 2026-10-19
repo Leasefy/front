@@ -1,7 +1,7 @@
 'use client';
 
 import { Toaster } from '@/components/ui/toast';
-import { Bank, SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, SealCheck, Wrench, Lifebuoy, Tag } from '@phosphor-icons/react';
+import { Bank, SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, SealCheck, Wrench, Lifebuoy, Tag, ArrowsLeftRight } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -175,6 +175,14 @@ const AGENCY_OWNER_NAV_ITEMS: NavItem[] = [
   { label: 'Mensajes', href: '/panel/mensajes', icon: Chat },
 ];
 
+/**
+ * AVALI-3 (QA de agentes 17-10; Nico: «una cuenta, dos portales»): el
+ * propietario que además es inquilino entra con su cuenta de inquilino. Ve el
+ * menú del propietario de inmobiliaria y, al final, el camino a su portal de
+ * inquilino.
+ */
+const PORTAL_DEL_INQUILINO: NavItem = { label: 'Mi portal de inquilino', href: '/inquilino', icon: ArrowsLeftRight };
+
 interface PanelLayoutProps {
   children: React.ReactNode;
 }
@@ -191,9 +199,20 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   // un menú que se completa un instante después.
   const administrados = useContratosAdministrados();
   const deInmobiliaria = administrados.cargando || administrados.doc !== null || Boolean(administrados.fichaSinContratos);
+  // AVALI-3: una cuenta de inquilino entra sólo si es propietario de inmobiliaria.
+  const { user } = useAuth();
+  const esCuentaDeInquilino = user?.role === 'tenant';
+  const esPropietarioConfirmado =
+    !administrados.cargando && (administrados.doc !== null || Boolean(administrados.fichaSinContratos));
   const showUpgrade = !deInmobiliaria && subscription?.planId === 'starter';
   const pathname = usePathname();
   const router = useRouter();
+  useEffect(() => {
+    // AVALI-3: una cuenta de inquilino que NO es propietario no tiene nada acá.
+    if (esCuentaDeInquilino && !administrados.cargando && !esPropietarioConfirmado) {
+      router.replace('/inquilino');
+    }
+  }, [esCuentaDeInquilino, administrados.cargando, esPropietarioConfirmado, router]);
   useEffect(() => {
     // Las pantallas del propietario independiente no son suyas: de ahí vuelve a lo suyo.
     if (!administrados.cargando && administrados.doc && !esRutaDelPropietarioDeInmobiliaria(pathname)) {
@@ -209,7 +228,6 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
    * ESTE navegador: «0/4» en la barra contra «3 de 5» en el perfil, y en otro
    * navegador (o con la cuenta nacida de la migración) 0/4 para siempre.
    */
-  const { user } = useAuth();
   const pasosDelPerfil = pasosDelPerfilDelPropietario(user);
   const onboardingSteps: ProfileCompletionStep[] = pasosDelPerfil.map((p, i) => ({
     id: i + 1,
@@ -226,7 +244,13 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-plan-page">
       {/* PLan CRM Sidebar */}
       <PlanSidebar
-        navItems={deInmobiliaria ? AGENCY_OWNER_NAV_ITEMS : LANDLORD_NAV_ITEMS}
+        navItems={
+          deInmobiliaria
+            ? esCuentaDeInquilino
+              ? [...AGENCY_OWNER_NAV_ITEMS, PORTAL_DEL_INQUILINO]
+              : AGENCY_OWNER_NAV_ITEMS
+            : LANDLORD_NAV_ITEMS
+        }
         logo={{
           title: 'PLan',
           // 🔴 Adentro de la plataforma el logo vuelve al inicio del panel, no
@@ -261,7 +285,10 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         <main id="main-content" tabIndex={-1}>
           {/* Una pantalla del propietario independiente no se monta para quien
               tiene inmobiliaria: ni pide datos (503) ni muestra ceros. */}
-          {deInmobiliaria && !esRutaDelPropietarioDeInmobiliaria(pathname) ? null : children}
+          {(deInmobiliaria && !esRutaDelPropietarioDeInmobiliaria(pathname)) ||
+          (esCuentaDeInquilino && !esPropietarioConfirmado)
+            ? null
+            : children}
         </main>
       </div>
 
@@ -277,7 +304,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
  */
 export default function PanelLayout({ children }: PanelLayoutProps) {
   return (
-    <ProtectedRoute allowedRoles={['landlord']}>
+    // AVALI-3: también la cuenta de inquilino (si no es propietario, el layout la devuelve a /inquilino).
+    <ProtectedRoute allowedRoles={['landlord', 'tenant']}>
       <I18nProvider>
         <DecisionProvider>
           <SidebarProvider>

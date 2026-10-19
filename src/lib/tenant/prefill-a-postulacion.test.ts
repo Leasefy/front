@@ -288,3 +288,57 @@ describe('aplicarIdentidadDelEstudio — flujo de corrección (modo update, NEED
   });
 });
 
+
+// POST-1 (QA de agentes 18-10, Nico «El back trae la cuenta»): la primera
+// postulación salía VACÍA aunque la cuenta tenía nombre, correo, celular y cédula.
+describe('aplicarPrefill — los datos de la CUENTA llenan lo que falta', () => {
+  const CUENTA = {
+    fullName: 'John Jaime Mesa Cano',
+    email: 'kmila9506@gmail.com',
+    phone: '3137827156',
+    documentType: 'cc' as const,
+    documentNumber: '71395289',
+    dateOfBirth: null,
+    currentAddress: null,
+  };
+
+  it('primera postulación sin estudio: nombre, correo, celular y cédula de la cuenta, y lo dice', () => {
+    const prefill: ApplicationPrefill = { hasPreviousApplication: false, preScoringIdentity: null, datosDeLaCuenta: CUENTA };
+    const app = aplicarPrefill(createEmptyApplication('prop-1'), prefill);
+    expect(app.personal.fullName).toBe('John Jaime Mesa Cano');
+    expect(app.personal.email).toBe('kmila9506@gmail.com');
+    expect(app.personal.phone).toBe('3137827156');
+    expect(app.personal.documentType).toBe('cc');
+    expect(app.personal.documentNumber).toBe('71395289');
+    expect(app.accountDataApplied).toBe(true);
+    expect(app.previousApplicationDataApplied).toBe(false);
+    expect(app.preScoringLockedFields).toEqual([]);
+  });
+
+  it('el estudio sigue mandando sobre la cuenta (T-0001)', () => {
+    const prefill: ApplicationPrefill = { hasPreviousApplication: false, preScoringIdentity: IDENTIDAD, datosDeLaCuenta: CUENTA };
+    const app = aplicarPrefill(createEmptyApplication('prop-1'), prefill);
+    expect(app.personal.fullName).toBe(IDENTIDAD.fullName);
+    expect(app.personal.documentNumber).toBe(IDENTIDAD.documentNumber);
+    // Lo que el estudio no cubre (el celular) sí sale de la cuenta.
+    expect(app.personal.phone).toBe('3137827156');
+  });
+
+  it('la postulación anterior manda sobre la cuenta; la cuenta sólo llena lo que la anterior no trae', () => {
+    const prefill: ApplicationPrefill = { ...PREVIA, phone: null, datosDeLaCuenta: CUENTA } as ApplicationPrefill;
+    const app = aplicarPrefill(createEmptyApplication('prop-1'), prefill);
+    expect(app.personal.fullName).toBe(PREVIA.fullName);
+    expect(app.personal.documentNumber).toBe(PREVIA.documentNumber);
+    expect(app.personal.phone).toBe('3137827156');
+  });
+
+  it('sin tipo en la cuenta, llega el número y el tipo lo elige la persona', () => {
+    const prefill: ApplicationPrefill = {
+      hasPreviousApplication: false,
+      datosDeLaCuenta: { ...CUENTA, documentType: null, documentNumber: '71395289' },
+    };
+    const app = aplicarPrefill(createEmptyApplication('prop-1'), prefill);
+    expect(app.personal.documentNumber).toBe('71395289');
+    expect(app.personal.documentType).toBe(createEmptyApplication('prop-1').personal.documentType);
+  });
+});

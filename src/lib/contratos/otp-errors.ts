@@ -52,12 +52,25 @@ export function describirErrorDeOtp(err: unknown, accion = 'verificar el código
   if (!(err instanceof ApiError)) {
     return { mensaje };
   }
-  const detalle = err.detalle ?? {};
+  /*
+   * CONTR-4 (QA 17-10): el back manda lo estructurado DENTRO de `details`
+   * (`{ code, message, details: { segundos } }`, `signing-otp.service.ts`) y
+   * `ApiError.detalle` es el cuerpo entero. Esto leía sólo el nivel de arriba:
+   * la espera, los intentos que quedan y el detalle por canal nunca llegaban a
+   * la pantalla. Se lee de los dos lados (y la espera también del
+   * `reintentarEnSegundos` que agrega el cliente a un 429).
+   */
+  const arriba = err.detalle ?? {};
+  const adentro =
+    arriba.details && typeof arriba.details === 'object'
+      ? (arriba.details as Record<string, unknown>)
+      : {};
   return {
     mensaje,
-    intentosRestantes: numero(detalle.intentosRestantes),
-    segundosDeEspera: numero(detalle.segundos),
-    channels: channelsDe(detalle.channels),
+    intentosRestantes: numero(adentro.intentosRestantes) ?? numero(arriba.intentosRestantes),
+    segundosDeEspera:
+      numero(adentro.segundos) ?? numero(arriba.segundos) ?? numero(arriba.reintentarEnSegundos),
+    channels: channelsDe(adentro.channels) ?? channelsDe(arriba.channels),
   };
 }
 

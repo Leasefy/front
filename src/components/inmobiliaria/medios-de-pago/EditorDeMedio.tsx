@@ -40,7 +40,7 @@ import {
   NOMBRE_DEL_TIPO,
   TIPOS,
   etiquetaDelCampo,
-  faltanteDe,
+  faltantesDe,
   type CampoDelMedio,
 } from './legible';
 
@@ -117,6 +117,8 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
   const cambiar = <K extends keyof NuevoMedioDePago>(clave: K, valor: NuevoMedioDePago[K]) => {
     setValores((v) => ({ ...v, [clave]: valor }));
     setErrores((previos) => {
+      // Otro tipo pide otros campos: lo que faltaba en el anterior ya no aplica.
+      if (clave === 'tipo') return {};
       if (!(clave in previos)) return previos;
       const siguientes = { ...previos };
       delete siguientes[clave as CampoDelFormulario];
@@ -125,7 +127,6 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
   };
 
   const sinNombre = valores.nombre.trim().length < MIN_LARGO_NOMBRE_DEL_MEDIO;
-  const faltante = faltanteDe(valores);
   const campos = CAMPOS_DEL_TIPO[valores.tipo];
 
   const enfocar = (campo: CampoDelFormulario | undefined) => {
@@ -143,8 +144,11 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
       enfocar(CAMPOS_DEL_FORMULARIO.find((c) => c in deLargo));
       return;
     }
-    if (sinNombre || faltante) {
-      if (sinNombre) enfocar('nombre');
+    // Lo que falta va debajo de SU campo y se enfoca el primero (CONC-2).
+    const faltantes = faltantesDe(valores);
+    if (sinNombre || faltantes.length > 0) {
+      setErrores(Object.fromEntries(faltantes.map((f) => [f.campo, f.mensaje])));
+      enfocar(sinNombre ? 'nombre' : faltantes[0].campo);
       return;
     }
     setGuardando(true);
@@ -304,7 +308,6 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
             </label>
           </div>
 
-          {tocado && faltante && <Banner variant="warning">{faltante}</Banner>}
           <Presence show={!!errorDelBack}>
             <Banner variant="danger" role="alert" data-testid="error-del-back">
               {errorDelBack}

@@ -198,7 +198,8 @@ export interface MedioConfigurado {
 }
 
 function enmascarar(numero: string | null | undefined): string | null {
-  const limpio = (numero ?? '').replace(/\s+/g, '');
+  // Guiones y puntos no cuentan como dígitos (CONC-3).
+  const limpio = (numero ?? '').replace(/[\s.\-]+/g, '');
   return limpio ? `•••• ${limpio.slice(-4)}` : null;
 }
 

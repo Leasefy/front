@@ -171,6 +171,10 @@ describe('🔴 una salida pendiente en su fila', () => {
       porMovimiento: { 'm-1': { evaluacion: { movimientoId: 'm-1', propuestas: [], ambigua: false }, vinculos: [] } },
     });
     expect(q('[data-testid="salida-sin-propuesta-m-1"]')).not.toBeNull();
+    // CONC-9: un pago a un proveedor se registra en Egresos, no se ignora.
+    const enlace = q('[data-testid="salida-sin-propuesta-m-1"] a') as HTMLAnchorElement | null;
+    expect(enlace?.getAttribute('href')).toBe('/panel/inmobiliaria/contabilidad/egresos');
+    expect(q('[data-testid="salida-sin-propuesta-m-1"]')!.textContent).not.toContain('ignórala');
     await act(async () => q('[data-testid="gasto-del-banco-m-1"]')!.click());
     api.conciliar.mockResolvedValue({ movimientoId: 'm-1', estado: 'CONCILIADO' });
     await act(async () => (document.querySelector('[data-testid="gasto-GMF_4X1000-m-1"]') as HTMLButtonElement).click());

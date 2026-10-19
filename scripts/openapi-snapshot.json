@@ -10547,6 +10547,12 @@
               "null"
             ]
           },
+          "propertyLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "debtorId": {
             "type": [
               "string",
@@ -10610,6 +10616,7 @@
           "propertyId",
           "ownerId",
           "ownerName",
+          "propertyLabel",
           "debtorId",
           "period",
           "daysInMora",
@@ -10688,6 +10695,143 @@
           "debtorId"
         ]
       },
+      "CobranzaOwnerReportApproved": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CobranzaOwnerReport"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "envio": {
+                "type": "object",
+                "properties": {
+                  "estado": {
+                    "type": "string",
+                    "enum": [
+                      "ENVIADO",
+                      "NO_SALIO"
+                    ]
+                  },
+                  "porQueNo": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "destino": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "contratoId": {
+                        "type": "string"
+                      },
+                      "contrato": {
+                        "type": "string"
+                      },
+                      "inmueble": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "nombre": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "nombre"
+                        ]
+                      },
+                      "propietarios": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "correo": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "esPrincipal": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "nombre",
+                            "correo",
+                            "esPrincipal"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "contratoId",
+                      "contrato",
+                      "inmueble",
+                      "propietarios"
+                    ]
+                  },
+                  "destinatarios": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "nombre": {
+                          "type": "string"
+                        },
+                        "correo": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "estado": {
+                          "type": "string",
+                          "enum": [
+                            "ENVIADO",
+                            "SIMULADO",
+                            "SIN_CORREO",
+                            "FALLIDO"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "nombre",
+                        "correo",
+                        "estado"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "estado",
+                  "porQueNo",
+                  "destino",
+                  "destinatarios"
+                ]
+              }
+            }
+          }
+        ]
+      },
       "CobranzaOwnerReportApproveBody": {
         "type": "object",
         "properties": {
@@ -10695,6 +10839,91 @@
             "type": "boolean"
           }
         }
+      },
+      "CobranzaOwnerReportDestino": {
+        "type": "object",
+        "properties": {
+          "destino": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "contratoId": {
+                "type": "string"
+              },
+              "contrato": {
+                "type": "string"
+              },
+              "inmueble": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "nombre": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "nombre"
+                ]
+              },
+              "propietarios": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "correo": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "esPrincipal": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "correo",
+                    "esPrincipal"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "contratoId",
+              "contrato",
+              "inmueble",
+              "propietarios"
+            ]
+          },
+          "porQueNo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "destino",
+          "porQueNo"
+        ]
       },
       "CobranzaDispute": {
         "type": "object",
@@ -12743,7 +12972,7 @@
               "type": "integer",
               "minimum": 0
             },
-            "description": "Índices de filas cuyo teléfono ya pertenece a OTRO deudor del tenant con una cédula distinta. Se importaron como deudor nuevo a propósito: dos codeudores comparten teléfono, y fusionarlos dejaría a uno debiendo los dos cánones. Revisá si son la misma persona; para fusionarlas está scripts/normalizar-telefonos-deudores.ts."
+            "description": "Índices de filas cuyo teléfono ya pertenece a OTRO deudor del tenant con una cédula distinta. Se importaron como deudor nuevo a propósito: dos codeudores comparten teléfono, y fusionarlos dejaría a uno debiendo los dos cánones. Revisa si son la misma persona; para fusionarlas está scripts/normalizar-telefonos-deudores.ts."
           },
           "vencimiento": {
             "$ref": "#/components/schemas/CarteraImportVencimiento"
@@ -14828,6 +15057,9 @@
             "$ref": "#/components/schemas/PilotoDirectorEnLaBandeja"
           },
           "cuotaId": {
+            "type": "string"
+          },
+          "proceso": {
             "type": "string"
           }
         },
@@ -39227,7 +39459,7 @@
             }
           },
           "409": {
-            "description": "Request already resolved or rejected",
+            "description": "Request already resolved or rejected, or the requester never verified their e-mail (code TITULAR_SIN_VERIFICAR)",
             "content": {
               "application/json": {
                 "schema": {
@@ -39326,6 +39558,55 @@
           },
           "500": {
             "description": "Unexpected result (defensive, unreachable in practice)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Notice email failed to send — extension NOT recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -39674,8 +39955,106 @@
               }
             }
           },
+          "409": {
+            "description": "Request already resolved or rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
           "500": {
             "description": "Unexpected result (defensive, unreachable in practice)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Notice email failed to send — extension NOT recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -47580,7 +47959,7 @@
       "post": {
         "operationId": "approveCobranzaOwnerReport",
         "summary": "Human-approve an owner mora report (T-323 gated).",
-        "description": "Transitions a draft report to \"pending_approval\" (default) or to \"sent\" (markAsSent=true, operator confirms physical delivery). Records approvedByUserId; stamps sentAt ONLY on explicit markAsSent. No automated send side-effect. Requires cobranza:approve (OWNER/ADMIN only).",
+        "description": "Transitions a draft report to \"pending_approval\" (default) or, with markAsSent=true, asks the back to EMAIL it (PDF attached) to the property owners and marks it \"sent\" ONLY if the back confirms it went out (MORI-33); otherwise 409 REPORTE_NO_SALIO with the reason. Requires cobranza:approve.",
         "tags": [
           "agency",
           "cobranza"
@@ -47627,7 +48006,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CobranzaOwnerReport"
+                  "$ref": "#/components/schemas/CobranzaOwnerReportApproved"
                 }
               }
             }
@@ -47662,6 +48041,16 @@
               }
             }
           },
+          "409": {
+            "description": "The email did not go out (REPORTE_NO_SALIO)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaOwnerReportError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "Database unavailable",
             "content": {
@@ -47678,8 +48067,8 @@
     "/api/agency/{agencyId}/cobranza/owner-reports/{id}/pdf": {
       "get": {
         "operationId": "getCobranzaOwnerReportPdf",
-        "summary": "Owner mora report PDF (not yet implemented).",
-        "description": "Reserved endpoint for the owner-report PDF export. Returns 501 until the PDF template ships. The report is validated to exist + belong to the tenant first (404 otherwise). Requires cobranza:view.",
+        "summary": "Owner mora report PDF (the letter the owner receives).",
+        "description": "The back renders the letter (owner and property from the contract of the case). 404 if the report or the contract is not found; 503 if the back does not answer. Requires cobranza:view.",
         "tags": [
           "agency",
           "cobranza"
@@ -47712,6 +48101,17 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "The PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
           "403": {
             "description": "cobranza:view required",
             "content": {
@@ -47732,8 +48132,8 @@
               }
             }
           },
-          "501": {
-            "description": "PDF export not yet implemented",
+          "409": {
+            "description": "The report has no tenant (SIN_INQUILINO)",
             "content": {
               "application/json": {
                 "schema": {
@@ -47744,6 +48144,86 @@
           },
           "503": {
             "description": "Database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaOwnerReportError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/cobranza/owner-reports/{id}/destino": {
+      "get": {
+        "operationId": "getCobranzaOwnerReportDestino",
+        "summary": "A quién va el reporte: el propietario y el inmueble del contrato del caso.",
+        "description": "MORI-33. El back resuelve el contrato del caso por el documento del inquilino y devuelve el inmueble y sus propietarios (los correos, tapados). `destino: null` + `porQueNo` cuando no se sabe. Requires cobranza:view.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "44444444-4444-4444-8444-444444444444"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El destino",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaOwnerReportDestino"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cobranza:view required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaOwnerReportError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (also cross-tenant / unmigrated)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaOwnerReportError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database or back unavailable",
             "content": {
               "application/json": {
                 "schema": {

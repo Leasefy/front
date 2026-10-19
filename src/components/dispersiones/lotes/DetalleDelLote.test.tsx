@@ -381,6 +381,37 @@ describe('<DetalleDelLote> — aprobación', () => {
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Aprobado');
   });
 
+  it('🔴 GIRI (Nico 18-10): con algo que revisar, la fila lo dice y «Aprobar» pide «Ya lo revisé»', async () => {
+    const l = lote({ estado: 'ESPERANDO_APROBACION' });
+    const conGiri = vista(l, {
+      revisarConGiri: [
+        {
+          dispersionId: l.items[0].dispersionId,
+          propietarioId: l.items[0].propietarioId,
+          motivos: ['El inquilino del contrato #1850 no ha pagado la cuota de octubre de 2026.'],
+        },
+      ],
+    });
+    await render(conGiri);
+    vi.mocked(lotesDeDispersionApi.aprobar).mockResolvedValue(lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-otro', aprobadoAt: '2026-09-01T15:05:00.000Z' }));
+
+    expect(container.querySelector(`[data-testid="giri-item-${l.items[0].dispersionId}"]`)?.textContent).toContain('no ha pagado la cuota de octubre');
+    await clic('Aprobar');
+    expect(document.body.querySelector('[data-testid="giri-antes-de-aprobar"]')?.textContent).toContain('Giri pide revisar una liquidación');
+    const aprobarDelDialogo = () => botones('Aprobar').find((b) => b.closest('[data-testid="dialogo-aprobar"]'))!;
+    expect(aprobarDelDialogo().disabled).toBe(true);
+
+    await act(async () => {
+      (document.body.querySelector('[data-testid="giri-ya-lo-revise"]') as HTMLButtonElement).click();
+    });
+    expect(aprobarDelDialogo().disabled).toBe(false);
+    await act(async () => {
+      aprobarDelDialogo().click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(lotesDeDispersionApi.aprobar).toHaveBeenCalledWith(ID, undefined, true);
+  });
+
   it('🔴 el error del back se muestra tal cual y se vuelve a leer cuántos intentos quedan', async () => {
     await render(vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z' })));
     vi.mocked(lotesDeDispersionApi.aprobar).mockRejectedValue(
@@ -513,6 +544,48 @@ describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo'
     const resultado = document.body.querySelector('[data-testid="resultado-de-aprobacion"]')?.textContent ?? '';
     expect(resultado).toContain('Aprobado por ti como administrador (P-4)');
     expect(resultado).not.toContain('Le llegó a');
+    expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Aprobado');
+  });
+
+  it('🔴 GIRI (Nico 18-10): un borrador suyo con algo que revisar: la tarjeta lo dice y «Aprobar» pide «Ya lo revisé»', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = true;
+    const l = lote();
+    await render(
+      vista(l, {
+        revisarConGiri: [
+          {
+            dispersionId: l.items[0].dispersionId,
+            propietarioId: l.items[0].propietarioId,
+            motivos: ['El inquilino del contrato #24 no ha pagado la cuota de noviembre de 2026.'],
+          },
+        ],
+      }),
+    );
+    expect(container.querySelector('[data-testid="lo-apruebas-tu"]')?.textContent).toContain('marca «Ya lo revisé»');
+    vi.mocked(lotesDeDispersionApi.solicitarAprobacion).mockResolvedValue({
+      lote: lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-creador', aprobadoAt: '2026-09-01T15:05:00.000Z' }),
+      exigeCodigo: false,
+      motivoDelCodigo: null,
+      expiraAt: null,
+      enviadoA: [],
+      mismoPaso: { aprobadoEnElMismoPaso: true, porQueNo: null, nota: 'Aprobado por ti como administrador.' },
+    });
+
+    await clic('Aprobar');
+    const dialogo = () => document.body.querySelector('[data-testid="dialogo-pedir-aprobacion"]')!;
+    expect(dialogo().textContent).toContain('Giri pide revisar una liquidación');
+    expect(dialogo().textContent).toContain('no ha pagado la cuota de noviembre');
+    const aprobar = () =>
+      [...dialogo().querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Aprobar') as HTMLButtonElement;
+    expect(aprobar().disabled).toBe(true);
+
+    await act(async () => {
+      (document.body.querySelector('[data-testid="giri-ya-lo-revise"]') as HTMLButtonElement).click();
+    });
+    expect(aprobar().disabled).toBe(false);
+    await clicEnDialogo('dialogo-pedir-aprobacion', 'Aprobar');
+    expect(lotesDeDispersionApi.solicitarAprobacion).toHaveBeenCalledWith(ID, true);
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Aprobado');
   });
 

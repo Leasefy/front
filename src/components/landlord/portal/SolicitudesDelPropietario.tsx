@@ -58,7 +58,7 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
     setCargando(true);
     setError(null);
     pqrsApi
-      .listMineConDisponibilidad()
+      .listMineConDisponibilidad({ comoPropietario: true })
       .then((r) => {
         setItems(r.items);
         setContratos(r.contratos);
@@ -134,6 +134,7 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
         onClose={cerrarNueva}
         onCreated={cargar}
         contratos={contratos}
+        comoPropietario
       />
     </div>
   );

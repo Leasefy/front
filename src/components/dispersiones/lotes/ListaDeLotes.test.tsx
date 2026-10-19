@@ -38,8 +38,9 @@ vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));
 
+const permisos = vi.hoisted(() => ({ isAdmin: false }));
 vi.mock('@/lib/hooks/usePermissions', () => ({
-  usePermissions: () => ({ canAccess: () => true, isAdmin: false, isLoading: false, agencyRole: 'admin' }),
+  usePermissions: () => ({ canAccess: () => true, isAdmin: permisos.isAdmin, isLoading: false, agencyRole: 'admin' }),
 }));
 
 vi.mock('@/lib/hooks/use-lotes-de-dispersion', () => ({
@@ -373,6 +374,52 @@ describe('<ListaDeLotes> — desde qué banco se gira', () => {
     expect(titulo).toBe('Lote de septiembre de 2026 armado');
     expect((opciones as { description: string }).description).toMatch(/^1 pago por /);
     expect(toast.info).toHaveBeenCalledWith(nota);
+  });
+
+  describe('GIRI (Nico 18-10): el administrador que arma con algo que revisar', () => {
+    beforeEach(() => {
+      permisos.isAdmin = true;
+      const mes = unMesChico();
+      mes.candidatos = mes.candidatos.map((c, i) =>
+        i === 3 ? { ...c, giri: ['El inquilino del contrato #24 no ha pagado la cuota de septiembre de 2026.'] } : c,
+      );
+      candidatos.mockResolvedValue(mes);
+    });
+    afterEach(() => {
+      permisos.isAdmin = false;
+    });
+
+    it('el diálogo no promete «queda aprobado al armarlo»: dice que Giri pide revisar y que se aprueba con «Ya lo revisé»', async () => {
+      await abrirArmar();
+      const encabezado = document.body.querySelector('[data-testid="dialogo-armar-lote"]')?.textContent ?? '';
+      expect(encabezado).toContain('Giri pide revisar una liquidación antes de girar');
+      expect(encabezado).toContain('«Ya lo revisé»');
+      expect(encabezado).not.toContain('queda aprobado al armarlo');
+    });
+
+    it('sin nada que revisar, el administrador lee lo de siempre (P-4)', async () => {
+      candidatos.mockResolvedValue(unMesChico());
+      await abrirArmar();
+      const encabezado = document.body.querySelector('[data-testid="dialogo-armar-lote"]')?.textContent ?? '';
+      expect(encabezado).toContain('queda aprobado al armarlo');
+      expect(encabezado).not.toContain('Giri');
+    });
+
+    it('al armar, «armado» (no «aprobado») y la nota de Giri del back', async () => {
+      const nota = 'Giri pide revisar una liquidación de este lote antes de aprobarlo. Mírala y aprueba con «Ya lo revisé».';
+      armar.mockResolvedValue({
+        lote: { id: 'lote-1', cantidad: 9, totalCop: 22_500_000, estado: 'BORRADOR' },
+        excluidos: [],
+        descubiertoCop: 0,
+        mismoPaso: { aprobadoEnElMismoPaso: false, porQueNo: null, nota },
+      });
+      await abrirArmar();
+      await clicEn(botonQueDice('Armar lote con el mes entero'));
+      const { toast } = await import('@/components/ui/toast');
+      const [titulo] = vi.mocked(toast.success).mock.calls.at(-1)!;
+      expect(titulo).toBe('Lote de septiembre de 2026 armado');
+      expect(toast.info).toHaveBeenCalledWith(nota);
+    });
   });
 
   it('los bancos salen agrupados por lo que reciben', async () => {

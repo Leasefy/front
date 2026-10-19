@@ -72,6 +72,11 @@ export interface EleccionDelLote {
   totalCop: number;
   /** Cuánto se giraría por encima del disponible. `0` = alcanza. */
   descubiertoCop: number;
+  /**
+   * GIRI (Nico 18-10): cuántas de las que entran tienen algo que revisar. Con
+   * una o más, el administrador que arma no lo aprueba en el mismo paso.
+   */
+  conGiri?: number;
 }
 
 export function ElegirAQuienPagarle({
@@ -163,6 +168,12 @@ export function ElegirAQuienPagarle({
     [girables, entra],
   );
 
+  /** GIRI: las que entran y en las que Giri pide revisar algo. */
+  const conGiri = useMemo(
+    () => girables.filter((c) => entra(c.dispersionId) && (c.giri?.length ?? 0) > 0).length,
+    [girables, entra],
+  );
+
   const disponible = datos?.plata.disponibleCop ?? 0;
   // El descubierto se mide contra el disponible, nunca contra 0: si ya venía
   // negativo, todo lo que se gire hoy es plata adelantada.
@@ -174,8 +185,9 @@ export function ElegirAQuienPagarle({
       orden,
       totalCop: totalElegido,
       descubiertoCop: descubierto,
+      conGiri,
     });
-  }, [elegidos, orden, totalElegido, descubierto, onCambio]);
+  }, [elegidos, orden, totalElegido, descubierto, conGiri, onCambio]);
 
   const alternar = (id: string) =>
     setElegidos((previos) => {
@@ -478,7 +490,7 @@ function CeldaDelGmf({ candidato }: { candidato: CandidatoDeDispersion }) {
   return (
     <TableCell className="text-right" data-testid={`gmf-${candidato.dispersionId}`}>
       {cop > 0 ? (
-        <span className="font-mono text-sm tabular-nums text-fg">−{formatCurrency(cop)}</span>
+        <span className="whitespace-nowrap font-mono text-sm tabular-nums text-fg">−{formatCurrency(cop)}</span>
       ) : (
         <span className="text-caption text-fg-muted">No se descuenta</span>
       )}
@@ -519,6 +531,18 @@ function FilaDelCandidato({
           <p className="text-caption text-warning" data-testid={`rechazo-de-wompi-${candidato.dispersionId}`}>
             Wompi la rechazó la última vez: {candidato.rechazoDeWompi}
           </p>
+        ) : null}
+        {/* GIRI (Nico 18-10): lo que hay que revisar antes de girarla. No la
+            excluye: aprobar el lote pide «Ya lo revisé». */}
+        {candidato.giri && candidato.giri.length > 0 ? (
+          <div className="mt-1 min-w-[13rem] space-y-0.5" data-testid={`giri-${candidato.dispersionId}`}>
+            <p className="text-caption font-medium text-warning">Giri: revisar antes de girar</p>
+            {candidato.giri.map((m) => (
+              <p key={m} className="text-caption text-fg-muted">
+                {m}
+              </p>
+            ))}
+          </div>
         ) : null}
       </TableCell>
       <TableCell className="text-fg-muted">{nombreDelMes(candidato.month)}</TableCell>

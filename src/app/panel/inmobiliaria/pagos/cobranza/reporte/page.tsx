@@ -211,7 +211,7 @@ function ReporteViewerContent() {
             {t('inmobiliaria.ai.cobranza.reporte.pageTitle')}
           </h1>
           {data?.report_date && (
-            <p className="mt-1 text-xs font-mono tabular-nums text-muted-foreground">
+            <p className="mt-1 text-caption font-mono tabular-nums text-muted-foreground">
               {diaDelReporte(data.report_date, locale)}
               {data.computed_at && (
                 <span className="ml-2 text-muted-foreground/70">
@@ -305,7 +305,7 @@ function ReporteViewerContent() {
                       campos que no existen → «: undefined (umbral 12)». */}
                   <p
                     className={[
-                      'text-xs',
+                      'text-caption',
                       alert.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
                     ].join(' ')}
                   >
@@ -356,7 +356,7 @@ function ReporteViewerContent() {
                           nombre. La referencia queda de respaldo, para un
                           payload cacheado sin el JOIN — nunca un nombre
                           inventado. */}
-                      <TableCell className="px-3 py-2 text-xs text-foreground">
+                      <TableCell className="px-3 py-2 text-caption text-foreground">
                         {d.debtor_name?.trim() || (
                           <span className="font-mono text-muted-foreground">
                             {toDebtorRef(d.debtor_id_masked ?? d.debtor_id)}
@@ -369,7 +369,7 @@ function ReporteViewerContent() {
                       <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                         {COP_FORMATTER.format(d.balance_cop)}
                       </TableCell>
-                      <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-muted-foreground">
+                      <TableCell className="px-3 py-2 font-mono tabular-nums text-caption text-muted-foreground">
                         {d.last_contact_at ? diaCorto(d.last_contact_at, locale) : '—'}
                       </TableCell>
                     </TableRowAnimada>
@@ -515,7 +515,7 @@ function KpiTile({
       >
         {value}
       </p>
-      {pista && <p className="mt-1 text-xs text-muted-foreground">{pista}</p>}
+      {pista && <p className="mt-1 text-caption text-muted-foreground">{pista}</p>}
     </div>
   )
 }

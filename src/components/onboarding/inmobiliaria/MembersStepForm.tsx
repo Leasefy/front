@@ -19,6 +19,7 @@ import {
   membersStepSchema,
   type MembersStepFormValues,
 } from './members-step-schema'
+import { COPIA_DE_PRUEBAS_SIN_CORREOS } from '@/lib/texto/correo-apagado'
 
 /**
  * Lo que devolvió el paso «Miembros»: las invitaciones REALES creadas en el
@@ -153,8 +154,8 @@ function MembersInviteLinksScreen({
             <p className="text-sm font-medium text-warning">
               {sinCorreoPorPruebas
                 ? sinCorreo.length === 1
-                  ? 'La invitación quedó creada. Este entorno es de pruebas y no manda correos.'
-                  : `${sinCorreo.length} invitaciones quedaron creadas. Este entorno es de pruebas y no manda correos.`
+                  ? `La invitación quedó creada. ${COPIA_DE_PRUEBAS_SIN_CORREOS}.`
+                  : `${sinCorreo.length} invitaciones quedaron creadas. ${COPIA_DE_PRUEBAS_SIN_CORREOS}.`
                 : sinCorreo.length === 1
                   ? 'Una invitación quedó creada, pero el correo no salió.'
                   : `${sinCorreo.length} invitaciones quedaron creadas, pero el correo no salió.`}

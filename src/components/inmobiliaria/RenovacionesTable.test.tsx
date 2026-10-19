@@ -301,3 +301,12 @@ describe('<RenovacionesTable> — lo que se arregló el 19-09', () => {
     expect(container.querySelectorAll('[data-testid^="renovacion-r-"]')).toHaveLength(2);
   });
 });
+
+describe('estaCerrada (CONTR-9, QA de agentes 17-10)', () => {
+  it('completada y «no renueva» salen de «Todos los estados»; las demás siguen', async () => {
+    const { estaCerrada } = await import('./RenovacionesTable');
+    expect(estaCerrada('completed')).toBe(true);
+    expect(estaCerrada('terminated')).toBe(true);
+    for (const s of ['pending', 'notified', 'negotiating', 'approved', 'signed']) expect(estaCerrada(s)).toBe(false);
+  });
+});

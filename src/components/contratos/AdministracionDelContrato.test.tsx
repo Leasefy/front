@@ -155,6 +155,26 @@ describe('la perilla del arrendador', () => {
     expect(document.body.textContent).toContain('lo decide este contrato')
   })
 
+  it('CONT-3 (QA 19-10): sin uso en el contrato, el uso y el IVA dicen que sale del tipo de inmueble', () => {
+    render(
+      contrato({
+        usoInmueble: null,
+        regimenTributario: {
+          usoComercial: { valor: false, origen: 'TIPO_DE_INMUEBLE' },
+          arrendadorResponsableIva: { valor: null, origen: 'SIN_DEFINIR' },
+          inquilinoRetenedorRenta: { valor: null, origen: 'SIN_DEFINIR' },
+          inquilinoRetenedorIva: { valor: null, origen: 'SIN_DEFINIR' },
+          inquilinoRetenedorIca: { valor: null, origen: 'SIN_DEFINIR' },
+        },
+      } as Partial<Contract>),
+    )
+
+    const texto = document.body.textContent ?? ''
+    expect(texto).toContain('por el tipo de inmueble se toma como vivienda')
+    expect(texto).toContain('No lleva (vivienda, por el tipo de inmueble)')
+    expect(texto).not.toContain('no se sabe si el canon lleva IVA')
+  })
+
   it('sin dato en ninguna parte, avisa que el cobro NO llevará IVA', () => {
     render(
       contrato({

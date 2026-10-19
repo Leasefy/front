@@ -56,6 +56,7 @@ import {
   type FilaDeTanda,
   type PersonaPendiente,
 } from '@/lib/api/invitaciones.service';
+import { CORREO_APAGADO_EN_PRUEBAS } from '@/lib/texto/correo-apagado'
 
 /** Cuántas filas se listan en el cajón. El total real va en la cabecera. */
 const A_LA_VISTA = 50;
@@ -83,7 +84,7 @@ export function fraseDelMotivo(motivo: string | undefined): string {
     case 'DOMINIO_NO_ENTREGABLE':
       return 'Su correo es de un dominio que no recibe mensajes (de prueba o reservado). Cámbialo por su correo real y vuelve a mandarla.';
     case 'CORREO_NO_CONFIGURADO':
-      return 'El envío de correos no está disponible en este momento. Vuelve a intentarlo más tarde; si sigue igual, escríbenos.';
+      return CORREO_APAGADO_EN_PRUEBAS;
     case 'ENVIO_FALLIDO':
       return 'El correo no salió esta vez. Vuelve a intentarlo en unos minutos.';
     default:

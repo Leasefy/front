@@ -158,6 +158,16 @@ describe('<InvitarInquilino> con el estado del back (CR-08)', () => {
     expect(boton()).toBeNull()
   })
 
+  it('🔴 QA 17-10 · SIN_ENVIO (cuenta de la migración, nunca invitada): «Invitar al portal», no «Reenviar»', async () => {
+    invitacionDelInquilino.mockResolvedValue(
+      estado({ estado: 'SIN_ENVIO', accion: 'REENVIAR', ultimoEnvio: null, vence: null }),
+    )
+    render({ contract: contratoBase({ tenantId: 'u-1', tenantEmail: 'ana@correo.co' }), puedeInvitar: true })
+    await esperar()
+    expect(boton()!.textContent).toContain('Invitar al portal')
+    expect(boton()!.textContent).not.toContain('Reenviar')
+  })
+
   it('SIN_CUENTA con correo: «Invitar al portal»', async () => {
     invitacionDelInquilino.mockResolvedValue(
       estado({ estado: 'SIN_CUENTA', accion: 'INVITAR', ultimoEnvio: null, vence: null }),

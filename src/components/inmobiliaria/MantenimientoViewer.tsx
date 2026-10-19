@@ -156,6 +156,29 @@ const STATUS_ORDER: MantenimientoStatus[] = ['reported', 'quoted', 'approved', '
 
 // formatDate and formatDateTime are replaced by fmtDate from useI18n
 
+/**
+ * FIXI-2 (QA de agentes 17-10): quién reportó la solicitud. Antes era siempre
+ * el inquilino, también cuando la creó la administradora desde el panel. Si
+ * no se sabe, no hay autor: mejor nada que un nombre equivocado.
+ */
+export function actorDelReporte(
+  solicitud: Pick<SolicitudMantenimiento, 'reportadaPor'>,
+  t: (key: string, params?: Record<string, string | number>) => string,
+): string | undefined {
+  const r = solicitud.reportadaPor;
+  if (!r) return undefined;
+  const nombre = r.nombre?.trim();
+  if (r.quien === 'INMOBILIARIA') {
+    return nombre
+      ? t('inmobiliaria.mantenimiento.tlReportedByAgency', { nombre })
+      : t('inmobiliaria.mantenimiento.tlReportedByTheAgency');
+  }
+  if (!nombre) return undefined;
+  if (r.quien === 'INQUILINO') return t('inmobiliaria.mantenimiento.tlReportedByTenant', { nombre });
+  if (r.quien === 'PROPIETARIO') return t('inmobiliaria.mantenimiento.tlReportedByOwner', { nombre });
+  return nombre;
+}
+
 function generateTimelineFn(
   solicitud: SolicitudMantenimiento,
   t: (key: string, params?: Record<string, string | number>) => string
@@ -169,7 +192,7 @@ function generateTimelineFn(
     title: t('inmobiliaria.mantenimiento.tlReported'),
     description: solicitud.title,
     date: solicitud.createdAt,
-    actor: solicitud.tenantName,
+    actor: actorDelReporte(solicitud, t),
     isCurrent: solicitud.status === 'reported',
   });
 

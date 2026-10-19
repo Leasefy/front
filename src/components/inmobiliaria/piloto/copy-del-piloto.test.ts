@@ -89,4 +89,9 @@ describe('el nombre de cada agente en la Actividad en vivo (QA de Cobri, 26-09)'
     expect(agente(es).pagos).not.toMatch(/proveedor/i)
     expect(agente(en).pagos).not.toMatch(/vendor|supplier/i)
   })
+
+  it('COBRI-6 (19-10): el resumen de Pagui dice «Pagui», no la clave cruda «pagui»', () => {
+    expect(agente(es).pagui).toBe('Pagui · resumen de pagos')
+    expect(agente(en).pagui).toBe('Pagui · payments summary')
+  })
 })

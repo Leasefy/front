@@ -156,6 +156,15 @@ describe('/piloto — detrás de PageGuard', () => {
     )
     expect(h.useDirectorHoy).toHaveBeenCalled()
   })
+
+  it('COBRI-6 (18-10): ?actividad=1 abre la Actividad —el enlace de Pagui— y se limpia de la URL', async () => {
+    window.history.replaceState(null, '', '/panel/inmobiliaria/piloto?actividad=1')
+    h.permisos = { isLoading: false, isAdmin: false, agencyRole: 'AGENTE' }
+    await render(<PilotoPage />)
+    expect(document.querySelector('[data-testid="piloto-cajon-actividad"]')).not.toBeNull()
+    expect(document.querySelector('[data-testid="piloto-cajon-bandeja"]')).toBeNull()
+    expect(window.location.search).toBe('')
+  })
 })
 
 describe('/piloto/procesos — detrás de PageGuard', () => {

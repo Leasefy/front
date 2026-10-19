@@ -24,6 +24,8 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { type ActionType } from '@/components/inmobiliaria/AccionDePostulacion';
 import { useDecisionDeCandidato } from '@/components/inmobiliaria/use-decision-de-candidato';
 import { ChipDeLaMarcaDelEstudio } from '@/components/inmobiliaria/MarcaDelEstudio';
+import { MarcaDeListaCorta } from '@/components/inmobiliaria/MarcaDeListaCorta';
+import { listasCortasApi, type PuestoEnLaListaCorta } from '@/lib/api/listas-cortas.service';
 import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
 import type { PasoKey } from '@/lib/recorrido/pasos';
 import { useContracts } from '@/lib/hooks/useContracts';
@@ -248,6 +250,8 @@ function CandidatosContent() {
   const hasLoadedRef = useRef(false);
 
   const [propertyId, setPropertyId] = useState<string | null>(null);
+  /** MATCH-3 (Nico 18-10): el puesto de cada postulación en la lista corta de Matching. */
+  const [listaCorta, setListaCorta] = useState<Map<string, PuestoEnLaListaCorta>>(() => new Map());
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -268,6 +272,11 @@ function CandidatosContent() {
         return;
       }
       setPropertyId(consignacion.propertyId);
+      // La lista corta es un dato de más: si no responde, la tabla sale igual.
+      void listasCortasApi
+        .puestosDelInmueble(consignacion.propertyId)
+        .then(setListaCorta)
+        .catch(() => undefined);
       const [propertyData, candidatesData] = await Promise.all([
         propertiesApi.getById(consignacion.propertyId),
         landlordApplicationsApi.getCandidates(consignacion.propertyId),
@@ -505,6 +514,7 @@ function CandidatosContent() {
                             {/* 🔴 El estudio es opcional (Nico, 04-10-2026):
                                 qué falta, a la vista. */}
                             <ChipDeLaMarcaDelEstudio marca={candidate.marcaDelEstudio} className="mt-1" />
+                            <MarcaDeListaCorta puesto={listaCorta.get(candidate.id)} className="mt-1" />
                           </div>
                         </div>
                       </TableCell>

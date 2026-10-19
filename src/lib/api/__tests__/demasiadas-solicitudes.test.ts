@@ -212,3 +212,13 @@ describe('segundosDeEspera', () => {
     expect(cuantoEsperar(3600)).toBe('1 hora')
   })
 })
+
+describe('segundosDeEspera — CONTR-4 (QA 17-10)', () => {
+  it('lee los `segundos` que el back anida en `details` (CODIGO_EN_ESPERA del código de firma)', () => {
+    expect(segundosDeEspera(null, { code: 'CODIGO_EN_ESPERA', details: { segundos: 16 } })).toBe(16)
+  })
+
+  it('el genérico de siempre sigue ganando si viene', () => {
+    expect(segundosDeEspera(null, { reintentarEnSegundos: 5, details: { segundos: 16 } })).toBe(5)
+  })
+})

@@ -75,6 +75,17 @@ interface DeOtraCuenta {
   mensaje: string;
 }
 
+
+/**
+ * `pendientes` del back cuenta las ENTRADAS (los pagos que hay que cruzar con
+ * una cuota). Dicho al lado de «5 salidas de plata» se leía como el total, y no
+ * cuadraba con «Pendientes de conciliar» de arriba, que suma también las
+ * salidas (CONC-4, QA de agentes 17-10).
+ */
+export function entradasPorConciliar(n: number): string {
+  return `${n} ${n === 1 ? 'entrada' : 'entradas'} por conciliar`;
+}
+
 export function CargarExtracto({ onCargado }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const mov = useAparecer();
@@ -214,7 +225,7 @@ export function CargarExtracto({ onCargado }: Props) {
           ? `${r.conPropuestaDeLaPasarela} ${r.conPropuestaDeLaPasarela === 1 ? 'puede ser un pago en línea' : 'pueden ser pagos en línea'}: ${r.conPropuestaDeLaPasarela === 1 ? 'quedó' : 'quedaron'} para que lo decidas.`
           : '',
         r.pendientes > 0
-          ? `${r.pendientes} por conciliar${r.seguras > 0 ? `, ${r.seguras} con candidato seguro` : ''}.`
+          ? `${entradasPorConciliar(r.pendientes)}${r.seguras > 0 ? `, ${r.seguras} con candidato seguro` : ''}.`
           : '',
       ]
         .filter(Boolean)
@@ -375,7 +386,7 @@ export function CargarExtracto({ onCargado }: Props) {
               title={resultado.cuenta ? `Extracto cargado en ${nombreDeLaCuenta(resultado.cuenta)}` : 'Extracto cargado'}
               data-testid="resultado-de-la-carga"
             >
-              {partesDelResultado(resultado).join(' · ')}. Quedan {resultado.pendientes} por conciliar
+              {partesDelResultado(resultado).join(' · ')}. Quedan {entradasPorConciliar(resultado.pendientes)}
               {resultado.seguras > 0 ? `, ${resultado.seguras} con candidato seguro` : ''}.
               {resultado.saldos?.cuadra === true && (
                 <> El saldo inicial más los movimientos da el saldo final: llegó completo.</>

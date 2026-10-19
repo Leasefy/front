@@ -212,3 +212,25 @@ describe('el estado de cuenta en PDF', () => {
     expect(texto).toContain('$\u00a02.350.000,29');
   });
 });
+
+// CIFRAS-EN (QA de los agentes, 19-10-2026): en el lab «Reportes a propietarios» pintó
+// «COP 4,200,000» en un panel en español. Era el lab con un `plataEnPantalla` viejo que sólo
+// aceptaba un texto: recibía la FUNCIÓN `localeDeLasCifras`, `Intl` no la entendía como idioma y
+// caía al del navegador (inglés). La plata de pantalla sigue al PANEL, nunca al navegador.
+describe('plataEnPantalla con el idioma del panel (no el del navegador)', () => {
+  it('panel en español: «$ 4.200.000»; en inglés: «$ 4,200,000»; nunca «COP …»', async () => {
+    const { plataEnPantalla } = await import('./escribir-plata')
+    const cifras = await import('@/lib/i18n/idioma-de-las-cifras')
+    const COP = plataEnPantalla(cifras.localeDeLasCifras, { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
+    const sinEspacios = (s: string) => s.replace(/\s/g, ' ')
+    try {
+      cifras.avisarIdiomaDeLasCifras('es', 'prueba')
+      expect(sinEspacios(COP.format(4_200_000))).toBe('$ 4.200.000')
+      cifras.avisarIdiomaDeLasCifras('en', 'prueba')
+      expect(sinEspacios(COP.format(4_200_000))).toBe('$ 4,200,000')
+      expect(COP.format(4_200_000)).not.toContain('COP')
+    } finally {
+      cifras.soltarIdiomaDeLasCifras('prueba')
+    }
+  })
+})

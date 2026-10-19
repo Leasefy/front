@@ -87,13 +87,13 @@ export function DocumentosTributarios() {
   const pedir = async () => {
     setPidiendo(true);
     try {
-      const { contratos } = await pqrsApi.listMineConDisponibilidad();
+      const { contratos } = await pqrsApi.listMineConDisponibilidad({ comoPropietario: true });
       await pqrsApi.create({
         tipo: 'peticion',
         asunto: `Certificación del mandatario ${anioPasado}`,
         descripcion: `Necesito la certificación del mandatario del año ${anioPasado} (lo facturado a mis inquilinos por mi cuenta) para mi declaración de renta.`,
         contratoId: contratos[0]?.contratoId,
-      });
+      }, { comoPropietario: true });
       setPedida(true);
       toast.success('Le pedimos la certificación a tu inmobiliaria. La ves en Solicitudes.');
     } catch (e) {

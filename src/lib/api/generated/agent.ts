@@ -4200,7 +4200,7 @@ export interface paths {
         put?: never;
         /**
          * Human-approve an owner mora report (T-323 gated).
-         * @description Transitions a draft report to "pending_approval" (default) or to "sent" (markAsSent=true, operator confirms physical delivery). Records approvedByUserId; stamps sentAt ONLY on explicit markAsSent. No automated send side-effect. Requires cobranza:approve (OWNER/ADMIN only).
+         * @description Transitions a draft report to "pending_approval" (default) or, with markAsSent=true, asks the back to EMAIL it (PDF attached) to the property owners and marks it "sent" ONLY if the back confirms it went out (MORI-33); otherwise 409 REPORTE_NO_SALIO with the reason. Requires cobranza:approve.
          */
         post: operations["approveCobranzaOwnerReport"];
         delete?: never;
@@ -4217,10 +4217,30 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Owner mora report PDF (not yet implemented).
-         * @description Reserved endpoint for the owner-report PDF export. Returns 501 until the PDF template ships. The report is validated to exist + belong to the tenant first (404 otherwise). Requires cobranza:view.
+         * Owner mora report PDF (the letter the owner receives).
+         * @description The back renders the letter (owner and property from the contract of the case). 404 if the report or the contract is not found; 503 if the back does not answer. Requires cobranza:view.
          */
         get: operations["getCobranzaOwnerReportPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/owner-reports/{id}/destino": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A quién va el reporte: el propietario y el inmueble del contrato del caso.
+         * @description MORI-33. El back resuelve el contrato del caso por el documento del inquilino y devuelve el inmueble y sus propietarios (los correos, tapados). `destino: null` + `porQueNo` cuando no se sabe. Requires cobranza:view.
+         */
+        get: operations["getCobranzaOwnerReportDestino"];
         put?: never;
         post?: never;
         delete?: never;
@@ -11874,6 +11894,7 @@ export interface components {
             propertyId: string | null;
             ownerId: string | null;
             ownerName: string | null;
+            propertyLabel: string | null;
             debtorId: string | null;
             period: string;
             daysInMora: number | null;
@@ -11904,8 +11925,52 @@ export interface components {
             /** Format: uuid */
             ownerId?: string;
         };
+        CobranzaOwnerReportApproved: components["schemas"]["CobranzaOwnerReport"] & {
+            envio?: {
+                /** @enum {string} */
+                estado: "ENVIADO" | "NO_SALIO";
+                porQueNo: string | null;
+                destino: {
+                    contratoId: string;
+                    contrato: string;
+                    inmueble: {
+                        id: string | null;
+                        nombre: string;
+                    };
+                    propietarios: {
+                        id: string | null;
+                        nombre: string;
+                        correo: string | null;
+                        esPrincipal: boolean;
+                    }[];
+                } | null;
+                destinatarios: {
+                    nombre: string;
+                    correo: string | null;
+                    /** @enum {string} */
+                    estado: "ENVIADO" | "SIMULADO" | "SIN_CORREO" | "FALLIDO";
+                }[];
+            };
+        };
         CobranzaOwnerReportApproveBody: {
             markAsSent?: boolean;
+        };
+        CobranzaOwnerReportDestino: {
+            destino: {
+                contratoId: string;
+                contrato: string;
+                inmueble: {
+                    id: string | null;
+                    nombre: string;
+                };
+                propietarios: {
+                    id: string | null;
+                    nombre: string;
+                    correo: string | null;
+                    esPrincipal: boolean;
+                }[];
+            } | null;
+            porQueNo: string | null;
         };
         CobranzaDispute: {
             id: string;
@@ -12431,7 +12496,7 @@ export interface components {
             altasAlEmbudo: number;
             /** @description Filas con monto pero sin fecha de vencimiento legible. Se importó el deudor, pero no entra a cobranza: sin vencimiento no hay días de mora, y una fecha inventada dispararía llamadas y una carta con cifras falsas. */
             sinVencimiento: number;
-            /** @description Índices de filas cuyo teléfono ya pertenece a OTRO deudor del tenant con una cédula distinta. Se importaron como deudor nuevo a propósito: dos codeudores comparten teléfono, y fusionarlos dejaría a uno debiendo los dos cánones. Revisá si son la misma persona; para fusionarlas está scripts/normalizar-telefonos-deudores.ts. */
+            /** @description Índices de filas cuyo teléfono ya pertenece a OTRO deudor del tenant con una cédula distinta. Se importaron como deudor nuevo a propósito: dos codeudores comparten teléfono, y fusionarlos dejaría a uno debiendo los dos cánones. Revisa si son la misma persona; para fusionarlas está scripts/normalizar-telefonos-deudores.ts. */
             conflictosTelefono: number[];
             vencimiento: components["schemas"]["CarteraImportVencimiento"];
             generatedAt: string;
@@ -12920,6 +12985,7 @@ export interface components {
             motivo?: string;
             director?: components["schemas"]["PilotoDirectorEnLaBandeja"];
             cuotaId?: string;
+            proceso?: string;
         };
         PilotoInboxResponse: {
             items: components["schemas"]["PilotoInboxItem"][];
@@ -18527,7 +18593,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Request already resolved or rejected */
+            /** @description Request already resolved or rejected, or the requester never verified their e-mail (code TITULAR_SIN_VERIFICAR) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -18563,6 +18629,23 @@ export interface operations {
             };
             /** @description Unexpected result (defensive, unreachable in practice) */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Notice email failed to send — extension NOT recorded */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18686,8 +18769,42 @@ export interface operations {
                     };
                 };
             };
+            /** @description Request already resolved or rejected */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
             /** @description Unexpected result (defensive, unreachable in practice) */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Notice email failed to send — extension NOT recorded */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -23075,7 +23192,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CobranzaOwnerReport"];
+                    "application/json": components["schemas"]["CobranzaOwnerReportApproved"];
                 };
             };
             /** @description Validation error or invalid transition */
@@ -23098,6 +23215,15 @@ export interface operations {
             };
             /** @description Not found (also cross-tenant / unmigrated) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description The email did not go out (REPORTE_NO_SALIO) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -23128,6 +23254,15 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description The PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
             /** @description cobranza:view required */
             403: {
                 headers: {
@@ -23146,8 +23281,8 @@ export interface operations {
                     "application/json": components["schemas"]["CobranzaOwnerReportError"];
                 };
             };
-            /** @description PDF export not yet implemented */
-            501: {
+            /** @description The report has no tenant (SIN_INQUILINO) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -23156,6 +23291,56 @@ export interface operations {
                 };
             };
             /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+        };
+    };
+    getCobranzaOwnerReportDestino: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El destino */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportDestino"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description Not found (also cross-tenant / unmigrated) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description Database or back unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;

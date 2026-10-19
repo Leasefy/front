@@ -488,7 +488,8 @@ export function ActaEntregaView({
             {/* Total Count — el total del filtro completo, no el de la página. */}
             <div className="flex items-center justify-between pt-3 border-t border-border">
               <span className="text-sm text-fg-muted">
-                {t('inmobiliaria.acta.total')}: {totalFiltrado} items
+                {t('inmobiliaria.acta.total')}: {totalFiltrado}{' '}
+                {t(totalFiltrado === 1 ? 'inmobiliaria.acta.itemLabel' : 'inmobiliaria.acta.itemsLabel')}
               </span>
               {onAddItem && (
                 <Button

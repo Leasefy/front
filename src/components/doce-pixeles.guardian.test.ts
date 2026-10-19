@@ -101,7 +101,12 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // 03-10 (ola E, E1): 2524 — los dos avisos de 12 px de «Giros devueltos» pasaron a `text-caption`.
 // 08-10: 2504 con Retención (Vinci) rehecha sobre las rutas reales, traída de
 // cambios-nico-10: el tablero, la bandeja y el caso viejos se fueron y lo nuevo va en 13 y 14.
-const CUANTOS_HABIA = 2504;
+// 17-10: 2473. Las pantallas de Mori y Cobri del 16-10 habían subido 4
+// (2508, más los de otras sesiones); Nico (QA de agentes 17-10) pidió pasar
+// esas pantallas enteras a 13: compromisos del deudor, reporte diario,
+// suscripción, umbrales, fallidos y auditoría (35 textos a `text-caption`; los
+// rótulos en mayúsculas se quedan en 12).
+const CUANTOS_HABIA = 2473;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

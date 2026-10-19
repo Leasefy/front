@@ -391,7 +391,8 @@ export function ApplicationProvider({
         // sin postulación previa puede tener un estudio vigente y de todas
         // formas debe ver su identidad precargada y bloqueada. Sólo si NINGUNA
         // de las dos cosas está presente no hay nada que prefillear.
-        if (!prefill.hasPreviousApplication && !prefill.preScoringIdentity) return;
+        // POST-1: los datos de la cuenta también cuentan (primera postulación sin estudio).
+        if (!prefill.hasPreviousApplication && !prefill.preScoringIdentity && !prefill.datosDeLaCuenta) return;
 
         setApplication((prev) => {
           // If the state is no longer pristine (user typed something), bail out.

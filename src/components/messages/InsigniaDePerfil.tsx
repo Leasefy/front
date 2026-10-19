@@ -30,8 +30,10 @@ const PERFILES: Record<
     clases: 'bg-success-soft text-success',
     Icono: House,
   },
+  // COMU-2: la persona de la inmobiliaria es «asesor», no «agente» (Nico,
+  // 17-10: «agente» son los de IA).
   AGENT: {
-    etiqueta: 'Agente',
+    etiqueta: 'Asesor',
     clases: 'bg-warning-soft text-warning',
     Icono: IdentificationBadge,
   },

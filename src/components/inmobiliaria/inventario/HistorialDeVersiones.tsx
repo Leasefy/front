@@ -59,7 +59,7 @@ export function HistorialDeVersiones({ versiones }: { versiones: VersionDelInven
                     ? t(`${B}.completadaEl`, { fecha: instanteLegible(v.completadoEn) })
                     : t(`${B}.editadaEl`, { fecha: instanteLegible(v.updatedAt) })}
                   {' · '}
-                  {t(`${B}.items`, { n: v.items.length })}
+                  {v.items.length === 1 ? t(`${B}.itemsUno`) : t(`${B}.items`, { n: v.items.length })}
                   {v.contratos > 0 && <> · {t(`${B}.contratosQueLaUsan`, { n: v.contratos })}</>}
                   {v.origen === 'CONSIGNACION' && <> · {t(`${B}.origenConsignacion`)}</>}
                 </p>

@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, type Ref } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Warning, WarningCircle } from '@phosphor-icons/react';
@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { AgencyRole } from '@/lib/types/inmobiliaria';
+import type { AvisoDelCorreo as Aviso } from '@/lib/equipo/aviso-del-correo';
+import { AvisoDelCorreo } from './AvisoDelCorreo';
 import { ROLES_PARA_INVITAR, cuentaParaElTope, queHaceElRol } from './roles-para-invitar';
 import { useMovimiento } from './movimiento';
 
@@ -33,16 +35,24 @@ export interface FormularioDeInvitacionProps {
   nombre: string;
   correo: string;
   rol: AgencyRole;
+  /** El back exige el nombre (`InviteMemberDto.name`, 04-10): ya no es opcional. */
+  errorDelNombre?: string | null;
   errorDelCorreo: string | null;
+  /** El correo ya es la cuenta de otra persona (19-10-2026). */
+  aviso?: Aviso | null;
+  nombreRef?: Ref<HTMLInputElement>;
   sugerencia: string | null;
   enviando: boolean;
   fallo: FalloDelEnvio | null;
   onNombre: (v: string) => void;
+  onSalirDelNombre?: () => void;
   onCorreo: (v: string) => void;
   onSalirDelCorreo: () => void;
   onUsarSugerencia: () => void;
   onRol: (rol: AgencyRole) => void;
   onEnviar: () => void;
+  /** «Es la misma persona, invitar igual». */
+  onInvitarIgual?: () => void;
   onVerPlanes: () => void;
 }
 
@@ -52,16 +62,21 @@ export const FormularioDeInvitacion = forwardRef<HTMLInputElement, FormularioDeI
       nombre,
       correo,
       rol,
+      errorDelNombre = null,
       errorDelCorreo,
+      aviso = null,
+      nombreRef,
       sugerencia,
       enviando,
       fallo,
       onNombre,
+      onSalirDelNombre,
       onCorreo,
       onSalirDelCorreo,
       onUsarSugerencia,
       onRol,
       onEnviar,
+      onInvitarIgual,
       onVerPlanes,
     },
     correoRef,
@@ -81,16 +96,27 @@ export const FormularioDeInvitacion = forwardRef<HTMLInputElement, FormularioDeI
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="invitar-nombre" className="block font-medium text-fg">
-              Nombre <span className="font-normal text-fg-subtle">(opcional)</span>
+              Nombre
             </Label>
             <Input
+              ref={nombreRef}
               id="invitar-nombre"
               value={nombre}
               onChange={(e) => onNombre(e.target.value)}
+              onBlur={onSalirDelNombre}
               placeholder="Ana Gómez"
               autoComplete="off"
               maxLength={120}
+              invalid={!!errorDelNombre}
+              aria-invalid={!!errorDelNombre || undefined}
+              aria-describedby={errorDelNombre ? 'invitar-nombre-error' : undefined}
+              required
             />
+            {errorDelNombre && (
+              <p id="invitar-nombre-error" className="text-caption text-danger">
+                {errorDelNombre}
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="invitar-correo" className="block font-medium text-fg">
@@ -133,6 +159,10 @@ export const FormularioDeInvitacion = forwardRef<HTMLInputElement, FormularioDeI
             )}
           </div>
         </div>
+
+        {/* El correo ya es la cuenta de otra persona: se dice antes de elegir
+            el rol, pegado a los dos campos que lo causan. */}
+        <AvisoDelCorreo aviso={aviso} enviando={enviando} onInvitarIgual={onInvitarIgual} />
 
         <div className="space-y-1.5">
           <Label htmlFor="invitar-rol" className="block font-medium text-fg">

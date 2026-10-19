@@ -98,6 +98,9 @@ export interface AsesorConCarga {
   userId: string
   leadsActivos: number
   ultimoLeadEl: string | null
+  /** QA 17-10 (IMANA-1): un back anterior no los manda. */
+  nombre?: string | null
+  rol?: 'ADMIN' | 'AGENTE'
 }
 
 export interface RenglonPorOrigen {

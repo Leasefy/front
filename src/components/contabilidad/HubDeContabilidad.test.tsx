@@ -43,6 +43,11 @@ const { api, gastos, exogena, procesos, toastMock } = vi.hoisted(() => ({
   toastMock: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 
+// CONTA-1: la portada pregunta también lo que la conciliación dejó por asentar.
+vi.mock('@/lib/api/cuentas-de-las-diferencias', () => ({
+  cuentasDeLasDiferenciasApi: { porAsentar: vi.fn().mockResolvedValue({ total: 0, valorCop: 0 }) },
+}));
+
 vi.mock('@/lib/api/contabilidad.service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/api/contabilidad.service')>()),
   contabilidadApi: api,
@@ -77,7 +82,7 @@ vi.mock('./asientos/CierreDePeriodo', () => ({
   ),
 }));
 
-import { HubDeContabilidad } from './HubDeContabilidad';
+import { HubDeContabilidad, pistaDelRango } from './HubDeContabilidad';
 
 const SIN_FALTANTES = {
   recibos: 0,
@@ -670,6 +675,13 @@ describe('HubDeContabilidad · el glow-up del 22-09', () => {
     await montar();
     const boton = $('[data-testid="descargar-csv"]')!;
     expect(boton.closest('header')?.textContent).toContain('Para el contador');
+  });
+
+  it('🔴 CONTA-2: la pista del rango sólo dice «mes pasado» con el rango que vino cargado', () => {
+    const inicial = { desde: '2026-09-01', hasta: '2026-09-30' };
+    expect(pistaDelRango(inicial, inicial)).toContain('Viene cargado el mes pasado');
+    expect(pistaDelRango({ desde: '', hasta: '' }, inicial)).toBe('Sin fechas sale el libro entero. ');
+    expect(pistaDelRango({ desde: '2026-01-01', hasta: '2026-09-30' }, inicial)).toBe('');
   });
 
   it('la grilla de pantallas dice qué es', async () => {

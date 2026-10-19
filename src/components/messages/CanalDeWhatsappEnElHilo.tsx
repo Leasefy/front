@@ -110,6 +110,22 @@ const ESTADOS: Record<EstadoDeWhatsapp, { es: string; en: string; clases: string
   RECIBIDO: { es: 'Llegó por WhatsApp', en: 'Came in over WhatsApp', clases: 'bg-info-soft text-info' },
 };
 
+/**
+ * COMU-3 (QA de agentes 18-10): en qué quedó la COPIA por WhatsApp es asunto de
+ * quien la manda —la inmobiliaria—. El inquilino veía en rojo «WhatsApp: falló ·
+ * WhatsApp no entregó el mensaje» en un mensaje que sí le llegó (lo estaba
+ * leyendo). Fuera del panel de la inmobiliaria sólo se dice que un mensaje llegó
+ * por WhatsApp. PURA.
+ */
+export function estadoDeWhatsappQueVe(
+  estado: EstadoDeWhatsapp | null | undefined,
+  quienMira: { enPanelDeInmobiliaria: boolean },
+): EstadoDeWhatsapp | null {
+  if (!estado) return null;
+  if (estado === 'RECIBIDO') return estado;
+  return quienMira.enPanelDeInmobiliaria ? estado : null;
+}
+
 /** La píldora debajo de la burbuja. Sin estado, no pinta nada. */
 export function EstadoDeWhatsappEnMensaje({
   estado,

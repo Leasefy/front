@@ -392,4 +392,39 @@ describe('aprobar una carta / generar un reporte: el fallo queda para el traduct
     expect(h.actual().generateFallo).toBeInstanceOf(TypeError)
     expect(mensajeParaLaPersona(h.actual().generateFallo)).toMatch(/conexi[oó]n/i)
   })
+
+  // MORI-33 (Nico 19-10-2026): «Aprobar y enviar» manda el correo; si no sale,
+  // el reporte NO queda enviado y la persona lee POR QUÉ.
+  it('reporte: si el correo no salió, `approveFallo` trae el porqué del micro', async () => {
+    const porQue = 'Ningún propietario del inmueble tiene correo registrado: agrégalo en su ficha y vuelve a enviarlo.'
+    contestar((url, init) =>
+      init?.method === 'POST'
+        ? json(409, { statusCode: 409, code: 'REPORTE_NO_SALIO', message: porQue, error: porQue })
+        : json(200, { reports: [] }),
+    )
+    const h = await montar(() => useOwnerReports())
+    let r: unknown = 'sin llamar'
+    await act(async () => {
+      r = await h.actual().approve('r-1', true)
+    })
+    expect(r).toBeNull()
+    expect(h.actual().approveError).toBe('approve 409')
+    expect(mensajeParaLaPersona(h.actual().approveFallo, { accion: 'aprobar el reporte' })).toContain('correo registrado')
+  })
+
+  it('reporte: el PDF que no se pudo armar dice por qué (ya no «próximamente»)', async () => {
+    const porQue = 'No encontramos un contrato de esta persona en tu inmobiliaria: el reporte no sabe a qué propietario va.'
+    contestar((url) =>
+      url.endsWith('/pdf')
+        ? json(404, { statusCode: 404, code: 'CONTRATO_DEL_CASO_NO_ENCONTRADO', message: porQue, error: porQue })
+        : json(200, { reports: [] }),
+    )
+    const h = await montar(() => useOwnerReports())
+    let r: { status: string; fallo?: unknown } = { status: 'sin llamar' }
+    await act(async () => {
+      r = await h.actual().downloadPdf('r-1')
+    })
+    expect(r.status).toBe('error')
+    expect(mensajeParaLaPersona(r.fallo, { accion: 'descargar el PDF' })).toContain('contrato de esta persona')
+  })
 })

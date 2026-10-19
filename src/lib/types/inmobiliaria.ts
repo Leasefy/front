@@ -3064,6 +3064,12 @@ export interface UserInvite {
   commissionSplit?: number;
   agentRole?: 'AGENT' | 'COORDINATOR' | 'DIRECTOR';
   position?: string;
+  /**
+   * «Es la misma persona, invitar igual» (19-10-2026): el correo ya es la
+   * cuenta de alguien con otro nombre y quien invita confirmó que es ella.
+   * Sin esto el back responde 409 `CORREO_DE_OTRA_PERSONA`.
+   */
+  mismaPersona?: boolean;
 }
 
 // Helper functions for users/roles

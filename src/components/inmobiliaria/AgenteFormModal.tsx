@@ -41,6 +41,10 @@ import {
   MENSAJES_DE_LA_INMOBILIARIA,
 } from '@/lib/configuracion/limites-de-la-inmobiliaria';
 import type { AgenteRole, AgencyRole, UserInvite } from '@/lib/types/inmobiliaria';
+import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service';
+import { avisoDelError } from '@/lib/equipo/aviso-del-correo';
+import { AvisoDelCorreo } from './invitar-al-equipo/AvisoDelCorreo';
+import { useAvisoDelCorreo, type RevisarCorreo } from './invitar-al-equipo/use-aviso-del-correo';
 import { getRoleLabel, ROLES_DEL_SISTEMA } from '@/lib/types/inmobiliaria';
 
 /**
@@ -62,7 +66,13 @@ interface AgenteFormModalProps {
   /** 'agent' = agent-only (default), 'member' = full invite with role selector */
   variant?: 'agent' | 'member';
   isLoading?: boolean;
+  /** Antes de enviar: ¿el correo ya es la cuenta de otra persona? (19-10-2026). */
+  revisarCorreo?: RevisarCorreo;
 }
+
+const REVISAR_CORREO: RevisarCorreo = (correo, nombre) =>
+  inmobiliariaConfigApi.revisarCorreoParaInvitar(correo, nombre);
+const CORREO_QUE_SE_PUEDE_REVISAR = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Los campos del formulario que pueden traer un error del servidor.
@@ -115,8 +125,12 @@ export function AgenteFormModal({
   onSubmit,
   variant = 'agent',
   isLoading = false,
+  revisarCorreo = REVISAR_CORREO,
 }: AgenteFormModalProps) {
   const { t } = useI18n();
+  // El correo ya es la cuenta de otra persona (19-10-2026, Portofino).
+  const avisoDelCorreo = useAvisoDelCorreo(revisarCorreo);
+  const limpiarElAviso = avisoDelCorreo.limpiar;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   // Lo que el servidor dijo y no va en ningún campo (un 409, un 5xx, la red).
@@ -181,7 +195,13 @@ export function AgenteFormModal({
     setAgentRole('agent'); setZone(''); setSpecialization('all');
     setCommissionSplit(50); setMessage('');
     setErrors({}); setErrorGeneral(null); setVerErrorGeneral(false); setTopeDelPlan(false);
-  }, [variant]);
+    limpiarElAviso();
+  }, [variant, limpiarElAviso]);
+
+  const revisarElCorreo = () => {
+    const correo = email.trim();
+    if (CORREO_QUE_SE_PUEDE_REVISAR.test(correo)) void avisoDelCorreo.revisar(correo, name.trim());
+  };
 
   const validateForm = useCallback(() => {
     const newErrors: Record<string, string> = {};
@@ -196,8 +216,8 @@ export function AgenteFormModal({
     return Object.keys(newErrors).length === 0;
   }, [name, email, commissionSplit, showAgentFields, t, idDelFormulario, agentRole]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent, mismaPersona = false) => {
+    e?.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
@@ -212,6 +232,7 @@ export function AgenteFormModal({
       if (variant === 'member') {
         invite.message = message || undefined;
       }
+      if (mismaPersona) invite.mismaPersona = true;
 
       if (showAgentFields) {
         invite.zone = zone || undefined;
@@ -224,6 +245,13 @@ export function AgenteFormModal({
       resetForm();
       onClose();
     } catch (error) {
+      // El correo ya es la cuenta de otra persona: el aviso con su salida
+      // («invitar igual»), no un error bajo el campo (19-10-2026).
+      const aviso = avisoDelError(error);
+      if (aviso) {
+        avisoDelCorreo.mostrar(aviso);
+        return;
+      }
       // 🔴 Antes: `console.error` y nada. SeccionEquipo se tragaba el error,
       // el modal se cerraba y se perdía lo escrito. Ahora se queda abierto,
       // cada error del 400 va a su campo (con el foco en el primero) y lo
@@ -317,7 +345,7 @@ export function AgenteFormModal({
               <User className="w-4 h-4 text-muted-foreground" />
               {t('inmobiliaria.agente.fullName')} *
             </label>
-            <Input id={`${idDelFormulario}-name`} aria-invalid={!!errors.name || undefined} aria-describedby={`${idDelFormulario}-name-error`} maxLength={MAX_LARGO_NOMBRE_DEL_INVITADO} type="text" value={name} onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((p) => { const n = { ...p }; delete n.name; return n; }); }} placeholder="Juan Perez" className={errorCls(!!errors.name)} />
+            <Input id={`${idDelFormulario}-name`} aria-invalid={!!errors.name || undefined} aria-describedby={`${idDelFormulario}-name-error`} maxLength={MAX_LARGO_NOMBRE_DEL_INVITADO} type="text" value={name} onChange={(e) => { setName(e.target.value); avisoDelCorreo.limpiar(); if (errors.name) setErrors((p) => { const n = { ...p }; delete n.name; return n; }); }} onBlur={() => { if (email.trim()) revisarElCorreo(); }} placeholder="Juan Perez" className={errorCls(!!errors.name)} />
             <ErrorDelCampo id={`${idDelFormulario}-name-error`} mensaje={errors.name} className="mt-0" />
           </div>
 
@@ -327,8 +355,13 @@ export function AgenteFormModal({
               <Envelope className="w-4 h-4 text-muted-foreground" />
               Email *
             </label>
-            <Input id={`${idDelFormulario}-email`} aria-invalid={!!errors.email || undefined} aria-describedby={`${idDelFormulario}-email-error`} type="email" value={email} onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; }); }} placeholder="juan@inmobiliaria.com" className={errorCls(!!errors.email)} />
+            <Input id={`${idDelFormulario}-email`} aria-invalid={!!errors.email || undefined} aria-describedby={`${idDelFormulario}-email-error`} type="email" value={email} onChange={(e) => { setEmail(e.target.value); avisoDelCorreo.limpiar(); if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; }); }} onBlur={revisarElCorreo} placeholder="juan@inmobiliaria.com" className={errorCls(!!errors.email)} />
             <ErrorDelCampo id={`${idDelFormulario}-email-error`} mensaje={errors.email} className="mt-0" />
+            <AvisoDelCorreo
+              aviso={avisoDelCorreo.aviso}
+              enviando={isSubmitting}
+              onInvitarIgual={() => void handleSubmit(undefined, true)}
+            />
           </div>
 
           {/* Rol del sistema — sólo al invitar un miembro */}

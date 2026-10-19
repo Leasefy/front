@@ -27,6 +27,8 @@ import { copiarAlPortapapeles, enlaceDeLaInvitacion } from './enlace-de-la-invit
 import { estadoDelCorreo } from './estado-de-la-invitacion';
 import { ROL_POR_DEFECTO } from './roles-para-invitar';
 import { useMovimiento } from './movimiento';
+import { avisoDelError } from '@/lib/equipo/aviso-del-correo';
+import { useAvisoDelCorreo, type RevisarCorreo } from './use-aviso-del-correo';
 
 /**
  * «Invitar a tu equipo» — el modal del ícono de persona con «+» del encabezado
@@ -67,6 +69,8 @@ export interface AccionesDelEquipo {
   invitar: (invite: UserInvite) => Promise<AgencyInviteResult>;
   reenviar: (memberId: string) => Promise<AgencyInviteResult>;
   cancelar: (memberId: string) => Promise<void>;
+  /** Antes de enviar: ¿el correo ya es la cuenta de otra persona? (19-10-2026). */
+  revisarCorreo?: RevisarCorreo;
 }
 
 const ACCIONES_REALES: AccionesDelEquipo = {
@@ -75,7 +79,10 @@ const ACCIONES_REALES: AccionesDelEquipo = {
   // Cancelar = quitar la fila (`REMOVED`): el token deja de servir porque el
   // back sólo acepta invitaciones en estado INVITED.
   cancelar: (memberId) => inmobiliariaConfigApi.deleteUser(memberId),
+  revisarCorreo: (correo, nombre) => inmobiliariaConfigApi.revisarCorreoParaInvitar(correo, nombre),
 };
+
+const FALTA_EL_NOMBRE = 'Escribe el nombre de la persona que invitas.';
 
 export interface InvitarAlEquipoProps {
   open: boolean;
@@ -135,6 +142,8 @@ export function InvitarAlEquipo({
   const [correo, setCorreo] = useState('');
   const [rol, setRol] = useState<AgencyRole>(ROL_POR_DEFECTO);
   const [errorDelCorreo, setErrorDelCorreo] = useState<string | null>(null);
+  const [errorDelNombre, setErrorDelNombre] = useState<string | null>(null);
+  const avisoDelCorreo = useAvisoDelCorreo(acciones.revisarCorreo);
   const [sugerencia, setSugerencia] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<FalloDelEnvio | null>(null);
@@ -148,6 +157,7 @@ export function InvitarAlEquipo({
   const [enfocarCopiar, setEnfocarCopiar] = useState(0);
   const copiarRef = useRef<HTMLButtonElement>(null);
   const correoRef = useRef<HTMLInputElement>(null);
+  const nombreRef = useRef<HTMLInputElement>(null);
 
   // DESIGN.md §8: Lenis no se frena con el bloqueo de scroll de Radix. El
   // contador de `SmoothScroll` hace seguro pedirlo también desde acá.
@@ -170,6 +180,8 @@ export function InvitarAlEquipo({
       setCorreo('');
       setRol(ROL_POR_DEFECTO);
       setErrorDelCorreo(null);
+      setErrorDelNombre(null);
+      avisoDelCorreo.limpiar();
       setSugerencia(null);
       setFallo(null);
       setEnlace(null);
@@ -192,22 +204,41 @@ export function InvitarAlEquipo({
     const v = validarCorreo(correo);
     setErrorDelCorreo(v.ok ? null : v.motivo);
     setSugerencia(v.sugerencia);
+    if (v.ok) void avisoDelCorreo.revisar(v.correo, nombre.trim());
   };
 
-  const enviar = async () => {
-    if (enviando) return;
+  // Con el correo ya escrito, cambiar el nombre puede quitar o poner el aviso.
+  const revisarNombre = () => {
+    if (!correo.trim()) return;
     const v = validarCorreo(correo);
-    if (!correo.trim() || !v.ok) {
+    if (v.ok) void avisoDelCorreo.revisar(v.correo, nombre.trim());
+  };
+
+  const enviar = async (mismaPersona = false) => {
+    if (enviando) return;
+    const nombreLimpio = nombre.trim();
+    const v = validarCorreo(correo);
+    const faltaElNombre = !nombreLimpio;
+    const correoMalo = !correo.trim() || !v.ok;
+    setErrorDelNombre(faltaElNombre ? FALTA_EL_NOMBRE : null);
+    if (correoMalo) {
       setErrorDelCorreo(!correo.trim() ? 'Escribe el correo de la persona.' : v.ok ? null : v.motivo);
-      correoRef.current?.focus();
+    }
+    if (faltaElNombre || correoMalo) {
+      (faltaElNombre ? nombreRef : correoRef).current?.focus();
       return;
     }
     const email = v.correo;
-    const nombreLimpio = nombre.trim();
     setEnviando(true);
     setFallo(null);
     try {
-      const respuesta = await acciones.invitar({ email, name: nombreLimpio, role: rol });
+      const respuesta = await acciones.invitar({
+        email,
+        name: nombreLimpio,
+        role: rol,
+        ...(mismaPersona && { mismaPersona: true }),
+      });
+      avisoDelCorreo.limpiar();
       const enlaceNuevo = enlaceDeLaInvitacion(respuesta);
       const comoLeFue = estadoDelCorreo(respuesta);
       setDeEstaVisita((antes) => ({ ...antes, [respuesta.id]: { correo: comoLeFue, enlace: enlaceNuevo } }));
@@ -234,16 +265,28 @@ export function InvitarAlEquipo({
       setSugerencia(null);
       void onCambio();
     } catch (err) {
+      // El correo ya es la cuenta de otra persona: el aviso con su salida, no
+      // un error suelto (19-10-2026).
+      const aviso = avisoDelError(err);
+      if (aviso) {
+        avisoDelCorreo.mostrar(aviso);
+        return;
+      }
       // Un 400 sobre el correo va debajo del campo (el traductor de errores
       // del front, `camposDelError`); lo demás, en el aviso del formulario.
       const campos = camposDelError(err);
       const delCorreo = campos.find((c) => c.campo === 'email');
+      const delNombre = campos.find((c) => c.campo === 'name');
+      if (delNombre) setErrorDelNombre(delNombre.mensaje);
       if (delCorreo) {
         setErrorDelCorreo(delCorreo.mensaje);
         correoRef.current?.focus();
+      } else if (delNombre) {
+        nombreRef.current?.focus();
       }
+      const deCampo = [delCorreo, delNombre].filter(Boolean).length;
       setFallo(
-        delCorreo && campos.length === 1
+        deCampo > 0 && campos.length === deCampo
           ? null
           : {
               mensaje: mensajeParaLaPersona(err, {
@@ -389,18 +432,27 @@ export function InvitarAlEquipo({
           <TabsContent value="invitar" className="mt-5 focus-visible:outline-none">
             <FormularioDeInvitacion
               ref={correoRef}
+              nombreRef={nombreRef}
               nombre={nombre}
               correo={correo}
               rol={rol}
+              errorDelNombre={errorDelNombre}
               errorDelCorreo={errorDelCorreo}
+              aviso={avisoDelCorreo.aviso}
               sugerencia={sugerencia}
               enviando={enviando}
               fallo={fallo}
-              onNombre={setNombre}
+              onNombre={(v) => {
+                setNombre(v);
+                setErrorDelNombre(null);
+                avisoDelCorreo.limpiar();
+              }}
+              onSalirDelNombre={revisarNombre}
               onCorreo={(v) => {
                 setCorreo(v);
                 setErrorDelCorreo(null);
                 setSugerencia(null);
+                avisoDelCorreo.limpiar();
               }}
               onSalirDelCorreo={revisarCorreo}
               onUsarSugerencia={() => {
@@ -413,6 +465,7 @@ export function InvitarAlEquipo({
                 setFallo(null);
               }}
               onEnviar={() => void enviar()}
+              onInvitarIgual={() => void enviar(true)}
               onVerPlanes={() => cambiarAbierto(false)}
             />
           </TabsContent>

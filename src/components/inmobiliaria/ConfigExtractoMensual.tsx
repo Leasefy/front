@@ -319,7 +319,9 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              {t('inmobiliaria.config.extractoMensual.conActividad', { n: resumen.propietariosConActividad })}
+              {resumen.propietariosConActividad === 1
+                ? t('inmobiliaria.config.extractoMensual.conActividadUno')
+                : t('inmobiliaria.config.extractoMensual.conActividad', { n: resumen.propietariosConActividad })}
               {resumen.omitidos > 0 && ` · ${t('inmobiliaria.config.extractoMensual.omitidosHint')}`}
             </p>
           </div>

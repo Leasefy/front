@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, Check, ArrowRight, Lightbulb, ClipboardText } from '@phosphor-icons/react';
+import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, Check, ArrowRight, Lightbulb, ClipboardText, Wrench, ChatCircle } from '@phosphor-icons/react';
 
 import { useFeaturedProperties } from '@/lib/hooks/useProperties';
 import { useAuth } from '@/lib/auth';
@@ -17,14 +17,13 @@ import { useEvaluation } from '@/lib/hooks/useEvaluation';
 import { useTenantApplications } from '@/lib/hooks/useApplications';
 import { useLeases } from '@/lib/hooks/useLeases';
 import { useContratosDelPortal } from '@/lib/hooks/use-contratos-del-portal';
-import { useEstadoDeCuentaDelPortal } from '@/lib/hooks/useResumenDelPortal';
-import { proximoPagoDelPortal } from '@/lib/estado-de-cuenta/proximo-pago-del-portal';
+import { useEstadoDeCuentaDelPortalConEstado } from '@/lib/hooks/useResumenDelPortal';
 import { hoyLocal } from '@/components/estado-de-cuenta/filas';
-import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { useTenantCases } from '@/lib/hooks/use-tenant-cases';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
 import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
+import { TuArriendo } from '@/components/tenant/TuArriendo';
 // El de `ui/` es el de Cadence —la baldosa con degradado cobalto→cian— y es el
 // que usan las otras seis pantallas del inquilino. El de `data-display/` es
 // otro, con círculo gris: mezclarlos es justo lo que hacía que el home se
@@ -213,8 +212,19 @@ export default function InquilinoPage() {
   // «Próximo pago» sale del estado de cuenta, la misma cuenta que «Pagos» y «Mi
   // arriendo» (QA-INQ-95: venía de `/tenant-payments/mine`, armado con el día
   // pactado y el canon entero del modelo viejo).
-  const estadoDeCuenta = useEstadoDeCuentaDelPortal(dashboardWillRender && cuantosArriendos > 0);
-  const nextPayment = estadoDeCuenta ? proximoPagoDelPortal(estadoDeCuenta, hoyLocal()) : null;
+  const estadoDelPortal = useEstadoDeCuentaDelPortalConEstado(dashboardWillRender && cuantosArriendos > 0);
+  /*
+   * QA de agentes 17-10 (Nico, «Inicio de arrendatario»): quien ya arrienda ve
+   * su arriendo arriba (lo vencido, el próximo pago, «Pagar») y accesos de
+   * arrendatario. Nada de «Propiedades para ti», postulaciones vacías ni score:
+   * siguen en el menú. Sus postulaciones en curso, si tiene, sí se dicen.
+   */
+  const esArrendatario = cuantosArriendos > 0;
+  const titulosDeLosInmuebles = useMemo(() => {
+    const t: Record<string, string> = {};
+    for (const l of activeLeases) if (l.contractId && l.propertyTitle) t[l.contractId] = l.propertyTitle;
+    return t;
+  }, [activeLeases]);
 
   // Loading state — wait for auth + real data so the "new user" banner doesn't flash
   const cargandoElPanel =
@@ -295,7 +305,8 @@ export default function InquilinoPage() {
 
         {/* «¿Recomendarías a tu inmobiliaria?» (marketplace, 09-10-2026): a
             los 3 meses del contrato y al terminar, hasta que vote. */}
-        <PreguntaDeLaRecomendacion className="mb-8" />
+        {/* Con arriendo va debajo de «Tu arriendo»: lo primero es su arriendo (Nico, 17-10). */}
+        {!esArrendatario && <PreguntaDeLaRecomendacion className="mb-8" />}
 
         {/*
           Lo primero del home es la aprobación, y reemplaza al viejo
@@ -325,7 +336,8 @@ export default function InquilinoPage() {
           </div>
         )}
 
-        {/* Stats Grid */}
+        {/* Stats Grid (quien todavía no arrienda) */}
+        {!esArrendatario && (
         <div
           className={`grid gap-4 mb-8 ${
             isNewUser
@@ -396,44 +408,69 @@ export default function InquilinoPage() {
           </>
           )}
 
-          {/* Next Payment or CTA */}
-          {nextPayment && cuantosArriendos > 0 ? (
-            <Link href="/inquilino/pagos" className="group">
-              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
-                  <CreditCard className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-                </div>
-                <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('dashboard.nextPayment')}</p>
-                <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">
-                  {i18nFormatCurrency(nextPayment.valor)}
-                </p>
-                <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
-                  {locale === 'es' ? `Vence el ${fechaCorta(nextPayment.fecha)}` : `Due ${fechaCorta(nextPayment.fecha)}`}
-                </p>
+          {/* Sin arriendo: por dónde empezar (con arriendo, el próximo pago está en «Tu arriendo»). */}
+          <Link href="/inquilino/explorar" className="group">
+            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
+                <MagnifyingGlass className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
               </div>
-            </Link>
-          ) : (
-            <Link href="/inquilino/explorar" className="group">
-              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
-                  <MagnifyingGlass className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-                </div>
-                <p className="text-xs text-primary font-medium mb-1">
-                  {locale === 'es' ? 'Comienza ahora' : 'Get started'}
-                </p>
-                <p className="text-sm font-semibold text-fg dark:text-white group-hover:text-primary transition-colors">
-                  {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
-                </p>
-              </div>
-            </Link>
-          )}
+              <p className="text-xs text-primary font-medium mb-1">
+                {locale === 'es' ? 'Comienza ahora' : 'Get started'}
+              </p>
+              <p className="text-sm font-semibold text-fg dark:text-white group-hover:text-primary transition-colors">
+                {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
+              </p>
+            </div>
+          </Link>
         </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
 
-            {/* Recommended Properties - Always show prominently */}
+            {esArrendatario && (
+              <div className="space-y-4">
+                <TuArriendo estado={estadoDelPortal} hoy={hoyLocal()} titulos={titulosDeLosInmuebles} />
+                <PreguntaDeLaRecomendacion />
+                {(hayCasos || activeApplications.length > 0) && (
+                  <div
+                    className={`grid grid-cols-1 gap-4 ${hayCasos && activeApplications.length > 0 ? 'sm:grid-cols-2' : ''}`}
+                    data-testid="lo-demas-del-arrendatario"
+                  >
+                    {hayCasos && (
+                      <Link href="/inquilino/casos" className="group">
+                        <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors flex items-center gap-3">
+                          <ClipboardText className="w-5 h-5 text-fg-muted dark:text-fg-subtle flex-shrink-0" aria-hidden="true" />
+                          <p className="text-sm text-fg dark:text-white group-hover:text-primary transition-colors">
+                            {locale === 'es'
+                              ? `${openCasesCount === 1 ? '1 caso abierto' : `${openCasesCount} casos abiertos`} con tu inmobiliaria`
+                              : `${openCasesCount} open cases`}
+                          </p>
+                        </div>
+                      </Link>
+                    )}
+                    {activeApplications.length > 0 && (
+                      <Link href="/inquilino/aplicaciones" className="group">
+                        <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors flex items-center gap-3">
+                          <FileText className="w-5 h-5 text-fg-muted dark:text-fg-subtle flex-shrink-0" aria-hidden="true" />
+                          <p className="text-sm text-fg dark:text-white group-hover:text-primary transition-colors">
+                            {locale === 'es'
+                              ? activeApplications.length === 1
+                                ? '1 postulación en curso'
+                                : `${activeApplications.length} postulaciones en curso`
+                              : `${activeApplications.length} applications in progress`}
+                          </p>
+                        </div>
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Recomendadas: sólo para quien todavía busca dónde vivir. */}
+            {!esArrendatario && (
             <section>
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -559,6 +596,7 @@ export default function InquilinoPage() {
                 ))}
               </Stagger>
             </section>
+            )}
 
             {/*
               Antes esto era un bloque suelto: sin encabezado y sobre un fondo
@@ -571,7 +609,7 @@ export default function InquilinoPage() {
               el mismo de Documentos y Contratos, dentro de una tarjeta con
               borde como el resto de las superficies del home.
             */}
-            {activeApplications.length === 0 && (
+            {!esArrendatario && activeApplications.length === 0 && (
               <section>
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -625,7 +663,32 @@ export default function InquilinoPage() {
                 {t('dashboard.quickActions')}
               </h3>
               <div className="space-y-2">
-                {[
+                {(esArrendatario ? [
+                  {
+                    href: '/inquilino/pagos',
+                    icon: CreditCard,
+                    label: locale === 'es' ? 'Pagar mi arriendo' : 'Pay my rent',
+                    desc: locale === 'es' ? 'En línea o con tu referencia' : 'Online or with your reference',
+                  },
+                  {
+                    href: '/inquilino/estado-de-cuenta',
+                    icon: FileText,
+                    label: locale === 'es' ? 'Estado de cuenta' : 'Account statement',
+                    desc: locale === 'es' ? 'Lo pagado y lo que debes' : 'What you paid and owe',
+                  },
+                  {
+                    href: '/inquilino/solicitudes?nueva=1',
+                    icon: Wrench,
+                    label: locale === 'es' ? 'Reportar un daño' : 'Report damage',
+                    desc: locale === 'es' ? 'Le llega a tu inmobiliaria' : 'Goes to your property manager',
+                  },
+                  {
+                    href: '/inquilino/mensajes?nuevo=1',
+                    icon: ChatCircle,
+                    label: locale === 'es' ? 'Escribirle a la inmobiliaria' : 'Message your property manager',
+                    desc: locale === 'es' ? 'Un mensaje directo' : 'A direct message',
+                  },
+                ] : [
                   {
                     href: '/inquilino/explorar',
                     icon: MagnifyingGlass,
@@ -650,7 +713,7 @@ export default function InquilinoPage() {
                     label: locale === 'es' ? 'Mi perfil' : 'My profile',
                     desc: locale === 'es' ? 'Editar información' : 'Edit information'
                   },
-                ].map((action) => (
+                ]).map((action) => (
                   <Link key={action.href} href={action.href}>
                     <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface dark:hover:bg-border transition-colors group">
                       <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center transition-shadow">

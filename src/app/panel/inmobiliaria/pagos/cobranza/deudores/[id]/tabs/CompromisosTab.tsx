@@ -188,7 +188,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
         <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.cobranza.detail.compromisos.empty')}
         </p>
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           Acá aparecen las promesas de pago, los planes, los siniestros y las
           cartas del caso. Este todavía no tiene ninguno.
         </p>
@@ -210,11 +210,11 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                   <span className="text-sm font-medium text-fg font-mono tabular-nums">
                     {COP.format(g.promesa!.montoCop)}
                   </span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-surface-muted text-fg-muted">
+                  <span className="text-caption px-2 py-0.5 rounded-full bg-surface-muted text-fg-muted">
                     {NOMBRE_DEL_ESTADO_DE_LA_PROMESA[g.promesa!.estado] ?? g.promesa!.estado}
                   </span>
                 </div>
-                <p className="text-xs text-fg-muted mt-1">
+                <p className="text-caption text-fg-muted mt-1">
                   Prometió pagar el {fecha(`${g.promesa!.fecha.slice(0, 10)}T12:00:00`, locale)} · {g.tipoTexto} · registró {g.quien}
                 </p>
               </StaggerItem>
@@ -248,11 +248,11 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                     <span className="text-sm font-medium text-fg font-mono tabular-nums">
                       {COP.format(pp.amount_cop)}
                     </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${estado.tono}`}>
+                    <span className={`text-caption px-2 py-0.5 rounded-full ${estado.tono}`}>
                       {estado.label}
                     </span>
                   </div>
-                  <p className="text-xs text-fg-muted mt-1">
+                  <p className="text-caption text-fg-muted mt-1">
                     {vencidaDias > 0 ? (
                       <>
                         Prometió pagar el {fecha(pp.due_date, locale)} —{' '}
@@ -266,7 +266,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                     {pp.channel ? ` · por ${channelLabel(pp.channel)}` : ''}
                   </p>
                   {pp.conditions && (
-                    <p className="text-xs text-fg-muted mt-0.5 italic">
+                    <p className="text-caption text-fg-muted mt-0.5 italic">
                       «{pp.conditions}»
                     </p>
                   )}
@@ -276,7 +276,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                       size="sm"
                       hideArrow
                       onClick={() => setLlamadaAbierta(pp.call_id)}
-                      className="mt-1.5 px-0 h-auto text-xs text-primary hover:underline"
+                      className="mt-1.5 px-0 h-auto text-caption text-primary hover:underline"
                       data-testid={`compromiso-ver-llamada-${pp.id}`}
                     >
                       Ver la llamada donde la hizo
@@ -305,11 +305,11 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                   <span className="text-sm font-medium text-fg font-mono tabular-nums">
                     {COP.format(Number(p.total_due_cop))}
                   </span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-surface-muted">
+                  <span className="text-caption px-2 py-0.5 rounded-full bg-surface-muted">
                     {etiqueta(PLAN_ESTADO, p.status)}
                   </span>
                 </div>
-                <p className="text-xs text-fg-muted mt-0.5">
+                <p className="text-caption text-fg-muted mt-0.5">
                   Ofrecido el {fecha(p.offered_at, locale)}
                   {/* QA-AGENTES 16-10: salía el slug crudo («· stub»). */}
                   {p.payment_provider ? ` · ${PROVEEDOR_DE_PAGO[p.payment_provider] ?? p.payment_provider}` : ''}
@@ -338,12 +338,12 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                       ? c.aseguradora.charAt(0).toUpperCase() + c.aseguradora.slice(1)
                       : '—'}
                   </span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-surface-muted">
+                  <span className="text-caption px-2 py-0.5 rounded-full bg-surface-muted">
                     {etiqueta(SINIESTRO_ESTADO, c.status)}
                   </span>
                 </div>
                 {c.policy_number && (
-                  <p className="text-xs text-fg-muted mt-0.5 font-mono">
+                  <p className="text-caption text-fg-muted mt-0.5 font-mono">
                     Póliza {c.policy_number}
                   </p>
                 )}
@@ -369,11 +369,11 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                   <span className="text-sm font-medium text-fg">
                     {etiqueta(CARTA_TIPO, l.kind)}
                   </span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-surface-muted">
+                  <span className="text-caption px-2 py-0.5 rounded-full bg-surface-muted">
                     {etiqueta(CARTA_ESTADO, l.status)}
                   </span>
                 </div>
-                <p className="text-xs text-fg-muted mt-0.5">
+                <p className="text-caption text-fg-muted mt-0.5">
                   Generada el {fecha(l.generated_at, locale)}
                 </p>
               </StaggerItem>

@@ -20,9 +20,12 @@ import { resumirElCliente } from '@/components/estado-de-cuenta/resumen';
 import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
 
 export interface ProximoPagoDelPortal {
+  /** Todo lo que vence ese día (la suma, si son varias). */
   valor: number;
-  /** `YYYY-MM-DD`: el vencimiento de la cuota. */
+  /** `YYYY-MM-DD`: el vencimiento. */
   fecha: string;
+  /** Cuántas cuotas o conceptos vencen ese día (1 casi siempre). */
+  cuantas: number;
 }
 
 /**
@@ -41,5 +44,28 @@ export function proximoPagoDelPortal(
   if (contratos.length === 0) return null;
   // `proximaCuota` es sólo del propietario; del lado del inquilino no viene.
   const r = resumirElCliente({ ...doc, contratos, proximaCuota: undefined }, hoy);
-  return r.proxima ? { valor: r.proxima.valor, fecha: r.proxima.fecha } : null;
+  if (!r.proxima) return null;
+  /*
+   * QA 17-10 (Nico, «Inicio de arrendatario»): si ese MISMO día vence más de
+   * una (dos cuotas, o la cuota y un concepto), el próximo pago es la suma: el
+   * panel de la inmobiliaria decía «$ 3.165.472,41 en 15 días» y el portal sólo
+   * una de las dos cuotas.
+   */
+  const fecha = r.proxima.fecha;
+  const delMismoDia = contratos
+    .flatMap((c) => [...c.secciones.arriendos, ...c.secciones.otrosConceptos])
+    .filter(
+      (f) =>
+        f.estado === 'PENDIENTE' &&
+        f.fechaVencimiento.slice(0, 10) === fecha &&
+        f.cajon !== 'CARTERA' &&
+        f.cajon !== 'VENCIDA_EN_PLAZO',
+    );
+  if (delMismoDia.length === 0) return { valor: r.proxima.valor, fecha, cuantas: 1 };
+  return {
+    // En centavos enteros: $ 1.640.500,50 + $ 1.524.971,91 no deja ruido de flotante.
+    valor: delMismoDia.reduce((s, f) => s + Math.round(f.valorNeto * 100), 0) / 100,
+    fecha,
+    cuantas: delMismoDia.length,
+  };
 }

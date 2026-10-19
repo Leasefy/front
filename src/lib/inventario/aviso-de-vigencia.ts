@@ -25,8 +25,9 @@ export function avisoDeVigencia(v: VigenciaDelInventario | null): AvisoDeVigenci
         clave: `${B}.porActualizarTitulo`,
         params: { numero: numeroDelContrato(v.porActualizarTras) },
       },
+      // CONT-1 (QA 19-10): sin un inventario completo antes, no hay «inventario anterior» que quede como registro.
       texto: {
-        clave: `${B}.porActualizarTexto`,
+        clave: v.ultimoCompleto ? `${B}.porActualizarTexto` : `${B}.porActualizarTextoSinAnterior`,
         params: { fecha: diaLegible(v.porActualizarTras.terminoEl) },
       },
     };

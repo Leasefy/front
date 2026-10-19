@@ -178,7 +178,13 @@ export function InvitarInquilino({ contract, puedeInvitar, onActualizado, onConf
         </p>
       ) : null}
       {puedeInvitar && invitacion.accion ? (
-        <BotonDeInvitar accion={invitacion.accion} enviando={enviando} onClick={() => void invitar()} />
+        <BotonDeInvitar
+          /* QA 17-10: sin un envío registrado (la cuenta la creó la migración)
+             no hay nada que «reenviar»: es la primera invitación. */
+          accion={invitacion.estado === 'SIN_ENVIO' ? 'INVITAR' : invitacion.accion}
+          enviando={enviando}
+          onClick={() => void invitar()}
+        />
       ) : null}
       {/* 🔴 QA-CONT-95 (B-23): sin correo, «agrégalo» tenía que decir DÓNDE:
           en Inquilinos, en la ficha de la persona («Editar datos»), que lo

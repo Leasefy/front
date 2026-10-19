@@ -123,7 +123,12 @@ export const lotesDeDispersionApi = {
    * y lo manda POR CORREO a quienes pueden aprobar; acá vuelven los correos
    * tapados y hasta cuándo vale.
    */
-  async solicitarAprobacion(id: string): Promise<SolicitudDeAprobacion> {
+  async solicitarAprobacion(id: string, yaLoRevise?: boolean): Promise<SolicitudDeAprobacion> {
+    // GIRI (Nico 18-10): el administrador que aprueba lo suyo confirma «Ya lo
+    // revisé»; sin nada que revisar, la llamada va sin cuerpo, como siempre.
+    if (yaLoRevise) {
+      return apiClient.post<SolicitudDeAprobacion>(`${BASE_DE_LOTES}/${id}/solicitar-aprobacion`, { yaLoRevise: true });
+    }
     return apiClient.post<SolicitudDeAprobacion>(`${BASE_DE_LOTES}/${id}/solicitar-aprobacion`);
   },
 
@@ -133,10 +138,12 @@ export const lotesDeDispersionApi = {
    * `codigo` sólo cuando el lote lo exige; se manda si viene, y nada más —
    * un `codigo: undefined` en el cuerpo también sería una clave de más.
    */
-  async aprobar(id: string, codigo?: string): Promise<LoteDeDispersion> {
+  async aprobar(id: string, codigo?: string, yaLoRevise?: boolean): Promise<LoteDeDispersion> {
     const cuerpo: Record<string, unknown> = {};
     const limpio = codigo?.trim();
     if (limpio) cuerpo.codigo = limpio;
+    // GIRI (Nico 18-10): «Ya lo revisé» sólo cuando hay algo que revisar.
+    if (yaLoRevise) cuerpo.yaLoRevise = true;
     const res = await apiClient.post<LoteDeDispersion>(`${BASE_DE_LOTES}/${id}/aprobar`, cuerpo);
     invalidar('dispersiones');
     return res;

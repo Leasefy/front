@@ -19,6 +19,7 @@ import {
   PrefacturasDelRango,
   filasDelMes,
   finDeAnio,
+  loQueSeEmiteHoy,
   totalDelMes,
 } from './PrefacturasDelRango';
 import type {
@@ -206,6 +207,84 @@ describe('totalDelMes', () => {
         propietarios: lado({ porEmitir: 2, totalCop: 100 }),
       }),
     ).toEqual({ cantidad: 6, totalCop: 500 });
+  });
+});
+
+describe('🔴 FACT-3: «Se puede emitir hoy» sin resolución no cuenta nada de ese lado', () => {
+  const sinResolucion = {
+    puedeNumerar: false,
+    motivo: 'SIN_RESOLUCION',
+    explicacion: 'La inmobiliaria no tiene ninguna resolución de facturación.',
+    numero: null,
+    prefijo: null,
+    desde: null,
+    hasta: null,
+    vigenteHasta: null,
+    disponibles: 0,
+    siguiente: null,
+  } as unknown as FacturasPorGenerar['resolucion'];
+  const delPropietario = factura({
+    clave: 'ct-1|2026-09|PROPIETARIO',
+    cuotaId: 'cu-9',
+    destinatario: 'PROPIETARIO',
+    totalCop: 166_600,
+  });
+
+  it('con la resolución del canon (y sin decir la de la comisión), los totales del back tal cual', () => {
+    expect(loQueSeEmiteHoy(datos())).toEqual({ cantidad: 1, totalCop: 1_800_000, esperanLaResolucion: 0 });
+  });
+
+  it('sin la del canon: las del inquilino esperan; las del propietario salen si su resolución numera', () => {
+    const d = datos({
+      propietarios: [delPropietario],
+      resolucion: sinResolucion,
+      resolucionDeLaComision: { ...datos().resolucion, prefijo: 'CO' },
+    });
+    expect(loQueSeEmiteHoy(d)).toEqual({ cantidad: 1, totalCop: 166_600, esperanLaResolucion: 1 });
+  });
+
+  it('sin ninguna: 0 hoy, y cuántas esperan (las que todavía no empiezan no cuentan)', () => {
+    const d = datos({ propietarios: [delPropietario], resolucion: sinResolucion, resolucionDeLaComision: sinResolucion });
+    expect(loQueSeEmiteHoy(d)).toEqual({ cantidad: 0, totalCop: 0, esperanLaResolucion: 2 });
+  });
+
+  it('FACT-6: los conteos llevan separador de miles («1.388 facturas»)', async () => {
+    const muchas = Array.from({ length: 1388 }, (_, i) => factura({ clave: `ct-${i}|2026-09|INQUILINO`, cuotaId: `cu-${i}` }));
+    const base = datos();
+    const mes = { ...base.meses[0], inquilinos: { ...base.meses[0].inquilinos, porEmitir: 1388, emitidas: 0 } };
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    await act(async () => {
+      root.render(<PrefacturasDelRango datos={datos({ inquilinos: muchas, meses: [mes] })} />);
+    });
+    expect(host.querySelector('[data-testid="rango-total-facturas"]')?.textContent).toBe('1.388');
+    // FACT-7: el total va a lo ancho en el celular.
+    expect(host.querySelector('[data-testid="rango-total-total"]')?.parentElement?.className).toContain('col-span-2');
+    expect(host.querySelector(`[data-testid="rango-mes-${mes.mes}"]`)?.textContent).toContain('1.388 facturas');
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it('en pantalla: «0 · $ 0», cuántas esperan la resolución, y el mes dice «Falta la resolución»', async () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    await act(async () => {
+      root.render(
+        <PrefacturasDelRango
+          datos={datos({ resolucion: sinResolucion, resolucionDeLaComision: sinResolucion })}
+        />,
+      );
+    });
+    expect(host.querySelector('[data-testid="rango-total-emitibles"]')?.textContent).toContain('0 ·');
+    expect(host.querySelector('[data-testid="rango-esperan-la-resolucion"]')?.textContent).toBe(
+      '1 lista espera la resolución',
+    );
+    expect(host.querySelector('[data-testid="rango-sin-resolucion-2026-09"]')?.textContent).toBe('Falta la resolución');
+    expect(host.querySelector('[data-testid="rango-emitible-2026-09"]')).toBeNull();
+    act(() => root.unmount());
+    host.remove();
   });
 });
 

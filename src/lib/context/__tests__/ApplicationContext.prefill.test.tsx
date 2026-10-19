@@ -268,6 +268,32 @@ describe('ApplicationContext — prefill: hasPreviousApplication false', () => {
     expect(getCtx().application.personal.fullName).toBeFalsy();
     expect(getCtx().application.income.monthlySalary).toBeFalsy();
   });
+
+  // POST-1 (QA 18-10, Nico «El back trae la cuenta»): la primera postulación
+  // salía vacía aunque la cuenta ya tenía los datos.
+  it('primera postulación: llena con los datos de la CUENTA y marca el aviso', async () => {
+    mockGetPrefill.mockResolvedValueOnce({
+      ...SAMPLE_PREFILL_EMPTY,
+      datosDeLaCuenta: {
+        fullName: 'John Jaime Mesa Cano',
+        email: 'kmila9506@gmail.com',
+        phone: '3137827156',
+        documentType: 'cc',
+        documentNumber: '71395289',
+        dateOfBirth: null,
+        currentAddress: null,
+      },
+    });
+
+    const { getCtx } = await renderProvider({ mode: 'create' });
+
+    expect(getCtx().application.personal.fullName).toBe('John Jaime Mesa Cano');
+    expect(getCtx().application.personal.documentNumber).toBe('71395289');
+    expect(getCtx().application.accountDataApplied).toBe(true);
+    expect(getCtx().application.prefilledAt).toBeTruthy();
+    // Un dato traído no es un paso confirmado.
+    expect(getCtx().application.income.monthlySalary).toBeFalsy();
+  });
 });
 
 // ── (3) update mode: getPrefill runs, but only the identity lock applies ─

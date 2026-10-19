@@ -939,7 +939,10 @@ export function StepSignatures({ formData, updateFormData, selectedConsignacion,
             {t('inmobiliaria.acta.spacesItems')}
           </p>
           <p className="font-medium text-fg text-sm">
-            {formData.rooms.length} {t('inmobiliaria.acta.spacesLabel')} / {formData.items.length} items
+            {formData.rooms.length}{' '}
+            {t(formData.rooms.length === 1 ? 'inmobiliaria.acta.spaceLabel' : 'inmobiliaria.acta.spacesLabel')} /{' '}
+            {formData.items.length}{' '}
+            {t(formData.items.length === 1 ? 'inmobiliaria.acta.itemLabel' : 'inmobiliaria.acta.itemsLabel')}
           </p>
         </div>
 

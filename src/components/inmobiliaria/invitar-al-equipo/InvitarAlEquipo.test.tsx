@@ -369,7 +369,7 @@ describe('InvitarAlEquipo — copiar', () => {
 describe('InvitarAlEquipo — correo no enviado', () => {
   it.each([
     ['failed', 'El correo no salió: pásale tú el enlace.', 'Correo no enviado'],
-    ['suppressed', 'Este entorno es de pruebas y no manda correos: pásale tú el enlace.', 'Correo retenido'],
+    ['suppressed', 'Esta copia de pruebas de Leasefy no manda correos: pásale tú el enlace.', 'Correo retenido'],
     ['not_configured', 'El servidor todavía no manda correos: pásale tú el enlace.', 'el servidor no manda correos'],
   ] as const)('%s: el bloque lo dice y la persona sale así en «Con acceso»', async (estado, enElBloque, enLaLista) => {
     acciones.invitar.mockResolvedValue(respuesta({ emailDelivered: false, emailStatus: estado }));
@@ -561,5 +561,91 @@ describe('InvitarAlEquipo — movimiento', () => {
     irA(/^Invitar$/);
     irA(/Con acceso/);
     expect(document.querySelector('[data-testid="persona-m-nueva"]')).toBeTruthy();
+  });
+});
+
+// ── El correo ya es la cuenta de otra persona (19-10-2026, Portofino) ───────
+
+describe('InvitarAlEquipo — un correo que ya es la cuenta de otra persona', () => {
+  const MENSAJE =
+    'Este correo ya es la cuenta de Jose Alejandro Restrepo Velasquez (inquilino). Si Laura Sanchez es otra persona, usa su propio correo.';
+  const AVISO = {
+    code: 'CORREO_DE_OTRA_PERSONA' as const,
+    message: MENSAJE,
+    nombreDeLaCuenta: 'Jose Alejandro Restrepo Velasquez',
+    relacion: 'inquilino' as const,
+    sePuedeInvitarIgual: true as const,
+  };
+  const aviso = () => document.querySelector<HTMLElement>('[data-testid="aviso-del-correo"]');
+
+  it('el nombre es obligatorio: sin él no se envía y se dice bajo el campo', async () => {
+    montar();
+    await enviarInvitacion('ana@portofino.co', '   ');
+    expect(acciones.invitar).not.toHaveBeenCalled();
+    expect(textoDelDialogo()).toContain('Escribe el nombre de la persona que invitas.');
+    expect(textoDelDialogo()).not.toContain('(opcional)');
+  });
+
+  it('al salir del correo pregunta y avisa, con «Es la misma persona, invitar igual»', async () => {
+    const revisarCorreo = vi.fn().mockResolvedValue(AVISO);
+    montar({ acciones: { ...acciones, revisarCorreo } as unknown as AccionesDelEquipo });
+    irA(/^Invitar$/);
+    escribir(document.querySelector<HTMLInputElement>('#invitar-nombre')!, 'Laura Sanchez');
+    const correo = document.querySelector<HTMLInputElement>('#invitar-correo')!;
+    escribir(correo, 'operacionesportofinopr@gmail.com');
+    await act(async () => {
+      correo.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    });
+
+    expect(revisarCorreo).toHaveBeenCalledWith('operacionesportofinopr@gmail.com', 'Laura Sanchez');
+    expect(aviso()?.textContent).toContain(MENSAJE);
+    expect(boton(/Es la misma persona, invitar igual/)).toBeTruthy();
+
+    // Cambiar el correo lo quita.
+    escribir(correo, 'laura@portofino.co');
+    await act(async () => {});
+    expect(textoDelDialogo()).not.toContain(MENSAJE);
+  });
+
+  it('el 409 al enviar muestra el aviso; «invitar igual» manda mismaPersona', async () => {
+    acciones.invitar
+      .mockRejectedValueOnce(new ApiError(409, MENSAJE, 'CORREO_DE_OTRA_PERSONA', { statusCode: 409, ...AVISO }))
+      .mockResolvedValueOnce(respuesta({ email: 'operacionesportofinopr@gmail.com', name: 'Laura Sanchez' }));
+    montar();
+    await enviarInvitacion('operacionesportofinopr@gmail.com', 'Laura Sanchez');
+
+    expect(aviso()?.textContent).toContain(MENSAJE);
+    // No es un error suelto: el aviso trae su salida.
+    expect(document.querySelector('[role="alert"].bg-danger-soft')).toBeNull();
+
+    await act(async () => {
+      boton(/Es la misma persona, invitar igual/)!.click();
+    });
+    expect(acciones.invitar).toHaveBeenLastCalledWith({
+      email: 'operacionesportofinopr@gmail.com',
+      name: 'Laura Sanchez',
+      role: expect.any(String),
+      mismaPersona: true,
+    });
+    expect(aviso()).toBeNull();
+  });
+
+  it('activo en otra inmobiliaria: lo dice y no ofrece «invitar igual»', async () => {
+    const frase =
+      'Este correo ya está activo en otra inmobiliaria de Leasefy, y cada persona puede estar en una sola. Invita a esta persona con otro correo, o pide que la retiren de la otra inmobiliaria.';
+    acciones.invitar.mockRejectedValueOnce(
+      new ApiError(409, frase, 'ACTIVO_EN_OTRA_INMOBILIARIA', {
+        statusCode: 409,
+        code: 'ACTIVO_EN_OTRA_INMOBILIARIA',
+        message: frase,
+        creoSuPropiaInmobiliaria: false,
+        sePuedeInvitarIgual: false,
+      }),
+    );
+    montar();
+    await enviarInvitacion('auxiliarsabanetapr@gmail.com', 'Ana Maria Echavarria');
+
+    expect(aviso()?.textContent).toContain(frase);
+    expect(boton(/invitar igual/)).toBeFalsy();
   });
 });

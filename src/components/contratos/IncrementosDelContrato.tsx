@@ -189,7 +189,7 @@ export function IncrementosDelContrato({
         </p>
         {datos.correoSaleDeVerdad === false && (
           <p className="mt-1 text-caption text-warning-700 dark:text-warning-100" data-testid="correo-simulado">
-            En este entorno el correo no sale: enviar simula y no deja constancia.
+            El correo está apagado en esta copia de pruebas de Leasefy: enviar la carta no le llega a nadie ni deja constancia. En producción sí se manda.
           </p>
         )}
       </div>

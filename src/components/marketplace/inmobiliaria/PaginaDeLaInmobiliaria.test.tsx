@@ -139,6 +139,8 @@ describe('<PaginaDeLaInmobiliaria>', () => {
     expect(container.querySelectorAll('[data-testid="tarjeta"]')).toHaveLength(2);
     // Sin videos, esa sección no se pinta (nada inventado).
     expect(texto).not.toContain('Sus videos');
+    // ARCO-1 (Nico 19-10-2026): su formulario de Habeas Data, por su nombre corto.
+    expect(container.querySelector('[data-testid="enlace-habeas-data"]')!.getAttribute('href')).toBe('/arco/nogal');
   });
 
   describe('lo que dicen de ella (Nico, 16-10-2026: dos muestras y el resto si se quiere)', () => {

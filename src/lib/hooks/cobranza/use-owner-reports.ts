@@ -26,6 +26,7 @@ import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { descargarBlob } from '@/lib/reportes/exportables'
 
 // ── Tipos del contrato del backend (agency-cobranza-owner-reports.ts) ─────────
 
@@ -36,6 +37,8 @@ export interface OwnerReport {
   propertyId: string | null
   ownerId: string | null
   ownerName: string | null
+  /** El inmueble del caso, como lo nombra la cartera (MORI-33). Un micro viejo no lo manda. */
+  propertyLabel?: string | null
   debtorId: string | null
   period: string
   daysInMora: number | null
@@ -48,6 +51,34 @@ export interface OwnerReport {
   sentAt: string | null
   createdAt: string
 }
+
+/**
+ * MORI-33 (Nico 19-10-2026, «por correo»): a quién va el reporte. Lo resuelve
+ * el back con el contrato del caso; los correos llegan TAPADOS.
+ */
+export interface DestinoDelReporte {
+  contratoId: string
+  contrato: string
+  inmueble: { id: string | null; nombre: string }
+  propietarios: Array<{ id: string | null; nombre: string; correo: string | null; esPrincipal: boolean }>
+}
+
+export interface LecturaDelDestino {
+  destino: DestinoDelReporte | null
+  /** Por qué no se sabe a quién va (sin contrato, sin inquilino). */
+  porQueNo: string | null
+}
+
+/** Cómo le fue al correo con cada propietario. */
+export interface EnvioDelReporte {
+  estado: 'ENVIADO' | 'NO_SALIO'
+  porQueNo: string | null
+  destino: DestinoDelReporte | null
+  destinatarios: Array<{ nombre: string; correo: string | null; estado: 'ENVIADO' | 'SIMULADO' | 'SIN_CORREO' | 'FALLIDO' }>
+}
+
+/** Lo que devuelve aprobar: con `markAsSent`, cómo le fue al correo. */
+export type OwnerReportAprobado = OwnerReport & { envio?: EnvioDelReporte }
 
 export interface OwnerReportListResponse {
   reports: OwnerReport[]
@@ -65,10 +96,8 @@ export interface GenerateOwnerReportBody {
 
 /** Resultado de pedir el PDF: el backend responde 501 hasta que la plantilla
  *  exista → lo modelamos como un estado honesto "próximamente". */
-export interface OwnerReportPdfResult {
-  status: 'unavailable' | 'error'
-  message: string
-}
+/** `ok` = se descargó; `error` = no se pudo, con `fallo` para el traductor. */
+export type OwnerReportPdfResult = { status: 'ok' } | { status: 'error'; fallo: unknown }
 
 // ── fetch con bearer + content-type sólo cuando hay body ─────────────────────
 
@@ -105,15 +134,21 @@ export interface UseOwnerReportsResult {
    * una persona.
    */
   generateFallo: unknown
-  /** POST approve — T-323: requiere click humano. markAsSent confirma entrega. */
-  approve: (id: string, markAsSent?: boolean) => Promise<OwnerReport | null>
+  /**
+   * POST approve — T-323: requiere click humano. `markAsSent` MANDA el reporte
+   * por correo (MORI-33): queda enviado sólo si salió; si no, `approveFallo`
+   * trae el porqué (409 `REPORTE_NO_SALIO`).
+   */
+  approve: (id: string, markAsSent?: boolean) => Promise<OwnerReportAprobado | null>
   isApproving: boolean
   approveError: string | null
   /** Por qué falló el último «aprobar»: como `generateFallo`. */
   approveFallo: unknown
-  /** GET pdf — devuelve el blob si el backend lo entrega, o un estado honesto. */
+  /** GET pdf — descarga la carta que recibe el propietario. */
   downloadPdf: (id: string) => Promise<OwnerReportPdfResult>
   isDownloading: boolean
+  /** GET destino — a quién va el reporte (MORI-33). null si no se pudo preguntar. */
+  leerDestino: (id: string) => Promise<LecturaDelDestino | null>
 }
 
 export function useOwnerReports(
@@ -237,7 +272,7 @@ export function useOwnerReports(
   )
 
   const approve = useCallback(
-    async (id: string, markAsSent?: boolean): Promise<OwnerReport | null> => {
+    async (id: string, markAsSent?: boolean): Promise<OwnerReportAprobado | null> => {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId || !id) {
         setApproveError('ENV_OR_AGENCY_MISSING')
@@ -256,7 +291,7 @@ export function useOwnerReports(
           setApproveFallo(await falloDelMicro(res))
           return null
         }
-        const updated = (await res.json()) as OwnerReport
+        const updated = (await res.json()) as OwnerReportAprobado
         await refetch(initialStatus)
         return updated
       } catch (err) {
@@ -274,7 +309,7 @@ export function useOwnerReports(
     async (id: string): Promise<OwnerReportPdfResult> => {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId || !id) {
-        return { status: 'unavailable', message: 'Próximamente' }
+        return { status: 'error', fallo: new Error('ENV_OR_AGENCY_MISSING') }
       }
       setIsDownloading(true)
       try {
@@ -282,26 +317,36 @@ export function useOwnerReports(
           `${agentUrl}/api/agency/${agencyId}/cobranza/owner-reports/${id}/pdf`,
           { headers: agentAuthHeaders() },
         )
-        // 501 = exportación a PDF no implementada aún → estado honesto.
-        if (res.status === 501) {
-          return { status: 'unavailable', message: 'Próximamente' }
+        // MORI-33: la carta la arma el back; un 404/409/503 trae su porqué.
+        if (!res.ok || !(res.headers.get('content-type') ?? '').includes('application/pdf')) {
+          return { status: 'error', fallo: await falloDelMicro(res) }
         }
-        if (!res.ok) {
-          return { status: 'unavailable', message: 'Próximamente' }
-        }
-        // Si en el futuro el backend entrega el binario, lo abrimos.
-        const contentType = res.headers.get('content-type') ?? ''
-        if (contentType.includes('application/pdf')) {
-          const blob = await res.blob()
-          const url = URL.createObjectURL(blob)
-          globalThis.open(url, '_blank', 'noopener')
-          return { status: 'unavailable', message: 'ok' }
-        }
-        return { status: 'unavailable', message: 'Próximamente' }
-      } catch {
-        return { status: 'unavailable', message: 'Próximamente' }
+        const nombre =
+          /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? 'reporte-de-cobranza.pdf'
+        descargarBlob(await res.blob(), nombre)
+        return { status: 'ok' }
+      } catch (err) {
+        return { status: 'error', fallo: err }
       } finally {
         setIsDownloading(false)
+      }
+    },
+    [agencyId],
+  )
+
+  const leerDestino = useCallback(
+    async (id: string): Promise<LecturaDelDestino | null> => {
+      const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+      if (!agentUrl || !agencyId || !id) return null
+      try {
+        const res = await authFetch(
+          `${agentUrl}/api/agency/${agencyId}/cobranza/owner-reports/${id}/destino`,
+          { headers: agentAuthHeaders() },
+        )
+        if (!res.ok) return null
+        return (await res.json()) as LecturaDelDestino
+      } catch {
+        return null
       }
     },
     [agencyId],
@@ -323,6 +368,7 @@ export function useOwnerReports(
     approveFallo,
     downloadPdf,
     isDownloading,
+    leerDestino,
   }
 }
 

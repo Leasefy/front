@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
+import { CORREO_APAGADO_EN_PRUEBAS } from '@/lib/texto/correo-apagado'
 
 export interface InvitarAlPortalProps {
   propietarioId: string;
@@ -60,7 +61,7 @@ export function porQueNoSalioLaInvitacion(motivo: string | undefined, correo?: s
     case 'RECIEN_ENVIADA':
       return 'Ya se la mandamos hace menos de 10 minutos. Espera un rato antes de reintentar.';
     case 'CORREO_NO_CONFIGURADO':
-      return 'El envío de correos no está disponible en este momento. Reintenta más tarde; si sigue igual, escríbenos.';
+      return CORREO_APAGADO_EN_PRUEBAS;
     case 'ENVIO_FALLIDO':
       return 'El correo no salió esta vez. Reintenta en unos minutos.';
     default:

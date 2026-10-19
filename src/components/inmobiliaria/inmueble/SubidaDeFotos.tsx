@@ -236,7 +236,7 @@ export function SubidaDeFotos({
             <span className="font-medium text-primary underline-offset-2 group-hover:underline">
               elígelas desde tu computador
             </span>
-            {aceptarPegado && <>, o pegalas con Ctrl+V</>}
+            {aceptarPegado && <>, o pégalas con Ctrl+V</>}
           </p>
         </div>
         <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">

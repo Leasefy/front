@@ -152,6 +152,7 @@ export const TEXTOS = {
     corre: 'Corre, todavía no actúa solo',
     apagado: 'Apagado',
     sinActividad: 'Sin acciones recientes',
+    esperan: (n: number) => (n === 1 ? '1 decisión espera tu clic en la Bandeja' : `${n} decisiones esperan tu clic en la Bandeja`),
     modos: { sombra: 'Manual', copiloto: 'Copiloto', autonomo: 'Automático', mixto: 'Mixto' },
   },
   enVivo: {

@@ -24,7 +24,9 @@
  * preguntándose por qué guardó una cosa y el portal muestra otra.
  */
 
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useContext, useEffect, useId, useState } from 'react';
+import Link from 'next/link';
+import { AuthContext } from '@/lib/auth/auth-context';
 import { toast } from '@/components/ui/toast';
 import {
   CalendarCheck,
@@ -41,7 +43,7 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { Collapse, CrossFade, MotionIndicator, Presence } from '@leasefy/cadence';
 import { AvailabilityScheduleEditor } from '@/components/panel/AvailabilityScheduleEditor';
-import { agendaApi, type TipoDeVisita } from '@/lib/api/agenda.service';
+import { agendaApi, type HorarioDelAsesor, type TipoDeVisita } from '@/lib/api/agenda.service';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -179,13 +181,17 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
   const [slotDuration, setSlotDuration] = useState(30);
   const [modalidades, setModalidades] = useState<TipoDeVisita[]>([]);
   const [guardando, setGuardando] = useState(false);
+  // IMANA-3: si el asesor a cargo tiene horario, ése manda (es lo que el aviso
+  // ofrece) y la tarjeta lo dice en vez de «Nadie puede agendar».
+  const [delAsesor, setDelAsesor] = useState<HorarioDelAsesor | null>(null);
+  const quienMira = useContext(AuthContext)?.user?.id ?? null;
 
   const cargar = useCallback(() => {
     if (!propertyId) return;
     setEstado('cargando');
     agendaApi
       .getDisponibilidad(propertyId)
-      .then(({ windows, agendas: delBack, visitTypes }) => {
+      .then(({ windows, agendas: delBack, visitTypes, delAsesor: horarioDelAsesor }) => {
         const presencial = delBack?.IN_PERSON ?? windows;
         const virtual = delBack?.VIRTUAL ?? [];
         setSlotDuration(presencial[0]?.slotDuration ?? virtual[0]?.slotDuration ?? 30);
@@ -194,6 +200,7 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
           VIRTUAL: virtual.length > 0 ? windowsToSchedule(virtual) : null,
         });
         setModalidades(visitTypes ?? []);
+        setDelAsesor(horarioDelAsesor && horarioDelAsesor.ventanas.length > 0 ? horarioDelAsesor : null);
         setEstado('listo');
       })
       .catch((e: unknown) => {
@@ -299,15 +306,17 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
           </span>
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-fg">Visitas</h3>
-            <p className="mt-0.5 text-body-sm text-fg-muted">
-              {prendido
-                ? `Se pueden agendar · ${resumenDeLaSemana(scheduleActivo ?? agendas.IN_PERSON ?? agendas.VIRTUAL)}`
-                : 'Nadie puede agendar una visita a este inmueble'}
+            <p className="mt-0.5 text-body-sm text-fg-muted" data-testid="visitas-resumen">
+              {delAsesor
+                ? `Se pueden agendar · horario de ${delAsesor.nombre}: ${resumenDeLaSemana(windowsToSchedule(delAsesor.ventanas))}`
+                : prendido
+                  ? `Se pueden agendar · ${resumenDeLaSemana(scheduleActivo ?? agendas.IN_PERSON ?? agendas.VIRTUAL)}`
+                  : 'Nadie puede agendar una visita a este inmueble'}
             </p>
           </div>
         </div>
 
-        {estado === 'listo' && (
+        {estado === 'listo' && !delAsesor && (
           <Switch
             checked={prendido}
             disabled={guardando}
@@ -373,7 +382,7 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
           el contenido se cruza con un fundido en vez de saltar. */}
       <CrossFade
         className="px-5 py-4"
-        swapKey={estado === 'listo' ? (prendido ? 'prendidas' : 'apagadas') : estado}
+        swapKey={estado === 'listo' ? (delAsesor ? 'del-asesor' : prendido ? 'prendidas' : 'apagadas') : estado}
       >
         {estado === 'cargando' && (
           <div className="flex justify-center py-6">
@@ -393,7 +402,34 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
           />
         )}
 
-        {estado === 'listo' && !prendido && (
+        {estado === 'listo' && delAsesor && (
+          <div className="space-y-3" data-testid="visitas-del-asesor">
+            <p className="text-body-sm text-fg-muted">
+              Las visitas de este inmueble siguen el horario de visitas de{' '}
+              <span className="font-medium text-fg">{delAsesor.nombre}</span>, que está a cargo. Los
+              interesados ven esos cupos en el aviso; el cupo reservado desaparece y la visita entra a
+              la agenda.
+              {prendido &&
+                ' Los horarios propios del inmueble no se usan mientras tenga ese horario.'}
+            </p>
+            {(delAsesor.userId === quienMira || delAsesor.memberId) && (
+              <Button asChild variant="outline" size="sm">
+                <Link
+                  href={
+                    delAsesor.userId === quienMira
+                      ? '/panel/inmobiliaria/perfil'
+                      : `/panel/inmobiliaria/configuracion/equipo/${delAsesor.memberId}`
+                  }
+                  data-testid="visitas-cambiar-horario-del-asesor"
+                >
+                  {delAsesor.userId === quienMira ? 'Cambiar mi horario' : `Cambiar el horario de ${delAsesor.nombre}`}
+                </Link>
+              </Button>
+            )}
+          </div>
+        )}
+
+        {estado === 'listo' && !delAsesor && !prendido && (
           <p className="text-body-sm text-fg-muted">
             Préndelas y elige los días y las horas en que reciben visitas. Los interesados
             verán esos cupos en el aviso y podrán reservar uno; el cupo reservado desaparece
@@ -401,7 +437,7 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
           </p>
         )}
 
-        {estado === 'listo' && prendido && (
+        {estado === 'listo' && !delAsesor && prendido && (
           <div className="space-y-5">
             <div>
               <h4 className="text-sm font-semibold text-fg">Cómo se puede visitar</h4>
@@ -512,7 +548,7 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
             <div className="flex items-start gap-2.5 rounded-lg bg-surface-muted/60 p-3">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" aria-hidden />
               <p className="text-caption text-fg-muted">
-                Si el agente a cargo tiene su propio horario de visitas, ese manda sobre este.
+                Si el asesor a cargo tiene su propio horario de visitas, ese manda sobre este.
                 Los cupos ya reservados no se vuelven a ofrecer.
               </p>
             </div>

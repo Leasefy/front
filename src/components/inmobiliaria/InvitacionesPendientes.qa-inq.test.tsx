@@ -124,7 +124,7 @@ describe('I-24 · el motivo en palabras', () => {
       ]),
     ).toContain('hace menos de 10 minutos');
     expect(porQueNoSalioNinguna([{ userId: 'a', enviada: false, motivo: 'CORREO_NO_CONFIGURADO' }])).toContain(
-      'no está disponible',
+      'el correo está apagado en esta copia de pruebas',
     );
   });
 });

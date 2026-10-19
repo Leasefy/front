@@ -38,6 +38,7 @@ import { DeshacerLaConciliacion } from './DeshacerLaConciliacion';
 import { SalidaDelExtracto } from './SalidaDelExtracto';
 // Seguimiento 6: el cajón del movimiento con lo que propone el agente («por el alias», las salidas).
 import { LoQueProponeElAgente } from './LoQueProponeElAgente';
+import { ParDeLaLinea } from './ParDeLaLinea';
 
 interface Props {
   movimiento: MovimientoBancario;
@@ -47,6 +48,8 @@ interface Props {
   onConciliar: (movimiento: MovimientoBancario, candidato: CandidatoDeConciliacion) => void;
   /** Conciliar contra la cartera ENTERA de un cliente, sin elegir cobro. */
   onConciliarConCliente: (movimiento: MovimientoBancario) => void;
+  /** CONC-12: conciliar la línea con los dos inquilinos del par (`m.par`). */
+  onConciliarElPar?: (movimiento: MovimientoBancario) => void;
   onIgnorar: (movimiento: MovimientoBancario) => void;
   onReabrir: (movimiento: MovimientoBancario) => void;
   /**
@@ -66,6 +69,7 @@ export function MovimientoFila({
   puedeEditar,
   onConciliar,
   onConciliarConCliente,
+  onConciliarElPar,
   onIgnorar,
   onReabrir,
   sinTablaDeVinculos = false,
@@ -195,6 +199,9 @@ export function MovimientoFila({
              * más vieja, y lo que sobre abona a los meses que siguen.
              */
             <div className="space-y-1.5">
+              {m.par && onConciliarElPar && (
+                <ParDeLaLinea movimientoId={m.id} par={m.par} deshabilitado={!puedeConciliar || ocupado} onConciliar={() => onConciliarElPar(m)} />
+              )}
               <p className="text-caption text-fg-muted">
                 Ninguna cuota pendiente se parece a este movimiento. Concilia contra el cliente y la
                 plata se reparte sobre su deuda más vieja.
@@ -213,6 +220,11 @@ export function MovimientoFila({
             </div>
           ) : (
             <ul className="flex flex-col gap-1.5" aria-label="Cuotas que se parecen">
+              {m.par && onConciliarElPar && (
+                <li>
+                  <ParDeLaLinea movimientoId={m.id} par={m.par} deshabilitado={!puedeConciliar || ocupado} onConciliar={() => onConciliarElPar(m)} />
+                </li>
+              )}
               {m.candidatos.map((c) => (
                 <li
                   key={c.contractId}

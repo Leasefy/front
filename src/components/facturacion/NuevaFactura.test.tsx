@@ -109,6 +109,16 @@ vi.mock('@/components/ui/confirmar', () => ({
   confirmar: (...a: unknown[]) => confirmarMock(...a),
 }));
 
+/*
+ * FACT-2: el enlace a Reglas de mora depende de `cobros:view`. Sin proveedor de
+ * permisos (null, lo de siempre en estas pruebas) el aviso queda como antes.
+ */
+let permisosDePrueba: { isLoading: boolean; canAccess: (m: string, a: string) => boolean } | null = null;
+vi.mock('@/lib/context/PermissionsContext', async (original) => ({
+  ...(await original<typeof import('@/lib/context/PermissionsContext')>()),
+  usePermissionsContextSafe: () => permisosDePrueba,
+}));
+
 import { NuevaFactura } from './NuevaFactura';
 import { alEventoDelCentro, type EventoDelCentro } from '@/lib/api/procesos.service';
 import { detenerEnElNavegador } from '@/components/procesos/detener-en-el-navegador';
@@ -306,6 +316,7 @@ beforeEach(() => {
   toastOk.mockReset();
   toastErr.mockReset();
   confirmarMock.mockReset().mockResolvedValue(true);
+  permisosDePrueba = null;
 });
 
 afterEach(() => {
@@ -1242,6 +1253,40 @@ describe('NuevaFactura', () => {
       expect(host.textContent!.split('NO lleva intereses').length - 1).toBe(0);
       // La fila dice sólo que está en mora, sin el párrafo.
       expect(q('[data-testid="en-mora-ct-1|2026-09|INQUILINO"]')!.textContent).toContain('42 días');
+    });
+
+    describe('🔴 FACT-2: «Configúralas en Pagos → Cartera → Reglas de mora» lleva hasta allá', () => {
+      const sinReglas = () =>
+        factura({
+          mora: { esCartera: true, diasDeMora: 16, recargosCop: 0, origen: null, motivo: 'Sin reglas.' },
+          avisos: [
+            'Esta cuota está en mora hace 16 días y la factura NO lleva intereses. La inmobiliaria no tiene reglas de mora activas: no hay con qué liquidar el interés de esta cuota. Configúralas en Pagos → Cartera → Reglas de mora.',
+          ],
+        });
+
+      it('con permiso de cobros: el enlace en lugar de la ruta, y vuelve a Facturación', async () => {
+        permisosDePrueba = { isLoading: false, canAccess: (m, a) => m === 'cobros' && a === 'view' };
+        porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [sinReglas()] }));
+        await montar();
+        const arriba = q('[data-testid="facturacion-inquilinos-mora-del-mes"]')!;
+        expect(arriba.textContent).toContain('no hay con qué liquidar el interés de esta cuota.');
+        expect(arriba.textContent).not.toContain('Pagos → Cartera');
+        const enlace = q('[data-testid="facturacion-inquilinos-ir-a-reglas-de-mora"]') as HTMLAnchorElement;
+        expect(enlace.textContent).toBe('Configurar las reglas de mora');
+        expect(enlace.getAttribute('href')).toBe(
+          '/panel/inmobiliaria/pagos/cartera/reglas-de-mora?volver=%2Fpanel%2Finmobiliaria%2Ffacturacion',
+        );
+      });
+
+      it('sin permiso de cobros: la ruta sigue escrita y no hay enlace a una pantalla que no abre', async () => {
+        permisosDePrueba = { isLoading: false, canAccess: () => false };
+        porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [sinReglas()] }));
+        await montar();
+        expect(q('[data-testid="facturacion-inquilinos-mora-del-mes"]')!.textContent).toContain(
+          'Configúralas en Pagos → Cartera → Reglas de mora.',
+        );
+        expect(q('[data-testid="facturacion-inquilinos-ir-a-reglas-de-mora"]')).toBeNull();
+      });
     });
 
     it('un aviso que es de ESA fila sí se queda en la fila', async () => {

@@ -207,6 +207,23 @@ export const conciliacionBancariaApi = {
     return res;
   },
 
+  /**
+   * CONC-12 (QA de agentes 17-10): UNA línea que paga el arriendo de varios
+   * inquilinos. El back le emite un recibo a cada uno por su parte y los une a
+   * la línea. La suma tiene que ser exacta.
+   */
+  async conciliarConVariosClientes(
+    movimientoId: string,
+    clientes: { tenantId: string; valorCop: number }[],
+  ): Promise<ResultadoDeConciliarConRecibos> {
+    const res = await apiClient.post<ResultadoDeConciliarConRecibos>(
+      `${BASE}/movimientos/${movimientoId}/conciliar-con-varios-clientes`,
+      { clientes: clientes.map((c) => ({ tenantId: c.tenantId, valorCop: c.valorCop })) },
+    );
+    invalidar('cobros');
+    return res;
+  },
+
   /** Las retenciones y comisiones que reconoce la inmobiliaria, y el 4×1000 de ley. */
   async diferenciasConocidas(): Promise<DiferenciasConocidasDeLaInmobiliaria> {
     return apiClient.get<DiferenciasConocidasDeLaInmobiliaria>(`${BASE}/diferencias-conocidas`);

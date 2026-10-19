@@ -16,6 +16,7 @@ import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { FirmaDelInventarioDelInquilino } from '@/components/inmobiliaria/inventario/FirmaDelInventarioDelInquilino';
+
 import { AuditTrail } from '@/components/contract/AuditTrail';
 import { RejectContractModal } from '@/components/contract/RejectContractModal';
 import { CancelContractModal } from '@/components/contract/CancelContractModal';
@@ -33,6 +34,8 @@ import { cn } from '@/lib/utils';
 import type { Contract, ContractStatus, RejectionType, ContractRejection } from '@/lib/types/contract';
 import { mensajeDeLaFirmaDelInquilino } from '@/lib/contratos/firma-del-inquilino';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { seOfreceFirmarElInventario } from '@/lib/contratos/inventario-del-inquilino';
+
 
 // ============================================================================
 // Types
@@ -517,6 +520,17 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
             signedPdfUrl={signedPdfUrl}
             rejections={rejections}
           />
+        )}
+
+        {/* CONTR-8 (QA 17-10): el inventario sólo se ofrecía en la pantalla de
+            éxito, que vive en memoria: quien recargaba o volvía otro día (o se
+            quedó en el código, CONTR-4) no tenía dónde firmarlo. Ahora también
+            aquí, una vez firmado el contrato; si no hay copia no pinta nada, y
+            si ya lo firmó dice quién y cuándo. */}
+        {!isPendingTenant && seOfreceFirmarElInventario(activeContract.status) && (
+          <div className="mt-8">
+            <FirmaDelInventarioDelInquilino contractId={activeContract.id} />
+          </div>
         )}
 
         {/* "Pedir cambios" — modal fijado a MODIFICATIONS (sin opción de rechazo definitivo).

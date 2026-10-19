@@ -1201,6 +1201,15 @@ export interface SolicitudMantenimiento {
   id: string;
   /** PI-28: la PQRS del portal de la que salió («Reparación / mantenimiento»), si salió de una. */
   pqrs?: { id: string; radicado: string } | null;
+  /**
+   * FIXI-2 (QA de agentes 17-10): quién la reportó, si se sabe (la PQRS de la
+   * que salió o el alta en el panel). `null`/ausente: el historial no le pone
+   * autor, nunca el inquilino por defecto.
+   */
+  reportadaPor?: {
+    nombre: string | null;
+    quien: 'INMOBILIARIA' | 'INQUILINO' | 'PROPIETARIO' | 'TERCERO';
+  } | null;
   consignacionId: string;
   propertyId: string;
   propietarioId: string;
@@ -1428,7 +1437,7 @@ export interface ExtractoPropietario {
    * no se movió nada», y las dos se leen igual: en blanco.
    */
   sinMovimiento: {
-    codigo: 'SIN_INMUEBLES' | 'SIN_MOVIMIENTO_DEL_MES';
+    codigo: 'SIN_INMUEBLES' | 'SIN_MOVIMIENTO_DEL_MES' | 'MES_DEL_SISTEMA_ANTERIOR';
     mensaje: string;
   } | null;
 
@@ -3055,6 +3064,12 @@ export interface UserInvite {
   commissionSplit?: number;
   agentRole?: 'AGENT' | 'COORDINATOR' | 'DIRECTOR';
   position?: string;
+  /**
+   * «Es la misma persona, invitar igual» (19-10-2026): el correo ya es la
+   * cuenta de alguien con otro nombre y quien invita confirmó que es ella.
+   * Sin esto el back responde 409 `CORREO_DE_OTRA_PERSONA`.
+   */
+  mismaPersona?: boolean;
 }
 
 // Helper functions for users/roles

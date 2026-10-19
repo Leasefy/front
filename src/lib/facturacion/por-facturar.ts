@@ -338,6 +338,22 @@ export function moraDelMes(filas: readonly FacturaDelMes[]): MoraDelMes {
   return { enMora, motivos: [...motivos] }
 }
 
+/**
+ * 🔴 FACT-2 (QA de los agentes, 19-10-2026): el motivo del back termina en
+ * «Configúralas en Pagos → Cartera → Reglas de mora.» y la pantalla lo pintaba
+ * como texto: nombraba la puerta sin abrirla. Se quita esa oración y la
+ * pantalla pone el enlace al lado, si la persona puede abrir esa pantalla.
+ */
+const RUTA_DE_LAS_REGLAS_DE_MORA = /\s*Configúralas en Pagos\s*→\s*Cartera\s*→\s*Reglas de mora\.?/i
+
+export function sinLaRutaDeLasReglasDeMora(texto: string): { texto: string; nombrabaLaRuta: boolean } {
+  if (!RUTA_DE_LAS_REGLAS_DE_MORA.test(texto)) return { texto, nombrabaLaRuta: false }
+  return {
+    texto: texto.replace(RUTA_DE_LAS_REGLAS_DE_MORA, '').replace(/\s{2,}/g, ' ').trim(),
+    nombrabaLaRuta: true,
+  }
+}
+
 // ── La resolución ───────────────────────────────────────────────────────────
 
 /**

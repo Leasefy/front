@@ -308,6 +308,23 @@ export interface CandidatoDeConciliacion {
   seguro: boolean;
 }
 
+/** CONC-12: la parte de un inquilino en un pago de dos. */
+export interface ParteDelPar {
+  contractId: string;
+  tenantId: string;
+  tenantName: string | null;
+  propertyTitle: string;
+  cuotaIds: string[];
+  meses: string[];
+  valorCop: number;
+}
+
+/** CONC-12: «el agente propone el par» (Nico, 17-10). */
+export interface ParDeLaLinea {
+  partes: ParteDelPar[];
+  porQue: string[];
+}
+
 export interface MovimientoBancario {
   id: string;
   agencyId: string;
@@ -326,6 +343,11 @@ export interface MovimientoBancario {
   cargadoPorUserId: string;
   createdAt: string;
   candidatos: CandidatoDeConciliacion[];
+  /**
+   * CONC-12 (QA de agentes 17-10): la línea paga el arriendo de DOS inquilinos
+   * y sus cuotas suman exacto. `null`/ausente: no hay par (o un back anterior).
+   */
+  par?: ParDeLaLinea | null;
   recibo: { id: string; numero: number; anuladoAt: string | null } | null;
   /**
    * 🔴 (02-10-2026, S2-D) «Este movimiento son N recibos»: la mejor

@@ -96,6 +96,10 @@ vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children?: React.ReactNode }) => children,
 }));
 
+vi.mock('@/lib/hooks/use-asesores', () => ({
+  useAsesores: () => ({ asesores: [], isLoading: false, error: null, refetch: vi.fn() }),
+  rolDelAsesor: () => 'Administración',
+}));
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   useConsignacion: (...args: unknown[]) => useConsignacionMock(...args),
   usePropietario: (...args: unknown[]) => usePropietarioMock(...args),

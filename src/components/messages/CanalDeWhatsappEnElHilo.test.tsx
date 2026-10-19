@@ -13,6 +13,7 @@ import { act } from 'react';
 import {
   AvisoDeWhatsapp,
   EstadoDeWhatsappEnMensaje,
+  estadoDeWhatsappQueVe,
 } from './CanalDeWhatsappEnElHilo';
 import type { CanalDeWhatsapp } from '@/lib/api/messages.types';
 
@@ -119,5 +120,19 @@ describe('EstadoDeWhatsappEnMensaje', () => {
     );
     expect(texto).toContain('WhatsApp: falló');
     expect(texto).toContain('fuera de la ventana de 24 h');
+  });
+});
+
+describe('COMU-3: el estado de la copia por WhatsApp lo ve quien la manda', () => {
+  it('en el panel de la inmobiliaria se ve todo; fuera, sólo «Llegó por WhatsApp»', () => {
+    const panel = { enPanelDeInmobiliaria: true };
+    const portal = { enPanelDeInmobiliaria: false };
+    expect(estadoDeWhatsappQueVe('FALLO', panel)).toBe('FALLO');
+    expect(estadoDeWhatsappQueVe('ENTREGADO', panel)).toBe('ENTREGADO');
+    // El inquilino leía en rojo «WhatsApp: falló» en el mensaje que estaba leyendo.
+    expect(estadoDeWhatsappQueVe('FALLO', portal)).toBeNull();
+    expect(estadoDeWhatsappQueVe('LEIDO', portal)).toBeNull();
+    expect(estadoDeWhatsappQueVe('RECIBIDO', portal)).toBe('RECIBIDO');
+    expect(estadoDeWhatsappQueVe(null, panel)).toBeNull();
   });
 });

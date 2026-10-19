@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
+import { rotuloDelIngreso } from '@/lib/postulaciones/rotulo-del-ingreso';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import {
   DOCUMENT_TYPES,
@@ -129,7 +130,7 @@ export function StepReview() {
       >
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Salario:</span>
+            <span className="text-muted-foreground">{rotuloDelIngreso(employment.employmentStatus).corto}:</span>
             <span className="font-medium text-foreground">
               {income.monthlySalary ? formatCurrency(income.monthlySalary) : '-'}
             </span>

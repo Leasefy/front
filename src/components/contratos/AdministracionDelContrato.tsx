@@ -317,7 +317,7 @@ export function AdministracionDelContrato({
         <Fila
           etiqueta="Uso del inmueble"
           valor={contract.usoInmueble ? USOS[contract.usoInmueble as Uso] : null}
-          ausente="Sin definir — no se sabe si el canon lleva IVA"
+          ausente={usoAusente(contract)}
         />
         {/*
           NI-05 (Nico, 06-10): la base guarda MENSUAL cuando el archivo de la
@@ -837,6 +837,19 @@ export function AdministracionDelContrato({
 }
 
 /**
+ * CONT-3 (QA 19-10): la ficha decía «Uso: Sin definir» y, dos renglones abajo,
+ * «IVA: No lleva (vivienda)». Sin uso en el contrato, el back lo toma del tipo
+ * de inmueble (`regimen-del-contrato.ts`): el renglón del uso lo dice.
+ */
+function usoAusente(contract: Contract): string {
+  const uso = contract.regimenTributario?.usoComercial
+  if (uso?.origen === 'TIPO_DE_INMUEBLE' && uso.valor !== null) {
+    return `Sin definir en el contrato — por el tipo de inmueble se toma como ${uso.valor ? 'comercial' : 'vivienda'}`
+  }
+  return 'Sin definir — no se sabe si el canon lleva IVA'
+}
+
+/**
  * El IVA del canon en una línea. Lo resuelve el BACK (`regimenTributario`,
  * la misma función del motor de cobros); acá sólo se pone en palabras.
  */
@@ -845,7 +858,11 @@ function leerIvaDelCanon(contract: Contract): { valor: string | null; ausente: s
   if (!r) return { valor: null, ausente: 'Sin datos del régimen' }
   const comercial = r.usoComercial.valor
   const propietario = r.arrendadorResponsableIva.valor
-  if (comercial === false) return { valor: 'No lleva (vivienda)', ausente: '' }
+  // CONT-3 (QA 19-10): sin uso en el contrato, el back lo toma del tipo de inmueble; se dice.
+  const porElTipo = r.usoComercial.origen === 'TIPO_DE_INMUEBLE'
+  if (comercial === false) {
+    return { valor: porElTipo ? 'No lleva (vivienda, por el tipo de inmueble)' : 'No lleva (vivienda)', ausente: '' }
+  }
   if (comercial === null) return { valor: null, ausente: 'Sin definir el uso — no se sabe si lleva IVA' }
   if (propietario === true) {
     return {

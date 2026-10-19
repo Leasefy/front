@@ -130,6 +130,12 @@ interface Props {
   idDeCarga?: string;
 }
 
+/** «N.º 8», «N.º 8 y N.º 9», «N.º 8, N.º 9 y N.º 10». */
+function unirConY(partes: readonly string[]): string {
+  if (partes.length <= 1) return partes[0] ?? '';
+  return `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`;
+}
+
 export function ExtractoBancario({ idDeCarga }: Props = {}) {
   const { canAccess, isLoading: permisosCargando } = usePermissions();
   const puedeConciliar = permisosCargando || canAccess('cobros', 'create');
@@ -253,6 +259,30 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
     }
   };
 
+  /** CONC-12 (Nico, 17-10): la línea que paga el arriendo de dos inquilinos. */
+  const conciliarElPar = async (m: MovimientoBancario) => {
+    if (!m.par) return;
+    marcar(m.id, true);
+    try {
+      await conciliacionBancariaApi.conciliarConVariosClientes(
+        m.id,
+        m.par.partes.map((p) => ({ tenantId: p.tenantId, valorCop: p.valorCop })),
+      );
+      const nombres = m.par.partes.map((p) => p.tenantName ?? p.propertyTitle);
+      toast.success(`Conciliado: un recibo a ${nombres.slice(0, -1).join(', ')} y otro a ${nombres[nombres.length - 1]}.`);
+      await cargar();
+    } catch (error) {
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo conciliar el pago de los dos.',
+          accion: 'conciliar el pago de los dos inquilinos',
+        }),
+      );
+    } finally {
+      marcar(m.id, false);
+    }
+  };
+
   /**
    * La plata va contra la DEUDA del cliente, no contra un cobro elegido: la
    * deuda nace con el contrato, así que el back la reparte de la cuota más
@@ -269,10 +299,13 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
       const aFavor = r.pago?.anticipoCop ?? 0;
       // Se dice lo que PASÓ, no «listo»: cuántos meses se pagaron y cuánta
       // plata quedó a favor. Sin eso nadie entiende a dónde fue el dinero.
+      // CONC-10 (QA de agentes 17-10): con el número del recibo, como cuando
+      // se concilia contra un candidato («Recibo N.º 6 emitido a …»).
+      const numeros = (r.pago?.recibos ?? []).map((x) => `N.º ${x.numero}`);
       toast.success(
         cuantos === 0
           ? `Quedaron ${plata(aFavor)} a favor del cliente: no debía nada.`
-          : `${cuantos} ${cuantos === 1 ? 'recibo emitido' : 'recibos emitidos'}` +
+          : `${cuantos === 1 ? 'Recibo' : 'Recibos'} ${unirConY(numeros)} ${cuantos === 1 ? 'emitido' : 'emitidos'}` +
               (aFavor > 0 ? ` y ${plata(aFavor)} a favor del cliente.` : '.'),
       );
       setConCliente(null);
@@ -482,6 +515,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
                       setConCliente(mov);
                       setClienteElegido(null);
                     }}
+                    onConciliarElPar={(mov) => void conciliarElPar(mov)}
                     onIgnorar={(mov) => {
                       setIgnorando(mov);
                       setMotivo('');

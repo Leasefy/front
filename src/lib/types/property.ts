@@ -103,6 +103,12 @@ export interface Property {
    * disponible sale, como antes). Ausente en las rutas públicas.
    */
   publicadoEnMarketplace?: boolean | null;
+  /**
+   * AVISO-1 (QA 19-10): cuándo se publicó en el marketplace. El back todavía no
+   * lo guarda (falta la columna); sin él la ficha no dice «Publicado hace…»:
+   * `createdAt` es cuándo se creó el inmueble (una importación de hace días).
+   */
+  publicadoEn?: string | null;
   adminFee: number;
   deposit: number;
   /**

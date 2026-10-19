@@ -8233,26 +8233,42 @@
           "triage": "No se pudo tomar la solicitud."
         },
         "public": {
-          "title": "Solicitud de derechos ARCO",
-          "subtitle": "Ejerza sus derechos de Acceso, Rectificación, Cancelación u Oposición sobre sus datos personales conforme a la Ley 1581 de 2012.",
+          "title": "Tus datos personales",
+          "subtitle": "Pide ver, corregir o borrar tus datos personales, o que dejen de usarlos (Habeas Data, Ley 1581 de 2012).",
           "nombreLabel": "Nombre completo",
           "cedulaLabel": "Número de cédula",
           "cedulaHint": "Solo números, sin puntos ni comas",
           "emailLabel": "Correo electrónico",
           "tipoLabel": "Tipo de solicitud",
           "descripcionLabel": "Descripción",
-          "descripcionPlaceholder": "Describe de manera específica qué datos deseas que tratemos...",
+          "descripcionPlaceholder": "Cuéntanos qué datos quieres ver, corregir o borrar, y por qué…",
           "submit": "Enviar solicitud",
           "submitting": "Enviando…",
           "successTitle": "Revisa tu correo electrónico",
-          "successBody": "Enviamos un enlace de confirmación a {{email}}. Sigue el enlace para completar tu solicitud.",
-          "successNote": "El enlace expira en 24 horas. Si no lo recibes, revisa tu carpeta de spam.",
+          "successBody": "Te enviamos un enlace a {{email}}. Ábrelo para confirmar tu correo y que la inmobiliaria reciba tu solicitud.",
+          "successNote": "Si no te llega en unos minutos, revisa la carpeta de spam.",
           "legalFooter": "Al enviar esta solicitud, aceptas que tus datos sean procesados para atender tu solicitud conforme a nuestra",
           "privacyLink": "política de privacidad",
           "rateLimitTitle": "Límite alcanzado",
-          "rateLimitBody": "Has enviado demasiadas solicitudes. Intenta de nuevo en 1 hora.",
+          "rateLimitBody": "Enviaste varias solicitudes seguidas. Espera una hora e intenta de nuevo.",
           "submitError": "No se pudo enviar la solicitud. Intenta de nuevo.",
-          "submitAnother": "Enviar otra solicitud"
+          "submitAnother": "Enviar otra solicitud",
+          "noAbrio": "No pudimos abrir el formulario de esta inmobiliaria. Recarga la página en unos minutos.",
+          "subtitleDe": "Pídele a {{inmobiliaria}} ver, corregir o borrar tus datos personales, o que deje de usarlos (Habeas Data, Ley 1581 de 2012).",
+          "tipos": {
+            "acceso": "Ver mis datos",
+            "rectificacion": "Corregir mis datos",
+            "cancelacion": "Borrar mis datos",
+            "oposicion": "Que dejen de usar mis datos"
+          },
+          "elegir": {
+            "titulo": "¿A qué inmobiliaria le escribes?",
+            "texto": "Cada inmobiliaria responde por los datos que tiene de ti. Elige la tuya: este formulario también está al pie de sus correos y en su página de Leasefy.",
+            "buscar": "Busca por nombre",
+            "sinResultados": "No la encontramos aquí. Abre el enlace «Tus datos personales» que viene al pie de los correos de tu inmobiliaria.",
+            "noEsta": "¿No está en la lista? Abre el enlace «Tus datos personales» que viene al pie de los correos de tu inmobiliaria.",
+            "noCargo": "No pudimos cargar las inmobiliarias. Recarga la página en unos minutos."
+          }
         },
         "verify": {
           "confirmed": "Solicitud confirmada — un administrador la revisará pronto",

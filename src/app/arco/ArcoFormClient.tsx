@@ -42,7 +42,19 @@ function enfocar(campo: CampoDelArco) {
   if (typeof document !== 'undefined') document.getElementById(ID_DEL_CAMPO[campo])?.focus();
 }
 
-export function ArcoFormClient() {
+/**
+ * ARCO-1 (Nico 19-10-2026: «formulario por inmobiliaria»). El formulario es de
+ * UNA inmobiliaria (`/arco/<inmobiliaria>`): la nombra arriba y le manda su id
+ * al micro en `agency_id`. Sin ella, el micro sólo la reconocía por la
+ * dirección web y ninguna tiene una: siempre terminaba en «no habilitado».
+ */
+export interface InmobiliariaDelArco {
+  id: string;
+  nombre: string;
+  logoUrl: string | null;
+}
+
+export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDelArco | null }) {
   const { t } = useI18n();
 
   // Form field state
@@ -122,7 +134,7 @@ export function ArcoFormClient() {
       const res = await fetch(`${agentUrl}/api/arco`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(inmobiliaria ? { ...body, agency_id: inmobiliaria.id } : body),
       });
 
       if (res.ok) {
@@ -171,14 +183,26 @@ export function ArcoFormClient() {
     <div className="w-full max-w-xl rounded-[22px] border border-border bg-surface p-8">
       {/* Card header */}
       <div className="text-center mb-8">
-        <p className="text-xl font-semibold font-heading text-fg mb-2">
-          Leasefy
-        </p>
+        {inmobiliaria ? (
+          <div className="mb-3 flex items-center justify-center gap-2.5" data-testid="arco-inmobiliaria">
+            {inmobiliaria.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- el logo viene de la inmobiliaria, de cualquier dominio
+              <img src={inmobiliaria.logoUrl} alt="" className="h-8 w-8 rounded-md object-contain" />
+            ) : null}
+            <p className="text-lg font-semibold font-heading text-fg">{inmobiliaria.nombre}</p>
+          </div>
+        ) : (
+          <p className="text-xl font-semibold font-heading text-fg mb-2">
+            Leasefy
+          </p>
+        )}
         <h1 className="text-3xl font-semibold font-heading text-fg mb-3">
           {t('inmobiliaria.ai.arco.public.title')}
         </h1>
         <p className="text-sm text-fg-subtle max-w-sm mx-auto">
-          {t('inmobiliaria.ai.arco.public.subtitle')}
+          {inmobiliaria
+            ? t('inmobiliaria.ai.arco.public.subtitleDe', { inmobiliaria: inmobiliaria.nombre })
+            : t('inmobiliaria.ai.arco.public.subtitle')}
         </p>
       </div>
 
@@ -322,16 +346,16 @@ export function ArcoFormClient() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="acceso">
-                  {t('inmobiliaria.ai.arco.tabs.acceso')}
+                  {t('inmobiliaria.ai.arco.public.tipos.acceso')}
                 </SelectItem>
                 <SelectItem value="rectificacion">
-                  {t('inmobiliaria.ai.arco.tabs.rectificacion')}
+                  {t('inmobiliaria.ai.arco.public.tipos.rectificacion')}
                 </SelectItem>
                 <SelectItem value="cancelacion">
-                  {t('inmobiliaria.ai.arco.tabs.cancelacion')}
+                  {t('inmobiliaria.ai.arco.public.tipos.cancelacion')}
                 </SelectItem>
                 <SelectItem value="oposicion">
-                  {t('inmobiliaria.ai.arco.tabs.oposicion')}
+                  {t('inmobiliaria.ai.arco.public.tipos.oposicion')}
                 </SelectItem>
               </SelectContent>
             </Select>

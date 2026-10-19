@@ -8198,26 +8198,42 @@
           "triage": "Could not take the request."
         },
         "public": {
-          "title": "ARCO Rights Request",
-          "subtitle": "Exercise your rights of Access, Rectification, Cancellation, or Opposition over your personal data as per Law 1581 of 2012.",
+          "title": "Your personal data",
+          "subtitle": "Ask to see, correct or delete your personal data, or to stop using it (Habeas Data, Colombian Law 1581 of 2012).",
           "nombreLabel": "Full name",
           "cedulaLabel": "ID number",
           "cedulaHint": "Numbers only, no dots or commas",
           "emailLabel": "Email address",
           "tipoLabel": "Request type",
           "descripcionLabel": "Description",
-          "descripcionPlaceholder": "Specifically describe what data you want us to process...",
+          "descripcionPlaceholder": "Tell us which data you want to see, correct or delete, and why…",
           "submit": "Submit request",
           "submitting": "Sending…",
           "successTitle": "Check your email",
-          "successBody": "We sent a confirmation link to {{email}}. Follow the link to complete your request.",
-          "successNote": "The link expires in 24 hours. If you don't receive it, check your spam folder.",
+          "successBody": "We sent a link to {{email}}. Open it to confirm your email so the agency receives your request.",
+          "successNote": "If it doesn't arrive in a few minutes, check your spam folder.",
           "legalFooter": "By submitting this request, you agree that your data will be processed to handle your request in accordance with our",
           "privacyLink": "privacy policy",
           "rateLimitTitle": "Limit reached",
-          "rateLimitBody": "You have sent too many requests. Try again in 1 hour.",
+          "rateLimitBody": "You sent several requests in a row. Wait an hour and try again.",
           "submitError": "Could not submit the request. Please try again.",
-          "submitAnother": "Submit another request"
+          "submitAnother": "Submit another request",
+          "noAbrio": "We couldn't open this agency's form. Reload the page in a few minutes.",
+          "subtitleDe": "Ask {{inmobiliaria}} to see, correct or delete your personal data, or to stop using it (Habeas Data, Colombian Law 1581 of 2012).",
+          "tipos": {
+            "acceso": "See my data",
+            "rectificacion": "Correct my data",
+            "cancelacion": "Delete my data",
+            "oposicion": "Stop using my data"
+          },
+          "elegir": {
+            "titulo": "Which agency are you writing to?",
+            "texto": "Each agency answers for the data it holds about you. Choose yours: this form is also linked at the bottom of its emails and on its Leasefy page.",
+            "buscar": "Search by name",
+            "sinResultados": "We couldn't find it here. Open the \u201cYour personal data\u201d link at the bottom of your agency's emails.",
+            "noEsta": "Not on the list? Open the “Your personal data” link at the bottom of your agency's emails.",
+            "noCargo": "We couldn't load the agencies. Reload the page in a few minutes."
+          }
         },
         "verify": {
           "confirmed": "Request confirmed — an administrator will review it shortly",

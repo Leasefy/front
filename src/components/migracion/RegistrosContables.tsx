@@ -4,11 +4,13 @@
  * Paso 5 de la migración: los registros contables.
  *
  * 🔴 8.ª tanda (14-10-2026, Nico: «saldos al cierre + movimientos del año»).
- * Tres archivos, cada uno con su puerta, y uno solo obligatorio:
+ * Tres archivos, cada uno con su puerta, y NINGUNO obligatorio por sí solo
+ * (T-0168, decisión del dueño: los saldos iniciales son opcionales; el paso
+ * queda listo en cuanto hay registros contables cargados, sean los saldos
+ * iniciales o el libro diario):
  *
  *   A. Saldos iniciales — el balance de prueba POR TERCERO al cierre del año
- *      anterior, que entra como UN asiento de apertura. Es lo que deja el
- *      paso listo (el muro lo exige).
+ *      anterior, que entra como UN asiento de apertura. Recomendado.
  *   B. El libro diario — los movimientos de ESTE año, después de la apertura
  *      (el back rechaza lo que ya está dentro de los saldos).
  *   C. Los comprobantes — historia de todos los años en la ficha de cada
@@ -309,8 +311,9 @@ export function RegistrosContables({
                 Qué traer de tu sistema anterior
               </h2>
               <p className="mt-1 max-w-2xl text-sm text-fg-muted">
-                Tres archivos, cada uno con su lugar. Sólo el primero es
-                obligatorio para terminar este paso.
+                Tres archivos, cada uno con su lugar. Los saldos iniciales no son
+                obligatorios: el paso queda listo cuando cargas registros contables,
+                sean los saldos iniciales o el libro diario.
               </p>
             </div>
             <ol className="grid gap-3 md:grid-cols-3">
@@ -320,7 +323,7 @@ export function RegistrosContables({
                 titulo="El balance de prueba por tercero"
                 cuando="Al cierre del año anterior (por ejemplo, al 31 de diciembre)."
                 para="Son los saldos iniciales: lo que había en bancos, lo que debía cada inquilino y lo que se le debía a cada propietario."
-                etiqueta="Obligatorio"
+                etiqueta="Recomendado"
                 testid="guia-balance"
               />
               <PasoDeLaGuia
@@ -529,7 +532,7 @@ export function RegistrosContables({
 
           {/* 🔴 Juan (15-10-2026): «que traiga la cartera antigua». Aparte de
               los tres caminos: no es un asiento, es la deuda de cada contrato. */}
-          <CarteraDelSistemaAnterior />
+          <CarteraDelSistemaAnterior bloqueada={ocupado} />
         </>
       )}
     </div>

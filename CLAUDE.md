@@ -751,6 +751,34 @@ literal prende un área; un back viejo (404), caído o raro = sin centavos, EXAC
   pago y facturas de proveedor siguen en pesos enteros): falta que `MoneyInput` acepte una llave que no sea de áreas
   del back.
 
+## Cartera del sistema anterior, por factura (T-0168)
+
+La tarjeta «La cartera que traían los inquilinos» (`CarteraDelSistemaAnterior.tsx`, dentro de «Registros contables»)
+ya no lee el balance de prueba por tercero: sube el informe de cartera POR FACTURA (una fila = una línea) y el back
+la pone en cada contrato con mora desde la fecha de la línea. Contrato congelado en
+`.orchestration/tasks/T-0168-cartera-por-factura/contract.md`; el back es WU-1.
+
+- **Columnas** (`lib/migracion/columnas-de-cartera.ts`, NO `mapearColumnas`): sólo cinco datos — vencimiento (o fecha
+  de la factura), documento y nombre del INQUILINO, concepto y SALDO PENDIENTE. Una columna con `propietario`,
+  `arrendador`, `dueño`, `owner` o `beneficiario` jamás es el documento ni el nombre (ni se ofrece en el selector); el monto
+  nunca es «Valor Total». Una columna de DÍAS («Días de mora», «Días de vencimiento») nunca se toma sola como fecha, y una
+  fecha anterior a 1990 (un serial chico de Excel, un año de 1900) no se lee: queda como problema local. Un `documento`/`nombre` sin decir «inquilino/arrendatario/cliente» no se toma solo. La pantalla
+  deja elegir la columna POR CAMPO (`elegirColumnaDelCampo`).
+- **Filas** (`lib/migracion/lineas-de-cartera.ts`): cada fila es una `LineaDeCartera`; las que no se pueden mandar (fecha o
+  monto ilegible, documento o concepto vacío, totales, en blanco) quedan como problema LOCAL con su número de fila, porque
+  UNA línea mala sería un 400 de todo el archivo. Fechas: ISO, `dd/mm/aaaa` (con la regla de mes primero por columna) y,
+  sólo en un Excel, el serial con el sistema de fechas del libro (`date1904`); de un CSV un número suelto no se lee.
+  `parseFile` también respeta `date1904` en las celdas con formato de fecha.
+- **Una sola llamada**: vista previa (`contractsApi.migracion.carteraPorFactura(lineas, true)`) y, al confirmar, carga
+  (`false`) con LA MISMA lista. Nunca por tandas (el back reemplaza la cartera de cada contrato). Tope 20.000 líneas: más,
+  se rechaza con un mensaje. 409 `SIN_FECHA_DE_CORTE` vuelve a pedir la fecha de corte.
+- `saldosDelSistemaAnterior` (el par por tercero) quedó `@deprecated`: la pantalla ya no lo llama; el back lo retira aparte.
+- **Candado visible**: `RegistrosContables` pasa su `ocupado` a `<CarteraDelSistemaAnterior bloqueada>`; la zona se ve apagada
+  (`aria-disabled`, `ZonaDeArchivo bloqueada`) y dice «Espera a que termine la carga de comprobantes.». Sigue DENTRO del
+  `inert` del muro; no hay botón de cancelar.
+- **Saldos iniciales opcionales**: el paso «Registros contables» queda listo con cualquier registro contable cargado (apertura
+  o libro diario); la guía ya no los llama «Obligatorio».
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

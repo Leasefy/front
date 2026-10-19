@@ -72,6 +72,18 @@ vi.mock('@/lib/api/contabilidad.service', async () => {
   return { ...actual, contabilidadApi: { ...actual.contabilidadApi, ...api } };
 });
 
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
+
+/* La tarjeta de cartera pregunta la fecha de corte al montarse. */
+vi.mock('@/lib/api/contracts.service', () => ({
+  contractsApi: {
+    migracion: {
+      fechaDeCorte: vi.fn().mockResolvedValue({ fecha: '2026-03-01', editable: true, motivo: null }),
+      carteraPorFactura: vi.fn(),
+    },
+  },
+}));
+
 import { RegistrosContables } from './RegistrosContables';
 
 const CUENTA: CuentaPuc = {
@@ -281,6 +293,23 @@ describe('una carga de asientos a medias', () => {
 
     await click(q('doble-libre'));
     expect((q(`descartar-carga-${CARGA.lote}`) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('la zona de la cartera se ve bloqueada mientras la carga de comprobantes está ocupada', async () => {
+    api.migracion.cargas.mockResolvedValue([CARGA]);
+    await pintar();
+    await click(q(`continuar-carga-${CARGA.lote}`)); // opens the journal upload (the double)
+    const zona = () => q('dropzone-cartera');
+    expect(zona()).not.toBeNull();
+    expect(zona()?.getAttribute('aria-disabled')).toBeNull();
+
+    await click(q('doble-ocupado'));
+    expect(zona()?.getAttribute('aria-disabled')).toBe('true');
+    expect(container.textContent).toContain('Espera a que termine la carga de comprobantes.');
+
+    await click(q('doble-libre'));
+    expect(zona()?.getAttribute('aria-disabled')).toBeNull();
+    expect(container.textContent).not.toContain('Espera a que termine la carga de comprobantes.');
   });
 });
 

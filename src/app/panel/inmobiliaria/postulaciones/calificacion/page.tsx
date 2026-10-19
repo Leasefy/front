@@ -103,7 +103,9 @@ function Buscar() {
                       </p>
                       <p className="text-xs text-fg-muted">
                         {r.alcance === 'TODO_LEASEFY'
-                          ? tr('Con todo su historial en Leasefy ({n} inmobiliarias)', { n: r.historial.inmobiliarias })
+                          ? r.historial.inmobiliarias === 1
+                            ? tr('Con todo su historial en Leasefy (1 inmobiliaria)')
+                            : tr('Con todo su historial en Leasefy ({n} inmobiliarias)', { n: r.historial.inmobiliarias })
                           : tr('Sólo lo que pasó con tu inmobiliaria: no autorizó compartirla')}
                       </p>
                     </div>

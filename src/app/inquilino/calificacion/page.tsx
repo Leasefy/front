@@ -92,7 +92,9 @@ function Autorizacion({ datos, alCambiar }: { datos: MiCalificacion; alCambiar: 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="flex items-center gap-2 text-sm text-fg">
             <ShareNetwork className="h-4 w-4 text-success" aria-hidden />
-            {tr('La autorizaste el {d}.', { d: a.desde ? new Date(a.desde).toLocaleDateString() : '—' })}
+            {tr('La autorizaste el {d}.', {
+              d: a.desde ? new Date(a.desde).toLocaleDateString(locale === 'en' ? 'en-US' : 'es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) : '—',
+            })}
           </p>
           <Button variant="outline" hideArrow disabled={enviando} onClick={() => decidir(false)}>
             {tr('Retirar la autorización')}

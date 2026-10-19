@@ -215,7 +215,13 @@ export function TarjetaDeCalificacion({
       )}
 
       {!sinDesglose && (
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <div
+          className={cn(
+            'mt-6 grid gap-4',
+            // Columnas parejas: con un solo bloque, ocupa todo el ancho (sin hueco).
+            c.mesesObservados > 0 && c.historial && c.documentos && 'lg:grid-cols-2',
+          )}
+        >
           <BarrasDelBloque
             titulo="Historial en Leasefy"
             peso={c.historial && c.mesesObservados > 0 ? pesoHistorial : null}

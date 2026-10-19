@@ -123,6 +123,23 @@ describe('PilotoBandeja', () => {
     expect(container.querySelector('[data-testid="piloto-chip-calidad"]')?.textContent).toContain('Niti · calidad')
   })
 
+  it('🔴 BANDEJA-AG (QA 19-10): los avisos de Cuenti y los pasos de Reti se llaman como ellos, no «Cobri»', async () => {
+    render({
+      items: [
+        base({ id: 'acc:cu-1', agente: 'pagos', proceso: 'pagos.preparar_el_cobro', titulo: 'Revisar la cuota de Marta' }),
+        base({ id: 'acc:re-1', agente: 'pagos', proceso: 'pagos.recuperar_fallido', titulo: 'Reenviar el link a Iván' }),
+        base({ id: 'acc:re-2', agente: 'pagos', proceso: 'pagos.recuperar_fallido', titulo: 'Pasar a cobranza la cuota de Ana' }),
+      ],
+    })
+    expect(container.querySelector('[data-testid="piloto-chip-pagos:cuenti"]')?.textContent).toMatch(/^Cuenti\s*1$/)
+    expect(container.querySelector('[data-testid="piloto-chip-pagos:reti"]')?.textContent).toMatch(/^Reti\s*2$/)
+    expect(container.querySelector('[data-testid="piloto-chip-pagos"]')).toBeNull()
+
+    await act(async () => (container.querySelector('[data-testid="piloto-chip-pagos:reti"]') as HTMLButtonElement).click())
+    expect(container.textContent).toContain('Reenviar el link a Iván')
+    expect(container.textContent).not.toContain('Revisar la cuota de Marta')
+  })
+
   it('🔴 CONTR-3: lo retenido se separa por agente y se puede buscar (la prórroga no se pierde en la página 29)', async () => {
     const calidad = Array.from({ length: 12 }, (_, i) =>
       base({ id: `acc:c-${i}`, agente: 'calidad', titulo: `Completar la ficha del inmueble ${i}`, resumen: 'Faltan fotos.' }),

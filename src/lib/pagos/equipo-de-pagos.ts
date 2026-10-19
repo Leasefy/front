@@ -162,6 +162,25 @@ export const EQUIPO_DE_PAGOS: readonly Especialista[] = [
   },
 ]
 
+/**
+ * BANDEJA-AG (QA 19-10-2026): quién del equipo propone cada proceso de la
+ * perilla que deja filas en la Bandeja. El micro gobierna a todo el equipo
+ * como `pagos` —que se llama Cobri—, así que sin esto los avisos de Cuenti y
+ * los pasos de Reti salían con el nombre de Cobri. Lo que no está acá (el link
+ * de Cobri, el autopago) sigue con el nombre del agente. Los procesos son los
+ * del back: `PROCESO_DE_CUENTI` (`cuenti.ts`) y `PROCESO_DE_RETI` (`reti.ts`).
+ */
+const ESPECIALISTA_DEL_PROCESO: Readonly<Record<string, Especialista['id']>> = {
+  'pagos.preparar_el_cobro': 'cuenti',
+  'pagos.recuperar_fallido': 'reti',
+}
+
+/** Quién del equipo propuso una decisión de este proceso, o null si es del agente. */
+export function especialistaDelProceso(proceso: string | null | undefined): Especialista | null {
+  const id = proceso ? ESPECIALISTA_DEL_PROCESO[proceso] : undefined
+  return (id && EQUIPO_DE_PAGOS.find((e) => e.id === id)) || null
+}
+
 // ── Qué está encendido ──────────────────────────────────────────────────────
 
 /** Lo que se sabe del gobierno del equipo, tal como llegó. */

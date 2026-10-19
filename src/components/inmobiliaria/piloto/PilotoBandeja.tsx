@@ -86,7 +86,7 @@ import { ordenarBandeja } from '@/lib/piloto/director'
 import { PorQueEnLaFila } from './PilotoDirectorPorQue'
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada'
 import { agenteDeLaAutonomia, nombreDelAgente } from '@/lib/agentes/equipo'
-import { coincideConLaBusqueda, grupoDeLaFila } from './bandeja-filtros'
+import { coincideConLaBusqueda, especialistaDelGrupo, grupoDeLaFila } from './bandeja-filtros'
 
 const POR_PAGINA = 10
 
@@ -114,6 +114,9 @@ function metaDe(
 ): { icon: Icon; label: string } {
   const propia = FUENTE_META[fuente]
   if (propia) return propia
+  // BANDEJA-AG: un miembro del equipo de pagos (Reti, Cuenti) con su nombre.
+  const especialista = especialistaDelGrupo(fuente)
+  if (especialista) return { icon: especialista.icon, label: especialista.nombre }
   // CONTR-3: lo retenido se agrupa por agente (`grupoDeLaFila`): su nombre.
   const agente = t ? agenteDeLaAutonomia(fuente) : null
   if (agente && t) return { icon: HandPalm, label: nombreDelAgente(agente, t) }

@@ -11,11 +11,34 @@
  *     mayúsculas, que exige todas las palabras.
  */
 import type { InboxItem } from '@/lib/api/piloto'
+import {
+  AGENTE_GOBERNADO,
+  EQUIPO_DE_PAGOS,
+  especialistaDelProceso,
+  type Especialista,
+} from '@/lib/pagos/equipo-de-pagos'
 
-/** El chip de la fila: lo retenido va con su agente; lo demás, con su tipo. */
-export function grupoDeLaFila(item: Pick<InboxItem, 'fuente' | 'agente'>): string {
-  if (item.fuente === 'retenido' && item.agente?.trim()) return item.agente.trim()
+const PREFIJO_DEL_EQUIPO = `${AGENTE_GOBERNADO}:`
+
+/**
+ * El chip de la fila: lo retenido va con su agente; lo demás, con su tipo.
+ * BANDEJA-AG (QA 19-10): dentro del equipo de pagos, con quien la propuso
+ * (`pagos:reti`, `pagos:cuenti`): el agente `pagos` es Cobri y no hizo eso.
+ */
+export function grupoDeLaFila(item: Pick<InboxItem, 'fuente' | 'agente' | 'proceso'>): string {
+  const agente = item.agente?.trim()
+  if (item.fuente === 'retenido' && agente) {
+    const especialista = agente === AGENTE_GOBERNADO ? especialistaDelProceso(item.proceso) : null
+    return especialista ? `${PREFIJO_DEL_EQUIPO}${especialista.id}` : agente
+  }
   return item.fuente
+}
+
+/** El especialista del equipo de pagos de un chip (`pagos:reti` → Reti), o null. */
+export function especialistaDelGrupo(grupo: string): Especialista | null {
+  if (!grupo.startsWith(PREFIJO_DEL_EQUIPO)) return null
+  const id = grupo.slice(PREFIJO_DEL_EQUIPO.length)
+  return EQUIPO_DE_PAGOS.find((e) => e.id === id) ?? null
 }
 
 function plano(texto: string): string {

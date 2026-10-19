@@ -27,6 +27,8 @@ const CLAVES = [
   // IN-07 (QA 04-10): UN solo estado vacío; y el regreso al contrato.
   'vacioTitulo', 'vacioTexto', 'empezar', 'volverAlContrato', 'volverListo', 'volverPendiente',
   'estadoFirmado', 'estadoPendiente',
+  // CONT-1 (QA 19-10): sin inventario anterior no se nombra; «1 ítem» en singular.
+  'porActualizarTextoSinAnterior', 'itemsUno',
   'firmaTitulo', 'firmaPendiente', 'firmadoPor', 'firmaNoIntegra', 'firmaInquilinoTitulo', 'firmaInquilinoAyuda', 'firmaAceptacion', 'firmaBoton', 'firmaHecha', 'firmaExito', 'firmaError',
 ].map((k) => `${B}.${k}`);
 

@@ -85,6 +85,16 @@ describe('aviso de vigencia en la ficha', () => {
     });
   });
 
+  it('CONT-1 (QA 19-10): sólo habla del «inventario anterior» si hubo uno completo', () => {
+    const sinAnterior = avisoDeVigencia({ ...base, motivo: 'ANTERIOR_AL_FIN_DEL_CONTRATO', porActualizarTras: tras });
+    expect(sinAnterior?.texto?.clave).toBe('inmobiliaria.inventarioDelInmueble.porActualizarTextoSinAnterior');
+    const conAnterior = avisoDeVigencia({
+      ...base, motivo: 'ANTERIOR_AL_FIN_DEL_CONTRATO', porActualizarTras: tras,
+      ultimoCompleto: { id: 'v1', version: 1, completadoEl: '2026-01-10' },
+    });
+    expect(conAnterior?.texto?.clave).toBe('inmobiliaria.inventarioDelInmueble.porActualizarTexto');
+  });
+
   it('vigente dice la versión y el día', () => {
     const a = avisoDeVigencia({
       ...base, vigente: true, motivo: null, inventarioVigenteId: 'v3',

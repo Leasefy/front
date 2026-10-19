@@ -18,6 +18,7 @@ import Link from 'next/link';
 import {
   CaretLeft,
   PaperPlaneTilt,
+  UserPlus,
   PencilSimpleLine,
   CheckCircle,
   WarningCircle,
@@ -184,6 +185,14 @@ function ContratoDetalleContent() {
   // usar `canEditContracts` acá mostraría el botón a un rol que el back le
   // responde 403.
   const canInviteTenant = canAccess('contratos', 'create');
+  /** CONT-4 (QA 19-10): el botón principal del borrador sin cuenta lleva a «Invitar al portal» de Partes. */
+  const irAInvitarAlInquilino = useCallback(() => {
+    const bloque = document.querySelector<HTMLElement>('[data-testid="partes-invitar"]');
+    if (!bloque) return;
+    const quieto = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    bloque.scrollIntoView?.({ behavior: quieto ? 'auto' : 'smooth', block: 'center' });
+    bloque.querySelector<HTMLElement>('button, a')?.focus({ preventScroll: true });
+  }, []);
 
   const [actionError, setActionError] = useState<string | null>(null);
   // (08-10-2026) El bloque del escenario abre «Cómo se cobra → Corregir».
@@ -558,6 +567,7 @@ function ContratoDetalleContent() {
               onTerminar: () => setTerminarAbierto(true),
               onCeder: () => setCesionAbierta(true),
               onCambiarInquilino: () => setCambioDeInquilinoAbierto(true),
+              onIrAInvitar: canInviteTenant ? irAInvitarAlInquilino : undefined,
             })
           : {})}
       />
@@ -1042,8 +1052,9 @@ function decisionesDelContrato({
   onTerminar,
   onCeder,
   onCambiarInquilino,
+  onIrAInvitar,
 }: {
-  contract: { id: string; status: string; startDate?: string | null };
+  contract: { id: string; status: string; startDate?: string | null; tenantId?: string | null };
   isSubmitting: boolean;
   pendingAction: string | null;
   latestRejectionReason?: string;
@@ -1060,6 +1071,8 @@ function decisionesDelContrato({
   onCeder: () => void;
   /** QA-CONT CR-06: abre «Cambiar de inquilino». Sin él, el botón no sale. */
   onCambiarInquilino?: () => void;
+  /** CONT-4 (QA 19-10): lleva a «Invitar al portal» de Partes. Sin él (sin permiso de invitar), no se ofrece. */
+  onIrAInvitar?: () => void;
 }): { aviso?: React.ReactNode; acciones?: React.ReactNode } {
   const status = contract.status as ContractStatus;
   const enVozBaja = 'h-auto gap-1.5 px-0 text-caption font-medium text-fg-muted hover:text-fg hover:no-underline';
@@ -1111,6 +1124,27 @@ function decisionesDelContrato({
     </Button>
   ) : null;
   const editar = { label: 'Editar', icon: PencilSimpleLine, onClick: onEdit };
+
+  /*
+   * CONT-4 (QA 19-10): en borrador y sin cuenta del inquilino, «Enviar al
+   * inquilino» siempre terminaba en el 409 que dice «invítalo primero». El
+   * paso que toca es la invitación: es el botón principal y lleva a ella.
+   */
+  if (status === 'draft' && contract.tenantId === null && onIrAInvitar) {
+    return {
+      aviso: (
+        <AvisoDelContrato
+          tono="paso"
+          icono={FileText}
+          titulo="Contrato en borrador"
+          detalle="El inquilino todavía no tiene cuenta en el portal. Invítalo primero; cuando tenga su cuenta, envíale el contrato para firmar."
+          principal={{ label: 'Invitar al portal', icon: UserPlus, onClick: onIrAInvitar }}
+          secundaria={editar}
+        />
+      ),
+      acciones: cancelar,
+    };
+  }
 
   if (status === 'draft') {
     return {

@@ -175,7 +175,7 @@ export function PartesDelContrato({
         {/* La invitación al portal (T-0036 §3.2.B6). 🔴 CR-08: también con la
             cuenta vinculada —el inquilino que nunca entró: estado y «Reenviar
             invitación»—; el componente decide con lo que dice el back. */}
-        <div className="pt-1 empty:hidden">
+        <div className="pt-1 empty:hidden" data-testid="partes-invitar">
           <InvitarInquilino
             contract={contract}
             puedeInvitar={puedeInvitar}

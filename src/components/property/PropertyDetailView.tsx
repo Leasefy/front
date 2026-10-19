@@ -326,8 +326,9 @@ export function PropertyDetailView({
                     <MapPin className="w-4 h-4 text-primary" strokeWidth={1.5} />
                     <span className="text-[14px] text-muted-foreground">{barrioYCiudad(property.neighborhood, property.city)}</span>
                   </span>
-                  {publicadoHace(property.createdAt) && (
-                    <span className="text-[13px] text-fg-subtle">· {publicadoHace(property.createdAt)}</span>
+                  {/* AVISO-1 (QA 19-10): la fecha de PUBLICACIÓN, nunca la de creación del inmueble. */}
+                  {publicadoHace(property.publicadoEn ?? undefined) && (
+                    <span className="text-[13px] text-fg-subtle">· {publicadoHace(property.publicadoEn ?? undefined)}</span>
                   )}
                 </div>
 

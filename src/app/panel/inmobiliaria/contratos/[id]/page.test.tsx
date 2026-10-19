@@ -396,6 +396,24 @@ describe('ContratoDetallePage — el fallo de una acción, en palabras', () => {
     expect(container.textContent).not.toContain('La operación falló')
   })
 
+  it('CONT-4 (QA 19-10) · en borrador y sin cuenta del inquilino, el paso es «Invitar al portal», no enviar', async () => {
+    withContract(contract({ status: 'draft', tenantId: null }))
+    await renderPage()
+
+    expect(() => boton('Enviar al inquilino')).toThrow()
+    const invitar = boton('Invitar al portal')
+    await clic(invitar)
+    expect(accionesDelContrato.send).not.toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="partes-invitar"]')).not.toBeNull()
+  })
+
+  it('CONT-4 · con la cuenta del inquilino, sigue «Enviar al inquilino»', async () => {
+    withContract(contract({ status: 'draft' }))
+    await renderPage()
+    expect(boton('Enviar al inquilino')).toBeTruthy()
+    expect(() => boton('Invitar al portal')).toThrow()
+  })
+
   it('C5 · enviar con un 403 → dice que es de permisos, no el texto crudo', async () => {
     const { ApiError } = await import('@/lib/api/client')
     accionesDelContrato.send.mockRejectedValue(new ApiError(403, 'Forbidden resource'))

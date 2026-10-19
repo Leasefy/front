@@ -86,7 +86,9 @@ export function InventarioDelContrato({ contratoId, legado }: Props) {
           <p>
             {tarea.contratoId === contratoId
               ? t(`${B}.tareaEsteContrato`, { fecha: diaLegible(tarea.terminoEl) })
-              : t(`${B}.porActualizarTexto`, { fecha: diaLegible(tarea.terminoEl) })}
+              : t(datos.vigenciaDelInmueble?.ultimoCompleto ? `${B}.porActualizarTexto` : `${B}.porActualizarTextoSinAnterior`, {
+                  fecha: diaLegible(tarea.terminoEl),
+                })}
           </p>
         </AlertaAccionable>
       )}

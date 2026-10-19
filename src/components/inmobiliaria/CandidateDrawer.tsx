@@ -1,5 +1,6 @@
 'use client';
 
+import { CalificacionDelPostulante } from '@/components/calificacion/CalificacionDelPostulante';
 import { TarjetaDeCalificacion } from '@/components/calificacion/TarjetaDeCalificacion';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
@@ -538,6 +539,12 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 dentro del panel de la inmobiliaria. */}
             <EstudioPagadoALaInmobiliaria applicationId={candidate.id} />
           </section>
+
+          {/* La Calificación Leasefy sin estudio (Nico, 19-10-2026: «mostrarla en el cajón»): desde la cuenta
+              de la persona. Con estudio, la trae la evaluación (abajo, en el análisis). */}
+          {!isLoadingAI && !evaluation?.calificacion_leasefy?.calificacion && (
+            <CalificacionDelPostulante applicationId={candidate.id} />
+          )}
 
           {/* AI Scoring Block */}
           <section className={cn(

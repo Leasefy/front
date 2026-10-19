@@ -13,6 +13,7 @@
  *     GET  /calificacion-leasefy/verificar/:codigo
  *   La inmobiliaria:
  *     POST /inmobiliaria/calificacion-leasefy/buscar   { documento, canon? }   (portafolio:view)
+ *     GET  /inmobiliaria/calificacion-leasefy/postulaciones/:applicationId    (portafolio:view)
  *     GET  /inmobiliaria/calificacion-leasefy/evaluaciones/preguntas            (contratos:view)
  *     GET  /inmobiliaria/calificacion-leasefy/evaluaciones/por-evaluar          (contratos:view)
  *     POST /inmobiliaria/calificacion-leasefy/evaluaciones { contractId, respuestas, nota? } (contratos:edit)
@@ -217,6 +218,17 @@ export const calificacionLeasefyApi = {
       documento,
       ...(canon ? { canon } : {}),
     });
+  },
+  /**
+   * La calificación de quien se postuló a un inmueble de la inmobiliaria, desde su cuenta (19-10-2026):
+   * para el cajón del candidato cuando no hay estudio. `disponible: false` = sin las tablas del buró.
+   */
+  deLaPostulacion(
+    applicationId: string,
+  ): Promise<{ disponible: boolean; resultado: CalificacionParaLaInmobiliaria | null }> {
+    return apiClient.get(
+      `/inmobiliaria/calificacion-leasefy/postulaciones/${encodeURIComponent(applicationId)}`,
+    );
   },
   preguntas(): Promise<{ preguntas: PreguntaDeFin[] }> {
     return apiClient.get('/inmobiliaria/calificacion-leasefy/evaluaciones/preguntas');

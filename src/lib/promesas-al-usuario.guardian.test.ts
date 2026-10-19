@@ -205,11 +205,6 @@ const EN_PANTALLA: Record<string, Promesa> = {
     de: 'micro',
     nota: 'El mensaje de degradación que pinta `CobranzaImportCard`.',
   },
-  'lib/hooks/cobranza/use-owner-reports.ts': {
-    estado: 'HONESTO',
-    de: 'micro',
-    nota: 'El mensaje de degradación de los informes del propietario del micro.',
-  },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════

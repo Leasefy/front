@@ -12,9 +12,15 @@
  * useOwnerReports (GET list/detail, POST generate, POST approve, GET pdf):
  *   - La lista se llena con reportes REALES cuando el backend responde.
  *   - "Generar" = POST generate → crea un borrador desde data real de cartera.
- *   - "Aprobar / Enviar" = POST approve (markAsSent) con CONFIRMACIÓN HUMANA.
- *   - "Descargar PDF" = GET pdf; el backend responde 501 hasta que la plantilla
- *     exista → mostramos un estado honesto.
+ *   - "Aprobar y enviar" = POST approve (markAsSent) con CONFIRMACIÓN HUMANA.
+ *   - "Descargar PDF" = GET pdf: la carta que recibe el propietario.
+ *
+ * 🔴 MORI-33 (QA de los agentes; Nico 19-10-2026: «por correo»). El reporte no
+ * sabía a quién iba («Para: Propietario sin nombre», título «Inmueble»), el PDF
+ * decía «próximamente» y «Aprobar» lo marcaba enviado sin mandar nada. Ahora el
+ * propietario y el inmueble salen del contrato del caso (`GET …/destino`, los
+ * correos tapados), el PDF lo arma el back y «Aprobar y enviar» se lo manda por
+ * correo: queda «Enviado» sólo si el correo salió; si no, dice por qué.
  *
  * FAIL-SOFT: si el endpoint responde 404/empty/error la lista degrada a [] y la
  *   pantalla muestra SÓLO el estado vacío — nunca un reporte de ejemplo, que se
@@ -28,7 +34,7 @@
  * un solo primary CTA por vista, tokens semánticos.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Buildings,
@@ -52,6 +58,7 @@ import {
 } from '@/components/inmobiliaria/cobranza/DebtorPicker'
 import {
   useOwnerReports,
+  type LecturaDelDestino,
   type OwnerReport,
   type OwnerReportStatus,
 } from '@/lib/hooks/cobranza/use-owner-reports'
@@ -133,8 +140,10 @@ interface ReportePreview {
 function adaptOwnerReport(r: OwnerReport): ReportePreview {
   return {
     id: r.id,
-    propietario: r.ownerName?.trim() || 'Propietario sin nombre',
-    inmueble: r.propertyId?.trim() || 'Inmueble',
+    // MORI-33: el propietario y el inmueble del contrato del caso. Un borrador
+    // viejo puede no tenerlos: la vista dice a quién va de verdad (`destino`).
+    propietario: r.ownerName?.trim() || 'Propietario por identificar',
+    inmueble: r.propertyLabel?.trim() || 'Inmueble del caso',
     diasMora: r.daysInMora ?? 0,
     valor: r.overdueAmount != null ? COP.format(r.overdueAmount) : '—',
     estado: BACKEND_ESTADO[r.status] ?? 'borrador',
@@ -267,7 +276,50 @@ function NuevoReporte({
   )
 }
 
-function ReportePreviewCard({ reporte }: { reporte: ReportePreview }) {
+/** «Ana Gómez (ana***@correo.co)» o «Ana Gómez, sin correo registrado». */
+function conSuCorreo(p: { nombre: string; correo: string | null }): string {
+  return p.correo ? `${p.nombre} (${p.correo})` : `${p.nombre}, sin correo registrado`
+}
+
+/** A quién le llega el reporte, leído del contrato del caso (MORI-33). */
+function ParaQuien({ reporte, lectura }: { reporte: ReportePreview; lectura: LecturaDelDestino | 'cargando' | null }) {
+  if (lectura === 'cargando') {
+    return <p className="text-xs text-fg-muted">Buscando el propietario del contrato…</p>
+  }
+  if (lectura === null) {
+    return <p className="text-xs text-fg-muted truncate">Para: {reporte.propietario}</p>
+  }
+  if (!lectura.destino) {
+    return (
+      <p className="text-xs text-warning" data-testid="reporte-sin-destino">
+        {lectura.porQueNo ?? 'No sabemos a qué propietario va este reporte.'}
+      </p>
+    )
+  }
+  const d = lectura.destino
+  const sinCorreo = d.propietarios.length > 0 && d.propietarios.every((p) => !p.correo)
+  return (
+    <div className="space-y-0.5" data-testid="reporte-destino">
+      <p className="text-xs text-fg-muted">
+        Para: {d.propietarios.length > 0 ? d.propietarios.map(conSuCorreo).join(' · ') : 'el inmueble no tiene propietario registrado'}
+      </p>
+      <p className="text-xs text-fg-subtle">Contrato {d.contrato}</p>
+      {sinCorreo && (
+        <p className="text-xs text-warning">
+          Ningún propietario tiene correo registrado: agrégalo en su ficha para poder enviárselo.
+        </p>
+      )}
+    </div>
+  )
+}
+
+function ReportePreviewCard({
+  reporte,
+  lectura,
+}: {
+  reporte: ReportePreview
+  lectura: LecturaDelDestino | 'cargando' | null
+}) {
   return (
     <Card>
       <CardContent className="p-5 space-y-4">
@@ -276,11 +328,9 @@ function ReportePreviewCard({ reporte }: { reporte: ReportePreview }) {
           <div className="space-y-0.5 min-w-0">
             <Eyebrow>Reporte de gestión</Eyebrow>
             <h2 className="text-base font-semibold text-fg">
-              Estado de cobranza — {reporte.inmueble}
+              Estado de cobranza — {lectura && lectura !== 'cargando' && lectura.destino ? lectura.destino.inmueble.nombre : reporte.inmueble}
             </h2>
-            <p className="text-xs text-fg-muted truncate">
-              Para: {reporte.propietario}
-            </p>
+            <ParaQuien reporte={reporte} lectura={lectura} />
           </div>
           <EstadoBadge estado={reporte.estado} />
         </div>
@@ -310,8 +360,9 @@ function ReportePreviewCard({ reporte }: { reporte: ReportePreview }) {
         <div className="flex items-start gap-2 rounded-lg bg-primary-soft p-3 text-xs text-fg">
           <ShieldCheck className="w-4 h-4 shrink-0 text-primary mt-0.5" weight="duotone" aria-hidden="true" />
           <p>
-            Este reporte requiere tu revisión y aprobación antes de enviarse al propietario. Ningún
-            reporte se envía de forma automática.
+            Este reporte requiere tu revisión y aprobación antes de enviarse al propietario. Al
+            aprobarlo se le manda por correo, con el reporte en PDF. Ningún reporte se envía de forma
+            automática.
           </p>
         </div>
       </CardContent>
@@ -344,6 +395,7 @@ function ReportesPropietariosContent() {
     approveFallo,
     downloadPdf,
     isDownloading,
+    leerDestino,
   } = useOwnerReports()
 
   // Reportes reales adaptados al shape de la vista.
@@ -369,7 +421,7 @@ function ReportesPropietariosContent() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  // Estado honesto del PDF (501 → "Próximamente").
+  // Si el PDF no se pudo descargar, por qué.
   const [pdfMsg, setPdfMsg] = useState<string | null>(null)
   // Feedback de aprobación / generación (T-323).
   const [actionMsg, setActionMsg] = useState<string | null>(null)
@@ -394,6 +446,31 @@ function ReportesPropietariosContent() {
 
   const esReal = Boolean(seleccionado?.raw)
   const yaEnviado = seleccionado?.estado === 'enviado'
+
+  // MORI-33: a quién va el reporte elegido (el contrato del caso, en el back).
+  const [destino, setDestino] = useState<{ id: string; lectura: LecturaDelDestino | 'cargando' | null } | null>(null)
+  const idElegido = esReal ? (seleccionado?.id ?? null) : null
+  useEffect(() => {
+    if (!idElegido) return
+    let vivo = true
+    setDestino({ id: idElegido, lectura: 'cargando' })
+    void leerDestino(idElegido).then((lectura) => {
+      if (vivo) setDestino({ id: idElegido, lectura })
+    })
+    return () => {
+      vivo = false
+    }
+  }, [idElegido, leerDestino])
+  const lectura = destino && destino.id === idElegido ? destino.lectura : null
+  const destinoLeido = lectura && lectura !== 'cargando' ? lectura : null
+  /** Se sabe que no le puede llegar a nadie: el botón se apaga y dice por qué. */
+  const porQueNoSePuedeEnviar = !destinoLeido
+    ? null
+    : !destinoLeido.destino
+      ? (destinoLeido.porQueNo ?? 'No sabemos a qué propietario va este reporte.')
+      : destinoLeido.destino.propietarios.every((p) => !p.correo)
+        ? 'Ningún propietario tiene correo registrado: agrégalo en su ficha para poder enviárselo.'
+        : null
 
   // El filtro segmentado también pide al backend la lista filtrada (camino real).
   const onFilterChange = (value: string) => {
@@ -431,35 +508,48 @@ function ReportesPropietariosContent() {
     }
   }
 
-  // ── Acción REAL: aprobar / enviar (POST approve) — T-323, click humano ───────
+  // ── Acción REAL: aprobar y enviar (POST approve) — T-323, click humano ──────
   const onAprobarEnviar = async () => {
-    if (!esReal || yaEnviado) return
-    // Confirmación humana explícita antes de marcar como enviado al propietario.
-    // Con el modal del sistema, no con el diálogo del navegador (02-10-2026).
+    if (!esReal || yaEnviado || porQueNoSePuedeEnviar) return
+    const propietarios = destinoLeido?.destino?.propietarios.filter((p) => p.correo) ?? []
+    // Confirmación humana explícita: con el modal del sistema (02-10-2026).
     const ok = await confirmar({
-      // QA-AGENTES 16-10 (MORI-33): Leasefy todavía no le manda el reporte al
-      // propietario (ni correo ni PDF); el botón decía «enviar» y nada salía.
-      titulo: `¿Aprobar el reporte para ${seleccionado.propietario}?`,
+      titulo:
+        propietarios.length > 0
+          ? `¿Enviarle el reporte a ${propietarios.map((p) => p.nombre).join(' y ')}?`
+          : `¿Aprobar y enviar el reporte de ${seleccionado.inmueble}?`,
       descripcion:
-        'Confirmas que lo revisaste y que se lo mandaste al propietario: Leasefy todavía no lo envía por ti. Queda aprobado y marcado como enviado.',
-      accion: 'Aprobar y marcar como enviado',
+        propietarios.length > 0
+          ? `Le llega por correo a ${propietarios.map(conSuCorreo).join(' y ')}, con el reporte en PDF. Queda como enviado sólo si el correo sale.`
+          : 'Se le manda por correo al propietario del contrato, con el reporte en PDF. Queda como enviado sólo si el correo sale.',
+      accion: 'Aprobar y enviar',
       icono: <PaperPlaneTilt weight="bold" />,
     })
     if (!ok) return
     setActionMsg(null)
     const updated = await approve(seleccionado.id, true)
     if (updated) {
-      setActionMsg('Reporte aprobado y marcado como enviado.')
+      const llegaron = updated.envio?.destinatarios.filter((d) => d.estado === 'ENVIADO') ?? []
+      setActionMsg(
+        llegaron.length > 0
+          ? `Enviado por correo a ${llegaron.map(conSuCorreo).join(' y ')}.`
+          : 'Reporte aprobado y enviado.',
+      )
     }
   }
 
-  // ── Acción REAL: descargar PDF (GET pdf) — 501 → estado honesto ──────────────
+  // ── Acción REAL: descargar PDF (GET pdf) — la carta que recibe el propietario ─
   const onDescargarPdf = async () => {
     if (!esReal) return
     setPdfMsg(null)
     const result = await downloadPdf(seleccionado.id)
-    if (result.status === 'unavailable' && result.message !== 'ok') {
-      setPdfMsg('La descarga en PDF estará disponible próximamente.')
+    if (result.status === 'error') {
+      setPdfMsg(
+        mensajeDeLaAccion(
+          { fallo: result.fallo },
+          { porDefecto: 'No pudimos descargar el PDF.', accion: 'descargar el PDF' },
+        ),
+      )
     }
   }
 
@@ -568,7 +658,7 @@ function ReportesPropietariosContent() {
         <section className="space-y-4" aria-label="Vista del reporte">
           {/* Elegir otro reporte cambia la vista con un fundido. */}
           <CrossFade swapKey={seleccionado.id}>
-            <ReportePreviewCard reporte={seleccionado} />
+            <ReportePreviewCard reporte={seleccionado} lectura={lectura} />
           </CrossFade>
 
           {/* Acciones. enviar/aprobar y PDF se cablean a endpoints reales cuando
@@ -584,22 +674,23 @@ function ReportesPropietariosContent() {
                   variant="default"
                   size="sm"
                   hideArrow
-                  disabled={!esReal || yaEnviado || isApproving}
+                  disabled={!esReal || yaEnviado || isApproving || Boolean(porQueNoSePuedeEnviar)}
                   onClick={onAprobarEnviar}
                   title={
                     !esReal
                       ? 'Disponible al generar un reporte real'
                       : yaEnviado
                         ? 'Este reporte ya fue enviado'
-                        : 'Aprobar y marcar como enviado al propietario'
+                        : (porQueNoSePuedeEnviar ?? 'Aprobar y enviárselo por correo al propietario')
                   }
+                  data-testid="reporte-aprobar-y-enviar"
                 >
                   {isApproving ? (
                     <Spinner size="sm" variant="current" />
                   ) : (
                     <PaperPlaneTilt className="w-3.5 h-3.5" aria-hidden="true" />
                   )}
-                  {yaEnviado ? 'Enviado' : 'Aprobar'}
+                  {yaEnviado ? 'Enviado' : 'Aprobar y enviar'}
                 </Button>
 
                 {/* Generar borrador (POST generate) — necesita un deudor real */}
@@ -647,7 +738,7 @@ function ReportesPropietariosContent() {
               {/* Feedback honesto de las acciones */}
               <Presence as="p" show={Boolean(actionMsg)} className="text-xs text-success">{actionMsg}
               </Presence>
-              <Presence as="p" show={Boolean(pdfMsg)} className="text-xs text-fg-muted">
+              <Presence as="p" show={Boolean(pdfMsg)} className="text-xs text-danger" role="alert" data-testid="reporte-pdf-error">
                 {pdfMsg}
               </Presence>
               <Presence as="p" show={Boolean(approveError)} className="text-xs text-danger" role="alert" data-testid="reporte-aprobar-error">
@@ -664,7 +755,8 @@ function ReportesPropietariosContent() {
               </Presence>
 
               <p className="text-xs text-fg-muted">
-                El envío al propietario siempre requiere tu aprobación explícita.
+                El envío al propietario siempre requiere tu aprobación explícita: sale por correo, con
+                el reporte en PDF adjunto.
               </p>
             </CardContent>
           </Card>

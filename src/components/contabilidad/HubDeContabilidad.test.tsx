@@ -82,7 +82,7 @@ vi.mock('./asientos/CierreDePeriodo', () => ({
   ),
 }));
 
-import { HubDeContabilidad } from './HubDeContabilidad';
+import { HubDeContabilidad, pistaDelRango } from './HubDeContabilidad';
 
 const SIN_FALTANTES = {
   recibos: 0,
@@ -675,6 +675,13 @@ describe('HubDeContabilidad · el glow-up del 22-09', () => {
     await montar();
     const boton = $('[data-testid="descargar-csv"]')!;
     expect(boton.closest('header')?.textContent).toContain('Para el contador');
+  });
+
+  it('🔴 CONTA-2: la pista del rango sólo dice «mes pasado» con el rango que vino cargado', () => {
+    const inicial = { desde: '2026-09-01', hasta: '2026-09-30' };
+    expect(pistaDelRango(inicial, inicial)).toContain('Viene cargado el mes pasado');
+    expect(pistaDelRango({ desde: '', hasta: '' }, inicial)).toBe('Sin fechas sale el libro entero. ');
+    expect(pistaDelRango({ desde: '2026-01-01', hasta: '2026-09-30' }, inicial)).toBe('');
   });
 
   it('la grilla de pantallas dice qué es', async () => {

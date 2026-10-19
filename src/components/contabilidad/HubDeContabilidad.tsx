@@ -320,6 +320,21 @@ const PEDIDOS: Record<ConsultaDeLaPortada, () => Promise<Parche>> = {
 
 const CONSULTAS = Object.keys(PEDIDOS) as ConsultaDeLaPortada[];
 
+/**
+ * CONTA-2 (19-10-2026): «Viene cargado el mes pasado» seguía diciéndose después
+ * de quitar las fechas. Se dice sólo si el rango es el que vino cargado.
+ */
+export function pistaDelRango(
+  rango: { desde: string; hasta: string },
+  inicial: { desde: string; hasta: string },
+): string {
+  if (rango.desde === inicial.desde && rango.hasta === inicial.hasta) {
+    return 'Viene cargado el mes pasado, que es el que se le manda al contador. '
+  }
+  if (!rango.desde && !rango.hasta) return 'Sin fechas sale el libro entero. '
+  return ''
+}
+
 function usePortada() {
   const [datos, setDatos] = useState<Portada>(nadaTodavia);
   const [cargando, setCargando] = useState(true);
@@ -737,9 +752,8 @@ function ParaElContador() {
             onChange={setRango}
             disabled={bajando}
           />
-          <p className="text-caption text-fg-muted">
-            Viene cargado el mes pasado, que es el que se le manda al contador.
-            El archivo lo arma el servidor: con un rango largo puede tardar.
+          <p className="text-caption text-fg-muted" data-testid="libro-pista-del-rango">
+            {pistaDelRango(rango, inicial)}El archivo lo arma el servidor: con un rango largo puede tardar.
           </p>
         </CajonCuerpo>
         <CajonPie

@@ -41,7 +41,7 @@ export function CalificacionDelPostulante({ applicationId }: { applicationId: st
     <Presence show={r !== null}>
       {r && (
         <section className="space-y-1.5" data-testid="calificacion-del-postulante">
-          <TarjetaDeCalificacion calificacion={r.calificacion} className="p-4" />
+          <TarjetaDeCalificacion calificacion={r.calificacion} className="p-4" compacta />
           <p className="text-xs text-fg-subtle">
             {r.alcance === 'TODO_LEASEFY'
               ? tr('Con todo su historial en Leasefy.')

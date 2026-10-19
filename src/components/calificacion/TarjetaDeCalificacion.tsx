@@ -141,10 +141,17 @@ export function TarjetaDeCalificacion({
   calificacion,
   className,
   sinDesglose,
+  compacta,
 }: {
   calificacion: Calificacion;
   className?: string;
   sinDesglose?: boolean;
+  /**
+   * Para un lugar angosto (el cajón del candidato): todo apilado. Las columnas
+   * de `lg:` miran el ancho de la PANTALLA, no el del cajón, y en un cajón con
+   * pantalla grande partían el veredicto en tres renglones.
+   */
+  compacta?: boolean;
 }) {
   const tr = useTr();
   const { formatCurrency } = useI18n();
@@ -170,7 +177,7 @@ export function TarjetaDeCalificacion({
 
   return (
     <div className={cn('rounded-lg border border-border bg-surface p-6 dark:border-border-strong', className)}>
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+      <div className={cn('flex flex-col gap-6', !compacta && 'lg:flex-row lg:items-start lg:justify-between')}>
         <div className="flex items-start gap-4">
           <LetraDeLaCalificacion letra={c.letra} grande />
           <div className="space-y-1.5">
@@ -188,7 +195,7 @@ export function TarjetaDeCalificacion({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:min-w-[22rem]">
+        <div className={cn('grid grid-cols-2 gap-4 sm:grid-cols-3', !compacta && 'lg:min-w-[22rem]')}>
           <div>
             <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">{tr('Canon máximo')}</p>
             <p className="mt-1 font-mono text-sm tabular-nums text-fg">
@@ -248,7 +255,7 @@ export function TarjetaDeCalificacion({
           className={cn(
             'mt-6 grid gap-4',
             // Columnas parejas: con un solo bloque, ocupa todo el ancho (sin hueco).
-            c.mesesObservados > 0 && c.historial && c.documentos && 'lg:grid-cols-2',
+            !compacta && c.mesesObservados > 0 && c.historial && c.documentos && 'lg:grid-cols-2',
           )}
         >
           <BarrasDelBloque

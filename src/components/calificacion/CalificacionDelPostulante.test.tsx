@@ -94,6 +94,17 @@ describe('La Calificación de quien se postuló (cajón del candidato)', () => {
     expect(texto()).toContain('Con todo su historial en Leasefy.');
   });
 
+  // En el cajón angosto las columnas de `lg:` (ancho de la PANTALLA) partían el
+  // veredicto en tres renglones: la tarjeta va compacta, todo apilado.
+  it('la tarjeta va compacta: sin las columnas de pantalla grande', async () => {
+    deLaPostulacion.mockResolvedValue({ disponible: true, resultado: { ...RESULTADO, alcance: 'TODO_LEASEFY' } });
+    await montar();
+    const bloque = document.querySelector('[data-testid="calificacion-del-postulante"]');
+    expect(bloque?.textContent).toContain('Se le arrienda con condiciones');
+    expect(bloque?.querySelector('.lg\\:flex-row')).toBeNull();
+    expect(bloque?.querySelector('.lg\\:min-w-\\[22rem\\]')).toBeNull();
+  });
+
   it('sin autorización dice que es sólo lo de esta inmobiliaria', async () => {
     deLaPostulacion.mockResolvedValue({ disponible: true, resultado: { ...RESULTADO, alcance: 'SOLO_ESTA_INMOBILIARIA' } });
     await montar();

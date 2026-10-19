@@ -583,7 +583,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 {/* La Calificación Leasefy (18-10-2026): documentos + historial en Leasefy. */}
                 {evaluation?.calificacion_leasefy?.calificacion && (
                   <div className="space-y-1.5">
-                    <TarjetaDeCalificacion calificacion={evaluation.calificacion_leasefy.calificacion} className="p-4" />
+                    <TarjetaDeCalificacion calificacion={evaluation.calificacion_leasefy.calificacion} className="p-4" compacta />
                     <p className="text-xs text-fg-subtle">
                       {evaluation.calificacion_leasefy.alcance === 'TODO_LEASEFY'
                         ? tr('Con todo su historial en Leasefy.')

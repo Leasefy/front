@@ -11,6 +11,7 @@ export const NOMBRE_DEL_MODO: Readonly<Record<string, string>> = { sombra: 'Manu
 export function queProponeLaMejora(c: ContenidoDeLaMejora): string {
   if (c.tipo === 'leccion') return `Enseñarle a Ori: «${c.texto}»`
   if (c.tipo === 'modo') return `Poner a ${c.agente} en ${NOMBRE_DEL_MODO[c.modo] ?? c.modo}`
+  if (c.tipo === 'deshacer') return `Deshacer: ${c.que}`
   return `Ajustar la regla «${c.parametro}» a ${c.valor}`
 }
 

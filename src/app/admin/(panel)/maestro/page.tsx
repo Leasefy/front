@@ -4,10 +4,14 @@
  * /admin/maestro — el maestro de Leasefy (Fase 3 y 4 de «Naira lo sabe todo»; Nico, 17 y 19-10-2026: «nos da insights a
  * nosotros y orquesta las Nairas»; «Ustedes aprueban cada una»; «En /admin → Maestro»; «La aplica sola»).
  *
- * Cuatro pestañas:
+ * Cinco pestañas:
  *   - Mejoras: lo que propuso el maestro para una categoría (lección para Ori, modo de un agente, ajuste de una regla de
  *     Naira), con su porqué y dónde lo vio. «Aprobar» lo reparte EN ESE MOMENTO: la Naira de cada inmobiliaria de la
- *     categoría lo aplica sola; abajo queda qué pasó en cada una. Pide confirmar antes.
+ *     categoría lo aplica sola; abajo queda qué pasó en cada una. Pide confirmar antes. Cada una trae su ENSAYO con 30
+ *     días reales y lo que dijo el REVISOR; lo que empeora o el revisor tumbó queda «Por revisar» (no se aprueba). Lo
+ *     aplicado trae «¿Sirvió?» a los 14 días y, si empeoró, el «Deshacer» que propone el maestro.
+ *   - Laboratorio (Nico, 19-10-2026: «quiero que al final el maestro sea así de crack»): la noche paso a paso, con el
+ *     anillo, la bitácora, los ensayos y el revisor; repetición y «Correr ahora» (`components/admin/maestro/Laboratorio`).
  *   - Insights: lo que encontró cada noche (sólo para Leasefy), con el costo de la noche.
  *   - Inmobiliarias: en qué categoría está cada una hoy, y los cortes de tamaño (editables).
  *   - Diarios: lo que cada Naira le dejó al maestro, día por día.
@@ -30,19 +34,22 @@ import {
 import { fmtDateTime } from '@/lib/admin/format'
 import { conNombres, queProponeLaMejora } from '@/lib/admin/maestro'
 import { useApiQuery } from '@/lib/admin/use-api-query'
+import { Laboratorio } from '@/components/admin/maestro/Laboratorio'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 
-type Pestana = 'mejoras' | 'insights' | 'inmobiliarias' | 'diarios'
+type Pestana = 'laboratorio' | 'mejoras' | 'insights' | 'inmobiliarias' | 'diarios'
 
 const ESTADO_DE_LA_MEJORA: Record<MejoraDelMaestro['estado'], { texto: string; tono: 'info' | 'ok' | 'bad' | 'warn' }> = {
   por_decidir: { texto: 'Por decidir', tono: 'info' },
+  por_revisar: { texto: 'Por revisar', tono: 'bad' },
   aprobada: { texto: 'Aprobada, sin repartir', tono: 'warn' },
   aplicada: { texto: 'Aplicada', tono: 'ok' },
   rechazada: { texto: 'Rechazada', tono: 'bad' },
+  deshecha: { texto: 'Deshecha', tono: 'warn' },
 }
 const RESULTADO: Record<ResultadoDelReparto, string> = {
   aplicado: 'aplicada',
@@ -50,7 +57,12 @@ const RESULTADO: Record<ResultadoDelReparto, string> = {
   falta_la_delegacion: 'en Automático, falta que alguien de la inmobiliaria lo confirme con su segundo factor',
   agente_sin_modo: 'ese agente no tiene modo',
   no_se_pudo: 'no se pudo',
+  sin_dato_previo: 'no se sabe cómo estaba antes: no se tocó',
+  ya_no_era_suya: 'la inmobiliaria ya lo había cambiado: no se tocó',
 }
+const VEREDICTO_DEL_ENSAYO: Record<string, string> = { mejora: 'mejora', neutro: 'no cambia mucho', empeora: 'empeora', sin_datos: 'sin datos' }
+const VEREDICTO_DE_LA_MEDICION: Record<string, string> = { sirvio: 'Sirvió', sin_cambio: 'Sin cambio claro', empeoro: 'Empeoró', sin_datos: 'Sin datos para medirla' }
+const MOTIVO: Record<string, string> = { ensayo_empeora: 'el ensayo con 30 días reales dice que empeora', revisor_la_tumba: 'el revisor la tumbó' }
 const ESTADO_DE_LA_NOCHE: Record<NocheDelMaestro['estado'], string> = {
   listo: 'Listo',
   fallo_del_modelo: 'El modelo falló',
@@ -77,7 +89,9 @@ function Mejora({ m, onDecidida }: { m: MejoraDelMaestro; onDecidida: (mensaje: 
       onDecidida(
         d === 'rechazar'
           ? (r.mensaje ?? 'Listo: rechazada.')
-          : `Listo: llegó a ${r.inmobiliarias ?? 0} inmobiliaria${r.inmobiliarias === 1 ? '' : 's'}.`,
+          : m.contenido.tipo === 'deshacer'
+            ? `Listo: se deshizo en ${r.inmobiliarias ?? 0} inmobiliaria${r.inmobiliarias === 1 ? '' : 's'}.`
+            : `Listo: llegó a ${r.inmobiliarias ?? 0} inmobiliaria${r.inmobiliarias === 1 ? '' : 's'}.`,
       )
     } catch (e) {
       setAviso({ tono: 'bad', texto: mensajeDelAdmin(e, { accion: d === 'aprobar' ? 'aprobar la mejora' : 'rechazar la mejora' }) })
@@ -89,7 +103,7 @@ function Mejora({ m, onDecidida }: { m: MejoraDelMaestro; onDecidida: (mensaje: 
     <article className="card p-4 space-y-3" data-maestro-mejora={m.estado}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1 min-w-0">
-          <p className="font-medium text-fg">{queProponeLaMejora(m.contenido)}</p>
+          <p className="font-medium text-fg">{m.que ?? queProponeLaMejora(m.contenido)}</p>
           <p className="text-sm text-fg-muted">
             Para: {m.categoria.nombre} · llegaría a {m.alcance} inmobiliaria{m.alcance === 1 ? '' : 's'} · {fmtDateTime(m.creadaEn)}
           </p>
@@ -97,7 +111,37 @@ function Mejora({ m, onDecidida }: { m: MejoraDelMaestro; onDecidida: (mensaje: 
         <Pill tone={estado.tono}>{estado.texto}</Pill>
       </div>
       <p className="text-sm text-fg">{m.porque}</p>
-      <p className="text-xs text-fg-muted">Lo vio en: {m.evidencia.map((e) => e.nombre).join(', ')}</p>
+      <p className="text-xs text-fg-muted">
+        {m.contenido.tipo === 'deshacer' ? 'Empeoró en' : 'Lo vio en'}: {m.evidencia.map((e) => e.nombre).join(', ')}
+      </p>
+      {m.estado === 'por_revisar' ? (
+        <p className="text-sm text-bad" data-maestro-por-revisar="">
+          No se puede aprobar: {m.motivos.map((x) => MOTIVO[x] ?? x).join(' y ')}.
+        </p>
+      ) : null}
+      {m.ensayo ? (
+        <div className="text-sm" data-maestro-ensayo={m.ensayo.veredicto}>
+          <span className="section-label">ensayo · {VEREDICTO_DEL_ENSAYO[m.ensayo.veredicto] ?? m.ensayo.veredicto}</span>
+          <p className="mt-1 text-fg">{m.ensayo.resumen}</p>
+        </div>
+      ) : null}
+      {m.revision ? (
+        <div className="text-sm" data-maestro-revision="">
+          <span className="section-label">revisor</span>
+          <p className="mt-1 text-fg">
+            {'noCorrio' in m.revision ? `No la revisó: ${m.revision.noCorrio}.` : `${m.revision.aguanta ? 'Aguanta' : 'La tumba'} (confianza ${m.revision.confianza}). ${m.revision.objecion}`}
+          </p>
+        </div>
+      ) : null}
+      {m.medicion ? (
+        <div className="text-sm" data-maestro-medicion={m.medicion.veredicto}>
+          <span className="section-label">¿sirvió? · a los {m.medicion.aLosDias} días</span>
+          <p className={`mt-1 ${m.medicion.veredicto === 'empeoro' ? 'text-bad' : 'text-fg'}`}>
+            {VEREDICTO_DE_LA_MEDICION[m.medicion.veredicto] ?? m.medicion.veredicto}. {m.medicion.resumen}
+            {m.deshacerPropuesto ? ' El maestro propone deshacerla (arriba, por decidir).' : ''}
+          </p>
+        </div>
+      ) : null}
       {m.decision ? (
         <p className="text-xs text-fg-muted">
           {m.decision.tipo === 'aprobada' ? 'Aprobó' : 'Rechazó'} {m.decision.quien} · {fmtDateTime(m.decision.en)}
@@ -114,13 +158,17 @@ function Mejora({ m, onDecidida }: { m: MejoraDelMaestro; onDecidida: (mensaje: 
           {m.aplicacion.porInmobiliaria.length === 0 ? <li className="text-fg-muted">Ninguna inmobiliaria estaba en esa categoría al aprobarla.</li> : null}
         </ul>
       ) : null}
-      {m.estado === 'por_decidir' || m.estado === 'aprobada' ? (
+      {m.estado === 'por_decidir' || m.estado === 'aprobada' || m.estado === 'por_revisar' ? (
         confirmando ? (
           <div className="card p-3 space-y-2" role="alertdialog" aria-label="Confirmar la decisión">
             <p className="text-sm text-fg">
               {confirmando === 'aprobar'
-                ? `La Naira de cada inmobiliaria de «${m.categoria.nombre}» la aplica sola, ahora mismo. Queda en la Actividad del Piloto de cada una.`
-                : 'No se reparte y el maestro no la vuelve a proponer.'}
+                ? m.contenido.tipo === 'deshacer'
+                  ? `La Naira de cada inmobiliaria donde quedó aplicada la revierte sola, ahora mismo (${m.alcance}). Queda en la Actividad del Piloto de cada una.`
+                  : `La Naira de cada inmobiliaria de «${m.categoria.nombre}» la aplica sola, ahora mismo. Queda en la Actividad del Piloto de cada una.`
+                : m.contenido.tipo === 'deshacer'
+                  ? 'La mejora sigue aplicada y el maestro no vuelve a proponer deshacerla.'
+                  : 'No se reparte y el maestro no la vuelve a proponer.'}
             </p>
             <div className="flex gap-2">
               <button type="button" className="btn btn-primary" disabled={ocupado} onClick={() => void decidir(confirmando)}>
@@ -133,10 +181,12 @@ function Mejora({ m, onDecidida }: { m: MejoraDelMaestro; onDecidida: (mensaje: 
           </div>
         ) : (
           <div className="flex gap-2">
-            <button type="button" className="btn btn-primary" onClick={() => setConfirmando('aprobar')}>
-              {m.estado === 'aprobada' ? 'Volver a repartir' : 'Aprobar'}
-            </button>
-            {m.estado === 'por_decidir' ? (
+            {m.estado !== 'por_revisar' ? (
+              <button type="button" className="btn btn-primary" onClick={() => setConfirmando('aprobar')}>
+                {m.estado === 'aprobada' ? 'Volver a repartir' : m.contenido.tipo === 'deshacer' ? 'Deshacer en todas' : 'Aprobar'}
+              </button>
+            ) : null}
+            {m.estado === 'por_decidir' || m.estado === 'por_revisar' ? (
               <button type="button" className="btn btn-ghost" onClick={() => setConfirmando('rechazar')}>
                 Rechazar
               </button>
@@ -251,7 +301,8 @@ export default function MaestroPage() {
     recargar()
   }
   const porDecidir = data?.propuestas.filter((p) => p.estado === 'por_decidir' || p.estado === 'aprobada') ?? []
-  const decididas = data?.propuestas.filter((p) => p.estado === 'aplicada' || p.estado === 'rechazada') ?? []
+  const porRevisar = data?.propuestas.filter((p) => p.estado === 'por_revisar') ?? []
+  const decididas = data?.propuestas.filter((p) => p.estado === 'aplicada' || p.estado === 'rechazada' || p.estado === 'deshecha') ?? []
   const ultima = data?.corridas[0]
   const costoMes = (data?.corridas ?? []).reduce((s, c) => s + c.costoUsd, 0)
 
@@ -275,7 +326,7 @@ export default function MaestroPage() {
             </div>
           ) : null}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <KpiCard label="por decidir" value={porDecidir.length} tone={porDecidir.length > 0 ? 'warn' : 'default'} />
+            <KpiCard label="por decidir" value={porDecidir.length} tone={porDecidir.length > 0 ? 'warn' : 'default'} hint={porRevisar.length > 0 ? `${porRevisar.length} por revisar` : undefined} />
             <KpiCard label="aplicadas" value={decididas.filter((p) => p.estado === 'aplicada').length} tone="ok" />
             <KpiCard label="última noche" value={ultima ? ultima.dia : '—'} hint={ultima ? ESTADO_DE_LA_NOCHE[ultima.estado] : 'todavía no ha pensado'} />
             <KpiCard label="costo de las noches" value={usd(costoMes)} hint={`${data.corridas.length} noche${data.corridas.length === 1 ? '' : 's'}`} />
@@ -284,6 +335,7 @@ export default function MaestroPage() {
             {(
               [
                 ['mejoras', `Mejoras (${porDecidir.length})`],
+                ['laboratorio', 'Laboratorio'],
                 ['insights', 'Insights'],
                 ['inmobiliarias', 'Inmobiliarias'],
                 ['diarios', 'Diarios'],
@@ -297,10 +349,14 @@ export default function MaestroPage() {
 
           {pestana === 'mejoras' ? (
             <section className="space-y-3" aria-label="Mejoras">
-              {porDecidir.length === 0 && decididas.length === 0 ? (
+              {porDecidir.length === 0 && decididas.length === 0 && porRevisar.length === 0 ? (
                 <EmptyBlock title="El maestro no ha propuesto nada" hint="Propone algo para una categoría cuando lo ve en al menos 3 inmobiliarias de ella." />
               ) : null}
               {porDecidir.map((m) => (
+                <Mejora key={m.id} m={m} onDecidida={decidida} />
+              ))}
+              {porRevisar.length > 0 ? <p className="section-label pt-2">por revisar · el ensayo o el revisor las tumbaron</p> : null}
+              {porRevisar.map((m) => (
                 <Mejora key={m.id} m={m} onDecidida={decidida} />
               ))}
               {decididas.length > 0 ? <p className="section-label pt-2">decididas</p> : null}
@@ -375,6 +431,7 @@ export default function MaestroPage() {
           ) : null}
 
           {pestana === 'diarios' ? <Diarios /> : null}
+          {pestana === 'laboratorio' ? <Laboratorio onVerMejoras={() => setPestana('mejoras')} /> : null}
         </div>
       ) : null}
     </div>

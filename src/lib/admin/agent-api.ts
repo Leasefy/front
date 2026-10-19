@@ -284,6 +284,7 @@ export interface NocheDelMaestro {
   id: string
   dia: string
   estado: 'listo' | 'fallo_del_modelo' | 'muy_caro' | 'sin_diarios'
+  origen: 'noche' | 'manual'
   modelo: string | null
   costoUsd: number
   diarios: number
@@ -299,11 +300,39 @@ export type ContenidoDeLaMejora =
   | { tipo: 'leccion'; texto: string; agente: string | null }
   | { tipo: 'modo'; agente: string; modo: 'sombra' | 'copiloto' | 'autonomo' }
   | { tipo: 'regla'; parametro: string; valor: number }
-export type ResultadoDelReparto = 'aplicado' | 'ya_estaba' | 'falta_la_delegacion' | 'agente_sin_modo' | 'no_se_pudo'
+  | { tipo: 'deshacer'; propuestaId: string; que: string }
+export type ResultadoDelReparto = 'aplicado' | 'ya_estaba' | 'falta_la_delegacion' | 'agente_sin_modo' | 'no_se_pudo' | 'sin_dato_previo' | 'ya_no_era_suya'
+export type EstadoDeLaMejora = 'por_decidir' | 'por_revisar' | 'rechazada' | 'aprobada' | 'aplicada' | 'deshecha'
+export type VeredictoDelEnsayo = 'mejora' | 'neutro' | 'empeora' | 'sin_datos'
+export type VeredictoDeLaMedicion = 'sirvio' | 'sin_cambio' | 'empeoro' | 'sin_datos'
+export type MotivoDeRevision = 'ensayo_empeora' | 'revisor_la_tumba'
+/** El ensayo de una mejora con los 30 días reales (laboratorio del maestro, 19-10-2026). */
+export interface EnsayoDeLaMejora {
+  version: number
+  veredicto: VeredictoDelEnsayo
+  resumen: string
+  cifras: Record<string, number>
+  filas: string[]
+  dias: string[]
+  grillas: Array<{ medida: string; referencia: number[][]; conLaMejora: number[][] | null }>
+  porInmobiliaria: Array<{ alias: string; veredicto: VeredictoDelEnsayo; cifras: Record<string, number> }>
+}
+export type RevisionDeLaMejora = { aguanta: boolean; objecion: string; confianza: 'alta' | 'media' | 'baja'; modelo: string } | { noCorrio: string }
 export interface MejoraDelMaestro {
   id: string
-  estado: 'por_decidir' | 'rechazada' | 'aprobada' | 'aplicada'
+  estado: EstadoDeLaMejora
   contenido: ContenidoDeLaMejora
+  /** Lo que propone, en una frase (la dice el micro). */
+  que: string
+  veredicto: 'pasa' | 'por_revisar'
+  motivos: MotivoDeRevision[]
+  ensayo: EnsayoDeLaMejora | null
+  revision: RevisionDeLaMejora | null
+  /** La mejora que deshace (sólo un «deshacer»). */
+  deshace: string | null
+  /** El «deshacer» que el maestro ya propuso para esta (si empeoró). */
+  deshacerPropuesto: string | null
+  medicion: { veredicto: VeredictoDeLaMedicion; resumen: string; aLosDias: number; medidaEn: string } | null
   categoria: { dimension: string; valor: string; nombre: string }
   porque: string
   evidencia: InmobiliariaConNombre[]
@@ -356,3 +385,83 @@ export function guardarAjustesDelMaestro(a: AjustesDelMaestro): Promise<{ ajuste
   return agentAdminApi('/api/admin/maestro/ajustes', { method: 'PUT', body: a })
 }
 
+
+// ── El laboratorio del maestro (Nico, 19-10-2026: «quiero que al final el maestro sea así de crack») ──────────
+
+export type RolDelMaestro = 'lector' | 'pensador' | 'verificador' | 'revisor' | 'medidor' | 'archivista'
+export interface PasoDelMaestro {
+  orden: number
+  en: string
+  rol: RolDelMaestro
+  paso: string
+  texto: string
+  detalle: Record<string, unknown>
+  /** El nombre de la inmobiliaria del paso, si el paso es de una. */
+  nombre: string | null
+}
+export interface InmobiliariaDelLaboratorio {
+  alias: string
+  tenantId: string
+  nombre: string
+  diarios: number
+  preguntas: number
+  categorias: { tamano: TamanoDelMaestro | null; ciudad: string | null; negocio: string | null } | null
+  agentes: Array<{ agente: string; modo: string; acciones30d: number; malas30d: number }>
+}
+export interface PropuestaDelLaboratorio {
+  id: string
+  /** La huella: la bitácora la nombra así en los pasos del ensayo y del revisor. */
+  huella: string
+  tipo: ContenidoDeLaMejora['tipo']
+  que: string
+  estado: EstadoDeLaMejora
+  veredicto: 'pasa' | 'por_revisar'
+  motivos: MotivoDeRevision[]
+  categoria: string
+  porque: string
+  evidencia: Array<{ alias: string | null; nombre: string }>
+  alcance: number
+  ensayo: EnsayoDeLaMejora | null
+  revision: RevisionDeLaMejora | null
+  reparto: Array<{ alias: string | null; nombre: string; resultado: ResultadoDelReparto }> | null
+  medicion: { veredicto: VeredictoDeLaMedicion; resumen: string; serie: { dias: string[]; valores: Array<number | null> } } | null
+}
+export interface LaboratorioResponse {
+  prendido: boolean
+  topeUsd: number
+  costoEstimadoUsd: number | null
+  enCurso: { corridaId: string; desde: string } | null
+  corridaId: string | null
+  corrida: {
+    id: string
+    dia: string
+    origen: 'noche' | 'manual'
+    pedidaPor: string | null
+    estado: NocheDelMaestro['estado']
+    modelo: string | null
+    costoUsd: number
+    diarios: number
+    inmobiliarias: number
+    insights: number
+    creadaEn: string
+  } | null
+  corridas: Array<{ id: string; dia: string; origen: 'noche' | 'manual'; estado: NocheDelMaestro['estado']; costoUsd: number; creadaEn: string }>
+  bitacora: PasoDelMaestro[]
+  inmobiliarias: InmobiliariaDelLaboratorio[]
+  propuestas: PropuestaDelLaboratorio[]
+  mediciones: Array<{ propuestaId: string; que: string | null; veredicto: VeredictoDeLaMedicion; resumen: string; medidaEn: string; serie: { dias: string[]; valores: Array<number | null> } }>
+  ontologia: { agentes: Array<{ id: string; nombre: string | null; funcion: string }>; limites: number }
+  generadoEn: string
+}
+
+export function getLaboratorioDelMaestro(corrida: string | null, signal?: AbortSignal): Promise<LaboratorioResponse> {
+  return agentAdminApi<LaboratorioResponse>('/api/admin/maestro/laboratorio', { query: { corrida: corrida ?? undefined }, signal })
+}
+
+export function getBitacoraDelMaestro(corridaId: string, desde: number, signal?: AbortSignal): Promise<{ pasos: PasoDelMaestro[]; terminada: boolean; guardada: boolean }> {
+  return agentAdminApi(`/api/admin/maestro/corridas/${encodeURIComponent(corridaId)}/bitacora`, { query: { desde: String(desde) }, signal })
+}
+
+export function correrElMaestroAhora(): Promise<{ corridaId: string; como: 'inngest' | 'en_proceso'; mensaje: string }> {
+  return agentAdminApi('/api/admin/maestro/correr-ahora', { method: 'POST', body: { confirmo: true } })
+}

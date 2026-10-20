@@ -107,7 +107,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
               <TrendDown weight="bold" className="h-3 w-3 text-ink-fg/80" />
             )}
             <span className="font-sans text-[11.5px] font-medium tabular-nums text-ink-fg/90">
-              {trend.isPositive ? '+' : ''}{trend.value}%
+              {trend.isPositive ? '+' : ''}{tasaEnPantalla(trend.value, Number.isInteger(trend.value) ? 0 : 1)}
             </span>
             <span className="font-sans text-[11.5px] text-ink-fg/60">{t('inmobiliaria.common.vsLastMonth')}</span>
           </div>
@@ -144,7 +144,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
             <TrendDown weight="bold" className="h-3 w-3 text-danger" />
           )}
           <span className={cn('text-xs font-medium tabular-nums', trend.isPositive ? 'text-fg-muted' : 'text-danger')}>
-            {trend.isPositive ? '+' : ''}{trend.value}%
+            {trend.isPositive ? '+' : ''}{tasaEnPantalla(trend.value, Number.isInteger(trend.value) ? 0 : 1)}
           </span>
           <span className="text-xs text-fg-muted">{t('inmobiliaria.common.vsLastMonth')}</span>
         </div>
@@ -233,13 +233,17 @@ function PipelineMiniCard({ item }: { item: PipelineItem }) {
 
   return (
     <div className="flex items-center gap-3 rounded-md border border-border bg-surface-muted p-3">
-      <div className="h-10 w-10 rounded-md bg-surface-muted overflow-hidden">
-        {item.propertyThumbnail && (
+      {/* QA 20-10: sin foto, la caja era del mismo color que la fila y quedaba un
+          hueco vacío a la izquierda: sin foto va el ícono del inmueble. */}
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-surface">
+        {item.propertyThumbnail ? (
           <img
             src={item.propertyThumbnail}
             alt=""
             className="h-full w-full object-cover"
           />
+        ) : (
+          <House weight="duotone" className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
         )}
       </div>
       <div className="flex-1 min-w-0">

@@ -45,11 +45,13 @@ import { useDropzone } from 'react-dropzone';
 import Link from 'next/link';
 import { Bank, CheckCircle, Plus, UploadSimple, WarningOctagon } from '@phosphor-icons/react';
 import { Appear } from '@leasefy/cadence';
+import { PasosDeLaTarea, type PasoDeLaTarea } from '@/components/pantalla/PasosDeLaTarea';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
 import { ZonaDeArchivo } from '@/components/migracion/ZonaDeArchivo';
-import { Avisos, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
+import { Avisos, SinLaMigracion } from '@/components/finanzas/piezas';
 import { ConvenioDeRecaudoCajon } from './ConvenioDeRecaudoCajon';
 import { ConciliacionDelArchivo } from './ConciliacionDelArchivo';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -121,12 +123,26 @@ export function RecaudoBancarioPanel() {
   );
 }
 
+/**
+ * 🔴 GLOW UP (Nico, 20-10-2026), con esta pantalla de ejemplo: «todo eso así en
+ * scroll nadie entiende qué es lo que debe de hacer […] qué requiere hacer
+ * primero el usuario y segundo etc.. hasta que complete el job to be done».
+ *
+ * La tarea son TRES pasos en un riel (`PasosDeLaTarea`), en el orden en que se
+ * hacen: 1) el convenio con el banco (una vez; hecho, queda en una línea con su
+ * «Cambiar el formato»), 2) subir el archivo del banco (el trabajo de cada día)
+ * y 3) conciliar lo que no se concilió solo (se abre al importar, o con un
+ * archivo ya importado de la lista de abajo). Los que vienen se ven, cerrados y
+ * con su porqué. Lo que cada paso HACE no cambió: son los mismos componentes.
+ */
 function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () => void }) {
   const activos = datos.convenios.filter((c) => c.activo);
   /** `null` = cerrado · `'nuevo'` = crear · un convenio = editarlo. */
   const [enElCajon, setEnElCajon] = useState<null | 'nuevo' | Convenio>(null);
   /** El archivo cuya conciliación se está mirando (el recién importado o uno de la lista). */
   const [archivoAbierto, setArchivoAbierto] = useState<string | null>(null);
+  /** Lo que respondió la última importación de esta visita: es el resumen del paso 2. */
+  const [importado, setImportado] = useState<ResultadoDeImportar | null>(null);
   /** Sube cada vez que se importa o concilia algo: la lista de archivos se vuelve a leer. */
   const [version, setVersion] = useState(0);
   const conciliacion = useRef<HTMLDivElement>(null);
@@ -134,6 +150,148 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
     setArchivoAbierto(id);
     requestAnimationFrame(() => conciliacion.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
+
+  const hayConvenio = datos.convenios.length > 0;
+  const hayActivo = activos.length > 0 && datos.disponible;
+
+  const convenio: PasoDeLaTarea = !hayConvenio
+    ? {
+        id: 'convenio',
+        titulo: 'Configura el convenio con tu banco',
+        descripcion: 'Se hace una vez: con qué banco recaudas y cómo se lee su archivo.',
+        estado: 'actual',
+        contenido: (
+          // 🔴 UN vacío y UNA acción (21-09): antes eran dos cajas de texto y ningún botón.
+          <section className="space-y-4" data-testid="sin-convenio">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
+                <Bank className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div className="space-y-1">
+                <h2 className="text-body-sm font-semibold text-fg">
+                  Todavía no recaudas por convenio con un banco
+                </h2>
+                <p className="max-w-xl text-body-sm text-fg-muted">
+                  Con un convenio, el archivo de recaudo de tu banco entra acá y cada pago se cruza
+                  solo con su inquilino (por la referencia o por la cédula). Te ayudamos a
+                  configurarlo: elige tu banco o sube un archivo de ejemplo.
+                </p>
+              </div>
+            </div>
+            <Button
+              hideArrow
+              disabled={!datos.disponible}
+              onClick={() => setEnElCajon('nuevo')}
+              data-testid="configurar-convenio"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Configurar el convenio
+            </Button>
+            {/* La salida que ya existe hoy, dicha sin competir con la acción. */}
+            <p className="text-caption text-fg-muted">
+              Mientras no lo tengas, la plata se sigue aplicando cargando el extracto en{' '}
+              <Link
+                href="/panel/inmobiliaria/pagos/recaudo"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Conciliación
+              </Link>
+              .
+            </p>
+          </section>
+        ),
+      }
+    : activos.length === 0
+      ? {
+          id: 'convenio',
+          titulo: 'Activa un convenio',
+          descripcion: 'Tienes convenios guardados, pero ninguno está activo.',
+          estado: 'actual',
+          contenido: (
+            <div className="space-y-4">
+              {/* Hay convenios pero ninguno activo: es otro estado y otra frase. */}
+              <p className="text-body-sm text-fg-muted" data-testid="sin-convenio-activo">
+                Ninguno de tus convenios está activo, así que todavía no se puede importar un
+                archivo. Actívalo desde su tarjeta.
+              </p>
+              <ConveniosGuardados
+                convenios={datos.convenios}
+                onEditar={setEnElCajon}
+                onNuevo={() => setEnElCajon('nuevo')}
+                sePuedeGuardar={datos.disponible}
+              />
+            </div>
+          ),
+        }
+      : {
+          id: 'convenio',
+          titulo: activos.length === 1 ? 'Tu convenio con el banco' : 'Tus convenios con el banco',
+          estado: 'hecho',
+          // Lo que se consulta seguido (la cuenta, la referencia de ejemplo) queda a la vista.
+          fijo: (
+            <ConveniosGuardados
+              convenios={datos.convenios}
+              onEditar={setEnElCajon}
+              onNuevo={() => setEnElCajon('nuevo')}
+              sePuedeGuardar={datos.disponible}
+            />
+          ),
+        };
+
+  const subir: PasoDeLaTarea = !hayActivo
+    ? {
+        id: 'subir',
+        titulo: 'Sube el archivo del banco',
+        descripcion: 'El archivo de recaudo que te manda el banco cada día, tal como lo bajaste.',
+        estado: 'pendiente',
+        bloqueadoPorque: datos.disponible
+          ? 'Primero configura y activa el convenio.'
+          : 'Todavía no se puede: falta una actualización de la base.',
+      }
+    : {
+        id: 'subir',
+        titulo: 'Sube el archivo del banco',
+        descripcion: 'El archivo de recaudo que te manda el banco cada día, tal como lo bajaste.',
+        estado: archivoAbierto ? 'hecho' : 'actual',
+        resumen: importado ? resumenDeLaImportacion(importado) : 'Estás revisando un archivo ya importado.',
+        etiquetaDeCambio: 'Subir otro archivo',
+        contenido: (
+          <ImportarArchivo
+            convenios={activos}
+            onImportado={(r) => {
+              onCambio();
+              setVersion((v) => v + 1);
+              setImportado(r);
+              abrir(r.archivo.id);
+            }}
+          />
+        ),
+      };
+
+  const conciliar: PasoDeLaTarea =
+    archivoAbierto && datos.disponible
+      ? {
+          id: 'conciliar',
+          titulo: 'Concilia lo que no se concilió solo',
+          descripcion:
+            'Lo que se identificó sin dudas ya tiene su recibo. Lo demás se concilia aquí, línea por línea, con su razón.',
+          estado: 'actual',
+          contenido: (
+            // 🔴 La conciliación del archivo, como la pidió Vale (20-10-2026).
+            <div ref={conciliacion} className="scroll-mt-24">
+              <ConciliacionDelArchivo archivoId={archivoAbierto} onCambio={() => setVersion((v) => v + 1)} />
+            </div>
+          ),
+        }
+      : {
+          id: 'conciliar',
+          titulo: 'Concilia lo que no se concilió solo',
+          descripcion: 'Lo que se identificó sin dudas ya tiene su recibo. Lo demás se concilia aquí.',
+          estado: 'pendiente',
+          bloqueadoPorque: hayActivo
+            ? 'Se abre al importar el archivo, o eligiendo uno de los ya importados (abajo).'
+            : 'Después de subir el primer archivo.',
+        };
 
   return (
     <div className="space-y-8">
@@ -145,83 +303,14 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
         />
       ) : null}
 
-      {/* 🔴 UN vacío y UNA acción. Eran dos cajas de texto que decían casi lo
-          mismo y ningún botón, mandando a configurar algo que no se podía
-          configurar. */}
-      {datos.convenios.length === 0 ? (
-        <section
-          className="rounded-lg border border-dashed border-border bg-surface p-10 text-center"
-          data-testid="sin-convenio"
-        >
-          <Bank className="mx-auto mb-4 h-10 w-10 text-fg-muted" aria-hidden="true" />
-          <h2 className="text-base font-semibold text-fg">
-            Todavía no recaudas por convenio con un banco
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-fg-muted">
-            Con un convenio, el archivo de recaudo de tu banco entra acá y cada pago se cruza
-            solo con su inquilino (por la referencia o por la cédula). Te ayudamos a
-            configurarlo: elige tu banco o sube un archivo de ejemplo.
-          </p>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-            <Button
-              hideArrow
-              disabled={!datos.disponible}
-              onClick={() => setEnElCajon('nuevo')}
-              data-testid="configurar-convenio"
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Configurar el convenio
-            </Button>
-          </div>
-          {/* La salida que ya existe hoy, dicha sin competir con la acción. */}
-          <p className="mt-4 text-xs text-fg-muted">
-            Mientras no lo tengas, la plata se sigue aplicando cargando el extracto en{' '}
-            <Link
-              href="/panel/inmobiliaria/pagos/recaudo"
-              className="font-medium text-primary underline-offset-4 hover:underline"
-            >
-              Conciliación
-            </Link>
-            .
-          </p>
-        </section>
-      ) : (
-        <ConveniosGuardados
-          convenios={datos.convenios}
-          onEditar={setEnElCajon}
-          onNuevo={() => setEnElCajon('nuevo')}
-          sePuedeGuardar={datos.disponible}
-        />
-      )}
+      <PasosDeLaTarea
+        titulo="Cómo entra la plata del banco"
+        pasos={[convenio, subir, conciliar]}
+        data-testid="pasos-del-recaudo"
+      />
 
-      {activos.length > 0 && datos.disponible ? (
-        <ImportarArchivo
-          convenios={activos}
-          onImportado={(archivoId) => {
-            onCambio();
-            setVersion((v) => v + 1);
-            abrir(archivoId);
-          }}
-        />
-      ) : datos.convenios.length > 0 && datos.disponible ? (
-        /* Hay convenios pero ninguno activo: es otro estado y otra frase. */
-        <p
-          className="rounded-lg border border-border bg-surface p-5 text-sm text-fg-muted"
-          data-testid="sin-convenio-activo"
-        >
-          Ninguno de tus convenios está activo, así que todavía no se puede importar un
-          archivo. Actívalo desde su tarjeta.
-        </p>
-      ) : null}
-
-      {/* 🔴 La conciliación del archivo, como la pidió Vale (20-10-2026). */}
-      {archivoAbierto && datos.disponible ? (
-        <div ref={conciliacion} className="scroll-mt-24">
-          <ConciliacionDelArchivo archivoId={archivoAbierto} onCambio={() => setVersion((v) => v + 1)} />
-        </div>
-      ) : null}
-
-      {datos.disponible && datos.convenios.length > 0 ? (
+      {/* Lo demás: los archivos de otros días, para volver a su conciliación. */}
+      {datos.disponible && hayConvenio ? (
         <ArchivosImportados version={version} abierto={archivoAbierto} onAbrir={abrir} />
       ) : null}
 
@@ -233,6 +322,15 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
       />
     </div>
   );
+}
+
+/** El paso 2 hecho, en una línea: qué archivo entró y cuánto se concilió solo. */
+function resumenDeLaImportacion(r: ResultadoDeImportar): string {
+  if (r.yaImportado) return `«${r.archivo.nombre}» ya se había importado: no se aplicó nada.`;
+  const solos = conciliadosAlImportar(r);
+  return `«${r.archivo.nombre}»: ${contar(r.archivo.nuevas, 'pago nuevo', 'pagos nuevos')}, ${
+    solos === 1 ? '1 se concilió solo' : `${solos} se conciliaron solos`
+  }.`;
 }
 
 function ConveniosGuardados({
@@ -247,105 +345,80 @@ function ConveniosGuardados({
   sePuedeGuardar: boolean;
 }) {
   return (
-    <section className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-fg">Tus convenios de recaudo</h2>
-          <p className="mt-1 max-w-2xl text-sm text-fg-muted">
-            Con qué bancos recaudas y cómo se lee el archivo de cada uno.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          hideArrow
-          disabled={!sePuedeGuardar}
-          onClick={onNuevo}
-          data-testid="nuevo-convenio"
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          Otro convenio
-        </Button>
-      </div>
-      {convenios.length === 0 ? (
-        <p className="rounded-lg border border-border bg-surface p-5 text-sm text-fg-muted">
-          No hay convenios configurados todavía.
-        </p>
-      ) : (
-        <ul className="grid gap-4 md:grid-cols-2" data-testid="convenios">
-          {convenios.map((c) => (
-            <li
-              key={c.id}
-              className="space-y-3 rounded-lg border border-border bg-surface p-5"
-              data-testid={`convenio-${c.id}`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-medium text-fg">{c.nombre}</p>
-                  <p className="text-sm text-fg-muted">
-                    {c.banco} · convenio {c.codigo}
-                  </p>
-                </div>
-                <Badge variant={c.activo ? 'success' : 'outline'}>
-                  {c.activo ? 'Activo' : 'Inactivo'}
-                </Badge>
-              </div>
-              <dl className="grid grid-cols-2 gap-2 text-xs text-fg-muted">
-                <div>
-                  <dt className="text-fg">Formato</dt>
-                  <dd>
-                    {c.tipo === 'ANCHO_FIJO'
-                      ? 'Ancho fijo'
-                      : `Delimitado por «${c.separador ?? ''}»`}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-fg">Fecha</dt>
-                  <dd>{c.formatoDeFecha}</dd>
-                </div>
-                <div>
-                  <dt className="text-fg">Valor</dt>
-                  <dd>{c.decimales === 0 ? 'en pesos' : `con ${c.decimales} decimales`}</dd>
-                </div>
-                <div>
-                  <dt className="text-fg">Dígito de verificación</dt>
-                  <dd>{c.referenciaDv === 'NINGUNO' ? 'sin dígito' : c.referenciaDv}</dd>
-                </div>
-                {/* 🔴 (18-09) Una cuenta tiene UN camino de entrada. Se muestra
-                    acá porque marcarla como «por archivo» deja de aceptar su
-                    extracto, y eso no puede ser una sorpresa. */}
-                <div>
-                  <dt className="text-fg">Cuenta que recauda</dt>
-                  <dd>{c.cuentaBancaria ?? 'sin declarar'}</dd>
-                </div>
-                <div>
-                  <dt className="text-fg">Entra por</dt>
-                  <dd>{c.viaDeEntradaNombre}</dd>
-                </div>
-              </dl>
+    <section className="space-y-3">
+      <ul className="divide-y divide-border-faint overflow-hidden rounded-md border border-border" data-testid="convenios">
+        {convenios.map((c) => (
+          <li
+            key={c.id}
+            className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-start"
+            data-testid={`convenio-${c.id}`}
+          >
+            <div className="min-w-0 flex-1 space-y-1">
+              <p className="flex flex-wrap items-center gap-2 font-medium text-fg">
+                {c.nombre}
+                <Badge variant={c.activo ? 'success' : 'outline'}>{c.activo ? 'Activo' : 'Inactivo'}</Badge>
+              </p>
+              {/* 🔴 (18-09) Una cuenta tiene UN camino de entrada: se dice siempre. */}
+              <p className="text-caption text-fg-muted">
+                {c.banco} · convenio {c.codigo} · cuenta {c.cuentaBancaria ?? 'sin declarar'} · entra por{' '}
+                {c.viaDeEntradaNombre}
+              </p>
               {/* 🔴 El ejemplo es lo que permite comparar contra el volante que
-                  entregó el banco SIN importar un archivo. */}
-              <p className="rounded border border-border bg-bg p-3 text-xs text-fg-muted">
+                  entregó el banco SIN importar un archivo: a la vista. */}
+              <p className="text-caption text-fg-muted">
                 El contrato <span className="font-mono">1850</span> pagaría con la referencia{' '}
-                <span className="font-mono text-fg">{c.ejemploDeReferencia}</span>. Compárala con
-                el volante que te dio el banco antes de imprimirla en los recibos.
+                <span className="font-mono text-fg">{c.ejemploDeReferencia}</span>. Compárala con el
+                volante que te dio el banco antes de imprimirla en los recibos.
               </p>
               <Avisos avisos={c.avisos} testId={`avisos-convenio-${c.id}`} />
-              {/* Se puede cambiar: un formato copiado del papel del banco casi
-                  nunca queda bien la primera vez, y hasta hoy no había cómo. */}
-              <Button
-                variant="outline"
-                size="sm"
-                hideArrow
-                disabled={!sePuedeGuardar}
-                onClick={() => onEditar(c)}
-                data-testid={`editar-convenio-${c.id}`}
-              >
-                Cambiar el formato
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
+              <MasDetalles etiqueta="Ver cómo se lee su archivo" etiquetaAbierto="Ocultar el formato">
+                <dl className="grid grid-cols-2 gap-2 text-caption text-fg-muted sm:grid-cols-4">
+                  <div>
+                    <dt className="text-fg">Formato</dt>
+                    <dd>{c.tipo === 'ANCHO_FIJO' ? 'Ancho fijo' : `Delimitado por «${c.separador ?? ''}»`}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-fg">Fecha</dt>
+                    <dd>{c.formatoDeFecha}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-fg">Valor</dt>
+                    <dd>{c.decimales === 0 ? 'en pesos' : `con ${c.decimales} decimales`}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-fg">Dígito de verificación</dt>
+                    <dd>{c.referenciaDv === 'NINGUNO' ? 'sin dígito' : c.referenciaDv}</dd>
+                  </div>
+                </dl>
+              </MasDetalles>
+            </div>
+            {/* Se puede cambiar: un formato copiado del papel del banco casi nunca
+                queda bien la primera vez. */}
+            <Button
+              variant="outline"
+              size="sm"
+              hideArrow
+              className="shrink-0 self-start"
+              disabled={!sePuedeGuardar}
+              onClick={() => onEditar(c)}
+              data-testid={`editar-convenio-${c.id}`}
+            >
+              Cambiar el formato
+            </Button>
+          </li>
+        ))}
+      </ul>
+      <Button
+        variant="ghost"
+        size="sm"
+        hideArrow
+        disabled={!sePuedeGuardar}
+        onClick={onNuevo}
+        data-testid="nuevo-convenio"
+      >
+        <Plus className="h-4 w-4" aria-hidden="true" />
+        Otro convenio
+      </Button>
     </section>
   );
 }
@@ -437,7 +510,8 @@ function ImportarArchivo({
   onImportado,
 }: {
   convenios: Convenio[];
-  onImportado: (archivoId: string) => void;
+  /** Con lo que respondió el back: el paso 2 lo resume y el 3 abre ese archivo. */
+  onImportado: (resultado: ResultadoDeImportar) => void;
 }) {
   const [convenioId, setConvenioId] = useState(convenios[0]?.id ?? '');
   const [nombre, setNombre] = useState('');
@@ -538,7 +612,7 @@ function ImportarArchivo({
     try {
       const r = await tesoreriaApi.importar(contenido, nombre, convenioId || undefined);
       setResultado(r);
-      onImportado(r.archivo.id);
+      onImportado(r);
       if (r.yaImportado) {
         toast.info('Este archivo ya se había importado: no se aplicó nada.');
       } else {
@@ -595,12 +669,19 @@ function ImportarArchivo({
 
   return (
     <section className="space-y-4">
-      <TituloDeBloque
-        titulo="Importar el archivo del banco"
-        explicacion="Cada línea se vuelve un movimiento bancario. Lo que se identifica sin dudas (la referencia del contrato o la cédula de un inquilino con un solo contrato, y el valor exacto de una cuota) se concilia solo y sale su recibo de caja; lo demás queda por conciliar con su razón. Lo de antes de facturar en Leasefy se omite. Si la cuenta de este convenio entra por EXTRACTO, su archivo no se importa: el mismo pago quedaría dos veces."
-      />
+      {/* GLOW UP: el título y la línea de qué es los pone el paso 2. Lo que pasa
+          con cada línea, plegado: está, pero no empuja el archivo hacia abajo. */}
+      <MasDetalles etiqueta="Qué pasa con cada línea del archivo" etiquetaAbierto="Ocultar">
+        <p className="max-w-2xl text-caption text-fg-muted">
+          Cada línea se vuelve un movimiento bancario. Lo que se identifica sin dudas (la referencia del
+          contrato o la cédula de un inquilino con un solo contrato, y el valor exacto de una cuota) se
+          concilia solo y sale su recibo de caja; lo demás queda por conciliar con su razón. Lo de antes de
+          facturar en Leasefy se omite. Si la cuenta de este convenio entra por EXTRACTO, su archivo no se
+          importa: el mismo pago quedaría dos veces.
+        </p>
+      </MasDetalles>
 
-      <div className="space-y-4 rounded-lg border border-border bg-surface p-5">
+      <div className="space-y-4">
         {convenios.length > 1 ? (
           <div className="space-y-1.5">
             <Label htmlFor="convenio">Con qué convenio se lee</Label>

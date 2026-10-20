@@ -42,6 +42,14 @@ export interface PasoDeLaTarea {
   bloqueadoPorque?: ReactNode;
   /** Algo a la derecha de la cabecera (una insignia, un conteo). */
   extra?: ReactNode;
+  /**
+   * Lo que se ve SIEMPRE bajo la cabecera, abierto o cerrado (los convenios
+   * guardados en una línea, con su «Cambiar»): lo que se consulta seguido no
+   * se esconde detrás de un clic.
+   */
+  fijo?: ReactNode;
+  /** El rótulo para volver a abrir un paso hecho. Por defecto «Cambiar». */
+  etiquetaDeCambio?: string;
 }
 
 export interface PasosDeLaTareaProps {
@@ -111,7 +119,7 @@ export function PasosDeLaTarea({ pasos, titulo, className, 'data-testid': testId
               {p.extra ? <span className="shrink-0">{p.extra}</span> : null}
               {sePuedeAbrir ? (
                 <span className="flex shrink-0 items-center gap-1 text-caption text-fg-muted">
-                  {abierto ? tr('Cerrar') : tr('Cambiar')}
+                  {abierto ? tr('Cerrar') : (p.etiquetaDeCambio ?? tr('Cambiar'))}
                   <CaretDown
                     className={cn('h-3.5 w-3.5 transition-transform duration-base ease-emphasis', abierto && 'rotate-180')}
                     aria-hidden="true"
@@ -147,6 +155,7 @@ export function PasosDeLaTarea({ pasos, titulo, className, 'data-testid': testId
               ) : (
                 <div className="flex items-start gap-3 px-5 py-4">{cabecera}</div>
               )}
+              {p.fijo ? <div className="px-5 pb-4 sm:pl-14">{p.fijo}</div> : null}
               <Collapse open={abierto && p.contenido != null} className="px-5 pb-5 sm:pl-14">
                 {p.contenido}
               </Collapse>

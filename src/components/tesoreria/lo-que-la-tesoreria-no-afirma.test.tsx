@@ -461,3 +461,34 @@ describe('🔴 el traslado muestra su desglose ANTES del botón', () => {
     ).toContain('bg-danger');
   });
 });
+
+/**
+ * GLOW UP (Nico, 20-10-2026): «qué requiere hacer primero el usuario y segundo
+ * etc.». El recaudo por convenio son tres pasos en orden; el que sigue está
+ * abierto y los que vienen dicen por qué todavía no.
+ */
+describe('GLOW UP · el recaudo por convenio, paso por paso', () => {
+  const estadoDe = (id: string) =>
+    contenedor.querySelector(`[data-testid="pasos-del-recaudo-${id}"]`)?.getAttribute('data-estado');
+
+  it('sin convenio, lo que sigue es configurarlo; subir y conciliar esperan', async () => {
+    h.listarConvenios.mockResolvedValue({ ...CONVENIOS, convenios: [] });
+    await pintar(<RecaudoBancarioPanel />);
+    expect(estadoDe('convenio')).toBe('actual');
+    expect(estadoDe('subir')).toBe('pendiente');
+    expect(estadoDe('conciliar')).toBe('pendiente');
+    expect(contenedor.textContent).toContain('Primero configura y activa el convenio.');
+  });
+
+  it('con el convenio activo, queda hecho a la vista y lo que sigue es subir el archivo', async () => {
+    h.listarConvenios.mockResolvedValue(CONVENIOS);
+    await pintar(<RecaudoBancarioPanel />);
+    expect(estadoDe('convenio')).toBe('hecho');
+    expect(estadoDe('subir')).toBe('actual');
+    expect(estadoDe('conciliar')).toBe('pendiente');
+    // El convenio sigue a la vista, con su «Cambiar el formato».
+    expect(contenedor.querySelector('[data-testid^="editar-convenio-"]')).not.toBeNull();
+    // El archivo se elige en el paso abierto.
+    expect(contenedor.querySelector('[data-testid="archivo-de-recaudo"]')).not.toBeNull();
+  });
+});

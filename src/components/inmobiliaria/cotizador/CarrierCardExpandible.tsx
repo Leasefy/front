@@ -18,6 +18,7 @@
  * disabled "Próximamente" control. No endpoints are invented here.
  */
 
+import { nombreDeLaAseguradora } from '@/lib/cotizador/nombre-de-la-aseguradora'
 import * as React from 'react'
 import { useState } from 'react'
 import {
@@ -322,7 +323,7 @@ export function CarrierCardExpandible({
         <div className="flex items-center gap-2.5 min-w-0">
           <StatusIcon status={carrier.status} />
           <span className="font-medium text-fg truncate">
-            {carrier.carrier}
+            {nombreDeLaAseguradora(carrier.carrier)}
           </span>
           <span
             className={cn(

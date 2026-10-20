@@ -4,12 +4,15 @@
 import { Minus, Plus } from '@phosphor-icons/react'
 import { SegmentedControl } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
-import { Input } from '@/components/ui/input'
+import { MoneyInput } from '@/components/ui/money-input'
 import { Button } from '@/components/ui/button'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { TIPOS_DE_INMUEBLE_DEL_COTIZADOR, type TipoDeInmuebleDelCotizador } from '@/lib/cotizador/tipo-de-inmueble'
 
-const TIPO_OPTIONS = ['apartamento', 'casa', 'oficina', 'local'] as const
-type TipoInmueble = (typeof TIPO_OPTIONS)[number]
+// 🔴 COTIZ-5 (19-10-2026, Nico): «Local u oficina» en una sola opción (`local`):
+// la base del micro no conoce «oficina» y era un 500.
+const TIPO_OPTIONS = TIPOS_DE_INMUEBLE_DEL_COTIZADOR
+type TipoInmueble = TipoDeInmuebleDelCotizador
 
 interface Step2Value {
   canonCop: number | ''
@@ -34,11 +37,6 @@ export function WizardStep2Propiedad({
 }: WizardStep2PropiedadProps) {
   const { t } = useI18n()
 
-  const canProceed =
-    value.canonCop !== '' &&
-    Number(value.canonCop) > 0 &&
-    value.tipoInmueble !== ''
-
   return (
     <div className="space-y-5">
       <h2 className="text-base font-semibold text-fg">
@@ -50,24 +48,14 @@ export function WizardStep2Propiedad({
         <label htmlFor="cotizador-canon" className="text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cotizador.nueva.step2.canonLabel')}
         </label>
-        <Input
+        {/* COTIZ-2 (19-10-2026): el canon con sus puntos de mil mientras se escribe. */}
+        <MoneyInput
           id="cotizador-canon"
-          type="text"
-          inputMode="numeric"
           value={value.canonCop === '' ? '' : String(value.canonCop)}
           placeholder={t('inmobiliaria.ai.cotizador.nueva.step2.canonPlaceholder')}
-          onChange={e => {
-            const raw = e.target.value.replace(/[^\d]/g, '')
-            onChange('canonCop', raw === '' ? '' : Number(raw))
-          }}
-          onBlur={() => {
-            if (value.canonCop === '' || Number(value.canonCop) <= 0) {
-              // parent controls errors via validateStep2 — blur just ensures field is touched
-            }
-          }}
+          onChange={crudo => onChange('canonCop', crudo === '' ? '' : Number(crudo))}
           aria-invalid={errors.canonCop ? true : undefined}
           aria-describedby={errors.canonCop ? 'cotizador-canon-error' : undefined}
-          className={errors.canonCop ? 'border-danger/40 focus-visible:ring-danger/20' : ''}
         />
         {/* 02-10-2026: el error entra suave (Cadence), con o sin servidor detrás. */}
         <ErrorDelCampo id="cotizador-canon-error" mensaje={errors.canonCop} className="mt-0" />
@@ -137,8 +125,8 @@ export function WizardStep2Propiedad({
         >
           {t('inmobiliaria.ai.cotizador.nueva.actions.atras')}
         </Button>
+        {/* COTIZ-3 (19-10-2026): prendido; al pulsarlo, cada campo dice qué le falta. */}
         <Button
-          disabled={!canProceed}
           onClick={onNext}
           className="flex-1"
           size="lg"

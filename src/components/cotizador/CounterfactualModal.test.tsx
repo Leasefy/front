@@ -189,11 +189,11 @@ describe('<CounterfactualModal>', () => {
     expect(ciudadSel.getAttribute('aria-disabled')).toBe('true')
   })
 
-  it('Test 3 — footer shows "Te quedan 5 de 50 hoy" given usage data', () => {
+  it('🔴 COTIZ-9: con 5 usadas de 50, «Te quedan 45 de 50 hoy» (antes pintaba las usadas)', () => {
     renderModal()
     const footer = $('[data-testid="cf-footer"]')
-    expect(footer?.textContent).toContain('Te quedan 5')
-    expect(footer?.textContent).toContain('50')
+    expect(footer?.textContent).toContain('Te quedan 45 de 50')
+    expect(footer?.textContent).not.toMatch(/Costo/)
   })
 
   it('Test 4 — cap exhausted: submit aria-disabled + banner "Se reinicia"', () => {

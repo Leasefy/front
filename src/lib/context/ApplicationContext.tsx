@@ -1,5 +1,6 @@
 'use client';
 
+import { guardarLaCasillaDeLaCalificacion } from '@/components/calificacion/CasillaDeLaCalificacion';
 import {
   createContext,
   useContext,
@@ -174,6 +175,9 @@ interface ApplicationContextValue {
   setAcceptTerms: (value: boolean) => void;
   authorizeVerification: boolean;
   setAuthorizeVerification: (value: boolean) => void;
+  /** La Calificación Leasefy (18-10-2026): casilla aparte, sin marcar, opcional. */
+  compartirCalificacion: boolean;
+  setCompartirCalificacion: (value: boolean) => void;
   canSubmit: boolean;
 
   // Habeas-data consent text (fetched once on mount)
@@ -289,6 +293,7 @@ export function ApplicationProvider({
   const [isGuestSubmission, setIsGuestSubmission] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [authorizeVerification, setAuthorizeVerification] = useState(false);
+  const [compartirCalificacion, setCompartirCalificacion] = useState(false);
   const [attemptedAdvance, setAttemptedAdvance] = useState(false);
   const [consentText, setConsentText] = useState<ConsentTextResponse | null>(null);
   const [authorizationVersion, setAuthorizationVersion] = useState<string | undefined>(undefined);
@@ -820,6 +825,10 @@ export function ApplicationProvider({
         updatedAt: new Date().toISOString(),
       }));
 
+      // La Calificación Leasefy: sólo con sesión (un invitado todavía no tiene
+      // cuenta con la que autorizar). Nunca frena la postulación.
+      if (isAuthenticated) await guardarLaCasillaDeLaCalificacion(compartirCalificacion);
+
       // Clear from localStorage after successful submission
       const storage = createApplicationStorage(propertyId);
       storage.remove({
@@ -888,7 +897,7 @@ export function ApplicationProvider({
     } finally {
       setIsLoading(false);
     }
-  }, [propertyId, application, authorizeVerification, authorizationVersion]);
+  }, [propertyId, application, authorizeVerification, authorizationVersion, compartirCalificacion]);
 
   // ========================================================================
   // Computed: completed steps
@@ -1012,6 +1021,8 @@ export function ApplicationProvider({
     setAcceptTerms,
     authorizeVerification,
     setAuthorizeVerification,
+    compartirCalificacion,
+    setCompartirCalificacion,
     canSubmit,
 
     consentText,

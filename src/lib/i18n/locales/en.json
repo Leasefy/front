@@ -1054,6 +1054,7 @@
       "porAprobar": "To approve",
       "origenesDeLeads": "Sources",
       "portalesDePublicacion": "Portals",
+      "calificacionLeasefy": "Leasefy rating",
       "requisitosDePostulacion": "Requirements",
       "calceDeLeads": "What to offer",
       "visitasDelPipeline": "Get visits ready",
@@ -6191,13 +6192,13 @@
           "step2": {
             "heading": "Property details",
             "canonLabel": "Monthly rent (COP)",
-            "canonPlaceholder": "e.g. 1500000",
+            "canonPlaceholder": "E.g. 1,500,000",
             "tipoLabel": "Property type",
             "tipoOptions": {
               "apartamento": "Apartment",
               "casa": "House",
-              "oficina": "Office",
-              "local": "Commercial space"
+              "oficina": "Retail space or office",
+              "local": "Retail space or office"
             },
             "codeudoresLabel": "Number of co-signers",
             "codeudoresHint": "0 if candidate has no co-signers"
@@ -6209,7 +6210,12 @@
             "ciudadRow": "City",
             "canonRow": "Monthly rent",
             "tipoRow": "Property type",
-            "codeudoresRow": "Co-signers"
+            "codeudoresRow": "Co-signers",
+            "aseguradorasRow": "Insurers",
+            "aseguradorasTodas": "All enabled",
+            "prioridadRow": "Priority",
+            "autorizacion": "I have {{nombre}}'s authorization for this check.",
+            "autorizacionFalta": "Check the box to run the check."
           },
           "restoreBanner": {
             "message": "You have a quote in progress. Continue where you left off?"
@@ -6233,29 +6239,27 @@
             "titulo": "Configure the request",
             "aseguradoras": {
               "titulo": "Which insurers should we query?",
-              "todas": "All insurers",
-              "todasDesc": "We query every insurer available to your agency.",
-              "favoritas": "Favorites",
-              "favoritasDesc": "Manually pick the insurers you want to query.",
-              "recomendar": "Let Leasefy recommend",
-              "recomendarDesc": "Leasefy picks the best insurers for the candidate's profile.",
+              "todas": "All enabled insurers",
+              "todasDesc": "We query every insurer your agency has enabled under «Insurers».",
+              "favoritas": "Only the ones I pick",
+              "favoritasDesc": "We query only the ones you check here.",
               "cargando": "Loading insurers…",
-              "sinAseguradoras": "No insurers available. We'll use the ones Leasefy recommends.",
-              "seleccionaUna": "Select at least one insurer."
+              "sinAseguradoras": "Your agency has no enabled insurers. Enable them in the «Insurers» tab.",
+              "seleccionaUna": "Check at least one insurer.",
+              "errorRegistro": "We couldn't load the list of insurers.",
+              "reintentar": "Try again"
             },
             "prioridad": {
               "titulo": "What should we prioritize?",
+              "subtitulo": "It decides which one we recommend among those that back the candidate.",
               "rapidez": "Speed",
+              "rapidezDesc": "The one that answered first.",
               "costo": "Lowest cost",
+              "costoDesc": "The one with the lowest monthly premium.",
               "cobertura": "Best coverage",
-              "probabilidad": "Highest approval odds"
-            },
-            "modo": {
-              "titulo": "Run mode",
-              "automatico": "Automatic",
-              "automaticoDesc": "Leasefy runs the request and picks the best option with no intervention.",
-              "revision": "With review",
-              "revisionDesc": "You review the results before moving forward with an insurer."
+              "coberturaDesc": "The one with the fewest conditions that backs the highest rent.",
+              "probabilidad": "Highest approval odds",
+              "probabilidadDesc": "The one that approves with no conditions; then, the one with fewest."
             }
           },
           "ctaConsultar": "Check insurability"
@@ -6280,7 +6284,7 @@
           "remaining": "{{n}} of {{m}} left today",
           "calculating": "Calculating…",
           "tardando": "Taking longer than expected…",
-          "submitButton": "Ask for explanation",
+          "submitButton": "Calculate",
           "capExhausted": {
             "title": "Limit reached",
             "body": "You've used all {{cap}} explanations for today. Resets tomorrow at {{time}} (Bogotá).",
@@ -6299,7 +6303,8 @@
             "ciudad": "City",
             "tipo": "Property type",
             "codeudores": "Co-debtors"
-          }
+          },
+          "recotizar": "Re-quote with this change"
         },
         "detail": {
           "header": {
@@ -6336,7 +6341,7 @@
           "connectionInterrupted": "Connection interrupted. Check your connection and try again.",
           "retry": "Retry",
           "reQuoteOfBadge": "Re-quote of #{{shortId}}",
-          "pedirExplicacionButton": "Ask for explanation",
+          "pedirExplicacionButton": "What if…?",
           "reQuoteButton": "Re-quote with changes",
           "liveRegion": {
             "carrierVerdict": "{{carrier}}: {{result}}"
@@ -6355,7 +6360,8 @@
             "recomendamos": "We recommend moving forward with {{carrier}}",
             "primaPorMes": "per month",
             "porQue": "Why",
-            "porQueMejorPrecio": "It's the option that best balances price and conditions among the insurers that accept."
+            "porQueMejorPrecio": "It's the option that best balances price and conditions among the insurers that accept.",
+            "headlineUna": "The candidate is {{status}} · 1 option found"
           },
           "matriz": {
             "titulo": "Compare the options",
@@ -8230,7 +8236,7 @@
             "titulo": "Which agency are you writing to?",
             "texto": "Each agency answers for the data it holds about you. Choose yours: this form is also linked at the bottom of its emails and on its Leasefy page.",
             "buscar": "Search by name",
-            "sinResultados": "We couldn't find it here. Open the \u201cYour personal data\u201d link at the bottom of your agency's emails.",
+            "sinResultados": "We couldn't find it here. Open the “Your personal data” link at the bottom of your agency's emails.",
             "noEsta": "Not on the list? Open the “Your personal data” link at the bottom of your agency's emails.",
             "noCargo": "We couldn't load the agencies. Reload the page in a few minutes."
           }
@@ -13806,7 +13812,7 @@
     "contrato": "Contract {{numero}}",
     "comoInquilino": "Tenant of the property at {{direccion}}",
     "comoPropietario": "Owner of the property at {{direccion}}",
-    "copropiedad": "Co-owned by {{propietarios}} owners · share: {{porcentaje}}\u00a0%",
+    "copropiedad": "Co-owned by {{propietarios}} owners · share: {{porcentaje}} %",
     "copropiedadSinPorcentaje": "Co-owned by {{propietarios}} owners · each owner's share is missing: no payout until the agency sets it",
     "vigente": "Active",
     "terminado": "Ended",

@@ -205,7 +205,8 @@ describe('SeccionesDelModulo — cuándo NO se dibuja', () => {
     permisos.modulos = ['portafolio', 'documentos', 'matching', 'estudio']
     render('/panel/inmobiliaria/postulaciones/soportes')
     const lista = cards()
-    expect(lista.map((c) => c.label)).toEqual(['postulaciones', 'soportesCorto'])
+    // La Calificación Leasefy (18-10-2026) es comercial: la ve con `portafolio:view`.
+    expect(lista.map((c) => c.label)).toEqual(['postulaciones', 'calificacionLeasefy', 'soportesCorto'])
     expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['soportesCorto'])
   })
 })

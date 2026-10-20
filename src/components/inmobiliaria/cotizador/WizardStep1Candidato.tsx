@@ -36,11 +36,7 @@ export function WizardStep1Candidato({
   const strippedCedula = value.cedula.replace(/[\s.\-]/g, '')
   const isCedulaFormatOk = /^[\d.\-\s]{7,15}$/.test(value.cedula) && /^\d{7,10}$/.test(strippedCedula)
 
-  const canProceed =
-    value.cedula.trim() !== '' &&
-    value.nombre.trim() !== '' &&
-    value.ciudad.trim() !== '' &&
-    !errors.cedula
+  // COTIZ-3 (19-10-2026): «Siguiente» va prendido; al pulsarlo, cada campo dice qué le falta.
 
   return (
     <div className="space-y-5">
@@ -117,8 +113,7 @@ export function WizardStep1Candidato({
           onKeyDown={e => {
             if (e.key === 'Enter') {
               e.preventDefault()
-              if (canProceed) onNext()
-              else nextBtnRef.current?.focus()
+              onNext()
             }
           }}
           aria-invalid={errors.ciudad ? true : undefined}
@@ -131,7 +126,6 @@ export function WizardStep1Candidato({
 
       <Button
         ref={nextBtnRef}
-        disabled={!canProceed}
         onClick={onNext}
         className="w-full"
         size="lg"

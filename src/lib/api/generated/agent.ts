@@ -10667,6 +10667,11 @@ export interface components {
             codeudoresCount: number;
             /** Format: uuid */
             re_quote_of?: string;
+            /** @enum {boolean} */
+            autorizacionConfirmada: true;
+            /** @enum {string} */
+            priority?: "rapidez" | "costo" | "cobertura" | "probabilidad";
+            carriers?: string[];
         };
         AgencyCotizadorQuoteDetailResponse: {
             /** Format: uuid */
@@ -10690,11 +10695,24 @@ export interface components {
             referencia?: string;
             servicio?: string;
         };
+        AgencyAskWhyHypotheticalCarrier: {
+            carrier: string;
+            /** @enum {string} */
+            status: "approved" | "conditional" | "rejected" | "error";
+            prima_mensual_cop: number | null;
+            condiciones: string[];
+            motivo_rechazo: string | null;
+            latency_ms: number;
+        };
         AgencyAskWhyResponse: {
             reasoning_trace_es: string;
+            narrative_es: string;
             cost_cop: number;
             /** @enum {string} */
             variable_changed: "canon" | "ciudad" | "tipo" | "codeudores";
+            /** @enum {string} */
+            modo: "calculado" | "recotizar";
+            hypothetical_carriers: components["schemas"]["AgencyAskWhyHypotheticalCarrier"][];
         };
         AgencyAskWhyError: {
             error: string;
@@ -16973,6 +16991,8 @@ export interface components {
             verdict: "approved" | "conditional" | "rejected" | "error";
             prima_mensual_cop: number | null;
             condiciones?: string[];
+            motivo_rechazo?: string | null;
+            latency_ms?: number;
         };
         /** @description SSE event `carrier.error`: emitted when a carrier dispatch fails (timeout, transport, parse). Structurally distinct from SSECarrierVerdict (D-24-05 mutual exclusion): error_code + retryable required, no verdict / prima_mensual_cop fields. */
         SSECarrierError: {

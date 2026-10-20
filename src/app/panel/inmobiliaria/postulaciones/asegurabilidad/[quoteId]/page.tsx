@@ -14,6 +14,7 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { useQuoteStream } from '@/lib/hooks/cotizador/use-quote-stream'
 import { useQuoteMetadata } from '@/lib/hooks/cotizador/use-quote-metadata'
 import { useWorkItemDetail } from '@/lib/hooks/ai/use-work-item-detail'
+import { tipoDeInmuebleEnPalabras } from '@/lib/cotizador/tipo-de-inmueble'
 import { runWorkItemAction } from '@/lib/api/agent-workspace'
 import { AccionSugerida } from '@/components/inmobiliaria/ai/AccionSugerida'
 import { QuoteHeader } from '@/components/inmobiliaria/cotizador/QuoteHeader'
@@ -112,6 +113,15 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
     carriers.length > 0 && carriers.every(c => c.status !== 'pending')
   // QA-IA-95: lo que dice el veredicto final del micro (`stub_mode`) manda; sin él, como antes.
   const isStubMode = finalVerdict?.stub_mode ?? (carriers.length > 0 && carriers.every(c => c.isStub))
+
+  // 🔴 COTIZ-11 (19-10-2026): «El agente propone» se pedía UNA vez, al abrir la
+  // cotización recién creada, y se quedaba en «Cotización en curso» aunque ya
+  // estuviera completa. Al llegar el veredicto final se vuelve a pedir.
+  const refetchVerdictItem = verdictItem.refetch
+  useEffect(() => {
+    if (finalVerdict) void refetchVerdictItem()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalVerdict !== null])
 
   // D-33-10: header buttons visible whenever ≥1 carrier has a final verdict —
   // does NOT require allFinal so operators can re-quote / ask-why even when a
@@ -228,7 +238,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
         timestamp={timestamp}
         canonCop={metadata?.canonCop ?? null}
         ciudad={metadata?.ciudad ?? null}
-        tipo={metadata?.tipoInmueble ?? null}
+        tipo={metadata?.tipoInmueble ? tipoDeInmuebleEnPalabras(metadata.tipoInmueble) : null}
         codeudores={null}
         totalCostCop={totalCostCop}
         isConnected={isConnected}
@@ -447,6 +457,11 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         quoteId={quoteId}
+        onRecotizarConElCambio={(variable, valor) =>
+          router.push(
+            `/panel/inmobiliaria/postulaciones/asegurabilidad/nueva?from=${encodeURIComponent(quoteId)}&cambio=${variable}&valor=${encodeURIComponent(valor)}`,
+          )
+        }
         originalCarriers={carriers}
         originalInputs={{
           canonCop: metadata?.canonCop ?? 0,

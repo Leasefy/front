@@ -26,6 +26,7 @@ import {
 import { WizardStep3Review } from '@/components/inmobiliaria/cotizador/WizardStep3Review'
 import { WizardRestoreBanner } from '@/components/inmobiliaria/cotizador/WizardRestoreBanner'
 import { mostrarElAvisoDelBorrador } from '@/lib/cotizador/aviso-del-borrador'
+import { tipoQueViaja } from '@/lib/cotizador/tipo-de-inmueble'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { CotizadorWizardSkeleton } from '@/components/skeleton/panel/CotizadorWizardSkeleton'
 import { Button } from '@/components/ui/button'
@@ -126,6 +127,8 @@ export default function NuevaCotizacionPage() {
   }>(EMPTY_PROPIEDAD)
   // Asegurabilidad Tier-B visión #6: config (carriers/priority/mode) — pure UI state.
   const [config, setConfig] = useState<WizardConfigValue>(EMPTY_WIZARD_CONFIG)
+  // 🔴 COTIZ-6 (QA 19-10-2026, Nico): la autorización del candidato, cada vez.
+  const [autorizacion, setAutorizacion] = useState(false)
   const [step1Errors, setStep1Errors] = useState<{ cedula?: string; nombre?: string; ciudad?: string }>({})
   const [step2Errors, setStep2Errors] = useState<{ canonCop?: string; tipoInmueble?: string }>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -182,10 +185,20 @@ export default function NuevaCotizacionPage() {
       canonCop: data.canonCop,
       // codeudoresCount not in GET response — defaults to 0 per Phase 33 D-33-10
       codeudoresCount: 0,
-      tipoInmueble: data.tipoInmueble,
+      tipoInmueble: tipoQueViaja(data.tipoInmueble),
     })
     // ciudad lives in candidato for the wizard's step-1 ciudad field
     setCandidato(prev => ({ ...prev, ciudad: data.ciudad }))
+    // COTIZ-8 (19-10-2026): «Re-cotizar con este cambio» del «¿Qué pasaría si…?»
+    // llega con `?cambio=<variable>&valor=<valor>`: se aplica sobre la original.
+    const cambio = searchParams?.get('cambio') ?? null
+    const valor = searchParams?.get('valor') ?? null
+    if (cambio && valor != null) {
+      if (cambio === 'canon' && Number(valor) > 0) setPropiedad(prev => ({ ...prev, canonCop: Number(valor) }))
+      if (cambio === 'codeudores' && Number.isInteger(Number(valor))) setPropiedad(prev => ({ ...prev, codeudoresCount: Number(valor) }))
+      if (cambio === 'tipo') setPropiedad(prev => ({ ...prev, tipoInmueble: tipoQueViaja(valor) }))
+      if (cambio === 'ciudad' && valor.trim()) setCandidato(prev => ({ ...prev, ciudad: valor }))
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parentMetadata.isLoading, parentMetadata.error, parentMetadata.data, isReQuoteMode])
 
@@ -350,15 +363,14 @@ export default function NuevaCotizacionPage() {
         nombre: candidato.nombre,
         ciudad: candidato.ciudad,
         canonCop: Number(propiedad.canonCop),
-        tipoInmueble: propiedad.tipoInmueble,
+        tipoInmueble: tipoQueViaja(propiedad.tipoInmueble),
         codeudoresCount: propiedad.codeudoresCount,
+        // 🔴 COTIZ-6: el micro no consulta sin esto.
+        autorizacionConfirmada: true,
       }
-      // Asegurabilidad Tier-B visión #6: attach consultation config.
-      // Backend tolerant-ignores unknown fields; only send carriers[] when the
-      // operator explicitly picked favoritas (else backend chooses the set).
+      // 🔴 COTIZ-PASO-3 (19-10-2026): el micro ya usa la prioridad (decide la
+      // recomendada) y las aseguradoras elegidas (sólo a ésas se consulta).
       submitBody.priority = config.priority
-      submitBody.mode = config.runMode
-      submitBody.carrierMode = config.carrierMode
       if (config.carrierMode === 'favoritas' && config.selectedCarriers.length > 0) {
         submitBody.carriers = config.selectedCarriers
       }
@@ -604,6 +616,9 @@ export default function NuevaCotizacionPage() {
               arcoError={arcoError}
               canCreate={canCreate}
               ctaLabel={tf('inmobiliaria.ai.cotizador.nueva.ctaConsultar', 'Consultar asegurabilidad')}
+              config={config}
+              autorizacion={autorizacion}
+              onAutorizacion={setAutorizacion}
             />
           )}
           </CrossFade>

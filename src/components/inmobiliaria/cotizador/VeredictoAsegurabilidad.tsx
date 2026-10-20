@@ -33,6 +33,7 @@ import type {
   PartialRanking,
 } from '@/lib/hooks/cotizador/use-quote-stream'
 import { Appear } from '@leasefy/cadence'
+import { nombreDeLaAseguradora } from '@/lib/cotizador/nombre-de-la-aseguradora'
 
 interface VeredictoAsegurabilidadProps {
   finalVerdict: FinalVerdict
@@ -122,11 +123,11 @@ export function VeredictoAsegurabilidad({
   // Los nombres de carrier llegan en minúscula del SSE ("sura", "mapfre").
   // Capitalizamos la primera letra para el titular, sin tocar el match al grid.
   const recommendedCarrierName = rawRecommendedCarrier
-    ? rawRecommendedCarrier.charAt(0).toUpperCase() + rawRecommendedCarrier.slice(1)
+    ? nombreDeLaAseguradora(rawRecommendedCarrier)
     : null
-  const recommendedFromGrid = recommendedCarrierName
+  const recommendedFromGrid = rawRecommendedCarrier
     ? carriers.find(
-        c => c.carrier.toLowerCase() === recommendedCarrierName.toLowerCase(),
+        c => c.carrier.toLowerCase() === rawRecommendedCarrier.toLowerCase(),
       ) ?? null
     : null
 
@@ -168,7 +169,7 @@ export function VeredictoAsegurabilidad({
         <h2 className="mt-4 text-2xl font-semibold tracking-tight leading-tight text-fg">
           {finalVerdict.asegurabilidad === 'no'
             ? t('inmobiliaria.ai.cotizador.detail.veredicto.headlineNo')
-            : t('inmobiliaria.ai.cotizador.detail.veredicto.headline', {
+            : t(acceptingCount === 1 ? 'inmobiliaria.ai.cotizador.detail.veredicto.headlineUna' : 'inmobiliaria.ai.cotizador.detail.veredicto.headline', {
                 status: asegStatusLabel.toLowerCase(),
                 count: acceptingCount,
               })}

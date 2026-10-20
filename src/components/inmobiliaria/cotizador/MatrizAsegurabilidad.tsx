@@ -23,6 +23,7 @@
  * recommendation — nothing else uses the brand color.
  */
 
+import { nombreDeLaAseguradora } from '@/lib/cotizador/nombre-de-la-aseguradora'
 import * as React from 'react'
 import { useState } from 'react'
 import {
@@ -223,7 +224,7 @@ function MatrizTable({
                 >
                   <TableHead scope="row" className="px-4 py-3 font-normal align-top">
                     <span className="block font-medium text-fg">
-                      {carrier.carrier}
+                      {nombreDeLaAseguradora(carrier.carrier)}
                     </span>
                     <CarrierLabelChips
                       labels={labelsByCarrier.get(carrier.carrier) ?? []}

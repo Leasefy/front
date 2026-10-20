@@ -33,9 +33,54 @@ export interface AskWhyNewValue {
 
 export interface AskWhyResult {
   narrative_es: string
-  /** 🔴 En pesos (Nico, 04-10-2026): el micro ya no manda dólares. */
+  /** 🔴 En pesos (Nico, 04-10-2026): el micro ya no manda dólares. Desde COTIZ-8, 0. */
   cost_cop: number
   hypothetical_carriers: CarrierState[]
+  /**
+   * 🔴 COTIZ-8 (19-10-2026): `calculado` = cotización de prueba, se volvieron a
+   * correr sus reglas; `recotizar` = aseguradoras reales: hay que volver a consultarlas.
+   */
+  modo: 'calculado' | 'recotizar'
+}
+
+interface AseguradoraHipoteticaDelMicro {
+  carrier?: unknown
+  status?: unknown
+  prima_mensual_cop?: unknown
+  condiciones?: unknown
+  motivo_rechazo?: unknown
+  latency_ms?: unknown
+}
+
+/**
+ * 🔴 COTIZ-8: lo que manda el micro (snake_case) → lo que pinta el modal. Antes
+ * se leía tal cual y, como el micro sólo mandaba `reasoning_trace_es`, el modal
+ * hacía `undefined.map` y se rompía la página entera. Un micro anterior: la
+ * frase de `reasoning_trace_es`, sin aseguradoras, y a re-cotizar.
+ */
+export function leerLaRespuesta(cuerpo: unknown): AskWhyResult {
+  const c = (cuerpo ?? {}) as Record<string, unknown>
+  const lista = Array.isArray(c.hypothetical_carriers) ? (c.hypothetical_carriers as AseguradoraHipoteticaDelMicro[]) : []
+  const hypothetical_carriers: CarrierState[] = lista
+    .filter((h) => typeof h.carrier === 'string')
+    .map((h) => ({
+      carrier: h.carrier as string,
+      status: (['approved', 'conditional', 'rejected', 'error'].includes(String(h.status)) ? h.status : 'error') as CarrierState['status'],
+      primaMensualCop: typeof h.prima_mensual_cop === 'number' ? h.prima_mensual_cop : null,
+      condiciones: Array.isArray(h.condiciones) ? h.condiciones.map(String) : [],
+      motivoRechazo: typeof h.motivo_rechazo === 'string' ? h.motivo_rechazo : null,
+      latencyMs: typeof h.latency_ms === 'number' ? h.latency_ms : null,
+      isStub: true,
+      startedAtMs: null,
+    }))
+  const narrativa =
+    typeof c.narrative_es === 'string' ? c.narrative_es : typeof c.reasoning_trace_es === 'string' ? c.reasoning_trace_es : ''
+  return {
+    narrative_es: narrativa,
+    cost_cop: typeof c.cost_cop === 'number' ? c.cost_cop : 0,
+    hypothetical_carriers,
+    modo: c.modo === 'calculado' && hypothetical_carriers.length > 0 ? 'calculado' : 'recotizar',
+  }
 }
 
 /**
@@ -177,8 +222,7 @@ export function useAskWhy(agencyId: string | null): {
           throw typed
         }
 
-        const json: AskWhyResult = await res.json()
-        return json
+        return leerLaRespuesta(await res.json())
       } catch (caught) {
         // Already-typed AskWhyError thrown above — re-throw without re-handling.
         // Se reconoce por `mensaje`, no por `code`: el `DOMException` de un

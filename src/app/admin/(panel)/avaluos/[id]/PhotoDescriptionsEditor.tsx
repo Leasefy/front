@@ -10,6 +10,8 @@ import {
   type PhotoDescriptionViolation,
   type PhotoDescriptionsRejected,
 } from '@/lib/admin/avaluos'
+import { Card, MonoLabel } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
 
 /** Human-readable reason for a rejected edit (the Ley-1673 fence codes). */
 function reasonLabel(v: PhotoDescriptionViolation): string {
@@ -99,7 +101,7 @@ export function PhotoDescriptionsEditor({ id, photos }: { id: string; photos: Ph
   }
 
   if (photos.length === 0) {
-    return <div className="text-xs text-fg-muted">Este avalúo no tiene fotos.</div>
+    return <div className="text-caption text-fg-muted">Este avalúo no tiene fotos.</div>
   }
 
   return (
@@ -109,46 +111,43 @@ export function PhotoDescriptionsEditor({ id, photos }: { id: string; photos: Ph
         const v = violations[p.key]
         const tooLong = value.length > PHOTO_DESCRIPTION_MAX_CHARS
         return (
-          <div key={p.key} className="pb-4 border-b border-bg-border last:border-0 last:pb-0">
+          <div key={p.key} className="pb-4 border-b border-border last:border-0 last:pb-0">
             <div className="flex items-baseline justify-between mb-1">
-              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
+              <MonoLabel>
                 foto {i + 1}
-              </span>
+              </MonoLabel>
               <span
                 className={
                   'font-mono text-[10px] tabular-nums ' +
-                  (tooLong ? 'text-bad' : 'text-fg-subtle')
+                  (tooLong ? 'text-danger' : 'text-fg-subtle')
                 }
               >
                 {value.length} / {PHOTO_DESCRIPTION_MAX_CHARS}
               </span>
             </div>
             <textarea
-              className={'textarea min-h-[64px] ' + (v ? 'border-bad' : '')}
+              className={'textarea min-h-[64px] ' + (v ? 'border-danger' : '')}
               placeholder="Descripción de la foto (prosa de anexo, nunca el valor)"
               value={value}
               onChange={(e) => setOne(p.key, e.target.value)}
             />
-            {v && <p className="text-sm text-bad mt-1">{reasonLabel(v)}</p>}
+            {v && <p className="text-sm text-danger mt-1">{reasonLabel(v)}</p>}
           </div>
         )
       })}
 
       {error && (
-        <div className="card p-3 border-bad/40">
-          <p className="text-sm text-bad">{error}</p>
-        </div>
+        <Card className="p-3 border-danger/40">
+          <p className="text-sm text-danger">{error}</p>
+        </Card>
       )}
-      {saved && <p className="text-sm text-ok">Descripciones guardadas.</p>}
+      {saved && <p className="text-sm text-success">Descripciones guardadas.</p>}
 
-      <button
-        type="button"
+      <Button hideArrow type="button"
         onClick={onSave}
-        disabled={saving || !dirty}
-        className="btn btn-primary"
-      >
+        disabled={saving || !dirty}>
         {saving ? 'Guardando…' : 'Guardar descripciones'}
-      </button>
+      </Button>
     </div>
   )
 }

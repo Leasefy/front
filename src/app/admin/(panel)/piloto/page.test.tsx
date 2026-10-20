@@ -80,7 +80,7 @@ describe('/admin/piloto — el Piloto automático de cada inmobiliaria', () => {
     const fila = q(`[data-testid="admin-piloto-fila-${LAB.tenant_id}"]`)!
     expect(fila.textContent).toContain('Inmobiliaria Laboratorio S.A.S.')
     expect(fila.textContent).toContain('En prueba')
-    expect(fila.textContent).toContain('encendido')
+    expect(fila.textContent).toContain('Encendido')
     expect(q(`[data-testid="admin-piloto-detalle-${OTRA.tenant_id}"]`)!.textContent).toContain('Contratado, todavía sin encender')
   })
 

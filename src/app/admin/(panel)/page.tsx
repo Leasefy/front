@@ -3,12 +3,19 @@
 import { useRouter } from 'next/navigation'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
-import { fmtCOP, fmtDateTime, USD_TO_COP } from '@/lib/admin/format'
+import { fmtCOP, fmtDateTime, fmtDiaCorto, fmtPorcentaje, USD_TO_COP } from '@/lib/admin/format'
+import { NOMBRE_DEL_MODELO } from '@/lib/admin/modelo-de-cobro'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { LaPlataforma, type ResumenDeLaPlataforma } from '@/components/admin/LaPlataforma'
 import { ErrorBlock, LoadingBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 import type { PillTone } from '@/lib/admin/types'
+import { Card, MonoLabel, StatusBadge } from '@leasefy/cadence'
+import { ArrowRight } from '@phosphor-icons/react'
+import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { legible, resultadoDeLaLlamada } from '@/lib/admin/textos-del-admin'
 
 /* ── Contract: docs/ADMIN-API-CONTRACT.md (back repo) — GET /dashboard ─────
  * 12 independent blocks via Promise.allSettled; each block may be null
@@ -176,7 +183,7 @@ function pctDelta(curr: number, prev: number) {
 // ── plain-div bar chart (Vapi cost: orange/bad) ──────────────────────────────
 
 function TrendBars({ trend }: { trend: DayBucket[] }) {
-  if (trend.length === 0) return <div className="text-sm text-fg-muted py-4">Sin datos.</div>
+  if (trend.length === 0) return <p className="py-4 text-body-sm text-fg-muted">Todavía no hay datos.</p>
   const paidVals = trend.map((d) => num(d.paid_total))
   const costVals = trend.map((d) => num(d.vapi_cost) * USD_TO_COP)
   const maxVal = Math.max(...paidVals, ...costVals, 1)
@@ -184,9 +191,9 @@ function TrendBars({ trend }: { trend: DayBucket[] }) {
   return (
     <div className="space-y-1">
       {/* Legend */}
-      <div className="flex items-center gap-4 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2 bg-ok/70" /> cobrado</span>
-        <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2 bg-bad/60" /> costo vapi</span>
+      <div className="mb-3 flex items-center gap-4 text-caption text-fg-muted">
+        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-success" /> Cobrado</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-danger" /> Costo de Vapi</span>
       </div>
       <div className="flex items-end gap-1 h-24">
         {trend.map((d, i) => {
@@ -196,9 +203,9 @@ function TrendBars({ trend }: { trend: DayBucket[] }) {
             <div
               key={d.day}
               className="flex-1 flex flex-col justify-end gap-px"
-              title={`${d.day.slice(5)}: cobrado ${fmtCOP(paidVals[i]!)} · vapi ${fmtCOP(costVals[i]!)}`}
+              title={`${fmtDiaCorto(d.day)}: cobrado ${fmtCOP(paidVals[i]!)} · Vapi ${fmtCOP(costVals[i]!)}`}
             >
-              <div className="bg-ok/70" style={{ height: `${Math.max(1, paidH)}%` }} />
+              <div className="rounded-t-[4px] bg-success" style={{ height: `${Math.max(1, paidH)}%` }} />
             </div>
           )
         })}
@@ -213,15 +220,15 @@ function TrendBars({ trend }: { trend: DayBucket[] }) {
               className="flex-1"
               title={`Vapi ${fmtCOP(costVals[i]!)}`}
             >
-              <div className="bg-bad/60" style={{ height: `${Math.max(1, costH)}%` }} />
+              <div className="rounded-b-[4px] bg-danger" style={{ height: `${Math.max(1, costH)}%` }} />
             </div>
           )
         })}
       </div>
-      <div className="flex justify-between font-mono text-[10px] text-fg-subtle mt-1">
-        <span>{trend[0]?.day?.slice(5)}</span>
-        <span className="tabular-nums">cobrado total {fmtCOP(paidVals.reduce((a, b) => a + b, 0))}</span>
-        <span>{trend[trend.length - 1]?.day?.slice(5)}</span>
+      <div className="mt-1 flex justify-between font-mono text-caption text-fg-subtle">
+        <span>{fmtDiaCorto(trend[0]?.day)}</span>
+        <span className="tabular-nums">cobrado en total {fmtCOP(paidVals.reduce((a, b) => a + b, 0))}</span>
+        <span>{fmtDiaCorto(trend[trend.length - 1]?.day)}</span>
       </div>
     </div>
   )
@@ -236,9 +243,16 @@ export default function AdminDashboard() {
     (signal) => adminApi('/dashboard', { signal }),
     [],
   )
+  // (19-10-2026) Lo de Leasefy, aparte: si la cobranza por voz falla, la
+  // plataforma igual se ve (y al revés).
+  const plataforma = useApiQuery<ResumenDeLaPlataforma>((signal) => adminApi('/plataforma', { signal }), [])
 
-  if (dash.isLoading) return <div className="p-8"><LoadingBlock label="cargando dashboard" /></div>
-  if (dash.error && !dash.data) return <div className="p-8"><ErrorBlock error={dash.error} /></div>
+  if (dash.isLoading && plataforma.isLoading)
+    return (
+      <div className="space-y-6 p-6 lg:p-8">
+        <LoadingBlock label="Cargando el resumen" filas={8} />
+      </div>
+    )
 
   const d = dash.data
 
@@ -264,209 +278,215 @@ export default function AdminDashboard() {
 
   const todayDate = new Date().toLocaleDateString('es-CO', {
     weekday: 'long', day: '2-digit', month: 'long',
-  }).toUpperCase()
+  })
 
   const outcomesTotal = outcomes.reduce((acc, o) => acc + num(o.count), 0)
 
   return (
-    <div className="p-6 lg:p-8 max-w-[1500px]">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="00 · resumen"
-        title="Operación, en una sola vista."
-        description="Datos en tiempo casi-real. Refresca manualmente."
+        title="Resumen"
+        description="Leasefy de un vistazo: las inmobiliarias, sus contratos y su plata. Abajo, la cobranza por voz."
       />
 
+      <LaPlataforma estado={plataforma} onInmobiliarias={(plan) => router.push(plan ? `/admin/tenants?plan=${plan}` : '/admin/tenants')} />
+
+      <div className="flex flex-wrap items-end justify-between gap-3 border-t border-border-faint pt-6">
+        <div className="space-y-1">
+          <h2 className="text-h3 font-semibold text-fg">Cobranza por voz</h2>
+          <p className="text-body-sm text-fg-muted">
+            Mori, el asistente que llama a los inquilinos en mora: lo cobrado, lo que cuesta y lo que pasa hoy.
+          </p>
+        </div>
+      </div>
+
+      {dash.error && !dash.data ? <ErrorBlock error={dash.error} onReintentar={dash.refetch} titulo="No pudimos cargar la cobranza por voz" /> : null}
+
       {/* ── 1. Hero KPI strip ───────────────────────────────────────────── */}
-      {kpis ? (
-        <section className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+      {dash.isLoading ? <LoadingBlock label="Cargando la cobranza por voz" filas={4} /> : kpis ? (
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5" aria-label="El mes">
           <KpiCard
-            label="Cobrado · mes"
+            label="Cobrado · este mes"
             value={fmtCOP(cobrado)}
-            hint={`${kpis.paid_count_mtd} pagos aprobados`}
+            hint={`${num(kpis.paid_count_mtd).toLocaleString('es-CO')} pagos aprobados`}
             tone="ok"
           />
           <KpiCard
-            label="Costo agente · mes"
+            label="Costo · este mes"
             value={fmtCOP(costoTotal)}
-            hint={`Vapi ${fmtCOP(costoVapiCop)} · Claude ${fmtCOP(costoClaude)} · WA —`}
+            hint={`Vapi ${fmtCOP(costoVapiCop)} · Claude ${fmtCOP(costoClaude)}`}
             tone="bad"
           />
           <KpiCard
-            label="ROI agente"
-            value={roi != null ? `${roi.toFixed(2)}x` : '—'}
-            hint={roi != null ? 'cobrado / costo' : 'falta costo'}
+            label="Retorno"
+            value={roi != null ? `${roi.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}x` : '—'}
+            hint={roi != null ? 'Lo cobrado dividido por lo que cuestan' : 'Falta el costo'}
           />
           <KpiCard
-            label="Activos / cerrados"
+            label="Deudores"
             value={
               <span>
                 <span className="text-fg">{kpis.debtors_active}</span>
                 <span className="text-fg-muted"> / {kpis.debtors_closed}</span>
               </span>
             }
-            hint="deudores"
+            hint="Activos / cerrados"
           />
           <KpiCard
-            label="Atrasados"
+            label="Cartera atrasada"
             value={kpis.cartera_atrasada_count}
             hint={fmtCOP(num(kpis.cartera_atrasada_amount))}
             tone="warn"
           />
         </section>
       ) : (
-        <div className="mb-6 text-sm text-fg-muted">Bloque KPIs no disponible.</div>
+        dash.error ? null : <p className="text-body-sm text-fg-muted">Las cifras del mes no llegaron.</p>
       )}
 
       {/* ── 2. Plan breakdown (LEFT) + HOY mega-card (RIGHT) ───────────── */}
-      <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+      <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Plan breakdown */}
-        <div className="lg:col-span-2 card p-5">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-4">
-            inmobiliarias por modelo
-          </div>
+        <Card className="p-6">
+          <h2 className="mb-4 text-subtitle font-semibold text-fg">Por modelo de cobro</h2>
           {plans.length === 0 ? (
-            <div className="text-sm text-fg-muted py-6 text-center">Sin agencias.</div>
+            <p className="py-6 text-center text-body-sm text-fg-muted">Todavía no hay inmobiliarias.</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-bg-border font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-                  <th className="text-left py-2">Modelo</th>
-                  <th className="text-right py-2">Total</th>
-                  <th className="text-right py-2">Activas</th>
-                  <th className="text-right py-2">Deudores</th>
-                  <th className="text-right py-2">Promesas</th>
-                  <th className="text-right py-2">Cobrado</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Modelo</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Activas</TableHead>
+                  <TableHead className="text-right">Deudores</TableHead>
+                  <TableHead className="text-right">Cobrado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {plans.map((p) => (
-                  <tr key={p.billing_model} className="border-b border-bg-border last:border-0">
-                    <td className="py-2.5 text-xs font-medium uppercase tracking-wide">{p.billing_model}</td>
-                    <td className="py-2.5 text-right tabular-nums font-mono text-xs">{p.agency_count}</td>
-                    <td className="py-2.5 text-right tabular-nums font-mono text-xs text-ok">{p.active_count}</td>
-                    <td className="py-2.5 text-right tabular-nums font-mono text-xs">{p.debtors_count}</td>
-                    <td className="py-2.5 text-right tabular-nums font-mono text-xs">{p.open_promises_count}</td>
-                    <td className="py-2.5 text-right tabular-nums font-mono text-xs text-fg-muted">
+                  <TableRow key={p.billing_model}>
+                    <TableCell className="font-medium">
+                      {(NOMBRE_DEL_MODELO as Record<string, string>)[p.billing_model ?? ''] ?? (p.billing_model ? legible(p.billing_model) : 'Sin modelo')}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums font-mono text-caption">{p.agency_count}</TableCell>
+                    <TableCell className="text-right tabular-nums font-mono text-caption text-success">{p.active_count}</TableCell>
+                    <TableCell className="text-right tabular-nums font-mono text-caption">{p.debtors_count}</TableCell>
+                    <TableCell className="text-right tabular-nums font-mono text-caption text-fg-muted">
                       {p.paid_mtd ? fmtCOP(num(p.paid_mtd)) : '—'}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
 
           {/* Key metrics */}
           {metrics && (
-            <div className="mt-5 pt-4 border-t border-bg-border">
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-                métricas clave · 30d
-              </div>
+            <div className="mt-5 pt-4 border-t border-border">
+              <MonoLabel className="block mb-3">
+                Métricas clave · 30 días
+              </MonoLabel>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: 'Ticket prom.', value: fmtCOP(num(metrics.avg_ticket_30d)) },
-                  { label: 'Promesa prom.', value: fmtCOP(num(metrics.avg_promise_amount_30d)) },
-                  { label: '% Cumplimiento', value: `${num(metrics.promise_kept_pct_30d).toFixed(1)}%` },
-                  { label: '% Compleción', value: `${num(metrics.call_completion_pct_30d).toFixed(1)}%` },
+                  { label: 'Pago promedio', value: fmtCOP(num(metrics.avg_ticket_30d)) },
+                  { label: 'Promesa promedio', value: fmtCOP(num(metrics.avg_promise_amount_30d)) },
+                  { label: 'Promesas cumplidas', value: fmtPorcentaje(num(metrics.promise_kept_pct_30d)) },
+                  { label: 'Llamadas completas', value: fmtPorcentaje(num(metrics.call_completion_pct_30d)) },
                 ].map((m) => (
                   <div key={m.label}>
-                    <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">{m.label}</div>
-                    <div className="mt-1 font-semibold tabular-nums text-sm">{m.value}</div>
+                    <MonoLabel className="block">{m.label}</MonoLabel>
+                    <div className="mt-1 font-mono text-body-sm font-semibold tabular-nums">{m.value}</div>
                   </div>
                 ))}
               </div>
             </div>
           )}
-        </div>
+        </Card>
 
         {/* HOY mega-card */}
-        <div className="lg:col-span-3 card p-5">
+        <Card className="p-6">
           <div className="flex items-center justify-between mb-3">
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-              hoy — {todayDate}
-            </div>
-            <span className="font-mono text-[10px] uppercase text-fg-subtle">live</span>
+            <MonoLabel className="block">
+              Hoy · {todayDate}
+            </MonoLabel>
+            <StatusBadge tone="success" dot pulse>En vivo</StatusBadge>
           </div>
 
           {today ? (
             <>
               <div className="flex items-baseline gap-4 flex-wrap mb-1">
-                <span className="text-3xl font-semibold tabular-nums text-ok">
+                <span className="font-mono text-stat font-semibold tabular-nums text-success">
                   {fmtCOP(num(today.payments_today_total))}
                 </span>
                 {paidDelta.value !== 0 && (
                   <span
                     className={
-                      'font-mono text-sm tabular-nums ' +
-                      (paidDelta.tone === 'ok' ? 'text-ok' : paidDelta.tone === 'bad' ? 'text-bad' : 'text-fg-muted')
+                      'font-mono text-body-sm tabular-nums ' +
+                      (paidDelta.tone === 'ok' ? 'text-success' : paidDelta.tone === 'bad' ? 'text-danger' : 'text-fg-muted')
                     }
                   >
-                    {paidDelta.value > 0 ? '+' : ''}{paidDelta.value.toFixed(1)}% vs ayer
+                    {paidDelta.value > 0 ? '+' : ''}{paidDelta.value.toLocaleString('es-CO', { maximumFractionDigits: 1 })} % frente a ayer
                   </span>
                 )}
               </div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-4">
-                ayer · {fmtCOP(num(today.payments_yesterday_total))}
-              </div>
+              <MonoLabel className="block mb-4">
+                Ayer · {fmtCOP(num(today.payments_yesterday_total))}
+              </MonoLabel>
 
-              <div className="border-t border-bg-border pt-3 mb-4">
-                <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">inversión hoy</div>
-                <div className="text-2xl font-semibold tabular-nums text-bad mt-0.5">
+              <div className="border-t border-border pt-3 mb-4">
+                <MonoLabel className="block">Lo invertido hoy</MonoLabel>
+                <div className="font-mono text-h2 font-semibold tabular-nums text-danger mt-0.5">
                   {fmtCOP(num(today.vapi_cost_today) * USD_TO_COP)}
                 </div>
-                <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mt-0.5">
-                  ayer · {fmtCOP(num(today.vapi_cost_yesterday) * USD_TO_COP)}
-                </div>
+                <MonoLabel className="block mt-0.5">
+                  Ayer · {fmtCOP(num(today.vapi_cost_yesterday) * USD_TO_COP)}
+                </MonoLabel>
               </div>
 
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-4 border-t border-bg-border pt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 border-t border-border pt-4">
                 {[
-                  { label: 'Pagos', value: today.payments_today_count, tone: 'text-ok' },
+                  { label: 'Pagos', value: today.payments_today_count, tone: 'text-success' },
                   { label: 'Llamadas', value: today.calls_today_count, hint: `ayer ${today.calls_yesterday_count}`, tone: '' },
                   { label: 'Promesas', value: today.promises_today_count, hint: `ayer ${today.promises_yesterday_count}`, tone: '' },
-                  { label: 'Escalaciones', value: today.escalations_today_count, tone: num(today.escalations_today_count) > 0 ? 'text-warn' : '' },
-                  { label: 'Nuevas inmob.', value: today.new_agencies_today, tone: '' },
-                  { label: 'Eventos comp.', value: today.compliance_events_today, tone: '' },
+                  { label: 'Escalaciones', value: today.escalations_today_count, tone: num(today.escalations_today_count) > 0 ? 'text-warning' : '' },
+                  { label: 'Inmobiliarias nuevas', value: today.new_agencies_today, tone: '' },
+                  { label: 'Cumplimiento', value: today.compliance_events_today, tone: '' },
                 ].map((m) => (
                   <div key={m.label}>
-                    <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">{m.label}</div>
+                    <MonoLabel className="block">{m.label}</MonoLabel>
                     <div className={`mt-1 font-semibold tabular-nums text-xl ${m.tone}`}>{m.value}</div>
-                    {m.hint && <div className="font-mono text-[9px] uppercase text-fg-subtle">{m.hint}</div>}
+                    {m.hint && <div className="text-caption text-fg-subtle">{m.hint}</div>}
                   </div>
                 ))}
               </div>
             </>
           ) : (
-            <div className="text-sm text-fg-muted py-6 text-center">Bloque HOY no disponible.</div>
+            <p className="py-6 text-center text-body-sm text-fg-muted">Las cifras de hoy no llegaron.</p>
           )}
-        </div>
+        </Card>
       </section>
 
       {/* ── 3. Chart + Experimento + Transacciones ──────────────────────── */}
-      <section className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-        <div className="lg:col-span-2 card p-5">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-            recaudo vs costo · últimos 14 días
-          </div>
+      <section className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <Card className="p-6 lg:col-span-2">
+          <h2 className="mb-4 text-subtitle font-semibold text-fg">Lo cobrado frente al costo · últimos 14 días</h2>
           <TrendBars trend={trend} />
-        </div>
+        </Card>
 
         {/* Active experiment */}
-        <div className="card p-5">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-            experimento activo
-          </div>
+        <Card className="p-6">
+          <h2 className="mb-4 text-subtitle font-semibold text-fg">Experimento en curso</h2>
           {experiment ? (
             <>
               <div className="font-semibold text-base break-all mb-1">{experiment.name}</div>
               <Pill tone="info">{experiment.status}</Pill>
-              <div className="border-t border-bg-border mt-3 pt-3">
-                <div className="flex justify-between text-xs">
+              <div className="border-t border-border mt-3 pt-3">
+                <div className="flex justify-between text-caption">
                   <span className="text-fg-subtle">asignaciones</span>
                   <span className="tabular-nums font-mono">
                     {experiment.variants.reduce((acc, v) => acc + num(v.assignment_count), 0)}
                   </span>
                 </div>
-                <div className="text-xs text-fg-muted font-mono mt-1 space-y-0.5">
+                <div className="text-caption text-fg-muted font-mono mt-1 space-y-0.5">
                   {experiment.variants.length === 0 ? (
                     <span>—</span>
                   ) : (
@@ -478,36 +498,36 @@ export default function AdminDashboard() {
                     ))
                   )}
                 </div>
-                <div className="mt-2 font-mono text-[10px] text-fg-subtle">
+                <div className="mt-2 font-mono text-caption text-fg-subtle">
                   desde {fmtDateTime(experiment.created_at)}
                 </div>
               </div>
             </>
           ) : (
-            <div className="text-sm text-fg-muted text-center py-6">Sin experimentos corriendo.</div>
+            <p className="py-6 text-center text-body-sm text-fg-muted">No hay experimentos en curso.</p>
           )}
-        </div>
+        </Card>
 
         {/* Recent transactions */}
-        <div className="card p-5">
+        <Card className="p-6">
           <div className="flex items-baseline justify-between mb-3">
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">transacciones · 24h</span>
-            <span className="font-mono text-[10px] text-fg-subtle">{transactions.length}</span>
+            <MonoLabel>transacciones · 24h</MonoLabel>
+            <span className="font-mono text-caption text-fg-subtle">{transactions.length}</span>
           </div>
           {transactions.length === 0 ? (
-            <div className="text-sm text-fg-muted text-center py-6">Sin transacciones.</div>
+            <p className="py-6 text-center text-body-sm text-fg-muted">Todavía no hay pagos hoy.</p>
           ) : (
             <div className="space-y-2">
               {transactions.map((t) => (
-                <div key={t.id} className="border-b border-bg-border last:border-0 pb-2 last:pb-0">
+                <div key={t.id} className="border-b border-border last:border-0 pb-2 last:pb-0">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="font-medium text-sm truncate flex-1">{t.debtor_name}</span>
-                    <span className={`tabular-nums font-mono text-sm ${t.status === 'approved' ? 'text-ok' : 'text-fg-muted'}`}>
+                    <span className="font-medium text-body-sm truncate flex-1">{t.debtor_name}</span>
+                    <span className={`tabular-nums font-mono text-body-sm ${t.status === 'approved' ? 'text-success' : 'text-fg-muted'}`}>
                       {fmtCOP(parseFloat(t.amount))}
                     </span>
                   </div>
                   <div className="flex items-baseline justify-between gap-2 mt-0.5">
-                    <span className="text-xs text-fg-muted truncate flex-1">
+                    <span className="text-caption text-fg-muted truncate flex-1">
                       {t.legal_name ?? '—'} · {t.status}
                     </span>
                     <Pill tone={paymentTone(t.status)}>{t.status}</Pill>
@@ -516,176 +536,159 @@ export default function AdminDashboard() {
               ))}
             </div>
           )}
-        </div>
+        </Card>
       </section>
 
       {/* ── 4. Agencies + Outcomes ──────────────────────────────────────── */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className="flex items-baseline justify-between mb-3">
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-              inmobiliarias · 30 días
-            </span>
-            <button
-              className="font-mono text-[10px] uppercase text-fg-subtle hover:text-fg"
-              onClick={() => router.push('/admin/tenants')}
-            >
-              ver todo →
-            </button>
+            <h2 className="text-subtitle font-semibold text-fg">Inmobiliarias · 30 días</h2>
+            <Button variant="link" size="sm" hideArrow onClick={() => router.push('/admin/tenants')}>
+              Ver todas
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Button>
           </div>
-          <div className="card overflow-x-auto">
-            <table className="w-full text-sm table-zebra">
-              <thead>
-                <tr className="border-b border-bg-border font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-                  <th className="text-left px-3 py-3">Inmobiliaria</th>
-                  <th className="text-right px-3 py-3">Deudores</th>
-                  <th className="text-right px-3 py-3">Calls 30d</th>
-                  <th className="text-right px-3 py-3">Promesas</th>
-                  <th className="text-right px-3 py-3">Escal.</th>
-                  <th className="text-right px-3 py-3">Cobrado 30d</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Inmobiliaria</TableHead>
+                  <TableHead className="text-right">Deudores</TableHead>
+                  <TableHead className="text-right">Llamadas 30 d</TableHead>
+                  <TableHead className="text-right">Promesas</TableHead>
+                  <TableHead className="text-right">Escal.</TableHead>
+                  <TableHead className="text-right">Cobrado 30d</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {agencies.map((a) => (
-                  <tr
+                  <TableRow
                     key={a.tenant_id}
-                    className="border-b border-bg-border last:border-0 cursor-pointer"
+                    className="border-b border-border last:border-0 cursor-pointer"
                     onClick={() => router.push(`/admin/tenants/${a.tenant_id}`)}
                   >
-                    <td className="px-3 py-2.5 font-medium">{a.legal_name}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums font-mono text-xs">{a.debtors_count}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums font-mono text-xs">{a.calls_30d}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums font-mono text-xs">{a.open_promises}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums font-mono text-xs">
+                    <TableCell className="px-3 py-2.5 font-medium">{a.legal_name}</TableCell>
+                    <TableCell className="px-3 py-2.5 text-right tabular-nums font-mono text-caption">{a.debtors_count}</TableCell>
+                    <TableCell className="px-3 py-2.5 text-right tabular-nums font-mono text-caption">{a.calls_30d}</TableCell>
+                    <TableCell className="px-3 py-2.5 text-right tabular-nums font-mono text-caption">{a.open_promises}</TableCell>
+                    <TableCell className="px-3 py-2.5 text-right tabular-nums font-mono text-caption">
                       {num(a.open_escalations) > 0 ? (
-                        <span className="text-warn font-medium">{a.open_escalations}</span>
+                        <span className="text-warning font-medium">{a.open_escalations}</span>
                       ) : a.open_escalations}
-                    </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums font-mono text-xs text-fg-muted">
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5 text-right tabular-nums font-mono text-caption text-fg-muted">
                       {a.paid_30d ? fmtCOP(num(a.paid_30d)) : '—'}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
                 {agencies.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-3 py-8 text-center text-fg-muted text-sm">Sin agencias.</td>
-                  </tr>
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-8 text-center text-fg-muted">Todavía no hay inmobiliarias.</TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </div>
 
         {/* Outcomes */}
-        <div className="card p-5">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-4">
-            outcomes llamadas · 30d
-          </div>
+        <Card className="p-6">
+          <h2 className="mb-4 text-subtitle font-semibold text-fg">Cómo terminan las llamadas · 30 días</h2>
           {outcomes.length === 0 ? (
-            <div className="text-sm text-fg-muted">Sin datos.</div>
+            <p className="text-body-sm text-fg-muted">Todavía no hay datos.</p>
           ) : (
             <div className="space-y-2">
               {outcomes.map((o) => {
                 const pct = outcomesTotal > 0 ? (num(o.count) / outcomesTotal) * 100 : 0
                 return (
                   <div key={o.outcome ?? 'none'}>
-                    <div className="flex items-baseline justify-between text-xs mb-1">
-                      <span className="font-medium">{o.outcome ?? '(sin outcome)'}</span>
-                      <span className="tabular-nums font-mono text-fg-muted">{o.count} · {pct.toFixed(1)}%</span>
+                    <div className="flex items-baseline justify-between text-caption mb-1">
+                      <span className="font-medium">{resultadoDeLaLlamada(o.outcome)}</span>
+                      <span className="tabular-nums font-mono text-fg-muted">{o.count} · {fmtPorcentaje(pct)}</span>
                     </div>
-                    <div className="h-1.5 bg-bg-hover overflow-hidden">
-                      <div className="h-full bg-brand" style={{ width: `${Math.min(100, pct)}%` }} />
+                    <div className="h-1.5 bg-surface-hover overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${Math.min(100, pct)}%` }} />
                     </div>
                   </div>
                 )
               })}
             </div>
           )}
-        </div>
+        </Card>
       </section>
 
       {/* ── 5. Escalations + Compliance ─────────────────────────────────── */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-            escalaciones abiertas
-          </div>
-          <div className="card overflow-hidden">
-            <table className="w-full text-sm">
-              <tbody>
+          <h2 className="mb-4 text-subtitle font-semibold text-fg">Escalaciones abiertas</h2>
+          <Card className="overflow-hidden">
+            <Table>
+              <TableBody>
                 {escalations.map((e) => (
-                  <tr key={e.id} className="border-b border-bg-border last:border-0">
-                    <td className="px-3 py-2.5">
+                  <TableRow key={e.id} className="border-b border-border last:border-0">
+                    <TableCell className="px-3 py-2.5">
                       <Pill tone={urgencyTone(e.urgency)}>{e.urgency}</Pill>
-                    </td>
-                    <td className="px-3 py-2.5">
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5">
                       <div className="font-medium text-fg leading-tight">{e.debtor_name}</div>
-                      <div className="text-xs text-fg-subtle leading-tight truncate max-w-[240px]">
+                      <div className="text-caption text-fg-subtle leading-tight truncate max-w-[240px]">
                         {e.legal_name ?? '—'}
                       </div>
-                    </td>
-                    <td className="px-3 py-2.5 text-right text-fg-muted text-xs whitespace-nowrap font-mono">
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5 text-right text-fg-muted text-caption whitespace-nowrap font-mono">
                       {fmtDateTime(e.created_at)}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
                 {escalations.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="px-3 py-8 text-center text-fg-muted text-sm">
-                      Sin escalaciones abiertas.
-                    </td>
-                  </tr>
+                  <TableRow>
+                    <TableCell colSpan={3} className="py-8 text-center text-fg-muted">
+                      No hay escalaciones abiertas.
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </div>
 
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-            compliance · 30d
-          </div>
-          <div className="card p-5 space-y-1.5">
+          <h2 className="mb-4 text-subtitle font-semibold text-fg">Cumplimiento · 30 días</h2>
+          <Card className="space-y-1.5 p-6">
             {compliance.map((c) => (
               <div
                 key={c.event_type}
-                className="flex items-baseline justify-between text-sm border-b border-bg-border last:border-0 py-1.5"
+                className="flex items-baseline justify-between text-body-sm border-b border-border last:border-0 py-1.5"
               >
-                <span className="font-mono text-xs text-fg">{c.event_type}</span>
+                <span className="font-mono text-caption text-fg">{c.event_type}</span>
                 <span className="tabular-nums font-mono font-medium">{c.count}</span>
               </div>
             ))}
             {compliance.length === 0 && (
-              <div className="text-sm text-fg-muted">Sin eventos.</div>
+              <p className="text-body-sm text-fg-muted">Sin eventos.</p>
             )}
-          </div>
+          </Card>
         </div>
       </section>
 
       {/* ── 6. Footer bar — MRR · ARR · Channels ───────────────────────── */}
       {footer && (
-        <section className="card p-5">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 items-start">
+        <Card className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 items-start">
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">MRR</div>
-              <div className="mt-1 text-xl font-semibold tabular-nums text-ok">{fmtCOP(num(footer.mrr))}</div>
+              <MonoLabel className="block">Cobranza · ingreso mensual</MonoLabel>
+              <div className="mt-1 text-xl font-semibold tabular-nums text-success">{fmtCOP(num(footer.mrr))}</div>
             </div>
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">ARR · proyectado</div>
+              <MonoLabel className="block">Cobranza · al año</MonoLabel>
               <div className="mt-1 text-xl font-semibold tabular-nums">{fmtCOP(num(footer.arr))}</div>
             </div>
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">Valuación</div>
-              <div className="mt-1 text-sm font-mono tabular-nums text-fg-muted">
-                {fmtCOP(num(footer.arr) * 8)} – {fmtCOP(num(footer.arr) * 12)}
-              </div>
-              <div className="font-mono text-[9px] text-fg-subtle">8–12× ARR</div>
-            </div>
             <div className="md:col-span-1">
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-2">Canales · mes</div>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-mono">
+              <MonoLabel className="block mb-2">Canales · este mes</MonoLabel>
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-caption font-mono">
                 {footer.channel_mix.length === 0 ? (
-                  <span className="text-fg-muted">sin llamadas</span>
+                  <span className="text-fg-muted">Sin llamadas</span>
                 ) : (
                   footer.channel_mix.map((c) => (
                     <span key={c.call_type}>
@@ -697,11 +700,11 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">Calls · mes</div>
+              <MonoLabel className="block">Llamadas · este mes</MonoLabel>
               <div className="mt-1 text-xl font-semibold tabular-nums">{footer.calls_this_month}</div>
             </div>
           </div>
-        </section>
+        </Card>
       )}
     </div>
   )

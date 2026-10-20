@@ -108,7 +108,7 @@ describe('RegistrationProfilesPage', () => {
     expect(container.textContent).toContain('último perfil activo')
   })
 
-  it('shows the "backend pendiente" notice and disables toggles on a 404', async () => {
+  it('shows the «todavía no se puede cambiar» notice and disables toggles on a 404', async () => {
     const err = Object.assign(new Error('not found'), { name: 'ApiError', status: 404 })
     // Make it a real ApiError instance so the `instanceof` check in the page passes.
     const { ApiError } = await import('@/lib/admin/api')
@@ -117,7 +117,7 @@ describe('RegistrationProfilesPage', () => {
 
     await mount()
 
-    expect(container.textContent).toContain('backend pendiente')
+    expect(container.textContent).toContain('Todavía no se puede cambiar')
     expect(switches().every((s) => s.disabled)).toBe(true)
   })
 })

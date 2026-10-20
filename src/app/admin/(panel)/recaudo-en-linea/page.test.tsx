@@ -47,6 +47,8 @@ const cuadreDelRecaudo = vi.fn()
 const exportarLiquidacionAExcel = vi.fn()
 const exportarLiquidacionAPdf = vi.fn()
 
+// Los filtros usan el Select de Cadence: en happy-dom se prueba con su doble nativo.
+vi.mock('@/components/ui/select', () => import('@/components/ui/select.doble-de-prueba'))
 vi.mock('@/lib/admin/recaudo-en-linea', async (original) => ({
   ...(await original<typeof import('@/lib/admin/recaudo-en-linea')>()),
   resumenDelRecaudo: (...a: unknown[]) => resumenDelRecaudo(...a),

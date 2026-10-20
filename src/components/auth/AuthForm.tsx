@@ -5,13 +5,13 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { CrossFade, Presence, motionScale, motionSpring } from '@leasefy/cadence';
+import { CrossFade, OTPInput, Presence, motionScale, motionSpring } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
 import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
-import { rutaDeOnboarding, rutaDeOnboardingConRegreso } from '@/lib/auth/perfil-de-onboarding';
+import { esDestinoQueRegistraSolo, rutaDeOnboarding, rutaDeOnboardingConRegreso } from '@/lib/auth/perfil-de-onboarding';
 import { tomarAvisoDeCierre, PARAM_MOTIVO, type MotivoDeCierre } from '@/lib/auth/session-terminal';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
@@ -60,7 +60,44 @@ interface AuthFormProps {
   returnUrl?: string;
   /** El correo que la persona ya escribió en otra pantalla (p. ej. su estudio): llega puesto. */
   correoInicial?: string;
+  /**
+   * `ventana` (Nico, 19-10-2026, «dale un glow up al login, algo hermoso por
+   * más que sea un modal»): el formulario dentro de la ventana de cuenta que se
+   * abre encima de otra pantalla (publicar, seguir, el estudio). Pide UNA
+   * contraseña —con el ojo para verla y el medidor—, sin «Confirmar
+   * contraseña», y los títulos los pone quien la abre (`textos`).
+   */
+  variante?: 'pagina' | 'ventana';
+  /** Los títulos y botones que cambian según para qué se pide la cuenta. */
+  textos?: TextosDeLaCuenta;
+  /** Arriba del título del registro: p. ej. «Soy inmobiliaria · Cambiar». */
+  encimaDelRegistro?: React.ReactNode;
+  /**
+   * «Revisa tu correo» pide también el código de 6 dígitos que trae el correo
+   * (Nico, 19-10-2026): se confirma sin salir y en el mismo dispositivo. El
+   * botón del correo sigue sirviendo. Sólo con la plantilla nueva en Supabase
+   * (`back/supabase/templates/confirmar-registro.html`), que trae el código.
+   */
+  confirmarConCodigo?: boolean;
+  /**
+   * «Crear cuenta» desde el inicio de sesión lo resuelve quien abrió la ventana
+   * (p. ej. publicar vuelve a «¿Quién publica?»), con el correo ya escrito.
+   */
+  alCrearCuenta?: (correo: string) => void;
 }
+
+/** Lo que dice la cuenta según para qué se pide. Lo que no venga, el texto de siempre. */
+export interface TextosDeLaCuenta {
+  registroTitulo?: string;
+  registroDetalle?: string;
+  registroBoton?: string;
+  loginTitulo?: string;
+  loginDetalle?: string;
+  loginBoton?: string;
+}
+
+/** Cuántos dígitos trae el código del correo (el `OTP length` de Supabase, 6 por defecto). */
+const DIGITOS_DEL_CODIGO = 6;
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -307,10 +344,13 @@ function ReenvioDeConfirmacion({
   reenvio,
   onReenviar,
   onCorregir,
+  que = 'enlace',
 }: {
   reenvio: EstadoDeReenvio;
   onReenviar: () => void;
   onCorregir?: () => void;
+  /** Lo que se reenvía: el enlace, o el código cuando se confirma con los 6 dígitos (el mismo correo trae los dos). */
+  que?: 'enlace' | 'codigo';
 }) {
   return (
     <div className="space-y-1.5 text-[13px] text-fg-subtle" data-testid="reenvio-de-confirmacion">
@@ -322,7 +362,7 @@ function ReenvioDeConfirmacion({
       >
       {reenvio.agotado ? (
         <p data-testid="reenvio-agotado">
-          Ya te enviamos {MAXIMO_DE_REENVIOS} enlaces. Si no aparecen en tu bandeja ni en spam, escríbenos a{' '}
+          Ya te enviamos {MAXIMO_DE_REENVIOS} {que === 'codigo' ? 'códigos' : 'enlaces'}. Si no aparecen en tu bandeja ni en spam, escríbenos a{' '}
           <a href="mailto:hola@leasefy.co" className={ENLACE}>
             hola@leasefy.co
           </a>{' '}
@@ -346,7 +386,9 @@ function ReenvioDeConfirmacion({
               ? 'Reenviando…'
               : reenvio.espera > 0
                 ? `Reenviar en ${reenvio.espera >= 60 ? `${Math.floor(reenvio.espera / 60)}:${String(reenvio.espera % 60).padStart(2, '0')}` : `${reenvio.espera} s`}`
-                : 'Reenviar el enlace'}
+                : que === 'codigo'
+                  ? 'Reenviar el código'
+                  : 'Reenviar el enlace'}
           </button>
         </p>
       )}
@@ -392,10 +434,24 @@ function errorDeGoogle(err: unknown): string {
   });
 }
 
-export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp, correoInicial }: AuthFormProps) {
+export function AuthForm({
+  className,
+  onSuccess,
+  defaultMode,
+  defaultRole,
+  returnUrl: returnUrlProp,
+  correoInicial,
+  variante = 'pagina',
+  textos,
+  encimaDelRegistro,
+  confirmarConCodigo: conCodigo = false,
+  alCrearCuenta,
+}: AuthFormProps) {
+  /** En la ventana se pide UNA contraseña: el ojo deja verla y el medidor dice si sirve. */
+  const pideConfirmarContrasena = variante !== 'ventana';
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, signOut, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, mfaCheckStatus, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, confirmacionDeLaSesion } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, confirmarCorreoConCodigo, sendPasswordReset, signOut, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, mfaCheckStatus, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, confirmacionDeLaSesion } = useAuth();
 
   /*
    * 🔴 Sin esto el correo y la contraseña terminaban en la URL (prueba en vivo,
@@ -725,8 +781,13 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // Where signup should land: an explicit deep-link role goes straight to that
   // role's onboarding (carrying returnUrl forward); otherwise the single
   // profile picker at /onboarding/seleccionar-rol.
+  // El publicador rápido hace su propio registro (19-10-2026): ahí sigue directo.
   const onboardingDest = () =>
-    explicitRole ? getOnboardingHref(explicitRole) : rutaDeOnboarding(null);
+    esDestinoQueRegistraSolo(returnUrl)
+      ? returnUrl
+      : explicitRole
+        ? getOnboardingHref(explicitRole)
+        : rutaDeOnboarding(null);
 
   // Preserve context on the email-confirmation link so it returns through
   // /auth/callback (which exchanges the code server-side and honors returnUrl)
@@ -756,7 +817,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     olvidarAviso();
     try {
       didAuthenticateInForm.current = true;
-      await signInWithGoogle();
+      // A dónde iba: sin esto Google volvía al inicio de su perfil (19-10-2026).
+      await signInWithGoogle(returnUrl !== '/' ? returnUrl : undefined);
       onSuccess?.();
     } catch (err) {
       didAuthenticateInForm.current = false;
@@ -842,7 +904,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     olvidarAviso();
     try {
       didAuthenticateInForm.current = true;
-      await signInWithGoogle();
+      // A dónde iba: sin esto Google volvía al inicio de su perfil (19-10-2026).
+      await signInWithGoogle(returnUrl !== '/' ? returnUrl : undefined);
       onSuccess?.();
     } catch (err) {
       didAuthenticateInForm.current = false;
@@ -853,7 +916,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   };
 
   const handleRegisterSubmit = async (data: RegisterFormData) => {
-    if (data.password !== data.confirmPassword) {
+    if (pideConfirmarContrasena && data.password !== data.confirmPassword) {
       setError('Las contraseñas no coinciden.');
       return;
     }
@@ -942,6 +1005,44 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               accion: 'reenviarte el enlace',
             }),
       });
+    }
+  };
+
+  /*
+   * El código de 6 dígitos del correo (Nico, 19-10-2026): se confirma sin
+   * salir de la ventana. Al completar los 6 se manda solo; el botón queda para
+   * quien lo pega o quiere reintentar. Un código malo o vencido se dice bajo
+   * el campo, y el campo se vacía para escribirlo otra vez.
+   */
+  const [codigo, setCodigo] = React.useState('');
+  const [confirmandoCodigo, setConfirmandoCodigo] = React.useState(false);
+  const [errorDelCodigo, setErrorDelCodigo] = React.useState<string | null>(null);
+  const confirmarConElCodigo = async (escrito: string) => {
+    if (escrito.length !== DIGITOS_DEL_CODIGO || confirmandoCodigo) return;
+    setConfirmandoCodigo(true);
+    setErrorDelCodigo(null);
+    try {
+      didAuthenticateInForm.current = true;
+      const usuario = await confirmarCorreoConCodigo(resetEmail, escrito);
+      if (!usuario) {
+        didAuthenticateInForm.current = false;
+        setConfirmandoCodigo(false);
+        setErrorDelCodigo('Tu correo quedó confirmado, pero no pudimos abrir la sesión. Inicia sesión con tu contraseña.');
+        return;
+      }
+      onSuccess?.();
+      // La redirección la hace el efecto de arriba, como al entrar con la contraseña:
+      // «Confirmando…» se queda hasta que cambia la pantalla.
+    } catch (err: unknown) {
+      didAuthenticateInForm.current = false;
+      setConfirmandoCodigo(false);
+      setCodigo('');
+      const codigoDelError = codigoDeSupabase(err);
+      setErrorDelCodigo(
+        codigoDelError === 'otp_expired' || codigoDelError === 'otp_disabled' || leerErrorDeSupabase(err).status === 403
+          ? 'Ese código no sirve: está mal escrito o ya venció. Revisa el último correo, o pide uno nuevo abajo.'
+          : mensajeDeSupabase(err, { porDefecto: 'No pudimos confirmar el código. Intenta de nuevo.', accion: 'confirmar tu correo' }),
+      );
     }
   };
 
@@ -1097,20 +1198,31 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           </motion.div>
         )}
 
+        {mode === 'register' && registerStep === 'credentials' && encimaDelRegistro}
+
         {/* Sin eyebrow («● ACCESO»): el título ya dice qué es (Nico, 2026-09-03). */}
-        <h1 className="font-heading text-[30px] font-medium leading-[1.1] tracking-[-0.03em] text-fg">
-          {mode === 'login' && 'Bienvenido de vuelta'}
-          {mode === 'register' && registerStep === 'credentials' && 'Crea tu cuenta'}
+        <h1
+          className={cn(
+            'font-heading font-medium leading-[1.1] tracking-[-0.03em] text-fg',
+            variante === 'ventana' ? 'text-[26px] sm:text-[28px]' : 'text-[30px]',
+          )}
+        >
+          {mode === 'login' && (textos?.loginTitulo ?? 'Bienvenido de vuelta')}
+          {mode === 'register' && registerStep === 'credentials' && (textos?.registroTitulo ?? 'Crea tu cuenta')}
           {mode === 'register' && registerStep === 'confirm-email' && 'Revisa tu correo'}
           {mode === 'forgot-password' && 'Recupera tu contraseña'}
           {mode === 'reset-sent' && 'Revisa tu correo'}
         </h1>
         <p className="mt-2 text-[14px] leading-relaxed text-fg-subtle">
-          {mode === 'login' && 'Ingresa a tu cuenta para continuar.'}
-          {mode === 'register' && registerStep === 'credentials' && 'Ingresa tus datos para continuar.'}
+          {mode === 'login' && (textos?.loginDetalle ?? 'Ingresa a tu cuenta para continuar.')}
+          {mode === 'register' && registerStep === 'credentials' && (textos?.registroDetalle ?? 'Ingresa tus datos para continuar.')}
           {mode === 'register' && registerStep === 'confirm-email' && (
             // Sin punto al final: pegado al correo se leía como parte de él (Nico, 01-10).
-            <>Enviamos un enlace de confirmación a <span className="font-medium text-fg-muted">{resetEmail}</span></>
+            conCodigo ? (
+              <>Te enviamos un código de 6 dígitos a <span className="font-medium text-fg-muted">{resetEmail}</span></>
+            ) : (
+              <>Enviamos un enlace de confirmación a <span className="font-medium text-fg-muted">{resetEmail}</span></>
+            )
           )}
           {mode === 'forgot-password' && 'Te enviaremos un enlace para restablecer tu contraseña.'}
           {mode === 'reset-sent' && (
@@ -1180,7 +1292,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                   <p className="text-[13px] text-fg-subtle">
                     <button
                       type="button"
-                      onClick={() => handleModeSwitch('register', correoSinCuenta)}
+                      onClick={() =>
+                        alCrearCuenta ? alCrearCuenta(correoSinCuenta) : handleModeSwitch('register', correoSinCuenta)
+                      }
                       className={ENLACE}
                       data-testid="crear-cuenta-con-este-correo"
                     >
@@ -1199,7 +1313,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                       Ingresando…
                     </>
                   ) : (
-                    'Iniciar sesión'
+                    textos?.loginBoton ?? 'Iniciar sesión'
                   )}
                 </Button>
               </fieldset>
@@ -1209,7 +1323,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               ¿Todavía no tienes cuenta?{' '}
               <button
                 type="button"
-                onClick={() => handleModeSwitch('register')}
+                onClick={() =>
+                  alCrearCuenta
+                    ? alCrearCuenta(loginForm.getValues('email')?.trim() ?? '')
+                    : handleModeSwitch('register')
+                }
                 className="font-medium text-[#1A40FF] hover:underline underline-offset-2"
               >
                 Crear cuenta
@@ -1269,17 +1387,19 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                   {/* Las cinco barras: rojo, naranja, verde (Nico, 2026-09-07). */}
                   <MedidorDeContrasena contrasena={contrasenaEscrita} correo={correoEscritoEnRegistro} />
                 </div>
-                <AuthInput
-                  label="Confirmar contraseña"
-                  type="password"
-                  isNewPassword
-                  placeholder="Repite tu contraseña"
-                  {...registerForm.register('confirmPassword', {
-                    required: 'Confirma tu contraseña',
-                    validate: (val) => val === registerForm.watch('password') || 'Las contraseñas no coinciden',
-                  })}
-                  error={registerForm.formState.errors.confirmPassword?.message}
-                />
+                {pideConfirmarContrasena && (
+                  <AuthInput
+                    label="Confirmar contraseña"
+                    type="password"
+                    isNewPassword
+                    placeholder="Repite tu contraseña"
+                    {...registerForm.register('confirmPassword', {
+                      required: 'Confirma tu contraseña',
+                      validate: (val) => val === registerForm.watch('password') || 'Las contraseñas no coinciden',
+                    })}
+                    error={registerForm.formState.errors.confirmPassword?.message}
+                  />
+                )}
                 <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
                 <ErrorBanner mensaje={error} />
                 {error && correoYaRegistrado && (
@@ -1295,7 +1415,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                   </p>
                 )}
                 <Button type="submit" disabled={isLoading || !hidratado} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
-                  {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
+                  {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : (textos?.registroBoton ?? 'Crear cuenta')}
                 </Button>
               </fieldset>
             </form>
@@ -1316,7 +1436,74 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
         )}
 
         {/* ── Register: Confirm email ────────────────────────────────────── */}
-        {mode === 'register' && registerStep === 'confirm-email' && (
+        {mode === 'register' && registerStep === 'confirm-email' && conCodigo && (
+          <div className="space-y-5" data-testid="confirmar-con-codigo">
+            <form
+              method="post"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void confirmarConElCodigo(codigo);
+              }}
+              className="space-y-3"
+            >
+              <p className="text-[13px] font-medium text-fg-muted">Código del correo</p>
+              <div aria-describedby={errorDelCodigo ? 'codigo-del-correo-error' : undefined}>
+                <OTPInput
+                  length={DIGITOS_DEL_CODIGO}
+                  value={codigo}
+                  autoFocus
+                  disabled={confirmandoCodigo}
+                  invalid={Boolean(errorDelCodigo)}
+                  onChange={(valor) => {
+                    setCodigo(valor);
+                    if (errorDelCodigo) setErrorDelCodigo(null);
+                    if (valor.length === DIGITOS_DEL_CODIGO) void confirmarConElCodigo(valor);
+                  }}
+                />
+              </div>
+              <ErrorDelCampo id="codigo-del-correo-error" mensaje={errorDelCodigo} className="mt-0" />
+              <Button
+                type="submit"
+                disabled={codigo.length !== DIGITOS_DEL_CODIGO || confirmandoCodigo || !hidratado}
+                className="h-12 w-full rounded-full text-[14px]"
+                data-testid="confirmar-codigo"
+              >
+                {confirmandoCodigo ? (
+                  <>
+                    <SpinnerGap className="mr-2 h-4 w-4 animate-spin" />
+                    Confirmando…
+                  </>
+                ) : (
+                  'Confirmar'
+                )}
+              </Button>
+            </form>
+            <p className="text-[12.5px] leading-relaxed text-fg-subtle">
+              También puedes tocar el botón «Confirmar mi correo» del mismo correo. Si no lo ves, revisa spam.
+            </p>
+            {webmail && (
+              <Button asChild hideArrow variant="secondary" className="w-full h-11 rounded-full text-[14px]">
+                <a href={webmail.url} target="_blank" rel="noopener noreferrer" data-testid="abrir-correo">
+                  Abrir {webmail.nombre}
+                  <ArrowSquareOut className="ml-2 h-4 w-4" weight="bold" aria-hidden="true" />
+                </a>
+              </Button>
+            )}
+            <ReenvioDeConfirmacion
+              que="codigo"
+              reenvio={reenvio}
+              onReenviar={reenviarConfirmacion}
+              onCorregir={() => {
+                setError(null);
+                setCodigo('');
+                setErrorDelCodigo(null);
+                setRegisterStep('credentials');
+              }}
+            />
+          </div>
+        )}
+
+        {mode === 'register' && registerStep === 'confirm-email' && !conCodigo && (
           <div className="space-y-5">
             {/*
               Acá había «Vuelve aquí e inicia sesión» y un botón «Ir a iniciar

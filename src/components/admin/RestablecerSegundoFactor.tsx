@@ -1,8 +1,13 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { adminApi, ApiError } from '@/lib/admin/api'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
+import { Alert, Card } from '@leasefy/cadence'
+import { Tarjeta } from '@/components/admin/screen/Tarjeta'
+import { ROL_DEL_EQUIPO } from '@/lib/admin/textos-del-admin'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 /** GET /api/v1/admin/cuentas/buscar?email= (back: `admin/resources/cuentas`). */
 interface CuentaParaSoporte {
@@ -28,8 +33,24 @@ interface CuentaParaSoporte {
  * back deja el rastro (`user.mfa_reset` en la bitácora del admin) y le manda
  * al usuario el correo de aviso.
  */
-export function RestablecerSegundoFactor() {
-  const [correo, setCorreo] = useState('')
+/** El rol de la cuenta (`users.role`) o de la inmobiliaria, en palabras. */
+const ROL_DE_LA_CUENTA: Record<string, string> = {
+  TENANT: 'Inquilino',
+  LANDLORD: 'Propietario',
+  AGENT: 'Inmobiliaria',
+  ADMIN: 'Administrador de Leasefy',
+}
+
+export function RestablecerSegundoFactor({
+  correoInicial,
+  sinTarjeta = false,
+}: {
+  /** (19-10-2026) Llega buscada: desde el equipo de la ficha de una inmobiliaria. */
+  correoInicial?: string
+  /** Sin la tarjeta de afuera (dentro de un cajón). */
+  sinTarjeta?: boolean
+} = {}) {
+  const [correo, setCorreo] = useState(correoInicial ?? '')
   const [buscando, setBuscando] = useState(false)
   const [cuenta, setCuenta] = useState<CuentaParaSoporte | null>(null)
   const [confirmando, setConfirmando] = useState(false)
@@ -39,9 +60,9 @@ export function RestablecerSegundoFactor() {
 
   const nombre = cuenta?.nombre || cuenta?.email || ''
 
-  async function buscar(e: FormEvent) {
-    e.preventDefault()
-    const email = correo.trim()
+  async function buscar(e?: FormEvent, correoABuscar = correo) {
+    e?.preventDefault()
+    const email = correoABuscar.trim()
     if (!email) return
     setBuscando(true)
     setError(null)
@@ -61,6 +82,15 @@ export function RestablecerSegundoFactor() {
     }
   }
 
+  const yaBusco = useRef(false)
+  useEffect(() => {
+    if (correoInicial && !yaBusco.current) {
+      yaBusco.current = true
+      void buscar(undefined, correoInicial)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [correoInicial])
+
   async function restablecer() {
     if (!cuenta) return
     setRestableciendo(true)
@@ -79,43 +109,35 @@ export function RestablecerSegundoFactor() {
     }
   }
 
-  return (
-    <div className="card p-5 border-t-4 border-t-brand">
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-1">
-        soporte · segundo factor
-      </div>
-      <p className="text-sm text-fg-muted mb-4">
-        Para quien perdió su app de autenticación y tampoco puede usar el código por correo del
-        login. Quita todos sus factores; al entrar, lo activa de nuevo.
-      </p>
-
-      <form onSubmit={(e) => void buscar(e)} className="flex flex-wrap gap-2 mb-4">
-        <input
+  const contenido = (
+    <>
+      <form onSubmit={(e) => void buscar(e)} className="mb-4 flex flex-wrap gap-2">
+        <Input
           type="email"
-          className="input w-72"
-          placeholder="correo de la cuenta"
+          className="w-full sm:w-80"
+          placeholder="Correo de la cuenta"
           aria-label="Correo de la cuenta"
           value={correo}
           onChange={(e) => setCorreo(e.target.value)}
         />
-        <button type="submit" className="btn" disabled={buscando || !correo.trim()}>
+        <Button variant="outline" hideArrow type="submit" disabled={buscando || !correo.trim()}>
           {buscando ? 'Buscando…' : 'Buscar'}
-        </button>
+        </Button>
       </form>
 
       {cuenta && (
-        <div className="space-y-3">
-          <div className="text-sm">
-            <div className="font-medium text-fg">{cuenta.nombre ?? '—'}</div>
-            <div className="font-mono text-xs text-fg-muted">
-              {cuenta.email} · {cuenta.rol}
+        <div className="space-y-4">
+          <div className="rounded-md border border-border bg-bg p-4 text-body-sm">
+            <div className="font-medium text-fg">{cuenta.nombre ?? 'Sin nombre registrado'}</div>
+            <div className="mt-0.5 text-caption text-fg-muted">
+              {cuenta.email} · {ROL_DE_LA_CUENTA[cuenta.rol] ?? cuenta.rol}
             </div>
             {cuenta.inmobiliarias.length > 0 && (
-              <div className="text-xs text-fg-muted mt-1">
-                {cuenta.inmobiliarias.map((i) => `${i.nombre} (${i.rol})`).join(' · ')}
+              <div className="mt-1 text-caption text-fg-muted">
+                {cuenta.inmobiliarias.map((i) => `${i.nombre} (${ROL_DEL_EQUIPO[i.rol] ?? i.rol})`).join(' · ')}
               </div>
             )}
-            <div className="font-mono text-xs text-fg-muted mt-1">
+            <div className="mt-2 text-caption text-fg tabular-nums">
               {cuenta.segundoFactor.total === 0
                 ? 'No tiene segundo factor: no hay nada que restablecer.'
                 : `${cuenta.segundoFactor.total} ${cuenta.segundoFactor.total === 1 ? 'factor' : 'factores'} · ${cuenta.segundoFactor.verificados} ${cuenta.segundoFactor.verificados === 1 ? 'verificado' : 'verificados'}`}
@@ -123,9 +145,10 @@ export function RestablecerSegundoFactor() {
           </div>
 
           {!confirmando ? (
-            <button
+            <Button
+              variant="destructive"
+              hideArrow
               type="button"
-              className="btn btn-danger"
               disabled={cuenta.segundoFactor.total === 0}
               onClick={() => {
                 setHecho(null)
@@ -133,47 +156,59 @@ export function RestablecerSegundoFactor() {
               }}
             >
               Restablecer segundo factor
-            </button>
+            </Button>
           ) : (
-            <div className="card p-3 border-bad/40">
-              <p className="text-sm text-fg mb-3">
-                Vas a quitarle el segundo factor a {nombre} ({cuenta.email}). Va a poder entrar sólo
-                con su contraseña hasta que lo active de nuevo, y le llega un correo avisándole.
-                ¿Seguro?
+            <Card className="border-danger/40 p-4">
+              <p className="mb-3 text-body-sm text-fg">
+                Vas a quitarle el segundo factor a {nombre} ({cuenta.email}). Va a poder entrar sólo con su contraseña
+                hasta que lo active de nuevo, y le llega un correo avisándole. ¿Seguro?
               </p>
-              <div className="flex gap-2">
-                <button
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="destructive"
+                  hideArrow
                   type="button"
-                  className="btn btn-danger"
                   disabled={restableciendo}
                   onClick={() => void restablecer()}
                 >
                   {restableciendo ? 'Restableciendo…' : 'Sí, restablecer'}
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  hideArrow
                   type="button"
-                  className="btn"
                   disabled={restableciendo}
                   onClick={() => setConfirmando(false)}
                 >
                   Cancelar
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           )}
         </div>
       )}
 
       {error && (
-        <p role="alert" className="text-sm text-bad mt-3">
+        <Alert variant="danger" role="alert" className="mt-3">
           {error}
-        </p>
+        </Alert>
       )}
       {hecho && (
-        <p role="status" className="text-sm text-fg mt-3">
+        <Alert variant="success" role="status" className="mt-3">
           {hecho}
-        </p>
+        </Alert>
       )}
-    </div>
+    </>
+  )
+
+  if (sinTarjeta) return contenido
+
+  return (
+    <Tarjeta
+      titulo="Restablecer el segundo factor"
+      descripcion="Para quien perdió su app de autenticación y tampoco puede usar el código por correo del login. Quita todos sus factores; al entrar, lo activa de nuevo."
+    >
+      {contenido}
+    </Tarjeta>
   )
 }

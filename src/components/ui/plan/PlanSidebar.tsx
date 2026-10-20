@@ -252,6 +252,12 @@ export interface PlanSidebarProps {
    * decir (lee el estado de la migración del contexto del panel).
    */
   footerCards?: React.ReactNode;
+  /**
+   * A dónde lleva «Ayuda» del pie. `null` lo quita: el admin de Leasefy no
+   * tiene ayuda propia y la pública (`/ayuda`) es para las inmobiliarias
+   * (19-10-2026). Por defecto, `/ayuda`, como siempre.
+   */
+  ayudaHref?: string | null;
 }
 
 interface NavItemComponentProps {
@@ -827,6 +833,7 @@ interface SidebarContentProps {
   showInvite?: boolean;
   onInvite?: () => void;
   footerCards?: React.ReactNode;
+  ayudaHref?: string | null;
   /**
    * Sólo para la vitrina (`/sidebar-preview`): pinta el menú como si la
    * página actual fuera ésta. En el panel no se pasa y manda la URL real.
@@ -862,6 +869,7 @@ export function SidebarContent({
   showInvite = false,
   onInvite,
   footerCards,
+  ayudaHref = '/ayuda',
   rutaActual,
   refDelInicio,
 }: SidebarContentProps) {
@@ -1120,14 +1128,16 @@ export function SidebarContent({
           Collapsed rail shows only the Help icon. */}
       {isCollapsed ? (
         <div className="px-2 pb-3 space-y-1">
-          <Link
-            href="/ayuda"
-            onClick={onItemClick}
-            title={tr('Ayuda')}
-            className="flex items-center justify-center px-2.5 py-2.5 rounded-full text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
-          >
-            <Question className="w-[18px] h-[18px]" />
-          </Link>
+          {ayudaHref && (
+            <Link
+              href={ayudaHref}
+              onClick={onItemClick}
+              title={tr('Ayuda')}
+              className="flex items-center justify-center px-2.5 py-2.5 rounded-full text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
+            >
+              <Question className="w-[18px] h-[18px]" />
+            </Link>
+          )}
           <SidebarThemeToggle collapsed />
         </div>
       ) : (
@@ -1162,14 +1172,18 @@ export function SidebarContent({
           {/* Ayuda y tema comparten fila: son los dos ajustes de chrome, y así
               el pie no crece una línea más por cada uno. */}
           <div className="flex items-center gap-2">
-            <Link
-              href="/ayuda"
-              onClick={onItemClick}
-              className="flex flex-1 items-center gap-3 px-3 py-2 rounded-full text-[13px] text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
-            >
-              <Question className="w-[18px] h-[18px]" />
-              <span>{tr('Ayuda')}</span>
-            </Link>
+            {ayudaHref ? (
+              <Link
+                href={ayudaHref}
+                onClick={onItemClick}
+                className="flex flex-1 items-center gap-3 px-3 py-2 rounded-full text-[13px] text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
+              >
+                <Question className="w-[18px] h-[18px]" />
+                <span>{tr('Ayuda')}</span>
+              </Link>
+            ) : (
+              <span className="flex-1" />
+            )}
             <SidebarThemeToggle />
           </div>
         </div>
@@ -1332,6 +1346,7 @@ export function PlanSidebar({
   showInvite = false,
   onInvite,
   footerCards,
+  ayudaHref,
 }: PlanSidebarProps) {
   const { isCollapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -1425,6 +1440,7 @@ export function PlanSidebar({
           showInvite={showInvite}
           onInvite={onInvite}
           footerCards={footerCards}
+          ayudaHref={ayudaHref}
         />
       </aside>
 
@@ -1479,6 +1495,7 @@ export function PlanSidebar({
                   }
                 : undefined
             }
+            ayudaHref={ayudaHref}
           />
         </SheetContent>
       </Sheet>

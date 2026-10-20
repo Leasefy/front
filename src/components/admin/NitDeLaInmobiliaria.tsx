@@ -2,9 +2,16 @@
 
 import Link from 'next/link'
 import { useState, type FormEvent } from 'react'
+import { ArrowRight } from '@phosphor-icons/react'
+import { Alert, KeyValueList, MonoLabel, Presence } from '@leasefy/cadence'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { Pill } from '@/components/admin/Pill'
+import { Tarjeta } from '@/components/admin/screen/Tarjeta'
+import { LoadingBlock } from '@/components/admin/screen/states'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   ACCION_CORREGIR_NIT,
   corregirNit,
@@ -40,23 +47,23 @@ export function NitDeLaInmobiliaria({ tenantId }: { tenantId: string }) {
 
   if (consulta.isLoading && !datos) {
     return (
-      <section className="card p-5" aria-busy="true">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">nit</div>
-        <p className="text-sm text-fg-muted mt-2">Cargando el NIT…</p>
-      </section>
+      <Tarjeta titulo="NIT" aria-busy="true">
+        <LoadingBlock label="Cargando el NIT" filas={2} suelto={false} />
+      </Tarjeta>
     )
   }
   if (consulta.error && !datos) {
     return (
-      <section className="card p-5">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">nit</div>
-        <p role="alert" className="text-sm text-bad mt-2">
-          No pudimos leer el NIT de esta inmobiliaria: {mensajeDelFallo(consulta.error, 'leer el NIT')}
-        </p>
-        <button type="button" className="btn mt-3" onClick={consulta.refetch}>
-          Reintentar
-        </button>
-      </section>
+      <Tarjeta titulo="NIT">
+        <div className="space-y-3">
+          <Alert variant="danger">
+            No pudimos leer el NIT de esta inmobiliaria: {mensajeDelFallo(consulta.error, 'leer el NIT')}
+          </Alert>
+          <Button variant="outline" size="sm" hideArrow onClick={consulta.refetch}>
+            Reintentar
+          </Button>
+        </div>
+      </Tarjeta>
     )
   }
   if (!datos) return null
@@ -105,144 +112,150 @@ export function NitDeLaInmobiliaria({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <section className="card p-5 space-y-4" aria-labelledby="nit-titulo">
-      <div>
-        <div id="nit-titulo" className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-          nit · corrección del backoffice
-        </div>
-        <p className="text-xs text-fg-muted mt-1">
-          La inmobiliaria no puede cambiarlo en Configuración. Si lo escribió mal, se corrige acá y queda
-          registrado quién lo cambió, cuándo y de qué a qué.
-        </p>
-      </div>
-
-      <dl className="divide-y divide-bg-border border border-bg-border">
-        <div className="px-4 py-2.5 flex items-center justify-between gap-3 text-sm">
-          <dt className="text-fg-muted">NIT en Leasefy</dt>
-          <dd className="font-mono tabular-nums text-fg" data-testid="nit-en-leasefy">
-            {datos.nit ?? 'Sin NIT'}
-          </dd>
-        </div>
-        <div className="px-4 py-2.5 flex items-center justify-between gap-3 text-sm">
-          <dt className="text-fg-muted">En el micro de agentes</dt>
-          <dd className="font-mono tabular-nums text-fg flex items-center gap-2" data-testid="nit-en-el-micro">
-            {!datos.microLeido
-              ? <span className="text-fg-subtle">no se pudo leer</span>
-              : datos.nitEnElMicro === null
-                ? <span className="text-fg-subtle">no la tiene (todavía no está activa)</span>
-                : datos.nitEnElMicro}
-            {distintoEnElMicro && <Pill tone="warn">distinto</Pill>}
-          </dd>
-        </div>
-      </dl>
-
-      {resultado && (
-        <p role="status" className={`text-sm ${resultado.tono === 'ok' ? 'text-ok' : 'text-warn'}`}>
-          {resultado.texto}
-        </p>
-      )}
-
-      {!editando ? (
-        <button type="button" className="btn" onClick={abrir}>
-          Corregir NIT
-        </button>
-      ) : (
-        <form onSubmit={revisar} noValidate className="space-y-3">
-          <div>
-            <label htmlFor="nit-nuevo" className="block text-xs text-fg-muted mb-1">
-              NIT correcto
-            </label>
-            <input
-              id="nit-nuevo"
-              className="input max-w-xs font-mono"
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="900123456-8"
-              value={nuevo}
-              aria-invalid={tocado && errorDelCampo ? true : undefined}
-              aria-describedby="nit-ayuda"
-              disabled={confirmando || guardando}
-              onChange={(e) => {
-                setNuevo(e.target.value)
-                setFallo(null)
-              }}
-              onBlur={() => setTocado(true)}
-            />
-            <p id="nit-ayuda" className={`text-xs mt-1 ${tocado && errorDelCampo ? 'text-bad' : 'text-fg-subtle'}`}>
-              {tocado && errorDelCampo
-                ? errorDelCampo
-                : 'Sin puntos ni espacios. El dígito de verificación va después del guion y es opcional.'}
-            </p>
-          </div>
-
-          {!confirmando ? (
-            <div className="flex gap-2">
-              <button type="submit" className="btn btn-primary">
-                Revisar el cambio
-              </button>
-              <button type="button" className="btn" onClick={cerrar}>
-                Cancelar
-              </button>
-            </div>
-          ) : (
-            <div className="card p-3 border-warn/40">
-              <p className="text-sm text-fg mb-2">
-                Vas a cambiar el NIT de {datos.nombre} de{' '}
-                <span className="font-mono">{datos.nit ?? 'ninguno'}</span> a{' '}
-                <span className="font-mono">{nuevo.trim()}</span>. Queda registrado con tu correo.
-              </p>
-              <p className="text-xs text-fg-muted mb-3">
-                No cambia lo que ya salió con el NIT anterior: facturas electrónicas ya transmitidas, contratos y
-                mandatos firmados, ni documentos guardados. La facturación electrónica (FEEL) y los bancos tienen
-                a la empresa registrada por su NIT: eso se actualiza aparte.
-              </p>
-              <div className="flex gap-2">
-                <button type="button" className="btn btn-primary" disabled={guardando} onClick={() => void guardar()}>
-                  {guardando ? 'Guardando…' : 'Sí, cambiar el NIT'}
-                </button>
-                <button type="button" className="btn" disabled={guardando} onClick={() => setConfirmando(false)}>
-                  Volver
-                </button>
-              </div>
-            </div>
-          )}
-        </form>
-      )}
-
-      {fallo && (
-        <p role="alert" className="text-sm text-bad">
-          {fallo}
-        </p>
-      )}
-
-      <div>
-        <div className="flex items-center justify-between gap-3 mb-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">correcciones</div>
-          <Link
-            href={`/admin/audit-explorer?action=${encodeURIComponent(ACCION_CORREGIR_NIT)}&entityId=${encodeURIComponent(datos.agencyId)}`}
-            className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle hover:text-fg"
-          >
-            ver en audit search →
-          </Link>
-        </div>
-        {!datos.cambiosLeidos ? (
-          <p className="text-xs text-warn">No se pudo leer la bitácora: no sabemos si hubo correcciones antes.</p>
-        ) : datos.cambios.length === 0 ? (
-          <p className="text-xs text-fg-muted">Nadie ha corregido este NIT desde el backoffice.</p>
-        ) : (
-          <ul className="divide-y divide-bg-border border border-bg-border" data-testid="cambios-del-nit">
-            {datos.cambios.map((c) => (
-              <li key={`${c.cuando}-${c.despues}`} className="px-4 py-2 text-xs flex flex-wrap items-center gap-x-4 gap-y-1">
-                <span className="tabular-nums text-fg-muted whitespace-nowrap">{fmtDateTime(c.cuando)}</span>
-                <span className="text-fg-muted">{c.quien ?? '—'}</span>
-                <span className="font-mono text-fg">
-                  {c.antes ?? 'sin NIT'} → {c.despues ?? '—'}
+    <Tarjeta
+      titulo={<span id="nit-titulo">NIT</span>}
+      descripcion="La inmobiliaria no puede cambiarlo en Configuración. Si lo escribió mal, se corrige acá y queda registrado quién lo cambió, cuándo y de qué a qué."
+      aria-labelledby="nit-titulo"
+    >
+      <div className="space-y-5">
+        <KeyValueList
+          items={[
+            {
+              label: 'NIT en Leasefy',
+              value: (
+                <span className="font-mono tabular-nums text-fg" data-testid="nit-en-leasefy">
+                  {datos.nit ?? 'Sin NIT'}
                 </span>
-              </li>
-            ))}
-          </ul>
+              ),
+            },
+            {
+              label: 'En el micro de agentes',
+              value: (
+                <span className="flex items-center justify-end gap-2 font-mono tabular-nums text-fg" data-testid="nit-en-el-micro">
+                  {!datos.microLeido ? (
+                    <span className="font-body text-fg-subtle">no se pudo leer</span>
+                  ) : datos.nitEnElMicro === null ? (
+                    <span className="font-body text-fg-subtle">no la tiene (todavía no está activa)</span>
+                  ) : (
+                    datos.nitEnElMicro
+                  )}
+                  {distintoEnElMicro && <Pill tone="warn">distinto</Pill>}
+                </span>
+              ),
+            },
+          ]}
+        />
+
+        <Presence show={Boolean(resultado)}>
+          {resultado ? (
+            <Alert
+              role="status"
+              variant={resultado.tono === 'ok' ? 'success' : 'warning'}
+              className={resultado.tono === 'ok' ? 'text-success' : 'text-warning'}
+            >
+              {resultado.texto}
+            </Alert>
+          ) : null}
+        </Presence>
+
+        {!editando ? (
+          <Button variant="outline" hideArrow onClick={abrir}>
+            Corregir NIT
+          </Button>
+        ) : (
+          <form onSubmit={revisar} noValidate className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="nit-nuevo">NIT correcto</Label>
+              <Input
+                id="nit-nuevo"
+                className="max-w-xs font-mono"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="900123456-8"
+                value={nuevo}
+                aria-invalid={tocado && errorDelCampo ? true : undefined}
+                aria-describedby="nit-ayuda"
+                disabled={confirmando || guardando}
+                onChange={(e) => {
+                  setNuevo(e.target.value)
+                  setFallo(null)
+                }}
+                onBlur={() => setTocado(true)}
+              />
+              <p id="nit-ayuda" className={`text-caption ${tocado && errorDelCampo ? 'text-danger' : 'text-fg-subtle'}`}>
+                {tocado && errorDelCampo
+                  ? errorDelCampo
+                  : 'Sin puntos ni espacios. El dígito de verificación va después del guion y es opcional.'}
+              </p>
+            </div>
+
+            {!confirmando ? (
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" hideArrow>
+                  Revisar el cambio
+                </Button>
+                <Button type="button" variant="outline" hideArrow onClick={cerrar}>
+                  Cancelar
+                </Button>
+              </div>
+            ) : (
+              <Alert variant="warning" title="Confirma el cambio" role="region" aria-label="Confirmar el cambio del NIT">
+                <div className="space-y-3 text-fg">
+                  <p>
+                    Vas a cambiar el NIT de {datos.nombre} de <span className="font-mono">{datos.nit ?? 'ninguno'}</span> a{' '}
+                    <span className="font-mono">{nuevo.trim()}</span>. Queda registrado con tu correo.
+                  </p>
+                  <p className="text-fg-muted">
+                    No cambia lo que ya salió con el NIT anterior: facturas electrónicas ya transmitidas, contratos y
+                    mandatos firmados, ni documentos guardados. La facturación electrónica (FEEL) y los bancos tienen a
+                    la empresa registrada por su NIT: eso se actualiza aparte.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" hideArrow isLoading={guardando} disabled={guardando} onClick={() => void guardar()}>
+                      {guardando ? 'Guardando…' : 'Sí, cambiar el NIT'}
+                    </Button>
+                    <Button type="button" variant="outline" hideArrow disabled={guardando} onClick={() => setConfirmando(false)}>
+                      Volver
+                    </Button>
+                  </div>
+                </div>
+              </Alert>
+            )}
+          </form>
         )}
+
+        {fallo && <Alert variant="danger">{fallo}</Alert>}
+
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <MonoLabel>Correcciones</MonoLabel>
+            <Link
+              href={`/admin/audit-explorer?action=${encodeURIComponent(ACCION_CORREGIR_NIT)}&entityId=${encodeURIComponent(datos.agencyId)}`}
+              className="group inline-flex items-center gap-1 text-body-sm font-medium text-fg-muted underline-offset-4 hover:text-fg hover:underline"
+            >
+              Ver en el buscador de auditoría
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+            </Link>
+          </div>
+          {!datos.cambiosLeidos ? (
+            <p className="text-body-sm text-warning">No se pudo leer la bitácora: no sabemos si hubo correcciones antes.</p>
+          ) : datos.cambios.length === 0 ? (
+            <p className="text-body-sm text-fg-muted">Nadie ha corregido este NIT desde el admin.</p>
+          ) : (
+            <ul className="divide-y divide-border-faint rounded-md border border-border" data-testid="cambios-del-nit">
+              {datos.cambios.map((c) => (
+                <li key={`${c.cuando}-${c.despues}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 text-body-sm">
+                  <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(c.cuando)}</span>
+                  <span className="text-fg-muted">{c.quien ?? '—'}</span>
+                  <span className="font-mono text-fg">
+                    {c.antes ?? 'sin NIT'} → {c.despues ?? '—'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
-    </section>
+    </Tarjeta>
   )
 }

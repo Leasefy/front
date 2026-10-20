@@ -4,14 +4,20 @@ import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
-import { useClientPagination } from '@/lib/admin/use-client-pagination'
+import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { ExperimentoDeLaura } from '@/components/admin/ExperimentoDeLaura'
 
-const PAGE_SIZE = 50
 import type { PillTone } from '@/lib/admin/types'
+
+
+const ESTADO_DEL_EXPERIMENTO: Record<string, string> = {
+  running: 'En curso',
+  paused: 'En pausa',
+  completed: 'Terminado',
+  draft: 'Borrador',
+  archived: 'Archivado',
+}
 
 // ─── Types (co-located, per FRONT.md §6.26) ────────────────────────────────
 
@@ -39,30 +45,47 @@ function statusTone(s: string): PillTone {
   return 'muted'
 }
 
+const SEGMENTOS: Segmento<ExperimentRow>[] = [
+  { valor: 'todos', nombre: 'Todos', cumple: () => true },
+  { valor: 'running', nombre: 'En curso', cumple: (e) => e.status === 'running' },
+  { valor: 'paused', nombre: 'En pausa', cumple: (e) => e.status === 'paused' },
+  { valor: 'otros', nombre: 'Terminados y otros', cumple: (e) => e.status !== 'running' && e.status !== 'paused' },
+]
+
 // ─── Columns ───────────────────────────────────────────────────────────────
 
 const columns: Column<ExperimentRow>[] = [
   {
-    header: 'Status',
-    cell: (r) => <Pill tone={statusTone(r.status)}>{r.status}</Pill>,
+    header: 'Estado',
+    orden: (r) => ESTADO_DEL_EXPERIMENTO[r.status] ?? r.status,
+    texto: (r) => ESTADO_DEL_EXPERIMENTO[r.status] ?? r.status,
+    cell: (r) => <Pill tone={statusTone(r.status)}>{ESTADO_DEL_EXPERIMENTO[r.status] ?? r.status}</Pill>,
   },
   {
     header: 'Experimento',
-    cell: (r) => <span className="font-mono text-xs break-all">{r.name}</span>,
+    orden: (r) => r.name,
+    texto: (r) => r.name,
+    cell: (r) => <span className="font-mono text-caption break-all">{r.name}</span>,
   },
   {
     header: 'Asignaciones',
     align: 'right',
+    orden: (r) => Number(r.assignment_count) || 0,
+    ordenPrimero: 'desc',
+    texto: (r) => Number(r.assignment_count) || 0,
     cell: (r) => (
-      <span className="tabular-nums font-mono text-xs">
+      <span className="tabular-nums font-mono text-caption">
         {(Number(r.assignment_count) || 0).toLocaleString('es-CO')}
       </span>
     ),
   },
   {
     header: 'Creado',
+    orden: (r) => r.created_at,
+    ordenPrimero: 'desc',
+    texto: (r) => fmtDateTime(r.created_at),
     cell: (r) => (
-      <span className="font-mono text-xs text-fg-muted tabular-nums whitespace-nowrap">
+      <span className="font-mono text-caption text-fg-muted tabular-nums whitespace-nowrap">
         {fmtDateTime(r.created_at)}
       </span>
     ),
@@ -73,26 +96,24 @@ const columns: Column<ExperimentRow>[] = [
 
 /** /ab-tests — Experiments (BACK.md §8.24 · FRONT.md §6.26). */
 export default function AbTestsPage() {
-  const { data, isLoading, error } = useApiQuery<ExperimentRow[]>(
+  const { data, isLoading, error, refetch } = useApiQuery<ExperimentRow[]>(
     (signal) => adminApi('/experiments', { signal }),
     [],
   )
 
   const running = (data ?? []).filter((e) => e.status === 'running').length
 
-  /* Un experimento por fila y no se borran: el registro sólo crece. El contador
-     «N corriendo» del header sigue leyendo `data` entero. */
-  const { page, setPage, total, pageRows } = useClientPagination(data, PAGE_SIZE)
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="sistema"
-        title="A/B tests"
+        title="Experimentos"
         description={
           data
-            ? `${running} corriendo · reporte detallado en /api/agency/[id]/experiments/[key]/report del agent service.`
-            : 'Experimentos activos ordenados running > paused > otros.'
+            ? `Pruebas A/B de los agentes: dos formas de hacer algo y cuál funciona mejor. ${
+                running === 1 ? 'Hay 1 en curso.' : `Hay ${running} en curso.`
+              }`
+            : 'Pruebas A/B de los agentes: dos formas de hacer algo y cuál funciona mejor.'
         }
       />
 
@@ -102,15 +123,19 @@ export default function AbTestsPage() {
 
       <DataTable
         columns={columns}
-        rows={pageRows}
+        rows={data}
         getKey={(r) => r.id}
         isLoading={isLoading}
         error={error}
-        emptyTitle="Sin experiments"
-        emptyHint="No hay experimentos creados aún."
+        onReintentar={refetch}
+        emptyTitle="Todavía no hay experimentos"
+        emptyHint="Cuando un agente pruebe dos formas de hacer algo, aparece acá."
+        aria-label="Experimentos"
+        queSon={['experimento', 'experimentos']}
+        buscar="Nombre del experimento"
+        segmentos={SEGMENTOS}
+        exportar="experimentos"
       />
-
-      <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />
     </div>
   )
 }

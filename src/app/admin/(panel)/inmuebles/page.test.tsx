@@ -92,7 +92,7 @@ describe('InmueblesPage', () => {
     expect(texto).toContain('Calle Falsa 123')
     expect(texto).toContain('Inmobiliaria de prueba')
     expect(texto).toContain('Arrendado')
-    expect(texto).toContain('6 · 1 act.')
+    expect(texto).toContain('6 · 1 vigentes')
     expect(texto).toContain('(sin inmobiliaria)')
     expect(texto).toContain('Disponible')
   })
@@ -108,32 +108,30 @@ describe('InmueblesPage', () => {
     expect(push).toHaveBeenCalledWith('/admin/inmuebles/inm-1')
   })
 
-  it('buscar escribe `q` en la URL y limpiar la borra', async () => {
+  it('buscar escribe `q` en la URL al dejar de escribir', async () => {
     listarInmuebles.mockResolvedValue(pagina([fila()]))
     await mount()
 
     const input = container.querySelector('input[type="search"]') as HTMLInputElement
-    const form = container.querySelector('form') as HTMLFormElement
     await act(async () => {
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
       setter?.call(input, ' daikiry ')
       input.dispatchEvent(new Event('input', { bubbles: true }))
     })
     await act(async () => {
-      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+      await new Promise((r) => setTimeout(r, 450))
     })
     expect(replace).toHaveBeenLastCalledWith('/admin/inmuebles?q=daikiry')
   })
 
-  it('con `q` en la URL la manda al back y ofrece limpiarla', async () => {
+  it('con `q` en la URL la manda al back y ofrece limpiar los filtros', async () => {
     state.search = 'q=2848'
     listarInmuebles.mockResolvedValue(pagina([]))
     await mount()
 
     expect(listarInmuebles).toHaveBeenCalledWith({ q: '2848', agencyId: '', page: 0 }, expect.any(AbortSignal))
-    expect(container.textContent).toContain('Nada coincide con «2848»')
-
-    const limpiar = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Limpiar')
+    expect(container.textContent).toContain('Nada con estos filtros')
+    const limpiar = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Limpiar filtros'))
     await act(async () => {
       limpiar?.click()
     })
@@ -154,16 +152,14 @@ describe('InmueblesPage', () => {
     expect(push).not.toHaveBeenCalled()
   })
 
-  it('con el filtro de inmobiliaria puesto muestra la píldora con su nombre para quitarlo', async () => {
+  it('con el filtro de inmobiliaria puesto lo manda al back y ofrece quitarlo', async () => {
     state.search = 'agencyId=ag-1'
     listarInmuebles.mockResolvedValue(pagina([fila()]))
     await mount()
 
     expect(listarInmuebles).toHaveBeenCalledWith({ q: '', agencyId: 'ag-1', page: 0 }, expect.any(AbortSignal))
-    const pildora = Array.from(container.querySelectorAll('button')).find((b) =>
-      b.textContent?.startsWith('sólo Inmobiliaria de prueba'),
-    )
-    expect(pildora).toBeTruthy()
+    const limpiar = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Limpiar filtros'))
+    expect(limpiar).toBeTruthy()
   })
 
   it('muestra el error del back sin pantalla en blanco', async () => {

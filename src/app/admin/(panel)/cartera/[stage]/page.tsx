@@ -1,7 +1,8 @@
 'use client'
 
-import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { Wallet } from '@phosphor-icons/react'
+import { MonoLabel } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import type { Paginated } from '@/lib/admin/types'
 import { useApiQuery } from '@/lib/admin/use-api-query'
@@ -9,51 +10,13 @@ import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
-import { ErrorBlock } from '@/components/admin/screen/states'
-import type { PillTone } from '@/lib/admin/types'
+import { EmptyBlock } from '@/components/admin/screen/states'
+import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
+import { BackButton } from '@/components/ui/back-button'
+import { Pill } from '@/components/admin/Pill'
+import { ETAPA, ETAPAS_DE_CARTERA, esEtapaDeCartera, legible } from '@/lib/admin/textos-del-admin'
 
 const PAGE_SIZE = 50
-
-// ---------- Stage constants (BACK.md §7.1) ----------
-
-const CARTERA_STAGES = ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'SX'] as const
-type CarteraStage = (typeof CARTERA_STAGES)[number]
-type StageTone = Extract<PillTone, 'ok' | 'neutral' | 'warn' | 'bad' | 'muted'>
-
-const STAGE_LABEL_ES: Record<CarteraStage, string> = {
-  S0: 'Pre-vencimiento',
-  S1: 'Cartera fresca',
-  S2: 'Mora administrativa',
-  S3: 'Mora pre-jurídica',
-  S4: 'Siniestro inmobiliario',
-  S5: 'Restitución / jurídico',
-  SX: 'Skip / Abandono',
-}
-
-const STAGE_HINT_ES: Record<CarteraStage, string> = {
-  S0: 'día < 0',
-  S1: 'día 1..15',
-  S2: 'día 16..45',
-  S3: 'día 46..89',
-  S4: 'reclamo seguro',
-  S5: '≥ 90d, sin póliza',
-  SX: 'cualquier edad',
-}
-
-const STAGE_TONE: Record<CarteraStage, StageTone> = {
-  S0: 'ok',
-  S1: 'neutral',
-  S2: 'warn',
-  S3: 'warn',
-  S4: 'bad',
-  S5: 'bad',
-  SX: 'muted',
-}
-
-function isCarteraStage(v: string): v is CarteraStage {
-  return (CARTERA_STAGES as readonly string[]).includes(v)
-}
 
 // ---------- Types ----------
 
@@ -88,8 +51,8 @@ interface CarteraStageResponse extends Paginated<DebtorInStage> {
 // ---------- Heat color for days-in-state ----------
 
 function daysClass(days: number): string {
-  if (days >= 30) return 'text-bad'
-  if (days >= 14) return 'text-warn'
+  if (days >= 30) return 'text-danger'
+  if (days >= 14) return 'text-warning'
   return 'text-fg'
 }
 
@@ -103,7 +66,7 @@ export default function CarteraStagePage() {
   const { get, page, setFilters, setPage } = useUrlFilters()
   const tenant = get('tenant')
 
-  const isValid = isCarteraStage(rawStage)
+  const isValid = esEtapaDeCartera(rawStage)
   const stage = isValid ? rawStage : null
 
   const result = useApiQuery<CarteraStageResponse>(
@@ -113,18 +76,21 @@ export default function CarteraStagePage() {
     isValid,
   )
 
-  // Invalid stage — client-side guard (FRONT.md §6.10)
+  // Etapa que no existe — se cuida en el cliente (FRONT.md §6.10)
   if (!isValid) {
     return (
-      <div className="p-6 lg:p-8">
-        <ErrorBlock
-          error={`Stage inválido: "${params.stage}". Valores válidos: ${CARTERA_STAGES.join(', ')}.`}
+      <div className="space-y-6 p-6 lg:p-8">
+        <BackButton href="/admin/cartera" label="Volver a cartera" />
+        <EmptyBlock
+          icono={<Wallet weight="bold" />}
+          title={`No existe la etapa «${params.stage}»`}
+          hint={`Las etapas son ${ETAPAS_DE_CARTERA.join(', ')}.`}
         />
       </div>
     )
   }
 
-  const tone = STAGE_TONE[stage!]
+  const etapa = ETAPA[stage!]
   const stageTenants = result.data?.tenants ?? []
   const showFilter = stageTenants.length > 1
 
@@ -132,42 +98,33 @@ export default function CarteraStagePage() {
     {
       header: 'Deudor',
       cell: (r) => (
-        <div>
-          <div className="font-medium text-fg truncate max-w-[200px]">
-            {r.full_name ?? <span className="text-fg-subtle">—</span>}
-          </div>
-          {r.document_number && (
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-              CC {r.document_number}
-            </div>
-          )}
+        <div className="min-w-0">
+          <div className="max-w-[220px] truncate font-medium text-fg">{r.full_name ?? '—'}</div>
+          {r.document_number && <MonoLabel className="tabular-nums">CC {r.document_number}</MonoLabel>}
         </div>
       ),
     },
     {
       header: 'Inmobiliaria',
-      cell: (r) => (
-        <span className="text-xs text-fg-muted truncate max-w-[180px]">
-          {r.legal_name ?? '—'}
-        </span>
-      ),
+      cell: (r) => <span className="block max-w-[180px] truncate text-fg-muted">{r.legal_name ?? '—'}</span>,
     },
     {
-      header: 'Vino de',
-      cell: (r) => (
-        <span className="font-mono text-[11px] tabular-nums text-fg-subtle">
-          {r.previous_stage ?? <span className="italic">inicial</span>}
-        </span>
-      ),
+      header: 'Venía de',
+      cell: (r) =>
+        r.previous_stage && esEtapaDeCartera(r.previous_stage) ? (
+          <Pill tone={ETAPA[r.previous_stage].tono}>{r.previous_stage}</Pill>
+        ) : (
+          <span className="text-fg-subtle">{r.previous_stage ?? 'inicio'}</span>
+        ),
     },
     {
-      header: 'Días en stage',
+      header: 'Días en la etapa',
       align: 'right',
       cell: (r) => {
         const days = parseFloat(r.days_in_state)
         return (
-          <span className={`tabular-nums font-mono text-sm ${daysClass(days)}`}>
-            {days.toFixed(1)}
+          <span className={`font-mono tabular-nums ${daysClass(days)}`}>
+            {days.toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
           </span>
         )
       },
@@ -175,22 +132,16 @@ export default function CarteraStagePage() {
     {
       header: 'Entró',
       cell: (r) => (
-        <span className="whitespace-nowrap text-xs text-fg-muted tabular-nums">
-          {fmtDateTime(r.stage_entered_at)}
-        </span>
+        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.stage_entered_at)}</span>
       ),
     },
     {
-      header: 'Próxima acción',
+      header: 'Lo siguiente',
       cell: (r) =>
         r.next_planned_for ? (
           <div>
-            <div className="text-xs text-fg-muted tabular-nums">
-              {fmtDateTime(r.next_planned_for)}
-            </div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-              {r.next_channel ?? '—'}
-            </div>
+            <div className="font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.next_planned_for)}</div>
+            <div className="text-caption text-fg-subtle">{r.next_channel ? legible(r.next_channel) : '—'}</div>
           </div>
         ) : (
           <span className="text-fg-subtle">—</span>
@@ -199,56 +150,21 @@ export default function CarteraStagePage() {
     {
       header: 'Motivo',
       cell: (r) => (
-        <span className="font-mono text-[11px] text-fg-muted max-w-[240px] truncate">
-          {r.transition_reason}
+        <span className="block max-w-[240px] truncate text-fg-muted" title={r.transition_reason}>
+          {legible(r.transition_reason)}
         </span>
       ),
     },
   ]
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl">
+    <div className="space-y-6 p-6 lg:p-8">
+      <BackButton href="/admin/cartera" label="Volver a cartera" />
       <PageHeader
-        label={`05 · cartera · ${stage}`}
-        title={STAGE_LABEL_ES[stage!]}
-        description={`${STAGE_HINT_ES[stage!]} · deudores ordenados por tiempo en stage (más viejos primero).`}
-        right={
-          <Link href="/admin/cartera" className="btn">
-            ← Cartera
-          </Link>
-        }
+        label={`Cartera · ${stage}`}
+        title={etapa.nombre}
+        description={`${etapa.pista.charAt(0).toUpperCase()}${etapa.pista.slice(1)}. Primero los que llevan más tiempo en la etapa.`}
       />
-
-      {/* Tenant filter — only when >1 agency has debtors in this stage */}
-      {showFilter && (
-        <div className="flex flex-wrap items-end gap-3 mb-4">
-          <label className="block">
-            <span className="block mb-1 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-              inmobiliaria
-            </span>
-            <select
-              className="input w-56"
-              value={tenant}
-              onChange={(e) => setFilters({ tenant: e.target.value }, { resetPage: true })}
-            >
-              <option value="">— todas —</option>
-              {stageTenants.map((t) => (
-                <option key={t.tenant_id} value={t.tenant_id}>
-                  {t.legal_name}
-                </option>
-              ))}
-            </select>
-          </label>
-          {tenant && (
-            <button
-              className="btn"
-              onClick={() => setFilters({ tenant: '' }, { resetPage: true })}
-            >
-              × limpiar
-            </button>
-          )}
-        </div>
-      )}
 
       <DataTable
         columns={columns}
@@ -256,18 +172,31 @@ export default function CarteraStagePage() {
         getKey={(r) => r.debtor_id}
         isLoading={result.isLoading}
         error={result.error}
-        emptyTitle={`Sin deudores en ${stage}`}
+        onReintentar={result.refetch}
+        emptyTitle={`No hay deudores en ${etapa.nombre.toLowerCase()}`}
         emptyHint={tenant ? 'Prueba quitando el filtro de inmobiliaria.' : undefined}
+        emptyIcon={<Wallet weight="bold" />}
+        aria-label={`Deudores en ${etapa.nombre}`}
+        barra={
+          // El filtro sólo con más de una inmobiliaria en la etapa.
+          showFilter ? (
+            <BarraDeFiltros>
+              <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria">
+                <Desplegable
+                  id="filtro-inmobiliaria"
+                  value={tenant}
+                  onChange={(v) => setFilters({ tenant: v }, { resetPage: true })}
+                  todas="Todas las inmobiliarias"
+                  opciones={stageTenants.map((t) => ({ valor: t.tenant_id, nombre: t.legal_name }))}
+                />
+              </Filtro>
+            </BarraDeFiltros>
+          ) : undefined
+        }
+        paginacion={result.data ? { page, total: result.data.total, pageSize: PAGE_SIZE, onPage: setPage } : undefined}
+        queSon={['deudor', 'deudores']}
+        filtrosEnLaUrl={['tenant']}
       />
-
-      {result.data && (
-        <Pagination
-          page={page}
-          total={result.data.total}
-          pageSize={PAGE_SIZE}
-          onPage={setPage}
-        />
-      )}
     </div>
   )
 }

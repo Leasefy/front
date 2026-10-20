@@ -23,27 +23,30 @@ import {
 import { CertificatePdfViewer } from './CertificatePdfViewer'
 import { PhotoDescriptionsEditor } from './PhotoDescriptionsEditor'
 import { SignatureCanvas } from './SignatureCanvas'
+import { Card, MonoLabel } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 
 function Meta({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="mb-2 last:mb-0">
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">{label}</div>
+      <MonoLabel className="block">{label}</MonoLabel>
       <div className={`text-sm text-fg mt-0.5 ${mono ? 'font-mono tabular-nums' : ''}`}>{value}</div>
     </div>
   )
 }
 
 function AdjustmentsList({ adjustments }: { adjustments: Adjustment[] }) {
-  if (adjustments.length === 0) return <div className="text-xs text-fg-muted">Sin ajustes.</div>
+  if (adjustments.length === 0) return <div className="text-caption text-fg-muted">Sin ajustes.</div>
   return (
     <div className="space-y-1">
       {adjustments.map((a, i) => (
-        <div key={`${a.factor}-${i}`} className="flex items-baseline justify-between text-xs">
+        <div key={`${a.factor}-${i}`} className="flex items-baseline justify-between text-caption">
           <span className="text-fg-muted">{a.factor}</span>
           <span
             className={
               'font-mono tabular-nums ' +
-              (a.pctBps > 0 ? 'text-ok' : a.pctBps < 0 ? 'text-bad' : 'text-fg-muted')
+              (a.pctBps > 0 ? 'text-success' : a.pctBps < 0 ? 'text-danger' : 'text-fg-muted')
             }
           >
             {fmtBpsSigned(a.pctBps)}
@@ -66,8 +69,8 @@ const MODE_LABELS: Record<Mode, string> = {
 }
 
 const MODE_ACTIVE_CLASS: Record<Mode, string> = {
-  approve: 'bg-ok text-white border-ok',
-  reject: 'bg-bad text-white border-bad',
+  approve: 'bg-success text-white border-success',
+  reject: 'bg-danger text-white border-danger',
 }
 
 /**
@@ -104,10 +107,10 @@ export default function AvaluoDetailPage() {
   const [done, setDone] = useState<'firmado' | 'rechazado' | null>(null)
 
   const isLoading = queue.isLoading || detail.isLoading
-  if (isLoading) return <div className="p-6 lg:p-8"><LoadingBlock /></div>
+  if (isLoading) return <div className="space-y-6 p-6 lg:p-8"><LoadingBlock /></div>
 
   // The detail fetch is the source of truth for the record existing.
-  if (detail.error) return <div className="p-6 lg:p-8"><ErrorBlock error={detail.error} /></div>
+  if (detail.error) return <div className="space-y-6 p-6 lg:p-8"><ErrorBlock error={detail.error} /></div>
 
   const item = queue.data?.items.find((i) => i.id === id) ?? null
   const d = detail.data
@@ -152,7 +155,7 @@ export default function AvaluoDetailPage() {
   const band = d?.band
 
   return (
-    <div className="p-6 lg:p-8 max-w-5xl space-y-6">
+    <div className="space-y-6 p-6 lg:p-8">
       {/* Header */}
       <div>
         <Link
@@ -161,7 +164,7 @@ export default function AvaluoDetailPage() {
         >
           ← Cola
         </Link>
-        <h1 className="font-display text-display tracking-tight text-fg mt-2">
+        <h1 className="text-h2 text-fg mt-2">
           {pending ? 'Revisar y firmar.' : done === 'rechazado' ? 'Avalúo rechazado.' : 'Avalúo resuelto.'}
         </h1>
         <p className="text-sm text-fg-muted mt-1">
@@ -174,10 +177,10 @@ export default function AvaluoDetailPage() {
       {!pending && (
         <div
           className={
-            'card p-4 border-l-4 ' + (done === 'rechazado' ? 'border-l-bad' : 'border-l-ok')
+            'card p-4 border-l-4 ' + (done === 'rechazado' ? '' : '')
           }
         >
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">estado</div>
+          <MonoLabel className="block">estado</MonoLabel>
           <div className="text-sm text-fg mt-1">
             {done ? (
               <Pill tone={done === 'rechazado' ? 'bad' : 'ok'}>{done}</Pill>
@@ -191,14 +194,14 @@ export default function AvaluoDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Proposed valuation (from pending-review item) */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="card p-5">
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+          <Card className="p-5">
+            <MonoLabel className="block mb-3">
               propuesta de valor del modelo
-            </div>
+            </MonoLabel>
 
             {item ? (
               <>
-                <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-bg-border">
+                <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-border">
                   <Meta label="valor estimado" value={fmtCOP(item.valueCop)} mono />
                   <Meta
                     label="banda"
@@ -222,16 +225,16 @@ export default function AvaluoDetailPage() {
 
                 {item.narrativaEs && (
                   <div className="mb-4">
-                    <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-1">
+                    <MonoLabel className="block mb-1">
                       narrativa
-                    </div>
+                    </MonoLabel>
                     <p className="text-sm text-fg-muted leading-relaxed">{item.narrativaEs}</p>
                   </div>
                 )}
 
-                <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-2">
+                <MonoLabel className="block mb-2">
                   ajustes aplicados
-                </div>
+                </MonoLabel>
                 <AdjustmentsList adjustments={item.adjustments} />
               </>
             ) : (
@@ -239,19 +242,19 @@ export default function AvaluoDetailPage() {
                 La propuesta de valor sólo está disponible mientras el avalúo está en revisión.
               </p>
             )}
-          </div>
+          </Card>
 
           {/* Detail: comparables */}
-          <div className="card p-5">
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+          <Card className="p-5">
+            <MonoLabel className="block mb-3">
               comparables · {d?.comparables?.length ?? 0}
-            </div>
+            </MonoLabel>
             {(d?.comparables ?? []).length === 0 ? (
-              <div className="text-xs text-fg-muted">Sin comparables.</div>
+              <div className="text-caption text-fg-muted">Sin comparables.</div>
             ) : (
               <div className="space-y-3">
                 {d!.comparables.map((c) => (
-                  <div key={c.id} className="pb-3 border-b border-bg-border last:border-0 last:pb-0">
+                  <div key={c.id} className="pb-3 border-b border-border last:border-0 last:pb-0">
                     <div className="flex items-baseline justify-between mb-1">
                       <span className="text-sm text-fg">{c.observedType}</span>
                       <span className="font-mono tabular-nums text-sm text-fg">
@@ -263,28 +266,28 @@ export default function AvaluoDetailPage() {
                 ))}
               </div>
             )}
-          </div>
+          </Card>
 
           {/* Photo descriptions — editable while in review (Ley-1673 fenced) */}
           {pending && (d?.photos?.length ?? 0) > 0 && (
-            <div className="card p-5">
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-1">
+            <Card className="p-5">
+              <MonoLabel className="block mb-1">
                 descripciones de fotos · {d?.photos.length}
-              </div>
-              <p className="text-xs text-fg-muted mb-4">
+              </MonoLabel>
+              <p className="text-caption text-fg-muted mb-4">
                 Corrige la prosa de anexo antes de firmar. Se congela al firmar.
               </p>
               <PhotoDescriptionsEditor id={id} photos={d!.photos} />
-            </div>
+            </Card>
           )}
         </div>
 
         {/* Sidebar: band coverage + sufficiency + Ley 820 */}
         <div className="space-y-4">
-          <div className="card p-5">
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+          <Card className="p-5">
+            <MonoLabel className="block mb-3">
               banda y suficiencia
-            </div>
+            </MonoLabel>
             {band ? (
               <>
                 <Meta label="banda" value={`${fmtCOP(band.lowCop)} – ${fmtCOP(band.highCop)}`} mono />
@@ -302,13 +305,13 @@ export default function AvaluoDetailPage() {
                 <Meta label="comps usados" value={String(d.sufficiency.compCount)} mono />
               </>
             )}
-          </div>
+          </Card>
 
           {item?.canonLey820 && (
-            <div className={'card p-5 ' + (item.canonLey820.capped ? 'border-l-4 border-l-warn' : '')}>
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+            <div className={'card p-5 ' + (item.canonLey820.capped ? '' : '')}>
+              <MonoLabel className="block mb-3">
                 canon Ley 820
-              </div>
+              </MonoLabel>
               <Meta label="canon sugerido" value={fmtCOP(item.canonLey820.canonSugeridoCop)} mono />
               <Meta label="tope legal" value={fmtCOP(item.canonLey820.topeLegalCop)} mono />
               {item.canonLey820.capped && (
@@ -316,24 +319,24 @@ export default function AvaluoDetailPage() {
                   <Pill tone="warn">tope aplicado</Pill>
                 </div>
               )}
-              <p className="text-xs text-fg-muted mt-1">{item.canonLey820.incrementoMaxNote}</p>
+              <p className="text-caption text-fg-muted mt-1">{item.canonLey820.incrementoMaxNote}</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Certificate PDF — the back streams it (preview pre-pago, clean post-pago) */}
-      <div className="card p-5">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <Card className="p-5">
+        <MonoLabel className="block mb-3">
           certificado (PDF)
-        </div>
+        </MonoLabel>
         <CertificatePdfViewer id={id} />
-      </div>
+      </Card>
 
       {/* Action — only while pending */}
       {pending && (
-        <div className="card p-5 border-t-4 border-t-brand">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">acción</div>
+        <Card className="p-5 ">
+          <MonoLabel className="block mb-3">acción</MonoLabel>
 
           <div className="flex gap-2 mb-4 flex-wrap">
             {(['approve', 'reject'] as Mode[]).map((m) => (
@@ -352,9 +355,9 @@ export default function AvaluoDetailPage() {
             <>
               {mode === 'approve' && (
                 <div className="mb-4">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-muted">
+                  <MonoLabel>
                     firma (opcional · Ley 527 — firma electrónica)
-                  </span>
+                  </MonoLabel>
                   <div className="mt-2">
                     <SignatureCanvas onChange={setSignatureImage} disabled={submitting} />
                   </div>
@@ -363,11 +366,11 @@ export default function AvaluoDetailPage() {
 
               {mode === 'reject' && (
                 <label className="block">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-muted">
+                  <MonoLabel>
                     motivo del rechazo (obligatorio · queda en audit trail) · {reason.length} / 2000
-                  </span>
-                  <textarea
-                    className="textarea mt-2 min-h-[100px]"
+                  </MonoLabel>
+                  <Textarea
+                    className="mt-2 min-h-[100px]"
                     placeholder="Explica por qué se rechaza el avalúo"
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
@@ -376,22 +379,22 @@ export default function AvaluoDetailPage() {
               )}
 
               {reasonTooLong && (
-                <p className="text-sm text-bad mt-1">El motivo no puede superar 2 000 caracteres.</p>
+                <p className="text-sm text-danger mt-1">El motivo no puede superar 2 000 caracteres.</p>
               )}
               {rejectNeedsReason && (
-                <p className="text-sm text-warn mt-1">Indica el motivo del rechazo antes de confirmar.</p>
+                <p className="text-sm text-warning mt-1">Indica el motivo del rechazo antes de confirmar.</p>
               )}
 
               {submitError && (
-                <div className="card p-3 border-bad/40 mt-3">
-                  <p className="text-sm text-bad">{submitError}</p>
-                </div>
+                <Card className="p-3 border-danger/40 mt-3">
+                  <p className="text-sm text-danger">{submitError}</p>
+                </Card>
               )}
 
               <div className="flex gap-2 mt-4">
-                <button type="button" onClick={onSubmit} disabled={!canSubmit} className="btn btn-primary">
+                <Button hideArrow type="button" onClick={onSubmit} disabled={!canSubmit}>
                   {submitting ? 'Guardando…' : mode === 'approve' ? 'Firmar' : 'Rechazar'}
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={() => {
@@ -408,7 +411,7 @@ export default function AvaluoDetailPage() {
               </div>
             </>
           )}
-        </div>
+        </Card>
       )}
     </div>
   )

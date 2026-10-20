@@ -24,6 +24,10 @@ import {
   type PreScoringConfig,
   type PreScoringConfigUpdate,
 } from '@/lib/admin/cotizador'
+import { Card, Eyebrow } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Pill } from '@/components/admin/Pill'
 
 const MIN_HOURS = 1
 const MAX_HOURS = 720
@@ -75,15 +79,15 @@ function Field({
       <label htmlFor={id} className="block text-sm font-medium text-fg mb-1.5">
         {label}
       </label>
-      <input
+      <Input
         id={id}
-        className="input tabular-nums"
+        className="tabular-nums"
         inputMode="numeric"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
       {error ? (
-        <p className="mt-1 text-xs text-bad">{error}</p>
+        <p className="mt-1 text-caption text-danger">{error}</p>
       ) : (
         <p className="mt-1 text-[11px] text-fg-subtle">{help}</p>
       )}
@@ -154,10 +158,10 @@ export function PreScoringConfigCard() {
   }
 
   return (
-    <section className="card p-6 space-y-6">
+    <Card className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <div className="section-label">pre-scoring de afianzamiento</div>
-        <span className="pill pill-info">TTL</span>
+        <Eyebrow>Pre-scoring de afianzamiento</Eyebrow>
+        <Pill tone="info">TTL</Pill>
       </div>
       <p className="text-sm text-fg-muted">
         Cuánto vale un estudio ya completado antes de relanzar uno nuevo, y cuánto se espera la
@@ -169,12 +173,12 @@ export function PreScoringConfigCard() {
       )}
 
       {error && !server && (
-        <div className="card p-4 border-l-4 border-l-bad">
-          <p className="text-sm text-bad">{configErrorMessage(error, 'No se pudo cargar la configuración.', 'cargar la configuración')}</p>
-          <button className="btn btn-ghost h-8 px-2 mt-2" onClick={refetch}>
+        <Card className="p-4 ">
+          <p className="text-sm text-danger">{configErrorMessage(error, 'No se pudo cargar la configuración.', 'cargar la configuración')}</p>
+          <Button variant="ghost" hideArrow className="h-8 px-2 mt-2" onClick={refetch}>
             Reintentar
-          </button>
-        </div>
+          </Button>
+        </Card>
       )}
 
       {server && (
@@ -199,23 +203,23 @@ export function PreScoringConfigCard() {
           </div>
 
           {saveError && (
-            <div className="card p-3 border-l-4 border-l-bad">
-              <p className="text-sm text-bad">{saveError}</p>
-            </div>
+            <Card className="p-3 ">
+              <p className="text-sm text-danger">{saveError}</p>
+            </Card>
           )}
           {saved && !saveError && (
-            <div className="card p-3 border-l-4 border-l-ok">
-              <p className="text-sm text-ok">Configuración guardada.</p>
-            </div>
+            <Card className="p-3 ">
+              <p className="text-sm text-success">Configuración guardada.</p>
+            </Card>
           )}
 
           <div className="flex items-center gap-3">
-            <button className="btn btn-primary" onClick={save} disabled={!canSave}>
+            <Button hideArrow onClick={save} disabled={!canSave}>
               {saving ? 'Guardando…' : 'Guardar'}
-            </button>
+            </Button>
           </div>
         </>
       )}
-    </section>
+    </Card>
   )
 }

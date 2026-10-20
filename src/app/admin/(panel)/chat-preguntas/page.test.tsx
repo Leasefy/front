@@ -172,11 +172,13 @@ afterEach(() => {
 describe('/admin/chat-preguntas', () => {
   it('muestra el resumen, las sugerencias y la tabla, sin correos', async () => {
     await montar()
-    expect(texto()).toContain('Preguntas al chat')
+    expect(texto()).toContain('Preguntas del chat')
     expect(texto()).toContain('37,5 %')
     expect(texto()).toContain('38 % de las preguntas sobre cartera no tuvieron respuesta (3 de 8).')
     expect(texto()).toContain('¿cuánto debe la cédula ••••••••89?')
-    expect(texto()).toContain('US$0,09')
+    // En pesos, nunca en dólares (Nico): US$ 0,09 a $ 4.000 por dólar.
+    expect(texto()).toContain('$\u00a0360')
+    expect(texto()).not.toContain('US$')
     expect(texto()).toContain('Portofino')
     expect(texto()).toContain('Sólo la ve el equipo de producto de Leasefy')
     expect(texto()).not.toContain('no está en el menú')
@@ -188,7 +190,7 @@ describe('/admin/chat-preguntas', () => {
     await montar()
     expect(estado.pedidos[0]).toMatchObject({ agencyId: AG, sinRespuesta: true, tema: 'cartera', q: 'saldo', pagina: 2, limite: 50 })
     act(() => {
-      boton('sólo pulgar abajo')!.click()
+      boton('Sólo pulgar abajo')!.click()
     })
     expect(estado.replace).toHaveBeenCalledWith(expect.stringContaining('pulgarAbajo=1'))
     expect(String(estado.replace.mock.calls.at(-1)?.[0])).not.toContain('page=')
@@ -197,7 +199,7 @@ describe('/admin/chat-preguntas', () => {
   it('un ejemplo de la sugerencia abre el detalle del turno en el cajón', async () => {
     await montar()
     act(() => {
-      boton('ver el ejemplo')!.click()
+      boton('Ver el ejemplo')!.click()
     })
     const ejemplo = [...document.querySelectorAll('li button')][0] as HTMLButtonElement
     await act(async () => {
@@ -213,7 +215,7 @@ describe('/admin/chat-preguntas', () => {
   it('sin preguntas dice por qué, sin ceros que mienten', async () => {
     estado.respuesta = respuesta({ totales: { ...respuesta().totales, preguntas: 0 }, filas: [], total: 0, sugerencias: [] })
     await montar()
-    expect(texto()).toContain('Sin preguntas en estas fechas')
+    expect(texto()).toContain('No hay preguntas en estas fechas')
   })
 
   it('un error del micro se muestra', async () => {

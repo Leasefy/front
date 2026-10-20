@@ -111,7 +111,7 @@ function Autorizacion({ datos, alCambiar }: { datos: MiCalificacion; alCambiar: 
       ) : (
         <div className="space-y-4">
           {texto && (
-            <div className="max-h-48 overflow-y-auto rounded-md bg-surface-muted p-4 text-xs leading-relaxed text-fg-muted" data-lenis-prevent>
+            <div className="max-h-48 overflow-y-auto rounded-md bg-surface-muted p-4 text-caption leading-relaxed text-fg-muted" data-lenis-prevent>
               <p className="mb-1 font-medium text-fg">{texto.title}</p>
               {texto.text}
             </div>
@@ -156,12 +156,12 @@ function Evaluacion({ e, alResponder }: { e: EvaluacionDeFin; alResponder: () =>
           {e.inmobiliaria ?? tr('Una inmobiliaria')}
           {e.direccion ? <span className="font-normal text-fg-muted"> · {e.direccion}</span> : null}
         </p>
-        <span className="font-mono text-xs tabular-nums text-fg-muted">{e.puntaje}/100</span>
+        <span className="font-mono text-caption tabular-nums text-fg-muted">{e.puntaje}/100</span>
       </div>
       <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
         {e.respuestas.map((r) => (
           <div key={r.pregunta}>
-            <dt className="text-xs text-fg-subtle">{tr(r.pregunta)}</dt>
+            <dt className="text-caption text-fg-subtle">{tr(r.pregunta)}</dt>
             <dd className="text-fg">{tr(r.respuesta)}</dd>
           </div>
         ))}
@@ -331,14 +331,20 @@ export default function MiCalificacionPage({
               <div key={k.contractId} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-fg">{k.inmobiliaria ?? tr('Una inmobiliaria')}</p>
-                  <p className="truncate text-xs text-fg-muted">{k.direccion ?? '—'}</p>
+                  <p className="truncate text-caption text-fg-muted">{k.direccion ?? '—'}</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-1 font-mono text-xs tabular-nums text-fg-muted">
-                  <span>{tr('{n} meses', { n: k.meses })}</span>
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-1 font-mono text-caption tabular-nums text-fg-muted">
+                  <span>{k.meses === 1 ? tr('1 mes') : tr('{n} meses', { n: k.meses })}</span>
                   {k.cuotasContadas > 0 ? (
                     <>
                       <span>{tr('{a} de {c} a tiempo', { a: k.cuotasATiempo, c: k.cuotasContadas })}</span>
-                      <span>{k.peorAtrasoDias > 0 ? tr('peor atraso {d} días', { d: k.peorAtrasoDias }) : tr('sin atrasos')}</span>
+                      <span>
+                        {k.peorAtrasoDias === 1
+                          ? tr('peor atraso 1 día')
+                          : k.peorAtrasoDias > 0
+                            ? tr('peor atraso {d} días', { d: k.peorAtrasoDias })
+                            : tr('sin atrasos')}
+                      </span>
                     </>
                   ) : (
                     <span>{tr('sin cuotas pagadas en Leasefy')}</span>
@@ -366,7 +372,7 @@ export default function MiCalificacionPage({
               <li key={`${c.cuando}-${i}`} className="flex justify-between gap-3 py-2">
                 <span className="text-fg">{c.inmobiliaria}</span>
                 {/* Con la hora: dos consultas del mismo día no parecen la misma fila repetida. */}
-                <span className="font-mono text-xs tabular-nums text-fg-muted">{fechaYHora(c.cuando)}</span>
+                <span className="font-mono text-caption tabular-nums text-fg-muted">{fechaYHora(c.cuando)}</span>
               </li>
             ))}
           </ul>
@@ -398,12 +404,12 @@ export default function MiCalificacionPage({
               {datos.certificados.lista.map((c) => (
                 <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-surface-muted px-3 py-2 text-sm">
                   <span className="font-mono tabular-nums text-fg">{c.codigo}</span>
-                  <span className="text-xs text-fg-muted">
+                  <span className="text-caption text-fg-muted">
                     {c.vencido ? tr('Venció el {d}', { d: fecha(c.venceEl) }) : tr('Vale hasta el {d}', { d: fecha(c.venceEl) })}
                   </span>
                   {c.codigo && (
                     <Link
-                      className="text-xs text-primary hover:underline"
+                      className="text-caption text-primary hover:underline"
                       href={conIdioma(`/verificar-calificacion/${encodeURIComponent(c.codigo)}`, idiomaDelPanel)}
                     >
                       {tr('Ver cómo lo ven')}
@@ -446,7 +452,7 @@ export default function MiCalificacionPage({
               </Button>
               {/* Un botón apagado dice por qué (QA del 19-10-2026). */}
               {sinCalificacion && (
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   {tr('Lo podrás comprar cuando tengas calificación: con cuotas pagadas en Leasefy o un estudio de tus documentos.')}
                 </p>
               )}

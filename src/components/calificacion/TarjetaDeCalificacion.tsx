@@ -316,7 +316,7 @@ function BloqueDelDesglose<K extends string>({
           <p className="mt-1 text-sm text-fg-muted">{tr(queEs)}</p>
         </div>
         {peso !== null && (
-          <span className="rounded-full border border-border px-3 py-1 font-mono text-xs tabular-nums text-fg-muted dark:border-border-strong">
+          <span className="rounded-full border border-border px-3 py-1 font-mono text-caption tabular-nums text-fg-muted dark:border-border-strong">
             {tr('Pesa {p} % de la calificación', { p: peso })}
           </span>
         )}
@@ -331,11 +331,11 @@ function BloqueDelDesglose<K extends string>({
                   <span className="text-sm font-medium text-fg">{nombre(r.componente)}</span>
                   <span className="shrink-0 font-mono text-sm tabular-nums text-fg">
                     <AnimatedNumber value={Math.round(r.valor as number)} from={0} duration={motionDuration.reveal * 1.6} />
-                    <span className="text-xs text-fg-subtle">/100</span>
+                    <span className="text-caption text-fg-subtle">/100</span>
                   </span>
                 </div>
                 <div className="mt-0.5 flex items-baseline justify-between gap-3">
-                  <span className="text-xs text-fg-muted">
+                  <span className="text-caption text-fg-muted">
                     {tr(queMide[r.componente as keyof typeof queMide] ?? '')}
                   </span>
                   <span className="shrink-0 font-mono text-[11px] tabular-nums text-fg-subtle">
@@ -362,7 +362,7 @@ function BloqueDelDesglose<K extends string>({
 
       {sinDato.length > 0 && (
         <p
-          className="mt-4 flex items-start gap-2 border-t border-dashed border-border pt-4 text-xs text-fg-muted dark:border-border-strong"
+          className="mt-4 flex items-start gap-2 border-t border-dashed border-border pt-4 text-caption text-fg-muted dark:border-border-strong"
           data-testid="bloque-sin-dato"
         >
           <CircleDashed className="mt-px h-4 w-4 shrink-0 text-fg-subtle" aria-hidden />
@@ -424,7 +424,7 @@ export function TarjetaDeCalificacion({
         <div className="flex items-start gap-4">
           <LetraDeLaCalificacion letra={c.letra} grande />
           <div className="space-y-1.5">
-            <p className="font-mono text-xs uppercase tracking-wide text-fg-subtle">{tr('Calificación Leasefy')}</p>
+            <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">{tr('Calificación Leasefy')}</p>
             <p className="text-2xl font-medium text-fg">
               <span className="font-mono tabular-nums">{c.puntaje}</span>
               <span className="text-base text-fg-muted">/100</span>
@@ -466,7 +466,7 @@ export function TarjetaDeCalificacion({
               <li key={x}>{tr(x)}</li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-fg-subtle">
+          <p className="mt-2 text-caption text-fg-subtle">
             {tr('Nunca un depósito en dinero: la Ley 820 lo prohíbe en vivienda.')}
           </p>
         </div>

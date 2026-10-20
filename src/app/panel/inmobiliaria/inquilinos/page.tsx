@@ -83,6 +83,7 @@ import { PermissionGate } from '@/components/auth/PermissionGate';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { useAlVolverLaConexion } from '@/lib/inquilinos/al-volver-la-conexion';
 import { KpiValor } from '@/components/estado/KpiValor';
+import { CifraQueCabe } from '@/components/estado/CifraQueCabe';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { Button } from '@/components/ui/button';
 import { TablePagination } from '@/components/ui/pagination';
@@ -405,7 +406,7 @@ function ContenidoDeInquilinos() {
         cargando={deLaLista ? cargando : cargandoPortafolio}
         fallo={deLaLista ? error : errorPortafolio}
       >
-        {valor}
+        <CifraQueCabe>{valor}</CifraQueCabe>
       </KpiValor>
     ) as unknown as string;
 

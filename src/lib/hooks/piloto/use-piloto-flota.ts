@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
+import { enModoComercial } from '@/lib/nav/modo-comercial'
 import {
   fetchPilotoFlota,
   putPilotoFlota,
@@ -47,7 +48,9 @@ export interface UsePilotoFlotaResult {
 
 export function usePilotoFlota(): UsePilotoFlotaResult {
   const { agency } = useAuth()
-  const agencyId = agency?.id ?? null
+  // En modo comercial el Piloto se ve en demo: no se le pregunta al micro,
+  // que todavía no conoce a esa inmobiliaria (cada pregunta era un 401).
+  const agencyId = enModoComercial(agency) ? null : agency?.id ?? null
 
   const [data, setData] = useState<PilotoFlotaResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)

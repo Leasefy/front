@@ -7,6 +7,7 @@ import { CrossFade } from '@leasefy/cadence'
 import { useDireccionDelPaso } from '@/components/onboarding/wizard/use-direccion-del-paso'
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol'
 import { CargaDeMarca } from '@/components/ui/carga-de-marca'
+import { useAuth } from '@/lib/auth'
 import { useOnboardingSession } from '@/lib/hooks/use-onboarding-session'
 import { useOnboardingProvisioning } from '@/lib/hooks/use-onboarding-provisioning'
 import { MarcoDelAsistente } from '@/components/onboarding/inmobiliaria/MarcoDelAsistente'
@@ -194,6 +195,7 @@ function OnboardingWizard({
   preStepAgency?: AgencyStepPreStepValues | null
 }) {
   const router = useRouter()
+  const { user } = useAuth()
   const {
     status,
     currentStep,
@@ -491,7 +493,7 @@ function OnboardingWizard({
                 onSubmit={withOverrideClear(submitAgency)}
                 // El 400 entero: sus `campos` van a cada campo (02-10-2026).
                 errorDelServidor={error !== null && error.kind === 'validation' ? error : null}
-                prefill={computeAgencyStepPrefill(preStepAgency, draft)}
+                prefill={computeAgencyStepPrefill(preStepAgency, draft, { telefono: user?.phone })}
                 sessionId={sessionId}
               />
               </>

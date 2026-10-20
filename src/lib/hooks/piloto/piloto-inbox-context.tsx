@@ -34,6 +34,7 @@ import {
 
 import { useAuth } from '@/lib/auth'
 import { fetchPilotoInbox, type PilotoInboxResponse } from '@/lib/api/piloto'
+import { enModoComercial } from '@/lib/nav/modo-comercial'
 
 const POLL_MS = 60_000
 
@@ -65,7 +66,9 @@ const PilotoInboxContext = createContext<PilotoInboxCompartido | null>(null)
 /** El único fetch/poll real — vive dentro del provider, nunca en un consumidor. */
 function usePilotoInboxInterno(): PilotoInboxCompartido {
   const { agency } = useAuth()
-  const agencyId = agency?.id ?? null
+  // En modo comercial el Piloto se ve en demo: no se le pregunta al micro,
+  // que todavía no conoce a esa inmobiliaria (cada pregunta era un 401).
+  const agencyId = enModoComercial(agency) ? null : agency?.id ?? null
 
   const [data, setData] = useState<PilotoInboxResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)

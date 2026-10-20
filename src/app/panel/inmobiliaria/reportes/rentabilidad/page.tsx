@@ -251,16 +251,21 @@ function RentabilidadContent() {
           <p id="rentabilidad-periodo" className="text-xs font-medium text-fg-muted">
             {t('inmobiliaria.reportes.rentabilidad.period.label')}
           </p>
-          <SegmentedControl<PresetDePeriodo>
-            value={preset}
-            onChange={elegirPreset}
-            size="sm"
-            aria-label={t('inmobiliaria.reportes.rentabilidad.period.label')}
-            options={PRESETS_DE_PERIODO.map((p) => ({
-              value: p,
-              label: t(`inmobiliaria.reportes.rentabilidad.period.${p}`),
-            }))}
-          />
+          {/* A 390 «3 meses» se partía en dos renglones dentro de un botón de
+              28 px: cada opción en una línea y el riel se desliza. */}
+          <div className="max-w-full overflow-x-auto [scrollbar-width:none]" data-lenis-prevent>
+            <SegmentedControl<PresetDePeriodo>
+              value={preset}
+              onChange={elegirPreset}
+              size="sm"
+              className="[&>button]:whitespace-nowrap"
+              aria-label={t('inmobiliaria.reportes.rentabilidad.period.label')}
+              options={PRESETS_DE_PERIODO.map((p) => ({
+                value: p,
+                label: t(`inmobiliaria.reportes.rentabilidad.period.${p}`),
+              }))}
+            />
+          </div>
         </div>
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-end gap-2">

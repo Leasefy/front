@@ -15,13 +15,15 @@ import type { AgencyMemberRole } from '@/lib/auth/types';
  *
  * Lo que se ofrece depende de quién mira, y nunca un botón que termine en un
  * rebote sin explicación:
- *  · Sin sesión: publicar (crear cuenta o entrar, y vuelve a `/publicar`) y,
- *    para la inmobiliaria, crear su página o entrar a la suya.
- *  · Propietario: su asistente de 10 pasos (`/publicar`).
- *  · Inmobiliaria (quien puede publicar): uno por uno con el asistente del
- *    panel, muchos desde un archivo, y su página.
- *  · Inquilino: `/publicar` lo devolvería a su portal sin decir nada (sólo
- *    propietarios e inmobiliarias publican). Se le dice eso, con la salida.
+ *  · Sin sesión: publicar (crear cuenta o entrar, y sigue en `/publica`) y,
+ *    para la inmobiliaria, su página o entrar a la suya.
+ *  · Propietario e inmobiliaria: el publicador rápido (`/publica`), uno o
+ *    muchos. Desde el marketplace TODOS publican con el rápido, también la
+ *    inmobiliaria que ya usa Leasefy (Nico, 20-10-2026: «el rápido es para
+ *    cuando publican desde el marketplace»); dentro del panel sigue el
+ *    formulario de siempre.
+ *  · Inquilino: se le dice que publican las cuentas de propietario y de
+ *    inmobiliaria, con la salida.
  */
 
 const SIN_PERMISO_PARA_PUBLICAR: AgencyMemberRole[] = ['CONTADOR', 'VIEWER'];
@@ -42,16 +44,16 @@ export function useDondePublicar(): { uno: string; muchos: string | null } | nul
   const esDeLaInmobiliaria = conSesion && (user?.role === 'agency' || hasActiveAgencyMembership);
   if (esDeLaInmobiliaria) {
     if (agencyRole && SIN_PERMISO_PARA_PUBLICAR.includes(agencyRole)) return null;
-    return { uno: '/panel/inmobiliaria/inmuebles/nuevo', muchos: '/panel/inmobiliaria/inmuebles/importar' };
+    return { uno: '/publica', muchos: '/publica?traer=excel' };
   }
-  if (conSesion && user?.role === 'tenant') return null;
-  return { uno: '/publicar', muchos: null };
+  if (conSesion && user?.role === 'tenant' && user.onboardingCompleted) return null;
+  return { uno: '/publica', muchos: null };
 }
 
 /** «Publicar inmueble», siempre a la vista (barra de arriba y lado del marketplace). */
 export function BotonPublicar({ className, compacto = false }: { className?: string; compacto?: boolean }) {
   const donde = useDondePublicar();
-  const { alTocar, ventana } = useCuentaParaPublicar(donde?.uno ?? '/publicar');
+  const { alTocar, ventana } = useCuentaParaPublicar(donde?.uno ?? '/publica');
   if (!donde) return null;
   return (
     <>
@@ -80,7 +82,7 @@ export function PublicarDesdeElMarketplace() {
   const esDeLaInmobiliaria = conSesion && (user?.role === 'agency' || hasActiveAgencyMembership);
   const inmobiliariaQuePublica = esDeLaInmobiliaria && !(agencyRole && SIN_PERMISO_PARA_PUBLICAR.includes(agencyRole));
   const esInquilino = conSesion && user?.role === 'tenant' && !hasActiveAgencyMembership;
-  const { alTocar, ventana } = useCuentaParaPublicar('/publicar');
+  const { alTocar, ventana } = useCuentaParaPublicar('/publica');
 
   return (
     <section
@@ -119,7 +121,7 @@ export function PublicarDesdeElMarketplace() {
           )}
           {!esInquilino && (
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/publicar" onClick={alTocar} className={principal} data-testid="publicar-mi-inmueble">
+              <Link href="/publica" onClick={alTocar} className={principal} data-testid="publicar-mi-inmueble">
                 Publicar mi inmueble
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
@@ -135,17 +137,17 @@ export function PublicarDesdeElMarketplace() {
         </p>
         <p className="mt-1 text-[14px] text-fg-muted">
           {esDeLaInmobiliaria
-            ? 'Uno por uno con el asistente, o muchos a la vez desde tu Excel. Todo lo que publicas sale en tu página y en el buscador de Leasefy.'
+            ? 'Uno o muchos a la vez: desde tu Excel, los enlaces de tus avisos o tus carpetas de fotos. Todo lo que publicas sale en tu página y en el buscador de Leasefy.'
             : 'Tu página web es tu perfil en Leasefy: tu propio chat que conoce tus inmuebles, tus videos y lo que dicen de ti. Lo que publicas sale ahí y en el buscador de Leasefy.'}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {inmobiliariaQuePublica ? (
             <>
-              <Link href="/panel/inmobiliaria/inmuebles/nuevo" className={principal} data-testid="publicar-uno">
+              <Link href="/publica" className={principal} data-testid="publicar-uno">
                 Publicar un inmueble
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
-              <Link href="/panel/inmobiliaria/inmuebles/importar" className={secundario} data-testid="cargar-muchos">
+              <Link href="/publica?traer=excel" className={secundario} data-testid="cargar-muchos">
                 <FileArrowUp className="h-4 w-4" aria-hidden />
                 Cargar muchos desde un archivo
               </Link>
@@ -160,13 +162,13 @@ export function PublicarDesdeElMarketplace() {
             </p>
           ) : (
             <>
-              <Link href="/auth?mode=register&role=agency" className={secundario} data-testid="crear-mi-pagina">
+              <Link href="/publica?perfil=agency" onClick={alTocar} className={secundario} data-testid="crear-mi-pagina">
                 Crear mi página gratis
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
               {!conSesion && (
                 <Link
-                  href={`/auth?returnUrl=${encodeURIComponent('/panel/inmobiliaria/inmuebles/nuevo')}`}
+                  href={`/auth?returnUrl=${encodeURIComponent('/publica')}`}
                   className={`${boton} text-primary hover:underline`}
                   data-testid="ya-tengo-cuenta"
                 >

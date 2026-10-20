@@ -54,9 +54,25 @@ export function agenciaDelBorrador(
   return agency && typeof agency === 'object' ? (agency as Record<string, unknown>) : null
 }
 
+/**
+ * El celular que la persona ya dio, como lo pide el campo: 10 dígitos sin el
+ * indicativo. Sólo un celular de Colombia (3xx); lo demás no se adivina.
+ */
+export function celularParaElCampo(telefono: string | null | undefined): string | undefined {
+  const digitos = (telefono ?? '').replace(/\D/g, '')
+  const nacional = digitos.length === 12 && digitos.startsWith('57') ? digitos.slice(2) : digitos
+  return /^3\d{9}$/.test(nacional) ? nacional : undefined
+}
+
 export function computeAgencyStepPrefill(
   preStep: AgencyStepPreStepValues | null | undefined,
   draft: Record<string, unknown> | null | undefined,
+  /**
+   * Lo que ya se sabe de la persona fuera del asistente (20-10-2026): quien
+   * se registró desde el marketplace ya dio su WhatsApp; al «Activar» no se
+   * le vuelve a pedir. Sólo cuando el asistente no tiene uno guardado.
+   */
+  conocidos?: { telefono?: string | null },
 ): Partial<AgencyStepFormValues> {
   const prefill: Partial<AgencyStepFormValues> = {}
   const guardada = agenciaDelBorrador(draft)
@@ -75,7 +91,9 @@ export function computeAgencyStepPrefill(
   if (primaryContactEmail) prefill.primaryContactEmail = primaryContactEmail
 
   const primaryContactPhone =
-    readDraftString(guardada, 'primaryContactPhone') || readDraftString(draft, 'contactPhone')
+    readDraftString(guardada, 'primaryContactPhone') ||
+    readDraftString(draft, 'contactPhone') ||
+    celularParaElCampo(conocidos?.telefono)
   if (primaryContactPhone) prefill.primaryContactPhone = primaryContactPhone
 
   const direccion = guardada?.address

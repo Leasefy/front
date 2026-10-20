@@ -1818,12 +1818,12 @@
       "cancelled": "Cancelado"
     },
     "dashboard": {
-      "title": "Dashboard Inmobiliaria",
+      "title": "Dashboard inmobiliaria",
       "subtitle": "Resumen de operaciones y métricas clave",
       "kpi": {
-        "totalProperties": "Propiedades Totales",
+        "totalProperties": "Propiedades totales",
         "rentedAndAvailable": "{{rented}} arrendadas · {{available}} disponibles",
-        "monthlyCollection": "Recaudo del Mes",
+        "monthlyCollection": "Recaudo del mes",
         "collectionRateLabel": "{{rate}} · {{rotulo}}",
         "commissions": "Comisiones",
         "commissionsGenerated": "Generadas este mes",
@@ -1839,7 +1839,7 @@
         "cuotasPendientesSinDato": "El servidor todavía no manda las cuotas del contrato"
       },
       "pipeline": {
-        "title": "Pipeline Activo",
+        "title": "Pipeline activo",
         "subtitle": "Leads y negociaciones en curso",
         "empty": "No hay leads activos"
       },
@@ -1854,14 +1854,14 @@
         "closedThisMonthUno": "1 cerrado este mes"
       },
       "quickActions": {
-        "title": "Acciones Rápidas",
-        "newOwner": "Nuevo Propietario",
+        "title": "Acciones rápidas",
+        "newOwner": "Nuevo propietario",
         "newOwnerDesc": "Registrar propietario",
-        "newConsignment": "Nueva Consignación",
+        "newConsignment": "Nueva consignación",
         "newConsignmentDesc": "Agregar propiedad",
-        "registerPayment": "Registrar Cobro",
+        "registerPayment": "Registrar cobro",
         "registerPaymentDesc": "Recibir pago",
-        "viewReports": "Ver Reportes",
+        "viewReports": "Ver reportes",
         "viewReportsDesc": "Extractos y cartera"
       },
       "alerts": {
@@ -1880,7 +1880,7 @@
         "carteraDelMesUna": "1 cuota del mes en cartera por {{amount}}"
       },
       "financial": {
-        "title": "Resumen Financiero",
+        "title": "Resumen financiero",
         "viewFullReports": "Ver reportes completos",
         "expected": "Esperado",
         "collected": "Recaudado",

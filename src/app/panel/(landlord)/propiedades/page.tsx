@@ -20,6 +20,7 @@ import { Button, Card } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { PageHeader, KpiCard, SearchInput, SegmentedControl, IconButton, CrossFade, StaggerItem } from '@leasefy/cadence';
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 
 type ViewMode = 'grid' | 'list';
 
@@ -298,7 +299,7 @@ export default function PropiedadesPage() {
                       </h3>
                       <p className="text-sm text-fg-muted flex items-center gap-1.5 mb-4">
                         <MapPin className="w-3.5 h-3.5" />
-                        {property.neighborhood}, {property.city}
+                        {barrioYCiudad(property.neighborhood, property.city)}
                       </p>
 
                       {/* Features */}

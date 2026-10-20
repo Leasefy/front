@@ -161,6 +161,12 @@ export interface Agency {
    *  (unlike the admin-only /inmobiliaria/config), so team members get the brand
    *  identity too. Hex '#rrggbb'. */
   branding?: { primaryColor?: string; secondaryColor?: string }
+  /**
+   * Registro rápido desde el marketplace, sin activar (Nico, 20-10-2026): el
+   * panel abre sólo lo comercial (`lib/nav/modo-comercial.ts`). Ausente en un
+   * back anterior = como siempre.
+   */
+  modoComercial?: boolean
 }
 
 export type AgencySize = 'small' | 'medium' | 'large' | 'enterprise'
@@ -285,13 +291,16 @@ export interface AuthState {
 
 
 export interface AuthContextType extends AuthState {
-  signInWithGoogle: () => Promise<void>
+  /** `regreso`: a dónde vuelve la persona después de Google (pasa por /auth/post-login). */
+  signInWithGoogle: (regreso?: string) => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<User | null>
   /** `perfil` → user_metadata: datos que ya conocemos antes de que tenga cuenta. */
   signUpWithEmail: (email: string, password: string, redirectTo?: string, intendedRole?: UserRole, perfil?: Record<string, string>) => Promise<{ requiresConfirmation: boolean }>
   sendPasswordReset: (email: string) => Promise<void>
   /** Reenvía el correo de confirmación del registro, con el mismo `redirectTo` del primero. */
   resendSignUpEmail: (email: string, redirectTo?: string) => Promise<void>
+  /** Confirma el correo del registro con el código de 6 dígitos del correo; devuelve el usuario o `null`. */
+  confirmarCorreoConCodigo: (email: string, codigo: string) => Promise<User | null>
   updatePassword: (newPassword: string) => Promise<void>
   /** Re-authenticate with current password to verify identity before sensitive operations */
   verifyCurrentPassword: (password: string) => Promise<boolean>

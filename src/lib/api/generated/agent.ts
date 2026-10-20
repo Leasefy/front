@@ -2825,6 +2825,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cotizador/quote/{quoteId}/seguimiento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Guarda la aseguradora elegida y/o el número de la póliza de una cotización.
+         * @description COTIZ-17 (19-10-2026): «Avanzar con la recomendada» guarda la elegida (quién y cuándo); «Radicar la póliza» registra a mano su número. La elegida tiene que haber respaldado al candidato; la póliza necesita una elegida. Sin la migración del seguimiento: 503 FALTA_UNA_MIGRACION.
+         */
+        put: operations["putAgencyCotizadorSeguimiento"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cotizador/ask-why": {
         parameters: {
             query?: never;
@@ -10520,6 +10540,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             cedulaHashPrefix8: string;
+            nombreCandidato?: string | null;
             canonCop: number;
             ciudad: string;
             createdAt: string;
@@ -10685,6 +10706,7 @@ export interface components {
             completedAt: string | null;
             /** Format: uuid */
             reQuoteOf: string | null;
+            seguimiento?: components["schemas"]["AgencyCotizadorSeguimiento"];
         };
         AgencyCotizadorQuoteDetailError: {
             error: string;
@@ -13101,6 +13123,7 @@ export interface components {
             origen: "piloto" | "politica" | "default";
             corre: boolean;
             porQueNoCorre: string | null;
+            enParte?: string | null;
             gobierna: boolean;
             actua: boolean;
             efectoReal: string;
@@ -17297,6 +17320,29 @@ export interface components {
             referencia?: string;
             servicio?: string;
         };
+        AgencyCotizadorSeguimiento: {
+            disponible: boolean;
+            nombreCandidato: string | null;
+            opcionElegida: string | null;
+            opcionElegidaPor: string | null;
+            opcionElegidaAt: string | null;
+            polizaNumero: string | null;
+            polizaRegistradaPor: string | null;
+            polizaRegistradaAt: string | null;
+        };
+        AgencyCotizadorSeguimientoBody: {
+            opcionElegida?: string | null;
+            polizaNumero?: string | null;
+        };
+        AgencyCotizadorSeguimientoError: {
+            error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -19152,6 +19198,87 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
+                };
+            };
+        };
+    };
+    putAgencyCotizadorSeguimiento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AgencyCotizadorSeguimientoBody"];
+            };
+        };
+        responses: {
+            /** @description El seguimiento como quedó */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimiento"];
+                };
+            };
+            /** @description Datos inválidos o una aseguradora que no respaldó al candidato */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimientoError"];
+                };
+            };
+            /** @description Missing/invalid JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimientoError"];
+                };
+            };
+            /** @description Sin cotizador:create-quote */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimientoError"];
+                };
+            };
+            /** @description La cotización no es de esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimientoError"];
+                };
+            };
+            /** @description SIN_OPCION_ELEGIDA o POLIZA_REGISTRADA */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimientoError"];
+                };
+            };
+            /** @description Sin base o FALTA_UNA_MIGRACION */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimientoError"];
                 };
             };
         };

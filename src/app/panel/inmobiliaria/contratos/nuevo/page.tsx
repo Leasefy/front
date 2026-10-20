@@ -123,6 +123,9 @@ import { inventarioDelInmuebleApi } from '@/lib/api/inventario-del-inmueble.serv
 import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar';
 import { esErrorInmuebleSinCanon } from '@/lib/inmuebles/canon-por-confirmar';
 import { errorDelArchivoDelContrato } from '@/lib/contratos/archivo-del-contrato';
+import { useQuoteMetadata } from '@/lib/hooks/cotizador/use-quote-metadata';
+import { nombreDeLaAseguradora } from '@/lib/cotizador/nombre-de-la-aseguradora';
+import { fraseDeLaCotizacion } from '@/lib/contratos/desde-la-cotizacion';
 import {
   bloqueoDeLaConsulta,
   bloqueoDelError,
@@ -212,6 +215,17 @@ function NuevoContratoContent() {
    * inmueble ya elegido, para no empezar de cero.
    */
   const inmueblePedido = esManual ? searchParams.get('inmueble') : null;
+  /*
+   * `?cotizacion=<quoteId>&aseguradora=<código>` (COTIZ-17, Nico 19-10-2026:
+   * «Nuevo contrato prellenado»): «Enviar a contrato» del Cotizador llega con
+   * el nombre del candidato, el canon y la aseguradora como respaldo (con su
+   * póliza, si se registró). La persona completa el inmueble, la cédula y las
+   * fechas: la cotización nunca guarda la cédula (sólo su huella).
+   */
+  const cotizacionPedida = esManual ? searchParams.get('cotizacion') : null;
+  const aseguradoraPedida = esManual ? searchParams.get('aseguradora') : null;
+  const cotizacion = useQuoteMetadata(cotizacionPedida ?? '');
+  const [desdeLaCotizacion, setDesdeLaCotizacion] = useState<{ nombre: string | null; aseguradora: string | null } | null>(null);
   const actions = useContractActions();
   const [partes, setPartes] = useState<PartesManuales>(() =>
     inquilinoPedido
@@ -331,6 +345,29 @@ function NuevoContratoContent() {
   // se registraba en ningún lado, así que meses después nadie sabía a quién
   // reclamarle. Ver src/lib/inmobiliaria/respaldo.ts.
   const [respaldo, setRespaldo] = useState<Partial<Respaldo>>({ tipo: 'seguro' });
+
+  // COTIZ-17: lo que trae la cotización, UNA vez y sin pisar lo ya escrito.
+  useEffect(() => {
+    const d = cotizacion.data;
+    if (!cotizacionPedida || !d || desdeLaCotizacion) return;
+    const nombre = d.seguimiento?.nombreCandidato?.trim() || null;
+    const codigo = d.seguimiento?.opcionElegida ?? aseguradoraPedida;
+    const aseguradora = codigo ? nombreDeLaAseguradora(codigo) : null;
+    const poliza = d.seguimiento?.opcionElegida ? (d.seguimiento.polizaNumero ?? '') : '';
+    setDesdeLaCotizacion({ nombre, aseguradora });
+    if (nombre && !inquilinoPedido) {
+      setPartes((p) =>
+        p.inquilino.modo === 'existente' && !p.inquilino.tenantId
+          ? { ...p, inquilino: { modo: 'nuevo', nombre, documento: '', correo: '', telefono: '' } }
+          : p,
+      );
+    }
+    if (d.canonCop > 0) setForm((f) => (f.monthlyRent ? f : { ...f, monthlyRent: String(Math.round(d.canonCop)) }));
+    if (aseguradora) {
+      setRespaldo((r) => (r.aseguradora?.trim() ? r : { ...r, tipo: 'seguro', aseguradora, identificador: poliza }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cotizacion.data]);
   const [evaluacion, setEvaluacion] = useState<EvaluationResult | null>(null);
 
   // Load application + property details
@@ -1136,6 +1173,12 @@ function NuevoContratoContent() {
       <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 xl:grid-cols-2" data-testid="nuevo-contrato-columnas">
         {/* ── Izquierda: lo que se elige ── */}
         <div className="min-w-0 space-y-6" data-testid="nuevo-contrato-elegir">
+        {/* COTIZ-17: de dónde viene lo que ya está puesto. */}
+        <Presence show={Boolean(desdeLaCotizacion)}>
+          <p className="rounded-lg border border-border bg-surface-muted p-3 text-body-sm text-fg-muted" data-testid="contrato-desde-la-cotizacion">
+            {desdeLaCotizacion ? fraseDeLaCotizacion(desdeLaCotizacion) : null}
+          </p>
+        </Presence>
         {esManual && (
           <PartesDelContratoManual
             inquilinoPedido={inquilinoPedido}

@@ -81,6 +81,11 @@ export interface CounterfactualModalProps {
   }
   /** Called when the wrapper returns 404 (quote stale). The parent shows a toast and closes. */
   onQuote404: () => void
+  /**
+   * COTIZ-17 (19-10-2026, «Solicitar codeudor»): abrir con una variable ya
+   * elegida (p. ej. 1 codeudor) para ver el efecto sin buscarla.
+   */
+  empezarCon?: { variable: 'codeudores'; valor: number } | null
 }
 
 // ---------------------------------------------------------------------------
@@ -194,6 +199,14 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
       codeudores: variable === 'codeudores' ? (value as number) : originalInputs.codeudores,
     })
   }
+
+  // COTIZ-17: «Solicitar codeudor» abre el modal con 1 codeudor ya elegido.
+  const empezarConVariable = props.empezarCon?.variable ?? null
+  const empezarConValor = props.empezarCon?.valor ?? null
+  useEffect(() => {
+    if (open && empezarConVariable !== null && empezarConValor !== null) activate(empezarConVariable, empezarConValor)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, empezarConVariable, empezarConValor])
 
   const isReadonly = (v: AskWhyVariable): boolean =>
     activeVariable !== null && activeVariable !== v

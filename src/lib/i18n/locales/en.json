@@ -6439,11 +6439,10 @@
           "postSeleccion": {
             "titulo": "What do you want to do now?",
             "radicar": "File the policy",
+            "cambiarPoliza": "Change the policy number",
             "expediente": "Generate case file",
             "notificar": "Notify the advisor",
-            "propietario": "Share with the owner",
             "contrato": "Move to contract",
-            "guardar": "Save the chosen option",
             "sinOpcion": "Available once there is an insurable option."
           }
         },
@@ -6904,6 +6903,8 @@
           "porQue": "Why",
           "siguienteAccion": "Next best action",
           "avanzar": "Proceed with recommended",
+          "elegida": "Chosen option",
+          "verPasos": "See the next steps",
           "recotizar": "Re-quote with changes"
         },
         "comparar": {

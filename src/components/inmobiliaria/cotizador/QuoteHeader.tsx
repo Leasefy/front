@@ -24,6 +24,8 @@ interface QuoteHeaderProps {
   isConnected: boolean
   /** QA-IA-95 (IA-A-11): la cotización ya tiene su veredicto final: no está «Desconectado», está completa. */
   terminada?: boolean
+  /** COTIZ-18 (19-10-2026): el nombre del candidato, si se guardó. */
+  nombre?: string | null
 }
 
 export function QuoteHeader({
@@ -37,6 +39,7 @@ export function QuoteHeader({
   totalCostCop,
   isConnected,
   terminada = false,
+  nombre = null,
 }: QuoteHeaderProps) {
   const { t, locale } = useI18n()
 
@@ -67,6 +70,7 @@ export function QuoteHeader({
             </span>
           </div>
           <div className="flex items-center gap-3 text-caption text-muted-foreground flex-wrap">
+            {nombre && <span className="font-medium text-foreground" data-testid="quote-header-nombre">{nombre}</span>}
             <span className="font-mono">{maskedCedula}</span>
             {canonCop !== null && (
               <span>

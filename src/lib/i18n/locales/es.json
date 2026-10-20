@@ -6474,11 +6474,10 @@
           "postSeleccion": {
             "titulo": "¿Qué quieres hacer ahora?",
             "radicar": "Radicar la póliza",
+            "cambiarPoliza": "Cambiar el número de la póliza",
             "expediente": "Generar expediente",
             "notificar": "Notificar al asesor",
-            "propietario": "Compartir con el propietario",
             "contrato": "Pasar a contrato",
-            "guardar": "Guardar la opción elegida",
             "sinOpcion": "Disponible cuando haya una opción asegurable."
           }
         },
@@ -6939,6 +6938,8 @@
           "porQue": "Por qué",
           "siguienteAccion": "Siguiente mejor acción",
           "avanzar": "Avanzar con la recomendada",
+          "elegida": "Opción elegida",
+          "verPasos": "Ver los siguientes pasos",
           "recotizar": "Re-cotizar con cambios"
         },
         "comparar": {

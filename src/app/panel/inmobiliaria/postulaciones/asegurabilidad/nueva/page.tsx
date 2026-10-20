@@ -187,8 +187,10 @@ export default function NuevaCotizacionPage() {
       codeudoresCount: 0,
       tipoInmueble: tipoQueViaja(data.tipoInmueble),
     })
-    // ciudad lives in candidato for the wizard's step-1 ciudad field
-    setCandidato(prev => ({ ...prev, ciudad: data.ciudad }))
+    // ciudad lives in candidato for the wizard's step-1 ciudad field.
+    // COTIZ-18 (19-10-2026): el nombre del candidato, si la original lo guardó.
+    const nombreGuardado = data.seguimiento?.nombreCandidato ?? null
+    setCandidato(prev => ({ ...prev, ciudad: data.ciudad, ...(nombreGuardado && !prev.nombre ? { nombre: nombreGuardado } : {}) }))
     // COTIZ-8 (19-10-2026): «Re-cotizar con este cambio» del «¿Qué pasaría si…?»
     // llega con `?cambio=<variable>&valor=<valor>`: se aplica sobre la original.
     const cambio = searchParams?.get('cambio') ?? null

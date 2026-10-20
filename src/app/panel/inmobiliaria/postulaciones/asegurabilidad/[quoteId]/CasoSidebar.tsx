@@ -102,9 +102,21 @@ export function CasoSidebar({ metadata, finalVerdict, isConnected }: CasoSidebar
         <p className="text-xs font-medium text-fg-muted">
           {tf(`${NS}.caso.candidato`, 'Candidato')}
         </p>
-        <p className="mt-0.5 text-sm font-mono font-medium text-fg">
-          {metadata?.cedulaHashPrefix8 ? `••• ${metadata.cedulaHashPrefix8}` : '—'}
-        </p>
+        {/* COTIZ-18 (19-10-2026): el nombre que se escribió en el asistente. */}
+        {metadata?.seguimiento?.nombreCandidato ? (
+          <>
+            <p className="mt-0.5 text-sm font-medium text-fg" data-testid="caso-candidato-nombre">
+              {metadata.seguimiento.nombreCandidato}
+            </p>
+            {metadata.cedulaHashPrefix8 && (
+              <p className="text-xs font-mono text-fg-muted">{`Ref. ${metadata.cedulaHashPrefix8}`}</p>
+            )}
+          </>
+        ) : (
+          <p className="mt-0.5 text-sm font-mono font-medium text-fg">
+            {metadata?.cedulaHashPrefix8 ? `••• ${metadata.cedulaHashPrefix8}` : '—'}
+          </p>
+        )}
       </div>
 
       {/* Inmueble — canon / ciudad / tipo */}

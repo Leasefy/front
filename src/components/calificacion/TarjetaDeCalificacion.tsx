@@ -50,6 +50,36 @@ const NOMBRE_DEL_COMPONENTE: Record<ComponenteDelHistorial | ComponenteDeLosDocu
 };
 
 /**
+ * La persona lee SU calificación («Mi calificación»): el back escribe las
+ * frases para la inmobiliaria («Tiene arriendo vencido…», «sus documentos»);
+ * a la persona se le dicen de tú (QA del 19-10-2026). Se cambia la frase
+ * entera, nunca palabra por palabra, y cada una tiene su inglés.
+ */
+const PARA_LA_PERSONA: Record<string, string> = {
+  'Tiene arriendo vencido sin pagar hace más de 30 días.': 'Tienes arriendo vencido sin pagar hace más de 30 días.',
+  'Quedó debiendo arriendo de un contrato que ya terminó.': 'Quedaste debiendo arriendo de un contrato que ya terminó.',
+  'Tiene un cobro jurídico abierto por un arriendo.': 'Tienes un cobro jurídico abierto por un arriendo.',
+  'Una inmobiliaria dio por perdida una deuda suya de arriendo en los últimos 4 años.':
+    'Una inmobiliaria dio por perdida una deuda tuya de arriendo en los últimos 4 años.',
+  'El nombre o el número de la cédula no coincide con el de los otros documentos: que lo revise una persona.':
+    'El nombre o el número de tu cédula no coincide con el de tus otros documentos: una persona lo revisará antes de decidir.',
+  'Un documento muestra señales de haber sido editado: que lo revise una persona antes de decidir.':
+    'Uno de tus documentos muestra señales de haber sido editado: una persona lo revisará antes de decidir.',
+  'Sólo con su historial en Leasefy: no hay un estudio de documentos de los últimos 6 meses, así que no se sabe hasta qué canon.':
+    'Sólo con tu historial en Leasefy: no hay un estudio de tus documentos de los últimos 6 meses, así que no se sabe hasta qué canon.',
+  'Sin historial en Leasefy todavía: la calificación sale de sus documentos.':
+    'Sin historial en Leasefy todavía: tu calificación sale de tus documentos.',
+  'Cómo terminaron sus contratos': 'Cómo terminaron tus contratos',
+  'Con menos de 6 meses de historial y sin estudio de documentos, la calificación llega hasta B.':
+    'Con menos de 6 meses de historial y sin estudio de tus documentos, tu calificación llega hasta B.',
+};
+
+/** La frase como se le dice a la persona (de tú); si no hay versión suya, la del back. */
+export function paraLaPersona(frase: string): string {
+  return PARA_LA_PERSONA[frase] ?? frase;
+}
+
+/**
  * Las frases de `explicacion` vienen del back en español. Las fijas se buscan
  * tal cual en `frases-en.ts`; la única con números («18 meses de historial en
  * Leasefy: el historial pesa 55 % y los documentos 45 %.») se reconoce y se
@@ -57,9 +87,9 @@ const NOMBRE_DEL_COMPONENTE: Record<ComponenteDelHistorial | ComponenteDeLosDocu
  */
 const FRASE_DE_LOS_MESES = /^(\d+) (mes|meses) de historial en Leasefy: el historial pesa (\d+) % y los documentos (\d+) %\.$/;
 
-export function fraseDelBack(tr: ReturnType<typeof useTr>, frase: string): string {
+export function fraseDelBack(tr: ReturnType<typeof useTr>, frase: string, deTu = false): string {
   const m = FRASE_DE_LOS_MESES.exec(frase);
-  if (!m) return tr(frase);
+  if (!m) return tr(deTu ? paraLaPersona(frase) : frase);
   return m[2] === 'mes'
     ? tr('1 mes de historial en Leasefy: el historial pesa {h} % y los documentos {d} %.', { h: m[3], d: m[4] })
     : tr('{n} meses de historial en Leasefy: el historial pesa {h} % y los documentos {d} %.', { n: m[1], h: m[3], d: m[4] });
@@ -97,10 +127,12 @@ function BarrasDelBloque<K extends string>({
   titulo,
   peso,
   bloque,
+  deTu,
 }: {
   titulo: string;
   peso: number | null;
   bloque: Bloque<K> | null;
+  deTu?: boolean;
 }) {
   const tr = useTr();
   if (!bloque) return null;
@@ -118,7 +150,10 @@ function BarrasDelBloque<K extends string>({
           <StaggerItem key={r.componente}>
             <div className="flex items-center justify-between gap-3 text-xs">
               <span className={cn('text-fg', r.valor === null && 'text-fg-subtle')}>
-                {tr(NOMBRE_DEL_COMPONENTE[r.componente as keyof typeof NOMBRE_DEL_COMPONENTE] ?? r.componente)}
+                {(() => {
+                  const nombre = NOMBRE_DEL_COMPONENTE[r.componente as keyof typeof NOMBRE_DEL_COMPONENTE] ?? r.componente;
+                  return tr(deTu ? paraLaPersona(nombre) : nombre);
+                })()}
               </span>
               <span className="font-mono tabular-nums text-fg-muted">
                 {r.valor === null ? tr('sin dato') : `${Math.round(r.valor)}`}
@@ -142,6 +177,7 @@ export function TarjetaDeCalificacion({
   className,
   sinDesglose,
   compacta,
+  deTu,
 }: {
   calificacion: Calificacion;
   className?: string;
@@ -152,6 +188,8 @@ export function TarjetaDeCalificacion({
    * pantalla grande partían el veredicto en tres renglones.
    */
   compacta?: boolean;
+  /** La lee la persona misma («Mi calificación»): los avisos se le dicen de tú. */
+  deTu?: boolean;
 }) {
   const tr = useTr();
   const { formatCurrency } = useI18n();
@@ -167,7 +205,7 @@ export function TarjetaDeCalificacion({
           <div className="space-y-1">
             <p className="text-base font-medium text-fg">{tr('Todavía no hay calificación')}</p>
             <p className="max-w-xl text-sm text-fg-muted">
-              {c.explicacion[0] ? fraseDelBack(tr, c.explicacion[0]) : tr('Todavía no hay datos para calificar.')}
+              {c.explicacion[0] ? fraseDelBack(tr, c.explicacion[0], deTu) : tr('Todavía no hay datos para calificar.')}
             </p>
           </div>
         </div>
@@ -234,7 +272,7 @@ export function TarjetaDeCalificacion({
           {[...c.frenos, ...c.revisiones].map((f) => (
             <li key={f.codigo} className="flex items-start gap-2 rounded-md bg-warning-soft px-3 py-2 text-sm text-fg">
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
-              {tr(f.texto)}
+              {tr(deTu ? paraLaPersona(f.texto) : f.texto)}
             </li>
           ))}
         </ul>
@@ -245,7 +283,7 @@ export function TarjetaDeCalificacion({
           {c.explicacion
             .filter((e) => !c.frenos.some((f) => f.texto === e) && !c.revisiones.some((r) => r.texto === e))
             .map((e) => (
-              <li key={e}>{fraseDelBack(tr, e)}</li>
+              <li key={e}>{fraseDelBack(tr, e, deTu)}</li>
             ))}
         </ul>
       )}
@@ -262,11 +300,13 @@ export function TarjetaDeCalificacion({
             titulo="Historial en Leasefy"
             peso={c.historial && c.mesesObservados > 0 ? pesoHistorial : null}
             bloque={c.mesesObservados > 0 ? c.historial : null}
+            deTu={deTu}
           />
           <BarrasDelBloque
             titulo="Documentos"
             peso={c.documentos ? 100 - pesoHistorial : null}
             bloque={c.documentos}
+            deTu={deTu}
           />
         </div>
       )}

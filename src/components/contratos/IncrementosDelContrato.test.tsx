@@ -13,8 +13,6 @@ vi.mock('@/lib/api/ciclo-de-vida.service', () => ({
     incrementos: vi.fn(),
     fijarTasaAnual: vi.fn(),
     digitarIncremento: vi.fn(),
-    generarCarta: vi.fn(),
-    revisarCarta: vi.fn(),
     enviarCarta: vi.fn(),
     verCarta: vi.fn(),
     vencidos: vi.fn(),
@@ -70,20 +68,31 @@ afterEach(() => {
 });
 
 describe('<IncrementosDelContrato> (17-09)', () => {
-  it('vivienda: muestra el aniversario al IPC y deja ver la carta', async () => {
+  it('vivienda: muestra el aniversario al IPC y UN solo botón abre la carta en el cajón (19-10)', async () => {
     api.incrementos.mockResolvedValue({
       uso: 'VIVIENDA',
       tasaAnualPactadaPct: null,
       aniversarios: [aniversario],
       disponible: true,
-      envioHabilitado: false,
+      envioHabilitado: true,
+      prorrateaElMes: true,
     });
-    api.generarCarta.mockResolvedValue({
-      uso: 'VIVIENDA',
-      tasaAnualPactadaPct: null,
-      aniversarios: [{ ...aniversario, carta: { estado: 'PENDIENTE_DE_REVISION', contenido: 'Señor(a)…', generadaAt: null, revisadaAt: null, enviadaAt: null } }],
-      disponible: true,
-      envioHabilitado: false,
+    api.verCarta.mockResolvedValue({
+      contractId: 'c1',
+      desde: '2026-08-21',
+      estado: 'POR_ENVIAR',
+      inquilino: 'Ana',
+      inmueble: 'Cra 1',
+      canonAnteriorCop: 1_000_000,
+      canonNuevoCop: 1_051_000,
+      para: 'ana@example.com',
+      asunto: 'Incremento del canon de arrendamiento desde el 21 de agosto de 2026',
+      contenido: 'Señor(a) Ana: …',
+      corregida: false,
+      reajuste: null,
+      enviada: null,
+      correoSaleDeVerdad: true,
+      envioHabilitado: true,
     });
     await montar(<IncrementosDelContrato contractId="c1" puedeEditar />);
     const bloque = document.querySelector('[data-testid="aniversario-2026-08-21"]')!;
@@ -91,11 +100,39 @@ describe('<IncrementosDelContrato> (17-09)', () => {
     // QA-CONT-95: con coma decimal, como se escribe en Colombia.
     expect(bloque.textContent).toContain('5,1 %');
     expect(document.querySelector('[data-testid="tasa-pactada"]')).toBeNull();
+    // El contrato parte el mes: la ficha lo dice.
+    expect(document.body.textContent).toContain('El mes del aniversario se cobra prorrateado.');
 
-    const generar = [...bloque.querySelectorAll('button')].find((b) => b.textContent === 'Ver y editar la carta')!;
-    await act(async () => generar.click());
-    expect(api.generarCarta).toHaveBeenCalledWith('c1', '2026-08-21');
-    expect(document.body.textContent).toContain('Carta por revisar');
+    // «Ver y editar la carta» en la ficha sobraba al lado del cajón (que ya corrige).
+    const botones = [...bloque.querySelectorAll('button')].map((b) => b.textContent);
+    expect(botones).not.toContain('Ver y editar la carta');
+    expect(botones.filter((t) => t?.startsWith('Ver y enviar la carta'))).toHaveLength(1);
+    expect(bloque.querySelector('textarea')).toBeNull();
+
+    const abrir = document.querySelector('[data-testid="enviar-carta-2026-08-21"]') as HTMLButtonElement;
+    await act(async () => abrir.click());
+    await act(async () => {});
+    expect(api.verCarta).toHaveBeenCalledWith('c1', '2026-08-21');
+  });
+
+  it('🔴 un contrato fecha a fecha (o sin el dato) no dice «se cobra prorrateado» (19-10)', async () => {
+    for (const prorrateaElMes of [false, null, undefined]) {
+      api.incrementos.mockResolvedValue({
+        uso: 'VIVIENDA',
+        tasaAnualPactadaPct: null,
+        aniversarios: [aniversario],
+        disponible: true,
+        envioHabilitado: true,
+        prorrateaElMes,
+      });
+      await montar(<IncrementosDelContrato contractId="c1" puedeEditar />);
+      expect(document.body.textContent).toContain('sube sola al 100 % del IPC');
+      expect(document.body.textContent).not.toContain('prorrateado');
+      act(() => root?.unmount());
+      container?.remove();
+    }
+    root = null;
+    container = null;
   });
 
   it('🔴 D6 + 19-10: la carta por enviar se ve antes de salir; si el correo se simula, lo dice y no hay constancia', async () => {
@@ -232,7 +269,7 @@ describe('<IncrementosDelContrato> (17-09)', () => {
     expect(api.soporteDeLaConstancia).toHaveBeenCalledWith('c1', '2026-08-21');
   });
 
-  it('sin la migración de la constancia, enviar queda muerto y lo dice', async () => {
+  it('sin la migración de la constancia lo dice; la carta igual se puede ver (el cajón no deja enviarla)', async () => {
     api.incrementos.mockResolvedValue({
       uso: 'VIVIENDA',
       tasaAnualPactadaPct: null,
@@ -241,9 +278,12 @@ describe('<IncrementosDelContrato> (17-09)', () => {
       envioHabilitado: false,
     });
     await montar(<IncrementosDelContrato contractId="c1" puedeEditar />);
-    const enviar = [...document.querySelectorAll('button')].find((b) => b.textContent === 'Ver y enviar la carta') as HTMLButtonElement;
-    expect(enviar.disabled).toBe(true);
+    const ver = document.querySelector('[data-testid="enviar-carta-2026-08-21"]') as HTMLButtonElement;
+    expect(ver.disabled).toBe(false);
     expect(document.body.textContent).toContain('Falta una actualización de la base para enviar');
+    // «Se entregó por otro medio» sí queda muerto: también necesita la migración.
+    const otroMedio = [...document.querySelectorAll('button')].find((b) => b.textContent === 'Se entregó por otro medio') as HTMLButtonElement;
+    expect(otroMedio.disabled).toBe(true);
   });
 
   it('local comercial: guarda la tasa pactada', async () => {

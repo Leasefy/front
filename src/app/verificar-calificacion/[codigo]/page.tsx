@@ -20,6 +20,7 @@ import { CheckCircle, SealWarning } from '@phosphor-icons/react';
 
 import { LetraDeLaCalificacion } from '@/components/calificacion/TarjetaDeCalificacion';
 import { calificacionLeasefyApi, type CertificadoVerificado } from '@/lib/api/calificacion-leasefy.service';
+import { codigoDelEnlace } from '@/lib/calificacion/codigo-del-enlace';
 import { formatCurrency } from '@/lib/format';
 import { traducir } from '@/lib/i18n/use-tr';
 import { IDIOMAS } from '@/lib/idioma/idioma';
@@ -68,7 +69,8 @@ function SelectorDelIdioma() {
 }
 
 export default function VerificarCalificacionPage({ params }: { params: Promise<{ codigo: string }> }) {
-  const { codigo } = use(params);
+  const { codigo: segmento } = use(params);
+  const codigo = codigoDelEnlace(segmento);
   const idioma = useIdioma();
   const tx = useTx();
   const [r, setR] = useState<CertificadoVerificado | null>(null);
@@ -96,7 +98,7 @@ export default function VerificarCalificacionPage({ params }: { params: Promise<
         <header className="space-y-1 text-center">
           <p className="font-mono text-xs uppercase tracking-wide text-fg-subtle">Leasefy</p>
           <h1 className="text-h2 text-fg">{tx('Verificar una Calificación Leasefy', 'Verify a Leasefy rating')}</h1>
-          <p className="font-mono text-sm tabular-nums text-fg-muted">{decodeURIComponent(codigo)}</p>
+          <p className="font-mono text-sm tabular-nums text-fg-muted">{codigo}</p>
         </header>
 
         <SelectorDelIdioma />

@@ -21,7 +21,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/toast";
 import {
   cicloDeVidaApi,
@@ -172,6 +171,9 @@ export function IncrementosDelContrato({
 
   const comercial = datos.uso === "COMERCIAL";
   const editable = puedeEditar && datos.disponible && !ocupado;
+  // Sólo un contrato que parte el mes lo prorratea (19-10-2026: la ficha decía
+  // «se cobra prorrateado» a todos; uno fecha a fecha empieza el período ese día).
+  const prorrateo = datos.prorrateaElMes ? " El mes del aniversario se cobra prorrateado." : "";
 
   return (
     <section className="space-y-3 rounded-lg border border-border p-4" data-testid="incrementos-del-contrato">
@@ -179,9 +181,9 @@ export function IncrementosDelContrato({
         <h3 className="text-sm font-medium">Incrementos del canon</h3>
         <p className="text-caption text-muted-foreground">
           {datos.uso === "VIVIENDA"
-            ? "Vivienda: sube sola al 100 % del IPC del año anterior en cada aniversario. El mes del aniversario se cobra prorrateado."
+            ? `Vivienda: sube sola al 100 % del IPC del año anterior en cada aniversario.${prorrateo}`
             : comercial
-              ? "Local comercial: digita el incremento de un año o la tasa pactada para cada año. El mes del aniversario se cobra prorrateado."
+              ? `Local comercial: digita el incremento de un año o la tasa pactada para cada año.${prorrateo}`
               : "El contrato no dice si es vivienda o local comercial: define el uso para saber cómo sube."}{" "}
           El canon sube aunque la carta no se haya enviado.
         </p>
@@ -269,27 +271,11 @@ export function IncrementosDelContrato({
                   ["porcentaje", "canonNuevoCop"],
                 )
               }
-              onGenerarCarta={() =>
-                void accion(
-                  () => cicloDeVidaApi.generarCarta(contractId, a.desde),
-                  "Carta generada: queda por revisar.",
-                  "generar la carta",
-                )
-              }
-              onRevisar={(contenido) =>
-                accion(
-                  () => cicloDeVidaApi.revisarCarta(contractId, a.desde, contenido),
-                  "Carta revisada.",
-                  "guardar el texto de la carta",
-                  ["contenido"],
-                )
-              }
-              onAbrirCarta={(texto) =>
+              onAbrirCarta={() =>
                 setCartaAbierta({
                   contractId,
                   desde: a.desde,
                   titulo: `Aniversario del ${diaLegible(a.desde)}`,
-                  texto,
                 })
               }
               onVerSoporte={() =>
@@ -343,8 +329,6 @@ function Aniversario({
   editable,
   envioHabilitado,
   onDigitar,
-  onGenerarCarta,
-  onRevisar,
   onAbrirCarta,
   onConstancia,
   onVerSoporte,
@@ -354,10 +338,11 @@ function Aniversario({
   editable: boolean;
   envioHabilitado: boolean;
   onDigitar: (body: { porcentaje?: number | null; canonNuevoCop?: number | null }) => Promise<ErroresDelServidor>;
-  onGenerarCarta: () => void;
-  onRevisar: (contenido?: string) => Promise<ErroresDelServidor>;
-  /** Abre el cajón con la carta: con el texto que se está corrigiendo, si lo hay. */
-  onAbrirCarta: (texto?: string) => void;
+  /**
+   * Abre el cajón de la carta: ahí se ve tal como sale, se corrige y se envía
+   * (19-10-2026: «Ver y editar» en la ficha sobraba al lado del cajón).
+   */
+  onAbrirCarta: () => void;
   onConstancia: (body: {
     medio: "FISICO" | "WHATSAPP" | "OTRO";
     fecha: string;
@@ -371,7 +356,6 @@ function Aniversario({
   const [errores, setErrores] = useState<ErroresDelServidor>({});
   const ids = {
     porcentaje: `incremento-${a.desde}`,
-    contenido: `carta-${a.desde}`,
     fecha: `constancia-fecha-${a.desde}`,
     nota: `constancia-nota-${a.desde}`,
     medio: `constancia-medio-${a.desde}`,
@@ -387,13 +371,11 @@ function Aniversario({
   const limpiar = (campo: keyof typeof ids) =>
     setErrores((prev) => (prev[campo] ? { ...prev, [campo]: undefined } : prev));
   const [porcentaje, setPorcentaje] = useState("");
-  const [texto, setTexto] = useState(a.carta?.contenido ?? "");
   const [constancia, setConstancia] = useState(false);
   const [medio, setMedio] = useState<"FISICO" | "WHATSAPP" | "OTRO">("FISICO");
   const [fecha, setFecha] = useState("");
   const [nota, setNota] = useState("");
   const [soporte, setSoporte] = useState<File | null>(null);
-  useEffect(() => setTexto(a.carta?.contenido ?? ""), [a.carta?.contenido]);
   const sube = a.origen !== null && a.canonNuevoCop !== a.canonAnteriorCop;
   const enviada = a.carta?.estado === "ENVIADA";
   const enVentana =
@@ -502,44 +484,17 @@ function Aniversario({
 
       {sube && editable && !enviada && (
         <div className="space-y-2">
-          {a.carta ? (
-            <>
-              <Textarea
-                id={ids.contenido}
-                value={texto}
-                onChange={(e) => {
-                  setTexto(e.target.value);
-                  limpiar("contenido");
-                }}
-                rows={6}
-                maxLength={10_000}
-                aria-label={`Carta del incremento del ${diaLegible(a.desde)}`}
-                aria-invalid={errores.contenido ? true : undefined}
-                aria-describedby={`${ids.contenido}-error`}
-              />
-              <ErrorDelCampo id={`${ids.contenido}-error`} mensaje={errores.contenido} className="mt-0" />
-            </>
-          ) : (
-            <Button size="sm" variant="outline" onClick={onGenerarCarta}>
-              Ver y editar la carta
-            </Button>
-          )}
           <div className="flex flex-wrap items-center gap-2">
-            {(enVentana || a.carta) && (
-              <Button
-                size="sm"
-                onClick={() => onAbrirCarta(a.carta ? texto : undefined)}
-                disabled={!envioHabilitado}
-                data-testid={`enviar-carta-${a.desde}`}
-              >
-                Ver y enviar la carta
-              </Button>
-            )}
-            {a.carta?.estado === "PENDIENTE_DE_REVISION" && (
-              <Button size="sm" variant="outline" onClick={() => void onRevisar(texto).then(pintar)}>
-                Guardar el texto
-              </Button>
-            )}
+            {/* Un solo botón: el cajón muestra la carta tal como sale, deja
+                corregirla y la envía (y dice por qué no, si no se puede). */}
+            <Button
+              size="sm"
+              variant={enVentana ? "default" : "outline"}
+              onClick={() => onAbrirCarta()}
+              data-testid={`enviar-carta-${a.desde}`}
+            >
+              Ver y enviar la carta
+            </Button>
             <Button size="sm" variant="ghost" onClick={() => setConstancia((v) => !v)} disabled={!envioHabilitado}>
               Se entregó por otro medio
             </Button>

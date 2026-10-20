@@ -203,6 +203,11 @@ export interface IncrementosDelContrato {
   /** `false` = en este entorno el correo no sale de verdad: enviar simula y no deja constancia. */
   correoSaleDeVerdad?: boolean;
   diasAntesDeLaCarta?: number;
+  /**
+   * El mes del aniversario se parte en dos cánones (`true`) o el período nuevo
+   * empieza ese día (`false`). `null`/ausente = no se sabe: la ficha no lo dice.
+   */
+  prorrateaElMes?: boolean | null;
   /** Sólo en la respuesta de enviar. */
   ultimoEnvio?: { resultado: 'ENVIADA' | 'SIMULADA'; mensaje: string };
 }
@@ -597,14 +602,9 @@ export const cicloDeVidaApi = {
     body: { porcentaje?: number | null; canonNuevoCop?: number | null },
   ) => apiClient.put<IncrementosDelContrato>(`/contracts/${contractId}/incrementos/${desde}`, body),
 
-  generarCarta: (contractId: string, desde: string) =>
-    apiClient.post<IncrementosDelContrato>(`/contracts/${contractId}/incrementos/${desde}/carta`, {}),
-
-  revisarCarta: (contractId: string, desde: string, contenido?: string) =>
-    apiClient.post<IncrementosDelContrato>(
-      `/contracts/${contractId}/incrementos/${desde}/carta/revisar`,
-      contenido ? { contenido } : {},
-    ),
+  // `generarCarta` y `revisarCarta` (POST …/carta y …/carta/revisar) se fueron
+  // con el editor de la ficha (19-10-2026): la carta se ve, se corrige y se
+  // envía en el cajón (`verCarta` + `enviarCarta` con el texto corregido).
 
   /** La carta para verla: la que va a salir o la que salió (19-10-2026). */
   verCarta: (contractId: string, desde: string) =>

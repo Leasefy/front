@@ -10,10 +10,10 @@
  *     fijas; el inquilino puede responder.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MagnifyingGlass, Handshake } from '@phosphor-icons/react';
-import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
+import { CrossFade, Presence, SearchInput, Stagger, StaggerItem } from '@leasefy/cadence';
 import { toast } from 'sonner';
 
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -23,6 +23,10 @@ import { Label } from '@/components/ui/label';
 import { MoneyInputNumerico } from '@/components/ui/money-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TablePagination } from '@/components/ui/pagination';
+import { usePermissionsContext } from '@/lib/context/PermissionsContext';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { normalizarParaBuscar } from '@/lib/inmuebles/buscar-en-el-portafolio';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { TarjetaDeCalificacion } from '@/components/calificacion/TarjetaDeCalificacion';
@@ -94,6 +98,15 @@ function Buscar() {
             </p>
           ) : (
             <Stagger className="space-y-4">
+              {/* Varias cuentas con el mismo documento (una persona con dos cuentas, o alguien que escribió
+                  la cédula de otro en su perfil): cada una se califica con lo SUYO; el nombre dice cuál es. */}
+              {resultado.resultados.length > 1 && (
+                <StaggerItem>
+                  <p className="rounded-md bg-warning-soft px-4 py-3 text-sm text-fg" data-testid="varias-cuentas">
+                    {tr('Hay {n} cuentas en Leasefy con este documento. Cada una tiene su propio historial: revisa el nombre para saber cuál es la persona que estudias.', { n: resultado.resultados.length })}
+                  </p>
+                </StaggerItem>
+              )}
               {resultado.resultados.map((r) => (
                 <StaggerItem key={r.persona.userId}>
                   <div className="space-y-2">
@@ -112,12 +125,21 @@ function Buscar() {
                     <TarjetaDeCalificacion calificacion={r.calificacion} />
                     <p className="text-xs text-fg-subtle">
                       {r.historial.porcentajeATiempo !== null
-                        ? tr('{p} % de {c} cuotas a tiempo · {t} contratos terminados, {b} sin deuda', {
-                            p: r.historial.porcentajeATiempo,
-                            c: r.historial.cuotasContadas,
-                            t: r.historial.contratosTerminados,
-                            b: r.historial.terminaronSinDeuda,
-                          })
+                        ? `${
+                            r.historial.cuotasContadas === 1
+                              ? tr('{p} % de 1 cuota a tiempo', { p: r.historial.porcentajeATiempo })
+                              : tr('{p} % de {c} cuotas a tiempo', {
+                                  p: r.historial.porcentajeATiempo,
+                                  c: r.historial.cuotasContadas,
+                                })
+                          } · ${
+                            r.historial.contratosTerminados === 1
+                              ? tr('1 contrato terminado, {b} sin deuda', { b: r.historial.terminaronSinDeuda })
+                              : tr('{t} contratos terminados, {b} sin deuda', {
+                                  t: r.historial.contratosTerminados,
+                                  b: r.historial.terminaronSinDeuda,
+                                })
+                          }`
                         : tr('Sin cuotas para medir la puntualidad.')}
                       {' · '}
                       {r.documentos.tieneEstudioVigente ? tr('Con estudio de documentos de los últimos 6 meses') : tr('Sin estudio de documentos reciente')}
@@ -133,7 +155,12 @@ function Buscar() {
   );
 }
 
-function Evaluar() {
+/**
+ * «Contratos terminados»: los del último año sin evaluación, con buscador y
+ * paginados (en Portofino son 350). Evaluar pide `contratos:edit`: quien sólo
+ * ve contratos (consulta, coordinación) ve la lista sin el botón.
+ */
+function Evaluar({ puedeEvaluar }: { puedeEvaluar: boolean }) {
   const tr = useTr();
   const localeFechas = useLocaleDeFechas();
   const [contratos, setContratos] = useState<ContratoPorEvaluar[] | null>(null);
@@ -144,6 +171,20 @@ function Evaluar() {
   const [respuestas, setRespuestas] = useState<Record<string, string>>({});
   const [nota, setNota] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
+
+  // Cada palabra por separado, sin tildes: «ramirez lucia» encuentra a «Ramírez Ocampo Lucía».
+  const filtrados = useMemo(() => {
+    const palabras = normalizarParaBuscar(busqueda).split(/\s+/).filter(Boolean);
+    if (!contratos || palabras.length === 0) return contratos ?? [];
+    return contratos.filter((k) => {
+      const t = normalizarParaBuscar(`${k.inquilino ?? ''} ${k.direccion ?? ''}`);
+      return palabras.every((p) => t.includes(p));
+    });
+  }, [contratos, busqueda]);
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(filtrados, {
+    resetKey: busqueda.trim(),
+  });
 
   const cargar = useCallback(() => {
     Promise.all([calificacionLeasefyApi.porEvaluar(), calificacionLeasefyApi.preguntas()])
@@ -180,6 +221,7 @@ function Evaluar() {
     <div className="space-y-4">
       <p className="max-w-2xl text-sm text-fg-muted">
         {tr('Contratos que terminaron en el último año y todavía no tienen evaluación. Cuenta para el historial de la persona en todo Leasefy.')}
+        {!puedeEvaluar && ` ${tr('Para evaluarlos hace falta poder editar contratos.')}`}
       </p>
       {contratos === null ? null : contratos.length === 0 ? (
         <p className="flex items-center gap-2 rounded-lg border border-dashed border-border p-6 text-sm text-fg-muted dark:border-border-strong">
@@ -187,23 +229,64 @@ function Evaluar() {
           {tr('No hay contratos terminados por evaluar.')}
         </p>
       ) : (
-        <div className="divide-y divide-border rounded-lg border border-border bg-surface dark:divide-border-strong dark:border-border-strong">
-          {contratos.map((k) => (
-            <div key={k.contractId} className="flex flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-fg">{k.inquilino ?? tr('Sin nombre')}</p>
-                <p className="truncate text-xs text-fg-muted">{k.direccion ?? '—'}</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="font-mono text-xs tabular-nums text-fg-muted">
-                  {k.terminoEl ? new Date(`${k.terminoEl}T12:00:00`).toLocaleDateString(localeFechas) : '—'}
-                </span>
-                <Button size="sm" variant="outline" hideArrow onClick={() => { setAbierto(k); setRespuestas({}); setNota(''); }}>
-                  {tr('Evaluar')}
-                </Button>
-              </div>
+        <div className="space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <div className="w-full sm:max-w-md sm:flex-1">
+              <label htmlFor="cal-buscar-contrato" className="sr-only">
+                {tr('Buscar por inquilino o dirección')}
+              </label>
+              <SearchInput
+                id="cal-buscar-contrato"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                onClear={() => setBusqueda('')}
+                placeholder={tr('Buscar por inquilino o dirección')}
+                inputSize="sm"
+                className="w-full"
+              />
             </div>
-          ))}
+            <span className="whitespace-nowrap text-xs font-medium tabular-nums text-fg-muted">
+              {filtrados.length === 1 ? tr('1 contrato') : tr('{n} contratos', { n: filtrados.length })}
+            </span>
+          </div>
+          <div className="rounded-lg border border-border bg-surface dark:border-border-strong">
+            {filtrados.length === 0 ? (
+              <p className="px-5 py-6 text-sm text-fg-muted">{tr('Ningún contrato coincide con la búsqueda.')}</p>
+            ) : (
+              <div className="divide-y divide-border dark:divide-border-strong">
+                {pageItems.map((k) => (
+                  <div key={k.contractId} className="flex flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-fg">{k.inquilino ?? tr('Sin nombre')}</p>
+                      <p className="truncate text-xs text-fg-muted">{k.direccion ?? '—'}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="font-mono text-xs tabular-nums text-fg-muted">
+                        {k.terminoEl ? new Date(`${k.terminoEl}T12:00:00`).toLocaleDateString(localeFechas) : '—'}
+                      </span>
+                      {puedeEvaluar && (
+                        <Button size="sm" variant="outline" hideArrow onClick={() => { setAbierto(k); setRespuestas({}); setNota(''); }}>
+                          {tr('Evaluar')}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {shouldPaginate && (
+              <div className="border-t border-border px-4 py-3 dark:border-border-strong">
+                <TablePagination
+                  total={total}
+                  page={page}
+                  pageSize={pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -251,7 +334,11 @@ function Evaluar() {
 
 export default function CalificacionLeasefyPanelPage() {
   const tr = useTr();
+  const { canAccess } = usePermissionsContext();
   const [pestana, setPestana] = useState<'buscar' | 'evaluar'>('buscar');
+  // Los contratos terminados piden `contratos:view` (el asesor comercial no lo tiene): sin él, sólo buscar.
+  const veContratos = canAccess('contratos', 'view');
+  const puedeEvaluar = canAccess('contratos', 'edit');
   return (
     <PageGuard module="portafolio">
       <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 p-6 lg:p-8">
@@ -261,13 +348,17 @@ export default function CalificacionLeasefyPanelPage() {
             {tr('Cómo le ha ido a una persona arrendando en Leasefy, más sus documentos: si se le arrienda fácil, con condiciones o no, y hasta qué canon.')}
           </p>
         </header>
-        <Tabs value={pestana} onValueChange={(v) => setPestana(v as 'buscar' | 'evaluar')}>
-          <TabsList>
-            <TabsTrigger value="buscar">{tr('Buscar a una persona')}</TabsTrigger>
-            <TabsTrigger value="evaluar">{tr('Contratos terminados')}</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <CrossFade swapKey={pestana}>{pestana === 'buscar' ? <Buscar /> : <Evaluar />}</CrossFade>
+        {veContratos && (
+          <Tabs value={pestana} onValueChange={(v) => setPestana(v as 'buscar' | 'evaluar')}>
+            <TabsList>
+              <TabsTrigger value="buscar">{tr('Buscar a una persona')}</TabsTrigger>
+              <TabsTrigger value="evaluar">{tr('Contratos terminados')}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+        <CrossFade swapKey={veContratos ? pestana : 'buscar'}>
+          {veContratos && pestana === 'evaluar' ? <Evaluar puedeEvaluar={puedeEvaluar} /> : <Buscar />}
+        </CrossFade>
       </motion.div>
     </PageGuard>
   );

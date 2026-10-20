@@ -103,5 +103,8 @@ describe('CostKpiStrip', () => {
     // Should contain the formatted forecast value, en pesos
     expect(text).toContain('11.970')
     expect(text).not.toMatch(/USD|US\$/)
+    // Al peso (QA 19-10-2026): 10,5 → «$ 11», sin centavos.
+    expect(text).toMatch(/\$\s11(?![\d.,])/)
+    expect(text).not.toMatch(/,\d/)
   })
 })

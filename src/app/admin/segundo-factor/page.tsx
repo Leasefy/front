@@ -9,6 +9,9 @@ import { MfaSetupSection } from '@/components/settings/MfaSetupSection'
 import { leerErrorDeSupabase } from '@/lib/auth/errores-de-supabase'
 import { mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor'
 import { MENSAJE_DEL_TOPE } from '@/lib/auth/inscripcion-del-segundo-factor'
+import { resolverCodigoDelMock, userIdDelToken } from '@/lib/auth/mock-del-segundo-factor'
+import { useMockDelSegundoFactor } from '@/lib/auth/use-mock-del-segundo-factor'
+import { InsigniaDelMock } from '@/components/auth/InsigniaDelMock'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 /**
@@ -72,6 +75,8 @@ function SegundoFactor() {
   const [verificando, setVerificando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const token = useRef<string | null>(null)
+  // Sólo fuera de producción (`lib/config/entorno.ts`): en producción es siempre `false`.
+  const mockHabilitado = useMockDelSegundoFactor()
 
   const cargarFactores = useCallback(async (accessToken: string) => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -131,10 +136,22 @@ function SegundoFactor() {
     setVerificando(true)
     setError(null)
     try {
+      // Mock (sólo fuera de producción): `123456` se cambia por el código real
+      // calculado con el secreto que este navegador guardó para ESTE factor.
+      const resuelto = await resolverCodigoDelMock({
+        codigo,
+        userId: userIdDelToken(token.current),
+        factorId,
+      })
+      if (!resuelto.ok) {
+        setError(resuelto.mensaje)
+        setCodigo('')
+        return
+      }
       const { data: desafio, error: errorDelDesafio } = await conTope(sb.auth.mfa.challenge({ factorId }))
       if (errorDelDesafio) throw errorDelDesafio
       const { error: errorDelCodigo } = await conTope(
-        sb.auth.mfa.verify({ factorId, challengeId: desafio.id, code: codigo }),
+        sb.auth.mfa.verify({ factorId, challengeId: desafio.id, code: resuelto.codigo }),
       )
       if (errorDelCodigo) throw errorDelCodigo
       // Recarga entera: el guard del panel lee la sesión nueva (aal2) al montar.
@@ -210,6 +227,15 @@ function SegundoFactor() {
             className="w-full border border-border bg-bg px-3 py-2 text-center font-mono text-2xl tracking-[0.3em] text-fg"
             data-testid="codigo-segundo-factor-admin"
           />
+          {mockHabilitado ? (
+            <p
+              className="flex flex-wrap items-center justify-center gap-2 text-xs text-fg-muted"
+              data-testid="aviso-del-mock"
+            >
+              <InsigniaDelMock variante="admin" />
+              Con el mock activo, escribir 123456 envía el código real de este navegador.
+            </p>
+          ) : null}
           <button type="submit" className="btn w-full" disabled={verificando || codigo.length !== 6}>
             {verificando ? 'Verificando…' : 'Entrar →'}
           </button>

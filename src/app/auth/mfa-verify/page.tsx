@@ -8,6 +8,9 @@ import { ShieldCheck, SignOut, UserCircle } from '@phosphor-icons/react';
 import { getSupabase } from '@/lib/supabase/client';
 import { getAccessToken, hayRespuestaDeSesion } from '@/lib/api/client';
 import { decodeAccessToken } from '@/lib/auth/jwt';
+import { InsigniaDelMock } from '@/components/auth/InsigniaDelMock';
+import { resolverCodigoDelMock, userIdDelToken } from '@/lib/auth/mock-del-segundo-factor';
+import { useMockDelSegundoFactor } from '@/lib/auth/use-mock-del-segundo-factor';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -153,6 +156,8 @@ export default function MfaVerifyPage() {
   // nunca es «el código cambió», es que esa entrada de la app no es la de
   // esta cuenta (Nico, 01-10: «le coloqué el de todos los que tengo»).
   const [rechazados, setRechazados] = useState(0);
+  // Sólo fuera de producción (`lib/config/entorno.ts`): en producción es siempre `false`.
+  const mockHabilitado = useMockDelSegundoFactor();
   // Antes del segundo factor el perfil del back puede no haber cargado: el
   // correo se lee del token (al instante, si ya está) o de la sesión de
   // Supabase. Mientras se busca, la píldora guarda su sitio: que la tarjeta no
@@ -359,6 +364,26 @@ export default function MfaVerifyPage() {
         if (refreshError) throw refreshError;
       }
 
+      // Mock (sólo fuera de producción): `123456` se cambia por el código real
+      // calculado con el secreto que este navegador guardó para ESTE factor.
+      const resuelto = await resolverCodigoDelMock({
+        codigo,
+        userId:
+          vigente?.session?.user?.id ??
+          userIdDelToken(vigente?.session?.access_token ?? getAccessToken()) ??
+          user?.id ??
+          null,
+        factorId,
+      });
+      if (!resuelto.ok) {
+        verificandoRef.current = false;
+        setIsLoading(false);
+        setHayError(true);
+        setCode('');
+        toast.error(resuelto.mensaje);
+        return;
+      }
+
       // Create a challenge
       const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId,
@@ -369,7 +394,7 @@ export default function MfaVerifyPage() {
       const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId,
         challengeId: challenge.id,
-        code: codigo,
+        code: resuelto.codigo,
       });
       if (verifyError) throw verifyError;
 
@@ -621,6 +646,16 @@ export default function MfaVerifyPage() {
                     disabled={isLoading}
                     autoFocus
                   />
+
+                  {mockHabilitado ? (
+                    <p
+                      className="flex flex-wrap items-center justify-center gap-2 text-center text-caption text-fg-subtle"
+                      data-testid="aviso-del-mock"
+                    >
+                      <InsigniaDelMock />
+                      Con el mock activo, escribir 123456 envía el código real de este navegador.
+                    </p>
+                  ) : null}
 
                   {/* Al tercer rechazo aparece la salida, subiendo 8 px. */}
                   <Presence show={rechazados >= 3}>

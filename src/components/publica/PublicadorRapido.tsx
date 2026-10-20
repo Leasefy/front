@@ -1,29 +1,47 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowSquareOut, CheckCircle, ImageSquare, Plus, SpinnerGap, Trash, WarningCircle, X } from '@phosphor-icons/react';
+import { Plus, SpinnerGap } from '@phosphor-icons/react';
 import { motionDuration, motionEase } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
-import { AddressAutocomplete } from '@/components/publicar/AddressAutocomplete';
+import { autoMapColumns } from '@/components/inmobiliaria/import/lib/columnMapping';
+import { mapRowsToProperties } from '@/components/inmobiliaria/import/lib/gapFiller';
+import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir';
+import { aImportProperty, leerEnlaces, traerFotoComoArchivo } from '@/lib/inmuebles/enlaces.service';
+import { normalizarDireccionCo } from '@/lib/inmuebles/normalizar-direccion-co';
+import { ESPERA_ENTRE_BUSQUEDAS_MS, ubicarDireccion } from '@/lib/inmuebles/ubicar-direccion';
 import {
+  MAX_FOTOS,
+  MAX_INMUEBLES,
   TIPOS,
   borrarBorrador,
-  fraseDeLoQueFalta,
+  desdeImportProperty,
+  direccionesRepetidas,
   guardarBorrador,
   inmuebleVacio,
   leerBorrador,
   loQueFalta,
+  nuevaLlave,
   paraCrear,
-  tituloDe,
   type InmuebleRapido,
+  type TipoRapido,
 } from '@/lib/publica/borrador';
+import { acomodarCarpetas, agruparPorCarpeta, type ArchivoConRuta } from '@/lib/publica/carpetas';
+import { prepararFoto, soloImagenes } from '@/lib/publica/fotos';
+import { almacenDeFotos, porInmueble, type FotoGuardada } from '@/lib/publica/fotos-guardadas';
+import { anotarPorUbicar, leerPorUbicar, quitarPorUbicar } from '@/lib/publica/por-ubicar';
+import { limitador, publicarEnTandas } from '@/lib/publica/publicar-en-tandas';
 import { cn } from '@/lib/utils';
+
+import { FilaDeInmueble } from './FilaDeInmueble';
+import { Pastilla, TarjetaDeInmueble, type EstadoDeLaTarjeta, type LlegandoALaTarjeta } from './TarjetaDeInmueble';
+import { TodoPublicado } from './TodoPublicado';
+import { TraerMuchos, type ResultadoDeCarpetas, type ResultadoDeEnlaces, type ResultadoDelExcel } from './TraerMuchos';
 
 /**
  * ══ EL PUBLICADOR RÁPIDO ════════════════════════════════════════════════════
@@ -33,106 +51,575 @@ import { cn } from '@/lib/utils';
  * publicar muy rápido uno o muchos, que se sienta rápido».
  *
  * Una tarjeta por inmueble con lo justo para salir en el marketplace: fotos,
- * arriendo o venta, tipo, dirección, precio, habitaciones, baños y área. «+
- * Agregar otro» copia la operación, el tipo y la ciudad del anterior. «Publicar
- * los N» crea cada uno (POST /properties, disponible y en el marketplace) y sube
- * sus fotos; cada tarjeta dice cómo le fue. Lo escrito se guarda en el
- * navegador mientras tanto (las fotos no: son archivos).
+ * arriendo o venta, tipo, dirección, precio, habitaciones, baños y área.
+ *
+ * Escala (Nico, 20-10-2026: «si llegan a ser muchísimos inmuebles, ¿cómo
+ * escala esto?»):
+ * - **Traerlos de una**: pegar los enlaces de sus avisos, leer su Excel (cada
+ *   fila una tarjeta) o arrastrar sus carpetas de fotos (una por inmueble; si
+ *   se llaman como el código o la dirección de una fila, se acomodan solas).
+ * - **Con más de 3, la lista se pliega**: cada inmueble es una línea y se abre
+ *   uno a la vez; filtros por lo que falta, y completar en bloque el tipo y la
+ *   ciudad que les falte a varios.
+ * - **Publicar no duplica ni se pierde**: fotos achicadas en el navegador y
+ *   guardadas en IndexedDB, 4 inmuebles a la vez, la llave anti-duplicados de
+ *   cada tarjeta y el id de lo ya creado guardado: si la pestaña se cierra,
+ *   al volver sigue donde iba.
  */
-type Estado = { que: 'borrador' } | { que: 'publicando' } | { que: 'publicado'; id: string } | { que: 'fallo'; motivo: string; id?: string };
+type Estado = EstadoDeLaTarjeta;
 
-const MAX_FOTOS = 20;
+/** Con más de esto, la lista se pliega a una línea por inmueble. */
+const POCOS = 3;
+
+type Filtro = 'todos' | 'faltan' | 'listos' | 'error' | 'publicados';
+
+const MOTIVO_A_MEDIAS = 'Quedó a medias: ya está publicado y faltan fotos por subir. Toca «Publicar» para terminar.';
+
+/** La tarjeta tal como nace: nada escrito, nada creado, de ningún lado. */
+function esVirgen(i: InmuebleRapido): boolean {
+  return !i.idCreado && !i.origen && !i.direccion.trim() && !i.precio && !i.descripcion.trim() && !i.barrio.trim() && i.habitaciones === null && i.banos === null && i.area === null;
+}
+
+function hostDe(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return 'el enlace';
+  }
+}
 
 export function PublicadorRapido({
   usuario,
   alTerminar,
+  paginaPublica = null,
 }: {
   usuario: string;
   /** Dónde sigue después de publicar (su cuenta). */
   alTerminar: { href: string; texto: string };
+  /** La página de la inmobiliaria en el marketplace, para compartirlos todos de una. */
+  paginaPublica?: string | null;
 }) {
   const contador = useRef(0);
   const nuevaClave = () => `i${Date.now().toString(36)}${(contador.current += 1)}`;
   const [inmuebles, setInmuebles] = useState<InmuebleRapido[]>(() => [inmuebleVacio('i0')]);
-  const [fotos, setFotos] = useState<Record<string, File[]>>({});
+  const [fotos, setFotos] = useState<Record<string, FotoGuardada[]>>({});
+  const [llegando, setLlegando] = useState<Record<string, LlegandoALaTarjeta>>({});
   const [estados, setEstados] = useState<Record<string, Estado>>({});
   const [publicando, setPublicando] = useState(false);
-  const [recuperado, setRecuperado] = useState(false);
+  const [corrida, setCorrida] = useState<string[] | null>(null);
+  const [cargado, setCargado] = useState(false);
+  const [recuperado, setRecuperado] = useState<{ inmuebles: number; fotos: number } | null>(null);
   const [intento, setIntento] = useState(false);
+  const [abierta, setAbierta] = useState<string | null>(null);
+  const [filtro, setFiltro] = useState<Filtro>('todos');
+  const [recortados, setRecortados] = useState(0);
 
-  // Lo que dejó escrito la última vez.
+  // Lo último, para lo que corre por fuera del render (fotos que llegan, publicar).
+  const inmueblesRef = useRef(inmuebles);
+  inmueblesRef.current = inmuebles;
+  const fotosRef = useRef(fotos);
+  fotosRef.current = fotos;
+  const llegandoRef = useRef(llegando);
+  llegandoRef.current = llegando;
+  const ordenRef = useRef<Record<string, number>>({});
+  const yaHuboAlgo = useRef(false);
+  /** Las que se crearon CON su punto en el mapa; a las demás se les pone después. */
+  const creadoConPunto = useRef<Record<string, boolean>>({});
+
+  const prepararDeAPocas = useMemo(() => limitador(2), []);
+  // El buscador de direcciones va de a una búsqueda, con su pausa (el techo de LocationIQ).
+  const ubicarDeAUna = useMemo(() => limitador(1), []);
+  const traerDeAPocos = useMemo(() => limitador(3), []);
+  const almacen = useMemo(() => almacenDeFotos(), []);
+
+  // ── Lo que dejó la última vez: los datos (localStorage) y las fotos (IndexedDB) ──
   useEffect(() => {
+    let vivo = true;
     const guardado = leerBorrador(usuario);
-    if (guardado) {
-      setInmuebles(guardado);
-      setRecuperado(true);
-    }
-  }, [usuario]);
-  useEffect(() => {
-    const pendientes = inmuebles.filter((i) => estados[i.clave]?.que !== 'publicado');
-    if (pendientes.length === 0) borrarBorrador(usuario);
-    else guardarBorrador(usuario, pendientes);
-  }, [inmuebles, estados, usuario]);
+    void (async () => {
+      // Con tiempo máximo: si IndexedDB no contesta, se recupera lo escrito igual (sin las fotos).
+      const todas = await Promise.race([
+        almacen.leerTodas(usuario).catch(() => [] as FotoGuardada[]),
+        new Promise<FotoGuardada[]>((listo) => window.setTimeout(() => listo([]), 8000)),
+      ]);
+      if (!vivo) return;
+      if (guardado) {
+        const claves = new Set(guardado.map((i) => i.clave));
+        const huerfanas = todas.filter((f) => !claves.has(f.inmueble)).map((f) => f.id);
+        if (huerfanas.length) void almacen.borrar(huerfanas);
+        const grupos = porInmueble(todas.filter((f) => claves.has(f.inmueble)));
+        for (const [c, lista] of Object.entries(grupos)) ordenRef.current[c] = Math.max(...lista.map((f) => f.orden)) + 1;
+        setInmuebles(guardado);
+        setFotos(grupos);
+        setEstados(
+          Object.fromEntries(
+            guardado
+              .filter((i) => i.idCreado)
+              .map((i): [string, Estado] =>
+                (grupos[i.clave] ?? []).some((f) => !f.subida)
+                  ? [i.clave, { que: 'fallo', id: i.idCreado, motivo: MOTIVO_A_MEDIAS }]
+                  : [i.clave, { que: 'publicado', id: i.idCreado as string }],
+              ),
+          ),
+        );
+        setRecuperado({ inmuebles: guardado.length, fotos: todas.length - huerfanas.length });
+      }
+      // Sin borrador, las fotos que hubiera NO se borran: perder un borrador no
+      // puede llevarse también las fotos. Quedan como huérfanas y se limpian la
+      // próxima vez que haya un borrador con qué compararlas.
+      setCargado(true);
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [usuario, almacen]);
 
-  const cambiar = (clave: string, parcial: Partial<InmuebleRapido>) =>
-    setInmuebles((lista) => lista.map((i) => (i.clave === clave ? { ...i, ...parcial } : i)));
-  const agregar = () =>
-    setInmuebles((lista) => {
-      const ultimo = lista[lista.length - 1];
-      return [...lista, inmuebleVacio(nuevaClave(), { operacion: ultimo?.operacion, tipo: ultimo?.tipo, ciudad: ultimo?.ciudad })];
+  // Lo que quedó publicado sin punto en una visita anterior: se ubica en segundo plano.
+  useEffect(() => {
+    if (!cargado) return;
+    for (const p of leerPorUbicar(usuario)) {
+      if (inmueblesRef.current.some((i) => i.idCreado === p.id)) continue;
+      void ubicarDeAUna(async () => {
+        const u = await ubicarDireccion({ direccion: p.direccion, ciudad: p.ciudad }).catch(() => null);
+        await new Promise((r) => window.setTimeout(r, ESPERA_ENTRE_BUSQUEDAS_MS));
+        if (!u) return; // El buscador no contestó: queda anotado para la próxima.
+        if (u.lat == null || u.lng == null) {
+          quitarPorUbicar(usuario, p.id);
+          return;
+        }
+        await propertiesApi
+          .update(p.id, { latitude: u.lat, longitude: u.lng })
+          .then(() => quitarPorUbicar(usuario, p.id))
+          .catch(() => undefined);
+      });
+    }
+  }, [cargado, usuario, ubicarDeAUna]);
+
+  useEffect(() => {
+    if (!cargado) return;
+    const pendientes = inmuebles.filter((i) => estados[i.clave]?.que !== 'publicado');
+    if (pendientes.length === 0) {
+      borrarBorrador(usuario);
+      return;
+    }
+    // Una sola tarjeta en blanco no es un borrador. Al abrir, guardarla podría
+    // pisar uno de verdad; si en esta sesión ya hubo algo y la persona lo quitó
+    // todo, sí se borra lo guardado.
+    if (pendientes.length === 1 && esVirgen(pendientes[0]) && !(fotosRef.current[pendientes[0].clave]?.length)) {
+      if (yaHuboAlgo.current) borrarBorrador(usuario);
+      return;
+    }
+    yaHuboAlgo.current = true;
+    guardarBorrador(usuario, pendientes);
+  }, [inmuebles, estados, usuario, cargado]);
+
+  const cambiar = useCallback(
+    (clave: string, parcial: Partial<InmuebleRapido>) =>
+      setInmuebles((lista) => lista.map((i) => (i.clave === clave ? { ...i, ...parcial } : i))),
+    [],
+  );
+
+  // ── Fotos ────────────────────────────────────────────────────────────────
+  const sumarLlegando = useCallback((clave: string, delta: number, trayendo?: LlegandoALaTarjeta['trayendo'] | null) => {
+    setLlegando((todo) => {
+      const antes = todo[clave] ?? { fotos: 0 };
+      const despues: LlegandoALaTarjeta = {
+        fotos: Math.max(0, antes.fotos + delta),
+        ...(trayendo === null ? {} : trayendo ? { trayendo } : antes.trayendo ? { trayendo: antes.trayendo } : {}),
+      };
+      const { [clave]: _fuera, ...resto } = todo;
+      return despues.fotos === 0 && !despues.trayendo ? resto : { ...todo, [clave]: despues };
     });
+  }, []);
+
+  /** Prepara (achica) y guarda una foto en su lugar de la tarjeta. */
+  const ponerFoto = useCallback(
+    async (clave: string, archivo: File, orden: number) => {
+      const lista = await prepararDeAPocas(() => prepararFoto(archivo));
+      const foto: FotoGuardada = { id: nuevaLlave(), usuario, inmueble: clave, orden, archivo: lista.archivo, miniatura: lista.miniatura, subida: false };
+      // La tarjeta pudo haberse quitado mientras tanto.
+      if (!inmueblesRef.current.some((i) => i.clave === clave)) return;
+      setFotos((todas) => ({ ...todas, [clave]: [...(todas[clave] ?? []), foto].sort((a, b) => a.orden - b.orden) }));
+      void almacen.guardar([foto]);
+    },
+    [almacen, prepararDeAPocas, usuario],
+  );
+
+  const reservarOrden = (clave: string, cuantas: number) => {
+    const desde = ordenRef.current[clave] ?? 0;
+    ordenRef.current[clave] = desde + cuantas;
+    return desde;
+  };
+
+  const agregarFotos = useCallback(
+    (clave: string, archivos: File[]) => {
+      const libres = MAX_FOTOS - (fotosRef.current[clave]?.length ?? 0) - (llegandoRef.current[clave]?.fotos ?? 0);
+      const tomadas = soloImagenes(archivos).slice(0, Math.max(0, libres));
+      if (tomadas.length === 0) return;
+      const desde = reservarOrden(clave, tomadas.length);
+      sumarLlegando(clave, tomadas.length);
+      tomadas.forEach((archivo, k) => {
+        void ponerFoto(clave, archivo, desde + k).finally(() => sumarLlegando(clave, -1));
+      });
+    },
+    [ponerFoto, sumarLlegando],
+  );
+
+  /** Baja las fotos de un aviso o de la celda del Excel, en orden, y las pone. */
+  const traerFotos = useCallback(
+    (clave: string, urls: string[]) => {
+      const todas = urls.slice(0, MAX_FOTOS);
+      if (todas.length === 0) return;
+      sumarLlegando(clave, 0, { listas: 0, total: todas.length });
+      void traerDeAPocos(async () => {
+        const desde = reservarOrden(clave, todas.length);
+        for (let k = 0; k < todas.length; k += 1) {
+          if (!inmueblesRef.current.some((i) => i.clave === clave)) break;
+          const archivo = await traerFotoComoArchivo(todas[k], `foto-${k + 1}`);
+          if (archivo) {
+            sumarLlegando(clave, 1);
+            await ponerFoto(clave, archivo, desde + k).finally(() => sumarLlegando(clave, -1));
+          }
+          sumarLlegando(clave, 0, { listas: k + 1, total: todas.length });
+        }
+        sumarLlegando(clave, 0, null);
+      });
+    },
+    [ponerFoto, sumarLlegando, traerDeAPocos],
+  );
+
+  const quitarFoto = useCallback(
+    (clave: string, id: string) => {
+      setFotos((todas) => ({ ...todas, [clave]: (todas[clave] ?? []).filter((f) => f.id !== id) }));
+      void almacen.borrar([id]);
+    },
+    [almacen],
+  );
+
+  const marcarSubida = useCallback(
+    (clave: string, id: string) => {
+      setFotos((todas) => {
+        const lista = (todas[clave] ?? []).map((f) => (f.id === id ? { ...f, subida: true } : f));
+        const foto = lista.find((f) => f.id === id);
+        if (foto) void almacen.guardar([foto]);
+        return { ...todas, [clave]: lista };
+      });
+    },
+    [almacen],
+  );
+
+  // ── El punto en el mapa ──────────────────────────────────────────────────
+  /** Le pone el punto a un inmueble ya publicado. Si falla, queda anotado para la próxima: nunca frena nada. */
+  const ponerPunto = useCallback(
+    (id: string, clave: string, i: InmuebleRapido) => {
+      if (i.latitud == null || i.longitud == null) {
+        // No se encontró en el mapa: no hay punto que poner.
+        quitarPorUbicar(usuario, id);
+        return;
+      }
+      creadoConPunto.current[clave] = true;
+      void propertiesApi
+        .update(id, { latitude: i.latitud, longitude: i.longitud })
+        .then(() => quitarPorUbicar(usuario, id))
+        .catch(() => {
+          creadoConPunto.current[clave] = false;
+        });
+    },
+    [usuario],
+  );
+
+  /**
+   * Ubica UNA tarjeta con la regla del importador del panel (`ubicarDireccion`:
+   * nunca un punto en otro departamento). Devuelve la tarjeta con su punto; si
+   * la dirección cambió mientras se buscaba, no pisa lo nuevo.
+   */
+  const ubicar = useCallback(
+    (clave: string): Promise<InmuebleRapido | null> =>
+      ubicarDeAUna(async () => {
+        const i = inmueblesRef.current.find((x) => x.clave === clave);
+        if (!i) return null;
+        if (i.ubicado || (i.latitud != null && i.longitud != null) || !i.direccion.trim()) return i;
+        const buscada = i.direccion;
+        const u = await ubicarDireccion({ direccion: i.direccion, ciudad: i.ciudad }).catch(() => ({ precision: 'ninguna' as const, lat: undefined, lng: undefined }));
+        await new Promise((r) => window.setTimeout(r, ESPERA_ENTRE_BUSQUEDAS_MS));
+        const ahora = inmueblesRef.current.find((x) => x.clave === clave);
+        if (!ahora || ahora.direccion !== buscada) return ahora ?? null;
+        const conPunto: InmuebleRapido = {
+          ...ahora,
+          ubicado: u.precision,
+          ...(u.lat != null && u.lng != null ? { latitud: u.lat, longitud: u.lng } : {}),
+        };
+        cambiar(clave, { ubicado: conPunto.ubicado, latitud: conPunto.latitud, longitud: conPunto.longitud });
+        // Ya publicado sin punto (no se lo hizo esperar): el punto se le pone ahora.
+        if (ahora.idCreado && !creadoConPunto.current[clave]) ponerPunto(ahora.idCreado, clave, conPunto);
+        return conPunto;
+      }),
+    [cambiar, ponerPunto, ubicarDeAUna],
+  );
+
+  const ubicarEnSegundoPlano = (claves: string[]) => {
+    for (const c of claves) void ubicar(c);
+  };
+
+  // ── Tarjetas ─────────────────────────────────────────────────────────────
+  const esVacia = (i: InmuebleRapido) =>
+    !i.idCreado && !i.origen && !i.direccion.trim() && !i.precio && !i.descripcion.trim() && !(fotosRef.current[i.clave]?.length) && !llegandoRef.current[i.clave];
+
+  /** Suma tarjetas; si sólo hay una y está en blanco, la reemplaza. Devuelve cuántas entraron. */
+  const sumarTarjetas = (nuevas: InmuebleRapido[]): InmuebleRapido[] => {
+    const actuales = inmueblesRef.current;
+    const base = actuales.length === 1 && esVacia(actuales[0]) ? [] : actuales;
+    const caben = Math.max(0, MAX_INMUEBLES - base.length);
+    const entran = nuevas.slice(0, caben);
+    setRecortados(nuevas.length - entran.length);
+    const lista = [...base, ...entran];
+    inmueblesRef.current = lista;
+    setInmuebles(lista);
+    setFiltro('todos');
+    setAbierta(null);
+    return entran;
+  };
+
+  const agregar = () => {
+    if (inmuebles.length >= MAX_INMUEBLES) return;
+    const ultimo = inmuebles[inmuebles.length - 1];
+    const nueva = inmuebleVacio(nuevaClave(), { operacion: ultimo?.operacion, tipo: ultimo?.tipo, ciudad: ultimo?.ciudad });
+    setInmuebles((lista) => [...lista, nueva]);
+    setAbierta(nueva.clave);
+    setFiltro('todos');
+  };
+
   const quitar = (clave: string) => {
     setInmuebles((lista) => (lista.length === 1 ? lista : lista.filter((i) => i.clave !== clave)));
+    const ids = (fotosRef.current[clave] ?? []).map((f) => f.id);
     setFotos((f) => {
       const { [clave]: _fuera, ...resto } = f;
       return resto;
     });
+    if (ids.length) void almacen.borrar(ids);
+    if (abierta === clave) setAbierta(null);
   };
 
+  // ── Los tres caminos para traer muchos ──────────────────────────────────
+  const traerEnlaces = async (urls: string[], alAvanzar: (l: number, t: number) => void): Promise<ResultadoDeEnlaces> => {
+    const resultados = await leerEnlaces(urls, alAvanzar);
+    const nuevas: Array<{ inmueble: InmuebleRapido; fotos: string[] }> = [];
+    resultados.forEach((r, k) => {
+      if (!r.ok) return;
+      nuevas.push(desdeImportProperty(aImportProperty(r.inmueble, k), nuevaClave(), { tipo: 'enlace', etiqueta: hostDe(r.url), url: r.url }));
+    });
+    const entraron = new Set(sumarTarjetas(nuevas.map((n) => n.inmueble)).map((i) => i.clave));
+    for (const n of nuevas) if (entraron.has(n.inmueble.clave)) traerFotos(n.inmueble.clave, n.fotos);
+    ubicarEnSegundoPlano([...entraron]);
+    return { creados: entraron.size, fallidos: resultados.filter((r): r is Extract<typeof r, { ok: false }> => !r.ok) };
+  };
+
+  const leerExcel = async (archivo: File): Promise<ResultadoDelExcel> => {
+    const { rows, headers } = await parseSpreadsheetFile(archivo);
+    const mapeos = autoMapColumns(headers, rows);
+    const destinos = new Set(mapeos.map((m) => m.targetField).filter(Boolean));
+    const columnasQueFaltan = [
+      ...(destinos.has('propertyAddress') ? [] : ['la dirección']),
+      ...(destinos.has('monthlyRent') || destinos.has('salePrice') ? [] : ['el precio']),
+    ];
+    const nuevas = mapRowsToProperties(rows, mapeos)
+      .filter((p) => p.propertyAddress || p.monthlyRent || p.salePrice || p.propertyType || p.externalId)
+      .map((p) => desdeImportProperty(p, nuevaClave(), { tipo: 'excel', etiqueta: `Fila ${p._rowIndex + 1}` }));
+    const entraron = new Set(sumarTarjetas(nuevas.map((n) => n.inmueble)).map((i) => i.clave));
+    let conFotosEnLaCelda = 0;
+    for (const n of nuevas) {
+      if (!entraron.has(n.inmueble.clave) || n.fotos.length === 0) continue;
+      conFotosEnLaCelda += 1;
+      traerFotos(n.inmueble.clave, n.fotos);
+    }
+    ubicarEnSegundoPlano([...entraron]);
+    const conFaltantes = nuevas.filter((n) => entraron.has(n.inmueble.clave) && loQueFalta(n.inmueble, 1).length > 0).length;
+    return { filas: rows.length, creados: entraron.size, conFaltantes, conFotosEnLaCelda, columnasQueFaltan };
+  };
+
+  const soltarCarpetas = async (archivos: ArchivoConRuta[]): Promise<ResultadoDeCarpetas> => {
+    const carpetas = agruparPorCarpeta(archivos);
+    const { asignadas, nuevas } = acomodarCarpetas(
+      carpetas,
+      inmueblesRef.current,
+      (c) => (fotosRef.current[c]?.length ?? 0) + (llegandoRef.current[c]?.fotos ?? 0),
+    );
+    for (const a of asignadas) agregarFotos(a.clave, a.carpeta.fotos);
+    const ultimo = inmueblesRef.current[inmueblesRef.current.length - 1];
+    const tarjetas = nuevas.map((c) => ({
+      inmueble: {
+        ...inmuebleVacio(nuevaClave(), { operacion: ultimo?.operacion, tipo: ultimo?.tipo, ciudad: ultimo?.ciudad }),
+        // Si la carpeta se llama como una dirección («Cra 76 # 34-21»), ésa es la dirección.
+        ...(normalizarDireccionCo(c.nombre) ? { direccion: c.nombre.slice(0, 300) } : {}),
+        origen: { tipo: 'carpeta' as const, etiqueta: c.nombre },
+      },
+      carpeta: c,
+    }));
+    const entraron = new Set(sumarTarjetas(tarjetas.map((t) => t.inmueble)).map((i) => i.clave));
+    for (const t of tarjetas) if (entraron.has(t.inmueble.clave)) agregarFotos(t.inmueble.clave, t.carpeta.fotos);
+    ubicarEnSegundoPlano([...entraron]);
+    return { carpetas: carpetas.length, acomodadas: asignadas.length, nuevas: entraron.size };
+  };
+
+  // ── Lo que se cuenta ─────────────────────────────────────────────────────
+  const cuantasFotos = (clave: string) => fotos[clave]?.length ?? 0;
+  const llega = (clave: string) => (llegando[clave]?.fotos ?? 0) > 0 || !!llegando[clave]?.trayendo;
   const porPublicar = inmuebles.filter((i) => estados[i.clave]?.que !== 'publicado');
-  const listos = porPublicar.filter((i) => loQueFalta(i, fotos[i.clave]?.length ?? 0).length === 0);
+  const listos = porPublicar.filter((i) => !llega(i.clave) && (i.idCreado || loQueFalta(i, cuantasFotos(i.clave)).length === 0));
   const publicados = inmuebles.filter((i) => estados[i.clave]?.que === 'publicado');
   const todosPublicados = inmuebles.length > 0 && publicados.length === inmuebles.length;
+  const repetidas = useMemo(() => direccionesRepetidas(inmuebles), [inmuebles]);
+  const numeroDe = useMemo(() => new Map(inmuebles.map((i, n) => [i.clave, n + 1])), [inmuebles]);
+  const hayLlegando = Object.keys(llegando).length > 0;
+  const porUbicar = inmuebles.filter((i) => i.direccion.trim() && !i.ubicado && (i.latitud == null || i.longitud == null)).length;
+  const modoLista = inmuebles.length > POCOS;
 
+  const enCadaFiltro = useMemo(() => {
+    const cuenta: Record<Filtro, number> = { todos: inmuebles.length, faltan: 0, listos: 0, error: 0, publicados: 0 };
+    for (const i of inmuebles) {
+      const e = estados[i.clave]?.que;
+      if (e === 'publicado') cuenta.publicados += 1;
+      else if (e === 'fallo') cuenta.error += 1;
+      else if (loQueFalta(i, fotos[i.clave]?.length ?? 0).length === 0) cuenta.listos += 1;
+      else cuenta.faltan += 1;
+    }
+    return cuenta;
+  }, [inmuebles, estados, fotos]);
+
+  const visibles = inmuebles.filter((i) => {
+    // La que se está editando no desaparece al completarse: se queda hasta plegarla.
+    if (!modoLista || filtro === 'todos' || i.clave === abierta) return true;
+    const e = estados[i.clave]?.que;
+    if (filtro === 'publicados') return e === 'publicado';
+    if (filtro === 'error') return e === 'fallo';
+    if (e === 'publicado' || e === 'fallo') return false;
+    const completo = loQueFalta(i, cuantasFotos(i.clave)).length === 0;
+    return filtro === 'listos' ? completo : !completo;
+  });
+
+  // Publicado ya está; lo que falta es el punto en el mapa de algunos: también se avisa.
+  useAvisoAlSalir(publicando || hayLlegando || (cargado && porUbicar > 0 && publicados.length > 0));
+
+  // ── Publicar ─────────────────────────────────────────────────────────────
   const publicarTodos = async () => {
     setIntento(true);
-    if (listos.length === 0 || publicando) return;
-    setPublicando(true);
-    for (const i of listos) {
-      const previo = estados[i.clave];
-      setEstados((e) => ({ ...e, [i.clave]: { que: 'publicando' } }));
-      try {
-        // Si ya se creó antes (sólo fallaron las fotos), no se crea otra vez.
-        const id = previo && previo.que === 'fallo' && previo.id ? previo.id : (await propertiesApi.create(paraCrear(i) as Parameters<typeof propertiesApi.create>[0])).id;
-        const archivos = fotos[i.clave] ?? [];
-        let fallaron = 0;
-        for (const archivo of archivos) {
-          try {
-            await propertiesApi.uploadImage(id, archivo);
-          } catch {
-            fallaron += 1;
-          }
-        }
-        setEstados((e) => ({
-          ...e,
-          [i.clave]:
-            fallaron === 0
-              ? { que: 'publicado', id }
-              : { que: 'fallo', id, motivo: `Se publicó, pero ${fallaron === 1 ? '1 foto no subió' : `${fallaron} fotos no subieron`}. Vuelve a intentar.` },
-        }));
-      } catch (err) {
-        setEstados((e) => ({
-          ...e,
-          [i.clave]: { que: 'fallo', motivo: mensajeParaLaPersona(err, { porDefecto: 'No se pudo publicar. Intenta de nuevo.', accion: 'publicar el inmueble' }) },
-        }));
-      }
+    if (publicando) return;
+    if (listos.length === 0) {
+      if (modoLista) setFiltro('faltan');
+      return;
     }
+    setPublicando(true);
+    setCorrida(listos.map((i) => i.clave));
+    ubicarEnSegundoPlano(listos.filter((i) => !i.ubicado && (i.latitud == null || i.longitud == null)).map((i) => i.clave));
+    setAbierta(null);
+    const trabajos = listos.map((i) => ({
+      clave: i.clave,
+      llave: i.llave,
+      datos: i.clave,
+      idCreado: i.idCreado,
+      fotos: (fotos[i.clave] ?? []).map((f) => ({ id: f.id, archivo: f.archivo, subida: f.subida })),
+    }));
+    const resultados = await publicarEnTandas(
+      trabajos,
+      {
+        // Se crea con lo que haya YA: el mapa no hace esperar a nadie. Si todavía no
+        // tiene punto, se lo pone `ubicar` apenas lo encuentre.
+        crear: async (clave, llave) => {
+          const i = inmueblesRef.current.find((x) => x.clave === clave);
+          if (!i) throw new Error('La tarjeta ya no está.');
+          creadoConPunto.current[clave] = i.latitud != null && i.longitud != null;
+          return propertiesApi.create(paraCrear(i) as Parameters<typeof propertiesApi.create>[0], { idempotencyKey: llave });
+        },
+        subirFoto: (id, archivo) => propertiesApi.uploadImage(id, archivo),
+        cuantasTiene: async (id) => (await propertiesApi.getImages(id)).length,
+        motivo: (error, que) =>
+          que === 'crear'
+            ? mensajeParaLaPersona(error, { porDefecto: 'No se pudo publicar. Intenta de nuevo.', accion: 'publicar el inmueble' })
+            : mensajeParaLaPersona(error, { porDefecto: 'No se pudo subir', accion: 'subir la foto' }),
+      },
+      {
+        alEmpezar: (c) => setEstados((e) => ({ ...e, [c]: { que: 'publicando' } })),
+        alCrear: (c, id) => {
+          cambiar(c, { idCreado: id });
+          const ahora = inmueblesRef.current.find((x) => x.clave === c);
+          // El punto llegó mientras se creaba: se le pone ya.
+          if (ahora && !creadoConPunto.current[c] && ahora.latitud != null && ahora.longitud != null) ponerPunto(id, c, ahora);
+        },
+        alSubirFoto: marcarSubida,
+        alTerminar: (c, r) => {
+          setEstados((e) => ({ ...e, [c]: r }));
+          if (r.que !== 'publicado') return;
+          void almacen.borrar((fotosRef.current[c] ?? []).map((f) => f.id));
+          const i = inmueblesRef.current.find((x) => x.clave === c);
+          // Publicado sin punto: queda anotado por si la pestaña se cierra antes de ubicarlo.
+          if (i && !i.ubicado && (i.latitud == null || i.longitud == null) && i.direccion.trim()) {
+            anotarPorUbicar(usuario, { id: r.id, direccion: i.direccion, ciudad: i.ciudad });
+          }
+        },
+      },
+      { aLaVez: 4 },
+    );
     setPublicando(false);
+    setCorrida(null);
+    // Si algo falló, lo primero que se ve es eso.
+    if (modoLista) setFiltro([...resultados.values()].some((r) => r.que === 'fallo') ? 'error' : 'todos');
+  };
+
+  // El que publicó todo vuelve a empezar con una tarjeta en blanco.
+  const publicarMas = () => {
+    const ultimo = inmuebles[inmuebles.length - 1];
+    const nueva = inmuebleVacio(nuevaClave(), { operacion: ultimo?.operacion, tipo: ultimo?.tipo, ciudad: ultimo?.ciudad });
+    setInmuebles([nueva]);
+    setFotos({});
+    setEstados({});
+    setIntento(false);
+    setFiltro('todos');
+    setAbierta(null);
+    window.scrollTo({ top: 0 });
   };
 
   if (todosPublicados) {
-    return <TodoPublicado inmuebles={publicados} estados={estados} fotos={fotos} alTerminar={alTerminar} alAgregarOtro={agregar} />;
+    return (
+      <TodoPublicado
+        inmuebles={publicados}
+        idDe={(c) => {
+          const e = estados[c];
+          return e && e.que === 'publicado' ? e.id : null;
+        }}
+        fotosDe={(c) => fotos[c] ?? []}
+        paginaPublica={paginaPublica}
+        porUbicar={porUbicar}
+        alTerminar={alTerminar}
+        alPublicarMas={publicarMas}
+      />
+    );
   }
+
+  // El avance de la corrida en curso.
+  const enLaCorrida = corrida ? inmuebles.filter((i) => corrida.includes(i.clave)) : [];
+  const hechos = enLaCorrida.filter((i) => ['publicado', 'fallo'].includes(estados[i.clave]?.que ?? '')).length;
+  const fotosDeLaCorrida = enLaCorrida.flatMap((i) => fotos[i.clave] ?? []);
+  const fotosArriba = fotosDeLaCorrida.filter((f) => f.subida).length;
+  // Cada inmueble terminado y cada foto arriba cuentan como un paso.
+  const pasos = enLaCorrida.length + fotosDeLaCorrida.length;
+  const porcentaje = pasos ? Math.round(((hechos + fotosArriba) / pasos) * 100) : 0;
+
+  const tarjeta = (i: InmuebleRapido) => (
+    <TarjetaDeInmueble
+      numero={numeroDe.get(i.clave) ?? 0}
+      inmueble={i}
+      fotos={fotos[i.clave] ?? []}
+      llegando={llegando[i.clave]}
+      estado={estados[i.clave] ?? { que: 'borrador' }}
+      repetidaCon={repetidas.get(i.clave)}
+      mostrarFaltantes={intento}
+      alCambiar={(p) => cambiar(i.clave, p)}
+      alAgregarFotos={(f) => agregarFotos(i.clave, f)}
+      alQuitarFoto={(id) => quitarFoto(i.clave, id)}
+      alQuitar={inmuebles.length > 1 ? () => quitar(i.clave) : undefined}
+      alPlegar={modoLista ? () => setAbierta(null) : undefined}
+    />
+  );
 
   return (
     <div className="mx-auto w-full max-w-[760px] pb-40" data-testid="publicador-rapido">
@@ -140,66 +627,151 @@ export function PublicadorRapido({
         <i className="inline-block size-2 rounded-[2px] bg-primary" aria-hidden="true" />
         Publica gratis
       </p>
-      <h1 className="mt-4 text-[30px] font-medium leading-[1.08] tracking-[-0.03em] text-fg sm:text-[36px]">
-        {inmuebles.length > 1 ? `Tus ${inmuebles.length} inmuebles` : 'Tu inmueble'}
+      <h1 className="mt-4 text-[30px] font-medium leading-[1.08] tracking-[-0.03em] text-fg sm:text-[36px]" data-testid="titulo-publicador">
+        {inmuebles.length > 1 ? `Tus ${inmuebles.length.toLocaleString('es-CO')} inmuebles` : 'Tu inmueble'}
       </h1>
-      <p className="mt-2 text-[15px] leading-relaxed text-fg-subtle">
-        Lo justo para salir en el marketplace. Lo demás lo completas cuando quieras.
-      </p>
+      <p className="mt-2 text-[15px] leading-relaxed text-fg-subtle">Lo justo para salir en el marketplace. Lo demás lo completas cuando quieras.</p>
       {recuperado && (
         <p className="mt-4 rounded-md bg-info-soft px-4 py-2.5 text-[13px] text-info" role="status">
-          Recuperamos lo que dejaste escrito. Las fotos hay que elegirlas otra vez.
+          Recuperamos lo que dejaste: {recuperado.inmuebles === 1 ? '1 inmueble' : `${recuperado.inmuebles} inmuebles`}
+          {recuperado.fotos > 0 ? ` y ${recuperado.fotos === 1 ? '1 foto' : `${recuperado.fotos} fotos`}` : ''}.
+        </p>
+      )}
+      {recortados > 0 && (
+        <p className="mt-4 rounded-md bg-warning-soft px-4 py-2.5 text-[13px] text-warning" role="status">
+          Caben {MAX_INMUEBLES} por vez: quedaron {recortados.toLocaleString('es-CO')} afuera. Publica estos y tráelos después.
         </p>
       )}
 
-      <div className="mt-8 space-y-5">
-        <AnimatePresence initial={false}>
-          {inmuebles.map((i, n) => (
-            <motion.div
-              key={i.clave}
-              layout
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
-              transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
-            >
-              <TarjetaDeInmueble
-                numero={n + 1}
-                inmueble={i}
-                fotos={fotos[i.clave] ?? []}
-                estado={estados[i.clave] ?? { que: 'borrador' }}
-                mostrarFaltantes={intento}
-                alCambiar={(p) => cambiar(i.clave, p)}
-                alCambiarFotos={(f) => setFotos((todas) => ({ ...todas, [i.clave]: f }))}
-                alQuitar={inmuebles.length > 1 ? () => quitar(i.clave) : undefined}
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
+      <div className="mt-6">
+        <TraerMuchos alTraerEnlaces={traerEnlaces} alLeerExcel={leerExcel} alSoltarCarpetas={soltarCarpetas} />
       </div>
 
-      <button
-        type="button"
-        onClick={agregar}
-        className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border-strong py-5 text-[15px] font-medium text-fg-muted transition-colors duration-fast hover:border-primary hover:bg-primary-soft hover:text-primary"
-        data-testid="agregar-otro-inmueble"
-      >
-        <Plus size={18} weight="bold" aria-hidden="true" />
-        Agregar otro inmueble
-      </button>
+      {modoLista && (
+        <>
+          <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Filtrar">
+            {(
+              [
+                ['todos', 'Todos'],
+                ['faltan', 'Les falta algo'],
+                ['listos', 'Listos'],
+                ['error', 'Con error'],
+                ['publicados', 'Publicados'],
+              ] as const
+            )
+              // El filtro puesto se ve aunque quede en 0: si no, no se sabe por qué la lista está corta.
+              .filter(([f]) => f === 'todos' || f === filtro || enCadaFiltro[f] > 0)
+              .map(([f, t]) => (
+                <button
+                  key={f}
+                  type="button"
+                  role="tab"
+                  aria-selected={filtro === f}
+                  onClick={() => setFiltro(f)}
+                  className={cn(
+                    'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors duration-fast',
+                    filtro === f ? 'border-fg bg-fg text-bg' : 'border-border bg-surface text-fg-muted hover:text-fg',
+                    f === 'error' && filtro !== f && 'text-danger',
+                  )}
+                  data-testid={`filtro-${f}`}
+                >
+                  {t}
+                  <span className="font-mono text-[11.5px] opacity-70">{enCadaFiltro[f].toLocaleString('es-CO')}</span>
+                </button>
+              ))}
+          </div>
+          <CompletarEnBloque
+            pendientes={porPublicar.filter((i) => !i.idCreado)}
+            alPonerTipo={(claves, tipo) => setInmuebles((l) => l.map((i) => (claves.has(i.clave) ? { ...i, tipo } : i)))}
+            alPonerCiudad={(claves, ciudad) => setInmuebles((l) => l.map((i) => (claves.has(i.clave) ? { ...i, ciudad } : i)))}
+          />
+        </>
+      )}
 
-      {/* El pie fijo: cuántos van y publicar. */}
+      {modoLista ? (
+        <div className="mt-4 space-y-2.5" data-testid="lista-de-inmuebles">
+          {visibles.map((i) =>
+            abierta === i.clave ? (
+              <div key={i.clave}>{tarjeta(i)}</div>
+            ) : (
+              <FilaDeInmueble
+                key={i.clave}
+                numero={numeroDe.get(i.clave) ?? 0}
+                inmueble={i}
+                fotos={fotos[i.clave] ?? []}
+                llegando={llegando[i.clave]}
+                estado={estados[i.clave] ?? { que: 'borrador' }}
+                repetidaCon={repetidas.get(i.clave)}
+                mostrarFaltantes={intento}
+                alAbrir={() => setAbierta(i.clave)}
+              />
+            ),
+          )}
+          {visibles.length === 0 && <p className="py-8 text-center text-[14px] text-fg-subtle">No hay inmuebles en este filtro.</p>}
+        </div>
+      ) : (
+        <div className="mt-8 space-y-5">
+          <AnimatePresence initial={false}>
+            {inmuebles.map((i) => (
+              <motion.div
+                key={i.clave}
+                layout
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
+                transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
+              >
+                {tarjeta(i)}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {inmuebles.length < MAX_INMUEBLES && (
+        <button
+          type="button"
+          onClick={agregar}
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border-strong py-5 text-[15px] font-medium text-fg-muted transition-colors duration-fast hover:border-primary hover:bg-primary-soft hover:text-primary"
+          data-testid="agregar-otro-inmueble"
+        >
+          <Plus size={18} weight="bold" aria-hidden="true" />
+          Agregar otro inmueble
+        </button>
+      )}
+
+      {/* El pie fijo: cuántos van y publicar; mientras publica, el avance. */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 px-4 py-4 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
+        {publicando && (
+          <div className="absolute inset-x-0 top-0 h-[3px] bg-surface-muted" aria-hidden="true">
+            <div className="h-full bg-primary transition-[width] duration-500 ease-out" style={{ width: `${porcentaje}%` }} data-testid="barra-de-avance" />
+          </div>
+        )}
         <div className="mx-auto flex w-full max-w-[760px] items-center justify-between gap-4">
-          <p className="text-[14px] text-fg-muted" data-testid="cuantos-listos">
-            <span className="font-mono font-medium text-fg">{listos.length}</span> de{' '}
-            <span className="font-mono">{porPublicar.length}</span> {porPublicar.length === 1 ? 'listo' : 'listos'} para publicar
-          </p>
+          {publicando ? (
+            <p className="text-[14px] text-fg-muted" role="status" data-testid="avance-publicando">
+              Publicando <span className="font-mono font-medium text-fg">{hechos.toLocaleString('es-CO')}</span> de{' '}
+              <span className="font-mono">{enLaCorrida.length.toLocaleString('es-CO')}</span>
+              {fotosDeLaCorrida.length > 0 && (
+                <span className="hidden sm:inline">
+                  {' '}
+                  · <span className="font-mono">{fotosArriba.toLocaleString('es-CO')}</span> de{' '}
+                  <span className="font-mono">{fotosDeLaCorrida.length.toLocaleString('es-CO')}</span> fotos
+                </span>
+              )}
+            </p>
+          ) : (
+            <p className="text-[14px] text-fg-muted" data-testid="cuantos-listos">
+              <span className="font-mono font-medium text-fg">{listos.length.toLocaleString('es-CO')}</span> de{' '}
+              <span className="font-mono">{porPublicar.length.toLocaleString('es-CO')}</span> {porPublicar.length === 1 ? 'listo' : 'listos'} para publicar
+              {hayLlegando && <span className="hidden sm:inline"> · preparando fotos…</span>}
+            </p>
+          )}
           <Button
             type="button"
             onClick={() => void publicarTodos()}
             disabled={publicando}
-            className="h-12 rounded-full px-7 text-[15px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)]"
+            className="h-12 shrink-0 rounded-full px-7 text-[15px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)]"
             data-testid="publicar-todos"
           >
             {publicando ? (
@@ -208,7 +780,7 @@ export function PublicadorRapido({
                 Publicando…
               </>
             ) : listos.length > 1 ? (
-              `Publicar los ${listos.length}`
+              `Publicar los ${listos.length.toLocaleString('es-CO')}`
             ) : (
               'Publicar'
             )}
@@ -219,354 +791,66 @@ export function PublicadorRapido({
   );
 }
 
-function TarjetaDeInmueble({
-  numero,
-  inmueble: i,
-  fotos,
-  estado,
-  mostrarFaltantes,
-  alCambiar,
-  alCambiarFotos,
-  alQuitar,
+/**
+ * Completar en bloque lo que se repite (el tipo, la ciudad) cuando les falta a
+ * varios. La dirección y el precio nunca: son distintos en cada inmueble.
+ */
+function CompletarEnBloque({
+  pendientes,
+  alPonerTipo,
+  alPonerCiudad,
 }: {
-  numero: number;
-  inmueble: InmuebleRapido;
-  fotos: File[];
-  estado: Estado;
-  mostrarFaltantes: boolean;
-  alCambiar: (p: Partial<InmuebleRapido>) => void;
-  alCambiarFotos: (f: File[]) => void;
-  alQuitar?: () => void;
+  pendientes: InmuebleRapido[];
+  alPonerTipo: (claves: Set<string>, tipo: TipoRapido) => void;
+  alPonerCiudad: (claves: Set<string>, ciudad: string) => void;
 }) {
-  const faltan = loQueFalta(i, fotos.length);
-  const entrada = useRef<HTMLInputElement>(null);
-  const vistas = useMemo(() => fotos.map((f) => URL.createObjectURL(f)), [fotos]);
-  useEffect(() => () => vistas.forEach((u) => URL.revokeObjectURL(u)), [vistas]);
-  const bloqueada = estado.que === 'publicando' || estado.que === 'publicado';
-  const [arrastrando, setArrastrando] = useState(false);
-  const sumar = (lista: FileList | null) => {
-    if (!lista) return;
-    const imagenes = Array.from(lista).filter((f) => f.type.startsWith('image/'));
-    alCambiarFotos([...fotos, ...imagenes].slice(0, MAX_FOTOS));
-  };
-  const falta = (c: Parameters<typeof faltan.includes>[0]) => mostrarFaltantes && faltan.includes(c);
-
+  const sinTipo = pendientes.filter((i) => !i.tipo);
+  const sinCiudad = pendientes.filter((i) => !i.ciudad.trim());
+  const [ciudad, setCiudad] = useState('');
+  if (sinTipo.length < 2 && sinCiudad.length < 2) return null;
   return (
-    <section
-      className={cn(
-        'relative rounded-lg border bg-surface p-5 shadow-[0_1px_2px_rgba(20,19,15,0.05)] sm:p-6',
-        estado.que === 'fallo' ? 'border-danger/50' : 'border-border',
-      )}
-      data-testid={`tarjeta-inmueble-${numero}`}
-      aria-label={`Inmueble ${numero}`}
-    >
-      <header className="mb-5 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-subtle">Inmueble {numero}</p>
-          <p className="mt-1 truncate text-[16px] font-medium text-fg">{tituloDe(i)}</p>
-        </div>
-        {alQuitar && !bloqueada && (
-          <button
-            type="button"
-            onClick={alQuitar}
-            aria-label={`Quitar el inmueble ${numero}`}
-            className="inline-flex size-9 items-center justify-center rounded-full border border-border text-fg-subtle hover:text-danger"
-          >
-            <Trash size={16} aria-hidden="true" />
-          </button>
-        )}
-      </header>
-
-      <fieldset disabled={bloqueada} className="min-w-0 space-y-5">
-        {/* Fotos: arrastrar varias, la primera es la portada. */}
+    <div className="mt-4 space-y-3 rounded-lg border border-border bg-surface-muted/50 p-4" data-testid="completar-en-bloque">
+      {sinTipo.length >= 2 && (
         <div>
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setArrastrando(true);
-            }}
-            onDragLeave={() => setArrastrando(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setArrastrando(false);
-              sumar(e.dataTransfer.files);
-            }}
-            className={cn(
-              'rounded-lg border-2 border-dashed p-3 transition-colors duration-fast',
-              arrastrando ? 'border-primary bg-primary-soft' : falta('fotos') ? 'border-danger/60' : 'border-border',
-            )}
-          >
-            {fotos.length === 0 ? (
-              <button
-                type="button"
-                onClick={() => entrada.current?.click()}
-                className="flex w-full flex-col items-center gap-2 py-8 text-center"
-                data-testid={`fotos-inmueble-${numero}`}
+          <p className="text-[13px] font-medium text-fg-muted">
+            A {sinTipo.length.toLocaleString('es-CO')} les falta el tipo. ¿Son todos iguales?
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {TIPOS.map((t) => (
+              <Pastilla
+                key={t.valor}
+                activa={false}
+                onClick={() => alPonerTipo(new Set(sinTipo.map((i) => i.clave)), t.valor)}
+                testId={`bloque-tipo-${t.valor}`}
               >
-                <span className="inline-flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary">
-                  <ImageSquare size={24} weight="duotone" aria-hidden="true" />
-                </span>
-                <span className="text-[15px] font-medium text-fg">Arrastra tus fotos o toca para elegirlas</span>
-                <span className="text-[13px] text-fg-subtle">Varias a la vez. La primera es la portada.</span>
-              </button>
-            ) : (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                {vistas.map((url, k) => (
-                  <div key={url} className="group relative aspect-square overflow-hidden rounded-md bg-surface-muted">
-                    <Image src={url} alt={`Foto ${k + 1}`} fill sizes="140px" className="object-cover" unoptimized />
-                    {k === 0 && (
-                      <span className="absolute left-1.5 top-1.5 rounded-full bg-black/55 px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-white">
-                        Portada
-                      </span>
-                    )}
-                    {!bloqueada && (
-                      <button
-                        type="button"
-                        onClick={() => alCambiarFotos(fotos.filter((_, x) => x !== k))}
-                        aria-label={`Quitar la foto ${k + 1}`}
-                        className="absolute right-1.5 top-1.5 inline-flex size-6 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                      >
-                        <X size={12} weight="bold" aria-hidden="true" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {fotos.length < MAX_FOTOS && !bloqueada && (
-                  <button
-                    type="button"
-                    onClick={() => entrada.current?.click()}
-                    className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border text-[12px] text-fg-subtle hover:border-primary hover:text-primary"
-                  >
-                    <Plus size={18} aria-hidden="true" />
-                    Más
-                  </button>
-                )}
-              </div>
-            )}
-            <input
-              ref={entrada}
-              type="file"
-              accept="image/*"
-              multiple
-              className="sr-only"
-              onChange={(e) => {
-                sumar(e.target.files);
-                e.target.value = '';
-              }}
-              data-testid={`entrada-fotos-${numero}`}
-            />
+                {t.nombre}
+              </Pastilla>
+            ))}
           </div>
         </div>
-
-        {/* Arriendo o venta + tipo */}
-        <div className="flex flex-wrap items-center gap-2">
-          {(['rent', 'sale'] as const).map((op) => (
-            <Pastilla key={op} activa={i.operacion === op} onClick={() => alCambiar({ operacion: op })}>
-              {op === 'rent' ? 'Arriendo' : 'Venta'}
-            </Pastilla>
-          ))}
-          <span className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
-          {TIPOS.map((t) => (
-            <Pastilla key={t.valor} activa={i.tipo === t.valor} aviso={falta('tipo')} onClick={() => alCambiar({ tipo: t.valor })}>
-              {t.nombre}
-            </Pastilla>
-          ))}
-        </div>
-
-        {/* Dirección: con sugerencias; si no hay, se escribe y se pone la ciudad. */}
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_200px]">
-          <Campo etiqueta="Dirección" aviso={falta('direccion')}>
-            <AddressAutocomplete
-              value={i.direccion}
-              onChangeText={(t) => alCambiar({ direccion: t, latitud: undefined, longitud: undefined })}
-              onSelect={(s) =>
-                alCambiar({ direccion: s.address, ciudad: s.city || i.ciudad, barrio: s.neighborhood || i.barrio, latitud: s.latitude, longitud: s.longitude })
-              }
-              placeholder="Calle 10 # 43-21"
-            />
-          </Campo>
-          <Campo etiqueta="Ciudad" aviso={falta('ciudad')}>
-            <input className={CAMPO} value={i.ciudad} onChange={(e) => alCambiar({ ciudad: e.target.value })} placeholder="Medellín" maxLength={50} data-testid={`ciudad-${numero}`} />
-          </Campo>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
-          <Campo etiqueta={i.operacion === 'sale' ? 'Precio de venta' : 'Canon mensual'} aviso={falta('precio')} className="col-span-2 sm:col-span-1">
-            <div className="relative">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-mono text-[15px] text-fg-subtle">$</span>
-              <input
-                className={cn(CAMPO, 'pl-8 font-mono tabular-nums')}
-                inputMode="numeric"
-                value={i.precio ? i.precio.toLocaleString('es-CO') : ''}
-                onChange={(e) => {
-                  const n = Number(e.target.value.replace(/\D/g, ''));
-                  alCambiar({ precio: Number.isFinite(n) && n > 0 ? Math.min(n, 2_000_000_000) : null });
-                }}
-                placeholder={i.operacion === 'sale' ? '450.000.000' : '2.500.000'}
-                data-testid={`precio-${numero}`}
-              />
-            </div>
-          </Campo>
-          <Numero etiqueta="Habitaciones" valor={i.habitaciones} alCambiar={(v) => alCambiar({ habitaciones: v })} max={20} />
-          <Numero etiqueta="Baños" valor={i.banos} alCambiar={(v) => alCambiar({ banos: v })} max={20} />
-          <Numero etiqueta="Área m²" valor={i.area} alCambiar={(v) => alCambiar({ area: v })} max={100000} />
-        </div>
-
-        <Campo etiqueta="Descripción (opcional)">
-          <textarea
-            className={cn(CAMPO, 'h-auto min-h-[84px] py-3')}
-            value={i.descripcion}
-            onChange={(e) => alCambiar({ descripcion: e.target.value })}
-            maxLength={5000}
-            placeholder="Lo que lo hace especial: la luz, la vista, lo cerca que queda de todo…"
-          />
-          {i.descripcion.trim().length > 0 && i.descripcion.trim().length < 20 && (
-            <p className="mt-1 text-[12.5px] text-fg-subtle">Escribe al menos 20 letras para que salga en el aviso.</p>
-          )}
-        </Campo>
-      </fieldset>
-
-      <EstadoDeLaTarjeta estado={estado} faltan={faltan} mostrarFaltantes={mostrarFaltantes} />
-    </section>
-  );
-}
-
-const CAMPO =
-  'h-12 w-full rounded-md border border-transparent bg-surface-muted/70 px-4 text-base text-fg placeholder:text-fg-placeholder transition-[background-color,border-color,box-shadow] duration-fast focus:border-primary focus:bg-surface focus:shadow-[0_0_0_4px_rgba(26,64,255,0.10)] focus:outline-none md:text-[14px]';
-
-function Campo({ etiqueta, aviso, className, children }: { etiqueta: string; aviso?: boolean; className?: string; children: React.ReactNode }) {
-  return (
-    <label className={cn('block', className)}>
-      <span className={cn('mb-1.5 block text-[13px] font-medium', aviso ? 'text-danger' : 'text-fg-muted')}>{etiqueta}</span>
-      {children}
-    </label>
-  );
-}
-
-function Numero({ etiqueta, valor, alCambiar, max }: { etiqueta: string; valor: number | null; alCambiar: (v: number | null) => void; max: number }) {
-  return (
-    <Campo etiqueta={etiqueta}>
-      <input
-        className={cn(CAMPO, 'font-mono tabular-nums')}
-        inputMode="numeric"
-        value={valor ?? ''}
-        onChange={(e) => {
-          const n = Number(e.target.value.replace(/\D/g, ''));
-          alCambiar(e.target.value.trim() === '' || !Number.isFinite(n) ? null : Math.min(n, max));
-        }}
-        placeholder="—"
-      />
-    </Campo>
-  );
-}
-
-function Pastilla({ activa, aviso, onClick, children }: { activa: boolean; aviso?: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={activa}
-      className={cn(
-        'h-9 rounded-full border px-3.5 text-[13.5px] font-medium transition-[background-color,border-color,color] duration-fast active:scale-[0.97]',
-        activa ? 'border-primary bg-primary text-primary-fg' : aviso ? 'border-danger/50 bg-surface text-fg-muted' : 'border-border bg-surface text-fg-muted hover:border-border-strong hover:text-fg',
       )}
-    >
-      {children}
-    </button>
-  );
-}
-
-function EstadoDeLaTarjeta({ estado, faltan, mostrarFaltantes }: { estado: Estado; faltan: ReturnType<typeof loQueFalta>; mostrarFaltantes: boolean }) {
-  if (estado.que === 'publicando')
-    return (
-      <p className="mt-5 flex items-center gap-2 text-[14px] text-fg-muted" role="status">
-        <SpinnerGap className="h-4 w-4 animate-spin" aria-hidden="true" /> Publicando y subiendo las fotos…
-      </p>
-    );
-  if (estado.que === 'publicado')
-    return (
-      <p className="mt-5 flex items-center gap-2 text-[14px] font-medium text-success" role="status">
-        <CheckCircle size={18} weight="fill" aria-hidden="true" /> Publicado en el marketplace
-      </p>
-    );
-  if (estado.que === 'fallo')
-    return (
-      <p className="mt-5 flex items-start gap-2 text-[14px] text-danger" role="alert">
-        <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0" aria-hidden="true" /> {estado.motivo}
-      </p>
-    );
-  return (
-    <p className={cn('mt-5 text-[13px]', faltan.length === 0 ? 'text-success' : mostrarFaltantes ? 'text-danger' : 'text-fg-subtle')}>
-      {fraseDeLoQueFalta(faltan)}
-    </p>
-  );
-}
-
-function TodoPublicado({
-  inmuebles,
-  estados,
-  fotos,
-  alTerminar,
-  alAgregarOtro,
-}: {
-  inmuebles: InmuebleRapido[];
-  estados: Record<string, Estado>;
-  fotos: Record<string, File[]>;
-  alTerminar: { href: string; texto: string };
-  alAgregarOtro: () => void;
-}) {
-  const portadas = useMemo(
-    () => Object.fromEntries(inmuebles.map((i) => [i.clave, fotos[i.clave]?.[0] ? URL.createObjectURL(fotos[i.clave][0]) : null])),
-    [inmuebles, fotos],
-  );
-  return (
-    <div className="mx-auto w-full max-w-[640px] text-center" data-testid="todo-publicado">
-      <motion.span
-        initial={{ scale: 0.6, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 380, damping: 18 }}
-        className="mx-auto inline-flex size-16 items-center justify-center rounded-full bg-success-soft text-success"
-      >
-        <CheckCircle size={34} weight="fill" aria-hidden="true" />
-      </motion.span>
-      <h1 className="mt-6 text-[30px] font-medium leading-[1.1] tracking-[-0.03em] text-fg sm:text-[36px]">
-        {inmuebles.length === 1 ? 'Ya está en el marketplace' : `Ya están en el marketplace: ${inmuebles.length}`}
-      </h1>
-      <p className="mt-3 text-[15px] text-fg-subtle">Compártelos y te llegan los interesados a tu WhatsApp y a tu cuenta.</p>
-      <ul className="mt-8 space-y-3 text-left">
-        {inmuebles.map((i) => {
-          const e = estados[i.clave];
-          const id = e && e.que === 'publicado' ? e.id : null;
-          return (
-            <li key={i.clave} className="flex items-center gap-4 rounded-lg border border-border bg-surface p-3">
-              <span className="relative size-16 shrink-0 overflow-hidden rounded-md bg-surface-muted">
-                {portadas[i.clave] && <Image src={portadas[i.clave] as string} alt="" fill sizes="64px" className="object-cover" unoptimized />}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[15px] font-medium text-fg">{tituloDe(i)}</span>
-                <span className="block font-mono text-[13px] text-fg-subtle">
-                  $ {(i.precio ?? 0).toLocaleString('es-CO')}
-                  {i.operacion === 'rent' ? ' / mes' : ''}
-                </span>
-              </span>
-              {id && (
-                <Link href={`/propiedades/${id}`} target="_blank" className="inline-flex items-center gap-1.5 text-[13.5px] font-medium text-primary hover:underline">
-                  Ver
-                  <ArrowSquareOut size={14} aria-hidden="true" />
-                </Link>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-        <Button asChild className="h-12 rounded-full px-7 text-[15px]" data-testid="entrar-a-mi-cuenta">
-          <Link href={alTerminar.href}>{alTerminar.texto}</Link>
-        </Button>
-        <Button type="button" variant="secondary" className="h-12 rounded-full px-6 text-[15px]" onClick={alAgregarOtro}>
-          Publicar otro
-        </Button>
-      </div>
+      {sinCiudad.length >= 2 && (
+        <form
+          className="flex flex-wrap items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (ciudad.trim()) alPonerCiudad(new Set(sinCiudad.map((i) => i.clave)), ciudad.trim().slice(0, 50));
+          }}
+        >
+          <span className="text-[13px] font-medium text-fg-muted">A {sinCiudad.length.toLocaleString('es-CO')} les falta la ciudad:</span>
+          <input
+            value={ciudad}
+            onChange={(e) => setCiudad(e.target.value)}
+            placeholder="Medellín"
+            maxLength={50}
+            className="h-9 w-44 rounded-full border border-border bg-surface px-3.5 text-[13.5px] text-fg focus:border-primary focus:outline-none"
+            data-testid="bloque-ciudad"
+          />
+          <Button type="submit" variant="secondary" disabled={!ciudad.trim()} className="h-9 rounded-full px-4 text-[13px]">
+            Ponerla a los {sinCiudad.length.toLocaleString('es-CO')}
+          </Button>
+        </form>
+      )}
     </div>
   );
 }

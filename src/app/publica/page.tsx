@@ -21,7 +21,7 @@ import { CONFIRMAR_CON_CODIGO, DESTINOS_PARA_PUBLICAR } from '@/components/marke
  */
 function Publica() {
   const sp = useSearchParams();
-  const { user, isAuthenticated, isLoading, perfilElegido, refreshUser, hasActiveAgencyMembership, agencyRole } = useAuth();
+  const { user, isAuthenticated, isLoading, perfilElegido, refreshUser, hasActiveAgencyMembership, agencyRole, agency } = useAuth();
   const [ventana, setVentana] = useState(false);
 
   const delParametro = sp.get('perfil');
@@ -81,6 +81,7 @@ function Publica() {
     contenido = (
       <PublicadorRapido
         usuario={user.id}
+        paginaPublica={esInmobiliaria && agency?.id && typeof window !== 'undefined' ? `${window.location.origin}/i/${agency.id}` : null}
         alTerminar={
           esInmobiliaria
             ? { href: '/panel/inmobiliaria/inmuebles', texto: 'Entrar a mi cuenta' }

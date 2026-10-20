@@ -26,6 +26,29 @@ try {
 }
 
 /** @type {import('next').NextConfig} */
+/**
+ * Las fotos públicas del Supabase del AMBIENTE también se pintan con
+ * next/image. En producción es un `*.supabase.co`, que ya está en la lista
+ * (no cambia nada); en el laboratorio es `http://localhost:3309`, y sin esto
+ * la primera foto subida ahí tumbaba el marketplace entero (20-10-2026).
+ */
+function almacenDelAmbiente() {
+  try {
+    const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
+    if (url.hostname.endsWith(".supabase.co")) return [];
+    return [
+      {
+        protocol: url.protocol.replace(":", ""),
+        hostname: url.hostname,
+        ...(url.port ? { port: url.port } : {}),
+        pathname: "/storage/v1/object/public/**",
+      },
+    ];
+  } catch {
+    return [];
+  }
+}
+
 const nextConfig = {
   // Permite validar el build de producción sin matar un `next dev` que esté
   // corriendo: los dos escriben en `.next` y se pisan. Con
@@ -110,6 +133,7 @@ const nextConfig = {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
       },
+      ...almacenDelAmbiente(),
     ],
   },
   async headers() {

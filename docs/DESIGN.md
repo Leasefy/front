@@ -1485,6 +1485,43 @@ Cada agente se pinta con **`<OrbeDeAgente agente="cobranza" estado="pensando" ta
 
 ---
 
+## 23. Pantallas por tarea — el GLOW UP (Nico, 20-10-2026)
+
+> Nico: «cada caso de uso tiene que optimizar el flujo desde lo que haría un usuario al inicio para
+> que entienda todo lo que debe de hacer desde el inicio hasta que ya tiene información y lo que
+> puede seguir haciendo […] minimizando carga cognitiva […] usa patrones de diseño para esconder
+> información irrelevante en la misma pantalla […] utiliza bien la información superior con las
+> acciones principales o secundarias».
+
+Cada pantalla del panel se lee de arriba abajo en el orden en que se trabaja. Las piezas viven en
+`src/components/pantalla/`:
+
+| Capa | Qué dice | Pieza |
+|---|---|---|
+| 1 · Encabezado | Dónde estoy, qué es (una línea) y qué se hace aquí | `EncabezadoDePantalla` — a la derecha, de lo más callado a lo más fuerte: la ayuda (`ParaEntenderMas`), las secundarias (`outline`) y la principal (cobalto). Todos los botones `size="sm"`. |
+| 2 · Lo que falta para empezar | Lo que se deja listo UNA vez, en orden y con su botón | `ListaParaEmpezar` — «Para facturar te faltan 2 pasos», el primero que falta lleva «Sigue», lo opcional lleva su rótulo y no cuenta, lo que no se pudo revisar (`desconocido`) nunca deja decir «Todo listo». Con todo listo se pliega en una línea. |
+| 2b · Una tarea en pasos | Configurar → subir → revisar → aprobar | `PasosDeLaTarea` — riel numerado: el paso actual abierto, los hechos con su resumen y «Cambiar», los que vienen con la razón por la que todavía no. |
+| 3 · Lo que toca hoy | El estado en UNA frase con sus cifras | Una `<p>` (el molde de §Pagos: «el resumen es una frase, no fichas»). Las cifras no prometen lo que un botón apagado no hace. |
+| 4 · El trabajo | La tabla, con pestañas, filtros y búsqueda dentro de la tarjeta | Lo de siempre: tabla paginada + cajón por fila. |
+| 5 · Lo demás | Lo que se toca una vez al año o se consulta poco | Su propia vista con «Volver», `MasDetalles` («Ver detalles»), un cajón, o una pestaña al final. Nunca un listado infinito al fondo. |
+
+Reglas que salen de ahí:
+
+- **Un aviso, una vez.** Si la lista de arriba dice que falta algo, no se repite en la pestaña ni en la
+  tabla; al lado de un botón apagado queda la razón en corto, con su salida.
+- **Pocas pestañas, por trabajo.** Ocho pestañas del mismo peso se leen como ocho cosas por hacer:
+  agrupar por lo que se viene a hacer (Facturación pasó de 8 a 5) y meter las variantes en un
+  `SegmentedControl` dentro de la pestaña.
+- **Lo de configurar una vez es un botón que abre su cajón ahí mismo**, no una pestaña adonde hay que ir.
+- **Los textos nuevos pasan por `tr()`** (`useTr`) y su inglés va en `lib/i18n/frases-en-del-glow-up.ts`.
+- **Cada pantalla se mide antes y después** con los 10 principios de Nielsen (la página de revisión
+  del glow up los lleva por módulo).
+
+Ejemplo hecho: Facturación (`app/panel/inmobiliaria/facturacion/page.tsx`,
+`components/facturacion/LoQueNecesitasParaFacturar.tsx`).
+
+---
+
 ## 22. When in Doubt
 
 1. Find a similar component already in the codebase — copy its pattern.

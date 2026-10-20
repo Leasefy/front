@@ -16,6 +16,10 @@ import { useAuth } from '@/lib/auth';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
+import { ModuloConDemo } from '@/components/venta/ModuloConDemo';
+import { demoDelPropietario } from '@/lib/venta/demos-del-panel';
+import { abiertaParaElPropietarioGratis, claveDeDemoDelPropietario } from '@/lib/venta/propietario-gratis';
+import { enlaceDeWhatsApp } from '@/lib/venta/whatsapp-de-leasefy';
 import {
   PropietarioDeInmobiliariaProvider,
   esRutaDelPropietarioDeInmobiliaria,
@@ -205,6 +209,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const esPropietarioConfirmado =
     !administrados.cargando && (administrados.doc !== null || Boolean(administrados.fichaSinContratos));
   const showUpgrade = !deInmobiliaria && subscription?.planId === 'starter';
+  // El propietario independiente en el plan gratis (Nico, 20-10-2026): sus
+  // inmuebles, candidatos y visitas abiertos; lo demás en demo con WhatsApp.
+  const propietarioGratis = showUpgrade && !administrados.cargando;
   const pathname = usePathname();
   const router = useRouter();
   useEffect(() => {
@@ -249,7 +256,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
             ? esCuentaDeInquilino
               ? [...AGENCY_OWNER_NAV_ITEMS, PORTAL_DEL_INQUILINO]
               : AGENCY_OWNER_NAV_ITEMS
-            : LANDLORD_NAV_ITEMS
+            : propietarioGratis
+              ? LANDLORD_NAV_ITEMS.map((f) => (abiertaParaElPropietarioGratis(f.href) ? f : { ...f, tag: 'Demo' }))
+              : LANDLORD_NAV_ITEMS
         }
         logo={{
           title: 'PLan',
@@ -260,8 +269,12 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
           href: getRoleHomeRoute('landlord'),
         }}
         showUpgrade={showUpgrade}
-        upgradeHref="/panel/upgrade"
-        upgradeLabel="Mejorar Plan"
+        upgradeHref={
+          propietarioGratis
+            ? enlaceDeWhatsApp({ quien: 'propietario', nombre: user?.firstName ?? null })
+            : '/panel/upgrade'
+        }
+        upgradeLabel={propietarioGratis ? 'Que Leasefy lo administre' : 'Mejorar Plan'}
         profileCompletion={user && !perfilCompleto ? {
           percentage,
           // Los pasos son los del perfil: ahí se completan.
@@ -288,7 +301,16 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
           {(deInmobiliaria && !esRutaDelPropietarioDeInmobiliaria(pathname)) ||
           (esCuentaDeInquilino && !esPropietarioConfirmado)
             ? null
-            : children}
+            : propietarioGratis && !abiertaParaElPropietarioGratis(pathname ?? '')
+              ? (
+                <ModuloConDemo
+                  demo={demoDelPropietario(claveDeDemoDelPropietario(pathname ?? ''))}
+                  quien="propietario"
+                  nombre={user?.firstName ?? null}
+                  empresa={[user?.firstName, user?.lastName].filter(Boolean).join(' ') || null}
+                />
+              )
+              : children}
         </main>
       </div>
 

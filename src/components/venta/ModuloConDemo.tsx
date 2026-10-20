@@ -105,7 +105,7 @@ export function ModuloConDemo({
           <span className="absolute inset-0 flex items-center justify-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-fg px-5 py-2.5 text-[14px] font-medium text-bg shadow-lg transition-transform duration-fast group-hover:scale-105">
               <PlayCircle size={18} weight="fill" aria-hidden="true" />
-              Ver cómo se vería {empresa ? `en ${empresa}` : 'en tu cuenta'}
+              {quien === 'inmobiliaria' && empresa ? `Ver cómo se vería en ${empresa}` : 'Ver cómo se vería en tu cuenta'}
             </span>
           </span>
         </button>

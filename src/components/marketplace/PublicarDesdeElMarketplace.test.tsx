@@ -13,13 +13,11 @@ void React;
 const { sesion } = vi.hoisted(() => ({ sesion: { actual: {} as Record<string, unknown> } }));
 
 vi.mock('@/lib/auth/use-auth', () => ({ useAuth: () => sesion.actual }));
-// La ventana de la cuenta: sólo importa si se abre, con qué aviso y a dónde sigue.
-vi.mock('@/components/auth/AuthModal', () => ({
-  AuthModal: ({ isOpen, aviso, returnUrl }: { isOpen: boolean; aviso?: React.ReactNode; returnUrl?: string }) =>
-    isOpen ? (
-      <div data-testid="ventana-de-la-cuenta" data-destino={returnUrl}>
-        {aviso}
-      </div>
+// La ventana de publicar: sólo importa si se abre y a dónde sigue cada perfil.
+vi.mock('./VentanaParaPublicar', () => ({
+  VentanaParaPublicar: ({ abierta, destinos }: { abierta: boolean; destinos: { landlord: string; agency: string } }) =>
+    abierta ? (
+      <div data-testid="ventana-de-la-cuenta" data-propietario={destinos.landlord} data-inmobiliaria={destinos.agency} />
     ) : null,
 }));
 vi.mock('next/link', () => ({
@@ -124,7 +122,7 @@ describe('<BotonPublicar> (siempre a la vista en la barra y el lado)', () => {
 });
 
 describe('sin sesión, «Publicar inmueble» abre la cuenta ENCIMA (Nico, 09-10)', () => {
-  it('no navega: abre la ventana con el porqué, y al entrar sigue a publicar', () => {
+  it('no navega: abre la ventana de publicar, y cada perfil sigue a lo suyo (Nico y Juan, 19-10)', () => {
     sesion.actual = { isLoading: false, hasActiveAgencyMembership: false, agencyRole: null, isAuthenticated: false, user: null };
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -137,8 +135,8 @@ describe('sin sesión, «Publicar inmueble» abre la cuenta ENCIMA (Nico, 09-10)
     });
     expect(evento.defaultPrevented).toBe(true);
     const ventana = container.querySelector('[data-testid="ventana-de-la-cuenta"]')!;
-    expect(ventana.getAttribute('data-destino')).toBe('/publicar');
-    expect(ventana.textContent).toContain('Para publicar tu inmueble necesitas una cuenta');
+    expect(ventana.getAttribute('data-propietario')).toBe('/publicar');
+    expect(ventana.getAttribute('data-inmobiliaria')).toBe('/panel/inmobiliaria/inmuebles/nuevo');
   });
 
   it('con sesión, el enlace navega como siempre', () => {

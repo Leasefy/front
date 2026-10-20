@@ -279,13 +279,16 @@ export interface AuthState {
 
 
 export interface AuthContextType extends AuthState {
-  signInWithGoogle: () => Promise<void>
+  /** `regreso`: a dónde vuelve la persona después de Google (pasa por /auth/post-login). */
+  signInWithGoogle: (regreso?: string) => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<User | null>
   /** `perfil` → user_metadata: datos que ya conocemos antes de que tenga cuenta. */
   signUpWithEmail: (email: string, password: string, redirectTo?: string, intendedRole?: UserRole, perfil?: Record<string, string>) => Promise<{ requiresConfirmation: boolean }>
   sendPasswordReset: (email: string) => Promise<void>
   /** Reenvía el correo de confirmación del registro, con el mismo `redirectTo` del primero. */
   resendSignUpEmail: (email: string, redirectTo?: string) => Promise<void>
+  /** Confirma el correo del registro con el código de 6 dígitos del correo; devuelve el usuario o `null`. */
+  confirmarCorreoConCodigo: (email: string, codigo: string) => Promise<User | null>
   updatePassword: (newPassword: string) => Promise<void>
   /** Re-authenticate with current password to verify identity before sensitive operations */
   verifyCurrentPassword: (password: string) => Promise<boolean>

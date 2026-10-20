@@ -1580,14 +1580,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [fetchUser, fetchBootstrap, checkMfaLevel, probeAgencyMembership, applyAgencyFetchResult, claimActiveSession, empezarChequeoSiEsOtraSesion])
 
-  /** Sign in with Google OAuth via Supabase */
-  const signInWithGoogle = useCallback(async () => {
+  /**
+   * Sign in with Google OAuth via Supabase.
+   *
+   * `regreso` (19-10-2026, publicar desde el marketplace): a dónde iba la
+   * persona. Antes Google volvía siempre a `/auth/callback` sin destino y quien
+   * tocó «Publicar» terminaba en el inicio de su perfil, no en lo que vino a
+   * hacer. Vuelve por `/auth/post-login`, que sigue mirando el segundo factor
+   * y el registro antes de llevarla al destino.
+   */
+  const signInWithGoogle = useCallback(async (regreso?: string) => {
     const supabase = getSupabase()
     if (!supabase) throw new Error('Supabase not initialized')
+    const destino =
+      regreso && regreso !== '/'
+        ? `?returnUrl=${encodeURIComponent(`/auth/post-login?returnUrl=${encodeURIComponent(regreso)}`)}`
+        : ''
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback${destino}`,
       },
     })
     if (error) {
@@ -1700,6 +1712,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
       ...(redirectTo ? { options: { emailRedirectTo: redirectTo } } : {}),
     })
     if (error) throw error
+  }, [])
+
+  /**
+   * Confirma el correo del registro con el código de 6 dígitos que trae el
+   * correo, sin salir de la pantalla (Nico, 19-10-2026: el registro rápido
+   * para publicar desde el marketplace). Abre la sesión como `signInWithEmail`:
+   * espera al bootstrap del listener y devuelve el usuario, o `null` si
+   * Supabase no abrió sesión.
+   */
+  const confirmarCorreoConCodigo = useCallback(async (email: string, codigo: string) => {
+    const supabase = getSupabase()
+    if (!supabase) throw new Error('Supabase not initialized')
+    let resolveBootstrap!: (user: User | null) => void
+    const bootstrapPromise = new Promise<User | null>((resolve) => {
+      resolveBootstrap = resolve
+    })
+    signInBootstrapWaiterRef.current = resolveBootstrap
+    const { data, error } = await supabase.auth.verifyOtp({ email, token: codigo, type: 'email' })
+    if (error) {
+      signInBootstrapWaiterRef.current = null
+      throw error
+    }
+    if (!data.session) {
+      signInBootstrapWaiterRef.current = null
+      return null
+    }
+    return bootstrapPromise
   }, [])
 
   /** Update password for authenticated user (works for both email and Google users) */
@@ -1940,6 +1979,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signUpWithEmail,
     sendPasswordReset,
     resendSignUpEmail,
+    confirmarCorreoConCodigo,
     updatePassword,
     verifyCurrentPassword,
     changePassword,

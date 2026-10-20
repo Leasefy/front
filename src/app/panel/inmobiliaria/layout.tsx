@@ -389,10 +389,14 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
             tabIndex={-1}
             className="mx-auto w-full max-w-[1920px]"
           >
+            {/* Un solo hijo: el candado lo pone junto a su bienvenida, y tres
+                sueltos quedaban como una lista sin llaves (aviso de React). */}
             <CandadoDelModoComercial>
-              <SeccionesDelModulo />
-              <CabeceraDelAgente />
-              {children}
+              <>
+                <SeccionesDelModulo />
+                <CabeceraDelAgente />
+                {children}
+              </>
             </CandadoDelModoComercial>
             {/* Nico, 10-10-2026: el plan gratuito recibe una invitación por
                 función (solo invita, nunca cierra nada); sólo el administrador. */}

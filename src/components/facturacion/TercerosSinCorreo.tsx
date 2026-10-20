@@ -60,7 +60,11 @@ import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 /** Radix reserva `''` para «sin selección», así que «Todos» lleva su clave. */
 const TODOS = 'TODOS'
 
-export function TercerosSinCorreo() {
+/**
+ * `enCajon` (GLOW UP, 20-10-2026): dentro del cajón «A quién le falta el
+ * correo» el título ya lo pone la cabecera del cajón; acá queda sólo el filtro.
+ */
+export function TercerosSinCorreo({ enCajon = false }: { enCajon?: boolean } = {}) {
   const [datos, setDatos] = useState<Datos | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<unknown>(null)
@@ -144,13 +148,20 @@ export function TercerosSinCorreo() {
         data-testid="terceros-tarjeta"
       >
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h3 className="text-body font-semibold text-fg">A quién le falta el correo</h3>
+          {enCajon ? (
             <p className="text-caption text-fg-muted">
               Primero los que más cuestan: el que tiene más contratos. Se completa
               desde su ficha (Inquilinos o Propietarios).
             </p>
-          </div>
+          ) : (
+            <div>
+              <h3 className="text-body font-semibold text-fg">A quién le falta el correo</h3>
+              <p className="text-caption text-fg-muted">
+                Primero los que más cuestan: el que tiene más contratos. Se completa
+                desde su ficha (Inquilinos o Propietarios).
+              </p>
+            </div>
+          )}
           <Select
             value={clase === '' ? TODOS : clase}
             onValueChange={(v) => setClase(v === TODOS ? '' : (v as ClaseDeTercero))}

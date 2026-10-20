@@ -408,7 +408,10 @@ function PlataDeLaFila({ factura }: { factura: FacturaDelMes }) {
               : factura.escenario.nombre}
           </p>
         )}
-      {factura.impuestosSinConfirmar && (
+      {/* GLOW UP (20-10-2026): cuando la columna del estado ya dice «Sin
+          confirmar · Confirmar en el contrato», no se repite acá (salía dos
+          veces en la misma fila, con el mismo `data-testid`). */}
+      {factura.impuestosSinConfirmar && estadoDeLaFila(factura) !== 'sin-escenario' && (
         <p>
           <ImpuestosSinConfirmar factura={factura} />
         </p>
@@ -1200,9 +1203,22 @@ export interface NuevaFacturaProps {
    * resolución» diría a dónde ir y no llevaría.
    */
   onIrAResolucion?: () => void
+  /**
+   * GLOW UP (20-10-2026): la página ya dice ARRIBA, en «Para facturar te
+   * faltan N pasos», que falta la resolución, con su botón. Con esta marca el
+   * aviso de acá no se repite (salía tres veces). El motivo al lado del botón
+   * apagado se queda: es donde se aprieta.
+   */
+  sinAvisoDeResolucionArriba?: boolean
+  /** Súbelo para volver a leer el mes (después de cargar una resolución). */
+  recargarCon?: number
 }
 
-export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
+export function NuevaFactura({
+  onIrAResolucion,
+  sinAvisoDeResolucionArriba = false,
+  recargarCon = 0,
+}: NuevaFacturaProps = {}) {
   const [mes, setMes] = useState(() => mesActual())
   /**
    * Hasta dónde MIRAR. Arranca en el mes elegido —que es el trabajo diario— y
@@ -1211,6 +1227,8 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
    * usa de vez en cuando.
    */
   const [hasta, setHasta] = useState(() => mesActual())
+  /** «Ver también los meses que siguen»: plegado, la consulta es el mes solo. */
+  const [verMesesQueSiguen, setVerMesesQueSiguen] = useState(false)
   const [datos, setDatos] = useState<FacturasPorGenerar | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<unknown>(null)
@@ -1277,7 +1295,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
 
   useEffect(() => {
     void cargar(mes, hasta)
-  }, [cargar, mes, hasta])
+  }, [cargar, mes, hasta, recargarCon])
 
   /**
    * T-0163: un mes de un contrato con varios inquilinos sale en una factura por
@@ -1655,6 +1673,29 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
     resolucionDeComision.prefijo === datos.resolucion.prefijo
 
   /**
+   * GLOW UP (20-10-2026): lo que la persona vino a saber del mes, de las DOS
+   * tablas: cuántas salen hoy, cuántas ya salieron y cuántas todavía no. Sale
+   * de las mismas reglas que las casillas Y de la resolución de cada tabla: sin
+   * una resolución que numere, ninguna «se puede emitir hoy» (decirlo sería
+   * prometer un botón que está apagado).
+   */
+  const estadoDelMes = (() => {
+    const numeraElCanon = datos?.resolucion.puedeNumerar === true
+    const numeraLaComision = resolucionDeComision?.puedeNumerar === true
+    const deLaTabla = (filas: FacturaDelMes[], numera: boolean) => {
+      const emitidas = filas.filter((f) => f.estado === 'EMITIDA').length
+      const porEmitir = filas.filter((f) => f.estado !== 'EMITIDA' && sePuedeEmitirHoy(f)).length
+      return { total: filas.length, emitidas, listas: numera ? porEmitir : 0, sinNumero: numera ? 0 : porEmitir }
+    }
+    const a = deLaTabla(delMes.inquilinos, numeraElCanon)
+    const b = deLaTabla(delMes.propietarios, numeraLaComision)
+    const total = a.total + b.total
+    const emitidas = a.emitidas + b.emitidas
+    const listas = a.listas + b.listas
+    return { total, emitidas, listas, frenadas: total - emitidas - listas, sinResolucion: a.sinNumero + b.sinNumero > 0 }
+  })()
+
+  /**
    * 🔴 Por qué HOY no se puede emitir nada, en las palabras del back.
    *
    * Sin resolución vigente el back devuelve 400, así que el botón se apaga
@@ -1830,7 +1871,9 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             className="max-w-xl text-caption text-warning"
             data-testid="facturacion-motivo-apagado"
           >
-            {motivoParaNoEmitir}{' '}
+            {/* GLOW UP: con la lista de la página arriba (que ya explica qué
+                falta), acá basta la razón corta y el botón. */}
+            {sinAvisoDeResolucionArriba ? 'Falta la resolución con qué numerar.' : motivoParaNoEmitir}{' '}
             {onIrAResolucion && (
               <button
                 type="button"
@@ -1906,7 +1949,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           ochocientas filas y apriete un botón que va a fallar. El texto es el
           del back, con el motivo exacto (no cargada, vencida, anulada, rango
           agotado): cada uno se arregla distinto. */}
-      {datos && !datos.resolucion.puedeNumerar && (
+      {datos && !datos.resolucion.puedeNumerar && !sinAvisoDeResolucionArriba && (
         <div
           className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5"
           data-testid="facturacion-sin-resolucion"
@@ -1946,13 +1989,17 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           tarjeta: acá sólo hay separadores. */}
       <section className="overflow-x-clip" data-testid="facturacion-por-facturar">
       <div className="border-b border-border px-4 py-4 space-y-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        {/* GLOW UP (20-10-2026): primero EL mes que se factura —es el trabajo de
+            todos los meses— y, plegado, mirar los que siguen (se usa de vez en
+            cuando: la pregunta del CEO del 13-09, «qué tengo por facturar hasta
+            diciembre»). Al plegarlo, la consulta vuelve al mes solo. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="facturacion-mes"
               className="text-caption font-medium text-fg-muted"
             >
-              Filtrar por mes
+              Mes a facturar
             </label>
             <Select
               value={mes}
@@ -1980,54 +2027,53 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             </Select>
           </div>
 
-          {/* 🔴 «Ver hasta» es MIRAR, no emitir. El CEO (13-09): «Si quiero
-              mirar qué facturas tengo por generar hasta el 31 de diciembre…
-              Lo que NO se puede es enviarlas [antes de tiempo].» Por eso
-              estira la consulta y no toca ni las casillas ni el botón. */}
-          {/* 🔴 Un SELECT del design system, no el campo nativo de mes (Nico,
-              21-09: «no estás usando los componentes de cadence, eso de hasta
-              diciembre no se entiende como un filtro»).
-              El `<input type="month">` pintaba el nombre EN EL IDIOMA DEL
-              NAVEGADOR —«September 2026» en una pantalla entera en español— y
-              abría el calendario del sistema, que no se parece a nada del
-              producto. Y «Hasta diciembre» era un botón al lado, que se lee
-              como una acción; ahora diciembre es una opción más de la misma
-              lista, que es lo que siempre fue. */}
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="facturacion-hasta"
-              className="text-caption font-medium text-fg-muted"
-            >
-              Ver hasta (sólo mirar)
-            </label>
-            <Select value={hasta || mes} onValueChange={(v) => setHasta(v)}>
-              <SelectTrigger
-                id="facturacion-hasta"
-                className="w-56"
-                data-testid="facturacion-hasta"
+          {/* 🔴 «Ver hasta» es MIRAR, no emitir (el CEO, 13-09): estira la
+              consulta y no toca ni las casillas ni el botón. Un SELECT del DS
+              (Nico, 21-09), no el campo nativo de mes. */}
+          {verMesesQueSiguen ? (
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="facturacion-hasta"
+                className="text-caption font-medium text-fg-muted"
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {topes.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {mesLegible(t)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                Mirar hasta (no se emite)
+              </label>
+              <Select value={hasta || mes} onValueChange={(v) => setHasta(v)}>
+                <SelectTrigger
+                  id="facturacion-hasta"
+                  className="w-56"
+                  data-testid="facturacion-hasta"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {topes.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {mesLegible(t)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+          <button
+            type="button"
+            className="inline-flex h-11 items-center gap-1.5 self-start text-body-sm font-medium text-primary underline-offset-4 hover:underline sm:self-end"
+            aria-expanded={verMesesQueSiguen}
+            onClick={() => {
+              if (verMesesQueSiguen) setHasta(mes)
+              setVerMesesQueSiguen((v) => !v)
+            }}
+            data-testid="facturacion-ver-meses-que-siguen"
+          >
+            {verMesesQueSiguen ? 'Ocultar los meses que siguen' : 'Ver también los meses que siguen'}
+          </button>
         </div>
 
-        {/* 🔴 Acá arriba quedan los FILTROS y lo que hay que saber antes de
-            emitir. El botón que emite se fue al pie: hay DOS tablas debajo
-            —Inquilinos y Propietarios— que comparten una sola selección, y
-            desde arriba quedaba fuera de la pantalla justo cuando se estaba
-            marcando (Nico, 19-09). */}
-        {/* El resumen es UNA frase, debajo de los filtros y en su lugar de
-            lectura —no dos líneas grises sueltas a la derecha—, y la
-            numeración se dice como un dato: con qué resolución, cuál sigue y
-            cuántos quedan. */}
+        {/* El resumen es UNA frase (el molde del 21-09): cuántos contratos, y
+            —lo que la persona vino a saber— cuántas facturas salen HOY, cuántas
+            ya salieron y cuántas todavía no. La numeración se dice como un dato:
+            con qué resolución, cuál sigue y cuántos quedan. */}
         {datos && (
           <p className="text-body-sm text-fg-muted" data-testid="facturacion-resumen">
             <span className="font-medium text-fg tabular-nums">
@@ -2038,6 +2084,39 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               ? `con cuotas de ${mesLegible(mes)}`
               : `con cuotas en ${datos.totales.meses} meses, hasta ${mesLegible(datos.hasta)}`}
             .
+            {estadoDelMes.total > 0 && (
+              <span data-testid="facturacion-estado-del-mes">
+                {' '}De sus{' '}
+                <span className="font-mono text-fg tabular-nums">
+                  {estadoDelMes.total.toLocaleString(localeDeLasCifras())}
+                </span>{' '}
+                {estadoDelMes.total === 1 ? 'factura' : 'facturas'},{' '}
+                <span className="font-mono font-medium text-primary tabular-nums">
+                  {estadoDelMes.listas.toLocaleString(localeDeLasCifras())}
+                </span>{' '}
+                {estadoDelMes.listas === 1 ? 'se puede emitir hoy' : 'se pueden emitir hoy'}
+                {estadoDelMes.emitidas > 0 && (
+                  <>
+                    ,{' '}
+                    <span className="font-mono text-fg tabular-nums">
+                      {estadoDelMes.emitidas.toLocaleString(localeDeLasCifras())}
+                    </span>{' '}
+                    ya {estadoDelMes.emitidas === 1 ? 'salió' : 'salieron'}
+                  </>
+                )}
+                {estadoDelMes.frenadas > 0 && (
+                  <>
+                    {' '}y{' '}
+                    <span className="font-mono text-fg tabular-nums">
+                      {estadoDelMes.frenadas.toLocaleString(localeDeLasCifras())}
+                    </span>{' '}
+                    todavía no {estadoDelMes.frenadas === 1 ? 'sale' : 'salen'}
+                    {estadoDelMes.sinResolucion ? ': falta la resolución con qué numerarlas' : ' (cada fila dice por qué)'}
+                  </>
+                )}
+                .
+              </span>
+            )}
             {datos.resolucion.puedeNumerar && (
               <span data-testid="facturacion-siguiente-numero">
                 {' '}

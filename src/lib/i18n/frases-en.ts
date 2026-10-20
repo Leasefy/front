@@ -3,7 +3,10 @@
  * Agrupado por el archivo donde sale la frase por primera vez. La clave es el
  * texto EXACTO que se ve en español (JSX junta los renglones con un espacio).
  */
+import { FRASES_EN_DEL_GLOW_UP } from './frases-en-del-glow-up'
+
 export const FRASES_EN: Record<string, string> = {
+  ...FRASES_EN_DEL_GLOW_UP,
   // app/panel/inmobiliaria/pagos/cobranza/inbox/page.tsx
   "Inbox de conversaciones": "Conversation inbox",
   "Las respuestas de tus inquilinos, agrupadas por intención. Cada conversación muestra el último mensaje y la acción sugerida. Los mensajes sin entender y los que requieren humano nunca se responden solos: los atiendes tú.": "Your tenants' replies, grouped by intent. Each conversation shows the last message and the suggested action. Messages the agent didn't understand and those that need a person are never answered automatically: you handle them.",

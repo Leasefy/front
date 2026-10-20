@@ -10107,7 +10107,7 @@
       "m2BannerTitle": "Reconciliation live — human review and statement ingestion connected",
       "m2BannerDesc": "Upload the bank statement and the agent suggests matches against collections, payouts and commissions. Matching runs in the background in shadow mode: it only suggests, nothing is auto-confirmed.",
       "uploadTitle": "Upload bank source",
-      "uploadHint": "Pick the bank and upload the statement CSV. Reconciliation runs in the background.",
+      "uploadHint": "Pick the bank and upload the statement as you got it (Excel or CSV). Reconciliation runs in the background.",
       "uploadBankLabel": "Bank",
       "bankBancolombia": "Bancolombia",
       "bankDavivienda": "Davivienda",

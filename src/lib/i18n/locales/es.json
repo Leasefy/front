@@ -1054,6 +1054,7 @@
       "porAprobar": "Por aprobar",
       "origenesDeLeads": "Orígenes",
       "portalesDePublicacion": "Portales",
+      "calificacionLeasefy": "Calificación Leasefy",
       "requisitosDePostulacion": "Requisitos",
       "calceDeLeads": "Qué ofrecer",
       "visitasDelPipeline": "Preparar visitas",
@@ -6226,13 +6227,13 @@
           "step2": {
             "heading": "Datos de la propiedad",
             "canonLabel": "Canon mensual (COP)",
-            "canonPlaceholder": "Ej: 1500000",
+            "canonPlaceholder": "Ej: 1.500.000",
             "tipoLabel": "Tipo de inmueble",
             "tipoOptions": {
               "apartamento": "Apartamento",
               "casa": "Casa",
-              "oficina": "Oficina",
-              "local": "Local"
+              "oficina": "Local u oficina",
+              "local": "Local u oficina"
             },
             "codeudoresLabel": "Número de codeudores",
             "codeudoresHint": "0 si el candidato no tiene codeudores"
@@ -6244,7 +6245,12 @@
             "ciudadRow": "Ciudad",
             "canonRow": "Canon mensual",
             "tipoRow": "Tipo de inmueble",
-            "codeudoresRow": "Codeudores"
+            "codeudoresRow": "Codeudores",
+            "aseguradorasRow": "Aseguradoras",
+            "aseguradorasTodas": "Todas las habilitadas",
+            "prioridadRow": "Prioridad",
+            "autorizacion": "Tengo la autorización de {{nombre}} para esta consulta.",
+            "autorizacionFalta": "Marca la casilla para consultar."
           },
           "restoreBanner": {
             "message": "Tienes una cotización en progreso. ¿Continuar donde la dejaste?"
@@ -6268,29 +6274,27 @@
             "titulo": "Configura la consulta",
             "aseguradoras": {
               "titulo": "¿A qué aseguradoras consultamos?",
-              "todas": "Todas las entidades",
-              "todasDesc": "Consultamos a todas las aseguradoras disponibles para tu inmobiliaria.",
-              "favoritas": "Favoritas",
-              "favoritasDesc": "Elige manualmente las aseguradoras que quieres consultar.",
-              "recomendar": "Que Leasefy recomiende",
-              "recomendarDesc": "Leasefy elige las mejores aseguradoras según el perfil del candidato.",
+              "todas": "Todas las habilitadas",
+              "todasDesc": "Consultamos a todas las aseguradoras que tu inmobiliaria tiene habilitadas en «Aseguradoras».",
+              "favoritas": "Sólo las que elijo",
+              "favoritasDesc": "Consultamos sólo a las que marques aquí.",
               "cargando": "Cargando aseguradoras…",
-              "sinAseguradoras": "No hay aseguradoras disponibles. Usaremos las que Leasefy recomiende.",
-              "seleccionaUna": "Selecciona al menos una aseguradora."
+              "sinAseguradoras": "Tu inmobiliaria no tiene aseguradoras habilitadas. Habilítalas en la pestaña «Aseguradoras».",
+              "seleccionaUna": "Marca al menos una aseguradora.",
+              "errorRegistro": "No pudimos traer la lista de aseguradoras.",
+              "reintentar": "Intentar de nuevo"
             },
             "prioridad": {
               "titulo": "¿Qué priorizamos?",
+              "subtitulo": "Decide cuál te recomendamos entre las que respalden al candidato.",
               "rapidez": "Rapidez",
+              "rapidezDesc": "La que respondió primero.",
               "costo": "Menor costo",
+              "costoDesc": "La de prima mensual más baja.",
               "cobertura": "Mayor cobertura",
-              "probabilidad": "Mayor probabilidad"
-            },
-            "modo": {
-              "titulo": "Modo de ejecución",
-              "automatico": "Automático",
-              "automaticoDesc": "Leasefy ejecuta la consulta y selecciona la mejor opción sin intervención.",
-              "revision": "Con revisión",
-              "revisionDesc": "Revisas los resultados antes de avanzar con una aseguradora."
+              "coberturaDesc": "La que pide menos condiciones y respalda el canon más alto.",
+              "probabilidad": "Mayor probabilidad",
+              "probabilidadDesc": "La que aprueba sin condiciones; después, la que pide menos."
             }
           },
           "ctaConsultar": "Consultar asegurabilidad"
@@ -6315,7 +6319,7 @@
           "remaining": "Te quedan {{n}} de {{m}} hoy",
           "calculating": "Calculando…",
           "tardando": "Tardando más de lo esperado…",
-          "submitButton": "Pedir explicación",
+          "submitButton": "Calcular",
           "capExhausted": {
             "title": "Límite alcanzado",
             "body": "Has usado tus {{cap}} explicaciones de hoy. Se reinicia mañana a las {{time}} (Bogotá).",
@@ -6334,7 +6338,8 @@
             "ciudad": "Ciudad",
             "tipo": "Tipo de inmueble",
             "codeudores": "Codeudores"
-          }
+          },
+          "recotizar": "Re-cotizar con este cambio"
         },
         "detail": {
           "header": {
@@ -6371,7 +6376,7 @@
           "connectionInterrupted": "Conexión interrumpida. Verifica tu conexión y reintenta.",
           "retry": "Reintentar",
           "reQuoteOfBadge": "Re-cotización de #{{shortId}}",
-          "pedirExplicacionButton": "Pedir explicación",
+          "pedirExplicacionButton": "¿Qué pasaría si…?",
           "reQuoteButton": "Re-cotizar con cambios",
           "liveRegion": {
             "carrierVerdict": "{{carrier}}: {{result}}"
@@ -6390,7 +6395,8 @@
             "recomendamos": "Recomendamos avanzar con {{carrier}}",
             "primaPorMes": "al mes",
             "porQue": "Por qué",
-            "porQueMejorPrecio": "Es la opción que mejor equilibra precio y condiciones entre las aseguradoras que aceptan."
+            "porQueMejorPrecio": "Es la opción que mejor equilibra precio y condiciones entre las aseguradoras que aceptan.",
+            "headlineUna": "El candidato es {{status}} · 1 opción encontrada"
           },
           "matriz": {
             "titulo": "Compara las opciones",
@@ -13841,7 +13847,7 @@
     "contrato": "Contrato {{numero}}",
     "comoInquilino": "Inquilino del inmueble en {{direccion}}",
     "comoPropietario": "Propietario del inmueble en {{direccion}}",
-    "copropiedad": "Copropiedad entre {{propietarios}} propietarios · su parte: {{porcentaje}}\u00a0%",
+    "copropiedad": "Copropiedad entre {{propietarios}} propietarios · su parte: {{porcentaje}} %",
     "copropiedadSinPorcentaje": "Copropiedad entre {{propietarios}} propietarios · falta el porcentaje de cada propietario: el giro no sale hasta que la inmobiliaria lo ponga",
     "vigente": "Vigente",
     "terminado": "Terminado",
@@ -14091,7 +14097,7 @@
       },
       "noHace": {
         "horario": "No llama fuera del horario de ley ni más de una vez al día por persona (Ley 2300)",
-        "t323": "No aprueba sola más de $\u00a05.000.000, más de 6 meses de plazo ni más de 20 % de descuento",
+        "t323": "No aprueba sola más de $ 5.000.000, más de 6 meses de plazo ni más de 20 % de descuento",
         "verifica": "No confirma pagos: verificarlos es trabajo de una persona de tu equipo"
       }
     },

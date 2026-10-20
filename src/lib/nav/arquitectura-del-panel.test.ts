@@ -997,6 +997,8 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     // inquilino los define cada inmobiliaria»). Postulaciones ya tenía
     // Soportes, así que el riel se dibujaba: no hace falta volverla fila.
     expect(secciones('postulaciones')).toEqual([
+      // La Calificación Leasefy (18-10-2026).
+      '/postulaciones/calificacion',
       '/postulaciones/requisitos',
       '/postulaciones/reclamos',
       '/postulaciones/soportes',

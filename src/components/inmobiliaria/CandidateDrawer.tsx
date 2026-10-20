@@ -1,5 +1,7 @@
 'use client';
 
+import { CalificacionDelPostulante } from '@/components/calificacion/CalificacionDelPostulante';
+import { TarjetaDeCalificacion } from '@/components/calificacion/TarjetaDeCalificacion';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useLenis } from '@/components/providers/SmoothScroll';
@@ -538,6 +540,12 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
             <EstudioPagadoALaInmobiliaria applicationId={candidate.id} />
           </section>
 
+          {/* La Calificación Leasefy sin estudio (Nico, 19-10-2026: «mostrarla en el cajón»): desde la cuenta
+              de la persona. Con estudio, la trae la evaluación (abajo, en el análisis). */}
+          {!isLoadingAI && !evaluation?.calificacion_leasefy?.calificacion && (
+            <CalificacionDelPostulante applicationId={candidate.id} />
+          )}
+
           {/* AI Scoring Block */}
           <section className={cn(
             'rounded-lg border p-5 space-y-4',
@@ -572,6 +580,17 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
               </div>
             ) : (
               <>
+                {/* La Calificación Leasefy (18-10-2026): documentos + historial en Leasefy. */}
+                {evaluation?.calificacion_leasefy?.calificacion && (
+                  <div className="space-y-1.5">
+                    <TarjetaDeCalificacion calificacion={evaluation.calificacion_leasefy.calificacion} className="p-4" compacta />
+                    <p className="text-xs text-fg-subtle">
+                      {evaluation.calificacion_leasefy.alcance === 'TODO_LEASEFY'
+                        ? tr('Con todo su historial en Leasefy.')
+                        : tr('Sólo lo que pasó con tu inmobiliaria: no autorizó compartir su calificación.')}
+                    </p>
+                  </div>
+                )}
                 {/* El score, con el color del nivel sólo en su ficha. */}
                 {level && totalScore !== undefined && levelColor && (
                   <div className="flex items-center gap-4">

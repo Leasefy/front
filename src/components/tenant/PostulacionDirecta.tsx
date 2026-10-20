@@ -36,6 +36,10 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  CasillaDeLaCalificacion,
+  guardarLaCasillaDeLaCalificacion,
+} from '@/components/calificacion/CasillaDeLaCalificacion'
 import { applicationsApi } from '@/lib/api/applications.service'
 import { ApiError } from '@/lib/api/client'
 import { formatCurrency } from '@/lib/format'
@@ -95,6 +99,8 @@ export function PostulacionDirecta({
 }: Props) {
   const [autoriza, setAutoriza] = useState(false)
   const [aceptaTerminos, setAceptaTerminos] = useState(false)
+  // La Calificación Leasefy (18-10-2026): casilla aparte, sin marcar, opcional.
+  const [compartirCalificacion, setCompartirCalificacion] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -200,6 +206,7 @@ export function PostulacionDirecta({
         return
       }
 
+      await guardarLaCasillaDeLaCalificacion(compartirCalificacion)
       onPostulada(creada.id)
     } catch (e) {
       // El back rechaza el envío cuando la identidad contradice el estudio de
@@ -232,7 +239,7 @@ export function PostulacionDirecta({
       }
       setEnviando(false)
     }
-  }, [puedeEnviar, property.id, prefill, identidad, consentText, onPostulada])
+  }, [puedeEnviar, property.id, prefill, identidad, consentText, onPostulada, compartirCalificacion])
 
   return (
     <div className="min-h-screen bg-muted py-8 px-4">
@@ -392,6 +399,11 @@ export function PostulacionDirecta({
                 para poder continuar.
               </p>
             ) : null}
+
+            <CasillaDeLaCalificacion
+              marcada={compartirCalificacion}
+              onCambio={setCompartirCalificacion}
+            />
 
             {error ? (
               <div

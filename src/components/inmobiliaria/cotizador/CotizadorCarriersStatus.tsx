@@ -1,5 +1,6 @@
 'use client'
 
+import { nombreDeLaAseguradora } from '@/lib/cotizador/nombre-de-la-aseguradora'
 import { Warning } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { relativeTime } from '@/lib/cartera'
@@ -116,7 +117,7 @@ export function CotizadorCarriersStatus({
             {/* Carrier name + route mode badge */}
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-fg capitalize">
-                {carrier.name}
+                {nombreDeLaAseguradora(carrier.name)}
               </span>
               <RouteBadge mode={carrier.mode} t={t} />
             </div>

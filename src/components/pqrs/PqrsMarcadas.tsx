@@ -61,6 +61,7 @@ export function PqrsMarcadas({
         tarea: (f) => pqrsApi.actualizar(f.id, cambio),
         accion: 'cambiar la solicitud',
         recursos: ['pqrs'],
+        recurso: 'PQRS',
       });
       avisarDelBloque(r, { todas, ninguna: 'No cambió ninguna solicitud' });
       onCambiaron();

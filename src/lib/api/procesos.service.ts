@@ -25,7 +25,7 @@ export interface PedidoDeReporte {
   desde?: string
   hasta?: string
 }
-import type { FiltrosDeRenglones, PaginaDeRenglones } from './procesos.types'
+import type { FiltrosDeRenglones, PaginaDeRenglones, RenglonNuevoDelNavegador } from './procesos.types'
 import type {
   DescargaDeProceso,
   FiltrosDeProcesos,
@@ -145,6 +145,38 @@ export const procesosApi = {
     if (filtros.limite) q.set('limite', String(filtros.limite))
     const s = q.toString()
     return apiClient.get<PaginaDeRenglones>(`${BASE_DE_PROCESOS}/${id}/renglones${s ? `?${s}` : ''}`)
+  },
+  /**
+   * El navegador anota lo que hizo, para «Ver detalle» (20-10-2026). De a 500
+   * (el tope del back) y recortado a lo que cabe en cada columna; sin texto
+   * vacío. Un back anterior responde 404: quien llama no debe frenarse por eso.
+   */
+  async anotar(id: string, renglones: readonly RenglonNuevoDelNavegador[]): Promise<void> {
+    const recortar = (t: string | null | undefined, n: number) => {
+      const limpio = (t ?? '').replace(/\s+/g, ' ').trim()
+      return limpio ? limpio.slice(0, n) : undefined
+    }
+    const listos = renglones.flatMap((r) => {
+      const titulo = recortar(r.titulo, 300)
+      if (!titulo) return []
+      const detalle = recortar(r.detalle, 500)
+      const motivo = recortar(r.motivo, 1000)
+      return [
+        {
+          estado: r.estado,
+          titulo,
+          ...(detalle ? { detalle } : {}),
+          ...(motivo ? { motivo } : {}),
+          ...(typeof r.montoCop === 'number' && Number.isFinite(r.montoCop) ? { montoCop: r.montoCop } : {}),
+          ...(r.recurso?.tipo && r.recurso.id
+            ? { recurso: { tipo: r.recurso.tipo.slice(0, 40), id: r.recurso.id.slice(0, 80) } }
+            : {}),
+        },
+      ]
+    })
+    for (let i = 0; i < listos.length; i += 500) {
+      await apiClient.post(`${BASE_DE_PROCESOS}/${id}/renglones`, { renglones: listos.slice(i, i + 500) })
+    }
   },
   cancelar(id: string): Promise<Proceso> {
     return apiClient.post<Proceso>(`${BASE_DE_PROCESOS}/${id}/cancelar`, {})

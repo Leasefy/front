@@ -20,9 +20,15 @@ import type { EstadoDeRenglon, PaginaDeRenglones, RenglonDelProceso } from '@/li
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { CajonDeLaFacturaEmitida } from './CajonDeLaFacturaEmitida'
+import { CajonDelInquilinoDelProceso } from './CajonDelInquilinoDelProceso'
+import { FichaDelRecurso, TIPOS_CON_FICHA } from './FichaDelRecurso'
 
-/** Qué recursos tienen su propio cajón. Uno sin cajón se lee, no se abre. */
-const CON_CAJON = new Set(['FACTURA'])
+/**
+ * Qué recursos tienen su propio cajón: la factura y el inquilino (los de
+ * siempre) y los de la ficha (contrato, propietario, cobro, inmueble, giro,
+ * asiento). Uno sin cajón se lee, no se abre.
+ */
+const CON_CAJON = new Set(['FACTURA', 'INQUILINO', ...TIPOS_CON_FICHA])
 
 type Filtro = 'TODOS' | EstadoDeRenglon
 
@@ -35,6 +41,7 @@ export function RenglonesDelProceso({ procesoId, activo }: { procesoId: string; 
   const [cargando, setCargando] = useState(true)
   const [sinDetalle, setSinDetalle] = useState(false)
   const [abierto, setAbierto] = useState<RenglonDelProceso | null>(null)
+  const cerrar = useCallback(() => setAbierto(null), [])
 
   // La búsqueda espera a que la persona deje de escribir.
   useEffect(() => {
@@ -193,7 +200,15 @@ export function RenglonesDelProceso({ procesoId, activo }: { procesoId: string; 
 
       <CajonDeLaFacturaEmitida
         id={abierto?.recurso?.tipo === 'FACTURA' ? abierto.recurso.id : null}
-        onCerrar={() => setAbierto(null)}
+        onCerrar={cerrar}
+      />
+      <CajonDelInquilinoDelProceso
+        id={abierto?.recurso?.tipo === 'INQUILINO' ? abierto.recurso.id : null}
+        onCerrar={cerrar}
+      />
+      <FichaDelRecurso
+        recurso={abierto?.recurso && TIPOS_CON_FICHA.has(abierto.recurso.tipo) ? abierto.recurso : null}
+        onCerrar={cerrar}
       />
     </section>
   )

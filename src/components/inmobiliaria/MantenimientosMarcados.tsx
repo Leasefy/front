@@ -76,6 +76,7 @@ export function MantenimientosMarcados({
         tarea: (f) => mantenimientoApi.updateStatus(f.id, destino),
         accion: cancelar ? 'cancelar el arreglo' : 'mover el arreglo',
         recursos: ['mantenimientos'],
+        recurso: 'MANTENIMIENTO',
       });
       avisarDelBloque(r, {
         todas: cancelar ? 'Cancelamos los arreglos' : `Los movimos a «${nombreDelDestino}»`,

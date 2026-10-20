@@ -116,6 +116,16 @@ export interface PaginaDeRenglones {
   resumen: ResumenDeRenglones
 }
 
+/** Lo que anota el NAVEGADOR (`POST /inmobiliaria/procesos/:id/renglones`). */
+export interface RenglonNuevoDelNavegador {
+  estado: EstadoDeRenglon
+  titulo: string
+  detalle?: string | null
+  motivo?: string | null
+  montoCop?: number | null
+  recurso?: { tipo: string; id: string } | null
+}
+
 export interface FiltrosDeRenglones {
   estado?: EstadoDeRenglon
   buscar?: string

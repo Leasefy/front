@@ -115,6 +115,7 @@ export function CobrosMarcados({
         tarea: (f) => cobrosApi.anular(f.id, elMotivo),
         accion: 'anular el cobro',
         recursos: ['cobros'],
+        recurso: 'COBRO',
       });
       avisarDelBloque(r, { todas: 'Anulamos los cobros', ninguna: 'No se anuló ningún cobro' });
       onAnulados();

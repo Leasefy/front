@@ -53,6 +53,13 @@ export interface HacerEnBloque<T extends FilaEnBloque> {
   recursos?: readonly string[]
   /** Cuántas a la vez. Pocas: cada una puede mandar un correo o escribir en la base. */
   aLaVez?: number
+  /**
+   * Qué es cada fila (`COBRO`, `MANTENIMIENTO`, `PQRS`…): con él, «Ver detalle»
+   * del centro lista cada una y la abre en su cajón (Nico, 20-10-2026).
+   */
+  recurso?: string
+  /** La segunda línea de la fila en «Ver detalle»: el inmueble, el mes. */
+  detalleDe?: (fila: T) => string | null | undefined
 }
 
 export async function hacerEnBloque<T extends FilaEnBloque>({
@@ -63,9 +70,12 @@ export async function hacerEnBloque<T extends FilaEnBloque>({
   accion,
   recursos,
   aLaVez = 4,
+  recurso,
+  detalleDe,
 }: HacerEnBloque<T>): Promise<ResultadoEnBloque> {
   let hechos = 0
   const fallidos: FalloEnBloque[] = []
+  const hechas: T[] = []
   const { detenido } = await correrEnElNavegador({
     tipo,
     titulo,
@@ -77,6 +87,7 @@ export async function hacerEnBloque<T extends FilaEnBloque>({
         try {
           await tarea(fila)
           hechos += 1
+          hechas.push(fila)
         } catch (e) {
           fallidos.push({
             id: fila.id,
@@ -86,7 +97,32 @@ export async function hacerEnBloque<T extends FilaEnBloque>({
         }
         await ctx.avanzar(hechos + fallidos.length, { total: filas.length })
       })
-      return { mensaje: fraseDelBloque({ total: filas.length, hechos, fallidos, detenido: ctx.debeParar() }) }
+      const deLaFila = (id: string) => {
+        const fila = filas.find((f) => f.id === id)
+        return fila && detalleDe ? (detalleDe(fila) ?? null) : null
+      }
+      return {
+        mensaje: fraseDelBloque({ total: filas.length, hechos, fallidos, detenido: ctx.debeParar() }),
+        ...(recurso
+          ? {
+              renglones: [
+                ...hechas.map((f) => ({
+                  estado: 'OK' as const,
+                  titulo: f.nombre,
+                  detalle: deLaFila(f.id),
+                  recurso: { tipo: recurso, id: f.id },
+                })),
+                ...fallidos.map((f) => ({
+                  estado: 'FALLO' as const,
+                  titulo: f.nombre,
+                  detalle: deLaFila(f.id),
+                  motivo: f.motivo,
+                  recurso: { tipo: recurso, id: f.id },
+                })),
+              ],
+            }
+          : {}),
+      }
     },
   })
   return { total: filas.length, hechos, fallidos, detenido }

@@ -56,6 +56,7 @@ const laura: MiembroDeLaTripulacion = {
   corre: true,
   actua: true,
   porQueNoCorre: null,
+  enParte: null,
   efectoReal: 'Mori prepara cada llamada y te la deja con un clic.',
   ultimo: { id: 'x', at: new Date(Date.now() - 3_600_000).toISOString(), agente: 'cobranza', tipo: 'llamada', titulo: 'Mori llamó a Camila Ejemplo' },
   trabajando: false,
@@ -91,6 +92,19 @@ const popover = (testid: string) => document.body.querySelector(`[data-testid="$
 const disparador = (testid: string) => container.querySelector(`[data-testid="${testid}"]`) as HTMLButtonElement
 
 describe('la tarjeta de un agente', () => {
+  it('NITI-2 (Nico 19-10): con una parte apagada dice «Copiloto · sólo lo que ya propuso»', () => {
+    const niti: MiembroDeLaTripulacion = { ...laura, agente: 'calidad', enParte: 'sólo lo que ya propuso', ultimo: null }
+    act(() => root.render(<TripulanteConPopover m={niti} pilotoEncendido accionesHoy={null} control={control()} />))
+    const tarjeta = disparador('tripulante-calidad')
+    expect(tarjeta.querySelector('[data-fila="modo"]')?.textContent).toBe('Copiloto')
+    expect(tarjeta.querySelector('[data-fila="en-parte"]')?.textContent).toBe('Sólo lo que ya propuso')
+    act(() => tarjeta.click())
+    expect(popover('popover-agente-calidad')?.textContent).toContain('Su modo · Copiloto · sólo lo que ya propuso')
+    // Sin parte apagada, la tarjeta de siempre.
+    act(() => root.render(<TripulanteConPopover m={laura} pilotoEncendido accionesHoy={null} control={control()} />))
+    expect(container.querySelector('[data-testid="tripulante-cobranza-en-parte"]')).toBeNull()
+  })
+
   it('al pasar el puntero NO abre: la tarjeta reacciona; el clic abre con lo que hace, su modo, lo último y lo de hoy', () => {
     act(() => root.render(<TripulanteConPopover m={laura} pilotoEncendido accionesHoy={8} control={control()} />))
     const tarjeta = disparador('tripulante-cobranza')

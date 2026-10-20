@@ -102,6 +102,13 @@ export interface OnboardingResumePoint {
    * en una agencia sin fundador conocido; ausente en un back anterior.
    */
   esQuienLaRegistro?: boolean | null
+  /**
+   * La inmobiliaria del registro rápido desde el marketplace, todavía sin
+   * activar (sin NIT ni traspaso al micro; Nico, 20-10-2026). Entra a su
+   * cuenta con lo comercial abierto: no tiene un registro «a medias». Ausente
+   * en un back anterior.
+   */
+  modoComercial?: boolean
 }
 
 export function getOnboardingResumePoint(): Promise<OnboardingResumePoint> {

@@ -1,7 +1,7 @@
 'use client';
 
 import { InvitacionAMejorarElPlan } from '@/components/plan/InvitacionAMejorarElPlan';
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, type ReactNode } from 'react';
 import { usePathname /* , useRouter */ } from 'next/navigation';
 import { ChatsCircle, AirTrafficControl } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -36,6 +36,8 @@ import { AGENCY_HOME_ROUTE } from '@/lib/auth/role-routes';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
 import { MuroDeMigracion } from '@/components/migracion/MuroDeMigracion';
+import { CandadoDelModoComercial } from '@/components/inmobiliaria/modo-comercial/CandadoDelModoComercial';
+import { abiertaEnModoComercial, enModoComercial } from '@/lib/nav/modo-comercial';
 import { AvisoModoSimulado } from '@/components/estado/AvisoModoSimulado';
 import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes';
 import { usePilotoBadge } from '@/lib/hooks/piloto/use-piloto-badge';
@@ -112,6 +114,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // admins. Falls back to the i18n title while loading / if empty, so the brand
   // never flashes empty. `logoUrl` empty → PlanSidebar shows the LeasefyMark.
   const { agency } = useAuth();
+  const modoComercial = enModoComercial(agency);
+  // En modo comercial no hay migración que hacer: el muro no se pone.
+  const Muro = modoComercial ? SinMuro : MuroDeMigracion;
   // 🔴 ARREGLOS-4 (03-10-2026): sólo quien PUEDE leerla la pide. El back la
   // cierra con `configuracion:view`; pedirla igual era un 403 en cada pantalla
   // del contador y de la asesora (y el nombre ya viene de `useAuth().agency`).
@@ -257,8 +262,16 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // isAdmin/agencyRole are null), so only ungated items survive — gated tabs
     // never flash in then disappear. The desktop sidebar shows a skeleton during
     // this window instead (PlanSidebar `loading` prop below).
-    return filterAgencyNav(ALL_NAV_ITEMS, ctxNav);
-  }, [ALL_NAV_ITEMS, ctxNav]);
+    const filas = filterAgencyNav(ALL_NAV_ITEMS, ctxNav);
+    // Modo comercial (registro rápido desde el marketplace, Nico 20-10-2026):
+    // lo comercial abierto; lo demás con «Activar», que al entrar dice para qué
+    // sirve activar (CandadoDelModoComercial). Sin el chat de los agentes: no
+    // conocen a esta inmobiliaria hasta que se activa.
+    if (!modoComercial) return filas;
+    return filas
+      .filter((f) => f.kind === 'section' || f.href !== '/panel/inmobiliaria')
+      .map((f) => (f.kind === 'section' || abiertaEnModoComercial(f.href) ? f : { ...f, tag: 'Activar' }));
+  }, [ALL_NAV_ITEMS, ctxNav, modoComercial]);
 
   return (
     <div className="min-h-screen bg-plan-page">
@@ -270,7 +283,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         Cuando no bloquea (que es el caso normal, y también el caso de error)
         no dibuja nada y no le agrega una sola clase a lo de adentro.
       */}
-      <MuroDeMigracion>
+      <Muro>
         {/* Global ⌘K shortcut listener — context-aware (skips beta subtree) */}
         <CommandPaletteShortcuts />
         {/* Command palette modal — portal renders above everything */}
@@ -374,9 +387,11 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
             tabIndex={-1}
             className="mx-auto w-full max-w-[1920px]"
           >
-            <SeccionesDelModulo />
-            <CabeceraDelAgente />
-            {children}
+            <CandadoDelModoComercial>
+              <SeccionesDelModulo />
+              <CabeceraDelAgente />
+              {children}
+            </CandadoDelModoComercial>
             {/* Nico, 10-10-2026: el plan gratuito recibe una invitación por
                 función (solo invita, nunca cierra nada); sólo el administrador. */}
             <InvitacionAMejorarElPlan activa={!subIndeterminate && !isPaidPlan && agencyRole === 'ADMIN'} />
@@ -402,7 +417,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
             falta justo donde importa. Con el simulado apagado —el caso normal,
             y siempre en producción— no dibuja nada. */}
         <AvisoModoSimulado />
-      </MuroDeMigracion>
+      </Muro>
 
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
           <ProtectedRoute>/<AgencySubscriptionGuard>: acá adentro se perdía todo toast
@@ -459,4 +474,9 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
       </AsistentePendienteGuard>
     </ProtectedRoute>
   );
+}
+
+/** El panel sin el muro de la migración (modo comercial). */
+function SinMuro({ children }: { children: ReactNode }) {
+  return <>{children}</>;
 }

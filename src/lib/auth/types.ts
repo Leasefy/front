@@ -155,6 +155,12 @@ export interface Agency {
    *  (unlike the admin-only /inmobiliaria/config), so team members get the brand
    *  identity too. Hex '#rrggbb'. */
   branding?: { primaryColor?: string; secondaryColor?: string }
+  /**
+   * Registro rápido desde el marketplace, sin activar (Nico, 20-10-2026): el
+   * panel abre sólo lo comercial (`lib/nav/modo-comercial.ts`). Ausente en un
+   * back anterior = como siempre.
+   */
+  modoComercial?: boolean
 }
 
 export type AgencySize = 'small' | 'medium' | 'large' | 'enterprise'

@@ -47,7 +47,7 @@ export function CasillaDeLaCalificacion({
 
   if (yaAutorizo) {
     return (
-      <p className="text-xs text-fg-muted" data-testid="calificacion-ya-autorizada">
+      <p className="text-caption text-fg-muted" data-testid="calificacion-ya-autorizada">
         {tr('Tu Calificación Leasefy ya se comparte con las inmobiliarias de Leasefy.')}{' '}
         <Link href="/inquilino/calificacion" className="underline hover:no-underline">
           {tr('Verla')}
@@ -75,7 +75,7 @@ export function CasillaDeLaCalificacion({
       </label>
       {verTexto && (
         <div
-          className="max-h-32 overflow-y-auto rounded-md border border-border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground"
+          className="max-h-32 overflow-y-auto rounded-md border border-border bg-muted/30 p-3 text-caption leading-relaxed text-muted-foreground"
           data-lenis-prevent
         >
           <p className="mb-1.5 font-medium text-foreground">{texto.title}</p>

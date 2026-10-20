@@ -584,7 +584,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 {evaluation?.calificacion_leasefy?.calificacion && (
                   <div className="space-y-1.5">
                     <TarjetaDeCalificacion calificacion={evaluation.calificacion_leasefy.calificacion} className="p-4" compacta />
-                    <p className="text-xs text-fg-subtle">
+                    <p className="text-caption text-fg-subtle">
                       {evaluation.calificacion_leasefy.alcance === 'TODO_LEASEFY'
                         ? tr('Con todo su historial en Leasefy.')
                         : tr('Sólo lo que pasó con tu inmobiliaria: no autorizó compartir su calificación.')}

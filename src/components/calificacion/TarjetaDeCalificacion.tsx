@@ -138,9 +138,10 @@ function BarrasDelBloque<K extends string>({
   if (!bloque) return null;
   return (
     <div className="rounded-md border border-border bg-surface-muted/40 p-4 dark:border-border-strong">
-      <div className="mb-3 flex items-baseline justify-between gap-3">
+      {/* Angosto (390 px, cajón): el peso baja entero a su renglón, nunca partido en «pesa 100 % ·» / «68/100». */}
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h4 className="text-sm font-medium text-fg">{tr(titulo)}</h4>
-        <span className="font-mono text-xs tabular-nums text-fg-muted">
+        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">
           {peso !== null ? tr('pesa {p} %', { p: peso }) : ''}
           {bloque.puntaje !== null ? ` · ${bloque.puntaje}/100` : ''}
         </span>
@@ -148,7 +149,7 @@ function BarrasDelBloque<K extends string>({
       <Stagger className="space-y-2.5">
         {bloque.desglose.map((r) => (
           <StaggerItem key={r.componente}>
-            <div className="flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center justify-between gap-3 text-caption">
               <span className={cn('text-fg', r.valor === null && 'text-fg-subtle')}>
                 {(() => {
                   const nombre = NOMBRE_DEL_COMPONENTE[r.componente as keyof typeof NOMBRE_DEL_COMPONENTE] ?? r.componente;
@@ -219,7 +220,7 @@ export function TarjetaDeCalificacion({
         <div className="flex items-start gap-4">
           <LetraDeLaCalificacion letra={c.letra} grande />
           <div className="space-y-1.5">
-            <p className="font-mono text-xs uppercase tracking-wide text-fg-subtle">{tr('Calificación Leasefy')}</p>
+            <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">{tr('Calificación Leasefy')}</p>
             <p className="text-2xl font-medium text-fg">
               <span className="font-mono tabular-nums">{c.puntaje}</span>
               <span className="text-base text-fg-muted">/100</span>
@@ -261,7 +262,7 @@ export function TarjetaDeCalificacion({
               <li key={x}>{tr(x)}</li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-fg-subtle">
+          <p className="mt-2 text-caption text-fg-subtle">
             {tr('Nunca un depósito en dinero: la Ley 820 lo prohíbe en vivienda.')}
           </p>
         </div>

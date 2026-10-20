@@ -40,9 +40,13 @@ vi.mock('@/lib/api/conciliacion-bancaria.service', () => ({ conciliacionBancaria
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
 vi.mock('@/components/inmobiliaria/import/lib/parseFile', () => ({
   leerPrimerasFilas: vi.fn(async () => [archivo.encabezados]),
+  // El lector de planillas (20-10-2026) recorre las hojas para elegir dónde
+  // están los títulos.
+  leerPrimerasFilasDeCadaHoja: vi.fn(async () => [{ hoja: 'Hoja1', filas: [archivo.encabezados] }]),
   parseSpreadsheetFile: vi.fn(async () => ({
     headers: archivo.encabezados,
     rows: archivo.filas,
+    sheetNames: ['Hoja1'],
   })),
 }));
 

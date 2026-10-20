@@ -28,7 +28,7 @@ import {
   procesosApi,
   type TipoDelNavegador,
 } from '@/lib/api/procesos.service'
-import type { Proceso, TipoDeProceso } from '@/lib/api/procesos.types'
+import type { Proceso, RenglonNuevoDelNavegador, TipoDeProceso } from '@/lib/api/procesos.types'
 import { descargarBlob } from '@/lib/reportes/exportables'
 import { mapWithConcurrency } from '@/lib/utils/concurrency'
 import { registrarDetenerEnElNavegador } from '@/components/procesos/detener-en-el-navegador'
@@ -181,6 +181,11 @@ export interface ResultadoDelTrabajo {
   mensaje?: string
   /** Un título mejor que el de la salida, si sólo al final se sabe. */
   titulo?: string
+  /**
+   * Lo que hizo, cosa por cosa, para «Ver detalle» del centro (Nico,
+   * 20-10-2026): cada fila con su estado, su porqué y el cajón de su cosa.
+   */
+  renglones?: readonly RenglonNuevoDelNavegador[]
 }
 
 export interface CorrerEnElNavegador<R extends ResultadoDelTrabajo | void> {
@@ -308,6 +313,11 @@ async function correrConElCentro<R extends ResultadoDelTrabajo | void>(
     if (estado.cancelacion) await estado.cancelacion
 
     const cierre = (resultado ?? {}) as ResultadoDelTrabajo
+    // El detalle antes del cierre: al quedar TERMINADO, «Ver detalle» ya lo tiene.
+    // Si no se pudo anotar, el proceso termina igual (el detalle es un extra).
+    if (cierre.renglones?.length) {
+      await procesosApi.anotar(procesoId, cierre.renglones).catch(() => undefined)
+    }
     try {
       await procesosApi.terminar(procesoId, {
         ...(cierre.archivo ? { archivo: cierre.archivo.blob, nombreDelArchivo: cierre.archivo.nombre } : {}),

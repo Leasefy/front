@@ -17,6 +17,7 @@
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { Input } from '@/components/ui/input';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
@@ -36,23 +37,39 @@ export function ConfigPenalidadDeTerminacion({
   const [error, setError] = useState<string | null>(null);
   useEffect(() => setValor(guardada != null ? String(guardada) : ''), [guardada]);
 
-  const guardar = async () => {
+  const enTexto = guardada != null ? String(guardada) : '';
+
+  const guardar = async (): Promise<boolean> => {
     const canones = valor.trim() === '' ? null : Number(valor.replace(',', '.'));
     if (canones !== null && (!Number.isFinite(canones) || canones < 0 || canones > 99)) {
       setError('La penalidad va en cánones, entre 0 y 99.');
-      return;
+      return false;
     }
     setError(null);
     setGuardando(true);
     try {
       await onSave?.({ penalidadTerminacionCanones: canones });
+      return true;
     } catch {
       // El padre ya lo dijo en un toast, por el traductor. Sin este `catch`
       // el rechazo quedaba sin atrapar (tanda 2 de errores, 02-10-2026).
+      return false;
     } finally {
       setGuardando(false);
     }
   };
+
+  // Dentro de Configuración se guarda con la barra de abajo (Nico, 20-10-2026).
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'perfil-penalidad-de-terminacion',
+    cambios: valor.trim().replace(',', '.') !== enTexto ? 1 : 0,
+    guardar,
+    descartar: () => {
+      setValor(enTexto);
+      setError(null);
+    },
+    activo: canEdit,
+  });
 
   return (
     <section
@@ -93,9 +110,11 @@ export function ConfigPenalidadDeTerminacion({
             aria-describedby="penalidad-por-defecto-error"
           />
         </label>
-        <Button size="sm" variant="outline" disabled={!canEdit || guardando} onClick={() => void guardar()}>
-          Guardar
-        </Button>
+        {conBarra ? null : (
+          <Button size="sm" variant="outline" disabled={!canEdit || guardando} onClick={() => void guardar()}>
+            Guardar
+          </Button>
+        )}
       </div>
       <ErrorDelCampo id="penalidad-por-defecto-error" mensaje={error} className="mt-0" />
     </section>

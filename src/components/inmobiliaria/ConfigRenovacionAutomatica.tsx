@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { ArrowsClockwise, Warning } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui';
@@ -115,8 +116,41 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
     [onSave],
   );
 
+  /*
+   * Dentro de Configuración (Nico, 20-10-2026): el interruptor y el IPC sólo
+   * marcan, y se guardan juntos con la barra de abajo. Fuera de ella, se
+   * guarda al tocar, como antes.
+   */
+  const ipcCambiado = ipcTexto.trim() !== escribirIpc(ipcGuardado).trim();
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'perfil-renovacion-automatica',
+    cambios: (prendida !== prendidaGuardada ? 1 : 0) + (ipcCambiado ? 1 : 0),
+    guardar: async () => {
+      const payload: UpdateAgencyPayload = {};
+      if (prendida !== prendidaGuardada) payload.renovacionAutomatica = prendida;
+      if (ipcCambiado) {
+        const valor = leerIpc(ipcTexto);
+        if (valor === undefined) {
+          setErrorDeIpc(MENSAJES_DEL_IPC.ipcVigente);
+          return false;
+        }
+        payload.ipcVigente = valor;
+      }
+      setErrorDeIpc(null);
+      if (Object.keys(payload).length === 0) return true;
+      return (await guardar(payload)) === 'ok';
+    },
+    descartar: () => {
+      setPrendida(prendidaGuardada);
+      setIpcTexto(escribirIpc(ipcGuardado));
+      setErrorDeIpc(null);
+    },
+    activo: canEdit,
+  });
+
   const cambiarPrendida = async (valor: boolean) => {
     setPrendida(valor);
+    if (conBarra) return;
     const r = await guardar({ renovacionAutomatica: valor });
     if (r !== 'ok') setPrendida(prendidaGuardada);
   };
@@ -136,7 +170,7 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
       return;
     }
     setErrorDeIpc(null);
-    if (valor === ipcGuardado) return;
+    if (conBarra || valor === ipcGuardado) return;
     const r = await guardar({ ipcVigente: valor });
     if (r === 'fallo') setIpcTexto(escribirIpc(ipcGuardado));
   };

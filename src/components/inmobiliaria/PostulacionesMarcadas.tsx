@@ -93,6 +93,7 @@ export function PostulacionesMarcadas({
         tarea: (f) => (rechazar ? landlordApplicationsApi.reject(f.id, t) : landlordApplicationsApi.requestInfo(f.id, t)),
         accion: rechazar ? 'rechazar la postulación' : 'pedir la información',
         recursos: ['applications'],
+        recurso: 'POSTULACION',
       })
       avisarDelBloque(r, {
         todas: rechazar ? 'Rechazamos las postulaciones' : 'Les pedimos la información',

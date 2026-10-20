@@ -10,7 +10,12 @@ import { cn } from '@/lib/utils';
 import { botonDelEncabezadoActivo } from '@/lib/nav/boton-del-encabezado';
 import { useAuth } from '@/lib/auth';
 import { getUserHomeRoute } from '@/lib/auth/role-routes';
-import { type ActiveContext } from '@/lib/auth/active-context';
+import {
+  estaEnLaInmobiliaria,
+  etiquetaDeLaPlataforma,
+  nombreEnLaPlataforma,
+  type ActiveContext,
+} from '@/lib/auth/active-context';
 import { ContextSwitcher } from './ContextSwitcher';
 import { useI18n } from '@/lib/i18n';
 import { getPlanById, PLANS, agencyPlanToDisplayPlan } from '@/lib/constants/subscription-plans';
@@ -105,7 +110,8 @@ export function PlanHeader({
   tenantSubscription,
   leftSlot,
 }: PlanHeaderProps) {
-  const { user, logout, agency, hasActiveAgencyMembership, activeContext, setActiveContext } = useAuth();
+  const { user, logout, agency, agencyRole, hasActiveAgencyMembership, activeContext, setActiveContext } = useAuth();
+
   const router = useRouter();
   const pathname = usePathname();
   // La pantalla que abrió un botón de esta barra lo deja marcado (08-10-2026).
@@ -136,6 +142,37 @@ export function PlanHeader({
   // Use `isInmobiliaria` only where the two diverge — routing, plan CTAs, etc.
   const isInmobiliaria = pathname?.startsWith('/panel/inmobiliaria') ?? false;
   const isLandlord = pathname?.startsWith('/panel') ?? false;
+
+  /*
+   * 🔴 La plataforma en la que la persona ESTÁ (QA 20-10-2026): dentro del
+   * panel de la inmobiliaria el contexto guardado podía seguir en «personal»
+   * (nunca lo eligió en el menú) y el menú decía «Inquilino» y mandaba Perfil
+   * y Configuración al portal del inquilino. Manda la pantalla; sólo donde la
+   * ruta no lo dice, lo guardado.
+   */
+  const contextoEnPantalla: ActiveContext =
+    isInmobiliaria && (hasActiveAgencyMembership || user?.role === 'agency')
+      ? 'agency'
+      : pathname?.startsWith('/inquilino') || (isLandlord && !isInmobiliaria)
+        ? 'personal'
+        : activeContext;
+  // Perfil y Configuración del menú abren los de esa plataforma.
+  const menuDeLaInmobiliaria = estaEnLaInmobiliaria({
+    role: user?.role,
+    activeContext: contextoEnPantalla,
+    hasActiveAgencyMembership,
+  });
+  /*
+   * 🔴 Nico, 20-10-2026: «que no le aparezca el nombre del inquilino a esa
+   * persona». A Laura la invitaron con un correo que ya era la cuenta de un
+   * inquilino y arriba decía «José Alejandro…». Dentro de la inmobiliaria va el
+   * nombre con que la invitaron (lo resuelve el back en `memberName`).
+   */
+  const nombreEnPantalla = nombreEnLaPlataforma({
+    nombreDeLaCuenta: user?.name,
+    nombreEnLaInmobiliaria: agency?.memberName,
+    enLaInmobiliaria: menuDeLaInmobiliaria,
+  });
 
   // In the inmobiliaria context, only admins can invite members or upgrade the plan.
   // Outside inmobiliaria (landlord/tenant), always show these actions.
@@ -1140,7 +1177,7 @@ export function PlanHeader({
                 {/* Avatar */}
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-ink flex items-center justify-center">
                   <span className="text-ink-fg font-medium text-sm">
-                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    {nombreEnPantalla.charAt(0).toUpperCase() || 'U'}
                   </span>
                 </div>
                 {/*
@@ -1164,29 +1201,42 @@ export function PlanHeader({
               </button>
             </DropdownListTrigger>
             <DropdownListContent
-              className="w-56 bg-surface border border-border shadow-lg rounded-lg p-1.5"
+              // 16 rem: los dos lados del interruptor de la plataforma se leen enteros (20-10-2026).
+              className="w-64 bg-surface border border-border shadow-lg rounded-lg p-1.5"
               align="end"
               sideOffset={8}
             >
               <DropdownListLabel className="px-3 py-2">
-                <p className="text-[14px] font-medium text-fg">{user?.name || 'Usuario'}</p>
+                <p className="text-[14px] font-medium text-fg" data-testid="nombre-en-el-menu">
+                  {nombreEnPantalla}
+                </p>
                 <p className="text-[12px] text-fg-muted">{user?.email}</p>
-                <span className="inline-block mt-1.5 px-2 py-0.5 text-[11px] font-medium rounded-full bg-surface-muted text-fg-muted">
-                  {user?.role === 'agency' ? 'Inmobiliaria' : user?.role === 'landlord' ? 'Propietario' : 'Inquilino'}
+                {/* La plataforma ACTIVA, no el rol con el que nació la cuenta (Nico, 20-10-2026). */}
+                <span
+                  className="inline-block mt-1.5 px-2 py-0.5 text-[11px] font-medium rounded-full bg-surface-muted text-fg-muted"
+                  data-testid="tipo-de-cuenta"
+                >
+                  {etiquetaDeLaPlataforma({
+                    role: user?.role,
+                    activeContext: contextoEnPantalla,
+                    hasActiveAgencyMembership,
+                    agencyRole,
+                  })}
                 </span>
               </DropdownListLabel>
               <DropdownListSeparator className="bg-surface-muted my-1" />
               <ContextSwitcher
                 user={user}
                 agencyName={agency?.name}
-                activeContext={activeContext}
+                agencyRole={agencyRole}
+                activeContext={contextoEnPantalla}
                 hasActiveAgencyMembership={hasActiveAgencyMembership}
                 locale={locale}
                 onSwitch={handleSwitchContext}
               />
               <DropdownListItem asChild>
                 <Link
-                  href={user?.role === 'agency' ? "/panel/inmobiliaria/perfil" : isLandlord ? "/panel/perfil" : "/inquilino/perfil"}
+                  href={menuDeLaInmobiliaria ? "/panel/inmobiliaria/perfil" : isLandlord ? "/panel/perfil" : "/inquilino/perfil"}
                   className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-lg cursor-pointer"
                 >
                   <User className="w-4 h-4 stroke-[1.5px] text-fg-muted" />
@@ -1195,7 +1245,7 @@ export function PlanHeader({
               </DropdownListItem>
               <DropdownListItem asChild>
                 <Link
-                  href={user?.role === 'agency' ? "/panel/inmobiliaria/configuracion" : isLandlord ? "/panel/configuracion" : "/inquilino/configuracion"}
+                  href={menuDeLaInmobiliaria ? "/panel/inmobiliaria/configuracion" : isLandlord ? "/panel/configuracion" : "/inquilino/configuracion"}
                   className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-lg cursor-pointer"
                 >
                   <Gear className="w-4 h-4 stroke-[1.5px] text-fg-muted" />

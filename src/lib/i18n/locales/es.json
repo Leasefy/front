@@ -10142,7 +10142,7 @@
       "m2BannerTitle": "Conciliación activa — revisión humana e ingesta de extractos conectadas",
       "m2BannerDesc": "Sube el extracto del banco y el agente sugiere coincidencias contra recaudos, dispersiones y comisiones. El matching corre en segundo plano en modo sombra: solo sugiere, nada se confirma automáticamente.",
       "uploadTitle": "Cargar fuente bancaria",
-      "uploadHint": "Elige el banco y sube el CSV del extracto. La conciliación corre en segundo plano.",
+      "uploadHint": "Elige el banco y sube el extracto como te lo dio (Excel o CSV). La conciliación corre en segundo plano.",
       "uploadBankLabel": "Banco",
       "bankBancolombia": "Bancolombia",
       "bankDavivienda": "Davivienda",

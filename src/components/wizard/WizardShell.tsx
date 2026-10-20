@@ -211,10 +211,13 @@ export function WizardShell({
                 <h1 className="text-sm font-medium text-fg leading-tight">
                   {property.title}
                 </h1>
-                <div className="flex items-center gap-1 text-xs text-fg-muted mt-1">
-                  <MapPin className="h-3 w-3" />
-                  <span>{property.neighborhood}, {property.city}</span>
-                </div>
+                {/* Sin barrio, sólo la ciudad: nunca «, Sabaneta». */}
+                {(property.neighborhood || property.city) && (
+                  <div className="flex items-center gap-1 text-xs text-fg-muted mt-1">
+                    <MapPin className="h-3 w-3" />
+                    <span>{[property.neighborhood, property.city].filter(Boolean).join(', ')}</span>
+                  </div>
+                )}
                 <div className="mt-2">
                   {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
                   <span className="text-sm font-mono tabular-nums font-medium text-fg">

@@ -133,6 +133,17 @@ const ACTA_ESTADO_BADGE: Record<ActaEntrega['status'], string> = {
   completed: 'bg-success-soft text-success',
 };
 
+/**
+ * QA 20-10: a 1440 la tabla de documentos no cabe y «Ver PDF» y «Descargar»
+ * quedaban escondidos a la derecha. La columna de acciones se queda fija (como
+ * en Facturación) y la tabla se desliza por detrás; al pasar el mouse por la
+ * fila, la celda fija toma el mismo fondo.
+ */
+const ACCIONES_FIJAS =
+  'sticky right-0 z-10 border-l border-border bg-card group-hover:bg-surface-muted';
+const ACCIONES_FIJAS_CABECERA =
+  'sticky right-0 z-20 border-l border-border bg-bg dark:bg-surface-muted';
+
 function fechaCorta(iso: string, locale: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
@@ -546,7 +557,7 @@ function DocumentosContent() {
             <TableHeader>
               <TableRow>
                 {columnas.map((c) => (
-                  <TableHead key={c} className="whitespace-nowrap">
+                  <TableHead key={c} className={cn('whitespace-nowrap', c === 'colAcciones' && ACCIONES_FIJAS_CABECERA)}>
                     {t(k(c))}
                   </TableHead>
                 ))}
@@ -591,7 +602,7 @@ function DocumentosContent() {
                       key={doc.id}
                       data-testid="documento-fila"
                       onClick={() => setDocumentoAbierto(doc)}
-                      className="cursor-pointer"
+                      className="group cursor-pointer"
                       tabIndex={0}
                       role="button"
                       aria-label={`Ver ${doc.name}`}
@@ -602,7 +613,7 @@ function DocumentosContent() {
                         }
                       }}
                     >
-                      <TableCell className="max-w-[280px]">
+                      <TableCell className="max-w-[210px]">
                         <p className="truncate font-medium text-fg">{doc.name}</p>
                         {doc.template?.name && (
                           <p className="truncate text-caption text-fg-muted">{doc.template.name}</p>
@@ -611,12 +622,12 @@ function DocumentosContent() {
                       <TableCell className="whitespace-nowrap text-fg-muted">
                         {doc.template ? CATEGORIA_LABEL[doc.template.category] : '—'}
                       </TableCell>
-                      <TableCell className="max-w-[240px]">
+                      <TableCell className="max-w-[200px]">
                         <span className="block truncate text-fg-muted">
                           {etiquetaDelInmueble(doc) ?? '—'}
                         </span>
                       </TableCell>
-                      <TableCell className="max-w-[220px]">
+                      <TableCell className="max-w-[150px]">
                         <span className="block truncate text-fg-muted">
                           {etiquetaDePartes(doc) ?? '—'}
                         </span>
@@ -636,7 +647,7 @@ function DocumentosContent() {
                       </TableCell>
                       {/* Las acciones de la fila actúan; el clic no sube a la fila. */}
                       <TableCell
-                        className="whitespace-nowrap"
+                        className={cn('whitespace-nowrap', ACCIONES_FIJAS)}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
                       >
@@ -687,7 +698,7 @@ function DocumentosContent() {
                       data-testid="plantilla-fila"
                       // La fila hace lo mismo que «Ver plantilla» (el molde, regla 5).
                       onClick={() => setPlantillaAbierta(p)}
-                      className="cursor-pointer"
+                      className="group cursor-pointer"
                       tabIndex={0}
                       role="button"
                       aria-label={`Ver la plantilla ${p.name}`}
@@ -711,7 +722,7 @@ function DocumentosContent() {
                         {p.variables.length}
                       </TableCell>
                       <TableCell
-                        className="whitespace-nowrap"
+                        className={cn('whitespace-nowrap', ACCIONES_FIJAS)}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
                       >

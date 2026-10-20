@@ -213,32 +213,35 @@ export function ReporteFilters({
 
       {/* Row 2: All Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        {/* Category Tabs */}
-        <SegmentedControl<'all' | ReportCategory>
-          value={filters.category}
-          onChange={(v) => updateFilter('category', v)}
-          options={CATEGORY_TAB_KEYS.map((tab) => {
-            const count = reportCounts[tab.value as keyof typeof reportCounts] || 0;
-            const isActive = filters.category === tab.value;
-            return {
-              value: tab.value,
-              ariaLabel: t(tab.labelKey),
-              label: (
-                <span className="flex items-center gap-2 whitespace-nowrap">
-                  {t(tab.labelKey)}
-                  {count > 0 && (
-                    <Badge
-                      variant={isActive ? 'default' : 'secondary'}
-                      className="min-w-[18px] justify-center px-1.5 py-0 text-xs"
-                    >
-                      {count}
-                    </Badge>
-                  )}
-                </span>
-              ),
-            };
-          })}
-        />
+        {/* Category Tabs. A 390 el riel no cabe: se desliza dentro de su caja
+            (antes se salía de la tarjeta y «Agentes» quedaba cortado). */}
+        <div className="max-w-full overflow-x-auto [scrollbar-width:none]" data-lenis-prevent>
+          <SegmentedControl<'all' | ReportCategory>
+            value={filters.category}
+            onChange={(v) => updateFilter('category', v)}
+            options={CATEGORY_TAB_KEYS.map((tab) => {
+              const count = reportCounts[tab.value as keyof typeof reportCounts] || 0;
+              const isActive = filters.category === tab.value;
+              return {
+                value: tab.value,
+                ariaLabel: t(tab.labelKey),
+                label: (
+                  <span className="flex items-center gap-2 whitespace-nowrap">
+                    {t(tab.labelKey)}
+                    {count > 0 && (
+                      <Badge
+                        variant={isActive ? 'default' : 'secondary'}
+                        className="min-w-[18px] justify-center px-1.5 py-0 text-xs"
+                      >
+                        {count}
+                      </Badge>
+                    )}
+                  </span>
+                ),
+              };
+            })}
+          />
+        </div>
 
         {/* Separator */}
         <div className="hidden sm:block w-px h-6 bg-border" />

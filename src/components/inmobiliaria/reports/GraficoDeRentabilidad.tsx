@@ -28,6 +28,7 @@ import {
 import type { RentabilidadFila } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { abreviarCop } from '@/components/recaudo/GraficoDeRecaudo';
 
 const COLOR = {
@@ -54,6 +55,11 @@ export function etiquetaDelInmueble(fila: Pick<RentabilidadFila, 'propertyTitle'
 
 /** Cuántos caracteres caben en el eje de los nombres (180 px, letra mono de 11 px). */
 export const LARGO_DE_LA_ETIQUETA = 26;
+
+/** En el celular el eje mide 120 px (a 390 las barras se quedaban con 100 px): caben 17. */
+const EJE = { ancho: 180, largo: LARGO_DE_LA_ETIQUETA, marcas: 5 } as const;
+/** En el celular, 3 marcas en el eje de la plata: con 5 se montaban («$ 1,5 M$ 3 M»). */
+const EJE_ANGOSTO = { ancho: 120, largo: 17, marcas: 3 } as const;
 
 /**
  * El nombre en una sola línea: si no cabe, se corta el título con «…» y el
@@ -124,16 +130,18 @@ function EtiquetaDelEje({
   x,
   y,
   payload,
+  largo = LARGO_DE_LA_ETIQUETA,
 }: {
   x?: number | string;
   y?: number | string;
   payload?: { value?: string };
+  largo?: number;
 }) {
   const etiqueta = String(payload?.value ?? '');
   return (
     <text x={x} y={y} dx={-4} textAnchor="end" dominantBaseline="central" fontSize={11} fill={COLOR.eje}>
       <title>{etiqueta}</title>
-      {etiquetaEnUnaLinea(etiqueta)}
+      {etiquetaEnUnaLinea(etiqueta, largo)}
     </text>
   );
 }
@@ -144,6 +152,7 @@ interface Props {
 
 export function GraficoDeRentabilidad({ filas }: Props) {
   const { t } = useI18n();
+  const eje = useIsMobile() ? EJE_ANGOSTO : EJE;
   const datos = topPorNeto(filas);
   if (datos.length === 0) {
     return (
@@ -168,6 +177,7 @@ export function GraficoDeRentabilidad({ filas }: Props) {
           <CartesianGrid horizontal={false} stroke={COLOR.grilla} strokeDasharray="2 4" />
           <XAxis
             type="number"
+            tickCount={eje.marcas}
             tickFormatter={abreviarCop}
             tick={{ fontSize: 11, fill: COLOR.eje }}
             axisLine={false}
@@ -176,8 +186,8 @@ export function GraficoDeRentabilidad({ filas }: Props) {
           <YAxis
             type="category"
             dataKey="etiqueta"
-            width={180}
-            tick={<EtiquetaDelEje />}
+            width={eje.ancho}
+            tick={<EtiquetaDelEje largo={eje.largo} />}
             interval={0}
             axisLine={false}
             tickLine={false}

@@ -201,7 +201,8 @@ describe('🔴 sin mes anterior no hay porcentaje', () => {
     datos.kpis = enCero({ collectedRevenue: 2_000_000, collectionTrend: 100 });
     await montar();
     expect(document.body.textContent).toContain('vs mes anterior');
-    expect(document.body.textContent).toContain('100%');
+    // Con el formato de acá (QA 20-10): «+100 %», no «+100%».
+    expect(document.body.textContent).toContain('+100 %');
   });
 
   it('una respuesta vieja en caché con 0 contra 0 sigue sin pintar flecha', async () => {
@@ -215,8 +216,8 @@ describe('🔴 sin mes anterior no hay porcentaje', () => {
     await montar();
     const cuerpo = document.body.textContent ?? '';
     expect(cuerpo).toContain('vs mes anterior');
-    expect(cuerpo).toContain('40%');
-    expect(cuerpo).not.toContain('+40%');
+    expect(cuerpo).toContain('40 %');
+    expect(cuerpo).not.toContain('+40 %');
   });
 });
 
@@ -296,7 +297,7 @@ describe('Resumen del negocio — con operación de verdad', () => {
     expect(texto('resumen-tasa-de-recaudo')).toBe('43,6 %');
     expect(texto('resumen-rotulo-de-la-tasa')).toBe('Pagado de lo emitido');
     expect(texto('resumen-cifras-de-la-tasa')).toContain('pagados de');
-    expect(tarjeta('Recaudo del Mes').textContent).toContain('43,6 % · Pagado de lo emitido');
+    expect(tarjeta('Recaudo del mes').textContent).toContain('43,6 % · Pagado de lo emitido');
   });
 
   it('una respuesta de antes, sin la tasa, se lee como lo que era: sobre lo causado', async () => {

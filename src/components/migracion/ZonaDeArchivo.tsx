@@ -31,6 +31,13 @@ export interface ZonaDeArchivoProps {
   detalle?: string;
   testid?: string;
   inputTestid?: string;
+  /**
+   * T-0168 · el paso está congelado por otra carga (los comprobantes): la zona
+   * se ve apagada y lo dice en `aria-disabled`. La zona NO sale del `inert`
+   * del muro (eso es lo que de verdad la congela); esto es lo que se VE.
+   * Quien la usa cambia `detalle` por el motivo.
+   */
+  bloqueada?: boolean;
 }
 
 export function ZonaDeArchivo({
@@ -41,15 +48,22 @@ export function ZonaDeArchivo({
   detalle,
   testid,
   inputTestid,
+  bloqueada = false,
 }: ZonaDeArchivoProps) {
   return (
     <div
       {...rootProps}
+      aria-disabled={bloqueada ? true : undefined}
       className={cn(
-        "flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed px-6 py-9 text-center transition-colors",
-        activo
-          ? "border-primary bg-primary-soft"
-          : "border-border-strong bg-surface-muted/50 hover:bg-surface-muted",
+        "flex flex-col items-center gap-3 rounded-md border border-dashed px-6 py-9 text-center transition-colors",
+        bloqueada
+          ? "cursor-not-allowed border-border-strong bg-surface-muted/50 opacity-60"
+          : cn(
+              "cursor-pointer",
+              activo
+                ? "border-primary bg-primary-soft"
+                : "border-border-strong bg-surface-muted/50 hover:bg-surface-muted",
+            ),
       )}
       data-testid={testid}
     >

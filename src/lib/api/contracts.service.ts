@@ -28,6 +28,7 @@ import type { Contract, ContractType, ContractStatus, ContractRejection, Inquili
 import type { CobroConDesglose } from './recibos-de-caja.types';
 import type { ValoresPorDefectoDelContrato } from '@/lib/contratos/valores-por-defecto';
 import { normalizeCobro } from './inmobiliaria.service';
+import type { LineaDeCartera } from '@/lib/migracion/lineas-de-cartera';
 import type { ContractAuditEvent, ContractAuditEventType, ContractAuditEventMetadata } from '@/lib/types/contract';
 
 // ============================================================================
@@ -668,6 +669,10 @@ export const contractsApi = {
      * 🔴 La cartera del sistema anterior por inquilino (Juan, 15-10-2026): lo
      * que cada documento debía al corte entra como el «Saldo del sistema
      * anterior» de su contrato. `soloVer` = la vista previa, no escribe.
+     *
+     * @deprecated T-0168: la reemplaza `carteraPorFactura` (una línea por
+     * factura, con su fecha). La pantalla ya no la llama; el back la conserva
+     * hasta que una tarea aparte la retire.
      */
     async saldosDelSistemaAnterior(
       saldos: Array<{ documento: string; nombre?: string | null; saldoCop: number }>,
@@ -678,6 +683,25 @@ export const contractsApi = {
           ? '/contracts/migrar/saldos-del-sistema-anterior/vista-previa'
           : '/contracts/migrar/saldos-del-sistema-anterior',
         { saldos },
+      );
+    },
+
+    /**
+     * T-0168 · la cartera del sistema anterior POR FACTURA: una línea por fila
+     * del informe de cartera, con su fecha, concepto y saldo pendiente. Va
+     * ENTERA en una sola llamada (el back reemplaza la cartera de cada contrato
+     * con lo que llega; partirla dejaría a un inquilino con la mitad). Tope:
+     * 20.000 líneas. `soloVer` = la vista previa, no escribe.
+     */
+    async carteraPorFactura(
+      lineas: LineaDeCartera[],
+      soloVer: boolean,
+    ): Promise<CargaDeCarteraPorFactura> {
+      return apiClient.post<CargaDeCarteraPorFactura>(
+        soloVer
+          ? '/contracts/migrar/cartera-por-factura/vista-previa'
+          : '/contracts/migrar/cartera-por-factura',
+        { lineas },
       );
     },
 
@@ -1852,7 +1876,11 @@ export interface ResultadoDeVerificacion {
   guardado: boolean
 }
 
-/** `POST /contracts/migrar/saldos-del-sistema-anterior[/vista-previa]`. */
+/**
+ * `POST /contracts/migrar/saldos-del-sistema-anterior[/vista-previa]`.
+ *
+ * @deprecated T-0168: ver `CargaDeCarteraPorFactura`.
+ */
 export interface CargaDeSaldosAnteriores {
   /** `AAAA-MM-DD`. */
   fechaDeCorte: string;
@@ -1873,6 +1901,70 @@ export interface CargaDeSaldosAnteriores {
     otrosContratos: number;
   }>;
   totales: { documentos: number; conContrato: number; sinContrato: number; totalCop: number };
+}
+
+/**
+ * T-0168 · `POST /contracts/migrar/cartera-por-factura[/vista-previa]`. Igual en
+ * la vista previa y en la carga. Espejo a mano de `CargaDeCarteraPorFactura` del
+ * back (contrato congelado §3.2): cualquier cambio de forma es de contrato.
+ */
+export type EstadoDelInquilinoEnLaCartera =
+  | 'SE_CARGA'
+  | 'CARGADO'
+  | 'IGUAL'
+  | 'CON_PAGOS'
+  | 'SIN_CONTRATO'
+  | 'SIN_LINEAS'
+  | 'NO_SE_SABE';
+
+export type ProblemaDeUnaLineaDeCartera =
+  | 'DOCUMENTO_CORTO'
+  | 'FECHA_INVALIDA'
+  | 'DESPUES_DEL_CORTE'
+  | 'CERO';
+
+export interface CargaDeCarteraPorFactura {
+  /** `AAAA-MM-DD`. */
+  fechaDeCorte: string;
+  inquilinos: Array<{
+    documento: string;
+    nombre: string | null;
+    /** Líneas cargables (después de las exclusiones por línea). */
+    lineas: number;
+    /** Σ de las líneas positivas. */
+    deudaCop: number;
+    /** Σ de |líneas negativas|. */
+    aFavorCop: number;
+    /** La fecha más temprana de las líneas cargables. */
+    desde: string | null;
+    /** Un valor que esta versión no conoce se muestra como «Revisar», nunca rompe. */
+    estado: EstadoDelInquilinoEnLaCartera;
+    motivo: string | null;
+    contrato: {
+      id: string;
+      numero: number;
+      externalId: string | null;
+      inquilino: string | null;
+      inmueble: string | null;
+    } | null;
+    /** Otros contratos del mismo documento que NO reciben las líneas. */
+    otrosContratos: number;
+  }>;
+  lineasConProblema: Array<{
+    fila: number | null;
+    documento: string;
+    problema: ProblemaDeUnaLineaDeCartera;
+    motivo: string;
+  }>;
+  totales: {
+    lineasRecibidas: number;
+    lineasValidas: number;
+    inquilinos: number;
+    conContrato: number;
+    sinContrato: number;
+    deudaCop: number;
+    aFavorCop: number;
+  };
 }
 
 /** `GET/PUT /contracts/migrar/fecha-de-corte`. */

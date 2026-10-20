@@ -21,7 +21,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/toast";
 import {
   cicloDeVidaApi,
@@ -36,6 +35,10 @@ import { plataEnPantalla } from "@/lib/plata/escribir-plata";
 import { diaLegible } from '@/lib/mandato/textos';
 import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import {
+  CartaDelIncrementoCajon,
+  type CartaQueSeAbre,
+} from "@/components/contratos/CartaDelIncrementoCajon";
 
 const PESOS = plataEnPantalla(localeDeLasCifras, {
   style: "currency",
@@ -102,6 +105,8 @@ export function IncrementosDelContrato({
   const [errorDeLaTasa, setErrorDeLaTasa] = useState<string | undefined>(undefined);
   const enfocar = useFocoAlPrimerError();
   const [ocupado, setOcupado] = useState(false);
+  // 🔴 19-10-2026: la carta se ve en su cajón antes de salir, y una enviada se abre igual.
+  const [cartaAbierta, setCartaAbierta] = useState<CartaQueSeAbre | null>(null);
 
   const cargar = useCallback(async () => {
     try {
@@ -166,6 +171,9 @@ export function IncrementosDelContrato({
 
   const comercial = datos.uso === "COMERCIAL";
   const editable = puedeEditar && datos.disponible && !ocupado;
+  // Sólo un contrato que parte el mes lo prorratea (19-10-2026: la ficha decía
+  // «se cobra prorrateado» a todos; uno fecha a fecha empieza el período ese día).
+  const prorrateo = datos.prorrateaElMes ? " El mes del aniversario se cobra prorrateado." : "";
 
   return (
     <section className="space-y-3 rounded-lg border border-border p-4" data-testid="incrementos-del-contrato">
@@ -173,9 +181,9 @@ export function IncrementosDelContrato({
         <h3 className="text-sm font-medium">Incrementos del canon</h3>
         <p className="text-caption text-muted-foreground">
           {datos.uso === "VIVIENDA"
-            ? "Vivienda: sube sola al 100 % del IPC del año anterior en cada aniversario. El mes del aniversario se cobra prorrateado."
+            ? `Vivienda: sube sola al 100 % del IPC del año anterior en cada aniversario.${prorrateo}`
             : comercial
-              ? "Local comercial: digita el incremento de un año o la tasa pactada para cada año. El mes del aniversario se cobra prorrateado."
+              ? `Local comercial: digita el incremento de un año o la tasa pactada para cada año.${prorrateo}`
               : "El contrato no dice si es vivienda o local comercial: define el uso para saber cómo sube."}{" "}
           El canon sube aunque la carta no se haya enviado.
         </p>
@@ -185,7 +193,8 @@ export function IncrementosDelContrato({
           </p>
         )}
         <p className="mt-1 text-caption text-muted-foreground">
-          La carta aparece sola {datos.diasAntesDeLaCarta ?? 30} días antes del aniversario y se envía con un clic.
+          La carta aparece sola {datos.diasAntesDeLaCarta ?? 30} días antes del aniversario. Antes de enviarla se
+          ve tal como le llega al inquilino.
         </p>
         {datos.correoSaleDeVerdad === false && (
           <p className="mt-1 text-caption text-warning-700 dark:text-warning-100" data-testid="correo-simulado">
@@ -262,28 +271,12 @@ export function IncrementosDelContrato({
                   ["porcentaje", "canonNuevoCop"],
                 )
               }
-              onGenerarCarta={() =>
-                void accion(
-                  () => cicloDeVidaApi.generarCarta(contractId, a.desde),
-                  "Carta generada: queda por revisar.",
-                  "generar la carta",
-                )
-              }
-              onRevisar={(contenido) =>
-                accion(
-                  () => cicloDeVidaApi.revisarCarta(contractId, a.desde, contenido),
-                  "Carta revisada.",
-                  "guardar el texto de la carta",
-                  ["contenido"],
-                )
-              }
-              onEnviar={(contenido) =>
-                accion(
-                  () => cicloDeVidaApi.enviarCarta(contractId, a.desde, contenido),
-                  "Carta enviada.",
-                  "enviar la carta",
-                  ["contenido"],
-                )
+              onAbrirCarta={() =>
+                setCartaAbierta({
+                  contractId,
+                  desde: a.desde,
+                  titulo: `Aniversario del ${diaLegible(a.desde)}`,
+                })
               }
               onVerSoporte={() =>
                 void (async () => {
@@ -312,6 +305,13 @@ export function IncrementosDelContrato({
           ))}
         </ul>
       )}
+
+      <CartaDelIncrementoCajon
+        carta={cartaAbierta}
+        onCerrar={() => setCartaAbierta(null)}
+        puedeEnviar={puedeEditar && datos.disponible}
+        onEnviada={cargar}
+      />
     </section>
   );
 }
@@ -329,9 +329,7 @@ function Aniversario({
   editable,
   envioHabilitado,
   onDigitar,
-  onGenerarCarta,
-  onRevisar,
-  onEnviar,
+  onAbrirCarta,
   onConstancia,
   onVerSoporte,
 }: {
@@ -340,9 +338,11 @@ function Aniversario({
   editable: boolean;
   envioHabilitado: boolean;
   onDigitar: (body: { porcentaje?: number | null; canonNuevoCop?: number | null }) => Promise<ErroresDelServidor>;
-  onGenerarCarta: () => void;
-  onRevisar: (contenido?: string) => Promise<ErroresDelServidor>;
-  onEnviar: (contenido?: string) => Promise<ErroresDelServidor>;
+  /**
+   * Abre el cajón de la carta: ahí se ve tal como sale, se corrige y se envía
+   * (19-10-2026: «Ver y editar» en la ficha sobraba al lado del cajón).
+   */
+  onAbrirCarta: () => void;
   onConstancia: (body: {
     medio: "FISICO" | "WHATSAPP" | "OTRO";
     fecha: string;
@@ -356,7 +356,6 @@ function Aniversario({
   const [errores, setErrores] = useState<ErroresDelServidor>({});
   const ids = {
     porcentaje: `incremento-${a.desde}`,
-    contenido: `carta-${a.desde}`,
     fecha: `constancia-fecha-${a.desde}`,
     nota: `constancia-nota-${a.desde}`,
     medio: `constancia-medio-${a.desde}`,
@@ -372,13 +371,11 @@ function Aniversario({
   const limpiar = (campo: keyof typeof ids) =>
     setErrores((prev) => (prev[campo] ? { ...prev, [campo]: undefined } : prev));
   const [porcentaje, setPorcentaje] = useState("");
-  const [texto, setTexto] = useState(a.carta?.contenido ?? "");
   const [constancia, setConstancia] = useState(false);
   const [medio, setMedio] = useState<"FISICO" | "WHATSAPP" | "OTRO">("FISICO");
   const [fecha, setFecha] = useState("");
   const [nota, setNota] = useState("");
   const [soporte, setSoporte] = useState<File | null>(null);
-  useEffect(() => setTexto(a.carta?.contenido ?? ""), [a.carta?.contenido]);
   const sube = a.origen !== null && a.canonNuevoCop !== a.canonAnteriorCop;
   const enviada = a.carta?.estado === "ENVIADA";
   const enVentana =
@@ -416,6 +413,17 @@ function Aniversario({
           </>
         )}
       </p>
+
+      {enviada && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onAbrirCarta()}
+          data-testid={`ver-carta-enviada-${a.desde}`}
+        >
+          Ver la carta enviada
+        </Button>
+      )}
 
       {a.bandeja?.alertaRoja && (
         <p
@@ -476,44 +484,17 @@ function Aniversario({
 
       {sube && editable && !enviada && (
         <div className="space-y-2">
-          {a.carta ? (
-            <>
-              <Textarea
-                id={ids.contenido}
-                value={texto}
-                onChange={(e) => {
-                  setTexto(e.target.value);
-                  limpiar("contenido");
-                }}
-                rows={6}
-                maxLength={10_000}
-                aria-label={`Carta del incremento del ${diaLegible(a.desde)}`}
-                aria-invalid={errores.contenido ? true : undefined}
-                aria-describedby={`${ids.contenido}-error`}
-              />
-              <ErrorDelCampo id={`${ids.contenido}-error`} mensaje={errores.contenido} className="mt-0" />
-            </>
-          ) : (
-            <Button size="sm" variant="outline" onClick={onGenerarCarta}>
-              Ver y editar la carta
-            </Button>
-          )}
           <div className="flex flex-wrap items-center gap-2">
-            {(enVentana || a.carta) && (
-              <Button
-                size="sm"
-                onClick={() => void onEnviar(a.carta ? texto : undefined).then(pintar)}
-                disabled={!envioHabilitado}
-                data-testid={`enviar-carta-${a.desde}`}
-              >
-                Enviar la carta
-              </Button>
-            )}
-            {a.carta?.estado === "PENDIENTE_DE_REVISION" && (
-              <Button size="sm" variant="outline" onClick={() => void onRevisar(texto).then(pintar)}>
-                Guardar el texto
-              </Button>
-            )}
+            {/* Un solo botón: el cajón muestra la carta tal como sale, deja
+                corregirla y la envía (y dice por qué no, si no se puede). */}
+            <Button
+              size="sm"
+              variant={enVentana ? "default" : "outline"}
+              onClick={() => onAbrirCarta()}
+              data-testid={`enviar-carta-${a.desde}`}
+            >
+              Ver y enviar la carta
+            </Button>
             <Button size="sm" variant="ghost" onClick={() => setConstancia((v) => !v)} disabled={!envioHabilitado}>
               Se entregó por otro medio
             </Button>

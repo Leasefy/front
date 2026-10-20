@@ -72,6 +72,11 @@ vi.mock('@/lib/api/contabilidad.service', async () => {
   return { ...actual, contabilidadApi: { ...actual.contabilidadApi, ...api } };
 });
 
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
+vi.mock('@/lib/api/contracts.service', () => ({
+  contractsApi: { migracion: { fechaDeCorte: vi.fn().mockResolvedValue({ fecha: null, editable: true, motivo: null }) } },
+}));
+
 import { RegistrosContables } from './RegistrosContables';
 
 const CUENTA = {
@@ -136,11 +141,13 @@ afterEach(() => {
 });
 
 describe('🔴 Portofino (14-10) · qué traer y a dónde va', () => {
-  it('la guía dice los tres archivos, para qué es cada uno y cuál es obligatorio', async () => {
+  it('la guía dice los tres archivos, para qué es cada uno y que ninguno es obligatorio', async () => {
     await pintar();
     const guia = q('contables-guia')!;
     expect(q('guia-balance')!.textContent).toContain('El balance de prueba por tercero');
-    expect(q('guia-balance')!.textContent).toContain('Obligatorio');
+    expect(q('guia-balance')!.textContent).toContain('Recomendado');
+    expect(q('guia-balance')!.textContent).not.toContain('Obligatorio');
+    expect(guia.textContent).toContain('Los saldos iniciales no son obligatorios');
     expect(q('guia-libro')!.textContent).toContain('Los movimientos de este año');
     expect(q('guia-comprobantes')!.textContent).toContain('Opcional');
     expect(guia.textContent).toContain('Sube tu archivo contable');

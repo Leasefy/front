@@ -1849,7 +1849,9 @@
         "closedThisMonth": "{{count}} cerrados este mes",
         "closedThisMonthLabel": "Cerrados este mes",
         "avgDaysToClose": "Promedio días cierre",
-        "days": "{{count}} días"
+        "days": "{{count}} días",
+        "activeAgentsUno": "1 agente activo",
+        "closedThisMonthUno": "1 cerrado este mes"
       },
       "quickActions": {
         "title": "Acciones Rápidas",
@@ -1868,12 +1870,14 @@
         "viewPayments": "Ver cobros",
         "pendingMaintenance": "{{count}} solicitudes de mantenimiento sin cerrar",
         "latePaymentsDetalle": "Canon vencido que todavía no entró. Desde Cobros se registra el pago o se manda el recordatorio.",
-        "pendingMaintenanceDetalle": "Solicitudes abiertas o en curso. Asigna quién las atiende y cerralas cuando estén resueltas.",
+        "pendingMaintenanceDetalle": "Solicitudes abiertas o en curso. Asigna quién las atiende y ciérralas cuando estén resueltas.",
         "viewRequests": "Ver solicitudes",
         "carteraDelMes": "{{count}} cuotas del mes en cartera por {{amount}}",
         "carteraDelMesDetalle": "Canon que pasó el plazo del contrato y todavía no entró. Desde Cartera se registra el pago o se manda el recordatorio.",
         "verCartera": "Ver cartera",
-        "verRecaudo": "Ver recaudo"
+        "verRecaudo": "Ver recaudo",
+        "pendingMaintenanceUno": "1 solicitud de mantenimiento sin cerrar",
+        "carteraDelMesUna": "1 cuota del mes en cartera por {{amount}}"
       },
       "financial": {
         "title": "Resumen Financiero",

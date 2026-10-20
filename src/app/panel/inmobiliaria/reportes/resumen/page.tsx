@@ -40,7 +40,7 @@ import {
   useCobros,
   useMantenimientos,
 } from '@/lib/hooks/useInmobiliaria';
-import { SIN_MEDIR, anchoDeBarra, tasaMedida, textoDeTasa } from '@/lib/tasas';
+import { SIN_MEDIR, anchoDeBarra, tasaMedida, tasaEnPantalla } from '@/lib/tasas';
 import { claveDelRotulo, fraseDeLasCifras, tasaDelTablero } from '@/lib/tasa-de-recaudo';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
@@ -277,7 +277,7 @@ function AgentMiniCard({
           {agent.name}
         </p>
         <p className="text-xs text-fg-muted">
-          {t('inmobiliaria.dashboard.team.closedThisMonth', { count: agent.metrics.closedThisMonth })}
+          {t(agent.metrics.closedThisMonth === 1 ? 'inmobiliaria.dashboard.team.closedThisMonthUno' : 'inmobiliaria.dashboard.team.closedThisMonth', { count: agent.metrics.closedThisMonth })}
         </p>
       </div>
       {/* 🔴 17-09: acá iba la comisión del asesor. Se paga por fuera de
@@ -511,7 +511,7 @@ function ResumenDelNegocio() {
           title={t('inmobiliaria.dashboard.kpi.monthlyCollection')}
           value={formatCurrency(kpis.collectedRevenue)}
           subtitle={t('inmobiliaria.dashboard.kpi.collectionRateLabel', {
-            rate: textoDeTasa(tasaDeRecaudo),
+            rate: tasaEnPantalla(tasaDeRecaudo),
             rotulo: rotuloDeLaTasa,
           })}
           trend={laVariacion(kpis.collectedRevenue, kpis.collectionTrend)}
@@ -545,7 +545,7 @@ function ResumenDelNegocio() {
         />
         <KPICard
           title={t('inmobiliaria.dashboard.kpi.occupancy')}
-          value={textoDeTasa(tasaDeOcupacion)}
+          value={tasaEnPantalla(tasaDeOcupacion)}
           subtitle={
             // El número dice QUÉ cuenta: nunca un porcentaje suelto.
             fueraDelCatalogo > 0
@@ -622,7 +622,7 @@ function ResumenDelNegocio() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.team.title')}</h2>
-              <p className="text-sm text-fg-muted mt-0.5">{t('inmobiliaria.dashboard.team.activeAgents', { count: activeAgents.length })}</p>
+              <p className="text-sm text-fg-muted mt-0.5">{t(activeAgents.length === 1 ? 'inmobiliaria.dashboard.team.activeAgentsUno' : 'inmobiliaria.dashboard.team.activeAgents', { count: activeAgents.length })}</p>
             </div>
             <Link
               href="/panel/inmobiliaria/configuracion/equipo"
@@ -714,7 +714,7 @@ function ResumenDelNegocio() {
         carteraDelMes.cuotasEnCartera > 0 && (
           <AlertaAccionable
             severidad="warning"
-            titulo={t('inmobiliaria.dashboard.alerts.carteraDelMes', {
+            titulo={t(carteraDelMes.cuotasEnCartera === 1 ? 'inmobiliaria.dashboard.alerts.carteraDelMesUna' : 'inmobiliaria.dashboard.alerts.carteraDelMes', {
               count: carteraDelMes.cuotasEnCartera,
               amount: formatCurrency(carteraDelMes.carteraCop),
             })}
@@ -756,7 +756,7 @@ function ResumenDelNegocio() {
       {pendingMaintenance.length > 0 && (
         <AlertaAccionable
           severidad="info"
-          titulo={t('inmobiliaria.dashboard.alerts.pendingMaintenance', { count: pendingMaintenance.length })}
+          titulo={t(pendingMaintenance.length === 1 ? 'inmobiliaria.dashboard.alerts.pendingMaintenanceUno' : 'inmobiliaria.dashboard.alerts.pendingMaintenance', { count: pendingMaintenance.length })}
           accion={{ label: t('inmobiliaria.dashboard.alerts.viewRequests'), href: '/panel/inmobiliaria/mantenimientos' }}
           data-testid="alerta-mantenimientos"
         >
@@ -820,7 +820,7 @@ function ResumenDelNegocio() {
                 emitido» son dos números distintos. */}
             <MonoLabel data-testid="resumen-rotulo-de-la-tasa">{rotuloDeLaTasa}</MonoLabel>
             <span className="font-heading font-semibold text-fg tabular-nums" data-testid="resumen-tasa-de-recaudo">
-              {textoDeTasa(tasaDeRecaudo)}
+              {tasaEnPantalla(tasaDeRecaudo)}
             </span>
           </div>
           <div className="h-2 rounded-full bg-surface-muted overflow-hidden">

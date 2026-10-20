@@ -1814,7 +1814,9 @@
         "closedThisMonth": "{{count}} closed this month",
         "closedThisMonthLabel": "Closed this month",
         "avgDaysToClose": "Avg days to close",
-        "days": "{{count}} days"
+        "days": "{{count}} days",
+        "activeAgentsUno": "1 active agent",
+        "closedThisMonthUno": "1 closed this month"
       },
       "quickActions": {
         "title": "Quick Actions",
@@ -1838,7 +1840,9 @@
         "carteraDelMes": "{{count}} installments this month past the grace period, for {{amount}}",
         "carteraDelMesDetalle": "Rent past the contract's grace period that has not come in yet. From the Portfolio you record the payment or send the reminder.",
         "verCartera": "View portfolio",
-        "verRecaudo": "View collections"
+        "verRecaudo": "View collections",
+        "pendingMaintenanceUno": "1 open maintenance request",
+        "carteraDelMesUna": "1 installment of the month overdue for {{amount}}"
       },
       "financial": {
         "title": "Financial Summary",

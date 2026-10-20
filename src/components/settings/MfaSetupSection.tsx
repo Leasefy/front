@@ -14,7 +14,8 @@ import {
   verificarFactorNuevo,
 } from '@/lib/auth/inscripcion-del-segundo-factor';
 import {
-  crearFactorConElMock,
+  inscribirYVerificarConElMock,
+  liberarYVerificarConElMock,
   resolverCodigoDelMock,
   userIdDelToken,
 } from '@/lib/auth/mock-del-segundo-factor';
@@ -248,7 +249,21 @@ export function MfaSetupSection({
         factorId: currentEnroll.factorId,
       });
       if (!resuelto.ok) {
-        toast.error(resuelto.mensaje);
+        // Sin secreto de este factor: el back lo libera y el mock inscribe y
+        // verifica uno nuevo (una sola vez; si falla, el mensaje de siempre).
+        const recuperado =
+          resuelto.sinSecreto && token ? await liberarYVerificarConElMock({ token, enElIngreso }) : null;
+        if (recuperado?.ok) {
+          setState('enrolled');
+          setFactorId(recuperado.factorId);
+          setEnrollData(null);
+          setCode('');
+          toast.success('Autenticación de dos factores activada con el mock');
+          onEnrolled?.();
+          onActivado?.(recuperado.factorId);
+          return;
+        }
+        toast.error(recuperado ? recuperado.mensaje : resuelto.mensaje);
         setCode('');
         return;
       }
@@ -286,13 +301,12 @@ export function MfaSetupSection({
       const token = getAccessToken() ?? accessTokenRef.current;
       accessTokenRef.current = token;
       if (!token) throw sinSesion();
-      const { factor, codigo } = await crearFactorConElMock(token);
-      await verificarFactorNuevo({ factorId: factor.factorId, codigo, enElIngreso, token });
+      const { factorId: nuevo } = await inscribirYVerificarConElMock({ token, enElIngreso });
       setState('enrolled');
-      setFactorId(factor.factorId);
+      setFactorId(nuevo);
       toast.success('Autenticación de dos factores activada con el mock');
       onEnrolled?.();
-      onActivado?.(factor.factorId);
+      onActivado?.(nuevo);
     } catch (err) {
       toast.error(
         mensajeDelSegundoFactor(

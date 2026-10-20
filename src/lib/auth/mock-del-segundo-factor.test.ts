@@ -74,7 +74,7 @@ describe('resolverCodigoDelMock', () => {
   it('123456 sin secreto para ese factor dice por qué', async () => {
     guardarSecretoDelMock('u1', 'otro', CLAVE);
     const r = await resolverCodigoDelMock({ codigo: CODIGO_DEL_MOCK, userId: 'u1', factorId: 'f1' });
-    expect(r).toEqual({ ok: false, mensaje: MENSAJE_SIN_SECRETO_DEL_MOCK });
+    expect(r).toEqual({ ok: false, mensaje: MENSAJE_SIN_SECRETO_DEL_MOCK, sinSecreto: true });
   });
 
   it('cualquier otro código pasa tal cual', async () => {
@@ -96,6 +96,6 @@ describe('resolverCodigoDelMock', () => {
   it('con un secreto corrupto no revienta: dice que no hay mock', async () => {
     guardarSecretoDelMock('u1', 'f1', '1-no-es-base32');
     const r = await resolverCodigoDelMock({ codigo: CODIGO_DEL_MOCK, userId: 'u1', factorId: 'f1' });
-    expect(r).toEqual({ ok: false, mensaje: MENSAJE_SIN_SECRETO_DEL_MOCK });
+    expect(r).toEqual({ ok: false, mensaje: MENSAJE_SIN_SECRETO_DEL_MOCK, sinSecreto: true });
   });
 });

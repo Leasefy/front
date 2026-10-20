@@ -67,7 +67,8 @@ import {
 } from '@/lib/auth/inscripcion-del-segundo-factor';
 import { InsigniaDelMock } from '@/components/auth/InsigniaDelMock';
 import {
-  crearFactorConElMock,
+  inscribirYVerificarConElMock,
+  liberarYVerificarConElMock,
   resolverCodigoDelMock,
   userIdDelToken,
 } from '@/lib/auth/mock-del-segundo-factor';
@@ -291,10 +292,22 @@ export function ActivarSegundoFactorPasoAPaso({
           factorId: actual.factorId,
         });
         if (!resuelto.ok) {
+          // Sin secreto de este factor: el back lo libera y el mock inscribe y
+          // verifica uno nuevo (una sola vez; si falla, el mensaje de siempre).
+          const recuperado =
+            resuelto.sinSecreto && token
+              ? await liberarYVerificarConElMock({ token, enElIngreso: true })
+              : null;
+          if (recuperado?.ok) {
+            activadoRef.current = true;
+            setPaso('listo');
+            onActivado(recuperado.factorId);
+            return;
+          }
           verificandoRef.current = false;
           setVerificando(false);
           setCodigo('');
-          setErrorDelCodigo(resuelto.mensaje);
+          setErrorDelCodigo(recuperado ? recuperado.mensaje : resuelto.mensaje);
           return;
         }
         await verificarFactorNuevo({
@@ -337,18 +350,10 @@ export function ActivarSegundoFactorPasoAPaso({
       if (!token) throw new Error('Tu sesión se cerró. Vuelve a entrar con tu contraseña.');
       if (await consultaRef.current) return;
       verificandoRef.current = true;
-      const { factor: nuevo, codigo: primerCodigo } = await crearFactorConElMock(token);
-      setFactor(nuevo);
-      factorRef.current = nuevo;
-      await verificarFactorNuevo({
-        factorId: nuevo.factorId,
-        codigo: primerCodigo,
-        enElIngreso: true,
-        token,
-      });
+      const { factorId } = await inscribirYVerificarConElMock({ token, enElIngreso: true });
       activadoRef.current = true;
       setPaso('listo');
-      onActivado(nuevo.factorId);
+      onActivado(factorId);
     } catch (err) {
       verificandoRef.current = false;
       setErrorAlPreparar(

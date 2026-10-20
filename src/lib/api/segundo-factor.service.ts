@@ -24,4 +24,12 @@ export const segundoFactorApi = {
   confirmarRestablecimiento(codigo: string): Promise<void> {
     return apiClient.post<void>('/auth/segundo-factor/restablecer/confirmar', { codigo })
   },
+  /**
+   * Sólo desarrollo y staging (T-0172): el back borra TODOS los factores de la
+   * persona para que el mock pueda inscribir uno nuevo. En producción el back
+   * contesta 404. Tipado a mano: la ruta no está en el OpenAPI del agente.
+   */
+  liberarFactoresDelMock(): Promise<{ factoresBorrados: number }> {
+    return apiClient.post<{ factoresBorrados: number }>('/auth/segundo-factor/mock/liberar')
+  },
 }

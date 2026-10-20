@@ -13,9 +13,10 @@ void React
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { challengeMock, verifyMock } = vi.hoisted(() => ({
+const { challengeMock, verifyMock, liberarMock } = vi.hoisted(() => ({
   challengeMock: vi.fn(),
   verifyMock: vi.fn(),
+  liberarMock: vi.fn(),
 }))
 
 function tokenDe(sub: string) {
@@ -25,6 +26,10 @@ const TOKEN = tokenDe('usuario-1')
 
 vi.mock('@/lib/api/client', () => ({
   getAccessToken: () => TOKEN,
+}))
+
+vi.mock('@/lib/api/segundo-factor.service', () => ({
+  segundoFactorApi: { liberarFactoresDelMock: liberarMock },
 }))
 
 vi.mock('@/lib/supabase/client', () => ({
@@ -49,6 +54,7 @@ function respuesta(body: unknown) {
 
 beforeEach(() => {
   window.localStorage.clear()
+  liberarMock.mockReset().mockRejectedValue(Object.assign(new Error('Not Found'), { status: 404 }))
   challengeMock.mockReset().mockResolvedValue({ data: { id: 'ch1' }, error: null })
   verifyMock.mockReset().mockResolvedValue({ data: { access_token: 'token-aal2' }, error: null })
   vi.stubGlobal(
@@ -161,6 +167,24 @@ describe('mock del segundo factor en el paso a paso', () => {
     expect(verifyMock).not.toHaveBeenCalled()
   })
 
+  it('123456 sin secreto y el back libera: inscribe uno nuevo con el mock y activa', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_ENV', 'development')
+    liberarMock.mockResolvedValue({ factoresBorrados: 1 })
+    const p = await montar()
+    await clic(porTestId('ya-tengo-la-app'))
+    await clic(porTestId('ya-lo-agregue'))
+
+    await escribirCodigo('123456')
+
+    expect(liberarMock).toHaveBeenCalledTimes(1)
+    expect(verifyMock).toHaveBeenCalledTimes(1)
+    const enviado = verifyMock.mock.calls[0]![0] as { code: string }
+    expect(enviado.code).toMatch(/^\d{6}$/)
+    expect(enviado.code).not.toBe('123456')
+    expect(window.localStorage.getItem(clavePorFactor('usuario-1', 'f-nuevo'))).toBe(SECRETO)
+    expect(p.onActivado).toHaveBeenCalledWith('f-nuevo')
+  })
+
   it('en producción 123456 viaja tal cual', async () => {
     vi.stubEnv('NEXT_PUBLIC_APP_ENV', 'production')
     await montar()
@@ -171,5 +195,6 @@ describe('mock del segundo factor en el paso a paso', () => {
     await escribirCodigo('123456')
 
     expect(verifyMock).toHaveBeenCalledWith({ factorId: 'f-nuevo', challengeId: 'ch1', code: '123456' })
+    expect(liberarMock).not.toHaveBeenCalled()
   })
 })

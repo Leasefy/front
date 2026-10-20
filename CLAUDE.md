@@ -107,8 +107,11 @@ activity feed, execution panel).
   `/admin/segundo-factor`) ofrecen «Usar mock de autenticación»: inscribe el TOTP real, guarda el `secret` en
   `localStorage` (`leasefy:mfa-mock:<userId>:<factorId>`) y completa el primer código solo (`lib/auth/totp.ts`, RFC 6238
   con WebCrypto). En cualquier pantalla que pida el código, `123456` se cambia por el TOTP real calculado con el secreto
-  guardado de ESE factor (`resolverCodigoDelMock`); sin secreto dice que el factor no se registró con el mock en este
-  navegador. Back y Supabase ven un TOTP verdadero. 🔴 La puerta es `lib/config/entorno.ts`: sólo
+  guardado de ESE factor (`resolverCodigoDelMock`). Sin secreto (factor inscrito con una app real) se llama a
+  `POST /auth/segundo-factor/mock/liberar` (`segundoFactorApi.liberarFactoresDelMock`; el back lo cierra con 404 en
+  producción), se inscribe y verifica un factor nuevo con el mock y se sigue como un verify normal
+  (`liberarYVerificarConElMock`, una sola vez; 404/red/5xx = el mensaje de que el factor no se registró con el mock).
+  El secreto se guarda sólo DESPUÉS de verificar (`inscribirYVerificarConElMock`). Back y Supabase ven un TOTP verdadero. 🔴 La puerta es `lib/config/entorno.ts`: sólo
   `NEXT_PUBLIC_APP_ENV` = `development` | `staging` (exacto) la abre; ausente o cualquier otro valor = producción;
   además se apaga en `leasefy.co` y `*.leasefy.co`. No se usa `NODE_ENV`. Lleva la marca visible «Mock» (`InsigniaDelMock`).
 - Guards client-side (no middleware): `ProtectedRoute`, `AgencyRoleGuard`, `PermissionGate`.

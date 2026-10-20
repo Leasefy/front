@@ -9,7 +9,11 @@ import { getSupabase } from '@/lib/supabase/client';
 import { getAccessToken, hayRespuestaDeSesion } from '@/lib/api/client';
 import { decodeAccessToken } from '@/lib/auth/jwt';
 import { InsigniaDelMock } from '@/components/auth/InsigniaDelMock';
-import { resolverCodigoDelMock, userIdDelToken } from '@/lib/auth/mock-del-segundo-factor';
+import {
+  liberarYVerificarConElMock,
+  resolverCodigoDelMock,
+  userIdDelToken,
+} from '@/lib/auth/mock-del-segundo-factor';
 import { useMockDelSegundoFactor } from '@/lib/auth/use-mock-del-segundo-factor';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -376,11 +380,23 @@ export default function MfaVerifyPage() {
         factorId,
       });
       if (!resuelto.ok) {
+        // Sin secreto de este factor: el back lo libera y el mock inscribe y
+        // verifica uno nuevo (una sola vez; si falla, el mensaje de siempre).
+        const tokenVigente = vigente?.session?.access_token ?? getAccessToken();
+        const recuperado =
+          resuelto.sinSecreto && tokenVigente
+            ? await liberarYVerificarConElMock({ token: tokenVigente, enElIngreso: true })
+            : null;
+        if (recuperado?.ok) {
+          setMfaVerified();
+          router.replace(destinoTrasElSegundoFactor(returnUrlDeLaBarra(), user?.role));
+          return;
+        }
         verificandoRef.current = false;
         setIsLoading(false);
         setHayError(true);
         setCode('');
-        toast.error(resuelto.mensaje);
+        toast.error(recuperado ? recuperado.mensaje : resuelto.mensaje);
         return;
       }
 

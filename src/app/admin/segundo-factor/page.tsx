@@ -9,7 +9,11 @@ import { MfaSetupSection } from '@/components/settings/MfaSetupSection'
 import { leerErrorDeSupabase } from '@/lib/auth/errores-de-supabase'
 import { mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor'
 import { MENSAJE_DEL_TOPE } from '@/lib/auth/inscripcion-del-segundo-factor'
-import { resolverCodigoDelMock, userIdDelToken } from '@/lib/auth/mock-del-segundo-factor'
+import {
+  liberarYVerificarConElMock,
+  resolverCodigoDelMock,
+  userIdDelToken,
+} from '@/lib/auth/mock-del-segundo-factor'
 import { useMockDelSegundoFactor } from '@/lib/auth/use-mock-del-segundo-factor'
 import { InsigniaDelMock } from '@/components/auth/InsigniaDelMock'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
@@ -144,7 +148,17 @@ function SegundoFactor() {
         factorId,
       })
       if (!resuelto.ok) {
-        setError(resuelto.mensaje)
+        // Sin secreto de este factor: el back lo libera y el mock inscribe y
+        // verifica uno nuevo (una sola vez; si falla, el mensaje de siempre).
+        const recuperado =
+          resuelto.sinSecreto && token.current
+            ? await liberarYVerificarConElMock({ token: token.current, enElIngreso: true })
+            : null
+        if (recuperado?.ok) {
+          window.location.href = next
+          return
+        }
+        setError(recuperado ? recuperado.mensaje : resuelto.mensaje)
         setCodigo('')
         return
       }

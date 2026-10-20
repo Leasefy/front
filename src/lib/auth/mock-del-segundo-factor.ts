@@ -12,7 +12,13 @@
  */
 
 import { decodeAccessToken } from '@/lib/auth/jwt';
-import { crearFactorTotp, type FactorPorVerificar } from '@/lib/auth/inscripcion-del-segundo-factor';
+import { segundoFactorApi } from '@/lib/api/segundo-factor.service';
+import {
+  crearFactorTotp,
+  descartarFactorSinVerificar,
+  verificarFactorNuevo,
+  type FactorPorVerificar,
+} from '@/lib/auth/inscripcion-del-segundo-factor';
 import { codigoTotp } from '@/lib/auth/totp';
 import { mockDeSegundoFactorHabilitado } from '@/lib/config/entorno';
 
@@ -52,7 +58,7 @@ export function userIdDelToken(token: string | null | undefined): string | null 
 
 export type CodigoResuelto =
   | { ok: true; codigo: string; sustituido: boolean }
-  | { ok: false; mensaje: string };
+  | { ok: false; mensaje: string; sinSecreto?: true };
 
 /**
  * Lo que hay que mandar a Supabase para el código que escribió la persona.
@@ -73,24 +79,73 @@ export async function resolverCodigoDelMock({
     return { ok: true, codigo, sustituido: false };
   }
   const secreto = leerSecretoDelMock(userId, factorId);
-  if (!secreto) return { ok: false, mensaje: MENSAJE_SIN_SECRETO_DEL_MOCK };
+  if (!secreto) return { ok: false, mensaje: MENSAJE_SIN_SECRETO_DEL_MOCK, sinSecreto: true };
   try {
     return { ok: true, codigo: await codigoTotp(secreto, ahoraMs), sustituido: true };
   } catch {
-    return { ok: false, mensaje: MENSAJE_SIN_SECRETO_DEL_MOCK };
+    return { ok: false, mensaje: MENSAJE_SIN_SECRETO_DEL_MOCK, sinSecreto: true };
   }
 }
 
 /**
- * Inscribe un factor TOTP como siempre, guarda su secreto y devuelve, junto al
- * factor, el primer código ya calculado. Nunca en producción: lanza.
+ * Inscribe un factor TOTP como siempre y lo verifica con el código calculado.
+ * El secreto se guarda DESPUÉS de verificar: si algo falla no queda ninguna
+ * clave huérfana y el factor a medio crear se descarta. Nunca en producción.
  */
-export async function crearFactorConElMock(
-  token: string,
-): Promise<{ factor: FactorPorVerificar; codigo: string }> {
+export async function inscribirYVerificarConElMock({
+  token,
+  enElIngreso,
+}: {
+  token: string;
+  enElIngreso: boolean;
+}): Promise<{ factorId: string }> {
   if (!mockDeSegundoFactorHabilitado()) throw new Error('El mock no está disponible en este entorno.');
   const factor = await crearFactorTotp(token);
+  try {
+    await verificarFactorNuevo({
+      factorId: factor.factorId,
+      codigo: await codigoTotp(factor.secret),
+      enElIngreso,
+      token,
+    });
+  } catch (err) {
+    descartarFactorSinVerificar(factor.factorId, token);
+    throw err;
+  }
   const userId = userIdDelToken(token);
   if (userId) guardarSecretoDelMock(userId, factor.factorId, factor.secret);
-  return { factor, codigo: await codigoTotp(factor.secret) };
+  return { factorId: factor.factorId };
+}
+
+export const MENSAJE_FALLO_AL_REINSCRIBIR_CON_EL_MOCK =
+  'No pudimos activar el mock. Intenta de nuevo en un momento.';
+
+export type RecuperacionDelMock = { ok: true; factorId: string } | { ok: false; mensaje: string };
+
+/**
+ * `123456` sobre un factor que NO se inscribió con el mock (T-0172, ronda 2):
+ * el back (sólo desarrollo y staging) libera los factores de la persona y acá
+ * se inscribe y verifica uno nuevo con el mock. Una sola vez, sin reintentos:
+ * si el back contesta 404, red o 5xx, queda el mensaje de siempre. Compuerta
+ * cerrada (producción): ni siquiera se llama al back.
+ */
+export async function liberarYVerificarConElMock({
+  token,
+  enElIngreso,
+}: {
+  token: string;
+  enElIngreso: boolean;
+}): Promise<RecuperacionDelMock> {
+  if (!mockDeSegundoFactorHabilitado()) return { ok: false, mensaje: MENSAJE_SIN_SECRETO_DEL_MOCK };
+  try {
+    await segundoFactorApi.liberarFactoresDelMock();
+  } catch {
+    return { ok: false, mensaje: MENSAJE_SIN_SECRETO_DEL_MOCK };
+  }
+  try {
+    const { factorId } = await inscribirYVerificarConElMock({ token, enElIngreso });
+    return { ok: true, factorId };
+  } catch {
+    return { ok: false, mensaje: MENSAJE_FALLO_AL_REINSCRIBIR_CON_EL_MOCK };
+  }
 }

@@ -50,13 +50,23 @@ export function usePilotoFlota(): UsePilotoFlotaResult {
   const { agency } = useAuth()
   // En modo comercial el Piloto se ve en demo: no se le pregunta al micro,
   // que todavía no conoce a esa inmobiliaria (cada pregunta era un 401).
-  const agencyId = enModoComercial(agency) ? null : agency?.id ?? null
+  const comercial = enModoComercial(agency)
+  const agencyId = comercial ? null : agency?.id ?? null
 
   const [data, setData] = useState<PilotoFlotaResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
   const [notAvailable, setNotAvailable] = useState(false)
   const [busy, setBusy] = useState(false)
+
+  // Sin agencia se sigue «cargando» (la sesión se resuelve); en modo comercial
+  // no hay nada que esperar: no disponible, y la píldora no se pinta.
+  useEffect(() => {
+    if (!comercial) return
+    setData(null)
+    setNotAvailable(true)
+    setIsLoading(false)
+  }, [comercial])
 
   const abortRef = useRef<AbortController | null>(null)
   const loadedOnceRef = useRef(false)

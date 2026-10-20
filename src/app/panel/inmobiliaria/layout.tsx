@@ -410,8 +410,11 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
 
         {/* El recorrido guiado de 3 pasos. Se monta acá —no en una pantalla—
             porque señala el sidebar y el header, que viven en este layout.
-            No pinta nada salvo que la preferencia esté encendida. */}
-        <TourDelPanel />
+            No pinta nada salvo que la preferencia esté encendida.
+            En modo comercial no: su bienvenida es la del candado, y el
+            recorrido (captar, firmar, cobrar, pagar) sería casi todo demo.
+            Al activar la cuenta sale como a cualquiera (nunca se marcó visto). */}
+        {!modoComercial && <TourDelPanel />}
 
         {/* 🔴 Si el panel está sirviendo datos inventados, lo dice. Va acá, en
             el layout, para cubrir las 156 rutas de una sola vez: un aviso que

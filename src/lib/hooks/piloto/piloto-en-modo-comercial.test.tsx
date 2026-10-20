@@ -20,6 +20,7 @@ vi.mock('@/lib/auth', () => ({
 
 import { usePilotoBadge } from './use-piloto-badge'
 import { PilotoInboxProvider, usePilotoInboxCompartido } from './piloto-inbox-context'
+import { usePilotoFlota } from './use-piloto-flota'
 
 let container: HTMLDivElement
 let root: Root
@@ -27,6 +28,11 @@ let root: Root
 function Badge() {
   const { total } = usePilotoBadge()
   return React.createElement('span', null, String(total ?? ''))
+}
+
+function Flota() {
+  const f = usePilotoFlota()
+  return React.createElement('span', { 'data-testid': 'flota' }, `${f.isLoading ? 'cargando' : 'listo'}·${f.notAvailable ? 'no-disponible' : 'disponible'}`)
 }
 
 function Bandeja() {
@@ -53,7 +59,7 @@ async function montar() {
   root = createRoot(container)
   await act(async () => {
     root.render(
-      React.createElement(PilotoInboxProvider, null, React.createElement(Badge), React.createElement(Bandeja)),
+      React.createElement(PilotoInboxProvider, null, React.createElement(Badge), React.createElement(Bandeja), React.createElement(Flota)),
     )
   })
   await act(async () => {
@@ -67,6 +73,13 @@ describe('el Piloto en modo comercial', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 401 }))
     await montar()
     expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('🔴 la flota no se queda «cargando»: no disponible, y la píldora «Piloto» no se pinta', async () => {
+    auth.agency = { id: 'AGY-TEST', modoComercial: true }
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 401 }))
+    await montar()
+    expect(container.querySelector('[data-testid="flota"]')?.textContent).toBe('listo·no-disponible')
   })
 
   it('fuera del modo comercial pregunta como siempre', async () => {

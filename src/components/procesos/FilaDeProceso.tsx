@@ -366,12 +366,6 @@ export function FilaDeProceso({
                 Reintentar
               </Link>
             ) : null)}
-          {resultado && (
-            <Link href={resultado.href} className={CLASE_ACCION_SUAVE} data-testid="ver-resultado-proceso">
-              {resultado.texto}
-              <ArrowRight className="h-3 w-3" aria-hidden="true" />
-            </Link>
-          )}
           {sePuedeDetener && (
             <AccionSuave
               onClick={() => (enElNavegador ? enElNavegador.detener() : void cancelar())}

@@ -853,6 +853,9 @@ export const facturacionPorMesService = {
    * esa factura en sí»). Por `getBlob` y no un `<a href>`: la ruta pide el
    * token de la sesión. Pide lo mismo que ver facturación (`cobros:view`).
    */
+  /** El detalle de una factura emitida (`GET /inmobiliaria/facturacion/:id`). */
+  factura: (facturaId: string) =>
+    apiClient.get<FacturaEmitidaDetalle>(`${BASE}/${encodeURIComponent(facturaId)}`),
   pdfDeLaFactura: (facturaId: string) =>
     apiClient.getBlob(`${BASE}/${encodeURIComponent(facturaId)}/pdf`),
 
@@ -1143,4 +1146,29 @@ export function mesLegible(mes: string): string {
   const nombre = NOMBRE_DEL_MES[Number(numero) - 1]
   if (!nombre || !anio) return mes
   return `${nombre} de ${anio}`
+}
+
+/**
+ * Una factura emitida tal como la devuelve `GET /inmobiliaria/facturacion/:id`
+ * (la fila con sus renglones y su anulación). Sólo lo que lee el cajón del
+ * centro de procesos (20-10-2026).
+ */
+export interface FacturaEmitidaDetalle {
+  id: string
+  mes: string
+  destinatario: 'INQUILINO' | 'PROPIETARIO'
+  numeroDian: string | null
+  terceroNombre: string
+  terceroDocumento: string | null
+  inmueble: string
+  subtotalCop: number
+  descuentoCop: number
+  ivaCop: number
+  retencionesCop: number
+  totalCop: number
+  lineas: LineaDeFactura[]
+  estado: string | null
+  emitidaAt?: string | null
+  createdAt: string
+  notaCredito: { numero: string } | null
 }

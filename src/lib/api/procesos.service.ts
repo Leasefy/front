@@ -25,6 +25,7 @@ export interface PedidoDeReporte {
   desde?: string
   hasta?: string
 }
+import type { FiltrosDeRenglones, PaginaDeRenglones } from './procesos.types'
 import type {
   DescargaDeProceso,
   FiltrosDeProcesos,
@@ -134,6 +135,16 @@ export const procesosApi = {
   /** URL firmada de una hora que baja el archivo con su nombre. */
   descarga(id: string): Promise<DescargaDeProceso> {
     return apiClient.get<DescargaDeProceso>(`${BASE_DE_PROCESOS}/${id}/descarga`)
+  },
+  /** Lo que hizo el proceso, renglón por renglón (20-10-2026). Un back anterior: 404. */
+  renglones(id: string, filtros: FiltrosDeRenglones = {}): Promise<PaginaDeRenglones> {
+    const q = new URLSearchParams()
+    if (filtros.estado) q.set('estado', filtros.estado)
+    if (filtros.buscar?.trim()) q.set('buscar', filtros.buscar.trim())
+    if (filtros.despuesDe) q.set('despuesDe', filtros.despuesDe)
+    if (filtros.limite) q.set('limite', String(filtros.limite))
+    const s = q.toString()
+    return apiClient.get<PaginaDeRenglones>(`${BASE_DE_PROCESOS}/${id}/renglones${s ? `?${s}` : ''}`)
   },
   cancelar(id: string): Promise<Proceso> {
     return apiClient.post<Proceso>(`${BASE_DE_PROCESOS}/${id}/cancelar`, {})

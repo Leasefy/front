@@ -131,7 +131,7 @@ function Publica() {
           <Link href="/" aria-label="Leasefy — inicio" className="inline-flex text-fg">
             <LeasefyLogotype size={20} title="Leasefy" />
           </Link>
-          <Link href="/es/propiedades" className="inline-flex items-center gap-1.5 text-[13.5px] text-fg-muted hover:text-fg">
+          <Link href="/propiedades" className="inline-flex items-center gap-1.5 text-[13.5px] text-fg-muted hover:text-fg">
             <ArrowLeft size={14} aria-hidden="true" />
             Volver al marketplace
           </Link>

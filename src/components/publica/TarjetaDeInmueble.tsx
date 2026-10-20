@@ -198,10 +198,12 @@ export function TarjetaDeInmueble({
               </button>
             ) : (
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                {fotos.map((f, k) => (
+                {fotos.map((f, k) => {
+                  const vista = vistas.get(f.id)
+                  return (
                   <div key={f.id} className="group relative aspect-square overflow-hidden rounded-md bg-surface-muted">
-                    {vistas.get(f.id) && (
-                      <Image src={vistas.get(f.id) as string} alt={`Foto ${k + 1}`} fill sizes="140px" className="object-cover" unoptimized />
+                    {vista && (
+                      <Image src={vista} alt={`Foto ${k + 1}`} fill sizes="140px" className="object-cover" unoptimized />
                     )}
                     {k === 0 && (
                       <span className="absolute left-1.5 top-1.5 rounded-full bg-black/55 px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-white">
@@ -224,7 +226,8 @@ export function TarjetaDeInmueble({
                       </button>
                     )}
                   </div>
-                ))}
+                  )
+                })}
                 {Array.from({ length: Math.min(cuantasLlegan, MAX_FOTOS - fotos.length) }, (_, k) => (
                   <div key={`llega-${k}`} className="aspect-square animate-pulse rounded-md bg-surface-muted" aria-hidden="true" />
                 ))}

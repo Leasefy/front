@@ -42,6 +42,7 @@ export function ModuloConDemo({
   const [verDemo, setVerDemo] = useState(false);
   const whatsapp = enlaceDeWhatsApp({ quien, nombre, empresa, queVio });
   const llamado = quien === 'inmobiliaria' ? 'Quiero que Leasefy maneje mi inmobiliaria' : 'Quiero que Leasefy administre mi inmueble';
+  const portada = demo.capturas[0]?.src;
 
   return (
     <section className="px-4 py-8 sm:px-6 lg:px-8 lg:py-12" data-testid="modulo-con-demo">
@@ -100,7 +101,9 @@ export function ModuloConDemo({
           className="group relative hidden min-h-[360px] overflow-hidden border-l border-border bg-surface-muted lg:block"
           aria-label="Ver demo"
         >
-          <Image src={demo.capturas[0]!.src} alt="" fill sizes="600px" className="object-cover object-left-top opacity-60 blur-[1.5px] transition duration-slow group-hover:opacity-80 group-hover:blur-0" />
+          {portada && (
+            <Image src={portada} alt="" fill sizes="600px" className="object-cover object-left-top opacity-60 blur-[1.5px] transition duration-slow group-hover:opacity-80 group-hover:blur-0" />
+          )}
           <span className="absolute inset-0 bg-gradient-to-l from-transparent via-surface/10 to-surface/60" aria-hidden="true" />
           <span className="absolute inset-0 flex items-center justify-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-fg px-5 py-2.5 text-[14px] font-medium text-bg shadow-lg transition-transform duration-fast group-hover:scale-105">
@@ -133,7 +136,8 @@ function DemoEnGrande({
 }) {
   const [i, setI] = useState(0);
   const total = demo.capturas.length;
-  const actual = demo.capturas[Math.min(i, total - 1)]!;
+  const actual = demo.capturas[Math.min(i, total - 1)];
+  const pantalla = actual?.src;
   return (
     <Dialog open={abierta} onOpenChange={(o) => !o && alCerrar()}>
       <DialogContent size="xl" className="max-w-[1180px] p-0" data-testid="demo-en-grande">
@@ -154,16 +158,18 @@ function DemoEnGrande({
         </div>
         <div className="relative aspect-[16/10] w-full bg-surface-muted">
           <AnimatePresence mode="wait" initial={false}>
+            {pantalla && (
             <motion.div
-              key={actual.src}
+              key={pantalla}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: motionDuration.base, ease: motionEase.standard }}
               className="absolute inset-0"
             >
-              <Image src={actual.src} alt={actual.alt} fill sizes="1180px" className="object-contain" />
+              <Image src={pantalla} alt={actual?.alt ?? ''} fill sizes="1180px" className="object-contain" />
             </motion.div>
+            )}
           </AnimatePresence>
           {total > 1 && (
             <>
@@ -173,7 +179,7 @@ function DemoEnGrande({
           )}
         </div>
         <div className="flex flex-col gap-3 border-t border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <p className="text-[14px] text-fg-muted">{actual.alt}.</p>
+          <p className="text-[14px] text-fg-muted">{actual?.alt ? `${actual.alt}.` : ''}</p>
           <Button asChild className="h-11 rounded-full px-5">
             <a href={whatsapp} target="_blank" rel="noreferrer noopener" data-testid="quiero-leasefy-demo">
               <WhatsappLogo size={18} weight="fill" className="mr-2" aria-hidden="true" />

@@ -68,7 +68,7 @@ export function InmuebleQueSePublica() {
               exit={{ opacity: 0, transition: { duration: motionDuration.slow, ease: motionEase.exit } }}
               transition={{ duration: motionDuration.reveal * 2, ease: motionEase.enter }}
             >
-              <Image src={foto} alt="" fill sizes="228px" style={{ objectFit: 'cover' }} />
+              {foto && <Image src={foto} alt="" fill sizes="228px" style={{ objectFit: 'cover' }} />}
             </motion.span>
           </AnimatePresence>
 

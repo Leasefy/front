@@ -280,6 +280,15 @@ export default function MiCalificacionPage({
 
   const fecha = (iso: string | null) =>
     iso ? new Date(iso).toLocaleDateString(localeFechas, { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+  const fechaYHora = (iso: string) =>
+    new Date(iso).toLocaleString(localeFechas, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'America/Bogota',
+    });
 
   if (cargando && !datos) return <EsqueletoDePagina variante="list" className="p-6 lg:p-8" />;
   if (error && !datos) {
@@ -292,6 +301,7 @@ export default function MiCalificacionPage({
   if (!datos) return null;
 
   const contratos = datos.historial?.porContrato ?? [];
+  const sinCalificacion = !datos.calificacion || datos.calificacion.estado === 'SIN_DATOS';
 
   return (
     <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
@@ -303,7 +313,7 @@ export default function MiCalificacionPage({
       </header>
 
       {datos.calificacion ? (
-        <TarjetaDeCalificacion calificacion={datos.calificacion} />
+        <TarjetaDeCalificacion calificacion={datos.calificacion} deTu />
       ) : (
         <EmptyState icon={XCircle} title={tr('Todavía no hay calificación')} description={tr('Todavía no hay datos para calificar.')} />
       )}
@@ -349,7 +359,8 @@ export default function MiCalificacionPage({
             {datos.consultas.lista.slice(0, 20).map((c, i) => (
               <li key={`${c.cuando}-${i}`} className="flex justify-between gap-3 py-2">
                 <span className="text-fg">{c.inmobiliaria}</span>
-                <span className="font-mono text-xs tabular-nums text-fg-muted">{fecha(c.cuando)}</span>
+                {/* Con la hora: dos consultas del mismo día no parecen la misma fila repetida. */}
+                <span className="font-mono text-xs tabular-nums text-fg-muted">{fechaYHora(c.cuando)}</span>
               </li>
             ))}
           </ul>
@@ -422,10 +433,18 @@ export default function MiCalificacionPage({
           {datos.certificados.precioCop === null ? (
             <p className="text-sm text-fg-muted">{tr('El certificado todavía no está a la venta.')}</p>
           ) : (
-            <Button hideArrow disabled={comprando || datos.calificacion?.estado === 'SIN_DATOS'} onClick={comprar}>
-              <Certificate className="mr-2 h-4 w-4" aria-hidden />
-              {tr('Comprar certificado por {v}', { v: formatCurrency(datos.certificados.precioCop) })}
-            </Button>
+            <div className="space-y-2">
+              <Button hideArrow disabled={comprando || sinCalificacion} onClick={comprar}>
+                <Certificate className="mr-2 h-4 w-4" aria-hidden />
+                {tr('Comprar certificado por {v}', { v: formatCurrency(datos.certificados.precioCop) })}
+              </Button>
+              {/* Un botón apagado dice por qué (QA del 19-10-2026). */}
+              {sinCalificacion && (
+                <p className="text-xs text-fg-muted">
+                  {tr('Lo podrás comprar cuando tengas calificación: con cuotas pagadas en Leasefy o un estudio de tus documentos.')}
+                </p>
+              )}
+            </div>
           )}
         </div>
       </Seccion>

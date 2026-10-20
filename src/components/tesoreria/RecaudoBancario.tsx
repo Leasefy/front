@@ -41,21 +41,36 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
 import Link from 'next/link';
 import { Bank, CheckCircle, Plus, UploadSimple, WarningOctagon } from '@phosphor-icons/react';
 import { Appear } from '@leasefy/cadence';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
+import { ZonaDeArchivo } from '@/components/migracion/ZonaDeArchivo';
 import { Avisos, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
 import { ConvenioDeRecaudoCajon } from './ConvenioDeRecaudoCajon';
+import { ConciliacionDelArchivo } from './ConciliacionDelArchivo';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { diaLegible } from '@/components/cobros/extracto-bancario/formato';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/toast';
 import { tesoreriaApi } from '@/lib/api/tesoreria.service';
+import { leerPlanilla, type PlanillaLeida } from '@/lib/importar/leer-planilla';
+import {
+  CAMPOS_DEL_RECAUDO,
+  armarFilasDelRecaudo,
+  esPlanilla,
+  type CampoDelRecaudo,
+} from '@/lib/tesoreria/recaudo-desde-planilla';
+import type { Mapeo } from '@/lib/importar/reconocer-columnas';
 import type {
+  FilaDePlanillaDelRecaudo,
+  ArchivoDeRecaudo,
   Convenio,
   ListaDeConvenios,
   PreviaDelRecaudo,
@@ -91,9 +106,12 @@ export function RecaudoBancarioPanel() {
 
   return (
     <div className="space-y-8">
+      {/* 🔴 (20-10-2026) Releer después de importar NO vuelve al esqueleto: eso
+          desmontaba la pantalla y se perdían el resultado y la conciliación del
+          archivo recién importado (el mismo error que tenía Configuración). */}
       <EstadoDeDatos
-        cargando={cargando}
-        error={fallo}
+        cargando={cargando && !datos}
+        error={datos ? null : fallo}
         queEs="los convenios de recaudo"
         onReintentar={cargar}
       >
@@ -107,6 +125,15 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
   const activos = datos.convenios.filter((c) => c.activo);
   /** `null` = cerrado · `'nuevo'` = crear · un convenio = editarlo. */
   const [enElCajon, setEnElCajon] = useState<null | 'nuevo' | Convenio>(null);
+  /** El archivo cuya conciliación se está mirando (el recién importado o uno de la lista). */
+  const [archivoAbierto, setArchivoAbierto] = useState<string | null>(null);
+  /** Sube cada vez que se importa o concilia algo: la lista de archivos se vuelve a leer. */
+  const [version, setVersion] = useState(0);
+  const conciliacion = useRef<HTMLDivElement>(null);
+  const abrir = (id: string) => {
+    setArchivoAbierto(id);
+    requestAnimationFrame(() => conciliacion.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
 
   return (
     <div className="space-y-8">
@@ -131,9 +158,9 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
             Todavía no recaudas por convenio con un banco
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-sm text-fg-muted">
-            Con un convenio, cada contrato paga con su referencia única y el archivo del
-            banco entra acá en un lote que una persona aprueba. Necesitas el diseño de
-            registro que te entregó tu banco al firmarlo.
+            Con un convenio, el archivo de recaudo de tu banco entra acá y cada pago se cruza
+            solo con su inquilino (por la referencia o por la cédula). Te ayudamos a
+            configurarlo: elige tu banco o sube un archivo de ejemplo.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
             <Button
@@ -168,7 +195,14 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
       )}
 
       {activos.length > 0 && datos.disponible ? (
-        <ImportarArchivo convenios={activos} onImportado={onCambio} />
+        <ImportarArchivo
+          convenios={activos}
+          onImportado={(archivoId) => {
+            onCambio();
+            setVersion((v) => v + 1);
+            abrir(archivoId);
+          }}
+        />
       ) : datos.convenios.length > 0 && datos.disponible ? (
         /* Hay convenios pero ninguno activo: es otro estado y otra frase. */
         <p
@@ -178,6 +212,17 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
           Ninguno de tus convenios está activo, así que todavía no se puede importar un
           archivo. Actívalo desde su tarjeta.
         </p>
+      ) : null}
+
+      {/* 🔴 La conciliación del archivo, como la pidió Vale (20-10-2026). */}
+      {archivoAbierto && datos.disponible ? (
+        <div ref={conciliacion} className="scroll-mt-24">
+          <ConciliacionDelArchivo archivoId={archivoAbierto} onCambio={() => setVersion((v) => v + 1)} />
+        </div>
+      ) : null}
+
+      {datos.disponible && datos.convenios.length > 0 ? (
+        <ArchivosImportados version={version} abierto={archivoAbierto} onAbrir={abrir} />
       ) : null}
 
       <ConvenioDeRecaudoCajon
@@ -305,21 +350,123 @@ function ConveniosGuardados({
   );
 }
 
+/**
+ * Los archivos ya importados, para volver a la conciliación de cualquiera:
+ * Vale sube uno por día y al otro día quiere ver qué quedó por conciliar.
+ */
+function ArchivosImportados({
+  version,
+  abierto,
+  onAbrir,
+}: {
+  version: number;
+  abierto: string | null;
+  onAbrir: (id: string) => void;
+}) {
+  const [archivos, setArchivos] = useState<ArchivoDeRecaudo[] | null>(null);
+  const [fallo, setFallo] = useState<unknown>(null);
+  const cargar = useCallback(async () => {
+    setFallo(null);
+    try {
+      setArchivos((await tesoreriaApi.listarArchivos(30)).archivos);
+    } catch (error) {
+      setFallo(error);
+    }
+  }, []);
+  useEffect(() => {
+    void cargar();
+  }, [cargar, version]);
+
+  if (archivos && archivos.length === 0) return null;
+  return (
+    <section className="space-y-3" data-testid="archivos-importados">
+      <div>
+        <h2 className="text-base font-semibold text-fg">Archivos importados</h2>
+        <p className="mt-1 text-body-sm text-fg-muted">
+          Abre uno para ver qué quedó conciliado, qué falta y por qué.
+        </p>
+      </div>
+      <EstadoDeDatos cargando={archivos === null && !fallo} error={archivos ? null : fallo} queEs="los archivos importados" onReintentar={cargar}>
+        {archivos ? (
+          <div className="overflow-hidden rounded-lg border border-border bg-surface">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Importado</TableHead>
+                  <TableHead>Archivo</TableHead>
+                  <TableHead>Banco</TableHead>
+                  <TableHead className="text-right">Pagos</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {archivos.map((a) => (
+                  <TableRow key={a.id} data-testid={`archivo-${a.id}`} data-state={abierto === a.id ? 'selected' : undefined}>
+                    <TableCell className="whitespace-nowrap">{diaLegible(a.createdAt)}</TableCell>
+                    <TableCell className="max-w-[18rem] truncate" title={a.nombre}>
+                      {a.nombre}
+                    </TableCell>
+                    <TableCell>{a.banco ?? '—'}</TableCell>
+                    <TableCell className="text-right tabular-nums">{a.filasValidas + a.filasRechazadas}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">{formatCurrency(a.totalCop)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant={abierto === a.id ? 'secondary' : 'outline'}
+                        hideArrow
+                        onClick={() => onAbrir(a.id)}
+                        data-testid={`ver-archivo-${a.id}`}
+                      >
+                        {abierto === a.id ? 'Abierto' : 'Ver conciliación'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : null}
+      </EstadoDeDatos>
+    </section>
+  );
+}
+
 function ImportarArchivo({
   convenios,
   onImportado,
 }: {
   convenios: Convenio[];
-  onImportado: () => void;
+  onImportado: (archivoId: string) => void;
 }) {
   const [convenioId, setConvenioId] = useState(convenios[0]?.id ?? '');
   const [nombre, setNombre] = useState('');
-  const [contenido, setContenido] = useState('');
+  /** Peso del archivo elegido, para la tarjeta (`null` = todavía no hay archivo). */
+  const [peso, setPeso] = useState<number | null>(null);
+  /** El texto del banco, o las filas de una planilla (Excel o CSV, 20-10-2026). */
+  const [contenido, setContenido] = useState<string | FilaDePlanillaDelRecaudo[]>('');
+  const [planilla, setPlanilla] = useState<{
+    leida: PlanillaLeida<CampoDelRecaudo>;
+    mapeo: Mapeo<CampoDelRecaudo>;
+    sinArmar: { linea: number; motivo: string }[];
+  } | null>(null);
   const [previa, setPrevia] = useState<PreviaDelRecaudo | null>(null);
   const [resultado, setResultado] = useState<ResultadoDeImportar | null>(null);
   const [leyendo, setLeyendo] = useState(false);
   const [importando, setImportando] = useState(false);
-  const input = useRef<HTMLInputElement>(null);
+  /**
+   * 🔴 Suelta el archivo y TODO lo que se derivó de él (Nico, 10-09: la tarjeta
+   * con «Subir otro» y «Descartar»). Es el mismo camino al reemplazarlo: así la
+   * previa del archivo anterior nunca queda pegada al nombre del nuevo.
+   */
+  const descartar = () => {
+    setNombre('');
+    setPeso(null);
+    setContenido('');
+    setPlanilla(null);
+    setPrevia(null);
+    setResultado(null);
+  };
 
   const elegir = async (archivo: File) => {
     if (archivo.size > TOPE_BYTES) {
@@ -328,14 +475,21 @@ function ImportarArchivo({
       );
       return;
     }
+    descartar();
     setLeyendo(true);
-    setResultado(null);
-    setPrevia(null);
     try {
-      const texto = await archivo.text();
       setNombre(archivo.name);
-      setContenido(texto);
-      setPrevia(await tesoreriaApi.previa(texto, archivo.name, convenioId || undefined));
+      setPeso(archivo.size);
+      const delimitado = convenios.find((c) => c.id === convenioId)?.tipo === 'DELIMITADO';
+      if (esPlanilla(archivo.name, delimitado)) {
+        // 🔴 Un Excel o un CSV: se reconocen sus columnas y viajan las filas.
+        const leida = await leerPlanilla(archivo, CAMPOS_DEL_RECAUDO);
+        await leerConMapeo(leida, leida.mapeo, archivo.name);
+      } else {
+        const texto = await archivo.text();
+        setContenido(texto);
+        setPrevia(await tesoreriaApi.previa(texto, archivo.name, convenioId || undefined));
+      }
     } catch (error) {
       // El 400 del formato trae su motivo en palabras; un 5xx dice que fue
       // nuestro, con la referencia; sólo sin respuesta se habla de la conexión.
@@ -350,17 +504,53 @@ function ImportarArchivo({
     }
   };
 
+  /** Arma las filas con las columnas elegidas y pide la vista previa al back. */
+  const leerConMapeo = async (
+    leida: PlanillaLeida<CampoDelRecaudo>,
+    mapeo: Mapeo<CampoDelRecaudo>,
+    nombreDelArchivo = nombre,
+  ) => {
+    const armadas = armarFilasDelRecaudo(leida.filas, mapeo, leida.filaDeEncabezado);
+    setPlanilla({ leida, mapeo, sinArmar: armadas.sinArmar });
+    setContenido(armadas.filas);
+    setPrevia(
+      armadas.filas.length > 0
+        ? await tesoreriaApi.previa(armadas.filas, nombreDelArchivo, convenioId || undefined)
+        : null,
+    );
+  };
+
+  const cambiarColumna = async (campo: CampoDelRecaudo, columna: string) => {
+    if (!planilla) return;
+    const mapeo = { ...planilla.mapeo, [campo]: columna === '—' ? undefined : columna };
+    setLeyendo(true);
+    try {
+      await leerConMapeo(planilla.leida, mapeo);
+    } catch (error) {
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo volver a leer la planilla.', accion: 'leer la planilla' }));
+    } finally {
+      setLeyendo(false);
+    }
+  };
+
   const importar = async () => {
     setImportando(true);
     try {
       const r = await tesoreriaApi.importar(contenido, nombre, convenioId || undefined);
       setResultado(r);
-      onImportado();
+      onImportado(r.archivo.id);
       if (r.yaImportado) {
         toast.info('Este archivo ya se había importado: no se aplicó nada.');
       } else {
+        const solos = conciliadosAlImportar(r);
         toast.success(
-          `${contar(r.archivo.nuevas, 'movimiento nuevo', 'movimientos nuevos')}. ${r.lote ? `Hay un lote de ${contar(r.lote.cantidad, 'pago')} esperando aprobación.` : 'Ninguno calzó exacto: quedaron en la cola manual.'}`,
+          `${contar(r.archivo.nuevas, 'pago nuevo', 'pagos nuevos')}. ${
+            solos > 0
+              ? solos === 1
+                ? 'Se concilió solo 1 pago y salió su recibo.'
+                : `Se conciliaron solos ${contar(solos, 'pago')} y salieron sus recibos.`
+              : 'Ninguno se pudo conciliar solo: abajo ves por qué, línea por línea.'
+          }`,
         );
       }
     } catch (error) {
@@ -375,11 +565,39 @@ function ImportarArchivo({
     }
   };
 
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+    onDrop: (aceptados: File[]) => {
+      if (aceptados[0]) void elegir(aceptados[0]);
+    },
+    onDropRejected: () =>
+      toast.error('Ese archivo no se puede leer acá: sube el de texto del banco (.txt, .dat, .asc), un Excel o un CSV.'),
+    multiple: false,
+    maxFiles: 1,
+    disabled: leyendo || importando,
+    accept: {
+      'text/plain': ['.txt', '.dat', '.asc', '.prn'],
+      'text/csv': ['.csv'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'application/vnd.ms-excel.sheet.macroEnabled.12': ['.xlsm'],
+      'application/vnd.oasis.opendocument.spreadsheet': ['.ods'],
+    },
+  });
+
+  /** La segunda línea de la tarjeta: qué se leyó del archivo. */
+  const detalleDelArchivo = leyendo
+    ? 'Leyendo…'
+    : planilla
+      ? `Hoja «${planilla.leida.hoja}» · ${contar(planilla.leida.filas.length, 'fila')}`
+      : previa
+        ? contar(previa.lineas, 'línea')
+        : undefined;
+
   return (
     <section className="space-y-4">
       <TituloDeBloque
         titulo="Importar el archivo del banco"
-        explicacion="Cada línea se vuelve un movimiento bancario y entra al MISMO lote de lo que calza exacto que ya apruebas en Conciliación. Esta pantalla no emite ningún recibo: los emite quien aprueba el lote. Y si la cuenta de este convenio está marcada para entrar por EXTRACTO, su archivo no se importa: el mismo pago quedaría dos veces."
+        explicacion="Cada línea se vuelve un movimiento bancario. Lo que se identifica sin dudas (la referencia del contrato o la cédula de un inquilino con un solo contrato, y el valor exacto de una cuota) se concilia solo y sale su recibo de caja; lo demás queda por conciliar con su razón. Lo de antes de facturar en Leasefy se omite. Si la cuenta de este convenio entra por EXTRACTO, su archivo no se importa: el mismo pago quedaría dos veces."
       />
 
       <div className="space-y-4 rounded-lg border border-border bg-surface p-5">
@@ -402,22 +620,30 @@ function ImportarArchivo({
         ) : null}
 
         <div className="space-y-1.5">
-          <Label htmlFor="archivo-de-recaudo">El archivo, tal como lo bajaste del banco</Label>
-          <Input
-            ref={input}
-            id="archivo-de-recaudo"
-            type="file"
-            accept=".txt,.csv,.dat,text/plain,text/csv"
-            data-testid="archivo-de-recaudo"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void elegir(f);
-            }}
-          />
-          <p className="text-xs text-fg-muted">
-            No se convierte ni se abre en Excel: se sube tal cual. El formato lo pone el
-            convenio.
-          </p>
+          <p className="text-body-sm font-medium text-fg">El archivo, tal como lo bajaste del banco</p>
+          {nombre ? (
+            <TarjetaDeArchivo
+              nombre={nombre}
+              peso={peso ?? undefined}
+              detalle={detalleDelArchivo}
+              inputProps={getInputProps()}
+              inputTestid="archivo-de-recaudo"
+              onSubirOtro={open}
+              onDescartar={descartar}
+              ocupado={leyendo || importando}
+              testid="archivo-elegido"
+            />
+          ) : (
+            <ZonaDeArchivo
+              rootProps={getRootProps()}
+              inputProps={getInputProps()}
+              activo={isDragActive}
+              testid="zona-del-recaudo"
+              inputTestid="archivo-de-recaudo"
+              titulo="Arrastra el archivo del banco o haz clic para elegirlo"
+              detalle="El de texto (ancho fijo o delimitado) se lee con el formato del convenio. Un Excel o un CSV también: reconocemos sus columnas y te mostramos cuál tomamos para cada dato. Nada se importa hasta que lo confirmes."
+            />
+          )}
         </div>
 
         {leyendo ? (
@@ -429,6 +655,54 @@ function ImportarArchivo({
         {/* Movimiento (ola 2, 03-10-2026): la vista previa del archivo y el
             resultado de importarlo ENTRAN (fundido y 4 px); otro archivo leído
             es otra vista previa, y vuelve a entrar. */}
+        {planilla ? (
+          <div className="space-y-2 rounded-md border border-border bg-bg p-3" data-testid="columnas-de-la-planilla">
+            <p className="text-body-sm font-medium text-fg">
+              Leímos «{planilla.leida.hoja}»: {contar(planilla.leida.filas.length, 'fila')}. Esta es la columna de cada
+              dato; cámbiala si no es.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {CAMPOS_DEL_RECAUDO.map((c) => (
+                <div key={c.campo} className="space-y-1">
+                  <Label className="text-caption">
+                    {c.etiqueta}
+                    {c.requerido ? null : <span className="text-fg-muted"> (opcional)</span>}
+                  </Label>
+                  <Select value={planilla.mapeo[c.campo] ?? '—'} onValueChange={(v) => void cambiarColumna(c.campo, v)}>
+                    <SelectTrigger data-testid={`columna-${c.campo}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="—">— No está —</SelectItem>
+                      {planilla.leida.encabezados.map((e) => (
+                        <SelectItem key={e} value={e}>
+                          {e}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+            {planilla.sinArmar.length > 0 ? (
+              <div className="text-caption text-warning" data-testid="filas-sin-armar">
+                <p>
+                  {contar(planilla.sinArmar.length, 'fila no trae', 'filas no traen')} referencia o valor: no se
+                  importan.
+                </p>
+                <ul className="mt-1 space-y-0.5">
+                  {planilla.sinArmar.slice(0, 5).map((f) => (
+                    <li key={f.linea}>
+                      Fila {f.linea}: {f.motivo}
+                    </li>
+                  ))}
+                  {planilla.sinArmar.length > 5 ? <li>y {contar(planilla.sinArmar.length - 5, 'más', 'más')}.</li> : null}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         {previa ? (
           <Appear key={`${previa.lineas}|${previa.validas}|${previa.totalCop}`} distance="xs">
             <Previa previa={previa} />
@@ -469,7 +743,7 @@ function Previa({ previa }: { previa: PreviaDelRecaudo }) {
         >
           <WarningOctagon className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
           <span>
-            Este archivo ya se importó el {previa.yaImportado.createdAt.slice(0, 10)} como «
+            Este archivo ya se importó el {diaLegible(previa.yaImportado.createdAt)} como «
             {previa.yaImportado.nombre}» ({contar(previa.yaImportado.nuevas, 'movimiento nuevo', 'movimientos nuevos')}).
             Volver a subirlo no va a aplicar nada.
           </span>
@@ -521,7 +795,7 @@ function Previa({ previa }: { previa: PreviaDelRecaudo }) {
                   <td className="p-2 text-right font-mono tabular-nums">
                     {formatCurrency(f.valorCop)}
                   </td>
-                  <td className="p-2">{f.fecha ?? '—'}</td>
+                  <td className="whitespace-nowrap p-2">{f.fecha ? diaLegible(f.fecha) : '—'}</td>
                   <td className="p-2 text-fg-muted">{f.secuencia ?? '—'}</td>
                 </tr>
               ))}
@@ -565,8 +839,19 @@ function Rechazadas({
   );
 }
 
+/**
+ * Cuántos pagos se conciliaron de verdad al importar: los del lote que SÍ se
+ * aprobaron (no su `estado`: un lote «APROBADO» puede haber mandado todo a la
+ * cola, QA 20-10-2026) y los que se identificaron por la cédula.
+ */
+export function conciliadosAlImportar(r: ResultadoDeImportar): number {
+  const delLote = r.lote?.estado === 'APROBADO' ? (r.lote.conciliados ?? r.lote.cantidad) : 0;
+  return delLote + (r.conciliadosSolos ?? 0);
+}
+
 function Resultado({ resultado }: { resultado: ResultadoDeImportar }) {
   const { archivo, lote } = resultado;
+  const solos = conciliadosAlImportar(resultado);
   return (
     <div
       className="space-y-3 rounded-lg border border-border bg-bg p-4 text-sm"
@@ -588,13 +873,37 @@ function Resultado({ resultado }: { resultado: ResultadoDeImportar }) {
       </p>
       <ul className="space-y-1 text-fg-muted">
         <li>{contar(archivo.nuevas, 'pago nuevo', 'pagos nuevos')}.</li>
-        <li>
-          {archivo.repetidas} ya estaban registrados (el banco manda el mes corrido: el archivo
-          de fin de mes se pisa con el de la quincena).
-        </li>
+        {archivo.repetidas - (resultado.antesDelCorte ?? 0) > 0 ? (
+          <li>
+            {archivo.repetidas - (resultado.antesDelCorte ?? 0)} ya estaban registrados (el banco manda el mes
+            corrido: el archivo de fin de mes se pisa con el de la quincena).
+          </li>
+        ) : null}
+        {resultado.antesDelCorte ? (
+          <li data-testid="antes-del-corte">
+            {contar(resultado.antesDelCorte, 'pago es', 'pagos son')} de antes de que facturaras en Leasefy: se
+            omitieron.
+          </li>
+        ) : null}
         <li>{contar(archivo.filasRechazadas, 'línea rechazada', 'líneas rechazadas')}.</li>
       </ul>
-      {lote ? (
+      {solos > 0 ? (
+        /* 🔴 Nico (20-10-2026): lo que cruza sin error se concilia solo, con el recibo al instante. */
+        <p className="text-fg" data-testid="conciliados-al-instante">
+          {solos === 1
+            ? 'Se concilió solo 1 pago y salió su recibo de caja.'
+            : `Se conciliaron solos ${contar(solos, 'pago')} y salieron sus recibos de caja.`}{' '}
+          Lo que no (otro valor, una
+          cédula con varios contratos, una referencia desconocida, una fecha que no cuadra) quedó en la{' '}
+          <Link
+            href="/panel/inmobiliaria/pagos/recaudo"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            cola de Conciliación
+          </Link>{' '}
+          con su razón.
+        </p>
+      ) : lote && lote.estado !== 'APROBADO' ? (
         <p className="text-fg">
           Se armó un lote de {contar(lote.cantidad, 'pago')} por {formatCurrency(lote.totalCop)} que{' '}
           <Link
@@ -608,8 +917,8 @@ function Resultado({ resultado }: { resultado: ResultadoDeImportar }) {
         </p>
       ) : (
         <p className="text-fg-muted">
-          Ninguno calzó exacto (referencia + valor): quedaron en la cola manual de Conciliación
-          para asignarlos uno por uno.
+          Ninguno se pudo conciliar solo. Abajo, en la conciliación del archivo, cada línea dice por qué y se puede
+          conciliar con un toque.
         </p>
       )}
       <Avisos avisos={resultado.avisos} testId="avisos-del-resultado" />

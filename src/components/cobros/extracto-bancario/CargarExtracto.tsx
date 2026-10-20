@@ -33,17 +33,17 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/toast';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
-import { leerPrimerasFilas, parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
+import { leerPlanilla } from '@/lib/importar/leer-planilla';
 import { ApiError } from '@/lib/api/client';
 import { conciliacionBancariaApi } from '@/lib/api/conciliacion-bancaria.service';
 import type { CuentaDelExtracto, ResultadoDeCarga } from '@/lib/api/conciliacion-bancaria.types';
 import {
+  CAMPOS_DE_EXTRACTO,
   COLUMNAS_DE_EXTRACTO,
+  ajustarMapeoDeExtracto,
   armarFilasDeExtracto,
-  detectarFilaDeEncabezado,
   faltantesDelMapeo,
   leerValorDelExtracto,
-  mapearColumnasDeExtracto,
   type CampoDeExtracto,
   type MapeoDeExtracto,
 } from '@/lib/cobros/extracto-bancario';
@@ -168,19 +168,20 @@ export function CargarExtracto({ onCargado }: Props) {
     setLeyendo(true);
     setResultado(null);
     try {
-      // Los extractos traen arriba la cuenta y el rango de fechas: la fila
-      // de encabezados hay que buscarla, no asumir que es la primera.
-      const primeras = await leerPrimerasFilas(f);
-      const filaDeEncabezado = detectarFilaDeEncabezado(primeras) ?? 0;
-      const r = await parseSpreadsheetFile(f, undefined, { filaDeEncabezado });
-      if (r.headers.length === 0) {
-        toast.error('El archivo no tiene encabezados: no hay cómo saber qué columna es la fecha.');
+      // 🔴 20-10-2026 (Nico: «un parser muy potente… igual para
+      // conciliación»): el mismo lector que la cartera. Elige la HOJA y la
+      // FILA de los títulos (los extractos traen arriba la cuenta y el rango
+      // de fechas), reconoce cada columna por su nombre Y por sus valores, y
+      // lee un archivo sin títulos. La persona corrige el mapeo abajo.
+      const r = await leerPlanilla(f, CAMPOS_DE_EXTRACTO);
+      if (r.encabezados.length === 0) {
+        toast.error('El archivo no tiene columnas que leer: revisa que sea el extracto del banco.');
         return;
       }
       setArchivo(f);
-      setEncabezados(r.headers);
-      setCrudas(r.rows as Record<string, unknown>[]);
-      setMapeo(mapearColumnasDeExtracto(r.headers));
+      setEncabezados(r.encabezados);
+      setCrudas(r.filas as Record<string, unknown>[]);
+      setMapeo(ajustarMapeoDeExtracto(r.mapeo));
     } catch (error) {
       // Un fallo al LEER el archivo es del navegador, no del servidor.
       toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo leer el archivo.' }));

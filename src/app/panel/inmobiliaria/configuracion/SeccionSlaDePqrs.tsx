@@ -21,7 +21,7 @@
  * lo primero que alguien se pregunta al bajarlo.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Clock, Siren, UserCircleCheck } from '@phosphor-icons/react';
 
 import { Button, Input } from '@/components/ui';
@@ -32,6 +32,7 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { slaDePqrsApi, type SlaDePqrs } from '@/lib/api/sla-de-pqrs.service';
 import { pqrsApi } from '@/lib/api/pqrs-agencia.service';
 import type { ResponsableDePqrs } from '@/lib/api/pqrs-agencia.types';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { EsqueletoDeSeccion, TarjetaDeAjustes, FilaDeAjuste } from './piezas';
 
 /** Los cuatro tipos, en el orden en que los lee una persona. */
@@ -66,19 +67,30 @@ export function SeccionSlaDePqrs() {
   // SO-26 (04-10-2026): a quién se le escalan las vencidas. Sólo administrador.
   const [equipo, setEquipo] = useState<ResponsableDePqrs[]>([]);
   const [guardandoJefe, setGuardandoJefe] = useState(false);
+  /*
+   * Dentro de Configuración (Nico, 20-10-2026): elegir en los dos selectores y
+   * escribir los plazos sólo marca; todo se guarda con la barra de abajo.
+   * `undefined` = no lo han tocado.
+   */
+  const [jefeElegido, setJefeElegido] = useState<string | undefined>(undefined);
+  const [porDefectoElegido, setPorDefectoElegido] = useState<string | undefined>(undefined);
+  const conBarraRef = useRef(false);
   useEffect(() => {
     pqrsApi.responsables().then(setEquipo).catch(() => setEquipo([]));
   }, []);
-  const guardarJefe = async (userId: string) => {
+  const guardarJefe = async (userId: string): Promise<boolean> => {
     setGuardandoJefe(true);
     try {
       const d = await slaDePqrsApi.guardarEscalamiento(userId || null);
       setDatos(d);
+      setJefeElegido(undefined);
+      if (conBarraRef.current) return true;
       toast.success(
         d.escalarANombre
           ? `Listo. Las PQRS vencidas se le escalan a ${d.escalarANombre}.`
           : 'Listo. Las PQRS vencidas no se le escalan a nadie.',
       );
+      return true;
     } catch (e) {
       toast.error(
         mensajeParaLaPersona(e, {
@@ -86,6 +98,7 @@ export function SeccionSlaDePqrs() {
           accion: 'guardar a quién se escalan las PQRS vencidas',
         }),
       );
+      return false;
     } finally {
       setGuardandoJefe(false);
     }
@@ -95,16 +108,19 @@ export function SeccionSlaDePqrs() {
   // llegan sin responsable (el Piloto se las asigna sola si la inmobiliaria lo
   // escogió en Autonomía → «Qué hace solo»). Sólo administrador.
   const [guardandoPorDefecto, setGuardandoPorDefecto] = useState(false);
-  const guardarPorDefecto = async (userId: string) => {
+  const guardarPorDefecto = async (userId: string): Promise<boolean> => {
     setGuardandoPorDefecto(true);
     try {
       const d = await slaDePqrsApi.guardarResponsablePorDefecto(userId || null);
       setDatos(d);
+      setPorDefectoElegido(undefined);
+      if (conBarraRef.current) return true;
       toast.success(
         d.responsablePorDefectoNombre
           ? `Listo. Las PQRS sin responsable quedan a cargo de ${d.responsablePorDefectoNombre} cuando el Piloto las asigna solo.`
           : 'Listo. Las PQRS sin responsable no tienen a quién asignarse solas: piden tu clic.',
       );
+      return true;
     } catch (e) {
       toast.error(
         mensajeParaLaPersona(e, {
@@ -112,6 +128,7 @@ export function SeccionSlaDePqrs() {
           accion: 'guardar el responsable por defecto de las PQRS',
         }),
       );
+      return false;
     } finally {
       setGuardandoPorDefecto(false);
     }
@@ -145,7 +162,7 @@ export function SeccionSlaDePqrs() {
     void cargar();
   }, [cargar]);
 
-  const guardar = async () => {
+  const guardar = async (): Promise<boolean> => {
     setGuardando(true);
     try {
       const porTipo = Object.fromEntries(
@@ -159,7 +176,8 @@ export function SeccionSlaDePqrs() {
       );
       const d = await slaDePqrsApi.guardar(porTipo);
       setDatos(d);
-      toast.success('Listo. Las PQRS ya radicadas conservan el plazo que se les prometió.');
+      if (!conBarraRef.current) toast.success('Listo. Las PQRS ya radicadas conservan el plazo que se les prometió.');
+      return true;
     } catch (e) {
       toast.error(
         mensajeParaLaPersona(e, {
@@ -167,10 +185,37 @@ export function SeccionSlaDePqrs() {
           accion: 'guardar el tiempo máximo',
         }),
       );
+      return false;
     } finally {
       setGuardando(false);
     }
   };
+
+  // Lo que difiere de lo guardado (antes de los retornos tempranos: es un gancho).
+  const plazoGuardado = (tipo: string) => (datos?.porTipo[tipo] ? String(datos.porTipo[tipo]) : '');
+  const plazosCambiados = datos
+    ? TIPOS.filter((t) => (borrador[t.valor] ?? '').trim() !== plazoGuardado(t.valor)).length
+    : 0;
+  const jefeCambio = jefeElegido !== undefined && jefeElegido !== (datos?.escalarAUserId ?? '');
+  const porDefectoCambio =
+    porDefectoElegido !== undefined && porDefectoElegido !== (datos?.responsablePorDefectoUserId ?? '');
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'sla-de-pqrs',
+    cambios: plazosCambiados + (jefeCambio ? 1 : 0) + (porDefectoCambio ? 1 : 0),
+    guardar: async () => {
+      if (plazosCambiados > 0 && !(await guardar())) return false;
+      if (jefeCambio && !(await guardarJefe(jefeElegido ?? ''))) return false;
+      if (porDefectoCambio && !(await guardarPorDefecto(porDefectoElegido ?? ''))) return false;
+      return true;
+    },
+    descartar: () => {
+      setBorrador(Object.fromEntries(TIPOS.map((t) => [t.valor, plazoGuardado(t.valor)])));
+      setJefeElegido(undefined);
+      setPorDefectoElegido(undefined);
+    },
+    activo: puedeEditar || isAdmin,
+  });
+  conBarraRef.current = conBarra;
 
   if (cargando || error || !datos) {
     return (
@@ -251,9 +296,9 @@ export function SeccionSlaDePqrs() {
         >
           <select
             aria-label="A quién se escalan las PQRS vencidas"
-            value={datos.escalarAUserId ?? ''}
+            value={jefeElegido ?? datos.escalarAUserId ?? ''}
             disabled={!isAdmin || guardandoJefe || !datos.disponible}
-            onChange={(e) => void guardarJefe(e.target.value)}
+            onChange={(e) => (conBarra ? setJefeElegido(e.target.value) : void guardarJefe(e.target.value))}
             className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg sm:w-64"
             data-testid="pqrs-escalar-a"
           >
@@ -284,9 +329,11 @@ export function SeccionSlaDePqrs() {
           >
             <select
               aria-label="Responsable por defecto de las PQRS"
-              value={datos.responsablePorDefectoUserId ?? ''}
+              value={porDefectoElegido ?? datos.responsablePorDefectoUserId ?? ''}
               disabled={!isAdmin || guardandoPorDefecto || !datos.disponible || !datos.responsablePorDefectoDisponible}
-              onChange={(e) => void guardarPorDefecto(e.target.value)}
+              onChange={(e) =>
+                conBarra ? setPorDefectoElegido(e.target.value) : void guardarPorDefecto(e.target.value)
+              }
               className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg sm:w-64"
               data-testid="pqrs-responsable-por-defecto"
             >
@@ -318,7 +365,7 @@ export function SeccionSlaDePqrs() {
         compromiso no vuelve vencidas de golpe a las que están abiertas.
       </p>
 
-      {puedeEditar && (
+      {puedeEditar && !conBarra && (
         <div className="flex justify-end">
           <Button
             hideArrow

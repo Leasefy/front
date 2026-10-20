@@ -13,6 +13,7 @@
 import { normalizarEncabezado } from '@/lib/migracion/columnas-de-tercero';
 import type { FilaDeExtracto } from '@/lib/api/conciliacion-bancaria.types';
 import { errorDelValorDelMovimiento } from './limites-del-extracto';
+import type { CampoReconocible, TipoDeValor } from '@/lib/importar/reconocer-columnas';
 import { aCentavos, restar } from '@/lib/plata/plata';
 
 export type CampoDeExtracto =
@@ -25,7 +26,8 @@ export type CampoDeExtracto =
   | 'documento'
   | 'referencia2'
   | 'canal'
-  | 'saldo';
+  | 'saldo'
+  | 'naturaleza';
 
 export interface ColumnaDeExtracto {
   campo: CampoDeExtracto;
@@ -147,7 +149,85 @@ export const COLUMNAS_DE_EXTRACTO: readonly ColumnaDeExtracto[] = [
     ayuda: 'El saldo después de cada movimiento, si el banco lo trae. Sirve para comprobar que el extracto llegó completo.',
     sinonimos: ['saldo', 'saldo disponible', 'saldo total', 'saldo final', 'saldo actual', 'saldo contable', 'balance'],
   },
+  {
+    // 🔴 (20-10-2026, Nico: «igual para conciliación») Varios bancos mandan el
+    // valor SIN signo y aparte dicen si entró o salió («D»/«C», «Débito»).
+    campo: 'naturaleza',
+    titulo: 'Débito o crédito',
+    ayuda: 'Si el banco trae el valor sin signo y en otra columna dice si entró (crédito) o salió (débito).',
+    sinonimos: [
+      'naturaleza',
+      'tipo',
+      'tipo movimiento',
+      'tipo de movimiento',
+      'debito credito',
+      'debito o credito',
+      'd c',
+      'db cr',
+      'signo',
+      'clase',
+      'clase de movimiento',
+      'cargo abono',
+    ],
+  },
 ];
+
+/**
+ * Lo mismo, para el lector de planillas (`lib/importar`): el tipo de dato de
+ * cada columna (para reconocerla por sus VALORES, no sólo por el nombre) y
+ * palabras sueltas que la delatan.
+ */
+const COMO_SE_RECONOCE: Record<
+  CampoDeExtracto,
+  { tipo: TipoDeValor; palabras?: string[]; evitar?: string[]; requerido?: boolean; porLosValores?: boolean }
+> = {
+  fecha: { tipo: 'fecha', palabras: ['fecha', 'date', 'dia'], evitar: ['corte', 'saldo', 'valor'], requerido: true, porLosValores: true },
+  valor: { tipo: 'plata', palabras: ['valor', 'monto', 'importe'], evitar: ['credito', 'debito', 'saldo', 'abono', 'cargo', 'fecha'] },
+  credito: { tipo: 'plata', palabras: ['credito', 'creditos', 'abono', 'abonos', 'entrada', 'ingreso', 'consignacion'], evitar: ['debito', 'saldo', 'fecha', 'tipo'] },
+  debito: { tipo: 'plata', palabras: ['debito', 'debitos', 'cargo', 'cargos', 'salida', 'egreso', 'retiro'], evitar: ['credito', 'saldo', 'fecha', 'tipo'] },
+  descripcion: { tipo: 'texto', palabras: ['descripcion', 'detalle', 'concepto', 'observacion', 'observaciones', 'movimiento'], evitar: ['fecha', 'valor', 'tipo', 'saldo'] },
+  referencia: { tipo: 'texto', palabras: ['referencia', 'ref'], evitar: ['2', 'fecha', 'valor'] },
+  documento: { tipo: 'texto', palabras: ['documento', 'comprobante', 'cedula', 'nit'], evitar: ['fecha', 'valor'] },
+  referencia2: { tipo: 'texto' },
+  canal: { tipo: 'texto', palabras: ['canal', 'sucursal', 'oficina', 'ciudad'] },
+  saldo: { tipo: 'plata', palabras: ['saldo', 'balance'], evitar: ['fecha'] },
+  naturaleza: { tipo: 'codigo', palabras: ['naturaleza', 'signo'], evitar: ['fecha', 'valor', 'saldo', 'documento', 'transaccion'] },
+};
+
+export const CAMPOS_DE_EXTRACTO: readonly CampoReconocible<CampoDeExtracto>[] = COLUMNAS_DE_EXTRACTO.map((c) => ({
+  campo: c.campo,
+  etiqueta: c.titulo,
+  sinonimos: c.sinonimos,
+  ...COMO_SE_RECONOCE[c.campo],
+}));
+
+/**
+ * El mapeo que dejó el lector, con las reglas del extracto: sin columna de
+ * referencia, el documento hace de referencia (como `mapearColumnasDeExtracto`).
+ */
+export function ajustarMapeoDeExtracto(mapeo: MapeoDeExtracto): MapeoDeExtracto {
+  const salida = { ...mapeo };
+  if (!salida.referencia && salida.documento) {
+    salida.referencia = salida.documento;
+    delete salida.documento;
+  }
+  // Con débito y crédito separados, «Valor» sobra (suele ser el saldo o un total).
+  if (salida.valor && salida.credito && salida.debito) delete salida.valor;
+  return salida;
+}
+
+/** «D», «DB», «Débito», «Cargo», «-» → -1 · «C», «CR», «Crédito», «Abono», «+» → 1. */
+export function signoDeLaNaturaleza(celda: unknown): -1 | 1 | null {
+  const s = String(celda ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+  if (!s) return null;
+  if (/^(d|db|dr|deb|debito|debitos|cargo|cargos|retiro|salida|egreso|nd|nota debito|-)\b|^-$/.test(s)) return -1;
+  if (/^(c|cr|cred|credito|creditos|abono|abonos|consignacion|entrada|ingreso|nc|nota credito|\+)\b|^\+$/.test(s)) return 1;
+  return null;
+}
 
 /**
  * ¿En qué fila están los encabezados? Los extractos traen arriba el número de
@@ -399,7 +479,9 @@ export function armarFilasDeExtracto(
   const descartadas: FilaDescartada[] = [];
 
   crudas.forEach((cruda, i) => {
-    const numero = i + 2;
+    // El número que ve la persona en Excel: los títulos pueden no estar en la
+    // fila 1 (el lector los busca), así que manda `_rowIndex` si viene.
+    const numero = typeof cruda._rowIndex === 'number' ? cruda._rowIndex + 1 : i + 2;
     const fecha = mapeo.fecha ? parsearFechaDeExtracto(cruda[mapeo.fecha]) : null;
     if (!fecha) {
       descartadas.push({ fila: numero, motivo: `Fecha ilegible: «${texto(mapeo.fecha ? cruda[mapeo.fecha] : '')}».` });
@@ -419,6 +501,9 @@ export function armarFilasDeExtracto(
     };
     if (mapeo.valor) {
       valor = leer(cruda[mapeo.valor]);
+      // Valor sin signo + «Débito/Crédito» aparte: el signo sale de ahí.
+      const signo = mapeo.naturaleza ? signoDeLaNaturaleza(cruda[mapeo.naturaleza]) : null;
+      if (valor !== null && signo !== null) valor = signo * Math.abs(valor);
     } else {
       const credito = mapeo.credito ? leer(cruda[mapeo.credito]) : null;
       const debito = mapeo.debito ? leer(cruda[mapeo.debito]) : null;

@@ -50,7 +50,8 @@ import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/caj
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
+import { Collapse, RadioGroup, RadioGroupItem } from '@leasefy/cadence';
+import { ArchivoDeEjemplo, BotonDeAvanzados, ElegirElBanco, ReglaDelFormato } from './ConvenioAsistido';
 import {
   Select,
   SelectContent,
@@ -69,6 +70,10 @@ import {
   type TextoDelConvenio,
 } from '@/lib/tesoreria/limites-de-tesoreria';
 import type {
+  CandidatoDeFormato,
+  ControlDelArchivo,
+  DeteccionDelFormato,
+  MarcaConTramo,
   Convenio,
   ListaDeConvenios,
   MapaDeColumnas,
@@ -141,6 +146,9 @@ interface Borrador {
   cuentaBancaria: string;
   viaDeEntrada: ViaDeEntrada;
   activo: boolean;
+  /** Asobancaria: la fecha del encabezado y el control del archivo (20-10-2026). */
+  fechaDelEncabezado: MarcaConTramo | null;
+  controlDelArchivo: ControlDelArchivo | null;
 }
 
 function deLaFila(c: Convenio): Borrador {
@@ -163,6 +171,8 @@ function deLaFila(c: Convenio): Borrador {
     cuentaBancaria: c.cuentaBancaria ?? '',
     viaDeEntrada: c.viaDeEntrada,
     activo: c.activo,
+    fechaDelEncabezado: c.fechaDelEncabezado ?? null,
+    controlDelArchivo: c.controlDelArchivo ?? null,
   };
 }
 
@@ -186,6 +196,8 @@ function enBlanco(formatosDeFecha: string[]): Borrador {
     cuentaBancaria: '',
     viaDeEntrada: 'ARCHIVO',
     activo: true,
+    fechaDelEncabezado: null,
+    controlDelArchivo: null,
   };
 }
 
@@ -218,6 +230,11 @@ export function ConvenioDeRecaudoCajon({
     editando ? deLaFila(editando) : enBlanco(catalogo.formatosDeFecha),
   );
   const [preset, setPreset] = useState<string>('');
+  /** El candidato del archivo de ejemplo que quedó puesto (20-10-2026). */
+  const [candidato, setCandidato] = useState<string | null>(null);
+  const [lineasDeEjemplo, setLineasDeEjemplo] = useState<string[]>([]);
+  /** Los campos técnicos van plegados: la mayoría elige el banco o sube un archivo. */
+  const [avanzado, setAvanzado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   /** El error de cada campo (el espejo del tope o `campos[]` del back). */
   const [errores, setErrores] = useState<Partial<Record<CampoConError, string>>>({});
@@ -230,6 +247,9 @@ export function ConvenioDeRecaudoCajon({
     setClaveVista(clave);
     setBorrador(editando ? deLaFila(editando) : enBlanco(catalogo.formatosDeFecha));
     setPreset('');
+    setCandidato(null);
+    setLineasDeEjemplo([]);
+    setAvanzado(false);
     setErrores({});
     setSueltos(null);
   }
@@ -257,9 +277,64 @@ export function ConvenioDeRecaudoCajon({
         lineasDePie: String(p.formato.lineasDePie),
         marcaDeDetalle: p.formato.marcaDeDetalle ?? '',
         marcaEn: p.formato.marcaEn == null ? '' : String(p.formato.marcaEn),
+        fechaDelEncabezado: p.formato.fechaDelEncabezado ?? null,
+        controlDelArchivo: p.formato.controlDelArchivo ?? null,
       }));
     },
     [catalogo.presets],
+  );
+
+  /** El formato que leyó el archivo de ejemplo queda puesto tal cual. */
+  const aplicarCandidato = useCallback(
+    (c: CandidatoDeFormato) => {
+      setCandidato(c.clave);
+      setPreset(catalogo.presets.some((p) => p.clave === c.clave) ? c.clave : '');
+      setBorrador((b) => ({
+        ...b,
+        tipo: c.formato.tipo,
+        separador: c.formato.separador ?? b.separador,
+        columnas: c.formato.columnas,
+        formatoDeFecha: c.formato.formatoDeFecha,
+        decimales: c.formato.decimales,
+        lineasDeEncabezado: String(c.formato.lineasDeEncabezado),
+        lineasDePie: String(c.formato.lineasDePie),
+        marcaDeDetalle: c.formato.marcaDeDetalle ?? '',
+        marcaEn: c.formato.marcaEn == null ? '' : String(c.formato.marcaEn),
+        fechaDelEncabezado: c.formato.fechaDelEncabezado ?? null,
+        controlDelArchivo: c.formato.controlDelArchivo ?? null,
+      }));
+    },
+    [catalogo.presets],
+  );
+
+  /**
+   * El banco con un toque: si todavía no hay formato, queda el estándar
+   * (Asobancaria 2001), y el nombre se sugiere. «Otro» deja escribirlo.
+   */
+  const elegirBanco = useCallback(
+    (b: string | null) => {
+      if (b === null) {
+        cambiar('banco', '');
+        requestAnimationFrame(() => document.getElementById('convenio-banco')?.focus());
+        return;
+      }
+      setBorrador((x) => ({ ...x, banco: b, nombre: x.nombre.trim() ? x.nombre : `Recaudo ${b}` }));
+      if (!preset && !candidato && Object.keys(borrador.columnas).length === 0) {
+        const estandar = catalogo.presets.find((p) => p.clave === 'asobancaria-2001');
+        if (estandar) aplicarPreset(estandar.clave);
+      }
+    },
+    [aplicarPreset, borrador.columnas, candidato, cambiar, catalogo.presets, preset],
+  );
+
+  const alDetectar = useCallback(
+    (d: DeteccionDelFormato) => {
+      setLineasDeEjemplo(d.primerasLineas);
+      if (d.codigoDelConvenio) {
+        setBorrador((b) => (b.codigo.trim() ? b : { ...b, codigo: d.codigoDelConvenio ?? '' }));
+      }
+    },
+    [],
   );
 
   const presetElegido = useMemo(
@@ -309,6 +384,8 @@ export function ConvenioDeRecaudoCajon({
       cuentaBancaria: borrador.cuentaBancaria.trim() || undefined,
       viaDeEntrada: borrador.viaDeEntrada,
       activo: borrador.activo,
+      fechaDelEncabezado: borrador.fechaDelEncabezado,
+      controlDelArchivo: borrador.controlDelArchivo,
     };
     // 🔁 Espejo de los topes del back: un texto más largo que su columna se
     // dice debajo de su campo y no viaja.
@@ -389,15 +466,21 @@ export function ConvenioDeRecaudoCajon({
     <Cajon abierto onOpenChange={(a) => !a && onCerrar()} ancho="sm:max-w-2xl" data-testid="cajon-convenio">
       <CajonCabecera
         titulo={editando ? `Convenio con ${editando.banco}` : 'Configurar el convenio de recaudo'}
-        descripcion="Los datos salen del diseño de registro que te entregó el banco al firmar el convenio. Ténlo al lado."
+        descripcion="Elige tu banco o sube un archivo de recaudo que te haya mandado: te ayudamos a dejarlo bien configurado."
       />
 
       <CajonCuerpo className="space-y-8">
-        {/* 1 · El banco */}
-        <section className="space-y-4">
-          <h3 className="text-sm font-semibold text-fg">El convenio</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
+        {/* 1 · El banco, con un toque (20-10-2026) */}
+        <section className="space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold text-fg">Tu banco</h3>
+            <p className="mt-1 text-body-sm text-fg-muted">
+              Elígelo y dejamos puesto el formato estándar de los bancos (Asobancaria 2001). Lo confirmas abajo con un
+              archivo que te haya mandado.
+            </p>
+          </div>
+          <ElegirElBanco banco={borrador.banco} onElegir={elegirBanco} />
+            <div className="space-y-1.5 sm:max-w-sm">
               <Label htmlFor="convenio-banco">Banco</Label>
               <Input
                 id="convenio-banco"
@@ -409,43 +492,39 @@ export function ConvenioDeRecaudoCajon({
               />
               {error('banco')}
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="convenio-codigo">Código del convenio</Label>
-              <Input
-                id="convenio-codigo"
-                placeholder="90210"
-                value={borrador.codigo}
-                onChange={(e) => cambiar('codigo', e.target.value)}
-                data-testid="convenio-codigo"
-                {...aria('codigo')}
-              />
-              {error('codigo', 'El número que el banco le asignó. Está en el contrato del convenio.')}
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="convenio-nombre">Cómo lo vas a llamar acá</Label>
-              <Input
-                id="convenio-nombre"
-                placeholder="Recaudo de arriendos"
-                value={borrador.nombre}
-                onChange={(e) => cambiar('nombre', e.target.value)}
-                data-testid="convenio-nombre"
-                {...aria('nombre')}
-              />
-              {error('nombre')}
-            </div>
-          </div>
         </section>
 
-        {/* 2 · El formato, arrancando por un preset */}
+        {/* 2 · El formato: con un archivo de ejemplo se lee solo */}
         <section className="space-y-4 border-t border-border pt-6">
           <div>
             <h3 className="text-sm font-semibold text-fg">Cómo se lee el archivo</h3>
-            <p className="mt-1 text-sm text-fg-muted">
-              Empieza por un formato típico y ajusta lo que tu banco haga distinto. Ningún
-              banco manda el mismo archivo.
+            <p className="mt-1 text-body-sm text-fg-muted">
+              Sube un archivo de recaudo que te haya mandado el banco y lo leemos solos. Verás los pagos que encontramos:
+              si se ven bien, el formato quedó.
             </p>
           </div>
-
+          <ArchivoDeEjemplo elegido={candidato} onDetectado={alDetectar} onElegir={aplicarCandidato} />
+          {presetElegido && !candidato ? (
+            <p className="text-caption text-fg-muted" data-testid="formato-puesto">
+              Formato puesto: {presetElegido.nombre}.
+            </p>
+          ) : null}
+          {lineasDeEjemplo.length > 0 ? (
+            <ReglaDelFormato
+              lineas={lineasDeEjemplo}
+              formato={{
+                tipo: borrador.tipo,
+                separador: borrador.separador,
+                columnas: borrador.columnas,
+                marcaDeDetalle: borrador.marcaDeDetalle || null,
+                marcaEn: numero(borrador.marcaEn) ?? null,
+                lineasDeEncabezado: numero(borrador.lineasDeEncabezado) ?? 0,
+              }}
+            />
+          ) : null}
+          <BotonDeAvanzados abierto={avanzado} onCambiar={() => setAvanzado((a) => !a)} />
+          <Collapse open={avanzado}>
+            <div className="space-y-6 pt-2" data-testid="formato-avanzado">
           <div className="space-y-2">
             <Label>Formato típico del que partir</Label>
             <RadioGroup
@@ -662,10 +741,7 @@ export function ConvenioDeRecaudoCajon({
               {error('marcaEn')}
             </div>
           </div>
-        </section>
-
-        {/* 3 · La referencia */}
-        <section className="space-y-4 border-t border-border pt-6">
+              <div className="space-y-4 border-t border-border pt-6">
           <div>
             <h3 className="text-sm font-semibold text-fg">La referencia de pago</h3>
             <p className="mt-1 text-sm text-fg-muted">
@@ -718,6 +794,43 @@ export function ConvenioDeRecaudoCajon({
               <p className="text-caption text-fg-muted">
                 Lo fija el banco en el contrato del convenio, no se elige.
               </p>
+            </div>
+          </div>
+        </div>
+            </div>
+          </Collapse>
+        </section>
+
+        {/* 3 · Los datos del convenio */}
+        <section className="space-y-4 border-t border-border pt-6">
+          <div>
+            <h3 className="text-sm font-semibold text-fg">El convenio</h3>
+            <p className="mt-1 text-body-sm text-fg-muted">El código está en el contrato del convenio con el banco.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="convenio-codigo">Código del convenio</Label>
+              <Input
+                id="convenio-codigo"
+                placeholder="90210"
+                value={borrador.codigo}
+                onChange={(e) => cambiar('codigo', e.target.value)}
+                data-testid="convenio-codigo"
+                {...aria('codigo')}
+              />
+              {error('codigo', 'El número que el banco le asignó. Está en el contrato del convenio.')}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="convenio-nombre">Cómo lo vas a llamar acá</Label>
+              <Input
+                id="convenio-nombre"
+                placeholder="Recaudo de arriendos"
+                value={borrador.nombre}
+                onChange={(e) => cambiar('nombre', e.target.value)}
+                data-testid="convenio-nombre"
+                {...aria('nombre')}
+              />
+              {error('nombre')}
             </div>
           </div>
         </section>

@@ -141,6 +141,12 @@ export type AgencyMemberRole = 'ADMIN' | 'AGENTE' | 'CONTADOR' | 'VIEWER'
 export interface Agency {
   id: string
   name: string
+  /**
+   * Cómo se llama la persona DENTRO de esta inmobiliaria (back, 20-10-2026): el
+   * nombre con que la invitaron si la cuenta es de otra persona (un inquilino
+   * que tenía ese correo). Viene con la membresía, no es de la inmobiliaria.
+   */
+  memberName?: string | null
   nit?: string
   city?: string
   address?: string

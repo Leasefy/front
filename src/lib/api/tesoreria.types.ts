@@ -31,7 +31,27 @@ export type MapaDeColumnas = Partial<
   Record<'referencia' | 'valor' | 'fecha' | 'secuencia' | 'oficina', UbicacionDelCampo>
 >;
 
+/** Un registro marcado del archivo y un tramo de él (Asobancaria: la fecha del encabezado 01). */
+export interface MarcaConTramo {
+  marca: string;
+  marcaEn: number;
+  desde: number;
+  largo: number;
+}
+
+/** El registro de control del archivo (Asobancaria: el 09 con cuántos pagos y el total). */
+export interface ControlDelArchivo {
+  marca: string;
+  marcaEn: number;
+  registros: { desde: number; largo: number };
+  total: { desde: number; largo: number };
+  decimales: number;
+}
+
 export interface Convenio {
+  /** Desde el 20-10-2026; ausentes en un back anterior. */
+  fechaDelEncabezado?: MarcaConTramo | null;
+  controlDelArchivo?: ControlDelArchivo | null;
   id: string;
   banco: string;
   codigo: string;
@@ -75,7 +95,40 @@ export interface PresetDeConvenio {
     lineasDePie: number;
     marcaDeDetalle?: string | null;
     marcaEn?: number | null;
+    fechaDelEncabezado?: MarcaConTramo | null;
+    controlDelArchivo?: ControlDelArchivo | null;
   };
+}
+
+/** Un formato probado contra el archivo de ejemplo (20-10-2026). */
+export interface CandidatoDeFormato {
+  clave: string;
+  nombre: string;
+  formato: PresetDeConvenio['formato'];
+  leidas: number;
+  rechazadas: number;
+  totalCop: number;
+  muestra: FilaLeidaDelRecaudo[];
+  control?: { registrosDelBanco: number; totalDelBancoCop: number; registrosLeidos: number; totalLeidoCop: number; cuadra: boolean };
+  confianza: 'alta' | 'media' | 'baja';
+  porQue: string;
+}
+
+export interface DeteccionDelFormato {
+  candidatos: CandidatoDeFormato[];
+  primerasLineas: string[];
+  codigoDelConvenio: string | null;
+}
+
+/** Una fila del recaudo leída de una planilla (Excel o CSV) en el navegador. */
+export interface FilaDePlanillaDelRecaudo {
+  linea: number;
+  referencia: string;
+  valorCop: number;
+  fecha: string | null;
+  secuencia?: string | null;
+  oficina?: string | null;
+  pagador?: string | null;
 }
 
 export interface ListaDeConvenios {
@@ -107,6 +160,8 @@ export interface GuardarConvenio {
   cuentaBancaria?: string;
   viaDeEntrada?: ViaDeEntrada;
   activo?: boolean;
+  fechaDelEncabezado?: MarcaConTramo | null;
+  controlDelArchivo?: ControlDelArchivo | null;
 }
 
 // ── 2. El archivo de recaudo ────────────────────────────────────────────────
@@ -172,6 +227,8 @@ export interface LoteDelRecaudo {
   id: string;
   estado: string;
   cantidad: number;
+  /** Cuántos se conciliaron de verdad al aprobar (los demás van a la cola manual). */
+  conciliados?: number | null;
   totalCop: number;
   movimientos: { movimientoId: string; valorCop: number; tenantName?: string | null }[];
 }
@@ -181,8 +238,26 @@ export interface ResultadoDeImportar {
   yaImportado: boolean;
   archivo: ArchivoDeRecaudo;
   lote: LoteDelRecaudo | null;
+  /** Líneas de antes de facturar en Leasefy: se omitieron (20-10-2026; ausente en un back anterior). */
+  antesDelCorte?: number;
+  /** Identificados por la cédula con el valor exacto: conciliados solos (20-10-2026). */
+  conciliadosSolos?: number;
   rechazadas: FilaRechazadaDelRecaudo[];
   avisos: string[];
+}
+
+/** 🔴 La columna «Estado conciliado» de la pantalla de Vale (20-10-2026). */
+export type EstadoConciliado = 'CONCILIADO' | 'POR_CONCILIAR' | 'OMITIDO' | 'CON_ERROR';
+
+/** Los contadores de arriba: lo que pidió Vale, con sus palabras. */
+export interface ContadoresDelArchivo {
+  procesados: number;
+  conciliados: number;
+  porConciliar: number;
+  omitidos: number;
+  erroresDeCarga: number;
+  /** Encabezado, totales y control del banco: se leen, pero no son pagos. */
+  lineasDeControl: number;
 }
 
 export interface FilaDelArchivo {
@@ -201,12 +276,26 @@ export interface FilaDelArchivo {
   contractId: string | null;
   calzaExacto: boolean;
   movimiento: { estado: string; reciboId: string | null } | null;
+  /** Desde el 20-10-2026; ausentes en un back anterior. */
+  estadoConciliado?: EstadoConciliado;
+  estadoConciliadoNombre?: string;
+  razon?: string;
+  sePuedeConciliar?: boolean;
+  contrato?: {
+    id: string;
+    codigo: string;
+    inquilino: string | null;
+    documento: string | null;
+    tenantId: string | null;
+  } | null;
 }
 
 export interface DetalleDelArchivo {
   archivo: ArchivoDeRecaudo;
   filas: FilaDelArchivo[];
   aplicadas: number;
+  /** Desde el 20-10-2026; ausente en un back anterior. */
+  contadores?: ContadoresDelArchivo;
 }
 
 // ── 3. El traslado de la comisión ───────────────────────────────────────────

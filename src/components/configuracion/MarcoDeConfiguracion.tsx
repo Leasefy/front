@@ -19,6 +19,11 @@ import { CrossFade, MotionIndicator, PageTransition } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 import {
+  BarraDeGuardado,
+  ProveedorDeCambiosPorGuardar,
+  usePermisoParaSalir,
+} from '@/components/configuracion/cambios-por-guardar';
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -54,7 +59,19 @@ interface MarcoDeConfiguracionProps {
   children: React.ReactNode;
 }
 
-export function MarcoDeConfiguracion({
+/**
+ * Con el guardado de Configuración (20-10-2026): una sola barra de «cambios
+ * sin guardar» al pie de la sección, ver `cambios-por-guardar.tsx`.
+ */
+export function MarcoDeConfiguracion(props: MarcoDeConfiguracionProps) {
+  return (
+    <ProveedorDeCambiosPorGuardar>
+      <Marco {...props} />
+    </ProveedorDeCambiosPorGuardar>
+  );
+}
+
+function Marco({
   titulo,
   subtitulo,
   navAria,
@@ -70,9 +87,11 @@ export function MarcoDeConfiguracion({
   const entradas = menu.flatMap((g) => g.entradas);
   const activa = entradas.find((e) => e.id === activaId) ?? null;
 
-  const irA = (id: string) => {
+  const permisoParaSalir = usePermisoParaSalir();
+  const irA = async (id: string) => {
     const destino = entradas.find((e) => e.id === id);
-    if (destino) router.push(destino.href);
+    if (!destino || destino.id === activa?.id) return;
+    if (await permisoParaSalir()) router.push(destino.href);
   };
 
   return (
@@ -86,7 +105,7 @@ export function MarcoDeConfiguracion({
         <nav aria-label={navAria} className="lg:w-60 lg:shrink-0">
           {/* Celular: la misma lista, en un selector. */}
           <div className="lg:hidden">
-            <Select value={activa?.id ?? ''} onValueChange={irA}>
+            <Select value={activa?.id ?? ''} onValueChange={(id) => void irA(id)}>
               <SelectTrigger aria-label={navAria}>
                 <SelectValue placeholder={titulo} />
               </SelectTrigger>
@@ -153,6 +172,7 @@ export function MarcoDeConfiguracion({
             </div>
           )}
           {children}
+          <BarraDeGuardado />
         </PageTransition>
       </div>
     </div>

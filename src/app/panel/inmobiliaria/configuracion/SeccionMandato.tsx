@@ -34,6 +34,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { PESOS, QUE_ES_LA_MODALIDAD, diaLegible } from '@/lib/mandato/textos';
 import { EsqueletoDeSeccion } from './piezas';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 
 type Borrador = Omit<CobroAlArrendar, 'id'> & { id?: string; clave: string };
 
@@ -98,22 +99,35 @@ function ModalidadPorDefecto({
   const [guardando, setGuardando] = useState(false);
   const cambio = (valor || null) !== config.modalidadDeMandato;
 
-  async function guardar() {
+  async function guardar(): Promise<boolean> {
     setGuardando(true);
     try {
       const c = await mandatoApi.guardarConfiguracion({ modalidadDeMandato: valor || null });
-      toast.success('Modalidad por defecto guardada.', {
-        description: 'Rige desde hoy para los mandatos que no tengan una propia.',
-      });
+      if (!conBarra) {
+        toast.success('Modalidad por defecto guardada.', {
+          description: 'Rige desde hoy para los mandatos que no tengan una propia.',
+        });
+      }
       onGuardado(c);
+      return true;
     } catch (e) {
       toast.error('No se pudo guardar.', {
         description: mensajeParaLaPersona(e, { porDefecto: 'Prueba de nuevo en un momento.', accion: 'guardar la modalidad' }),
       });
+      return false;
     } finally {
       setGuardando(false);
     }
   }
+
+  // La barra de guardado de Configuración (Nico, 20-10-2026).
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'mandato-modalidad',
+    cambios: cambio ? 1 : 0,
+    guardar,
+    descartar: () => setValor(config.modalidadDeMandato ?? ''),
+    activo: config.disponible,
+  });
 
   return (
     <section className="space-y-4 p-5 rounded-lg bg-card border border-border">
@@ -160,9 +174,11 @@ function ModalidadPorDefecto({
             ? `La actual rige desde el ${diaLegible(config.modalidadDeMandatoDesde)}.`
             : 'Intereses de mora: por defecto, garantizado → de la inmobiliaria; sobre recaudo → del propietario.'}
         </p>
-        <Button size="sm" hideArrow onClick={guardar} disabled={!cambio || !config.disponible} isLoading={guardando}>
-          Guardar
-        </Button>
+        {conBarra ? null : (
+          <Button size="sm" hideArrow onClick={guardar} disabled={!cambio || !config.disponible} isLoading={guardando}>
+            Guardar
+          </Button>
+        )}
       </div>
     </section>
   );
@@ -183,7 +199,7 @@ function CobrosAlArrendar({
   const cambiar = (clave: string, cambio: Partial<Borrador>) =>
     setFilas((fs) => fs.map((f) => (f.clave === clave ? { ...f, ...cambio } : f)));
 
-  async function guardar() {
+  async function guardar(): Promise<boolean> {
     setGuardando(true);
     try {
       const c = await mandatoApi.guardarConfiguracion({
@@ -193,17 +209,35 @@ function CobrosAlArrendar({
           valor: Number(f.valor),
         })),
       });
-      toast.success('Cobros al arrendar guardados.');
+      if (!conBarra) toast.success('Cobros al arrendar guardados.');
       setFilas(c.cobrosAlArrendar.map((x) => ({ ...x, clave: x.id })));
       onGuardado(c);
+      return true;
     } catch (e) {
       toast.error('No se pudieron guardar los cobros.', {
         description: mensajeParaLaPersona(e, { porDefecto: 'Prueba de nuevo en un momento.', accion: 'guardar los cobros' }),
       });
+      return false;
     } finally {
       setGuardando(false);
     }
   }
+
+  // La barra de guardado de Configuración (Nico, 20-10-2026): cada cobro
+  // agregado, quitado o cambiado cuenta como un cambio.
+  const comoQuedo = (f: Omit<Borrador, 'clave'> & { clave?: string }) =>
+    JSON.stringify([f.nombre.trim(), f.tipo, Number(f.valor), f.opcional, f.activo]);
+  const guardados = new Map(config.cobrosAlArrendar.map((c) => [c.id, comoQuedo(c)]));
+  const cambios =
+    filas.filter((f) => guardados.get(f.clave) !== comoQuedo(f)).length +
+    [...guardados.keys()].filter((id) => !filas.some((f) => f.clave === id)).length;
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'mandato-cobros-al-arrendar',
+    cambios,
+    guardar,
+    descartar: () => setFilas(config.cobrosAlArrendar.map((c) => ({ ...c, clave: c.id }))),
+    activo: config.disponible,
+  });
 
   return (
     <section className="space-y-4 p-5 rounded-lg bg-card border border-border" data-testid="cobros-al-arrendar-config">
@@ -281,11 +315,13 @@ function CobrosAlArrendar({
           ))}
         </div>
       )}
-      <div className="flex justify-end">
-        <Button size="sm" hideArrow onClick={guardar} isLoading={guardando} disabled={!config.disponible}>
-          Guardar cobros
-        </Button>
-      </div>
+      {conBarra ? null : (
+        <div className="flex justify-end">
+          <Button size="sm" hideArrow onClick={guardar} isLoading={guardando} disabled={!config.disponible}>
+            Guardar cobros
+          </Button>
+        </div>
+      )}
     </section>
   );
 }
@@ -298,24 +334,40 @@ function IvaDeLaComision({
   onGuardado: () => void;
 }) {
   const [guardando, setGuardando] = useState(false);
-  const actual = config.ivaDeLaComision.responsableIva;
+  const guardado = config.ivaDeLaComision.responsableIva;
+  // Con la barra, elegir sólo marca (`undefined` = no lo han tocado).
+  const [elegido, setElegido] = useState<boolean | null | undefined>(undefined);
+  const actual = elegido === undefined ? guardado : elegido;
 
-  async function guardar(valor: boolean | null) {
+  async function guardar(valor: boolean | null): Promise<boolean> {
     setGuardando(true);
     try {
       await agencyApi.updateAgency({ responsableIva: valor });
-      toast.success('Perfil de IVA guardado.', {
-        description: 'Aplica a las cuotas que se generen o regeneren desde ahora.',
-      });
+      if (!conBarra) {
+        toast.success('Perfil de IVA guardado.', {
+          description: 'Aplica a las cuotas que se generen o regeneren desde ahora.',
+        });
+      }
+      setElegido(undefined);
       onGuardado();
+      return true;
     } catch (e) {
       toast.error('No se pudo guardar.', {
         description: mensajeParaLaPersona(e, { porDefecto: 'Prueba de nuevo en un momento.', accion: 'guardar el perfil de IVA' }),
       });
+      return false;
     } finally {
       setGuardando(false);
     }
   }
+
+  // La barra de guardado de Configuración (Nico, 20-10-2026).
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'mandato-iva-de-la-comision',
+    cambios: elegido !== undefined && elegido !== guardado ? 1 : 0,
+    guardar: () => (elegido === undefined ? true : guardar(elegido)),
+    descartar: () => setElegido(undefined),
+  });
 
   return (
     <section className="space-y-4 p-5 rounded-lg bg-card border border-border" data-testid="iva-de-la-comision">
@@ -340,7 +392,10 @@ function IvaDeLaComision({
             hideArrow
             variant={actual === v ? 'default' : 'outline'}
             disabled={guardando}
-            onClick={() => actual !== v && guardar(v)}
+            onClick={() => {
+              if (conBarra) setElegido(v);
+              else if (actual !== v) void guardar(v);
+            }}
           >
             {nombre}
           </Button>

@@ -70,6 +70,8 @@ const PARA_LA_PERSONA: Record<string, string> = {
   'Sin historial en Leasefy todavía: la calificación sale de sus documentos.':
     'Sin historial en Leasefy todavía: tu calificación sale de tus documentos.',
   'Cómo terminaron sus contratos': 'Cómo terminaron tus contratos',
+  'Con menos de 6 meses de historial y sin estudio de documentos, la calificación llega hasta B.':
+    'Con menos de 6 meses de historial y sin estudio de tus documentos, tu calificación llega hasta B.',
 };
 
 /** La frase como se le dice a la persona (de tú); si no hay versión suya, la del back. */

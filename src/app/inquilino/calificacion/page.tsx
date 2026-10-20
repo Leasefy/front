@@ -45,6 +45,8 @@ const COMO_TERMINO: Record<ContratoDeLaPersona['termino'], string> = {
   SIN_DEUDA: 'Terminó sin deudas',
   CON_DEUDA: 'Terminó con deuda',
   JURIDICO: 'En cobro jurídico',
+  // Contrato migrado, sin cuotas en Leasefy, que la inmobiliaria evaluó al terminar (19-10-2026).
+  EVALUADO: 'Terminó; lo evaluó la inmobiliaria',
 };
 
 function Seccion({ titulo, descripcion, children }: { titulo: string; descripcion?: string; children: React.ReactNode }) {
@@ -333,10 +335,14 @@ export default function MiCalificacionPage({
                 </div>
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-1 font-mono text-xs tabular-nums text-fg-muted">
                   <span>{tr('{n} meses', { n: k.meses })}</span>
-                  <span>
-                    {tr('{a} de {c} a tiempo', { a: k.cuotasATiempo, c: k.cuotasContadas })}
-                  </span>
-                  <span>{k.peorAtrasoDias > 0 ? tr('peor atraso {d} días', { d: k.peorAtrasoDias }) : tr('sin atrasos')}</span>
+                  {k.cuotasContadas > 0 ? (
+                    <>
+                      <span>{tr('{a} de {c} a tiempo', { a: k.cuotasATiempo, c: k.cuotasContadas })}</span>
+                      <span>{k.peorAtrasoDias > 0 ? tr('peor atraso {d} días', { d: k.peorAtrasoDias }) : tr('sin atrasos')}</span>
+                    </>
+                  ) : (
+                    <span>{tr('sin cuotas pagadas en Leasefy')}</span>
+                  )}
                   {k.deudaVencidaCop > 0 && <span className="text-danger">{tr('debe {v}', { v: formatCurrency(k.deudaVencidaCop) })}</span>}
                   <span className="font-sans text-fg">{tr(COMO_TERMINO[k.termino])}</span>
                 </div>

@@ -814,4 +814,8 @@ export const FRASES_EN: Record<string, string> = {
   "Sólo con tu historial en Leasefy: no hay un estudio de tus documentos de los últimos 6 meses, así que no se sabe hasta qué canon.": "Based only on your history on Leasefy: there's no review of your documents from the last 6 months, so your maximum rent is unknown.",
   "Sin historial en Leasefy todavía: tu calificación sale de tus documentos.": "No history on Leasefy yet: your rating comes from your documents.",
   "Cómo terminaron tus contratos": "How your contracts ended",
+  "Terminó; lo evaluó la inmobiliaria": "Ended; the agency reviewed it",
+  "sin cuotas pagadas en Leasefy": "no installments paid on Leasefy",
+  "Con menos de 6 meses de historial y sin estudio de documentos, la calificación llega hasta B.": "With less than 6 months of history and no document review, the rating goes up to B.",
+  "Con menos de 6 meses de historial y sin estudio de tus documentos, tu calificación llega hasta B.": "With less than 6 months of history and no review of your documents, your rating goes up to B.",
 }

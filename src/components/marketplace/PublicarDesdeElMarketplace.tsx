@@ -44,14 +44,14 @@ export function useDondePublicar(): { uno: string; muchos: string | null } | nul
     if (agencyRole && SIN_PERMISO_PARA_PUBLICAR.includes(agencyRole)) return null;
     return { uno: '/panel/inmobiliaria/inmuebles/nuevo', muchos: '/panel/inmobiliaria/inmuebles/importar' };
   }
-  if (conSesion && user?.role === 'tenant') return null;
-  return { uno: '/publicar', muchos: null };
+  if (conSesion && user?.role === 'tenant' && user.onboardingCompleted) return null;
+  return { uno: '/publica', muchos: null };
 }
 
 /** «Publicar inmueble», siempre a la vista (barra de arriba y lado del marketplace). */
 export function BotonPublicar({ className, compacto = false }: { className?: string; compacto?: boolean }) {
   const donde = useDondePublicar();
-  const { alTocar, ventana } = useCuentaParaPublicar(donde?.uno ?? '/publicar');
+  const { alTocar, ventana } = useCuentaParaPublicar(donde?.uno ?? '/publica');
   if (!donde) return null;
   return (
     <>
@@ -80,7 +80,7 @@ export function PublicarDesdeElMarketplace() {
   const esDeLaInmobiliaria = conSesion && (user?.role === 'agency' || hasActiveAgencyMembership);
   const inmobiliariaQuePublica = esDeLaInmobiliaria && !(agencyRole && SIN_PERMISO_PARA_PUBLICAR.includes(agencyRole));
   const esInquilino = conSesion && user?.role === 'tenant' && !hasActiveAgencyMembership;
-  const { alTocar, ventana } = useCuentaParaPublicar('/publicar');
+  const { alTocar, ventana } = useCuentaParaPublicar('/publica');
 
   return (
     <section
@@ -119,7 +119,7 @@ export function PublicarDesdeElMarketplace() {
           )}
           {!esInquilino && (
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/publicar" onClick={alTocar} className={principal} data-testid="publicar-mi-inmueble">
+              <Link href="/publica" onClick={alTocar} className={principal} data-testid="publicar-mi-inmueble">
                 Publicar mi inmueble
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>

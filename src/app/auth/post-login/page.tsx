@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useAuth } from '@/lib/auth/use-auth';
-import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
+import { esDestinoQueRegistraSolo, rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { sanitizeReturnUrl } from '@/lib/utils';
 import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
@@ -73,6 +73,11 @@ function PostLoginResolver() {
     // Honor an invitation returnUrl before the generic onboarding redirect —
     // the /invitacion/[token] page handles needsOnboarding on its own.
     if (returnUrl.startsWith('/invitacion/')) {
+      router.replace(returnUrl);
+      return;
+    }
+    // El publicador rápido hace su propio registro (nombre + WhatsApp, 19-10-2026).
+    if (isAuthenticated && esDestinoQueRegistraSolo(returnUrl)) {
       router.replace(returnUrl);
       return;
     }

@@ -11,7 +11,7 @@ import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
 import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
-import { rutaDeOnboarding, rutaDeOnboardingConRegreso } from '@/lib/auth/perfil-de-onboarding';
+import { esDestinoQueRegistraSolo, rutaDeOnboarding, rutaDeOnboardingConRegreso } from '@/lib/auth/perfil-de-onboarding';
 import { tomarAvisoDeCierre, PARAM_MOTIVO, type MotivoDeCierre } from '@/lib/auth/session-terminal';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
@@ -781,8 +781,13 @@ export function AuthForm({
   // Where signup should land: an explicit deep-link role goes straight to that
   // role's onboarding (carrying returnUrl forward); otherwise the single
   // profile picker at /onboarding/seleccionar-rol.
+  // El publicador rápido hace su propio registro (19-10-2026): ahí sigue directo.
   const onboardingDest = () =>
-    explicitRole ? getOnboardingHref(explicitRole) : rutaDeOnboarding(null);
+    esDestinoQueRegistraSolo(returnUrl)
+      ? returnUrl
+      : explicitRole
+        ? getOnboardingHref(explicitRole)
+        : rutaDeOnboarding(null);
 
   // Preserve context on the email-confirmation link so it returns through
   // /auth/callback (which exchanges the code server-side and honors returnUrl)

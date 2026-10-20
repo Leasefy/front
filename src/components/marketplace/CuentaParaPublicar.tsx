@@ -61,14 +61,14 @@ export function useVentanaDeCuenta({
 }
 
 /**
- * A dónde sigue quien acaba de crear la cuenta para publicar, según quién
- * publica. El propietario, a su asistente de publicar; la inmobiliaria, a
- * «Nueva consignación» (su registro todavía pasa por el asistente de la
- * inmobiliaria: lo reemplaza el registro rápido, fase 2 del 19-10-2026).
+ * A dónde sigue quien acaba de crear la cuenta para publicar: al publicador
+ * rápido (`/publica`), que le pide nombre y WhatsApp y lo deja publicar. El
+ * perfil viaja en la dirección (Google no lo guarda en la cuenta).
  */
 export const DESTINOS_PARA_PUBLICAR = {
-  landlord: '/publicar',
-  agency: '/panel/inmobiliaria/inmuebles/nuevo',
+  landlord: '/publica?perfil=landlord',
+  agency: '/publica?perfil=agency',
+  entrar: '/publica',
 } as const;
 
 /**
@@ -88,7 +88,7 @@ export const CONFIRMAR_CON_CODIGO = process.env.NEXT_PUBLIC_CONFIRMAR_CON_CODIGO
  * La ventana es la de publicar (Nico y Juan, 19-10-2026): primero «¿Quién va a
  * publicar?» —propietario o inmobiliaria— y después la cuenta.
  */
-export function useCuentaParaPublicar(destino: string) {
+export function useCuentaParaPublicar(_destino?: string) {
   const { isAuthenticated } = useAuth();
   const [abierta, setAbierta] = useState(false);
   const abrir = useCallback(() => setAbierta(true), []);
@@ -96,7 +96,7 @@ export function useCuentaParaPublicar(destino: string) {
     <VentanaParaPublicar
       abierta={abierta}
       alCambiar={setAbierta}
-      destinos={{ ...DESTINOS_PARA_PUBLICAR, landlord: destino }}
+      destinos={DESTINOS_PARA_PUBLICAR}
       confirmarConCodigo={CONFIRMAR_CON_CODIGO}
     />
   );

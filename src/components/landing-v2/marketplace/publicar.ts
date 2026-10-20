@@ -12,10 +12,12 @@ import { useCuentaParaPublicar } from '@/components/marketplace/CuentaParaPublic
 export function usePublicarGratis() {
   const { user, isLoading, activeContext, agencyRole } = useAuth();
   const esInmobiliaria = !isLoading && (activeContext === 'agency' || user?.role === 'agency');
+  // Quien no es (todavía) de una inmobiliaria publica con el publicador rápido
+  // (19-10-2026); la inmobiliaria, desde su panel.
   const href = !esInmobiliaria
-    ? '/publicar'
+    ? '/publica'
     : agencyRole === 'CONTADOR' || agencyRole === 'VIEWER'
-      ? '/publicar'
+      ? '/publica'
       : '/panel/inmobiliaria/inmuebles/nuevo';
   const { alTocar, ventana } = useCuentaParaPublicar(href);
   return { href, alTocar, ventana };

@@ -51,7 +51,7 @@ afterEach(() => {
 describe('<PublicarDesdeElMarketplace>', () => {
   it('sin sesión: publicar, crear la página o entrar a la que ya tiene', () => {
     montar({ isAuthenticated: false, user: null });
-    expect(enlace('publicar-mi-inmueble')!.getAttribute('href')).toBe('/publicar');
+    expect(enlace('publicar-mi-inmueble')!.getAttribute('href')).toBe('/publica');
     expect(enlace('crear-mi-pagina')!.getAttribute('href')).toBe('/auth?mode=register&role=agency');
     expect(enlace('ya-tengo-cuenta')!.getAttribute('href')).toBe(
       `/auth?returnUrl=${encodeURIComponent('/panel/inmobiliaria/inmuebles/nuevo')}`,
@@ -61,7 +61,7 @@ describe('<PublicarDesdeElMarketplace>', () => {
 
   it('propietario: su asistente de /publicar', () => {
     montar({ isAuthenticated: true, user: { role: 'landlord' } });
-    expect(enlace('publicar-mi-inmueble')!.getAttribute('href')).toBe('/publicar');
+    expect(enlace('publicar-mi-inmueble')!.getAttribute('href')).toBe('/publica');
     expect(enlace('ya-tengo-cuenta')).toBeNull();
     expect(enlace('publicar-uno')).toBeNull();
   });
@@ -83,7 +83,7 @@ describe('<PublicarDesdeElMarketplace>', () => {
   });
 
   it('inquilino: se le explica por qué no, en vez de mandarlo a un rebote', () => {
-    montar({ isAuthenticated: true, user: { role: 'tenant' } });
+    montar({ isAuthenticated: true, user: { role: 'tenant', onboardingCompleted: true } });
     expect(enlace('publicar-mi-inmueble')).toBeNull();
     expect(container.querySelector('[data-testid="publicar-cuenta-de-inquilino"]')!.textContent).toContain(
       'Tu cuenta es de inquilino',
@@ -102,10 +102,10 @@ describe('<BotonPublicar> (siempre a la vista en la barra y el lado)', () => {
   }
 
   it('sin sesión y el propietario van al asistente de /publicar', () => {
-    expect(pintar({ isAuthenticated: false, user: null })!.getAttribute('href')).toBe('/publicar');
+    expect(pintar({ isAuthenticated: false, user: null })!.getAttribute('href')).toBe('/publica');
     act(() => root.unmount());
     container.remove();
-    expect(pintar({ isAuthenticated: true, user: { role: 'landlord' } })!.getAttribute('href')).toBe('/publicar');
+    expect(pintar({ isAuthenticated: true, user: { role: 'landlord' } })!.getAttribute('href')).toBe('/publica');
   });
 
   it('la inmobiliaria va a «Nueva consignación» de su panel', () => {
@@ -114,7 +114,7 @@ describe('<BotonPublicar> (siempre a la vista en la barra y el lado)', () => {
   });
 
   it('el inquilino y el contador no lo ven', () => {
-    expect(pintar({ isAuthenticated: true, user: { role: 'tenant' } })).toBeNull();
+    expect(pintar({ isAuthenticated: true, user: { role: 'tenant', onboardingCompleted: true } })).toBeNull();
     act(() => root.unmount());
     container.remove();
     expect(pintar({ isAuthenticated: true, user: { role: 'agency' }, hasActiveAgencyMembership: true, agencyRole: 'CONTADOR' })).toBeNull();
@@ -135,8 +135,8 @@ describe('sin sesión, «Publicar inmueble» abre la cuenta ENCIMA (Nico, 09-10)
     });
     expect(evento.defaultPrevented).toBe(true);
     const ventana = container.querySelector('[data-testid="ventana-de-la-cuenta"]')!;
-    expect(ventana.getAttribute('data-propietario')).toBe('/publicar');
-    expect(ventana.getAttribute('data-inmobiliaria')).toBe('/panel/inmobiliaria/inmuebles/nuevo');
+    expect(ventana.getAttribute('data-propietario')).toBe('/publica?perfil=landlord');
+    expect(ventana.getAttribute('data-inmobiliaria')).toBe('/publica?perfil=agency');
   });
 
   it('con sesión, el enlace navega como siempre', () => {

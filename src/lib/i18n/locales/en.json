@@ -4703,7 +4703,9 @@
         },
         "chart": {
           "title": "Top {{n}} by net to owner",
-          "subtitle": "What each property leaves after commission, withholdings and expenses."
+          "titleEmpty": "Net to owner by property",
+          "subtitle": "What each property leaves after commission, withholdings and expenses.",
+          "empty": "No property left a net amount to its owner in this period."
         },
         "table": {
           "title": "Detail by property",

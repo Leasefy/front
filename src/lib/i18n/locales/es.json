@@ -4660,17 +4660,17 @@
       }
     },
     "reportes": {
-      "title": "Centro de Reportes",
+      "title": "Centro de reportes",
       "subtitle": "Genera, visualiza y exporta reportes del portafolio",
       "search": "Buscar reporte...",
       "generate": "Generar reporte",
-      "generateAll": "Generar Todos",
+      "generateAll": "Generar todos",
       "noReports": "Sin reportes",
       "noReportsDesc": "No hay reportes que coincidan con los filtros seleccionados.",
       "clearSearch": "Limpiar búsqueda",
       "viewCards": "Tarjetas",
       "viewList": "Lista",
-      "otherReports": "Otros Reportes",
+      "otherReports": "Otros reportes",
       "stats": {
         "reports": "Reportes",
         "report": "reporte",
@@ -4679,12 +4679,12 @@
         "never": "Nunca"
       },
       "types": {
-        "ownerStatement": "Extracto de Propietario",
-        "portfolio": "Reporte de Portafolio",
-        "aging": "Cartera por Edades",
-        "commissions": "Reporte de Comisiones",
-        "occupancy": "Reporte de Ocupación",
-        "cashFlow": "Flujo de Caja",
+        "ownerStatement": "Extracto del propietario",
+        "portfolio": "Reporte del portafolio",
+        "aging": "Cartera por edades",
+        "commissions": "Reporte de comisiones",
+        "occupancy": "Reporte de ocupación",
+        "cashFlow": "Flujo de caja",
         "expirations": "Vencimientos",
         "rentabilidad": "Rentabilidad por inmueble"
       },
@@ -4701,7 +4701,7 @@
         "netPayment": "Pago neto"
       },
       "aging": {
-        "title": "Cartera por Edades",
+        "title": "Cartera por edades",
         "current": "Vigente",
         "days30": "1-30 días",
         "days60": "31-60 días",
@@ -4738,7 +4738,9 @@
         },
         "chart": {
           "title": "Top {{n}} por neto al propietario",
-          "subtitle": "Lo que cada inmueble deja después de comisión, retenciones y gastos."
+          "titleEmpty": "Neto al propietario por inmueble",
+          "subtitle": "Lo que cada inmueble deja después de comisión, retenciones y gastos.",
+          "empty": "Ningún inmueble le dejó neto al propietario en este periodo."
         },
         "table": {
           "title": "Detalle por inmueble",

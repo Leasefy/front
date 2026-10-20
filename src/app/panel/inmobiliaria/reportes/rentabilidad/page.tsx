@@ -76,7 +76,7 @@ import {
 } from '@/lib/reportes/periodo';
 import {
   GraficoDeRentabilidad,
-  TOP_DEL_GRAFICO,
+  cuantosEnElGrafico,
 } from '@/components/inmobiliaria/reports/GraficoDeRentabilidad';
 import {
   ORDEN_INICIAL,
@@ -395,9 +395,10 @@ function RentabilidadContent() {
         <section className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="border-b border-border p-5">
             <h2 className="text-base font-semibold text-fg">
-              {t('inmobiliaria.reportes.rentabilidad.chart.title', {
-                n: Math.min(TOP_DEL_GRAFICO, filas.length),
-              })}
+              {/* Cuenta sólo los que dejaron neto: los que quedan en $0 no tienen barra. */}
+              {cuantosEnElGrafico(filas) > 0
+                ? t('inmobiliaria.reportes.rentabilidad.chart.title', { n: cuantosEnElGrafico(filas) })
+                : t('inmobiliaria.reportes.rentabilidad.chart.titleEmpty')}
             </h2>
             <p className="mt-0.5 text-xs text-fg-muted">
               {t('inmobiliaria.reportes.rentabilidad.chart.subtitle')}

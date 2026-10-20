@@ -8589,7 +8589,7 @@
             },
             "c3": {
               "titulo": "Flags vacancy",
-              "texto": "When a property has been vacant for over a month, it prepares the question to the owner about the rent: in their portal or, if they have no account, as a task to call them. The owner sets the number."
+              "texto": "When a property has been vacant for over a month, it prepares the question to the owner about the rent: in their portal or, if they have no account, as a task to call them. If they have several vacant properties, one question covers them all. The owner sets the number."
             }
           },
           "necesita": {
@@ -8599,7 +8599,7 @@
           "modo": {
             "sombra": "It doesn't write to the owner: it suggests when to ask about the rent and, if you want, it goes out with one click.",
             "copiloto": "It leaves in your Inbox, one click away, the question to the owner of a property vacant for over a month.",
-            "autonomo": "It asks the owner on its own, in their portal, whether they want to review the rent; if they have no account, it leaves the agent a task to call them. Changing the rent and requesting an appraisal always need your click."
+            "autonomo": "It asks the owner on its own, in their portal, whether they want to review the rent; if they have no account, it leaves the agent a task to call them; if they have several vacant properties, it asks only once. Changing the rent and requesting an appraisal always need your click."
           },
           "empezar": "See my appraisals"
         },

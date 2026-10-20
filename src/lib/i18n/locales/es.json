@@ -8624,7 +8624,7 @@
             },
             "c3": {
               "titulo": "Te avisa de la vacancia",
-              "texto": "Con un inmueble desocupado hace más de un mes, prepara la pregunta al propietario sobre el canon: por su portal o, si no tiene cuenta, como una tarea para llamarlo. El número lo pone él."
+              "texto": "Con un inmueble desocupado hace más de un mes, prepara la pregunta al propietario sobre el canon: por su portal o, si no tiene cuenta, como una tarea para llamarlo. Si tiene varios vacíos, es una sola pregunta con todos. El número lo pone él."
             }
           },
           "necesita": {
@@ -8634,7 +8634,7 @@
           "modo": {
             "sombra": "No le escribe al propietario: te propone cuándo preguntarle por el canon y, si quieres, sale con un clic.",
             "copiloto": "Te deja en la Bandeja, lista para un clic, la pregunta al propietario de un inmueble desocupado hace más de un mes.",
-            "autonomo": "Le pregunta solo al propietario, en su portal, si quiere revisar el canon; si no tiene cuenta, le deja al asesor la tarea de llamarlo. Cambiar el canon y pedir un avalúo siempre te piden un clic."
+            "autonomo": "Le pregunta solo al propietario, en su portal, si quiere revisar el canon; si no tiene cuenta, le deja al asesor la tarea de llamarlo; si tiene varios inmuebles vacíos, se lo pregunta una sola vez. Cambiar el canon y pedir un avalúo siempre te piden un clic."
           },
           "empezar": "Ver mis avalúos"
         },

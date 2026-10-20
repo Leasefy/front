@@ -109,7 +109,7 @@ export function CasoSidebar({ metadata, finalVerdict, isConnected }: CasoSidebar
               {metadata.seguimiento.nombreCandidato}
             </p>
             {metadata.cedulaHashPrefix8 && (
-              <p className="text-xs font-mono text-fg-muted">{`Ref. ${metadata.cedulaHashPrefix8}`}</p>
+              <p className="text-caption font-mono text-fg-muted">{`Ref. ${metadata.cedulaHashPrefix8}`}</p>
             )}
           </>
         ) : (

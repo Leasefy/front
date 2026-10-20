@@ -98,7 +98,7 @@ export function PostSeleccionSheet({ onAction, disabled = false, abierto, onAbie
       <Collapse open={open}>
         <div className="mt-3 space-y-2" data-testid="post-seleccion-pasos">
           {resumen && (
-            <p className="text-xs text-fg-muted" data-testid="post-seleccion-resumen">
+            <p className="text-caption text-fg-muted" data-testid="post-seleccion-resumen">
               {resumen}
             </p>
           )}

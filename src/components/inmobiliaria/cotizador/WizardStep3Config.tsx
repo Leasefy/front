@@ -141,7 +141,7 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
             </div>
           )}
           <Presence show={faltaElegir && opciones.length > 0}>
-            <p className="mt-2 text-xs text-warning" id="cotizador-elige-una">
+            <p className="mt-2 text-caption text-warning" id="cotizador-elige-una">
               {tf(`${K}.aseguradoras.seleccionaUna`, 'Marca al menos una aseguradora.')}
             </p>
           </Presence>

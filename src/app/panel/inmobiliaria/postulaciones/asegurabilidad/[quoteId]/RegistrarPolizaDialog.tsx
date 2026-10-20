@@ -132,7 +132,7 @@ export function RegistrarPolizaDialog({ abierto, onOpenChange, agencyId, quoteId
         )}
 
         <Presence show={!elegida && Boolean(aseguradora) && !sinActualizacion}>
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {`También queda ${aseguradora ? nombreDeLaAseguradora(aseguradora) : ''} como la opción elegida.`}
           </p>
         </Presence>

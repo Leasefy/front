@@ -132,11 +132,11 @@ export function CotizadorRecentQuotesFeed({
                     </span>
                     {/* COTIZ-18 (19-10-2026): el nombre del candidato; sin él, la referencia. */}
                     {q.nombreCandidato?.trim() ? (
-                      <span className="text-xs text-fg-muted" data-testid="cotizacion-candidato">
+                      <span className="text-caption text-fg-muted" data-testid="cotizacion-candidato">
                         {q.nombreCandidato.trim()}
                       </span>
                     ) : (
-                      <span className="text-xs font-mono text-fg-muted">
+                      <span className="text-caption font-mono text-fg-muted">
                         {tr("Ref.")} {q.cedulaHashPrefix8}
                       </span>
                     )}

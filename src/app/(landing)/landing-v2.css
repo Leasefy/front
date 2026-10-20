@@ -182,7 +182,8 @@ html.pm-open .lv2 header .mbtn .bars span{background:var(--ink)}
 .lv2 .hright{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding-bottom:4px}
 @media(min-width:640px){.lv2 .hright{align-items:flex-end}}
 .lv2 .hovl{position:absolute;inset:0;background:radial-gradient(ellipse 66% 48% at 50% 30%,rgba(6,10,26,.44),rgba(6,10,26,0) 72%),linear-gradient(to bottom,rgba(6,10,26,.38),rgba(6,10,26,0) 26%,rgba(6,10,26,0) 62%,rgba(248,247,245,.92) 94%,#F8F7F5 100%)}
-.lv2 .hcontent{position:relative;z-index:2;display:flex;flex:1;flex-direction:column;align-items:center;text-align:center;padding:150px 0 96px}
+/* Arriba y abajo nada más: los lados son los del .container (20/32/48 px). Con «padding:150px 0 96px» el texto del hero quedaba pegado al borde del celular (Nico, 19-10-2026, iPhone). */
+.lv2 .hcontent{position:relative;z-index:2;display:flex;flex:1;flex-direction:column;align-items:center;text-align:center;padding-top:150px;padding-bottom:96px}
 .lv2 .hleft{max-width:680px}
 .lv2 .hero h1{font-family:var(--fd);font-weight:600;color:#fff;line-height:1.04;letter-spacing:-.03em;font-size:clamp(2.35rem,5.8vw,5.9rem);max-width:1040px;margin:0 auto}
 .lv2 .hsub{margin-top:20px;max-width:560px;font-size:15px;line-height:1.65;color:rgba(248,247,245,.78)}

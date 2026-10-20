@@ -20,7 +20,8 @@ export default function CuadreDeTercerosPage() {
         {/* La explicación va detrás de un botón, no puesta sobre la pantalla:
             acá arriba lo que hace falta saber es qué se está mirando. */}
         <header className="space-y-1.5">
-          <SectionLabel>Finanzas</SectionLabel>
+          {/* GLOW UP: la misma sección que Traslados y Pendientes (la cara «Cuadrar la caja»). */}
+          <SectionLabel>Tesorería</SectionLabel>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h1 className="text-h2 text-fg">Cuadre de la plata de terceros</h1>
             <ParaEntenderMas

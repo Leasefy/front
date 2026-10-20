@@ -47,11 +47,12 @@ interface DispersionResumenProps {
  * Get completion rate color based on percentage - subtle version
  */
 function getProgressColor(rate: number | null): string {
-  if (rate === null) return 'bg-muted-foreground/30';
-  if (rate >= 90) return 'bg-foreground';
-  if (rate >= 50) return 'bg-foreground/70';
-  if (rate > 0) return 'bg-foreground/50';
-  return 'bg-muted-foreground/30';
+  // GLOW UP (20-10-2026): la barra era negra (`bg-foreground`), el único negro
+  // de dato del panel. Avance en cobalto; completo, en verde.
+  if (rate === null) return 'bg-border-strong';
+  if (rate >= 100) return 'bg-success';
+  if (rate > 0) return 'bg-primary';
+  return 'bg-border-strong';
 }
 
 /*

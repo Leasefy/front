@@ -80,4 +80,9 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
     "{n} of {total} have no email: their invoices aren't delivered.",
   'No frena la factura': "Doesn't block invoicing",
   'Ver a quién le falta': 'See who is missing one',
+  // app/panel/inmobiliaria/pagos/dispersiones/page.tsx
+  'Pagar a propietarios': 'Pay owners',
+  'Lo que se le gira a cada propietario en el mes, y en qué va cada giro.':
+    'What each owner is paid this month, and where each payout stands.',
+  'Generar la dispersión': 'Generate the payout',
 }

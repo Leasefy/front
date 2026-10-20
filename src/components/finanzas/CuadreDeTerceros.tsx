@@ -36,6 +36,8 @@ import { CheckCircle, WarningOctagon } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Avisos, Cifra, CifraDeTexto, TituloDeBloque } from '@/components/finanzas/piezas';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { finanzasApi } from '@/lib/api/finanzas.service';
 import type { CuadreDeTerceros as Respuesta } from '@/lib/api/finanzas.types';
@@ -162,140 +164,54 @@ export function avisosQueElVeredictoNoDijo(datos: {
   return [...datos.avisos];
 }
 
+/**
+ * GLOW UP (Nico, 20-10-2026): «minimizando carga cognitiva, minimizando tanta
+ * información». Las mismas cifras salían TRES veces —la lista renglón por
+ * renglón, las fichas de «la identidad, término por término» y las de «contra lo
+ * que dice el banco»— y la acción que cierra el descuadre más común («Proponer
+ * el traslado») vivía al pie de una ficha. Ahora, en el orden en que se trabaja:
+ *   1. el veredicto y, a su lado, lo que se puede hacer ya (trasladar lo tuyo,
+ *      identificar las partidas);
+ *   2. los avisos que el veredicto no dijo;
+ *   3. la cuenta renglón por renglón (UNA explicación de los números);
+ *   4. qué puede explicar la diferencia;
+ *   5. plegado, cada término con su fuente (para quien audita).
+ * Las cifras y sus definiciones son las mismas.
+ */
 function Cuadre({ datos }: { datos: Respuesta }) {
+  const hayTraslado = datos.comisionRetenidaCop > 0 && datos.comisionEnLaCuentaCop > 0;
+  const hayPartidas = datos.partidasPorIdentificar > 0;
   return (
     <div className="space-y-6">
-      <Veredicto datos={datos} />
+      <div className="space-y-3">
+        <Veredicto datos={datos} />
+        {hayTraslado || hayPartidas ? (
+          <div className="flex flex-wrap items-center gap-2" data-testid="cuadre-acciones">
+            {hayTraslado ? (
+              // 🔴 (18-09) El número que cierra el cuadre, con su acción a la mano.
+              <Button asChild size="sm" hideArrow>
+                <Link href="/panel/inmobiliaria/pagos/traslados" data-testid="ir-a-traslados">
+                  Proponer el traslado a tu cuenta propia ({formatCurrency(datos.comisionEnLaCuentaCop)})
+                </Link>
+              </Button>
+            ) : null}
+            {hayPartidas ? (
+              <Button asChild size="sm" variant="outline" hideArrow>
+                <Link href="/panel/inmobiliaria/pagos/recaudo" data-testid="ir-a-identificar-partidas">
+                  {datos.partidasPorIdentificar === 1
+                    ? 'Identificar la partida en Conciliación'
+                    : `Identificar las ${datos.partidasPorIdentificar} partidas en Conciliación`}
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
 
       {/* CE-01 (QA-PAGOS-95): la plata de las frases del back, «$ X» con el espacio duro de la casa. */}
       <Avisos avisos={avisosQueElVeredictoNoDijo(datos).map((a) => conLaPlataPegada(a))} testId="cuadre-avisos" />
 
       {datos.renglones && datos.renglones.length > 0 ? <LaCuentaEnPalabras datos={datos} /> : null}
-
-      <section className="space-y-4">
-        <TituloDeBloque
-          titulo="La identidad, término por término"
-          explicacion="Lo que el banco dice que hay, contra la suma de la plata que no es tuya. Los cuatro términos salen de fuentes distintas: si uno está mal, la diferencia lo delata."
-        />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Cifra
-            id="recaudado-no-girado"
-            etiqueta="Recaudado y no girado"
-            valor={datos.recaudadoYNoGiradoCop}
-            definicion={`Lo que entró de inquilinos (${formatCurrency(datos.detalle.recaudadoCop)}) menos lo que salió a propietarios (${formatCurrency(datos.detalle.giradoCop)}). Adentro está lo tuyo (comisión, su IVA, intereses y gastos)${datos.propioRetenidoCop !== undefined ? `: ${formatCurrency(datos.propioRetenidoCop)} que se restan para llegar a la plata de terceros` : ', que es plata tuya'}.`}
-          />
-          <Cifra
-            id="anticipos"
-            etiqueta="Anticipos del inquilino"
-            valor={datos.anticiposDelInquilinoCop}
-            definicion="El saldo vivo de lo que los inquilinos adelantaron. Es de ellos hasta que se consume mes a mes."
-          />
-          <Cifra
-            id="garantias"
-            etiqueta="Garantías de servicios"
-            valor={datos.garantiasDeServiciosCop}
-            definicion={`El saldo vivo de ${cuantos(datos.detalle.garantiasVivas, 'garantía', 'garantías')}. Es plata del inquilino hasta que se paga un servicio o se le devuelve.`}
-          />
-          <Cifra
-            id="por-identificar"
-            etiqueta="Partidas por identificar"
-            valor={datos.partidasPorIdentificarCop}
-            definicion={`${cuantos(datos.partidasPorIdentificar, 'entrada', 'entradas')} del extracto que nadie asignó. Se quedan en el pasivo hasta que se les ponga inquilino y cuota: no se pasan a ingresos ni se devuelven solas.`}
-            tono={datos.partidasPorIdentificar > 0 ? 'warning' : undefined}
-          />
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <TituloDeBloque
-          titulo="Contra lo que dice el banco"
-          explicacion="El saldo de la cuenta de recaudo sale del extracto cargado en Conciliación. Sin extracto no se puede cuadrar, y eso se dice — no se supone un cero."
-        />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <Cifra
-            id="saldo-banco"
-            etiqueta="Saldo de la cuenta de recaudo"
-            valor={datos.haySaldoDelBanco ? datos.saldoDeLaCuentaCop : null}
-            definicion={`La suma de ${datos.detalle.movimientosDelExtracto === 1 ? 'el' : 'los'} ${cuantos(datos.detalle.movimientosDelExtracto, 'movimiento', 'movimientos')} del extracto hasta el ${fechaLarga(datos.fecha)}.`}
-            sinMedir="No hay extracto bancario cargado hasta esta fecha: cárgalo en Conciliación para poder cuadrar."
-          />
-          <Cifra
-            id="plata-de-terceros"
-            etiqueta="Plata de terceros"
-            valor={datos.plataDeTercerosCop}
-            definicion={
-              datos.propioRetenidoCop !== undefined
-                ? `Los cuatro términos de arriba menos lo tuyo que entró con los recaudos (${formatCurrency(datos.propioRetenidoCop)}): lo que NO es de la inmobiliaria y tiene que estar en esa cuenta.`
-                : 'La suma de los cuatro términos de arriba: lo que NO es de la inmobiliaria y tiene que estar en esa cuenta.'
-            }
-          />
-          <Cifra
-            id="diferencia"
-            etiqueta="Diferencia a explicar"
-            valor={datos.diferenciaCop}
-            definicion={
-              datos.diferenciaCop === 0
-                ? 'Cuadra exacto.'
-                : (datos.diferenciaCop ?? 0) > 0
-                  ? datos.laDiferenciaEsLaComision
-                    ? 'En el banco hay MÁS de lo que se le debe a terceros, y es exactamente lo tuyo que todavía no trasladaste. No es un descuadre.'
-                    : 'En el banco hay MÁS de lo que se le debe a terceros. Suele ser lo tuyo, todavía sin trasladar.'
-                  : 'En el banco hay MENOS de lo que se le debe a terceros.'
-            }
-            sinMedir="No se pudo cuadrar: falta el extracto del banco."
-            tono={datos.faltaPlataDeTerceros ? 'danger' : undefined}
-          />
-        </div>
-        {datos.comisionRetenidaCop > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <CifraDeTexto
-              id="comision-referencia"
-              etiqueta={datos.propioRetenidoCop !== undefined ? 'Lo tuyo que entró con lo cobrado' : 'Tu comisión causada (referencia)'}
-              texto={formatCurrency(datos.comisionRetenidaCop)}
-              definicion={
-                datos.propioRetenidoCop !== undefined
-                  ? 'Comisión + su IVA − retenciones de los meses ya cobrados, más los intereses y gastos de cobranza que se trasladan: la misma cuenta del traslado. Se resta de la plata de terceros.'
-                  : 'NO entra en la identidad: es plata tuya. Está acá porque es la explicación más común de una diferencia a favor.'
-              }
-              pie={
-                datos.comisionTrasladadaCop > 0 ? (
-                  <span>
-                    Ya trasladaste {formatCurrency(datos.comisionTrasladadaCop)} a tu cuenta
-                    propia: esa parte salió del banco de recaudo.
-                  </span>
-                ) : null
-              }
-            />
-            {/* 🔴 (18-09) El número que cierra el cuadre. Hasta hoy la pantalla
-                decía «suele ser tu comisión» sin poder decir CUÁNTA seguía ahí;
-                ahora lo dice, y el enlace lleva a proponerlo. */}
-            <CifraDeTexto
-              id="comision-en-la-cuenta"
-              etiqueta={datos.propioRetenidoCop !== undefined ? 'Lo tuyo sin trasladar' : 'Comisión sin trasladar'}
-              texto={formatCurrency(datos.comisionEnLaCuentaCop)}
-              definicion={
-                datos.laDiferenciaEsLaComision
-                  ? 'La diferencia de arriba es EXACTAMENTE esto. No es un descuadre: es plata tuya que sigue en la cuenta de recaudo. Aprueba el traslado y el cuadre da cero.'
-                  : datos.propioRetenidoCop !== undefined
-                    ? 'Lo tuyo que sigue en la cuenta de recaudo: lo que entró menos lo que ya trasladaste. Es la diferencia esperada.'
-                    : 'Lo que de tu comisión sigue en la cuenta de recaudo: causada menos trasladada.'
-              }
-              tono={datos.laDiferenciaEsLaComision ? 'success' : undefined}
-              pie={
-                datos.comisionEnLaCuentaCop > 0 ? (
-                  <Link
-                    href="/panel/inmobiliaria/pagos/traslados"
-                    className="font-medium text-primary underline-offset-4 hover:underline"
-                    data-testid="ir-a-traslados"
-                  >
-                    Proponer el traslado a tu cuenta propia
-                  </Link>
-                ) : null
-              }
-            />
-          </div>
-        ) : null}
-      </section>
 
       {datos.explicaciones.length > 0 ? (
         <section className="space-y-3">
@@ -316,6 +232,135 @@ function Cuadre({ datos }: { datos: Respuesta }) {
           </ul>
         </section>
       ) : null}
+
+      {/* Cada término con su fuente: la misma cuenta, vista por quien audita.
+          Plegada, pero en la página (`montadoSiempre`). */}
+      <MasDetalles
+        etiqueta="Ver cada término con su fuente"
+        etiquetaAbierto="Ocultar los términos"
+        montadoSiempre
+        abiertoAlInicio={!datos.renglones || datos.renglones.length === 0}
+        classNameDelContenido="space-y-6"
+        data-testid="cuadre-terminos"
+      >
+        <section className="space-y-4">
+          <TituloDeBloque
+            titulo="La identidad, término por término"
+            explicacion="Lo que el banco dice que hay, contra la suma de la plata que no es tuya. Los cuatro términos salen de fuentes distintas: si uno está mal, la diferencia lo delata."
+          />
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <Cifra
+              id="recaudado-no-girado"
+              etiqueta="Recaudado y no girado"
+              valor={datos.recaudadoYNoGiradoCop}
+              definicion={`Lo que entró de inquilinos (${formatCurrency(datos.detalle.recaudadoCop)}) menos lo que salió a propietarios (${formatCurrency(datos.detalle.giradoCop)}). Adentro está lo tuyo (comisión, su IVA, intereses y gastos)${datos.propioRetenidoCop !== undefined ? `: ${formatCurrency(datos.propioRetenidoCop)} que se restan para llegar a la plata de terceros` : ', que es plata tuya'}.`}
+            />
+            <Cifra
+              id="anticipos"
+              etiqueta="Anticipos del inquilino"
+              valor={datos.anticiposDelInquilinoCop}
+              definicion="El saldo vivo de lo que los inquilinos adelantaron. Es de ellos hasta que se consume mes a mes."
+            />
+            <Cifra
+              id="garantias"
+              etiqueta="Garantías de servicios"
+              valor={datos.garantiasDeServiciosCop}
+              definicion={`El saldo vivo de ${cuantos(datos.detalle.garantiasVivas, 'garantía', 'garantías')}. Es plata del inquilino hasta que se paga un servicio o se le devuelve.`}
+            />
+            <Cifra
+              id="por-identificar"
+              etiqueta="Partidas por identificar"
+              valor={datos.partidasPorIdentificarCop}
+              definicion={`${cuantos(datos.partidasPorIdentificar, 'entrada', 'entradas')} del extracto que nadie asignó. Se quedan en el pasivo hasta que se les ponga inquilino y cuota: no se pasan a ingresos ni se devuelven solas.`}
+              tono={datos.partidasPorIdentificar > 0 ? 'warning' : undefined}
+            />
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <TituloDeBloque
+            titulo="Contra lo que dice el banco"
+            explicacion="El saldo de la cuenta de recaudo sale del extracto cargado en Conciliación. Sin extracto no se puede cuadrar, y eso se dice — no se supone un cero."
+          />
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <Cifra
+              id="saldo-banco"
+              etiqueta="Saldo de la cuenta de recaudo"
+              valor={datos.haySaldoDelBanco ? datos.saldoDeLaCuentaCop : null}
+              definicion={`La suma de ${datos.detalle.movimientosDelExtracto === 1 ? 'el' : 'los'} ${cuantos(datos.detalle.movimientosDelExtracto, 'movimiento', 'movimientos')} del extracto hasta el ${fechaLarga(datos.fecha)}.`}
+              sinMedir="No hay extracto bancario cargado hasta esta fecha: cárgalo en Conciliación para poder cuadrar."
+            />
+            <Cifra
+              id="plata-de-terceros"
+              etiqueta="Plata de terceros"
+              valor={datos.plataDeTercerosCop}
+              definicion={
+                datos.propioRetenidoCop !== undefined
+                  ? `Los cuatro términos de arriba menos lo tuyo que entró con los recaudos (${formatCurrency(datos.propioRetenidoCop)}): lo que NO es de la inmobiliaria y tiene que estar en esa cuenta.`
+                  : 'La suma de los cuatro términos de arriba: lo que NO es de la inmobiliaria y tiene que estar en esa cuenta.'
+              }
+            />
+            <Cifra
+              id="diferencia"
+              etiqueta="Diferencia a explicar"
+              valor={datos.diferenciaCop}
+              definicion={
+                datos.diferenciaCop === 0
+                  ? 'Cuadra exacto.'
+                  : (datos.diferenciaCop ?? 0) > 0
+                    ? datos.laDiferenciaEsLaComision
+                      ? 'En el banco hay MÁS de lo que se le debe a terceros, y es exactamente lo tuyo que todavía no trasladaste. No es un descuadre.'
+                      : 'En el banco hay MÁS de lo que se le debe a terceros. Suele ser lo tuyo, todavía sin trasladar.'
+                    : 'En el banco hay MENOS de lo que se le debe a terceros.'
+              }
+              sinMedir="No se pudo cuadrar: falta el extracto del banco."
+              tono={datos.faltaPlataDeTerceros ? 'danger' : undefined}
+            />
+          </div>
+          {datos.comisionRetenidaCop > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <CifraDeTexto
+                id="comision-referencia"
+                etiqueta={datos.propioRetenidoCop !== undefined ? 'Lo tuyo que entró con lo cobrado' : 'Tu comisión causada (referencia)'}
+                texto={formatCurrency(datos.comisionRetenidaCop)}
+                definicion={
+                  datos.propioRetenidoCop !== undefined
+                    ? 'Comisión + su IVA − retenciones de los meses ya cobrados, más los intereses y gastos de cobranza que se trasladan: la misma cuenta del traslado. Se resta de la plata de terceros.'
+                    : 'NO entra en la identidad: es plata tuya. Está acá porque es la explicación más común de una diferencia a favor.'
+                }
+                pie={
+                  datos.comisionTrasladadaCop > 0 ? (
+                    <span>
+                      Ya trasladaste {formatCurrency(datos.comisionTrasladadaCop)} a tu cuenta
+                      propia: esa parte salió del banco de recaudo.
+                    </span>
+                  ) : null
+                }
+              />
+              {/* 🔴 (18-09) El número que cierra el cuadre. Hasta hoy la pantalla
+                  decía «suele ser tu comisión» sin poder decir CUÁNTA seguía ahí;
+                  ahora lo dice, y el enlace lleva a proponerlo. */}
+              <CifraDeTexto
+                id="comision-en-la-cuenta"
+                etiqueta={datos.propioRetenidoCop !== undefined ? 'Lo tuyo sin trasladar' : 'Comisión sin trasladar'}
+                texto={formatCurrency(datos.comisionEnLaCuentaCop)}
+                definicion={
+                  datos.laDiferenciaEsLaComision
+                    ? 'La diferencia de arriba es EXACTAMENTE esto. No es un descuadre: es plata tuya que sigue en la cuenta de recaudo. Aprueba el traslado y el cuadre da cero.'
+                    : datos.propioRetenidoCop !== undefined
+                      ? 'Lo tuyo que sigue en la cuenta de recaudo: lo que entró menos lo que ya trasladaste. Es la diferencia esperada.'
+                      : 'Lo que de tu comisión sigue en la cuenta de recaudo: causada menos trasladada.'
+                }
+                tono={datos.laDiferenciaEsLaComision ? 'success' : undefined}
+                pie={
+                  null
+                }
+              />
+            </div>
+          ) : null}
+        </section>
+
+      </MasDetalles>
     </div>
   );
 }

@@ -27,6 +27,12 @@ export interface MasDetallesProps {
   className?: string;
   /** Clases del contenido (van ADENTRO del colapsable). */
   classNameDelContenido?: string;
+  /**
+   * Deja el contenido en la página aunque esté plegado (oculto con `hidden`):
+   * para lo que otra parte de la pantalla o un lector necesita encontrar, y
+   * para no perder el estado de adentro al plegar. Al abrir, entra con fundido.
+   */
+  montadoSiempre?: boolean;
   'data-testid'?: string;
 }
 
@@ -37,6 +43,7 @@ export function MasDetalles({
   abiertoAlInicio = false,
   className,
   classNameDelContenido,
+  montadoSiempre = false,
   'data-testid': testId,
 }: MasDetallesProps) {
   const tr = useTr();
@@ -57,9 +64,17 @@ export function MasDetalles({
           aria-hidden="true"
         />
       </button>
-      <Collapse open={abierto} id={id} className={cn('pt-3', classNameDelContenido)}>
-        {children}
-      </Collapse>
+      {montadoSiempre ? (
+        // Los hijos no cambian de padre al abrir (no se remontan ni pierden su
+        // estado); la entrada es la animación del preset (`animate-rise-in`).
+        <div id={id} hidden={!abierto} className={cn('pt-3', abierto && 'animate-rise-in', classNameDelContenido)}>
+          {children}
+        </div>
+      ) : (
+        <Collapse open={abierto} id={id} className={cn('pt-3', classNameDelContenido)}>
+          {children}
+        </Collapse>
+      )}
     </div>
   );
 }

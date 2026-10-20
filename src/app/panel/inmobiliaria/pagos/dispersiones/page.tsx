@@ -86,6 +86,7 @@ import { nombreDelMes } from '@/lib/utils/mes';
 import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
 import { CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useTr } from '@/lib/i18n/use-tr';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -784,33 +785,33 @@ function DispersionesContent() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.dispersiones.title')}
-          </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            {t('inmobiliaria.dispersiones.subtitle')}
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {/* Los lotes al banco: el archivo plano con doble aprobación. */}
-          <Button asChild variant="secondary" hideArrow>
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* GLOW UP (20-10-2026): el encabezado común —la cara a la que pertenece,
+          qué es en una línea y, a la derecha, lo secundario y lo principal—,
+          con el contenedor de todo el panel (antes `p-4 md:p-6`: esta pantalla
+          arrancaba 8 px más a la izquierda que Liquidaciones). */}
+      <EncabezadoDePantalla
+        seccion={tr('Pagar a propietarios')}
+        titulo={t('inmobiliaria.dispersiones.title')}
+        descripcion={tr('Lo que se le gira a cada propietario en el mes, y en qué va cada giro.')}
+        acciones={
+          // Los lotes al banco: el archivo plano con doble aprobación.
+          <Button asChild variant="outline" size="sm" hideArrow>
             <Link href={RUTA_LOTES}>
               <Bank className="w-4 h-4" />
               {tr("Lotes al banco")}
             </Link>
           </Button>
-          <Button asChild hideArrow>
+        }
+        accionPrincipal={
+          <Button asChild size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/dispersiones/generar">
               <Lightning className="w-4 h-4" weight="fill" />
-              {t('inmobiliaria.dispersiones.wizard.title')}
+              {tr('Generar la dispersión')}
             </Link>
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Summary Section — la página ya no anima su propia entrada (la pone el
           `template.tsx`); se anima el CAMBIO: esqueleto → resumen / fallo se

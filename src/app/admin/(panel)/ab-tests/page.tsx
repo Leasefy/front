@@ -48,13 +48,13 @@ const columns: Column<ExperimentRow>[] = [
   },
   {
     header: 'Experimento',
-    cell: (r) => <span className="font-mono text-xs break-all">{r.name}</span>,
+    cell: (r) => <span className="font-mono text-caption break-all">{r.name}</span>,
   },
   {
     header: 'Asignaciones',
     align: 'right',
     cell: (r) => (
-      <span className="tabular-nums font-mono text-xs">
+      <span className="tabular-nums font-mono text-caption">
         {(Number(r.assignment_count) || 0).toLocaleString('es-CO')}
       </span>
     ),
@@ -62,7 +62,7 @@ const columns: Column<ExperimentRow>[] = [
   {
     header: 'Creado',
     cell: (r) => (
-      <span className="font-mono text-xs text-fg-muted tabular-nums whitespace-nowrap">
+      <span className="font-mono text-caption text-fg-muted tabular-nums whitespace-nowrap">
         {fmtDateTime(r.created_at)}
       </span>
     ),
@@ -85,7 +85,7 @@ export default function AbTestsPage() {
   const { page, setPage, total, pageRows } = useClientPagination(data, PAGE_SIZE)
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         label="sistema"
         title="A/B tests"

@@ -1,9 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { Buildings } from '@phosphor-icons/react'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
+import { legible } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pagination } from '@/components/admin/screen/Pagination'
@@ -55,41 +57,41 @@ export default function TenantsPage() {
     {
       header: 'NIT',
       cell: (r) => (
-        <span className="font-mono text-xs text-fg-muted tabular-nums">{r.nit}</span>
+        <span className="font-mono text-caption text-fg-muted tabular-nums">{r.nit}</span>
       ),
     },
     {
       header: 'Contacto',
-      cell: (r) => <span className="text-xs text-fg-muted">{r.primary_contact_email}</span>,
+      cell: (r) => <span className="text-caption text-fg-muted">{r.primary_contact_email}</span>,
     },
     {
       header: 'Modelo',
-      cell: (r) => <Pill tone="neutral">{r.billing_model}</Pill>,
+      cell: (r) => <Pill tone="neutral">{legible(r.billing_model)}</Pill>,
     },
     {
       header: 'Deudores',
       align: 'right',
-      cell: (r) => <span className="tabular-nums font-mono text-sm">{r.debtor_count}</span>,
+      cell: (r) => <span className="font-mono tabular-nums">{r.debtor_count}</span>,
     },
     {
       header: 'Llamadas',
       align: 'right',
-      cell: (r) => <span className="tabular-nums font-mono text-sm">{r.call_count}</span>,
+      cell: (r) => <span className="font-mono tabular-nums">{r.call_count}</span>,
     },
     {
-      header: 'Pagado aprobado',
+      header: 'Recaudado',
       align: 'right',
       cell: (r) => (
-        <span className="tabular-nums text-fg-muted text-sm">
+        <span className="font-mono tabular-nums text-fg-muted">
           {r.paid_total != null ? fmtCOP(parseFloat(r.paid_total)) : '—'}
         </span>
       ),
     },
     {
-      header: 'Alta',
+      header: 'Se registró',
       align: 'right',
       cell: (r) => (
-        <span className="whitespace-nowrap text-xs text-fg-muted tabular-nums">
+        <span className="whitespace-nowrap font-mono text-caption text-fg-muted tabular-nums">
           {fmtDateTime(r.created_at)}
         </span>
       ),
@@ -97,11 +99,10 @@ export default function TenantsPage() {
   ]
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="02 · tenants"
         title="Inmobiliarias"
-        description="Todas las agencias registradas en la plataforma. Click en una fila para ver el detalle."
+        description="Todas las inmobiliarias registradas en Leasefy. Toca una para ver su detalle."
       />
 
       {/* (08-10-2026, Nico) Lo que quedó en «No pudimos abrir tu registro», con su motivo. */}
@@ -113,12 +114,14 @@ export default function TenantsPage() {
         getKey={(r) => r.agency_id}
         isLoading={tenants.isLoading}
         error={tenants.error}
-        emptyTitle="Sin agencias"
-        emptyHint="No hay agencias registradas en la base."
+        onReintentar={tenants.refetch}
+        emptyTitle="Todavía no hay inmobiliarias"
+        emptyHint="Cuando una se registre, aparece acá."
+        emptyIcon={<Buildings weight="bold" />}
+        aria-label="Inmobiliarias"
         onRowClick={(r) => router.push(`/admin/tenants/${r.tenant_id}`)}
+        pie={<Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />}
       />
-
-      <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />
     </div>
   )
 }

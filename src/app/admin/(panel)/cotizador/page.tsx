@@ -23,6 +23,8 @@ import {
   toUpdateCarrierBody,
   type CarrierFormValues,
 } from './carrier-form-schema'
+import { Card } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
 
 /**
  * El mensaje real del micro (`{ success:false, error }`), con la regla de oro
@@ -126,7 +128,7 @@ export default function CotizadorPage() {
     },
     {
       header: 'Producto',
-      cell: (c) => <span className="text-xs text-fg-muted">{c.productType}</span>,
+      cell: (c) => <span className="text-caption text-fg-muted">{c.productType}</span>,
     },
     {
       header: 'Modo',
@@ -150,44 +152,39 @@ export default function CotizadorPage() {
       align: 'right',
       cell: (c) => (
         <div className="flex items-center gap-2 justify-end">
-          <button
-            className="btn btn-ghost h-8 px-2"
-            onClick={() => openEdit(c)}
+          <Button variant="ghost" hideArrow className="h-8 px-2" onClick={() => openEdit(c)}
             disabled={busyName === c.name}
           >
             Editar
-          </button>
-          <button
-            className="btn btn-danger h-8 px-2"
-            onClick={() => handleDelete(c)}
+          </Button>
+          <Button variant="destructive" hideArrow className="h-8 px-2" onClick={() => handleDelete(c)}
             disabled={busyName === c.name}
           >
             {busyName === c.name ? '…' : 'Eliminar'}
-          </button>
+          </Button>
         </div>
       ),
     },
   ]
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="31 · cotizador"
         title="Aseguradoras"
         description="Registry de carriers del cotizador (empezando por Fianly). Configura la ruta, el modo de integración y las credenciales — se guardan encriptadas y nunca se muestran de vuelta."
         right={
           form.kind === 'none' ? (
-            <button className="btn btn-primary" onClick={openCreate}>
+            <Button hideArrow onClick={openCreate}>
               Nuevo carrier
-            </button>
+            </Button>
           ) : undefined
         }
       />
 
       {rowError && (
-        <div className="card p-4 border-l-4 border-l-bad mb-6">
-          <p className="text-sm text-bad">{rowError}</p>
-        </div>
+        <Card className="p-4  mb-6">
+          <p className="text-sm text-danger">{rowError}</p>
+        </Card>
       )}
 
       {form.kind !== 'none' && (
@@ -214,7 +211,7 @@ export default function CotizadorPage() {
         emptyHint='Crea el primero con "Nuevo carrier".'
       />
 
-      <div className="mt-8">
+      <div className="">
         <PreScoringConfigCard />
       </div>
     </div>

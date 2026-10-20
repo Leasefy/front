@@ -1,12 +1,19 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 
 import {
   planFormSchema,
   PLAN_FORM_DEFAULTS,
   type PlanFormValues,
 } from './plan-form-schema'
+import { Card, Eyebrow } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Pill } from '@/components/admin/Pill'
 
 type FieldErrors = Partial<Record<keyof PlanFormValues, string>>
 
@@ -31,16 +38,16 @@ export interface PlanFormProps {
 
 function Label({ htmlFor, children, required }: { htmlFor: string; children: React.ReactNode; required?: boolean }) {
   return (
-    <label htmlFor={htmlFor} className="block text-sm font-medium text-fg mb-1.5">
+    <label htmlFor={htmlFor} className="block text-body-sm font-medium text-fg mb-1.5">
       {children}
-      {required && <span className="text-bad"> *</span>}
+      {required && <span className="text-danger"> *</span>}
     </label>
   )
 }
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
-  return <p className="mt-1 text-xs text-bad">{message}</p>
+  return <p className="mt-1 text-caption text-danger">{message}</p>
 }
 
 function Help({ children }: { children: React.ReactNode }) {
@@ -104,22 +111,22 @@ export function PlanForm({
   return (
     <form onSubmit={submit} noValidate className="card p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <div className="section-label">{isEdit ? 'editar plan' : 'nuevo plan'}</div>
-        <span className="pill pill-info">AGENCY</span>
+        <Eyebrow>{isEdit ? 'Editar plan' : 'Nuevo plan'}</Eyebrow>
+        <Pill tone="info">AGENCY</Pill>
       </div>
 
       {/* Identity */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="plan-name" required>Nombre</Label>
-          <input id="plan-name" aria-required="true" className="input" value={values.name} onChange={text('name')} />
+          <Input id="plan-name" aria-required="true" className="" value={values.name} onChange={text('name')} />
           <FieldError message={errors.name} />
         </div>
         <div>
           <Label htmlFor="plan-slug">Slug</Label>
-          <input
+          <Input
             id="plan-slug"
-            className="input font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+            className="font-mono disabled:opacity-50 disabled:cursor-not-allowed"
             value={values.slug}
             onChange={text('slug')}
             disabled={isEdit}
@@ -136,23 +143,22 @@ export function PlanForm({
 
       <div>
         <Label htmlFor="plan-description">Descripción</Label>
-        <textarea id="plan-description" className="textarea" rows={2} value={values.description} onChange={text('description')} />
+        <Textarea id="plan-description" className="" rows={2} value={values.description} onChange={text('description')} />
         <FieldError message={errors.description} />
       </div>
 
       {/* Billing mode governs the pricing inputs below */}
       <div>
         <Label htmlFor="plan-billingMode" required>Modo de cobro</Label>
-        <select
-          id="plan-billingMode"
-          aria-required="true"
-          className="input"
-          value={values.billingMode}
-          onChange={(e) => set('billingMode', e.target.value as PlanFormValues['billingMode'])}
-        >
-          <option value="FLAT">FLAT — precio fijo mensual/anual</option>
-          <option value="USAGE_CANON">USAGE_CANON — % del canon administrado</option>
-        </select>
+        <Select value={values.billingMode} onValueChange={(v) => set('billingMode', v as PlanFormValues['billingMode'])}>
+          <SelectTrigger id="plan-billingMode" aria-required="true">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="FLAT">Precio fijo (mensual o anual)</SelectItem>
+            <SelectItem value="USAGE_CANON">Porcentaje del canon administrado</SelectItem>
+          </SelectContent>
+        </Select>
         <Help>
           {usageCanon
             ? 'Se cobra un % del canon; el precio mensual/anual se envía en 0.'
@@ -164,7 +170,7 @@ export function PlanForm({
         {usageCanon ? (
           <div>
             <Label htmlFor="plan-usageFeePct" required>% de canon</Label>
-            <input id="plan-usageFeePct" aria-required="true" className="input tabular-nums" inputMode="decimal" value={values.usageFeePct} onChange={text('usageFeePct')} />
+            <Input id="plan-usageFeePct" aria-required="true" className="tabular-nums" inputMode="decimal" value={values.usageFeePct} onChange={text('usageFeePct')} />
             <Help>En porcentaje (ej. 1.5). Se guarda en basis points (×100).</Help>
             <FieldError message={errors.usageFeePct} />
           </div>
@@ -172,12 +178,12 @@ export function PlanForm({
           <>
             <div>
               <Label htmlFor="plan-monthlyPrice" required>Precio mensual (COP)</Label>
-              <input id="plan-monthlyPrice" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.monthlyPrice} onChange={text('monthlyPrice')} />
+              <Input id="plan-monthlyPrice" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.monthlyPrice} onChange={text('monthlyPrice')} />
               <FieldError message={errors.monthlyPrice} />
             </div>
             <div>
               <Label htmlFor="plan-annualPrice" required>Precio anual (COP)</Label>
-              <input id="plan-annualPrice" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.annualPrice} onChange={text('annualPrice')} />
+              <Input id="plan-annualPrice" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.annualPrice} onChange={text('annualPrice')} />
               <FieldError message={errors.annualPrice} />
             </div>
           </>
@@ -188,12 +194,12 @@ export function PlanForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="plan-scoringViewPrice" required>Precio scoring view (COP)</Label>
-          <input id="plan-scoringViewPrice" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.scoringViewPrice} onChange={text('scoringViewPrice')} />
+          <Input id="plan-scoringViewPrice" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.scoringViewPrice} onChange={text('scoringViewPrice')} />
           <FieldError message={errors.scoringViewPrice} />
         </div>
         <div>
           <Label htmlFor="plan-evaluationCreditPrice" required>Precio crédito evaluación (COP)</Label>
-          <input id="plan-evaluationCreditPrice" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.evaluationCreditPrice} onChange={text('evaluationCreditPrice')} />
+          <Input id="plan-evaluationCreditPrice" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.evaluationCreditPrice} onChange={text('evaluationCreditPrice')} />
           <FieldError message={errors.evaluationCreditPrice} />
         </div>
       </div>
@@ -202,31 +208,31 @@ export function PlanForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="plan-maxProperties" required>Máx. propiedades</Label>
-          <input id="plan-maxProperties" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.maxProperties} onChange={text('maxProperties')} />
+          <Input id="plan-maxProperties" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.maxProperties} onChange={text('maxProperties')} />
           <Help>{SENTINEL_HELP}</Help>
           <FieldError message={errors.maxProperties} />
         </div>
         <div>
           <Label htmlFor="plan-maxUsers" required>Máx. usuarios</Label>
-          <input id="plan-maxUsers" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.maxUsers} onChange={text('maxUsers')} />
+          <Input id="plan-maxUsers" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.maxUsers} onChange={text('maxUsers')} />
           <Help>{SENTINEL_HELP}</Help>
           <FieldError message={errors.maxUsers} />
         </div>
         <div>
           <Label htmlFor="plan-maxScoringViews" required>Máx. scoring views</Label>
-          <input id="plan-maxScoringViews" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.maxScoringViews} onChange={text('maxScoringViews')} />
+          <Input id="plan-maxScoringViews" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.maxScoringViews} onChange={text('maxScoringViews')} />
           <Help>{SENTINEL_HELP}</Help>
           <FieldError message={errors.maxScoringViews} />
         </div>
         <div>
           <Label htmlFor="plan-monthlyEvalCap" required>Tope mensual evaluaciones</Label>
-          <input id="plan-monthlyEvalCap" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.monthlyEvalCap} onChange={text('monthlyEvalCap')} />
+          <Input id="plan-monthlyEvalCap" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.monthlyEvalCap} onChange={text('monthlyEvalCap')} />
           <Help>{SENTINEL_HELP}</Help>
           <FieldError message={errors.monthlyEvalCap} />
         </div>
         <div>
           <Label htmlFor="plan-monthlyCreditGrant" required>Bono mensual de créditos</Label>
-          <input id="plan-monthlyCreditGrant" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.monthlyCreditGrant} onChange={text('monthlyCreditGrant')} />
+          <Input id="plan-monthlyCreditGrant" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.monthlyCreditGrant} onChange={text('monthlyCreditGrant')} />
           <Help>Entero {'>'}= 0.</Help>
           <FieldError message={errors.monthlyCreditGrant} />
         </div>
@@ -234,44 +240,39 @@ export function PlanForm({
 
       {/* Flags */}
       <fieldset className="space-y-2">
-        <div className="section-label">flags</div>
+        <Eyebrow>Opciones</Eyebrow>
         {([
           ['scoringIncluded', 'Scoring incluido'],
           ['hasPremiumScoring', 'Scoring premium'],
           ['hasApiAccess', 'Acceso API'],
           ['isDefault', 'Plan por defecto'],
         ] as const).map(([key, label]) => (
-          <label key={key} className="flex items-center gap-2 text-sm text-fg cursor-pointer">
-            <input
-              type="checkbox"
-              className="accent-brand"
-              checked={values[key]}
-              onChange={(e) => set(key, e.target.checked)}
-            />
+          <label key={key} className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg">
+            <Switch checked={values[key]} onCheckedChange={(v) => set(key, v)} aria-label={label} />
             {label}
           </label>
         ))}
         {values.isDefault && otherDefaultExists && (
-          <div className="card p-3 border-l-4 border-l-warn text-xs text-warn">
+          <Card className="p-3  text-caption text-warning">
             Ya existe otro plan marcado como <strong>por defecto</strong>. El backend no fuerza
             unicidad: revisa que a lo sumo uno quede como default.
-          </div>
+          </Card>
         )}
       </fieldset>
 
       {submitError && (
-        <div className="card p-3 border-l-4 border-l-bad">
-          <p className="text-sm text-bad">{submitError}</p>
-        </div>
+        <Card className="p-3 ">
+          <p className="text-body-sm text-danger">{submitError}</p>
+        </Card>
       )}
 
       <div className="flex items-center gap-3">
-        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+        <Button hideArrow type="submit"  disabled={isSubmitting}>
           {isSubmitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear plan'}
-        </button>
-        <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={isSubmitting}>
+        </Button>
+        <Button variant="ghost" hideArrow type="button"  onClick={onCancel} disabled={isSubmitting}>
           Cancelar
-        </button>
+        </Button>
       </div>
     </form>
   )

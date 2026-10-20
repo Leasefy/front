@@ -31,15 +31,12 @@ const config: Config = {
   			sans: ['var(--font-sans)'],
   			heading: ['var(--font-heading)'],
   			mono: ['var(--font-mono)'],
-  			// Admin panel only (Satoshi, self-hosted under /admin/fonts).
-  			display: ['Satoshi', 'var(--font-admin-sans)', 'sans-serif'],
+  			// 🔴 19-10-2026: `display` ya no se pisa acá. Era la Satoshi del admin
+  			// viejo (que sólo se cargaba en /admin): afuera, `font-display` caía a
+  			// `sans-serif`. Ahora es la de Cadence (`var(--font-display)`, Schibsted).
   		},
-  		// Admin panel display scale + mono label tracking (nest brandbook).
-  		fontSize: {
-  			'display-xl': ['clamp(2.5rem, 6vw, 4.5rem)', { lineHeight: '0.95', letterSpacing: '-0.025em', fontWeight: '900' }],
-  			'display-lg': ['clamp(2rem, 4.5vw, 3rem)', { lineHeight: '1.0', letterSpacing: '-0.025em', fontWeight: '700' }],
-  			display: ['clamp(1.5rem, 3vw, 2rem)', { lineHeight: '1.05', letterSpacing: '-0.015em', fontWeight: '700' }],
-  		},
+  		// 🔴 19-10-2026: tampoco `text-display` / `-lg` / `-xl` (la escala del admin
+  		// viejo). `text-display` es la de Cadence.
   		letterSpacing: {
   			'mono-label': '0.12em',
   		},
@@ -234,41 +231,13 @@ const config: Config = {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
-  			/* ── Admin panel (/admin) — nest brandbook tokens. ADDITIVE + scoped:
-  			   these keys don't collide with the app's own palette and are only
-  			   used inside the `.admin-scope` internal tool. Do NOT use in the
-  			   customer app. ── */
-  			// DEFAULT points at the SAME --bg/--fg vars @leasefy/cadence uses (was a
-  			// hardcoded hex here, which silently shadowed cadence's dark-mode-aware
-  			// bg-bg/text-fg for the WHOLE app, not just /admin). The admin-specific
-  			// paper/ink values now live under `.admin-scope` in globals.css, scoped
-  			// to the admin subtree via a CSS var override — bg-bg/text-fg resolve
-  			// correctly everywhere else.
-  			bg: {
-  				DEFAULT: 'var(--bg)',
-  				surface: '#FFFFFF',
-  				card: '#FFFFFF',
-  				hover: '#EFEFEC',
-  				border: '#E2E3DE',
-  				'border-strong': '#C9CBC4',
-  			},
-  			fg: {
-  				DEFAULT: 'var(--fg)',
-  				muted: '#5A6678',
-  				subtle: '#8C95A2',
-  				dim: '#C0C5CD',
-  			},
-  			brand: '#0040FF',
-  			'brand-ink': '#0A1B2E',
-  			'brand-paper': '#F7F7F5',
-  			'brand-night': '#0D0D0D',
-  			nestlila: '#A8B3FF',
-  			nestcielo: '#00CFE0',
-  			nestyellow: '#E6FF6A',
-  			nestgray: '#E6E8EC',
-  			ok: '#00A878',
-  			warn: '#C97A0F',
-  			bad: '#D33547',
+  			// El cobalto de Leasefy FIJO (no cambia con el tema, a diferencia de
+  			// `primary`). Lo usa el hero de «Para ti» del inquilino: blanco encima
+  			// mide 6,59:1 en claro y en oscuro. 🔴 19-10-2026: los demás tokens que
+  			// vivían acá (`bg-bg-*`, `fg-muted/subtle/dim` en hex, `ok/warn/bad`,
+  			// `nest*`, `brand-ink/paper/night`) eran del admin viejo y se fueron con
+  			// él: el admin ahora habla Cadence como el resto de la plataforma.
+  			brand: '#1A40FF',
   			/* ── New design system scales ── */
   			indigo: {
   				50: 'hsl(var(--indigo-50))',

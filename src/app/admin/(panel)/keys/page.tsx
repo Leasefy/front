@@ -7,6 +7,7 @@ import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import type { PillTone } from '@/lib/admin/types'
+import { Card, MonoLabel } from '@leasefy/cadence'
 
 // ── Types co-located with the screen (BACK.md §8.22 + §7.4 · FRONT.md §6.30) ─
 
@@ -92,8 +93,8 @@ export default function KeysPage() {
     {
       header: 'Última rotación',
       cell: (r) => (
-        <span className="font-mono text-xs text-fg-muted">
-          {r.last_rotated_at ?? <span className="text-bad">nunca</span>}
+        <span className="font-mono text-caption text-fg-muted">
+          {r.last_rotated_at ?? <span className="text-danger">nunca</span>}
         </span>
       ),
     },
@@ -103,7 +104,7 @@ export default function KeysPage() {
       cell: (r) => {
         const d = daysSince(r.last_rotated_at)
         return (
-          <span className="tabular-nums font-mono text-xs">
+          <span className="tabular-nums font-mono text-caption">
             {d != null ? `${d}d` : '—'}
           </span>
         )
@@ -117,19 +118,18 @@ export default function KeysPage() {
     },
     {
       header: 'Notas',
-      cell: (r) => <span className="text-xs text-fg-muted">{r.notes ?? '—'}</span>,
+      cell: (r) => <span className="text-caption text-fg-muted">{r.notes ?? '—'}</span>,
     },
   ]
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="24 · keys"
-        title="Rotación de API keys"
+        title="Llaves"
         description={`Ley 2157 / SAGRILAFT: rotar cada 90 días. Warn en últimos ${KEY_ROTATION_WARN_DAYS}d. Nunca se muestran los valores de las keys.`}
       />
 
-      <div className="grid grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-4 gap-3">
         <KpiCard label="OK"        value={counts.ok}      tone="ok" />
         <KpiCard label="Warn"      value={counts.warn}    tone="warn" />
         <KpiCard label="Vencidas"  value={counts.overdue} tone="bad" />
@@ -137,22 +137,22 @@ export default function KeysPage() {
       </div>
 
       {isLoading && (
-        <div className="card p-8 flex items-center justify-center">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted flex items-center gap-2">
-            <span className="inline-block w-2 h-2 bg-brand animate-pulse" />
+        <Card className="p-8 flex items-center justify-center">
+          <MonoLabel className="flex items-center gap-2">
+            <span className="inline-block w-2 h-2 bg-primary animate-pulse" />
             cargando
-          </span>
-        </div>
+          </MonoLabel>
+        </Card>
       )}
 
       {error && (
-        <div className="card p-6">
-          <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-bad flex items-center gap-2 mb-2">
-            <span className="inline-block w-2 h-2 bg-bad" />
+        <Card className="p-6">
+          <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-danger flex items-center gap-2 mb-2">
+            <span className="inline-block w-2 h-2 bg-danger" />
             error
           </div>
           <p className="text-sm text-fg-muted">{error.message}</p>
-        </div>
+        </Card>
       )}
 
       {!isLoading && !error && (
@@ -165,12 +165,12 @@ export default function KeysPage() {
         />
       )}
 
-      <div className="card p-4 border-l-4 border-l-brand mt-6 text-xs text-fg-muted">
+      <Card className="p-4  text-caption text-fg-muted">
         Fuente:{' '}
         <code className="font-mono">src/config/key-rotation-log.ts</code> en el backend —
         el commit en git es el audit trail. Pendiente migrar a{' '}
         <code className="font-mono">agent.api_key_rotations</code> + audit_log + Doppler/Infisical.
-      </div>
+      </Card>
     </div>
   )
 }

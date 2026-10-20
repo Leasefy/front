@@ -23,6 +23,8 @@
  */
 
 import { useMemo, useState } from 'react'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Switch } from '@/components/ui/switch'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { Pill } from '@/components/admin/Pill'
@@ -40,6 +42,9 @@ import {
   type FilaDeLaMatriz,
   type MatrizDeModulos,
 } from '@/lib/admin/modulos-pagos'
+import { Card, Eyebrow } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 /** `2026-09-17T…` → `2026-09-17`. */
 function soloFecha(iso: string | null): string {
@@ -125,21 +130,20 @@ export default function ModulosPagosPage() {
   return (
     <>
       <PageHeader
-        label="módulos de pago"
-        title="Inmobiliarias × módulos"
+        title="Módulos"
         description="Qué módulo de pago tiene comprado cada inmobiliaria, quién se lo prendió y cuándo. Prender o apagar desde acá es lo único que lo cambia: ninguna inmobiliaria puede activárselo sola."
       />
 
       {data && !data.disponible && (
-        <div className="card p-4 border-l-4 border-l-warn mb-6">
+        <Card className="p-4  mb-6">
           <p className="text-sm text-fg">{data.motivo}</p>
-        </div>
+        </Card>
       )}
 
       {fallo && (
-        <div className="card p-4 border-l-4 border-l-bad mb-6">
-          <p className="text-sm text-bad">{fallo}</p>
-        </div>
+        <Card className="p-4  mb-6">
+          <p className="text-sm text-danger">{fallo}</p>
+        </Card>
       )}
 
       <form
@@ -149,23 +153,18 @@ export default function ModulosPagosPage() {
           setAplicada(busqueda.trim())
         }}
       >
-        <input
-          className="input"
+        <Input
+          
           placeholder="Buscar por nombre o NIT"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           aria-label="Buscar inmobiliaria"
         />
-        <button className="btn" type="submit">
+        <Button variant="outline" hideArrow type="submit">
           Buscar
-        </button>
-        <label className="flex items-center gap-2 text-xs text-fg-muted cursor-pointer select-none ml-auto">
-          <input
-            type="checkbox"
-            className="accent-brand"
-            checked={soloConModulos}
-            onChange={(e) => setSoloConModulos(e.target.checked)}
-          />
+        </Button>
+        <label className="ml-auto flex cursor-pointer select-none items-center gap-2.5 text-body-sm text-fg-muted">
+          <Switch checked={soloConModulos} onCheckedChange={setSoloConModulos} aria-label="Sólo las que compraron algo" />
           Sólo las que compraron algo ({conAlguno.length})
         </label>
       </form>
@@ -189,38 +188,38 @@ export default function ModulosPagosPage() {
         />
       ) : (
         <>
-          <p className="text-xs text-fg-muted mb-3">
+          <p className="text-caption text-fg-muted mb-3">
             Mostrando {visibles.length} de {agencias.length} inmobiliarias ·{' '}
             {conAlguno.length} con al menos un módulo comprado
           </p>
-          <div className="card overflow-x-auto">
-            <table className="w-full text-sm table-zebra">
-              <thead>
-                <tr className="border-b border-bg-border">
+          <Card className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-border">
                   {['Inmobiliaria', 'NIT', ...catalogo.map((c) => c.nombre)].map(
                     (h, i) => (
-                      <th
+                      <TableHead
                         key={i}
-                        className="px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle whitespace-nowrap text-left"
+                        
                       >
                         {h}
-                      </th>
+                      </TableHead>
                     ),
                   )}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {visibles.map((a) => (
-                  <tr key={a.agencyId}>
-                    <td className="px-3 py-2.5">{a.nombre}</td>
-                    <td className="px-3 py-2.5 font-mono text-xs text-fg-muted">
+                  <TableRow key={a.agencyId}>
+                    <TableCell >{a.nombre}</TableCell>
+                    <TableCell className="font-mono text-caption text-fg-muted">
                       {a.nit ?? '—'}
-                    </td>
+                    </TableCell>
                     {catalogo.map((c) => {
                       const m = a.modulos[c.modulo]
                       const llave = `${a.agencyId}:${c.modulo}`
                       return (
-                        <td key={c.modulo} className="px-3 py-2.5">
+                        <TableCell key={c.modulo} className="px-3 py-2.5">
                           <div className="flex flex-col gap-1.5 items-start">
                             <Pill tone={m?.habilitado ? 'ok' : 'muted'}>
                               {m?.habilitado ? 'Comprado' : 'Apagado'}
@@ -232,9 +231,7 @@ export default function ModulosPagosPage() {
                                 {m.motivo ? ` · ${m.motivo}` : ''}
                               </span>
                             )}
-                            <button
-                              className="btn"
-                              disabled={ocupado === llave || !data?.disponible}
+                            <Button variant="outline" hideArrow disabled={ocupado === llave || !data?.disponible}
                               onClick={() => void alternar(a, c.modulo, c.nombre)}
                             >
                               {ocupado === llave
@@ -242,30 +239,30 @@ export default function ModulosPagosPage() {
                                 : m?.habilitado
                                   ? 'Apagar'
                                   : 'Prender'}
-                            </button>
+                            </Button>
                           </div>
-                        </td>
+                        </TableCell>
                       )
                     })}
-                  </tr>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
 
-          <div className="card p-4 mt-6">
-            <p className="section-label mb-2">Qué es cada módulo</p>
+          <Card className="p-4 mt-6">
+            <Eyebrow className="mb-2">Qué es cada módulo</Eyebrow>
             <dl className="space-y-2">
               {catalogo.map((c) => (
                 <div key={c.modulo}>
                   <dt className="text-sm text-fg">{c.nombre}</dt>
-                  <dd className="text-xs text-fg-muted leading-relaxed">
+                  <dd className="text-caption text-fg-muted leading-relaxed">
                     {c.descripcion}
                   </dd>
                 </div>
               ))}
             </dl>
-          </div>
+          </Card>
         </>
       )}
     </>

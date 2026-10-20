@@ -1,6 +1,9 @@
 'use client'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
+import { Card, CodeBlock, MonoLabel, StatusBadge } from '@leasefy/cadence'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Pill } from '@/components/admin/Pill'
 
 // ── Scaffold data (BACK.md §9 · FRONT.md §6.32) ───────────────────────────────
 
@@ -46,7 +49,7 @@ const PREVIEW_ROWS = [
 ]
 
 function trackingTone(t: number): string {
-  return t >= 100 ? 'pill-ok' : t >= 80 ? 'pill-warn' : 'pill-bad'
+  return t >= 100 ? 'ok' : t >= 80 ? 'warn' : 'bad'
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -54,95 +57,83 @@ function trackingTone(t: number): string {
 /** /agency-targets — STATIC scaffold (BACK.md §9 · FRONT.md §6.32). */
 export default function AgencyTargetsPage() {
   return (
-    <div className="p-6 lg:p-8 max-w-5xl">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="27 · targets"
-        title="Metas mensuales por agencia"
-        description="Recovery COP/mes objetivo · % cumplimiento promesas · # deudores activos meta. Alimenta la barra Meta Activos del home."
+        title="Metas"
+        description="Las metas de cada inmobiliaria: recaudo del mes, promesas cumplidas y deudores activos. Alimentan la barra de metas del Resumen."
       />
 
       {/* Scaffold notice */}
-      <div className="card p-5 border-l-4 border-l-warn mb-6">
+      <Card className="space-y-3 p-6">
         <div className="flex items-baseline justify-between gap-4">
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warn">
-            scaffold · pendiente de build
-          </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-            esfuerzo · ~2h agent + 1h admin
-          </span>
+          <StatusBadge tone="warning">Sin construir todavía</StatusBadge>
+          <MonoLabel>Esfuerzo · ~2 h en el micro + 1 h en el admin</MonoLabel>
         </div>
         <p className="text-sm text-fg mt-2">
           Tabla <code className="font-mono">agent.agency_targets</code> no existe en agent —
           Gap 3 del GAPS.md. Hoy la barra del home muestra <strong>100K hardcoded</strong> como
           placeholder. Los datos de tracking son 100% mock.
         </p>
-        <p className="text-xs text-fg-muted mt-2">
+        <p className="text-caption text-fg-muted mt-2">
           Trackeado en: <code className="font-mono">GAPS.md #3 — Tabla agency_targets</code>
         </p>
-      </div>
+      </Card>
 
       {/* Todo list */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         qué se necesita para shipearla
-      </div>
-      <div className="card p-5 mb-6">
+      </MonoLabel>
+      <Card className="p-5">
         <ol className="space-y-2 text-sm text-fg">
           {TODO_LIST.map((t, i) => (
             <li key={i} className="flex gap-3">
-              <span className="font-mono text-brand text-xs shrink-0">
+              <span className="font-mono text-primary text-caption shrink-0">
                 {String(i + 1).padStart(2, '0')}
               </span>
               <span>{t}</span>
             </li>
           ))}
         </ol>
-      </div>
+      </Card>
 
       {/* Migration SQL */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        migration SQL · copy-paste a Supabase Studio
-      </div>
-      <div className="card p-0 mb-6 overflow-hidden">
-        <pre className="bg-surface-muted p-4 font-mono text-[11px] leading-relaxed text-fg overflow-x-auto">
-          {MIGRATION_SQL}
-        </pre>
-      </div>
+      <CodeBlock language="sql" filename="Migración (la aplica Víctor)" code={MIGRATION_SQL} />
 
       {/* Preview (greyed out, non-interactive) */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         preview · cómo se va a ver cuando ship
-      </div>
-      <div className="card p-5 mb-6 opacity-60 pointer-events-none select-none">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      </MonoLabel>
+      <Card className="p-5 opacity-60 pointer-events-none select-none">
+        <MonoLabel className="block mb-3">
           grid · agencia × mes 2026
-        </div>
+        </MonoLabel>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-bg-border font-mono text-[10px] text-fg-subtle uppercase tracking-[0.12em]">
-                <th className="text-left  py-2 font-medium">Agencia</th>
-                <th className="text-right py-2 font-medium">Target deudores</th>
-                <th className="text-right py-2 font-medium">Target recovery</th>
-                <th className="text-right py-2 font-medium">% kept target</th>
-                <th className="text-right py-2 font-medium">Tracking</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead >Agencia</TableHead>
+                <TableHead className="text-right">Target deudores</TableHead>
+                <TableHead className="text-right">Target recovery</TableHead>
+                <TableHead className="text-right">% kept target</TableHead>
+                <TableHead className="text-right">Tracking</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {PREVIEW_ROWS.map((r) => (
-                <tr key={r.name} className="border-b border-bg-border">
-                  <td className="py-2.5 text-sm">{r.name}</td>
-                  <td className="py-2.5 text-right tabular-nums font-mono text-xs">{r.td}</td>
-                  <td className="py-2.5 text-right tabular-nums font-mono text-xs">{r.tr}</td>
-                  <td className="py-2.5 text-right tabular-nums font-mono text-xs">{r.pct}%</td>
-                  <td className="py-2.5 text-right">
-                    <span className={`pill ${trackingTone(r.tracking)}`}>{r.tracking}%</span>
-                  </td>
-                </tr>
+                <TableRow key={r.name} className="border-b border-border">
+                  <TableCell className="text-sm">{r.name}</TableCell>
+                  <TableCell className="text-right tabular-nums font-mono text-caption">{r.td}</TableCell>
+                  <TableCell className="text-right tabular-nums font-mono text-caption">{r.tr}</TableCell>
+                  <TableCell className="text-right tabular-nums font-mono text-caption">{r.pct}%</TableCell>
+                  <TableCell className="text-right">
+                    <Pill tone={trackingTone(r.tracking)}>{r.tracking} %</Pill>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

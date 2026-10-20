@@ -6,6 +6,9 @@ import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { Card, MonoLabel } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 // ---------- Types ----------
 
@@ -73,88 +76,87 @@ export default function DebtorsPage() {
     {
       header: 'Cédula',
       cell: (r) => (
-        <span className="font-mono text-xs text-fg-muted">{r.document_number ?? '—'}</span>
+        <span className="font-mono text-caption text-fg-muted">{r.document_number ?? '—'}</span>
       ),
     },
     {
       header: 'Teléfono',
       cell: (r) => (
-        <span className="font-mono text-xs text-fg-muted">{r.phone_primary ?? '—'}</span>
+        <span className="font-mono text-caption text-fg-muted">{r.phone_primary ?? '—'}</span>
       ),
     },
     {
       header: 'Email',
-      cell: (r) => <span className="text-xs text-fg-muted">{r.email ?? '—'}</span>,
+      cell: (r) => <span className="text-caption text-fg-muted">{r.email ?? '—'}</span>,
     },
     {
       header: 'Agencia',
-      cell: (r) => <span className="text-xs">{r.legal_name ?? '—'}</span>,
+      cell: (r) => <span className="text-caption">{r.legal_name ?? '—'}</span>,
     },
     {
       header: 'Llamadas',
       align: 'right',
       cell: (r) => (
-        <span className="tabular-nums font-mono text-xs">{r.calls_count}</span>
+        <span className="tabular-nums font-mono text-caption">{r.calls_count}</span>
       ),
     },
   ]
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="21 · debtors"
-        title="Búsqueda de deudores"
+        title="Deudores"
         description="Datos sensibles. Cada búsqueda queda registrada en audit_log (action='debtor.search') antes de devolver resultados. Sin búsqueda, sin filas."
       />
 
       {/* PII audit notice */}
-      <div className="mb-4 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-        <span className="inline-block w-2 h-2 bg-warn" />
+      <div className=" flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
+        <span className="inline-block w-2 h-2 bg-warning" />
         PII — acceso auditado · audit_log.action=&apos;debtor.search&apos;
       </div>
 
       {/* Search form — submit-triggered to avoid audit log spam on keystrokes */}
-      <form className="card p-4 mb-6 flex gap-3 items-end" onSubmit={handleSubmit}>
+      <form className="card p-4 flex gap-3 items-end" onSubmit={handleSubmit}>
         <label className="flex-1">
           <span className="block mb-1 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
             nombre · cédula · teléfono
           </span>
-          <input
+          <Input
             type="search"
-            className="input w-full"
+            className="w-full"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="ej: 1234567 o +57300…"
             autoComplete="off"
           />
         </label>
-        <button type="submit" className="btn btn-primary">
+        <Button hideArrow type="submit">
           Buscar →
-        </button>
+        </Button>
         {committedQ && (
-          <button type="button" className="btn" onClick={handleClear}>
+          <Button variant="outline" hideArrow type="button"  onClick={handleClear}>
             × limpiar
-          </button>
+          </Button>
         )}
       </form>
 
       {/* Idle state — no search yet */}
       {!committedQ ? (
-        <div className="card p-8 text-center">
+        <Card className="p-8 text-center">
           <p className="text-sm text-fg-muted">
             Ingresa un término para encontrar deudores.
           </p>
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mt-2">
+          <MonoLabel className="block mt-2">
             sin búsqueda · sin filas · sin auditoría
-          </p>
-        </div>
+          </MonoLabel>
+        </Card>
       ) : (
         <>
           {debtors.data && (
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+            <MonoLabel className="block mb-3">
               resultados · {debtors.data.data.length}
               {debtors.data.data.length === 50 && ' (cap 50)'}
-            </div>
+            </MonoLabel>
           )}
           <DataTable
             columns={columns}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Switch } from '@/components/ui/switch'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
@@ -17,6 +18,7 @@ import {
   REGISTRATION_PROFILES,
   type RegistrationProfileKey,
 } from '@/lib/constants/registration-profiles'
+import { Card, MonoLabel } from '@leasefy/cadence'
 
 // ── Merge helpers ─────────────────────────────────────────────────────────────
 
@@ -66,32 +68,21 @@ function Toggle({
   disabled,
   busy,
   onToggle,
+  ariaLabel,
 }: {
   enabled: boolean
   disabled: boolean
   busy: boolean
   onToggle: () => void
+  ariaLabel: string
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={enabled}
+    <Switch
+      checked={enabled}
       disabled={disabled || busy}
-      onClick={onToggle}
-      className={
-        'relative inline-flex h-6 w-11 shrink-0 items-center border transition-colors rounded-none ' +
-        'disabled:opacity-40 disabled:cursor-not-allowed ' +
-        (enabled ? 'bg-ok/20 border-ok/50' : 'bg-bg-hover border-bg-border-strong')
-      }
-    >
-      <span
-        className={
-          'inline-block h-4 w-4 transition-transform ' +
-          (enabled ? 'translate-x-6 bg-ok' : 'translate-x-1 bg-fg-subtle')
-        }
-      />
-    </button>
+      onCheckedChange={() => onToggle()}
+      aria-label={ariaLabel}
+    />
   )
 }
 
@@ -153,17 +144,16 @@ export default function RegistrationProfilesPage() {
   const notReady = error instanceof ApiError && error.status === 404
 
   return (
-    <div className="p-6 lg:p-8 max-w-3xl">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="29 · registration"
         title="Perfiles de registro"
         description="Activa o desactiva los perfiles que un usuario puede elegir al registrarse. Global a toda la plataforma. Un perfil desactivado desaparece del signup; las cuentas existentes no se tocan."
       />
 
       {/* Endpoint-pending notice (backend not shipped yet) */}
       {notReady && (
-        <div className="card p-5 border-l-4 border-l-warn mb-6">
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warn">
+        <Card className="p-5  mb-6">
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warning">
             backend pendiente
           </span>
           <p className="text-sm text-fg mt-2">
@@ -172,7 +162,7 @@ export default function RegistrationProfilesPage() {
             activos) y los toggles quedan deshabilitados. Ver el contrato en{' '}
             <code className="font-mono">docs/registration-profiles.md</code>.
           </p>
-        </div>
+        </Card>
       )}
 
       {/* Load error that is NOT a 404 */}
@@ -180,9 +170,9 @@ export default function RegistrationProfilesPage() {
 
       {/* Action error (toggle failed / guard) */}
       {actionError && (
-        <div className="card p-4 border-l-4 border-l-bad mb-6">
-          <p className="text-sm text-bad">{actionError}</p>
-        </div>
+        <Card className="p-4  mb-6">
+          <p className="text-sm text-danger">{actionError}</p>
+        </Card>
       )}
 
       {isLoading ? (
@@ -190,10 +180,7 @@ export default function RegistrationProfilesPage() {
       ) : (
         <div className="space-y-px">
           {rows.map((row) => (
-            <div
-              key={row.key}
-              className="card p-5 flex items-center gap-4"
-            >
+            <Card className="p-5 flex items-center gap-4" key={row.key}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-fg">{row.label}</span>
@@ -202,11 +189,11 @@ export default function RegistrationProfilesPage() {
                     {row.enabled ? 'activo' : 'inactivo'}
                   </Pill>
                 </div>
-                <p className="text-[13px] text-fg-muted mt-1">{row.description}</p>
-                <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mt-2">
+                <p className="text-caption text-fg-muted mt-1">{row.description}</p>
+                <MonoLabel className="block mt-2">
                   últ. cambio: {fmtWhen(row.updated_at)}
                   {row.updated_by ? ` · ${row.updated_by}` : ''}
-                </div>
+                </MonoLabel>
               </div>
 
               <Toggle
@@ -214,17 +201,18 @@ export default function RegistrationProfilesPage() {
                 disabled={notReady}
                 busy={busyKey === row.key}
                 onToggle={() => handleToggle(row, !row.enabled)}
+                ariaLabel={`Permitir el registro de ${row.key}`}
               />
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
-      <div className="card p-4 border-l-4 border-l-brand text-xs text-fg-muted mt-6">
+      <Card className="p-4  text-caption text-fg-muted">
         <strong>Seguro por diseño.</strong> El signup falla ABIERTO: si el backend de config no
         responde, todos los perfiles quedan visibles para no romper el registro. Desactivar es una
         acción explícita que persiste en el backend con audit_log.
-      </div>
+      </Card>
     </div>
   )
 }

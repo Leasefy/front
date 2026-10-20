@@ -3,6 +3,9 @@
 import { useState, type FormEvent } from 'react'
 import { adminApi, ApiError } from '@/lib/admin/api'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
+import { Card, MonoLabel } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 /** GET /api/v1/admin/cuentas/buscar?email= (back: `admin/resources/cuentas`). */
 interface CuentaParaSoporte {
@@ -80,42 +83,42 @@ export function RestablecerSegundoFactor() {
   }
 
   return (
-    <div className="card p-5 border-t-4 border-t-brand">
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-1">
+    <Card className="p-5 ">
+      <MonoLabel className="block mb-1">
         soporte · segundo factor
-      </div>
+      </MonoLabel>
       <p className="text-sm text-fg-muted mb-4">
         Para quien perdió su app de autenticación y tampoco puede usar el código por correo del
         login. Quita todos sus factores; al entrar, lo activa de nuevo.
       </p>
 
       <form onSubmit={(e) => void buscar(e)} className="flex flex-wrap gap-2 mb-4">
-        <input
+        <Input
           type="email"
-          className="input w-72"
+          className="w-72"
           placeholder="correo de la cuenta"
           aria-label="Correo de la cuenta"
           value={correo}
           onChange={(e) => setCorreo(e.target.value)}
         />
-        <button type="submit" className="btn" disabled={buscando || !correo.trim()}>
+        <Button variant="outline" hideArrow type="submit"  disabled={buscando || !correo.trim()}>
           {buscando ? 'Buscando…' : 'Buscar'}
-        </button>
+        </Button>
       </form>
 
       {cuenta && (
         <div className="space-y-3">
           <div className="text-sm">
             <div className="font-medium text-fg">{cuenta.nombre ?? '—'}</div>
-            <div className="font-mono text-xs text-fg-muted">
+            <div className="font-mono text-caption text-fg-muted">
               {cuenta.email} · {cuenta.rol}
             </div>
             {cuenta.inmobiliarias.length > 0 && (
-              <div className="text-xs text-fg-muted mt-1">
+              <div className="text-caption text-fg-muted mt-1">
                 {cuenta.inmobiliarias.map((i) => `${i.nombre} (${i.rol})`).join(' · ')}
               </div>
             )}
-            <div className="font-mono text-xs text-fg-muted mt-1">
+            <div className="font-mono text-caption text-fg-muted mt-1">
               {cuenta.segundoFactor.total === 0
                 ? 'No tiene segundo factor: no hay nada que restablecer.'
                 : `${cuenta.segundoFactor.total} ${cuenta.segundoFactor.total === 1 ? 'factor' : 'factores'} · ${cuenta.segundoFactor.verificados} ${cuenta.segundoFactor.verificados === 1 ? 'verificado' : 'verificados'}`}
@@ -123,9 +126,8 @@ export function RestablecerSegundoFactor() {
           </div>
 
           {!confirmando ? (
-            <button
-              type="button"
-              className="btn btn-danger"
+            <Button variant="destructive" hideArrow type="button"
+              
               disabled={cuenta.segundoFactor.total === 0}
               onClick={() => {
                 setHecho(null)
@@ -133,39 +135,37 @@ export function RestablecerSegundoFactor() {
               }}
             >
               Restablecer segundo factor
-            </button>
+            </Button>
           ) : (
-            <div className="card p-3 border-bad/40">
+            <Card className="p-3 border-danger/40">
               <p className="text-sm text-fg mb-3">
                 Vas a quitarle el segundo factor a {nombre} ({cuenta.email}). Va a poder entrar sólo
                 con su contraseña hasta que lo active de nuevo, y le llega un correo avisándole.
                 ¿Seguro?
               </p>
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="btn btn-danger"
+                <Button variant="destructive" hideArrow type="button"
+                  
                   disabled={restableciendo}
                   onClick={() => void restablecer()}
                 >
                   {restableciendo ? 'Restableciendo…' : 'Sí, restablecer'}
-                </button>
-                <button
-                  type="button"
-                  className="btn"
+                </Button>
+                <Button variant="outline" hideArrow type="button"
+                  
                   disabled={restableciendo}
                   onClick={() => setConfirmando(false)}
                 >
                   Cancelar
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           )}
         </div>
       )}
 
       {error && (
-        <p role="alert" className="text-sm text-bad mt-3">
+        <p role="alert" className="text-sm text-danger mt-3">
           {error}
         </p>
       )}
@@ -174,6 +174,6 @@ export function RestablecerSegundoFactor() {
           {hecho}
         </p>
       )}
-    </div>
+    </Card>
   )
 }

@@ -22,7 +22,7 @@
  */
 
 import { useState } from 'react'
-import { Sheet, SheetBody, SheetContent, SheetHeader } from '@leasefy/cadence'
+import { Alert, Card, Chip, MonoLabel, Sheet, SheetBody, SheetContent, SheetHeader } from '@leasefy/cadence'
 import {
   getChatPreguntas,
   type SugerenciaDelChat,
@@ -37,6 +37,9 @@ import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pagination } from '@/components/admin/screen/Pagination'
 import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
+import { Button } from '@/components/ui/button'
+import { BarraDeFiltros, Buscador, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
+import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
 
 const POR_PAGINA = 50
 
@@ -109,8 +112,8 @@ function EstadoDelTurno({ t }: { t: TurnoDelChat }) {
 function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">{etiqueta}</div>
-      <div className="text-sm text-fg mt-0.5">{children}</div>
+      <MonoLabel className="block">{etiqueta}</MonoLabel>
+      <div className="text-body-sm text-fg mt-0.5">{children}</div>
     </div>
   )
 }
@@ -131,7 +134,7 @@ function DetalleDelTurno({ t, onClose }: { t: TurnoDelChat | null; onClose: () =
               </Dato>
               <Dato etiqueta="respuesta del chat">
                 {t.respuesta ? (
-                  <pre className="text-xs text-fg-muted whitespace-pre-wrap leading-snug max-h-72 overflow-y-auto font-sans">{t.respuesta}</pre>
+                  <pre className="text-caption text-fg-muted whitespace-pre-wrap leading-snug max-h-72 overflow-y-auto font-sans">{t.respuesta}</pre>
                 ) : (
                   <span className="text-fg-muted">{t.falla ? 'El turno se cortó antes de responder.' : 'Sin respuesta guardada.'}</span>
                 )}
@@ -173,7 +176,7 @@ function DetalleDelTurno({ t, onClose }: { t: TurnoDelChat | null; onClose: () =
                   </div>
                 )}
               </Dato>
-              <p className="text-xs text-fg-subtle">
+              <p className="text-caption text-fg-subtle">
                 Sin el correo de quién preguntó. Los números largos (documentos, cuentas, teléfonos) van ocultos.
               </p>
             </SheetBody>
@@ -187,22 +190,24 @@ function DetalleDelTurno({ t, onClose }: { t: TurnoDelChat | null; onClose: () =
 function TarjetaDeSugerencia({ s, onAbrir }: { s: SugerenciaDelChat; onAbrir: (t: TurnoDelChat) => void }) {
   const [abierta, setAbierta] = useState(false)
   return (
-    <div className={`card border-l-4 ${s.severidad === 'alta' ? 'border-l-bad' : 'border-l-warn'} p-4`} data-testid="sugerencia">
-      <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-        <Pill tone={s.severidad === 'alta' ? 'bad' : 'warn'}>{s.severidad === 'alta' ? 'prioridad alta' : 'para revisar'}</Pill>
+    <Card className="space-y-2 p-5" data-testid="sugerencia">
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone={s.severidad === 'alta' ? 'bad' : 'warn'} dot>{s.severidad === 'alta' ? 'Prioridad alta' : 'Para revisar'}</Pill>
         <span className="font-medium text-fg">{s.hallazgo}</span>
       </div>
-      <div className="text-sm text-fg-muted leading-snug mb-2">→ {s.accion}</div>
+      <p className="text-body-sm leading-snug text-fg-muted">→ {s.accion}</p>
       {s.ejemplos.length > 0 && (
         <>
-          <button
+          <Button
             type="button"
+            variant="link"
+            size="sm"
+            hideArrow
             onClick={() => setAbierta((v) => !v)}
             aria-expanded={abierta}
-            className="text-xs text-fg-subtle hover:text-fg underline underline-offset-2"
           >
-            {abierta ? 'ocultar los ejemplos' : `ver ${s.ejemplos.length === 1 ? 'el ejemplo' : `los ${s.ejemplos.length} ejemplos`}`}
-          </button>
+            {abierta ? 'Ocultar los ejemplos' : `Ver ${s.ejemplos.length === 1 ? 'el ejemplo' : `los ${s.ejemplos.length} ejemplos`}`}
+          </Button>
           {abierta && (
             <ul className="mt-2 space-y-1">
               {s.ejemplos.map((e) => (
@@ -210,10 +215,10 @@ function TarjetaDeSugerencia({ s, onAbrir }: { s: SugerenciaDelChat; onAbrir: (t
                   <button
                     type="button"
                     onClick={() => onAbrir(e)}
-                    className="text-left text-sm text-fg hover:underline underline-offset-2"
+                    className="rounded-sm text-left text-body-sm text-fg underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     «{e.pregunta}»{' '}
-                    <span className="font-mono text-[10px] text-fg-subtle">
+                    <span className="font-mono text-caption text-fg-subtle">
                       {e.inmobiliaria ?? e.agencyId.slice(0, 8)} · {fmtDateTime(e.fecha)}
                     </span>
                   </button>
@@ -223,7 +228,7 @@ function TarjetaDeSugerencia({ s, onAbrir }: { s: SugerenciaDelChat; onAbrir: (t
           )}
         </>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -240,7 +245,7 @@ export default function ChatPreguntasPage() {
   const [texto, setTexto] = useState(q)
   const [abierto, setAbierto] = useState<TurnoDelChat | null>(null)
 
-  const { data, isLoading, error } = useApiQuery(
+  const { data, isLoading, error, refetch } = useApiQuery(
     (signal) =>
       getChatPreguntas({
         ...(agencia ? { agencyId: agencia } : {}),
@@ -268,172 +273,146 @@ export default function ChatPreguntasPage() {
   ]
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="chat"
-        title="Preguntas al chat"
+        title="Preguntas del chat"
         description="Lo que le preguntan al chat las inmobiliarias, sin el correo de quién preguntó y con los números largos ocultos, y lo que conviene mejorar."
       />
 
-      <div className="card p-3 mb-6 text-sm text-fg-muted" role="note">
+      <Alert variant="info" role="note">
         Sólo la ve el equipo de producto de Leasefy, como dice la §16 de la política de tratamiento
         (versión 4.0). Las preguntas se guardan 12 meses.
-      </div>
+      </Alert>
 
       {/* Filtros (viven en la URL). */}
-      <div className="flex flex-wrap items-end gap-3 mb-6" data-testid="filtros">
-        <label className="text-xs text-fg-subtle flex flex-col gap-1">
-          inmobiliaria
-          <select
-            className="input"
-            value={agencia}
-            onChange={(e) => setFilters({ agencia: e.target.value || undefined }, { resetPage: true })}
-            aria-label="inmobiliaria"
-          >
-            <option value="">todas</option>
-            {(data?.inmobiliarias ?? []).map((i) => (
-              <option key={i.agencyId} value={i.agencyId}>
-                {(i.nombre ?? i.agencyId.slice(0, 8)) + ` (${i.preguntas})`}
-              </option>
-            ))}
-            {agencia && !(data?.inmobiliarias ?? []).some((i) => i.agencyId === agencia) && (
-              <option value={agencia}>{agencia.slice(0, 8)}</option>
-            )}
-          </select>
-        </label>
-        <label className="text-xs text-fg-subtle flex flex-col gap-1">
-          desde
-          <input
-            type="date"
-            className="input"
-            value={desde}
-            aria-label="desde"
-            onChange={(e) => setFilters({ desde: e.target.value || undefined }, { resetPage: true })}
-          />
-        </label>
-        <label className="text-xs text-fg-subtle flex flex-col gap-1">
-          hasta
-          <input
-            type="date"
-            className="input"
-            value={hasta}
-            aria-label="hasta"
-            onChange={(e) => setFilters({ hasta: e.target.value || undefined }, { resetPage: true })}
-          />
-        </label>
-        <label className="text-xs text-fg-subtle flex flex-col gap-1">
-          tema
-          <select
-            className="input"
-            value={tema}
-            aria-label="tema"
-            onChange={(e) => setFilters({ tema: e.target.value || undefined }, { resetPage: true })}
-          >
-            <option value="">todos</option>
-            {(data?.temas ?? []).map((t) => (
-              <option key={t.tema} value={t.tema}>
-                {`${t.nombre} (${t.preguntas})`}
-              </option>
-            ))}
-          </select>
-        </label>
-        <form
-          className="flex items-end gap-2"
-          onSubmit={(e) => {
-            e.preventDefault()
-            setFilters({ q: texto.trim() || undefined }, { resetPage: true })
-          }}
-        >
-          <label className="text-xs text-fg-subtle flex flex-col gap-1">
-            texto
-            <input
-              type="search"
-              className="input"
-              value={texto}
-              placeholder="palabras de la pregunta"
-              aria-label="buscar en las preguntas"
-              onChange={(e) => setTexto(e.target.value)}
+      <Card className="p-4" data-testid="filtros">
+        <BarraDeFiltros>
+          <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria">
+            <Desplegable
+              id="filtro-inmobiliaria"
+              aria-label="inmobiliaria"
+              value={agencia}
+              onChange={(v) => setFilters({ agencia: v || undefined }, { resetPage: true })}
+              todas="Todas las inmobiliarias"
+              opciones={[
+                ...(data?.inmobiliarias ?? []).map((i) => ({
+                  valor: i.agencyId,
+                  nombre: `${i.nombre ?? i.agencyId.slice(0, 8)} (${i.preguntas})`,
+                })),
+                ...(agencia && !(data?.inmobiliarias ?? []).some((i) => i.agencyId === agencia)
+                  ? [{ valor: agencia, nombre: agencia.slice(0, 8) }]
+                  : []),
+              ]}
             />
-          </label>
-          <button type="submit" className="btn">Buscar</button>
-        </form>
-        <button
-          type="button"
-          onClick={() => setFilters({ sinRespuesta: sinRespuesta ? undefined : '1' }, { resetPage: true })}
-          className={`pill ${sinRespuesta ? 'pill-info' : ''}`}
-          aria-pressed={sinRespuesta}
-        >
-          sólo sin respuesta
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilters({ pulgarAbajo: pulgarAbajo ? undefined : '1' }, { resetPage: true })}
-          className={`pill ${pulgarAbajo ? 'pill-info' : ''}`}
-          aria-pressed={pulgarAbajo}
-        >
-          sólo pulgar abajo
-        </button>
-        {(agencia || desde || hasta || tema || q || sinRespuesta || pulgarAbajo) && (
-          <button
-            type="button"
-            className="text-xs text-fg-subtle hover:text-fg underline underline-offset-2"
-            onClick={() => {
-              setTexto('')
-              setFilters(
-                { agencia: undefined, desde: undefined, hasta: undefined, tema: undefined, q: undefined, sinRespuesta: undefined, pulgarAbajo: undefined },
-                { resetPage: true },
-              )
+          </Filtro>
+          <Filtro etiqueta="Desde" htmlFor="filtro-desde" className="sm:w-44">
+            <CampoDeFecha id="filtro-desde" value={desde} onChange={(v) => setFilters({ desde: v || undefined }, { resetPage: true })} />
+          </Filtro>
+          <Filtro etiqueta="Hasta" htmlFor="filtro-hasta" className="sm:w-44">
+            <CampoDeFecha id="filtro-hasta" value={hasta} onChange={(v) => setFilters({ hasta: v || undefined }, { resetPage: true })} />
+          </Filtro>
+          <Filtro etiqueta="Tema" htmlFor="filtro-tema">
+            <Desplegable
+              id="filtro-tema"
+              aria-label="tema"
+              value={tema}
+              onChange={(v) => setFilters({ tema: v || undefined }, { resetPage: true })}
+              todas="Todos los temas"
+              opciones={(data?.temas ?? []).map((t) => ({ valor: t.tema, nombre: `${t.nombre} (${t.preguntas})` }))}
+            />
+          </Filtro>
+          <form
+            className="flex items-end gap-2 sm:min-w-64 sm:flex-1"
+            onSubmit={(e) => {
+              e.preventDefault()
+              setFilters({ q: texto.trim() || undefined }, { resetPage: true })
             }}
           >
-            quitar filtros
-          </button>
-        )}
-      </div>
+            <Filtro etiqueta="Texto" htmlFor="filtro-texto" className="flex-1">
+              <Buscador id="filtro-texto" value={texto} onChange={setTexto} placeholder="Palabras de la pregunta" aria-label="buscar en las preguntas" />
+            </Filtro>
+            <Button variant="outline" hideArrow type="submit">
+              Buscar
+            </Button>
+          </form>
+        </BarraDeFiltros>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Chip
+            selected={sinRespuesta}
+            onClick={() => setFilters({ sinRespuesta: sinRespuesta ? undefined : '1' }, { resetPage: true })}
+          >
+            Sólo sin respuesta
+          </Chip>
+          <Chip
+            selected={pulgarAbajo}
+            onClick={() => setFilters({ pulgarAbajo: pulgarAbajo ? undefined : '1' }, { resetPage: true })}
+          >
+            Sólo pulgar abajo
+          </Chip>
+          {(agencia || desde || hasta || tema || q || sinRespuesta || pulgarAbajo) && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              hideArrow
+              onClick={() => {
+                setTexto('')
+                setFilters(
+                  { agencia: undefined, desde: undefined, hasta: undefined, tema: undefined, q: undefined, sinRespuesta: undefined, pulgarAbajo: undefined },
+                  { resetPage: true },
+                )
+              }}
+            >
+              Quitar los filtros
+            </Button>
+          )}
+        </div>
+      </Card>
 
       {isLoading && !data ? (
         <LoadingBlock />
       ) : error ? (
-        <ErrorBlock error={error} />
+        <ErrorBlock error={error} onReintentar={refetch} />
       ) : !data || data.totales.preguntas === 0 ? (
         <EmptyBlock
-          title="Sin preguntas en estas fechas"
+          title="No hay preguntas en estas fechas"
           hint="Nadie le ha preguntado nada al chat en este rango, o el chat todavía no guarda sus preguntas en esta instalación."
         />
       ) : (
         <>
           {/* Resumen de la ventana. */}
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-            del {fechaLarga(diaDeBogota(data.ventana.desde))} al{' '}
+          <MonoLabel className="block">
+            Del {fechaLarga(diaDeBogota(data.ventana.desde))} al{' '}
             {/* Con «hasta», el micro corta a la medianoche del día siguiente; sin él, es ahora. */}
             {fechaLarga(hasta || diaDeBogota(data.ventana.hasta))}
             {data.ventana.truncado ? ' · las 5.000 más recientes' : ''}
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-8">
-            <KpiCard label="preguntas" value={totales!.preguntas} hint={`${totales!.inmobiliarias} ${totales!.inmobiliarias === 1 ? 'inmobiliaria' : 'inmobiliarias'}`} />
+          </MonoLabel>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+            <KpiCard label="Preguntas" value={totales!.preguntas} hint={`${totales!.inmobiliarias} ${totales!.inmobiliarias === 1 ? 'inmobiliaria' : 'inmobiliarias'}`} />
             <KpiCard
-              label="sin respuesta"
+              label="Sin respuesta"
               value={totales!.porcentajeSinRespuesta == null ? '—' : `${String(totales!.porcentajeSinRespuesta).replace('.', ',')} %`}
               hint={`${totales!.sinRespuesta} de ${totales!.preguntas}`}
               tone={(totales!.porcentajeSinRespuesta ?? 0) >= 25 ? 'bad' : 'default'}
             />
-            <KpiCard label="reformuladas" value={totales!.reformulaciones} />
-            <KpiCard label="abandonos" value={totales!.abandonos} />
-            <KpiCard label="se cortaron" value={totales!.fallas} tone={totales!.fallas > 0 ? 'warn' : 'default'} />
+            <KpiCard label="Reformuladas" value={totales!.reformulaciones} />
+            <KpiCard label="Abandonos" value={totales!.abandonos} />
+            <KpiCard label="Se cortaron" value={totales!.fallas} tone={totales!.fallas > 0 ? 'warn' : 'default'} />
             <KpiCard
-              label="costo"
+              label="Costo"
               value={totales!.turnosConCosto === 0 ? '—' : usd(totales!.costoUsd)}
-              hint={totales!.turnosConCosto === 0 ? 'todavía sin costo anotado' : `${totales!.turnosConCosto} turnos con costo`}
+              hint={totales!.turnosConCosto === 0 ? 'Todavía sin costo anotado' : `${totales!.turnosConCosto} turnos con costo`}
             />
           </div>
 
           {/* Sugerencias. */}
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">qué mejorar del chat</div>
+          <h2 className="text-subtitle font-semibold text-fg">Qué mejorar del chat</h2>
           {data.sugerencias.length === 0 ? (
-            <p className="text-sm text-fg-subtle mb-8">
+            <p className="text-body-sm text-fg-subtle">
               Nada que sugerir con estas preguntas: ningún tema pasa los umbrales (se necesitan al menos 5 preguntas de un tema).
             </p>
           ) : (
-            <div className="space-y-2 mb-8">
+            <div className="space-y-2">
               {data.sugerencias.map((s) => (
                 <TarjetaDeSugerencia key={s.id} s={s} onAbrir={setAbierto} />
               ))}
@@ -441,28 +420,28 @@ export default function ChatPreguntasPage() {
           )}
 
           {/* Temas, especialistas y fuentes. */}
-          <div className="grid gap-4 md:grid-cols-3 mb-8">
-            <div className="card p-4">
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-2">temas más preguntados</div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="p-5">
+              <MonoLabel className="mb-2 block">Temas más preguntados</MonoLabel>
               <div className="flex flex-wrap gap-1">
                 {data.temas.slice(0, 12).map((t) => (
-                  <button
+                  <Chip
                     key={t.tema}
-                    type="button"
-                    className={`pill ${tema === t.tema ? 'pill-info' : ''}`}
+                    size="sm"
+                    selected={tema === t.tema}
                     onClick={() => setFilters({ tema: tema === t.tema ? undefined : t.tema }, { resetPage: true })}
                   >
-                    {t.nombre} · {t.preguntas}
-                  </button>
+                    {t.nombre} · <span className="font-mono tabular-nums">{t.preguntas}</span>
+                  </Chip>
                 ))}
               </div>
-            </div>
-            <div className="card p-4">
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-2">especialistas que más trabajan</div>
+            </Card>
+            <Card className="p-5">
+              <MonoLabel className="mb-2 block">Especialistas que más trabajan</MonoLabel>
               {data.especialistas.length === 0 ? (
-                <span className="text-sm text-fg-subtle">ningún especialista en estas preguntas</span>
+                <span className="text-body-sm text-fg-subtle">Ningún especialista en estas preguntas</span>
               ) : (
-                <ul className="text-sm space-y-0.5">
+                <ul className="text-body-sm space-y-0.5">
                   {data.especialistas.map((e) => (
                     <li key={e.nombre} className="flex justify-between gap-2">
                       <span>{especialistaLegible(e.nombre)}</span>
@@ -471,13 +450,13 @@ export default function ChatPreguntasPage() {
                   ))}
                 </ul>
               )}
-            </div>
-            <div className="card p-4">
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-2">de dónde sacó la respuesta</div>
+            </Card>
+            <Card className="p-5">
+              <MonoLabel className="block mb-2">de dónde sacó la respuesta</MonoLabel>
               {data.fuentes.length === 0 ? (
-                <span className="text-sm text-fg-subtle">sin fuentes anotadas</span>
+                <span className="text-body-sm text-fg-subtle">sin fuentes anotadas</span>
               ) : (
-                <ul className="text-sm space-y-0.5">
+                <ul className="text-body-sm space-y-0.5">
                   {data.fuentes.map((f) => (
                     <li key={f.nombre} className="flex justify-between gap-2">
                       <span>{fuenteLegible(f.nombre)}</span>
@@ -486,11 +465,11 @@ export default function ChatPreguntasPage() {
                   ))}
                 </ul>
               )}
-            </div>
+            </Card>
           </div>
 
           {/* Por semana e inmobiliaria. */}
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">por semana e inmobiliaria</div>
+          <MonoLabel className="block mb-3">por semana e inmobiliaria</MonoLabel>
           <div className="mb-8">
             <DataTable
               rows={data.resumen}
@@ -518,9 +497,9 @@ export default function ChatPreguntasPage() {
           </div>
 
           {/* Las preguntas. */}
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+          <MonoLabel className="block mb-3">
             preguntas · más recientes primero · {data.total} {data.total === 1 ? 'pregunta' : 'preguntas'}
-          </div>
+          </MonoLabel>
           <DataTable
             rows={data.filas}
             getKey={(t) => t.turnoId}

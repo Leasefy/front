@@ -1,6 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Switch } from '@/components/ui/switch'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
@@ -23,6 +25,8 @@ import {
   toUpdatePlanBody,
   type PlanFormValues,
 } from './plan-form-schema'
+import { Card } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
 
 // ── Cell helpers ──────────────────────────────────────────────────────────────
 
@@ -170,24 +174,23 @@ export default function PlansPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="30 · plans"
         title="Planes de inmobiliaria"
         description="Catálogo de planes AGENCY (contrato 29). Crea, edita y desactiva planes. Los inactivos quedan atenuados y se pueden reactivar. El slug es inmutable tras crear."
         right={
           form.kind === 'none' ? (
-            <button className="btn btn-primary" onClick={openCreate}>
+            <Button hideArrow onClick={openCreate}>
               Nuevo plan
-            </button>
+            </Button>
           ) : undefined
         }
       />
 
       {rowError && (
-        <div className="card p-4 border-l-4 border-l-bad mb-6">
-          <p className="text-sm text-bad">{rowError}</p>
-        </div>
+        <Card className="p-4  mb-6">
+          <p className="text-sm text-danger">{rowError}</p>
+        </Card>
       )}
 
       {form.kind !== 'none' && (
@@ -215,17 +218,12 @@ export default function PlansPage() {
         <>
           {/* Filtro — por defecto solo activos (lista limpia con los que se usan). */}
           <div className="flex items-center justify-between gap-3 mb-3">
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               Mostrando {visiblePlans.length} de {plans.length} planes
               {inactiveCount > 0 && !showInactive ? ` · ${inactiveCount} inactivo(s) oculto(s)` : ''}
             </p>
-            <label className="flex items-center gap-2 text-xs text-fg-muted cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={showInactive}
-                onChange={(e) => setShowInactive(e.target.checked)}
-                className="accent-brand"
-              />
+            <label className="flex cursor-pointer select-none items-center gap-2.5 text-body-sm text-fg-muted">
+              <Switch checked={showInactive} onCheckedChange={setShowInactive} aria-label="Mostrar inactivos" />
               Mostrar inactivos
             </label>
           </div>
@@ -236,83 +234,77 @@ export default function PlansPage() {
               hint="Todos los planes están inactivos. Activa “Mostrar inactivos” para verlos y reactivarlos."
             />
           ) : (
-        <div className="card overflow-x-auto">
-          <table className="w-full text-sm table-zebra">
-            <thead>
-              <tr className="border-b border-bg-border">
+        <Card className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border">
                 {['Nombre', 'Slug', 'Nivel', 'Cobro', 'Precio', 'Propiedades', 'Usuarios', 'Eval/mes', 'Flags', 'Estado', ''].map(
                   (h, i) => (
-                    <th
+                    <TableHead
                       key={i}
-                      className="px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle whitespace-nowrap text-left"
+                      
                     >
                       {h}
-                    </th>
+                    </TableHead>
                   ),
                 )}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {visiblePlans.map((p) => (
-                <tr key={p.id} className={p.isActive ? undefined : 'opacity-50'}>
-                  <td className="px-3 py-2.5 align-top">
+                <TableRow key={p.id} className={p.isActive ? undefined : 'opacity-50'}>
+                  <TableCell className="align-top">
                     <div className="font-medium text-fg">{p.name}</div>
                     {p.description && (
                       <div className="text-[11px] text-fg-muted max-w-xs truncate">{p.description}</div>
                     )}
-                  </td>
-                  <td className="px-3 py-2.5 align-top font-mono text-xs text-fg-muted">{p.tier}</td>
-                  <td className="px-3 py-2.5 align-top tabular-nums text-xs">{p.level ?? '—'}</td>
-                  <td className="px-3 py-2.5 align-top font-mono text-[10px] uppercase tracking-[0.12em] text-fg-muted">
+                  </TableCell>
+                  <TableCell className="align-top font-mono text-caption text-fg-muted">{p.tier}</TableCell>
+                  <TableCell className="align-top tabular-nums text-caption">{p.level ?? '—'}</TableCell>
+                  <TableCell className="align-top font-mono text-[10px] uppercase tracking-[0.12em] text-fg-muted">
                     {p.billingMode}
-                  </td>
-                  <td className="px-3 py-2.5 align-top tabular-nums font-mono text-xs">{priceLabel(p)}</td>
-                  <td className="px-3 py-2.5 align-top tabular-nums text-xs">{sentinel(p.maxProperties)}</td>
-                  <td className="px-3 py-2.5 align-top tabular-nums text-xs">{sentinel(p.maxUsers)}</td>
-                  <td className="px-3 py-2.5 align-top tabular-nums text-xs">{sentinel(p.monthlyEvalCap)}</td>
-                  <td className="px-3 py-2.5 align-top">
+                  </TableCell>
+                  <TableCell className="align-top tabular-nums font-mono text-caption">{priceLabel(p)}</TableCell>
+                  <TableCell className="align-top tabular-nums text-caption">{sentinel(p.maxProperties)}</TableCell>
+                  <TableCell className="align-top tabular-nums text-caption">{sentinel(p.maxUsers)}</TableCell>
+                  <TableCell className="align-top tabular-nums text-caption">{sentinel(p.monthlyEvalCap)}</TableCell>
+                  <TableCell className="align-top">
                     <div className="flex flex-wrap gap-1">
                       {p.scoringIncluded && <Pill tone="info">scoring</Pill>}
                       {p.isDefault && <Pill tone="ok">default</Pill>}
                     </div>
-                  </td>
-                  <td className="px-3 py-2.5 align-top">
+                  </TableCell>
+                  <TableCell className="align-top">
                     <Pill tone={p.isActive ? 'ok' : 'bad'}>{p.isActive ? 'activo' : 'inactivo'}</Pill>
-                  </td>
-                  <td className="px-3 py-2.5 align-top whitespace-nowrap">
+                  </TableCell>
+                  <TableCell className="align-top whitespace-nowrap">
                     <div className="flex items-center gap-2 justify-end">
-                      <button
-                        className="btn btn-ghost h-8 px-2"
-                        onClick={() => openEdit(p)}
+                      <Button variant="ghost" hideArrow className="h-8 px-2" onClick={() => openEdit(p)}
                         disabled={busyId === p.id}
                       >
                         Editar
-                      </button>
+                      </Button>
                       {p.isActive ? (
-                        <button
-                          className="btn btn-danger h-8 px-2"
-                          onClick={() => handleDeactivate(p)}
+                        <Button variant="destructive" hideArrow className="h-8 px-2" onClick={() => handleDeactivate(p)}
                           disabled={busyId === p.id}
                           title="Quita el plan de /upgrade (los clientes ya no podrán elegirlo). No borra datos ni afecta suscripciones actuales; se puede reactivar."
                         >
                           {busyId === p.id ? '…' : 'Desactivar'}
-                        </button>
+                        </Button>
                       ) : (
-                        <button
-                          className="btn h-8 px-2"
-                          onClick={() => handleReactivate(p)}
+                        <Button variant="outline" hideArrow className="h-8 px-2" onClick={() => handleReactivate(p)}
                           disabled={busyId === p.id}
                         >
                           {busyId === p.id ? '…' : 'Reactivar'}
-                        </button>
+                        </Button>
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
           )}
         </>
       )}

@@ -6,6 +6,8 @@ import { Pagination } from '@/components/admin/screen/Pagination'
 import { Pill } from '@/components/admin/Pill'
 import type { AvaluoListItem } from '@/lib/admin/avaluos'
 import { AVALUO_STATES, avaluoStateMeta } from '@/lib/admin/avaluo-states'
+import { MonoLabel } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
 
 /** Filter tabs: "Todos" ('' → no state filter) + the real lifecycle states. */
 const STATE_TABS: { value: string; label: string }[] = [
@@ -64,16 +66,16 @@ export function AvaluoRegistrosView({
     {
       header: 'Método',
       cell: (r) => (
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted">
+        <MonoLabel>
           {r.method || '—'}
-        </span>
+        </MonoLabel>
       ),
     },
     {
       header: 'Firma',
       cell: (r) =>
         r.signedBy ? (
-          <span className="text-xs">
+          <span className="text-caption">
             <span className="text-fg">{r.signedBy}</span>
             {r.signedAt && (
               <span className="block text-fg-subtle font-mono">{fmtDateTime(r.signedAt)}</span>
@@ -87,14 +89,14 @@ export function AvaluoRegistrosView({
       header: 'Creado',
       align: 'right',
       cell: (r) => (
-        <span className="whitespace-nowrap tabular-nums text-fg-muted text-xs font-mono">
+        <span className="whitespace-nowrap tabular-nums text-fg-muted text-caption font-mono">
           {fmtDateTime(r.createdAt)}
         </span>
       ),
     },
     {
       header: 'Certificado',
-      cell: (r) => <span className="font-mono text-[11px] text-fg-dim">{r.slug}</span>,
+      cell: (r) => <span className="font-mono text-[11px] text-fg-subtle">{r.slug}</span>,
     },
   ]
 
@@ -103,15 +105,17 @@ export function AvaluoRegistrosView({
       {/* State filter — segmented control over the real lifecycle states + "Todos". */}
       <div className="flex flex-wrap gap-1 mb-4">
         {STATE_TABS.map((tab) => (
-          <button
+          <Button
             key={tab.value || 'todos'}
             type="button"
+            size="sm"
+            hideArrow
+            variant={activeState === tab.value ? 'default' : 'outline'}
             aria-pressed={activeState === tab.value}
-            className={`btn ${activeState === tab.value ? 'btn-primary' : ''}`.trim()}
             onClick={() => onStateChange(tab.value)}
           >
             {tab.label}
-          </button>
+          </Button>
         ))}
       </div>
 

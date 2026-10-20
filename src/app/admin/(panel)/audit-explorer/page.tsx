@@ -1,5 +1,6 @@
 'use client'
 
+import { Binoculars, X } from '@phosphor-icons/react'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
@@ -8,6 +9,11 @@ import type { Paginated } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pagination } from '@/components/admin/screen/Pagination'
+import { BarraDeFiltros, Buscador, Filtro } from '@/components/admin/screen/Filtros'
+import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { legible } from '@/lib/admin/textos-del-admin'
 
 const PAGE_SIZE = 100
 
@@ -51,51 +57,37 @@ export default function AuditExplorerPage() {
     {
       header: 'Cuándo',
       cell: (r) => (
-        <span className="whitespace-nowrap tabular-nums text-fg-muted text-xs font-mono">
-          {fmtDateTime(r.created_at)}
-        </span>
+        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.created_at)}</span>
       ),
     },
     {
-      header: 'Actor',
-      cell: (r) => (
-        <span className="font-mono text-[11px] uppercase tracking-mono-label text-fg-muted">
-          {r.actor_type}
-        </span>
-      ),
+      header: 'Quién',
+      cell: (r) => <span className="text-fg-muted">{legible(r.actor_type)}</span>,
     },
     {
-      header: 'Action',
-      cell: (r) => (
-        <span className="font-mono text-xs text-fg">{r.action}</span>
-      ),
+      header: 'Acción',
+      cell: (r) => <span className="font-mono text-caption text-fg">{r.action}</span>,
     },
     {
-      header: 'Entity',
+      header: 'Sobre qué',
       cell: (r) => (
-        <div className="font-mono text-[10px] text-fg-subtle">
-          <div>{r.entity_type ?? '—'}</div>
+        <div className="font-mono text-caption text-fg-subtle">
+          <div>{r.entity_type ? legible(r.entity_type) : '—'}</div>
           <div>{r.entity_id ? `${r.entity_id.slice(0, 8)}…` : '—'}</div>
         </div>
       ),
     },
     {
-      header: 'Agencia',
-      cell: (r) => (
-        <span className="truncate block max-w-[140px] text-xs text-fg-muted">{r.legal_name ?? '—'}</span>
-      ),
+      header: 'Inmobiliaria',
+      cell: (r) => <span className="block max-w-[160px] truncate text-fg-muted">{r.legal_name ?? '—'}</span>,
     },
     {
-      header: 'Payload',
+      header: 'Datos',
       cell: (r) => {
         const full = r.payload ? JSON.stringify(r.payload) : null
-        const truncated = full ? full.slice(0, 100) : '—'
         return (
-          <span
-            className="text-xs text-fg-muted font-mono max-w-[280px] truncate block"
-            title={full ?? undefined}
-          >
-            {truncated}
+          <span className="block max-w-[280px] truncate font-mono text-caption text-fg-muted" title={full ?? undefined}>
+            {full ? full.slice(0, 100) : '—'}
           </span>
         )
       },
@@ -103,80 +95,11 @@ export default function AuditExplorerPage() {
   ]
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="17 · audit explorer"
-        title="Audit Explorer"
-        description="Búsqueda en audit_log para auditorías SIC / SAGRILAFT. Append-only."
+        title="Buscar en auditoría"
+        description="La bitácora completa (audit_log), que nunca se borra, para las auditorías de la SIC y SAGRILAFT."
       />
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-end gap-3 mb-4">
-        <label className="block flex-1 min-w-48">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">
-            action LIKE
-          </span>
-          <input
-            className="input"
-            value={action}
-            onChange={(e) => setFilters({ action: e.target.value }, { resetPage: true })}
-            placeholder="ej: payment.recovered"
-          />
-        </label>
-        <label className="block">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">
-            cédula deudor
-          </span>
-          <input
-            className="input w-40"
-            value={debtorDoc}
-            onChange={(e) => setFilters({ debtorDoc: e.target.value }, { resetPage: true })}
-            placeholder="1234567"
-          />
-        </label>
-        <label className="block">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">
-            entity_id
-          </span>
-          <input
-            className="input w-44"
-            value={entityId}
-            onChange={(e) => setFilters({ entityId: e.target.value }, { resetPage: true })}
-            placeholder="UUID"
-          />
-        </label>
-        <label className="block">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">desde</span>
-          <input
-            type="date"
-            className="input w-40"
-            value={from}
-            onChange={(e) => setFilters({ from: e.target.value }, { resetPage: true })}
-          />
-        </label>
-        <label className="block">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">hasta</span>
-          <input
-            type="date"
-            className="input w-40"
-            value={to}
-            onChange={(e) => setFilters({ to: e.target.value }, { resetPage: true })}
-          />
-        </label>
-        {hasFilters && (
-          <button
-            className="btn"
-            onClick={() =>
-              setFilters(
-                { action: '', debtorDoc: '', entityId: '', from: '', to: '' },
-                { resetPage: true },
-              )
-            }
-          >
-            × limpiar
-          </button>
-        )}
-      </div>
 
       <DataTable
         columns={columns}
@@ -184,13 +107,62 @@ export default function AuditExplorerPage() {
         getKey={(r) => r.id}
         isLoading={result.isLoading}
         error={result.error}
-        emptyTitle="Sin resultados"
-        emptyHint="Ajusta los filtros."
+        onReintentar={result.refetch}
+        emptyTitle="No encontramos nada con estos filtros"
+        emptyHint="Prueba con otra acción, otra cédula u otras fechas."
+        emptyIcon={<Binoculars weight="bold" />}
+        aria-label="Bitácora de auditoría"
+        barra={
+          <BarraDeFiltros>
+            <Filtro etiqueta="Acción (contiene)" htmlFor="filtro-accion" className="sm:min-w-56 sm:flex-1">
+              <Buscador
+                id="filtro-accion"
+                value={action}
+                onChange={(v) => setFilters({ action: v }, { resetPage: true })}
+                placeholder="p. ej. payment.recovered"
+              />
+            </Filtro>
+            <Filtro etiqueta="Cédula del deudor" htmlFor="filtro-cedula" className="sm:w-44">
+              <Input
+                id="filtro-cedula"
+                className="font-mono"
+                inputMode="numeric"
+                value={debtorDoc}
+                onChange={(e) => setFilters({ debtorDoc: e.target.value }, { resetPage: true })}
+                placeholder="1234567"
+              />
+            </Filtro>
+            <Filtro etiqueta="Id de la entidad" htmlFor="filtro-entidad" className="sm:w-56">
+              <Input
+                id="filtro-entidad"
+                className="font-mono"
+                value={entityId}
+                onChange={(e) => setFilters({ entityId: e.target.value }, { resetPage: true })}
+                placeholder="UUID"
+              />
+            </Filtro>
+            <Filtro etiqueta="Desde" htmlFor="filtro-desde" className="sm:w-44">
+              <CampoDeFecha id="filtro-desde" value={from} onChange={(v) => setFilters({ from: v }, { resetPage: true })} />
+            </Filtro>
+            <Filtro etiqueta="Hasta" htmlFor="filtro-hasta" className="sm:w-44">
+              <CampoDeFecha id="filtro-hasta" value={to} onChange={(v) => setFilters({ to: v }, { resetPage: true })} />
+            </Filtro>
+            {hasFilters ? (
+              <Button
+                variant="ghost"
+                hideArrow
+                onClick={() =>
+                  setFilters({ action: '', debtorDoc: '', entityId: '', from: '', to: '' }, { resetPage: true })
+                }
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+                Quitar los filtros
+              </Button>
+            ) : null}
+          </BarraDeFiltros>
+        }
+        pie={result.data ? <Pagination page={page} total={result.data.total} pageSize={PAGE_SIZE} onPage={setPage} /> : null}
       />
-
-      {result.data && (
-        <Pagination page={page} total={result.data.total} pageSize={PAGE_SIZE} onPage={setPage} />
-      )}
     </div>
   )
 }

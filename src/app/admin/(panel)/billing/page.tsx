@@ -6,6 +6,7 @@ import { fmtCOP } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { MonoLabel } from '@leasefy/cadence'
 
 /* ── Types (match BACK.md §8.8 + monolith billing/page.tsx) ──────────────── */
 
@@ -44,7 +45,7 @@ const columns: Column<MrrRow>[] = [
     header: 'MRR mes actual',
     align: 'right',
     cell: (r) => (
-      <span className={`tabular-nums font-mono text-sm ${num(r.mrr) > 0 ? 'text-ok' : 'text-fg-muted'}`}>
+      <span className={`tabular-nums font-mono text-sm ${num(r.mrr) > 0 ? 'text-success' : 'text-fg-muted'}`}>
         {fmtCOP(num(r.mrr))}
       </span>
     ),
@@ -53,7 +54,7 @@ const columns: Column<MrrRow>[] = [
     header: 'MRR mes pasado',
     align: 'right',
     cell: (r) => (
-      <span className="tabular-nums font-mono text-xs text-fg-muted">
+      <span className="tabular-nums font-mono text-caption text-fg-muted">
         {fmtCOP(num(r.mrr_prev))}
       </span>
     ),
@@ -75,15 +76,14 @@ export default function BillingPage() {
   const billingCount = rows.filter((r) => num(r.mrr) > 0).length
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="18 · billing"
-        title="MRR / ARR / por agencia."
+        title="Ingresos"
         description="BillingEvent rows agregados. Mes pasado + ARR proyectado."
       />
 
       {/* ── KPIs ─────────────────────────────────────────────────────── */}
-      <section className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+      <section className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <KpiCard
           label="MRR · mes pasado"
           value={fmtCOP(mrrCop)}
@@ -103,9 +103,9 @@ export default function BillingPage() {
       </section>
 
       {/* ── Per-agency table (LIMIT 100, no paging) ───────────────────── */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         MRR por inmobiliaria · mes actual vs pasado
-      </div>
+      </MonoLabel>
       <DataTable
         columns={columns}
         rows={rows}

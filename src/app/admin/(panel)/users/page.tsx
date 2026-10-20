@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { RestablecerSegundoFactor } from '@/components/admin/RestablecerSegundoFactor'
+import { Card, MonoLabel } from '@leasefy/cadence'
 
 // ── Types co-located with the screen (BACK.md §8.21 · FRONT.md §6.29) ────────
 
@@ -74,7 +75,7 @@ export default function UsersPage() {
           <span className="font-medium text-fg">
             {r.email}
             {recentlyActive && (
-              <span className="ml-2 pill pill-ok text-[9px]">activo 24h</span>
+              <Pill tone="ok" className="ml-2 text-[9px]">activo 24h</Pill>
             )}
           </span>
         )
@@ -92,7 +93,7 @@ export default function UsersPage() {
     {
       header: 'Última sesión',
       cell: (r) => (
-        <span className="font-mono text-xs text-fg-muted">
+        <span className="font-mono text-caption text-fg-muted">
           {fmtDateTime(r.supabase.last_sign_in_at)}
         </span>
       ),
@@ -101,7 +102,7 @@ export default function UsersPage() {
       header: 'Acciones 30d',
       align: 'right',
       cell: (r) => (
-        <span className="tabular-nums font-mono text-xs">
+        <span className="tabular-nums font-mono text-caption">
           {Number(r.audit.action_count_30d) || 0}
         </span>
       ),
@@ -110,7 +111,7 @@ export default function UsersPage() {
       header: 'Última acción',
       cell: (r) =>
         r.audit.last_action_at ? (
-          <span className="font-mono text-xs text-fg-muted">
+          <span className="font-mono text-caption text-fg-muted">
             {fmtDateTime(r.audit.last_action_at)}
           </span>
         ) : (
@@ -123,21 +124,21 @@ export default function UsersPage() {
     {
       header: 'Cuándo',
       cell: (r) => (
-        <span className="font-mono text-xs text-fg-muted">{fmtDateTime(r.created_at)}</span>
+        <span className="font-mono text-caption text-fg-muted">{fmtDateTime(r.created_at)}</span>
       ),
     },
     {
       header: 'Admin',
-      cell: (r) => <span className="text-xs">{r.actor}</span>,
+      cell: (r) => <span className="text-caption">{r.actor}</span>,
     },
     {
       header: 'Acción',
-      cell: (r) => <code className="font-mono text-xs">{r.action}</code>,
+      cell: (r) => <code className="font-mono text-caption">{r.action}</code>,
     },
     {
       header: 'Entidad',
       cell: (r) => (
-        <span className="text-xs text-fg-muted">
+        <span className="text-caption text-fg-muted">
           {r.entity_type
             ? `${r.entity_type}${r.entity_id ? ` · ${r.entity_id.slice(0, 8)}…` : ''}`
             : '—'}
@@ -147,24 +148,23 @@ export default function UsersPage() {
   ]
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="23 · users"
-        title="Admin roster"
+        title="Equipo Leasefy"
         description="Admins en ADMIN_EMAILS + actividad de auditoría. Para agregar o remover admins, editar ADMIN_EMAILS en el env y reiniciar — no hay UI de mutación."
       />
 
       {data?.supabase_error && (
-        <div className="card p-4 border-l-4 border-l-warn mb-6 text-xs text-fg-muted">
+        <Card className="p-4  mb-6 text-caption text-fg-muted">
           Supabase auth no disponible: <span className="font-mono">{data.supabase_error}</span> —
           las columnas de sesión pueden estar incompletas.
-        </div>
+        </Card>
       )}
 
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         admins
-      </div>
-      <div className="mb-8">
+      </MonoLabel>
+      <div className="">
         <DataTable
           columns={rosterColumns}
           rows={admins}
@@ -179,13 +179,13 @@ export default function UsersPage() {
       {/* Soporte: restablecer el segundo factor de UNA cuenta de la plataforma
           (29-09-2026). Vive acá porque es la pantalla de usuarios del
           backoffice; no hay ficha de usuario de la plataforma. */}
-      <div className="mb-8">
+      <div className="">
         <RestablecerSegundoFactor />
       </div>
 
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         últimas 25 acciones admin
-      </div>
+      </MonoLabel>
       <DataTable
         columns={recentColumns}
         rows={feed}

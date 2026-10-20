@@ -1,181 +1,130 @@
 /**
- * Admin panel styles — nest brandbook, ported from the monolith globals.css.
- * Everything is SCOPED under `.admin-scope` so the component classes
- * (.btn/.card/.pill/.input/.section-label) never leak into the customer app.
- * The color/typography utilities (bg-bg, text-fg, font-display, tracking-mono-label)
- * come from the additive tokens in tailwind.config.ts and are only used inside
- * admin markup.
+ * /admin — el puente de clases sueltas, con la cara de Leasefy (Cadence).
+ *
+ * 🔴 19-10-2026 (Nico: «el admin debe ser admin de Leasefy, no debe quedar
+ * nada de nest»). El admin vivía con su propio sistema copiado de otra marca:
+ * Satoshi, esquinas rectas, rótulos mono en mayúsculas y su azul. Ahora cada
+ * pantalla de esta rama usa los componentes REALES de Cadence (`Button`,
+ * `Card`, `Badge`, `Table`, `Input`…), igual que el panel de la inmobiliaria.
+ *
+ * Este archivo sólo existe para las pantallas que llegan desde OTRAS ramas
+ * con las clases viejas (`card`, `btn`, `pill`, `input`, `section-label`,
+ * `text-ok`…): el Maestro de `account-manager`, por ejemplo. Con esto se ven
+ * con los tokens de Leasefy —píldoras, radios de 20 px, la tinta y el cobalto
+ * del tema, claro y oscuro— hasta que se pasen a componentes. Código nuevo:
+ * nunca estas clases, siempre el componente.
+ *
+ * Todo va bajo `.admin-scope` para que nada se escape a la plataforma.
  */
 
-/* ── Satoshi (self-hosted under public/admin/fonts) ───────────────────── */
-@font-face {
-  font-family: 'Satoshi';
-  src: url('/admin/fonts/Satoshi-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+/* ── Superficies ─────────────────────────────────────────────────────────── */
+.admin-scope .card {
+  @apply rounded-[20px] border border-border bg-surface;
 }
-@font-face {
-  font-family: 'Satoshi';
-  src: url('/admin/fonts/Satoshi-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
+.admin-scope .card-paper {
+  @apply rounded-[20px] bg-surface-muted text-fg;
 }
-@font-face {
-  font-family: 'Satoshi';
-  src: url('/admin/fonts/Satoshi-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
+.admin-scope .card-blue {
+  @apply rounded-[20px] bg-primary text-primary-fg;
 }
-@font-face {
-  font-family: 'Satoshi';
-  src: url('/admin/fonts/Satoshi-Black.woff2') format('woff2');
-  font-weight: 900;
-  font-style: normal;
-  font-display: swap;
+.admin-scope .card-night {
+  @apply rounded-[20px] bg-ink text-ink-fg;
+}
+.admin-scope .card-lila {
+  @apply rounded-[20px] bg-primary-soft text-fg;
+}
+.admin-scope .card-yellow {
+  @apply rounded-[20px] bg-warning-soft text-fg;
 }
 
-/* ── Scope base: paper canvas + ink text + Inter body ─────────────────── */
-.admin-scope {
-  font-family: var(--font-admin-sans), Inter, ui-sans-serif, system-ui, sans-serif;
-  font-feature-settings: 'cv11', 'ss01', 'cv05';
-  font-size: 14px;
-  line-height: 1.5;
-  @apply bg-bg text-fg antialiased min-h-screen;
+/* ── Botones (la píldora del `Button` de Cadence) ───────────────────────── */
+.admin-scope .btn {
+  @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface px-[18px] text-caption font-medium text-fg outline-none transition-[color,background-color,border-color,transform] duration-150 hover:border-border-strong hover:bg-bg active:scale-[0.97] focus-visible:shadow-[0_0_0_3px_rgba(20,19,15,0.12)] disabled:pointer-events-none disabled:border-transparent disabled:bg-surface-muted disabled:text-fg-subtle;
 }
-.admin-scope ::selection {
-  background: rgba(0, 64, 255, 0.18);
-  color: #0a1b2e;
+.admin-scope .btn-primary {
+  @apply border-transparent bg-primary text-primary-fg hover:border-transparent hover:bg-primary-hover;
+}
+.admin-scope .btn-danger {
+  @apply border-transparent bg-danger-soft text-danger hover:border-transparent hover:opacity-90;
+}
+.admin-scope .btn-ghost {
+  @apply border-transparent bg-transparent text-fg hover:border-transparent hover:bg-surface-muted;
+}
+.admin-scope .btn-on-dark {
+  @apply border-white/25 bg-white/15 text-white hover:border-white/40 hover:bg-white/25;
+}
+.admin-scope .btn-inverted {
+  @apply border-transparent bg-white text-fg hover:border-transparent hover:bg-white/90;
 }
 
-/* Component classes — plain rules with @apply (NO @layer: this file is imported
-   on its own, without @tailwind directives; @apply still resolves from config). */
-/* Section labels */
+/* ── Campos (el `Input` / `Textarea` de Cadence) ────────────────────────── */
+.admin-scope .input {
+  @apply h-11 w-full rounded-[12px] border border-border bg-surface px-3.5 text-body-sm text-fg outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-fg-subtle hover:border-border-strong focus-visible:border-primary focus-visible:shadow-[0_0_0_3px_rgba(26,64,255,0.12)];
+}
+.admin-scope .textarea {
+  @apply w-full rounded-[12px] border border-border bg-surface p-3.5 text-body-sm text-fg outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-fg-subtle hover:border-border-strong focus-visible:border-primary focus-visible:shadow-[0_0_0_3px_rgba(26,64,255,0.12)];
+}
+
+/* ── Píldoras (el `Badge` de Cadence) ───────────────────────────────────── */
+.admin-scope .pill {
+  @apply inline-flex h-5 items-center gap-1.5 whitespace-nowrap rounded-full bg-surface-muted px-2.5 text-[11px] font-medium text-fg-muted;
+}
+.admin-scope .pill-ok {
+  @apply bg-success-soft text-success;
+}
+.admin-scope .pill-warn {
+  @apply bg-warning-soft text-warning;
+}
+.admin-scope .pill-bad {
+  @apply bg-danger-soft text-danger;
+}
+.admin-scope .pill-info {
+  @apply bg-primary-soft text-primary;
+}
+.admin-scope .pill-solid {
+  @apply bg-primary text-primary-fg;
+}
+
+/* ── Rótulos (el `Eyebrow` de Cadence: el cuadrito cobalto + mono) ──────── */
 .admin-scope .section-label {
-    @apply inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted;
-  }
-  .admin-scope .section-label::before {
-    content: '';
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    background: theme('colors.brand');
-  }
-  .admin-scope .section-label-inverted {
-    @apply inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-white/70;
-  }
-  .admin-scope .section-label-inverted::before {
-    content: '';
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    background: theme('colors.white');
-  }
+  @apply inline-flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-fg-subtle;
+}
+.admin-scope .section-label::before {
+  content: '';
+  @apply inline-block h-1.5 w-1.5 shrink-0 rounded-[2px] bg-primary;
+}
+.admin-scope .section-label-inverted {
+  @apply inline-flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-white/70;
+}
+.admin-scope .section-label-inverted::before {
+  content: '';
+  @apply inline-block h-1.5 w-1.5 shrink-0 rounded-[2px] bg-white;
+}
 
-  /* Cards */
-  .admin-scope .card {
-    @apply bg-bg-card border border-bg-border rounded-none;
-  }
-  .admin-scope .card-paper {
-    @apply bg-brand-paper text-brand-ink border border-bg-border rounded-none;
-  }
-  .admin-scope .card-blue {
-    @apply bg-brand text-white border border-brand rounded-none;
-  }
-  .admin-scope .card-night {
-    @apply bg-brand-night text-white border border-brand-night rounded-none;
-  }
-  .admin-scope .card-lila {
-    @apply bg-nestlila text-brand-ink border border-nestlila rounded-none;
-  }
-  .admin-scope .card-yellow {
-    @apply bg-nestyellow text-brand-ink border border-nestyellow rounded-none;
-  }
+/* ── Títulos y números ──────────────────────────────────────────────────── */
+.admin-scope .h-display,
+.admin-scope .h-display-lg,
+.admin-scope .h-display-xl {
+  @apply text-h2 text-fg;
+}
+.admin-scope .step-num {
+  @apply inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary font-mono text-xs text-primary-fg;
+}
 
-  /* Buttons */
-  .admin-scope .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 h-10 font-mono text-[11px] uppercase tracking-[0.12em] border border-bg-border-strong bg-bg-surface text-fg hover:bg-bg-hover hover:border-fg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed rounded-none;
-  }
-  .admin-scope .btn-primary {
-    @apply bg-brand text-white border-brand hover:bg-[#0033CC] hover:border-[#0033CC];
-  }
-  .admin-scope .btn-danger {
-    @apply bg-transparent text-bad border-bad/40 hover:bg-bad/10 hover:border-bad;
-  }
-  .admin-scope .btn-ghost {
-    @apply bg-transparent border-transparent text-fg-muted hover:text-fg hover:bg-bg-hover;
-  }
-  .admin-scope .btn-on-dark {
-    @apply border-white/30 bg-white/10 text-white hover:bg-white/20 hover:border-white/60;
-  }
-  .admin-scope .btn-inverted {
-    @apply bg-white text-brand-ink border-white hover:bg-brand-paper;
-  }
+/* ── Los tonos viejos, a los cuatro de Cadence ──────────────────────────── */
+.admin-scope .text-ok { color: var(--success); }
+.admin-scope .text-warn { color: var(--warning); }
+.admin-scope .text-bad { color: var(--danger); }
+.admin-scope .text-brand { color: var(--primary); }
+.admin-scope .bg-ok { background-color: var(--success); }
+.admin-scope .bg-warn { background-color: var(--warning); }
+.admin-scope .bg-bad { background-color: var(--danger); }
+.admin-scope .bg-brand { background-color: var(--primary); }
 
-  /* Inputs */
-  .admin-scope .input {
-    @apply w-full bg-bg-surface border border-bg-border-strong rounded-none px-3 h-10 text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:border-brand;
-  }
-  .admin-scope .textarea {
-    @apply w-full bg-bg-surface border border-bg-border-strong rounded-none p-3 text-[13px] leading-relaxed text-fg placeholder:text-fg-subtle font-mono resize-y focus:outline-none focus:border-brand;
-  }
-
-  /* Pills */
-  .admin-scope .pill {
-    @apply inline-flex items-center gap-1 px-2 h-5 rounded-none font-mono text-[10px] uppercase tracking-[0.12em] bg-bg-hover border border-bg-border text-fg-muted;
-  }
-  .admin-scope .pill-ok {
-    @apply bg-ok/10 border-ok/30 text-ok;
-  }
-  .admin-scope .pill-warn {
-    @apply bg-warn/10 border-warn/30 text-warn;
-  }
-  .admin-scope .pill-bad {
-    @apply bg-bad/10 border-bad/30 text-bad;
-  }
-  .admin-scope .pill-info {
-    @apply bg-brand/10 border-brand/30 text-brand;
-  }
-  .admin-scope .pill-solid {
-    @apply bg-brand border-brand text-white;
-  }
-
-  /* Misc */
-  .admin-scope .step-num {
-    @apply inline-flex items-center justify-center w-8 h-8 bg-brand text-white font-mono text-xs;
-  }
-  .admin-scope .h-display {
-    @apply font-display text-display tracking-tight;
-  }
-  .admin-scope .h-display-lg {
-    @apply font-display text-display-lg tracking-tight;
-  }
-  .admin-scope .h-display-xl {
-    @apply font-display text-display-xl tracking-tight;
-  }
-
-/* Tables (plain CSS — scoped) */
-.admin-scope .table-zebra > tbody > tr:nth-child(odd) {
-  background: #fbfbfa;
+/* ── Tablas ─────────────────────────────────────────────────────────────── */
+.admin-scope .table-zebra > tbody > tr {
+  @apply border-t border-border-faint transition-colors duration-150;
 }
 .admin-scope .table-zebra > tbody > tr:hover {
-  background: #f0f0ee;
-}
-
-/* ── Decorative patterns (scoped; unique names) ───────────────────────── */
-.admin-scope .pattern-hash {
-  background-image: repeating-linear-gradient(135deg, transparent 0, transparent 6px, rgba(10, 27, 46, 0.06) 6px, rgba(10, 27, 46, 0.06) 7px);
-}
-.admin-scope .pattern-hash-on-blue {
-  background-image: repeating-linear-gradient(135deg, transparent 0, transparent 6px, rgba(255, 255, 255, 0.1) 6px, rgba(255, 255, 255, 0.1) 7px);
-}
-.admin-scope .pattern-dots {
-  background-image: radial-gradient(rgba(0, 64, 255, 0.16) 1px, transparent 1px);
-  background-size: 8px 8px;
-}
-.admin-scope .pattern-grid {
-  background-image: linear-gradient(to right, rgba(10, 27, 46, 0.035) 1px, transparent 1px);
-  background-size: 80px 100%;
+  @apply bg-surface-hover;
 }

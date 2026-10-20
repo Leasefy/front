@@ -147,7 +147,7 @@ describe('<ExperimentoDeLaura>', () => {
     expect($('experimento-recomendacion')?.textContent).toContain('B · como mucho 2 cuotas recupera más plata en 30 días')
 
     await clic(boton('Aprobar la ganadora'))
-    expect((host.querySelector('[data-testid="ganadora-b-menos-cuotas"]') as HTMLInputElement).checked).toBe(true)
+    expect(host.querySelector('[data-testid="ganadora-b-menos-cuotas"]')?.getAttribute('aria-checked')).toBe('true')
     expect($('confirmar-adoptar')?.textContent).toContain('como mucho 2 cuotas a todos los deudores de todas las inmobiliarias')
 
     adminApi.mockResolvedValueOnce(

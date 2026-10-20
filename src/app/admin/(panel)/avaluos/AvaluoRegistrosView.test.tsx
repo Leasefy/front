@@ -115,13 +115,13 @@ describe('AvaluoRegistrosView', () => {
 
   it('renders the error state', () => {
     render(baseProps({ items: undefined, total: undefined, error: new Error('boom') }))
-    expect(container.textContent?.toLowerCase()).toContain('error')
+    expect(container.textContent).toContain('No pudimos cargar')
     expect(container.textContent).toContain('boom')
   })
 
   it('renders the loading state', () => {
     render(baseProps({ items: undefined, total: undefined, isLoading: true }))
-    expect(container.textContent).toContain('cargando')
+    expect(container.querySelector('[role="status"]')).not.toBeNull()
   })
 
   it('marks the active state tab as pressed', () => {
@@ -151,7 +151,7 @@ describe('AvaluoRegistrosView', () => {
     render(baseProps({ items: [makeItem()], total: 250, pageSize: 100, page: 0, onPage }))
 
     const next = Array.from(container.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('Siguiente'),
+      b.getAttribute('aria-label') === 'Página siguiente',
     )
     expect(next).toBeTruthy()
     act(() => {

@@ -1,6 +1,8 @@
 'use client'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
+import { Card, MonoLabel } from '@leasefy/cadence'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 // ── Scaffold data (BACK.md §9 · FRONT.md §6.32) ───────────────────────────────
 
@@ -58,99 +60,98 @@ const SAMPLE_AGENCIES = ['Inmobiliaria Demo SAS', 'Real Estate Bogotá', 'Carter
 /** /feature-flags — STATIC scaffold (BACK.md §9 · FRONT.md §6.32). */
 export default function FeatureFlagsPage() {
   return (
-    <div className="p-6 lg:p-8 max-w-5xl">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="25 · feature-flags"
-        title="Toggles per-tenant"
+        title="Banderas"
         description="Flags por inmobiliaria: experimentos, features beta, kill-switches granulares."
       />
 
       {/* Scaffold notice */}
-      <div className="card p-5 border-l-4 border-l-warn mb-6">
+      <Card className="p-5 ">
         <div className="flex items-baseline justify-between gap-4">
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warn">
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warning">
             scaffold · pendiente de build
           </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
+          <MonoLabel>
             esfuerzo · ~2h agent + 1h admin
-          </span>
+          </MonoLabel>
         </div>
         <p className="text-sm text-fg mt-2">
           No existe tabla <code className="font-mono">agent.feature_flags</code> todavía ni la
           función <code className="font-mono">agent.is_feature_enabled()</code>. Cuando ship,
           esta pantalla muestra un grid agencias × flags con toggle visual.
         </p>
-        <p className="text-xs text-fg-muted mt-2">
+        <p className="text-caption text-fg-muted mt-2">
           Trackeado en: <code className="font-mono">HANDOFF.md deuda · feature-flags scaffold</code>
         </p>
-      </div>
+      </Card>
 
       {/* Todo list */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         qué se necesita para shipearla
-      </div>
-      <div className="card p-5 mb-6">
+      </MonoLabel>
+      <Card className="p-5">
         <ol className="space-y-2 text-sm text-fg">
           {TODO_LIST.map((t, i) => (
             <li key={i} className="flex gap-3">
-              <span className="font-mono text-brand text-xs shrink-0">
+              <span className="font-mono text-primary text-caption shrink-0">
                 {String(i + 1).padStart(2, '0')}
               </span>
               <span>{t}</span>
             </li>
           ))}
         </ol>
-      </div>
+      </Card>
 
       {/* Migration SQL */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         migration SQL · copy-paste a Supabase Studio
-      </div>
-      <div className="card p-0 mb-6 overflow-hidden">
+      </MonoLabel>
+      <Card className="p-0 overflow-hidden">
         <pre className="bg-surface-muted p-4 font-mono text-[11px] leading-relaxed text-fg overflow-x-auto">
           {MIGRATION_SQL}
         </pre>
-      </div>
+      </Card>
 
       {/* Preview (greyed out, non-interactive) */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         preview · cómo se va a ver cuando ship
-      </div>
-      <div className="card p-5 mb-6 opacity-60 pointer-events-none select-none">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      </MonoLabel>
+      <Card className="p-5 opacity-60 pointer-events-none select-none">
+        <MonoLabel className="block mb-3">
           grid agencias × flags
-        </div>
+        </MonoLabel>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-bg-border font-mono text-[10px] text-fg-subtle uppercase tracking-[0.12em]">
-                <th className="text-left py-2 font-medium">Agencia</th>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead >Agencia</TableHead>
                 {PREVIEW_KEYS.map((f) => (
-                  <th key={f.key} className="text-center py-2 font-medium" title={f.desc}>
+                  <TableHead key={f.key}  title={f.desc}>
                     {f.key.split('_').slice(0, 2).join(' ')}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {SAMPLE_AGENCIES.map((a) => (
-                <tr key={a} className="border-b border-bg-border">
-                  <td className="py-2.5 text-sm">{a}</td>
+                <TableRow key={a} className="border-b border-border">
+                  <TableCell className="text-sm">{a}</TableCell>
                   {PREVIEW_KEYS.map((f, i) => (
-                    <td key={f.key} className="text-center py-2.5">
+                    <TableCell key={f.key} className="text-center py-2.5">
                       <div
-                        className={`inline-block w-8 h-4 rounded-none ${
-                          i % 2 === 0 ? 'bg-ok' : 'bg-fg-dim'
+                        className={`inline-block w-8 h-4  ${
+                          i % 2 === 0 ? 'bg-success' : 'bg-border-strong'
                         }`}
                       />
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

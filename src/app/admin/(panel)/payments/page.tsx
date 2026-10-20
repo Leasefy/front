@@ -1,5 +1,7 @@
 'use client'
 
+import { CheckCircle, CreditCard, CurrencyCircleDollar, HourglassMedium, Prohibit, X } from '@phosphor-icons/react'
+import { Alert } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
@@ -10,6 +12,9 @@ import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pagination } from '@/components/admin/screen/Pagination'
 import { Pill } from '@/components/admin/Pill'
+import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
+import { Button } from '@/components/ui/button'
+import { legible } from '@/lib/admin/textos-del-admin'
 
 const PAGE_SIZE = 50
 
@@ -65,12 +70,25 @@ function statusTone(s: string): PillTone {
   }
 }
 
+const ESTADO_DEL_PAGO: Record<string, string> = {
+  approved: 'Aprobado',
+  pending: 'Pendiente',
+  declined: 'Rechazado',
+  voided: 'Anulado',
+  refunded: 'Reembolsado',
+}
+
 function DisbursementCell({ status, disbursedAt }: { status: string | null; disbursedAt: string | null }) {
   if (status === 'disbursed') {
     const dateOnly = disbursedAt ? fmtDateTime(disbursedAt).split(',')[0] : ''
-    return <span className="text-ok">✓ {dateOnly}</span>
+    return (
+      <span className="inline-flex items-center gap-1.5 text-success">
+        <CheckCircle className="h-4 w-4" weight="fill" aria-hidden="true" />
+        <span className="font-mono text-caption tabular-nums">{dateOnly}</span>
+      </span>
+    )
   }
-  if (status === 'pending') return <span className="text-warn">pending</span>
+  if (status === 'pending') return <Pill tone="warn">Por desembolsar</Pill>
   return <span className="text-fg-subtle">—</span>
 }
 
@@ -93,57 +111,41 @@ export default function PaymentsPage() {
   const columns: Column<PaymentRow>[] = [
     {
       header: 'Deudor',
-      cell: (r) => (
-        <span className="font-medium text-fg truncate block max-w-[180px]">{r.debtor_name}</span>
-      ),
+      cell: (r) => <span className="block max-w-[180px] truncate font-medium text-fg">{r.debtor_name}</span>,
     },
     {
-      header: 'Agencia',
-      cell: (r) => (
-        <span className="text-fg-muted text-xs truncate block max-w-[160px]">{r.legal_name ?? '—'}</span>
-      ),
+      header: 'Inmobiliaria',
+      cell: (r) => <span className="block max-w-[160px] truncate text-fg-muted">{r.legal_name ?? '—'}</span>,
     },
     {
-      header: 'Status',
-      cell: (r) => <Pill tone={statusTone(r.status)}>{r.status}</Pill>,
+      header: 'Estado',
+      cell: (r) => <Pill tone={statusTone(r.status)}>{ESTADO_DEL_PAGO[r.status] ?? legible(r.status)}</Pill>,
     },
     {
-      header: 'Provider',
-      cell: (r) => (
-        <span className="font-mono text-[11px] uppercase tracking-mono-label text-fg-muted">
-          {r.provider ?? '—'}
-        </span>
-      ),
+      header: 'Pasarela',
+      cell: (r) => <span className="text-fg-muted">{r.provider ? legible(r.provider) : '—'}</span>,
     },
     {
-      header: 'Monto',
+      header: 'Valor',
       align: 'right',
-      cell: (r) => <span className="tabular-nums font-medium">{fmtCOP(num(r.amount))}</span>,
+      cell: (r) => <span className="font-mono font-medium tabular-nums">{fmtCOP(num(r.amount))}</span>,
     },
     {
-      header: 'Fee',
+      header: 'Comisión',
       align: 'right',
       cell: (r) => (
-        <span className="tabular-nums text-fg-muted text-xs">
-          {r.fee_amount ? fmtCOP(num(r.fee_amount)) : '—'}
-        </span>
+        <span className="font-mono text-caption tabular-nums text-fg-muted">{r.fee_amount ? fmtCOP(num(r.fee_amount)) : '—'}</span>
       ),
     },
     {
       header: 'Desembolso',
-      cell: (r) => (
-        <span className="text-xs">
-          <DisbursementCell status={r.disbursement_status} disbursedAt={r.disbursed_at} />
-        </span>
-      ),
+      cell: (r) => <DisbursementCell status={r.disbursement_status} disbursedAt={r.disbursed_at} />,
     },
     {
       header: 'Pagado',
       align: 'right',
       cell: (r) => (
-        <span className="whitespace-nowrap tabular-nums text-fg-muted text-xs font-mono">
-          {fmtDateTime(r.paid_at ?? r.created_at)}
-        </span>
+        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.paid_at ?? r.created_at)}</span>
       ),
     },
   ]
@@ -151,90 +153,49 @@ export default function PaymentsPage() {
   const pendingDisbursementCount = num(kpis?.pending_disbursement_count)
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="08 · pagos"
         title="Pagos"
-        description="Funnel Wompi / Bold — aprobado, pendiente, declinado, reembolsado y desembolsado. Últimos 30 días."
+        description="El embudo de los pagos en línea (Wompi y Bold) de los últimos 30 días: aprobados, pendientes, rechazados, reembolsados y desembolsados."
       />
 
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           tone="ok"
-          label="Aprobado · 30d"
+          icon={<CheckCircle />}
+          label="Aprobado · 30 días"
           value={result.isLoading ? '—' : fmtCOP(num(kpis?.approved_total))}
-          hint={`${kpis?.approved_count ?? 0} transacciones`}
+          hint={`${num(kpis?.approved_count).toLocaleString('es-CO')} pagos`}
         />
         <KpiCard
           tone="warn"
+          icon={<HourglassMedium />}
           label="Pendientes"
-          value={result.isLoading ? '—' : (kpis?.pending_count ?? '0')}
-          hint="payment.status='pending'"
+          value={result.isLoading ? '—' : num(kpis?.pending_count)}
+          hint="Esperando la respuesta de la pasarela"
         />
         <KpiCard
           tone="bad"
-          label="Declinados · 30d"
-          value={result.isLoading ? '—' : (kpis?.declined_count ?? '0')}
-          hint={`${kpis?.refunded_count ?? 0} refunded`}
+          icon={<Prohibit />}
+          label="Rechazados · 30 días"
+          value={result.isLoading ? '—' : num(kpis?.declined_count)}
+          hint={`${num(kpis?.refunded_count).toLocaleString('es-CO')} reembolsados`}
         />
         <KpiCard
-          label="Desembolsado · 30d"
+          icon={<CurrencyCircleDollar />}
+          label="Desembolsado · 30 días"
           value={result.isLoading ? '—' : fmtCOP(num(kpis?.disbursed_total))}
-          hint={`${kpis?.disbursed_count ?? 0} payouts · fees ${fmtCOP(num(kpis?.fees_total))}`}
+          hint={`${num(kpis?.disbursed_count).toLocaleString('es-CO')} giros · comisiones ${fmtCOP(num(kpis?.fees_total))}`}
         />
       </div>
 
-      {/* Pending disbursement alert */}
       {pendingDisbursementCount > 0 && (
-        <div className="card p-3 border-l-4 border-l-warn mb-6">
-          <span className="font-mono text-[10px] uppercase tracking-mono-label text-warn">alerta</span>
-          <p className="text-sm text-fg mt-1">
-            <span className="tabular-nums font-medium">{kpis?.pending_disbursement_count}</span>{' '}
-            pago{pendingDisbursementCount === 1 ? '' : 's'} aprobado{pendingDisbursementCount === 1 ? '' : 's'} hace más de 3 días sin desembolsar.
-            Revisar el cron daily-dispersion.
-          </p>
-        </div>
+        <Alert variant="warning" title="Pagos sin desembolsar">
+          <span className="font-mono tabular-nums">{pendingDisbursementCount.toLocaleString('es-CO')}</span>{' '}
+          {pendingDisbursementCount === 1 ? 'pago aprobado lleva' : 'pagos aprobados llevan'} más de 3 días sin
+          desembolsarse. Revisa la tarea diaria de dispersión (daily-dispersion).
+        </Alert>
       )}
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-end gap-3 mb-4">
-        <label className="block">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">status</span>
-          <select
-            className="input w-44"
-            value={status}
-            onChange={(e) => setFilters({ status: e.target.value }, { resetPage: true })}
-          >
-            <option value="">— todos —</option>
-            <option value="approved">approved</option>
-            <option value="pending">pending</option>
-            <option value="declined">declined</option>
-            <option value="voided">voided</option>
-            <option value="refunded">refunded</option>
-          </select>
-        </label>
-        <label className="block">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">provider</span>
-          <select
-            className="input w-36"
-            value={provider}
-            onChange={(e) => setFilters({ provider: e.target.value }, { resetPage: true })}
-          >
-            <option value="">— todos —</option>
-            <option value="wompi">wompi</option>
-            <option value="bold">bold</option>
-          </select>
-        </label>
-        {(status || provider) && (
-          <button
-            className="btn"
-            onClick={() => setFilters({ status: '', provider: '' }, { resetPage: true })}
-          >
-            × limpiar
-          </button>
-        )}
-      </div>
 
       <DataTable
         columns={columns}
@@ -242,13 +203,44 @@ export default function PaymentsPage() {
         getKey={(r) => r.id}
         isLoading={result.isLoading}
         error={result.error}
-        emptyTitle="Sin pagos"
-        emptyHint="Ajusta los filtros."
+        onReintentar={result.refetch}
+        emptyTitle="No hay pagos con estos filtros"
+        emptyHint="Prueba con otro estado u otra pasarela."
+        emptyIcon={<CreditCard weight="bold" />}
+        aria-label="Pagos"
+        barra={
+          <BarraDeFiltros>
+            <Filtro etiqueta="Estado" htmlFor="filtro-estado">
+              <Desplegable
+                id="filtro-estado"
+                value={status}
+                onChange={(v) => setFilters({ status: v }, { resetPage: true })}
+                todas="Todos los estados"
+                opciones={Object.entries(ESTADO_DEL_PAGO).map(([valor, nombre]) => ({ valor, nombre }))}
+              />
+            </Filtro>
+            <Filtro etiqueta="Pasarela" htmlFor="filtro-pasarela">
+              <Desplegable
+                id="filtro-pasarela"
+                value={provider}
+                onChange={(v) => setFilters({ provider: v }, { resetPage: true })}
+                todas="Todas las pasarelas"
+                opciones={[
+                  { valor: 'wompi', nombre: 'Wompi' },
+                  { valor: 'bold', nombre: 'Bold' },
+                ]}
+              />
+            </Filtro>
+            {status || provider ? (
+              <Button variant="ghost" hideArrow onClick={() => setFilters({ status: '', provider: '' }, { resetPage: true })}>
+                <X className="h-4 w-4" aria-hidden="true" />
+                Quitar los filtros
+              </Button>
+            ) : null}
+          </BarraDeFiltros>
+        }
+        pie={result.data ? <Pagination page={page} total={result.data.total} pageSize={PAGE_SIZE} onPage={setPage} /> : null}
       />
-
-      {result.data && (
-        <Pagination page={page} total={result.data.total} pageSize={PAGE_SIZE} onPage={setPage} />
-      )}
     </div>
   )
 }

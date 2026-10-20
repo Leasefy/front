@@ -7,7 +7,10 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { Pill } from '@/components/admin/Pill'
-import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
+import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
+import { ArrowsClockwise, CheckCircle, IdentificationCard, Scales } from '@phosphor-icons/react'
+import { legible } from '@/lib/admin/textos-del-admin'
+import { MonoLabel } from '@leasefy/cadence'
 
 // ─── Types (match ADMIN-API-CONTRACT.md — Failed states) ───────────────────
 
@@ -50,66 +53,66 @@ function ageHours(iso: string): number {
 
 const centralColumns: Column<FailedRow>[] = [
   {
-    header: 'Status',
-    cell: (r) => <Pill tone="bad">{r.status}</Pill>,
+    header: 'Estado',
+    cell: (r) => <Pill tone="bad">{legible(r.status)}</Pill>,
   },
   {
     header: 'Deudor',
     cell: (r) => <span className="truncate max-w-[200px] block">{r.debtor_name ?? '—'}</span>,
   },
   {
-    header: 'Agencia',
-    cell: (r) => <span className="text-fg-muted text-xs truncate max-w-[180px] block">{r.legal_name ?? '—'}</span>,
+    header: 'Inmobiliaria',
+    cell: (r) => <span className="block max-w-[180px] truncate text-fg-muted">{r.legal_name ?? '—'}</span>,
   },
   {
-    header: 'Creado',
+    header: 'Cuándo',
     align: 'right',
-    cell: (r) => <span className="whitespace-nowrap font-mono text-xs text-fg-muted tabular-nums">{fmtDateTime(r.created_at)}</span>,
+    cell: (r) => <span className="whitespace-nowrap font-mono text-caption text-fg-muted tabular-nums">{fmtDateTime(r.created_at)}</span>,
   },
 ]
 
 const crmColumns: Column<FailedRow>[] = [
   {
-    header: 'Status',
-    cell: (r) => <Pill tone="warn">{r.status}</Pill>,
+    header: 'Estado',
+    cell: (r) => <Pill tone="warn">{legible(r.status)}</Pill>,
   },
   {
     header: 'Deudor',
     cell: (r) => <span className="truncate max-w-[200px] block">{r.debtor_name ?? '—'}</span>,
   },
   {
-    header: 'Agencia',
-    cell: (r) => <span className="text-fg-muted text-xs truncate max-w-[180px] block">{r.legal_name ?? '—'}</span>,
+    header: 'Inmobiliaria',
+    cell: (r) => <span className="block max-w-[180px] truncate text-fg-muted">{r.legal_name ?? '—'}</span>,
   },
   {
-    header: 'Creado',
+    header: 'Cuándo',
     align: 'right',
-    cell: (r) => <span className="whitespace-nowrap font-mono text-xs text-fg-muted tabular-nums">{fmtDateTime(r.created_at)}</span>,
+    cell: (r) => <span className="whitespace-nowrap font-mono text-caption text-fg-muted tabular-nums">{fmtDateTime(r.created_at)}</span>,
   },
 ]
 
 const legalColumns: Column<LegalPackageRow>[] = [
   {
-    header: 'Status',
-    cell: (r) => <Pill tone="bad">{r.legal_status}</Pill>,
+    header: 'Estado',
+    cell: (r) => <Pill tone="bad">{legible(r.legal_status)}</Pill>,
   },
   {
     header: 'Deudor',
     cell: (r) => <span className="truncate max-w-[200px] block">{r.debtor_name ?? '—'}</span>,
   },
   {
-    header: 'Agencia',
-    cell: (r) => <span className="text-fg-muted text-xs truncate max-w-[180px] block">{r.legal_name ?? '—'}</span>,
+    header: 'Inmobiliaria',
+    cell: (r) => <span className="block max-w-[180px] truncate text-fg-muted">{r.legal_name ?? '—'}</span>,
   },
   {
-    header: 'Edad',
+    header: 'Lleva',
     align: 'right',
-    cell: (r) => <span className="tabular-nums font-mono text-xs text-bad">{ageHours(r.issued_at)}h</span>,
+    cell: (r) => <span className="tabular-nums font-mono text-caption text-danger">{ageHours(r.issued_at)} h</span>,
   },
   {
     header: 'Emitido',
     align: 'right',
-    cell: (r) => <span className="whitespace-nowrap font-mono text-xs text-fg-muted tabular-nums">{fmtDateTime(r.issued_at)}</span>,
+    cell: (r) => <span className="whitespace-nowrap font-mono text-caption text-fg-muted tabular-nums">{fmtDateTime(r.issued_at)}</span>,
   },
 ]
 
@@ -117,7 +120,7 @@ const legalColumns: Column<LegalPackageRow>[] = [
 
 /** /failed-states — ops inbox (BACK.md §8.17 · FRONT.md §6.20). */
 export default function FailedStatesPage() {
-  const { data, isLoading, error } = useApiQuery<FailedStatesResponse>(
+  const { data, isLoading, error, refetch } = useApiQuery<FailedStatesResponse>(
     (signal) => adminApi('/failed-states', { signal }),
     [],
   )
@@ -128,87 +131,87 @@ export default function FailedStatesPage() {
   const total   = central.length + crm.length + legal.length
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="sistema"
-        title="Ops inbox"
-        description="Fallas operacionales consolidadas: centrales, CRM sync, legal stuck > 72h. Solo lectura."
+        title="Procesos fallidos"
+        description="Lo que se cayó y espera a alguien: reportes a centrales de riesgo, sincronización con los CRM y paquetes legales atascados más de 72 horas. Sólo lectura."
       />
 
       {isLoading && <LoadingBlock />}
-      {!isLoading && error && <ErrorBlock error={error} />}
+      {!isLoading && error && <ErrorBlock error={error} onReintentar={refetch} />}
 
       {data && (
         <>
           {/* Counters */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <KpiCard
-              label="Centrales failed"
+              icon={<IdentificationCard />}
+              label="Centrales de riesgo"
               value={central.length}
               hint="Datacrédito / TransUnion"
               tone={central.length > 0 ? 'bad' : 'ok'}
             />
             <KpiCard
-              label="CRM sync failed"
+              icon={<ArrowsClockwise />}
+              label="Sincronización con CRM"
               value={crm.length}
               hint="Wasi / Domus / WebProp / Sinco"
               tone={crm.length > 0 ? 'warn' : 'ok'}
             />
             <KpiCard
-              label="Legal stuck > 72h"
+              icon={<Scales />}
+              label="Legal atascado · más de 72 h"
               value={legal.length}
-              hint="Certicámara PENDING_RECEIPT"
+              hint="Certicámara sin acuse de recibo"
               tone={legal.length > 0 ? 'bad' : 'ok'}
             />
           </div>
 
           {total === 0 && (
-            <div className="card p-8 text-center text-fg-muted text-sm">
-              Sin ítems pendientes. Todo OK.
-            </div>
+            <EmptyBlock icono={<CheckCircle weight="bold" />} title="No hay nada caído" hint="Todo lo de abajo está al día." />
           )}
 
           {/* Centrales */}
           {(central.length > 0 || total === 0) && (
-            <section className="mb-6">
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-                Centrales failed — Datacrédito / TransUnion
-              </div>
+            <section className="space-y-3">
+              <MonoLabel className="block">
+                Centrales de riesgo — Datacrédito y TransUnion
+              </MonoLabel>
               <DataTable
                 columns={centralColumns}
                 rows={central}
                 getKey={(r) => r.id}
-                emptyTitle="Sin fallas en centrales"
+                emptyTitle="Nada fallido con las centrales"
               />
             </section>
           )}
 
           {/* CRM */}
           {(crm.length > 0 || total === 0) && (
-            <section className="mb-6">
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-                CRM sync failed — Wasi / Domus / WebProp / Sinco
-              </div>
+            <section className="space-y-3">
+              <MonoLabel className="block">
+                Sincronización con CRM — Wasi, Domus, WebProp y Sinco
+              </MonoLabel>
               <DataTable
                 columns={crmColumns}
                 rows={crm}
                 getKey={(r) => r.id}
-                emptyTitle="Sin fallas de sincronización CRM"
+                emptyTitle="Nada fallido con los CRM"
               />
             </section>
           )}
 
           {/* Legal */}
           {(legal.length > 0 || total === 0) && (
-            <section className="mb-6">
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-                Legal stuck &gt; 72h — Certicámara PENDING_RECEIPT
-              </div>
+            <section className="space-y-3">
+              <MonoLabel className="block">
+                Legal atascado más de 72 h — Certicámara sin acuse
+              </MonoLabel>
               <DataTable
                 columns={legalColumns}
                 rows={legal}
                 getKey={(r) => r.id}
-                emptyTitle="Sin packages atascados"
+                emptyTitle="Ningún paquete atascado"
               />
             </section>
           )}

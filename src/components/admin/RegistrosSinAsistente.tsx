@@ -17,10 +17,14 @@
 
 import { useState } from 'react'
 
+import { Alert, MonoLabel, Stagger, StaggerItem } from '@leasefy/cadence'
+import { CheckCircle, WarningCircle } from '@phosphor-icons/react'
+
 import { adminApi, ApiError } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { Pill } from '@/components/admin/Pill'
+import { Button } from '@/components/ui/button'
 
 export interface FilaSinAsistente {
   id: string
@@ -81,48 +85,68 @@ export function RegistrosSinAsistente() {
   if (filas.isLoading || filas.error || lista.length === 0) return null
 
   return (
-    <section className="mb-6 rounded-lg border border-border p-4" data-testid="registros-sin-asistente">
-      <h2 className="text-sm font-semibold text-fg">Registros que no abrieron el asistente</h2>
-      <p className="mt-1 text-xs text-fg-muted">
+    <Alert
+      variant="warning"
+      title="Registros que no abrieron el asistente"
+      data-testid="registros-sin-asistente"
+      // Es una sección que se queda, no un aviso que aparece: sin `role="alert"`.
+      role="region"
+      aria-label="Registros que no abrieron el asistente"
+      className="[&_.alert-title]:text-fg"
+    >
+      <p className="text-fg-muted">
         El dueño vio «No pudimos abrir tu registro». El motivo es lo que contestó el asistente; «Reintentar» lo vuelve a
         pedir y, si funciona, le manda la invitación por correo a la inmobiliaria.
       </p>
-      <ul className="mt-3 space-y-3">
+      <Stagger as="ul" className="mt-3 space-y-2">
         {lista.map((f) => (
-          <li key={f.id} className="rounded-md border border-border p-3" data-testid={`sin-asistente-${f.id}`}>
+          <StaggerItem
+            as="li"
+            key={f.id}
+            className="rounded-md border border-border bg-surface p-3.5 text-fg"
+            data-testid={`sin-asistente-${f.id}`}
+          >
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium text-fg">{f.name}</span>
               <Pill tone={f.provisioningStatus === 'FAILED' ? 'bad' : 'warn'}>{queLePaso(f)}</Pill>
-              <span className="text-xs text-fg-muted tabular-nums">
+              <MonoLabel className="tabular-nums">
                 {f.invitationAttempts} {f.invitationAttempts === 1 ? 'intento' : 'intentos'} · {fmtDateTime(f.updatedAt)}
-              </span>
+              </MonoLabel>
             </div>
-            <p className="mt-2 break-words font-mono text-xs text-fg" data-testid="motivo">
+            <p className="mt-2 break-words font-mono text-caption text-fg" data-testid="motivo">
               {motivoDe(f)}
             </p>
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              <button
+            <div className="mt-2.5 flex flex-wrap items-center gap-3">
+              <Button
                 type="button"
-                className="rounded-md border border-border px-3 py-1 text-xs font-medium text-fg hover:bg-surface-muted disabled:opacity-50"
+                size="sm"
+                variant="outline"
+                hideArrow
                 disabled={enCurso !== null}
+                isLoading={enCurso === f.id}
                 onClick={() => void reintentar(f.id)}
                 data-testid="reintentar"
               >
                 {enCurso === f.id ? 'Reintentando…' : 'Reintentar'}
-              </button>
+              </Button>
               {respuesta[f.id] ? (
                 <span
                   role="status"
-                  className={`text-xs ${respuesta[f.id].ok ? 'text-fg' : 'text-red-600'}`}
+                  className={`flex items-center gap-1.5 text-body-sm ${respuesta[f.id].ok ? 'text-success' : 'text-danger'}`}
                   data-testid="respuesta"
                 >
+                  {respuesta[f.id].ok ? (
+                    <CheckCircle className="h-4 w-4 shrink-0" weight="fill" aria-hidden="true" />
+                  ) : (
+                    <WarningCircle className="h-4 w-4 shrink-0" weight="fill" aria-hidden="true" />
+                  )}
                   {respuesta[f.id].texto}
                 </span>
               ) : null}
             </div>
-          </li>
+          </StaggerItem>
         ))}
-      </ul>
-    </section>
+      </Stagger>
+    </Alert>
   )
 }

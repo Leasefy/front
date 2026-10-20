@@ -1,12 +1,18 @@
 'use client'
 
-import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { ArrowSquareOut } from '@phosphor-icons/react'
+import { CodeBlock, KeyValueList, MessageBubble, MonoLabel, Stagger, StaggerItem } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
-import { fmtDateTime, fmtDuration, fmtCOP } from '@/lib/admin/format'
+import { fmtDateTime, fmtDuration, fmtCOP, USD_TO_COP } from '@/lib/admin/format'
+import { legible, resultadoDeLaLlamada, tonoDelResultado } from '@/lib/admin/textos-del-admin'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
+import { PageHeader } from '@/components/admin/screen/PageHeader'
+import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 import { Pill } from '@/components/admin/Pill'
+import { BackButton } from '@/components/ui/back-button'
+import { Button } from '@/components/ui/button'
 
 interface CallDetail {
   id: string
@@ -40,117 +46,119 @@ interface CallDetail {
   } | null
 }
 
+/** Un JSON crudo del agente o de Vapi, en el bloque de código de Cadence. */
 function JsonBlock({ label, value }: { label: string; value: unknown }) {
   if (value == null) return null
-  return (
-    <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-1">{label}</div>
-      <pre className="card p-3 text-[11px] leading-relaxed text-fg-muted overflow-x-auto font-mono">
-        {JSON.stringify(value, null, 2)}
-      </pre>
-    </div>
-  )
+  return <CodeBlock language="json" filename={label} code={JSON.stringify(value, null, 2)} />
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">{label}</div>
-      <div className="text-sm text-fg mt-0.5">{children}</div>
-    </div>
-  )
+/** Quién habla en la conversación de Vapi. */
+function quienHabla(rol: string | undefined): 'user' | 'agent' | null {
+  if (rol === 'user') return 'user'
+  if (rol === 'assistant' || rol === 'bot') return 'agent'
+  return null
 }
 
 /** /calls/:id — DB row merged with live Vapi (BACK.md §8.4). vapi may be null. */
 export default function CallDetailPage() {
   const params = useParams<{ id: string }>()
   const id = params.id
-  const { data, isLoading, error } = useApiQuery<CallDetail>(
+  const { data, isLoading, error, refetch } = useApiQuery<CallDetail>(
     (signal) => adminApi(`/calls/${id}`, { signal }),
     [id],
   )
 
-  if (isLoading) return <div className="p-6 lg:p-8"><LoadingBlock /></div>
-  if (error) return <div className="p-6 lg:p-8"><ErrorBlock error={error} /></div>
+  if (isLoading) return <div className="space-y-6 p-6 lg:p-8"><LoadingBlock filas={8} /></div>
+  if (error) return <div className="space-y-6 p-6 lg:p-8"><ErrorBlock error={error} onReintentar={refetch} /></div>
   if (!data) return null
 
   const recording = data.recording_url ?? data.vapi?.recordingUrl ?? null
+  const mensajes = (data.vapi?.artifact?.messages ?? []).filter((m) => quienHabla(m.role) && m.message)
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-4xl">
-      <div>
-        <Link href="/admin/calls" className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle hover:text-fg">
-          ← Llamadas
-        </Link>
-        <h1 className="font-display text-display tracking-tight text-fg mt-2">{data.debtor_name ?? 'Llamada'}</h1>
-      </div>
+    <div className="space-y-6 p-6 lg:p-8">
+      <BackButton href="/admin/calls" label="Volver a llamadas" />
+      <PageHeader
+        title={data.debtor_name ?? 'Llamada'}
+        description={data.legal_name ?? undefined}
+        right={<Pill tone={tonoDelResultado(data.outcome)}>{resultadoDeLaLlamada(data.outcome)}</Pill>}
+      />
 
-      {/* Header fields */}
-      <div className="card p-5 grid grid-cols-2 md:grid-cols-3 gap-4">
-        <Field label="agencia">{data.legal_name ?? '—'}</Field>
-        <Field label="teléfono">{data.debtor_phone ?? '—'}</Field>
-        <Field label="inicio">{fmtDateTime(data.initiated_at)}</Field>
-        <Field label="duración">{fmtDuration(data.duration_seconds)}</Field>
-        <Field label="outcome"><Pill>{data.outcome ?? '—'}</Pill></Field>
-        <Field label="qa score">{data.qa_score ?? '—'}</Field>
-        {data.vapi?.status && <Field label="estado vapi">{data.vapi.status}</Field>}
-        {data.vapi?.endedReason && <Field label="ended reason">{data.vapi.endedReason}</Field>}
-        {data.vapi?.cost != null && <Field label="costo vapi">{fmtCOP((data.vapi.cost ?? 0) * 4000)}</Field>}
-      </div>
+      <Tarjeta titulo="La llamada">
+        <KeyValueList
+          className="grid gap-x-8 md:grid-cols-2 xl:grid-cols-3"
+          items={[
+            { label: 'Inmobiliaria', value: data.legal_name ?? '—' },
+            { label: 'Teléfono', value: <span className="font-mono tabular-nums">{data.debtor_phone ?? '—'}</span> },
+            { label: 'Empezó', value: <span className="font-mono tabular-nums">{fmtDateTime(data.initiated_at)}</span> },
+            { label: 'Duración', value: <span className="font-mono tabular-nums">{fmtDuration(data.duration_seconds)}</span> },
+            { label: 'Calidad', value: <span className="font-mono tabular-nums">{data.qa_score != null ? Number(data.qa_score).toFixed(0) : '—'}</span> },
+            ...(data.vapi?.status ? [{ label: 'Estado en Vapi', value: legible(data.vapi.status) }] : []),
+            ...(data.vapi?.endedReason ? [{ label: 'Por qué terminó', value: legible(data.vapi.endedReason) }] : []),
+            ...(data.vapi?.cost != null
+              ? [{ label: 'Costo en Vapi', value: <span className="font-mono tabular-nums">{fmtCOP((data.vapi.cost ?? 0) * USD_TO_COP)}</span> }]
+              : []),
+          ]}
+        />
+      </Tarjeta>
 
-      {/* Audio */}
       {recording && (
-        <div className="space-y-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">grabación</div>
+        <Tarjeta titulo="Grabación">
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <audio controls src={recording} className="w-full" />
-        </div>
+        </Tarjeta>
       )}
 
-      {/* Compliance flags */}
       {data.compliance_flags && data.compliance_flags.length > 0 && (
-        <div className="space-y-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">compliance flags</div>
+        <Tarjeta titulo="Alertas de cumplimiento">
           <div className="flex flex-wrap gap-1.5">
             {data.compliance_flags.map((f, i) => (
-              <Pill key={i} tone="warn">{f}</Pill>
+              <Pill key={i} tone="warn">
+                {legible(f)}
+              </Pill>
             ))}
           </div>
-        </div>
+        </Tarjeta>
       )}
 
-      {/* Conversation */}
-      {data.vapi?.artifact?.messages && data.vapi.artifact.messages.length > 0 && (
-        <div className="space-y-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">conversación</div>
-          <div className="card p-4 space-y-2">
-            {data.vapi.artifact.messages.map((m, i) => (
-              <div key={i} className="text-sm">
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mr-2">{m.role ?? '—'}</span>
-                <span className="text-fg-muted">{m.message ?? ''}</span>
-              </div>
+      {mensajes.length > 0 ? (
+        <Tarjeta titulo="Conversación" descripcion="Lo que se dijo, tal como lo guardó Vapi.">
+          <Stagger className="space-y-3">
+            {mensajes.map((m, i) => (
+              <StaggerItem key={i}>
+                <MessageBubble role={quienHabla(m.role)!} agentName="Agente">
+                  {m.message}
+                </MessageBubble>
+              </StaggerItem>
             ))}
-          </div>
-        </div>
-      )}
-      {!data.vapi?.artifact?.messages?.length && (data.vapi?.transcript || data.transcript_url) && (
-        <div className="space-y-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">transcripción</div>
+          </Stagger>
+        </Tarjeta>
+      ) : data.vapi?.transcript || data.transcript_url ? (
+        <Tarjeta titulo="Transcripción">
           {data.vapi?.transcript ? (
-            <pre className="card p-3 text-[12px] leading-relaxed text-fg-muted whitespace-pre-wrap font-sans">{data.vapi.transcript}</pre>
+            <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-fg-muted">{data.vapi.transcript}</p>
           ) : (
-            <a href={data.transcript_url!} target="_blank" rel="noreferrer" className="btn inline-flex">Ver transcripción →</a>
+            <Button asChild variant="outline" hideArrow>
+              <a href={data.transcript_url!} target="_blank" rel="noreferrer">
+                Ver la transcripción
+                <ArrowSquareOut className="h-4 w-4" aria-hidden="true" />
+              </a>
+            </Button>
           )}
-        </div>
-      )}
+        </Tarjeta>
+      ) : null}
 
-      {/* Raw JSON */}
-      <div className="grid grid-cols-1 gap-4">
-        <JsonBlock label="agent_summary" value={data.agent_summary} />
-        <JsonBlock label="summary_json" value={data.summary_json} />
-        <JsonBlock label="qa_dimensions" value={data.qa_dimensions} />
-        {data.vapi?.costBreakdown != null && <JsonBlock label="vapi costBreakdown" value={data.vapi.costBreakdown} />}
-      </div>
+      {data.agent_summary != null || data.summary_json != null || data.qa_dimensions != null || data.vapi?.costBreakdown != null ? (
+        <section className="space-y-3" aria-label="Datos crudos">
+          <MonoLabel className="block">Datos crudos</MonoLabel>
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <JsonBlock label="Resumen del agente" value={data.agent_summary} />
+            <JsonBlock label="Resumen (JSON)" value={data.summary_json} />
+            <JsonBlock label="Calidad por dimensión" value={data.qa_dimensions} />
+            {data.vapi?.costBreakdown != null && <JsonBlock label="Costo en Vapi, desglosado" value={data.vapi.costBreakdown} />}
+          </div>
+        </section>
+      ) : null}
     </div>
   )
 }

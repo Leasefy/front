@@ -1,17 +1,18 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { PhoneCall, Waveform } from '@phosphor-icons/react'
 import { adminApi } from '@/lib/admin/api'
 import type { Paginated } from '@/lib/admin/types'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
-import { useTenantOptions } from '@/lib/admin/use-tenant-options'
 import { fmtDateTime, fmtDuration } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pagination } from '@/components/admin/screen/Pagination'
 import { Pill } from '@/components/admin/Pill'
-import type { PillTone } from '@/lib/admin/types'
+import { BarraDeFiltros, Buscador, Desplegable, Filtro, SelectorDeInmobiliaria } from '@/components/admin/screen/Filtros'
+import { RESULTADOS_DE_LLAMADA, resultadoDeLaLlamada, tonoDelResultado } from '@/lib/admin/textos-del-admin'
 
 const PAGE_SIZE = 50
 
@@ -27,16 +28,6 @@ interface CallRow {
   legal_name: string | null
 }
 
-/** Maps a free-form call outcome to a pill tone (heuristic — exact enum lives in the agent). */
-function outcomeTone(outcome: string | null): PillTone {
-  if (!outcome) return 'muted'
-  const o = outcome.toLowerCase()
-  if (o.includes('paid') || o.includes('promise') || o.includes('success')) return 'ok'
-  if (o.includes('fail') || o.includes('no_answer') || o.includes('refus') || o.includes('declin')) return 'bad'
-  if (o.includes('voicemail') || o.includes('busy') || o.includes('callback')) return 'warn'
-  return 'neutral'
-}
-
 /** /calls — cross-tenant call log (FRONT.md §6.6 · BACK.md §8.4). */
 export default function CallsPage() {
   const router = useRouter()
@@ -45,62 +36,44 @@ export default function CallsPage() {
   const outcome = get('outcome')
   const q = get('q')
 
-  const tenants = useTenantOptions()
   const calls = useApiQuery<Paginated<CallRow>>(
     (signal) => adminApi('/calls', { query: { tenant, outcome, q, page }, signal }),
     [tenant, outcome, q, page],
   )
 
   const columns: Column<CallRow>[] = [
-    { header: 'Inicio', cell: (r) => <span className="whitespace-nowrap">{fmtDateTime(r.initiated_at)}</span> },
-    { header: 'Agencia', cell: (r) => r.legal_name ?? '—' },
-    { header: 'Deudor', cell: (r) => r.debtor_name ?? '—' },
-    { header: 'Duración', align: 'right', cell: (r) => <span className="tabular-nums">{fmtDuration(r.duration_seconds)}</span> },
-    { header: 'Outcome', cell: (r) => <Pill tone={outcomeTone(r.outcome)}>{r.outcome ?? '—'}</Pill> },
-    { header: 'QA', align: 'right', cell: (r) => <span className="tabular-nums">{r.qa_score ?? '—'}</span> },
-    { header: 'Rec', align: 'center', cell: (r) => (r.recording_url ? '●' : '○') },
+    {
+      header: 'Cuándo',
+      cell: (r) => <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.initiated_at)}</span>,
+    },
+    { header: 'Inmobiliaria', cell: (r) => <span className="text-fg-muted">{r.legal_name ?? '—'}</span> },
+    { header: 'Deudor', cell: (r) => <span className="font-medium text-fg">{r.debtor_name ?? '—'}</span> },
+    {
+      header: 'Duración',
+      align: 'right',
+      cell: (r) => <span className="font-mono tabular-nums">{fmtDuration(r.duration_seconds)}</span>,
+    },
+    { header: 'Resultado', cell: (r) => <Pill tone={tonoDelResultado(r.outcome)}>{resultadoDeLaLlamada(r.outcome)}</Pill> },
+    {
+      header: 'Calidad',
+      align: 'right',
+      cell: (r) => <span className="font-mono tabular-nums">{r.qa_score != null ? Number(r.qa_score).toFixed(0) : '—'}</span>,
+    },
+    {
+      header: 'Grabación',
+      align: 'center',
+      cell: (r) =>
+        r.recording_url ? (
+          <Waveform className="mx-auto h-4 w-4 text-primary" weight="fill" aria-label="Tiene grabación" />
+        ) : (
+          <span className="text-fg-subtle" aria-label="Sin grabación">—</span>
+        ),
+    },
   ]
 
   return (
-    <div className="p-6 lg:p-8">
-      <PageHeader label="cross-tenant" title="Llamadas" description="Todas las llamadas de todas las agencias." />
-
-      {/* Filters (reflected in the URL) */}
-      <div className="flex flex-wrap items-end gap-3 mb-4">
-        <label className="block">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">agencia</span>
-          <select
-            className="input w-56"
-            value={tenant}
-            onChange={(e) => setFilters({ tenant: e.target.value }, { resetPage: true })}
-          >
-            <option value="">Todas</option>
-            {(tenants.data ?? []).map((t) => (
-              <option key={t.tenant_id} value={t.tenant_id}>
-                {t.legal_name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">outcome</span>
-          <input
-            className="input w-40"
-            value={outcome}
-            onChange={(e) => setFilters({ outcome: e.target.value }, { resetPage: true })}
-            placeholder="ej. paid"
-          />
-        </label>
-        <label className="block flex-1 min-w-48">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">deudor</span>
-          <input
-            className="input"
-            value={q}
-            onChange={(e) => setFilters({ q: e.target.value }, { resetPage: true })}
-            placeholder="Buscar por nombre…"
-          />
-        </label>
-      </div>
+    <div className="space-y-6 p-6 lg:p-8">
+      <PageHeader title="Llamadas" description="Todas las llamadas de los agentes, de todas las inmobiliarias." />
 
       <DataTable
         columns={columns}
@@ -108,14 +81,43 @@ export default function CallsPage() {
         getKey={(r) => r.id}
         isLoading={calls.isLoading}
         error={calls.error}
-        emptyTitle="Sin llamadas"
-        emptyHint="Ajusta los filtros."
+        onReintentar={calls.refetch}
+        emptyTitle="No hay llamadas con estos filtros"
+        emptyHint="Prueba con otra inmobiliaria u otro resultado."
+        emptyIcon={<PhoneCall weight="bold" />}
+        aria-label="Llamadas"
         onRowClick={(r) => router.push(`/admin/calls/${r.id}`)}
+        barra={
+          // Los filtros viven en la URL: se comparten y sobreviven a recargar.
+          <BarraDeFiltros>
+            <Filtro etiqueta="Deudor" htmlFor="filtro-deudor" className="sm:min-w-64 sm:flex-1">
+              <Buscador
+                id="filtro-deudor"
+                value={q}
+                onChange={(v) => setFilters({ q: v }, { resetPage: true })}
+                placeholder="Buscar por nombre…"
+              />
+            </Filtro>
+            <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria">
+              <SelectorDeInmobiliaria
+                id="filtro-inmobiliaria"
+                value={tenant}
+                onChange={(v) => setFilters({ tenant: v }, { resetPage: true })}
+              />
+            </Filtro>
+            <Filtro etiqueta="Resultado" htmlFor="filtro-resultado">
+              <Desplegable
+                id="filtro-resultado"
+                value={outcome}
+                onChange={(v) => setFilters({ outcome: v }, { resetPage: true })}
+                todas="Todos los resultados"
+                opciones={Object.entries(RESULTADOS_DE_LLAMADA).map(([valor, nombre]) => ({ valor, nombre }))}
+              />
+            </Filtro>
+          </BarraDeFiltros>
+        }
+        pie={calls.data ? <Pagination page={page} total={calls.data.total} pageSize={PAGE_SIZE} onPage={setPage} /> : null}
       />
-
-      {calls.data && (
-        <Pagination page={page} total={calls.data.total} pageSize={PAGE_SIZE} onPage={setPage} />
-      )}
     </div>
   )
 }

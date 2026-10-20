@@ -1,10 +1,16 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
+import { Alert, KeyValueList, Presence, SegmentedControl } from '@leasefy/cadence'
 import { useHidratado } from '@/lib/hooks/use-hidratado'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { Pill } from '@/components/admin/Pill'
+import { Tarjeta } from '@/components/admin/screen/Tarjeta'
+import { LoadingBlock } from '@/components/admin/screen/states'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   NOMBRE_DEL_TIPO,
   TIPOS_DEL_FACTURADOR,
@@ -52,31 +58,28 @@ export function FacturadorFeelDeLaInmobiliaria({ tenantId }: { tenantId: string 
   const [agregando, setAgregando] = useState<TipoDelFacturador | null>(null)
   const [eligiendo, setEligiendo] = useState(false)
 
-  const titulo = (
-    <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-      facturación electrónica · cuenta de FEEL de Leasefy
-    </div>
-  )
+  const titulo = 'Facturación electrónica'
+  const descripcion = 'La inmobiliaria como facturador dentro de la cuenta de FEEL de Leasefy.'
 
   if (consulta.isLoading && !datos) {
     return (
-      <section className="card p-5" aria-busy="true">
-        {titulo}
-        <p className="text-sm text-fg-muted mt-2">Cargando el facturador…</p>
-      </section>
+      <Tarjeta titulo={titulo} descripcion={descripcion} aria-busy="true">
+        <LoadingBlock label="Cargando el facturador" filas={2} suelto={false} />
+      </Tarjeta>
     )
   }
   if (consulta.error && !datos) {
     return (
-      <section className="card p-5">
-        {titulo}
-        <p role="alert" className="text-sm text-bad mt-2">
-          No pudimos leer el facturador: {mensajeDelFalloDelFacturador(consulta.error, 'leer el facturador')}
-        </p>
-        <button type="button" className="btn mt-3" onClick={consulta.refetch}>
-          Reintentar
-        </button>
-      </section>
+      <Tarjeta titulo={titulo} descripcion={descripcion}>
+        <div className="space-y-3">
+          <Alert variant="danger">
+            No pudimos leer el facturador: {mensajeDelFalloDelFacturador(consulta.error, 'leer el facturador')}
+          </Alert>
+          <Button variant="outline" size="sm" hideArrow onClick={consulta.refetch}>
+            Reintentar
+          </Button>
+        </div>
+      </Tarjeta>
     )
   }
   if (!datos) return null
@@ -89,120 +92,131 @@ export function FacturadorFeelDeLaInmobiliaria({ tenantId }: { tenantId: string 
   }
 
   return (
-    <section className="card p-5 space-y-4" aria-labelledby="facturador-titulo" data-testid="facturador-feel">
-      <div id="facturador-titulo">
-        {titulo}
-        <p className="text-xs text-fg-muted mt-1">
-          Cada inmobiliaria transmite como un facturador dentro de la cuenta de FEEL de Leasefy. Dalo de alta en FEEL con
-          su NIT y su resolución, pega acá el token que FEEL le dio y pruébalo. La inmobiliaria no ve el token.
-        </p>
-      </div>
+    <Tarjeta
+      titulo={<span id="facturador-titulo">{titulo}</span>}
+      descripcion="Cada inmobiliaria transmite como un facturador dentro de la cuenta de FEEL de Leasefy. Dalo de alta en FEEL con su NIT y su resolución, pega acá el token que FEEL le dio y pruébalo. La inmobiliaria no ve el token."
+      aria-labelledby="facturador-titulo"
+      data-testid="facturador-feel"
+    >
+      <div className="space-y-5">
+        {!datos.disponible && (
+          <Alert variant="warning" role="note">
+            Falta la migración {datos.migracion} en esta base: todavía no se puede guardar un facturador.
+          </Alert>
+        )}
+        {!datos.feelPrendido && (
+          <Alert variant="info" role="note" data-testid="feel-apagado">
+            La transmisión está apagada en el servidor (FEEL_ENABLED). Se puede registrar y probar; las facturas quedan
+            en cola hasta que se prenda.
+          </Alert>
+        )}
 
-      {!datos.disponible && (
-        <p className="text-sm text-warn">
-          Falta la migración {datos.migracion} en esta base: todavía no se puede guardar un facturador.
-        </p>
-      )}
-      {!datos.feelPrendido && (
-        <p className="text-xs text-warn" data-testid="feel-apagado">
-          La transmisión está apagada en el servidor (FEEL_ENABLED). Se puede registrar y probar; las facturas quedan en
-          cola hasta que se prenda.
-        </p>
-      )}
+        <KeyValueList
+          items={[
+            {
+              label: 'Inmobiliaria',
+              value: (
+                <span className="text-right">
+                  {datos.inmobiliaria.razonSocial ?? datos.inmobiliaria.nombre} ·{' '}
+                  <span className="font-mono">{datos.inmobiliaria.nit ?? 'sin NIT'}</span>
+                </span>
+              ),
+            },
+          ]}
+        />
 
-      <dl className="divide-y divide-bg-border border border-bg-border">
-        <div className="px-4 py-2.5 flex items-center justify-between gap-3 text-sm">
-          <dt className="text-fg-muted">Inmobiliaria</dt>
-          <dd className="text-fg text-right">
-            {datos.inmobiliaria.razonSocial ?? datos.inmobiliaria.nombre} ·{' '}
-            <span className="font-mono">{datos.inmobiliaria.nit ?? 'sin NIT'}</span>
-          </dd>
-        </div>
-      </dl>
+        <BloqueDelFacturador tenantId={tenantId} tipo={null} facturador={datos.facturador} datos={datos} onCambio={cambio} />
 
-      <BloqueDelFacturador tenantId={tenantId} tipo={null} facturador={datos.facturador} datos={datos} onCambio={cambio} />
+        {datos.resoluciones.length > 0 && (
+          <ul className="space-y-1.5 text-body-sm" data-testid="facturador-resoluciones">
+            {datos.resoluciones.map((r) => (
+              <li key={`${r.numero}-${r.prefijo}`} className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-fg">
+                  {r.numero} · {r.prefijo || 'sin prefijo'}
+                </span>
+                {r.coincideConFeel === true && <Pill tone="ok">coincide con FEEL</Pill>}
+                {r.coincideConFeel === false && <Pill tone="warn">ningún facturador de FEEL la tiene</Pill>}
+              </li>
+            ))}
+          </ul>
+        )}
 
-      {datos.resoluciones.length > 0 && (
-        <ul className="text-xs space-y-1" data-testid="facturador-resoluciones">
-          {datos.resoluciones.map((r) => (
-            <li key={`${r.numero}-${r.prefijo}`} className="flex items-center gap-2">
-              <span className="font-mono text-fg">
-                {r.numero} · {r.prefijo || 'sin prefijo'}
-              </span>
-              {r.coincideConFeel === true && <Pill tone="ok">coincide con FEEL</Pill>}
-              {r.coincideConFeel === false && <Pill tone="warn">ningún facturador de FEEL la tiene</Pill>}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* QA-FACT-CONTA-95: un facturador por resolución (por tipo de documento). */}
-      {(porTipo.length > 0 || datos.porTipoDisponible !== undefined) && (
-        <div className="space-y-3 border-t border-bg-border pt-4" data-testid="facturadores-por-tipo">
-          <div>
-            <div className="text-sm text-fg">Facturadores por tipo de documento</div>
-            <p className="text-xs text-fg-muted mt-0.5">
-              En FEEL cada resolución, con su prefijo, es un facturador aparte con su propio token. Si la inmobiliaria
-              numera la comisión (u otro tipo) con otra resolución, regístrala acá: esas facturas salen con su token y
-              las demás con el de arriba.
-            </p>
+        {/* QA-FACT-CONTA-95: un facturador por resolución (por tipo de documento). */}
+        {(porTipo.length > 0 || datos.porTipoDisponible !== undefined) && (
+          <div className="space-y-4 border-t border-border-faint pt-5" data-testid="facturadores-por-tipo">
+            <div className="space-y-1">
+              <h3 className="text-body font-medium text-fg">Facturadores por tipo de documento</h3>
+              <p className="text-body-sm text-fg-muted">
+                En FEEL cada resolución, con su prefijo, es un facturador aparte con su propio token. Si la inmobiliaria
+                numera la comisión (u otro tipo) con otra resolución, regístrala acá: esas facturas salen con su token y
+                las demás con el de arriba.
+              </p>
+            </div>
+            {porTipo.map((f) => (
+              <BloqueDelFacturador
+                key={f.tipoDeDocumento}
+                tenantId={tenantId}
+                tipo={f.tipoDeDocumento}
+                facturador={f}
+                datos={datos}
+                onCambio={cambio}
+              />
+            ))}
+            {agregando && (
+              <BloqueDelFacturador
+                tenantId={tenantId}
+                tipo={agregando}
+                facturador={null}
+                datos={datos}
+                onCambio={cambio}
+                abiertoAlEmpezar
+                onCancelar={() => setAgregando(null)}
+              />
+            )}
+            {!agregando && libres.length > 0 && datos.porTipoDisponible && (
+              eligiendo ? (
+                <div className="flex flex-wrap items-center gap-2" data-testid="facturador-elegir-tipo">
+                  <span className="text-body-sm text-fg-muted">¿Para qué tipo de factura?</span>
+                  {libres.map((t) => (
+                    <Button
+                      key={t}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      hideArrow
+                      onClick={() => {
+                        setAgregando(t)
+                        setEligiendo(false)
+                      }}
+                    >
+                      {NOMBRE_DEL_TIPO[t]}
+                    </Button>
+                  ))}
+                  <Button type="button" size="sm" variant="ghost" hideArrow onClick={() => setEligiendo(false)}>
+                    Cancelar
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  hideArrow
+                  onClick={() => setEligiendo(true)}
+                  data-testid="facturador-agregar-tipo"
+                >
+                  Agregar el facturador de un tipo de documento
+                </Button>
+              )
+            )}
+            {datos.porTipoDisponible === false && (
+              <Alert variant="warning" role="note">
+                Falta la migración {datos.migracionPorTipo} en esta base: por ahora sólo hay un facturador por inmobiliaria.
+              </Alert>
+            )}
           </div>
-          {porTipo.map((f) => (
-            <BloqueDelFacturador
-              key={f.tipoDeDocumento}
-              tenantId={tenantId}
-              tipo={f.tipoDeDocumento}
-              facturador={f}
-              datos={datos}
-              onCambio={cambio}
-            />
-          ))}
-          {agregando && (
-            <BloqueDelFacturador
-              tenantId={tenantId}
-              tipo={agregando}
-              facturador={null}
-              datos={datos}
-              onCambio={cambio}
-              abiertoAlEmpezar
-              onCancelar={() => setAgregando(null)}
-            />
-          )}
-          {!agregando && libres.length > 0 && datos.porTipoDisponible && (
-            eligiendo ? (
-              <div className="flex flex-wrap items-center gap-2" data-testid="facturador-elegir-tipo">
-                <span className="text-xs text-fg-muted">¿Para qué tipo de factura?</span>
-                {libres.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    className="btn"
-                    onClick={() => {
-                      setAgregando(t)
-                      setEligiendo(false)
-                    }}
-                  >
-                    {NOMBRE_DEL_TIPO[t]}
-                  </button>
-                ))}
-                <button type="button" className="btn" onClick={() => setEligiendo(false)}>
-                  Cancelar
-                </button>
-              </div>
-            ) : (
-              <button type="button" className="btn" onClick={() => setEligiendo(true)} data-testid="facturador-agregar-tipo">
-                Agregar el facturador de un tipo de documento
-              </button>
-            )
-          )}
-          {datos.porTipoDisponible === false && (
-            <p className="text-xs text-warn">
-              Falta la migración {datos.migracionPorTipo} en esta base: por ahora sólo hay un facturador por inmobiliaria.
-            </p>
-          )}
-        </div>
-      )}
-    </section>
+        )}
+      </div>
+    </Tarjeta>
   )
 }
 
@@ -287,87 +301,103 @@ function BloqueDelFacturador({
   const disponible = tipo ? datos.porTipoDisponible === true : datos.disponible
 
   return (
-    <div className="space-y-3" data-testid={`facturador-bloque${sufijo}`}>
-      <dl className="divide-y divide-bg-border border border-bg-border">
-        <div className="px-4 py-2.5 flex items-center justify-between gap-3 text-sm">
-          <dt className="text-fg-muted">{tipo ? `Facturador ${nombre}` : 'Facturador (cualquier tipo)'}</dt>
-          <dd className="text-fg flex items-center gap-2" data-testid={`facturador-estado${sufijo}`}>
-            {f ? (
-              <>
-                <span className="font-mono">{f.ambiente === 'PRODUCCION' ? 'producción' : 'pruebas'}</span>
-                <span className="font-mono text-fg-subtle">token …{f.finalDelToken}</span>
-                {estado && <Pill tone={estado.tono}>{estado.texto}</Pill>}
-              </>
-            ) : (
-              <span className="text-fg-subtle">sin registrar</span>
-            )}
-          </dd>
-        </div>
-        {f && (
-          <div className="px-4 py-2.5 flex items-center justify-between gap-3 text-sm">
-            <dt className="text-fg-muted">Prefijo en FEEL</dt>
-            <dd className="font-mono text-fg" data-testid={`facturador-prefijo${sufijo}`}>
-              {f.prefijoFa ?? '—'}
-              {f.ultimaPruebaAt && <span className="text-fg-subtle"> · probado {fmtDateTime(f.ultimaPruebaAt)}</span>}
-            </dd>
-          </div>
-        )}
-        {f?.estado === 'FALLO' && f.ultimoError && <div className="px-4 py-2.5 text-xs text-bad">{f.ultimoError}</div>}
-      </dl>
+    <div className="space-y-3 rounded-md border border-border p-4" data-testid={`facturador-bloque${sufijo}`}>
+      <KeyValueList
+        compact
+        items={[
+          {
+            label: tipo ? `Facturador ${nombre}` : 'Facturador (cualquier tipo)',
+            value: (
+              <span className="flex flex-wrap items-center justify-end gap-2 text-fg" data-testid={`facturador-estado${sufijo}`}>
+                {f ? (
+                  <>
+                    <span className="font-mono">{f.ambiente === 'PRODUCCION' ? 'producción' : 'pruebas'}</span>
+                    <span className="font-mono text-fg-subtle">token …{f.finalDelToken}</span>
+                    {estado && <Pill tone={estado.tono}>{estado.texto}</Pill>}
+                  </>
+                ) : (
+                  <span className="text-fg-subtle">sin registrar</span>
+                )}
+              </span>
+            ),
+          },
+          ...(f
+            ? [
+                {
+                  label: 'Prefijo en FEEL',
+                  value: (
+                    <span className="font-mono text-fg" data-testid={`facturador-prefijo${sufijo}`}>
+                      {f.prefijoFa ?? '—'}
+                      {f.ultimaPruebaAt && (
+                        <span className="font-body text-fg-subtle"> · probado {fmtDateTime(f.ultimaPruebaAt)}</span>
+                      )}
+                    </span>
+                  ),
+                },
+              ]
+            : []),
+        ]}
+      />
+      {f?.estado === 'FALLO' && f.ultimoError && (
+        <Alert variant="danger" role="note">
+          {f.ultimoError}
+        </Alert>
+      )}
 
       {!editando ? (
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn" onClick={abrir} disabled={!disponible || trabajando !== null}>
+          <Button type="button" variant="outline" size="sm" hideArrow onClick={abrir} disabled={!disponible || trabajando !== null}>
             {f ? 'Cambiar el token' : 'Registrar el facturador'}
-          </button>
+          </Button>
           {f && (
-            <button
+            <Button
               type="button"
-              className="btn btn-primary"
+              size="sm"
+              hideArrow
               disabled={trabajando !== null}
+              isLoading={trabajando === 'probar'}
               onClick={() => void hacer('probar', () => probarFacturador(tenantId, tipo), 'probar la conexión')}
               data-testid={`facturador-probar${sufijo}`}
             >
               {trabajando === 'probar' ? 'Probando…' : 'Probar la conexión'}
-            </button>
+            </Button>
           )}
           {f && !confirmandoQuitar && (
-            <button type="button" className="btn" disabled={trabajando !== null} onClick={() => setConfirmandoQuitar(true)}>
+            <Button type="button" variant="ghost" size="sm" hideArrow disabled={trabajando !== null} onClick={() => setConfirmandoQuitar(true)}>
               Quitar
-            </button>
+            </Button>
           )}
         </div>
       ) : (
-        <form method="post" onSubmit={guardar} noValidate className="space-y-3" data-testid={`facturador-formulario${sufijo}`}>
-          <div className="flex flex-wrap gap-4">
-            <label className="text-xs text-fg-muted flex items-center gap-1.5">
-              <input type="radio" name={`ambiente${sufijo}`} checked={ambiente === 'SANDBOX'} onChange={() => setAmbiente('SANDBOX')} />
-              Pruebas (habilitación)
-            </label>
-            <label className="text-xs text-fg-muted flex items-center gap-1.5">
-              <input
-                type="radio"
-                name={`ambiente${sufijo}`}
-                checked={ambiente === 'PRODUCCION'}
-                onChange={() => setAmbiente('PRODUCCION')}
-              />
-              Producción
-            </label>
+        <form method="post" onSubmit={guardar} noValidate className="space-y-4" data-testid={`facturador-formulario${sufijo}`}>
+          <div className="space-y-1.5">
+            <Label>Ambiente de FEEL</Label>
+            <SegmentedControl<AmbienteDelFacturador>
+              size="sm"
+              value={ambiente}
+              onChange={setAmbiente}
+              options={[
+                { value: 'SANDBOX', label: 'Pruebas (habilitación)' },
+                { value: 'PRODUCCION', label: 'Producción' },
+              ]}
+            />
           </div>
           {ambiente === 'PRODUCCION' && !datos.urlProduccion && (
-            <p className="text-xs text-warn">El servidor no tiene la dirección de FEEL de producción: la prueba va a fallar.</p>
+            <Alert variant="warning" role="note">
+              El servidor no tiene la dirección de FEEL de producción: la prueba va a fallar.
+            </Alert>
           )}
           {ambiente === 'SANDBOX' && !datos.urlSandbox && (
-            <p className="text-xs text-warn">El servidor no tiene la dirección de FEEL de pruebas: la prueba va a fallar.</p>
+            <Alert variant="warning" role="note">
+              El servidor no tiene la dirección de FEEL de pruebas: la prueba va a fallar.
+            </Alert>
           )}
-          <div>
-            <label htmlFor={`facturador-token${sufijo}`} className="block text-xs text-fg-muted mb-1">
-              Token del facturador {nombre} (TokenIdentificador)
-            </label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor={`facturador-token${sufijo}`}>Token del facturador {nombre} (TokenIdentificador)</Label>
+            <Input
               id={`facturador-token${sufijo}`}
               type="password"
-              className="input max-w-md font-mono"
+              className="max-w-md font-mono"
               autoComplete="off"
               value={token}
               aria-invalid={tocado && errorDelCampo ? true : undefined}
@@ -378,31 +408,33 @@ function BloqueDelFacturador({
               }}
               onBlur={() => setTocado(true)}
             />
-            <p id={`facturador-token-ayuda${sufijo}`} className={`text-xs mt-1 ${tocado && errorDelCampo ? 'text-bad' : 'text-fg-subtle'}`}>
+            <p
+              id={`facturador-token-ayuda${sufijo}`}
+              className={`text-caption ${tocado && errorDelCampo ? 'text-danger' : 'text-fg-subtle'}`}
+            >
               {tocado && errorDelCampo ? errorDelCampo : 'Se guarda cifrado; nadie lo vuelve a ver.'}
             </p>
           </div>
-          <div>
-            <label htmlFor={`facturador-nit${sufijo}`} className="block text-xs text-fg-muted mb-1">
-              NIT con el que se dio de alta en FEEL
-            </label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor={`facturador-nit${sufijo}`}>NIT con el que se dio de alta en FEEL</Label>
+            <Input
               id={`facturador-nit${sufijo}`}
-              className="input max-w-xs font-mono"
+              className="max-w-xs font-mono"
               inputMode="numeric"
               autoComplete="off"
               value={nit}
               onChange={(e) => setNit(e.target.value)}
             />
-            <p className="text-xs mt-1 text-fg-subtle">Tiene que ser el NIT de la inmobiliaria.</p>
+            <p className="text-caption text-fg-subtle">Tiene que ser el NIT de la inmobiliaria.</p>
           </div>
-          <div className="flex gap-2">
-            <button type="submit" className="btn btn-primary" disabled={trabajando !== null || !hidratado}>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" hideArrow disabled={trabajando !== null || !hidratado} isLoading={trabajando === 'guardar'}>
               {trabajando === 'guardar' ? 'Guardando…' : 'Guardar'}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="btn"
+              variant="outline"
+              hideArrow
               onClick={() => {
                 setEditando(false)
                 onCancelar?.()
@@ -410,39 +442,40 @@ function BloqueDelFacturador({
               disabled={trabajando !== null}
             >
               Cancelar
-            </button>
+            </Button>
           </div>
         </form>
       )}
 
-      {confirmandoQuitar && (
-        <div className="card p-3 border-warn/40">
-          <p className="text-sm text-fg mb-2">
-            {tipo
-              ? `Si quitas el facturador ${nombre}, esas facturas salen con el facturador de cualquier tipo (si su resolución es la de FEEL) o quedan en cola sin transmitirse.`
-              : `Si quitas el facturador, lo que emita ${datos.inmobiliaria.nombre} queda en cola sin transmitirse a la DIAN hasta que lo vuelvas a registrar.`}
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={trabajando !== null}
-              onClick={() => void hacer('quitar', () => quitarFacturador(tenantId, tipo), 'quitar el facturador')}
-            >
-              {trabajando === 'quitar' ? 'Quitando…' : 'Sí, quitarlo'}
-            </button>
-            <button type="button" className="btn" disabled={trabajando !== null} onClick={() => setConfirmandoQuitar(false)}>
-              Volver
-            </button>
+      <Presence show={confirmandoQuitar}>
+        <Alert variant="warning" role="region" aria-label="Confirmar quitar el facturador">
+          <div className="space-y-3 text-fg">
+            <p>
+              {tipo
+                ? `Si quitas el facturador ${nombre}, esas facturas salen con el facturador de cualquier tipo (si su resolución es la de FEEL) o quedan en cola sin transmitirse.`
+                : `Si quitas el facturador, lo que emita ${datos.inmobiliaria.nombre} queda en cola sin transmitirse a la DIAN hasta que lo vuelvas a registrar.`}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                hideArrow
+                disabled={trabajando !== null}
+                isLoading={trabajando === 'quitar'}
+                onClick={() => void hacer('quitar', () => quitarFacturador(tenantId, tipo), 'quitar el facturador')}
+              >
+                {trabajando === 'quitar' ? 'Quitando…' : 'Sí, quitarlo'}
+              </Button>
+              <Button type="button" variant="outline" size="sm" hideArrow disabled={trabajando !== null} onClick={() => setConfirmandoQuitar(false)}>
+                Volver
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        </Alert>
+      </Presence>
 
-      {fallo && (
-        <p role="alert" className="text-sm text-bad">
-          {fallo}
-        </p>
-      )}
+      {fallo && <Alert variant="danger">{fallo}</Alert>}
     </div>
   )
 }

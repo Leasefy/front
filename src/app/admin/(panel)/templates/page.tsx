@@ -1,6 +1,10 @@
 'use client'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
+import { Card, CodeBlock, MonoLabel, StatusBadge } from '@leasefy/cadence'
+import { Pill } from '@/components/admin/Pill'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { legible } from '@/lib/admin/textos-del-admin'
 
 // ── Scaffold data (BACK.md §9 · FRONT.md §6.32) ───────────────────────────────
 
@@ -79,22 +83,17 @@ const PREVIEW_TEMPLATES = [
 /** /templates — STATIC scaffold (BACK.md §9 · FRONT.md §6.32). */
 export default function TemplatesPage() {
   return (
-    <div className="p-6 lg:p-8 max-w-5xl">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="22 · templates"
-        title="Editor multi-idioma"
-        description="WhatsApp / Email / SMS templates con version history. Aprobación Meta Cloud API integrada."
+        title="Plantillas"
+        description="Las plantillas de WhatsApp, correo y SMS con su historial de versiones y la aprobación de Meta."
       />
 
       {/* Scaffold notice */}
-      <div className="card p-5 border-l-4 border-l-warn mb-6">
+      <Card className="space-y-3 p-6">
         <div className="flex items-baseline justify-between gap-4">
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warn">
-            scaffold · pendiente de build
-          </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-            esfuerzo · ~4h agent + 2h admin
-          </span>
+          <StatusBadge tone="warning">Sin construir todavía</StatusBadge>
+          <MonoLabel>Esfuerzo · ~4 h en el micro + 2 h en el admin</MonoLabel>
         </div>
         <p className="text-sm text-fg mt-2">
           Hoy los templates viven en{' '}
@@ -103,87 +102,74 @@ export default function TemplatesPage() {
           <code className="font-mono">agent.message_templates</code> y el enum{' '}
           <code className="font-mono">agent.template_channel</code> no existen todavía.
         </p>
-        <p className="text-xs text-fg-muted mt-2">
+        <p className="text-caption text-fg-muted mt-2">
           Trackeado en:{' '}
           <code className="font-mono">Phase 17.6 templates en filesystem · pendiente migrar a DB</code>
         </p>
-      </div>
+      </Card>
 
       {/* Todo list */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         qué se necesita para shipearla
-      </div>
-      <div className="card p-5 mb-6">
+      </MonoLabel>
+      <Card className="p-5">
         <ol className="space-y-2 text-sm text-fg">
           {TODO_LIST.map((t, i) => (
             <li key={i} className="flex gap-3">
-              <span className="font-mono text-brand text-xs shrink-0">
+              <span className="font-mono text-primary text-caption shrink-0">
                 {String(i + 1).padStart(2, '0')}
               </span>
               <span>{t}</span>
             </li>
           ))}
         </ol>
-      </div>
+      </Card>
 
       {/* Migration SQL */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        migration SQL · copy-paste a Supabase Studio
-      </div>
-      <div className="card p-0 mb-6 overflow-hidden">
-        <pre className="bg-surface-muted p-4 font-mono text-[11px] leading-relaxed text-fg overflow-x-auto">
-          {MIGRATION_SQL}
-        </pre>
-      </div>
+      <CodeBlock language="sql" filename="Migración (la aplica Víctor)" code={MIGRATION_SQL} />
 
       {/* Preview (greyed out, non-interactive) */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         preview · cómo se va a ver cuando ship
-      </div>
-      <div className="card p-5 mb-6 opacity-60 pointer-events-none select-none">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      </MonoLabel>
+      <Card className="p-5 opacity-60 pointer-events-none select-none">
+        <MonoLabel className="block mb-3">
           grid · key × lang
-        </div>
+        </MonoLabel>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-bg-border font-mono text-[10px] text-fg-subtle uppercase tracking-[0.12em]">
-                <th className="text-left py-2 font-medium">Key</th>
-                <th className="text-left py-2 font-medium">Lang</th>
-                <th className="text-left py-2 font-medium">Channel</th>
-                <th className="text-left py-2 font-medium">Body (preview)</th>
-                <th className="text-left py-2 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead >Key</TableHead>
+                <TableHead >Lang</TableHead>
+                <TableHead >Channel</TableHead>
+                <TableHead >Body (preview)</TableHead>
+                <TableHead >Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {PREVIEW_TEMPLATES.map((t, i) => (
-                <tr key={i} className="border-b border-bg-border">
-                  <td className="py-2.5 font-mono text-[11px]">{t.key}</td>
-                  <td className="py-2.5">
-                    <span className="pill text-[10px]">{t.lang}</span>
-                  </td>
-                  <td className="py-2.5 font-mono text-[11px] text-fg-muted">{t.channel}</td>
-                  <td
-                    className="py-2.5 text-xs text-fg-muted truncate"
+                <TableRow key={i} className="border-b border-border">
+                  <TableCell className="font-mono text-caption">{t.key}</TableCell>
+                  <TableCell>
+                    <Pill tone="neutral">{t.lang}</Pill>
+                  </TableCell>
+                  <TableCell className="font-mono text-caption text-fg-muted">{t.channel}</TableCell>
+                  <TableCell
+                    className="py-2.5 text-caption text-fg-muted truncate"
                     style={{ maxWidth: '320px' }}
                   >
                     {t.body}
-                  </td>
-                  <td className="py-2.5">
-                    <span
-                      className={`pill text-[10px] ${
-                        t.status === 'approved' ? 'pill-ok' : 'pill-warn'
-                      }`}
-                    >
-                      {t.status}
-                    </span>
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell>
+                    <Pill tone={t.status === 'approved' ? 'ok' : 'warn'}>{t.status === 'approved' ? 'Aprobada' : legible(t.status)}</Pill>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

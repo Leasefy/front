@@ -2,12 +2,28 @@
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import {
+  Buildings,
+  ChatCircleText,
+  CurrencyCircleDollar,
+  HandCoins,
+  PhoneCall,
+  ShieldCheck,
+  UserSwitch,
+  Users,
+  Wallet,
+} from '@phosphor-icons/react'
+import { MonoLabel } from '@leasefy/cadence'
 import { adminApi, ApiError } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtDateTime, fmtDuration } from '@/lib/admin/format'
+import { legible, metricaDeLaInmobiliaria, resultadoDeLaLlamada, tonoDelResultado } from '@/lib/admin/textos-del-admin'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
+import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
+import { PageHeader } from '@/components/admin/screen/PageHeader'
+import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { Pill } from '@/components/admin/Pill'
+import { BackButton } from '@/components/ui/back-button'
 import { NitDeLaInmobiliaria } from '@/components/admin/NitDeLaInmobiliaria'
 // DIAN-FEEL (04-10-2026): la inmobiliaria como facturador de la cuenta de FEEL de Leasefy.
 import { FacturadorFeelDeLaInmobiliaria } from '@/components/admin/FacturadorFeelDeLaInmobiliaria'
@@ -58,15 +74,16 @@ interface TenantDetail {
 /** Counters whose value is a COP amount (the rest are plain counts). */
 const MONEY_COUNTERS = new Set(['paid_total'])
 
-// ---------- Sub-components ----------
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="px-4 py-2.5 flex items-center justify-between text-sm">
-      <span className="text-fg-muted">{label}</span>
-      <span className="tabular-nums font-mono text-fg">{children}</span>
-    </div>
-  )
+/** El ícono de cada métrica (neutro: son cifras, no botones). */
+const ICONO_DE_LA_METRICA: Record<string, React.ReactNode> = {
+  debtors_count: <Users />,
+  calls_count: <PhoneCall />,
+  calls_30d: <ChatCircleText />,
+  open_promises_count: <HandCoins />,
+  paid_total: <CurrencyCircleDollar />,
+  open_escalations_count: <UserSwitch />,
+  compliance_events_count: <ShieldCheck />,
+  cartera_atrasada_count: <Wallet />,
 }
 
 // ---------- Page ----------
@@ -76,31 +93,28 @@ export default function TenantDetailPage() {
   const params = useParams<{ tenantId: string }>()
   const tenantId = params.tenantId
 
-  const { data, isLoading, error } = useApiQuery<TenantDetail>(
+  const { data, isLoading, error, refetch } = useApiQuery<TenantDetail>(
     (signal) => adminApi(`/tenants/${tenantId}`, { signal }),
     [tenantId],
   )
 
-  if (isLoading) return <div className="p-6 lg:p-8"><LoadingBlock /></div>
+  if (isLoading) return <div className="space-y-6 p-6 lg:p-8"><LoadingBlock filas={8} /></div>
 
-  // 404 — agency not found
+  // 404 — la inmobiliaria no existe
   if (error instanceof ApiError && error.status === 404) {
     return (
-      <div className="p-6 lg:p-8">
-        <div className="card p-8 text-center">
-          <p className="text-sm font-medium text-fg">Agencia no encontrada</p>
-          <p className="text-xs text-fg-muted mt-1">
-            El tenant <span className="font-mono">{tenantId}</span> no existe en la base.
-          </p>
-          <Link href="/admin/tenants" className="btn mt-4 inline-flex">
-            ← Volver a Inmobiliarias
-          </Link>
-        </div>
+      <div className="space-y-6 p-6 lg:p-8">
+        <BackButton href="/admin/tenants" label="Volver a inmobiliarias" />
+        <EmptyBlock
+          icono={<Buildings weight="bold" />}
+          title="No encontramos esta inmobiliaria"
+          hint={`No hay ninguna con el id ${tenantId}.`}
+        />
       </div>
     )
   }
 
-  if (error) return <div className="p-6 lg:p-8"><ErrorBlock error={error} /></div>
+  if (error) return <div className="space-y-6 p-6 lg:p-8"><ErrorBlock error={error} onReintentar={refetch} /></div>
   if (!data) return null
 
   const callColumns: Column<RecentCall>[] = [
@@ -109,7 +123,7 @@ export default function TenantDetailPage() {
       cell: (r) => (
         <Link
           href={`/admin/calls/${r.id}`}
-          className="text-fg hover:text-brand transition-colors"
+          className="font-medium text-fg underline-offset-4 transition-colors hover:text-primary hover:underline"
           onClick={(e) => e.stopPropagation()}
         >
           {r.debtor_name}
@@ -117,27 +131,19 @@ export default function TenantDetailPage() {
       ),
     },
     {
-      header: 'Outcome',
-      cell: (r) => (
-        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-muted">
-          {r.outcome ?? '—'}
-        </span>
-      ),
+      header: 'Resultado',
+      cell: (r) => <Pill tone={tonoDelResultado(r.outcome)}>{resultadoDeLaLlamada(r.outcome)}</Pill>,
     },
     {
       header: 'Duración',
       align: 'right',
-      cell: (r) => (
-        <span className="tabular-nums text-xs text-fg-muted">
-          {fmtDuration(r.duration_seconds)}
-        </span>
-      ),
+      cell: (r) => <span className="font-mono tabular-nums text-fg-muted">{fmtDuration(r.duration_seconds)}</span>,
     },
     {
-      header: 'Inicio',
+      header: 'Cuándo',
       align: 'right',
       cell: (r) => (
-        <span className="whitespace-nowrap text-xs text-fg-subtle tabular-nums">
+        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-subtle">
           {fmtDateTime(r.initiated_at)}
         </span>
       ),
@@ -147,15 +153,13 @@ export default function TenantDetailPage() {
   const eventColumns: Column<RecentEvent>[] = [
     {
       header: 'Evento',
-      cell: (r) => (
-        <span className="font-mono text-xs text-fg">{r.event_type}</span>
-      ),
+      cell: (r) => <span className="text-fg">{legible(r.event_type)}</span>,
     },
     {
       header: 'Cuándo',
       align: 'right',
       cell: (r) => (
-        <span className="whitespace-nowrap text-xs text-fg-subtle tabular-nums">
+        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-subtle">
           {fmtDateTime(r.timestamp)}
         </span>
       ),
@@ -163,78 +167,60 @@ export default function TenantDetailPage() {
   ]
 
   return (
-    <div className="p-6 lg:p-8 max-w-5xl space-y-8">
-      {/* Back + header */}
-      <div>
-        <Link
-          href="/admin/tenants"
-          className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle hover:text-fg"
-        >
-          ← Inmobiliarias
-        </Link>
-        <h1 className="font-display text-display tracking-tight text-fg mt-2">
-          {data.agency.legal_name}
-        </h1>
-        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 font-mono text-[11px] text-fg-muted">
-          {/* El NIT vive en la tarjeta de abajo (el de Leasefy y el del micro):
-              acá quedaría viejo después de corregirlo. */}
-          <span>
-            <span className="text-fg-subtle">email:</span> {data.agency.primary_contact_email}
+    <div className="space-y-6 p-6 lg:p-8">
+      <BackButton href="/admin/tenants" label="Volver a inmobiliarias" />
+      <PageHeader
+        title={data.agency.legal_name}
+        description={
+          // El NIT vive en su tarjeta (la de Leasefy y la del micro): acá quedaría
+          // viejo después de corregirlo.
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span>{data.agency.primary_contact_email}</span>
+            {data.agency.primary_contact_phone ? (
+              <span className="font-mono tabular-nums">{data.agency.primary_contact_phone}</span>
+            ) : null}
+            <Pill tone="neutral">{legible(data.agency.billing_model)}</Pill>
           </span>
-          {data.agency.primary_contact_phone && (
-            <span>
-              <span className="text-fg-subtle">tel:</span> {data.agency.primary_contact_phone}
-            </span>
-          )}
-          <Pill tone="neutral">{data.agency.billing_model}</Pill>
-        </div>
-      </div>
+        }
+      />
 
-      {/* El NIT del back (la fuente) y su corrección: el de arriba es la copia
-          que tiene el micro de agentes. */}
+      {/* Las ocho cifras de la inmobiliaria. */}
+      <section aria-label="Métricas" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {data.counters.map((c) => (
+          <KpiCard
+            key={c.label}
+            label={metricaDeLaInmobiliaria(c.label)}
+            value={MONEY_COUNTERS.has(c.label) ? fmtCOP(Number(c.value)) : Number(c.value)}
+            icon={ICONO_DE_LA_METRICA[c.label]}
+          />
+        ))}
+      </section>
+
+      {/* El NIT del back (la fuente) y su corrección. */}
       <NitDeLaInmobiliaria tenantId={tenantId} />
 
       <FacturadorFeelDeLaInmobiliaria tenantId={tenantId} />
 
-      {/* 8-metric counters list */}
-      <section>
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-          métricas
-        </div>
-        <div className="card divide-y divide-bg-border">
-          {data.counters.map((c) => (
-            <Field key={c.label} label={c.label}>
-              {MONEY_COUNTERS.has(c.label)
-                ? fmtCOP(Number(c.value))
-                : c.value}
-            </Field>
-          ))}
-        </div>
-      </section>
-
-      {/* Recent calls + events */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <section>
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-            últimas llamadas
-          </div>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <section className="space-y-3">
+          <MonoLabel className="block">Últimas llamadas</MonoLabel>
           <DataTable
             columns={callColumns}
             rows={data.recentCalls}
             getKey={(r) => r.id}
-            emptyTitle="Sin llamadas"
+            emptyTitle="Todavía no hay llamadas"
+            aria-label="Últimas llamadas"
           />
         </section>
 
-        <section>
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-            eventos compliance recientes
-          </div>
+        <section className="space-y-3">
+          <MonoLabel className="block">Eventos de cumplimiento recientes</MonoLabel>
           <DataTable
             columns={eventColumns}
             rows={data.recentEvents}
             getKey={(r) => r.id}
-            emptyTitle="Sin eventos"
+            emptyTitle="Sin eventos todavía"
+            aria-label="Eventos de cumplimiento"
           />
         </section>
       </div>

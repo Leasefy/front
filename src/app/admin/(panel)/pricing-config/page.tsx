@@ -12,6 +12,8 @@ import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { Pill } from '@/components/admin/Pill'
 import { EditarModeloDeCobro } from '@/components/admin/EditarModeloDeCobro'
 import { NOMBRE_DEL_MODELO, fraccionAPorcentaje, type ModeloDeCobro } from '@/lib/admin/modelo-de-cobro'
+import { MonoLabel } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
 
 const PAGE_SIZE = 50
 import type { PillTone } from '@/lib/admin/types'
@@ -162,7 +164,7 @@ export default function PricingConfigPage() {
       header: 'Success %',
       align: 'right',
       cell: (r) => (
-        <span className="tabular-nums font-mono text-xs">
+        <span className="tabular-nums font-mono text-caption">
           {pct(r.success_fee_pct)}
         </span>
       ),
@@ -171,7 +173,7 @@ export default function PricingConfigPage() {
       header: 'Min mes',
       align: 'right',
       cell: (r) => (
-        <span className="tabular-nums font-mono text-xs">
+        <span className="tabular-nums font-mono text-caption">
           {r.monthly_min ? fmtCOP(num(r.monthly_min)) : '—'}
         </span>
       ),
@@ -180,7 +182,7 @@ export default function PricingConfigPage() {
       header: 'Per deudor',
       align: 'right',
       cell: (r) => (
-        <span className="tabular-nums font-mono text-xs">
+        <span className="tabular-nums font-mono text-caption">
           {r.per_deudor ? fmtCOP(num(r.per_deudor)) : '—'}
         </span>
       ),
@@ -189,7 +191,7 @@ export default function PricingConfigPage() {
       header: 'Base hybrid',
       align: 'right',
       cell: (r) => (
-        <span className="tabular-nums font-mono text-xs">
+        <span className="tabular-nums font-mono text-caption">
           {r.base_fee ? fmtCOP(num(r.base_fee)) : '—'}
         </span>
       ),
@@ -198,7 +200,7 @@ export default function PricingConfigPage() {
       header: 'Hybrid %',
       align: 'right',
       cell: (r) => (
-        <span className="tabular-nums font-mono text-xs">
+        <span className="tabular-nums font-mono text-caption">
           {pct(r.hybrid_pct)}
         </span>
       ),
@@ -207,7 +209,7 @@ export default function PricingConfigPage() {
       header: 'Recaudo 30d',
       align: 'right',
       cell: (r) => (
-        <span className="tabular-nums font-mono text-xs text-ok">
+        <span className="tabular-nums font-mono text-caption text-success">
           {r.recovered_30d ? fmtCOP(num(r.recovered_30d)) : '—'}
         </span>
       ),
@@ -219,7 +221,7 @@ export default function PricingConfigPage() {
         const proj = projectMonthlyFee(r)
         return proj.value != null ? (
           <div title={proj.formula}>
-            <div className="tabular-nums font-mono text-xs text-brand">
+            <div className="tabular-nums font-mono text-caption text-primary">
               {fmtCOP(proj.value)}
             </div>
             <div
@@ -230,7 +232,7 @@ export default function PricingConfigPage() {
             </div>
           </div>
         ) : (
-          <span className="text-xs text-fg-subtle">—</span>
+          <span className="text-caption text-fg-subtle">—</span>
         )
       },
     },
@@ -239,27 +241,25 @@ export default function PricingConfigPage() {
       align: 'right',
       cell: (r) =>
         r.billing_model ? (
-          <button
-            type="button"
-            className="btn"
+          <Button variant="outline" hideArrow type="button"
+            
             onClick={() => setEditando(r)}
             data-testid={`editar-modelo-${r.tenant_id}`}
           >
             Cambiar
-          </button>
+          </Button>
         ) : null,
     },
   ]
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="26 · pricing"
-        title="Modelo de pricing por agencia"
+        title="Precios"
         description="Cómo le cobra Leasefy a cada inmobiliaria. Sólo Leasefy lo cambia (la inmobiliaria lo ve en sólo lectura); cada cambio queda en el registro con quién, cuándo y de qué a qué. Proyección calculada en el navegador."
       />
 
-      <div className="grid grid-cols-5 gap-3 mb-8">
+      <div className="grid grid-cols-5 gap-3">
         <KpiCard label="Total agencias"  value={rows?.length ?? 0} />
         <KpiCard label="Standard"        value={byModel.standard} />
         <KpiCard label="Performance"     value={byModel.performance} tone="ok" />
@@ -283,10 +283,10 @@ export default function PricingConfigPage() {
       <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />
 
       {rows && rows.length > 0 && (
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle text-right mt-3">
+        <MonoLabel className="block text-right mt-3">
           Proyección total mes:{' '}
-          <span className="text-brand">{fmtCOP(totalProjected)}</span>
-        </div>
+          <span className="text-primary">{fmtCOP(totalProjected)}</span>
+        </MonoLabel>
       )}
 
       {editando && (

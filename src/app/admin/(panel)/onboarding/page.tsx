@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import type { PillTone } from '@/lib/admin/types'
+import { MonoLabel } from '@leasefy/cadence'
 
 // ── Types co-located with the screen (BACK.md §8.23 · FRONT.md §6.27) ─────────
 
@@ -68,7 +69,7 @@ export default function OnboardingPage() {
     {
       header: 'Inició',
       cell: (r) => (
-        <span className="font-mono text-xs tabular-nums text-fg-muted">
+        <span className="font-mono text-caption tabular-nums text-fg-muted">
           {fmtDateTime(r.created_at)}
         </span>
       ),
@@ -76,7 +77,7 @@ export default function OnboardingPage() {
     {
       header: 'Expira',
       cell: (r) => (
-        <span className="font-mono text-xs tabular-nums text-fg-muted">
+        <span className="font-mono text-caption tabular-nums text-fg-muted">
           {fmtDateTime(r.expires_at)}
         </span>
       ),
@@ -91,7 +92,7 @@ export default function OnboardingPage() {
     {
       header: 'Alta',
       cell: (r) => (
-        <span className="font-mono text-xs tabular-nums text-fg-muted">
+        <span className="font-mono text-caption tabular-nums text-fg-muted">
           {fmtDateTime(r.created_at)}
         </span>
       ),
@@ -100,7 +101,7 @@ export default function OnboardingPage() {
       header: 'Primera llamada',
       cell: (r) =>
         r.first_call ? (
-          <span className="font-mono text-xs tabular-nums">{fmtDateTime(r.first_call)}</span>
+          <span className="font-mono text-caption tabular-nums">{fmtDateTime(r.first_call)}</span>
         ) : (
           <span className="text-fg-subtle">—</span>
         ),
@@ -109,7 +110,7 @@ export default function OnboardingPage() {
       header: 'Primer pago',
       cell: (r) =>
         r.first_payment ? (
-          <span className="font-mono text-xs tabular-nums">{fmtDateTime(r.first_payment)}</span>
+          <span className="font-mono text-caption tabular-nums">{fmtDateTime(r.first_payment)}</span>
         ) : (
           <span className="text-fg-subtle">—</span>
         ),
@@ -124,17 +125,16 @@ export default function OnboardingPage() {
   ]
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="20 · onboarding"
-        title="Pipeline nuevas inmobiliarias"
+        title="Onboarding"
         description="Sesiones en proceso + últimas 30 agencias en el funnel: configurada → primera llamada → primer pago."
       />
 
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         en proceso · onboarding_sessions activas
-      </div>
-      <div className="mb-8">
+      </MonoLabel>
+      <div className="">
         <DataTable
           columns={inflightColumns}
           rows={data?.inFlight}
@@ -145,9 +145,9 @@ export default function OnboardingPage() {
         />
       </div>
 
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         funnel · primer call / primer pago (últimas 30 agencias)
-      </div>
+      </MonoLabel>
       <DataTable
         columns={liveColumns}
         rows={data?.liveAgencies}

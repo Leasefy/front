@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { DownloadSimple, ShieldCheck, X } from '@phosphor-icons/react'
+import { Alert } from '@leasefy/cadence'
 import { adminApi, adminApiUrl } from '@/lib/admin/api'
 import { getSupabase } from '@/lib/supabase/client'
 import { useApiQuery } from '@/lib/admin/use-api-query'
@@ -11,6 +13,10 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pagination } from '@/components/admin/screen/Pagination'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
+import { legible } from '@/lib/admin/textos-del-admin'
+import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
+import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
+import { Button } from '@/components/ui/button'
 
 const PAGE_SIZE = 100
 
@@ -65,7 +71,7 @@ export default function AuditsPage() {
     try {
       const sb = getSupabase()
       const token = sb ? (await sb.auth.getSession()).data.session?.access_token : null
-      if (!token) throw new Error('Sesión expirada — vuelve a iniciar sesión.')
+      if (!token) throw new Error('Tu sesión venció: vuelve a entrar.')
       const exportUrl = adminApiUrl('/audits/export.csv', {
         type:   type   || undefined,
         tenant: tenant || undefined,
@@ -78,7 +84,7 @@ export default function AuditsPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `audits-${new Date().toISOString().slice(0, 10)}.csv`
+      a.download = `auditoria-${new Date().toISOString().slice(0, 10)}.csv`
       document.body.appendChild(a)
       a.click()
       a.remove()
@@ -94,50 +100,38 @@ export default function AuditsPage() {
 
   const columns: Column<EventRow>[] = [
     {
-      header: 'Timestamp',
+      header: 'Cuándo',
       cell: (r) => (
-        <span className="whitespace-nowrap tabular-nums text-fg-muted text-xs font-mono">
-          {fmtDateTime(r.timestamp)}
+        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.timestamp)}</span>
+      ),
+    },
+    {
+      header: 'Evento',
+      cell: (r) => (
+        <span className="text-fg" title={r.event_type}>
+          {legible(r.event_type)}
         </span>
       ),
     },
     {
-      header: 'Tipo evento',
-      cell: (r) => (
-        <span className="font-mono text-xs text-fg">{r.event_type}</span>
-      ),
-    },
-    {
-      header: 'Agencia',
-      cell: (r) => (
-        <span className="truncate block max-w-[160px] text-xs text-fg-muted">{r.legal_name ?? '—'}</span>
-      ),
+      header: 'Inmobiliaria',
+      cell: (r) => <span className="block max-w-[180px] truncate text-fg-muted">{r.legal_name ?? '—'}</span>,
     },
     {
       header: 'Deudor',
-      cell: (r) => (
-        <span className="truncate block max-w-[160px] text-xs">{r.debtor_name ?? '—'}</span>
-      ),
+      cell: (r) => <span className="block max-w-[180px] truncate">{r.debtor_name ?? '—'}</span>,
     },
     {
       header: 'Canal',
-      cell: (r) => (
-        <span className="font-mono text-[10px] uppercase tracking-mono-label text-fg-muted">
-          {r.channel ?? '—'}
-        </span>
-      ),
+      cell: (r) => <span className="text-fg-muted">{r.channel ? legible(r.channel) : '—'}</span>,
     },
     {
       header: 'Detalles',
       cell: (r) => {
         const full = r.details ? JSON.stringify(r.details) : null
-        const truncated = full ? full.slice(0, 120) : '—'
         return (
-          <span
-            className="text-xs text-fg-muted font-mono max-w-[420px] truncate block"
-            title={full ?? undefined}
-          >
-            {truncated}
+          <span className="block max-w-[420px] truncate font-mono text-caption text-fg-muted" title={full ?? undefined}>
+            {full ? full.slice(0, 120) : '—'}
           </span>
         )
       },
@@ -145,83 +139,19 @@ export default function AuditsPage() {
   ]
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="04 · auditoría"
         title="Auditoría"
-        description="Eventos de compliance — Habeas Data, Ley 2300, identity y guardrails. Exportable a CSV (máx 50k filas)."
+        description="Los eventos de cumplimiento: Habeas Data, Ley 2300, identidad y barandas de los agentes. Se descargan en CSV (hasta 50.000 filas)."
         right={
-          <button type="button" className="btn" onClick={onExport} disabled={exporting}>
-            {exporting ? 'Descargando…' : 'Export CSV →'}
-          </button>
+          <Button variant="outline" hideArrow onClick={onExport} disabled={exporting} isLoading={exporting}>
+            <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+            {exporting ? 'Descargando…' : 'Descargar CSV'}
+          </Button>
         }
       />
 
-      {exportError && (
-        <div className="card p-3 border-bad/40 mb-4">
-          <p className="text-sm text-bad">{exportError}</p>
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-end gap-3 mb-4">
-        <label className="block">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">tipo evento</span>
-          <select
-            className="input w-56"
-            value={type}
-            onChange={(e) => setFilters({ type: e.target.value }, { resetPage: true })}
-          >
-            <option value="">— todos —</option>
-            {(facets.data?.eventTypes ?? []).map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">inmobiliaria</span>
-          <select
-            className="input w-56"
-            value={tenant}
-            onChange={(e) => setFilters({ tenant: e.target.value }, { resetPage: true })}
-          >
-            <option value="">— todas —</option>
-            {(facets.data?.tenants ?? []).map((t) => (
-              <option key={t.tenant_id} value={t.tenant_id}>
-                {t.legal_name ?? t.tenant_id}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">desde</span>
-          <input
-            type="date"
-            className="input w-40"
-            value={from}
-            onChange={(e) => setFilters({ from: e.target.value }, { resetPage: true })}
-          />
-        </label>
-        <label className="block">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-mono-label text-fg-subtle">hasta</span>
-          <input
-            type="date"
-            className="input w-40"
-            value={to}
-            onChange={(e) => setFilters({ to: e.target.value }, { resetPage: true })}
-          />
-        </label>
-        {hasFilters && (
-          <button
-            className="btn"
-            onClick={() => setFilters({ type: '', tenant: '', from: '', to: '' }, { resetPage: true })}
-          >
-            × limpiar
-          </button>
-        )}
-      </div>
+      {exportError && <Alert variant="danger">{exportError}</Alert>}
 
       <DataTable
         columns={columns}
@@ -229,13 +159,51 @@ export default function AuditsPage() {
         getKey={(r) => r.id}
         isLoading={events.isLoading}
         error={events.error}
-        emptyTitle="Sin eventos"
-        emptyHint="Ajusta los filtros."
+        onReintentar={events.refetch}
+        emptyTitle="No hay eventos con estos filtros"
+        emptyHint="Prueba con otro tipo, otra inmobiliaria u otras fechas."
+        emptyIcon={<ShieldCheck weight="bold" />}
+        aria-label="Eventos de cumplimiento"
+        barra={
+          <BarraDeFiltros>
+            <Filtro etiqueta="Tipo de evento" htmlFor="filtro-tipo">
+              <Desplegable
+                id="filtro-tipo"
+                value={type}
+                onChange={(v) => setFilters({ type: v }, { resetPage: true })}
+                todas="Todos los eventos"
+                opciones={(facets.data?.eventTypes ?? []).map((t) => ({ valor: t, nombre: legible(t) }))}
+              />
+            </Filtro>
+            <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria">
+              <Desplegable
+                id="filtro-inmobiliaria"
+                value={tenant}
+                onChange={(v) => setFilters({ tenant: v }, { resetPage: true })}
+                todas="Todas las inmobiliarias"
+                opciones={(facets.data?.tenants ?? []).map((t) => ({ valor: t.tenant_id, nombre: t.legal_name ?? t.tenant_id }))}
+              />
+            </Filtro>
+            <Filtro etiqueta="Desde" htmlFor="filtro-desde" className="sm:w-44">
+              <CampoDeFecha id="filtro-desde" value={from} onChange={(v) => setFilters({ from: v }, { resetPage: true })} />
+            </Filtro>
+            <Filtro etiqueta="Hasta" htmlFor="filtro-hasta" className="sm:w-44">
+              <CampoDeFecha id="filtro-hasta" value={to} onChange={(v) => setFilters({ to: v }, { resetPage: true })} />
+            </Filtro>
+            {hasFilters ? (
+              <Button
+                variant="ghost"
+                hideArrow
+                onClick={() => setFilters({ type: '', tenant: '', from: '', to: '' }, { resetPage: true })}
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+                Quitar los filtros
+              </Button>
+            ) : null}
+          </BarraDeFiltros>
+        }
+        pie={events.data ? <Pagination page={page} total={events.data.total} pageSize={PAGE_SIZE} onPage={setPage} /> : null}
       />
-
-      {events.data && (
-        <Pagination page={page} total={events.data.total} pageSize={PAGE_SIZE} onPage={setPage} />
-      )}
     </div>
   )
 }

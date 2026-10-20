@@ -1,15 +1,29 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { ArrowCounterClockwise, CheckCircle, Phone, Scales } from '@phosphor-icons/react'
+import {
+  Alert,
+  CodeBlock,
+  KeyValueList,
+  MonoLabel,
+  Presence,
+  RadioCard,
+  RadioCardGroup,
+} from '@leasefy/cadence'
 import { adminApi, ApiError } from '@/lib/admin/api'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
+import { resultadoDeLaRevision, tipoDeDecision } from '@/lib/admin/textos-del-admin'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
-import { Pill } from '@/components/admin/Pill'
-import type { PillTone } from '@/lib/admin/types'
+import { PageHeader } from '@/components/admin/screen/PageHeader'
+import { Tarjeta } from '@/components/admin/screen/Tarjeta'
+import { BackButton } from '@/components/ui/back-button'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 
 interface RecentCall {
   id: string
@@ -41,59 +55,40 @@ interface ApprovalDetail {
   calls: RecentCall[]
 }
 
-function Meta({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string
-  value: string
-  mono?: boolean
-}) {
-  return (
-    <div className="mb-2 last:mb-0">
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">{label}</div>
-      <div className={`text-sm text-fg mt-0.5 ${mono ? 'font-mono tabular-nums' : ''}`}>{value}</div>
-    </div>
-  )
-}
-
-function JsonBlock({ label, value }: { label: string; value: unknown }) {
-  if (value == null) return null
-  return (
-    <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-1">{label}</div>
-      <pre className="card p-3 text-[11px] leading-relaxed text-fg-muted overflow-x-auto font-mono">
-        {JSON.stringify(value, null, 2)}
-      </pre>
-    </div>
-  )
-}
-
 type Outcome = 'upheld' | 'overridden' | 'escalated'
 
-const OUTCOME_LABELS: Record<Outcome, string> = {
-  upheld: '✓ Aprobar (upheld)',
-  overridden: '↺ Override (modificar payload)',
-  escalated: '⚠ Escalar a abogado',
-}
-
-const OUTCOME_ACTIVE_CLASS: Record<Outcome, string> = {
-  upheld: 'bg-ok text-white border-ok',
-  overridden: 'bg-warn text-white border-warn',
-  escalated: 'bg-bad text-white border-bad',
-}
+/** Las tres salidas, con su porqué. */
+const SALIDAS: Array<{ valor: Outcome; titulo: string; detalle: string; icono: React.ReactNode }> = [
+  {
+    valor: 'upheld',
+    titulo: 'Aprobar',
+    detalle: 'El agente la ejecuta tal como la propuso.',
+    icono: <CheckCircle className="h-5 w-5 text-success" weight="fill" aria-hidden="true" />,
+  },
+  {
+    valor: 'overridden',
+    titulo: 'Modificar',
+    detalle: 'No se ejecuta así: escribe qué cambiarías y por qué.',
+    icono: <ArrowCounterClockwise className="h-5 w-5 text-warning" weight="bold" aria-hidden="true" />,
+  },
+  {
+    valor: 'escalated',
+    titulo: 'Escalar a un abogado',
+    detalle: 'Necesita revisión legal antes de cualquier paso.',
+    icono: <Scales className="h-5 w-5 text-danger" weight="fill" aria-hidden="true" />,
+  },
+]
 
 const NOTES_PLACEHOLDER: Record<Outcome, string> = {
-  upheld: 'Confirmación de revisión (opcional)',
-  overridden: 'Explica qué del payload modificarías y por qué',
-  escalated: 'Razón de la escalación legal',
+  upheld: 'Una nota de la revisión (opcional)',
+  overridden: 'Qué cambiarías de la propuesta y por qué',
+  escalated: 'Por qué necesita un abogado',
 }
 
-const reviewOutcomeTone: Record<string, PillTone> = {
-  upheld: 'ok',
-  overridden: 'warn',
-  escalated: 'bad',
+const VARIANTE_DE_LA_REVISION: Record<string, 'success' | 'warning' | 'danger'> = {
+  upheld: 'success',
+  overridden: 'warning',
+  escalated: 'danger',
 }
 
 /** /admin/approvals/:id — decision detail + action (FRONT.md §6.12 · BACK.md §8.10). */
@@ -110,8 +105,8 @@ export default function ApprovalDetailPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  if (isLoading) return <div className="p-6 lg:p-8"><LoadingBlock /></div>
-  if (error) return <div className="p-6 lg:p-8"><ErrorBlock error={error} /></div>
+  if (isLoading) return <div className="space-y-6 p-6 lg:p-8"><LoadingBlock filas={6} /></div>
+  if (error) return <div className="space-y-6 p-6 lg:p-8"><ErrorBlock error={error} onReintentar={refetch} /></div>
   if (!data) return null
 
   const pending = data.reviewable && !data.reviewed_at
@@ -135,7 +130,7 @@ export default function ApprovalDetailPage() {
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         // Concurrency guard: someone else reviewed it first
-        setSubmitError('Esta decisión ya fue revisada por otro admin. Actualizando…')
+        setSubmitError('Otra persona del equipo ya la revisó. Te mostramos cómo quedó.')
         refetch()
       } else {
         setSubmitError(mensajeDelAdmin(err, { accion: 'registrar la decisión' }))
@@ -146,189 +141,174 @@ export default function ApprovalDetailPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-5xl space-y-6">
-      {/* Header */}
-      <div>
-        <Link
-          href="/admin/approvals"
-          className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle hover:text-fg"
-        >
-          ← Cola
-        </Link>
-        <h1 className="font-display text-display tracking-tight text-fg mt-2">
-          {pending ? 'Revisar y decidir.' : `Revisado · ${data.review_outcome ?? '—'}`}
-        </h1>
-        <p className="text-sm text-fg-muted mt-1">
-          {data.legal_name ?? '(sin agencia)'} · deudor{' '}
-          <span className="font-mono">{data.debtor_name ?? '—'}</span>
-          {data.document_number ? ` · CC ${data.document_number}` : ''}
-        </p>
-      </div>
+    <div className="space-y-6 p-6 lg:p-8">
+      <BackButton href="/admin/approvals" label="Volver a aprobaciones" />
+      <PageHeader
+        title={pending ? 'Revisa y decide' : `Revisada · ${resultadoDeLaRevision(data.review_outcome)}`}
+        description={
+          <>
+            {data.legal_name ?? 'Sin inmobiliaria'} · {data.debtor_name ?? 'Deudor sin nombre'}
+            {data.document_number ? (
+              <>
+                {' '}· CC <span className="font-mono tabular-nums">{data.document_number}</span>
+              </>
+            ) : null}
+          </>
+        }
+      />
 
-      {/* Already-reviewed banner */}
       {!pending && (
-        <div
-          className={
-            'card p-4 border-l-4 ' +
-            (data.review_outcome === 'upheld'
-              ? 'border-l-ok'
-              : data.review_outcome === 'overridden'
-                ? 'border-l-warn'
-                : 'border-l-fg-dim')
-          }
+        <Alert
+          variant={VARIANTE_DE_LA_REVISION[data.review_outcome ?? ''] ?? 'info'}
+          title={`Ya revisada: ${resultadoDeLaRevision(data.review_outcome).toLowerCase()}`}
         >
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-            ya revisado
-          </div>
-          <div className="text-sm text-fg mt-1">
-            <Pill tone={reviewOutcomeTone[data.review_outcome ?? ''] ?? 'neutral'}>
-              {data.review_outcome ?? '—'}
-            </Pill>{' '}
-            por{' '}
-            <span className="font-mono">{data.reviewed_by ?? '?'}</span>
-            {data.reviewed_at ? ` · ${fmtDateTime(data.reviewed_at)}` : ''}
-          </div>
-        </div>
+          Por <span className="font-mono">{data.reviewed_by ?? 'alguien del equipo'}</span>
+          {data.reviewed_at ? ` · ${fmtDateTime(data.reviewed_at)}` : ''}
+        </Alert>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Decision details */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="card p-5">
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-              decisión propuesta por el agente
-            </div>
-            <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-bg-border">
-              <Meta label="tipo" value={data.decision_type} />
-              <Meta label="modelo" value={data.model_used} />
-              <Meta
-                label="confianza"
-                value={
-                  data.confidence_score != null
-                    ? `${(Number(data.confidence_score) * 100).toFixed(1)}%`
-                    : '—'
-                }
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Tarjeta titulo="Lo que propone el agente" className="lg:col-span-2">
+          <div className="space-y-5">
+            <KeyValueList
+              items={[
+                { label: 'Tipo', value: tipoDeDecision(data.decision_type) },
+                { label: 'Modelo', value: <span className="font-mono">{data.model_used}</span> },
+                {
+                  label: 'Confianza',
+                  value: (
+                    <span className="font-mono tabular-nums">
+                      {data.confidence_score != null
+                        ? `${(Number(data.confidence_score) * 100).toLocaleString('es-CO', { maximumFractionDigits: 1 })} %`
+                        : '—'}
+                    </span>
+                  ),
+                },
+                { label: 'Creada', value: <span className="font-mono tabular-nums">{fmtDateTime(data.created_at)}</span> },
+              ]}
+            />
+            <CodeBlock language="json" filename="Propuesta" code={JSON.stringify(data.decision_payload ?? {}, null, 2)} />
+            {data.human_override_payload ? (
+              <CodeBlock
+                language="json"
+                filename="Lo que se cambió"
+                code={JSON.stringify(data.human_override_payload, null, 2)}
               />
-              <Meta label="creada" value={fmtDateTime(data.created_at)} />
-            </div>
-            <JsonBlock label="payload" value={data.decision_payload} />
-            {data.human_override_payload && (
-              <div className="mt-4">
-                <JsonBlock label="override aplicado" value={data.human_override_payload} />
-              </div>
-            )}
+            ) : null}
           </div>
-        </div>
+        </Tarjeta>
 
-        {/* Debtor context + last calls */}
-        <div className="card p-5">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-            contexto del deudor
-          </div>
-          <Meta label="nombre" value={data.debtor_name ?? '—'} />
-          <Meta label="cédula" value={data.document_number ?? '—'} mono />
-          <Meta label="teléfono" value={data.phone_primary ?? '—'} mono />
-          <Meta label="email" value={data.debtor_email ?? '—'} mono />
-          <Meta label="agencia" value={data.legal_name ?? '—'} />
-
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mt-4 mb-2">
-            últimas 5 llamadas
-          </div>
-          {(data.calls ?? []).length === 0 ? (
-            <div className="text-xs text-fg-muted">Sin llamadas previas.</div>
-          ) : (
-            <div className="space-y-1.5">
-              {(data.calls ?? []).map((c) => (
-                <div key={c.id} className="flex items-baseline justify-between text-xs">
-                  <span className="text-fg-muted font-mono tabular-nums">
-                    {fmtDateTime(c.initiated_at)}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className="text-fg">{c.outcome ?? '—'}</span>
-                    {c.qa_score && (
-                      <span className="font-mono text-[10px] text-fg-subtle tabular-nums">
-                        qa {Number(c.qa_score).toFixed(0)}
+        <Tarjeta titulo="El deudor">
+          <div className="space-y-5">
+            <KeyValueList
+              compact
+              items={[
+                { label: 'Nombre', value: data.debtor_name ?? '—' },
+                { label: 'Cédula', value: <span className="font-mono tabular-nums">{data.document_number ?? '—'}</span> },
+                { label: 'Teléfono', value: <span className="font-mono tabular-nums">{data.phone_primary ?? '—'}</span> },
+                { label: 'Correo', value: <span className="break-all">{data.debtor_email ?? '—'}</span> },
+                { label: 'Inmobiliaria', value: data.legal_name ?? '—' },
+              ]}
+            />
+            <div className="space-y-2">
+              <MonoLabel className="block">Últimas 5 llamadas</MonoLabel>
+              {(data.calls ?? []).length === 0 ? (
+                <p className="text-body-sm text-fg-muted">Todavía no lo han llamado.</p>
+              ) : (
+                <ul className="divide-y divide-border-faint">
+                  {(data.calls ?? []).map((c) => (
+                    <li key={c.id} className="flex items-center justify-between gap-3 py-2 text-body-sm">
+                      <span className="flex items-center gap-2 text-fg-muted">
+                        <Phone className="h-4 w-4 shrink-0" aria-hidden="true" />
+                        <span className="font-mono tabular-nums">{fmtDateTime(c.initiated_at)}</span>
                       </span>
-                    )}
-                  </span>
-                </div>
-              ))}
+                      <span className="flex items-center gap-2">
+                        <span className="text-fg">{c.outcome ?? '—'}</span>
+                        {c.qa_score ? (
+                          <MonoLabel className="tabular-nums">Calidad {Number(c.qa_score).toFixed(0)}</MonoLabel>
+                        ) : null}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        </Tarjeta>
       </div>
 
-      {/* Action card — only shown while pending */}
       {pending && (
-        <div className="card p-5 border-t-4 border-t-brand">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-            acción
-          </div>
-
-          <div className="flex gap-2 mb-4 flex-wrap">
-            {(['upheld', 'overridden', 'escalated'] as Outcome[]).map((o) => (
-              <button
-                key={o}
-                type="button"
-                onClick={() => setMode(o)}
-                className={'btn ' + (mode === o ? OUTCOME_ACTIVE_CLASS[o] : '')}
-              >
-                {OUTCOME_LABELS[o]}
-              </button>
-            ))}
-          </div>
-
-          {mode && (
-            <>
-              <label className="block">
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-muted">
-                  notas (opcional — quedan en audit trail) · {notes.length} / 2000
-                </span>
-                <textarea
-                  className="textarea mt-2 min-h-[100px]"
-                  placeholder={NOTES_PLACEHOLDER[mode]}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+        <Tarjeta titulo="Tu decisión" descripcion="Queda en la bitácora de auditoría con tu correo y la hora.">
+          <div className="space-y-5">
+            <RadioCardGroup
+              value={mode ?? ''}
+              onValueChange={(v) => {
+                setMode(v as Outcome)
+                setSubmitError(null)
+              }}
+              className="grid gap-3 md:grid-cols-3"
+              aria-label="Qué hacer con la propuesta"
+            >
+              {SALIDAS.map((s) => (
+                <RadioCard
+                  key={s.valor}
+                  value={s.valor}
+                  label={
+                    <span className="flex items-center gap-2">
+                      {s.icono}
+                      {s.titulo}
+                    </span>
+                  }
+                  description={s.detalle}
                 />
-              </label>
+              ))}
+            </RadioCardGroup>
 
-              {notesTooLong && (
-                <p className="text-sm text-bad mt-1">
-                  Las notas no pueden superar 2 000 caracteres.
-                </p>
-              )}
-
-              {submitError && (
-                <div className="card p-3 border-bad/40 mt-3">
-                  <p className="text-sm text-bad">{submitError}</p>
+            <Presence show={mode !== null}>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <Label htmlFor="notas-de-la-revision">Notas</Label>
+                    <MonoLabel className={notesTooLong ? 'text-danger' : undefined}>
+                      {notes.length.toLocaleString('es-CO')} / 2.000
+                    </MonoLabel>
+                  </div>
+                  <Textarea
+                    id="notas-de-la-revision"
+                    className="min-h-[110px]"
+                    placeholder={mode ? NOTES_PLACEHOLDER[mode] : ''}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    aria-invalid={notesTooLong || undefined}
+                  />
+                  {notesTooLong ? (
+                    <p className="text-body-sm text-danger">Las notas no pueden pasar de 2.000 caracteres.</p>
+                  ) : null}
                 </div>
-              )}
 
-              <div className="flex gap-2 mt-4">
-                <button
-                  type="button"
-                  onClick={onSubmit}
-                  disabled={!canSubmit}
-                  className="btn btn-primary"
-                >
-                  {submitting ? 'Guardando…' : 'Confirmar'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode(null)
-                    setNotes('')
-                    setSubmitError(null)
-                  }}
-                  disabled={submitting}
-                  className="btn"
-                >
-                  Cancelar
-                </button>
+                {submitError ? <Alert variant="danger">{submitError}</Alert> : null}
+
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={onSubmit} disabled={!canSubmit} isLoading={submitting} hideArrow>
+                    {submitting ? 'Guardando…' : 'Confirmar la decisión'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    hideArrow
+                    onClick={() => {
+                      setMode(null)
+                      setNotes('')
+                      setSubmitError(null)
+                    }}
+                    disabled={submitting}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
               </div>
-            </>
-          )}
-        </div>
+            </Presence>
+          </div>
+        </Tarjeta>
       )}
     </div>
   )

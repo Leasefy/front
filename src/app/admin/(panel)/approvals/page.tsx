@@ -1,11 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { ArrowRight, SealCheck } from '@phosphor-icons/react'
+import { Card, Chip, MonoLabel, Stagger, StaggerItem } from '@leasefy/cadence'
+
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtDateTime } from '@/lib/admin/format'
+import { tipoDeDecision } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
@@ -29,78 +32,77 @@ interface ApprovalsResponse {
   facets: Array<{ decision_type: string; n: string }>
 }
 
+const pesos = (n: unknown) => (typeof n === 'number' ? `$ ${n.toLocaleString('es-CO')}` : '—')
+
 function summarizePayload(type: string, payload: Record<string, unknown>): string {
   switch (type) {
     case 'pre_judicial_letter':
-      return `Carta pre-jurídica armada · ${
-        (payload.debt_amount_cop as number | undefined)?.toLocaleString('es-CO') ?? '—'
-      } COP de deuda`
+      return `Carta prejurídica lista · deuda de ${pesos(payload.debt_amount_cop)}`
     case 'siniestro_filing':
-      return `Reclamo siniestro · aseguradora ${
-        (payload.insurer as string | undefined) ?? '?'
-      } · ${
-        (payload.debt_amount_cop as number | undefined)?.toLocaleString('es-CO') ?? '—'
-      } COP`
+      return `Reclamo a la aseguradora ${(payload.insurer as string | undefined) ?? '(sin nombre)'} · ${pesos(payload.debt_amount_cop)}`
     case 'legal_escalation':
-      return `Escalación legal · ${
-        (payload.target as string | undefined) ?? '?'
-      } (${(payload.reason as string | undefined) ?? '—'})`
+      return `Escalación legal a ${(payload.target as string | undefined) ?? '(sin destino)'} · ${
+        (payload.reason as string | undefined) ?? 'sin motivo'
+      }`
     default:
       return JSON.stringify(payload).slice(0, 200)
   }
 }
 
-function ageTone(createdAt: string): string {
-  const days = (Date.now() - new Date(createdAt).getTime()) / 86_400_000
-  if (days > 3) return 'border-l-bad'
-  if (days > 1) return 'border-l-warn'
-  return 'border-l-brand'
+/** Cuánto lleva esperando: más de 3 días es urgente, más de 1 hay que mirarla. */
+function tonoDeLaEspera(dias: number) {
+  if (dias > 3) return 'bad' as const
+  if (dias > 1) return 'warn' as const
+  return 'neutral' as const
+}
+
+/** «5 h», «1 día», «3,2 días». */
+function esperaEnPalabras(dias: number): string {
+  if (dias < 1) return `${Math.max(1, Math.round(dias * 24))} h`
+  const redondo = Math.round(dias * 10) / 10
+  return `${redondo.toLocaleString('es-CO')} ${redondo === 1 ? 'día' : 'días'}`
 }
 
 function ApprovalCard({ row }: { row: PendingRow }) {
-  const router = useRouter()
-  const days = (Date.now() - new Date(row.created_at).getTime()) / 86_400_000
+  const dias = (Date.now() - new Date(row.created_at).getTime()) / 86_400_000
   const summary = summarizePayload(row.decision_type, row.decision_payload)
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => router.push(`/admin/approvals/${row.id}`)}
-      onKeyDown={(e) => e.key === 'Enter' && router.push(`/admin/approvals/${row.id}`)}
-      className={`card border-l-4 ${ageTone(row.created_at)} p-4 flex items-start gap-4 hover:bg-bg-hover transition-colors cursor-pointer`}
-    >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-          <Pill tone="info">{row.decision_type}</Pill>
-          <span className="font-medium text-fg">{row.debtor_name ?? '—'}</span>
-          <span className="text-fg-subtle text-xs font-mono">
-            {row.legal_name ?? '(sin agencia)'}
-          </span>
+    <Link href={`/admin/approvals/${row.id}`} className="group block rounded-[20px] outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <Card interactive className="flex items-start gap-4 p-5">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Pill tone="info">{tipoDeDecision(row.decision_type)}</Pill>
+            <span className="font-medium text-fg">{row.debtor_name ?? 'Deudor sin nombre'}</span>
+            <span className="text-body-sm text-fg-muted">{row.legal_name ?? 'Sin inmobiliaria'}</span>
+          </div>
+          <p className="text-body-sm text-fg-muted">{summary}</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Pill tone={tonoDeLaEspera(dias)} dot>
+              Esperando {esperaEnPalabras(dias)}
+            </Pill>
+            <MonoLabel>
+              Confianza {row.confidence_score != null ? `${Math.round(Number(row.confidence_score) * 100)} %` : '—'}
+            </MonoLabel>
+            <MonoLabel>{row.model_used}</MonoLabel>
+            <MonoLabel className="tabular-nums">{fmtDateTime(row.created_at)}</MonoLabel>
+          </div>
         </div>
-        <div className="text-sm text-fg-muted leading-snug mb-2">{summary}</div>
-        <div className="flex flex-wrap items-center gap-4 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-          <span className={days > 3 ? 'text-bad' : days > 1 ? 'text-warn' : ''}>
-            esperando {days.toFixed(1)}d
-          </span>
-          <span>
-            conf {row.confidence_score != null ? Number(row.confidence_score).toFixed(2) : '—'}
-          </span>
-          <span>{row.model_used}</span>
-          <span className="tabular-nums">{fmtDateTime(row.created_at)}</span>
-        </div>
-      </div>
-      <div className="text-fg-subtle">→</div>
-    </div>
+        <ArrowRight
+          className="mt-1 h-5 w-5 shrink-0 text-fg-subtle transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-fg"
+          aria-hidden="true"
+        />
+      </Card>
+    </Link>
   )
 }
 
-/** /admin/approvals — T-323/2024 reviewable queue (FRONT.md §6.11 · BACK.md §8.10). */
+/** /admin/approvals — la cola de la ley T-323/2024 (FRONT.md §6.11 · BACK.md §8.10). */
 export default function ApprovalsPage() {
   const { get, setFilters } = useUrlFilters()
   const type = get('type')
 
-  const { data, isLoading, error } = useApiQuery<ApprovalsResponse>(
+  const { data, isLoading, error, refetch } = useApiQuery<ApprovalsResponse>(
     (signal) => adminApi('/approvals', { query: { type: type || undefined }, signal }),
     [type],
   )
@@ -110,50 +112,50 @@ export default function ApprovalsPage() {
   const totalPending = facets.reduce((a, f) => a + parseInt(f.n, 10), 0)
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="aprobaciones"
-        title="Cola T-323/2024"
-        description="Toda decisión algorítmica con efecto legal pasa por acá antes de ejecutarse."
+        title="Aprobaciones"
+        description="Toda decisión de un agente con efecto legal pasa por acá antes de ejecutarse (sentencia T-323 de 2024)."
       />
 
-      {/* Type facets */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <button
-          onClick={() => setFilters({ type: undefined })}
-          className={`pill ${!type ? 'pill-info' : ''}`}
-        >
-          todas · {totalPending}
-        </button>
+      {/* Filtro por tipo: las píldoras de filtro de Cadence. */}
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por tipo de decisión">
+        <Chip selected={!type} onClick={() => setFilters({ type: undefined })}>
+          Todas · <span className="font-mono tabular-nums">{totalPending}</span>
+        </Chip>
         {facets.map((f) => (
-          <button
+          <Chip
             key={f.decision_type}
+            selected={type === f.decision_type}
             onClick={() => setFilters({ type: f.decision_type })}
-            className={`pill ${type === f.decision_type ? 'pill-info' : ''}`}
           >
-            {f.decision_type} · {f.n}
-          </button>
+            {tipoDeDecision(f.decision_type)} · <span className="font-mono tabular-nums">{f.n}</span>
+          </Chip>
         ))}
       </div>
 
-      {/* Queue */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        cola · más viejas primero
-      </div>
-
-      {isLoading ? (
-        <LoadingBlock />
-      ) : error ? (
-        <ErrorBlock error={error} />
-      ) : rows.length === 0 ? (
-        <EmptyBlock title="Sin decisiones pendientes" hint="La cola está vacía." />
-      ) : (
-        <div className="space-y-2">
-          {rows.map((r) => (
-            <ApprovalCard key={r.id} row={r} />
-          ))}
-        </div>
-      )}
+      <section className="space-y-3" aria-label="Cola de aprobaciones">
+        <MonoLabel className="block">Cola · las más viejas primero</MonoLabel>
+        {isLoading ? (
+          <LoadingBlock />
+        ) : error ? (
+          <ErrorBlock error={error} onReintentar={refetch} />
+        ) : rows.length === 0 ? (
+          <EmptyBlock
+            icono={<SealCheck weight="bold" />}
+            title="No hay decisiones esperando"
+            hint="Cuando un agente proponga algo con efecto legal, aparece acá para que alguien lo apruebe."
+          />
+        ) : (
+          <Stagger className="space-y-2">
+            {rows.map((r) => (
+              <StaggerItem key={r.id}>
+                <ApprovalCard row={r} />
+              </StaggerItem>
+            ))}
+          </Stagger>
+        )}
+      </section>
     </div>
   )
 }

@@ -10,6 +10,8 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pagination } from '@/components/admin/screen/Pagination'
 import { Pill } from '@/components/admin/Pill'
+import { Chip, MonoLabel, SearchInput } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
 
 const TONO_DEL_ESTADO: Record<InmuebleAdminRow['status'], PillTone> = {
   RENTED: 'ok',
@@ -51,12 +53,12 @@ export default function InmueblesPage() {
   const columns: Column<InmuebleAdminRow>[] = [
     {
       header: '# Leasefy',
-      cell: (r) => <span className="font-mono text-xs tabular-nums text-fg">{r.code}</span>,
+      cell: (r) => <span className="font-mono text-caption tabular-nums text-fg">{r.code}</span>,
     },
     {
       header: '# inmobiliaria',
       cell: (r) => (
-        <span className="font-mono text-xs tabular-nums text-fg-muted">{r.externalId ?? '—'}</span>
+        <span className="font-mono text-caption tabular-nums text-fg-muted">{r.externalId ?? '—'}</span>
       ),
     },
     {
@@ -64,7 +66,7 @@ export default function InmueblesPage() {
       cell: (r) => (
         <div className="min-w-0">
           <div className="font-medium text-fg leading-snug">{r.address}</div>
-          <div className="text-xs text-fg-muted">{r.city}</div>
+          <div className="text-caption text-fg-muted">{r.city}</div>
         </div>
       ),
     },
@@ -74,7 +76,7 @@ export default function InmueblesPage() {
         r.agencia ? (
           <button
             type="button"
-            className="text-xs text-fg-muted hover:text-brand transition-colors text-left"
+            className="rounded-sm text-left text-body-sm text-fg-muted underline-offset-4 outline-none transition-colors hover:text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring"
             title="Ver sólo esta inmobiliaria"
             onClick={(e) => {
               e.stopPropagation()
@@ -84,7 +86,7 @@ export default function InmueblesPage() {
             {r.agencia.name}
           </button>
         ) : (
-          <span className="text-xs text-fg-subtle">(sin inmobiliaria)</span>
+          <span className="text-caption text-fg-subtle">(sin inmobiliaria)</span>
         ),
     },
     {
@@ -95,7 +97,7 @@ export default function InmueblesPage() {
       header: 'Contratos',
       align: 'right',
       cell: (r) => (
-        <span className="font-mono text-xs tabular-nums text-fg">
+        <span className="font-mono text-caption tabular-nums text-fg">
           {r.contratos}
           <span className="text-fg-subtle"> · {r.activos} act.</span>
         </span>
@@ -106,7 +108,7 @@ export default function InmueblesPage() {
       align: 'right',
       cell: (r) => (
         <span
-          className={`font-mono text-xs tabular-nums ${r.reparaciones > 0 ? 'text-warn' : 'text-fg-subtle'}`}
+          className={`font-mono text-caption tabular-nums ${r.reparaciones > 0 ? 'text-warning' : 'text-fg-subtle'}`}
         >
           {r.reparaciones}
         </span>
@@ -115,10 +117,9 @@ export default function InmueblesPage() {
   ]
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="inmuebles · historial interno"
-        title="Riesgo por inmueble"
+        title="Inmuebles"
         description="Cuántas veces se arrendó, cuánto estuvo desocupado y qué se le reparó. Interno de Leasefy: la inmobiliaria no ve esta pantalla."
       />
 
@@ -129,41 +130,43 @@ export default function InmueblesPage() {
           setFilters({ q: busqueda.trim() || undefined }, { resetPage: true })
         }}
       >
-        <input
-          type="search"
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Consecutivo, código de la inmobiliaria o dirección"
-          aria-label="Buscar inmueble"
-          className="input w-full sm:w-96"
-        />
-        <button type="submit" className="btn btn-primary">
+        <div className="w-full sm:w-96">
+          <SearchInput
+            inputSize="md"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            onClear={() => setBusqueda('')}
+            placeholder="Consecutivo, código de la inmobiliaria o dirección"
+            aria-label="Buscar inmueble"
+          />
+        </div>
+        <Button hideArrow type="submit">
           Buscar
-        </button>
+        </Button>
         {q && (
-          <button
-            type="button"
-            className="btn btn-ghost"
+          <Button variant="ghost" hideArrow type="button"
+            
             onClick={() => setFilters({ q: undefined }, { resetPage: true })}
           >
             Limpiar
-          </button>
+          </Button>
         )}
         {agencyId && (
-          <button
-            type="button"
-            className="pill pill-info"
+          <Chip
+            selected
+            removable
             title="Quitar el filtro de inmobiliaria"
+            onRemove={() => setFilters({ agencyId: undefined }, { resetPage: true })}
             onClick={() => setFilters({ agencyId: undefined }, { resetPage: true })}
           >
-            sólo {agenciaFiltrada ?? 'esta inmobiliaria'} ×
-          </button>
+            sólo {agenciaFiltrada ?? 'esta inmobiliaria'} 
+          </Chip>
         )}
       </form>
 
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         {data ? `${data.total.toLocaleString('es-CO')} inmuebles · más contratos primero` : 'inmuebles'}
-      </div>
+      </MonoLabel>
 
       <DataTable
         columns={columns}

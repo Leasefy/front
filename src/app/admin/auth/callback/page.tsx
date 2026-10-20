@@ -4,7 +4,10 @@ import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getSupabase } from '@/lib/supabase/client'
 import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect'
-import { Wordmark } from '@/components/admin/Wordmark'
+import { Button } from '@/components/ui/button'
+import { MonoLabel, Spinner } from '@leasefy/cadence'
+import { WarningCircle } from '@phosphor-icons/react'
+import { MarcoDeAcceso, TituloDeAcceso } from '@/components/admin/acceso/MarcoDeAcceso'
 
 /**
  * /admin/auth/callback — handles BOTH Supabase OTP-return flavors (FRONT.md §3.2):
@@ -32,6 +35,8 @@ export default function AdminAuthCallbackPage() {
 function CallbackInner() {
   const sp = useSearchParams()
   const [err, setErr] = useState<string | null>(null)
+  /** El código que mandó Supabase (`access_denied`, `otp_expired`), para soporte. */
+  const [codigoDelError, setCodigoDelError] = useState<string | null>(null)
 
   useEffect(() => {
     const sb = getSupabase()
@@ -58,8 +63,10 @@ function CallbackInner() {
       const params = new URLSearchParams(raw)
       const errorCode = params.get('error') ?? params.get('error_code')
       if (errorCode) {
-        const desc = params.get('error_description')
-        setErr(desc ? `${errorCode}: ${desc}` : errorCode)
+        // La descripción de Supabase viene en inglés («Email link is invalid
+        // or has expired»): se dice en español y el código queda abajo.
+        setErr('El enlace venció o ya se usó. Pide uno nuevo y ábrelo en este mismo navegador.')
+        setCodigoDelError(params.get('error_code') ?? errorCode)
         return
       }
     }
@@ -89,7 +96,7 @@ function CallbackInner() {
     // arrives, the link was invalid/expired — tell the user instead of spinning.
     const safety = setTimeout(() => {
       if (!navigated) {
-        setErr('No pudimos verificar el magic link. Puede haber expirado o ya fue usado — pide uno nuevo.')
+        setErr('Puede que haya vencido o que ya lo hayas usado. Pide uno nuevo y ábrelo en este navegador.')
       }
     }, 8000)
 
@@ -103,14 +110,18 @@ function CallbackInner() {
   return (
     <CallbackShell>
       {err ? (
-        <>
-          <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-bad flex items-center justify-center gap-2 mb-2">
-            <span className="inline-block w-2 h-2 bg-bad" />
-            error
+        <div className="space-y-7" data-testid="admin-callback-error">
+          <div className="flex h-14 w-14 items-center justify-center rounded-md bg-danger-soft">
+            <WarningCircle className="h-7 w-7 text-danger" weight="fill" aria-hidden="true" />
           </div>
-          <p className="text-sm text-fg-muted max-w-sm">{err}</p>
-          <a href="/admin/login" className="btn mt-6 inline-flex">Volver a login →</a>
-        </>
+          <TituloDeAcceso titulo="No pudimos abrir el enlace" bajada={err} />
+          {codigoDelError ? (
+            <MonoLabel className="block">Referencia: {codigoDelError}</MonoLabel>
+          ) : null}
+          <Button asChild hideArrow className="h-11 w-full rounded-full text-[14px]">
+            <a href="/admin/login">Pedir un enlace nuevo</a>
+          </Button>
+        </div>
       ) : (
         <Loading />
       )}
@@ -119,27 +130,14 @@ function CallbackInner() {
 }
 
 function CallbackShell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-bg">
-      <div className="text-center">
-        <div className="flex flex-col items-center gap-2 mb-6">
-          <Wordmark size="md" variant="blue" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">admin</span>
-        </div>
-        {children}
-      </div>
-    </div>
-  )
+  return <MarcoDeAcceso data-testid="admin-callback">{children}</MarcoDeAcceso>
 }
 
 function Loading() {
   return (
-    <>
-      <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted flex items-center justify-center gap-2">
-        <span className="inline-block w-2 h-2 bg-brand animate-pulse" />
-        verificando sesión
-      </div>
-      <p className="mt-2 text-xs text-fg-subtle">redirigiendo...</p>
-    </>
+    <div className="flex items-center gap-3 text-body-sm text-fg-muted" role="status">
+      <Spinner size="sm" />
+      <span>Verificando tu sesión…</span>
+    </div>
   )
 }

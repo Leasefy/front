@@ -1,12 +1,16 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { ChartBar, CheckCircle, Gauge as GaugeIcon, ListChecks, PhoneCall, WarningOctagon } from '@phosphor-icons/react'
+import { MonoLabel, Progress } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { Tarjeta } from '@/components/admin/screen/Tarjeta'
+import { legible } from '@/lib/admin/textos-del-admin'
 
 /* ── Types (match ADMIN-API-CONTRACT.md — QA) ───────────────────────────── */
 
@@ -49,12 +53,12 @@ function num(s: string | null | undefined): number {
   return Number.isFinite(n) ? n : 0
 }
 
-function scoreTone(score: string | null): string {
-  const n = parseFloat(score ?? '0')
-  if (n < 50) return 'bg-bad'
-  if (n < 70) return 'bg-warn'
-  if (n < 90) return 'bg-brand'
-  return 'bg-ok'
+/** El color de la barra de un tramo de puntaje. */
+function colorDelTramo(desde: number): 'danger' | 'warning' | 'primary' | 'success' {
+  if (desde < 50) return 'danger'
+  if (desde < 70) return 'warning'
+  if (desde < 90) return 'primary'
+  return 'success'
 }
 
 /** /qa — QA scoring (BACK.md §8.12 · FRONT.md §6.16). 30-day window. */
@@ -76,145 +80,108 @@ export default function QaPage() {
 
   const lowColumns: Column<LowScoreRow>[] = [
     {
-      header: 'Score',
+      header: 'Puntaje',
       align: 'right',
       cell: (r) => (
-        <span className="tabular-nums font-mono text-bad font-medium">
-          {r.qa_score ? Number(r.qa_score).toFixed(0) : '—'}
-        </span>
+        <span className="font-mono font-medium tabular-nums text-danger">{r.qa_score ? Number(r.qa_score).toFixed(0) : '—'}</span>
       ),
     },
-    {
-      header: 'Deudor',
-      cell: (r) => (
-        <span className="font-medium">{r.debtor_name ?? '—'}</span>
-      ),
-    },
-    {
-      header: 'Agencia',
-      cell: (r) => <span className="text-fg-muted text-xs truncate">{r.legal_name ?? '—'}</span>,
-    },
+    { header: 'Deudor', cell: (r) => <span className="font-medium">{r.debtor_name ?? '—'}</span> },
+    { header: 'Inmobiliaria', cell: (r) => <span className="block truncate text-fg-muted">{r.legal_name ?? '—'}</span> },
     {
       header: 'Cuándo',
       align: 'right',
-      cell: (r) => (
-        <span className="whitespace-nowrap font-mono text-xs text-fg-muted">
-          {fmtDateTime(r.initiated_at)}
-        </span>
-      ),
+      cell: (r) => <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.initiated_at)}</span>,
     },
   ]
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="09 · qa"
-        title="Quality scoring."
-        description="Distribución, flags y calls que requieren revisión (score < 70). Última 30d."
+        title="Calidad de llamadas"
+        description="Cómo puntúa el revisor automático cada llamada de los últimos 30 días, qué alertas salen y cuáles hay que escuchar (puntaje menor a 70)."
       />
 
-      {/* ── KPIs ─────────────────────────────────────────────────────── */}
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-        <KpiCard label="Llamadas 30d" value={stats?.total_calls ?? '0'} hint="todas" />
-        <KpiCard label="Scoreadas" value={stats?.scored_calls ?? '0'} hint="QaScorer corrió" />
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5" aria-label="Resumen">
+        <KpiCard icon={<PhoneCall />} label="Llamadas · 30 días" value={num(stats?.total_calls)} hint="Todas" />
+        <KpiCard icon={<ListChecks />} label="Con puntaje" value={num(stats?.scored_calls)} hint="El revisor ya las escuchó" />
         <KpiCard
-          label="Score promedio"
-          value={`${num(stats?.avg_qa_score).toFixed(1)} / 100`}
+          icon={<GaugeIcon />}
+          label="Puntaje promedio"
+          value={`${num(stats?.avg_qa_score).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} / 100`}
         />
-        <KpiCard
-          label="Compliant"
-          value={stats?.compliant_count ?? '0'}
-          tone="ok"
-        />
-        <KpiCard
-          label="No compliant"
-          value={stats?.non_compliant_count ?? '0'}
-          tone="bad"
-        />
+        <KpiCard icon={<CheckCircle />} label="Cumplen" value={num(stats?.compliant_count)} tone="ok" />
+        <KpiCard icon={<WarningOctagon />} label="No cumplen" value={num(stats?.non_compliant_count)} tone="bad" />
       </section>
 
-      {/* ── Histogram + Flags ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* 10-bucket score distribution */}
-        <div className="card p-5">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-4">
-            distribución · 10 buckets
-          </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Tarjeta titulo="Cómo se reparten los puntajes" descripcion="De 0 a 100, en tramos de 10.">
           {dist.length === 0 ? (
-            <div className="text-sm text-fg-muted">Sin calls scoreadas.</div>
+            <p className="text-body-sm text-fg-muted">Todavía no hay llamadas con puntaje.</p>
           ) : (
-            <div className="space-y-2">
-              {/* Fill all 10 buckets (1-based, per width_bucket) */}
+            <div className="space-y-2.5">
+              {/* Los 10 tramos (1 a 10, como width_bucket) */}
               {Array.from({ length: 10 }, (_, i) => {
                 const bkt = i + 1
                 const from = i * 10
                 const to = (i + 1) * 10
                 const row = dist.find((d) => Number(d.bucket) === bkt)
                 const n = row ? num(row.count) : 0
-                const pct = (n / maxBucket) * 100
-                const barColor =
-                  from < 50 ? 'bg-bad' :
-                  from < 70 ? 'bg-warn' :
-                  from < 90 ? 'bg-brand' :
-                               'bg-ok'
                 return (
-                  <div key={bkt}>
-                    <div className="flex items-baseline justify-between text-xs mb-1">
-                      <span className="font-mono text-fg-muted">{from}–{to}</span>
-                      <span className="font-mono tabular-nums">{n}</span>
+                  <div key={bkt} className="space-y-1">
+                    <div className="flex items-baseline justify-between text-caption">
+                      <span className="font-mono text-fg-muted">
+                        {from}–{to}
+                      </span>
+                      <span className="font-mono tabular-nums text-fg">{n.toLocaleString('es-CO')}</span>
                     </div>
-                    <div className="h-2 bg-bg-hover overflow-hidden">
-                      <div className={`h-full ${barColor}`} style={{ width: `${pct}%` }} />
-                    </div>
+                    <Progress value={(n / maxBucket) * 100} color={colorDelTramo(from)} size="sm" label={`${from} a ${to}: ${n}`} />
                   </div>
                 )
               })}
             </div>
           )}
-        </div>
+        </Tarjeta>
 
-        {/* Top-12 compliance flags */}
-        <div className="card p-5">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-4">
-            compliance flags · 30d
-          </div>
+        <Tarjeta titulo="Alertas de cumplimiento" descripcion="Las más frecuentes de los últimos 30 días.">
           {flags.length === 0 ? (
-            <div className="text-sm text-fg-muted">Sin flags.</div>
+            <p className="text-body-sm text-fg-muted">Sin alertas. Bien.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {flags.map((f) => {
                 const n = num(f.count)
-                const pct = (n / maxFlag) * 100
                 return (
-                  <div key={f.flag}>
-                    <div className="flex items-baseline justify-between text-xs mb-1">
-                      <span className="font-mono text-fg">{f.flag}</span>
-                      <span className="font-mono tabular-nums text-warn">{n}</span>
+                  <div key={f.flag} className="space-y-1">
+                    <div className="flex items-baseline justify-between gap-3 text-caption">
+                      <span className="text-fg" title={f.flag}>
+                        {legible(f.flag)}
+                      </span>
+                      <span className="font-mono tabular-nums text-warning">{n.toLocaleString('es-CO')}</span>
                     </div>
-                    <div className="h-1.5 bg-bg-hover overflow-hidden">
-                      <div className="h-full bg-warn" style={{ width: `${pct}%` }} />
-                    </div>
+                    <Progress value={(n / maxFlag) * 100} color="warning" size="xs" label={`${f.flag}: ${n}`} />
                   </div>
                 )
               })}
             </div>
           )}
-        </div>
+        </Tarjeta>
       </div>
 
-      {/* ── Low-score queue ─────────────────────────────────────────────── */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        cola de revisión · score &lt; 70 · top 30
-      </div>
-      <DataTable
-        columns={lowColumns}
-        rows={low}
-        getKey={(r) => r.id}
-        isLoading={qa.isLoading}
-        error={qa.error}
-        emptyTitle="Sin calls debajo del umbral."
-        onRowClick={(r) => router.push(`/admin/calls/${r.id}`)}
-      />
+      <section className="space-y-3" aria-label="Llamadas para revisar">
+        <MonoLabel className="block">Para revisar · puntaje menor a 70 · las 30 más bajas</MonoLabel>
+        <DataTable
+          columns={lowColumns}
+          rows={low}
+          getKey={(r) => r.id}
+          isLoading={qa.isLoading}
+          error={qa.error}
+          onReintentar={qa.refetch}
+          emptyTitle="Ninguna llamada está por debajo de 70"
+          emptyIcon={<ChartBar weight="bold" />}
+          aria-label="Llamadas para revisar"
+          onRowClick={(r) => router.push(`/admin/calls/${r.id}`)}
+        />
+      </section>
     </div>
   )
 }

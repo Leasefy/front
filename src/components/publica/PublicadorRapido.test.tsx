@@ -136,6 +136,16 @@ async function subirExcel() {
 }
 
 describe('el publicador con muchos inmuebles (20-10-2026)', () => {
+  it('«Cargar muchos desde un archivo» del marketplace abre directo el Excel', async () => {
+    await act(async () => {
+      raiz.render(<PublicadorRapido usuario="u1" alTerminar={{ href: '/panel', texto: 'Entrar a mi cuenta' }} caminoInicial="excel" />);
+    });
+    await esperar();
+    expect(por('camino-excel')?.getAttribute('aria-selected')).toBe('true');
+    expect(por('excel-entrada')).not.toBeNull();
+    expect(por('enlaces-texto')).toBeNull();
+  });
+
   it('cada fila del Excel es una tarjeta plegada; el tipo y la ciudad que faltan se completan en bloque', async () => {
     cargarHoja([
       ['INM-1', 'Cra 76 # 34-21 apto 301', 'Medellín', 'Laureles', 'Apartamento', 2_800_000, 3],

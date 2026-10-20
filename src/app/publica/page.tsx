@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft } from '@phosphor-icons/react';
@@ -13,6 +13,35 @@ import { RegistroRapido } from '@/components/publica/RegistroRapido';
 import { PublicadorRapido } from '@/components/publica/PublicadorRapido';
 import { VentanaParaPublicar, type PerfilQuePublica } from '@/components/marketplace/VentanaParaPublicar';
 import { CONFIRMAR_CON_CODIGO, DESTINOS_PARA_PUBLICAR } from '@/components/marketplace/CuentaParaPublicar';
+import type { CaminoParaMuchos } from '@/components/publica/TraerMuchos';
+import { marketplaceApi, paginaDe } from '@/lib/api/marketplace.service';
+
+const CAMINOS: CaminoParaMuchos[] = ['enlaces', 'excel', 'carpetas'];
+
+/**
+ * La página de la inmobiliaria para compartir: por su nombre corto
+ * (`/i/arriendos-del-valle`) si ya lo tiene, y mientras tanto (o si no) por su id.
+ */
+function usePaginaPublica(agencyId: string | null | undefined): string | null {
+  const [ruta, setRuta] = useState<string | null>(null);
+  useEffect(() => {
+    if (!agencyId) return;
+    let vigente = true;
+    setRuta(`/i/${agencyId}`);
+    marketplaceApi
+      .pagina(agencyId)
+      .then((p) => {
+        if (vigente) setRuta(paginaDe(p));
+      })
+      .catch(() => {
+        // Sin la página (todavía no sale en el marketplace): queda la del id.
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [agencyId]);
+  return ruta && typeof window !== 'undefined' ? `${window.location.origin}${ruta}` : null;
+}
 
 /**
  * `/publica` — publicar rápido desde el marketplace (Juan y Nico, 19-10-2026):
@@ -23,6 +52,10 @@ function Publica() {
   const sp = useSearchParams();
   const { user, isAuthenticated, isLoading, perfilElegido, refreshUser, hasActiveAgencyMembership, agencyRole, agency } = useAuth();
   const [ventana, setVentana] = useState(false);
+  const esInmobiliaria = Boolean(user) && (hasActiveAgencyMembership || user?.role === 'agency');
+  const paginaPublica = usePaginaPublica(esInmobiliaria ? agency?.id : null);
+  const traer = sp.get('traer');
+  const caminoInicial = CAMINOS.find((c) => c === traer) ?? null;
 
   const delParametro = sp.get('perfil');
   const perfilPedido: PerfilQuePublica | null =
@@ -77,11 +110,11 @@ function Publica() {
       </div>
     );
   } else {
-    const esInmobiliaria = hasActiveAgencyMembership || user.role === 'agency';
     contenido = (
       <PublicadorRapido
         usuario={user.id}
-        paginaPublica={esInmobiliaria && agency?.id && typeof window !== 'undefined' ? `${window.location.origin}/i/${agency.id}` : null}
+        paginaPublica={paginaPublica}
+        caminoInicial={caminoInicial}
         alTerminar={
           esInmobiliaria
             ? { href: '/panel/inmobiliaria/inmuebles', texto: 'Entrar a mi cuenta' }

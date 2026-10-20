@@ -41,7 +41,7 @@ import { cn } from '@/lib/utils';
 import { FilaDeInmueble } from './FilaDeInmueble';
 import { Pastilla, TarjetaDeInmueble, type EstadoDeLaTarjeta, type LlegandoALaTarjeta } from './TarjetaDeInmueble';
 import { TodoPublicado } from './TodoPublicado';
-import { TraerMuchos, type ResultadoDeCarpetas, type ResultadoDeEnlaces, type ResultadoDelExcel } from './TraerMuchos';
+import { TraerMuchos, type CaminoParaMuchos, type ResultadoDeCarpetas, type ResultadoDeEnlaces, type ResultadoDelExcel } from './TraerMuchos';
 
 /**
  * ══ EL PUBLICADOR RÁPIDO ════════════════════════════════════════════════════
@@ -92,12 +92,15 @@ export function PublicadorRapido({
   usuario,
   alTerminar,
   paginaPublica = null,
+  caminoInicial = null,
 }: {
   usuario: string;
   /** Dónde sigue después de publicar (su cuenta). */
   alTerminar: { href: string; texto: string };
   /** La página de la inmobiliaria en el marketplace, para compartirlos todos de una. */
   paginaPublica?: string | null;
+  /** Con qué camino abre «¿Son muchos?» (p. ej. «Cargar muchos desde un archivo» → el Excel). */
+  caminoInicial?: CaminoParaMuchos | null;
 }) {
   const contador = useRef(0);
   const nuevaClave = () => `i${Date.now().toString(36)}${(contador.current += 1)}`;
@@ -644,7 +647,7 @@ export function PublicadorRapido({
       )}
 
       <div className="mt-6">
-        <TraerMuchos alTraerEnlaces={traerEnlaces} alLeerExcel={leerExcel} alSoltarCarpetas={soltarCarpetas} />
+        <TraerMuchos inicial={caminoInicial} alTraerEnlaces={traerEnlaces} alLeerExcel={leerExcel} alSoltarCarpetas={soltarCarpetas} />
       </div>
 
       {modoLista && (

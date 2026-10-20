@@ -13,8 +13,6 @@ vi.mock('@/lib/api/ciclo-de-vida.service', () => ({
     incrementos: vi.fn(),
     fijarTasaAnual: vi.fn(),
     digitarIncremento: vi.fn(),
-    generarCarta: vi.fn(),
-    revisarCarta: vi.fn(),
     enviarCarta: vi.fn(),
     verCarta: vi.fn(),
     vencidos: vi.fn(),

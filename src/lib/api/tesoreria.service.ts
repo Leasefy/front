@@ -29,6 +29,8 @@ import type {
   MisCertificados,
   ResultadoDeImportar,
   Traslado,
+  DeteccionDelFormato,
+  FilaDePlanillaDelRecaudo,
 } from './tesoreria.types';
 
 const BASE = '/inmobiliaria/tesoreria';
@@ -55,6 +57,10 @@ function cuerpoDelConvenio(dto: GuardarConvenio): Record<string, unknown> {
   if (dto.referenciaPrefijo) cuerpo.referenciaPrefijo = dto.referenciaPrefijo;
   if (dto.referenciaDv) cuerpo.referenciaDv = dto.referenciaDv;
   if (dto.activo !== undefined) cuerpo.activo = dto.activo;
+  // 🔴 (20-10-2026) Sin estos dos, el formato Asobancaria quedaba sin la fecha
+  // del encabezado: cada pago tomaba la fecha de HOY.
+  if (dto.fechaDelEncabezado) cuerpo.fechaDelEncabezado = dto.fechaDelEncabezado;
+  if (dto.controlDelArchivo) cuerpo.controlDelArchivo = dto.controlDelArchivo;
   /*
    * 🔴 QA-PAGOS-95 r2 (N-33, 06-10-2026): la cuenta que recauda y POR DÓNDE
    * entra su plata no viajaban. El cajón las pedía y el back las guardaba, pero
@@ -86,21 +92,39 @@ export const tesoreriaApi = {
     return r;
   },
 
+  /** Con un archivo de ejemplo del banco, qué formato tiene. No guarda nada (20-10-2026). */
+  detectarFormato(contenido: string): Promise<DeteccionDelFormato> {
+    return apiClient.post<DeteccionDelFormato>(`${BASE}/convenios/detectar`, { contenido });
+  },
+
   // ── El archivo de recaudo ─────────────────────────────────────────────────
 
-  /** Lee el archivo con el formato del convenio. NO escribe nada. */
-  previa(contenido: string, nombreArchivo: string, convenioId?: string): Promise<PreviaDelRecaudo> {
-    const cuerpo: Record<string, unknown> = { nombreArchivo, contenido };
+  /**
+   * Lee el archivo con el formato del convenio. NO escribe nada. `contenido`
+   * es el texto del banco o, desde el 20-10-2026, las filas de una planilla.
+   */
+  previa(
+    contenido: string | FilaDePlanillaDelRecaudo[],
+    nombreArchivo: string,
+    convenioId?: string,
+  ): Promise<PreviaDelRecaudo> {
+    const cuerpo: Record<string, unknown> = {
+      nombreArchivo,
+      ...(typeof contenido === 'string' ? { contenido } : { filas: contenido }),
+    };
     if (convenioId) cuerpo.convenioId = convenioId;
     return apiClient.post<PreviaDelRecaudo>(`${BASE}/recaudo/previa`, cuerpo);
   },
 
   async importar(
-    contenido: string,
+    contenido: string | FilaDePlanillaDelRecaudo[],
     nombreArchivo: string,
     convenioId?: string,
   ): Promise<ResultadoDeImportar> {
-    const cuerpo: Record<string, unknown> = { nombreArchivo, contenido };
+    const cuerpo: Record<string, unknown> = {
+      nombreArchivo,
+      ...(typeof contenido === 'string' ? { contenido } : { filas: contenido }),
+    };
     if (convenioId) cuerpo.convenioId = convenioId;
     const r = await apiClient.post<ResultadoDeImportar>(`${BASE}/recaudo/importar`, cuerpo);
     // Importar crea movimientos bancarios y puede armar el lote de conciliación.

@@ -235,6 +235,66 @@ describe('🔴 el recaudo bancario no dice «importado» cuando no importó', ()
   });
 });
 
+describe('🔴 el archivo elegido es una tarjeta con «Subir otro» y «Descartar» (Nico, 10-09)', () => {
+  it('«Descartar» suelta la previa del archivo y vuelve la zona de arrastre', async () => {
+    h.listarConvenios.mockResolvedValue(CONVENIOS);
+    h.previa.mockResolvedValue({
+      convenio: { id: 'c-1', nombre: 'Recaudo', banco: 'Bancolombia' },
+      huella: 'abc',
+      yaImportado: null,
+      lineas: 1,
+      omitidas: 0,
+      totalCop: 1_000_000,
+      validas: 1,
+      rechazadas: [],
+      avisos: [],
+      puedeImportarse: true,
+      viaDeEntrada: 'ARCHIVO',
+      muestra: [
+        {
+          linea: 1,
+          crudo: '1850;20/10/2026;1000000',
+          referencia: '1850',
+          nucleo: '1850',
+          nucleoAlterno: null,
+          dvValido: true,
+          valorCop: 1_000_000,
+          fecha: '2026-10-20',
+          secuencia: null,
+          oficina: null,
+        },
+      ],
+    });
+    await pintar(<RecaudoBancarioPanel />);
+    expect(contenedor.querySelector('[data-testid="zona-del-recaudo"]')).not.toBeNull();
+
+    const input = contenedor.querySelector<HTMLInputElement>('[data-testid="archivo-de-recaudo"]')!;
+    const archivo = new File(['1850;20/10/2026;1000000'], 'recaudo-20.txt', { type: 'text/plain' });
+    Object.defineProperty(archivo, 'text', { value: () => Promise.resolve('1850;20/10/2026;1000000') });
+    Object.defineProperty(input, 'files', { value: [archivo] });
+    await act(async () => {
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(contenedor.querySelector('[data-testid="archivo-elegido-nombre"]')?.textContent).toBe('recaudo-20.txt');
+    expect(contenedor.querySelector('[data-testid="zona-del-recaudo"]')).toBeNull();
+    // La fecha de la muestra se lee como fecha, no como «2026-10-20».
+    const muestra = contenedor.querySelector('[data-testid="muestra-del-recaudo"]')?.textContent ?? '';
+    expect(muestra).toMatch(/20 (de )?oct/);
+    expect(muestra).not.toContain('2026-10-20');
+
+    await act(async () => {
+      (contenedor.querySelector('[data-testid="archivo-elegido-descartar"]') as HTMLButtonElement).click();
+    });
+    expect(contenedor.querySelector('[data-testid="previa-del-recaudo"]')).toBeNull();
+    expect(contenedor.querySelector('[data-testid="importar-recaudo"]')).toBeNull();
+    expect(contenedor.querySelector('[data-testid="zona-del-recaudo"]')).not.toBeNull();
+  });
+});
+
 describe('🔴 el pendiente de aplicar no ofrece aplicar cuando no hay contra qué', () => {
   const base: ListaDeAplicables = {
     disponible: true,

@@ -245,8 +245,6 @@ const DECLARADOS: readonly string[] = [
   'sessionApi.revoke',
   'subscriptionsApi.cancelSubscription',
   'subscriptionsApi.getPlan',
-  'tesoreriaApi.detalleDelArchivo',
-  'tesoreriaApi.listarArchivos',
   'tesoreriaApi.pendientesDelContrato',
   'visitasApi.noShows',
   'visitasApi.sePuedeMostrar',

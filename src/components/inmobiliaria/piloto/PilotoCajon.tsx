@@ -316,12 +316,14 @@ export function PilotoCajon({
     normalizarDirectorDeLaAccion(data?.director) ?? normalizarDirectorDeLaAccion(porQueDeRespaldo?.director)
   const motivoDelCaso = data?.motivo || porQueDeRespaldo?.motivo || null
 
-  const titulo = alerta
-    ? alerta.titulo
-    : (data?.titulo ?? t('inmobiliaria.piloto.cajon.cargandoTitulo'))
-  const subtitulo = alerta
-    ? alerta.detalle
-    : (data?.subtitulo ?? t('inmobiliaria.piloto.cajon.subtituloVacio'))
+  // AVAL-5 (19-10-2026): como en la fila de la Bandeja, el «$» va pegado a su
+  // cifra; si no, «…el canon de $» quedaba solo al final del renglón.
+  const titulo = conLaPlataPegada(
+    alerta ? alerta.titulo : (data?.titulo ?? t('inmobiliaria.piloto.cajon.cargandoTitulo')),
+  )
+  const subtitulo = conLaPlataPegada(
+    alerta ? alerta.detalle : (data?.subtitulo ?? t('inmobiliaria.piloto.cajon.subtituloVacio')),
+  )
 
   return (
     <Sheet open={apertura !== null} onOpenChange={(abierto) => !abierto && onClose()}>

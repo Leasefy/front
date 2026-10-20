@@ -203,6 +203,11 @@ export interface IncrementosDelContrato {
   /** `false` = en este entorno el correo no sale de verdad: enviar simula y no deja constancia. */
   correoSaleDeVerdad?: boolean;
   diasAntesDeLaCarta?: number;
+  /**
+   * El mes del aniversario se parte en dos cánones (`true`) o el período nuevo
+   * empieza ese día (`false`). `null`/ausente = no se sabe: la ficha no lo dice.
+   */
+  prorrateaElMes?: boolean | null;
   /** Sólo en la respuesta de enviar. */
   ultimoEnvio?: { resultado: 'ENVIADA' | 'SIMULADA'; mensaje: string };
 }
@@ -227,6 +232,38 @@ export interface CartaEnLaBandeja {
   enviadaAt: string | null;
   medio: MedioDeLaCarta | null;
   ultimoIntento: string | null;
+}
+
+/**
+ * La carta tal como sale o tal como salió (`GET /contracts/:id/incrementos/:desde/carta`,
+ * 19-10-2026: «no me salió qué tipo de carta enviamos, y ya la enviamos»; el
+ * CEO de Portofino quería ver qué se envió).
+ */
+export interface CartaParaVer {
+  contractId: string;
+  desde: string;
+  estado: 'POR_ENVIAR' | 'ENVIADA';
+  inquilino: string | null;
+  inmueble: string | null;
+  canonAnteriorCop: number | null;
+  canonNuevoCop: number | null;
+  /** A quién va (por enviar) o a quién fue (enviada). */
+  para: string | null;
+  asunto: string;
+  contenido: string;
+  /** El texto lo guardó una persona: no es el que arma Leasefy hoy. */
+  corregida: boolean;
+  /** El mes del aniversario ya se cobró: la diferencia se suma a la factura siguiente. */
+  reajuste: { valorCop: number; deMes: string; enMes: string } | null;
+  enviada: {
+    at: string | null;
+    por: string | null;
+    medio: MedioDeLaCarta | null;
+    constancia: string | null;
+    soporteNombre: string | null;
+  } | null;
+  correoSaleDeVerdad: boolean;
+  envioHabilitado: boolean;
 }
 
 export interface BandejaDeCartas {
@@ -565,14 +602,13 @@ export const cicloDeVidaApi = {
     body: { porcentaje?: number | null; canonNuevoCop?: number | null },
   ) => apiClient.put<IncrementosDelContrato>(`/contracts/${contractId}/incrementos/${desde}`, body),
 
-  generarCarta: (contractId: string, desde: string) =>
-    apiClient.post<IncrementosDelContrato>(`/contracts/${contractId}/incrementos/${desde}/carta`, {}),
+  // `generarCarta` y `revisarCarta` (POST …/carta y …/carta/revisar) se fueron
+  // con el editor de la ficha (19-10-2026): la carta se ve, se corrige y se
+  // envía en el cajón (`verCarta` + `enviarCarta` con el texto corregido).
 
-  revisarCarta: (contractId: string, desde: string, contenido?: string) =>
-    apiClient.post<IncrementosDelContrato>(
-      `/contracts/${contractId}/incrementos/${desde}/carta/revisar`,
-      contenido ? { contenido } : {},
-    ),
+  /** La carta para verla: la que va a salir o la que salió (19-10-2026). */
+  verCarta: (contractId: string, desde: string) =>
+    apiClient.get<CartaParaVer>(`/contracts/${contractId}/incrementos/${desde}/carta`),
 
   /** D6: un clic. El back decide si el correo sale de verdad (`EMAIL_DELIVERY_ENABLED`). */
   enviarCarta: (contractId: string, desde: string, contenido?: string) =>

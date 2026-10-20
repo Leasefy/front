@@ -2746,3 +2746,20 @@ button[role='radio'][data-state='checked'].group {
 .dark .bg-info-soft .alert-title {
   color: var(--info-ink);
 }
+
+/*
+ * 🔴 El cuerpo de todo diálogo mide su contenido (Nico, 19-10-2026, video desde
+ * un iPhone: la ventana de la cuenta del marketplace salía como una ranura de
+ * ~60 px detrás de la barra de Safari, con el formulario desplazándose dentro).
+ * Cadence arma el cuerpo `min-h-0 flex-1` —base 0 %— dentro de un panel de alto
+ * `fit-content`; Safari (iOS) mide ese panel con la base del cuerpo, 0, y la
+ * hoja queda del alto de la cabecera. Con base `auto` el panel mide el
+ * contenido en todos los navegadores y, si no cabe, el cuerpo se encoge
+ * (`min-h-0`) y scrollea igual que antes. Cubre Dialog y AlertDialog, por el
+ * adaptador o directo de Cadence (los dos ponen `data-dialog-body`). Sólo
+ * mientras el cuerpo conserva el `flex-1` de Cadence: un call site con otro
+ * `flex-*` manda.
+ */
+[data-dialog-body].flex-1 {
+  flex: 1 1 auto;
+}

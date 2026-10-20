@@ -496,6 +496,8 @@ export const landlordApplicationsApi = {
       integrity_flags: (raw.integrity_flags as EvaluationResult['integrity_flags']) ?? (nested.integrity_flags as EvaluationResult['integrity_flags']),
       observations: (raw.observations as EvaluationResult['observations']) ?? (nested.observations as EvaluationResult['observations']),
       score_breakdown: (raw.score_breakdown as EvaluationResult['score_breakdown']) ?? (nested.score_breakdown as EvaluationResult['score_breakdown']),
+      // La Calificación Leasefy (18-10-2026): documentos + historial en Leasefy. Aditivo.
+      calificacion_leasefy: (raw.calificacion_leasefy as EvaluationResult['calificacion_leasefy']) ?? (nested.calificacion_leasefy as EvaluationResult['calificacion_leasefy']),
       credit_check: creditCheck,
       protection_options: protectionOptions,
     };

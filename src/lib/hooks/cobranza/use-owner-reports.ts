@@ -8,7 +8,7 @@
  *   GET  /api/agency/:agencyId/cobranza/owner-reports/:id    (detalle)
  *   POST /api/agency/:agencyId/cobranza/owner-reports/generate    (crea borrador)
  *   POST /api/agency/:agencyId/cobranza/owner-reports/:id/approve (aprueba/envía)
- *   GET  /api/agency/:agencyId/cobranza/owner-reports/:id/pdf     (501 — próximamente)
+ *   GET  /api/agency/:agencyId/cobranza/owner-reports/:id/pdf     (PDF binario)
  *
  * Patrón fail-soft (igual a use-cartera-overview):
  *   - sin NEXT_PUBLIC_AGENT_URL o sin agencyId → setIsLoading(false) y return.
@@ -94,8 +94,6 @@ export interface GenerateOwnerReportBody {
   ownerId?: string
 }
 
-/** Resultado de pedir el PDF: el backend responde 501 hasta que la plantilla
- *  exista → lo modelamos como un estado honesto "próximamente". */
 /** `ok` = se descargó; `error` = no se pudo, con `fallo` para el traductor. */
 export type OwnerReportPdfResult = { status: 'ok' } | { status: 'error'; fallo: unknown }
 

@@ -19,8 +19,10 @@ export const COOKIE_DEL_IDIOMA = 'leasefy-idioma';
 /**
  * Las rutas públicas que llevan idioma en la URL. El resto (panel, auth,
  * /publicar, la API…) sigue como siempre, sin prefijo.
+ * `/verificar-calificacion` (19-10-2026): la abre quien recibe el certificado de
+ * la Calificación Leasefy, a veces de afuera del país: en su idioma.
  */
-const PUBLICAS = ['/propiedades', '/i', '/productos', '/contacto', '/avaluo', '/ayuda', '/terminos', '/privacidad', '/blog', '/para', '/pricing'];
+const PUBLICAS = ['/propiedades', '/i', '/productos', '/contacto', '/avaluo', '/ayuda', '/terminos', '/privacidad', '/blog', '/para', '/pricing', '/verificar-calificacion'];
 
 export function esIdioma(valor: unknown): valor is Idioma {
   return valor === 'es' || valor === 'en';

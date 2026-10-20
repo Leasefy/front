@@ -19,6 +19,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const lectura = await leerLaInmobiliaria(decodeURIComponent(inmobiliaria));
   const nombre = lectura.estado === 'ok' ? lectura.inmobiliaria.nombre : null;
   return {
+    robots: { index: false, follow: false },
     // La plantilla del layout raíz ya agrega «| Leasefy».
     title: nombre ? `Tus datos personales · ${nombre}` : 'Tus datos personales',
     description: nombre

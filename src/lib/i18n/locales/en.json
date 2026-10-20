@@ -1054,6 +1054,7 @@
       "porAprobar": "To approve",
       "origenesDeLeads": "Sources",
       "portalesDePublicacion": "Portals",
+      "calificacionLeasefy": "Leasefy rating",
       "requisitosDePostulacion": "Requirements",
       "calceDeLeads": "What to offer",
       "visitasDelPipeline": "Get visits ready",
@@ -1813,7 +1814,9 @@
         "closedThisMonth": "{{count}} closed this month",
         "closedThisMonthLabel": "Closed this month",
         "avgDaysToClose": "Avg days to close",
-        "days": "{{count}} days"
+        "days": "{{count}} days",
+        "activeAgentsUno": "1 active agent",
+        "closedThisMonthUno": "1 closed this month"
       },
       "quickActions": {
         "title": "Quick Actions",
@@ -1837,7 +1840,9 @@
         "carteraDelMes": "{{count}} installments this month past the grace period, for {{amount}}",
         "carteraDelMesDetalle": "Rent past the contract's grace period that has not come in yet. From the Portfolio you record the payment or send the reminder.",
         "verCartera": "View portfolio",
-        "verRecaudo": "View collections"
+        "verRecaudo": "View collections",
+        "pendingMaintenanceUno": "1 open maintenance request",
+        "carteraDelMesUna": "1 installment of the month overdue for {{amount}}"
       },
       "financial": {
         "title": "Financial Summary",
@@ -4698,7 +4703,9 @@
         },
         "chart": {
           "title": "Top {{n}} by net to owner",
-          "subtitle": "What each property leaves after commission, withholdings and expenses."
+          "titleEmpty": "Net to owner by property",
+          "subtitle": "What each property leaves after commission, withholdings and expenses.",
+          "empty": "No property left a net amount to its owner in this period."
         },
         "table": {
           "title": "Detail by property",
@@ -6191,13 +6198,13 @@
           "step2": {
             "heading": "Property details",
             "canonLabel": "Monthly rent (COP)",
-            "canonPlaceholder": "e.g. 1500000",
+            "canonPlaceholder": "E.g. 1,500,000",
             "tipoLabel": "Property type",
             "tipoOptions": {
               "apartamento": "Apartment",
               "casa": "House",
-              "oficina": "Office",
-              "local": "Commercial space"
+              "oficina": "Retail space or office",
+              "local": "Retail space or office"
             },
             "codeudoresLabel": "Number of co-signers",
             "codeudoresHint": "0 if candidate has no co-signers"
@@ -6209,7 +6216,12 @@
             "ciudadRow": "City",
             "canonRow": "Monthly rent",
             "tipoRow": "Property type",
-            "codeudoresRow": "Co-signers"
+            "codeudoresRow": "Co-signers",
+            "aseguradorasRow": "Insurers",
+            "aseguradorasTodas": "All enabled",
+            "prioridadRow": "Priority",
+            "autorizacion": "I have {{nombre}}'s authorization for this check.",
+            "autorizacionFalta": "Check the box to run the check."
           },
           "restoreBanner": {
             "message": "You have a quote in progress. Continue where you left off?"
@@ -6233,29 +6245,27 @@
             "titulo": "Configure the request",
             "aseguradoras": {
               "titulo": "Which insurers should we query?",
-              "todas": "All insurers",
-              "todasDesc": "We query every insurer available to your agency.",
-              "favoritas": "Favorites",
-              "favoritasDesc": "Manually pick the insurers you want to query.",
-              "recomendar": "Let Leasefy recommend",
-              "recomendarDesc": "Leasefy picks the best insurers for the candidate's profile.",
+              "todas": "All enabled insurers",
+              "todasDesc": "We query every insurer your agency has enabled under «Insurers».",
+              "favoritas": "Only the ones I pick",
+              "favoritasDesc": "We query only the ones you check here.",
               "cargando": "Loading insurers…",
-              "sinAseguradoras": "No insurers available. We'll use the ones Leasefy recommends.",
-              "seleccionaUna": "Select at least one insurer."
+              "sinAseguradoras": "Your agency has no enabled insurers. Enable them in the «Insurers» tab.",
+              "seleccionaUna": "Check at least one insurer.",
+              "errorRegistro": "We couldn't load the list of insurers.",
+              "reintentar": "Try again"
             },
             "prioridad": {
               "titulo": "What should we prioritize?",
+              "subtitulo": "It decides which one we recommend among those that back the candidate.",
               "rapidez": "Speed",
+              "rapidezDesc": "The one that answered first.",
               "costo": "Lowest cost",
+              "costoDesc": "The one with the lowest monthly premium.",
               "cobertura": "Best coverage",
-              "probabilidad": "Highest approval odds"
-            },
-            "modo": {
-              "titulo": "Run mode",
-              "automatico": "Automatic",
-              "automaticoDesc": "Leasefy runs the request and picks the best option with no intervention.",
-              "revision": "With review",
-              "revisionDesc": "You review the results before moving forward with an insurer."
+              "coberturaDesc": "The one with the fewest conditions that backs the highest rent.",
+              "probabilidad": "Highest approval odds",
+              "probabilidadDesc": "The one that approves with no conditions; then, the one with fewest."
             }
           },
           "ctaConsultar": "Check insurability"
@@ -6280,7 +6290,7 @@
           "remaining": "{{n}} of {{m}} left today",
           "calculating": "Calculating…",
           "tardando": "Taking longer than expected…",
-          "submitButton": "Ask for explanation",
+          "submitButton": "Calculate",
           "capExhausted": {
             "title": "Limit reached",
             "body": "You've used all {{cap}} explanations for today. Resets tomorrow at {{time}} (Bogotá).",
@@ -6299,7 +6309,8 @@
             "ciudad": "City",
             "tipo": "Property type",
             "codeudores": "Co-debtors"
-          }
+          },
+          "recotizar": "Re-quote with this change"
         },
         "detail": {
           "header": {
@@ -6336,7 +6347,7 @@
           "connectionInterrupted": "Connection interrupted. Check your connection and try again.",
           "retry": "Retry",
           "reQuoteOfBadge": "Re-quote of #{{shortId}}",
-          "pedirExplicacionButton": "Ask for explanation",
+          "pedirExplicacionButton": "What if…?",
           "reQuoteButton": "Re-quote with changes",
           "liveRegion": {
             "carrierVerdict": "{{carrier}}: {{result}}"
@@ -6355,7 +6366,8 @@
             "recomendamos": "We recommend moving forward with {{carrier}}",
             "primaPorMes": "per month",
             "porQue": "Why",
-            "porQueMejorPrecio": "It's the option that best balances price and conditions among the insurers that accept."
+            "porQueMejorPrecio": "It's the option that best balances price and conditions among the insurers that accept.",
+            "headlineUna": "The candidate is {{status}} · 1 option found"
           },
           "matriz": {
             "titulo": "Compare the options",
@@ -6433,11 +6445,10 @@
           "postSeleccion": {
             "titulo": "What do you want to do now?",
             "radicar": "File the policy",
+            "cambiarPoliza": "Change the policy number",
             "expediente": "Generate case file",
             "notificar": "Notify the advisor",
-            "propietario": "Share with the owner",
             "contrato": "Move to contract",
-            "guardar": "Save the chosen option",
             "sinOpcion": "Available once there is an insurable option."
           }
         },
@@ -6898,6 +6909,8 @@
           "porQue": "Why",
           "siguienteAccion": "Next best action",
           "avanzar": "Proceed with recommended",
+          "elegida": "Chosen option",
+          "verPasos": "See the next steps",
           "recotizar": "Re-quote with changes"
         },
         "comparar": {
@@ -8230,7 +8243,7 @@
             "titulo": "Which agency are you writing to?",
             "texto": "Each agency answers for the data it holds about you. Choose yours: this form is also linked at the bottom of its emails and on its Leasefy page.",
             "buscar": "Search by name",
-            "sinResultados": "We couldn't find it here. Open the \u201cYour personal data\u201d link at the bottom of your agency's emails.",
+            "sinResultados": "We couldn't find it here. Open the “Your personal data” link at the bottom of your agency's emails.",
             "noEsta": "Not on the list? Open the “Your personal data” link at the bottom of your agency's emails.",
             "noCargo": "We couldn't load the agencies. Reload the page in a few minutes."
           }
@@ -8582,7 +8595,7 @@
             },
             "c3": {
               "titulo": "Flags vacancy",
-              "texto": "When a property has been vacant for over a month, it prepares the question to the owner about the rent. The owner sets the number."
+              "texto": "When a property has been vacant for over a month, it prepares the question to the owner about the rent: in their portal or, if they have no account, as a task to call them. If they have several vacant properties, one question covers them all. The owner sets the number."
             }
           },
           "necesita": {
@@ -8592,7 +8605,7 @@
           "modo": {
             "sombra": "It doesn't write to the owner: it suggests when to ask about the rent and, if you want, it goes out with one click.",
             "copiloto": "It leaves in your Inbox, one click away, the question to the owner of a property vacant for over a month.",
-            "autonomo": "It asks the owner on its own, in their portal, whether they want to review the rent. Changing the rent and requesting an appraisal always need your click."
+            "autonomo": "It asks the owner on its own, in their portal, whether they want to review the rent; if they have no account, it leaves the agent a task to call them; if they have several vacant properties, it asks only once. Changing the rent and requesting an appraisal always need your click."
           },
           "empezar": "See my appraisals"
         },
@@ -9109,10 +9122,10 @@
             "salaTitulo": "Appraisals",
             "salaDesc": "A reference value estimate, fully remote and AI-assisted. No physical visit: the certificate is generated from market data and signed by a Leasefy reviewer.",
             "colaTitle": "My appraisal requests",
-            "colaDesc": "Every appraisal you requested, end to end: request → market-data estimate → review → signed certificate. You always see the up-to-date status; the review and signature are handled by a Leasefy reviewer. No physical visit is performed.",
+            "colaDesc": "Every appraisal you requested, step by step: you request it, a Leasefy reviewer reviews it, signs it and it gets delivered. You see when you requested it, when it was signed and the certificate as soon as it is ready. No physical visit is performed.",
             "colaKpiLabel": "Active",
             "colaEmptyTitle": "No requests yet",
-            "colaEmptyHint": "Request your first appraisal: mint the link, the estimate is generated and you track every step here until the signed certificate.",
+            "colaEmptyHint": "Request your first appraisal from the Summary: you generate the link, the estimate is made and you follow every step here until the signed certificate.",
             "casoColaLabel": "My requests",
             "solicitarTitle": "Request an appraisal",
             "solicitarCta": "Request appraisal",
@@ -9178,7 +9191,19 @@
                 "tuParte": "look for it in the agency's email and share it with your client."
               }
             },
-            "firmaNota": "The review and the certificate signature are handled by a Leasefy reviewer. No physical visit to the property is performed."
+            "firmaNota": "The review and the certificate signature are handled by a Leasefy reviewer. No physical visit to the property is performed.",
+            "colaSinServicio": "Your requests cannot be shown: this environment does not have the appraisal service connected. Write to your Leasefy contact to turn it on.",
+            "colaPasosAria": "Where it stands: {{paso}}",
+            "colaPedidoEl": "Requested on {{fecha}}",
+            "colaFirmadoEl": "signed on {{fecha}}",
+            "colaVerEstado": "See where it stands",
+            "colaPasos": {
+              "solicitado": "Requested",
+              "enRevision": "In review",
+              "firmado": "Signed",
+              "entregado": "Delivered",
+              "rechazado": "Rejected"
+            }
           },
           "cobranza": {
             "salaDesc": "The agent works standard delinquency for you — calls, WhatsApp and letters within the law — and escalates only the critical cases.",
@@ -13470,6 +13495,92 @@
       "sigue": "Next up: {{paso}}. Pick it up where you left off.",
       "continuar": "Continue migration"
     },
+    "cartera": {
+      "titulo": "What tenants owed",
+      "corte": "Cut-off date: {{fecha}}.",
+      "descripcion": "Upload the cartera report from your previous system, with one row per pending invoice. Each balance goes to its tenant's contract and accrues late interest from its own date.",
+      "columnas": "We use five things from each row: the due date, the tenant document and name, the concept and the outstanding balance. The rest of the file is ignored.",
+      "sinCorte": "Set the cut-off date first (Contracts step): the cartera is what each tenant owed that day.",
+      "zonaTitulo": "Drop the per-invoice cartera report",
+      "zonaDetalle": "Excel or CSV, as your system exports it.",
+      "zonaBloqueada": "Wait for the receipts upload to finish.",
+      "leyendo": "Reading…",
+      "filas": "{{n}} rows",
+      "errorLeer": "We couldn't read the file. Is it Excel or CSV?",
+      "errorVista": "We couldn't check the cartera.",
+      "errorCargar": "The cartera couldn't be loaded.",
+      "demasiadas": "The file has {{n}} lines with a balance and the maximum is {{max}}. Keep only what is outstanding at the cut-off date and upload it again.",
+      "mapeoTitulo": "Check which column each piece of data comes from",
+      "mapeoFalta": "Still to pick: {{lista}}.",
+      "mapeoElegir": "Pick a column",
+      "mapeoNinguna": "None",
+      "mapeoAria": "Column for {{campo}}",
+      "campos": {
+        "documento": "Tenant document",
+        "nombre": "Tenant name",
+        "fechaVencimiento": "Due date",
+        "fechaFactura": "Invoice date",
+        "concepto": "Concept",
+        "valor": "Outstanding balance"
+      },
+      "camposAyuda": {
+        "fechaVencimiento": "Late interest counts from this date.",
+        "fechaFactura": "Used when the due date is missing or unreadable.",
+        "valor": "What is still owed, not the invoice total."
+      },
+      "faltan": {
+        "documento": "the tenant document",
+        "nombre": "the tenant name",
+        "fecha": "the due date (or the invoice date)",
+        "concepto": "the concept",
+        "valor": "the outstanding balance"
+      },
+      "conFechaDeFactura": "{{n}} rows had no readable due date: we used the invoice date.",
+      "conFechaDeFacturaUno": "1 row had no readable due date: we used the invoice date.",
+      "sinEnviarTitulo": "{{n}} rows of the file are not sent",
+      "sinEnviarTituloUno": "1 row of the file is not sent",
+      "sinEnviarItem": "Row {{fila}}: {{motivo}}",
+      "sinEnviarItemSinNumero": "{{motivo}}",
+      "buscando": "Looking up each tenant's contract…",
+      "resumen": "{{n}} tenants with a contract · {{deuda}} owed",
+      "resumenUno": "1 tenant with a contract · {{deuda}} owed",
+      "resumenAFavor": " · {{monto}} in the tenant's favour",
+      "resumenSinContrato": " · {{n}} without a contract (not loaded)",
+      "resumenLineas": "{{validas}} of {{recibidas}} lines can be loaded.",
+      "tabla": {
+        "documento": "Document",
+        "inquilino": "Tenant",
+        "contrato": "Contract",
+        "lineas": "Lines",
+        "desde": "Since",
+        "deuda": "Owes",
+        "aFavor": "In favour",
+        "queSePasa": "What happens"
+      },
+      "contratoConMas": "has {{n}} more: goes to the current one",
+      "estado": {
+        "SE_CARGA": "Will be loaded",
+        "CARGADO": "Loaded",
+        "IGUAL": "Already there",
+        "CON_PAGOS": "Already has payments",
+        "SIN_CONTRATO": "No contract",
+        "SIN_LINEAS": "No lines to load",
+        "NO_SE_SABE": "Couldn't be checked",
+        "otro": "Review"
+      },
+      "aFavorNota": "What is in the tenant's favour goes to their credit balance.",
+      "verMas": "Showing {{max}} of {{n}}.",
+      "problemasTitulo": "{{n}} lines with a problem: not loaded",
+      "problemasTituloUno": "1 line with a problem: not loaded",
+      "problemasItem": "Row {{fila}} · {{documento}}: {{motivo}}",
+      "problemasItemSinNumero": "{{documento}}: {{motivo}}",
+      "cargar": "Load the cartera of {{n}} tenants",
+      "cargarUno": "Load the cartera of 1 tenant",
+      "cargando": "Loading…",
+      "reemplaza": "If a tenant already had cartera from the previous system, this replaces it.",
+      "cargada": "Done: the cartera of {{n}} tenants is loaded ({{deuda}}). It already shows in Cartera and in each contract's statement.",
+      "cargadaUno": "Done: the cartera of 1 tenant is loaded ({{deuda}}). It already shows in Cartera and in the contract's statement."
+    },
     "muro": {
       "cerrar": "Close and continue later",
       "eyebrow": "Getting started",
@@ -13620,7 +13731,7 @@
       },
       "contables": {
         "titulo": "Accounting entries",
-        "descripcion": "Historical balances and movements. It goes last because it needs the chart of accounts in place. What completes it is the opening balances: the trial balance by third party at the close of the previous year. This year's movements and the vouchers are added if you have them.",
+        "descripcion": "Historical balances and movements. It goes last because it needs the chart of accounts in place. What completes it is loading accounting records: the opening balances (the trial balance by third party at the close of the previous year) or the general-ledger movements. The vouchers are added if you have them.",
         "corto": "Accounting entries"
       }
     },
@@ -13720,7 +13831,7 @@
     "contrato": "Contract {{numero}}",
     "comoInquilino": "Tenant of the property at {{direccion}}",
     "comoPropietario": "Owner of the property at {{direccion}}",
-    "copropiedad": "Co-owned by {{propietarios}} owners · share: {{porcentaje}}\u00a0%",
+    "copropiedad": "Co-owned by {{propietarios}} owners · share: {{porcentaje}} %",
     "copropiedadSinPorcentaje": "Co-owned by {{propietarios}} owners · each owner's share is missing: no payout until the agency sets it",
     "vigente": "Active",
     "terminado": "Ended",

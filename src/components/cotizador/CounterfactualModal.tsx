@@ -19,7 +19,6 @@
 // frontend disabled-submit is pre-emptive UX; a stale client that bypasses it
 // still receives the 429 codepath which presents the same banner.
 
-import { formatCurrency } from '@/lib/types/inmobiliaria'
 import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
@@ -34,6 +33,8 @@ import { useAskWhyUsage } from '@/lib/hooks/cotizador/use-ask-why-usage'
 import { useAuth } from '@/lib/auth'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 import { AnimatedNumber, CrossFade, MotionIndicator } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { TIPOS_DE_INMUEBLE_DEL_COTIZADOR, tipoDeInmuebleEnPalabras, tipoQueViaja } from '@/lib/cotizador/tipo-de-inmueble'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -42,7 +43,8 @@ import { AnimatedNumber, CrossFade, MotionIndicator } from '@leasefy/cadence'
 // Re-declared per plan: WizardStep2Propiedad does NOT export TIPO_OPTIONS;
 // import would couple a leaf component to a page-level wizard. Values match
 // the wizard exactly — verified by reading WizardStep2Propiedad.tsx.
-const TIPO_OPTIONS = ['apartamento', 'casa', 'oficina', 'local'] as const
+// 🔴 COTIZ-5 (19-10-2026): «Local u oficina» en una sola opción (`local`).
+const TIPO_OPTIONS = TIPOS_DE_INMUEBLE_DEL_COTIZADOR
 type TipoInmueble = (typeof TIPO_OPTIONS)[number]
 
 // Minimal DANE-major city list. The wizard's ciudad input is a free-text
@@ -68,6 +70,8 @@ export interface CounterfactualModalProps {
   open: boolean
   onClose: () => void
   quoteId: string
+  /** COTIZ-8: con aseguradoras reales, abrir el asistente con el dato ya cambiado. */
+  onRecotizarConElCambio?: (variable: string, valor: string) => void
   originalCarriers: CarrierState[]
   originalInputs: {
     canonCop: number
@@ -77,6 +81,11 @@ export interface CounterfactualModalProps {
   }
   /** Called when the wrapper returns 404 (quote stale). The parent shows a toast and closes. */
   onQuote404: () => void
+  /**
+   * COTIZ-17 (19-10-2026, «Solicitar codeudor»): abrir con una variable ya
+   * elegida (p. ej. 1 codeudor) para ver el efecto sin buscarla.
+   */
+  empezarCon?: { variable: 'codeudores'; valor: number } | null
 }
 
 // ---------------------------------------------------------------------------
@@ -191,6 +200,14 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
     })
   }
 
+  // COTIZ-17: «Solicitar codeudor» abre el modal con 1 codeudor ya elegido.
+  const empezarConVariable = props.empezarCon?.variable ?? null
+  const empezarConValor = props.empezarCon?.valor ?? null
+  useEffect(() => {
+    if (open && empezarConVariable !== null && empezarConValor !== null) activate(empezarConVariable, empezarConValor)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, empezarConVariable, empezarConValor])
+
   const isReadonly = (v: AskWhyVariable): boolean =>
     activeVariable !== null && activeVariable !== v
 
@@ -231,38 +248,34 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
   }
 
   // ---- Footer text ----------------------------------------------------------
-  const usedCount = usage?.used_today ?? '?'
+  // 🔴 COTIZ-9 (19-10-2026): «Te quedan» son las que QUEDAN (antes pintaba las
+  // usadas: «Te quedan 0 de 50» sin haber usado ninguna).
   const capCount = usage?.daily_cap ?? DEFAULT_DAILY_CAP
+  const usedCount = usage ? Math.max(0, capCount - usage.used_today) : '?'
   const resetTimeBogota = usage ? formatBogotaResetTime(usage.resets_at) : '00:00'
 
   let footerText: string
   if (isLoading) {
     footerText = t('inmobiliaria.ai.cotizador.askWhy.calculating')
-  } else if (result) {
-    footerText =
-      t('inmobiliaria.ai.cotizador.askWhy.costActual', { cost: formatCurrency(result.cost_cop) }) +
-      ' · ' +
-      t('inmobiliaria.ai.cotizador.askWhy.remaining', { n: usedCount, m: capCount })
   } else {
-    footerText =
-      t('inmobiliaria.ai.cotizador.askWhy.costEstimate') +
-      ' · ' +
-      t('inmobiliaria.ai.cotizador.askWhy.remaining', { n: usedCount, m: capCount })
+    // COTIZ-8: ya no usa la IA ni cuesta: sólo cuántas quedan hoy.
+    footerText = t('inmobiliaria.ai.cotizador.askWhy.remaining', { n: usedCount, m: capCount })
+  }
+  // COTIZ-8: con aseguradoras reales, el mismo cambio en una cotización nueva.
+  const recotizarConElCambio = () => {
+    const p = lastPayloadRef.current
+    if (!p || !props.onRecotizarConElCambio) return
+    props.onRecotizarConElCambio(p.variable, p.variable === 'tipo' ? tipoQueViaja(String(p.new_value)) : String(p.new_value))
   }
 
   // ---- Render ---------------------------------------------------------------
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
-      <DialogContent
-        className="
-          max-w-none
-          sm:rounded-none sm:translate-x-0 sm:translate-y-0
-          sm:left-0 sm:top-0 sm:w-full sm:h-full sm:m-0 sm:max-h-none
-          md:rounded-[20px] md:max-w-2xl md:mx-auto md:my-12
-          md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2
-          md:w-full md:h-auto
-        "
-      >
+      {/* QA 19-10-2026 (Nico: «ese modal se ve súper pequeño»): las clases de
+          posición de antes (`top-1/2`, `my-12`, `translate`) peleaban con el
+          centrado de Cadence (`inset-0 m-auto`) y el panel quedaba a media
+          pantalla con casi todo escondido. El tamaño es el de la casa. */}
+      <DialogContent size="xl">
         {/* Antes esto era un `<h2>` suelto dentro del cuerpo: título más grande
             que el del resto de los modales, sin filete, sin ✕ y —lo peor— sin
             `DialogTitle`, o sea un diálogo sin nombre accesible. */}
@@ -353,7 +366,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                 role="group"
                 data-testid="cf-tipo-group"
                 aria-label={t('inmobiliaria.ai.cotizador.askWhy.variableLabels.tipo')}
-                className="grid grid-cols-4 gap-2"
+                className="grid grid-cols-3 gap-2"
               >
                 {TIPO_OPTIONS.map(tipo => {
                   const isActive = draftValues.tipo === tipo
@@ -383,7 +396,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                           className="inset-0 -z-10 rounded-lg bg-primary/10 ring-1 ring-primary"
                         />
                       )}
-                      {tipo}
+                      {tipoDeInmuebleEnPalabras(tipo)}
                     </button>
                   )
                 })}
@@ -501,6 +514,13 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
               >
                 {result.narrative_es}
               </p>
+            )}
+            {result && !isLoading && result.modo === 'recotizar' && props.onRecotizarConElCambio && (
+              <Button size="sm" hideArrow onClick={recotizarConElCambio} className="mt-3" data-testid="cf-recotizar">
+                {t('inmobiliaria.ai.cotizador.askWhy.recotizar') === 'inmobiliaria.ai.cotizador.askWhy.recotizar'
+                  ? 'Re-cotizar con este cambio'
+                  : t('inmobiliaria.ai.cotizador.askWhy.recotizar')}
+              </Button>
             )}
             </CrossFade>
 

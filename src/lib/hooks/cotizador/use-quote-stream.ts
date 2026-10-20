@@ -207,11 +207,12 @@ export function useQuoteStream(
     }
 
     if (parsed.type === 'carrier.verdict' || parsed.type === 'carrier.verdict_received') {
-      const { carrier, verdict, prima_mensual_cop, condiciones } = parsed.data
+      const { carrier, verdict, prima_mensual_cop, condiciones, motivo_rechazo, latency_ms } = parsed.data
       setCarriersMap(prev => {
         const next = new Map(prev)
         const existing = next.get(carrier)
-        const latencyMs = latenciaEnVivo(existing?.startedAtMs)
+        // COTIZ-14: lo que tardó la aseguradora; el reloj del navegador sólo si el micro no lo dice.
+        const latencyMs = typeof latency_ms === 'number' ? latency_ms : latenciaEnVivo(existing?.startedAtMs)
         next.set(carrier, {
           ...(existing ?? {
             carrier,
@@ -222,7 +223,8 @@ export function useQuoteStream(
           status: verdict === 'error' ? 'error' : verdict,
           primaMensualCop: prima_mensual_cop,
           condiciones: condiciones ?? [],
-          motivoRechazo: null,
+          // COTIZ-12: el porqué del rechazo («Te dice el porqué»).
+          motivoRechazo: motivo_rechazo ?? null,
           latencyMs,
         } as CarrierState)
         return next

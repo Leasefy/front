@@ -104,6 +104,7 @@ export default function CotizadorOverviewPage() {
       (q: QuoteInsertEvent): CotizadorOverviewResponse['lastQuotes'][0] => ({
         id: q.id,
         cedulaHashPrefix8: q.cedulaHashPrefix8,
+        nombreCandidato: null,
         canonCop: q.canonCop,
         ciudad: q.ciudad,
         status: q.status,

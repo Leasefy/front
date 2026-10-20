@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { User, Briefcase, CurrencyDollar, FileText, Pencil, Check, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
+import { CasillaDeLaCalificacion } from '@/components/calificacion/CasillaDeLaCalificacion';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
 import { rotuloDelIngreso } from '@/lib/postulaciones/rotulo-del-ingreso';
@@ -32,6 +33,8 @@ export function StepReview() {
     setAcceptTerms,
     authorizeVerification,
     setAuthorizeVerification,
+    compartirCalificacion,
+    setCompartirCalificacion,
     consentText,
     mode,
   } = useApplication();
@@ -233,6 +236,9 @@ export function StepReview() {
               </span>
             </label>
           </div>
+
+          {/* La Calificación Leasefy (18-10-2026): aparte, sin marcar y opcional. */}
+          <CasillaDeLaCalificacion marcada={compartirCalificacion} onCambio={setCompartirCalificacion} />
         </div>
 
         {!acceptTerms || !authorizeVerification ? (

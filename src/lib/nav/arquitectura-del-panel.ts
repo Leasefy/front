@@ -35,6 +35,7 @@ import {
   HandCoins,
   IdentificationBadge,
   Files,
+  Gauge,
   CalendarCheck,
   Signature,
   ShieldWarning,
@@ -513,6 +514,8 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // define cada inmobiliaria». Se LEE con `pipeline` (el asesor tiene
           // que saber qué papeles pedir) y se EDITA con `configuracion:edit`,
           // que la pantalla verifica y el back exige de nuevo.
+          // La Calificación Leasefy (18-10-2026): buscar la de una persona y evaluar los contratos que terminan.
+          { labelKey: 'inmobiliaria.nav.calificacionLeasefy', href: r('/postulaciones/calificacion'), icon: Gauge, module: 'portafolio', scope: 'comercial' },
           { labelKey: 'inmobiliaria.nav.requisitosDePostulacion', href: r('/postulaciones/requisitos'), icon: Files, module: 'pipeline', scope: 'comercial' },
           // F-07: el canal del candidato rechazado para pedir detalle o
           // corregir un dato. Nunca se le dice el puntaje.

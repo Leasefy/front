@@ -120,7 +120,7 @@ export function CotizadorRecentQuotesFeed({
                   href={`/panel/inmobiliaria/postulaciones/asegurabilidad/${q.id}`}
                   className="flex items-center justify-between py-3 px-1 hover:bg-surface-muted rounded-md transition-colors"
                   aria-label={t('inmobiliaria.ai.cotizador.overview.recentQuotes.ariaRow')
-                    .replace('{{name}}', `Ref. ${q.cedulaHashPrefix8}`)
+                    .replace('{{name}}', q.nombreCandidato?.trim() || `Ref. ${q.cedulaHashPrefix8}`)
                     .replace('{{city}}', q.ciudad)
                     .replace('{{status}}', q.status)}
                 >
@@ -130,9 +130,16 @@ export function CotizadorRecentQuotesFeed({
                     <span className="text-sm font-medium text-fg">
                       {q.ciudad} · {formatCOP(q.canonCop)}{tr("/mes")}
                     </span>
-                    <span className="text-xs font-mono text-fg-muted">
-                      {tr("Ref.")} {q.cedulaHashPrefix8}
-                    </span>
+                    {/* COTIZ-18 (19-10-2026): el nombre del candidato; sin él, la referencia. */}
+                    {q.nombreCandidato?.trim() ? (
+                      <span className="text-caption text-fg-muted" data-testid="cotizacion-candidato">
+                        {q.nombreCandidato.trim()}
+                      </span>
+                    ) : (
+                      <span className="text-caption font-mono text-fg-muted">
+                        {tr("Ref.")} {q.cedulaHashPrefix8}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusBadge status={q.status} t={t} />

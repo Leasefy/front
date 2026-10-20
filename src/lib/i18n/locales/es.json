@@ -1054,6 +1054,7 @@
       "porAprobar": "Por aprobar",
       "origenesDeLeads": "Orígenes",
       "portalesDePublicacion": "Portales",
+      "calificacionLeasefy": "Calificación Leasefy",
       "requisitosDePostulacion": "Requisitos",
       "calceDeLeads": "Qué ofrecer",
       "visitasDelPipeline": "Preparar visitas",
@@ -1848,7 +1849,9 @@
         "closedThisMonth": "{{count}} cerrados este mes",
         "closedThisMonthLabel": "Cerrados este mes",
         "avgDaysToClose": "Promedio días cierre",
-        "days": "{{count}} días"
+        "days": "{{count}} días",
+        "activeAgentsUno": "1 agente activo",
+        "closedThisMonthUno": "1 cerrado este mes"
       },
       "quickActions": {
         "title": "Acciones Rápidas",
@@ -1867,12 +1870,14 @@
         "viewPayments": "Ver cobros",
         "pendingMaintenance": "{{count}} solicitudes de mantenimiento sin cerrar",
         "latePaymentsDetalle": "Canon vencido que todavía no entró. Desde Cobros se registra el pago o se manda el recordatorio.",
-        "pendingMaintenanceDetalle": "Solicitudes abiertas o en curso. Asigna quién las atiende y cerralas cuando estén resueltas.",
+        "pendingMaintenanceDetalle": "Solicitudes abiertas o en curso. Asigna quién las atiende y ciérralas cuando estén resueltas.",
         "viewRequests": "Ver solicitudes",
         "carteraDelMes": "{{count}} cuotas del mes en cartera por {{amount}}",
         "carteraDelMesDetalle": "Canon que pasó el plazo del contrato y todavía no entró. Desde Cartera se registra el pago o se manda el recordatorio.",
         "verCartera": "Ver cartera",
-        "verRecaudo": "Ver recaudo"
+        "verRecaudo": "Ver recaudo",
+        "pendingMaintenanceUno": "1 solicitud de mantenimiento sin cerrar",
+        "carteraDelMesUna": "1 cuota del mes en cartera por {{amount}}"
       },
       "financial": {
         "title": "Resumen Financiero",
@@ -4655,17 +4660,17 @@
       }
     },
     "reportes": {
-      "title": "Centro de Reportes",
+      "title": "Centro de reportes",
       "subtitle": "Genera, visualiza y exporta reportes del portafolio",
       "search": "Buscar reporte...",
       "generate": "Generar reporte",
-      "generateAll": "Generar Todos",
+      "generateAll": "Generar todos",
       "noReports": "Sin reportes",
       "noReportsDesc": "No hay reportes que coincidan con los filtros seleccionados.",
       "clearSearch": "Limpiar búsqueda",
       "viewCards": "Tarjetas",
       "viewList": "Lista",
-      "otherReports": "Otros Reportes",
+      "otherReports": "Otros reportes",
       "stats": {
         "reports": "Reportes",
         "report": "reporte",
@@ -4674,12 +4679,12 @@
         "never": "Nunca"
       },
       "types": {
-        "ownerStatement": "Extracto de Propietario",
-        "portfolio": "Reporte de Portafolio",
-        "aging": "Cartera por Edades",
-        "commissions": "Reporte de Comisiones",
-        "occupancy": "Reporte de Ocupación",
-        "cashFlow": "Flujo de Caja",
+        "ownerStatement": "Extracto del propietario",
+        "portfolio": "Reporte del portafolio",
+        "aging": "Cartera por edades",
+        "commissions": "Reporte de comisiones",
+        "occupancy": "Reporte de ocupación",
+        "cashFlow": "Flujo de caja",
         "expirations": "Vencimientos",
         "rentabilidad": "Rentabilidad por inmueble"
       },
@@ -4696,7 +4701,7 @@
         "netPayment": "Pago neto"
       },
       "aging": {
-        "title": "Cartera por Edades",
+        "title": "Cartera por edades",
         "current": "Vigente",
         "days30": "1-30 días",
         "days60": "31-60 días",
@@ -4733,7 +4738,9 @@
         },
         "chart": {
           "title": "Top {{n}} por neto al propietario",
-          "subtitle": "Lo que cada inmueble deja después de comisión, retenciones y gastos."
+          "titleEmpty": "Neto al propietario por inmueble",
+          "subtitle": "Lo que cada inmueble deja después de comisión, retenciones y gastos.",
+          "empty": "Ningún inmueble le dejó neto al propietario en este periodo."
         },
         "table": {
           "title": "Detalle por inmueble",
@@ -6226,13 +6233,13 @@
           "step2": {
             "heading": "Datos de la propiedad",
             "canonLabel": "Canon mensual (COP)",
-            "canonPlaceholder": "Ej: 1500000",
+            "canonPlaceholder": "Ej: 1.500.000",
             "tipoLabel": "Tipo de inmueble",
             "tipoOptions": {
               "apartamento": "Apartamento",
               "casa": "Casa",
-              "oficina": "Oficina",
-              "local": "Local"
+              "oficina": "Local u oficina",
+              "local": "Local u oficina"
             },
             "codeudoresLabel": "Número de codeudores",
             "codeudoresHint": "0 si el candidato no tiene codeudores"
@@ -6244,7 +6251,12 @@
             "ciudadRow": "Ciudad",
             "canonRow": "Canon mensual",
             "tipoRow": "Tipo de inmueble",
-            "codeudoresRow": "Codeudores"
+            "codeudoresRow": "Codeudores",
+            "aseguradorasRow": "Aseguradoras",
+            "aseguradorasTodas": "Todas las habilitadas",
+            "prioridadRow": "Prioridad",
+            "autorizacion": "Tengo la autorización de {{nombre}} para esta consulta.",
+            "autorizacionFalta": "Marca la casilla para consultar."
           },
           "restoreBanner": {
             "message": "Tienes una cotización en progreso. ¿Continuar donde la dejaste?"
@@ -6268,29 +6280,27 @@
             "titulo": "Configura la consulta",
             "aseguradoras": {
               "titulo": "¿A qué aseguradoras consultamos?",
-              "todas": "Todas las entidades",
-              "todasDesc": "Consultamos a todas las aseguradoras disponibles para tu inmobiliaria.",
-              "favoritas": "Favoritas",
-              "favoritasDesc": "Elige manualmente las aseguradoras que quieres consultar.",
-              "recomendar": "Que Leasefy recomiende",
-              "recomendarDesc": "Leasefy elige las mejores aseguradoras según el perfil del candidato.",
+              "todas": "Todas las habilitadas",
+              "todasDesc": "Consultamos a todas las aseguradoras que tu inmobiliaria tiene habilitadas en «Aseguradoras».",
+              "favoritas": "Sólo las que elijo",
+              "favoritasDesc": "Consultamos sólo a las que marques aquí.",
               "cargando": "Cargando aseguradoras…",
-              "sinAseguradoras": "No hay aseguradoras disponibles. Usaremos las que Leasefy recomiende.",
-              "seleccionaUna": "Selecciona al menos una aseguradora."
+              "sinAseguradoras": "Tu inmobiliaria no tiene aseguradoras habilitadas. Habilítalas en la pestaña «Aseguradoras».",
+              "seleccionaUna": "Marca al menos una aseguradora.",
+              "errorRegistro": "No pudimos traer la lista de aseguradoras.",
+              "reintentar": "Intentar de nuevo"
             },
             "prioridad": {
               "titulo": "¿Qué priorizamos?",
+              "subtitulo": "Decide cuál te recomendamos entre las que respalden al candidato.",
               "rapidez": "Rapidez",
+              "rapidezDesc": "La que respondió primero.",
               "costo": "Menor costo",
+              "costoDesc": "La de prima mensual más baja.",
               "cobertura": "Mayor cobertura",
-              "probabilidad": "Mayor probabilidad"
-            },
-            "modo": {
-              "titulo": "Modo de ejecución",
-              "automatico": "Automático",
-              "automaticoDesc": "Leasefy ejecuta la consulta y selecciona la mejor opción sin intervención.",
-              "revision": "Con revisión",
-              "revisionDesc": "Revisas los resultados antes de avanzar con una aseguradora."
+              "coberturaDesc": "La que pide menos condiciones y respalda el canon más alto.",
+              "probabilidad": "Mayor probabilidad",
+              "probabilidadDesc": "La que aprueba sin condiciones; después, la que pide menos."
             }
           },
           "ctaConsultar": "Consultar asegurabilidad"
@@ -6315,7 +6325,7 @@
           "remaining": "Te quedan {{n}} de {{m}} hoy",
           "calculating": "Calculando…",
           "tardando": "Tardando más de lo esperado…",
-          "submitButton": "Pedir explicación",
+          "submitButton": "Calcular",
           "capExhausted": {
             "title": "Límite alcanzado",
             "body": "Has usado tus {{cap}} explicaciones de hoy. Se reinicia mañana a las {{time}} (Bogotá).",
@@ -6334,7 +6344,8 @@
             "ciudad": "Ciudad",
             "tipo": "Tipo de inmueble",
             "codeudores": "Codeudores"
-          }
+          },
+          "recotizar": "Re-cotizar con este cambio"
         },
         "detail": {
           "header": {
@@ -6371,7 +6382,7 @@
           "connectionInterrupted": "Conexión interrumpida. Verifica tu conexión y reintenta.",
           "retry": "Reintentar",
           "reQuoteOfBadge": "Re-cotización de #{{shortId}}",
-          "pedirExplicacionButton": "Pedir explicación",
+          "pedirExplicacionButton": "¿Qué pasaría si…?",
           "reQuoteButton": "Re-cotizar con cambios",
           "liveRegion": {
             "carrierVerdict": "{{carrier}}: {{result}}"
@@ -6390,7 +6401,8 @@
             "recomendamos": "Recomendamos avanzar con {{carrier}}",
             "primaPorMes": "al mes",
             "porQue": "Por qué",
-            "porQueMejorPrecio": "Es la opción que mejor equilibra precio y condiciones entre las aseguradoras que aceptan."
+            "porQueMejorPrecio": "Es la opción que mejor equilibra precio y condiciones entre las aseguradoras que aceptan.",
+            "headlineUna": "El candidato es {{status}} · 1 opción encontrada"
           },
           "matriz": {
             "titulo": "Compara las opciones",
@@ -6468,11 +6480,10 @@
           "postSeleccion": {
             "titulo": "¿Qué quieres hacer ahora?",
             "radicar": "Radicar la póliza",
+            "cambiarPoliza": "Cambiar el número de la póliza",
             "expediente": "Generar expediente",
             "notificar": "Notificar al asesor",
-            "propietario": "Compartir con el propietario",
             "contrato": "Pasar a contrato",
-            "guardar": "Guardar la opción elegida",
             "sinOpcion": "Disponible cuando haya una opción asegurable."
           }
         },
@@ -6933,6 +6944,8 @@
           "porQue": "Por qué",
           "siguienteAccion": "Siguiente mejor acción",
           "avanzar": "Avanzar con la recomendada",
+          "elegida": "Opción elegida",
+          "verPasos": "Ver los siguientes pasos",
           "recotizar": "Re-cotizar con cambios"
         },
         "comparar": {
@@ -8617,7 +8630,7 @@
             },
             "c3": {
               "titulo": "Te avisa de la vacancia",
-              "texto": "Con un inmueble desocupado hace más de un mes, prepara la pregunta al propietario sobre el canon. El número lo pone él."
+              "texto": "Con un inmueble desocupado hace más de un mes, prepara la pregunta al propietario sobre el canon: por su portal o, si no tiene cuenta, como una tarea para llamarlo. Si tiene varios vacíos, es una sola pregunta con todos. El número lo pone él."
             }
           },
           "necesita": {
@@ -8627,7 +8640,7 @@
           "modo": {
             "sombra": "No le escribe al propietario: te propone cuándo preguntarle por el canon y, si quieres, sale con un clic.",
             "copiloto": "Te deja en la Bandeja, lista para un clic, la pregunta al propietario de un inmueble desocupado hace más de un mes.",
-            "autonomo": "Le pregunta solo al propietario, en su portal, si quiere revisar el canon. Cambiar el canon y pedir un avalúo siempre te piden un clic."
+            "autonomo": "Le pregunta solo al propietario, en su portal, si quiere revisar el canon; si no tiene cuenta, le deja al asesor la tarea de llamarlo; si tiene varios inmuebles vacíos, se lo pregunta una sola vez. Cambiar el canon y pedir un avalúo siempre te piden un clic."
           },
           "empezar": "Ver mis avalúos"
         },
@@ -9144,10 +9157,10 @@
             "salaTitulo": "Avalúos",
             "salaDesc": "Estimación de valor referencial, 100% remota y asistida por IA. Sin visita física: el certificado se genera con datos de mercado y lo firma un revisor de Leasefy.",
             "colaTitle": "Mis solicitudes de avalúo",
-            "colaDesc": "Cada avalúo que pediste, de principio a fin: solicitud → estimación con datos de mercado → revisión → certificado firmado. Siempre ves el estado al día; la revisión y la firma las hace un revisor de Leasefy. No se realiza visita física.",
+            "colaDesc": "Cada avalúo que pediste, paso a paso: lo pides, un revisor de Leasefy lo revisa, lo firma y se entrega. Ves cuándo lo pediste, cuándo se firmó y el certificado apenas esté. No se realiza visita física.",
             "colaKpiLabel": "Activas",
             "colaEmptyTitle": "Aún no tienes solicitudes",
-            "colaEmptyHint": "Pide tu primer avalúo: generás el link, se genera la estimación y aquí sigues cada paso hasta el certificado firmado.",
+            "colaEmptyHint": "Pide tu primer avalúo desde el Resumen: generas el link, se hace la estimación y aquí sigues cada paso hasta el certificado firmado.",
             "casoColaLabel": "Mis solicitudes",
             "solicitarTitle": "Solicitar un avalúo",
             "solicitarCta": "Solicitar avalúo",
@@ -9213,7 +9226,19 @@
                 "tuParte": "búscalo en el correo de la inmobiliaria y compártelo con tu cliente."
               }
             },
-            "firmaNota": "La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza visita física al inmueble."
+            "firmaNota": "La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza visita física al inmueble.",
+            "colaSinServicio": "No se pueden ver tus solicitudes: este entorno no tiene conectado el servicio de avalúos. Escríbele a tu contacto de Leasefy para activarlo.",
+            "colaPasosAria": "En qué va: {{paso}}",
+            "colaPedidoEl": "Pedido el {{fecha}}",
+            "colaFirmadoEl": "firmado el {{fecha}}",
+            "colaVerEstado": "Ver en qué va",
+            "colaPasos": {
+              "solicitado": "Pedido",
+              "enRevision": "En revisión",
+              "firmado": "Firmado",
+              "entregado": "Entregado",
+              "rechazado": "Rechazado"
+            }
           },
           "cobranza": {
             "salaDesc": "El agente trabaja la mora estándar por ti — llamadas, WhatsApp y cartas cumpliendo la ley — y te escala solo los casos críticos.",
@@ -13505,6 +13530,92 @@
       "sigue": "Sigue con {{paso}}. Retómala donde la dejaste.",
       "continuar": "Continuar migración"
     },
+    "cartera": {
+      "titulo": "La cartera que traían los inquilinos",
+      "corte": "Fecha de corte: {{fecha}}.",
+      "descripcion": "Sube el informe de cartera de tu sistema anterior, con una fila por cada factura pendiente. Cada saldo entra al contrato de su inquilino y cuenta mora desde su propia fecha.",
+      "columnas": "De cada fila usamos cinco datos: la fecha de vencimiento, el documento y el nombre del inquilino, el concepto y el saldo pendiente. El resto del archivo se ignora.",
+      "sinCorte": "Primero la fecha de corte (paso Contratos): la cartera es lo que cada inquilino debía ese día.",
+      "zonaTitulo": "Arrastra el informe de cartera por factura",
+      "zonaDetalle": "Excel o CSV, tal como lo exporta tu sistema.",
+      "zonaBloqueada": "Espera a que termine la carga de comprobantes.",
+      "leyendo": "Leyendo…",
+      "filas": "{{n}} filas",
+      "errorLeer": "No pudimos leer el archivo. ¿Es Excel o CSV?",
+      "errorVista": "No pudimos revisar la cartera.",
+      "errorCargar": "No se pudo cargar la cartera.",
+      "demasiadas": "El archivo trae {{n}} líneas con saldo y el máximo es {{max}}. Déjalo solo con lo que está pendiente a la fecha de corte y súbelo de nuevo.",
+      "mapeoTitulo": "Revisa de qué columna sale cada dato",
+      "mapeoFalta": "Falta señalar {{lista}}.",
+      "mapeoElegir": "Elige una columna",
+      "mapeoNinguna": "Ninguna",
+      "mapeoAria": "Columna para {{campo}}",
+      "campos": {
+        "documento": "Documento del inquilino",
+        "nombre": "Nombre del inquilino",
+        "fechaVencimiento": "Fecha de vencimiento",
+        "fechaFactura": "Fecha de la factura",
+        "concepto": "Concepto",
+        "valor": "Saldo pendiente"
+      },
+      "camposAyuda": {
+        "fechaVencimiento": "Desde esta fecha cuenta la mora.",
+        "fechaFactura": "Se usa cuando el vencimiento falta o no se puede leer.",
+        "valor": "Lo que todavía se debe, no el total de la factura."
+      },
+      "faltan": {
+        "documento": "el documento del inquilino",
+        "nombre": "el nombre del inquilino",
+        "fecha": "la fecha de vencimiento (o la de la factura)",
+        "concepto": "el concepto",
+        "valor": "el saldo pendiente"
+      },
+      "conFechaDeFactura": "{{n}} filas no traían un vencimiento legible: usamos la fecha de la factura.",
+      "conFechaDeFacturaUno": "1 fila no traía un vencimiento legible: usamos la fecha de la factura.",
+      "sinEnviarTitulo": "{{n}} filas del archivo no se envían",
+      "sinEnviarTituloUno": "1 fila del archivo no se envía",
+      "sinEnviarItem": "Fila {{fila}}: {{motivo}}",
+      "sinEnviarItemSinNumero": "{{motivo}}",
+      "buscando": "Buscando el contrato de cada inquilino…",
+      "resumen": "{{n}} inquilinos con contrato · {{deuda}} de deuda",
+      "resumenUno": "1 inquilino con contrato · {{deuda}} de deuda",
+      "resumenAFavor": " · {{monto}} a favor del inquilino",
+      "resumenSinContrato": " · {{n}} sin contrato (no se cargan)",
+      "resumenLineas": "{{validas}} de {{recibidas}} líneas se pueden cargar.",
+      "tabla": {
+        "documento": "Documento",
+        "inquilino": "Inquilino",
+        "contrato": "Contrato",
+        "lineas": "Líneas",
+        "desde": "Desde",
+        "deuda": "Debe",
+        "aFavor": "A favor",
+        "queSePasa": "Qué pasa"
+      },
+      "contratoConMas": "tiene {{n}} más: va al vigente",
+      "estado": {
+        "SE_CARGA": "Se carga",
+        "CARGADO": "Cargado",
+        "IGUAL": "Ya estaba",
+        "CON_PAGOS": "Ya tiene pagos",
+        "SIN_CONTRATO": "Sin contrato",
+        "SIN_LINEAS": "Sin líneas que cargar",
+        "NO_SE_SABE": "No se pudo revisar",
+        "otro": "Revisar"
+      },
+      "aFavorNota": "Lo que está a favor del inquilino va a su saldo a favor.",
+      "verMas": "Se muestran {{max}} de {{n}}.",
+      "problemasTitulo": "{{n}} líneas con problema: no se cargan",
+      "problemasTituloUno": "1 línea con problema: no se carga",
+      "problemasItem": "Fila {{fila}} · {{documento}}: {{motivo}}",
+      "problemasItemSinNumero": "{{documento}}: {{motivo}}",
+      "cargar": "Cargar la cartera de {{n}} inquilinos",
+      "cargarUno": "Cargar la cartera de 1 inquilino",
+      "cargando": "Cargando…",
+      "reemplaza": "Si un inquilino ya tenía cartera del sistema anterior, esta la reemplaza.",
+      "cargada": "Listo: la cartera de {{n}} inquilinos quedó cargada ({{deuda}}). Ya se ve en Cartera y en el estado de cuenta de cada contrato.",
+      "cargadaUno": "Listo: la cartera de 1 inquilino quedó cargada ({{deuda}}). Ya se ve en Cartera y en el estado de cuenta de su contrato."
+    },
     "muro": {
       "cerrar": "Cerrar y seguir después",
       "eyebrow": "Puesta en marcha",
@@ -13655,7 +13766,7 @@
       },
       "contables": {
         "titulo": "Registros contables",
-        "descripcion": "Los saldos y movimientos históricos. Va al final porque necesita a los terceros, los contratos y el plan de cuentas: cada saldo se imputa a una cuenta y a un propietario, un inquilino o un contrato. Lo que lo deja listo son los saldos iniciales: el balance por tercero al cierre del año anterior. Los movimientos de este año y los comprobantes se suman si los tienes.",
+        "descripcion": "Los saldos y movimientos históricos. Va al final porque necesita a los terceros, los contratos y el plan de cuentas: cada saldo se imputa a una cuenta y a un propietario, un inquilino o un contrato. Lo que lo deja listo es cargar registros contables: los saldos iniciales (el balance por tercero al cierre del año anterior) o los movimientos del libro diario. Los comprobantes se suman si los tienes.",
         "corto": "Registros contables"
       }
     },
@@ -13755,7 +13866,7 @@
     "contrato": "Contrato {{numero}}",
     "comoInquilino": "Inquilino del inmueble en {{direccion}}",
     "comoPropietario": "Propietario del inmueble en {{direccion}}",
-    "copropiedad": "Copropiedad entre {{propietarios}} propietarios · su parte: {{porcentaje}}\u00a0%",
+    "copropiedad": "Copropiedad entre {{propietarios}} propietarios · su parte: {{porcentaje}} %",
     "copropiedadSinPorcentaje": "Copropiedad entre {{propietarios}} propietarios · falta el porcentaje de cada propietario: el giro no sale hasta que la inmobiliaria lo ponga",
     "vigente": "Vigente",
     "terminado": "Terminado",
@@ -14005,7 +14116,7 @@
       },
       "noHace": {
         "horario": "No llama fuera del horario de ley ni más de una vez al día por persona (Ley 2300)",
-        "t323": "No aprueba sola más de $\u00a05.000.000, más de 6 meses de plazo ni más de 20 % de descuento",
+        "t323": "No aprueba sola más de $ 5.000.000, más de 6 meses de plazo ni más de 20 % de descuento",
         "verifica": "No confirma pagos: verificarlos es trabajo de una persona de tu equipo"
       }
     },

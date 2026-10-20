@@ -18,6 +18,9 @@ describe('el idioma de la parte pública (Nico, 16-10-2026)', () => {
     expect(esRutaPublica('/panel/inmobiliaria')).toBe(false)
     expect(esRutaPublica('/publicar')).toBe(false)
     expect(esRutaPublica('/inquilino')).toBe(false)
+    // La verificación del certificado de la Calificación Leasefy, sí; la del panel del inquilino, no.
+    expect(esRutaPublica('/verificar-calificacion/AB3D-E7FH')).toBe(true)
+    expect(esRutaPublica('/inquilino/calificacion')).toBe(false)
   })
 
   it('pone el prefijo a lo público y respeta ? y #', () => {

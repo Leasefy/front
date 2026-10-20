@@ -1,9 +1,17 @@
 name: CI
 
+# Triggers: `push` runs only on the long-lived branches; every other branch is
+# covered by its pull_request run. With `branches: ["**"]` a push to a branch
+# with an open PR ran CI twice (refs/heads/x and refs/pull/N/merge differ, so
+# `concurrency` cannot dedupe them) and burned Actions minutes. Docs-only
+# changes skip CI. `workflow_dispatch` enables the manual e2e job below.
 on:
   push:
-    branches: ["**"]
+    branches: [Main, develop]
+    paths-ignore: ["**/*.md"]
   pull_request:
+    paths-ignore: ["**/*.md"]
+  workflow_dispatch:
 
 # Cancel superseded runs on the same ref to save CI minutes.
 concurrency:

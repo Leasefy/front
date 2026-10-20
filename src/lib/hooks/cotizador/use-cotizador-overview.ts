@@ -24,6 +24,8 @@ export interface CotizadorOverviewResponse {
   lastQuotes: Array<{
     id: string                          // quote_id (UUID)
     cedulaHashPrefix8: string           // first 8 chars of cedula_hash — NEVER raw cédula
+    /** COTIZ-18 (19-10-2026): el nombre del candidato; `null`/ausente = sin él (o un micro anterior). */
+    nombreCandidato?: string | null
     canonCop: number                    // monthly rent in COP
     ciudad: string
     createdAt: string                   // ISO 8601

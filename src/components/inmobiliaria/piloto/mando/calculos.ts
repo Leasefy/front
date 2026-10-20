@@ -307,6 +307,8 @@ export interface MiembroDeLaTripulacion {
   corre: boolean
   actua: boolean
   porQueNoCorre: string | null
+  /** NITI-2: corre, pero Leasefy le apagó una parte («sólo lo que ya propuso»). */
+  enParte: string | null
   efectoReal: string | null
   /** Lo último que hizo, del feed. */
   ultimo: ActivityItem | null
@@ -329,6 +331,7 @@ export function tripulacion(
       corre: a.corre,
       actua: Boolean(a.actua),
       porQueNoCorre: a.porQueNoCorre ?? null,
+      enParte: a.corre && typeof a.enParte === 'string' && a.enParte ? a.enParte : null,
       efectoReal: a.efectoReal ?? null,
       ultimo: actividad.find((i) => i.agente === a.agente) ?? null,
       trabajando: a.corre && ocupados.has(a.agente),

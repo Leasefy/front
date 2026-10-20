@@ -45,8 +45,10 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
 
   // Null-guard rule (T-35-14): use != null to catch both null and undefined.
   // NEVER render "0" or "$0.00" for a null forecast value.
+  // Al peso (QA 19-10-2026): salen de dólares × la tasa (y de promedios), no
+  // son plata guardada; sin redondear traían centavos («$ 12,6»).
   const enPesos = (v: number | null | undefined): string =>
-    v != null ? formatCurrency(v) : '—'
+    v != null ? formatCurrency(Math.round(v)) : '—'
 
   const cards = [
     {

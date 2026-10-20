@@ -93,7 +93,7 @@ export function CarrierLabelChips({ labels, className }: CarrierLabelChipsProps)
             // Display-only comparative label (no toggling). Override the default
             // primary-soft selected fill with the semantic token tint.
             tabIndex={-1}
-            className={cn('cursor-default pointer-events-none', meta.cls)}
+            className={cn('cursor-default pointer-events-none whitespace-nowrap', meta.cls)}
           >
             {tf(`inmobiliaria.ai.cotizador.labels.${meta.key}`, meta.fallback)}
           </Chip>

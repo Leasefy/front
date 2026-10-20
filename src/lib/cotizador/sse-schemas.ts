@@ -33,6 +33,10 @@ export const SSECarrierVerdictSchema = z.object({
   verdict: z.enum(['approved', 'conditional', 'rejected', 'error']),
   prima_mensual_cop: z.number().nullable(),
   condiciones: z.array(z.string()).optional(),
+  /** COTIZ-12 (19-10-2026): por qué no lo respalda (un micro anterior no lo manda). */
+  motivo_rechazo: z.string().nullable().optional(),
+  /** COTIZ-14 (19-10-2026): lo que tardó ESA aseguradora, en ms. */
+  latency_ms: z.number().optional(),
 })
 
 export const SSECarrierErrorSchema = z.object({

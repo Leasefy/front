@@ -60,7 +60,12 @@ function VideoDelChat() {
     if (!v) return;
     v.muted = true;
     v.defaultMuted = true;
-    v.play().catch(() => {});
+    // iPhone en bajo consumo (o cualquier navegador que niegue el autoplay):
+    // la imagen fija de la respuesta, no un recuadro gris con «play» (Nico,
+    // 19-10-2026, video desde el celular).
+    v.play().catch((e: unknown) => {
+      if ((e as { name?: string } | null)?.name === "NotAllowedError") setQuieto(true);
+    });
   }, [quieto]);
   if (quieto) return <img src={`/landing-v2/producto/home-chat${s}.webp`} width={2400} height={1500} alt={tx(...ALT_DEL_CHAT)} />;
   return (

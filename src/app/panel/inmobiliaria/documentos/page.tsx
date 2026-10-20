@@ -613,7 +613,7 @@ function DocumentosContent() {
                         }
                       }}
                     >
-                      <TableCell className="max-w-[240px]">
+                      <TableCell className="max-w-[210px]">
                         <p className="truncate font-medium text-fg">{doc.name}</p>
                         {doc.template?.name && (
                           <p className="truncate text-caption text-fg-muted">{doc.template.name}</p>
@@ -627,7 +627,7 @@ function DocumentosContent() {
                           {etiquetaDelInmueble(doc) ?? '—'}
                         </span>
                       </TableCell>
-                      <TableCell className="max-w-[180px]">
+                      <TableCell className="max-w-[150px]">
                         <span className="block truncate text-fg-muted">
                           {etiquetaDePartes(doc) ?? '—'}
                         </span>

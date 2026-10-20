@@ -23,8 +23,9 @@ import {
   toUpdateCarrierBody,
   type CarrierFormValues,
 } from './carrier-form-schema'
-import { Card } from '@leasefy/cadence'
+import { Alert } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
+import { confirmar } from '@/components/ui/confirmar'
 
 /**
  * El mensaje real del micro (`{ success:false, error }`), con la regla de oro
@@ -48,6 +49,15 @@ type FormMode =
  * credenciales son write-only: nunca se leen del backend, solo se escriben
  * cuando el admin las completa explícitamente.
  */
+const MODO: Record<string, string> = {
+  stub: 'De prueba',
+  rest: 'API',
+  'form-rpa': 'Formulario automático',
+  'email-broker': 'Por correo',
+  'open-finance': 'Open finance',
+}
+const PRODUCTO: Record<string, string> = { seguro: 'Seguro', fianza: 'Fianza' }
+
 export default function CotizadorPage() {
   const { data, isLoading, error, refetch } = useApiQuery<CarrierRow[]>(
     (signal) => listCarriers(signal),
@@ -97,13 +107,13 @@ export default function CotizadorPage() {
   }
 
   async function handleDelete(carrier: CarrierRow) {
-    if (
-      !window.confirm(
-        `¿Eliminar el carrier "${carrier.name}"?\n\n` +
-          'Se desactiva (soft-delete): deja de cotizar pero no se borran datos ni credenciales.',
-      )
-    )
-      return
+    const ok = await confirmar({
+      tipo: 'advertencia',
+      titulo: `¿Desactivar la aseguradora «${carrier.displayName || carrier.name}»?`,
+      descripcion: 'Deja de cotizar. No se borran sus datos ni sus credenciales.',
+      accion: 'Desactivar',
+    })
+    if (!ok) return
     setRowError(null)
     setBusyName(carrier.name)
     try {
@@ -118,7 +128,9 @@ export default function CotizadorPage() {
 
   const columns: Column<CarrierRow>[] = [
     {
-      header: 'Nombre',
+      header: 'Aseguradora',
+      orden: (c) => c.displayName || c.name,
+      texto: (c) => c.displayName || c.name,
       cell: (c) => (
         <div>
           <div className="font-medium text-fg">{c.name}</div>
@@ -128,24 +140,27 @@ export default function CotizadorPage() {
     },
     {
       header: 'Producto',
-      cell: (c) => <span className="text-caption text-fg-muted">{c.productType}</span>,
+      orden: (c) => c.productType,
+      texto: (c) => PRODUCTO[c.productType] ?? c.productType,
+      cell: (c) => <span className="text-caption text-fg-muted">{PRODUCTO[c.productType] ?? c.productType}</span>,
     },
     {
-      header: 'Modo',
-      cell: (c) => <Pill tone="info">{c.mode}</Pill>,
+      header: 'Conexión',
+      orden: (c) => c.mode,
+      texto: (c) => MODO[c.mode] ?? c.mode,
+      cell: (c) => <Pill tone="info">{MODO[c.mode] ?? c.mode}</Pill>,
     },
     {
       header: 'Estado',
-      cell: (c) => <Pill tone={c.enabled ? 'ok' : 'bad'}>{c.enabled ? 'activo' : 'inactivo'}</Pill>,
+      orden: (c) => (c.enabled ? 0 : 1),
+      texto: (c) => (c.enabled ? 'Activa' : 'Inactiva'),
+      cell: (c) => <Pill tone={c.enabled ? 'ok' : 'muted'}>{c.enabled ? 'Activa' : 'Inactiva'}</Pill>,
     },
     {
       header: 'Credenciales',
-      cell: (c) =>
-        c.has_config ? (
-          <Pill tone="ok">configurado ✓</Pill>
-        ) : (
-          <Pill tone="warn">sin credenciales</Pill>
-        ),
+      orden: (c) => (c.has_config ? 0 : 1),
+      texto: (c) => (c.has_config ? 'Puestas' : 'Sin credenciales'),
+      cell: (c) => (c.has_config ? <Pill tone="ok">Puestas</Pill> : <Pill tone="warn">Sin credenciales</Pill>),
     },
     {
       header: '',
@@ -160,7 +175,7 @@ export default function CotizadorPage() {
           <Button variant="destructive" hideArrow className="h-8 px-2" onClick={() => handleDelete(c)}
             disabled={busyName === c.name}
           >
-            {busyName === c.name ? '…' : 'Eliminar'}
+            {busyName === c.name ? '…' : 'Desactivar'}
           </Button>
         </div>
       ),
@@ -171,21 +186,17 @@ export default function CotizadorPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Aseguradoras"
-        description="Registry de carriers del cotizador (empezando por Fianly). Configura la ruta, el modo de integración y las credenciales — se guardan encriptadas y nunca se muestran de vuelta."
+        description="Las aseguradoras del cotizador (empezando por Fianly): la ruta, cómo se conecta y sus credenciales. Las credenciales se guardan cifradas y nunca se vuelven a mostrar."
         right={
           form.kind === 'none' ? (
             <Button hideArrow onClick={openCreate}>
-              Nuevo carrier
+              Nueva aseguradora
             </Button>
           ) : undefined
         }
       />
 
-      {rowError && (
-        <Card className="p-4  mb-6">
-          <p className="text-sm text-danger">{rowError}</p>
-        </Card>
-      )}
+      {rowError ? <Alert variant="danger">{rowError}</Alert> : null}
 
       {form.kind !== 'none' && (
         <div className="mb-8">
@@ -207,8 +218,21 @@ export default function CotizadorPage() {
         getKey={(c) => c.id}
         isLoading={isLoading}
         error={error}
-        emptyTitle="Sin carriers"
-        emptyHint='Crea el primero con "Nuevo carrier".'
+        onReintentar={refetch}
+        emptyTitle="Todavía no hay aseguradoras"
+        emptyHint="Crea la primera con «Nueva aseguradora»."
+        aria-label="Aseguradoras del cotizador"
+        queSon={['aseguradora', 'aseguradoras']}
+        buscar="Nombre de la aseguradora"
+        textoExtra={(c) => c.name}
+        segmentos={[
+          { valor: 'todas', nombre: 'Todas', cumple: () => true },
+          { valor: 'activas', nombre: 'Activas', cumple: (c) => c.enabled },
+          { valor: 'inactivas', nombre: 'Inactivas', cumple: (c) => !c.enabled },
+          { valor: 'sin-credenciales', nombre: 'Sin credenciales', cumple: (c) => !c.has_config },
+        ]}
+        exportar="aseguradoras-del-cotizador"
+        masEnElExcel={[{ header: 'Código', texto: (c) => c.name }]}
       />
 
       <div className="">

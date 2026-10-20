@@ -176,7 +176,9 @@ describe('/admin/chat-preguntas', () => {
     expect(texto()).toContain('37,5 %')
     expect(texto()).toContain('38 % de las preguntas sobre cartera no tuvieron respuesta (3 de 8).')
     expect(texto()).toContain('¿cuánto debe la cédula ••••••••89?')
-    expect(texto()).toContain('US$0,09')
+    // En pesos, nunca en dólares (Nico): US$ 0,09 a $ 4.000 por dólar.
+    expect(texto()).toContain('$\u00a0360')
+    expect(texto()).not.toContain('US$')
     expect(texto()).toContain('Portofino')
     expect(texto()).toContain('Sólo la ve el equipo de producto de Leasefy')
     expect(texto()).not.toContain('no está en el menú')

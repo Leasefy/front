@@ -1,157 +1,193 @@
 'use client'
 
+import { useState } from 'react'
+import { Flag } from '@phosphor-icons/react'
+import { Alert } from '@leasefy/cadence'
+import { adminApi } from '@/lib/admin/api'
+import { useApiQuery } from '@/lib/admin/use-api-query'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
+import type { RespuestaDeBanderas, BanderasDeLaInmobiliaria } from '@/lib/admin/banderas'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { Card, MonoLabel } from '@leasefy/cadence'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
+import { Pill } from '@/components/admin/Pill'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 
-// ── Scaffold data (BACK.md §9 · FRONT.md §6.32) ───────────────────────────────
+const SEGMENTOS: Segmento<BanderasDeLaInmobiliaria>[] = [
+  { valor: 'todas', nombre: 'Todas', cumple: () => true },
+  { valor: 'todos', nombre: 'Todos los agentes', cumple: (f) => f.lista !== null && f.hereda },
+  { valor: 'propia', nombre: 'Lista propia', cumple: (f) => f.lista !== null && !f.hereda },
+  { valor: 'pausa', nombre: 'En pausa', cumple: (f) => f.pausada },
+  { valor: 'sin-micro', nombre: 'Sin el micro', cumple: (f) => f.lista === null },
+]
 
 /**
- * STATIC SCAFFOLD — no fetch.
- * agent.feature_flags table and agent.is_feature_enabled() function do not
- * exist yet. No endpoint is wired; hitting /keys would 404.
- * Build the migration below first, then wire the screen.
+ * /admin/feature-flags — Banderas: qué agentes corren para cada inmobiliaria
+ * (19-10-2026, Nico: «construirlas de verdad», «por inmobiliaria»). Era una
+ * maqueta con filas inventadas. Back: `api/v1/admin/banderas` sobre
+ * `agent.agency_policies.agentes_habilitados`, con la misma regla del micro.
  */
+export default function BanderasPage() {
+  const { data, isLoading, error, refetch } = useApiQuery<RespuestaDeBanderas>((s) => adminApi('/banderas', { signal: s }), [])
+  const [abierta, setAbierta] = useState<BanderasDeLaInmobiliaria | null>(null)
+  const [cambio, setCambio] = useState<{ agente: string; encendido: boolean } | null>(null)
+  const [motivo, setMotivo] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [fallo, setFallo] = useState<string | null>(null)
+  const total = data?.agentes.length ?? 0
 
-const MIGRATION_SQL = `-- agent/prisma/migrations/XXXX_feature_flags/migration.sql
-CREATE TABLE agent.feature_flags (
-  key          TEXT          NOT NULL,
-  tenant_id    UUID          NOT NULL REFERENCES agent.agencies(tenant_id) ON DELETE CASCADE,
-  enabled      BOOLEAN       NOT NULL DEFAULT FALSE,
-  payload      JSONB         NOT NULL DEFAULT '{}'::jsonb,
-  rollout_pct  INTEGER       NOT NULL DEFAULT 0 CHECK (rollout_pct BETWEEN 0 AND 100),
-  updated_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
-  updated_by   TEXT,
-  PRIMARY KEY (key, tenant_id)
-);
+  async function guardar() {
+    if (!abierta || !cambio || motivo.trim().length < 5) return
+    setGuardando(true)
+    setFallo(null)
+    try {
+      const fila = await adminApi<BanderasDeLaInmobiliaria>(`/banderas/${abierta.tenant_id}/${cambio.agente}`, {
+        method: 'PUT',
+        body: { encendido: cambio.encendido, motivo: motivo.trim() },
+      })
+      setAbierta({ ...abierta, ...fila })
+      setCambio(null)
+      setMotivo('')
+      refetch()
+    } catch (err) {
+      setFallo(mensajeDelAdmin(err, { accion: 'cambiar el agente', porDefecto: 'No se pudo cambiar el agente.' }))
+    } finally {
+      setGuardando(false)
+    }
+  }
 
-CREATE INDEX feature_flags_tenant_idx ON agent.feature_flags(tenant_id);
-ALTER TABLE agent.feature_flags ENABLE ROW LEVEL SECURITY;
-ALTER TABLE agent.feature_flags FORCE ROW LEVEL SECURITY;
+  const columnas: Column<BanderasDeLaInmobiliaria>[] = [
+    { header: 'Inmobiliaria', orden: (f) => f.nombre, texto: (f) => f.nombre, cell: (f) => <span className="font-medium text-fg">{f.nombre}</span> },
+    {
+      header: 'Agentes',
+      orden: (f) => (f.lista === null ? null : Object.values(f.encendidos).filter(Boolean).length),
+      ordenPrimero: 'desc',
+      texto: (f) =>
+        f.lista === null
+          ? 'Sin política en el micro'
+          : f.hereda
+            ? `Todos (${total})`
+            : `${Object.values(f.encendidos).filter(Boolean).length} de ${total}`,
+      cell: (f) => {
+        const n = Object.values(f.encendidos).filter(Boolean).length
+        return f.lista === null ? (
+          <span className="text-caption text-fg-subtle">Sin política en el micro</span>
+        ) : f.hereda ? (
+          <span className="text-body-sm text-fg">Todos ({total}) · como viene por defecto</span>
+        ) : (
+          <span className="text-body-sm text-fg">
+            {n} de {total} encendidos
+          </span>
+        )
+      },
+    },
+    {
+      header: 'Pausa de emergencia',
+      orden: (f) => (f.pausada ? 0 : 1),
+      texto: (f) => (f.pausada ? 'En pausa' : 'No'),
+      cell: (f) => (f.pausada ? <Pill tone="bad" dot>En pausa</Pill> : <span className="text-caption text-fg-subtle">No</span>),
+    },
+    {
+      header: '',
+      align: 'right',
+      cell: (f) =>
+        f.lista === null ? null : (
+          <Button size="sm" variant="outline" hideArrow onClick={() => { setAbierta(f); setCambio(null); setMotivo(''); setFallo(null) }}>
+            Ver sus agentes
+          </Button>
+        ),
+    },
+  ]
 
-CREATE OR REPLACE FUNCTION agent.is_feature_enabled(p_key TEXT, p_tenant UUID)
-RETURNS BOOLEAN AS $$
-  SELECT COALESCE(
-    (SELECT enabled FROM agent.feature_flags
-      WHERE key = p_key AND tenant_id = p_tenant),
-    FALSE
-  );
-$$ LANGUAGE SQL STABLE;`
-
-const TODO_LIST = [
-  'Aplicar migration SQL (ver abajo) + ALTER en .planning del agent',
-  'Helper agent.is_feature_enabled(key, tenant) ya incluido en la migration',
-  'Server action setFlag(key, tenant_id, enabled, payload) con admin re-check + logAdminAction',
-  'UI grid agencias × flags con toggle visual + filtro por estado',
-  'Audit trail en agent.audit_log con action="feature_flag.toggle"',
-]
-
-const PREVIEW_KEYS = [
-  { key: 'inferred_profile_v2',  desc: 'Usa profile inference Phase 17.2 en agent calls' },
-  { key: 'whatsapp_top3_alert',  desc: 'Daily report top-3 deudores por WhatsApp (D-13)' },
-  { key: 'cartera_payment_plan', desc: 'Permite ofrecer planes de pago en S2/S3' },
-  { key: 'english_calls',        desc: 'Habilita prompts EN para deudores anglo' },
-]
-
-const SAMPLE_AGENCIES = ['Inmobiliaria Demo SAS', 'Real Estate Bogotá', 'Cartera Andina']
-
-// ── Page ──────────────────────────────────────────────────────────────────────
-
-/** /feature-flags — STATIC scaffold (BACK.md §9 · FRONT.md §6.32). */
-export default function FeatureFlagsPage() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Banderas"
-        description="Flags por inmobiliaria: experimentos, features beta, kill-switches granulares."
+        description="Qué agentes corren para cada inmobiliaria. Cada cambio pide un motivo y queda registrado. Además, cada agente tiene un interruptor general en el servidor: si está apagado allá, no corre para nadie aunque acá esté encendido."
+      />
+      <DataTable
+        columns={columnas}
+        rows={data?.inmobiliarias}
+        getKey={(f) => f.tenant_id}
+        isLoading={isLoading}
+        error={error}
+        onReintentar={refetch}
+        emptyTitle="Ninguna inmobiliaria está en el micro de agentes"
+        emptyIcon={<Flag weight="bold" />}
+        aria-label="Banderas por inmobiliaria"
+        onRowClick={(f) => {
+          if (f.lista === null) return
+          setAbierta(f)
+          setCambio(null)
+          setMotivo('')
+          setFallo(null)
+        }}
+        filaMarcada={(f) => f.tenant_id === abierta?.tenant_id}
+        queSon={['inmobiliaria', 'inmobiliarias']}
+        buscar="Buscar inmobiliaria"
+        segmentos={SEGMENTOS}
+        exportar="banderas"
+        masEnElExcel={(data?.agentes ?? []).map((a) => ({
+          header: a.nombre,
+          texto: (f: BanderasDeLaInmobiliaria) => (f.lista === null ? '' : Boolean(f.encendidos[a.agente])),
+        }))}
       />
 
-      {/* Scaffold notice */}
-      <Card className="p-5 ">
-        <div className="flex items-baseline justify-between gap-4">
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warning">
-            scaffold · pendiente de build
-          </span>
-          <MonoLabel>
-            esfuerzo · ~2h agent + 1h admin
-          </MonoLabel>
-        </div>
-        <p className="text-sm text-fg mt-2">
-          No existe tabla <code className="font-mono">agent.feature_flags</code> todavía ni la
-          función <code className="font-mono">agent.is_feature_enabled()</code>. Cuando ship,
-          esta pantalla muestra un grid agencias × flags con toggle visual.
-        </p>
-        <p className="text-caption text-fg-muted mt-2">
-          Trackeado en: <code className="font-mono">HANDOFF.md deuda · feature-flags scaffold</code>
-        </p>
-      </Card>
-
-      {/* Todo list */}
-      <MonoLabel className="block mb-3">
-        qué se necesita para shipearla
-      </MonoLabel>
-      <Card className="p-5">
-        <ol className="space-y-2 text-sm text-fg">
-          {TODO_LIST.map((t, i) => (
-            <li key={i} className="flex gap-3">
-              <span className="font-mono text-primary text-caption shrink-0">
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <span>{t}</span>
-            </li>
-          ))}
-        </ol>
-      </Card>
-
-      {/* Migration SQL */}
-      <MonoLabel className="block mb-3">
-        migration SQL · copy-paste a Supabase Studio
-      </MonoLabel>
-      <Card className="p-0 overflow-hidden">
-        <pre className="bg-surface-muted p-4 font-mono text-[11px] leading-relaxed text-fg overflow-x-auto">
-          {MIGRATION_SQL}
-        </pre>
-      </Card>
-
-      {/* Preview (greyed out, non-interactive) */}
-      <MonoLabel className="block mb-3">
-        preview · cómo se va a ver cuando ship
-      </MonoLabel>
-      <Card className="p-5 opacity-60 pointer-events-none select-none">
-        <MonoLabel className="block mb-3">
-          grid agencias × flags
-        </MonoLabel>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead >Agencia</TableHead>
-                {PREVIEW_KEYS.map((f) => (
-                  <TableHead key={f.key}  title={f.desc}>
-                    {f.key.split('_').slice(0, 2).join(' ')}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {SAMPLE_AGENCIES.map((a) => (
-                <TableRow key={a} className="border-b border-border">
-                  <TableCell className="text-sm">{a}</TableCell>
-                  {PREVIEW_KEYS.map((f, i) => (
-                    <TableCell key={f.key} className="text-center py-2.5">
-                      <div
-                        className={`inline-block w-8 h-4  ${
-                          i % 2 === 0 ? 'bg-success' : 'bg-border-strong'
-                        }`}
-                      />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+      <Cajon abierto={abierta !== null} onOpenChange={(a) => (a ? null : setAbierta(null))}>
+        <CajonCabecera
+          titulo={abierta ? `Agentes de ${abierta.nombre}` : 'Agentes'}
+          descripcion={abierta?.hereda ? 'Hoy tiene todos encendidos, como viene por defecto.' : 'Tiene una lista propia de agentes.'}
+        />
+        <CajonCuerpo>
+          <div className="space-y-4">
+            {abierta?.pausada ? <Alert variant="danger">Está en pausa de emergencia: ningún agente corre aunque esté encendido.</Alert> : null}
+            <ul className="divide-y divide-border rounded-lg border border-border">
+              {(data?.agentes ?? []).map((a) => {
+                const encendido = cambio?.agente === a.agente ? cambio.encendido : Boolean(abierta?.encendidos[a.agente])
+                return (
+                  <li key={a.agente} className="flex items-start justify-between gap-3 px-4 py-3">
+                    <div className="min-w-0">
+                      <div className="text-body-sm font-medium text-fg">{a.nombre}</div>
+                      <div className="text-caption text-fg-muted">{a.queHace}</div>
+                    </div>
+                    <Switch
+                      checked={encendido}
+                      disabled={guardando || (cambio !== null && cambio.agente !== a.agente)}
+                      onCheckedChange={(v) => {
+                        setFallo(null)
+                        setCambio(v === Boolean(abierta?.encendidos[a.agente]) ? null : { agente: a.agente, encendido: v })
+                      }}
+                      aria-label={`${a.nombre} para ${abierta?.nombre ?? ''}`}
+                    />
+                  </li>
+                )
+              })}
+            </ul>
+            {cambio ? (
+              <div className="space-y-1.5">
+                <label htmlFor="motivo-bandera" className="text-body-sm font-medium text-fg">
+                  ¿Por qué lo {cambio.encendido ? 'prendes' : 'apagas'}? <span className="text-danger">*</span>
+                </label>
+                <Textarea id="motivo-bandera" aria-required="true" rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+                <p className="text-caption text-fg-subtle">Queda guardado con tu correo y la fecha.</p>
+              </div>
+            ) : null}
+            {fallo ? <Alert variant="danger">{fallo}</Alert> : null}
+          </div>
+        </CajonCuerpo>
+        <CajonPie ayuda={cambio && motivo.trim().length < 5 ? 'Escribe el motivo (al menos 5 letras).' : undefined}>
+          <Button variant="outline" hideArrow onClick={() => (cambio ? setCambio(null) : setAbierta(null))}>
+            {cambio ? 'Deshacer' : 'Cerrar'}
+          </Button>
+          {cambio ? (
+            <Button hideArrow disabled={motivo.trim().length < 5 || guardando} onClick={() => void guardar()}>
+              {guardando ? 'Guardando…' : 'Guardar el cambio'}
+            </Button>
+          ) : null}
+        </CajonPie>
+      </Cajon>
     </div>
   )
 }

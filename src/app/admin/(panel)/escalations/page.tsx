@@ -1,12 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { Card, MonoLabel, Stagger, StaggerItem } from '@leasefy/cadence'
+import { useRouter } from 'next/navigation'
+import { Card, MonoLabel, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
+import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
+import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { urgencia } from '@/lib/admin/textos-del-admin'
 
@@ -83,9 +87,22 @@ function Columna({
   )
 }
 
-/** /admin/escalations — tablero de 3 columnas (FRONT.md §6.13 · BACK.md §8.11). */
+const ESTADO: Record<string, { nombre: string; tono: 'bad' | 'info' | 'muted' }> = {
+  open: { nombre: 'Abierta', tono: 'bad' },
+  assigned: { nombre: 'En curso', tono: 'info' },
+  resolved: { nombre: 'Resuelta', tono: 'muted' },
+}
+const RANGO_DE_URGENCIA: Record<string, number> = { live: 0, high: 1, medium: 2, low: 3 }
+
+/**
+ * /admin/escalations — los casos que un agente le pasó a una persona (FRONT.md
+ * §6.13 · BACK.md §8.11). 20-10-2026: tabla de la plataforma por defecto
+ * (buscar, pestañas, orden, Excel) y el tablero de 3 columnas como otra vista.
+ */
 export default function EscalationsPage() {
-  // El tablero devuelve un arreglo pelado (LIMIT 200), no un sobre { data }.
+  const router = useRouter()
+  const { get, setFilters } = useUrlFilters()
+  const vista = get('ver') === 'tablero' ? 'tablero' : 'tabla'
   const { data, isLoading, error, refetch } = useApiQuery<EscalationRow[]>(
     (signal) => adminApi('/escalations', { signal }),
     [],
@@ -96,18 +113,103 @@ export default function EscalationsPage() {
   const assigned = rows.filter((r) => r.status === 'assigned')
   const resolved = rows.filter((r) => r.status === 'resolved')
 
+  const columnas: Column<EscalationRow>[] = [
+    {
+      header: 'Urgencia',
+      orden: (r) => RANGO_DE_URGENCIA[r.urgency] ?? 9,
+      texto: (r) => urgencia(r.urgency).nombre,
+      cell: (r) => {
+        const u = urgencia(r.urgency)
+        return (
+          <Pill tone={u.tono} dot>
+            {u.nombre}
+          </Pill>
+        )
+      },
+    },
+    {
+      header: 'Deudor',
+      orden: (r) => r.debtor_name,
+      texto: (r) => r.debtor_name ?? 'Deudor sin nombre',
+      cell: (r) => <span className="font-medium text-fg">{r.debtor_name ?? 'Deudor sin nombre'}</span>,
+    },
+    {
+      header: 'Inmobiliaria',
+      orden: (r) => r.legal_name,
+      texto: (r) => r.legal_name ?? 'Sin inmobiliaria',
+      cell: (r) => <span className="text-fg-muted">{r.legal_name ?? 'Sin inmobiliaria'}</span>,
+    },
+    {
+      header: 'Estado',
+      orden: (r) => r.status,
+      texto: (r) => (ESTADO[r.status] ?? { nombre: r.status }).nombre,
+      cell: (r) => {
+        const e = ESTADO[r.status] ?? { nombre: r.status, tono: 'muted' as const }
+        return <Pill tone={e.tono}>{e.nombre}</Pill>
+      },
+    },
+    {
+      header: 'Desde',
+      align: 'right',
+      orden: (r) => r.created_at,
+      ordenPrimero: 'desc',
+      texto: (r) => fmtDateTime(r.created_at),
+      cell: (r) => <span className="whitespace-nowrap text-caption tabular-nums text-fg-muted">{fmtDateTime(r.created_at)}</span>,
+    },
+  ]
+
+  const cambiarVista = (
+    <SegmentedControl<'tabla' | 'tablero'>
+      size="sm"
+      aria-label="Cómo verlas"
+      value={vista}
+      onChange={(v) => setFilters({ ver: v === 'tablero' ? 'tablero' : undefined })}
+      options={[
+        { value: 'tabla', label: 'Tabla' },
+        { value: 'tablero', label: 'Tablero' },
+      ]}
+    />
+  )
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Escalaciones"
-        description={
-          !isLoading && !error
-            ? `${open.length} ${open.length === 1 ? 'abierta' : 'abiertas'} · ${assigned.length} en curso · ${resolved.length} resueltas en 7 días. Primero lo más urgente.`
-            : 'Los casos que un agente le pasó a una persona: abiertos, en curso y resueltos en los últimos 7 días.'
-        }
+        description="Los casos que un agente le pasó a una persona: abiertos, en curso y resueltos en los últimos 7 días. Toca uno para tomarlo o resolverlo."
+        right={cambiarVista}
       />
 
-      {isLoading ? (
+      <section aria-label="Cifras de las escalaciones" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiCard label="Abiertas" value={data ? open.length : '—'} tone={open.length ? 'bad' : 'default'} hint="Sin nadie asignado" />
+        <KpiCard label="En curso" value={data ? assigned.length : '—'} hint="Alguien las tiene" />
+        <KpiCard label="Resueltas" value={data ? resolved.length : '—'} tone="ok" hint="Últimos 7 días" />
+      </section>
+
+      {vista === 'tabla' ? (
+        <DataTable
+          columns={columnas}
+          rows={data}
+          getKey={(r) => r.id}
+          isLoading={isLoading}
+          error={error}
+          onReintentar={refetch}
+          emptyTitle="No hay escalaciones"
+          emptyHint="Cuando un agente le pase un caso a una persona, aparece acá."
+          aria-label="Escalaciones"
+          onRowClick={(r) => router.push(`/admin/escalations/${r.id}`)}
+          queSon={['escalación', 'escalaciones']}
+          buscar="Deudor o inmobiliaria"
+          segmentos={[
+            { valor: 'pendientes', nombre: 'Por atender', cumple: (r) => r.status !== 'resolved' },
+            { valor: 'open', nombre: 'Abiertas', cumple: (r) => r.status === 'open' },
+            { valor: 'assigned', nombre: 'En curso', cumple: (r) => r.status === 'assigned' },
+            { valor: 'resolved', nombre: 'Resueltas', cumple: (r) => r.status === 'resolved' },
+            { valor: 'todas', nombre: 'Todas', cumple: () => true },
+          ]}
+          ordenInicial={{ columna: 0, sentido: 'asc' }}
+          exportar="escalaciones"
+        />
+      ) : isLoading ? (
         <LoadingBlock filas={6} />
       ) : error ? (
         <ErrorBlock error={error} onReintentar={refetch} />

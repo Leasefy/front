@@ -119,7 +119,7 @@ export const PANTALLAS_DEL_ADMIN: Record<string, DatosDeLaPantalla> = {
 
   '/admin/payments': { seccion: 'plata', icono: CreditCard, nombre: 'Pagos', queHay: 'El embudo de pagos en línea' },
   '/admin/recaudo-en-linea': { seccion: 'plata', icono: HandCoins, nombre: 'Recaudo en línea', queHay: 'Reporte de Wompi y liquidaciones' },
-  '/admin/billing': { seccion: 'plata', icono: ChartLineUp, nombre: 'Ingresos', queHay: 'MRR y ARR de Leasefy' },
+  '/admin/billing': { seccion: 'plata', icono: ChartLineUp, nombre: 'Ingresos', queHay: 'Lo que Leasefy cobra a cada inmobiliaria' },
   '/admin/costs': { seccion: 'plata', icono: Coins, nombre: 'Costos', queHay: 'Lo que cuesta operar la plataforma' },
   '/admin/exogena': { seccion: 'plata', icono: Receipt, nombre: 'Exógena', queHay: 'Conceptos por año y publicación' },
 

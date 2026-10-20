@@ -1,117 +1,210 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Buildings } from '@phosphor-icons/react'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
-import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { useUrlFilters } from '@/lib/admin/use-url-filters'
+import { fmtFecha, fmtNumero } from '@/lib/admin/format'
+import { pasaLosFiltros, type InmobiliariaDeLaLista } from '@/lib/admin/inmobiliarias-de-la-lista'
+import { estadoDelPlan } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
-import { useClientPagination } from '@/lib/admin/use-client-pagination'
+import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
+import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
 import { Pill } from '@/components/admin/Pill'
 import { RegistrosSinAsistente } from '@/components/admin/RegistrosSinAsistente'
 
-const PAGE_SIZE = 50
+const estadoDe = (f: InmobiliariaDeLaLista) => f.plan?.estado ?? 'sin-plan'
 
-// ---------- Types ----------
+/** Las pestañas por estado del plan, con su conteo. */
+const SEGMENTOS: Segmento<InmobiliariaDeLaLista>[] = [
+  { valor: 'todas', nombre: 'Todas', cumple: () => true },
+  { valor: 'ACTIVE', nombre: 'Al día', cumple: (f) => estadoDe(f) === 'ACTIVE' },
+  { valor: 'PAST_DUE', nombre: 'En mora', cumple: (f) => estadoDe(f) === 'PAST_DUE' },
+  { valor: 'SUSPENDED', nombre: 'Suspendidas', cumple: (f) => estadoDe(f) === 'SUSPENDED' },
+  { valor: 'CANCELLED', nombre: 'Canceladas', cumple: (f) => estadoDe(f) === 'CANCELLED' },
+  { valor: 'sin-plan', nombre: 'Sin plan', cumple: (f) => estadoDe(f) === 'sin-plan' },
+]
 
-interface TenantRow {
-  agency_id: string
-  tenant_id: string
-  legal_name: string
-  nit: string
-  billing_model: string
-  primary_contact_email: string
-  created_at: string
-  debtor_count: number
-  call_count: number
-  paid_total: string | null
-}
+const FILTRO_DE_MIGRACION = [
+  { valor: 'pendiente', nombre: 'Pendiente' },
+  { valor: 'completada', nombre: 'Completada' },
+  { valor: 'omitida', nombre: 'No la hizo' },
+]
+
+const FILTRO_DE_COBRANZA = [
+  { valor: 'si', nombre: 'Con cobranza por voz' },
+  { valor: 'no', nombre: 'Sin cobranza por voz' },
+]
 
 // ---------- Page ----------
 
 /**
- * /tenants — agency roster (BACK.md §8.3 · FRONT.md §6.4).
+ * /admin/tenants — todas las inmobiliarias de Leasefy.
  *
- * El endpoint devuelve un arreglo pelado (sin `page`/`limit`, sin `total`), así
- * que el recorte va en el cliente: el roster crece con cada agencia y sin pie de
- * paginación la pantalla era un volcado. Cuando `/tenants` exponga contrato
- * `Paginated<T>`, esto pasa a ser paginado de servidor como `/payments`.
+ * 🔴 19-10-2026 (Nico: «que sí traiga la información de cada cosa»). Antes la
+ * lista era la de la cobranza por voz (`agent.agencies`): 2 de 8 en el lab, con
+ * columnas de deudores y llamadas. Ahora es la plataforma: plan, contratos,
+ * inmuebles y equipo, y la cobranza por voz como un dato más.
+ *
+ * El endpoint devuelve el arreglo entero (no pagina): el filtro y el recorte
+ * van en el cliente, con los filtros en la URL para poder compartir el enlace.
  */
 export default function TenantsPage() {
   const router = useRouter()
+  const { get, setFilters } = useUrlFilters()
+  const voz = get('voz')
+  const migracion = get('migracion')
 
-  const tenants = useApiQuery<TenantRow[]>(
-    (signal) => adminApi('/tenants', { signal }),
+  const tenants = useApiQuery<InmobiliariaDeLaLista[]>((signal) => adminApi('/tenants', { signal }))
+
+  const todas = tenants.data
+  const filtrar = useMemo(
+    () => (f: InmobiliariaDeLaLista) =>
+      pasaLosFiltros(f, { q: '', plan: '', voz }) && (!migracion || f.migracion === migracion),
+    [voz, migracion],
   )
 
-  const { page, setPage, total, pageRows } = useClientPagination(tenants.data, PAGE_SIZE)
+  const cifras = useMemo(() => {
+    const filas = todas ?? []
+    const suma = (k: 'contratos_activos' | 'inmuebles') => filas.reduce((s, f) => s + (f[k] ?? 0), 0)
+    return {
+      total: filas.length,
+      alDia: filas.filter((f) => f.plan?.estado === 'ACTIVE').length,
+      conProblema: filas.filter((f) => f.plan && ['PAST_DUE', 'SUSPENDED'].includes(f.plan.estado)).length,
+      contratos: suma('contratos_activos'),
+      inmuebles: suma('inmuebles'),
+    }
+  }, [todas])
 
-  const columns: Column<TenantRow>[] = [
+  const columns: Column<InmobiliariaDeLaLista>[] = [
     {
-      header: 'Razón social',
-      cell: (r) => <span className="font-medium text-fg">{r.legal_name}</span>,
-    },
-    {
-      header: 'NIT',
+      header: 'Inmobiliaria',
+      className: 'min-w-[220px]',
+      orden: (r) => r.nombre ?? r.legal_name,
+      texto: (r) => r.nombre ?? r.legal_name,
       cell: (r) => (
-        <span className="font-mono text-caption text-fg-muted tabular-nums">{r.nit}</span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-fg">{r.nombre ?? r.legal_name}</span>
+            {r.activa === false ? <Pill tone="muted">Inactiva</Pill> : null}
+            {r.solo_en_el_agente ? <Pill tone="warn">Sólo en la cobranza</Pill> : null}
+          </div>
+          <div className="mt-0.5 text-caption text-fg-subtle">
+            {[r.nit ? `NIT ${r.nit}` : 'Sin NIT', r.ciudad].filter(Boolean).join(' · ')}
+          </div>
+        </div>
       ),
     },
     {
-      header: 'Contacto',
-      cell: (r) => <span className="text-caption text-fg-muted">{r.primary_contact_email}</span>,
+      header: 'Plan',
+      orden: (r) => r.plan?.nombre ?? r.plan?.tier,
+      texto: (r) => (r.plan ? `${r.plan.nombre ?? r.plan.tier} · ${estadoDelPlan(r.plan.estado).nombre}` : 'Sin plan'),
+      cell: (r) => {
+        const estado = estadoDelPlan(r.plan?.estado)
+        return r.plan ? (
+          <div className="flex flex-col items-start gap-1">
+            <span className="text-body-sm text-fg">{r.plan.nombre ?? r.plan.tier}</span>
+            <Pill tone={estado.tono} dot>
+              {estado.nombre}
+            </Pill>
+          </div>
+        ) : (
+          <Pill tone="muted">Sin plan</Pill>
+        )
+      },
     },
     {
-      header: 'Modelo',
-      cell: (r) => <Pill tone="neutral">{legible(r.billing_model)}</Pill>,
-    },
-    {
-      header: 'Deudores',
+      header: 'Contratos',
       align: 'right',
-      cell: (r) => <span className="font-mono tabular-nums">{r.debtor_count}</span>,
-    },
-    {
-      header: 'Llamadas',
-      align: 'right',
-      cell: (r) => <span className="font-mono tabular-nums">{r.call_count}</span>,
-    },
-    {
-      header: 'Recaudado',
-      align: 'right',
+      orden: (r) => r.contratos_activos ?? 0,
+      ordenPrimero: 'desc',
+      texto: (r) => r.contratos_activos ?? 0,
       cell: (r) => (
-        <span className="font-mono tabular-nums text-fg-muted">
-          {r.paid_total != null ? fmtCOP(parseFloat(r.paid_total)) : '—'}
-        </span>
+        <div className="tabular-nums">
+          <span className="text-fg">{fmtNumero(r.contratos_activos ?? 0)}</span>
+          {r.contratos ? <div className="text-caption text-fg-subtle">de {fmtNumero(r.contratos)}</div> : null}
+        </div>
       ),
+    },
+    {
+      header: 'Inmuebles',
+      align: 'right',
+      orden: (r) => r.inmuebles ?? 0,
+      ordenPrimero: 'desc',
+      texto: (r) => r.inmuebles ?? 0,
+      cell: (r) => <span className="tabular-nums">{fmtNumero(r.inmuebles ?? 0)}</span>,
+    },
+    {
+      header: 'Equipo',
+      align: 'right',
+      orden: (r) => r.equipo ?? 0,
+      ordenPrimero: 'desc',
+      texto: (r) => r.equipo ?? 0,
+      cell: (r) => <span className="tabular-nums">{fmtNumero(r.equipo ?? 0)}</span>,
+    },
+    {
+      header: 'Cobranza por voz',
+      orden: (r) => (r.en_cobranza_por_voz ? r.debtor_count : null),
+      ordenPrimero: 'desc',
+      texto: (r) =>
+        r.en_cobranza_por_voz === true
+          ? `${r.debtor_count} deudores · ${r.call_count} llamadas`
+          : r.en_cobranza_por_voz === null
+            ? 'No se pudo leer'
+            : 'Sin conectar',
+      cell: (r) =>
+        r.en_cobranza_por_voz === true ? (
+          <span className="text-caption text-fg-muted tabular-nums">
+            {fmtNumero(r.debtor_count)} deudores · {fmtNumero(r.call_count)} llamadas
+          </span>
+        ) : r.en_cobranza_por_voz === null ? (
+          <span className="text-caption text-fg-subtle">No se pudo leer</span>
+        ) : (
+          <span className="text-caption text-fg-subtle">Sin conectar</span>
+        ),
     },
     {
       header: 'Se registró',
       align: 'right',
+      orden: (r) => r.created_at,
+      ordenPrimero: 'desc',
+      texto: (r) => fmtFecha(r.created_at),
       cell: (r) => (
-        <span className="whitespace-nowrap font-mono text-caption text-fg-muted tabular-nums">
-          {fmtDateTime(r.created_at)}
-        </span>
+        <span className="whitespace-nowrap text-caption text-fg-muted tabular-nums">{fmtFecha(r.created_at)}</span>
       ),
     },
   ]
+
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Inmobiliarias"
-        description="Todas las inmobiliarias registradas en Leasefy. Toca una para ver su detalle."
+        description="Todas las inmobiliarias de Leasefy: su plan, su operación y su equipo. Toca una para ver su ficha."
       />
+
+      <section aria-label="Cifras de las inmobiliarias" className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <KpiCard label="Inmobiliarias" value={tenants.data ? cifras.total : '—'} />
+        <KpiCard label="Plan al día" value={tenants.data ? cifras.alDia : '—'} tone="ok" />
+        <KpiCard
+          label="En mora o suspendidas"
+          value={tenants.data ? cifras.conProblema : '—'}
+          tone={cifras.conProblema > 0 ? 'warn' : 'default'}
+        />
+        <KpiCard label="Contratos vigentes" value={tenants.data ? cifras.contratos : '—'} />
+        <KpiCard label="Inmuebles" value={tenants.data ? cifras.inmuebles : '—'} />
+      </section>
 
       {/* (08-10-2026, Nico) Lo que quedó en «No pudimos abrir tu registro», con su motivo. */}
       <RegistrosSinAsistente />
 
       <DataTable
         columns={columns}
-        rows={pageRows}
-        getKey={(r) => r.agency_id}
+        rows={todas}
+        getKey={(r) => r.tenant_id}
         isLoading={tenants.isLoading}
         error={tenants.error}
         onReintentar={tenants.refetch}
@@ -120,7 +213,46 @@ export default function TenantsPage() {
         emptyIcon={<Buildings weight="bold" />}
         aria-label="Inmobiliarias"
         onRowClick={(r) => router.push(`/admin/tenants/${r.tenant_id}`)}
-        pie={<Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />}
+        queSon={['inmobiliaria', 'inmobiliarias']}
+        buscar="Nombre, NIT, ciudad o correo"
+        textoExtra={(r) => [r.legal_name, r.nit, r.ciudad, r.correo, r.primary_contact_email].filter(Boolean).join(' ')}
+        segmentos={SEGMENTOS}
+        filtrar={filtrar}
+        filtrosEnLaUrl={['voz', 'migracion']}
+        ordenInicial={{ columna: 6, sentido: 'desc' }}
+        exportar="inmobiliarias"
+        masEnElExcel={[
+          { header: 'NIT', texto: (r) => r.nit },
+          { header: 'Ciudad', texto: (r) => r.ciudad },
+          { header: 'Correo', texto: (r) => r.correo ?? r.primary_contact_email },
+          { header: 'Contratos en total', texto: (r) => r.contratos ?? 0 },
+          { header: 'Migración', texto: (r) => (r.migracion === 'completada' ? 'Completada' : r.migracion === 'omitida' ? 'No la hizo' : 'Pendiente') },
+          { header: 'Activa', texto: (r) => r.activa !== false },
+        ]}
+        barra={
+          <BarraDeFiltros>
+            <Filtro etiqueta="Cobranza por voz">
+              <Desplegable
+                value={voz}
+                onChange={(v) => setFilters({ voz: v, page: undefined })}
+                opciones={FILTRO_DE_COBRANZA}
+                todas="Todas"
+                aria-label="Cobranza por voz"
+                data-testid="filtro-voz"
+              />
+            </Filtro>
+            <Filtro etiqueta="Migración">
+              <Desplegable
+                value={migracion}
+                onChange={(v) => setFilters({ migracion: v, page: undefined })}
+                opciones={FILTRO_DE_MIGRACION}
+                todas="Todas"
+                aria-label="Migración"
+                data-testid="filtro-migracion"
+              />
+            </Filtro>
+          </BarraDeFiltros>
+        }
       />
     </div>
   )

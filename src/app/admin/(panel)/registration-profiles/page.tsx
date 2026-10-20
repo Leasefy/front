@@ -18,7 +18,7 @@ import {
   REGISTRATION_PROFILES,
   type RegistrationProfileKey,
 } from '@/lib/constants/registration-profiles'
-import { Card, MonoLabel } from '@leasefy/cadence'
+import { Alert, Card } from '@leasefy/cadence'
 
 // ── Merge helpers ─────────────────────────────────────────────────────────────
 
@@ -147,53 +147,43 @@ export default function RegistrationProfilesPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Perfiles de registro"
-        description="Activa o desactiva los perfiles que un usuario puede elegir al registrarse. Global a toda la plataforma. Un perfil desactivado desaparece del signup; las cuentas existentes no se tocan."
+        description="Qué puede elegir una persona al crear su cuenta en Leasefy: inquilino, propietario o inmobiliaria. Vale para toda la plataforma. Un perfil apagado deja de aparecer en el registro; las cuentas que ya existen no cambian."
       />
 
       {/* Endpoint-pending notice (backend not shipped yet) */}
       {notReady && (
-        <Card className="p-5  mb-6">
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warning">
-            backend pendiente
-          </span>
-          <p className="text-sm text-fg mt-2">
-            El endpoint <code className="font-mono">GET /registration-profiles</code> todavía no
-            existe. Mientras tanto se muestran los perfiles con su estado por defecto (todos
-            activos) y los toggles quedan deshabilitados. Ver el contrato en{' '}
-            <code className="font-mono">docs/registration-profiles.md</code>.
-          </p>
-        </Card>
+        <Alert variant="warning" title="Todavía no se puede cambiar desde acá">
+          El servidor no tiene esta función (falta <code className="font-mono">GET /registration-profiles</code>). Se
+          muestran los tres perfiles encendidos, como están por defecto, y los interruptores quedan apagados.
+        </Alert>
       )}
 
       {/* Load error that is NOT a 404 */}
-      {error && !notReady && <div className="mb-6"><ErrorBlock error={error} /></div>}
+      {error && !notReady ? <ErrorBlock error={error} /> : null}
 
       {/* Action error (toggle failed / guard) */}
       {actionError && (
-        <Card className="p-4  mb-6">
-          <p className="text-sm text-danger">{actionError}</p>
-        </Card>
+        <Alert variant="danger">{actionError}</Alert>
       )}
 
       {isLoading ? (
         <LoadingBlock label="cargando perfiles" />
       ) : (
-        <div className="space-y-px">
+        <div className="space-y-3">
           {rows.map((row) => (
             <Card className="p-5 flex items-center gap-4" key={row.key}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-fg">{row.label}</span>
-                  <span className="font-mono text-[10px] text-fg-subtle">{row.key}</span>
                   <Pill tone={row.enabled ? 'ok' : 'muted'}>
-                    {row.enabled ? 'activo' : 'inactivo'}
+                    {row.enabled ? 'Encendido' : 'Apagado'}
                   </Pill>
                 </div>
                 <p className="text-caption text-fg-muted mt-1">{row.description}</p>
-                <MonoLabel className="block mt-2">
-                  últ. cambio: {fmtWhen(row.updated_at)}
+                <p className="mt-2 text-caption text-fg-subtle">
+                  {row.updated_at ? `Último cambio: ${fmtWhen(row.updated_at)}` : 'Nadie lo ha cambiado'}
                   {row.updated_by ? ` · ${row.updated_by}` : ''}
-                </MonoLabel>
+                </p>
               </div>
 
               <Toggle
@@ -201,18 +191,17 @@ export default function RegistrationProfilesPage() {
                 disabled={notReady}
                 busy={busyKey === row.key}
                 onToggle={() => handleToggle(row, !row.enabled)}
-                ariaLabel={`Permitir el registro de ${row.key}`}
+                ariaLabel={`Permitir el registro como ${row.label.toLowerCase()}`}
               />
             </Card>
           ))}
         </div>
       )}
 
-      <Card className="p-4  text-caption text-fg-muted">
-        <strong>Seguro por diseño.</strong> El signup falla ABIERTO: si el backend de config no
-        responde, todos los perfiles quedan visibles para no romper el registro. Desactivar es una
-        acción explícita que persiste en el backend con audit_log.
-      </Card>
+      <p className="text-caption text-fg-muted">
+        Si el servidor no responde, el registro muestra los tres perfiles para no dejar a nadie por fuera. Apagar uno
+        queda guardado y registrado con tu correo.
+      </p>
     </div>
   )
 }

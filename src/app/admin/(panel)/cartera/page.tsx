@@ -9,13 +9,10 @@ import { fmtDateTime } from '@/lib/admin/format'
 import { ETAPA, ETAPAS_DE_CARTERA, legible, type EtapaDeCartera as CarteraStage } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
-import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 
-const PAGE_SIZE = 50
 
 /** El tono de Cadence (`StatusBadge`) de cada etapa. */
 const TONO_DEL_SELLO = { ok: 'success', neutral: 'info', warn: 'warning', bad: 'critical', muted: 'neutral' } as const
@@ -108,10 +105,6 @@ export default function CarteraPage() {
     (signal) => adminApi('/cartera', { signal }),
   )
 
-  /* Log cross-tenant de transiciones: se acumula con cada corrida del cron, así
-     que no tiene techo. Va ANTES de los early-return de abajo — un hook detrás
-     de un `return` condicional rompe el orden de hooks de React. */
-  const transitionsPaging = useClientPagination(data?.transitions, PAGE_SIZE)
 
   if (isLoading) return <div className="space-y-6 p-6 lg:p-8"><LoadingBlock filas={6} /></div>
   if (error) return <div className="space-y-6 p-6 lg:p-8"><ErrorBlock error={error} onReintentar={refetch} /></div>
@@ -138,24 +131,34 @@ export default function CarteraPage() {
   const transitionColumns: Column<TransitionRow>[] = [
     {
       header: 'Cuándo',
+      orden: (r) => r.transitioned_at,
+      ordenPrimero: 'desc',
+      texto: (r) => fmtDateTime(r.transitioned_at),
       cell: (r) => (
         <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.transitioned_at)}</span>
       ),
     },
     {
       header: 'Deudor',
+      orden: (r) => r.debtor_name,
+      texto: (r) => r.debtor_name,
       cell: (r) => <span className="block max-w-[200px] truncate font-medium">{r.debtor_name ?? '—'}</span>,
     },
     {
       header: 'Inmobiliaria',
+      orden: (r) => r.legal_name,
+      texto: (r) => r.legal_name,
       cell: (r) => <span className="block max-w-[180px] truncate text-fg-muted">{r.legal_name ?? '—'}</span>,
     },
     {
       header: 'Cambio de etapa',
+      orden: (r) => r.to_stage,
+      texto: (r) => `${r.from_stage ?? 'inicio'} → ${r.to_stage}`,
       cell: (r) => <TransitionArrow from={r.from_stage} to={r.to_stage} />,
     },
     {
       header: 'Motivo',
+      texto: (r) => legible(r.reason),
       cell: (r) => <span className="block max-w-[260px] truncate text-fg-muted" title={r.reason}>{legible(r.reason)}</span>,
     },
   ]
@@ -209,20 +212,20 @@ export default function CarteraPage() {
         <MonoLabel className="block">Cambios de etapa recientes</MonoLabel>
         <DataTable
           columns={transitionColumns}
-          rows={transitionsPaging.pageRows}
+          rows={data?.transitions}
           getKey={(r) => r.id}
           emptyTitle="Todavía no hay cambios de etapa"
           emptyHint="La tarea de cartera corre todos los días a las 6:30 a. m. (hora de Bogotá)."
           emptyIcon={<Wallet weight="bold" />}
           aria-label="Cambios de etapa"
-          pie={
-            <Pagination
-              page={transitionsPaging.page}
-              total={transitionsPaging.total}
-              pageSize={PAGE_SIZE}
-              onPage={transitionsPaging.setPage}
-            />
-          }
+          queSon={['cambio', 'cambios']}
+          buscar="Deudor, inmobiliaria o motivo"
+          segmentos={[
+            { valor: 'todos', nombre: 'Todos', cumple: () => true },
+            ...ETAPAS_DE_CARTERA.map((e) => ({ valor: e, nombre: `A ${e}`, cumple: (r: TransitionRow) => r.to_stage === e })),
+          ]}
+          ordenInicial={{ columna: 0, sentido: 'desc' }}
+          exportar="cambios-de-etapa"
         />
       </section>
     </div>

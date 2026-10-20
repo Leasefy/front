@@ -5,15 +5,12 @@ import { ChatCircleDots, Coins, Robot, Waveform } from '@phosphor-icons/react'
 import { Alert, MonoLabel } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
-import { fmtCOP } from '@/lib/admin/format'
+import { fmtCOP, fmtDiaCorto, USD_TO_COP } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
-import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 
-const PAGE_SIZE = 50
 
 /* ── Types (match ADMIN-API-CONTRACT.md — Costs) ────────────────────────── */
 
@@ -61,8 +58,13 @@ function num(s: string | null | undefined): number {
 
 // ── Stacked daily bar chart (plain divs, no chart lib) ─────────────────────
 
-const usd = (n: number, decimales = 2) =>
-  `US$ ${n.toLocaleString('es-CO', { minimumFractionDigits: decimales, maximumFractionDigits: decimales })}`
+/**
+ * Vapi y Claude cobran en dólares; acá todo va en pesos (Nico: «ninguna
+ * pantalla con dólares»), a la tasa fija del admin (`USD_TO_COP`, la misma del
+ * back y del Resumen).
+ */
+const alPeso = (dolares: number) => Math.round(dolares * USD_TO_COP)
+const pesos = (dolares: number) => fmtCOP(alPeso(dolares))
 
 function DailyStackedBars({ daily }: { daily: DailyRow[] }) {
   if (daily.length === 0) return <p className="text-body-sm text-fg-muted">Todavía no hay datos.</p>
@@ -79,10 +81,10 @@ function DailyStackedBars({ daily }: { daily: DailyRow[] }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-4 text-caption text-fg-muted">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-primary" /> Vapi · {usd(vapiTotal)}
+          <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-primary" /> Vapi · {pesos(vapiTotal)}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-primary/35" /> Claude · {usd(claudeTotal)}
+          <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-primary/35" /> Claude · {pesos(claudeTotal)}
         </span>
       </div>
       <div className="flex h-36 items-end gap-1.5" role="img" aria-label={`Costo diario de los últimos ${daily.length} días`}>
@@ -93,7 +95,7 @@ function DailyStackedBars({ daily }: { daily: DailyRow[] }) {
             <div
               key={i}
               className="flex flex-1 flex-col justify-end gap-px overflow-hidden rounded-t-[6px]"
-              title={`${daily[i]?.day?.slice(5)}: Vapi ${usd(v, 4)} · Claude ${usd(c, 4)}`}
+              title={`${fmtDiaCorto(daily[i]?.day)}: Vapi ${pesos(v)} · Claude ${pesos(c)}`}
             >
               {c > 0 && <div className="bg-primary/35" style={{ height: `${Math.max(1, (c / max) * 100)}%` }} />}
               {v > 0 && <div className="bg-primary" style={{ height: `${Math.max(1, (v / max) * 100)}%` }} />}
@@ -103,8 +105,8 @@ function DailyStackedBars({ daily }: { daily: DailyRow[] }) {
         })}
       </div>
       <div className="flex justify-between font-mono text-caption text-fg-subtle">
-        <span>{daily[0]?.day?.slice(5)}</span>
-        <span>{daily[daily.length - 1]?.day?.slice(5)}</span>
+        <span>{fmtDiaCorto(daily[0]?.day)}</span>
+        <span>{fmtDiaCorto(daily[daily.length - 1]?.day)}</span>
       </div>
     </div>
   )
@@ -121,9 +123,6 @@ export default function CostsPage() {
 
   const mtd = costs.data?.mtd
   const perTenant = costs.data?.perTenant ?? []
-  /* Una fila por agencia ⇒ crece con el negocio. El mix por modelo de abajo NO
-     se pagina: es el conjunto cerrado de modelos LLM en uso. */
-  const perTenantPaging = useClientPagination(perTenant, PAGE_SIZE)
   const daily = costs.data?.dailySeries ?? []
   const modelMix = costs.data?.modelMix ?? []
 
@@ -136,36 +135,28 @@ export default function CostsPage() {
   // Per-tenant columns
 
   const tenantColumns: Column<PerTenantRow>[] = [
-    { header: 'Inmobiliaria', cell: (r) => <span className="font-medium">{r.legal_name}</span> },
-    { header: 'Vapi', align: 'right', cell: (r) => <span className="font-mono tabular-nums">{usd(num(r.vapi_cost_usd))}</span> },
-    { header: 'Claude', align: 'right', cell: (r) => <span className="font-mono tabular-nums">{usd(num(r.claude_cost_usd))}</span> },
-    { header: 'Total', align: 'right', cell: (r) => <span className="font-mono font-medium tabular-nums">{usd(num(r.total_cost_usd))}</span> },
-    {
-      header: 'Total en pesos',
-      align: 'right',
-      cell: (r) => {
-        const totalCop = num(r.total_cost_cop)
-        return <span className="font-mono tabular-nums text-fg-muted">{totalCop > 0 ? fmtCOP(totalCop) : '—'}</span>
-      },
-    },
+    { header: 'Inmobiliaria', orden: (r) => r.legal_name, texto: (r) => r.legal_name, cell: (r) => <span className="font-medium">{r.legal_name}</span> },
+    { header: 'Vapi', align: 'right', orden: (r) => num(r.vapi_cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.vapi_cost_usd)), cell: (r) => <span className="font-mono tabular-nums">{pesos(num(r.vapi_cost_usd))}</span> },
+    { header: 'Claude', align: 'right', orden: (r) => num(r.claude_cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.claude_cost_usd)), cell: (r) => <span className="font-mono tabular-nums">{pesos(num(r.claude_cost_usd))}</span> },
+    { header: 'Total', align: 'right', orden: (r) => num(r.total_cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.total_cost_usd)), cell: (r) => <span className="font-mono font-medium tabular-nums">{pesos(num(r.total_cost_usd))}</span> },
   ]
 
   const modelColumns: Column<ModelMixRow>[] = [
-    { header: 'Modelo', cell: (r) => <span className="font-mono text-caption">{r.model_used}</span> },
-    { header: 'Usos', align: 'right', cell: (r) => <span className="font-mono tabular-nums">{num(r.count).toLocaleString('es-CO')}</span> },
-    { header: 'Costo', align: 'right', cell: (r) => <span className="font-mono tabular-nums">{usd(num(r.cost_usd), 4)}</span> },
+    { header: 'Modelo', orden: (r) => r.model_used, texto: (r) => r.model_used, cell: (r) => <span className="font-mono text-caption">{r.model_used}</span> },
+    { header: 'Usos', align: 'right', orden: (r) => num(r.count), ordenPrimero: 'desc', texto: (r) => num(r.count), cell: (r) => <span className="font-mono tabular-nums">{num(r.count).toLocaleString('es-CO')}</span> },
+    { header: 'Costo', align: 'right', orden: (r) => num(r.cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.cost_usd)), cell: (r) => <span className="font-mono tabular-nums">{pesos(num(r.cost_usd))}</span> },
   ]
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Costos"
-        description="Lo que cuesta operar la plataforma este mes: voz (Vapi) y modelo (Claude). WhatsApp todavía no se mide."
+        description={`Lo que cuesta operar la plataforma este mes: voz (Vapi) y modelo (Claude). Los dos cobran en dólares; acá van en pesos a ${fmtCOP(USD_TO_COP)} por dólar. WhatsApp todavía no se mide.`}
       />
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumen del mes">
-        <KpiCard icon={<Waveform />} label="Vapi · este mes" value={usd(vapiMtdUsd)} hint={fmtCOP(vapiMtdCop)} />
-        <KpiCard icon={<Robot />} label="Claude · este mes" value={usd(claudeMtdUsd)} hint={fmtCOP(claudeMtdCop)} />
+        <KpiCard icon={<Waveform />} label="Vapi · este mes" value={fmtCOP(vapiMtdCop || vapiMtdUsd * USD_TO_COP)} hint="Las llamadas de voz" />
+        <KpiCard icon={<Robot />} label="Claude · este mes" value={fmtCOP(claudeMtdCop || claudeMtdUsd * USD_TO_COP)} hint="El modelo de los agentes" />
         <KpiCard icon={<ChatCircleDots />} label="WhatsApp · este mes" value="—" hint="Todavía no se mide" />
         <KpiCard icon={<Coins />} label="Total · este mes" value={totalCostCop > 0 ? fmtCOP(totalCostCop) : '—'} hint="Vapi y Claude, en pesos" />
       </section>
@@ -174,7 +165,7 @@ export default function CostsPage() {
         <MonoLabel className="block">Por inmobiliaria</MonoLabel>
         <DataTable
           columns={tenantColumns}
-          rows={perTenantPaging.pageRows}
+          rows={costs.data ? perTenant : undefined}
           getKey={(r) => r.tenant_id}
           isLoading={costs.isLoading}
           error={costs.error}
@@ -183,14 +174,11 @@ export default function CostsPage() {
           emptyIcon={<Coins weight="bold" />}
           aria-label="Costos por inmobiliaria"
           onRowClick={(r) => router.push(`/admin/tenants/${r.tenant_id}`)}
-          pie={
-            <Pagination
-              page={perTenantPaging.page}
-              total={perTenantPaging.total}
-              pageSize={PAGE_SIZE}
-              onPage={perTenantPaging.setPage}
-            />
-          }
+          id="inmobiliarias"
+          queSon={['inmobiliaria', 'inmobiliarias']}
+          buscar="Buscar inmobiliaria"
+          ordenInicial={{ columna: 3, sentido: 'desc' }}
+          exportar="costos-por-inmobiliaria"
         />
       </section>
 
@@ -205,10 +193,15 @@ export default function CostsPage() {
             error={costs.error}
             emptyTitle="No se usó ningún modelo este mes"
             aria-label="Costos por modelo"
+            id="modelos"
+            queSon={['modelo', 'modelos']}
+            filasPorPagina={10}
+            ordenInicial={{ columna: 2, sentido: 'desc' }}
+            exportar="costos-por-modelo"
           />
         </section>
 
-        <Tarjeta titulo="Últimos 14 días" descripcion="Vapi y Claude, en dólares.">
+        <Tarjeta titulo="Últimos 14 días" descripcion="Vapi y Claude, en pesos.">
           <DailyStackedBars daily={daily} />
         </Tarjeta>
       </div>

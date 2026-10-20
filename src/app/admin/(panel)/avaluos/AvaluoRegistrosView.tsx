@@ -2,7 +2,6 @@
 
 import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
 import { Pill } from '@/components/admin/Pill'
 import type { AvaluoListItem } from '@/lib/admin/avaluos'
 import { AVALUO_STATES, avaluoStateMeta } from '@/lib/admin/avaluo-states'
@@ -51,6 +50,7 @@ export function AvaluoRegistrosView({
   const columns: Column<AvaluoListItem>[] = [
     {
       header: 'Estado',
+      texto: (r) => avaluoStateMeta(r.state).label,
       cell: (r) => {
         const meta = avaluoStateMeta(r.state)
         return <Pill tone={meta.tone}>{meta.label}</Pill>
@@ -59,12 +59,14 @@ export function AvaluoRegistrosView({
     {
       header: 'Valor',
       align: 'right',
+      texto: (r) => r.valueCop,
       // fmtCOP already renders '—' for null (refused valuation). `city` is always
       // null on this route, so it is intentionally not a column.
       cell: (r) => <span className="tabular-nums font-medium">{fmtCOP(r.valueCop)}</span>,
     },
     {
       header: 'Método',
+      texto: (r) => r.method,
       cell: (r) => (
         <MonoLabel>
           {r.method || '—'}
@@ -73,6 +75,7 @@ export function AvaluoRegistrosView({
     },
     {
       header: 'Firma',
+      texto: (r) => (r.signedBy ? `${r.signedBy}${r.signedAt ? ` · ${fmtDateTime(r.signedAt)}` : ''}` : ''),
       cell: (r) =>
         r.signedBy ? (
           <span className="text-caption">
@@ -88,6 +91,7 @@ export function AvaluoRegistrosView({
     {
       header: 'Creado',
       align: 'right',
+      texto: (r) => fmtDateTime(r.createdAt),
       cell: (r) => (
         <span className="whitespace-nowrap tabular-nums text-fg-muted text-caption font-mono">
           {fmtDateTime(r.createdAt)}
@@ -96,43 +100,41 @@ export function AvaluoRegistrosView({
     },
     {
       header: 'Certificado',
+      texto: (r) => r.slug,
       cell: (r) => <span className="font-mono text-[11px] text-fg-subtle">{r.slug}</span>,
     },
   ]
 
   return (
-    <div>
-      {/* State filter — segmented control over the real lifecycle states + "Todos". */}
-      <div className="flex flex-wrap gap-1 mb-4">
-        {STATE_TABS.map((tab) => (
-          <Button
-            key={tab.value || 'todos'}
-            type="button"
-            size="sm"
-            hideArrow
-            variant={activeState === tab.value ? 'default' : 'outline'}
-            aria-pressed={activeState === tab.value}
-            onClick={() => onStateChange(tab.value)}
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </div>
-
-      <DataTable
-        columns={columns}
-        rows={items}
-        getKey={(r) => r.id}
-        isLoading={isLoading}
-        error={error}
-        emptyTitle="Sin registros"
-        emptyHint="No hay certificados para este estado."
-        onRowClick={(r) => onRowClick(r.id)}
-      />
-
-      {items && total !== undefined && (
-        <Pagination page={page} total={total} pageSize={pageSize} onPage={onPage} />
-      )}
-    </div>
+    <DataTable
+      columns={columns}
+      rows={items}
+      getKey={(r) => r.id}
+      isLoading={isLoading}
+      error={error}
+      emptyTitle="Sin registros"
+      emptyHint="No hay certificados para este estado."
+      onRowClick={(r) => onRowClick(r.id)}
+      aria-label="Certificados de avalúo"
+      queSon={['certificado', 'certificados']}
+      paginacion={items && total !== undefined ? { page, total, pageSize, onPage } : undefined}
+      barra={
+        <div className="flex flex-wrap gap-1" role="group" aria-label="Estado del certificado">
+          {STATE_TABS.map((tab) => (
+            <Button
+              key={tab.value || 'todos'}
+              type="button"
+              size="sm"
+              hideArrow
+              variant={activeState === tab.value ? 'default' : 'outline'}
+              aria-pressed={activeState === tab.value}
+              onClick={() => onStateChange(tab.value)}
+            >
+              {tab.label}
+            </Button>
+          ))}
+        </div>
+      }
+    />
   )
 }

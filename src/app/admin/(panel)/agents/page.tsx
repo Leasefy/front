@@ -32,6 +32,8 @@ export default function AgentsPage() {
   const columns: Column<Agent>[] = [
     {
       header: 'Nombre',
+      orden: (r) => r.name,
+      texto: (r) => r.name ?? 'Sin nombre',
       cell: (r) => (
         <span className="flex items-center gap-2">
           <span className="font-medium text-fg">{r.name ?? 'Sin nombre'}</span>
@@ -41,6 +43,8 @@ export default function AgentsPage() {
     },
     {
       header: 'Modelo',
+      orden: (r) => r.model?.model,
+      texto: (r) => `${r.model?.provider ?? ''} / ${r.model?.model ?? ''}`,
       cell: (r) => (
         <span className="font-mono text-fg-muted">
           {r.model?.provider ?? '—'} / {r.model?.model ?? '—'}
@@ -49,11 +53,15 @@ export default function AgentsPage() {
     },
     {
       header: 'Voz',
+      orden: (r) => r.voice?.provider,
+      texto: (r) => r.voice?.provider,
       cell: (r) => <span className="text-fg-muted">{r.voice?.provider ?? '—'}</span>,
     },
     {
       header: 'Silencio',
       align: 'right',
+      orden: (r) => r.silenceTimeoutSeconds,
+      texto: (r) => r.silenceTimeoutSeconds,
       cell: (r) => (
         <span className="font-mono tabular-nums">
           {r.silenceTimeoutSeconds != null ? `${r.silenceTimeoutSeconds} s` : '—'}
@@ -62,6 +70,9 @@ export default function AgentsPage() {
     },
     {
       header: 'Actualizado',
+      orden: (r) => r.updatedAt,
+      ordenPrimero: 'desc',
+      texto: (r) => fmtDateTime(r.updatedAt),
       cell: (r) => (
         <span className="whitespace-nowrap font-mono tabular-nums text-fg-muted">{fmtDateTime(r.updatedAt)}</span>
       ),
@@ -69,6 +80,7 @@ export default function AgentsPage() {
     {
       header: 'ID',
       align: 'right',
+      texto: (r) => r.id,
       cell: (r) => (
         <span className="font-mono text-caption text-fg-subtle">{r.id.slice(0, 8)}</span>
       ),
@@ -93,6 +105,10 @@ export default function AgentsPage() {
         onReintentar={agents.refetch}
         aria-label="Agentes de voz"
         onRowClick={(r) => router.push(`/admin/agents/${r.id}`)}
+        queSon={['agente', 'agentes']}
+        buscar="Nombre, modelo o voz"
+        ordenInicial={{ columna: 4, sentido: 'desc' }}
+        exportar="agentes-de-voz"
       />
     </div>
   )

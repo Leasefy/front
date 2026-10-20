@@ -2,14 +2,13 @@
 
 import { useRouter } from 'next/navigation'
 import { PhoneCall, Waveform } from '@phosphor-icons/react'
-import { adminApi } from '@/lib/admin/api'
+import { adminApi, traerTodasLasPaginas } from '@/lib/admin/api'
 import type { Paginated } from '@/lib/admin/types'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtDateTime, fmtDuration } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
 import { Pill } from '@/components/admin/Pill'
 import { BarraDeFiltros, Buscador, Desplegable, Filtro, SelectorDeInmobiliaria } from '@/components/admin/screen/Filtros'
 import { RESULTADOS_DE_LLAMADA, resultadoDeLaLlamada, tonoDelResultado } from '@/lib/admin/textos-del-admin'
@@ -44,24 +43,28 @@ export default function CallsPage() {
   const columns: Column<CallRow>[] = [
     {
       header: 'Cuándo',
+      texto: (r) => fmtDateTime(r.initiated_at),
       cell: (r) => <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.initiated_at)}</span>,
     },
-    { header: 'Inmobiliaria', cell: (r) => <span className="text-fg-muted">{r.legal_name ?? '—'}</span> },
-    { header: 'Deudor', cell: (r) => <span className="font-medium text-fg">{r.debtor_name ?? '—'}</span> },
+    { header: 'Inmobiliaria', texto: (r) => r.legal_name, cell: (r) => <span className="text-fg-muted">{r.legal_name ?? '—'}</span> },
+    { header: 'Deudor', texto: (r) => r.debtor_name, cell: (r) => <span className="font-medium text-fg">{r.debtor_name ?? '—'}</span> },
     {
       header: 'Duración',
       align: 'right',
+      texto: (r) => fmtDuration(r.duration_seconds),
       cell: (r) => <span className="font-mono tabular-nums">{fmtDuration(r.duration_seconds)}</span>,
     },
-    { header: 'Resultado', cell: (r) => <Pill tone={tonoDelResultado(r.outcome)}>{resultadoDeLaLlamada(r.outcome)}</Pill> },
+    { header: 'Resultado', texto: (r) => resultadoDeLaLlamada(r.outcome), cell: (r) => <Pill tone={tonoDelResultado(r.outcome)}>{resultadoDeLaLlamada(r.outcome)}</Pill> },
     {
       header: 'Calidad',
       align: 'right',
+      texto: (r) => (r.qa_score != null ? Number(r.qa_score) : null),
       cell: (r) => <span className="font-mono tabular-nums">{r.qa_score != null ? Number(r.qa_score).toFixed(0) : '—'}</span>,
     },
     {
       header: 'Grabación',
       align: 'center',
+      texto: (r) => Boolean(r.recording_url),
       cell: (r) =>
         r.recording_url ? (
           <Waveform className="mx-auto h-4 w-4 text-primary" weight="fill" aria-label="Tiene grabación" />
@@ -116,7 +119,11 @@ export default function CallsPage() {
             </Filtro>
           </BarraDeFiltros>
         }
-        pie={calls.data ? <Pagination page={page} total={calls.data.total} pageSize={PAGE_SIZE} onPage={setPage} /> : null}
+        paginacion={calls.data ? { page, total: calls.data.total, pageSize: PAGE_SIZE, onPage: setPage } : undefined}
+        queSon={['llamada', 'llamadas']}
+        filtrosEnLaUrl={['q', 'tenant', 'outcome']}
+        exportar="llamadas"
+        traerTodoParaElExcel={() => traerTodasLasPaginas<CallRow>('/calls', { tenant, outcome, q })}
       />
     </div>
   )

@@ -82,15 +82,20 @@ export default function QaPage() {
     {
       header: 'Puntaje',
       align: 'right',
+      orden: (r) => (r.qa_score ? Number(r.qa_score) : null),
+      texto: (r) => (r.qa_score ? Number(r.qa_score) : null),
       cell: (r) => (
         <span className="font-mono font-medium tabular-nums text-danger">{r.qa_score ? Number(r.qa_score).toFixed(0) : '—'}</span>
       ),
     },
-    { header: 'Deudor', cell: (r) => <span className="font-medium">{r.debtor_name ?? '—'}</span> },
-    { header: 'Inmobiliaria', cell: (r) => <span className="block truncate text-fg-muted">{r.legal_name ?? '—'}</span> },
+    { header: 'Deudor', orden: (r) => r.debtor_name, texto: (r) => r.debtor_name, cell: (r) => <span className="font-medium">{r.debtor_name ?? '—'}</span> },
+    { header: 'Inmobiliaria', orden: (r) => r.legal_name, texto: (r) => r.legal_name, cell: (r) => <span className="block truncate text-fg-muted">{r.legal_name ?? '—'}</span> },
     {
       header: 'Cuándo',
       align: 'right',
+      orden: (r) => r.initiated_at,
+      ordenPrimero: 'desc',
+      texto: (r) => fmtDateTime(r.initiated_at),
       cell: (r) => <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.initiated_at)}</span>,
     },
   ]
@@ -180,6 +185,11 @@ export default function QaPage() {
           emptyIcon={<ChartBar weight="bold" />}
           aria-label="Llamadas para revisar"
           onRowClick={(r) => router.push(`/admin/calls/${r.id}`)}
+          queSon={['llamada', 'llamadas']}
+          buscar="Deudor o inmobiliaria"
+          filasPorPagina={10}
+          ordenInicial={{ columna: 0, sentido: 'asc' }}
+          exportar="llamadas-para-revisar"
         />
       </section>
     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { DownloadSimple, ShieldCheck, X } from '@phosphor-icons/react'
+import { DownloadSimple, ShieldCheck } from '@phosphor-icons/react'
 import { Alert } from '@leasefy/cadence'
 import { adminApi, adminApiUrl } from '@/lib/admin/api'
 import { getSupabase } from '@/lib/supabase/client'
@@ -11,12 +11,12 @@ import { fmtDateTime } from '@/lib/admin/format'
 import type { Paginated } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { legible } from '@/lib/admin/textos-del-admin'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
 import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
 import { Button } from '@/components/ui/button'
+import { CajonDelDetalle } from '@/components/admin/screen/CajonDelDetalle'
 
 const PAGE_SIZE = 100
 
@@ -60,6 +60,7 @@ export default function AuditsPage() {
     [],
   )
 
+  const [abierto, setAbierto] = useState<EventRow | null>(null)
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
 
@@ -96,7 +97,6 @@ export default function AuditsPage() {
     }
   }
 
-  const hasFilters = type || tenant || from || to
 
   const columns: Column<EventRow>[] = [
     {
@@ -143,12 +143,6 @@ export default function AuditsPage() {
       <PageHeader
         title="Auditoría"
         description="Los eventos de cumplimiento: Habeas Data, Ley 2300, identidad y barandas de los agentes. Se descargan en CSV (hasta 50.000 filas)."
-        right={
-          <Button variant="outline" hideArrow onClick={onExport} disabled={exporting} isLoading={exporting}>
-            <DownloadSimple className="h-4 w-4" aria-hidden="true" />
-            {exporting ? 'Descargando…' : 'Descargar CSV'}
-          </Button>
-        }
       />
 
       {exportError && <Alert variant="danger">{exportError}</Alert>}
@@ -164,6 +158,17 @@ export default function AuditsPage() {
         emptyHint="Prueba con otro tipo, otra inmobiliaria u otras fechas."
         emptyIcon={<ShieldCheck weight="bold" />}
         aria-label="Eventos de cumplimiento"
+        onRowClick={setAbierto}
+        filaMarcada={(r) => r.id === abierto?.id}
+        paginacion={events.data ? { page, total: events.data.total, pageSize: PAGE_SIZE, onPage: setPage } : undefined}
+        queSon={['evento', 'eventos']}
+        filtrosEnLaUrl={['type', 'tenant', 'from', 'to']}
+        acciones={
+          <Button variant="secondary" hideArrow onClick={onExport} disabled={exporting} className="gap-2">
+            <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+            {exporting ? 'Descargando…' : 'Exportar CSV'}
+          </Button>
+        }
         barra={
           <BarraDeFiltros>
             <Filtro etiqueta="Tipo de evento" htmlFor="filtro-tipo">
@@ -190,19 +195,38 @@ export default function AuditsPage() {
             <Filtro etiqueta="Hasta" htmlFor="filtro-hasta" className="sm:w-44">
               <CampoDeFecha id="filtro-hasta" value={to} onChange={(v) => setFilters({ to: v }, { resetPage: true })} />
             </Filtro>
-            {hasFilters ? (
-              <Button
-                variant="ghost"
-                hideArrow
-                onClick={() => setFilters({ type: '', tenant: '', from: '', to: '' }, { resetPage: true })}
-              >
-                <X className="h-4 w-4" aria-hidden="true" />
-                Quitar los filtros
-              </Button>
-            ) : null}
           </BarraDeFiltros>
         }
-        pie={events.data ? <Pagination page={page} total={events.data.total} pageSize={PAGE_SIZE} onPage={setPage} /> : null}
+      />
+
+      <CajonDelDetalle
+        abierto={abierto !== null}
+        onCerrar={() => setAbierto(null)}
+        titulo={abierto ? legible(abierto.event_type) : 'Evento'}
+        descripcion={abierto ? fmtDateTime(abierto.timestamp) : undefined}
+        campos={
+          abierto
+            ? [
+                { nombre: 'Código', valor: <code className="font-mono">{abierto.event_type}</code> },
+                { nombre: 'Inmobiliaria', valor: abierto.legal_name ?? '—' },
+                { nombre: 'Deudor', valor: abierto.debtor_name ?? '—' },
+                { nombre: 'Canal', valor: abierto.channel ? legible(abierto.channel) : '—' },
+                {
+                  nombre: 'Evidencia',
+                  valor: abierto.evidence_url ? (
+                    <a href={abierto.evidence_url} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+                      Abrir la evidencia
+                    </a>
+                  ) : (
+                    '—'
+                  ),
+                },
+                { nombre: 'Registro', valor: <code className="font-mono">{abierto.id}</code> },
+              ]
+            : []
+        }
+        datos={abierto?.details}
+        tituloDeLosDatos="Detalles"
       />
     </div>
   )

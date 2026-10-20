@@ -7,6 +7,7 @@ describe('personaDelAdmin', () => {
     expect(personaDelAdmin('n@leasefy.co')).toMatchObject({ nombre: 'Nico', cargo: 'CPO', inicial: 'N' })
     expect(personaDelAdmin('Juan.Lopez@leasefy.co')).toMatchObject({ nombre: 'Juan', cargo: 'CEO' })
     expect(personaDelAdmin('alex.lopez@leasefy.co')).toMatchObject({ nombre: 'Alex', cargo: 'CMO' })
+    expect(personaDelAdmin('victor.ortiz@leasefy.co')).toMatchObject({ nombre: 'Víctor', cargo: 'CTO', inicial: 'V' })
   })
 
   it('los metadatos de la cuenta mandan sobre la lista', () => {

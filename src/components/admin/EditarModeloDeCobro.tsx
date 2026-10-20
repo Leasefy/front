@@ -113,7 +113,7 @@ export function EditarModeloDeCobro({
       <span className="flex items-center gap-1">
         <Input
           id={id}
-          className="w-24 font-mono"
+          className="w-28 font-mono"
           type="number"
           min={0}
           max={50}
@@ -131,7 +131,7 @@ export function EditarModeloDeCobro({
       {etiqueta}
       <Input
         id={id}
-        className="w-36 font-mono"
+        className="font-mono"
         type="number"
         min={0}
         step={1}
@@ -143,23 +143,15 @@ export function EditarModeloDeCobro({
   )
 
   return (
-    <Card className="p-5 space-y-4 mt-6" aria-labelledby="modelo-titulo" data-testid="editar-modelo-de-cobro">
-      <div>
-        <div id="modelo-titulo" className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-          modelo de cobro · {actual.legal_name}
-        </div>
-        <p className="text-caption text-fg-muted mt-1">
-          Sólo Leasefy lo cambia; la inmobiliaria lo ve en sólo lectura. Queda registrado quién lo cambió,
-          cuándo y de qué a qué.
-        </p>
-      </div>
+    // (19-10-2026) Vive dentro del cajón de Precios: el título y la explicación van en su cabecera.
+    <div className="space-y-4" aria-label={`Modelo de cobro de ${actual.legal_name}`} data-testid="editar-modelo-de-cobro">
 
       <form onSubmit={revisar} noValidate className="space-y-4">
-        <div className="flex flex-wrap items-end gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="text-caption text-fg-muted flex flex-col gap-1" htmlFor="modelo-billing">
             Modelo
             <Select value={modelo} onValueChange={(v) => setModelo(v as ModeloDeCobro)} disabled={confirmando || guardando}>
-              <SelectTrigger id="modelo-billing" className="w-56">
+              <SelectTrigger id="modelo-billing">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -219,6 +211,6 @@ export function EditarModeloDeCobro({
           </p>
         )}
       </form>
-    </Card>
+    </div>
   )
 }

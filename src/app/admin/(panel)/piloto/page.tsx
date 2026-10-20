@@ -15,7 +15,7 @@ import {
   type EstadoDelPilotoPorLeasefy,
   type PilotoDeLaInmobiliaria,
 } from '@/lib/admin/piloto-de-las-inmobiliarias'
-import { Card, MonoLabel, SearchInput } from '@leasefy/cadence'
+import { Card, SearchInput } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 
 const cuando = (iso: string | null) => {
@@ -131,13 +131,13 @@ export default function PilotoDeLasInmobiliariasPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium text-fg">{f.legal_name}</span>
                   <Pill tone={tono(f.estado)}>{EL_ESTADO[f.estado].nombre}</Pill>
-                  <Pill tone={f.activo ? 'ok' : 'muted'}>{f.activo ? 'encendido' : 'sin encender'}</Pill>
+                  <Pill tone={f.activo ? 'ok' : 'muted'}>{f.activo ? 'Encendido' : 'Sin encender'}</Pill>
                 </div>
                 <p className="text-caption text-fg-muted mt-1" data-testid={`admin-piloto-detalle-${f.tenant_id}`}>{f.detalle}</p>
-                <MonoLabel className="block mt-1">
-                  últ. cambio: {cuando(f.updated_at)}
+                <p className="mt-1 text-caption text-fg-subtle">
+                  {f.updated_at ? `Último cambio: ${cuando(f.updated_at)}` : 'Nadie lo ha cambiado'}
                   {f.updated_by ? ` · ${f.updated_by}` : ''}
-                </MonoLabel>
+                </p>
               </div>
               <div className="flex flex-wrap gap-2" role="group" aria-label={`Cambiar el Piloto de ${f.legal_name}`}>
                 {ESTADOS_DEL_PILOTO.map((e) => (

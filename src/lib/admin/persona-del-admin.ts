@@ -26,6 +26,7 @@ export const FUNDADORES: Record<string, { nombre: string; cargo: string }> = {
   'juan.lopez@leasefy.co': { nombre: 'Juan', cargo: 'CEO' },
   'alex.lopez@leasefy.co': { nombre: 'Alex', cargo: 'CMO' },
   'n@leasefy.co': { nombre: 'Nico', cargo: 'CPO' },
+  'victor.ortiz@leasefy.co': { nombre: 'Víctor', cargo: 'CTO' },
 }
 
 function texto(valor: unknown): string | null {

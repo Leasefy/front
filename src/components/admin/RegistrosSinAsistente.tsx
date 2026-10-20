@@ -17,7 +17,7 @@
 
 import { useState } from 'react'
 
-import { Alert, MonoLabel, Stagger, StaggerItem } from '@leasefy/cadence'
+import { Alert, Stagger, StaggerItem } from '@leasefy/cadence'
 import { CheckCircle, WarningCircle } from '@phosphor-icons/react'
 
 import { adminApi, ApiError } from '@/lib/admin/api'
@@ -82,41 +82,76 @@ export function RegistrosSinAsistente() {
   }
 
   const lista = filas.data ?? []
+  // (19-10-2026) Con muchas, la lista cerrada: antes empujaba la tabla de
+  // inmobiliarias una pantalla entera hacia abajo.
+  const [abierta, setAbierta] = useState<boolean | null>(null)
   if (filas.isLoading || filas.error || lista.length === 0) return null
+  const verLista = abierta ?? lista.length <= 2
 
   return (
     <Alert
       variant="warning"
-      title="Registros que no abrieron el asistente"
+      title={
+        lista.length === 1
+          ? 'Un registro no abrió el asistente'
+          : `${lista.length} registros no abrieron el asistente`
+      }
       data-testid="registros-sin-asistente"
       // Es una sección que se queda, no un aviso que aparece: sin `role="alert"`.
       role="region"
       aria-label="Registros que no abrieron el asistente"
       className="[&_.alert-title]:text-fg"
     >
-      <p className="text-fg-muted">
-        El dueño vio «No pudimos abrir tu registro». El motivo es lo que contestó el asistente; «Reintentar» lo vuelve a
-        pedir y, si funciona, le manda la invitación por correo a la inmobiliaria.
-      </p>
-      <Stagger as="ul" className="mt-3 space-y-2">
-        {lista.map((f) => (
-          <StaggerItem
-            as="li"
-            key={f.id}
-            className="rounded-md border border-border bg-surface p-3.5 text-fg"
-            data-testid={`sin-asistente-${f.id}`}
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-medium text-fg">{f.name}</span>
-              <Pill tone={f.provisioningStatus === 'FAILED' ? 'bad' : 'warn'}>{queLePaso(f)}</Pill>
-              <MonoLabel className="tabular-nums">
-                {f.invitationAttempts} {f.invitationAttempts === 1 ? 'intento' : 'intentos'} · {fmtDateTime(f.updatedAt)}
-              </MonoLabel>
-            </div>
-            <p className="mt-2 break-words font-mono text-caption text-fg" data-testid="motivo">
-              {motivoDe(f)}
-            </p>
-            <div className="mt-2.5 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-3xl text-fg-muted">
+          El dueño vio «No pudimos abrir tu registro». «Reintentar» lo vuelve a pedir y, si funciona, le manda la
+          invitación por correo.
+        </p>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          hideArrow
+          aria-expanded={verLista}
+          onClick={() => setAbierta(!verLista)}
+          data-testid="ver-registros"
+        >
+          {verLista ? 'Ocultar' : `Ver ${lista.length === 1 ? 'el registro' : `los ${lista.length}`}`}
+        </Button>
+      </div>
+      {verLista ? (
+        <Stagger as="ul" className="mt-3 divide-y divide-border-faint overflow-hidden rounded-md border border-border bg-surface">
+          {lista.map((f) => (
+            <StaggerItem
+              as="li"
+              key={f.id}
+              className="flex flex-col gap-2 px-3.5 py-3 text-fg sm:flex-row sm:items-center sm:gap-4"
+              data-testid={`sin-asistente-${f.id}`}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium text-fg">{f.name}</span>
+                  <Pill tone={f.provisioningStatus === 'FAILED' ? 'bad' : 'warn'}>{queLePaso(f)}</Pill>
+                </div>
+                <p className="mt-1 break-words text-caption text-fg-muted" data-testid="motivo">
+                  {motivoDe(f)} · {f.invitationAttempts} {f.invitationAttempts === 1 ? 'intento' : 'intentos'} ·{' '}
+                  {fmtDateTime(f.updatedAt)}
+                </p>
+                {respuesta[f.id] ? (
+                  <span
+                    role="status"
+                    className={`mt-1.5 flex items-center gap-1.5 text-body-sm ${respuesta[f.id].ok ? 'text-success' : 'text-danger'}`}
+                    data-testid="respuesta"
+                  >
+                    {respuesta[f.id].ok ? (
+                      <CheckCircle className="h-4 w-4 shrink-0" weight="fill" aria-hidden="true" />
+                    ) : (
+                      <WarningCircle className="h-4 w-4 shrink-0" weight="fill" aria-hidden="true" />
+                    )}
+                    {respuesta[f.id].texto}
+                  </span>
+                ) : null}
+              </div>
               <Button
                 type="button"
                 size="sm"
@@ -126,27 +161,14 @@ export function RegistrosSinAsistente() {
                 isLoading={enCurso === f.id}
                 onClick={() => void reintentar(f.id)}
                 data-testid="reintentar"
+                className="shrink-0 self-start sm:self-center"
               >
                 {enCurso === f.id ? 'Reintentando…' : 'Reintentar'}
               </Button>
-              {respuesta[f.id] ? (
-                <span
-                  role="status"
-                  className={`flex items-center gap-1.5 text-body-sm ${respuesta[f.id].ok ? 'text-success' : 'text-danger'}`}
-                  data-testid="respuesta"
-                >
-                  {respuesta[f.id].ok ? (
-                    <CheckCircle className="h-4 w-4 shrink-0" weight="fill" aria-hidden="true" />
-                  ) : (
-                    <WarningCircle className="h-4 w-4 shrink-0" weight="fill" aria-hidden="true" />
-                  )}
-                  {respuesta[f.id].texto}
-                </span>
-              ) : null}
-            </div>
-          </StaggerItem>
-        ))}
-      </Stagger>
+            </StaggerItem>
+          ))}
+        </Stagger>
+      ) : null}
     </Alert>
   )
 }

@@ -3,9 +3,11 @@
 import { useRouter } from 'next/navigation'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
-import { fmtCOP, fmtDateTime, USD_TO_COP } from '@/lib/admin/format'
+import { fmtCOP, fmtDateTime, fmtDiaCorto, fmtPorcentaje, USD_TO_COP } from '@/lib/admin/format'
+import { NOMBRE_DEL_MODELO } from '@/lib/admin/modelo-de-cobro'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { LaPlataforma, type ResumenDeLaPlataforma } from '@/components/admin/LaPlataforma'
 import { ErrorBlock, LoadingBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 import type { PillTone } from '@/lib/admin/types'
@@ -201,7 +203,7 @@ function TrendBars({ trend }: { trend: DayBucket[] }) {
             <div
               key={d.day}
               className="flex-1 flex flex-col justify-end gap-px"
-              title={`${d.day.slice(5)}: cobrado ${fmtCOP(paidVals[i]!)} · vapi ${fmtCOP(costVals[i]!)}`}
+              title={`${fmtDiaCorto(d.day)}: cobrado ${fmtCOP(paidVals[i]!)} · Vapi ${fmtCOP(costVals[i]!)}`}
             >
               <div className="rounded-t-[4px] bg-success" style={{ height: `${Math.max(1, paidH)}%` }} />
             </div>
@@ -224,9 +226,9 @@ function TrendBars({ trend }: { trend: DayBucket[] }) {
         })}
       </div>
       <div className="mt-1 flex justify-between font-mono text-caption text-fg-subtle">
-        <span>{trend[0]?.day?.slice(5)}</span>
+        <span>{fmtDiaCorto(trend[0]?.day)}</span>
         <span className="tabular-nums">cobrado en total {fmtCOP(paidVals.reduce((a, b) => a + b, 0))}</span>
-        <span>{trend[trend.length - 1]?.day?.slice(5)}</span>
+        <span>{fmtDiaCorto(trend[trend.length - 1]?.day)}</span>
       </div>
     </div>
   )
@@ -241,9 +243,16 @@ export default function AdminDashboard() {
     (signal) => adminApi('/dashboard', { signal }),
     [],
   )
+  // (19-10-2026) Lo de Leasefy, aparte: si la cobranza por voz falla, la
+  // plataforma igual se ve (y al revés).
+  const plataforma = useApiQuery<ResumenDeLaPlataforma>((signal) => adminApi('/plataforma', { signal }), [])
 
-  if (dash.isLoading) return <div className="space-y-6 p-6 lg:p-8"><LoadingBlock label="Cargando el resumen" filas={8} /></div>
-  if (dash.error && !dash.data) return <div className="space-y-6 p-6 lg:p-8"><ErrorBlock error={dash.error} /></div>
+  if (dash.isLoading && plataforma.isLoading)
+    return (
+      <div className="space-y-6 p-6 lg:p-8">
+        <LoadingBlock label="Cargando el resumen" filas={8} />
+      </div>
+    )
 
   const d = dash.data
 
@@ -277,11 +286,24 @@ export default function AdminDashboard() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Resumen"
-        description="La operación de Leasefy de un vistazo: lo cobrado, lo que cuesta, la cartera y lo que pasa hoy. Los datos se cargan al abrir la pantalla."
+        description="Leasefy de un vistazo: las inmobiliarias, sus contratos y su plata. Abajo, la cobranza por voz."
       />
 
+      <LaPlataforma estado={plataforma} onInmobiliarias={(plan) => router.push(plan ? `/admin/tenants?plan=${plan}` : '/admin/tenants')} />
+
+      <div className="flex flex-wrap items-end justify-between gap-3 border-t border-border-faint pt-6">
+        <div className="space-y-1">
+          <h2 className="text-h3 font-semibold text-fg">Cobranza por voz</h2>
+          <p className="text-body-sm text-fg-muted">
+            Mori, el asistente que llama a los inquilinos en mora: lo cobrado, lo que cuesta y lo que pasa hoy.
+          </p>
+        </div>
+      </div>
+
+      {dash.error && !dash.data ? <ErrorBlock error={dash.error} onReintentar={dash.refetch} titulo="No pudimos cargar la cobranza por voz" /> : null}
+
       {/* ── 1. Hero KPI strip ───────────────────────────────────────────── */}
-      {kpis ? (
+      {dash.isLoading ? <LoadingBlock label="Cargando la cobranza por voz" filas={4} /> : kpis ? (
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5" aria-label="El mes">
           <KpiCard
             label="Cobrado · este mes"
@@ -297,7 +319,7 @@ export default function AdminDashboard() {
           />
           <KpiCard
             label="Retorno"
-            value={roi != null ? `${roi.toFixed(2)}x` : '—'}
+            value={roi != null ? `${roi.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}x` : '—'}
             hint={roi != null ? 'Lo cobrado dividido por lo que cuestan' : 'Falta el costo'}
           />
           <KpiCard
@@ -318,14 +340,14 @@ export default function AdminDashboard() {
           />
         </section>
       ) : (
-        <p className="text-body-sm text-fg-muted">Las cifras del mes no llegaron.</p>
+        dash.error ? null : <p className="text-body-sm text-fg-muted">Las cifras del mes no llegaron.</p>
       )}
 
       {/* ── 2. Plan breakdown (LEFT) + HOY mega-card (RIGHT) ───────────── */}
-      <section className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Plan breakdown */}
-        <Card className="p-6 lg:col-span-2">
-          <h2 className="mb-4 text-subtitle font-semibold text-fg">Inmobiliarias por modelo de cobro</h2>
+        <Card className="p-6">
+          <h2 className="mb-4 text-subtitle font-semibold text-fg">Por modelo de cobro</h2>
           {plans.length === 0 ? (
             <p className="py-6 text-center text-body-sm text-fg-muted">Todavía no hay inmobiliarias.</p>
           ) : (
@@ -336,18 +358,18 @@ export default function AdminDashboard() {
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Activas</TableHead>
                   <TableHead className="text-right">Deudores</TableHead>
-                  <TableHead className="text-right">Promesas</TableHead>
                   <TableHead className="text-right">Cobrado</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {plans.map((p) => (
                   <TableRow key={p.billing_model}>
-                    <TableCell className="font-medium">{legible(p.billing_model)}</TableCell>
+                    <TableCell className="font-medium">
+                      {(NOMBRE_DEL_MODELO as Record<string, string>)[p.billing_model ?? ''] ?? (p.billing_model ? legible(p.billing_model) : 'Sin modelo')}
+                    </TableCell>
                     <TableCell className="text-right tabular-nums font-mono text-caption">{p.agency_count}</TableCell>
                     <TableCell className="text-right tabular-nums font-mono text-caption text-success">{p.active_count}</TableCell>
                     <TableCell className="text-right tabular-nums font-mono text-caption">{p.debtors_count}</TableCell>
-                    <TableCell className="text-right tabular-nums font-mono text-caption">{p.open_promises_count}</TableCell>
                     <TableCell className="text-right tabular-nums font-mono text-caption text-fg-muted">
                       {p.paid_mtd ? fmtCOP(num(p.paid_mtd)) : '—'}
                     </TableCell>
@@ -367,8 +389,8 @@ export default function AdminDashboard() {
                 {[
                   { label: 'Pago promedio', value: fmtCOP(num(metrics.avg_ticket_30d)) },
                   { label: 'Promesa promedio', value: fmtCOP(num(metrics.avg_promise_amount_30d)) },
-                  { label: 'Promesas cumplidas', value: `${num(metrics.promise_kept_pct_30d).toFixed(1)}%` },
-                  { label: 'Llamadas completas', value: `${num(metrics.call_completion_pct_30d).toFixed(1)}%` },
+                  { label: 'Promesas cumplidas', value: fmtPorcentaje(num(metrics.promise_kept_pct_30d)) },
+                  { label: 'Llamadas completas', value: fmtPorcentaje(num(metrics.call_completion_pct_30d)) },
                 ].map((m) => (
                   <div key={m.label}>
                     <MonoLabel className="block">{m.label}</MonoLabel>
@@ -381,7 +403,7 @@ export default function AdminDashboard() {
         </Card>
 
         {/* HOY mega-card */}
-        <Card className="p-6 lg:col-span-3">
+        <Card className="p-6">
           <div className="flex items-center justify-between mb-3">
             <MonoLabel className="block">
               Hoy · {todayDate}
@@ -420,14 +442,14 @@ export default function AdminDashboard() {
                 </MonoLabel>
               </div>
 
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-4 border-t border-border pt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 border-t border-border pt-4">
                 {[
                   { label: 'Pagos', value: today.payments_today_count, tone: 'text-success' },
                   { label: 'Llamadas', value: today.calls_today_count, hint: `ayer ${today.calls_yesterday_count}`, tone: '' },
                   { label: 'Promesas', value: today.promises_today_count, hint: `ayer ${today.promises_yesterday_count}`, tone: '' },
                   { label: 'Escalaciones', value: today.escalations_today_count, tone: num(today.escalations_today_count) > 0 ? 'text-warning' : '' },
-                  { label: 'Nuevas inmob.', value: today.new_agencies_today, tone: '' },
-                  { label: 'Eventos comp.', value: today.compliance_events_today, tone: '' },
+                  { label: 'Inmobiliarias nuevas', value: today.new_agencies_today, tone: '' },
+                  { label: 'Cumplimiento', value: today.compliance_events_today, tone: '' },
                 ].map((m) => (
                   <div key={m.label}>
                     <MonoLabel className="block">{m.label}</MonoLabel>
@@ -583,7 +605,7 @@ export default function AdminDashboard() {
                   <div key={o.outcome ?? 'none'}>
                     <div className="flex items-baseline justify-between text-caption mb-1">
                       <span className="font-medium">{resultadoDeLaLlamada(o.outcome)}</span>
-                      <span className="tabular-nums font-mono text-fg-muted">{o.count} · {pct.toFixed(1)}%</span>
+                      <span className="tabular-nums font-mono text-fg-muted">{o.count} · {fmtPorcentaje(pct)}</span>
                     </div>
                     <div className="h-1.5 bg-surface-hover overflow-hidden">
                       <div className="h-full bg-primary" style={{ width: `${Math.min(100, pct)}%` }} />
@@ -653,21 +675,14 @@ export default function AdminDashboard() {
       {/* ── 6. Footer bar — MRR · ARR · Channels ───────────────────────── */}
       {footer && (
         <Card className="p-6">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 items-start">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 items-start">
             <div>
-              <MonoLabel className="block">MRR</MonoLabel>
+              <MonoLabel className="block">Cobranza · ingreso mensual</MonoLabel>
               <div className="mt-1 text-xl font-semibold tabular-nums text-success">{fmtCOP(num(footer.mrr))}</div>
             </div>
             <div>
-              <MonoLabel className="block">ARR proyectado</MonoLabel>
+              <MonoLabel className="block">Cobranza · al año</MonoLabel>
               <div className="mt-1 text-xl font-semibold tabular-nums">{fmtCOP(num(footer.arr))}</div>
-            </div>
-            <div>
-              <MonoLabel className="block">Valuación</MonoLabel>
-              <div className="mt-1 text-body-sm font-mono tabular-nums text-fg-muted">
-                {fmtCOP(num(footer.arr) * 8)} – {fmtCOP(num(footer.arr) * 12)}
-              </div>
-              <div className="font-mono text-[9px] text-fg-subtle">8–12× ARR</div>
             </div>
             <div className="md:col-span-1">
               <MonoLabel className="block mb-2">Canales · este mes</MonoLabel>

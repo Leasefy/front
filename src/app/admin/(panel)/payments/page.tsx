@@ -2,7 +2,7 @@
 
 import { CheckCircle, CreditCard, CurrencyCircleDollar, HourglassMedium, Prohibit, X } from '@phosphor-icons/react'
 import { Alert } from '@leasefy/cadence'
-import { adminApi } from '@/lib/admin/api'
+import { adminApi, traerTodasLasPaginas } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
@@ -10,7 +10,6 @@ import type { Paginated, PillTone } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
 import { Pill } from '@/components/admin/Pill'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
 import { Button } from '@/components/ui/button'
@@ -111,39 +110,52 @@ export default function PaymentsPage() {
   const columns: Column<PaymentRow>[] = [
     {
       header: 'Deudor',
+      texto: (r) => r.debtor_name,
       cell: (r) => <span className="block max-w-[180px] truncate font-medium text-fg">{r.debtor_name}</span>,
     },
     {
       header: 'Inmobiliaria',
+      texto: (r) => r.legal_name,
       cell: (r) => <span className="block max-w-[160px] truncate text-fg-muted">{r.legal_name ?? '—'}</span>,
     },
     {
       header: 'Estado',
+      texto: (r) => ESTADO_DEL_PAGO[r.status] ?? legible(r.status),
       cell: (r) => <Pill tone={statusTone(r.status)}>{ESTADO_DEL_PAGO[r.status] ?? legible(r.status)}</Pill>,
     },
     {
       header: 'Pasarela',
+      texto: (r) => (r.provider ? legible(r.provider) : ''),
       cell: (r) => <span className="text-fg-muted">{r.provider ? legible(r.provider) : '—'}</span>,
     },
     {
       header: 'Valor',
       align: 'right',
+      texto: (r) => num(r.amount),
       cell: (r) => <span className="font-mono font-medium tabular-nums">{fmtCOP(num(r.amount))}</span>,
     },
     {
       header: 'Comisión',
       align: 'right',
+      texto: (r) => (r.fee_amount ? num(r.fee_amount) : null),
       cell: (r) => (
         <span className="font-mono text-caption tabular-nums text-fg-muted">{r.fee_amount ? fmtCOP(num(r.fee_amount)) : '—'}</span>
       ),
     },
     {
       header: 'Desembolso',
+      texto: (r) =>
+        r.disbursement_status === 'disbursed'
+          ? `Desembolsado ${r.disbursed_at ? fmtDateTime(r.disbursed_at) : ''}`
+          : r.disbursement_status === 'pending'
+            ? 'Por desembolsar'
+            : '',
       cell: (r) => <DisbursementCell status={r.disbursement_status} disbursedAt={r.disbursed_at} />,
     },
     {
       header: 'Pagado',
       align: 'right',
+      texto: (r) => fmtDateTime(r.paid_at ?? r.created_at),
       cell: (r) => (
         <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.paid_at ?? r.created_at)}</span>
       ),
@@ -239,7 +251,12 @@ export default function PaymentsPage() {
             ) : null}
           </BarraDeFiltros>
         }
-        pie={result.data ? <Pagination page={page} total={result.data.total} pageSize={PAGE_SIZE} onPage={setPage} /> : null}
+        paginacion={result.data ? { page, total: result.data.total, pageSize: PAGE_SIZE, onPage: setPage } : undefined}
+        queSon={['pago', 'pagos']}
+        filtrosEnLaUrl={['status', 'provider']}
+        exportar="pagos-en-linea"
+        traerTodoParaElExcel={() => traerTodasLasPaginas<PaymentRow>('/payments', { status, provider })}
+        masEnElExcel={[{ header: 'CUFE de la factura', texto: (r) => r.invoice_cufe }]}
       />
     </div>
   )

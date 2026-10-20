@@ -3,20 +3,19 @@
 import { useState } from 'react'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
-import { fmtCOP } from '@/lib/admin/format'
+import { fmtCOP, fmtNumero } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
-import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { Pill } from '@/components/admin/Pill'
 import { EditarModeloDeCobro } from '@/components/admin/EditarModeloDeCobro'
 import { NOMBRE_DEL_MODELO, fraccionAPorcentaje, type ModeloDeCobro } from '@/lib/admin/modelo-de-cobro'
-import { MonoLabel } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@leasefy/cadence'
+import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon'
 
-const PAGE_SIZE = 50
 import type { PillTone } from '@/lib/admin/types'
+
 
 // ── Types co-located with the screen (BACK.md §8.20 · FRONT.md §6.31) ─────────
 
@@ -52,47 +51,60 @@ function num(s: string | number | null | undefined): number {
   return Number.isFinite(n) ? n : 0
 }
 
+/** «8 %» desde la fracción que guarda la política (0,08). */
+function pct(fraccion: string | number | null): string {
+  return fraccion != null ? `${fraccionAPorcentaje(fraccion).toLocaleString('es-CO')} %` : '—'
+}
+
+/** Lo de la cobranza por voz del mes, de `GET /billing` (la fórmula de la factura del micro). */
+interface CobroPorVoz {
+  modelo: string
+  recuperadoEsteMesCop: number
+  recuperadoMesPasadoCop: number
+  deudoresConLlamada: number
+  estimadoCop: number
+  enElMinimo: boolean
+  minimoCop: number
+}
+
 /**
- * Client-side monthly fee projection by billing model (BACK.md §8.20 · §7.5).
- * formula is shown as a tooltip on the projected value.
+ * El cobro del mes en palabras (20-10-2026). La cifra la calcula el back con
+ * la MISMA fórmula de la factura del micro (`agent/src/billing/engine.ts`):
+ * antes esta pantalla estimaba con otra (todos los deudores, 30 días
+ * corridos) y no coincidía con Ingresos ni con la factura.
  */
-function projectMonthlyFee(p: PolicyRow): { value: number | null; formula: string } {
-  const recovered = num(p.recovered_30d)
-  const debtors   = num(p.debtors_count)
-  const minCop    = num(p.monthly_min)
-
-  if (!p.billing_model) return { value: null, formula: '—' }
-
+function comoSeCobra(p: PolicyRow, v: CobroPorVoz): string {
+  if (v.enElMinimo) return `No llega al mínimo: se cobra el mínimo del mes`
+  const deudores = `${fmtNumero(v.deudoresConLlamada)} ${v.deudoresConLlamada === 1 ? 'deudor' : 'deudores'} con llamada × ${fmtCOP(num(p.per_deudor))}`
+  const base = num(p.base_fee) > 0 ? `${fmtCOP(num(p.base_fee))} + ` : ''
   switch (p.billing_model) {
-    case 'standard': {
-      const perDeudor = num(p.per_deudor)
-      const calc = Math.max(minCop, debtors * perDeudor)
-      return {
-        value: calc,
-        formula: `max(${fmtCOP(minCop)}, ${debtors} × ${fmtCOP(perDeudor)})`,
-      }
-    }
-    case 'performance': {
-      // La política guarda la FRACCIÓN (0,08 = 8 %): antes se dividía otra vez
-      // por 100 y la proyección salía cien veces menor.
-      const pct  = num(p.success_fee_pct)
-      const calc = Math.max(minCop, recovered * pct)
-      return {
-        value: calc,
-        formula: `max(${fmtCOP(minCop)}, ${(pct * 100).toFixed(1)}% × ${fmtCOP(recovered)})`,
-      }
-    }
-    case 'hybrid': {
-      const base = num(p.base_fee)
-      const pct  = num(p.hybrid_pct)
-      const calc = Math.max(minCop, base + recovered * pct)
-      return {
-        value: calc,
-        formula: `max(${fmtCOP(minCop)}, ${fmtCOP(base)} + ${(pct * 100).toFixed(1)}% × ${fmtCOP(recovered)})`,
-      }
-    }
+    case 'standard':
+      return `${base}${deudores}`
+    case 'hybrid':
+      return `${base}${deudores} + ${pct(p.hybrid_pct)} de ${fmtCOP(v.recuperadoEsteMesCop)}`
     default:
-      return { value: null, formula: '—' }
+      return `${pct(p.success_fee_pct)} de ${fmtCOP(v.recuperadoEsteMesCop)} recuperado`
+  }
+}
+
+/** La tarifa de su modelo, en palabras (sólo lo que aplica a ese modelo). */
+function tarifa(p: PolicyRow): string[] {
+  const minimo = p.monthly_min ? `Mínimo ${fmtCOP(num(p.monthly_min))} al mes` : null
+  switch (p.billing_model) {
+    case 'standard':
+      return [
+        `${num(p.base_fee) > 0 ? `${fmtCOP(num(p.base_fee))} fijos + ` : ''}${fmtCOP(num(p.per_deudor))} por deudor con llamada`,
+        minimo,
+      ].filter(Boolean) as string[]
+    case 'performance':
+      return [`${pct(p.success_fee_pct)} de lo recuperado`, minimo].filter(Boolean) as string[]
+    case 'hybrid':
+      return [
+        `${fmtCOP(num(p.base_fee))} fijos + ${fmtCOP(num(p.per_deudor))} por deudor con llamada + ${pct(p.hybrid_pct)} de lo recuperado`,
+        minimo,
+      ].filter(Boolean) as string[]
+    default:
+      return []
   }
 }
 
@@ -103,12 +115,12 @@ function modelTone(model: string | null): PillTone {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-/** /pricing-config — modelo de cobro por agencia, read-only (BACK.md §8.20 · FRONT.md §6.31). */
-/** «0.0800» → «8 %» (la política guarda la fracción). */
-function pct(fraccion: string | null): string {
-  return fraccion != null ? `${fraccionAPorcentaje(fraccion)} %` : '—'
-}
-
+/**
+ * /admin/pricing-config — cuánto le cobra Leasefy a cada inmobiliaria por la
+ * cobranza por voz (BACK.md §8.20). 19-10-2026 (QA del admin): en español, la
+ * tarifa de cada modelo en palabras, el cobro estimado del mes como cifra
+ * arriba, y sin desbordar a 1440.
+ */
 export default function PricingConfigPage() {
   const { data: rows, isLoading, error, refetch } = useApiQuery<PolicyRow[]>(
     (signal) => adminApi('/pricing-config', { signal }),
@@ -121,118 +133,105 @@ export default function PricingConfigPage() {
    */
   const [editando, setEditando] = useState<PolicyRow | null>(null)
 
-  /* Una fila por agencia: crece con cada alta. Los KPIs y la proyección de
-     abajo siguen contando sobre `rows` entero, no sobre la página visible. */
-  const { page, setPage, total, pageRows } = useClientPagination(rows, PAGE_SIZE)
-
-  const byModel = {
-    standard:    (rows ?? []).filter((r) => r.billing_model === 'standard').length,
-    performance: (rows ?? []).filter((r) => r.billing_model === 'performance').length,
-    hybrid:      (rows ?? []).filter((r) => r.billing_model === 'hybrid').length,
-    none:        (rows ?? []).filter((r) => !r.billing_model).length,
-  }
-
-  const totalProjected = (rows ?? []).reduce(
-    (sum, r) => sum + (projectMonthlyFee(r).value ?? 0),
-    0,
+  const ingresos = useApiQuery<{ inmobiliarias: Array<{ tenant_id: string; voz: CobroPorVoz | null }>; totales: { estimadoPorVozCop: number } }>(
+    (signal) => adminApi('/billing', { signal }),
+    [],
   )
+  const vozDe = new Map((ingresos.data?.inmobiliarias ?? []).map((i) => [i.tenant_id, i.voz]))
+
+  const cuantas = (modelo: string | null) => (rows ?? []).filter((r) => (r.billing_model ?? null) === modelo).length
+  const estimadoDelMes = ingresos.data?.totales.estimadoPorVozCop
 
   const columns: Column<PolicyRow>[] = [
     {
-      header: 'Agencia',
+      header: 'Inmobiliaria',
+      className: 'min-w-[220px]',
+      orden: (r) => r.legal_name,
+      texto: (r) => r.legal_name,
       cell: (r) => (
-        <div>
+        <div className="min-w-0">
           <div className="font-medium text-fg">{r.legal_name}</div>
-          <div className="font-mono text-[10px] text-fg-subtle">
-            {num(r.debtors_count)} deudores · máx {pct(r.max_discount)} desc ·{' '}
-            máx {r.max_plan_months ?? '—'} cuotas · {r.negotiation_max_attempts ?? '—'} intentos
+          <div className="text-caption text-fg-subtle">
+            {fmtNumero(num(r.debtors_count))} {num(r.debtors_count) === 1 ? 'deudor' : 'deudores'}
           </div>
         </div>
       ),
     },
     {
       header: 'Modelo',
+      orden: (r) => r.billing_model,
+      texto: (r) =>
+        r.billing_model && r.billing_model in NOMBRE_DEL_MODELO
+          ? NOMBRE_DEL_MODELO[r.billing_model as ModeloDeCobro]
+          : r.billing_model ?? 'Sin modelo',
       cell: (r) => (
         <Pill tone={modelTone(r.billing_model)}>
           {r.billing_model && r.billing_model in NOMBRE_DEL_MODELO
             ? NOMBRE_DEL_MODELO[r.billing_model as ModeloDeCobro]
-            : r.billing_model ?? 'sin política'}
+            : r.billing_model ?? 'Sin modelo'}
         </Pill>
       ),
     },
     {
-      header: 'Success %',
-      align: 'right',
-      cell: (r) => (
-        <span className="tabular-nums font-mono text-caption">
-          {pct(r.success_fee_pct)}
-        </span>
-      ),
-    },
-    {
-      header: 'Min mes',
-      align: 'right',
-      cell: (r) => (
-        <span className="tabular-nums font-mono text-caption">
-          {r.monthly_min ? fmtCOP(num(r.monthly_min)) : '—'}
-        </span>
-      ),
-    },
-    {
-      header: 'Per deudor',
-      align: 'right',
-      cell: (r) => (
-        <span className="tabular-nums font-mono text-caption">
-          {r.per_deudor ? fmtCOP(num(r.per_deudor)) : '—'}
-        </span>
-      ),
-    },
-    {
-      header: 'Base hybrid',
-      align: 'right',
-      cell: (r) => (
-        <span className="tabular-nums font-mono text-caption">
-          {r.base_fee ? fmtCOP(num(r.base_fee)) : '—'}
-        </span>
-      ),
-    },
-    {
-      header: 'Hybrid %',
-      align: 'right',
-      cell: (r) => (
-        <span className="tabular-nums font-mono text-caption">
-          {pct(r.hybrid_pct)}
-        </span>
-      ),
-    },
-    {
-      header: 'Recaudo 30d',
-      align: 'right',
-      cell: (r) => (
-        <span className="tabular-nums font-mono text-caption text-success">
-          {r.recovered_30d ? fmtCOP(num(r.recovered_30d)) : '—'}
-        </span>
-      ),
-    },
-    {
-      header: 'Fee proyect',
-      align: 'right',
+      header: 'Tarifa',
+      texto: (r) => tarifa(r).join(' · '),
       cell: (r) => {
-        const proj = projectMonthlyFee(r)
-        return proj.value != null ? (
-          <div title={proj.formula}>
-            <div className="tabular-nums font-mono text-caption text-primary">
-              {fmtCOP(proj.value)}
-            </div>
-            <div
-              className="font-mono text-[9px] text-fg-subtle truncate"
-              style={{ maxWidth: '180px' }}
-            >
-              {proj.formula}
-            </div>
+        const lineas = tarifa(r)
+        return lineas.length ? (
+          <div className="text-body-sm">
+            <div className="text-fg">{lineas[0]}</div>
+            {lineas[1] ? <div className="text-caption text-fg-muted">{lineas[1]}</div> : null}
           </div>
         ) : (
-          <span className="text-caption text-fg-subtle">—</span>
+          <span className="text-caption text-fg-subtle">Sin tarifa</span>
+        )
+      },
+    },
+    {
+      header: 'Lo que Mori negocia',
+      texto: (r) => `Descuento hasta ${pct(r.max_discount)} · hasta ${r.max_plan_months ?? '—'} cuotas · ${r.negotiation_max_attempts ?? '—'} intentos`,
+      cell: (r) => (
+        <div className="text-caption text-fg-muted">
+          <div>Descuento hasta {pct(r.max_discount)}</div>
+          <div>
+            Hasta {r.max_plan_months ?? '—'} cuotas · {r.negotiation_max_attempts ?? '—'} intentos
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: 'Recuperado este mes',
+      align: 'right',
+      orden: (r) => vozDe.get(r.tenant_id)?.recuperadoEsteMesCop,
+      ordenPrimero: 'desc',
+      texto: (r) => vozDe.get(r.tenant_id)?.recuperadoEsteMesCop ?? null,
+      cell: (r) => {
+        const v = vozDe.get(r.tenant_id)
+        return v ? (
+          <div className="whitespace-nowrap tabular-nums">
+            <div className="text-fg">{fmtCOP(v.recuperadoEsteMesCop)}</div>
+            <div className="text-caption text-fg-subtle">Mes pasado {fmtCOP(v.recuperadoMesPasadoCop)}</div>
+          </div>
+        ) : (
+          <span className="text-caption text-fg-subtle">{ingresos.isLoading ? '…' : '—'}</span>
+        )
+      },
+    },
+    {
+      header: 'Cobro del mes',
+      align: 'right',
+      orden: (r) => vozDe.get(r.tenant_id)?.estimadoCop,
+      ordenPrimero: 'desc',
+      texto: (r) => vozDe.get(r.tenant_id)?.estimadoCop ?? null,
+      cell: (r) => {
+        const v = vozDe.get(r.tenant_id)
+        return v && r.billing_model ? (
+          <div className="max-w-[220px]">
+            <div className="tabular-nums font-medium text-fg">{fmtCOP(v.estimadoCop)}</div>
+            <div className="text-caption text-fg-subtle">{comoSeCobra(r, v)}</div>
+          </div>
+        ) : (
+          <span className="text-caption text-fg-subtle">{ingresos.isLoading ? '…' : '—'}</span>
         )
       },
     },
@@ -241,8 +240,11 @@ export default function PricingConfigPage() {
       align: 'right',
       cell: (r) =>
         r.billing_model ? (
-          <Button variant="outline" hideArrow type="button"
-            
+          <Button
+            size="sm"
+            variant="outline"
+            hideArrow
+            type="button"
             onClick={() => setEditando(r)}
             data-testid={`editar-modelo-${r.tenant_id}`}
           >
@@ -255,51 +257,68 @@ export default function PricingConfigPage() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        title="Precios"
-        description="Cómo le cobra Leasefy a cada inmobiliaria. Sólo Leasefy lo cambia (la inmobiliaria lo ve en sólo lectura); cada cambio queda en el registro con quién, cuándo y de qué a qué. Proyección calculada en el navegador."
+        title="Precios de la cobranza por voz"
+        description="Cuánto le cobra Leasefy a cada inmobiliaria por Mori. Sólo Leasefy lo cambia (la inmobiliaria lo ve sin poder editarlo) y cada cambio queda registrado con quién, cuándo y de qué a qué. El cobro del mes es un estimado con lo de hoy y la misma fórmula de su factura."
       />
 
-      <div className="grid grid-cols-5 gap-3">
-        <KpiCard label="Total agencias"  value={rows?.length ?? 0} />
-        <KpiCard label="Standard"        value={byModel.standard} />
-        <KpiCard label="Performance"     value={byModel.performance} tone="ok" />
-        <KpiCard label="Hybrid"          value={byModel.hybrid} />
-        <KpiCard
-          label="Sin policy"
-          value={byModel.none}
-          tone={byModel.none > 0 ? 'warn' : 'default'}
-        />
-      </div>
+      <section aria-label="Cifras de los precios" className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <KpiCard label="Inmobiliarias" value={rows ? rows.length : '—'} />
+        <KpiCard label={NOMBRE_DEL_MODELO.performance} value={rows ? cuantas('performance') : '—'} />
+        <KpiCard label={NOMBRE_DEL_MODELO.standard} value={rows ? cuantas('standard') : '—'} />
+        <KpiCard label={NOMBRE_DEL_MODELO.hybrid} value={rows ? cuantas('hybrid') : '—'} />
+        <KpiCard label="Cobro estimado del mes" value={estimadoDelMes != null ? fmtCOP(estimadoDelMes) : '—'} tone="ok" />
+      </section>
+
+      {rows && cuantas(null) > 0 ? (
+        <Alert variant="warning" title={`${cuantas(null) === 1 ? 'Una inmobiliaria no tiene' : `${cuantas(null)} inmobiliarias no tienen`} modelo de cobro`}>
+          Están en la cobranza por voz pero sin tarifa: no se les puede calcular el cobro.
+        </Alert>
+      ) : null}
 
       <DataTable
         columns={columns}
-        rows={pageRows}
+        rows={rows}
         getKey={(r) => r.tenant_id}
         isLoading={isLoading}
         error={error}
-        emptyTitle="Sin agencias"
+        onReintentar={refetch}
+        emptyTitle="Ninguna inmobiliaria en la cobranza por voz"
+        emptyHint="Cuando una se conecte a Mori, su tarifa aparece acá."
+        aria-label="Precios de la cobranza por voz"
+        queSon={['inmobiliaria', 'inmobiliarias']}
+        buscar="Buscar inmobiliaria"
+        segmentos={[
+          { valor: 'todas', nombre: 'Todas', cumple: () => true },
+          { valor: 'performance', nombre: NOMBRE_DEL_MODELO.performance, cumple: (r) => r.billing_model === 'performance' },
+          { valor: 'standard', nombre: NOMBRE_DEL_MODELO.standard, cumple: (r) => r.billing_model === 'standard' },
+          { valor: 'hybrid', nombre: NOMBRE_DEL_MODELO.hybrid, cumple: (r) => r.billing_model === 'hybrid' },
+          { valor: 'sin', nombre: 'Sin modelo', cumple: (r) => !r.billing_model },
+        ]}
+        onRowClick={(r) => (r.billing_model ? setEditando(r) : undefined)}
+        filaMarcada={(r) => r.tenant_id === editando?.tenant_id}
+        exportar="precios-cobranza-por-voz"
       />
 
-      <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />
-
-      {rows && rows.length > 0 && (
-        <MonoLabel className="block text-right mt-3">
-          Proyección total mes:{' '}
-          <span className="text-primary">{fmtCOP(totalProjected)}</span>
-        </MonoLabel>
-      )}
-
-      {editando && (
-        <EditarModeloDeCobro
-          key={editando.tenant_id}
-          actual={editando}
-          onCerrar={() => setEditando(null)}
-          onGuardado={() => {
-            setEditando(null)
-            refetch()
-          }}
+      <Cajon abierto={editando !== null} onOpenChange={(abierto) => (abierto ? null : setEditando(null))}>
+        <CajonCabecera
+          titulo={editando ? `Modelo de cobro de ${editando.legal_name}` : 'Modelo de cobro'}
+          descripcion="Sólo Leasefy lo cambia; la inmobiliaria lo ve sin poder editarlo. Queda registrado quién lo cambió, cuándo y de qué a qué."
         />
-      )}
+        <CajonCuerpo>
+          {editando ? (
+            <EditarModeloDeCobro
+              key={editando.tenant_id}
+              actual={editando}
+              onCerrar={() => setEditando(null)}
+              onGuardado={() => {
+                setEditando(null)
+                refetch()
+                ingresos.refetch()
+              }}
+            />
+          ) : null}
+        </CajonCuerpo>
+      </Cajon>
     </div>
   )
 }

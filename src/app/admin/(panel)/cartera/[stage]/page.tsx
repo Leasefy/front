@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { Wallet, X } from '@phosphor-icons/react'
+import { Wallet } from '@phosphor-icons/react'
 import { MonoLabel } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import type { Paginated } from '@/lib/admin/types'
@@ -10,11 +10,9 @@ import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
 import { EmptyBlock } from '@/components/admin/screen/states'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
 import { BackButton } from '@/components/ui/back-button'
-import { Button } from '@/components/ui/button'
 import { Pill } from '@/components/admin/Pill'
 import { ETAPA, ETAPAS_DE_CARTERA, esEtapaDeCartera, legible } from '@/lib/admin/textos-del-admin'
 
@@ -192,16 +190,12 @@ export default function CarteraStagePage() {
                   opciones={stageTenants.map((t) => ({ valor: t.tenant_id, nombre: t.legal_name }))}
                 />
               </Filtro>
-              {tenant ? (
-                <Button variant="ghost" hideArrow onClick={() => setFilters({ tenant: '' }, { resetPage: true })}>
-                  <X className="h-4 w-4" aria-hidden="true" />
-                  Quitar el filtro
-                </Button>
-              ) : null}
             </BarraDeFiltros>
           ) : undefined
         }
-        pie={result.data ? <Pagination page={page} total={result.data.total} pageSize={PAGE_SIZE} onPage={setPage} /> : null}
+        paginacion={result.data ? { page, total: result.data.total, pageSize: PAGE_SIZE, onPage: setPage } : undefined}
+        queSon={['deudor', 'deudores']}
+        filtrosEnLaUrl={['tenant']}
       />
     </div>
   )

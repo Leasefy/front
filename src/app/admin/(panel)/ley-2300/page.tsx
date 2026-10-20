@@ -7,15 +7,12 @@ import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
-import { Pagination } from '@/components/admin/screen/Pagination'
-import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 import { legible } from '@/lib/admin/textos-del-admin'
 
-const PAGE_SIZE = 50
 
 // ─── Types (co-located, per FRONT.md §6.19) ────────────────────────────────
 
@@ -151,24 +148,27 @@ export default function Ley2300Page() {
   const maxN = Math.max(1, ...Array.from(heatmapMap.values()))
 
   const violations = data?.violations ?? []
-  /* Violaciones de los últimos 30 días: sin tope. El contador del encabezado
-     sigue mostrando el total, no el de la página. */
-  const violationsPaging = useClientPagination(violations, PAGE_SIZE)
 
   const violationColumns: Column<ViolationRow>[] = [
     {
       header: 'Cuándo',
+      orden: (v) => v.timestamp,
+      ordenPrimero: 'desc',
+      texto: (v) => fmtDateTime(v.timestamp),
       cell: (v) => <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(v.timestamp)}</span>,
     },
     {
       header: 'Tipo',
+      orden: (v) => v.event_type,
+      texto: (v) => legible(v.event_type),
       cell: (v) => <Pill tone={v.event_type.includes('inbound') ? 'muted' : 'bad'}>{legible(v.event_type)}</Pill>,
     },
-    { header: 'Canal', cell: (v) => <span className="text-fg-muted">{v.channel ? legible(v.channel) : '—'}</span> },
-    { header: 'Deudor', cell: (v) => <span className="block max-w-[180px] truncate">{v.debtor_name ?? '—'}</span> },
-    { header: 'Inmobiliaria', cell: (v) => <span className="block max-w-[160px] truncate text-fg-muted">{v.legal_name ?? '—'}</span> },
+    { header: 'Canal', orden: (v) => v.channel, texto: (v) => (v.channel ? legible(v.channel) : ''), cell: (v) => <span className="text-fg-muted">{v.channel ? legible(v.channel) : '—'}</span> },
+    { header: 'Deudor', orden: (v) => v.debtor_name, texto: (v) => v.debtor_name, cell: (v) => <span className="block max-w-[180px] truncate">{v.debtor_name ?? '—'}</span> },
+    { header: 'Inmobiliaria', orden: (v) => v.legal_name, texto: (v) => v.legal_name, cell: (v) => <span className="block max-w-[160px] truncate text-fg-muted">{v.legal_name ?? '—'}</span> },
     {
       header: 'Detalles',
+      texto: (v) => (v.details ? JSON.stringify(v.details) : ''),
       cell: (v) => (
         <span className="block max-w-[260px] truncate font-mono text-caption text-fg-muted" title={v.details ? JSON.stringify(v.details) : undefined}>
           {v.details ? JSON.stringify(v.details).slice(0, 100) : '—'}
@@ -269,19 +269,20 @@ export default function Ley2300Page() {
             </MonoLabel>
             <DataTable
               columns={violationColumns}
-              rows={violationsPaging.pageRows}
+              rows={violations}
               getKey={(v) => v.id}
               emptyTitle="Ninguna falta: todo dentro del horario"
               emptyIcon={<Scales weight="bold" />}
               aria-label="Faltas a la Ley 2300"
-              pie={
-                <Pagination
-                  page={violationsPaging.page}
-                  total={violationsPaging.total}
-                  pageSize={PAGE_SIZE}
-                  onPage={violationsPaging.setPage}
-                />
-              }
+              queSon={['falta', 'faltas']}
+              buscar="Deudor, inmobiliaria o tipo"
+              segmentos={[
+                { valor: 'todas', nombre: 'Todas', cumple: () => true },
+                { valor: 'salientes', nombre: 'Contactos fuera de horario', cumple: (v) => !v.event_type.includes('inbound') },
+                { valor: 'entrantes', nombre: 'Entrantes', cumple: (v) => v.event_type.includes('inbound') },
+              ]}
+              ordenInicial={{ columna: 0, sentido: 'desc' }}
+              exportar="faltas-ley-2300"
             />
           </section>
         </>

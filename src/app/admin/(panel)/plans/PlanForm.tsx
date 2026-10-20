@@ -9,7 +9,7 @@ import {
   PLAN_FORM_DEFAULTS,
   type PlanFormValues,
 } from './plan-form-schema'
-import { Card, Eyebrow } from '@leasefy/cadence'
+import { Alert, Eyebrow } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -54,7 +54,7 @@ function Help({ children }: { children: React.ReactNode }) {
   return <p className="mt-1 text-[11px] text-fg-subtle">{children}</p>
 }
 
-const SENTINEL_HELP = '-1 = ilimitado · 0 = ninguno · N = tope'
+const SENTINEL_HELP = '-1 = sin tope · 0 = ninguno · otro número = el tope'
 
 // ── Form ────────────────────────────────────────────────────────────────────
 
@@ -109,10 +109,10 @@ export function PlanForm({
   }
 
   return (
-    <form onSubmit={submit} noValidate className="card p-6 space-y-6">
+    <form onSubmit={submit} noValidate className="space-y-6 rounded-lg border border-border bg-surface p-6">
       <div className="flex items-center justify-between">
         <Eyebrow>{isEdit ? 'Editar plan' : 'Nuevo plan'}</Eyebrow>
-        <Pill tone="info">AGENCY</Pill>
+        <Pill tone="info">Para inmobiliarias</Pill>
       </div>
 
       {/* Identity */}
@@ -123,19 +123,19 @@ export function PlanForm({
           <FieldError message={errors.name} />
         </div>
         <div>
-          <Label htmlFor="plan-slug">Slug</Label>
+          <Label htmlFor="plan-slug">Código del plan</Label>
           <Input
             id="plan-slug"
             className="font-mono disabled:opacity-50 disabled:cursor-not-allowed"
             value={values.slug}
             onChange={text('slug')}
             disabled={isEdit}
-            placeholder={isEdit ? undefined : 'se autogenera del nombre'}
+            placeholder={isEdit ? undefined : 'Sale del nombre si lo dejas vacío'}
           />
           {isEdit ? (
-            <Help>El slug es inmutable tras crear.</Help>
+            <Help>El código no cambia después de crear el plan.</Help>
           ) : (
-            <Help>Opcional. Minúsculas, números y guiones (ej. flex-pro).</Help>
+            <Help>Opcional. Minúsculas, números y guiones (ej. flex-pro). No se puede cambiar después.</Help>
           )}
           <FieldError message={errors.slug} />
         </div>
@@ -155,23 +155,23 @@ export function PlanForm({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="FLAT">Precio fijo (mensual o anual)</SelectItem>
+            <SelectItem value="FLAT">Mensualidad fija (mensual o anual)</SelectItem>
             <SelectItem value="USAGE_CANON">Porcentaje del canon administrado</SelectItem>
           </SelectContent>
         </Select>
         <Help>
           {usageCanon
-            ? 'Se cobra un % del canon; el precio mensual/anual se envía en 0.'
-            : 'Se cobra el precio fijo; el % de canon se envía en 0.'}
+            ? 'Se cobra un porcentaje del canon que administra; la mensualidad queda en 0.'
+            : 'Se cobra la mensualidad; el porcentaje del canon queda en 0.'}
         </Help>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {usageCanon ? (
           <div>
-            <Label htmlFor="plan-usageFeePct" required>% de canon</Label>
+            <Label htmlFor="plan-usageFeePct" required>Porcentaje del canon</Label>
             <Input id="plan-usageFeePct" aria-required="true" className="tabular-nums" inputMode="decimal" value={values.usageFeePct} onChange={text('usageFeePct')} />
-            <Help>En porcentaje (ej. 1.5). Se guarda en basis points (×100).</Help>
+            <Help>Por ejemplo 1,5 para el 1,5 % del canon.</Help>
             <FieldError message={errors.usageFeePct} />
           </div>
         ) : (
@@ -193,12 +193,12 @@ export function PlanForm({
       {/* Scoring / evaluation pricing (always relevant) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="plan-scoringViewPrice" required>Precio scoring view (COP)</Label>
+          <Label htmlFor="plan-scoringViewPrice" required>Precio de ver una calificación (COP)</Label>
           <Input id="plan-scoringViewPrice" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.scoringViewPrice} onChange={text('scoringViewPrice')} />
           <FieldError message={errors.scoringViewPrice} />
         </div>
         <div>
-          <Label htmlFor="plan-evaluationCreditPrice" required>Precio crédito evaluación (COP)</Label>
+          <Label htmlFor="plan-evaluationCreditPrice" required>Precio del crédito de evaluación (COP)</Label>
           <Input id="plan-evaluationCreditPrice" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.evaluationCreditPrice} onChange={text('evaluationCreditPrice')} />
           <FieldError message={errors.evaluationCreditPrice} />
         </div>
@@ -207,25 +207,25 @@ export function PlanForm({
       {/* Limits (sentinels) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="plan-maxProperties" required>Máx. propiedades</Label>
+          <Label htmlFor="plan-maxProperties" required>Tope de inmuebles</Label>
           <Input id="plan-maxProperties" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.maxProperties} onChange={text('maxProperties')} />
           <Help>{SENTINEL_HELP}</Help>
           <FieldError message={errors.maxProperties} />
         </div>
         <div>
-          <Label htmlFor="plan-maxUsers" required>Máx. usuarios</Label>
+          <Label htmlFor="plan-maxUsers" required>Tope de usuarios</Label>
           <Input id="plan-maxUsers" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.maxUsers} onChange={text('maxUsers')} />
           <Help>{SENTINEL_HELP}</Help>
           <FieldError message={errors.maxUsers} />
         </div>
         <div>
-          <Label htmlFor="plan-maxScoringViews" required>Máx. scoring views</Label>
+          <Label htmlFor="plan-maxScoringViews" required>Tope de calificaciones vistas</Label>
           <Input id="plan-maxScoringViews" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.maxScoringViews} onChange={text('maxScoringViews')} />
           <Help>{SENTINEL_HELP}</Help>
           <FieldError message={errors.maxScoringViews} />
         </div>
         <div>
-          <Label htmlFor="plan-monthlyEvalCap" required>Tope mensual evaluaciones</Label>
+          <Label htmlFor="plan-monthlyEvalCap" required>Tope de evaluaciones al mes</Label>
           <Input id="plan-monthlyEvalCap" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.monthlyEvalCap} onChange={text('monthlyEvalCap')} />
           <Help>{SENTINEL_HELP}</Help>
           <FieldError message={errors.monthlyEvalCap} />
@@ -233,7 +233,7 @@ export function PlanForm({
         <div>
           <Label htmlFor="plan-monthlyCreditGrant" required>Bono mensual de créditos</Label>
           <Input id="plan-monthlyCreditGrant" aria-required="true" className="tabular-nums" inputMode="numeric" value={values.monthlyCreditGrant} onChange={text('monthlyCreditGrant')} />
-          <Help>Entero {'>'}= 0.</Help>
+          <Help>Número entero, sin negativos.</Help>
           <FieldError message={errors.monthlyCreditGrant} />
         </div>
       </div>
@@ -242,9 +242,9 @@ export function PlanForm({
       <fieldset className="space-y-2">
         <Eyebrow>Opciones</Eyebrow>
         {([
-          ['scoringIncluded', 'Scoring incluido'],
-          ['hasPremiumScoring', 'Scoring premium'],
-          ['hasApiAccess', 'Acceso API'],
+          ['scoringIncluded', 'Incluye la calificación del inquilino'],
+          ['hasPremiumScoring', 'Calificación premium'],
+          ['hasApiAccess', 'Acceso por API'],
           ['isDefault', 'Plan por defecto'],
         ] as const).map(([key, label]) => (
           <label key={key} className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg">
@@ -253,17 +253,14 @@ export function PlanForm({
           </label>
         ))}
         {values.isDefault && otherDefaultExists && (
-          <Card className="p-3  text-caption text-warning">
-            Ya existe otro plan marcado como <strong>por defecto</strong>. El backend no fuerza
-            unicidad: revisa que a lo sumo uno quede como default.
-          </Card>
+          <Alert variant="warning">
+            Ya hay otro plan <strong>por defecto</strong>. Leasefy no lo impide: deja sólo uno marcado.
+          </Alert>
         )}
       </fieldset>
 
       {submitError && (
-        <Card className="p-3 ">
-          <p className="text-body-sm text-danger">{submitError}</p>
-        </Card>
+        <Alert variant="danger">{submitError}</Alert>
       )}
 
       <div className="flex items-center gap-3">

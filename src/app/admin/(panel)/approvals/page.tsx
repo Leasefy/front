@@ -1,8 +1,7 @@
 'use client'
 
-import Link from 'next/link'
-import { ArrowRight, SealCheck } from '@phosphor-icons/react'
-import { Card, Chip, MonoLabel, Stagger, StaggerItem } from '@leasefy/cadence'
+import { useRouter } from 'next/navigation'
+import { SealCheck } from '@phosphor-icons/react'
 
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
@@ -10,7 +9,9 @@ import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtDateTime } from '@/lib/admin/format'
 import { tipoDeDecision } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
+import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
 import { Pill } from '@/components/admin/Pill'
 
 interface PendingRow {
@@ -63,42 +64,9 @@ function esperaEnPalabras(dias: number): string {
   return `${redondo.toLocaleString('es-CO')} ${redondo === 1 ? 'día' : 'días'}`
 }
 
-function ApprovalCard({ row }: { row: PendingRow }) {
-  const dias = (Date.now() - new Date(row.created_at).getTime()) / 86_400_000
-  const summary = summarizePayload(row.decision_type, row.decision_payload)
-
-  return (
-    <Link href={`/admin/approvals/${row.id}`} className="group block rounded-[20px] outline-none focus-visible:ring-2 focus-visible:ring-ring">
-      <Card interactive className="flex items-start gap-4 p-5">
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Pill tone="info">{tipoDeDecision(row.decision_type)}</Pill>
-            <span className="font-medium text-fg">{row.debtor_name ?? 'Deudor sin nombre'}</span>
-            <span className="text-body-sm text-fg-muted">{row.legal_name ?? 'Sin inmobiliaria'}</span>
-          </div>
-          <p className="text-body-sm text-fg-muted">{summary}</p>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <Pill tone={tonoDeLaEspera(dias)} dot>
-              Esperando {esperaEnPalabras(dias)}
-            </Pill>
-            <MonoLabel>
-              Confianza {row.confidence_score != null ? `${Math.round(Number(row.confidence_score) * 100)} %` : '—'}
-            </MonoLabel>
-            <MonoLabel>{row.model_used}</MonoLabel>
-            <MonoLabel className="tabular-nums">{fmtDateTime(row.created_at)}</MonoLabel>
-          </div>
-        </div>
-        <ArrowRight
-          className="mt-1 h-5 w-5 shrink-0 text-fg-subtle transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-fg"
-          aria-hidden="true"
-        />
-      </Card>
-    </Link>
-  )
-}
-
 /** /admin/approvals — la cola de la ley T-323/2024 (FRONT.md §6.11 · BACK.md §8.10). */
 export default function ApprovalsPage() {
+  const router = useRouter()
   const { get, setFilters } = useUrlFilters()
   const type = get('type')
 
@@ -107,55 +75,123 @@ export default function ApprovalsPage() {
     [type],
   )
 
-  const rows = data?.data ?? []
   const facets = data?.facets ?? []
   const totalPending = facets.reduce((a, f) => a + parseInt(f.n, 10), 0)
+  const ahora = Date.now()
+  const diasDe = (r: PendingRow) => (ahora - new Date(r.created_at).getTime()) / 86_400_000
+  const vencidas = (data?.data ?? []).filter((r) => diasDe(r) > 3).length
+
+  const columnas: Column<PendingRow>[] = [
+    {
+      header: 'Decisión',
+      className: 'min-w-[260px]',
+      orden: (r) => tipoDeDecision(r.decision_type),
+      texto: (r) => `${tipoDeDecision(r.decision_type)} · ${summarizePayload(r.decision_type, r.decision_payload)}`,
+      cell: (r) => (
+        <div className="min-w-0 max-w-md space-y-1">
+          <Pill tone="info">{tipoDeDecision(r.decision_type)}</Pill>
+          <p className="line-clamp-2 text-caption text-fg-muted">{summarizePayload(r.decision_type, r.decision_payload)}</p>
+        </div>
+      ),
+    },
+    {
+      header: 'Deudor',
+      orden: (r) => r.debtor_name,
+      texto: (r) => r.debtor_name ?? 'Deudor sin nombre',
+      cell: (r) => (
+        <div className="min-w-0">
+          <div className="font-medium text-fg">{r.debtor_name ?? 'Deudor sin nombre'}</div>
+          <div className="text-caption text-fg-muted">{r.legal_name ?? 'Sin inmobiliaria'}</div>
+        </div>
+      ),
+    },
+    {
+      header: 'Esperando',
+      orden: (r) => r.created_at,
+      texto: (r) => esperaEnPalabras(diasDe(r)),
+      cell: (r) => (
+        <Pill tone={tonoDeLaEspera(diasDe(r))} dot>
+          {esperaEnPalabras(diasDe(r))}
+        </Pill>
+      ),
+    },
+    {
+      header: 'Confianza',
+      align: 'right',
+      orden: (r) => (r.confidence_score != null ? Number(r.confidence_score) : null),
+      texto: (r) => (r.confidence_score != null ? Math.round(Number(r.confidence_score) * 100) : null),
+      cell: (r) => (
+        <span className="tabular-nums text-fg">
+          {r.confidence_score != null ? `${Math.round(Number(r.confidence_score) * 100)} %` : '—'}
+        </span>
+      ),
+    },
+    {
+      header: 'Propuesta',
+      align: 'right',
+      orden: (r) => r.created_at,
+      ordenPrimero: 'desc',
+      texto: (r) => fmtDateTime(r.created_at),
+      cell: (r) => (
+        <div className="whitespace-nowrap text-caption">
+          <div className="tabular-nums text-fg-muted">{fmtDateTime(r.created_at)}</div>
+          <div className="font-mono text-fg-subtle">{r.model_used}</div>
+        </div>
+      ),
+    },
+  ]
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Aprobaciones"
-        description="Toda decisión de un agente con efecto legal pasa por acá antes de ejecutarse (sentencia T-323 de 2024)."
+        description="Toda decisión de un agente con efecto legal pasa por acá antes de ejecutarse (sentencia T-323 de 2024). Toca una para revisarla y decidir."
       />
 
-      {/* Filtro por tipo: las píldoras de filtro de Cadence. */}
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por tipo de decisión">
-        <Chip selected={!type} onClick={() => setFilters({ type: undefined })}>
-          Todas · <span className="font-mono tabular-nums">{totalPending}</span>
-        </Chip>
-        {facets.map((f) => (
-          <Chip
-            key={f.decision_type}
-            selected={type === f.decision_type}
-            onClick={() => setFilters({ type: f.decision_type })}
-          >
-            {tipoDeDecision(f.decision_type)} · <span className="font-mono tabular-nums">{f.n}</span>
-          </Chip>
-        ))}
-      </div>
-
-      <section className="space-y-3" aria-label="Cola de aprobaciones">
-        <MonoLabel className="block">Cola · las más viejas primero</MonoLabel>
-        {isLoading ? (
-          <LoadingBlock />
-        ) : error ? (
-          <ErrorBlock error={error} onReintentar={refetch} />
-        ) : rows.length === 0 ? (
-          <EmptyBlock
-            icono={<SealCheck weight="bold" />}
-            title="No hay decisiones esperando"
-            hint="Cuando un agente proponga algo con efecto legal, aparece acá para que alguien lo apruebe."
-          />
-        ) : (
-          <Stagger className="space-y-2">
-            {rows.map((r) => (
-              <StaggerItem key={r.id}>
-                <ApprovalCard row={r} />
-              </StaggerItem>
-            ))}
-          </Stagger>
-        )}
+      <section aria-label="Cifras de la cola" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiCard label="Esperando" value={data ? totalPending : '—'} tone={totalPending ? 'warn' : 'default'} />
+        <KpiCard label="Más de 3 días" value={data ? vencidas : '—'} tone={vencidas ? 'bad' : 'default'} />
       </section>
+
+      <DataTable
+        columns={columnas}
+        rows={data?.data}
+        getKey={(r) => r.id}
+        isLoading={isLoading}
+        error={error}
+        onReintentar={refetch}
+        emptyTitle="No hay decisiones esperando"
+        emptyHint="Cuando un agente proponga algo con efecto legal, aparece acá para que alguien lo apruebe."
+        emptyIcon={<SealCheck weight="bold" />}
+        aria-label="Cola de aprobaciones"
+        onRowClick={(r) => router.push(`/admin/approvals/${r.id}`)}
+        queSon={['decisión', 'decisiones']}
+        buscar="Deudor, inmobiliaria o detalle"
+        textoExtra={(r) => `${r.legal_name ?? ''} ${r.model_used}`}
+        filtrosEnLaUrl={['type']}
+        ordenInicial={{ columna: 2, sentido: 'asc' }}
+        exportar="aprobaciones-pendientes"
+        masEnElExcel={[
+          { header: 'Inmobiliaria', texto: (r) => r.legal_name },
+          { header: 'Modelo', texto: (r) => r.model_used },
+        ]}
+        barra={
+          <BarraDeFiltros>
+            <Filtro etiqueta="Tipo de decisión">
+              <Desplegable
+                value={type}
+                onChange={(v) => setFilters({ type: v, page: undefined })}
+                todas={`Todas (${totalPending})`}
+                aria-label="Tipo de decisión"
+                opciones={facets.map((f) => ({ valor: f.decision_type, nombre: `${tipoDeDecision(f.decision_type)} (${f.n})` }))}
+              />
+            </Filtro>
+          </BarraDeFiltros>
+        }
+      />
+      {data && data.data.length >= 100 ? (
+        <p className="text-caption text-fg-subtle">Se muestran las 100 más viejas; el resto aparece a medida que se decidan.</p>
+      ) : null}
     </div>
   )
 }

@@ -222,3 +222,22 @@ function redirectTo(path: string): void {
   }
   window.location.href = path
 }
+
+/**
+ * Todas las páginas de una lista paginada del admin (`{ data, total }`), para
+ * el Excel de una tabla que pagina en el servidor (20-10-2026). Tope de
+ * `tope` filas: más que eso no cabe en un Excel útil y castiga al back.
+ */
+export async function traerTodasLasPaginas<T>(
+  ruta: string,
+  query: Record<string, string | number | undefined>,
+  tope = 5000,
+): Promise<T[]> {
+  const filas: T[] = []
+  for (let page = 0; page < 200; page++) {
+    const r = await adminApi<{ data: T[]; total: number }>(ruta, { query: { ...query, page } })
+    filas.push(...r.data)
+    if (r.data.length === 0 || filas.length >= r.total || filas.length >= tope) break
+  }
+  return filas.slice(0, tope)
+}

@@ -30,11 +30,10 @@ import {
 } from '@/lib/admin/agent-api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
-import { fmtDateTime } from '@/lib/admin/format'
+import { fmtCOP, fmtDateTime, USD_TO_COP } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
 import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 import { Button } from '@/components/ui/button'
@@ -64,11 +63,14 @@ function fuenteLegible(f: string): string {
 
 const especialistaLegible = (e: string) => `especialista de ${e.replace(/[_-]/g, ' ')}`
 
-/** «US$0,0123». */
-function usd(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return '—'
-  const dec = n > 0 && n < 0.01 ? 4 : 2
-  return `US$${n.toFixed(dec).replace('.', ',')}`
+/**
+ * El costo del turno en pesos (el modelo cobra en dólares; Nico: «ninguna
+ * pantalla con dólares»), a la tasa fija del admin. Menos de un peso se dice así.
+ */
+function costo(dolares: number | null | undefined): string {
+  if (dolares == null || !Number.isFinite(dolares)) return '—'
+  const cop = Math.round(dolares * USD_TO_COP)
+  return cop > 0 && cop < 1 ? 'Menos de $ 1' : fmtCOP(cop)
 }
 
 /** «3,2 s». */
@@ -85,6 +87,29 @@ function diaDeBogota(iso: string): string {
 /** «15 de octubre de 2026». */
 function fechaLarga(iso: string): string {
   return new Date(`${iso}T12:00:00Z`).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+}
+
+/** Lo mismo que dicen las pastillas de «Cómo terminó», en texto (para el Excel). */
+function comoTermino(t: TurnoDelChat): string {
+  const fin = t.falla
+    ? t.falla.motivo === 'sin_creditos'
+      ? 'Se cortó: sin créditos'
+      : 'Se cortó'
+    : t.respuesta === null
+      ? 'Respuesta sin guardar'
+      : t.sinRespuesta
+        ? 'Sin respuesta'
+        : 'Respondió'
+  return [
+    fin,
+    t.reformulada ? 'reformulada' : null,
+    t.corregida ? 'corregida' : null,
+    t.abandonada ? 'abandono' : null,
+    t.pulgar === 'abajo' ? 'pulgar abajo' : t.pulgar === 'arriba' ? 'pulgar arriba' : null,
+    t.cifraContradicha ? 'cifra contradicha' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 function EstadoDelTurno({ t }: { t: TurnoDelChat }) {
@@ -150,7 +175,7 @@ function DetalleDelTurno({ t, onClose }: { t: TurnoDelChat | null; onClose: () =
                 <Dato etiqueta="temas">{t.temas.join(' · ') || '—'}</Dato>
                 <Dato etiqueta="rol de quien preguntó">{t.rol ?? '—'}</Dato>
                 <Dato etiqueta="tardó">{segundos(t.ms)}</Dato>
-                <Dato etiqueta="costo">{usd(t.costoUsd)}</Dato>
+                <Dato etiqueta="costo">{costo(t.costoUsd)}</Dato>
                 <Dato etiqueta="tokens (entrada / salida)">
                   {t.tokensEntrada == null && t.tokensSalida == null
                     ? '—'
@@ -264,12 +289,12 @@ export default function ChatPreguntasPage() {
 
   const totales = data?.totales
   const columnas: Column<TurnoDelChat>[] = [
-    { header: 'fecha', cell: (t) => <span className="tabular-nums whitespace-nowrap text-fg-muted">{fmtDateTime(t.fecha)}</span> },
-    { header: 'inmobiliaria', cell: (t) => <span title={t.agencyId}>{t.inmobiliaria ?? t.agencyId.slice(0, 8)}</span> },
-    { header: 'pregunta', cell: (t) => <span className="line-clamp-2 text-fg">{t.pregunta || '—'}</span>, className: 'min-w-[16rem]' },
-    { header: 'cómo terminó', cell: (t) => <EstadoDelTurno t={t} /> },
-    { header: 'tardó', cell: (t) => <span className="tabular-nums">{segundos(t.ms)}</span>, align: 'right' },
-    { header: 'costo', cell: (t) => <span className="tabular-nums">{usd(t.costoUsd)}</span>, align: 'right' },
+    { header: 'Fecha', texto: (t) => fmtDateTime(t.fecha), cell: (t) => <span className="tabular-nums whitespace-nowrap text-fg-muted">{fmtDateTime(t.fecha)}</span> },
+    { header: 'Inmobiliaria', texto: (t) => t.inmobiliaria ?? t.agencyId, cell: (t) => <span title={t.agencyId}>{t.inmobiliaria ?? t.agencyId.slice(0, 8)}</span> },
+    { header: 'Pregunta', texto: (t) => t.pregunta, cell: (t) => <span className="line-clamp-2 text-fg">{t.pregunta || '—'}</span>, className: 'min-w-[16rem]' },
+    { header: 'Cómo terminó', texto: (t) => comoTermino(t), cell: (t) => <EstadoDelTurno t={t} /> },
+    { header: 'Tardó', texto: (t) => segundos(t.ms), cell: (t) => <span className="tabular-nums">{segundos(t.ms)}</span>, align: 'right' },
+    { header: 'Costo', texto: (t) => costo(t.costoUsd), cell: (t) => <span className="tabular-nums">{costo(t.costoUsd)}</span>, align: 'right' },
   ]
 
   return (
@@ -400,7 +425,7 @@ export default function ChatPreguntasPage() {
             <KpiCard label="Se cortaron" value={totales!.fallas} tone={totales!.fallas > 0 ? 'warn' : 'default'} />
             <KpiCard
               label="Costo"
-              value={totales!.turnosConCosto === 0 ? '—' : usd(totales!.costoUsd)}
+              value={totales!.turnosConCosto === 0 ? '—' : costo(totales!.costoUsd)}
               hint={totales!.turnosConCosto === 0 ? 'Todavía sin costo anotado' : `${totales!.turnosConCosto} turnos con costo`}
             />
           </div>
@@ -475,11 +500,14 @@ export default function ChatPreguntasPage() {
               rows={data.resumen}
               getKey={(s) => `${s.semana}-${s.agencyId}`}
               columns={[
-                { header: 'semana del', cell: (s) => <span className="whitespace-nowrap">{fechaLarga(s.semana)}</span> },
-                { header: 'inmobiliaria', cell: (s) => s.inmobiliaria ?? s.agencyId.slice(0, 8) },
-                { header: 'preguntas', cell: (s) => <span className="tabular-nums">{s.preguntas}</span>, align: 'right' },
+                { header: 'Semana del', orden: (s) => s.semana, ordenPrimero: 'desc', texto: (s) => fechaLarga(s.semana), cell: (s) => <span className="whitespace-nowrap">{fechaLarga(s.semana)}</span> },
+                { header: 'Inmobiliaria', orden: (s) => s.inmobiliaria, texto: (s) => s.inmobiliaria ?? s.agencyId, cell: (s) => s.inmobiliaria ?? s.agencyId.slice(0, 8) },
+                { header: 'Preguntas', orden: (s) => s.preguntas, ordenPrimero: 'desc', texto: (s) => s.preguntas, cell: (s) => <span className="tabular-nums">{s.preguntas}</span>, align: 'right' },
                 {
-                  header: 'sin respuesta',
+                  header: 'Sin respuesta',
+                  orden: (s) => s.porcentajeSinRespuesta,
+                  ordenPrimero: 'desc',
+                  texto: (s) => s.porcentajeSinRespuesta,
                   cell: (s) => (
                     <span className="tabular-nums">
                       {s.porcentajeSinRespuesta == null ? '—' : `${String(s.porcentajeSinRespuesta).replace('.', ',')} %`}
@@ -487,12 +515,17 @@ export default function ChatPreguntasPage() {
                   ),
                   align: 'right',
                 },
-                { header: 'reformuladas', cell: (s) => <span className="tabular-nums">{s.reformulaciones}</span>, align: 'right' },
-                { header: 'abandonos', cell: (s) => <span className="tabular-nums">{s.abandonos}</span>, align: 'right' },
-                { header: 'se cortaron', cell: (s) => <span className="tabular-nums">{s.fallas}</span>, align: 'right' },
-                { header: 'temas', cell: (s) => <span className="text-fg-muted">{s.temas.map((t) => t.nombre).join(' · ') || '—'}</span> },
+                { header: 'Reformuladas', orden: (s) => s.reformulaciones, ordenPrimero: 'desc', texto: (s) => s.reformulaciones, cell: (s) => <span className="tabular-nums">{s.reformulaciones}</span>, align: 'right' },
+                { header: 'Abandonos', orden: (s) => s.abandonos, ordenPrimero: 'desc', texto: (s) => s.abandonos, cell: (s) => <span className="tabular-nums">{s.abandonos}</span>, align: 'right' },
+                { header: 'Se cortaron', orden: (s) => s.fallas, ordenPrimero: 'desc', texto: (s) => s.fallas, cell: (s) => <span className="tabular-nums">{s.fallas}</span>, align: 'right' },
+                { header: 'Temas', texto: (s) => s.temas.map((t) => t.nombre).join(' · '), cell: (s) => <span className="text-fg-muted">{s.temas.map((t) => t.nombre).join(' · ') || '—'}</span> },
               ]}
               emptyTitle="Sin semanas"
+              id="semanas"
+              aria-label="Preguntas por semana e inmobiliaria"
+              queSon={['semana', 'semanas']}
+              filasPorPagina={10}
+              exportar="chat-por-semana"
             />
           </div>
 
@@ -508,8 +541,31 @@ export default function ChatPreguntasPage() {
             isLoading={isLoading}
             emptyTitle="Ninguna pregunta con estos filtros"
             emptyHint="Quita algún filtro para ver más."
+            aria-label="Preguntas del chat"
+            filaMarcada={(t) => t.turnoId === abierto?.turnoId}
+            paginacion={{ page, total: data.total, pageSize: POR_PAGINA, onPage: setPage }}
+            queSon={['pregunta', 'preguntas']}
+            exportar="preguntas-del-chat"
+            traerTodoParaElExcel={async () => {
+              const todas: TurnoDelChat[] = []
+              for (let pagina = 1; pagina <= 100; pagina++) {
+                const r = await getChatPreguntas({
+                  ...(agencia ? { agencyId: agencia } : {}),
+                  ...(desde ? { desde } : {}),
+                  ...(hasta ? { hasta } : {}),
+                  ...(tema ? { tema } : {}),
+                  ...(q ? { q } : {}),
+                  sinRespuesta,
+                  pulgarAbajo,
+                  pagina,
+                  limite: POR_PAGINA,
+                })
+                todas.push(...r.filas)
+                if (r.filas.length === 0 || todas.length >= r.total || todas.length >= 5000) break
+              }
+              return todas
+            }}
           />
-          <Pagination page={page} total={data.total} pageSize={POR_PAGINA} onPage={setPage} />
         </>
       )}
 

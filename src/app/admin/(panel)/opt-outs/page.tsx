@@ -2,7 +2,7 @@
 
 import { BellSlash, HandPalm, Scales, Users } from '@phosphor-icons/react'
 import { Alert } from '@leasefy/cadence'
-import { adminApi } from '@/lib/admin/api'
+import { adminApi, traerTodasLasPaginas } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtDateTime } from '@/lib/admin/format'
@@ -10,7 +10,6 @@ import type { Paginated } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
 import { Pill } from '@/components/admin/Pill'
 import { BarraDeFiltros, Buscador, Filtro } from '@/components/admin/screen/Filtros'
 import { legible } from '@/lib/admin/textos-del-admin'
@@ -64,20 +63,23 @@ export default function OptOutsPage() {
   const columns: Column<OptOutRow>[] = [
     {
       header: 'Cuándo',
+      texto: (r) => fmtDateTime(r.timestamp),
       cell: (r) => <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.timestamp)}</span>,
     },
-    { header: 'Deudor', cell: (r) => <span className="block max-w-[200px] truncate font-medium text-fg">{r.debtor_name ?? '—'}</span> },
-    { header: 'Inmobiliaria', cell: (r) => <span className="block max-w-[160px] truncate text-fg-muted">{r.legal_name ?? '—'}</span> },
-    { header: 'Canal', cell: (r) => <Pill tone="bad">{legible(r.channel ?? 'voice')}</Pill> },
-    { header: 'Cómo se detectó', cell: (r) => <span className="text-fg-muted">{r.detection ? legible(r.detection) : '—'}</span> },
+    { header: 'Deudor', texto: (r) => r.debtor_name, cell: (r) => <span className="block max-w-[200px] truncate font-medium text-fg">{r.debtor_name ?? '—'}</span> },
+    { header: 'Inmobiliaria', texto: (r) => r.legal_name, cell: (r) => <span className="block max-w-[160px] truncate text-fg-muted">{r.legal_name ?? '—'}</span> },
+    { header: 'Canal', texto: (r) => legible(r.channel ?? 'voice'), cell: (r) => <Pill tone="bad">{legible(r.channel ?? 'voice')}</Pill> },
+    { header: 'Cómo se detectó', texto: (r) => (r.detection ? legible(r.detection) : ''), cell: (r) => <span className="text-fg-muted">{r.detection ? legible(r.detection) : '—'}</span> },
     {
       header: 'Lo que dijo',
+      texto: (r) => r.matched_phrase,
       cell: (r) => (
         <span className="block max-w-[240px] truncate italic text-fg-muted">{r.matched_phrase ? `«${r.matched_phrase}»` : '—'}</span>
       ),
     },
     {
       header: 'Canales cerrados',
+      texto: (r) => (r.opt_out_channels ?? []).map((c) => legible(c)).join(', '),
       cell: (r) => {
         const channels = r.opt_out_channels ?? []
         if (channels.length === 0) return <span className="text-fg-subtle">—</span>
@@ -130,7 +132,11 @@ export default function OptOutsPage() {
             </Filtro>
           </BarraDeFiltros>
         }
-        pie={result.data ? <Pagination page={page} total={result.data.total} pageSize={PAGE_SIZE} onPage={setPage} /> : null}
+        paginacion={result.data ? { page, total: result.data.total, pageSize: PAGE_SIZE, onPage: setPage } : undefined}
+        queSon={['baja', 'bajas']}
+        filtrosEnLaUrl={['q']}
+        exportar="bajas-de-contacto"
+        traerTodoParaElExcel={() => traerTodasLasPaginas<OptOutRow>('/opt-outs', { q })}
       />
 
       <Alert variant="danger" role="note" title="Base legal">

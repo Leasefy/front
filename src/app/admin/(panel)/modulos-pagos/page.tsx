@@ -15,11 +15,10 @@
  * 2. **Pide MOTIVO para prender o apagar.** El back no lo exige; esta pantalla
  *    sí. Un entitlement de pago que nadie explicó es imposible de auditar seis
  *    meses después — y el que lo va a leer es alguien que no estaba ese día.
- * 3. **Apagar se confirma; prender no.** Prender abre una pantalla; apagar se la
- *    quita a alguien que la está usando, y eso no debería pasar por un clic
- *    distraído. (Acá sí se usa `window.confirm`: el backoffice tiene su propio
- *    sistema de diseño y no tiene modales — es la zona permitida por
- *    `sin-dialogos-del-navegador.test.ts`.)
+ * 3. **Prender y apagar pasan por un cajón** que pide el motivo y dice qué va a
+ *    pasar (19-10-2026: antes eran `window.confirm` + `window.prompt`, que
+ *    ignoran el tema y algunos navegadores suprimen). Apagar se avisa en
+ *    amarillo: le quita la pantalla a alguien que puede estar usándola.
  */
 
 import { useMemo, useState } from 'react'
@@ -42,13 +41,19 @@ import {
   type FilaDeLaMatriz,
   type MatrizDeModulos,
 } from '@/lib/admin/modulos-pagos'
-import { Card, Eyebrow } from '@leasefy/cadence'
+import { Alert, Card, Eyebrow } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
+import { fmtFecha } from '@/lib/admin/format'
 
-/** `2026-09-17T…` → `2026-09-17`. */
-function soloFecha(iso: string | null): string {
-  return iso ? iso.slice(0, 10) : '—'
+/** Lo que se va a cambiar, mientras el cajón pide el motivo. */
+interface CambioPendiente {
+  fila: FilaDeLaMatriz
+  modulo: string
+  nombreDelModulo: string
+  prender: boolean
 }
 
 export default function ModulosPagosPage() {
@@ -75,45 +80,23 @@ export default function ModulosPagosPage() {
   )
   const visibles = soloConModulos ? conAlguno : agencias
 
-  async function alternar(
-    fila: FilaDeLaMatriz,
-    modulo: string,
-    nombreDelModulo: string,
-  ) {
-    const estado = fila.modulos[modulo]
-    const prender = !estado?.habilitado
-    const llave = `${fila.agencyId}:${modulo}`
+  const [pendiente, setPendiente] = useState<CambioPendiente | null>(null)
+  const [motivo, setMotivo] = useState('')
 
-    // 🔴 Apagar se confirma. Prender abre una pantalla; apagar se la quita a
-    // alguien que puede estar liquidando la nómina del mes.
-    if (
-      !prender &&
-      !window.confirm(
-        `¿Apagar "${nombreDelModulo}" para ${fila.nombre}?\n\n` +
-          'Dejan de ver el módulo en el menú y sus rutas responden 402. ' +
-          'Los datos NO se borran: si lo vuelves a prender, está todo como estaba.',
-      )
-    ) {
-      return
-    }
-
-    const motivo = window.prompt(
-      prender
-        ? `¿Por qué se le prende "${nombreDelModulo}" a ${fila.nombre}?\n\n(Ej.: "contrato firmado 2026-09-17". Queda guardado con tu correo y la fecha.)`
-        : `¿Por qué se le apaga "${nombreDelModulo}" a ${fila.nombre}?\n\n(Ej.: "mora de 3 meses". Queda guardado con tu correo y la fecha.)`,
-      '',
-    )
-    // Cancelar el motivo cancela la acción: un entitlement sin explicación es
-    // exactamente lo que esta pantalla existe para evitar.
-    if (motivo === null || motivo.trim() === '') return
-
+  function alternar(fila: FilaDeLaMatriz, modulo: string, nombreDelModulo: string) {
     setFallo(null)
+    setMotivo('')
+    setPendiente({ fila, modulo, nombreDelModulo, prender: !fila.modulos[modulo]?.habilitado })
+  }
+
+  async function confirmarElCambio() {
+    if (!pendiente || motivo.trim().length < 3) return
+    const { fila, modulo, prender } = pendiente
+    const llave = `${fila.agencyId}:${modulo}`
     setOcupado(llave)
     try {
-      await fijarModulo(fila.agencyId, modulo, {
-        habilitado: prender,
-        motivo: motivo.trim(),
-      })
+      await fijarModulo(fila.agencyId, modulo, { habilitado: prender, motivo: motivo.trim() })
+      setPendiente(null)
       refetch()
     } catch (err) {
       setFallo(
@@ -128,26 +111,18 @@ export default function ModulosPagosPage() {
   }
 
   return (
-    <>
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Módulos"
         description="Qué módulo de pago tiene comprado cada inmobiliaria, quién se lo prendió y cuándo. Prender o apagar desde acá es lo único que lo cambia: ninguna inmobiliaria puede activárselo sola."
       />
 
-      {data && !data.disponible && (
-        <Card className="p-4  mb-6">
-          <p className="text-sm text-fg">{data.motivo}</p>
-        </Card>
-      )}
+      {data && !data.disponible ? <Alert variant="warning">{data.motivo}</Alert> : null}
 
-      {fallo && (
-        <Card className="p-4  mb-6">
-          <p className="text-sm text-danger">{fallo}</p>
-        </Card>
-      )}
+      {fallo && !pendiente ? <Alert variant="danger">{fallo}</Alert> : null}
 
       <form
-        className="flex flex-wrap items-center gap-2 mb-4"
+        className="flex flex-wrap items-center gap-2"
         onSubmit={(e) => {
           e.preventDefault()
           setAplicada(busqueda.trim())
@@ -227,7 +202,7 @@ export default function ModulosPagosPage() {
                             {/* 🔴 Quién y cuándo: es lo que hace auditable la venta. */}
                             {m?.habilitadoPorEmail && (
                               <span className="text-[10px] text-fg-subtle leading-tight">
-                                {m.habilitadoPorEmail} · {soloFecha(m.habilitadoAt)}
+                                {m.habilitadoPorEmail} · {m.habilitadoAt ? fmtFecha(m.habilitadoAt) : '—'}
                                 {m.motivo ? ` · ${m.motivo}` : ''}
                               </span>
                             )}
@@ -265,6 +240,55 @@ export default function ModulosPagosPage() {
           </Card>
         </>
       )}
-    </>
+      <Cajon abierto={pendiente !== null} onOpenChange={(abierto) => (abierto ? null : setPendiente(null))}>
+        <CajonCabecera
+          titulo={
+            pendiente
+              ? `${pendiente.prender ? 'Prender' : 'Apagar'} «${pendiente.nombreDelModulo}» a ${pendiente.fila.nombre}`
+              : 'Módulo'
+          }
+          descripcion={
+            pendiente?.prender
+              ? 'La inmobiliaria ve el módulo en su menú desde ya.'
+              : 'Deja de ver el módulo y sus pantallas no abren. No se borra nada: si se vuelve a prender, está todo como estaba.'
+          }
+        />
+        <CajonCuerpo>
+          <div className="space-y-4">
+            {pendiente && !pendiente.prender ? (
+              <Alert variant="warning">Puede estar usándolo ahora mismo.</Alert>
+            ) : null}
+            <div className="space-y-1.5">
+              <label htmlFor="motivo-del-modulo" className="text-body-sm font-medium text-fg">
+                ¿Por qué? <span className="text-danger">*</span>
+              </label>
+              <Textarea
+                id="motivo-del-modulo"
+                rows={3}
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                placeholder={pendiente?.prender ? 'Ej.: contrato firmado el 17 de septiembre' : 'Ej.: mora de 3 meses'}
+                aria-required="true"
+              />
+              <p className="text-caption text-fg-subtle">Queda guardado con tu correo y la fecha.</p>
+            </div>
+            {fallo ? <Alert variant="danger">{fallo}</Alert> : null}
+          </div>
+        </CajonCuerpo>
+        <CajonPie ayuda={motivo.trim().length < 3 ? 'Escribe el motivo para seguir.' : undefined}>
+          <Button variant="outline" hideArrow onClick={() => setPendiente(null)}>
+            Cancelar
+          </Button>
+          <Button
+            hideArrow
+            variant={pendiente?.prender ? 'default' : 'destructive'}
+            disabled={!pendiente || motivo.trim().length < 3 || ocupado !== null}
+            onClick={() => void confirmarElCambio()}
+          >
+            {ocupado ? 'Guardando…' : pendiente?.prender ? 'Prender el módulo' : 'Apagar el módulo'}
+          </Button>
+        </CajonPie>
+      </Cajon>
+    </div>
   )
 }

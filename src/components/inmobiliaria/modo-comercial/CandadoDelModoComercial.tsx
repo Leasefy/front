@@ -18,6 +18,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { ModuloConDemo } from '@/components/venta/ModuloConDemo';
+import { moduloDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
+import { demoDeLaInmobiliaria } from '@/lib/venta/demos-del-panel';
+import { enlaceDeWhatsApp } from '@/lib/venta/whatsapp-de-leasefy';
 import {
   INICIO_DEL_MODO_COMERCIAL,
   RUTA_PARA_ACTIVAR,
@@ -42,7 +46,7 @@ const LO_QUE_SE_ABRE = [
  * Fuera del modo comercial no hace nada.
  */
 export function CandadoDelModoComercial({ children }: { children: ReactNode }) {
-  const { agency } = useAuth();
+  const { agency, user } = useAuth();
   const pathname = usePathname() ?? '';
   const router = useRouter();
   const comercial = enModoComercial(agency);
@@ -62,13 +66,53 @@ export function CandadoDelModoComercial({ children }: { children: ReactNode }) {
   }
   return (
     <>
-      {abiertaEnModoComercial(pathname) ? children : <ActivarTuCuenta />}
-      <BienvenidaComercial agencyId={agency?.id ?? null} />
+      {abiertaEnModoComercial(pathname) ? children : <ParteCerrada ruta={pathname} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} />}
+      <BienvenidaComercial agencyId={agency?.id ?? null} nombre={user?.firstName ?? null} empresa={agency?.name ?? null} />
     </>
   );
 }
 
-/** Lo que ve quien entra a una parte cerrada. */
+/**
+ * Una parte cerrada (Nico, 20-10-2026): no se abre «gratis al activar»; se vende
+ * el servicio. Qué hace, la demo y nuestro WhatsApp; «¿Ya eres cliente?» lleva a
+ * completar el registro (NIT, razón social, segundo factor).
+ */
+function ParteCerrada({ ruta, nombre, empresa }: { ruta: string; nombre: string | null; empresa: string | null }) {
+  const modulo = moduloDeLaRuta(ruta);
+  return (
+    <ModuloConDemo
+      demo={demoDeLaInmobiliaria(modulo?.key)}
+      quien="inmobiliaria"
+      nombre={nombre}
+      empresa={empresa}
+      queVio={modulo ? NOMBRES[modulo.key] ?? null : null}
+      yaEsCliente={{ href: RUTA_PARA_ACTIVAR, texto: '¿Ya eres cliente? Activa tu cuenta' }}
+    />
+  );
+}
+
+/** Cómo se llama cada parte en el mensaje de WhatsApp. */
+const NOMBRES: Record<string, string> = {
+  cobranza: 'la cobranza',
+  conciliacion: 'la conciliación bancaria',
+  avaluos: 'los avalúos',
+  asegurabilidad: 'el seguro de arrendamiento',
+  matching: 'el cruce de interesados',
+  estudio: 'el estudio del inquilino',
+  retencion: 'la retención',
+  contratos: 'los contratos',
+  pagos: 'los pagos y giros',
+  facturacion: 'la facturación electrónica',
+  contabilidad: 'la contabilidad',
+  nomina: 'la nómina',
+  propietarios: 'los propietarios',
+  inquilinos: 'los inquilinos',
+  reportes: 'los reportes',
+  mantenimientos: 'los mantenimientos',
+  documentos: 'los documentos',
+};
+
+/** Lo que ve quien entra a una parte cerrada (antes del 20-10: activar gratis). */
 export function ActivarTuCuenta() {
   return (
     <motion.section
@@ -109,7 +153,7 @@ export function ActivarTuCuenta() {
 const CLAVE_BIENVENIDA = (agencyId: string) => `leasefy-bienvenida-comercial:${agencyId}`;
 
 /** Una sola vez por inmobiliaria: qué tiene abierto y qué se abre al activar. */
-function BienvenidaComercial({ agencyId }: { agencyId: string | null }) {
+function BienvenidaComercial({ agencyId, nombre, empresa }: { agencyId: string | null; nombre: string | null; empresa: string | null }) {
   const [abierta, setAbierta] = useState(false);
 
   useEffect(() => {
@@ -133,13 +177,13 @@ function BienvenidaComercial({ agencyId }: { agencyId: string | null }) {
 
   return (
     <Dialog open={abierta} onOpenChange={(o) => (o ? setAbierta(true) : cerrar())}>
-      <DialogContent size="sm" icon={<Megaphone weight="bold" />} data-testid="bienvenida-comercial">
+      <DialogContent size="md" icon={<Megaphone weight="bold" />} data-testid="bienvenida-comercial">
         <DialogHeader>
-          <DialogTitle>Tu cuenta ya está lista para publicar</DialogTitle>
+          <DialogTitle>{nombre ? `${nombre}, bienvenido a Leasefy` : 'Bienvenido a Leasefy'}</DialogTitle>
           <DialogDescription>
-            Aquí ves tus inmuebles, los interesados que te escriben, las postulaciones y tu agenda de visitas. Cuando
-            quieras más, activa tu cuenta: contratos, cobranza, pagos a propietarios y los agentes de IA. Por ahora es
-            gratis.
+            Tus inmuebles, los interesados que te escriben, las postulaciones y tu agenda de visitas son tuyos, gratis.
+            Lo demás lo ves en demo: no somos sólo un marketplace, podemos manejar tu inmobiliaria en piloto automático
+            con cobranza, contratos, pagos a propietarios y contabilidad.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -147,7 +191,9 @@ function BienvenidaComercial({ agencyId }: { agencyId: string | null }) {
             Seguir con mis inmuebles
           </Button>
           <Button asChild className="rounded-full" onClick={cerrar}>
-            <Link href={RUTA_PARA_ACTIVAR}>Activar ahora</Link>
+            <a href={enlaceDeWhatsApp({ quien: 'inmobiliaria', nombre, empresa })} target="_blank" rel="noreferrer noopener">
+              Hablar con Leasefy
+            </a>
           </Button>
         </DialogFooter>
       </DialogContent>

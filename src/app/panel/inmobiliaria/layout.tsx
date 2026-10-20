@@ -103,7 +103,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // …y sólo al ADMIN: `/upgrade` es `PageGuard adminOnly`, así que a un
   // AGENTE/CONTADOR/VIEWER el botón lo mandaba a una pantalla que lo devuelve
   // a la portada sin decirle nada. Un CTA que rebota es peor que no tenerlo.
-  const showUpgradeCta = !subIndeterminate && !isPaidPlan && isAdmin;
+  // En modo comercial no: ahí se vende el servicio por WhatsApp (ModuloConDemo).
+  const agenciaEnComercial = enModoComercial(useAuth().agency);
+  const showUpgradeCta = !subIndeterminate && !isPaidPlan && isAdmin && !agenciaEnComercial;
 
   // Real agency identity for the sidebar brand row. PRIMARY source is the auth
   // membership probe (`useAuth().agency`), which is available to EVERY active
@@ -270,7 +272,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     if (!modoComercial) return filas;
     return filas
       .filter((f) => f.kind === 'section' || f.href !== '/panel/inmobiliaria')
-      .map((f) => (f.kind === 'section' || abiertaEnModoComercial(f.href) ? f : { ...f, tag: 'Activar' }));
+      .map((f) => (f.kind === 'section' || abiertaEnModoComercial(f.href) ? f : { ...f, tag: 'Demo' }));
   }, [ALL_NAV_ITEMS, ctxNav, modoComercial]);
 
   return (
@@ -394,7 +396,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
             </CandadoDelModoComercial>
             {/* Nico, 10-10-2026: el plan gratuito recibe una invitación por
                 función (solo invita, nunca cierra nada); sólo el administrador. */}
-            <InvitacionAMejorarElPlan activa={!subIndeterminate && !isPaidPlan && agencyRole === 'ADMIN'} />
+            <InvitacionAMejorarElPlan activa={!modoComercial && !subIndeterminate && !isPaidPlan && agencyRole === 'ADMIN'} />
           </main>
         </div>
 

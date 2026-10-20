@@ -21,13 +21,14 @@
  * No sugiere ninguna cifra: el número lo escribe la inmobiliaria mirando al DANE.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { toast } from '@/components/ui/toast';
 import { IPC_MAXIMO, MENSAJES_DEL_IPC, loQueElBackDijoDelIpc } from '@/lib/configuracion/limites-del-ipc';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 
 /** El ancla del bloque: a esto apunta el aviso de /contratos/renovaciones. */
 export const ANCLA_IPC_POR_ANIO = 'ipc-por-anio';
@@ -104,15 +105,67 @@ export function ConfigIpcPorAnio({ agency, onSave, canEdit = true, hoy }: Props)
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [guardando, setGuardando] = useState(false);
 
-  // La agencia se refresca después de cada guardado: los campos siguen a la fila.
-  useEffect(() => setTextos(textosDe(guardado)), [guardado]);
+  // La agencia se refresca después de cada guardado: los campos siguen a la
+  // fila, salvo que tengan algo sin guardar (guardar OTRA tarjeta también relee).
+  const pendientesRef = useRef(0);
+  useEffect(() => {
+    if (pendientesRef.current > 0) return;
+    setTextos(textosDe(guardado));
+  }, [guardado]);
 
   const volverALoGuardado = (clave: string) => {
     const anterior = guardado[clave];
     setTextos((t) => ({ ...t, [clave]: anterior == null ? '' : escribirIpc(anterior) }));
   };
 
+  /*
+   * Dentro de Configuración (Nico, 20-10-2026): escribir sólo marca; los años
+   * cambiados se guardan juntos con la barra de abajo. Fuera de ella, se
+   * guarda al salir del campo, como antes.
+   */
+  const cambiados = anios
+    .map(String)
+    .filter((clave) => (textos[clave] ?? '').trim() !== (guardado[clave] == null ? '' : escribirIpc(guardado[clave])));
+  pendientesRef.current = cambiados.length;
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'perfil-ipc-por-anio',
+    cambios: cambiados.length,
+    guardar: async () => {
+      const mapa = { ...guardado };
+      const malos: Record<string, string> = {};
+      for (const clave of cambiados) {
+        const valor = leerIpcDelAnio(textos[clave] ?? '');
+        if (valor === undefined) malos[clave] = MENSAJES_DEL_IPC.ipcPorAnio;
+        else if (valor === null) delete mapa[clave];
+        else mapa[clave] = valor;
+      }
+      if (Object.keys(malos).length > 0) {
+        setErrores((e) => ({ ...e, ...malos }));
+        return false;
+      }
+      setErrores({});
+      setGuardando(true);
+      try {
+        await onSave?.({ ipcPorAnio: mapa });
+        return true;
+      } catch (error) {
+        const { delCampo, sueltos } = loQueElBackDijoDelIpc(error, 'ipcPorAnio');
+        if (delCampo && cambiados[0]) setErrores((e) => ({ ...e, [cambiados[0]]: delCampo }));
+        if (sueltos.length > 0) toast.error(sueltos.join(' · '));
+        return false;
+      } finally {
+        setGuardando(false);
+      }
+    },
+    descartar: () => {
+      setTextos(textosDe(guardado));
+      setErrores({});
+    },
+    activo: canEdit,
+  });
+
   const confirmar = async (clave: string) => {
+    if (conBarra) return;
     const valor = leerIpcDelAnio(textos[clave] ?? '');
     if (valor === undefined) {
       setErrores((e) => ({ ...e, [clave]: MENSAJES_DEL_IPC.ipcPorAnio }));

@@ -75,12 +75,12 @@ export function SeccionPermisos() {
     };
   }, [intento]);
 
-  const guardar = async (nuevos: Matrices) => {
+  const guardar = async (nuevos: Matrices): Promise<boolean> => {
     // 🔴 22-09 noche: SÓLO los roles que cambiaron. Antes iban los tres de
     // siempre con lo que la pantalla creyera, y el back reescribía el objeto
     // entero: un rol que no venía volvía a fábrica. ADMIN nunca se manda.
     const body = cuerpoConLoQueCambio(permissions, nuevos);
-    if (Object.keys(body).length === 0) return;
+    if (Object.keys(body).length === 0) return true;
     setGuardando(true);
     try {
       const matrices = await rolePermissionsApi.updateRolePermissions(body);
@@ -91,6 +91,7 @@ export function SeccionPermisos() {
       toast.success(t('inmobiliaria.config.toasts.permissionsSaved'), {
         description: t('inmobiliaria.config.toasts.permissionsSavedDesc'),
       });
+      return true;
     } catch (error) {
       // 🔴 Acá había `t(...) || 'Error al guardar permisos'`. Ese `||` NUNCA
       // corre: `t()` de una clave que falta devuelve LA CLAVE. La clave ya
@@ -102,6 +103,7 @@ export function SeccionPermisos() {
           accion: 'guardar los permisos',
         }),
       });
+      return false;
     } finally {
       setGuardando(false);
     }

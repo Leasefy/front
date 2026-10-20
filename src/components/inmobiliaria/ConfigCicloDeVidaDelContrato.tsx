@@ -18,10 +18,11 @@
  *   · 🔴 El seguro opcional como % del canon, por plan.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Label, RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { Input } from '@/components/ui/input';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
@@ -61,7 +62,29 @@ export function ConfigCicloDeVidaDelContrato({
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /** Lo guardado, en el mismo formato de los campos: para contar y descartar. */
+  const inicial = {
+    dias: agency.diasAntesCartaIncremento != null ? String(agency.diasAntesCartaIncremento) : '',
+    gastos: aTres(agency.pactaGastosDeCobranza),
+    momento: agency.garantiaServiciosMomento ?? '',
+    tope: agency.garantiaServiciosTopeCop != null ? String(agency.garantiaServiciosTopeCop) : '',
+    periodos: agency.garantiaServiciosTopePeriodos != null ? String(agency.garantiaServiciosTopePeriodos) : '',
+    vigencia: agency.vigenciaEstudioDias != null ? String(agency.vigenciaEstudioDias) : '',
+    pctBasico:
+      agency.seguroOpcionalPctPorPlan?.BASIC != null ? String(agency.seguroOpcionalPctPorPlan.BASIC) : '',
+    pctPremium:
+      agency.seguroOpcionalPctPorPlan?.PREMIUM != null ? String(agency.seguroOpcionalPctPorPlan.PREMIUM) : '',
+  };
+  const actual = { dias, gastos, momento, tope, periodos, vigencia, pctBasico, pctPremium };
+  const cambios = (Object.keys(inicial) as Array<keyof typeof inicial>).filter(
+    (k) => String(actual[k]).trim() !== String(inicial[k]).trim(),
+  ).length;
+  // Guardar OTRA tarjeta relee la agencia: lo que esta tiene sin guardar no se pisa.
+  const cambiosRef = useRef(cambios);
+  cambiosRef.current = cambios;
+
   useEffect(() => {
+    if (cambiosRef.current > 0) return;
     setDias(agency.diasAntesCartaIncremento != null ? String(agency.diasAntesCartaIncremento) : '');
     setGastos(aTres(agency.pactaGastosDeCobranza));
     setMomento(agency.garantiaServiciosMomento ?? '');
@@ -78,31 +101,31 @@ export function ConfigCicloDeVidaDelContrato({
     );
   }, [agency]);
 
-  const guardar = async () => {
+  const guardar = async (): Promise<boolean> => {
     const diasNum = dias.trim() === '' ? null : Number(dias);
     if (diasNum !== null && (!Number.isInteger(diasNum) || diasNum < 1 || diasNum > 120)) {
       setError('Los días antes de la carta van de 1 a 120.');
-      return;
+      return false;
     }
     const topeNum = tope.trim() === '' ? null : Number(tope.replace(/\D/g, ''));
     if (topeNum !== null && (!Number.isInteger(topeNum) || topeNum <= 0)) {
       setError('El tope va en pesos, mayor que cero.');
-      return;
+      return false;
     }
     // El tope del back (`garantiaServiciosTopeCop`, columna int4).
     if (topeNum !== null && topeNum > MAX_MONTO_EN_PESOS) {
       setError('El tope de la garantía de servicios no puede pasar de $2.000.000.000. Revisa que no sobren ceros.');
-      return;
+      return false;
     }
     const periodosNum = periodos.trim() === '' ? null : Number(periodos);
     if (periodosNum !== null && (!Number.isInteger(periodosNum) || periodosNum < 1 || periodosNum > 12)) {
       setError('El tope en períodos va de 1 a 12.');
-      return;
+      return false;
     }
     const vigenciaNum = vigencia.trim() === '' ? null : Number(vigencia);
     if (vigenciaNum !== null && (!Number.isInteger(vigenciaNum) || vigenciaNum < 1 || vigenciaNum > 730)) {
       setError('La vigencia del estudio va de 1 a 730 días.');
-      return;
+      return false;
     }
     const pct = (texto: string): number | null => {
       const n = Number(texto.replace(',', '.'));
@@ -113,7 +136,7 @@ export function ConfigCicloDeVidaDelContrato({
     for (const p of [pctB, pctP]) {
       if (p !== null && !(p > 0 && p <= 100)) {
         setError('El porcentaje del seguro va entre 0 y 100.');
-        return;
+        return false;
       }
     }
     const porPlan: Record<string, number> = {};
@@ -137,16 +160,37 @@ export function ConfigCicloDeVidaDelContrato({
     if (JSON.stringify(porPlan) !== JSON.stringify(guardado)) {
       payload.seguroOpcionalPctPorPlan = porPlan;
     }
-    if (Object.keys(payload).length === 0) return;
+    if (Object.keys(payload).length === 0) return true;
     setGuardando(true);
     try {
       await onSave?.(payload);
+      return true;
     } catch {
       // El padre ya avisó con el mensaje del back (p. ej. 503 sin migración).
+      return false;
     } finally {
       setGuardando(false);
     }
   };
+
+  // Dentro de Configuración se guarda con la barra de abajo (Nico, 20-10-2026).
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'perfil-ciclo-de-vida-del-contrato',
+    cambios,
+    guardar,
+    descartar: () => {
+      setDias(inicial.dias);
+      setGastos(inicial.gastos);
+      setMomento(inicial.momento as 'INICIO' | 'ENTREGA' | '');
+      setTope(inicial.tope);
+      setPeriodos(inicial.periodos);
+      setVigencia(inicial.vigencia);
+      setPctBasico(inicial.pctBasico);
+      setPctPremium(inicial.pctPremium);
+      setError(null);
+    },
+    activo: canEdit,
+  });
 
   const deshabilitado = !canEdit || guardando;
   return (
@@ -332,9 +376,11 @@ export function ConfigCicloDeVidaDelContrato({
       </fieldset>
 
       <div className="flex items-center gap-2">
-        <Button size="sm" variant="outline" disabled={deshabilitado} onClick={() => void guardar()}>
-          Guardar
-        </Button>
+        {conBarra ? null : (
+          <Button size="sm" variant="outline" disabled={deshabilitado} onClick={() => void guardar()}>
+            Guardar
+          </Button>
+        )}
         <ErrorDelCampo id="ciclo-de-vida-error" mensaje={error} className="mt-0" />
       </div>
     </section>

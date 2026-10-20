@@ -24,9 +24,11 @@ import {
 } from '@phosphor-icons/react';
 
 import { Switch } from '@/components/ui';
+import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { useNotificationSettings } from '@/lib/hooks/useSettings';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { EsqueletoDeSeccion, FilaDeAjuste, TarjetaDeAjustes } from './piezas';
 
 /** Las perillas por tema; las mismas claves que lee el back al mandar. */
@@ -41,7 +43,40 @@ type ClaveDelBack =
 export function SeccionNotificaciones() {
   const { locale } = useI18n();
   const es = locale === 'es';
-  const { settings, isLoading, errorCrudo, refresh, updateSetting } = useNotificationSettings();
+  const { settings, isLoading, errorCrudo, refresh, updateSetting, updateSettings } = useNotificationSettings();
+
+  /*
+   * Dentro de Configuración (Nico, 20-10-2026): tocar un interruptor sólo
+   * marca; lo marcado se guarda junto, en UNA escritura, con la barra de abajo.
+   */
+  const [marcados, setMarcados] = useState<Partial<Record<ClaveDelBack, boolean>>>({});
+  const pendientes = (Object.entries(marcados) as Array<[ClaveDelBack, boolean]>).filter(
+    ([clave, valor]) => valor !== !!settings[clave],
+  );
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'notificaciones',
+    cambios: pendientes.length,
+    guardar: async () => {
+      if (pendientes.length === 0) return true;
+      try {
+        await updateSettings(Object.fromEntries(pendientes));
+        setMarcados({});
+        return true;
+      } catch (e) {
+        toast.error(
+          mensajeParaLaPersona(e, {
+            porDefecto: es
+              ? 'No se pudieron guardar las notificaciones. Prueba de nuevo en un momento.'
+              : 'Error updating settings',
+            accion: 'guardar las notificaciones',
+          }),
+        );
+        return false;
+      }
+    },
+    descartar: () => setMarcados({}),
+  });
+  const valorDe = (clave: ClaveDelBack) => marcados[clave] ?? !!settings[clave];
 
   const filas: Array<{ clave: ClaveDelBack; icono: typeof Envelope; titulo: string; desc: string }> = [
     {
@@ -108,9 +143,13 @@ export function SeccionNotificaciones() {
           {filas.map((fila) => (
             <FilaDeAjuste key={fila.clave} icono={fila.icono} titulo={fila.titulo} descripcion={fila.desc}>
               <Switch
-                checked={!!settings[fila.clave]}
+                checked={valorDe(fila.clave)}
                 aria-label={`${fila.titulo} por correo`}
                 onCheckedChange={async () => {
+                  if (conBarra) {
+                    setMarcados((m) => ({ ...m, [fila.clave]: !valorDe(fila.clave) }));
+                    return;
+                  }
                   const siguiente = !settings[fila.clave];
                   try {
                     await updateSetting(fila.clave, siguiente);

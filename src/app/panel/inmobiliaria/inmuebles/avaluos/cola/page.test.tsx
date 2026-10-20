@@ -1,16 +1,13 @@
 /**
- * cola/page.test.tsx — el estado vacío no puede ofrecer una puerta cerrada.
+ * «Mis solicitudes de avalúo» lee los avalúos de verdad (QA 19-10-2026, Nico).
  *
- * Esta pestaña es la única pantalla que ve alguien que todavía no pidió ningún
- * avalúo, y su estado vacío ofrecía «Solicitar avalúo» apuntando al Resumen.
- * Pero en el Resumen ese mismo botón está DESHABILITADO cuando el micro de
- * avalúos no está conectado (`NEXT_PUBLIC_AVALUO_API_URL` sin definir, que es
- * el caso hoy en todos los worktrees). O sea: la salida llevaba a otra puerta
- * cerrada, y encima sin decir por qué.
- *
- * El criterio es el mismo que en el Resumen —si no se alcanza el servicio, no
- * se ofrece la acción— y se decide acá, en el call site, no adentro de
- * <ColaHumana>: es esta pantalla la que sabe a dónde manda su CTA.
+ * Antes leía la cola de los agentes, que el micro devuelve SIEMPRE vacía para
+ * avalúos: en producción decía «0 Activas · Aún no tienes solicitudes» aunque la
+ * inmobiliaria tuviera avalúos. Lo que sostiene esta prueba:
+ *  - cada avalúo sale con sus pasos, la fecha en que se pidió y la de la firma;
+ *  - el firmado trae su certificado; el que va en camino, su página de estado;
+ *  - «Activas» se cuenta en el servicio (borrador + en revisión), no en la página;
+ *  - sin el servicio (502) dice que no se pueden ver: nunca «0» ni «Aún no tienes».
  */
 
 import * as React from 'react'
@@ -18,16 +15,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
-void React // jsx-preserve
+import { ApiError } from '@/lib/api/client'
+import type { AgencyAvaluoItem } from '@/lib/api/inmobiliaria.service'
 
-// ── El origen del micro, controlable por test ─────────────────────────────
+void React // jsx-preserve
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'))
+
+// El origen del asistente de avalúos, controlable por prueba.
 let _origen = ''
 vi.mock('@/lib/avaluo/wizard-url', () => ({
   get AVALUO_WIZARD_ORIGIN() {
     return _origen
-  },
-  get AVALUO_WIZARD_URL() {
-    return _origen ? `${_origen}/avaluo` : ''
   },
 }))
 
@@ -35,34 +35,39 @@ vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children: React.ReactNode }) => children,
 }))
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
-
-vi.mock('@/lib/i18n', () => ({
-  // Devolver la clave alcanza: lo que se prueba es CUÁL se elige, no su texto.
-  useI18n: () => ({ t: (k: string) => k }),
+vi.mock('../DescargarCertificado', () => ({
+  ESTADOS_CON_CERTIFICADO: ['firmado', 'entregado'],
+  tieneCertificado: (e: string) => e === 'firmado' || e === 'entregado',
+  DescargarCertificado: ({ id }: { id: string }) => <button data-testid={`certificado-${id}`}>Descargar certificado</button>,
 }))
 
-vi.mock('@/lib/hooks/ai/use-agent-work-items', () => ({
-  useAgentWorkItems: () => ({
-    items: [],
-    total: 0,
-    isLoading: false,
-    error: null,
-    runAction: vi.fn(),
-  }),
-}))
+type Respuesta = { avaluos: AgencyAvaluoItem[]; total: number; isLoading?: boolean; errorCrudo?: unknown }
+let respuestas: { todas: Respuesta; borrador: Respuesta; revision: Respuesta }
 
-// <ColaHumana> tiene sus propios tests; acá interesa QUÉ le pasa la página.
-const props: { emptyAction?: unknown; emptyHint?: unknown } = {}
-vi.mock('@/components/inmobiliaria/ai/ColaHumana', () => ({
-  ColaHumana: (p: { emptyAction?: unknown; emptyHint?: unknown }) => {
-    props.emptyAction = p.emptyAction
-    props.emptyHint = p.emptyHint
-    return null
+vi.mock('@/lib/hooks/useInmobiliaria', () => ({
+  useAgencyAvaluos: (p?: { state?: string }) => {
+    const r = p?.state === 'borrador' ? respuestas.borrador : p?.state === 'en_revisión' ? respuestas.revision : respuestas.todas
+    return { pageSize: 100, isLoading: false, errorCrudo: null, refetch: vi.fn(), ...r }
   },
 }))
 
 import AvaluosColaPage from './page'
+
+const avaluo = (x: Partial<AgencyAvaluoItem>): AgencyAvaluoItem => ({
+  id: 'a-1',
+  slug: 's-1',
+  state: 'en_revisión',
+  valueCop: 420_000_000,
+  method: 'Comparables',
+  city: 'Medellín',
+  ownerName: 'Paula Propietaria',
+  identity: '1017',
+  submissionId: 'sub-1',
+  createdAt: '2026-10-03T15:00:00.000Z',
+  updatedAt: '2026-10-03T15:00:00.000Z',
+  signedAt: null,
+  ...x,
+})
 
 let container: HTMLDivElement
 let root: Root
@@ -72,42 +77,93 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   _origen = ''
-  delete props.emptyAction
-  delete props.emptyHint
+  respuestas = {
+    todas: { avaluos: [], total: 0 },
+    borrador: { avaluos: [], total: 0 },
+    revision: { avaluos: [], total: 0 },
+  }
 })
 
 afterEach(() => {
-  act(() => {
-    root.unmount()
-  })
+  act(() => root.unmount())
   container.remove()
-  vi.clearAllMocks()
 })
 
 async function montar() {
   await act(async () => {
-    root.render(React.createElement(AvaluosColaPage))
+    root.render(<AvaluosColaPage />)
   })
 }
 
-const NS = 'inmobiliaria.ai.workspace.pages.avaluos'
-
-describe('Cola de Avalúos — el vacío no manda a una puerta cerrada', () => {
-  it('sin servicio conectado no ofrece el CTA, y dice por qué', async () => {
+describe('Mis solicitudes de avalúo — los avalúos de verdad', () => {
+  it('cada avalúo con sus pasos, cuándo se pidió y cuándo se firmó; el firmado trae su certificado', async () => {
+    respuestas.todas = {
+      avaluos: [
+        avaluo({ id: 'a-1', state: 'en_revisión', submissionId: 'sub-1' }),
+        avaluo({ id: 'a-2', state: 'firmado', ownerName: 'Julia Ochoa', signedAt: '2026-10-05T15:00:00.000Z', submissionId: 'sub-2' }),
+      ],
+      total: 2,
+    }
+    respuestas.borrador = { avaluos: [], total: 1 }
+    respuestas.revision = { avaluos: [], total: 3 }
     await montar()
 
-    expect(props.emptyAction).toBeUndefined()
-    expect(props.emptyHint).toBe(`${NS}.solicitarUnavailable`)
+    const filas = [...container.querySelectorAll('[data-testid="avaluo-solicitud"]')]
+    expect(filas).toHaveLength(2)
+    expect(filas[0].textContent).toContain('Paula Propietaria')
+    expect(filas[0].textContent).toContain('En revisión')
+    expect(filas[0].textContent).toMatch(/Pedido el 3 de oct\.? de 2026/)
+    // En camino: su página de estado, en otra pestaña.
+    const enlace = filas[0].querySelector('a') as HTMLAnchorElement
+    expect(enlace.getAttribute('href')).toBe('/avaluo/estado/sub-1')
+    expect(enlace.target).toBe('_blank')
+    expect(enlace.textContent).toContain('Ver en qué va')
+    // Firmado: certificado y la fecha de la firma.
+    expect(filas[1].textContent).toMatch(/firmado el 5 de oct\.? de 2026/)
+    expect(filas[1].querySelector('[data-testid="certificado-a-2"]')).not.toBeNull()
+    // Los pasos dicen en qué va cada uno.
+    const pasos = [...container.querySelectorAll('[data-testid="avaluo-pasos"]')].map((p) => p.getAttribute('aria-label'))
+    expect(pasos).toEqual(['En qué va: En revisión', 'En qué va: Entregado'])
+    // «Activas» = borrador + en revisión, contados en el servicio.
+    expect(container.querySelector('[data-testid="avaluos-activas"]')?.textContent).toContain('4')
   })
 
-  it('con el servicio conectado sí ofrece pedir el primero', async () => {
+  it('el rechazado se queda en la revisión, en rojo, y dice «Rechazado»', async () => {
+    respuestas.todas = { avaluos: [avaluo({ state: 'rechazado', valueCop: null, submissionId: null })], total: 1 }
+    await montar()
+    const fila = container.querySelector('[data-testid="avaluo-solicitud"]')!
+    expect(fila.querySelector('[data-testid="avaluo-pasos"]')?.getAttribute('aria-label')).toBe('En qué va: Rechazado')
+    expect(fila.querySelector('[aria-current="step"]')?.textContent).toBe('Rechazado')
+    expect(fila.textContent).toContain('—')
+    expect(fila.querySelector('a')).toBeNull()
+  })
+
+  it('sin el servicio dice que no se pueden ver: ni «0» ni «Aún no tienes solicitudes»', async () => {
+    const caido = new ApiError(502, 'El servicio de avalúos no responde')
+    respuestas.todas = { avaluos: [], total: 0, errorCrudo: caido }
+    respuestas.borrador = { avaluos: [], total: 0, errorCrudo: caido }
+    respuestas.revision = { avaluos: [], total: 0, errorCrudo: caido }
+    await montar()
+    expect(container.querySelector('[data-testid="avaluos-cola-sin-servicio"]')?.textContent).toContain(
+      'No se pueden ver tus solicitudes',
+    )
+    expect(container.textContent).not.toContain('Aún no tienes solicitudes')
+    expect(container.querySelector('[data-testid="avaluos-activas"]')?.textContent).toContain('—')
+    expect(container.querySelector('[data-testid="avaluos-activas"]')?.textContent).not.toMatch(/\d/)
+  })
+
+  it('con el servicio y sin avalúos, sí dice que aún no hay y ofrece pedir el primero', async () => {
     _origen = 'http://localhost:3003'
     await montar()
+    expect(container.textContent).toContain('Aún no tienes solicitudes')
+    expect(container.querySelector('[data-testid="avaluos-activas"]')?.textContent).toContain('0')
+    const crear = [...container.querySelectorAll('a')].find((a) => a.textContent?.includes('Solicitar avalúo'))
+    expect(crear?.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/avaluos')
+  })
 
-    expect(props.emptyAction).toEqual({
-      label: `${NS}.solicitarCta`,
-      href: '/panel/inmobiliaria/inmuebles/avaluos',
-    })
-    expect(props.emptyHint).toBe(`${NS}.colaEmptyHint`)
+  it('sin el asistente conectado, el vacío no ofrece una puerta cerrada y dice por qué', async () => {
+    await montar()
+    expect([...container.querySelectorAll('a')].some((a) => a.textContent?.includes('Solicitar avalúo'))).toBe(false)
+    expect(container.textContent).toContain('no tiene conectado el servicio de avalúos')
   })
 })

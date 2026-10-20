@@ -55,10 +55,10 @@ export function CertificatePdfViewer({ id }: { id: string }) {
   }, [id])
 
   if (loading) {
-    return <div className="text-xs text-fg-muted">Cargando certificado…</div>
+    return <div className="text-caption text-fg-muted">Cargando certificado…</div>
   }
   if (error) {
-    return <div className="text-sm text-bad">{error}</div>
+    return <div className="text-sm text-danger">{error}</div>
   }
   if (!url) return null
 
@@ -66,7 +66,7 @@ export function CertificatePdfViewer({ id }: { id: string }) {
     <iframe
       src={url}
       title="Certificado de avalúo (PDF)"
-      className="w-full h-[600px] rounded border border-bg-border bg-white"
+      className="w-full h-[600px] rounded border border-border bg-white"
     />
   )
 }

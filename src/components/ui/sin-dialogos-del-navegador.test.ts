@@ -38,11 +38,10 @@ const RAIZ = join(process.cwd(), 'src')
  * Zonas donde un diálogo del navegador sí se acepta, cada una con su motivo.
  * Una excepción sin nombre es la puerta por la que vuelve el desorden.
  *
- * `app/admin/` es el backoffice interno de Leasefy: no usa este sistema de
- * diseño (tiene el suyo, ver `admin.css`) y lo operan dos personas del equipo,
- * no clientes.
+ * (19-10-2026) El admin de Leasefy ya usa Cadence y su confirmación
+ * (`components/ui/confirmar.tsx`): dejó de ser zona permitida.
  */
-const ZONAS_PERMITIDAS = ['app/admin/', 'components/admin/']
+const ZONAS_PERMITIDAS: string[] = []
 
 /**
  * `beforeunload` y compañía no son confirmaciones nuestras.

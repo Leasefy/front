@@ -11,7 +11,8 @@
  */
 
 import { useRef, useState } from 'react'
-import { Presence } from '@leasefy/cadence'
+import { Eyebrow, Presence } from '@leasefy/cadence'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 import { Pill } from '@/components/admin/Pill'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
@@ -28,6 +29,8 @@ import {
   type ResultadoDeLaImportacion,
 } from '@/lib/admin/recaudo-en-linea'
 import { Cifra, ErrorDeLaAccion, Etiqueta } from './partes'
+import { Card } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
 
 /** El mismo tope del back (`@MaxLength` del contenido). */
 export const TOPE_DEL_REPORTE = 10_000_000
@@ -86,9 +89,9 @@ export function ReporteDeWompi({ alImportar }: { alImportar?: () => void }) {
 
   return (
     <div data-testid="reporte-de-wompi">
-      <div className="card p-5">
-        <div className="section-label">subir el reporte de wompi</div>
-        <p className="text-[13px] text-fg-muted mt-2">
+      <Card className="p-5">
+        <Eyebrow>Subir el reporte de Wompi</Eyebrow>
+        <p className="text-body-sm text-fg-muted mt-2">
           Descárgalo del panel de comercios de Wompi (Transacciones o Desembolsos) en CSV. Primero ves
           qué pasaría con cada transacción; nada se guarda hasta que lo importes.
         </p>
@@ -104,14 +107,14 @@ export function ReporteDeWompi({ alImportar }: { alImportar?: () => void }) {
             data-testid="archivo-del-reporte"
           />
         </label>
-      </div>
+      </Card>
 
       <ErrorDeLaAccion mensaje={error} testId="error-del-reporte" />
 
       <Presence show={resultado !== null}>
         {resultado ? (
-          <div className="card p-5 mt-4 border-l-4 border-l-ok" data-testid="resultado-del-reporte">
-            <div className="section-label">importado · {resultado.archivo}</div>
+          <Card className="p-5 mt-4 " data-testid="resultado-del-reporte">
+            <Eyebrow>Importado · {resultado.archivo}</Eyebrow>
             <p className="text-sm text-fg mt-2">
               {resultado.importadas === 0
                 ? 'No había nada nuevo: el reporte ya estaba cargado igual.'
@@ -127,27 +130,26 @@ export function ReporteDeWompi({ alImportar }: { alImportar?: () => void }) {
                   : ` ${resultado.resumen.frenadas} quedaron frenadas y no entraron (corrígelas en el archivo y vuelve a subirlo).`
                 : ''}
             </p>
-          </div>
+          </Card>
         ) : null}
       </Presence>
 
       <Presence show={lectura !== null}>
         {lectura ? (
-          <div className="card p-5 mt-4" data-testid="vista-previa-del-reporte">
+          <Card className="p-5 mt-4" data-testid="vista-previa-del-reporte">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <div className="section-label">vista previa · {lectura.archivo}</div>
+                <Eyebrow>Vista previa · {lectura.archivo}</Eyebrow>
                 {lectura.yaSubido ? (
-                  <p className="text-[13px] text-warn mt-2" data-testid="ya-subido">
+                  <p className="text-body-sm text-warning mt-2" data-testid="ya-subido">
                     Este mismo archivo ya se subió el {fmtDateTime(lectura.yaSubido.at)}
                     {lectura.yaSubido.por ? ` (${lectura.yaSubido.por})` : ''}. Volver a importarlo no
                     duplica nada.
                   </p>
                 ) : null}
               </div>
-              <button
-                type="button"
-                className="btn btn-primary"
+              <Button hideArrow type="button"
+                
                 disabled={ocupado !== null || porImportar === 0}
                 onClick={() => void importar()}
                 data-testid="importar-reporte"
@@ -157,7 +159,7 @@ export function ReporteDeWompi({ alImportar }: { alImportar?: () => void }) {
                   : porImportar === 0
                     ? 'Nada nuevo para importar'
                     : `Importar ${porImportar} ${porImportar === 1 ? 'transacción' : 'transacciones'}`}
-              </button>
+              </Button>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-4" data-testid="resumen-del-reporte">
@@ -173,7 +175,7 @@ export function ReporteDeWompi({ alImportar }: { alImportar?: () => void }) {
                 <Etiqueta>frenadas — no entran</Etiqueta>
                 <ul className="mt-2 space-y-1">
                   {frenadas.map((f) => (
-                    <li key={`${f.fila}-${f.transaccionId ?? ''}`} className="text-[13px] text-fg">
+                    <li key={`${f.fila}-${f.transaccionId ?? ''}`} className="text-body-sm text-fg">
                       <span className="font-mono text-fg-subtle">
                         renglón {f.fila}
                         {f.transaccionId ? ` · ${f.transaccionId}` : ''}
@@ -189,30 +191,30 @@ export function ReporteDeWompi({ alImportar }: { alImportar?: () => void }) {
               <div className="mt-5">
                 <Etiqueta>desembolsos de wompi a leasefy en el archivo</Etiqueta>
                 <div className="overflow-x-auto mt-2">
-                  <table className="w-full text-[13px] table-zebra">
-                    <thead>
-                      <tr className="border-b border-bg-border text-left">
-                        <th className="px-2 py-1.5"><Etiqueta>desembolso</Etiqueta></th>
-                        <th className="px-2 py-1.5"><Etiqueta>fecha</Etiqueta></th>
-                        <th className="px-2 py-1.5 text-right"><Etiqueta>transacciones</Etiqueta></th>
-                        <th className="px-2 py-1.5 text-right"><Etiqueta>bruto</Etiqueta></th>
-                        <th className="px-2 py-1.5 text-right"><Etiqueta>descuentos</Etiqueta></th>
-                        <th className="px-2 py-1.5 text-right"><Etiqueta>neto</Etiqueta></th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-border text-left">
+                        <TableHead ><Etiqueta>desembolso</Etiqueta></TableHead>
+                        <TableHead ><Etiqueta>fecha</Etiqueta></TableHead>
+                        <TableHead className="text-right"><Etiqueta>transacciones</Etiqueta></TableHead>
+                        <TableHead className="text-right"><Etiqueta>bruto</Etiqueta></TableHead>
+                        <TableHead className="text-right"><Etiqueta>descuentos</Etiqueta></TableHead>
+                        <TableHead className="text-right"><Etiqueta>neto</Etiqueta></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {lectura.desembolsos.map((d) => (
-                        <tr key={d.desembolsoId}>
-                          <td className="px-2 py-1.5 font-mono">{d.desembolsoId}</td>
-                          <td className="px-2 py-1.5">{d.fecha ?? '—'}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{d.transacciones}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{pesos(d.brutoCop)}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{pesos(d.descuentosCop)}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{pesos(d.netoCop)}</td>
-                        </tr>
+                        <TableRow key={d.desembolsoId}>
+                          <TableCell className="px-2 py-1.5 font-mono">{d.desembolsoId}</TableCell>
+                          <TableCell className="px-2 py-1.5">{d.fecha ?? '—'}</TableCell>
+                          <TableCell className="px-2 py-1.5 text-right tabular-nums">{d.transacciones}</TableCell>
+                          <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(d.brutoCop)}</TableCell>
+                          <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(d.descuentosCop)}</TableCell>
+                          <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(d.netoCop)}</TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             ) : null}
@@ -220,52 +222,52 @@ export function ReporteDeWompi({ alImportar }: { alImportar?: () => void }) {
             <div className="mt-5">
               <Etiqueta>transacción por transacción</Etiqueta>
               <div className="overflow-x-auto max-h-[28rem] overflow-y-auto mt-2" data-lenis-prevent>
-                <table className="w-full text-[13px] table-zebra" data-testid="filas-del-reporte">
-                  <thead>
-                    <tr className="border-b border-bg-border text-left">
-                      <th className="px-2 py-1.5"><Etiqueta>renglón</Etiqueta></th>
-                      <th className="px-2 py-1.5"><Etiqueta>transacción</Etiqueta></th>
-                      <th className="px-2 py-1.5"><Etiqueta>fecha</Etiqueta></th>
-                      <th className="px-2 py-1.5"><Etiqueta>estado</Etiqueta></th>
-                      <th className="px-2 py-1.5 text-right"><Etiqueta>bruto</Etiqueta></th>
-                      <th className="px-2 py-1.5 text-right"><Etiqueta>neto</Etiqueta></th>
-                      <th className="px-2 py-1.5"><Etiqueta>cuadre</Etiqueta></th>
-                      <th className="px-2 py-1.5"><Etiqueta>inmobiliaria</Etiqueta></th>
-                      <th className="px-2 py-1.5"><Etiqueta>qué pasa</Etiqueta></th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table data-testid="filas-del-reporte">
+                  <TableHeader>
+                    <TableRow className="border-b border-border text-left">
+                      <TableHead ><Etiqueta>renglón</Etiqueta></TableHead>
+                      <TableHead ><Etiqueta>transacción</Etiqueta></TableHead>
+                      <TableHead ><Etiqueta>fecha</Etiqueta></TableHead>
+                      <TableHead ><Etiqueta>estado</Etiqueta></TableHead>
+                      <TableHead className="text-right"><Etiqueta>bruto</Etiqueta></TableHead>
+                      <TableHead className="text-right"><Etiqueta>neto</Etiqueta></TableHead>
+                      <TableHead ><Etiqueta>cuadre</Etiqueta></TableHead>
+                      <TableHead ><Etiqueta>inmobiliaria</Etiqueta></TableHead>
+                      <TableHead ><Etiqueta>qué pasa</Etiqueta></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {lectura.filas.map((f) => (
-                      <tr key={`${f.fila}-${f.transaccionId ?? ''}`} data-testid={`fila-${f.fila}`}>
-                        <td className="px-2 py-1.5 font-mono text-fg-subtle">{f.fila}</td>
-                        <td className="px-2 py-1.5 font-mono">{f.transaccionId ?? '—'}</td>
-                        <td className="px-2 py-1.5">{f.fecha ?? '—'}</td>
-                        <td className="px-2 py-1.5">{f.estado ?? '—'}</td>
-                        <td className="px-2 py-1.5 text-right tabular-nums">{pesos(f.brutoCop)}</td>
-                        <td className="px-2 py-1.5 text-right tabular-nums">{pesos(f.netoCop)}</td>
-                        <td className="px-2 py-1.5" title={f.detalleDelCuadre ?? undefined}>
+                      <TableRow key={`${f.fila}-${f.transaccionId ?? ''}`} data-testid={`fila-${f.fila}`}>
+                        <TableCell className="px-2 py-1.5 font-mono text-fg-subtle">{f.fila}</TableCell>
+                        <TableCell className="px-2 py-1.5 font-mono">{f.transaccionId ?? '—'}</TableCell>
+                        <TableCell className="px-2 py-1.5">{f.fecha ?? '—'}</TableCell>
+                        <TableCell className="px-2 py-1.5">{f.estado ?? '—'}</TableCell>
+                        <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(f.brutoCop)}</TableCell>
+                        <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(f.netoCop)}</TableCell>
+                        <TableCell className="px-2 py-1.5" title={f.detalleDelCuadre ?? undefined}>
                           {f.cuadre ? NOMBRE_DEL_CUADRE[f.cuadre] : '—'}
-                        </td>
-                        <td className="px-2 py-1.5">{f.inmobiliaria ?? '—'}</td>
-                        <td className="px-2 py-1.5">
+                        </TableCell>
+                        <TableCell className="px-2 py-1.5">{f.inmobiliaria ?? '—'}</TableCell>
+                        <TableCell className="px-2 py-1.5">
                           <Pill tone={TONO_DE_LA_ACCION[f.accion]}>{NOMBRE_DE_LA_ACCION[f.accion]}</Pill>
                           {f.motivo && f.accion !== 'frenada' ? (
-                            <div className="text-[13px] text-fg-muted mt-1">{f.motivo}</div>
+                            <div className="text-body-sm text-fg-muted mt-1">{f.motivo}</div>
                           ) : null}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
               {lectura.filasOmitidas > 0 ? (
-                <p className="text-[13px] text-fg-muted mt-2">
+                <p className="text-body-sm text-fg-muted mt-2">
                   Y {lectura.filasOmitidas} renglones más que no caben aquí (las que ya estaban igual van
                   al final); el resumen de arriba los cuenta todos.
                 </p>
               ) : null}
             </div>
-          </div>
+          </Card>
         ) : null}
       </Presence>
     </div>

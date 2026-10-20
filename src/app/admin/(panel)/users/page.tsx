@@ -2,9 +2,13 @@
 
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
-import { fmtDateTime } from '@/lib/admin/format'
+import Link from 'next/link'
+import { Alert } from '@leasefy/cadence'
+import { fmtDateTime, fmtNumero } from '@/lib/admin/format'
+import { accionDelAdmin } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { RestablecerSegundoFactor } from '@/components/admin/RestablecerSegundoFactor'
 
@@ -47,9 +51,38 @@ interface FeedRow extends AdminAction {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-/** /users — admin roster + audit activity (BACK.md §8.21 · FRONT.md §6.29). */
+const UN_DIA = 24 * 60 * 60 * 1000
+
+/** «agency_policy · 48bfa717…» → algo que se lee. */
+const ENTIDADES: Record<string, string> = {
+  agency_policy: 'Agentes de una inmobiliaria',
+  agency: 'Inmobiliaria',
+  agency_subscription: 'Plan de una inmobiliaria',
+  subscription_plan_config: 'Plan del catálogo',
+  plan: 'Plan del catálogo',
+  debtor: 'Deudor',
+  call: 'Llamada',
+  approval: 'Aprobación',
+  escalation: 'Escalación',
+  notification_template: 'Aviso',
+  registration_profile: 'Registro',
+  piloto_de_la_inmobiliaria: 'Piloto automático',
+  user: 'Cuenta',
+}
+
+const SEGMENTOS_DEL_EQUIPO: Segmento<AdminEntry>[] = [
+  { valor: 'todos', nombre: 'Todos', cumple: () => true },
+  { valor: 'activos', nombre: 'Activos en 30 días', cumple: (a) => Number(a.audit.action_count_30d) > 0 },
+  { valor: 'nunca', nombre: 'Nunca han entrado', cumple: (a) => !a.supabase.exists_in_auth },
+]
+
+/**
+ * /admin/users — el equipo de Leasefy que entra al admin y lo último que hizo
+ * (BACK.md §8.21). 20-10-2026: en español, con la tabla de la plataforma y
+ * lo que se hizo en palabras («Cambió un plan», no `plan.update`).
+ */
 export default function UsersPage() {
-  const { data, isLoading, error } = useApiQuery<UsersResponse>(
+  const { data, isLoading, error, refetch } = useApiQuery<UsersResponse>(
     (signal) => adminApi('/users', { signal }),
     [],
   )
@@ -57,62 +90,60 @@ export default function UsersPage() {
   const now = Date.now()
   const admins = data?.admins ?? []
 
-  // Merge every admin's recent_actions into one cross-admin feed (latest 25).
+  // Lo último de cada persona, en una sola lista (las 25 más recientes de cada una).
   const feed: FeedRow[] = admins
     .flatMap((a) => (a.recent_actions ?? []).map((act) => ({ ...act, actor: a.email })))
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 25)
+
+  const activos30 = admins.filter((a) => Number(a.audit.action_count_30d) > 0).length
+  const nuncaEntraron = admins.filter((a) => !a.supabase.exists_in_auth).length
+  const acciones30 = admins.reduce((n, a) => n + (Number(a.audit.action_count_30d) || 0), 0)
 
   const rosterColumns: Column<AdminEntry>[] = [
     {
-      header: 'Email',
+      header: 'Persona',
+      orden: (r) => r.email,
+      texto: (r) => r.email,
       cell: (r) => {
-        const recentlyActive =
-          r.audit.last_action_at != null &&
-          now - new Date(r.audit.last_action_at).getTime() < 24 * 60 * 60 * 1000
+        const activaHoy = r.audit.last_action_at != null && now - new Date(r.audit.last_action_at).getTime() < UN_DIA
         return (
-          <span className="font-medium text-fg">
-            {r.email}
-            {recentlyActive && (
-              <span className="ml-2 pill pill-ok text-[9px]">activo 24h</span>
-            )}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-fg">{r.email}</span>
+            {activaHoy ? <Pill tone="ok" dot>Activa hoy</Pill> : null}
+          </div>
         )
       },
     },
     {
-      header: 'Auth',
+      header: 'Cuenta',
+      orden: (r) => (r.supabase.exists_in_auth ? 1 : 0),
+      texto: (r) => (r.supabase.exists_in_auth ? 'Ya entró' : 'Nunca ha entrado'),
       cell: (r) =>
-        r.supabase.exists_in_auth ? (
-          <Pill tone="ok">existe</Pill>
-        ) : (
-          <Pill tone="warn">nunca login</Pill>
-        ),
+        r.supabase.exists_in_auth ? <Pill tone="ok">Ya entró</Pill> : <Pill tone="warn">Nunca ha entrado</Pill>,
     },
     {
       header: 'Última sesión',
-      cell: (r) => (
-        <span className="font-mono text-xs text-fg-muted">
-          {fmtDateTime(r.supabase.last_sign_in_at)}
-        </span>
-      ),
+      orden: (r) => r.supabase.last_sign_in_at,
+      ordenPrimero: 'desc',
+      texto: (r) => (r.supabase.last_sign_in_at ? fmtDateTime(r.supabase.last_sign_in_at) : ''),
+      cell: (r) => <span className="whitespace-nowrap text-caption text-fg-muted">{fmtDateTime(r.supabase.last_sign_in_at)}</span>,
     },
     {
-      header: 'Acciones 30d',
+      header: 'Acciones en 30 días',
       align: 'right',
-      cell: (r) => (
-        <span className="tabular-nums font-mono text-xs">
-          {Number(r.audit.action_count_30d) || 0}
-        </span>
-      ),
+      orden: (r) => Number(r.audit.action_count_30d) || 0,
+      ordenPrimero: 'desc',
+      texto: (r) => Number(r.audit.action_count_30d) || 0,
+      cell: (r) => <span className="tabular-nums text-fg">{fmtNumero(Number(r.audit.action_count_30d) || 0)}</span>,
     },
     {
       header: 'Última acción',
+      orden: (r) => r.audit.last_action_at,
+      ordenPrimero: 'desc',
+      texto: (r) => (r.audit.last_action_at ? fmtDateTime(r.audit.last_action_at) : ''),
       cell: (r) =>
         r.audit.last_action_at ? (
-          <span className="font-mono text-xs text-fg-muted">
-            {fmtDateTime(r.audit.last_action_at)}
-          </span>
+          <span className="whitespace-nowrap text-caption text-fg-muted">{fmtDateTime(r.audit.last_action_at)}</span>
         ) : (
           <span className="text-fg-subtle">—</span>
         ),
@@ -121,80 +152,122 @@ export default function UsersPage() {
 
   const recentColumns: Column<FeedRow>[] = [
     {
+      header: 'Qué hizo',
+      className: 'min-w-[220px]',
+      orden: (r) => accionDelAdmin(r.action),
+      texto: (r) => accionDelAdmin(r.action),
+      cell: (r) => (
+        <div className="min-w-0">
+          <div className="text-body-sm text-fg">{accionDelAdmin(r.action)}</div>
+          <code className="font-mono text-caption text-fg-subtle">{r.action}</code>
+        </div>
+      ),
+    },
+    {
+      header: 'Quién',
+      orden: (r) => r.actor,
+      texto: (r) => r.actor,
+      cell: (r) => <span className="text-caption text-fg">{r.actor}</span>,
+    },
+    {
+      header: 'Sobre qué',
+      texto: (r) => (r.entity_type ? ENTIDADES[r.entity_type] ?? r.entity_type : ''),
+      cell: (r) =>
+        r.entity_type ? (
+          <div className="min-w-0 text-caption">
+            <div className="text-fg-muted">{ENTIDADES[r.entity_type] ?? r.entity_type}</div>
+            {r.entity_id ? <code className="font-mono text-fg-subtle">{r.entity_id.slice(0, 8)}</code> : null}
+          </div>
+        ) : (
+          <span className="text-fg-subtle">—</span>
+        ),
+    },
+    {
       header: 'Cuándo',
-      cell: (r) => (
-        <span className="font-mono text-xs text-fg-muted">{fmtDateTime(r.created_at)}</span>
-      ),
-    },
-    {
-      header: 'Admin',
-      cell: (r) => <span className="text-xs">{r.actor}</span>,
-    },
-    {
-      header: 'Acción',
-      cell: (r) => <code className="font-mono text-xs">{r.action}</code>,
-    },
-    {
-      header: 'Entidad',
-      cell: (r) => (
-        <span className="text-xs text-fg-muted">
-          {r.entity_type
-            ? `${r.entity_type}${r.entity_id ? ` · ${r.entity_id.slice(0, 8)}…` : ''}`
-            : '—'}
-        </span>
-      ),
+      align: 'right',
+      orden: (r) => r.created_at,
+      ordenPrimero: 'desc',
+      texto: (r) => fmtDateTime(r.created_at),
+      cell: (r) => <span className="whitespace-nowrap text-caption text-fg-muted">{fmtDateTime(r.created_at)}</span>,
     },
   ]
 
+  const personas = [...new Set(feed.map((f) => f.actor))]
+
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="23 · users"
-        title="Admin roster"
-        description="Admins en ADMIN_EMAILS + actividad de auditoría. Para agregar o remover admins, editar ADMIN_EMAILS en el env y reiniciar — no hay UI de mutación."
+        title="Equipo Leasefy"
+        description="Quiénes entran al admin y lo último que hizo cada persona. Para sumar o quitar a alguien se cambia la lista ADMIN_EMAILS del servidor y se reinicia."
       />
 
-      {data?.supabase_error && (
-        <div className="card p-4 border-l-4 border-l-warn mb-6 text-xs text-fg-muted">
-          Supabase auth no disponible: <span className="font-mono">{data.supabase_error}</span> —
-          las columnas de sesión pueden estar incompletas.
-        </div>
-      )}
+      <section aria-label="Cifras del equipo" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiCard label="Personas" value={data ? admins.length : '—'} />
+        <KpiCard label="Activas en 30 días" value={data ? activos30 : '—'} tone="ok" />
+        <KpiCard label="Nunca han entrado" value={data ? nuncaEntraron : '—'} tone={nuncaEntraron ? 'warn' : 'default'} />
+        <KpiCard label="Acciones en 30 días" value={data ? acciones30 : '—'} />
+      </section>
 
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        admins
-      </div>
-      <div className="mb-8">
-        <DataTable
-          columns={rosterColumns}
-          rows={admins}
-          getKey={(r) => r.email}
-          isLoading={isLoading}
-          error={error}
-          emptyTitle="Sin admins configurados"
-          emptyHint="Verificar ADMIN_EMAILS en el env."
-        />
-      </div>
+      {data?.supabase_error ? (
+        <Alert variant="warning">No se pudo leer el inicio de sesión de cada persona: las columnas de sesión pueden venir incompletas.</Alert>
+      ) : null}
 
-      {/* Soporte: restablecer el segundo factor de UNA cuenta de la plataforma
-          (29-09-2026). Vive acá porque es la pantalla de usuarios del
-          backoffice; no hay ficha de usuario de la plataforma. */}
-      <div className="mb-8">
-        <RestablecerSegundoFactor />
-      </div>
-
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        últimas 25 acciones admin
-      </div>
       <DataTable
-        columns={recentColumns}
-        rows={feed}
-        getKey={(r) => r.id}
+        id="equipo"
+        columns={rosterColumns}
+        rows={data ? admins : undefined}
+        getKey={(r) => r.email}
         isLoading={isLoading}
         error={error}
-        emptyTitle="Sin acciones registradas"
-        emptyHint="Las acciones aparecen cuando un admin aprueba / escala / busca deudores."
+        onReintentar={refetch}
+        emptyTitle="No hay nadie en ADMIN_EMAILS"
+        emptyHint="Sin esa lista nadie puede entrar al admin."
+        aria-label="Equipo de Leasefy"
+        queSon={['persona', 'personas']}
+        buscar="Correo"
+        segmentos={SEGMENTOS_DEL_EQUIPO}
+        ordenInicial={{ columna: 4, sentido: 'desc' }}
+        exportar="equipo-leasefy"
       />
+
+      <RestablecerSegundoFactor />
+
+      <section aria-labelledby="lo-ultimo" className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <h2 id="lo-ultimo" className="text-h4 font-medium text-fg">
+            Lo último que hizo el equipo
+          </h2>
+          <Link href="/admin/audit-explorer" className="text-body-sm text-fg-muted underline underline-offset-2 hover:text-fg">
+            Buscar en toda la auditoría
+          </Link>
+        </div>
+        <DataTable
+          id="acciones"
+          columns={recentColumns}
+          rows={data ? feed : undefined}
+          getKey={(r) => r.id}
+          isLoading={isLoading}
+          error={error}
+          onReintentar={refetch}
+          emptyTitle="Nadie ha hecho nada todavía"
+          emptyHint="Aparece cuando alguien aprueba, escala, busca un deudor o cambia algo."
+          aria-label="Lo último que hizo el equipo"
+          queSon={['acción', 'acciones']}
+          buscar="Qué hizo, quién o el código"
+          textoExtra={(r) => `${r.action} ${r.entity_id ?? ''}`}
+          segmentos={[
+            { valor: 'todos', nombre: 'Todos', cumple: () => true },
+            ...personas.map((p) => ({ valor: p, nombre: p.split('@')[0], cumple: (r: FeedRow) => r.actor === p })),
+          ]}
+          filasPorPagina={10}
+          ordenInicial={{ columna: 3, sentido: 'desc' }}
+          exportar="acciones-del-equipo"
+          masEnElExcel={[
+            { header: 'Código', texto: (r) => r.action },
+            { header: 'Id', texto: (r) => r.entity_id },
+          ]}
+        />
+      </section>
     </div>
   )
 }

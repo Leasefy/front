@@ -56,10 +56,17 @@ activity feed, execution panel).
   `/panel/(landlord)`, `/inquilino`, `/propiedades`, `/onboarding`, `/aplicar`, `/auth`, `/avaluo`.
 - **Backoffice admin** (`/admin/*`, `src/app/admin/`): panel interno de Leasefy/Portofino
   (operación cross-tenant). Auth propia (`/admin/login`, allowlist `ADMIN_EMAILS`), sidebar
-  en `src/components/admin/Nav.tsx`. ⚠️ NO usa el design system de shadcn/`DESIGN.md`: tiene
-  el suyo propio (clases `card`/`btn`/`pill`, tokens `fg/bg/brand`, mono) en `admin.css`.
-  Cliente HTTP: `adminApi` (`src/lib/admin/api.ts`, base `NEXT_PUBLIC_ADMIN_API_URL`).
-  Referencia canónica de patrón de pantalla: `/admin/approvals`.
+  en `src/components/admin/Nav.tsx`. Desde el 19-10-2026 usa Cadence como el panel (ya no las
+  clases `card`/`btn`/`pill` de `admin.css`). Cliente HTTP: `adminApi` (`src/lib/admin/api.ts`,
+  base `NEXT_PUBLIC_ADMIN_API_URL`). **Toda lista va en `DataTable`**
+  (`src/components/admin/screen/DataTable.tsx`, 20-10-2026, Nico: «que las tablas tengan
+  paginación, filtros y todo lo que tienen las tablas de la plataforma»): buscador, pestañas con
+  conteo, filtros propios (`filtrosEnLaUrl`: «Limpiar filtros» los borra en UN solo cambio de
+  URL), orden por columna (`Column.orden`), Excel (`exportar` + `Column.texto`; con paginación
+  del servidor, `traerTodoParaElExcel`), filas por página, conteo «N de M» y tarjetas bajo 768 px;
+  todo en la URL (respaldo en memoria sin enrutador: `use-estado-de-la-tabla.ts`). El detalle de
+  una fila va en un cajón (`CajonDelDetalle` o uno propio). Sin Excel donde hay datos personales
+  de deudores (Deudores, Cartera por etapa).
 - Componentes por feature folders en `src/components/` (no atomic design).
 - Patrón páginas de panel: `page.tsx` (Server Component) + `XxxView.tsx` (presentación) +
   `XxxClient.tsx` (interacción).

@@ -32,6 +32,7 @@ import { resumenDelRecaudo } from '@/lib/admin/recaudo-en-linea'
 import { ReporteDeWompi } from './ReporteDeWompi'
 import { Liquidaciones } from './Liquidaciones'
 import { CuadreDelRecaudo } from './CuadreDelRecaudo'
+import { Card, MonoLabel } from '@leasefy/cadence'
 
 type Pestana = 'liquidaciones' | 'reporte' | 'cuadre'
 
@@ -49,19 +50,18 @@ export default function RecaudoEnLineaAdminPage() {
   const { data: resumen, isLoading, error } = useApiQuery((signal) => resumenDelRecaudo(signal), [version])
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl" data-testid="admin-recaudo-en-linea">
+    <div className="space-y-6 p-6 lg:p-8" data-testid="admin-recaudo-en-linea">
       <PageHeader
-        label="35 · recaudo en línea"
         title="Recaudo en línea y liquidaciones"
         description="Leasefy recauda los pagos en línea en su cuenta de Wompi y le gira a cada inmobiliaria con una liquidación: qué pagos incluye y qué se descontó, tal como viene. Aquí no se calcula ninguna tarifa."
         right={
-          <div className="card p-3 border-l-4 border-l-warn" data-testid="frecuencia-del-giro">
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">giro a las inmobiliarias</div>
+          <Card className="p-3 " data-testid="frecuencia-del-giro">
+            <MonoLabel className="block">giro a las inmobiliarias</MonoLabel>
             <div className="text-sm text-fg mt-0.5">
               {resumen?.frecuenciaDelGiro.definida ? `Frecuencia del giro: ${resumen.frecuenciaDelGiro.texto}` : FRECUENCIA_POR_DEFINIR}
             </div>
-            <div className="text-[13px] text-fg-muted">Se generan a mano, por rango de fechas.</div>
-          </div>
+            <div className="text-caption text-fg-muted">Se generan a mano, por rango de fechas.</div>
+          </Card>
         }
       />
 
@@ -70,32 +70,32 @@ export default function RecaudoEnLineaAdminPage() {
       ) : error ? (
         <ErrorBlock error={error} />
       ) : resumen && !resumen.disponible ? (
-        <div className="card p-5 border-l-4 border-l-warn" data-testid="sin-migracion">
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warn">migración pendiente</span>
+        <Card className="p-5 " data-testid="sin-migracion">
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warning">migración pendiente</span>
           <p className="text-sm text-fg mt-2">
             La base todavía no tiene las tablas del recaudo en línea (migración{' '}
             <code className="font-mono">{resumen.migraciones.agregador}</code>). La aplica Víctor. Mientras
             tanto no hay reportes ni liquidaciones que mostrar.
           </p>
-        </div>
+        </Card>
       ) : resumen ? (
         <>
           {!resumen.giroDisponible ? (
-            <div className="card p-4 border-l-4 border-l-warn mb-4" data-testid="sin-migracion-del-giro">
-              <p className="text-[13px] text-fg">
+            <Card className="p-4  mb-4" data-testid="sin-migracion-del-giro">
+              <p className="text-caption text-fg">
                 Falta la migración <code className="font-mono">{resumen.migraciones.giro}</code>: se puede
                 todo menos marcar una liquidación como girada. La aplica Víctor.
               </p>
-            </div>
+            </Card>
           ) : null}
           {resumen.ultimoReporte ? (
-            <p className="text-[13px] text-fg-muted mb-4" data-testid="ultimo-reporte">
+            <p className="text-caption text-fg-muted mb-4" data-testid="ultimo-reporte">
               Último reporte de Wompi: {resumen.ultimoReporte.archivo} ({resumen.ultimoReporte.transacciones}{' '}
               transacciones), {fmtDateTime(resumen.ultimoReporte.at)} · {resumen.ultimoReporte.subidoPor}
             </p>
           ) : null}
 
-          <div className="flex flex-wrap gap-1 border-b border-bg-border mb-5" role="tablist" aria-label="Secciones del recaudo en línea">
+          <div className="flex flex-wrap gap-1 border-b border-border mb-5" role="tablist" aria-label="Secciones del recaudo en línea">
             {PESTANAS.map((p) => {
               const activa = pestana === p.id
               return (
@@ -108,7 +108,7 @@ export default function RecaudoEnLineaAdminPage() {
                   onClick={() => setPestana(p.id)}
                   data-testid={`pestana-${p.id}`}
                 >
-                  {activa ? <MotionIndicator layoutId={`${id}-pestana`} className="inset-x-0 -bottom-px h-0.5 bg-brand" /> : null}
+                  {activa ? <MotionIndicator layoutId={`${id}-pestana`} className="inset-x-0 -bottom-px h-0.5 bg-primary" /> : null}
                   {p.nombre}
                 </button>
               )

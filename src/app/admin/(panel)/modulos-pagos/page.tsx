@@ -15,14 +15,15 @@
  * 2. **Pide MOTIVO para prender o apagar.** El back no lo exige; esta pantalla
  *    sí. Un entitlement de pago que nadie explicó es imposible de auditar seis
  *    meses después — y el que lo va a leer es alguien que no estaba ese día.
- * 3. **Apagar se confirma; prender no.** Prender abre una pantalla; apagar se la
- *    quita a alguien que la está usando, y eso no debería pasar por un clic
- *    distraído. (Acá sí se usa `window.confirm`: el backoffice tiene su propio
- *    sistema de diseño y no tiene modales — es la zona permitida por
- *    `sin-dialogos-del-navegador.test.ts`.)
+ * 3. **Prender y apagar pasan por un cajón** que pide el motivo y dice qué va a
+ *    pasar (19-10-2026: antes eran `window.confirm` + `window.prompt`, que
+ *    ignoran el tema y algunos navegadores suprimen). Apagar se avisa en
+ *    amarillo: le quita la pantalla a alguien que puede estar usándola.
  */
 
 import { useMemo, useState } from 'react'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Switch } from '@/components/ui/switch'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { Pill } from '@/components/admin/Pill'
@@ -40,10 +41,19 @@ import {
   type FilaDeLaMatriz,
   type MatrizDeModulos,
 } from '@/lib/admin/modulos-pagos'
+import { Alert, Card, Eyebrow } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
+import { fmtFecha } from '@/lib/admin/format'
 
-/** `2026-09-17T…` → `2026-09-17`. */
-function soloFecha(iso: string | null): string {
-  return iso ? iso.slice(0, 10) : '—'
+/** Lo que se va a cambiar, mientras el cajón pide el motivo. */
+interface CambioPendiente {
+  fila: FilaDeLaMatriz
+  modulo: string
+  nombreDelModulo: string
+  prender: boolean
 }
 
 export default function ModulosPagosPage() {
@@ -70,45 +80,23 @@ export default function ModulosPagosPage() {
   )
   const visibles = soloConModulos ? conAlguno : agencias
 
-  async function alternar(
-    fila: FilaDeLaMatriz,
-    modulo: string,
-    nombreDelModulo: string,
-  ) {
-    const estado = fila.modulos[modulo]
-    const prender = !estado?.habilitado
-    const llave = `${fila.agencyId}:${modulo}`
+  const [pendiente, setPendiente] = useState<CambioPendiente | null>(null)
+  const [motivo, setMotivo] = useState('')
 
-    // 🔴 Apagar se confirma. Prender abre una pantalla; apagar se la quita a
-    // alguien que puede estar liquidando la nómina del mes.
-    if (
-      !prender &&
-      !window.confirm(
-        `¿Apagar "${nombreDelModulo}" para ${fila.nombre}?\n\n` +
-          'Dejan de ver el módulo en el menú y sus rutas responden 402. ' +
-          'Los datos NO se borran: si lo vuelves a prender, está todo como estaba.',
-      )
-    ) {
-      return
-    }
-
-    const motivo = window.prompt(
-      prender
-        ? `¿Por qué se le prende "${nombreDelModulo}" a ${fila.nombre}?\n\n(Ej.: "contrato firmado 2026-09-17". Queda guardado con tu correo y la fecha.)`
-        : `¿Por qué se le apaga "${nombreDelModulo}" a ${fila.nombre}?\n\n(Ej.: "mora de 3 meses". Queda guardado con tu correo y la fecha.)`,
-      '',
-    )
-    // Cancelar el motivo cancela la acción: un entitlement sin explicación es
-    // exactamente lo que esta pantalla existe para evitar.
-    if (motivo === null || motivo.trim() === '') return
-
+  function alternar(fila: FilaDeLaMatriz, modulo: string, nombreDelModulo: string) {
     setFallo(null)
+    setMotivo('')
+    setPendiente({ fila, modulo, nombreDelModulo, prender: !fila.modulos[modulo]?.habilitado })
+  }
+
+  async function confirmarElCambio() {
+    if (!pendiente || motivo.trim().length < 3) return
+    const { fila, modulo, prender } = pendiente
+    const llave = `${fila.agencyId}:${modulo}`
     setOcupado(llave)
     try {
-      await fijarModulo(fila.agencyId, modulo, {
-        habilitado: prender,
-        motivo: motivo.trim(),
-      })
+      await fijarModulo(fila.agencyId, modulo, { habilitado: prender, motivo: motivo.trim() })
+      setPendiente(null)
       refetch()
     } catch (err) {
       setFallo(
@@ -123,49 +111,35 @@ export default function ModulosPagosPage() {
   }
 
   return (
-    <>
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="módulos de pago"
-        title="Inmobiliarias × módulos"
+        title="Módulos"
         description="Qué módulo de pago tiene comprado cada inmobiliaria, quién se lo prendió y cuándo. Prender o apagar desde acá es lo único que lo cambia: ninguna inmobiliaria puede activárselo sola."
       />
 
-      {data && !data.disponible && (
-        <div className="card p-4 border-l-4 border-l-warn mb-6">
-          <p className="text-sm text-fg">{data.motivo}</p>
-        </div>
-      )}
+      {data && !data.disponible ? <Alert variant="warning">{data.motivo}</Alert> : null}
 
-      {fallo && (
-        <div className="card p-4 border-l-4 border-l-bad mb-6">
-          <p className="text-sm text-bad">{fallo}</p>
-        </div>
-      )}
+      {fallo && !pendiente ? <Alert variant="danger">{fallo}</Alert> : null}
 
       <form
-        className="flex flex-wrap items-center gap-2 mb-4"
+        className="flex flex-wrap items-center gap-2"
         onSubmit={(e) => {
           e.preventDefault()
           setAplicada(busqueda.trim())
         }}
       >
-        <input
-          className="input"
+        <Input
+          
           placeholder="Buscar por nombre o NIT"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           aria-label="Buscar inmobiliaria"
         />
-        <button className="btn" type="submit">
+        <Button variant="outline" hideArrow type="submit">
           Buscar
-        </button>
-        <label className="flex items-center gap-2 text-xs text-fg-muted cursor-pointer select-none ml-auto">
-          <input
-            type="checkbox"
-            className="accent-brand"
-            checked={soloConModulos}
-            onChange={(e) => setSoloConModulos(e.target.checked)}
-          />
+        </Button>
+        <label className="ml-auto flex cursor-pointer select-none items-center gap-2.5 text-body-sm text-fg-muted">
+          <Switch checked={soloConModulos} onCheckedChange={setSoloConModulos} aria-label="Sólo las que compraron algo" />
           Sólo las que compraron algo ({conAlguno.length})
         </label>
       </form>
@@ -189,38 +163,38 @@ export default function ModulosPagosPage() {
         />
       ) : (
         <>
-          <p className="text-xs text-fg-muted mb-3">
+          <p className="text-caption text-fg-muted mb-3">
             Mostrando {visibles.length} de {agencias.length} inmobiliarias ·{' '}
             {conAlguno.length} con al menos un módulo comprado
           </p>
-          <div className="card overflow-x-auto">
-            <table className="w-full text-sm table-zebra">
-              <thead>
-                <tr className="border-b border-bg-border">
+          <Card className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-border">
                   {['Inmobiliaria', 'NIT', ...catalogo.map((c) => c.nombre)].map(
                     (h, i) => (
-                      <th
+                      <TableHead
                         key={i}
-                        className="px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle whitespace-nowrap text-left"
+                        
                       >
                         {h}
-                      </th>
+                      </TableHead>
                     ),
                   )}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {visibles.map((a) => (
-                  <tr key={a.agencyId}>
-                    <td className="px-3 py-2.5">{a.nombre}</td>
-                    <td className="px-3 py-2.5 font-mono text-xs text-fg-muted">
+                  <TableRow key={a.agencyId}>
+                    <TableCell >{a.nombre}</TableCell>
+                    <TableCell className="font-mono text-caption text-fg-muted">
                       {a.nit ?? '—'}
-                    </td>
+                    </TableCell>
                     {catalogo.map((c) => {
                       const m = a.modulos[c.modulo]
                       const llave = `${a.agencyId}:${c.modulo}`
                       return (
-                        <td key={c.modulo} className="px-3 py-2.5">
+                        <TableCell key={c.modulo} className="px-3 py-2.5">
                           <div className="flex flex-col gap-1.5 items-start">
                             <Pill tone={m?.habilitado ? 'ok' : 'muted'}>
                               {m?.habilitado ? 'Comprado' : 'Apagado'}
@@ -228,13 +202,11 @@ export default function ModulosPagosPage() {
                             {/* 🔴 Quién y cuándo: es lo que hace auditable la venta. */}
                             {m?.habilitadoPorEmail && (
                               <span className="text-[10px] text-fg-subtle leading-tight">
-                                {m.habilitadoPorEmail} · {soloFecha(m.habilitadoAt)}
+                                {m.habilitadoPorEmail} · {m.habilitadoAt ? fmtFecha(m.habilitadoAt) : '—'}
                                 {m.motivo ? ` · ${m.motivo}` : ''}
                               </span>
                             )}
-                            <button
-                              className="btn"
-                              disabled={ocupado === llave || !data?.disponible}
+                            <Button variant="outline" hideArrow disabled={ocupado === llave || !data?.disponible}
                               onClick={() => void alternar(a, c.modulo, c.nombre)}
                             >
                               {ocupado === llave
@@ -242,32 +214,81 @@ export default function ModulosPagosPage() {
                                 : m?.habilitado
                                   ? 'Apagar'
                                   : 'Prender'}
-                            </button>
+                            </Button>
                           </div>
-                        </td>
+                        </TableCell>
                       )
                     })}
-                  </tr>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
 
-          <div className="card p-4 mt-6">
-            <p className="section-label mb-2">Qué es cada módulo</p>
+          <Card className="p-4 mt-6">
+            <Eyebrow className="mb-2">Qué es cada módulo</Eyebrow>
             <dl className="space-y-2">
               {catalogo.map((c) => (
                 <div key={c.modulo}>
                   <dt className="text-sm text-fg">{c.nombre}</dt>
-                  <dd className="text-xs text-fg-muted leading-relaxed">
+                  <dd className="text-caption text-fg-muted leading-relaxed">
                     {c.descripcion}
                   </dd>
                 </div>
               ))}
             </dl>
-          </div>
+          </Card>
         </>
       )}
-    </>
+      <Cajon abierto={pendiente !== null} onOpenChange={(abierto) => (abierto ? null : setPendiente(null))}>
+        <CajonCabecera
+          titulo={
+            pendiente
+              ? `${pendiente.prender ? 'Prender' : 'Apagar'} «${pendiente.nombreDelModulo}» a ${pendiente.fila.nombre}`
+              : 'Módulo'
+          }
+          descripcion={
+            pendiente?.prender
+              ? 'La inmobiliaria ve el módulo en su menú desde ya.'
+              : 'Deja de ver el módulo y sus pantallas no abren. No se borra nada: si se vuelve a prender, está todo como estaba.'
+          }
+        />
+        <CajonCuerpo>
+          <div className="space-y-4">
+            {pendiente && !pendiente.prender ? (
+              <Alert variant="warning">Puede estar usándolo ahora mismo.</Alert>
+            ) : null}
+            <div className="space-y-1.5">
+              <label htmlFor="motivo-del-modulo" className="text-body-sm font-medium text-fg">
+                ¿Por qué? <span className="text-danger">*</span>
+              </label>
+              <Textarea
+                id="motivo-del-modulo"
+                rows={3}
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                placeholder={pendiente?.prender ? 'Ej.: contrato firmado el 17 de septiembre' : 'Ej.: mora de 3 meses'}
+                aria-required="true"
+              />
+              <p className="text-caption text-fg-subtle">Queda guardado con tu correo y la fecha.</p>
+            </div>
+            {fallo ? <Alert variant="danger">{fallo}</Alert> : null}
+          </div>
+        </CajonCuerpo>
+        <CajonPie ayuda={motivo.trim().length < 3 ? 'Escribe el motivo para seguir.' : undefined}>
+          <Button variant="outline" hideArrow onClick={() => setPendiente(null)}>
+            Cancelar
+          </Button>
+          <Button
+            hideArrow
+            variant={pendiente?.prender ? 'default' : 'destructive'}
+            disabled={!pendiente || motivo.trim().length < 3 || ocupado !== null}
+            onClick={() => void confirmarElCambio()}
+          >
+            {ocupado ? 'Guardando…' : pendiente?.prender ? 'Prender el módulo' : 'Apagar el módulo'}
+          </Button>
+        </CajonPie>
+      </Cajon>
+    </div>
   )
 }

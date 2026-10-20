@@ -1,140 +1,167 @@
 'use client'
 
+import { useState } from 'react'
+import { Power } from '@phosphor-icons/react'
+import { Alert } from '@leasefy/cadence'
+import { adminApi } from '@/lib/admin/api'
+import { useApiQuery } from '@/lib/admin/use-api-query'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
+import { fmtDateTime } from '@/lib/admin/format'
+import type { RespuestaDeBanderas, BanderasDeLaInmobiliaria } from '@/lib/admin/banderas'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
+import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 
-// ── Scaffold data (BACK.md §9 · ADMIN-API-CONTRACT.md coverage table) ─────────
+const SEGMENTOS: Segmento<BanderasDeLaInmobiliaria>[] = [
+  { valor: 'todas', nombre: 'Todas', cumple: () => true },
+  { valor: 'pausa', nombre: 'En pausa', cumple: (f) => f.pausada },
+  { valor: 'funcionando', nombre: 'Funcionando', cumple: (f) => !f.pausada },
+]
 
 /**
- * STATIC SCAFFOLD — no fetch.
- * Neither GET /kill-switch nor POST /kill-switch/:tenantId exist in the admin
- * API (out of scope by design; not present in ADMIN-API-CONTRACT.md). The
- * agency_policies.cobranza_paused_* columns don't exist either. Build the
- * migration + endpoints first, then wire this screen.
+ * /admin/kill-switch — Pausa de emergencia (19-10-2026, Nico: «por
+ * inmobiliaria, todos sus agentes, con motivo y registro; la inmobiliaria no se
+ * la quita»). Era una maqueta. Pone o quita la llave `pausa_de_emergencia` en
+ * `agent.agency_policies.agentes_habilitados`; el micro, con ella, no corre
+ * ningún agente (`agent/src/piloto/habilitacion.ts`).
  */
+export default function PausaDeEmergenciaPage() {
+  const { data, isLoading, error, refetch } = useApiQuery<RespuestaDeBanderas>((s) => adminApi('/banderas', { signal: s }), [])
+  const [objetivo, setObjetivo] = useState<BanderasDeLaInmobiliaria | null>(null)
+  const [motivo, setMotivo] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [fallo, setFallo] = useState<string | null>(null)
 
-const MIGRATION_SQL = `-- agent/prisma/migrations/XXXX_kill_switch/migration.sql
-ALTER TABLE agent.agency_policies
-  ADD COLUMN cobranza_paused_at     TIMESTAMPTZ,
-  ADD COLUMN cobranza_paused_by     TEXT,
-  ADD COLUMN cobranza_paused_reason TEXT;`
+  const filas = (data?.inmobiliarias ?? []).filter((f) => f.lista !== null)
+  const enPausa = filas.filter((f) => f.pausada).length
+  const pausar = objetivo ? !objetivo.pausada : true
 
-const TODO_LIST = [
-  'Aplicar migration SQL (columnas cobranza_paused_* en agency_policies)',
-  'Back: GET /api/v1/admin/kill-switch — agencias + calls 24h/7d + failed states + escalaciones abiertas + paused_at',
-  'Back: POST /api/v1/admin/kill-switch/:tenantId — toggle con logAdminAction("kill_switch.toggle")',
-  'Agent: chequear cobranza_paused_at antes de iniciar cualquier llamada/outreach',
-  'Front: reemplazar este scaffold por la tabla real con botón Pausar/Reanudar',
-]
+  async function confirmar() {
+    if (!objetivo || motivo.trim().length < 5) return
+    setGuardando(true)
+    setFallo(null)
+    try {
+      await adminApi(`/banderas/${objetivo.tenant_id}/pausa`, { method: 'PUT', body: { pausada: pausar, motivo: motivo.trim() } })
+      setObjetivo(null)
+      refetch()
+    } catch (err) {
+      setFallo(mensajeDelAdmin(err, { accion: pausar ? 'pausar los agentes' : 'reanudar los agentes', porDefecto: 'No se pudo guardar.' }))
+    } finally {
+      setGuardando(false)
+    }
+  }
 
-const SAMPLE_ROWS = [
-  { agency: 'Inmobiliaria Demo SAS', calls24h: 14, calls7d: 96, failed: 0, esc: 1, paused: false },
-  { agency: 'Real Estate Bogotá',    calls24h: 6,  calls7d: 41, failed: 2, esc: 0, paused: false },
-  { agency: 'Cartera Andina',        calls24h: 0,  calls7d: 3,  failed: 0, esc: 0, paused: true },
-]
+  const columnas: Column<BanderasDeLaInmobiliaria>[] = [
+    { header: 'Inmobiliaria', orden: (f) => f.nombre, texto: (f) => f.nombre, cell: (f) => <span className="font-medium text-fg">{f.nombre}</span> },
+    {
+      header: 'Sus agentes',
+      orden: (f) => (f.pausada ? 0 : 1),
+      texto: (f) =>
+        f.pausada
+          ? ['En pausa', f.pausa ? `desde ${fmtDateTime(f.pausa.cuando)}` : '', f.pausa?.quien ?? '', f.pausa?.motivo ?? ''].filter(Boolean).join(' · ')
+          : 'Funcionando',
+      cell: (f) =>
+        f.pausada ? (
+          <div className="space-y-1">
+            <Pill tone="bad" dot>En pausa</Pill>
+            {f.pausa ? (
+              <p className="text-caption text-fg-muted">
+                Desde {fmtDateTime(f.pausa.cuando)}
+                {f.pausa.quien ? ` · ${f.pausa.quien}` : ''}
+                {f.pausa.motivo ? ` · «${f.pausa.motivo}»` : ''}
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <Pill tone="ok" dot>Funcionando</Pill>
+        ),
+    },
+    {
+      header: '',
+      align: 'right',
+      cell: (f) => (
+        <Button
+          size="sm"
+          variant={f.pausada ? 'outline' : 'destructive'}
+          hideArrow
+          onClick={() => { setObjetivo(f); setMotivo(''); setFallo(null) }}
+        >
+          {f.pausada ? 'Reanudar' : 'Pausar todo'}
+        </Button>
+      ),
+    },
+  ]
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
-/** /kill-switch — STATIC scaffold: endpoint not built yet (BACK.md §9). */
-export default function KillSwitchPage() {
   return (
-    <div className="p-6 lg:p-8 max-w-5xl">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="16 · kill-switch"
-        title="Pausar agencia"
-        description="Freno de emergencia por inmobiliaria: detiene llamadas y outreach del agente."
+        title="Pausa de emergencia"
+        description="Detiene de inmediato TODOS los agentes de una inmobiliaria: llamadas, mensajes y piloto automático. Pide motivo, queda registrado y sólo Leasefy la quita."
+      />
+      <section aria-label="Cifras de la pausa" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiCard label="Con agentes" value={data ? filas.length : '—'} />
+        <KpiCard label="En pausa" value={data ? enPausa : '—'} tone={enPausa ? 'bad' : 'default'} />
+      </section>
+      <DataTable
+        columns={columnas}
+        rows={data ? filas : undefined}
+        getKey={(f) => f.tenant_id}
+        isLoading={isLoading}
+        error={error}
+        onReintentar={refetch}
+        rowClassName={(f) => (f.pausada ? 'bg-danger/5' : undefined)}
+        emptyTitle="Ninguna inmobiliaria está en el micro de agentes"
+        emptyIcon={<Power weight="bold" />}
+        aria-label="Pausa de emergencia por inmobiliaria"
+        queSon={['inmobiliaria', 'inmobiliarias']}
+        buscar="Buscar inmobiliaria"
+        segmentos={SEGMENTOS}
+        ordenInicial={{ columna: 1, sentido: 'asc' }}
+        exportar="pausa-de-emergencia"
       />
 
-      {/* Scaffold notice */}
-      <div className="card p-5 border-l-4 border-l-warn mb-6">
-        <div className="flex items-baseline justify-between gap-4">
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warn">
-            scaffold · pendiente de build
-          </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-            esfuerzo · ~1h agent + 2h back + 1h admin
-          </span>
-        </div>
-        <p className="text-sm text-fg mt-2">
-          El endpoint <code className="font-mono">GET /api/v1/admin/kill-switch</code> no existe
-          en la API admin (fuera de alcance por diseño — no figura en{' '}
-          <code className="font-mono">ADMIN-API-CONTRACT.md</code>), y las columnas{' '}
-          <code className="font-mono">agency_policies.cobranza_paused_*</code> tampoco.
-          Cuando ship, esta pantalla lista agencias con actividad reciente y un botón
-          Pausar/Reanudar auditado.
-        </p>
-        <p className="text-xs text-fg-muted mt-2">
-          Trackeado en: <code className="font-mono">BACK.md §9 · kill-switch</code>
-        </p>
-      </div>
-
-      {/* Todo list */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        qué se necesita para shipearla
-      </div>
-      <div className="card p-5 mb-6">
-        <ol className="space-y-2 text-sm text-fg">
-          {TODO_LIST.map((t, i) => (
-            <li key={i} className="flex gap-3">
-              <span className="font-mono text-brand text-xs shrink-0">
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <span>{t}</span>
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      {/* Migration SQL */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        migration SQL · copy-paste a Supabase Studio
-      </div>
-      <div className="card p-0 mb-6 overflow-hidden">
-        <pre className="bg-surface-muted p-4 font-mono text-[11px] leading-relaxed text-fg overflow-x-auto">
-          {MIGRATION_SQL}
-        </pre>
-      </div>
-
-      {/* Preview (greyed out, non-interactive) */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        preview · cómo se va a ver cuando ship
-      </div>
-      <div className="card p-5 mb-6 opacity-60 pointer-events-none select-none">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-bg-border font-mono text-[10px] text-fg-subtle uppercase tracking-[0.12em]">
-                <th className="text-left py-2 font-medium">Agencia</th>
-                <th className="text-right py-2 font-medium">Calls 24h</th>
-                <th className="text-right py-2 font-medium">Calls 7d</th>
-                <th className="text-right py-2 font-medium">Failed abiertos</th>
-                <th className="text-right py-2 font-medium">Escalaciones</th>
-                <th className="text-center py-2 font-medium">Estado</th>
-                <th className="text-center py-2 font-medium">Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {SAMPLE_ROWS.map((r) => (
-                <tr key={r.agency} className="border-b border-bg-border">
-                  <td className="py-2.5">{r.agency}</td>
-                  <td className="py-2.5 text-right tabular-nums font-mono text-xs">{r.calls24h}</td>
-                  <td className="py-2.5 text-right tabular-nums font-mono text-xs">{r.calls7d}</td>
-                  <td className="py-2.5 text-right tabular-nums font-mono text-xs">{r.failed}</td>
-                  <td className="py-2.5 text-right tabular-nums font-mono text-xs">{r.esc}</td>
-                  <td className="py-2.5 text-center">
-                    <Pill tone={r.paused ? 'bad' : 'ok'}>{r.paused ? 'pausada' : 'activa'}</Pill>
-                  </td>
-                  <td className="py-2.5 text-center">
-                    <button className="btn text-xs" disabled>
-                      {r.paused ? 'Reanudar' : 'Pausar'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <Cajon abierto={objetivo !== null} onOpenChange={(a) => (a ? null : setObjetivo(null))}>
+        <CajonCabecera
+          titulo={objetivo ? `${pausar ? 'Pausar todos los agentes de' : 'Reanudar los agentes de'} ${objetivo.nombre}` : 'Pausa de emergencia'}
+          descripcion={
+            pausar
+              ? 'Ningún agente vuelve a llamar, escribir ni actuar por esta inmobiliaria hasta que la reanudes. Lo que está en curso termina.'
+              : 'Sus agentes vuelven a funcionar como los tenía antes de la pausa.'
+          }
+        />
+        <CajonCuerpo>
+          <div className="space-y-4">
+            {pausar ? <Alert variant="warning">La inmobiliaria no puede quitarse la pausa desde su panel.</Alert> : null}
+            <div className="space-y-1.5">
+              <label htmlFor="motivo-pausa" className="text-body-sm font-medium text-fg">
+                ¿Por qué? <span className="text-danger">*</span>
+              </label>
+              <Textarea
+                id="motivo-pausa"
+                aria-required="true"
+                rows={3}
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                placeholder={pausar ? 'Ej.: quejas de inquilinos por llamadas' : 'Ej.: revisado con la inmobiliaria'}
+              />
+              <p className="text-caption text-fg-subtle">Queda guardado con tu correo y la fecha.</p>
+            </div>
+            {fallo ? <Alert variant="danger">{fallo}</Alert> : null}
+          </div>
+        </CajonCuerpo>
+        <CajonPie ayuda={motivo.trim().length < 5 ? 'Escribe el motivo (al menos 5 letras).' : undefined}>
+          <Button variant="outline" hideArrow onClick={() => setObjetivo(null)}>
+            Cancelar
+          </Button>
+          <Button hideArrow variant={pausar ? 'destructive' : 'default'} disabled={motivo.trim().length < 5 || guardando} onClick={() => void confirmar()}>
+            {guardando ? 'Guardando…' : pausar ? 'Pausar todo' : 'Reanudar'}
+          </Button>
+        </CajonPie>
+      </Cajon>
     </div>
   )
 }

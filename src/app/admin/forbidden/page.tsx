@@ -1,11 +1,15 @@
 'use client'
 
+import { LockKey } from '@phosphor-icons/react'
+
 import { getSupabase } from '@/lib/supabase/client'
-import { Wordmark } from '@/components/admin/Wordmark'
+import { Button } from '@/components/ui/button'
+import { MarcoDeAcceso, TituloDeAcceso } from '@/components/admin/acceso/MarcoDeAcceso'
 
 /**
- * /admin/forbidden — reached when GET /me returns 403 (email not on
- * ADMIN_EMAILS). Terminal screen: does NOT loop back to login (FRONT.md §3.3).
+ * /admin/forbidden — se llega cuando `GET /me` responde 403: el correo no está
+ * en `ADMIN_EMAILS`. Pantalla final: NO vuelve sola al login (FRONT.md §3.3),
+ * pero deja cerrar la sesión para entrar con otra cuenta.
  */
 export default function AdminForbiddenPage() {
   async function signOut() {
@@ -14,20 +18,19 @@ export default function AdminForbiddenPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-bg">
-      <div className="max-w-md text-center">
-        <div className="flex flex-col items-center gap-2 mb-6">
-          <Wordmark size="md" variant="blue" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">admin</span>
+    <MarcoDeAcceso data-testid="admin-sin-acceso">
+      <div className="space-y-7">
+        <div className="flex h-14 w-14 items-center justify-center rounded-md bg-surface-muted ring-1 ring-border">
+          <LockKey className="h-7 w-7 text-fg" weight="fill" aria-hidden="true" />
         </div>
-        <div className="section-label justify-center mb-3">acceso denegado</div>
-        <h1 className="font-display text-display tracking-tight mb-2 text-fg">No estás en la allowlist</h1>
-        <p className="text-sm text-fg-muted mb-8">
-          Tu email no está autorizado para el panel interno. Pídele a un admin que te agregue a
-          <span className="font-mono"> ADMIN_EMAILS</span>.
-        </p>
-        <button onClick={signOut} className="btn">Cerrar sesión →</button>
+        <TituloDeAcceso
+          titulo="Esta cuenta no entra al admin"
+          bajada="El admin es sólo para el equipo de Leasefy. Si eres del equipo, pide que agreguen tu correo a la lista de administradores y vuelve a entrar."
+        />
+        <Button variant="outline" hideArrow onClick={() => void signOut()} className="h-11 w-full rounded-full text-[14px]">
+          Entrar con otra cuenta
+        </Button>
       </div>
-    </div>
+    </MarcoDeAcceso>
   )
 }

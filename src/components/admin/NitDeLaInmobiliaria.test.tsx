@@ -219,10 +219,10 @@ describe('<NitDeLaInmobiliaria>', () => {
     expect(texto()).not.toContain('Nadie ha corregido')
   })
 
-  it('enlaza a Audit search con la acción y la inmobiliaria', async () => {
+  it('enlaza al buscador de auditoría con la acción y la inmobiliaria', async () => {
     adminApi.mockResolvedValueOnce(DATOS)
     await montar()
-    const a = [...host.querySelectorAll('a')].find((x) => (x.textContent ?? '').includes('audit search'))
+    const a = [...host.querySelectorAll('a')].find((x) => (x.textContent ?? '').includes('buscador de auditoría'))
     expect(a!.getAttribute('href')).toBe(`/admin/audit-explorer?action=agency.nit.update&entityId=${ID}`)
   })
 })

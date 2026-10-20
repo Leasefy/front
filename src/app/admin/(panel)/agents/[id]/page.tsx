@@ -1,13 +1,28 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { CheckCircle, Robot, WarningCircle } from '@phosphor-icons/react'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  Alert,
+  KeyValueList,
+  MonoLabel,
+  Presence,
+} from '@leasefy/cadence'
 import { adminApi, ApiError } from '@/lib/admin/api'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { useApiQuery } from '@/lib/admin/use-api-query'
-import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
+import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
+import { PageHeader } from '@/components/admin/screen/PageHeader'
+import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 import { Pill } from '@/components/admin/Pill'
+import { BackButton } from '@/components/ui/back-button'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import {
   splitSections,
   joinSections,
@@ -33,24 +48,6 @@ interface AgentDetail {
   systemPrompt: string
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="text-sm border-b border-bg-border pb-2 last:border-0 last:pb-0">
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">{label}</div>
-      <div className="text-fg mt-0.5 break-words">{children}</div>
-    </div>
-  )
-}
-
-function MetaKV({ k, v }: { k: string; v?: string | null }) {
-  return (
-    <span>
-      <span className="text-fg-subtle">{k}:</span>{' '}
-      <span className="text-fg">{v ?? '—'}</span>
-    </span>
-  )
-}
-
 /** Section editor — lives inside the detail page, all in one component per SPA pattern. */
 function PromptEditor({
   agentId,
@@ -64,7 +61,7 @@ function PromptEditor({
   const [sections, setSections] = useState<PromptSection[]>(() =>
     splitSections(initialSystemPrompt),
   )
-  const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  const [abiertas, setAbiertas] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null)
 
@@ -87,15 +84,6 @@ function PromptEditor({
   const isEmpty = currentPrompt.trim().length === 0
   const canSave = dirty && !tooLong && !isEmpty
 
-  function toggle(i: number) {
-    setExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(i)) next.delete(i)
-      else next.add(i)
-      return next
-    })
-  }
-
   async function onSave() {
     if (!canSave) return
     setSubmitting(true)
@@ -105,10 +93,10 @@ function PromptEditor({
         `/agents/${agentId}/system-prompt`,
         { method: 'PATCH', body: { prompt: currentPrompt } },
       )
-      setFeedback({ ok: true, msg: `Guardado. Prompt: ${res.length} chars.` })
+      setFeedback({ ok: true, msg: `Guardado: ${res.length.toLocaleString('es-CO')} caracteres.` })
       onSaved()
     } catch (err) {
-      const msg = mensajeDelAdmin(err, { accion: 'guardar el prompt' })
+      const msg = mensajeDelAdmin(err, { accion: 'guardar las instrucciones' })
       setFeedback({ ok: false, msg })
     } finally {
       setSubmitting(false)
@@ -120,103 +108,93 @@ function PromptEditor({
     setFeedback(null)
   }
 
+  const originales = splitSections(initialSystemPrompt)
+
   return (
-    <>
-      {/* Sticky toolbar */}
-      <div className="flex flex-wrap items-center gap-3 mb-4 sticky top-0 z-10 bg-bg/90 backdrop-blur py-3 border-b border-bg-border -mx-6 px-6 lg:-mx-8 lg:px-8">
-        <button
-          onClick={onSave}
-          disabled={!canSave || submitting}
-          className="btn btn-primary"
-        >
-          {submitting ? 'Guardando…' : 'Guardar →'}
-        </button>
-        <button
-          onClick={onRevert}
-          disabled={!dirty || submitting}
-          className="btn"
-        >
-          Revertir
-        </button>
+    <div className="space-y-4">
+      {/* La barra de guardar queda pegada bajo la cabecera mientras se edita. */}
+      <div className="sticky top-16 z-10 -mx-6 flex flex-wrap items-center gap-3 border-b border-border bg-bg/95 px-6 py-3 backdrop-blur lg:-mx-8 lg:px-8">
+        <Button onClick={onSave} disabled={!canSave || submitting} isLoading={submitting} hideArrow>
+          {submitting ? 'Guardando…' : 'Guardar'}
+        </Button>
+        <Button variant="outline" onClick={onRevert} disabled={!dirty || submitting} hideArrow>
+          Deshacer los cambios
+        </Button>
         {dirty ? (
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted">
-            <span className="text-ok">+{stats.added}</span>
+          <MonoLabel className="tabular-nums">
+            <span className="text-success">+{stats.added}</span>
             {' / '}
-            <span className="text-bad">−{stats.removed}</span>
+            <span className="text-danger">−{stats.removed}</span>
             {' líneas · '}
-            <span className={tooLong ? 'text-bad' : 'text-fg'}>
-              {currentPrompt.length} / 50 000 chars
+            <span className={tooLong ? 'text-danger' : 'text-fg'}>
+              {currentPrompt.length.toLocaleString('es-CO')} / 50.000
             </span>
-          </span>
+          </MonoLabel>
         ) : (
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-subtle">
-            sin cambios
-          </span>
+          <MonoLabel>Sin cambios</MonoLabel>
         )}
-        {feedback && (
-          <span
-            className={
-              'ml-auto font-mono text-[11px] uppercase tracking-[0.12em] flex items-center gap-2 ' +
-              (feedback.ok ? 'text-ok' : 'text-bad')
-            }
-          >
+        <Presence show={Boolean(feedback)} className="ml-auto">
+          {feedback ? (
             <span
-              className={'inline-block w-2 h-2 ' + (feedback.ok ? 'bg-ok' : 'bg-bad')}
-            />
-            {feedback.msg}
-          </span>
-        )}
+              role="status"
+              className={'flex items-center gap-1.5 text-body-sm ' + (feedback.ok ? 'text-success' : 'text-danger')}
+            >
+              {feedback.ok ? (
+                <CheckCircle className="h-4 w-4" weight="fill" aria-hidden="true" />
+              ) : (
+                <WarningCircle className="h-4 w-4" weight="fill" aria-hidden="true" />
+              )}
+              {feedback.msg}
+            </span>
+          ) : null}
+        </Presence>
       </div>
 
       {(isEmpty || tooLong) && (
-        <div className="card p-3 border-bad/40 mb-4">
-          <p className="text-sm text-bad">
-            {isEmpty
-              ? 'El prompt no puede estar vacío.'
-              : `El prompt excede 50 000 caracteres (${currentPrompt.length}).`}
-          </p>
-        </div>
+        <Alert variant="danger">
+          {isEmpty
+            ? 'Las instrucciones no pueden quedar vacías.'
+            : `Las instrucciones pasan de 50.000 caracteres (${currentPrompt.length.toLocaleString('es-CO')}).`}
+        </Alert>
       )}
 
-      <div className="space-y-2">
+      <Accordion
+        type="multiple"
+        value={abiertas}
+        onValueChange={setAbiertas}
+        className="overflow-hidden rounded-lg border border-border bg-surface"
+      >
         {sections.map((sec, i) => {
-          const isOpen = expanded.has(i)
-          const origRaw = splitSections(initialSystemPrompt)[i]?.raw ?? ''
-          const changed = sec.raw !== origRaw
+          const changed = sec.raw !== (originales[i]?.raw ?? '')
           return (
-            <div key={i} className={'card ' + (changed ? 'border-warn/50' : '')}>
-              <button
-                onClick={() => toggle(i)}
-                className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-bg-hover transition-colors"
-              >
-                <span className="text-fg-subtle text-xs font-mono w-4">
-                  {isOpen ? '▾' : '▸'}
+            <AccordionItem key={i} value={String(i)} className={changed ? 'bg-warning-soft' : undefined}>
+              <AccordionTrigger className="gap-3 px-5 py-4 hover:bg-surface-hover">
+                <span className="flex min-w-0 flex-1 items-center gap-2">
+                  <span className="truncate text-body-sm font-medium">{sec.title}</span>
+                  {sec.markers.map((mk) => (
+                    <Pill key={mk} tone="info">
+                      {mk}
+                    </Pill>
+                  ))}
+                  {changed && <Pill tone="warn">Editada</Pill>}
                 </span>
-                <span className="font-medium text-sm flex-1 truncate">{sec.title}</span>
-                {sec.markers.map((mk) => (
-                  <Pill key={mk} tone="info">{mk}</Pill>
-                ))}
-                {changed && <Pill tone="warn">editado</Pill>}
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle tabular-nums">
-                  {sec.raw.length}c
-                </span>
-              </button>
-              {isOpen && (
-                <div className="px-4 pb-4 border-t border-bg-border">
-                  <textarea
-                    value={sec.raw}
-                    onChange={(e) => setSections(replaceSection(sections, i, e.target.value))}
-                    className="textarea mt-3"
-                    rows={Math.min(Math.max(6, sec.raw.split('\n').length + 1), 30)}
-                    spellCheck={false}
-                  />
-                </div>
-              )}
-            </div>
+                <MonoLabel className="shrink-0 tabular-nums">{sec.raw.length.toLocaleString('es-CO')}</MonoLabel>
+              </AccordionTrigger>
+              <AccordionContent className="max-w-none px-5 pb-5">
+                <Textarea
+                  aria-label={`Sección ${sec.title}`}
+                  value={sec.raw}
+                  onChange={(e) => setSections(replaceSection(sections, i, e.target.value))}
+                  className="font-mono text-caption leading-relaxed"
+                  rows={Math.min(Math.max(6, sec.raw.split('\n').length + 1), 30)}
+                  spellCheck={false}
+                />
+              </AccordionContent>
+            </AccordionItem>
           )
         })}
-      </div>
-    </>
+      </Accordion>
+    </div>
   )
 }
 
@@ -229,90 +207,71 @@ export default function AgentDetailPage() {
     [id],
   )
 
-  if (isLoading) return <div className="p-6 lg:p-8"><LoadingBlock /></div>
+  if (isLoading) return <div className="space-y-6 p-6 lg:p-8"><LoadingBlock filas={8} /></div>
 
-  // 404 — Vapi rejected the lookup (contract: any Vapi error → 404 "Agent not found")
+  // 404 — Vapi rechazó la consulta (contrato: cualquier error de Vapi → 404).
   if (error instanceof ApiError && error.status === 404) {
     return (
-      <div className="p-6 lg:p-8">
-        <div className="card p-8 text-center">
-          <p className="text-sm font-medium text-fg">Agente no encontrado</p>
-          <p className="text-xs text-fg-muted mt-1">
-            El assistant <span className="font-mono">{id}</span> no existe en Vapi o Vapi no respondió.
-          </p>
-          <Link href="/admin/agents" className="btn mt-4 inline-flex">
-            ← Volver a Agentes
-          </Link>
-        </div>
+      <div className="space-y-6 p-6 lg:p-8">
+        <BackButton href="/admin/agents" label="Volver a agentes de voz" />
+        <EmptyBlock
+          icono={<Robot weight="bold" />}
+          title="No encontramos este agente"
+          hint={`El agente ${id} no existe en Vapi, o Vapi no respondió.`}
+        />
       </div>
     )
   }
 
-  if (error) return <div className="p-6 lg:p-8"><ErrorBlock error={error} /></div>
+  if (error) return <div className="space-y-6 p-6 lg:p-8"><ErrorBlock error={error} onReintentar={refetch} /></div>
   if (!data) return null
 
   const systemPrompt = data.systemPrompt ?? ''
   const sections = splitSections(systemPrompt)
 
   return (
-    <div className="p-6 lg:p-8 max-w-5xl">
-      {/* Breadcrumb + header */}
-      <div className="mb-8">
-        <Link
-          href="/admin/agents"
-          className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle hover:text-fg"
-        >
-          ← Agentes
-        </Link>
-        <h1 className="font-display text-display tracking-tight text-fg mt-2">
-          {data.name ?? '(sin nombre)'}
-        </h1>
-        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 font-mono text-[11px] text-fg-muted">
-          <MetaKV k="modelo" v={`${data.model?.provider ?? '—'}/${data.model?.model ?? '—'}`} />
-          <MetaKV k="voz" v={data.voice?.provider} />
-          <MetaKV k="silencio" v={`${data.silenceTimeoutSeconds ?? '—'}s`} />
-        </div>
-      </div>
-
-      {/* Read-only config block */}
-      <div className="mb-8">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-          config rápida (read-only)
-        </div>
-        <div className="card p-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
-          <Field label="firstMessage">
-            {data.firstMessage ? (
-              data.firstMessage.length > 120
-                ? data.firstMessage.slice(0, 120) + '…'
-                : data.firstMessage
-            ) : '—'}
-          </Field>
-          <Field label="maxDurationSeconds">{String(data.maxDurationSeconds ?? '—')}</Field>
-          <Field label="endCallPhrases">
-            {(data.endCallPhrases ?? []).join(' · ') || '—'}
-          </Field>
-          <Field label="temperature">{String(data.temperature ?? '—')}</Field>
-          <Field label="maxTokens">{String(data.maxTokens ?? '—')}</Field>
-          <Field label="tools">{String(data.toolsCount ?? 0)}</Field>
-        </div>
-      </div>
-
-      {/* Section editor */}
-      <div>
-        <div className="flex items-baseline justify-between mb-3">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-            system prompt
-          </div>
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-            {systemPrompt.length} chars · {sections.length} secc.
+    <div className="space-y-6 p-6 lg:p-8">
+      <BackButton href="/admin/agents" label="Volver a agentes de voz" />
+      <PageHeader
+        title={data.name ?? 'Agente sin nombre'}
+        description={
+          <span className="font-mono text-body-sm">
+            {data.model?.provider ?? '—'} / {data.model?.model ?? '—'} · voz {data.voice?.provider ?? '—'} · silencio{' '}
+            {data.silenceTimeoutSeconds ?? '—'} s
           </span>
-        </div>
-        <PromptEditor
-          agentId={id}
-          initialSystemPrompt={systemPrompt}
-          onSaved={refetch}
+        }
+      />
+
+      <Tarjeta titulo="Configuración" descripcion="Sólo lectura: se cambia en Vapi.">
+        <KeyValueList
+          className="grid gap-x-8 md:grid-cols-2"
+          items={[
+            {
+              label: 'Primer mensaje',
+              value: data.firstMessage
+                ? data.firstMessage.length > 120
+                  ? data.firstMessage.slice(0, 120) + '…'
+                  : data.firstMessage
+                : '—',
+            },
+            { label: 'Duración máxima', value: <span className="font-mono tabular-nums">{data.maxDurationSeconds != null ? `${data.maxDurationSeconds} s` : '—'}</span> },
+            { label: 'Frases para colgar', value: (data.endCallPhrases ?? []).join(' · ') || '—' },
+            { label: 'Temperatura', value: <span className="font-mono tabular-nums">{String(data.temperature ?? '—')}</span> },
+            { label: 'Tokens máximos', value: <span className="font-mono tabular-nums">{String(data.maxTokens ?? '—')}</span> },
+            { label: 'Herramientas', value: <span className="font-mono tabular-nums">{String(data.toolsCount ?? 0)}</span> },
+          ]}
         />
-      </div>
+      </Tarjeta>
+
+      <section className="space-y-3" aria-label="Instrucciones del agente">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-subtitle font-semibold text-fg">Instrucciones</h2>
+          <MonoLabel className="tabular-nums">
+            {systemPrompt.length.toLocaleString('es-CO')} caracteres · {sections.length} secciones
+          </MonoLabel>
+        </div>
+        <PromptEditor agentId={id} initialSystemPrompt={systemPrompt} onSaved={refetch} />
+      </section>
     </div>
   )
 }

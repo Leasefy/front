@@ -1,6 +1,15 @@
-import { lastPage } from '@/lib/admin/types'
+'use client'
 
-/** 0-indexed pager driven by the URL (`page` param). Shared across paginated screens. */
+import { TablePagination } from '@/components/ui/pagination'
+
+/**
+ * El paginador del admin: el de las tablas de la plataforma (Cadence:
+ * «Mostrando 1–50 de 312», páginas numeradas y flechas). El back del admin
+ * cuenta las páginas desde 0 y el de Cadence desde 1: se traduce acá.
+ *
+ * Va en el `pie` del `DataTable`, dentro de la misma tarjeta. Con filas,
+ * siempre se ve (aunque quepan en una página): es lo que dice cuántas hay.
+ */
 export function Pagination({
   page,
   total,
@@ -12,28 +21,13 @@ export function Pagination({
   pageSize: number
   onPage: (page: number) => void
 }) {
-  const last = lastPage(total, pageSize)
-  if (total <= pageSize) return null
-
-  const from = page * pageSize + 1
-  const to = Math.min((page + 1) * pageSize, total)
-
+  if (total <= 0) return null
   return (
-    <div className="flex items-center justify-between mt-4">
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle tabular-nums">
-        {from}–{to} de {total}
-      </div>
-      <div className="flex items-center gap-2">
-        <button className="btn" disabled={page <= 0} onClick={() => onPage(page - 1)}>
-          ← Anterior
-        </button>
-        <span className="font-mono text-[11px] tabular-nums text-fg-muted px-2">
-          {page + 1} / {last + 1}
-        </span>
-        <button className="btn" disabled={page >= last} onClick={() => onPage(page + 1)}>
-          Siguiente →
-        </button>
-      </div>
-    </div>
+    <TablePagination
+      total={total}
+      page={page + 1}
+      pageSize={pageSize}
+      onPageChange={(pagina) => onPage(pagina - 1)}
+    />
   )
 }

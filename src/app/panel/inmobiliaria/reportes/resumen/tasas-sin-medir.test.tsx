@@ -116,7 +116,7 @@ describe('Resumen del negocio — inmobiliaria en cero', () => {
     await montar();
     const ocupacion = tarjeta('Ocupación').textContent ?? '';
     expect(ocupacion).toContain('—');
-    expect(ocupacion).not.toContain('0.0%');
+    expect(ocupacion).not.toContain('0,0 %');
   });
 
   it('la tasa de recaudo del resumen financiero es una raya', async () => {
@@ -233,8 +233,8 @@ describe('Resumen del negocio — con operación de verdad', () => {
       avgDaysToClose: 18,
     });
     await montar();
-    expect(tarjeta('Ocupación').textContent).toContain('80.0%');
-    expect(texto('resumen-tasa-de-recaudo')).toBe('90.0%');
+    expect(tarjeta('Ocupación').textContent).toContain('80,0 %');
+    expect(texto('resumen-tasa-de-recaudo')).toBe('90,0 %');
     expect(document.body.textContent).toContain('vs mes anterior');
     expect(texto('resumen-dias-al-cierre')).toContain('18');
   });
@@ -257,7 +257,7 @@ describe('Resumen del negocio — con operación de verdad', () => {
     });
     await montar();
     const ocupacion = tarjeta('Ocupación').textContent ?? '';
-    expect(ocupacion).toContain('83.0%');
+    expect(ocupacion).toContain('83,0 %');
     expect(ocupacion).toContain('730 arrendados de 880 en catálogo');
     expect(ocupacion).toContain('1.944 fuera del catálogo');
     // La tasa NO se mide contra los 2.824.
@@ -268,7 +268,7 @@ describe('Resumen del negocio — con operación de verdad', () => {
     // Una respuesta vieja en caché no trae `propertiesInCatalog`.
     datos.kpis = enCero({ totalProperties: 10, propertiesRented: 8 });
     await montar();
-    expect(tarjeta('Ocupación').textContent).toContain('80.0%');
+    expect(tarjeta('Ocupación').textContent).toContain('80,0 %');
   });
 
   it('🔴 la tasa dice con qué fórmula se midió, y es la que mandó el back', async () => {
@@ -293,16 +293,16 @@ describe('Resumen del negocio — con operación de verdad', () => {
       },
     });
     await montar();
-    expect(texto('resumen-tasa-de-recaudo')).toBe('43.6%');
+    expect(texto('resumen-tasa-de-recaudo')).toBe('43,6 %');
     expect(texto('resumen-rotulo-de-la-tasa')).toBe('Pagado de lo emitido');
     expect(texto('resumen-cifras-de-la-tasa')).toContain('pagados de');
-    expect(tarjeta('Recaudo del Mes').textContent).toContain('43.6% · Pagado de lo emitido');
+    expect(tarjeta('Recaudo del Mes').textContent).toContain('43,6 % · Pagado de lo emitido');
   });
 
   it('una respuesta de antes, sin la tasa, se lee como lo que era: sobre lo causado', async () => {
     datos.kpis = enCero({ expectedRevenue: 10_000_000, collectedRevenue: 9_000_000, collectionRate: 90 });
     await montar();
-    expect(texto('resumen-tasa-de-recaudo')).toBe('90.0%');
+    expect(texto('resumen-tasa-de-recaudo')).toBe('90,0 %');
     expect(texto('resumen-rotulo-de-la-tasa')).toBe('Recaudo sobre lo causado');
   });
 
@@ -315,7 +315,7 @@ describe('Resumen del negocio — con operación de verdad', () => {
       collectedRevenue: 0,
     });
     await montar();
-    expect(texto('resumen-tasa-de-recaudo')).toBe('0.0%');
-    expect(tarjeta('Ocupación').textContent).toContain('0.0%');
+    expect(texto('resumen-tasa-de-recaudo')).toBe('0,0 %');
+    expect(tarjeta('Ocupación').textContent).toContain('0,0 %');
   });
 });

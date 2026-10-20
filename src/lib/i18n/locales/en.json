@@ -9116,10 +9116,10 @@
             "salaTitulo": "Appraisals",
             "salaDesc": "A reference value estimate, fully remote and AI-assisted. No physical visit: the certificate is generated from market data and signed by a Leasefy reviewer.",
             "colaTitle": "My appraisal requests",
-            "colaDesc": "Every appraisal you requested, end to end: request → market-data estimate → review → signed certificate. You always see the up-to-date status; the review and signature are handled by a Leasefy reviewer. No physical visit is performed.",
+            "colaDesc": "Every appraisal you requested, step by step: you request it, a Leasefy reviewer reviews it, signs it and it gets delivered. You see when you requested it, when it was signed and the certificate as soon as it is ready. No physical visit is performed.",
             "colaKpiLabel": "Active",
             "colaEmptyTitle": "No requests yet",
-            "colaEmptyHint": "Request your first appraisal: mint the link, the estimate is generated and you track every step here until the signed certificate.",
+            "colaEmptyHint": "Request your first appraisal from the Summary: you generate the link, the estimate is made and you follow every step here until the signed certificate.",
             "casoColaLabel": "My requests",
             "solicitarTitle": "Request an appraisal",
             "solicitarCta": "Request appraisal",
@@ -9185,7 +9185,19 @@
                 "tuParte": "look for it in the agency's email and share it with your client."
               }
             },
-            "firmaNota": "The review and the certificate signature are handled by a Leasefy reviewer. No physical visit to the property is performed."
+            "firmaNota": "The review and the certificate signature are handled by a Leasefy reviewer. No physical visit to the property is performed.",
+            "colaSinServicio": "Your requests cannot be shown: this environment does not have the appraisal service connected. Write to your Leasefy contact to turn it on.",
+            "colaPasosAria": "Where it stands: {{paso}}",
+            "colaPedidoEl": "Requested on {{fecha}}",
+            "colaFirmadoEl": "signed on {{fecha}}",
+            "colaVerEstado": "See where it stands",
+            "colaPasos": {
+              "solicitado": "Requested",
+              "enRevision": "In review",
+              "firmado": "Signed",
+              "entregado": "Delivered",
+              "rechazado": "Rejected"
+            }
           },
           "cobranza": {
             "salaDesc": "The agent works standard delinquency for you — calls, WhatsApp and letters within the law — and escalates only the critical cases.",

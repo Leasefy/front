@@ -9151,10 +9151,10 @@
             "salaTitulo": "Avalúos",
             "salaDesc": "Estimación de valor referencial, 100% remota y asistida por IA. Sin visita física: el certificado se genera con datos de mercado y lo firma un revisor de Leasefy.",
             "colaTitle": "Mis solicitudes de avalúo",
-            "colaDesc": "Cada avalúo que pediste, de principio a fin: solicitud → estimación con datos de mercado → revisión → certificado firmado. Siempre ves el estado al día; la revisión y la firma las hace un revisor de Leasefy. No se realiza visita física.",
+            "colaDesc": "Cada avalúo que pediste, paso a paso: lo pides, un revisor de Leasefy lo revisa, lo firma y se entrega. Ves cuándo lo pediste, cuándo se firmó y el certificado apenas esté. No se realiza visita física.",
             "colaKpiLabel": "Activas",
             "colaEmptyTitle": "Aún no tienes solicitudes",
-            "colaEmptyHint": "Pide tu primer avalúo: generás el link, se genera la estimación y aquí sigues cada paso hasta el certificado firmado.",
+            "colaEmptyHint": "Pide tu primer avalúo desde el Resumen: generas el link, se hace la estimación y aquí sigues cada paso hasta el certificado firmado.",
             "casoColaLabel": "Mis solicitudes",
             "solicitarTitle": "Solicitar un avalúo",
             "solicitarCta": "Solicitar avalúo",
@@ -9220,7 +9220,19 @@
                 "tuParte": "búscalo en el correo de la inmobiliaria y compártelo con tu cliente."
               }
             },
-            "firmaNota": "La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza visita física al inmueble."
+            "firmaNota": "La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza visita física al inmueble.",
+            "colaSinServicio": "No se pueden ver tus solicitudes: este entorno no tiene conectado el servicio de avalúos. Escríbele a tu contacto de Leasefy para activarlo.",
+            "colaPasosAria": "En qué va: {{paso}}",
+            "colaPedidoEl": "Pedido el {{fecha}}",
+            "colaFirmadoEl": "firmado el {{fecha}}",
+            "colaVerEstado": "Ver en qué va",
+            "colaPasos": {
+              "solicitado": "Pedido",
+              "enRevision": "En revisión",
+              "firmado": "Firmado",
+              "entregado": "Entregado",
+              "rechazado": "Rechazado"
+            }
           },
           "cobranza": {
             "salaDesc": "El agente trabaja la mora estándar por ti — llamadas, WhatsApp y cartas cumpliendo la ley — y te escala solo los casos críticos.",

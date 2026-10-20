@@ -1157,7 +1157,13 @@ export interface FacturaEmitidaDetalle {
   id: string
   mes: string
   destinatario: 'INQUILINO' | 'PROPIETARIO'
-  numeroDian: string | null
+  /**
+   * El consecutivo SIN prefijo (la columna es un número: `1`, no `SETP-1`).
+   * Para mostrarlo, `numeroDeLaFacturaEmitida`, que le pega el prefijo.
+   */
+  numeroDian: number | string | null
+  /** El prefijo de la resolución («SETP», «FE»); vacío si no tiene. */
+  prefijo?: string | null
   terceroNombre: string
   terceroDocumento: string | null
   inmueble: string

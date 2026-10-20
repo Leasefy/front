@@ -15,6 +15,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { facturacionPorMesService, type FacturaEmitidaDetalle } from '@/lib/api/facturacion-por-mes.service'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { formatCurrency } from '@/lib/format'
+import { mesEnTitulo } from '@/lib/utils/mes'
 import { toast } from 'sonner'
 
 export function CajonDeLaFacturaEmitida({ id, onCerrar }: { id: string | null; onCerrar: () => void }) {
@@ -45,7 +46,7 @@ export function CajonDeLaFacturaEmitida({ id, onCerrar }: { id: string | null; o
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${factura.numeroDian ?? 'factura'}.pdf`
+      a.download = `${numeroDeLaFacturaEmitida(factura) ?? 'factura'}.pdf`
       a.click()
       URL.revokeObjectURL(url)
     } catch (e) {
@@ -55,7 +56,8 @@ export function CajonDeLaFacturaEmitida({ id, onCerrar }: { id: string | null; o
     }
   }
 
-  const titulo = factura?.numeroDian ? `Factura ${factura.numeroDian}` : 'Factura'
+  const numero = factura ? numeroDeLaFacturaEmitida(factura) : null
+  const titulo = numero ? `Factura ${numero}` : 'Factura'
   return (
     <Cajon abierto={id !== null} onOpenChange={(v) => !v && onCerrar()} data-testid="cajon-factura-emitida">
       <CajonCabecera
@@ -75,7 +77,7 @@ export function CajonDeLaFacturaEmitida({ id, onCerrar }: { id: string | null; o
           <>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-body-sm">
               <Dato etiqueta="Inmueble" valor={factura.inmueble} ancho />
-              <Dato etiqueta="Mes" valor={factura.mes} />
+              <Dato etiqueta="Mes" valor={mesEnTitulo(factura.mes)} />
               <Dato etiqueta="Documento" valor={factura.terceroDocumento ?? 'Sin registrar'} />
               {factura.notaCredito && <Dato etiqueta="Anulada con" valor={`Nota crédito ${factura.notaCredito.numero}`} ancho />}
             </dl>
@@ -131,4 +133,18 @@ function Fila({ etiqueta, valor, fuerte = false }: { etiqueta: string; valor: nu
       <dd className={`font-mono tabular-nums ${fuerte ? 'font-medium text-fg' : 'text-fg'}`}>{formatCurrency(valor)}</dd>
     </div>
   )
+}
+
+/**
+ * «SETP-1», como en la lista del proceso y en Facturación: la base guarda el
+ * consecutivo y el prefijo por separado, y el detalle los manda así.
+ */
+export function numeroDeLaFacturaEmitida(
+  f: Pick<FacturaEmitidaDetalle, 'numeroDian' | 'prefijo'>,
+): string | null {
+  if (f.numeroDian === null || f.numeroDian === undefined) return null
+  const numero = String(f.numeroDian).trim()
+  if (!numero) return null
+  const prefijo = f.prefijo?.trim()
+  return prefijo && !numero.startsWith(`${prefijo}-`) ? `${prefijo}-${numero}` : numero
 }

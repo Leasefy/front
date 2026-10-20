@@ -727,6 +727,7 @@ export const FRASES_EN: Record<string, string> = {
   "Todavía no tienes arriendos con historial de pagos en Leasefy.": "You don't have rentals with payment history on Leasefy yet.",
   "{a} de {c} a tiempo": "{a} of {c} on time",
   "peor atraso {d} días": "worst delay {d} days",
+  "peor atraso 1 día": "worst delay 1 day",
   "sin atrasos": "no delays",
   "debe {v}": "owes {v}",
   "Vigente": "Active",

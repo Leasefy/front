@@ -334,11 +334,17 @@ export default function MiCalificacionPage({
                   <p className="truncate text-xs text-fg-muted">{k.direccion ?? '—'}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-1 font-mono text-xs tabular-nums text-fg-muted">
-                  <span>{tr('{n} meses', { n: k.meses })}</span>
+                  <span>{k.meses === 1 ? tr('1 mes') : tr('{n} meses', { n: k.meses })}</span>
                   {k.cuotasContadas > 0 ? (
                     <>
                       <span>{tr('{a} de {c} a tiempo', { a: k.cuotasATiempo, c: k.cuotasContadas })}</span>
-                      <span>{k.peorAtrasoDias > 0 ? tr('peor atraso {d} días', { d: k.peorAtrasoDias }) : tr('sin atrasos')}</span>
+                      <span>
+                        {k.peorAtrasoDias === 1
+                          ? tr('peor atraso 1 día')
+                          : k.peorAtrasoDias > 0
+                            ? tr('peor atraso {d} días', { d: k.peorAtrasoDias })
+                            : tr('sin atrasos')}
+                      </span>
                     </>
                   ) : (
                     <span>{tr('sin cuotas pagadas en Leasefy')}</span>

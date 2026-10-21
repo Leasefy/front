@@ -41,7 +41,7 @@ import {
   DropdownListItem,
   DropdownListSeparator,
 } from '@/components/ui/dropdown-menu';
-import { IconButton, Chip, SegmentedControl, AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
+import { Avatar, IconButton, Chip, SegmentedControl, AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { useI18n } from '@/lib/i18n';
 import type { Propietario } from '@/lib/types/inmobiliaria';
@@ -146,6 +146,11 @@ interface PropietarioTableProps {
    */
   soloBarra?: boolean;
   /**
+   * GLOW UP 21-10: la página trae la cifra «Con giros atrasados» que filtra la lista (en la franja,
+   * dentro de la tarjeta). Con esto la barra no repite el mismo filtro como chip.
+   */
+  filtroDeSaldoAfuera?: boolean;
+  /**
    * Acciones masivas (Nico, 10-10-2026): con esto la tabla pinta las casillas.
    * Lo marcado y lo que se hace con ello lo lleva la página.
    */
@@ -170,6 +175,7 @@ export function PropietarioTable({
   onExport,
   plataOculta = false,
   soloBarra = false,
+  filtroDeSaldoAfuera = false,
   marcadas,
   onMarcar,
 }: PropietarioTableProps) {
@@ -318,7 +324,7 @@ export function PropietarioTable({
 
           {/* P-21: sin la plata, «Con saldo pendiente 0» sería otra afirmación
               falsa (el saldo llega en null y se lee 0). No se ofrece. */}
-          {!plataOculta && (
+          {!plataOculta && !filtroDeSaldoAfuera && (
             <>
               {/* Separator */}
               <div className="hidden sm:block w-px h-6 bg-border" />
@@ -434,16 +440,11 @@ export function PropietarioTable({
                   {/* Propietario */}
                   <TableCell className="p-4">
                     <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-                          isCompany
-                            ? 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle'
-                            : 'bg-primary-soft text-primary'
-                        )}
-                      >
-                        {isCompany ? <Buildings className="w-5 h-5" /> : <User className="w-5 h-5" />}
-                      </div>
+                      {/* GLOW UP 21-10: su Avatar (iniciales y su tono, que sale del nombre); antes el mismo
+                          muñequito azul para todos. La empresa conserva su edificio adentro. */}
+                      <Avatar name={propietario.name} size="md" className="shrink-0">
+                        {isCompany ? <Buildings className="size-5" /> : undefined}
+                      </Avatar>
                       <div className="min-w-0">
                         <p className="font-medium text-foreground truncate">
                           {propietario.name}
@@ -519,7 +520,8 @@ export function PropietarioTable({
                       </span>
                     ) : (
                       <>
-                        <span className="text-primary text-sm font-medium">
+                        {/* «Al día» en tinta suave: no pide nada (el azul es sólo de la acción principal). */}
+                        <span className="text-fg-muted text-sm">
                           {t('inmobiliaria.propietario.table.upToDate')}
                         </span>
                         <LineasDelGiro propietario={propietario} />
@@ -719,16 +721,10 @@ function TarjetasDePropietarios({
               className="block w-full min-w-0 rounded-md pr-10 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <span className="flex items-start gap-3">
-                <span
-                  className={cn(
-                    'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
-                    isCompany
-                      ? 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle'
-                      : 'bg-primary-soft text-primary'
-                  )}
-                  aria-hidden="true"
-                >
-                  {isCompany ? <Buildings className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                <span className="mt-0.5 shrink-0" aria-hidden="true">
+                  <Avatar name={propietario.name} size="sm">
+                    {isCompany ? <Buildings className="size-4" /> : undefined}
+                  </Avatar>
                 </span>
                 <span className="min-w-0">
                   {/* El nombre se ajusta en dos renglones; nunca «Constructora Ñan…». */}
@@ -769,7 +765,7 @@ function TarjetasDePropietarios({
                           {t('inmobiliaria.propietario.giros.sinDiaDeGiro')}
                         </span>
                       ) : (
-                        <span className="text-caption font-medium text-primary">
+                        <span className="text-caption text-fg-muted">
                           {t('inmobiliaria.propietario.table.upToDate')}
                         </span>
                       )}

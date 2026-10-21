@@ -16,7 +16,6 @@ import {
   Warning,
   GridFour,
   List,
-  CaretRight,
   Users,
   UserCircle,
   Funnel,
@@ -34,6 +33,7 @@ import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria'
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import {
   Dialog,
   DialogContent,
@@ -607,38 +607,30 @@ function PropietariosContent() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{t('inmobiliaria.common.title')}</span>
-            <CaretRight className="w-3 h-3" />
-            <span className="text-foreground">{t('inmobiliaria.propietarios.title')}</span>
-          </div>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.propietarios.title')}
-          </h1>
-          <p className="text-body text-fg-muted max-w-2xl line-clamp-2">
-            {t('inmobiliaria.propietarios.subtitle')}
-          </p>
-        </div>
-
-        {/* P-22: a 390 px los dos no caben en una línea («Nuevo propietario»
-            se salía del borde y la página medía 416 px): se acomodan en dos,
-            cada uno a lo ancho. */}
-        {puedeCrear && (
-          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-            <Button variant="secondary" hideArrow onClick={() => setShowIACapture(true)} className="flex-1 sm:flex-none">
-              <Sparkle className="w-5 h-5 text-primary" weight="fill" />
+      {/* GLOW UP 21-10: el encabezado de todas las pantallas. «Crear con IA» es secundaria y su
+          orbe va en tinta: el azul es sólo de la acción principal. P-22: a 390 px las dos van a lo
+          ancho (la principal primero), que es lo que hace `EncabezadoDePantalla`. */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secDirectorio')}
+        titulo={t('inmobiliaria.propietarios.title')}
+        descripcion={t('inmobiliaria.propietarios.subtitle')}
+        acciones={
+          puedeCrear ? (
+            <Button variant="secondary" size="sm" hideArrow onClick={() => setShowIACapture(true)}>
+              <Sparkle className="w-4 h-4" />
               {t('inmobiliaria.propietarios.addOwnerIA')}
             </Button>
-            <Button hideArrow onClick={() => setShowAddModal(true)} className="flex-1 sm:flex-none">
-              <UserPlus className="w-5 h-5" />
+          ) : undefined
+        }
+        accionPrincipal={
+          puedeCrear ? (
+            <Button size="sm" hideArrow onClick={() => setShowAddModal(true)}>
+              <UserPlus className="w-4 h-4" />
               {t('inmobiliaria.propietarios.addOwner')}
             </Button>
-          </div>
-        )}
-      </div>
+          ) : undefined
+        }
+      />
 
       {/* AVISO-TIPO-DOC: los propietarios cuyo documento frena la factura por
           mandato (sólo para quien puede arreglarlo; se va solo al completarlos). */}
@@ -664,56 +656,6 @@ function PropietariosContent() {
         </div>
       </Presence>
 
-      {/* Summary Stats — P-22: a 390 px, en dos columnas, «$96.600.000» se
-          cortaba («$96.600.0») y las etiquetas también («PROPIETA…»). Una
-          columna en el celular, dos en tableta y cuatro desde `xl`, donde la
-          cifra cabe con el menú abierto. */}
-      <FranjaDeCifras fila="xl" data-testid="cifras-de-propietarios">
-        <KpiCard
-          label={t('inmobiliaria.propietarios.title')}
-          value={valorDeTile(String(stats.totalPropietarios))}
-          icon={<Users />}
-        />
-        <KpiCard
-          label={t('inmobiliaria.propietarios.properties')}
-          value={valorDeTile(String(stats.totalProperties))}
-          icon={<Buildings />}
-        />
-        <KpiCard
-          label={t('inmobiliaria.propietarios.monthlyRevenue')}
-          value={plataOculta ? tileSinPlata : valorDeTile(formatCurrency(stats.totalMonthlyRent))}
-          sublabel={plataOculta ? sinAccesoALaPlata : undefined}
-          icon={<CurrencyDollar />}
-        />
-        {/* Sin dato, la etiqueta tampoco puede decir «Sin pendientes» ni
-            pintarse en verde: es la misma afirmación que el «$0». Sin acceso
-            a la plata (P-21), tampoco. */}
-        <Cifra
-          etiqueta={
-            kpiSinDato || plataOculta
-              ? 'Giros atrasados'
-              : stats.pendingCount > 0
-                ? t('inmobiliaria.propietarios.withBalance', { count: stats.pendingCount })
-                : t('inmobiliaria.propietarios.noPending')
-          }
-          valor={
-            plataOculta
-              ? tileSinPlata
-              : valorDeTile(
-                  stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate'),
-                )
-          }
-          detalle={
-            plataOculta
-              ? sinAccesoALaPlata
-              : !kpiSinDato && (stats.generadoSinGirar ?? 0) > 0
-                ? t('inmobiliaria.propietarios.generadoSinGirar', { monto: formatCurrency(stats.generadoSinGirar ?? 0) })
-                : undefined
-          }
-          // El punto ámbar dice «hay giros atrasados» (antes, el ícono de alerta de la tarjeta).
-          tono={!kpiSinDato && !plataOculta && stats.pendingCount > 0 ? 'aviso' : undefined}
-        />
-      </FranjaDeCifras>
 
       {/* AVISO-TIPO-DOC: qué filtra la lista y cómo volver a verla entera. */}
       <Presence
@@ -745,6 +687,73 @@ function PropietariosContent() {
           Sin entrada propia: la página ya entra con el `template.tsx`; lo que
           se anima adentro son los cambios (filas, tarjetas, la cifra). */}
       <div className="rounded-lg border border-border bg-card overflow-hidden">
+          {/* Summary Stats — P-22: a 390 px, en dos columnas, «$96.600.000» se
+              cortaba («$96.600.0») y las etiquetas también («PROPIETA…»). Una
+              columna en el celular, dos en tableta y cuatro desde `xl`, donde la
+              cifra cabe con el menú abierto. */}
+          <FranjaDeCifras
+            fila="xl"
+            data-testid="cifras-de-propietarios"
+            className="rounded-none border-0 border-b border-border"
+          >
+            <KpiCard
+              label={t('inmobiliaria.propietarios.title')}
+              value={valorDeTile(String(stats.totalPropietarios))}
+              icon={<Users />}
+            />
+            <KpiCard
+              label={t('inmobiliaria.propietarios.properties')}
+              value={valorDeTile(String(stats.totalProperties))}
+              icon={<Buildings />}
+            />
+            <KpiCard
+              label={t('inmobiliaria.propietarios.monthlyRevenue')}
+              value={plataOculta ? tileSinPlata : valorDeTile(formatCurrency(stats.totalMonthlyRent))}
+              sublabel={plataOculta ? sinAccesoALaPlata : undefined}
+              icon={<CurrencyDollar />}
+            />
+            {/* Sin dato, la etiqueta tampoco puede decir «Sin pendientes» ni
+                pintarse en verde: es la misma afirmación que el «$0». Sin acceso
+                a la plata (P-21), tampoco. */}
+            <Cifra
+              etiqueta={
+                kpiSinDato || plataOculta
+                  ? 'Giros atrasados'
+                  : stats.pendingCount > 0
+                    ? t('inmobiliaria.propietarios.withBalance', { count: stats.pendingCount })
+                    : t('inmobiliaria.propietarios.noPending')
+              }
+              valor={
+                plataOculta
+                  ? tileSinPlata
+                  : valorDeTile(
+                      stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate'),
+                    )
+              }
+              detalle={
+                plataOculta
+                  ? sinAccesoALaPlata
+                  : !kpiSinDato && (stats.generadoSinGirar ?? 0) > 0
+                    ? t('inmobiliaria.propietarios.generadoSinGirar', { monto: formatCurrency(stats.generadoSinGirar ?? 0) })
+                    : undefined
+              }
+              // El punto ámbar dice «hay giros atrasados» (antes, el ícono de alerta de la tarjeta).
+              tono={!kpiSinDato && !plataOculta && stats.pendingCount > 0 ? 'aviso' : undefined}
+              // GLOW UP 21-10: la cifra ES el filtro «con giros atrasados» (antes un chip aparte en la
+              // barra): un toque y la lista muestra a quién hay que girarle; otro toque la vuelve entera.
+              onClick={
+                !kpiSinDato && !plataOculta && (stats.pendingCount > 0 || filtros.soloConSaldo)
+                  ? () => {
+                      setFiltros((f) => ({ ...f, soloConSaldo: !f.soloConSaldo }));
+                      setCurrentPage(1);
+                    }
+                  : undefined
+              }
+              activa={filtros.soloConSaldo}
+              data-testid="cifra-giros-atrasados"
+            />
+          </FranjaDeCifras>
+
         {/* View Toggle Header */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
           <SegmentedControl<ViewMode>
@@ -853,6 +862,7 @@ function PropietariosContent() {
                 onDelete={handleDelete}
                 onExport={handleExport}
                 plataOculta={plataOculta}
+                filtroDeSaldoAfuera
                 marcadas={marcadas}
                 onMarcar={marcar}
               />
@@ -884,6 +894,7 @@ function PropietariosContent() {
                 onDelete={handleDelete}
                 onExport={handleExport}
                 plataOculta={plataOculta}
+                filtroDeSaldoAfuera
               />
               {paginationData.totalItems === 0 ? (
               /* En tarjetas no hay barra de filtros —vive dentro de la tabla—,

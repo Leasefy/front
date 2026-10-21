@@ -1553,6 +1553,9 @@ nombre nuevo de Phosphor que no esté en el mapa sale con el dibujo de Phosphor:
   filtra la lista es `<Cifra onClick activa>` (botón con `aria-pressed`) y, si filtra una tabla, la franja va DENTRO de la
   tarjeta de la tabla, arriba de la búsqueda — y entonces no lleva además un selector con los mismos estados. Punto de
   estado (`tono`) sólo cuando la cifra pide atención. `fila="xl"` cuando son montos largos que con el menú abierto no caben.
+- **Página larga** (más de tres pantallas de alto, como Configuración · Perfil): `IndiceDeLaPagina`
+  (components/pantalla) pegado arriba con «En esta sección»; cada bloque lleva `id` + `data-indice="Nombre"`.
+  Si la página pasa de ~10 bloques, la pregunta es si deberían ser secciones aparte.
 - **Cajón**: ver o editar una cosa sin perder la lista. **Modal**: decidir algo que no puede esperar o no se deshace.
   **Página**: una tarea de más de 3 pasos o algo que se comparte con un enlace.
 - **Modal**: título = la pregunta; el porqué en una línea con la cifra o el nombre que importa; botones que dicen lo que

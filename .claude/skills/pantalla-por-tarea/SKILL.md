@@ -26,6 +26,7 @@ gestionando». Reglas: SÓLO front (nunca back ni reglas de negocio), «NO ME CR
 3. **Los pasos de la tarea** (`PasosDeLaTarea`): el actual abierto; lo hecho resumido con «Cambiar»; lo que falta, con su porqué.
 4. **El trabajo de todos los días**: la tabla con su barra adentro, los filtros que más se usan a la vista, la fila abre el cajón.
 5. **Lo que se consulta**: plegado en `MasDetalles`, en la misma pantalla.
+   Si la página igual queda larga (más de tres pantallas), `IndiceDeLaPagina` arriba («En esta sección»).
 
 ## 3. El flujo completo
 Recorre: entrar (¿se entiende en 5 s?) → empezar (¿qué toca primero?) → cada paso (¿dice qué falta y por qué?) → terminar

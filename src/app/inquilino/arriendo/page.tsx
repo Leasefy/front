@@ -455,6 +455,7 @@ export default function ArriendoPage() {
           ) : contratosSinArriendo.length > 0 || cargandoContratos ? null : (
             <EmptyState
               icon={House}
+              ilustracion="casa"
               title="No tienes arriendos activos"
               description="Cuando firmes un contrato de arriendo, tu información aparecerá aquí."
               /* "aplicaciones" está muerto (docs/VOCABULARIO.md). Y quien no

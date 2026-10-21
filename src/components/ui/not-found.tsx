@@ -43,6 +43,7 @@ export function NotFound({
     <div className={cn('min-h-[400px] flex items-center justify-center', className)}>
       <EmptyState
         icon={House}
+        ilustracion="casa"
         title={title}
         description={description}
         action={action}

@@ -1522,6 +1522,72 @@ Ejemplo hecho: Facturación (`app/panel/inmobiliaria/facturacion/page.tsx`,
 
 ---
 
+## 24. Cadence 2 — la identidad y cómo se construye el front (Nico, 20 → 21-10-2026)
+
+> «Quiero nuestra propia marca, que no se sienta que es IA… la UX debe ser perfecta, los flujos de trabajo al 100 %
+> optimizados para la tarea, y la UI hermosa.» Identidad completa: `@leasefy/cadence` → `docs/IDENTIDAD.md`;
+> página viva https://claude.ai/artifact/E1o95TDQhSza4djDLQk5jn. Skills: `cadence-identidad` (Cadence) y
+> `leasefy-diseno` + `pantalla-por-tarea` (front).
+
+**Fundamentos.** Papel `#FBFAF8` · arena `#F3F1ED` · piedra `#E7E3DC` · tinta `#121110` · grafito `#5B5751` · ceniza `#706B64` ·
+**voltaje `#1A40FF` = la única chispa** · medianoche `#0A0F2C`. Host Grotesk (títulos livianos) + DM Mono (cifras, etiquetas,
+MAYÚSCULAS cortas). Esquina superelipse 1.5 en todo lo redondeado.
+
+**Íconos.** La familia propia de Leasefy (trazo 1,5, esquinas suavizadas, corte en los cruces). Se sigue importando de
+`@phosphor-icons/react` (o `<Icono nombre>` de Cadence): `next.config.mjs` (`aliasDeIconos`) y `vitest.config.ts` apuntan ese
+paquete al puente `@leasefy/cadence/phosphor`, que dibuja con nuestra familia los 307 nombres que usa la plataforma. Un
+nombre nuevo de Phosphor que no esté en el mapa sale con el dibujo de Phosphor: agrégalo a la familia (Cadence,
+`scripts/iconos/familia.py`). Nunca Lucide.
+
+**Ilustraciones 3D.** `<Ilustracion nombre="casa|alcancia|billetera|escudo|monedas" tono="voltaje|grafito|auto" />`
+(archivos en `public/ilustraciones/`). Para vacíos grandes, éxitos y momentos de bienvenida. Uno por pantalla.
+
+**Las piezas y cuándo.**
+- **Botón**: una acción azul por pantalla (la que más se hace ahí); secundarias en arena; «decidir» (aprobar, girar) en
+  `ink`; cancelar en `ghost`; lo irreversible en `destructive`. `loading` conserva el ancho; `count` nunca muestra 0.
+  sm en tablas y barras, md en todo lo demás, lg sólo en la entrada y formularios de una columna.
+- **Tabla**: la barra (buscar · vista · filtros · densidad · acción de la tabla) va DENTRO de la tarjeta
+  (`<Table toolbar footer>`); cifras en mono a la derecha; la fila abre el cajón; paginación en el pie.
+- **Cajón**: ver o editar una cosa sin perder la lista. **Modal**: decidir algo que no puede esperar o no se deshace.
+  **Página**: una tarea de más de 3 pasos o algo que se comparte con un enlace.
+- **Modal**: título = la pregunta; el porqué en una línea con la cifra o el nombre que importa; botones que dicen lo que
+  hacen; lo irreversible se confirma escribiendo (`ConfirmarEscribiendo`); lo que se deshace no lleva modal sino aviso
+  con «Deshacer».
+- **Aviso (toast)**: tarjeta clara con punto de estado, título + una línea, acción opcional.
+- **Avatar**: personas en superelipse con su tono (`kind="persona"`, el tono sale del nombre); agentes en círculo con su
+  orbe (`kind="agente"`); inmuebles con su foto. Nunca iniciales hechas a mano en una pantalla.
+- **Vacío**: ilustración (grande) o esfera con ícono (chico) + qué falta + el siguiente paso como botón.
+- **Formularios**: etiqueta arriba; la ayuda dice qué va; el error dice CÓMO arreglarlo con un ejemplo; un campo apagado
+  dice por qué; lo verificado lleva su chulo verde y de dónde salió.
+
+## 25. Medir la UX — antes y después de cada pantalla
+
+Cada pantalla que se toca se puntúa ANTES y DESPUÉS (0–10 por principio) y el puntaje queda en la página de revisión.
+
+**Los 10 de Nielsen**, en preguntas concretas para Leasefy:
+1. *Visibilidad del estado*: ¿se sabe qué está pasando (cargando, guardado, enviado, en cola) sin adivinar?
+2. *Mundo real*: ¿dice «canon», «propietario», «liquidación», «día de pago» — no «entity», «payload», «sync»?
+3. *Control y libertad*: ¿hay «Deshacer», «Volver», «Cancelar» a la mano, y Esc cierra?
+4. *Consistencia*: ¿las mismas piezas de Cadence, el mismo lugar para la acción principal, los mismos nombres?
+5. *Prevenir errores*: ¿se valida antes, se bloquea lo imposible y se explica por qué está apagado?
+6. *Reconocer antes que recordar*: ¿lo que hace falta está a la vista (no hay que ir a otra pantalla a mirar un dato)?
+7. *Flexibilidad*: ¿atajos, filtros guardados, acciones masivas para quien hace esto 50 veces al día?
+8. *Minimalismo*: ¿cada bloque se gana su lugar?; lo de consulta, plegado en «Más detalles».
+9. *Errores que ayudan*: ¿el error dice qué pasó, por qué y cómo arreglarlo, en palabras de la inmobiliaria?
+10. *Ayuda*: ¿hay una línea que explica para qué es la pantalla y un «¿Cómo funciona?» donde la tarea es nueva?
+
+**Leyes que se revisan siempre**: Hick (menos opciones a la vez: una principal, pocas secundarias, el resto en «Más»),
+Fitts (lo frecuente grande y cerca; lo destructivo lejos de lo frecuente), Jakob (como lo hacen las herramientas que ya
+usan: tablas, cajones, filtros), Miller (agrupar de a 5–7), Tesler (la complejidad la absorbe el sistema, no el usuario),
+proximidad y región común (lo que va junto, junto: la barra de la tabla dentro de la tabla), Doherty (respuesta < 400 ms o
+un esqueleto con la forma de lo que llega), Von Restorff (sólo UNA cosa destaca: la acción principal).
+
+**El flujo completo** (Nico: «desde que ingresa hasta que sigue gestionando»): para cada pantalla escribir el trabajo en
+una línea («Registrar los pagos que llegaron hoy») y recorrerlo: 1) al entrar, ¿se entiende en 5 segundos para qué es y qué
+toca primero? 2) ¿la acción principal está arriba a la derecha y es la única azul? 3) ¿cada paso dice qué falta y por
+qué? 4) al terminar, ¿se confirma el resultado (aviso, resumen) y se ofrece lo siguiente? 5) ¿al volver mañana, la pantalla
+muestra lo pendiente primero? Si algún punto falla, la pantalla no está lista.
+
 ## 22. When in Doubt
 
 1. Find a similar component already in the codebase — copy its pattern.

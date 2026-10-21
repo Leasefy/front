@@ -416,6 +416,7 @@ function PagosPageContent() {
           <div>
             <EmptyState
               icon={CurrencyCircleDollar}
+              ilustracion="monedas"
               title={locale === 'es' ? 'Sin pagos por ahora' : 'No payments yet'}
               description={locale === 'es'
                 ? 'Cuando tengas un arriendo activo, aquí podrás ver tus pagos, recibos y estado de cuenta.'
@@ -693,6 +694,7 @@ function PagosPageContent() {
             ) : (
               <EmptyState
                 icon={CurrencyCircleDollar}
+                ilustracion="monedas"
                 title={locale === 'es' ? 'No hay historial de pagos' : 'No payment history'}
                 description={locale === 'es'
                   ? 'Cuando realices pagos de arriendo, aparecerán aquí para tu seguimiento.'

@@ -233,6 +233,7 @@ export default function LandlordLeasesPage() {
             {leases.length === 0 ? (
               <EmptyState
                 icon={House}
+                ilustracion="casa"
                 title={t('landlord.leases.emptyTitle')}
                 description={t('landlord.leases.emptyDescription')}
                 action={{ label: t('landlord.leases.emptyAction'), href: "/panel/contratos" }}

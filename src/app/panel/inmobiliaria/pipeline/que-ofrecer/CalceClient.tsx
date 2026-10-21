@@ -445,6 +445,7 @@ export function CalceClient() {
             {inmuebles.length === 0 ? (
               <EmptyState
                 icon={House}
+                ilustracion="casa"
                 title={tr("Todavía no hay inmuebles en el tablero")}
                 description={tr("Los inmuebles de esta lista salen de los leads del pipeline: son los que alguien está mirando.")}
                 action={{ label: 'Ir al pipeline', href: '/panel/inmobiliaria/pipeline' }}

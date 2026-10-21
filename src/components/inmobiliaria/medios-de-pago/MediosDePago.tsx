@@ -208,6 +208,7 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
         <div className="space-y-5" data-testid="medios-vacio">
           <EmptyState
             icon={Wallet}
+            ilustracion="billetera"
             title="Todavía no tienes medios de pago"
             description="Sin medios, el inquilino no sabe a dónde pagarte y el recibo de caja usa la lista genérica. Empieza con los dos de siempre, o arma el tuyo."
             action={puedeEditar ? { label: 'Crear un medio', onClick: abrirNuevo } : undefined}

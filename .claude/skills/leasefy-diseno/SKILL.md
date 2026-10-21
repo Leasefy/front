@@ -1,10 +1,10 @@
 ---
 name: leasefy-diseno
-description: diseño UI UX pantalla nueva rediseño glow up botón tarjeta tabla cajón formulario estado vacío ilustración marca identidad Cadence 2 papel tinta voltaje Host Grotesk DM Mono superelipse esquina Mollie EsferaDeGrano FotoEnEstrias CampoDeMedianoche orbe Nielsen pantallas por tarea — usar SIEMPRE antes de crear o cambiar cualquier pantalla o componente visual
+description: diseño UI UX pantalla nueva rediseño glow up botón tarjeta tabla cajón modal aviso avatar ícono ilustración 3D formulario estado vacío marca identidad Cadence 2 papel tinta voltaje Host Grotesk DM Mono superelipse esquina Mollie EsferaDeGrano FotoEnEstrias CampoDeMedianoche orbe Nielsen pantallas por tarea — usar SIEMPRE antes de crear o cambiar cualquier pantalla o componente visual
 license: MIT
 metadata:
   author: leasefy-front
-  version: 2.0.0
+  version: 3.0.0
 ---
 
 # leasefy-diseno — la identidad de Leasefy y cómo se construye una pantalla
@@ -73,3 +73,17 @@ enteras, la esquina suavizada en todo, ninguna regla de negocio cambiada, prueba
 - `cadence/docs/IDENTIDAD.md` — la identidad completa (tokens, piezas, motivos, ejemplos).
 - `docs/DESIGN.md` §23 — Pantallas por tarea. · `src/components/pantalla/*` — piezas del patrón.
 - Página de revisión con 9 pantallas y 252 piezas gráficas con código: https://claude.ai/artifact/E1o95TDQhSza4djDLQk5jn
+
+
+## Cadence 2 completo (21-10-2026) — lo que llegó con la identidad v3/v4 y el 3D
+- **Íconos propios en TODA la plataforma**: se importan como siempre de `@phosphor-icons/react`; el alias de
+  `next.config.mjs`/`vitest.config.ts` los dibuja con la familia de Leasefy (trazo 1,5). Un ícono que no esté en el mapa
+  sale de Phosphor: pedir/dibujar el nuestro en Cadence (`scripts/iconos/familia.py`, `npm run iconos`). Nunca Lucide.
+- **Ilustraciones 3D** (`<Ilustracion nombre tono>`, `public/ilustraciones/`): vacíos grandes, éxitos, bienvenida. Grafito o
+  voltaje; una por pantalla.
+- **Tabla con su barra ADENTRO** (`<Table toolbar={<TableToolbar>…} footer={<TableFooter>…}>`): buscar, vista, filtros y
+  densidad pertenecen a la tabla. Cifras en mono a la derecha. La fila abre el cajón.
+- **Avatar de Cadence** (persona superelipse + tono del nombre; agente círculo + orbe; inmueble foto): nunca iniciales a mano.
+- **Modales para decidir**, título = pregunta, `ConfirmarEscribiendo` para lo irreversible; **avisos** claros con punto y
+  «Deshacer»; **botón cargando** que conserva el ancho; **contador** sólo > 0.
+- Medir antes/después con §25 de DESIGN.md (skill `pantalla-por-tarea`).

@@ -225,11 +225,13 @@ describe('/auth/update-password', () => {
     expect(pushMock).toHaveBeenCalledWith('/inquilino')
   })
 
-  it('«Guardar contraseña» lleva una sola flecha', async () => {
+  it('«Guardar contraseña» no lleva flechas (Cadence 2: el botón dice lo que hace, sin flecha)', async () => {
     await pintar()
     const boton = container.querySelector('button[type="submit"]') as HTMLButtonElement
     expect(boton.textContent).toContain('Guardar contraseña')
-    expect(boton.querySelectorAll('svg')).toHaveLength(1)
+    // Antes se sumaba una → a mano a la ↗ del botón y quedaban dos; desde la identidad
+    // Cadence 2 (20-10-2026) los botones no llevan flecha automática.
+    expect(boton.querySelectorAll('svg')).toHaveLength(0)
   })
 })
 

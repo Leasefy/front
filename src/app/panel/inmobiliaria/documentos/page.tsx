@@ -24,7 +24,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Archive, ClipboardText, FileText, Plus } from '@phosphor-icons/react';
+import { Archive, ClipboardText, DownloadSimple, Eye, FileText, Plus } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -44,7 +44,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
-import { Presence, SearchInput } from '@leasefy/cadence';
+import { IconButton, Presence, SearchInput } from '@leasefy/cadence';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -614,9 +614,11 @@ function DocumentosContent() {
                         }
                       }}
                     >
-                      <TableCell className="max-w-[210px]">
-                        <p className="truncate font-medium text-fg">{doc.name}</p>
-                        {doc.template?.name && (
+                      <TableCell className="max-w-[280px]">
+                        <p className="truncate font-medium text-fg" title={doc.name}>{doc.name}</p>
+                        {/* La plantilla sólo si dice algo distinto del nombre (antes, «Contrato de
+                            arrendamiento» dos veces seguidas). */}
+                        {doc.template?.name && doc.template.name !== doc.name && (
                           <p className="truncate text-caption text-fg-muted">{doc.template.name}</p>
                         )}
                       </TableCell>
@@ -652,25 +654,27 @@ function DocumentosContent() {
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
                       >
-                        <div className="flex items-center gap-1">
-                          <Button
+                        {/* Atajos de la fila en íconos (con su nombre al pasar): el cajón que abre la
+                            fila trae los mismos con texto. Así la tabla cabe y el nombre respira. */}
+                        <div className="flex items-center gap-0.5">
+                          <IconButton
                             variant="ghost"
                             size="sm"
-                            hideArrow
+                            icon={<Eye />}
+                            aria-label={t(k('verPdf'))}
+                            title={t(k('verPdf'))}
                             onClick={() => void verPdf(doc)}
                             data-testid="documento-ver"
-                          >
-                            {t(k('verPdf'))}
-                          </Button>
-                          <Button
+                          />
+                          <IconButton
                             variant="ghost"
                             size="sm"
-                            hideArrow
+                            icon={<DownloadSimple />}
+                            aria-label={t(k('descargar'))}
+                            title={t(k('descargar'))}
                             onClick={() => void descargarPdf(doc)}
                             data-testid="documento-descargar"
-                          >
-                            {t(k('descargar'))}
-                          </Button>
+                          />
                         </div>
                       </TableCell>
                     </TableRowAnimada>

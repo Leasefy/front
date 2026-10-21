@@ -95,6 +95,7 @@ import { ESPACIO_DE_LA_PLATA, decimalesEnPantalla, seMuestranLosCentavos } from 
 import { nombreDelMes } from '@/lib/recaudo/meses'
 import { CampoDeMes } from '@/components/ui/campo-de-mes'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const CANALES: { value: CanalDeCobranza; label: string }[] = [
   { value: 'CORREO', label: 'Correo' },
@@ -415,15 +416,12 @@ function PagosRecordatorios() {
   return (
     <CrossFade swapKey="condiciones">
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-2">
-        <Eyebrow>Cobranza</Eyebrow>
-        <h1 className="text-h2 text-fg">Recordatorios</h1>
-        <p className="max-w-2xl text-sm text-fg-muted">
-          Las condiciones con las que esta inmobiliaria cobra, y el disparo desde la cartera. Nada
-          sale solo: el recordatorio y los avisos los manda una persona, después de ver a cuántos le
-          va a llegar.
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo="Recordatorios"
+        descripcion="Las condiciones con las que esta inmobiliaria cobra, y el disparo desde la cartera. Nada sale solo: el recordatorio y los avisos los manda una persona, después de ver a cuántos le va a llegar."
+        data-testid="recordatorios-encabezado"
+      />
 
       {secuencia && !secuencia.disponible && (
         <Aviso tono="warning">{secuencia.motivo}</Aviso>

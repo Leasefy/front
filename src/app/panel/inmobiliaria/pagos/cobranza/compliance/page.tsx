@@ -31,6 +31,7 @@ import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { MonoLabel } from '@leasefy/cadence'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 function ComplianceOverviewContent() {
   const { t, locale } = useI18n()
@@ -117,7 +118,7 @@ function ComplianceOverviewContent() {
   if (!isLoading && data && !error && !hasAnyIssues) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="p-6 lg:p-8 space-y-6">
         <EmptyState
           icon={ShieldCheck}
           title={t('inmobiliaria.ai.cobranza.compliance.empty.title')}
@@ -131,20 +132,17 @@ function ComplianceOverviewContent() {
 
   return (
     <CrossFade swapKey="panel">
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-heading text-foreground">
-            {t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
-          </h1>
-          {lastUpdated && (
-            <p className="mt-1 text-xs text-muted-foreground tabular-nums font-mono">
-              {lastUpdated}
-            </p>
-          )}
-        </div>
-      </div>
+    <div className="p-6 lg:p-8 space-y-6">
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
+        junto={
+          lastUpdated ? (
+            <span className="text-caption font-mono tabular-nums text-fg-muted">{lastUpdated}</span>
+          ) : null
+        }
+        data-testid="cumplimiento-encabezado"
+      />
 
       {/* Page-level red banner — D-34-RES-A1 trigger remaining_days <= 15.
           Entra y sale con `Presence` (baja 8px desde arriba, como antes). */}

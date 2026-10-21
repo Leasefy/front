@@ -25,7 +25,7 @@
 
 import { useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
+import { Cifra, CrossFade, FranjaDeCifras, Stagger, StaggerItem } from '@leasefy/cadence'
 import { Warning, Download, GearSix, BellRinging, CalendarBlank } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -53,6 +53,8 @@ import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { sinDeudores } from '@/lib/cobranza/reporte-sin-deudores'
 import { textoDelAviso } from '@/lib/cobranza/aviso-del-reporte'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 
 /**
  * N-11 (QA-PAGOS-95, 05-10-2026): el reporte decía «PKR», «100.0%» y
@@ -203,51 +205,52 @@ function ReporteViewerContent() {
 
   return (
     <CrossFade swapKey="reporte">
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-heading text-foreground">
-            {t('inmobiliaria.ai.cobranza.reporte.pageTitle')}
-          </h1>
-          {data?.report_date && (
-            <p className="mt-1 text-caption font-mono tabular-nums text-muted-foreground">
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* GLOW UP 21-10: el encabezado común; el día del reporte junto al título
+          y la suscripción y los umbrales como acciones. */}
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.reporte.pageTitle')}
+        junto={
+          data?.report_date ? (
+            <span className="text-caption font-mono tabular-nums text-fg-muted">
               {diaDelReporte(data.report_date, locale)}
-              {data.computed_at && (
-                <span className="ml-2 text-muted-foreground/70">
-                  · {new Date(data.computed_at).toLocaleString(locale)}
-                </span>
-              )}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cobranza/reporte/suscripcion">
-              <BellRinging className="w-3.5 h-3.5" aria-hidden="true" />
-              {locale.startsWith('es') ? 'Suscripción' : 'Subscription'}
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cobranza/reporte/thresholds">
-              <GearSix className="w-3.5 h-3.5" aria-hidden="true" />
-              {locale.startsWith('es') ? 'Umbrales' : 'Thresholds'}
-            </Link>
-          </Button>
-        </div>
-      </div>
+              {data.computed_at ? ` · ${new Date(data.computed_at).toLocaleString(locale)}` : ''}
+            </span>
+          ) : null
+        }
+        acciones={
+          <>
+            <Button asChild variant="outline" size="sm" hideArrow>
+              <Link href="/panel/inmobiliaria/pagos/cobranza/reporte/suscripcion">
+                <BellRinging className="w-3.5 h-3.5" aria-hidden="true" />
+                {locale.startsWith('es') ? 'Suscripción' : 'Subscription'}
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" hideArrow>
+              <Link href="/panel/inmobiliaria/pagos/cobranza/reporte/thresholds">
+                <GearSix className="w-3.5 h-3.5" aria-hidden="true" />
+                {locale.startsWith('es') ? 'Umbrales' : 'Thresholds'}
+              </Link>
+            </Button>
+          </>
+        }
+        data-testid="reporte-encabezado"
+      />
 
-      {/* Error */}
-      {error && !data && (
-        <div className="rounded-lg bg-danger-soft text-danger">
-          Error: {error}
-        </div>
-      )}
+      {/* El error crudo del hook («Error: 500») pasa al cartel de siempre. */}
+      {error && !data ? (
+        <FalloDeCarga
+          error={typeof error === 'string' ? new Error(error) : error}
+          queEs="el reporte del día"
+          onReintentar={() => refetch()}
+        />
+      ) : null}
 
       {data && (
         <>
           {/* 1. KPI tile row */}
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <FranjaDeCifras aria-label={t('inmobiliaria.ai.cobranza.reporte.pageTitle')} data-testid="reporte-cifras">
             {/* MORI-22: era «% recuperado» y medía las PROMESAS cumplidas
                 (lo mismo que su umbral); sin promesas vencidas, sin cifra. */}
             <KpiTile
@@ -274,7 +277,7 @@ function ReporteViewerContent() {
               value={callsOutside != null ? String(callsOutside) : '—'}
               alert={callsOutside != null && callsOutside >= callsOutsideCritical}
             />
-          </section>
+          </FranjaDeCifras>
 
           {/* 2. Alert banners */}
           {/* Cada aviso baja 4px a su lugar, escalonado (techo 320 ms). La
@@ -477,6 +480,11 @@ function ReporteViewerContent() {
   )
 }
 
+/**
+ * Una cifra del reporte, dentro de la franja (GLOW UP 21-10). El punto dice
+ * cómo va: rojo si cruzó su umbral, verde si no; sin cifra («—») no es una
+ * buena noticia y va sin punto.
+ */
 function KpiTile({
   label,
   value,
@@ -489,34 +497,14 @@ function KpiTile({
   /** De dónde sale la cifra, o por qué no hay. */
   pista?: string
 }) {
-  // Sin cifra («—») no es una buena noticia: va en gris, no en verde.
   const sinCifra = value === '—'
   return (
-    <div
-      className={[
-        'rounded-lg border bg-card p-4',
-        alert
-          ? 'border-danger/30'
-          : 'border-border',
-      ].join(' ')}
-    >
-      <MonoLabel>
-        {label}
-      </MonoLabel>
-      <p
-        className={[
-          'mt-2 text-3xl font-mono tabular-nums',
-          alert
-            ? 'text-danger font-bold'
-            : sinCifra
-              ? 'text-muted-foreground'
-              : 'text-success',
-        ].join(' ')}
-      >
-        {value}
-      </p>
-      {pista && <p className="mt-1 text-caption text-muted-foreground">{pista}</p>}
-    </div>
+    <Cifra
+      etiqueta={label}
+      valor={value}
+      tono={alert ? 'peligro' : sinCifra ? undefined : 'exito'}
+      detalle={pista}
+    />
   )
 }
 

@@ -559,7 +559,7 @@ function TemplateEditorContent({
       </div>
 
       {/* Page body */}
-      <div className="p-4 md:p-6 space-y-6 flex-1">
+      <div className="p-6 lg:p-8 space-y-6 flex-1">
         {/* Unknown variable warning (T-36-10-01 UI layer) */}
         <Presence show={unknownVars.length > 0} direction="none" initial={false}>
           <Alert

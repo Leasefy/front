@@ -215,7 +215,7 @@ function AuditContent() {
 
   return (
     <CrossFade swapKey="bitacora">
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <EncabezadoDePantalla
           seccion="Cobranza"

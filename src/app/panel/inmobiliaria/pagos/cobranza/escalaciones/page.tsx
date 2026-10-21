@@ -225,7 +225,7 @@ function EscalacionesContent() {
 
   return (
     <CrossFade swapKey="tablero">
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* ARIA live region — announces new open escalations to screen readers */}
       <div
         role="status"

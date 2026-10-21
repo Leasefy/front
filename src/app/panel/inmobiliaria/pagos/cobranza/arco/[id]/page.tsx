@@ -915,7 +915,7 @@ function DetalleArco(props: ArcoDetailPageProps) {
   if (error) {
     return (
       <CrossFade swapKey="fallo">
-      <div className="p-4 md:p-6">
+      <div className="p-6 lg:p-8">
         <Alert variant="destructive">
           <AlertTitle>{t('common.error')}</AlertTitle>
           <AlertDescription className="flex items-center justify-between gap-4">
@@ -944,7 +944,7 @@ function DetalleArco(props: ArcoDetailPageProps) {
 
   return (
     <CrossFade swapKey="solicitud">
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Volver: primitivo del DS (`backButtonVariants` de Cadence), no un
           Link con una flecha escrita a mano. */}
       <BackButton

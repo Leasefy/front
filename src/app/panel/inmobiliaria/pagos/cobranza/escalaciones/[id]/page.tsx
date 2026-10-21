@@ -118,7 +118,7 @@ function EscalationDetailContent() {
   if (!data) {
     return (
       <CrossFade swapKey="no-existe">
-      <div className="p-4 md:p-6">
+      <div className="p-6 lg:p-8">
         <Button
           variant="link"
           size="sm"
@@ -145,7 +145,7 @@ function EscalationDetailContent() {
 
   return (
     <CrossFade swapKey="escalacion">
-    <div className="p-4 md:p-6 space-y-6 max-w-4xl">
+    <div className="p-6 lg:p-8 space-y-6 max-w-4xl">
       {/* Breadcrumb */}
       <Link
         href="/panel/inmobiliaria/pagos/cobranza/escalaciones"

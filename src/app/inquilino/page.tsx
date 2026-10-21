@@ -20,6 +20,9 @@ import { useLeases } from '@/lib/hooks/useLeases';
 import { useContratosDelPortal } from '@/lib/hooks/use-contratos-del-portal';
 import { useEstadoDeCuentaDelPortalConEstado } from '@/lib/hooks/useResumenDelPortal';
 import { hoyLocal } from '@/components/estado-de-cuenta/filas';
+import { queTeToca } from '@/lib/inquilino/que-te-toca';
+import { vistaDeTuArriendo } from '@/lib/inquilino/tu-arriendo';
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 import { useTenantCases } from '@/lib/hooks/use-tenant-cases';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
@@ -221,6 +224,15 @@ export default function InquilinoPage() {
    * siguen en el menú. Sus postulaciones en curso, si tiene, sí se dicen.
    */
   const esArrendatario = cuantosArriendos > 0;
+  const teToca = queTeToca({
+    arrienda: esArrendatario,
+    vista: esArrendatario && estadoDelPortal.doc ? vistaDeTuArriendo(estadoDelPortal.doc, hoyLocal(), {}) : null,
+    aprobacionVigente: Boolean(aprobacionVigente),
+    postulacionesEnCurso: activeApplications.length,
+    es: locale === 'es',
+    plata: (n) => i18nFormatCurrency(n),
+    dia: (iso) => fechaLarga(iso),
+  });
   const titulosDeLosInmuebles = useMemo(() => {
     const t: Record<string, string> = {};
     for (const l of activeLeases) if (l.contractId && l.propertyTitle) t[l.contractId] = l.propertyTitle;
@@ -296,6 +308,23 @@ export default function InquilinoPage() {
           className="mb-8"
           seccion={greeting}
           titulo={t('dashboard.hello', { name: firstName })}
+          // «Te toca: …» (Nico eligió «3 secciones», 21-10): lo único urgente, en una línea.
+          descripcion={
+            teToca ? (
+              <span data-testid="te-toca">
+                {teToca.texto}
+                {teToca.href ? (
+                  <>
+                    {' '}
+                    <Link href={teToca.href} className="font-medium text-primary underline-offset-4 hover:underline">
+                      {locale === 'es' ? 'Ir' : 'Go'}
+                      <ArrowRight className="ml-1 inline h-3.5 w-3.5 align-[-2px]" aria-hidden="true" />
+                    </Link>
+                  </>
+                ) : null}
+              </span>
+            ) : undefined
+          }
         />
         {/* Acá iba un "¡Tu perfil está listo!" que repetía, palabra por
             palabra, la tarjeta que viene justo debajo. Dos felicitaciones

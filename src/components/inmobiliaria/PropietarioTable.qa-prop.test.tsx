@@ -124,11 +124,12 @@ describe('P-09 — `aria-sort` en las cabeceras ordenables', () => {
 });
 
 describe('P-08 — número gramatical', () => {
-  it('«(1 arrendada)» en singular y «(2 arrendadas)» en plural', () => {
+  it('«1 arrendada» en singular y «2 arrendadas» en plural (debajo de la cifra, glow up 21-10)', () => {
     render([PAULA, JOHN]);
     const texto = container.textContent ?? '';
-    expect(texto).toContain('(1 inmobiliaria.propietario.table.rentedOne)');
-    expect(texto).toContain('(2 inmobiliaria.propietario.table.rented)');
+    expect(texto).toContain('1 inmobiliaria.propietario.table.rentedOne');
+    expect(texto).toContain('2 inmobiliaria.propietario.table.rented');
+    expect(texto).not.toContain('1 inmobiliaria.propietario.table.rented ');
   });
 });
 

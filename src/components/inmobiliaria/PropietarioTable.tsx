@@ -469,11 +469,12 @@ export function PropietarioTable({
                   {/* Properties */}
                   <TableCell className="p-4">
                     <div>
-                      <span className="font-semibold text-foreground tabular-nums">
+                      {/* La cifra arriba en mono; cuántas están arrendadas, debajo (antes se partía «0 (0 / arrendadas)»). */}
+                      <span className="font-mono text-foreground tabular-nums">
                         {propietario.propertyCount}
                       </span>
-                      <span className="text-muted-foreground ml-1">
-                        ({arrendadas(t, propietario.activeLeases)})
+                      <span className="block whitespace-nowrap text-xs text-muted-foreground">
+                        {arrendadas(t, propietario.activeLeases)}
                       </span>
                       {/* El minoritario existe: sus copropiedades van aparte
                           del conteo de mandatos donde es principal. */}

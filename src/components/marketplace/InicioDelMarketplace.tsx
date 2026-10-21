@@ -132,8 +132,16 @@ export function InicioDelMarketplace() {
                 {...entrada(2)}
                 className="mt-4 max-w-[560px] text-[16px] leading-[1.5] text-fg-muted sm:text-[17px] [text-wrap:balance]"
               >
-                Cuéntalo como se lo dirías a alguien. Ori busca entre{' '}
-                <span className="font-mono tabular-nums text-fg">{isLoading ? '…' : total}</span> inmuebles
+                {/* GLOW UP (21-10): con cero publicados no se presume «0 inmuebles»: se dice qué hace Ori. */}
+                Cuéntalo como se lo dirías a alguien.{' '}
+                {!isLoading && total === 0 ? (
+                  'Ori busca entre lo publicado'
+                ) : (
+                  <>
+                    Ori busca entre{' '}
+                    <span className="font-mono tabular-nums text-fg">{isLoading ? '…' : total}</span> inmuebles
+                  </>
+                )}
                 {cuantasPublican > 0 && (
                   <>
                     {' '}

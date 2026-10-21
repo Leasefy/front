@@ -60,9 +60,30 @@ let mockMetadata: {
   tipoInmueble: string
   createdAt: string
   reQuoteOf: string | null
+  seguimiento?: Record<string, unknown>
 } | null = null
+const mockActualizarSeguimiento = vi.fn()
 vi.mock('@/lib/hooks/cotizador/use-quote-metadata', () => ({
-  useQuoteMetadata: () => ({ data: mockMetadata, isLoading: false, error: null }),
+  useQuoteMetadata: () => ({ data: mockMetadata, isLoading: false, error: null, actualizarSeguimiento: mockActualizarSeguimiento }),
+}))
+
+// COTIZ-17: el PUT del seguimiento, la tarea del asesor y el diálogo de la póliza.
+const mockGuardarSeguimiento = vi.fn()
+vi.mock('@/lib/cotizador/seguimiento', async (original) => ({
+  ...(await original<object>()),
+  guardarSeguimiento: (...a: unknown[]) => mockGuardarSeguimiento(...a),
+}))
+vi.mock('@/components/inmobiliaria/agenda/NuevaTareaDrawer', () => ({
+  NuevaTareaDrawer: (p: { abierto: boolean; inicial?: { titulo?: string; nota?: string } }) =>
+    p.abierto ? React.createElement('div', { 'data-testid': 'tarea-del-asesor' }, `${p.inicial?.titulo} | ${p.inicial?.nota}`) : null,
+}))
+vi.mock('./RegistrarPolizaDialog', async (original) => ({
+  ...(await original<object>()),
+  RegistrarPolizaDialog: (p: { abierto: boolean; aseguradora: string | null }) =>
+    p.abierto ? React.createElement('div', { 'data-testid': 'poliza-abierta' }, p.aseguradora) : null,
+}))
+vi.mock('@/lib/hooks/ai/use-work-item-detail', () => ({
+  useWorkItemDetail: () => ({ data: null, refetch: vi.fn() }),
 }))
 
 vi.mock('@/lib/i18n', () => ({
@@ -93,12 +114,14 @@ let lastModalProps: {
   open: boolean
   onQuote404: () => void
   onClose: () => void
+  empezarCon?: { variable: string; valor: number } | null
 } | null = null
 vi.mock('@/components/cotizador/CounterfactualModal', () => ({
   CounterfactualModal: (props: {
     open: boolean
     onQuote404: () => void
     onClose: () => void
+    empezarCon?: { variable: string; valor: number } | null
   }) => {
     lastModalProps = props
     return props.open
@@ -148,6 +171,8 @@ beforeEach(() => {
   mockCarriers = []
   mockMetadata = null
   lastModalProps = null
+  mockGuardarSeguimiento.mockReset()
+  mockActualizarSeguimiento.mockReset()
 })
 
 afterEach(() => {
@@ -276,5 +301,69 @@ describe('QuoteDetailPage — Phase 33 header actions', () => {
     })
     expect(lastModalProps?.open).toBe(false)
     expect(mockToastError).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('COTIZ-17 (QA 19-10-2026): ningún botón dice «Próximamente»', () => {
+  const META = {
+    cedulaHashPrefix8: 'abcd1234',
+    canonCop: 2_350_000,
+    ciudad: 'Medellín',
+    tipoInmueble: 'apartamento',
+    createdAt: '2026-10-19T20:00:00Z',
+    reQuoteOf: null,
+  }
+  const SEGUIMIENTO_VACIO = {
+    disponible: true, nombreCandidato: 'Ana Ruiz', opcionElegida: null, opcionElegidaPor: null, opcionElegidaAt: null,
+    polizaNumero: null, polizaRegistradaPor: null, polizaRegistradaAt: null,
+  }
+  beforeEach(() => {
+    mockCarriers = [
+      { carrier: 'mapfre', status: 'approved', isStub: true, condiciones: [], motivoRechazo: null, primaMensualCop: 138_700 },
+      { carrier: 'sura', status: 'rejected', isStub: true, condiciones: [], motivoRechazo: 'Ingresos', primaMensualCop: null },
+    ]
+  })
+  const boton = (accion: string) => container.querySelector(`[data-action="${accion}"]`) as HTMLButtonElement
+
+  it('«Avanzar con la recomendada» guarda la recomendada y abre los pasos', async () => {
+    mockMetadata = { ...META, seguimiento: SEGUIMIENTO_VACIO }
+    mockGuardarSeguimiento.mockResolvedValue({ ...SEGUIMIENTO_VACIO, opcionElegida: 'mapfre' })
+    mount()
+    await act(async () => boton('avanzar').click())
+    expect(mockGuardarSeguimiento).toHaveBeenCalledWith('agency-test', TEST_QUOTE_ID, { opcionElegida: 'mapfre' })
+    expect(mockActualizarSeguimiento).toHaveBeenCalledWith(expect.objectContaining({ opcionElegida: 'mapfre' }))
+    expect(container.textContent).not.toMatch(/próximamente/i)
+  })
+
+  it('sin la actualización de la base: lo dice y no guarda', async () => {
+    mockMetadata = { ...META, seguimiento: { ...SEGUIMIENTO_VACIO, disponible: false } }
+    mount()
+    await act(async () => boton('avanzar').click())
+    expect(mockGuardarSeguimiento).not.toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="cotizacion-aviso"]')?.textContent).toMatch(/falta aplicar una actualización de la base de datos/)
+  })
+
+  it('«Enviar a contrato» abre Nuevo contrato con la cotización y la aseguradora', () => {
+    mockMetadata = { ...META, seguimiento: SEGUIMIENTO_VACIO }
+    mount()
+    act(() => boton('contrato').click())
+    expect(mockRouterPush).toHaveBeenCalledWith(`/panel/inmobiliaria/contratos/nuevo?cotizacion=${TEST_QUOTE_ID}&aseguradora=mapfre`)
+  })
+
+  it('«Solicitar codeudor» abre «¿Qué pasaría si…?» con 1 codeudor', () => {
+    mockMetadata = META
+    mount()
+    act(() => boton('codeudor').click())
+    expect(lastModalProps?.open).toBe(true)
+    expect(lastModalProps?.empezarCon).toEqual({ variable: 'codeudores', valor: 1 })
+  })
+
+  it('«Compartir» copia el enlace del caso', async () => {
+    mockMetadata = META
+    const writeText = vi.fn(async () => undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    mount()
+    await act(async () => boton('compartir').click())
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/panel/inmobiliaria/postulaciones/asegurabilidad/${TEST_QUOTE_ID}`)
   })
 })

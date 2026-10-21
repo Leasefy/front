@@ -1814,7 +1814,9 @@
         "closedThisMonth": "{{count}} closed this month",
         "closedThisMonthLabel": "Closed this month",
         "avgDaysToClose": "Avg days to close",
-        "days": "{{count}} days"
+        "days": "{{count}} days",
+        "activeAgentsUno": "1 active agent",
+        "closedThisMonthUno": "1 closed this month"
       },
       "quickActions": {
         "title": "Quick Actions",
@@ -1838,7 +1840,9 @@
         "carteraDelMes": "{{count}} installments this month past the grace period, for {{amount}}",
         "carteraDelMesDetalle": "Rent past the contract's grace period that has not come in yet. From the Portfolio you record the payment or send the reminder.",
         "verCartera": "View portfolio",
-        "verRecaudo": "View collections"
+        "verRecaudo": "View collections",
+        "pendingMaintenanceUno": "1 open maintenance request",
+        "carteraDelMesUna": "1 installment of the month overdue for {{amount}}"
       },
       "financial": {
         "title": "Financial Summary",
@@ -4699,7 +4703,9 @@
         },
         "chart": {
           "title": "Top {{n}} by net to owner",
-          "subtitle": "What each property leaves after commission, withholdings and expenses."
+          "titleEmpty": "Net to owner by property",
+          "subtitle": "What each property leaves after commission, withholdings and expenses.",
+          "empty": "No property left a net amount to its owner in this period."
         },
         "table": {
           "title": "Detail by property",
@@ -6439,11 +6445,10 @@
           "postSeleccion": {
             "titulo": "What do you want to do now?",
             "radicar": "File the policy",
+            "cambiarPoliza": "Change the policy number",
             "expediente": "Generate case file",
             "notificar": "Notify the advisor",
-            "propietario": "Share with the owner",
             "contrato": "Move to contract",
-            "guardar": "Save the chosen option",
             "sinOpcion": "Available once there is an insurable option."
           }
         },
@@ -6904,6 +6909,8 @@
           "porQue": "Why",
           "siguienteAccion": "Next best action",
           "avanzar": "Proceed with recommended",
+          "elegida": "Chosen option",
+          "verPasos": "See the next steps",
           "recotizar": "Re-quote with changes"
         },
         "comparar": {
@@ -8588,7 +8595,7 @@
             },
             "c3": {
               "titulo": "Flags vacancy",
-              "texto": "When a property has been vacant for over a month, it prepares the question to the owner about the rent. The owner sets the number."
+              "texto": "When a property has been vacant for over a month, it prepares the question to the owner about the rent: in their portal or, if they have no account, as a task to call them. If they have several vacant properties, one question covers them all. The owner sets the number."
             }
           },
           "necesita": {
@@ -8598,7 +8605,7 @@
           "modo": {
             "sombra": "It doesn't write to the owner: it suggests when to ask about the rent and, if you want, it goes out with one click.",
             "copiloto": "It leaves in your Inbox, one click away, the question to the owner of a property vacant for over a month.",
-            "autonomo": "It asks the owner on its own, in their portal, whether they want to review the rent. Changing the rent and requesting an appraisal always need your click."
+            "autonomo": "It asks the owner on its own, in their portal, whether they want to review the rent; if they have no account, it leaves the agent a task to call them; if they have several vacant properties, it asks only once. Changing the rent and requesting an appraisal always need your click."
           },
           "empezar": "See my appraisals"
         },
@@ -9115,10 +9122,10 @@
             "salaTitulo": "Appraisals",
             "salaDesc": "A reference value estimate, fully remote and AI-assisted. No physical visit: the certificate is generated from market data and signed by a Leasefy reviewer.",
             "colaTitle": "My appraisal requests",
-            "colaDesc": "Every appraisal you requested, end to end: request → market-data estimate → review → signed certificate. You always see the up-to-date status; the review and signature are handled by a Leasefy reviewer. No physical visit is performed.",
+            "colaDesc": "Every appraisal you requested, step by step: you request it, a Leasefy reviewer reviews it, signs it and it gets delivered. You see when you requested it, when it was signed and the certificate as soon as it is ready. No physical visit is performed.",
             "colaKpiLabel": "Active",
             "colaEmptyTitle": "No requests yet",
-            "colaEmptyHint": "Request your first appraisal: mint the link, the estimate is generated and you track every step here until the signed certificate.",
+            "colaEmptyHint": "Request your first appraisal from the Summary: you generate the link, the estimate is made and you follow every step here until the signed certificate.",
             "casoColaLabel": "My requests",
             "solicitarTitle": "Request an appraisal",
             "solicitarCta": "Request appraisal",
@@ -9184,7 +9191,19 @@
                 "tuParte": "look for it in the agency's email and share it with your client."
               }
             },
-            "firmaNota": "The review and the certificate signature are handled by a Leasefy reviewer. No physical visit to the property is performed."
+            "firmaNota": "The review and the certificate signature are handled by a Leasefy reviewer. No physical visit to the property is performed.",
+            "colaSinServicio": "Your requests cannot be shown: this environment does not have the appraisal service connected. Write to your Leasefy contact to turn it on.",
+            "colaPasosAria": "Where it stands: {{paso}}",
+            "colaPedidoEl": "Requested on {{fecha}}",
+            "colaFirmadoEl": "signed on {{fecha}}",
+            "colaVerEstado": "See where it stands",
+            "colaPasos": {
+              "solicitado": "Requested",
+              "enRevision": "In review",
+              "firmado": "Signed",
+              "entregado": "Delivered",
+              "rechazado": "Rejected"
+            }
           },
           "cobranza": {
             "salaDesc": "The agent works standard delinquency for you — calls, WhatsApp and letters within the law — and escalates only the critical cases.",
@@ -10088,7 +10107,7 @@
       "m2BannerTitle": "Reconciliation live — human review and statement ingestion connected",
       "m2BannerDesc": "Upload the bank statement and the agent suggests matches against collections, payouts and commissions. Matching runs in the background in shadow mode: it only suggests, nothing is auto-confirmed.",
       "uploadTitle": "Upload bank source",
-      "uploadHint": "Pick the bank and upload the statement CSV. Reconciliation runs in the background.",
+      "uploadHint": "Pick the bank and upload the statement as you got it (Excel or CSV). Reconciliation runs in the background.",
       "uploadBankLabel": "Bank",
       "bankBancolombia": "Bancolombia",
       "bankDavivienda": "Davivienda",

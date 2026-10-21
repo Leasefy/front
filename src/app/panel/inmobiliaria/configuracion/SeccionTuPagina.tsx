@@ -26,6 +26,7 @@ import { normalizarNombreCorto, problemaDelNombreCorto } from '@/lib/marketplace
 import { PORTADAS_DE_LEASEFY, esPortadaDeLeasefy, portadaDe } from '@/lib/marketplace/portadas';
 import { LogoDeLaInmobiliaria } from '@/components/marketplace/inmobiliaria/piezas';
 import { EsqueletoDeSeccion, VacioDeSeccion } from './piezas';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 
 const REDES = [
   { clave: 'instagram', nombre: 'Instagram', ejemplo: '@tuinmobiliaria' },
@@ -97,14 +98,14 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
   const problema = slug ? problemaDelNombreCorto(normalizado) : 'forma';
   const direccion = `leasefy.co/i/${normalizado || agency.slug || agency.id}`;
 
-  const guardar = async () => {
+  const guardar = async (): Promise<boolean> => {
     if (problema) {
       setErrorDelNombre(
         problema === 'reservado'
           ? 'Ese nombre corto está reservado. Prueba con el nombre de tu inmobiliaria.'
           : 'Va en minúsculas, sin tildes ni espacios (usa guiones), entre 3 y 50 letras.',
       );
-      return;
+      return false;
     }
     setGuardando(true);
     setErrorDelNombre(null);
@@ -114,16 +115,42 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
         lema: lema.trim() || null,
         branding: { socials: { ...(agency.branding?.socials ?? {}), ...redes } },
       } as never);
-      toast.success('Tu página quedó guardada.');
+      if (!conBarra) toast.success('Tu página quedó guardada.');
       alGuardar();
+      return true;
     } catch (e) {
       const texto = mensajeParaLaPersona(e, { porDefecto: 'No pudimos guardar tu página.', accion: 'guardar tu página' });
       if (/nombre corto/i.test(texto)) setErrorDelNombre(texto);
       else toast.error(texto);
+      return false;
     } finally {
       setGuardando(false);
     }
   };
+
+  // La barra de guardado de Configuración (Nico, 20-10-2026). La portada y el
+  // logo se guardan al subirlos: un archivo ya subido no se «descarta».
+  const redesGuardadas = (clave: string) => agency.branding?.socials?.[clave] ?? '';
+  const cambios =
+    (slug.trim() !== (agency.slug ?? '') ? 1 : 0) +
+    (lema.trim() !== (agency.lema ?? '').trim() ? 1 : 0) +
+    (Object.keys(redes) as Array<keyof Redes>).filter((k) => redes[k].trim() !== redesGuardadas(k)).length;
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'tu-pagina',
+    cambios,
+    guardar,
+    descartar: () => {
+      setSlug(agency.slug ?? '');
+      setLema(agency.lema ?? '');
+      setRedes({
+        instagram: redesGuardadas('instagram'),
+        tiktok: redesGuardadas('tiktok'),
+        youtube: redesGuardadas('youtube'),
+        facebook: redesGuardadas('facebook'),
+      });
+      setErrorDelNombre(null);
+    },
+  });
 
   const subirPortada = async (f: File | undefined) => {
     if (!f) return;
@@ -386,10 +413,10 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className={conBarra ? 'hidden' : 'flex justify-end'}>
         <button
           type="button"
-          onClick={guardar}
+          onClick={() => void guardar()}
           disabled={guardando}
           className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-[14px] font-medium text-primary-fg hover:bg-primary-600 disabled:opacity-60 active:scale-[0.97]"
         >

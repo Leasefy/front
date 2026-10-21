@@ -5,61 +5,61 @@
  *
  * Sección "¿Qué quieres hacer ahora?" que se monta en el rail de recomendación.
  * Disclosure simple (sin librería de modal externa): un trigger que despliega la
- * lista de siguientes pasos sobre la opción elegida:
- *   Radicar · Generar expediente · Notificar asesor · Compartir con propietario ·
- *   Pasar a contrato · Guardar opción elegida.
+ * lista de siguientes pasos sobre la opción elegida.
  *
- * Cada ítem → onAction(code). Las acciones con destino natural las resuelve el
- * padre (navegación); el resto quedan etiquetadas "Próximamente" por el padre
- * (patrón de honestidad — no se inventan endpoints).
+ * 🔴 COTIZ-17 (19-10-2026, Nico): cada paso hace lo que dice —
+ *   Radicar la póliza (el número a mano) · Generar expediente (el PDF) ·
+ *   Notificar al asesor (una tarea en su Agenda) · Pasar a contrato (Nuevo
+ *   contrato prellenado). «Compartir con el propietario» se quitó (la
+ *   cotización no sabe de qué inmueble es y la autorización del candidato es
+ *   para esta consulta) y «Guardar la opción elegida» es «Avanzar con la
+ *   recomendada». Lo abre también «Avanzar» (controlado por el padre).
  *
- * UX-only.
  */
 
 import { useState } from 'react'
 import { CaretDown, ListChecks } from '@phosphor-icons/react'
 
+import { Collapse } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { RailAction } from './RailAction'
 
 const NS = 'inmobiliaria.ai.cotizador'
 
 /** Códigos de paso post-selección (catálogo cerrado). */
-export type PostSeleccionCode =
-  | 'radicar'
-  | 'expediente'
-  | 'notificar'
-  | 'propietario'
-  | 'contrato'
-  | 'guardar'
+export type PostSeleccionCode = 'radicar' | 'expediente' | 'notificar' | 'contrato'
 
 const STEP_FALLBACK_ES: Record<PostSeleccionCode, string> = {
   radicar: 'Radicar la póliza',
   expediente: 'Generar expediente',
   notificar: 'Notificar al asesor',
-  propietario: 'Compartir con el propietario',
   contrato: 'Pasar a contrato',
-  guardar: 'Guardar la opción elegida',
 }
 
-const STEP_ORDER: PostSeleccionCode[] = [
-  'radicar',
-  'expediente',
-  'notificar',
-  'propietario',
-  'contrato',
-  'guardar',
-]
+const STEP_ORDER: PostSeleccionCode[] = ['radicar', 'expediente', 'notificar', 'contrato']
 
 interface PostSeleccionSheetProps {
   onAction: (code: PostSeleccionCode) => void
   /** Inhabilita los pasos cuando aún no hay una opción asegurable. */
   disabled?: boolean
+  /** Abierto desde afuera («Avanzar con la recomendada» lo abre). Sin esto, lleva su estado. */
+  abierto?: boolean
+  onAbiertoChange?: (abierto: boolean) => void
+  /** Lo que ya quedó: «Elegiste Mapfre» / «Póliza N.º 123». */
+  resumen?: string | null
+  /** La póliza ya registrada: el paso dice «Cambiar la póliza». */
+  conPoliza?: boolean
 }
 
-export function PostSeleccionSheet({ onAction, disabled = false }: PostSeleccionSheetProps) {
+export function PostSeleccionSheet({ onAction, disabled = false, abierto, onAbiertoChange, resumen = null, conPoliza = false }: PostSeleccionSheetProps) {
   const { t } = useI18n()
-  const [open, setOpen] = useState(false)
+  const [abiertoPropio, setAbiertoPropio] = useState(false)
+  const open = abierto ?? abiertoPropio
+  const setOpen = (v: boolean | ((x: boolean) => boolean)) => {
+    const siguiente = typeof v === 'function' ? v(open) : v
+    if (onAbiertoChange) onAbiertoChange(siguiente)
+    else setAbiertoPropio(siguiente)
+  }
 
   /** i18n con fallback — nunca muestra la clave cruda. */
   const tf = (key: string, fallback: string): string => {
@@ -94,12 +94,22 @@ export function PostSeleccionSheet({ onAction, disabled = false }: PostSeleccion
         />
       </button>
 
-      {open && (
-        <div className="mt-3 space-y-2">
+      {/* Se abre y se cierra con el movimiento de Cadence. */}
+      <Collapse open={open}>
+        <div className="mt-3 space-y-2" data-testid="post-seleccion-pasos">
+          {resumen && (
+            <p className="text-caption text-fg-muted" data-testid="post-seleccion-resumen">
+              {resumen}
+            </p>
+          )}
           {STEP_ORDER.map((code) => (
             <RailAction
               key={code}
-              label={tf(`${NS}.detail.postSeleccion.${code}`, STEP_FALLBACK_ES[code])}
+              label={
+                code === 'radicar' && conPoliza
+                  ? tf(`${NS}.detail.postSeleccion.cambiarPoliza`, 'Cambiar el número de la póliza')
+                  : tf(`${NS}.detail.postSeleccion.${code}`, STEP_FALLBACK_ES[code])
+              }
               disabled={disabled}
               disabledTooltip={tf(
                 `${NS}.detail.postSeleccion.sinOpcion`,
@@ -110,7 +120,7 @@ export function PostSeleccionSheet({ onAction, disabled = false }: PostSeleccion
             />
           ))}
         </div>
-      )}
+      </Collapse>
     </section>
   )
 }

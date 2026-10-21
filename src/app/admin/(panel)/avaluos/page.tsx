@@ -12,16 +12,17 @@ import {
   type PendingReviewItem,
 } from '@/lib/admin/avaluos'
 import { AvaluoRegistros } from './AvaluoRegistros'
+import { Card, Eyebrow, MonoLabel } from '@leasefy/cadence'
 
 // Left-border urgency by confidence: low confidence needs the most eyes.
 function confianzaBorder(item: PendingReviewItem): string {
   switch (item.confianza?.nivel) {
     case 'baja':
-      return 'border-l-bad'
+      return ''
     case 'media':
-      return 'border-l-warn'
+      return ''
     default:
-      return 'border-l-brand'
+      return ''
   }
 }
 
@@ -36,7 +37,7 @@ function AvaluoIdentity({ item }: { item: PendingReviewItem }) {
 
   if (!ownerName && !agencyName) {
     return (
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-dim mb-1">
+      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-1">
         sin identificar
       </div>
     )
@@ -44,11 +45,11 @@ function AvaluoIdentity({ item }: { item: PendingReviewItem }) {
 
   return (
     <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
+      <MonoLabel>
         {agencyName ? 'inmobiliaria' : 'propietario'}
-      </span>
+      </MonoLabel>
       {agencyName && <span className="text-sm font-medium text-fg">{agencyName}</span>}
-      {agencyName && ownerName && <span className="text-fg-dim">·</span>}
+      {agencyName && ownerName && <span className="text-fg-subtle">·</span>}
       {ownerName && (
         <span className={agencyName ? 'text-sm text-fg-muted' : 'text-sm font-medium text-fg'}>
           {ownerName}
@@ -71,7 +72,7 @@ function AvaluoCard({ item }: { item: PendingReviewItem }) {
       tabIndex={0}
       onClick={() => router.push(`/admin/avaluos/${item.id}`)}
       onKeyDown={(e) => e.key === 'Enter' && router.push(`/admin/avaluos/${item.id}`)}
-      className={`card border-l-4 ${confianzaBorder(item)} p-4 flex items-start gap-4 hover:bg-bg-hover transition-colors cursor-pointer`}
+      className={`card border-l-4 ${confianzaBorder(item)} p-4 flex items-start gap-4 hover:bg-surface-hover transition-colors cursor-pointer`}
     >
       <div className="flex-1 min-w-0">
         <AvaluoIdentity item={item} />
@@ -82,7 +83,7 @@ function AvaluoCard({ item }: { item: PendingReviewItem }) {
             </Pill>
           )}
           <span className="font-medium text-fg tabular-nums">{fmtCOP(item.valueCop)}</span>
-          {band && <span className="text-fg-subtle text-xs font-mono">{band}</span>}
+          {band && <span className="text-fg-subtle text-caption font-mono">{band}</span>}
           {item.canonLey820?.capped && (
             <Pill tone="warn">Ley 820 · tope aplicado</Pill>
           )}
@@ -96,7 +97,7 @@ function AvaluoCard({ item }: { item: PendingReviewItem }) {
           <span>{item.method || '—'}</span>
           <span>{item.comps.length} comps</span>
           <span>{item.adjustments.length} ajustes</span>
-          <span className="text-fg-dim normal-case tracking-normal">{item.slug}</span>
+          <span className="text-fg-subtle normal-case tracking-normal">{item.slug}</span>
         </div>
       </div>
       <div className="text-fg-subtle">→</div>
@@ -121,26 +122,26 @@ export default function AvaluosPage() {
   const items = data?.items ?? []
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         label="avalúos"
         title="Firma de certificados"
         description="Avalúos con propuesta de valor lista, pendientes de revisión y firma del certificado."
         right={
-          <div className="card px-4 py-3 text-center">
+          <Card className="px-4 py-3 text-center">
             <div className="text-2xl font-semibold text-fg tabular-nums">
               {isLoading ? '—' : items.length}
             </div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
+            <MonoLabel className="block">
               por firmar
-            </div>
-          </div>
+            </MonoLabel>
+          </Card>
         }
       />
 
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+      <MonoLabel className="block mb-3">
         cola · más recientes primero
-      </div>
+      </MonoLabel>
 
       {isLoading ? (
         <LoadingBlock />
@@ -159,8 +160,8 @@ export default function AvaluosPage() {
       {/* Registros por estado — the full certificate history, filterable by
           lifecycle state (borrador · en revisión · firmado · rechazado ·
           entregado). Independent of the "por firmar" queue above. */}
-      <section className="mt-10 pt-8 border-t border-bg-border">
-        <div className="section-label mb-2">registros</div>
+      <section className="mt-10 pt-8 border-t border-border">
+        <Eyebrow className="mb-2">Registros</Eyebrow>
         <h2 className="font-display text-xl tracking-tight text-fg mb-1">Historial por estado</h2>
         <p className="text-sm text-fg-muted max-w-2xl mb-4">
           Todos los certificados de avalúo, filtrables por estado del ciclo de vida — no solo

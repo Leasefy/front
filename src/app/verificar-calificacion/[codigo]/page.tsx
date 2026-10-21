@@ -96,7 +96,7 @@ export default function VerificarCalificacionPage({ params }: { params: Promise<
     <main className="min-h-screen bg-bg px-4 py-12">
       <div className="mx-auto max-w-xl space-y-6">
         <header className="space-y-1 text-center">
-          <p className="font-mono text-xs uppercase tracking-wide text-fg-subtle">Leasefy</p>
+          <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">Leasefy</p>
           <h1 className="text-h2 text-fg">{tx('Verificar una Calificación Leasefy', 'Verify a Leasefy rating')}</h1>
           <p className="font-mono text-sm tabular-nums text-fg-muted">{codigo}</p>
         </header>
@@ -182,7 +182,7 @@ export default function VerificarCalificacionPage({ params }: { params: Promise<
                 {r.resumen.condiciones.map((c) => traducir(c, idioma)).join(' · ')}
               </p>
             )}
-            <p className="text-xs text-fg-subtle">
+            <p className="text-caption text-fg-subtle">
               {tx(
                 'La Calificación Leasefy no es un reporte a centrales de riesgo: resume cómo le ha ido a la persona arrendando en Leasefy y sus documentos. La persona autorizó compartirla.',
                 'The Leasefy rating is not a credit bureau report: it sums up how the person has done renting on Leasefy, plus their documents. The person authorized sharing it.',

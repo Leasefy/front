@@ -93,6 +93,11 @@ export async function preguntarPorElRegistro(): Promise<Respuesta> {
     return 'no-se'
   }
 
+  // Modo comercial (registro rápido desde el marketplace, Nico 20-10-2026):
+  // no es un registro a medias, es una cuenta que todavía no se activó. Pasa a
+  // su cuenta y NO se recuerda: al «Activar» el asistente vuelve a contar.
+  if (punto.modoComercial === true) return 'sin-agencia'
+
   if (punto.agentSessionId == null) {
     return punto.provisioningStatus == null ? 'sin-agencia' : 'a-medias'
   }

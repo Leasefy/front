@@ -70,13 +70,17 @@ describe('estado de la invitación', () => {
 });
 
 describe('roles para invitar', () => {
-  it('son los siete del back y cada uno explica qué puede hacer', () => {
+  it('son los once del back (con los auxiliares del 20-10-2026) y cada uno explica qué puede hacer', () => {
     expect(ROLES_PARA_INVITAR.map((r) => r.rol)).toEqual([
       'admin',
       'coordinador',
       'agente',
+      'auxiliar_comercial',
+      'auxiliar_administrativo',
+      'auxiliar_mantenimiento',
       'auxiliar_cartera',
       'contador',
+      'auxiliar_contable',
       'abogado_externo',
       'viewer',
     ]);

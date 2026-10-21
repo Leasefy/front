@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Presence } from '@leasefy/cadence'
+import { Presence, RadioCard, RadioCardGroup } from '@leasefy/cadence'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { Pill } from '@/components/admin/Pill'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   adoptarLaGanadora,
   empezarElExperimento,
@@ -24,6 +25,9 @@ import {
   type EstadoDelExperimento,
   type Forma,
 } from '@/lib/admin/experimento-de-laura'
+import { Card, MonoLabel } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 type Accion = null | 'empezar' | 'pausar' | 'adoptar'
 
@@ -50,23 +54,23 @@ export function ExperimentoDeLaura() {
 
   if (consulta.isLoading && !e) {
     return (
-      <section className="card p-5 mb-6" aria-busy="true">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">laura · cómo ofrece el acuerdo</div>
-        <p className="text-sm text-fg-muted mt-2">Cargando el experimento…</p>
-      </section>
+      <Card className="p-5 mb-6" aria-busy="true">
+        <MonoLabel className="block">laura · cómo ofrece el acuerdo</MonoLabel>
+        <p className="text-body-sm text-fg-muted mt-2">Cargando el experimento…</p>
+      </Card>
     )
   }
   if (consulta.error && !e) {
     return (
-      <section className="card p-5 mb-6">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">laura · cómo ofrece el acuerdo</div>
-        <p role="alert" className="text-sm text-bad mt-2">
+      <Card className="p-5 mb-6">
+        <MonoLabel className="block">laura · cómo ofrece el acuerdo</MonoLabel>
+        <p role="alert" className="text-body-sm text-danger mt-2">
           No pudimos leer el experimento: {mensajeDelAdmin(consulta.error, { accion: 'leer el experimento' })}
         </p>
-        <button type="button" className="btn mt-3" onClick={consulta.refetch}>
+        <Button variant="outline" hideArrow className="mt-3" type="button"  onClick={consulta.refetch}>
           Reintentar
-        </button>
-      </section>
+        </Button>
+      </Card>
     )
   }
   if (!e) return null
@@ -97,13 +101,13 @@ export function ExperimentoDeLaura() {
   const sePuedeCambiar = e.disponible && e.estado !== 'completed'
 
   return (
-    <section className="card p-5 space-y-4 mb-6" aria-labelledby="experimento-laura-titulo" data-testid="experimento-de-laura">
+    <Card className="p-5 space-y-4 mb-6" aria-labelledby="experimento-laura-titulo" data-testid="experimento-de-laura">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div id="experimento-laura-titulo" className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
             laura · cómo ofrece el acuerdo
           </div>
-          <p className="text-xs text-fg-muted mt-1 max-w-3xl">
+          <p className="text-caption text-fg-muted mt-1 max-w-3xl">
             A la mitad de los deudores Laura les ofrece el acuerdo como hoy y a la otra mitad con menos cuotas, al azar y
             por voz y WhatsApp (el mismo deudor oye lo mismo en los dos). Gana la que recupera más plata en{' '}
             {e.diasDeLaMedicion} días, contada con los recibos del back. Corre en todas las inmobiliarias
@@ -117,14 +121,14 @@ export function ExperimentoDeLaura() {
       </div>
 
       {!e.disponible && (
-        <p className="text-sm text-warn" data-testid="experimento-sin-migracion">
+        <p className="text-body-sm text-warning" data-testid="experimento-sin-migracion">
           Todavía no se puede empezar: falta una actualización de la base del asistente de cobranza.
           Sin ella no habría con qué medir la plata.
         </p>
       )}
 
       {e.startedAt && (
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {/* Sin punto final: la hora ya termina en «a. m.» / «p. m.». */}
           Empezó el {fmtDateTime(e.startedAt)}
           {e.endedAt ? ` · terminó el ${fmtDateTime(e.endedAt)}` : ''}
@@ -132,26 +136,26 @@ export function ExperimentoDeLaura() {
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm border border-bg-border" data-testid="formas-del-experimento">
-          <thead>
-            <tr className="text-left text-xs text-fg-muted">
-              <th className="px-3 py-2 font-normal">Forma</th>
-              <th className="px-3 py-2 font-normal text-right">Asignados</th>
-              <th className="px-3 py-2 font-normal text-right">Medidos</th>
-              <th className="px-3 py-2 font-normal text-right">Plata en {e.diasDeLaMedicion} días</th>
-              <th className="px-3 py-2 font-normal text-right">Por deudor</th>
-              <th className="px-3 py-2 font-normal text-right">Pagaron algo</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-bg-border">
+        <Table data-testid="formas-del-experimento">
+          <TableHeader>
+            <TableRow className="text-left text-caption text-fg-muted">
+              <TableHead >Forma</TableHead>
+              <TableHead className="text-right">Asignados</TableHead>
+              <TableHead className="text-right">Medidos</TableHead>
+              <TableHead className="text-right">Plata en {e.diasDeLaMedicion} días</TableHead>
+              <TableHead className="text-right">Por deudor</TableHead>
+              <TableHead className="text-right">Pagaron algo</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {e.formas.map((f) => (
-              <tr key={f.variantKey} data-testid={`forma-${f.variantKey}`}>
-                <td className="px-3 py-2">
+              <TableRow key={f.variantKey} data-testid={`forma-${f.variantKey}`}>
+                <TableCell >
                   <div className="text-fg">{nombreDeLaForma(f.variantKey, e.maxCuotas)}</div>
-                  <div className="text-xs text-fg-muted">{queHaceLaForma(f.variantKey, e.maxCuotas)}</div>
-                </td>
-                <td className="px-3 py-2 text-right font-mono tabular-nums">{f.asignados.toLocaleString('es-CO')}</td>
-                <td className="px-3 py-2 text-right font-mono tabular-nums">
+                  <div className="text-caption text-fg-muted">{queHaceLaForma(f.variantKey, e.maxCuotas)}</div>
+                </TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{f.asignados.toLocaleString('es-CO')}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">
                   {f.medidos.toLocaleString('es-CO')}
                   {(f.enCurso > 0 || f.sinDatos > 0) && (
                     <div className="text-[11px] text-fg-subtle font-sans">
@@ -160,20 +164,20 @@ export function ExperimentoDeLaura() {
                       {f.sinDatos > 0 ? `${f.sinDatos} sin contrato` : ''}
                     </div>
                   )}
-                </td>
-                <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtCOP(f.plataTotal)}</td>
-                <td className="px-3 py-2 text-right font-mono tabular-nums">{f.medidos > 0 ? fmtCOP(f.plataPorDeudor) : '—'}</td>
-                <td className="px-3 py-2 text-right font-mono tabular-nums">
+                </TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{fmtCOP(f.plataTotal)}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{f.medidos > 0 ? fmtCOP(f.plataPorDeudor) : '—'}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">
                   {f.medidos > 0 ? `${Math.round((f.conAlgunPago / f.medidos) * 100)} %` : '—'}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {e.adoptada ? (
-        <p role="status" className="text-sm text-ok" data-testid="experimento-adoptada">
+        <p role="status" className="text-body-sm text-success" data-testid="experimento-adoptada">
           Ganó {nombreDeLaForma(e.adoptada.variantKey, e.maxCuotas)}: la aprobó {e.adoptada.adoptadaPor} el{' '}
           {fmtDateTime(e.adoptada.adoptadaAt)}.{' '}
           {e.adoptada.variantKey === FORMA_COMO_HOY
@@ -182,7 +186,7 @@ export function ExperimentoDeLaura() {
         </p>
       ) : (
         e.estado !== 'sin_empezar' && (
-          <p className="text-sm text-fg" data-testid="experimento-recomendacion">
+          <p className="text-body-sm text-fg" data-testid="experimento-recomendacion">
             {fraseDeLaRecomendacion(e)}
           </p>
         )
@@ -191,43 +195,42 @@ export function ExperimentoDeLaura() {
       {sePuedeCambiar && accion === null && (
         <div className="flex flex-wrap gap-2">
           {e.estado === 'sin_empezar' && (
-            <button type="button" className="btn btn-primary" onClick={() => abrir('empezar')}>
+            <Button hideArrow type="button"  onClick={() => abrir('empezar')}>
               Empezar el experimento
-            </button>
+            </Button>
           )}
           {e.estado === 'paused' && (
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button hideArrow type="button"
+              
               disabled={guardando}
               onClick={() => void hacer(() => empezarElExperimento(e.maxCuotas ?? MAX_CUOTAS_POR_DEFECTO), 'reanudar el experimento')}
             >
               {guardando ? 'Reanudando…' : 'Reanudar'}
-            </button>
+            </Button>
           )}
           {e.estado === 'running' && (
-            <button type="button" className="btn" onClick={() => abrir('pausar')}>
+            <Button variant="outline" hideArrow type="button"  onClick={() => abrir('pausar')}>
               Pausar
-            </button>
+            </Button>
           )}
           {(e.estado === 'running' || e.estado === 'paused') && (
-            <button type="button" className="btn" onClick={() => abrir('adoptar')}>
+            <Button variant="outline" hideArrow type="button"  onClick={() => abrir('adoptar')}>
               Aprobar la ganadora
-            </button>
+            </Button>
           )}
         </div>
       )}
 
       <Presence show={accion === 'empezar'}>
-        <div className="card p-3 border-warn/40 space-y-3" data-testid="confirmar-empezar">
+        <Card className="p-3 border-warning/40 space-y-3" data-testid="confirmar-empezar">
           <div>
-            <label htmlFor="cuotas-de-b" className="block text-xs text-fg-muted mb-1">
+            <label htmlFor="cuotas-de-b" className="block text-caption text-fg-muted mb-1">
               La forma B ofrece como mucho
             </label>
             <div className="flex items-center gap-2">
-              <input
+              <Input
                 id="cuotas-de-b"
-                className="input max-w-[5rem] font-mono"
+                className="max-w-[5rem] font-mono"
                 inputMode="numeric"
                 value={cuotas}
                 aria-invalid={cuotasLeidas === null ? true : undefined}
@@ -235,109 +238,106 @@ export function ExperimentoDeLaura() {
                 disabled={guardando}
                 onChange={(ev) => setCuotas(ev.target.value)}
               />
-              <span className="text-sm text-fg">cuotas</span>
+              <span className="text-body-sm text-fg">cuotas</span>
             </div>
-            <p id="cuotas-de-b-ayuda" className={`text-xs mt-1 ${cuotasLeidas === null ? 'text-bad' : 'text-fg-subtle'}`}>
+            <p id="cuotas-de-b-ayuda" className={`text-caption mt-1 ${cuotasLeidas === null ? 'text-danger' : 'text-fg-subtle'}`}>
               {cuotasLeidas === null
                 ? `Escribe un número de cuotas entre ${MAX_CUOTAS_MINIMO} y ${MAX_CUOTAS_MAXIMO}.`
                 : 'Con 1, la forma B sólo ofrece el pago total. No se puede cambiar una vez que haya deudores asignados.'}
             </p>
           </div>
-          <p className="text-sm text-fg">
+          <p className="text-body-sm text-fg">
             Vas a empezar el experimento en todas las inmobiliarias que no lo apagaron. Desde la próxima llamada o
             mensaje, la mitad de los deudores oirá
             {cuotasLeidas === null ? ' la forma B' : ` «${nombreDeLaForma(FORMA_MENOS_CUOTAS, cuotasLeidas)}»`} y la otra
             mitad, como hoy. Queda registrado con tu correo.
           </p>
           <div className="flex gap-2">
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button hideArrow type="button"
+              
               disabled={guardando || cuotasLeidas === null}
               onClick={() => cuotasLeidas !== null && void hacer(() => empezarElExperimento(cuotasLeidas), 'empezar el experimento')}
             >
               {guardando ? 'Empezando…' : 'Sí, empezar'}
-            </button>
-            <button type="button" className="btn" disabled={guardando} onClick={() => setAccion(null)}>
+            </Button>
+            <Button variant="outline" hideArrow type="button"  disabled={guardando} onClick={() => setAccion(null)}>
               Volver
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       </Presence>
 
       <Presence show={accion === 'pausar'}>
-        <div className="card p-3 border-warn/40 space-y-3" data-testid="confirmar-pausar">
-          <p className="text-sm text-fg">
+        <Card className="p-3 border-warning/40 space-y-3" data-testid="confirmar-pausar">
+          <p className="text-body-sm text-fg">
             Mientras esté en pausa, Laura le ofrece el acuerdo a todos como hoy. Lo medido no se pierde y al reanudar
             cada deudor vuelve a su misma forma.
           </p>
           <div className="flex gap-2">
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button hideArrow type="button"
+              
               disabled={guardando}
               onClick={() => void hacer(() => pausarElExperimento(), 'pausar el experimento')}
             >
               {guardando ? 'Pausando…' : 'Sí, pausar'}
-            </button>
-            <button type="button" className="btn" disabled={guardando} onClick={() => setAccion(null)}>
+            </Button>
+            <Button variant="outline" hideArrow type="button"  disabled={guardando} onClick={() => setAccion(null)}>
               Volver
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       </Presence>
 
       <Presence show={accion === 'adoptar'}>
-        <div className="card p-3 border-warn/40 space-y-3" data-testid="confirmar-adoptar">
+        <Card className="p-3 border-warning/40 space-y-3" data-testid="confirmar-adoptar">
           <fieldset className="space-y-2">
-            <legend className="text-xs text-fg-muted mb-1">¿Cuál gana?</legend>
-            {[FORMA_COMO_HOY, FORMA_MENOS_CUOTAS].map((f) => (
-              <label key={f} className="flex items-start gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  name="ganadora"
+            <legend className="text-caption text-fg-muted mb-1">¿Cuál gana?</legend>
+            <RadioCardGroup
+              value={ganadora}
+              onValueChange={(v) => setGanadora(v as Forma)}
+              disabled={guardando}
+              orientation="vertical"
+              aria-label="Cuál gana"
+            >
+              {[FORMA_COMO_HOY, FORMA_MENOS_CUOTAS].map((f) => (
+                <RadioCard
+                  key={f}
                   value={f}
-                  checked={ganadora === f}
-                  disabled={guardando}
-                  onChange={() => setGanadora(f as Forma)}
                   data-testid={`ganadora-${f}`}
+                  label={nombreDeLaForma(f, e.maxCuotas)}
+                  badge={f === recomendada && e.recomendacion.tipo === 'gana' ? 'La recomendada' : undefined}
                 />
-                <span>
-                  {nombreDeLaForma(f, e.maxCuotas)}
-                  {f === recomendada && e.recomendacion.tipo === 'gana' ? ' (la recomendada)' : ''}
-                </span>
-              </label>
-            ))}
+              ))}
+            </RadioCardGroup>
           </fieldset>
           {e.recomendacion.tipo !== 'gana' && (
-            <p className="text-xs text-warn">{fraseDeLaRecomendacion(e)}</p>
+            <p className="text-caption text-warning">{fraseDeLaRecomendacion(e)}</p>
           )}
-          <p className="text-sm text-fg">
+          <p className="text-body-sm text-fg">
             {ganadora === FORMA_COMO_HOY
               ? 'El experimento termina y Laura sigue ofreciendo el acuerdo como siempre, en todas las inmobiliarias.'
               : `El experimento termina y desde ya Laura le ofrece ${e.maxCuotas !== null && e.maxCuotas <= 1 ? 'sólo el pago total' : `como mucho ${e.maxCuotas ?? 'las'} cuotas`} a todos los deudores de todas las inmobiliarias (nunca más de lo que autoriza cada una). Queda registrado con tu correo.`}
           </p>
           <div className="flex gap-2">
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button hideArrow type="button"
+              
               disabled={guardando}
               onClick={() => void hacer(() => adoptarLaGanadora(ganadora), 'aprobar la ganadora')}
             >
               {guardando ? 'Aprobando…' : 'Sí, aprobar'}
-            </button>
-            <button type="button" className="btn" disabled={guardando} onClick={() => setAccion(null)}>
+            </Button>
+            <Button variant="outline" hideArrow type="button"  disabled={guardando} onClick={() => setAccion(null)}>
               Volver
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       </Presence>
 
       {fallo && (
-        <p role="alert" className="text-sm text-bad">
+        <p role="alert" className="text-body-sm text-danger">
           {fallo}
         </p>
       )}
-    </section>
+    </Card>
   )
 }

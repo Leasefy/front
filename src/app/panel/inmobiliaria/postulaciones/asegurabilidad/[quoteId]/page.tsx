@@ -35,7 +35,20 @@ import { CasoSidebar } from './CasoSidebar'
 import { RecomendacionRail } from './RecomendacionRail'
 import { MatrizActionBar, type MatrizActionCode } from './MatrizActionBar'
 import type { PostSeleccionCode } from './PostSeleccionSheet'
-import { Appear, CrossFade, Presence } from '@leasefy/cadence'
+import { RegistrarPolizaDialog, SIN_LA_ACTUALIZACION } from './RegistrarPolizaDialog'
+import { NuevaTareaDrawer } from '@/components/inmobiliaria/agenda/NuevaTareaDrawer'
+import { nombreDeLaAseguradora } from '@/lib/cotizador/nombre-de-la-aseguradora'
+import { formatPrimaCop } from '@/lib/cotizador/verdict-derive'
+import {
+  enlaceDelCaso,
+  faltaLaActualizacion,
+  guardarSeguimiento,
+  notaDeLaTareaDelAsesor,
+  tituloDeLaTareaDelAsesor,
+} from '@/lib/cotizador/seguimiento'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { aFechaIso } from '@/lib/fechas-locales'
+import { Appear, CrossFade, Presence, usePrefersReducedMotion } from '@leasefy/cadence'
 
 // ---------------------------------------------------------------------------
 // Inner component (rendered inside PageGuard — auth is guaranteed)
@@ -63,10 +76,18 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
   // Surfaces canon/ciudad/tipo + cedulaHashPrefix8 + createdAt into the page
   // header + PDF inputs summary. codeudoresCount is not persisted in the DB
   // (wizard input only — used at quote-time, dropped after), so it stays 0.
-  const { data: metadata } = useQuoteMetadata(quoteId)
+  const { data: metadata, actualizarSeguimiento } = useQuoteMetadata(quoteId)
+  const seguimiento = metadata?.seguimiento ?? null
 
   // Phase 33: counterfactual modal open flag (D-33-01..D-33-13).
   const [modalOpen, setModalOpen] = useState(false)
+  // COTIZ-17: «Solicitar codeudor» abre el modal con 1 codeudor ya elegido.
+  const [empezarCon, setEmpezarCon] = useState<{ variable: 'codeudores'; valor: number } | null>(null)
+  const [pasosAbiertos, setPasosAbiertos] = useState(false)
+  const [guardandoElegida, setGuardandoElegida] = useState(false)
+  const [polizaAbierta, setPolizaAbierta] = useState(false)
+  const [tareaAbierta, setTareaAbierta] = useState(false)
+  const movimientoReducido = usePrefersReducedMotion()
 
   // F10: the cotizador work-item (read-only triage — actions usually []) for
   // this quote. 404 / notAvailable / error → the panel silently renders
@@ -147,7 +168,10 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
   }
 
   // D-33-11: open the counterfactual modal.
-  const handlePedirExplicacion = () => setModalOpen(true)
+  const handlePedirExplicacion = () => {
+    setEmpezarCon(null)
+    setModalOpen(true)
+  }
 
   // Descargar PDF — reusa el endpoint backend (mismo path que StreamCompleteBanner).
   // El botón de la barra de acciones delega aquí cuando hay agency + quote.
@@ -157,47 +181,126 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
     filenamePrefix: pdfFilenamePrefix,
   })
 
-  // Patrón de honestidad: las acciones que aún NO tienen backend (avanzar /
-  // comparar / codeudor / compartir / contrato + radicar / expediente /
-  // notificar / propietario / guardar) NO inventan un endpoint — muestran un
-  // aviso inline "Próximamente" (NO toast — aquí no hay sistema de toast para
-  // estados informativos persistentes). Las que SÍ tienen destino natural
-  // reutilizan los handlers existentes (descargar PDF / re-cotizar / resolver).
-  const [proximamente, setProximamente] = useState<string | null>(null)
+  // 🔴 COTIZ-17 (QA 19-10-2026, Nico «construye todo lo que sea necesario»):
+  // ninguna acción dice «Próximamente». Lo que no se puede hacer TODAVÍA (la
+  // base sin la actualización del seguimiento) se dice en este aviso.
+  const [aviso, setAviso] = useState<string | null>(null)
 
-  // Barra de acciones (visión #8/#21): mapea cada código a su comportamiento.
+  // La recomendada: la mejor opción del veredicto; sin ella, la primera que respaldó.
+  const recomendada =
+    finalVerdict?.mejor_opcion?.carrier ??
+    carriers.find((c) => c.status === 'approved' || c.status === 'conditional')?.carrier ??
+    null
+  const elegida = seguimiento?.opcionElegida ?? null
+  const laDeLaPoliza = elegida ?? recomendada
+  const primaDe = (carrier: string | null) => {
+    const c = carrier ? carriers.find((x) => x.carrier === carrier) : null
+    return c?.primaMensualCop != null ? formatPrimaCop(c.primaMensualCop) : null
+  }
+
+  // «Avanzar con la recomendada» = «Guardar la opción elegida» (Nico): guarda
+  // la recomendada (quién y cuándo) y abre «¿Qué quieres hacer ahora?».
+  const avanzar = async () => {
+    setAviso(null)
+    setPasosAbiertos(true)
+    if (!recomendada || !agency?.id || elegida === recomendada) return
+    if (seguimiento?.disponible === false) {
+      setAviso(SIN_LA_ACTUALIZACION)
+      return
+    }
+    setGuardandoElegida(true)
+    try {
+      const s = await guardarSeguimiento(agency.id, quoteId, { opcionElegida: recomendada })
+      actualizarSeguimiento(s)
+      toast.success(`Quedó ${nombreDeLaAseguradora(recomendada)} como la opción elegida.`)
+    } catch (err) {
+      if (faltaLaActualizacion(err)) setAviso(SIN_LA_ACTUALIZACION)
+      else
+        toast.error('No pudimos guardar la opción elegida', {
+          description: mensajeParaLaPersona(err, {
+            porDefecto: 'Intenta de nuevo en un momento.',
+            accion: 'guardar la opción elegida',
+          }),
+        })
+    } finally {
+      setGuardandoElegida(false)
+    }
+  }
+
+  // «Comparar opciones»: la tabla comparativa ya está en esta página: se baja a ella.
+  const irALaComparacion = () => {
+    const tabla = document.getElementById('matriz-asegurabilidad')
+    tabla?.scrollIntoView({ behavior: movimientoReducido ? 'auto' : 'smooth', block: 'start' })
+    tabla?.focus({ preventScroll: true })
+  }
+
+  // «Compartir»: el enlace del caso (sólo lo abre alguien del equipo con el cotizador).
+  const compartir = async () => {
+    const enlace = enlaceDelCaso(window.location.origin, quoteId)
+    try {
+      await navigator.clipboard.writeText(enlace)
+      toast.success('Copiamos el enlace de esta cotización', {
+        description: 'Sólo lo abre alguien de tu equipo con acceso al cotizador.',
+      })
+    } catch {
+      toast.error('No pudimos copiar el enlace', { description: enlace })
+    }
+  }
+
+  // «Enviar a contrato» / «Pasar a contrato»: Nuevo contrato con el nombre, el
+  // canon y la aseguradora como póliza (la persona completa el resto).
+  const irAContrato = () =>
+    router.push(
+      `/panel/inmobiliaria/contratos/nuevo?cotizacion=${encodeURIComponent(quoteId)}${
+        laDeLaPoliza ? `&aseguradora=${encodeURIComponent(laDeLaPoliza)}` : ''
+      }`,
+    )
+
+  // Barra de acciones (visión #8/#21): cada código hace lo que dice.
   const handleMatrizAction = (code: MatrizActionCode) => {
-    setProximamente(null)
+    setAviso(null)
     switch (code) {
       case 'descargar':
         void downloadPdf()
         return
-      // Sin backend todavía → aviso honesto inline.
       case 'avanzar':
+        void avanzar()
+        return
       case 'comparar':
+        irALaComparacion()
+        return
       case 'codeudor':
+        setEmpezarCon({ variable: 'codeudores', valor: 1 })
+        setModalOpen(true)
+        return
       case 'compartir':
+        void compartir()
+        return
       case 'contrato':
-        setProximamente(
-          t(`inmobiliaria.ai.cotizador.detail.acciones.${code}`),
-        )
+        irAContrato()
         return
       default:
         return
     }
   }
 
-  // Pasos post-selección (visión #22): los de destino natural navegan; el resto
-  // queda como "Próximamente".
+  // Pasos de «¿Qué quieres hacer ahora?» (visión #22).
   const handlePostSeleccion = (code: PostSeleccionCode) => {
-    setProximamente(null)
-    if (code === 'contrato') {
-      // mismo destino que "Enviar a contrato" — aún sin backend.
-      setProximamente(t('inmobiliaria.ai.cotizador.detail.postSeleccion.contrato'))
-      return
+    setAviso(null)
+    switch (code) {
+      case 'radicar':
+        setPolizaAbierta(true)
+        return
+      case 'expediente':
+        void downloadPdf()
+        return
+      case 'notificar':
+        setTareaAbierta(true)
+        return
+      case 'contrato':
+        irAContrato()
+        return
     }
-    // radicar / expediente / notificar / propietario / guardar → próximamente.
-    setProximamente(t(`inmobiliaria.ai.cotizador.detail.postSeleccion.${code}`))
   }
 
   // D-33-13: when the wrapper returns 404 (quote stale / wrong tenant), close
@@ -243,6 +346,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
         totalCostCop={totalCostCop}
         isConnected={isConnected}
         terminada={finalVerdict !== null}
+        nombre={seguimiento?.nombreCandidato ?? null}
       />
 
       {/* Main content — ficha del caso en 3 columnas (visión #14):
@@ -373,7 +477,10 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
                 tarjetas. Aparece cuando ≥1 aseguradora tiene veredicto; los stubs
                 van etiquetados "Estimado · Prevalidación Leasefy". */}
             <Presence show={hasAnyVerdict}>
-              <MatrizAsegurabilidad carriers={carriers} />
+              {/* COTIZ-17: «Comparar opciones» baja hasta aquí. */}
+              <div id="matriz-asegurabilidad" tabIndex={-1} className="scroll-mt-24 outline-none">
+                <MatrizAsegurabilidad carriers={carriers} />
+              </div>
             </Presence>
 
             {/* Barra de acciones (visión #8/#21) — debajo de la matriz. Aparece
@@ -394,24 +501,17 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
             {/* Aviso "Próximamente" (patrón de honestidad — NO toast): las
                 acciones sin backend explican que están por llegar en lugar de
                 fallar en silencio. */}
-            <Presence show={Boolean(proximamente)}
+            <Presence show={Boolean(aviso)}
                 role="status"
                 className="rounded-lg border border-border bg-surface-muted p-3 flex items-center justify-between gap-3"
+                data-testid="cotizacion-aviso"
               >
-                <span className="text-sm text-fg-muted">
-                  <span className="font-medium text-fg">
-                    {proximamente}
-                  </span>{' '}
-                  {t('inmobiliaria.ai.cotizador.detail.acciones.proximamente') ===
-                  'inmobiliaria.ai.cotizador.detail.acciones.proximamente'
-                    ? 'estará disponible próximamente.'
-                    : t('inmobiliaria.ai.cotizador.detail.acciones.proximamente')}
-                </span>
+                <span className="text-sm text-fg-muted">{aviso}</span>
                 <Button
                   variant="ghost"
                   size="sm"
                   hideArrow
-                  onClick={() => setProximamente(null)}
+                  onClick={() => setAviso(null)}
                   className="shrink-0 text-fg-muted"
                 >
                   {t('inmobiliaria.ai.cotizador.detail.acciones.cerrar') ===
@@ -445,6 +545,10 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
               onAvanzar={() => handleMatrizAction('avanzar')}
               onReQuote={handleReQuote}
               onPostSeleccion={handlePostSeleccion}
+              seguimiento={seguimiento}
+              guardando={guardandoElegida}
+              pasosAbiertos={pasosAbiertos}
+              onPasosAbiertosChange={setPasosAbiertos}
             />
           </div>
         </div>
@@ -470,6 +574,39 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
           codeudores: 0,
         }}
         onQuote404={handleQuote404}
+        empezarCon={empezarCon}
+      />
+
+      {/* COTIZ-17 «Radicar la póliza»: el número a mano. */}
+      <RegistrarPolizaDialog
+        abierto={polizaAbierta}
+        onOpenChange={setPolizaAbierta}
+        agencyId={agency?.id ?? null}
+        quoteId={quoteId}
+        seguimiento={seguimiento}
+        aseguradora={laDeLaPoliza}
+        onGuardado={actualizarSeguimiento}
+      />
+
+      {/* COTIZ-17 «Notificar al asesor»: una tarea en su Agenda con el enlace. */}
+      <NuevaTareaDrawer
+        abierto={tareaAbierta}
+        onOpenChange={setTareaAbierta}
+        onCreada={() => undefined}
+        coordina={canAccess('operaciones', 'edit')}
+        titulo="Notificar al asesor"
+        descripcion="Le queda una tarea en su Agenda con lo que salió y el enlace a esta cotización."
+        inicial={{
+          titulo: tituloDeLaTareaDelAsesor(seguimiento?.nombreCandidato),
+          fecha: aFechaIso(new Date()),
+          nota: notaDeLaTareaDelAsesor({
+            aseguradora: laDeLaPoliza ? nombreDeLaAseguradora(laDeLaPoliza) : null,
+            elegida: elegida !== null,
+            primaMensual: primaDe(laDeLaPoliza),
+            polizaNumero: elegida ? (seguimiento?.polizaNumero ?? null) : null,
+            enlace: typeof window !== 'undefined' ? enlaceDelCaso(window.location.origin, quoteId) : quoteId,
+          }),
+        }}
       />
     </div>
     </CrossFade>

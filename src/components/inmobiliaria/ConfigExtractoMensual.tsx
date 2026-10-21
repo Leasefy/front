@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { EnvelopeSimple, PaperPlaneTilt, Warning } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
@@ -97,21 +98,56 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
     [onSave],
   );
 
+  /*
+   * Dentro de Configuración (Nico, 20-10-2026): el interruptor y el día sólo
+   * marcan, y se guardan juntos con la barra de abajo. Fuera de ella, se
+   * guarda al tocar, como antes.
+   */
+  const diaValido = (texto: string) => {
+    const n = parseInt(texto, 10);
+    return Number.isNaN(n) || n < MIN_DIA_DEL_EXTRACTO || n > MAX_DIA_DEL_EXTRACTO ? null : n;
+  };
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'perfil-extracto-mensual',
+    cambios: (automatico !== automaticoGuardado ? 1 : 0) + (diaTexto.trim() !== String(diaGuardado) ? 1 : 0),
+    guardar: async () => {
+      const payload: UpdateAgencyPayload = {};
+      if (automatico !== automaticoGuardado) payload.extractoMensualAutomatico = automatico;
+      if (diaTexto.trim() !== String(diaGuardado)) {
+        const n = diaValido(diaTexto);
+        if (n === null) {
+          setErrorDeDia(t('inmobiliaria.config.extractoMensual.diaError'));
+          return false;
+        }
+        payload.extractoMensualDia = n;
+      }
+      setErrorDeDia(null);
+      return Object.keys(payload).length === 0 ? true : guardar(payload);
+    },
+    descartar: () => {
+      setAutomatico(automaticoGuardado);
+      setDiaTexto(String(diaGuardado));
+      setErrorDeDia(null);
+    },
+    activo: canEdit,
+  });
+
   const cambiarAutomatico = async (prendido: boolean) => {
     setAutomatico(prendido);
+    if (conBarra) return;
     const ok = await guardar({ extractoMensualAutomatico: prendido });
     if (!ok) setAutomatico(automaticoGuardado);
   };
 
   const confirmarDia = async () => {
-    const n = parseInt(diaTexto, 10);
-    if (Number.isNaN(n) || n < MIN_DIA_DEL_EXTRACTO || n > MAX_DIA_DEL_EXTRACTO) {
+    const n = diaValido(diaTexto);
+    if (n === null) {
       setErrorDeDia(t('inmobiliaria.config.extractoMensual.diaError'));
-      setDiaTexto(String(diaGuardado));
+      if (!conBarra) setDiaTexto(String(diaGuardado));
       return;
     }
     setErrorDeDia(null);
-    if (n === diaGuardado) return;
+    if (conBarra || n === diaGuardado) return;
     const ok = await guardar({ extractoMensualDia: n });
     if (!ok) setDiaTexto(String(diaGuardado));
   };

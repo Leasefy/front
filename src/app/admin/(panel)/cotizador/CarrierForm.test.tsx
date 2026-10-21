@@ -155,7 +155,7 @@ describe('CarrierForm — edit mode', () => {
     })
 
     expect(byId('carrier-name').hasAttribute('disabled')).toBe(true)
-    expect(container.textContent).toContain('configurado ✓')
+    expect(container.textContent).toContain('Configuradas')
     // Credenciales nunca se prellenan aunque el carrier ya las tenga.
     expect(byId('carrier-config_password').getAttribute('value')).toBe('')
   })

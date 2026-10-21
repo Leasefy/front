@@ -89,6 +89,17 @@ const CLAVES_COLA = [
   'colaEmptyTitle',
   'colaEmptyHint',
   'casoColaLabel',
+  // «Mis solicitudes» lee los avalúos de verdad (QA 19-10, Nico).
+  'colaSinServicio',
+  'colaPasosAria',
+  'colaPedidoEl',
+  'colaFirmadoEl',
+  'colaVerEstado',
+  'colaPasos.solicitado',
+  'colaPasos.enRevision',
+  'colaPasos.firmado',
+  'colaPasos.entregado',
+  'colaPasos.rechazado',
 ]
 
 const TODAS = [...CLAVES_SALA, ...CLAVES_ESTADOS, ...CLAVES_PASOS, ...CLAVES_COLA].map(

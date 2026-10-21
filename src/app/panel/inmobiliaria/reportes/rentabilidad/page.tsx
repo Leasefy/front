@@ -76,7 +76,7 @@ import {
 } from '@/lib/reportes/periodo';
 import {
   GraficoDeRentabilidad,
-  TOP_DEL_GRAFICO,
+  cuantosEnElGrafico,
 } from '@/components/inmobiliaria/reports/GraficoDeRentabilidad';
 import {
   ORDEN_INICIAL,
@@ -251,16 +251,21 @@ function RentabilidadContent() {
           <p id="rentabilidad-periodo" className="text-xs font-medium text-fg-muted">
             {t('inmobiliaria.reportes.rentabilidad.period.label')}
           </p>
-          <SegmentedControl<PresetDePeriodo>
-            value={preset}
-            onChange={elegirPreset}
-            size="sm"
-            aria-label={t('inmobiliaria.reportes.rentabilidad.period.label')}
-            options={PRESETS_DE_PERIODO.map((p) => ({
-              value: p,
-              label: t(`inmobiliaria.reportes.rentabilidad.period.${p}`),
-            }))}
-          />
+          {/* A 390 «3 meses» se partía en dos renglones dentro de un botón de
+              28 px: cada opción en una línea y el riel se desliza. */}
+          <div className="max-w-full overflow-x-auto [scrollbar-width:none]" data-lenis-prevent>
+            <SegmentedControl<PresetDePeriodo>
+              value={preset}
+              onChange={elegirPreset}
+              size="sm"
+              className="[&>button]:whitespace-nowrap"
+              aria-label={t('inmobiliaria.reportes.rentabilidad.period.label')}
+              options={PRESETS_DE_PERIODO.map((p) => ({
+                value: p,
+                label: t(`inmobiliaria.reportes.rentabilidad.period.${p}`),
+              }))}
+            />
+          </div>
         </div>
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-end gap-2">
@@ -395,9 +400,10 @@ function RentabilidadContent() {
         <section className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="border-b border-border p-5">
             <h2 className="text-base font-semibold text-fg">
-              {t('inmobiliaria.reportes.rentabilidad.chart.title', {
-                n: Math.min(TOP_DEL_GRAFICO, filas.length),
-              })}
+              {/* Cuenta sólo los que dejaron neto: los que quedan en $0 no tienen barra. */}
+              {cuantosEnElGrafico(filas) > 0
+                ? t('inmobiliaria.reportes.rentabilidad.chart.title', { n: cuantosEnElGrafico(filas) })
+                : t('inmobiliaria.reportes.rentabilidad.chart.titleEmpty')}
             </h2>
             <p className="mt-0.5 text-xs text-fg-muted">
               {t('inmobiliaria.reportes.rentabilidad.chart.subtitle')}

@@ -19,6 +19,11 @@ import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 export const ROLES_SIN_LA_SUSCRIPCION: readonly string[] = [
   AGENCY_ROLES.AUXILIAR_CARTERA,
   AGENCY_ROLES.ABOGADO_EXTERNO,
+  // Los cuatro auxiliares (20-10-2026) tampoco: `subscription: []`.
+  AGENCY_ROLES.AUXILIAR_COMERCIAL,
+  AGENCY_ROLES.AUXILIAR_ADMINISTRATIVO,
+  AGENCY_ROLES.AUXILIAR_CONTABLE,
+  AGENCY_ROLES.AUXILIAR_MANTENIMIENTO,
 ]
 
 /** Con los permisos ya cargados (dentro de `PermissionsProvider`). */

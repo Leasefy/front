@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { ChartLineUp, Info, Warning } from '@phosphor-icons/react';
 import { RadioCard, RadioCardGroup } from '@leasefy/cadence';
 
@@ -90,9 +91,36 @@ export function ConfigTasaDeRecaudo({ agency, onSave, canEdit = true }: ConfigTa
   const disponible = datos?.disponible !== false;
   const bloqueada = !canEdit || !disponible || guardando;
 
+  // Dentro de Configuración, elegir sólo marca: se guarda con la barra de abajo
+  // (Nico, 20-10-2026). Fuera de ella, se guarda al elegir, como antes.
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'perfil-tasa-de-recaudo',
+    cambios: elegida !== guardada ? 1 : 0,
+    guardar: async () => {
+      setGuardando(true);
+      try {
+        await onSave?.({ tasaDeRecaudoSobre: elegida });
+        setVersion((v) => v + 1);
+        return true;
+      } catch {
+        // El padre ya avisó con el mensaje del back (403, o el 503 sin migración).
+        return false;
+      } finally {
+        setGuardando(false);
+      }
+    },
+    descartar: () => setElegida(guardada),
+    activo: canEdit && disponible,
+  });
+
   const elegir = useCallback(
     async (valor: string) => {
-      if (!esBaseDeLaTasa(valor) || valor === guardada) return;
+      if (!esBaseDeLaTasa(valor)) return;
+      if (conBarra) {
+        setElegida(valor);
+        return;
+      }
+      if (valor === guardada) return;
       setElegida(valor);
       setGuardando(true);
       try {
@@ -105,7 +133,7 @@ export function ConfigTasaDeRecaudo({ agency, onSave, canEdit = true }: ConfigTa
         setGuardando(false);
       }
     },
-    [guardada, onSave],
+    [guardada, onSave, conBarra],
   );
 
   const medidaDelMes = (base: BaseDeLaTasaDeRecaudo) => datos?.opciones.find((o) => o.base === base) ?? null;

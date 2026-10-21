@@ -30,6 +30,7 @@ import type {
   MediosDelRecibo,
   NuevoReciboDeCaja,
   NuevoReciboPorCliente,
+  ReciboConSuCobro,
   ReciboDeCaja,
   RespuestaDeRecibo,
   RespuestaDeReciboPorCliente,
@@ -231,6 +232,14 @@ export const recibosDeCajaApi = {
   },
 
   /** Los recibos de la inmobiliaria, filtrables. Por defecto, sólo los vivos. */
+  /**
+   * Un recibo con un resumen de su cobro (`GET /inmobiliaria/recibos-de-caja/:id`,
+   * `cobros:view`). Lo abre la ficha del centro de procesos.
+   */
+  async ver(id: string): Promise<ReciboConSuCobro> {
+    return apiClient.get<ReciboConSuCobro>(`/inmobiliaria/recibos-de-caja/${encodeURIComponent(id)}`);
+  },
+
   async listar(filtros?: FiltrosDeRecibos): Promise<ReciboDeCaja[]> {
     const query = new URLSearchParams();
     if (filtros?.desde) query.set('desde', filtros.desde);

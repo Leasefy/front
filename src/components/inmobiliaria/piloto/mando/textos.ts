@@ -152,6 +152,8 @@ export const TEXTOS = {
     corre: 'Corre, todavía no actúa solo',
     apagado: 'Apagado',
     sinActividad: 'Sin acciones recientes',
+    /** NITI-2: lo que le queda cuando Leasefy le apagó una parte, con mayúscula inicial. */
+    enParte: (queda: string) => queda.charAt(0).toUpperCase() + queda.slice(1),
     esperan: (n: number) => (n === 1 ? '1 decisión espera tu clic en la Bandeja' : `${n} decisiones esperan tu clic en la Bandeja`),
     modos: { sombra: 'Manual', copiloto: 'Copiloto', autonomo: 'Automático', mixto: 'Mixto' },
   },

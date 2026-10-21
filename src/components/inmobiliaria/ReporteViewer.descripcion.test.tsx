@@ -52,7 +52,7 @@ import type { ReportDefinition } from '@/lib/types/inmobiliaria'
 
 const REPORTE: ReportDefinition = {
   id: 'cartera-edades',
-  title: 'Cartera por Edades',
+  title: 'Cartera por edades',
   description: 'Saldos pendientes agrupados por dias de mora',
   category: 'financiero',
   icon: 'ChartBar',

@@ -13,13 +13,11 @@ void React;
 const { sesion } = vi.hoisted(() => ({ sesion: { actual: {} as Record<string, unknown> } }));
 
 vi.mock('@/lib/auth/use-auth', () => ({ useAuth: () => sesion.actual }));
-// La ventana de la cuenta: sólo importa si se abre, con qué aviso y a dónde sigue.
-vi.mock('@/components/auth/AuthModal', () => ({
-  AuthModal: ({ isOpen, aviso, returnUrl }: { isOpen: boolean; aviso?: React.ReactNode; returnUrl?: string }) =>
-    isOpen ? (
-      <div data-testid="ventana-de-la-cuenta" data-destino={returnUrl}>
-        {aviso}
-      </div>
+// La ventana de publicar: sólo importa si se abre y a dónde sigue cada perfil.
+vi.mock('./VentanaParaPublicar', () => ({
+  VentanaParaPublicar: ({ abierta, destinos }: { abierta: boolean; destinos: { landlord: string; agency: string } }) =>
+    abierta ? (
+      <div data-testid="ventana-de-la-cuenta" data-propietario={destinos.landlord} data-inmobiliaria={destinos.agency} />
     ) : null,
 }));
 vi.mock('next/link', () => ({
@@ -53,25 +51,25 @@ afterEach(() => {
 describe('<PublicarDesdeElMarketplace>', () => {
   it('sin sesión: publicar, crear la página o entrar a la que ya tiene', () => {
     montar({ isAuthenticated: false, user: null });
-    expect(enlace('publicar-mi-inmueble')!.getAttribute('href')).toBe('/publicar');
-    expect(enlace('crear-mi-pagina')!.getAttribute('href')).toBe('/auth?mode=register&role=agency');
+    expect(enlace('publicar-mi-inmueble')!.getAttribute('href')).toBe('/publica');
+    expect(enlace('crear-mi-pagina')!.getAttribute('href')).toBe('/publica?perfil=agency');
     expect(enlace('ya-tengo-cuenta')!.getAttribute('href')).toBe(
-      `/auth?returnUrl=${encodeURIComponent('/panel/inmobiliaria/inmuebles/nuevo')}`,
+      `/auth?returnUrl=${encodeURIComponent('/publica')}`,
     );
     expect(container.textContent).toContain('Se publica con tu cuenta');
   });
 
-  it('propietario: su asistente de /publicar', () => {
+  it('propietario: el publicador rápido de /publica', () => {
     montar({ isAuthenticated: true, user: { role: 'landlord' } });
-    expect(enlace('publicar-mi-inmueble')!.getAttribute('href')).toBe('/publicar');
+    expect(enlace('publicar-mi-inmueble')!.getAttribute('href')).toBe('/publica');
     expect(enlace('ya-tengo-cuenta')).toBeNull();
     expect(enlace('publicar-uno')).toBeNull();
   });
 
-  it('inmobiliaria: uno por uno, muchos desde un archivo y su página', () => {
+  it('inmobiliaria: desde el marketplace también publica con el rápido (Nico, 20-10), y su página', () => {
     montar({ isAuthenticated: true, user: { role: 'agency' }, hasActiveAgencyMembership: true, agencyRole: 'ADMIN' });
-    expect(enlace('publicar-uno')!.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/nuevo');
-    expect(enlace('cargar-muchos')!.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/importar');
+    expect(enlace('publicar-uno')!.getAttribute('href')).toBe('/publica');
+    expect(enlace('cargar-muchos')!.getAttribute('href')).toBe('/publica?traer=excel');
     expect(enlace('mi-pagina')!.getAttribute('href')).toBe('/panel/inmobiliaria/configuracion/tu-pagina');
     // No se le ofrece el asistente del propietario ni crear otra página.
     expect(enlace('publicar-mi-inmueble')).toBeNull();
@@ -85,7 +83,7 @@ describe('<PublicarDesdeElMarketplace>', () => {
   });
 
   it('inquilino: se le explica por qué no, en vez de mandarlo a un rebote', () => {
-    montar({ isAuthenticated: true, user: { role: 'tenant' } });
+    montar({ isAuthenticated: true, user: { role: 'tenant', onboardingCompleted: true } });
     expect(enlace('publicar-mi-inmueble')).toBeNull();
     expect(container.querySelector('[data-testid="publicar-cuenta-de-inquilino"]')!.textContent).toContain(
       'Tu cuenta es de inquilino',
@@ -103,20 +101,20 @@ describe('<BotonPublicar> (siempre a la vista en la barra y el lado)', () => {
     return container.querySelector<HTMLAnchorElement>('[data-testid="boton-publicar"]');
   }
 
-  it('sin sesión y el propietario van al asistente de /publicar', () => {
-    expect(pintar({ isAuthenticated: false, user: null })!.getAttribute('href')).toBe('/publicar');
+  it('sin sesión y el propietario van al publicador rápido', () => {
+    expect(pintar({ isAuthenticated: false, user: null })!.getAttribute('href')).toBe('/publica');
     act(() => root.unmount());
     container.remove();
-    expect(pintar({ isAuthenticated: true, user: { role: 'landlord' } })!.getAttribute('href')).toBe('/publicar');
+    expect(pintar({ isAuthenticated: true, user: { role: 'landlord' } })!.getAttribute('href')).toBe('/publica');
   });
 
-  it('la inmobiliaria va a «Nueva consignación» de su panel', () => {
+  it('la inmobiliaria también va al publicador rápido (Nico, 20-10: desde el marketplace, el rápido)', () => {
     const b = pintar({ isAuthenticated: true, user: { role: 'agency' }, hasActiveAgencyMembership: true, agencyRole: 'ADMIN' });
-    expect(b!.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/nuevo');
+    expect(b!.getAttribute('href')).toBe('/publica');
   });
 
   it('el inquilino y el contador no lo ven', () => {
-    expect(pintar({ isAuthenticated: true, user: { role: 'tenant' } })).toBeNull();
+    expect(pintar({ isAuthenticated: true, user: { role: 'tenant', onboardingCompleted: true } })).toBeNull();
     act(() => root.unmount());
     container.remove();
     expect(pintar({ isAuthenticated: true, user: { role: 'agency' }, hasActiveAgencyMembership: true, agencyRole: 'CONTADOR' })).toBeNull();
@@ -124,7 +122,7 @@ describe('<BotonPublicar> (siempre a la vista en la barra y el lado)', () => {
 });
 
 describe('sin sesión, «Publicar inmueble» abre la cuenta ENCIMA (Nico, 09-10)', () => {
-  it('no navega: abre la ventana con el porqué, y al entrar sigue a publicar', () => {
+  it('no navega: abre la ventana de publicar, y cada perfil sigue a lo suyo (Nico y Juan, 19-10)', () => {
     sesion.actual = { isLoading: false, hasActiveAgencyMembership: false, agencyRole: null, isAuthenticated: false, user: null };
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -137,8 +135,8 @@ describe('sin sesión, «Publicar inmueble» abre la cuenta ENCIMA (Nico, 09-10)
     });
     expect(evento.defaultPrevented).toBe(true);
     const ventana = container.querySelector('[data-testid="ventana-de-la-cuenta"]')!;
-    expect(ventana.getAttribute('data-destino')).toBe('/publicar');
-    expect(ventana.textContent).toContain('Para publicar tu inmueble necesitas una cuenta');
+    expect(ventana.getAttribute('data-propietario')).toBe('/publica?perfil=landlord');
+    expect(ventana.getAttribute('data-inmobiliaria')).toBe('/publica?perfil=agency');
   });
 
   it('con sesión, el enlace navega como siempre', () => {

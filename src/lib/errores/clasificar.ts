@@ -289,6 +289,10 @@ const ROL_EN_LA_FRASE: Record<string, string> = {
   COORDINADOR: 'el coordinador',
   AUXILIAR_CARTERA: 'el auxiliar de cartera',
   ABOGADO_EXTERNO: 'el abogado externo',
+  AUXILIAR_COMERCIAL: 'el auxiliar comercial',
+  AUXILIAR_ADMINISTRATIVO: 'el auxiliar administrativo',
+  AUXILIAR_CONTABLE: 'el auxiliar contable',
+  AUXILIAR_MANTENIMIENTO: 'el auxiliar de mantenimiento',
 }
 
 /** `'ADMIN,CONTADOR'` → «el administrador y el contador»; vacío o desconocido → `null`. Pura. */

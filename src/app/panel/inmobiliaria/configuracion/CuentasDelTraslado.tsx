@@ -26,6 +26,7 @@ import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { tesoreriaApi } from '@/lib/api/tesoreria.service';
 import type { ConfiguracionDeTesoreria } from '@/lib/api/tesoreria.types';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { EsqueletoDeSeccion } from './piezas';
 
 type Cambio = Partial<Omit<ConfiguracionDeTesoreria, 'disponible' | 'motivo'>>;
@@ -60,11 +61,12 @@ export function CuentasDelTraslado() {
     void leer();
   }, [leer]);
 
-  async function guardar(clave: string, cambio: Cambio) {
+  async function guardar(clave: string, cambio: Cambio): Promise<boolean> {
     setGuardando(clave);
     try {
       setDatos(await tesoreriaApi.guardarConfiguracion(cambio));
-      toast.success('Configuración del traslado guardada.');
+      if (!conBarra) toast.success('Configuración del traslado guardada.');
+      return true;
     } catch (e) {
       toast.error(
         mensajeParaLaPersona(e, {
@@ -72,12 +74,40 @@ export function CuentasDelTraslado() {
           accion: 'guardar la configuración del traslado',
         }),
       );
+      return false;
     } finally {
       setGuardando(null);
     }
   }
 
-  const apagado = (clave: string) => !datos?.disponible || guardando === clave || !escritura.puede;
+  /*
+   * Dentro de Configuración (Nico, 20-10-2026): elegir una cuenta o marcar una
+   * casilla sólo marca; todo se guarda junto, en una escritura, con la barra.
+   */
+  const [borrador, setBorrador] = useState<Cambio>({});
+  const pendiente = Object.fromEntries(
+    Object.entries(borrador).filter(([k, v]) => datos && v !== datos[k as keyof Cambio]),
+  ) as Cambio;
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'cuentas-del-traslado',
+    cambios: Object.keys(pendiente).length,
+    guardar: async () => {
+      if (Object.keys(pendiente).length === 0) return true;
+      const ok = await guardar('todo', pendiente);
+      if (ok) setBorrador({});
+      return ok;
+    },
+    descartar: () => setBorrador({}),
+    activo: Boolean(datos?.disponible) && escritura.puede,
+  });
+  const cambiar = (clave: string, cambio: Cambio) => {
+    if (conBarra) setBorrador((b) => ({ ...b, ...cambio }));
+    else void guardar(clave, cambio);
+  };
+  const valor = <K extends keyof Cambio>(k: K) => (k in borrador ? borrador[k] : datos?.[k]) as Cambio[K];
+
+  const apagado = (clave: string) =>
+    !datos?.disponible || guardando === clave || guardando === 'todo' || !escritura.puede;
 
   return (
     <section className="space-y-4 rounded-lg border border-border bg-surface p-6" data-testid="cuentas-del-traslado">
@@ -112,8 +142,8 @@ export function CuentasDelTraslado() {
                 <Label htmlFor="cuenta-puc-recaudo">Cuenta del PUC de la cuenta de recaudo</Label>
                 <SelectorDeCuenta
                   cuentas={cuentas}
-                  value={datos.cuentaPucRecaudoId ?? ''}
-                  onChange={(id) => id && void guardar('recaudo', { cuentaPucRecaudoId: id })}
+                  value={valor('cuentaPucRecaudoId') ?? ''}
+                  onChange={(id) => id && cambiar('recaudo', { cuentaPucRecaudoId: id })}
                   soloImputables
                   disabled={apagado('recaudo')}
                   placeholder="Sin cuenta: el traslado sale sin asiento"
@@ -125,8 +155,8 @@ export function CuentasDelTraslado() {
                 <Label htmlFor="cuenta-puc-propia">Cuenta del PUC de tu cuenta propia</Label>
                 <SelectorDeCuenta
                   cuentas={cuentas}
-                  value={datos.cuentaPucPropiaId ?? ''}
-                  onChange={(id) => id && void guardar('propia', { cuentaPucPropiaId: id })}
+                  value={valor('cuentaPucPropiaId') ?? ''}
+                  onChange={(id) => id && cambiar('propia', { cuentaPucPropiaId: id })}
                   soloImputables
                   disabled={apagado('propia')}
                   placeholder="Sin cuenta: el traslado sale sin asiento"
@@ -140,9 +170,9 @@ export function CuentasDelTraslado() {
               {QUE_SE_TRASLADA.map((o) => (
                 <label key={o.campo} className="flex items-center gap-2 text-body-sm text-fg" data-testid={`traslada-${o.campo}`}>
                   <Checkbox
-                    checked={datos[o.campo]}
+                    checked={Boolean(valor(o.campo))}
                     disabled={apagado(o.campo)}
-                    onCheckedChange={(v) => void guardar(o.campo, { [o.campo]: v === true })}
+                    onCheckedChange={(v) => cambiar(o.campo, { [o.campo]: v === true })}
                   />
                   {o.texto}
                 </label>

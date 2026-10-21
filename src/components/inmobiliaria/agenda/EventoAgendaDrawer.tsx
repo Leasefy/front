@@ -32,6 +32,7 @@ import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useEquipo, useMiUserId } from '@/lib/agenda/use-equipo';
 import { origenDelEvento } from '@/lib/agenda/origen-del-evento';
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
 import { AsesorDeLaVisita, MasAccionesDeLaVisita } from '@/components/inmobiliaria/agenda/AccionesDeLaVisita';
 
 const ESTADO_BADGE: Record<EventoEstado, string> = {
@@ -330,7 +331,7 @@ export function EventoAgendaDrawer({
 
                 {evento.descripcion && (
                   <Fila etiqueta={evento.tipo === 'tarea' ? 'Nota' : 'Franja'}>
-                    <span className="whitespace-pre-wrap">{evento.descripcion}</span>
+                    <span className="whitespace-pre-wrap">{conLaPlataPegada(evento.descripcion)}</span>
                   </Fila>
                 )}
               </dl>

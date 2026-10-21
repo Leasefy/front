@@ -1,86 +1,21 @@
 'use client'
 
 import Link from 'next/link'
+import { ArrowRight, Wallet } from '@phosphor-icons/react'
+import { Card, MonoLabel, Progress, Stagger, StaggerItem, StatusBadge } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
+import { ETAPA, ETAPAS_DE_CARTERA, legible, type EtapaDeCartera as CarteraStage } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
-import { useClientPagination } from '@/lib/admin/use-client-pagination'
+import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
-import type { PillTone } from '@/lib/admin/types'
 
-const PAGE_SIZE = 50
 
-// ---------- Stage constants (BACK.md §7.1) ----------
-
-const CARTERA_STAGES = ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'SX'] as const
-type CarteraStage = (typeof CARTERA_STAGES)[number]
-type StageTone = Extract<PillTone, 'ok' | 'neutral' | 'warn' | 'bad' | 'muted'>
-
-const STAGE_LABEL_ES: Record<CarteraStage, string> = {
-  S0: 'Pre-vencimiento',
-  S1: 'Cartera fresca',
-  S2: 'Mora administrativa',
-  S3: 'Mora pre-jurídica',
-  S4: 'Siniestro inmobiliario',
-  S5: 'Restitución / jurídico',
-  SX: 'Skip / Abandono',
-}
-
-const STAGE_HINT_ES: Record<CarteraStage, string> = {
-  S0: 'día < 0',
-  S1: 'día 1..15',
-  S2: 'día 16..45',
-  S3: 'día 46..89',
-  S4: 'reclamo seguro',
-  S5: '≥ 90d, sin póliza',
-  SX: 'cualquier edad',
-}
-
-const STAGE_TONE: Record<CarteraStage, StageTone> = {
-  S0: 'ok',
-  S1: 'neutral',
-  S2: 'warn',
-  S3: 'warn',
-  S4: 'bad',
-  S5: 'bad',
-  SX: 'muted',
-}
-
-// ---------- Color helpers ----------
-
-function toneToBgClass(tone: StageTone): string {
-  switch (tone) {
-    case 'ok':      return 'bg-ok/15'
-    case 'neutral': return 'bg-brand/15'
-    case 'warn':    return 'bg-warn/20'
-    case 'bad':     return 'bg-bad/20'
-    case 'muted':   return 'bg-fg-dim/25'
-  }
-}
-
-function toneToBorderClass(tone: StageTone): string {
-  switch (tone) {
-    case 'ok':      return 'border-l-ok'
-    case 'neutral': return 'border-l-brand'
-    case 'warn':    return 'border-l-warn'
-    case 'bad':     return 'border-l-bad'
-    case 'muted':   return 'border-l-fg-dim'
-  }
-}
-
-function toneToInkClass(tone: StageTone): string {
-  switch (tone) {
-    case 'ok':      return 'text-ok'
-    case 'neutral': return 'text-brand'
-    case 'warn':    return 'text-warn'
-    case 'bad':     return 'text-bad'
-    case 'muted':   return 'text-fg-muted'
-  }
-}
+/** El tono de Cadence (`StatusBadge`) de cada etapa. */
+const TONO_DEL_SELLO = { ok: 'success', neutral: 'info', warn: 'warning', bad: 'critical', muted: 'neutral' } as const
 
 // ---------- Types ----------
 
@@ -126,54 +61,38 @@ interface CarteraOverview {
 // ---------- Sub-components ----------
 
 function StageCard({ bucket, total }: { bucket: StageBucket; total: number }) {
-  const tone = STAGE_TONE[bucket.stage]
+  const etapa = ETAPA[bucket.stage]
   const pct = total > 0 ? (bucket.n / total) * 100 : 0
   return (
-    <Link
-      href={`/admin/cartera/${bucket.stage}`}
-      className={`block card p-4 hover:bg-bg-hover transition-colors border-l-2 ${toneToBorderClass(tone)}`}
-    >
-      <div className="flex items-baseline justify-between mb-2">
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-subtle">
-          {bucket.stage}
-        </span>
-        <span className="font-mono text-[10px] tabular-nums text-fg-subtle">
-          {pct.toFixed(1)}%
-        </span>
-      </div>
-      <div className="font-display text-3xl tabular-nums leading-none mb-1">
-        {bucket.n.toLocaleString('es-CO')}
-      </div>
-      <div className="text-xs text-fg truncate" title={STAGE_LABEL_ES[bucket.stage]}>
-        {STAGE_LABEL_ES[bucket.stage]}
-      </div>
-      <div className="mt-2 pt-2 border-t border-bg-border flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-        <span>{STAGE_HINT_ES[bucket.stage]}</span>
-        {bucket.avg_days_in_state !== null && (
-          <span className="tabular-nums normal-case text-fg-muted">
-            {bucket.avg_days_in_state.toFixed(1)}d prom
-          </span>
-        )}
-      </div>
+    <Link href={`/admin/cartera/${bucket.stage}`} className="group block h-full rounded-[20px] outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <Card interactive className="flex h-full flex-col gap-2 p-5">
+        <div className="flex items-center justify-between gap-2">
+          <StatusBadge tone={TONO_DEL_SELLO[etapa.tono]}>{bucket.stage}</StatusBadge>
+          <MonoLabel className="tabular-nums">{pct.toLocaleString('es-CO', { maximumFractionDigits: 1 })} %</MonoLabel>
+        </div>
+        <div className="font-mono text-stat font-semibold tabular-nums text-fg">{bucket.n.toLocaleString('es-CO')}</div>
+        <div className="truncate text-body-sm font-medium text-fg" title={etapa.nombre}>
+          {etapa.nombre}
+        </div>
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-border-faint pt-2 text-caption text-fg-subtle">
+          <span>{etapa.pista}</span>
+          {bucket.avg_days_in_state !== null && (
+            <span className="font-mono tabular-nums text-fg-muted">
+              {bucket.avg_days_in_state.toLocaleString('es-CO', { maximumFractionDigits: 1 })} d prom.
+            </span>
+          )}
+        </div>
+      </Card>
     </Link>
   )
 }
 
-function TransitionArrow({
-  from,
-  to,
-}: {
-  from: CarteraStage | null
-  to: CarteraStage
-}) {
-  const toTone = STAGE_TONE[to]
+function TransitionArrow({ from, to }: { from: CarteraStage | null; to: CarteraStage }) {
   return (
-    <span className="inline-flex items-center gap-1.5 font-mono text-[11px] tabular-nums">
-      <span className="text-fg-subtle">{from ?? <span className="italic">inicial</span>}</span>
-      <span className="text-fg-dim">→</span>
-      <span className={`px-1.5 py-0.5 ${toneToBgClass(toTone)} ${toneToInkClass(toTone)}`}>
-        {to}
-      </span>
+    <span className="inline-flex items-center gap-1.5">
+      <span className="font-mono text-caption text-fg-subtle">{from ?? 'inicio'}</span>
+      <ArrowRight className="h-3.5 w-3.5 text-fg-subtle" aria-hidden="true" />
+      <Pill tone={ETAPA[to].tono}>{to}</Pill>
     </span>
   )
 }
@@ -182,21 +101,17 @@ function TransitionArrow({
 
 /** /cartera — portfolio overview (BACK.md §8.6 · FRONT.md §6.9). */
 export default function CarteraPage() {
-  const { data, isLoading, error } = useApiQuery<CarteraOverview>(
+  const { data, isLoading, error, refetch } = useApiQuery<CarteraOverview>(
     (signal) => adminApi('/cartera', { signal }),
   )
 
-  /* Log cross-tenant de transiciones: se acumula con cada corrida del cron, así
-     que no tiene techo. Va ANTES de los early-return de abajo — un hook detrás
-     de un `return` condicional rompe el orden de hooks de React. */
-  const transitionsPaging = useClientPagination(data?.transitions, PAGE_SIZE)
 
-  if (isLoading) return <div className="p-6 lg:p-8"><LoadingBlock /></div>
-  if (error) return <div className="p-6 lg:p-8"><ErrorBlock error={error} /></div>
+  if (isLoading) return <div className="space-y-6 p-6 lg:p-8"><LoadingBlock filas={6} /></div>
+  if (error) return <div className="space-y-6 p-6 lg:p-8"><ErrorBlock error={error} onReintentar={refetch} /></div>
 
   // Normalise: fill in stages missing from the API (n=0 if no debtors in stage)
   const byStage = new Map((data?.buckets ?? []).map((b) => [b.stage, b]))
-  const buckets: StageBucket[] = CARTERA_STAGES.map((stage) => {
+  const buckets: StageBucket[] = ETAPAS_DE_CARTERA.map((stage) => {
     const b = byStage.get(stage)
     return {
       stage,
@@ -216,125 +131,101 @@ export default function CarteraPage() {
   const transitionColumns: Column<TransitionRow>[] = [
     {
       header: 'Cuándo',
+      orden: (r) => r.transitioned_at,
+      ordenPrimero: 'desc',
+      texto: (r) => fmtDateTime(r.transitioned_at),
       cell: (r) => (
-        <span className="whitespace-nowrap text-xs text-fg-muted tabular-nums">
-          {fmtDateTime(r.transitioned_at)}
-        </span>
+        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.transitioned_at)}</span>
       ),
     },
     {
       header: 'Deudor',
-      cell: (r) => (
-        <span className="truncate max-w-[200px]">{r.debtor_name ?? '—'}</span>
-      ),
+      orden: (r) => r.debtor_name,
+      texto: (r) => r.debtor_name,
+      cell: (r) => <span className="block max-w-[200px] truncate font-medium">{r.debtor_name ?? '—'}</span>,
     },
     {
       header: 'Inmobiliaria',
-      cell: (r) => (
-        <span className="text-xs text-fg-muted truncate max-w-[180px]">
-          {r.legal_name ?? '—'}
-        </span>
-      ),
+      orden: (r) => r.legal_name,
+      texto: (r) => r.legal_name,
+      cell: (r) => <span className="block max-w-[180px] truncate text-fg-muted">{r.legal_name ?? '—'}</span>,
     },
     {
-      header: 'Transición',
+      header: 'Cambio de etapa',
+      orden: (r) => r.to_stage,
+      texto: (r) => `${r.from_stage ?? 'inicio'} → ${r.to_stage}`,
       cell: (r) => <TransitionArrow from={r.from_stage} to={r.to_stage} />,
     },
     {
       header: 'Motivo',
-      cell: (r) => (
-        <span className="font-mono text-[11px] text-fg-muted truncate max-w-[260px]">
-          {r.reason}
-        </span>
-      ),
+      texto: (r) => legible(r.reason),
+      cell: (r) => <span className="block max-w-[260px] truncate text-fg-muted" title={r.reason}>{legible(r.reason)}</span>,
     },
   ]
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl space-y-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="05 · cartera"
-        title="Estado de cartera"
+        title="Cartera"
         description={[
-          `${total.toLocaleString('es-CO')} deudores clasificados en 7 stages (S0..S5, SX).`,
-          untracked > 0
-            ? ` ${untracked.toLocaleString('es-CO')} sin estado asignado.`
-            : '',
+          `${total.toLocaleString('es-CO')} deudores en 7 etapas de cobro (S0 a S5 y SX).`,
+          untracked > 0 ? ` ${untracked.toLocaleString('es-CO')} todavía sin etapa.` : '',
         ].join('')}
       />
 
-      {/* Stage bucket grid */}
-      <section>
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-          buckets por stage
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <section aria-label="Deudores por etapa">
+        <Stagger className="grid grid-cols-2 gap-3 md:grid-cols-4 2xl:grid-cols-7">
           {buckets.map((b) => (
-            <StageCard key={b.stage} bucket={b} total={total} />
+            <StaggerItem key={b.stage} className="h-full">
+              <StageCard bucket={b} total={total} />
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </section>
 
-      {/* Funnel bars */}
-      <section>
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-          distribución
+      <Tarjeta titulo="Cómo se reparte" descripcion="Toca una etapa para ver sus deudores.">
+        <div className="space-y-3">
+          {buckets.map((b) => {
+            const pct = total > 0 ? (b.n / total) * 100 : 0
+            const etapa = ETAPA[b.stage]
+            return (
+              <Link
+                key={b.stage}
+                href={`/admin/cartera/${b.stage}`}
+                className="group -mx-2 grid grid-cols-[minmax(0,10rem)_1fr_auto] items-center gap-3 rounded-sm px-2 py-1 outline-none transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[minmax(0,14rem)_1fr_auto]"
+              >
+                <span className="flex min-w-0 items-baseline gap-2">
+                  <span className="font-mono text-caption text-fg-subtle">{b.stage}</span>
+                  <span className="truncate text-body-sm text-fg">{etapa.nombre}</span>
+                </span>
+                <Progress value={(b.n / maxN) * 100} color={etapa.barra} size="sm" label={`${etapa.nombre}: ${b.n}`} />
+                <span className="w-24 text-right font-mono text-caption tabular-nums text-fg-muted">
+                  {b.n.toLocaleString('es-CO')} · {pct.toLocaleString('es-CO', { maximumFractionDigits: 1 })} %
+                </span>
+              </Link>
+            )
+          })}
         </div>
-        <div className="card p-5">
-          <div className="space-y-2.5">
-            {buckets.map((b) => {
-              const pct = total > 0 ? (b.n / total) * 100 : 0
-              const widthPct = (b.n / maxN) * 100
-              const tone = STAGE_TONE[b.stage]
-              return (
-                <Link key={b.stage} href={`/admin/cartera/${b.stage}`} className="block group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-28 shrink-0 flex items-baseline gap-2">
-                      <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg-subtle">
-                        {b.stage}
-                      </span>
-                      <span className="text-xs text-fg-muted truncate">
-                        {STAGE_LABEL_ES[b.stage]}
-                      </span>
-                    </div>
-                    <div className="flex-1 h-6 bg-bg-hover relative overflow-hidden">
-                      <div
-                        className={`h-full transition-all group-hover:opacity-80 ${toneToBgClass(tone)}`}
-                        style={{ width: `${widthPct}%` }}
-                      />
-                      <div className="absolute inset-0 flex items-center justify-end pr-2.5 font-mono text-[11px] tabular-nums text-fg">
-                        {b.n.toLocaleString('es-CO')}
-                      </div>
-                    </div>
-                    <div className="w-14 shrink-0 text-right font-mono text-[11px] tabular-nums text-fg-subtle">
-                      {pct.toFixed(1)}%
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      </section>
+      </Tarjeta>
 
-      {/* Recent transitions */}
-      <section>
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-          transiciones recientes
-        </div>
+      <section className="space-y-3" aria-label="Cambios de etapa recientes">
+        <MonoLabel className="block">Cambios de etapa recientes</MonoLabel>
         <DataTable
           columns={transitionColumns}
-          rows={transitionsPaging.pageRows}
+          rows={data?.transitions}
           getKey={(r) => r.id}
-          emptyTitle="Sin transiciones"
-          emptyHint="El cron cartera-cadence-cron corre a las 06:30 Bogotá."
-        />
-
-        <Pagination
-          page={transitionsPaging.page}
-          total={transitionsPaging.total}
-          pageSize={PAGE_SIZE}
-          onPage={transitionsPaging.setPage}
+          emptyTitle="Todavía no hay cambios de etapa"
+          emptyHint="La tarea de cartera corre todos los días a las 6:30 a. m. (hora de Bogotá)."
+          emptyIcon={<Wallet weight="bold" />}
+          aria-label="Cambios de etapa"
+          queSon={['cambio', 'cambios']}
+          buscar="Deudor, inmobiliaria o motivo"
+          segmentos={[
+            { valor: 'todos', nombre: 'Todos', cumple: () => true },
+            ...ETAPAS_DE_CARTERA.map((e) => ({ valor: e, nombre: `A ${e}`, cumple: (r: TransitionRow) => r.to_stage === e })),
+          ]}
+          ordenInicial={{ columna: 0, sentido: 'desc' }}
+          exportar="cambios-de-etapa"
         />
       </section>
     </div>

@@ -217,7 +217,8 @@ describe('O3 — sólo se ofrece lo que el back va a dejar hacer', () => {
     // «Mandar el extracto» de las acciones masivas (10-10-2026) pide lo mismo
     // que el back en `extractos/enviar-mes/en-el-centro`: `dispersiones:edit`.
     expect(new Set(permisos.pedidas)).toEqual(
-      new Set(['propietarios:create', 'propietarios:edit', 'propietarios:delete', 'dispersiones:edit']),
+      // 🔴 20-10-2026 (política de datos): «Exportar» también pregunta su llave.
+      new Set(['propietarios:create', 'propietarios:edit', 'propietarios:delete', 'propietarios:export', 'dispersiones:edit']),
     );
   });
 

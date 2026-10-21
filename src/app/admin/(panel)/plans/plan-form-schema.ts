@@ -80,7 +80,7 @@ export const planFormSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['slug'],
-        message: 'Slug inválido: minúsculas, números y guiones (ej. flex-pro).',
+        message: 'El código va en minúsculas, números y guiones (ej. flex-pro).',
       })
     }
 
@@ -91,7 +91,7 @@ export const planFormSchema = z
         return
       }
       if (!UINT_RE.test(raw)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${label} debe ser un entero en pesos (>= 0).` })
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${label} va en pesos enteros, sin negativos.` })
         return
       }
       if (Number(raw) > PRECIO_MAXIMO_DEL_PLAN_COP) {
@@ -125,7 +125,7 @@ export const planFormSchema = z
         return
       }
       if (!UINT_RE.test(raw)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${label} debe ser un entero >= 0.` })
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${label} va en números enteros, sin negativos.` })
         return
       }
       if (Number(raw) > CREDITOS_MAXIMOS_DEL_MES) {
@@ -134,14 +134,14 @@ export const planFormSchema = z
     }
 
     // Prices that exist regardless of billing mode.
-    price('scoringViewPrice', 'El precio de scoring view')
+    price('scoringViewPrice', 'El precio de ver una calificación')
     price('evaluationCreditPrice', 'El precio del crédito de evaluación')
     uint('monthlyCreditGrant', 'El bono mensual de créditos')
 
     // Limits (sentinels -1/0/N).
-    limit('maxProperties', 'El máximo de propiedades')
-    limit('maxUsers', 'El máximo de usuarios')
-    limit('maxScoringViews', 'El máximo de scoring views')
+    limit('maxProperties', 'El tope de inmuebles')
+    limit('maxUsers', 'El tope de usuarios')
+    limit('maxScoringViews', 'El tope de calificaciones vistas')
     limit('monthlyEvalCap', 'El tope mensual de evaluaciones')
 
     if (v.billingMode === 'FLAT') {
@@ -150,9 +150,9 @@ export const planFormSchema = z
     } else {
       // USAGE_CANON: monthly/annual are forced 0; the % of canon is required.
       if (v.usageFeePct === '') {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['usageFeePct'], message: 'El % de canon es obligatorio en modo USAGE_CANON.' })
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['usageFeePct'], message: 'Falta el porcentaje del canon.' })
       } else if (!DECIMAL_RE.test(v.usageFeePct)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['usageFeePct'], message: 'El % de canon debe ser un número >= 0 (ej. 1.5).' })
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['usageFeePct'], message: 'El porcentaje del canon es un número sin negativos (ej. 1,5).' })
       } else if (Math.round(Number(v.usageFeePct) * 100) > COMISION_MAXIMA_BPS) {
         // El back recibe puntos básicos (% × 100): 100 % = 10.000.
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['usageFeePct'], message: MENSAJES_DEL_PLAN.comisionMaxima })

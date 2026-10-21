@@ -44,9 +44,7 @@ activity feed, execution panel).
 - Cadence (`@leasefy/cadence`, `file:../cadence`): el CI y Vercel clonan el repo hermano `Leasefy/cadence` antes de
   instalar. La rama o tag a clonar sale de `.cadence-ref` (raíz de `front/`, una sola línea); sin el archivo se
   usa `main`. Lo actualiza quien cambia la versión de Cadence que la rama necesita, en el mismo commit que el
-  lockfile; mientras una rama fije un ref, `main` de Cadence no gobierna sus builds. Hoy apunta a `bugs-nico-1`
-  de Cadence (main 1.2.3 + los arreglos del DateField del 18-10: escribir «14» en el Día dejaba «1»,
-  y «03» perdía el cero y no saltaba al Mes); al mezclarla a `main` de Cadence, volver `.cadence-ref` a `main`.
+  lockfile; mientras una rama fije un ref, `main` de Cadence no gobierna sus builds. Hoy apunta a `main` (los arreglos del DateField del 18-10 —escribir «14» en el Día dejaba «1», y «03» perdía el cero y no saltaba al Mes— ya están mezclados en `main` de Cadence).
   Una rama fijada nunca se borra mientras una rama de front la fije: primero se actualiza `.cadence-ref`
   (incidente 2026-10-07: el build de Main fallo con clone exit 128).
 
@@ -56,10 +54,17 @@ activity feed, execution panel).
   `/panel/(landlord)`, `/inquilino`, `/propiedades`, `/onboarding`, `/aplicar`, `/auth`, `/avaluo`.
 - **Backoffice admin** (`/admin/*`, `src/app/admin/`): panel interno de Leasefy/Portofino
   (operación cross-tenant). Auth propia (`/admin/login`, allowlist `ADMIN_EMAILS`), sidebar
-  en `src/components/admin/Nav.tsx`. ⚠️ NO usa el design system de shadcn/`DESIGN.md`: tiene
-  el suyo propio (clases `card`/`btn`/`pill`, tokens `fg/bg/brand`, mono) en `admin.css`.
-  Cliente HTTP: `adminApi` (`src/lib/admin/api.ts`, base `NEXT_PUBLIC_ADMIN_API_URL`).
-  Referencia canónica de patrón de pantalla: `/admin/approvals`.
+  en `src/components/admin/Nav.tsx`. Desde el 19-10-2026 usa Cadence como el panel (ya no las
+  clases `card`/`btn`/`pill` de `admin.css`). Cliente HTTP: `adminApi` (`src/lib/admin/api.ts`,
+  base `NEXT_PUBLIC_ADMIN_API_URL`). **Toda lista va en `DataTable`**
+  (`src/components/admin/screen/DataTable.tsx`, 20-10-2026, Nico: «que las tablas tengan
+  paginación, filtros y todo lo que tienen las tablas de la plataforma»): buscador, pestañas con
+  conteo, filtros propios (`filtrosEnLaUrl`: «Limpiar filtros» los borra en UN solo cambio de
+  URL), orden por columna (`Column.orden`), Excel (`exportar` + `Column.texto`; con paginación
+  del servidor, `traerTodoParaElExcel`), filas por página, conteo «N de M» y tarjetas bajo 768 px;
+  todo en la URL (respaldo en memoria sin enrutador: `use-estado-de-la-tabla.ts`). El detalle de
+  una fila va en un cajón (`CajonDelDetalle` o uno propio). Sin Excel donde hay datos personales
+  de deudores (Deudores, Cartera por etapa).
 - Componentes por feature folders en `src/components/` (no atomic design).
 - Patrón páginas de panel: `page.tsx` (Server Component) + `XxxView.tsx` (presentación) +
   `XxxClient.tsx` (interacción).

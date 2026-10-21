@@ -2769,6 +2769,11 @@ export interface RoleMatrices {
     COORDINADOR?: PermMap;
     AUXILIAR_CARTERA?: PermMap;
     ABOGADO_EXTERNO?: PermMap;
+    /** Roles auxiliares (20-10-2026); opcionales: un back anterior no los manda. */
+    AUXILIAR_COMERCIAL?: PermMap;
+    AUXILIAR_ADMINISTRATIVO?: PermMap;
+    AUXILIAR_CONTABLE?: PermMap;
+    AUXILIAR_MANTENIMIENTO?: PermMap;
   };
   /** ROLES (14-10-2026): los módulos de los agentes de cada rol (un back anterior no lo manda). */
   modulosDelMicro?: Record<string, { cobranza: string[]; cotizador: string[]; ap: string[] }>;
@@ -2787,6 +2792,10 @@ export interface UpdateRolePermissionsBody {
   COORDINADOR?: PermMap;
   AUXILIAR_CARTERA?: PermMap;
   ABOGADO_EXTERNO?: PermMap;
+  AUXILIAR_COMERCIAL?: PermMap;
+  AUXILIAR_ADMINISTRATIVO?: PermMap;
+  AUXILIAR_CONTABLE?: PermMap;
+  AUXILIAR_MANTENIMIENTO?: PermMap;
 }
 
 export const rolePermissionsApi = {

@@ -12,6 +12,7 @@ import {
 import { ChartLineUp } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { SinDatos } from '@/components/estado/SinDatos'
+import { nombreDeLaAseguradora } from '@/lib/cotizador/nombre-de-la-aseguradora'
 import type { ApprovalRateMonthlyRow } from '@/lib/hooks/cotizador/use-insights'
 
 // ---------------------------------------------------------------------------
@@ -140,6 +141,8 @@ export function ApprovalRateMonthlyChart({
             key={carrier}
             type="linear"
             dataKey={carrier}
+            // COTIZ-16: la leyenda con el nombre («Bolívar»), no el código.
+            name={nombreDeLaAseguradora(carrier)}
             stroke={CARRIER_COLORS[idx % CARRIER_COLORS.length]}
             dot={{ r: 3 }}
             connectNulls={false}

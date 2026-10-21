@@ -326,8 +326,8 @@ export default function ParaTiPage() {
           *
           * `bg-brand` y no `bg-primary`: en tema oscuro `--primary` se vuelve
           * `--indigo-300` (#8A9FFF) y el texto blanco encima queda en **2,48:1**
-          * —ilegible—. `--brand` resuelve a cobalto fijo (#0040FF) en los dos
-          * temas, y ahí el blanco mide 6,61:1.
+          * —ilegible—. `--brand` resuelve al cobalto de Leasefy fijo (#1A40FF)
+          * en los dos temas, y ahí el blanco mide 6,59:1.
           *
           * El número de la derecha era `getAccessiblePropertiesPercentage()`, una
           * tabla fija por letra de score (A=95, B=85, C=60, D=30) que no mira el

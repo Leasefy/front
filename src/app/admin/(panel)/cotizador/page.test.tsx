@@ -29,6 +29,9 @@ const deleteCarrier = vi.fn()
 const getPreScoringConfig = vi.fn()
 const updatePreScoringConfig = vi.fn()
 
+// La confirmación es la de Cadence (19-10-2026: ya no `window.confirm`): acá dice que sí.
+vi.mock('@/components/ui/confirmar', () => ({ confirmar: vi.fn().mockResolvedValue(true) }))
+
 vi.mock('@/lib/admin/cotizador', () => ({
   listCarriers: (signal?: AbortSignal) => listCarriers(signal),
   createCarrier: (body: unknown) => createCarrier(body),
@@ -93,7 +96,6 @@ beforeEach(() => {
     resultReuseTtlHours: 48,
   })
   updatePreScoringConfig.mockReset()
-  window.confirm = vi.fn().mockReturnValue(true)
 })
 
 afterEach(() => {
@@ -118,9 +120,9 @@ function deleteButton(name: string): HTMLButtonElement {
     tr.textContent?.includes(name),
   )
   const btn = Array.from(row?.querySelectorAll('button') ?? []).find((b) =>
-    b.textContent?.includes('Eliminar'),
+    b.textContent?.includes('Desactivar'),
   )
-  if (!btn) throw new Error(`Eliminar button for ${name} not found`)
+  if (!btn) throw new Error(`Desactivar button for ${name} not found`)
   return btn as HTMLButtonElement
 }
 
@@ -138,8 +140,8 @@ describe('CotizadorPage', () => {
 
     expect(container.textContent).toContain('fianly')
     expect(container.textContent).toContain('sura')
-    expect(container.textContent).toContain('configurado ✓')
-    expect(container.textContent).toContain('sin credenciales')
+    expect(container.textContent).toContain('Puestas')
+    expect(container.textContent).toContain('Sin credenciales')
   })
 
   it('opens the create form and creates a carrier', async () => {
@@ -149,7 +151,7 @@ describe('CotizadorPage', () => {
     await mount()
 
     const newBtn = Array.from(container.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('Nuevo carrier'),
+      b.textContent?.includes('Nueva aseguradora'),
     ) as HTMLButtonElement
     await act(async () => newBtn.click())
 
@@ -174,7 +176,7 @@ describe('CotizadorPage', () => {
 
     const nameInput = container.querySelector('#carrier-name') as HTMLInputElement
     expect(nameInput.disabled).toBe(true)
-    expect(container.textContent).toContain('configurado ✓')
+    expect(container.textContent).toContain('Puestas')
 
     await act(async () => {
       submitButton().click()

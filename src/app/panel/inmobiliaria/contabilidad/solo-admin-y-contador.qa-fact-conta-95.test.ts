@@ -34,7 +34,18 @@ const paginas = [
   }
 })
 
-describe('🔴 Contabilidad: sólo el administrador y el contador (CB-R12)', () => {
+/** Las pantallas que también abre el auxiliar contable (20-10-2026). */
+const CON_EL_AUXILIAR_CONTABLE = [
+  'page.tsx',
+  join('asientos', 'page.tsx'),
+  join('egresos', 'page.tsx'),
+  join('estados-financieros', 'page.tsx'),
+  join('gastos', 'page.tsx'),
+  join('puc', 'page.tsx'),
+  join('reportes', 'page.tsx'),
+]
+
+describe('🔴 Contabilidad: sólo el administrador y el contador (CB-R12), y el auxiliar contable donde registra', () => {
   it('hay pantallas que revisar', () => {
     expect(paginas.length).toBeGreaterThanOrEqual(13)
   })
@@ -45,7 +56,13 @@ describe('🔴 Contabilidad: sólo el administrador y el contador (CB-R12)', () 
     expect(guardas.length).toBeGreaterThan(0)
     for (const g of guardas) {
       expect(g).toMatch(/module="reportes"/)
-      expect(g).toMatch(/roles=\{\[AGENCY_ROLES\.ADMIN,\s*AGENCY_ROLES\.CONTADOR\]\}/)
+      // Roles auxiliares (20-10-2026): donde el auxiliar contable registra o
+      // consulta, la lista compartida; en lo demás, sólo admin y contador.
+      if (CON_EL_AUXILIAR_CONTABLE.includes(f)) {
+        expect(g).toMatch(/roles=\{ROLES_DE_LA_CONTABILIDAD\}/)
+      } else {
+        expect(g).toMatch(/roles=\{\[AGENCY_ROLES\.ADMIN,\s*AGENCY_ROLES\.CONTADOR\]\}/)
+      }
       expect(g).toMatch(/seccion="Contabilidad"/)
     }
   })

@@ -43,6 +43,7 @@ describe('las frases de la Calificación Leasefy que vienen del back', () => {
       'Sólo con su historial en Leasefy: no hay un estudio de documentos de los últimos 6 meses, así que no se sabe hasta qué canon.',
       'Sin historial en Leasefy todavía: la calificación sale de sus documentos.',
       'Cómo terminaron sus contratos',
+      'Con menos de 6 meses de historial y sin estudio de documentos, la calificación llega hasta B.',
     ]
     for (const f of frenos) {
       const deTu = paraLaPersona(f)

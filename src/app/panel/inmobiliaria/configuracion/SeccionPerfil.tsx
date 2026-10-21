@@ -13,7 +13,6 @@ import { toast } from '@/components/ui/toast';
 import { Buildings, Info } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { useI18n } from '@/lib/i18n';
 import {
   ConfigPerfilAgencia,
   ConfigExtractoMensual,
@@ -30,7 +29,7 @@ import { EsqueletoDeSeccion, VacioDeSeccion } from './piezas';
 /**
  * Los datos de la empresa que se imprimen en un contrato o en una cuenta de
  * cobro. Sin ellos la ficha se llena de «—» y nadie sabe cuáles faltan: acá se
- * nombran, y «Editar» (abajo, en la tarjeta) es la salida.
+ * nombran, y los campos de abajo (con la barra de guardado) son la salida.
  */
 const DATOS_DE_LA_EMPRESA: Array<{ campo: keyof AgencyProfile; label: string }> = [
   { campo: 'nit', label: 'NIT' },
@@ -49,7 +48,6 @@ export function datosQueFaltan(agency: AgencyProfile): string[] {
 }
 
 export function SeccionPerfil() {
-  const { t } = useI18n();
   const { config, isLoading, errorCrudo, refetch } = useInmobiliariaConfig();
   const agency = config?.agency ?? null;
   const isAgencyAdmin = agency?.memberRole === 'ADMIN';
@@ -74,9 +72,8 @@ export function SeccionPerfil() {
       try {
         await agencyApi.updateAgency(payload);
         await refetch();
-        toast.success(t('inmobiliaria.config.toasts.configSaved'), {
-          description: t('inmobiliaria.config.toasts.configSavedDesc'),
-        });
+        // Lo guardado lo dice la barra de abajo («Cambios guardados»): un toast
+        // por tarjeta repetiría lo mismo tres veces (Nico, 20-10-2026).
       } catch (error) {
         if (!pintaLosCampos || !traeErroresPorCampo(error)) {
           toast.error(
@@ -98,8 +95,10 @@ export function SeccionPerfil() {
 
   return (
     <EstadoDeDatos
-      cargando={isLoading}
-      error={errorCrudo}
+      // 🔴 Releer después de guardar NO vuelve al esqueleto (QA 20-10-2026):
+      // desmontaba las demás tarjetas y se perdía lo que tenían sin guardar.
+      cargando={isLoading && !agency}
+      error={agency ? null : errorCrudo}
       vacio={!agency}
       queEs="los datos de tu inmobiliaria"
       onReintentar={refetch}
@@ -118,8 +117,8 @@ export function SeccionPerfil() {
             <div className="flex items-start gap-2.5 rounded-lg border border-border bg-surface-muted px-4 py-3">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
               <p className="text-sm text-fg-muted">
-                Faltan datos de la empresa: {faltan.join(', ')}. Toca «Editar» y complétalos: se imprimen en los
-                contratos y en las cuentas de cobro.
+                Faltan datos de la empresa: {faltan.join(', ')}. Complétalos aquí abajo y guarda: se imprimen en
+                los contratos y en las cuentas de cobro.
               </p>
             </div>
           )}

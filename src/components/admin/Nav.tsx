@@ -1,9 +1,9 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { getSupabase } from '@/lib/supabase/client'
-import { Wordmark } from './Wordmark'
+import { useMemo } from 'react'
+
+import { PlanSidebar } from '@/components/ui/plan/PlanSidebar'
+import { filasDelMenuDelAdmin } from '@/lib/admin/menu-del-admin'
 
 /** The nav sections, in order (FRONT.md §5.1). Routes are prefixed /admin. */
 export const NAV_ITEMS = [
@@ -50,60 +50,26 @@ export const NAV_ITEMS = [
   { href: '/admin/recaudo-en-linea', label: 'Recaudo en línea', hint: 'wompi · liquidaciones', code: '35' },
 ] as const
 
-export function Nav({ userEmail }: { userEmail: string }) {
-  const pathname = usePathname()
-
-  async function signOut() {
-    await getSupabase()?.auth.signOut()
-    window.location.href = '/admin/login'
-  }
-
+/**
+ * La barra lateral del admin: el `PlanSidebar` de la plataforma (Cadence), el
+ * mismo de los paneles de la inmobiliaria, el propietario y el inquilino.
+ * Secciones plegables, un ícono por fila, el logotipo de Leasefy, plegar con
+ * ⌘B, el cajón en el celular y el buscador de pantallas (⌘K) arriba.
+ *
+ * `NAV_ITEMS` (arriba) sigue siendo LA lista de pantallas; la sección, el ícono
+ * y el nombre de cada una salen de `lib/admin/menu-del-admin.ts`.
+ */
+export function Nav({ onBuscar }: { onBuscar: () => void }) {
+  const filas = useMemo(() => filasDelMenuDelAdmin(NAV_ITEMS), [])
   return (
-    <aside className="w-64 shrink-0 border-r border-bg-border bg-bg-surface min-h-screen flex flex-col sticky top-0 h-screen overflow-y-auto" data-lenis-prevent>
-      <div className="px-5 py-5 border-b border-bg-border">
-        {/* Negro, como el logo de la barra de las otras plataformas y el de la landing (Nico, 03-10). */}
-        <Wordmark size="md" variant="ink" />
-        <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">admin · v1</div>
-      </div>
-
-      <nav className="flex-1 px-2 py-3 space-y-px">
-        {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={
-                'group flex items-center gap-3 px-3 py-2.5 transition-colors border-l-2 ' +
-                (active
-                  ? 'bg-bg-hover text-fg border-l-brand'
-                  : 'text-fg-muted hover:bg-bg-hover hover:text-fg border-l-transparent')
-              }
-            >
-              <span
-                className={
-                  'font-mono text-[10px] tabular-nums ' +
-                  (active ? 'text-brand' : 'text-fg-subtle group-hover:text-fg-muted')
-                }
-              >
-                {item.code}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium leading-tight">{item.label}</div>
-                <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">{item.hint}</div>
-              </div>
-            </Link>
-          )
-        })}
-      </nav>
-
-      <div className="px-3 py-3 border-t border-bg-border space-y-3">
-        <div className="px-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">sesión</div>
-          <div className="text-xs text-fg-muted truncate mt-0.5" title={userEmail}>{userEmail}</div>
-        </div>
-        <button onClick={signOut} className="btn btn-ghost w-full justify-start">Cerrar sesión →</button>
-      </div>
-    </aside>
+    <PlanSidebar
+      navItems={filas}
+      logo={{ title: 'Admin de Leasefy', href: '/admin' }}
+      workspaceName="Admin de Leasefy"
+      onSearchClick={onBuscar}
+      searchPlaceholder="Buscar una pantalla"
+      // La ayuda pública es para las inmobiliarias; acá no lleva a nada útil.
+      ayudaHref={null}
+    />
   )
 }

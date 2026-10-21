@@ -189,7 +189,7 @@ describe('<MembersStepForm>', () => {
     }
   })
 
-  it('exposes the seven panel agency roles (ROLES, 14-10-2026) — no OPERATOR', () => {
+  it('exposes the panel agency roles (ROLES, 14-10-2026; +4 auxiliares 20-10-2026) — no OPERATOR', () => {
     expect(MEMBER_ROLE_OPTIONS.map((option) => option.value)).toEqual([
       'AGENTE',
       'CONTADOR',
@@ -198,6 +198,10 @@ describe('<MembersStepForm>', () => {
       'COORDINADOR',
       'AUXILIAR_CARTERA',
       'ABOGADO_EXTERNO',
+      'AUXILIAR_COMERCIAL',
+      'AUXILIAR_ADMINISTRATIVO',
+      'AUXILIAR_CONTABLE',
+      'AUXILIAR_MANTENIMIENTO',
     ])
     expect(MEMBER_ROLE_OPTIONS.map((option) => option.label)).toEqual([
       'Asesor comercial',
@@ -207,6 +211,10 @@ describe('<MembersStepForm>', () => {
       'Coordinador',
       'Auxiliar de cartera',
       'Abogado externo',
+      'Auxiliar comercial',
+      'Auxiliar administrativo',
+      'Auxiliar contable',
+      'Auxiliar de mantenimiento',
     ])
   })
 

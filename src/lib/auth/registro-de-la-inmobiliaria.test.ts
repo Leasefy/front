@@ -34,6 +34,23 @@ beforeEach(() => {
   resumeOnboarding.mockReset()
 })
 
+describe('preguntarPorElRegistro — el modo comercial (registro rápido desde el marketplace, 20-10)', () => {
+  it('la inmobiliaria sin activar NO tiene un registro a medias: pasa a su cuenta (sin recordarlo)', async () => {
+    getOnboardingResumePoint.mockResolvedValue(
+      punto({ agentSessionId: null, provisioningStatus: 'PENDING', modoComercial: true } as never),
+    )
+
+    await expect(preguntarPorElRegistro()).resolves.toBe('sin-agencia')
+    expect(resumeOnboarding).not.toHaveBeenCalled()
+  })
+
+  it('sin la marca, la misma inmobiliaria pendiente sigue siendo «a medias» (como siempre)', async () => {
+    getOnboardingResumePoint.mockResolvedValue(punto({ agentSessionId: null, provisioningStatus: 'PENDING' } as never))
+
+    await expect(preguntarPorElRegistro()).resolves.toBe('a-medias')
+  })
+})
+
 describe('preguntarPorElRegistro — sólo a quien registró la inmobiliaria', () => {
   it('un miembro que no la registró NO pide el resume del micro y pasa (sin-agencia)', async () => {
     getOnboardingResumePoint.mockResolvedValue(punto({ esQuienLaRegistro: false }))

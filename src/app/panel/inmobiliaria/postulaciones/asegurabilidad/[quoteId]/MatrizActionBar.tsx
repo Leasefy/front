@@ -7,14 +7,12 @@
  *   Avanzar con recomendada · Comparar opciones · Solicitar codeudor · Descargar ·
  *   Compartir · Enviar a contrato · Reintentar.
  *
- * Cableado honesto:
- *  - Re-cotizar / Resolver condiciones / Reconectar → handlers existentes del padre.
+ * Cableado (🔴 COTIZ-17, 19-10-2026: ningún botón dice «Próximamente»):
+ *  - Re-cotizar / Reconectar → handlers existentes del padre.
  *  - Descargar → callback del padre (reusa el path de PDF de StreamCompleteBanner).
- *  - Acciones aún sin backend (contrato / compartir / codeudor / avanzar / comparar)
- *    → onAction(code); el padre muestra el aviso "Próximamente" (patrón de honestidad).
- *
- * UX-only: NO inventa endpoints. Cada botón sin backend queda explícitamente
- * etiquetado como próximamente por el padre.
+ *  - avanzar (guarda la elegida) / comparar (baja a la tabla) / codeudor
+ *    («¿Qué pasaría si…?» con 1 codeudor) / compartir (copia el enlace) /
+ *    contrato (Nuevo contrato prellenado) → onAction(code); los resuelve el padre.
  */
 
 import {
@@ -47,8 +45,8 @@ interface MatrizActionBarProps {
   carriers: CarrierState[]
   /** Re-cotizar con cambios (handler existente del padre). */
   onReQuote: () => void
-  /** Resolver condiciones / pedir explicación (handler existente del padre). */
-  onResolver: () => void
+  /** Resolver condiciones / pedir explicación (lo usa el padre; «Solicitar codeudor» va por onAction). */
+  onResolver?: () => void
   /** Reconectar el stream (reconnect del hook). */
   onReconnect: () => void
   /** Descargar PDF (path existente de StreamCompleteBanner). */
@@ -60,7 +58,6 @@ interface MatrizActionBarProps {
 export function MatrizActionBar({
   carriers,
   onReQuote,
-  onResolver,
   onReconnect,
   onDownload,
   onAction,
@@ -78,7 +75,6 @@ export function MatrizActionBar({
   const hasAsegurable = carriers.some(
     (c) => c.status === 'approved' || c.status === 'conditional',
   )
-  const hasConditional = carriers.some((c) => c.status === 'conditional')
   const allFailed =
     carriers.length > 0 &&
     carriers.every((c) => c.status === 'rejected' || c.status === 'error')
@@ -120,7 +116,7 @@ export function MatrizActionBar({
         variant="secondary"
         size="sm"
         hideArrow
-        onClick={() => (hasConditional ? onResolver() : onAction('codeudor'))}
+        onClick={() => onAction('codeudor')}
         data-action="codeudor"
       >
         <UsersThree className="w-4 h-4" weight="duotone" aria-hidden="true" />
@@ -139,7 +135,7 @@ export function MatrizActionBar({
         {tf(`${NS}.detail.acciones.descargar`, 'Descargar')}
       </Button>
 
-      {/* Compartir — sin backend todavía → próximamente */}
+      {/* Compartir — copia el enlace del caso */}
       <Button
         variant="secondary"
         size="sm"
@@ -151,7 +147,7 @@ export function MatrizActionBar({
         {tf(`${NS}.detail.acciones.compartir`, 'Compartir')}
       </Button>
 
-      {/* Enviar a contrato — sin backend todavía → próximamente */}
+      {/* Enviar a contrato — Nuevo contrato prellenado */}
       <Button
         variant="secondary"
         size="sm"

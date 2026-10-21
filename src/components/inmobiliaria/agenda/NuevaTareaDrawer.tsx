@@ -115,9 +115,17 @@ export function loQueFalta(errores: Record<string, string>): string | null {
 /** Los pickers de cadence con la altura y el radio de los demás campos del cajón. */
 const CAMPO_CLICABLE = 'h-11 w-full rounded-[12px] px-3.5';
 
-export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada, coordina = true }: Props & {
+export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada, coordina = true, inicial, titulo, descripcion }: Props & {
   /** AG-11: quien coordina asigna a cualquiera; la asesora, sólo a sí misma. */
   coordina?: boolean;
+  /**
+   * COTIZ-17 (19-10-2026, «Notificar al asesor» del Cotizador): la tarea llega
+   * con lo que ya se sabe (qué hay que hacer, el día, la nota con el enlace).
+   */
+  inicial?: Partial<TareaForm>;
+  /** La cabecera, si no es «Nueva tarea». */
+  titulo?: string;
+  descripcion?: string;
 }) {
   const [form, setForm] = useState<TareaForm>(TAREA_VACIA);
   const [guardando, setGuardando] = useState(false);
@@ -144,9 +152,11 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada, coordina = t
 
   useEffect(() => {
     if (abierto) {
-      setForm(TAREA_VACIA);
+      setForm({ ...TAREA_VACIA, ...inicial });
       setDelServidor({});
     }
+    // `inicial` se toma al abrir (no se reescribe lo que la persona ya editó).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto]);
 
   const inmuebles = useMemo<ComboboxOption[]>(
@@ -226,8 +236,8 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada, coordina = t
   return (
     <Cajon abierto={abierto} onOpenChange={onOpenChange} data-testid="nueva-tarea-cajon">
       <CajonCabecera
-        titulo="Nueva tarea"
-        descripcion="Algo que hay que hacer un día: queda en la agenda con su inmueble y su responsable."
+        titulo={titulo ?? 'Nueva tarea'}
+        descripcion={descripcion ?? 'Algo que hay que hacer un día: queda en la agenda con su inmueble y su responsable.'}
       />
       <form
         className="contents"

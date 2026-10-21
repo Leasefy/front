@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { fmtCOP } from '@/lib/admin/format'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   ESTADO_DE_CONTRATO,
   ESTADO_DE_INMUEBLE,
@@ -18,6 +19,9 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
+import { Card, Eyebrow, MonoLabel } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { BackButton } from '@/components/ui/back-button'
 
 const TONO_DEL_NIVEL: Record<NivelDeRiesgo, PillTone> = {
   sin_datos: 'muted',
@@ -28,16 +32,16 @@ const TONO_DEL_NIVEL: Record<NivelDeRiesgo, PillTone> = {
 
 const COLOR_DEL_NIVEL: Record<NivelDeRiesgo, string> = {
   sin_datos: 'text-fg-subtle',
-  bajo: 'text-ok',
-  medio: 'text-warn',
-  alto: 'text-bad',
+  bajo: 'text-success',
+  medio: 'text-warning',
+  alto: 'text-danger',
 }
 
 const BARRA_DEL_NIVEL: Record<NivelDeRiesgo, string> = {
-  sin_datos: 'bg-fg-dim',
-  bajo: 'bg-ok',
-  medio: 'bg-warn',
-  alto: 'bg-bad',
+  sin_datos: 'bg-border-strong',
+  bajo: 'bg-success',
+  medio: 'bg-warning',
+  alto: 'bg-danger',
 }
 
 const TONO_DEL_CONTRATO: Record<ContratoDelHistorial['status'], PillTone> = {
@@ -73,7 +77,7 @@ function Seccion({
 }) {
   return (
     <section className="mt-8">
-      <div className="section-label mb-1">{label}</div>
+      <Eyebrow className="mb-1">{label}</Eyebrow>
       <h2 className="text-lg font-semibold text-fg mb-3">{title}</h2>
       {children}
     </section>
@@ -91,12 +95,12 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
   const columnasDeContratos: Column<ContratoDelHistorial>[] = [
     {
       header: '# Leasefy',
-      cell: (c) => <span className="font-mono text-xs tabular-nums text-fg">{c.code}</span>,
+      cell: (c) => <span className="font-mono text-caption tabular-nums text-fg">{c.code}</span>,
     },
     {
       header: '# inmobiliaria',
       cell: (c) => (
-        <span className="font-mono text-xs tabular-nums text-fg-muted">{c.externalId ?? '—'}</span>
+        <span className="font-mono text-caption tabular-nums text-fg-muted">{c.externalId ?? '—'}</span>
       ),
     },
     {
@@ -105,17 +109,17 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
     },
     {
       header: 'Inicio',
-      cell: (c) => <span className="font-mono text-xs tabular-nums">{c.inicio ?? '—'}</span>,
+      cell: (c) => <span className="font-mono text-caption tabular-nums">{c.inicio ?? '—'}</span>,
     },
     {
       header: 'Fin',
-      cell: (c) => <span className="font-mono text-xs tabular-nums">{c.fin ?? '—'}</span>,
+      cell: (c) => <span className="font-mono text-caption tabular-nums">{c.fin ?? '—'}</span>,
     },
     {
       header: 'Duración',
       align: 'right',
       cell: (c) => (
-        <span className="font-mono text-xs tabular-nums">
+        <span className="font-mono text-caption tabular-nums">
           {c.duracionDias === null ? '—' : dias(c.duracionDias)}
         </span>
       ),
@@ -123,15 +127,15 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
     {
       header: 'Canon',
       align: 'right',
-      cell: (c) => <span className="font-mono text-xs tabular-nums">{fmtCOP(c.canon)}</span>,
+      cell: (c) => <span className="font-mono text-caption tabular-nums">{fmtCOP(c.canon)}</span>,
     },
     {
       header: 'Arrendó',
       align: 'center',
       cell: (c) => (
-        <span className={`font-mono text-[10px] uppercase tracking-[0.12em] ${c.arrendo ? 'text-ok' : 'text-fg-subtle'}`}>
+        <MonoLabel className={`${c.arrendo ? 'text-success' : 'text-fg-subtle'}`}>
           {c.arrendo ? 'sí' : 'no'}
-        </span>
+        </MonoLabel>
       ),
     },
   ]
@@ -139,7 +143,7 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
   const columnasDeReparaciones: Column<ReparacionDelHistorial>[] = [
     {
       header: 'Fecha',
-      cell: (r) => <span className="font-mono text-xs tabular-nums">{r.creada}</span>,
+      cell: (r) => <span className="font-mono text-caption tabular-nums">{r.creada}</span>,
     },
     {
       header: 'Tipo',
@@ -158,49 +162,46 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
     {
       header: 'Estado',
       cell: (r) => (
-        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-muted">
+        <MonoLabel>
           {ESTADO_DE_REPARACION[r.estado]}
-        </span>
+        </MonoLabel>
       ),
     },
     {
       header: 'Completada',
-      cell: (r) => <span className="font-mono text-xs tabular-nums">{r.completada ?? '—'}</span>,
+      cell: (r) => <span className="font-mono text-caption tabular-nums">{r.completada ?? '—'}</span>,
     },
     {
       header: 'Aprobado',
       align: 'right',
-      cell: (r) => <span className="font-mono text-xs tabular-nums">{fmtCOP(r.montoAprobado)}</span>,
+      cell: (r) => <span className="font-mono text-caption tabular-nums">{fmtCOP(r.montoAprobado)}</span>,
     },
     {
       header: 'Paga',
-      cell: (r) => <span className="text-xs text-fg-muted">{QUIEN_PAGA[r.pagaQuien]}</span>,
+      cell: (r) => <span className="text-caption text-fg-muted">{QUIEN_PAGA[r.pagaQuien]}</span>,
     },
   ]
 
   return (
-    <div className="p-6 lg:p-8">
-      <Link href="/admin/inmuebles" className="btn btn-ghost mb-4 inline-flex">
-        ← Inmuebles
-      </Link>
+    <div className="space-y-6 p-6 lg:p-8">
+      <BackButton href="/admin/inmuebles" label="Volver a inmuebles" />
 
       <PageHeader
-        label="inmuebles · historial interno"
         title={`#${inmueble.code}${inmueble.externalId ? ` · ${inmueble.externalId} en la inmobiliaria` : ''}`}
         description={`${inmueble.address} · ${inmueble.city}${inmueble.agencia ? ` · ${inmueble.agencia.name}` : ''}`}
         right={<Pill tone="info">{ESTADO_DE_INMUEBLE[inmueble.status]}</Pill>}
       />
 
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-bad mb-6 flex items-center gap-2">
-        <span className="inline-block w-2 h-2 bg-bad" />
+      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-danger flex items-center gap-2">
+        <span className="inline-block w-2 h-2 bg-danger" />
         interno de leasefy · la inmobiliaria no ve esta pantalla
       </div>
 
       {/* Medidor de riesgo, con cada señal y sus puntos a la vista */}
-      <div className="card p-5" data-testid="riesgo">
+      <Card className="p-5" data-testid="riesgo">
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">riesgo</div>
+            <MonoLabel className="block">riesgo</MonoLabel>
             <div className={`text-3xl font-semibold mt-1 ${COLOR_DEL_NIVEL[riesgo.nivel]}`}>
               {NIVEL_DE_RIESGO[riesgo.nivel]}
               {riesgo.nivel !== 'sin_datos' && (
@@ -210,26 +211,26 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
           </div>
           <Pill tone={TONO_DEL_NIVEL[riesgo.nivel]}>{riesgo.senales.length} señal{riesgo.senales.length === 1 ? '' : 'es'}</Pill>
         </div>
-        <div className="h-1.5 w-full bg-bg-hover mt-4" aria-hidden>
+        <div className="h-1.5 w-full bg-surface-hover mt-4" aria-hidden>
           <div
             className={`h-full ${BARRA_DEL_NIVEL[riesgo.nivel]}`}
             style={{ width: `${Math.min(100, Math.max(riesgo.puntaje, riesgo.nivel === 'sin_datos' ? 0 : 3))}%` }}
           />
         </div>
-        <ul className="mt-4 divide-y divide-bg-border">
+        <ul className="mt-4 divide-y divide-border-faint">
           {riesgo.senales.map((s) => (
             <li key={s.clave} className="py-2.5 flex items-start justify-between gap-4 text-sm">
               <span className="text-fg">{s.texto}</span>
-              <span className={`font-mono text-xs tabular-nums shrink-0 ${s.puntos > 0 ? 'text-bad' : 'text-fg-subtle'}`}>
+              <span className={`font-mono text-caption tabular-nums shrink-0 ${s.puntos > 0 ? 'text-danger' : 'text-fg-subtle'}`}>
                 {s.puntos > 0 ? `+${s.puntos}` : '0'}
               </span>
             </li>
           ))}
         </ul>
-      </div>
+      </Card>
 
       {/* Los números que resumen la historia */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <KpiCard
           label="contratos"
           value={contratos.total}
@@ -238,19 +239,16 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
         <KpiCard
           label="veces arrendado"
           value={contratos.vecesArrendado}
-          hint={
-            <>
-              {contratos.rotacionPorAno === null
-                ? 'historia corta para medir rotación'
-                : `${contratos.rotacionPorAno} por año · dura ${contratos.duracionPromedioDias === null ? '—' : dias(contratos.duracionPromedioDias)}`}
-              {contratos.renovaciones > 0 && (
-                <>
-                  {' · '}
-                  {contratos.renovaciones} renovación{contratos.renovaciones === 1 ? '' : 'es'}
-                </>
-              )}
-            </>
-          }
+          hint={[
+            contratos.rotacionPorAno === null
+              ? 'historia corta para medir rotación'
+              : `${contratos.rotacionPorAno} por año · dura ${contratos.duracionPromedioDias === null ? '—' : dias(contratos.duracionPromedioDias)}`,
+            contratos.renovaciones > 0
+              ? `${contratos.renovaciones} renovación${contratos.renovaciones === 1 ? '' : 'es'}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         />
         <KpiCard
           label="desocupado"
@@ -290,10 +288,10 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
       </div>
 
       <Seccion label="ocupación" title="Vacancias entre contratos">
-        <div className="card p-4 mb-3 text-sm flex flex-wrap items-center gap-x-6 gap-y-1" data-testid="ocupacion-ahora">
-          <span className={`font-mono text-[10px] uppercase tracking-[0.12em] ${ocupacion.desocupadoAhora ? 'text-bad' : 'text-ok'}`}>
+        <Card className="p-4 mb-3 text-sm flex flex-wrap items-center gap-x-6 gap-y-1" data-testid="ocupacion-ahora">
+          <MonoLabel className={`${ocupacion.desocupadoAhora ? 'text-danger' : 'text-success'}`}>
             {ocupacion.desocupadoAhora ? 'desocupado ahora' : ocupacion.desde ? 'ocupado ahora' : 'sin historia'}
-          </span>
+          </MonoLabel>
           {ocupacion.desocupadoAhora && (
             <span className="text-fg">
               lleva {dias(ocupacion.diasDesocupadoActual)} sin contrato
@@ -304,39 +302,39 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
               {ocupacion.vacancias.length} vacancia{ocupacion.vacancias.length === 1 ? '' : 's'} · {dias(ocupacion.vacanciaPromedioDias)} en promedio
             </span>
           )}
-        </div>
+        </Card>
         {ocupacion.vacancias.length === 0 ? (
-          <div className="card p-6 text-center text-sm text-fg-muted">
+          <Card className="p-6 text-center text-sm text-fg-muted">
             {ocupacion.desde ? 'Ningún hueco entre un contrato y el siguiente.' : 'Todavía no arrendó.'}
-          </div>
+          </Card>
         ) : (
-          <div className="card overflow-x-auto">
-            <table className="w-full text-sm table-zebra">
-              <thead>
-                <tr className="border-b border-bg-border">
+          <Card className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-border">
                   {['Desde', 'Hasta', 'Días', 'Entre contratos'].map((h) => (
-                    <th key={h} className="px-3 py-2.5 text-left font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
+                    <TableHead key={h} >
                       {h}
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {ocupacion.vacancias.map((v) => (
-                  <tr key={`${v.desde}-${v.hasta}`}>
-                    <td className="px-3 py-2.5 font-mono text-xs tabular-nums">{v.desde}</td>
-                    <td className="px-3 py-2.5 font-mono text-xs tabular-nums">{v.hasta}</td>
-                    <td className={`px-3 py-2.5 font-mono text-xs tabular-nums ${v.dias >= 60 ? 'text-bad' : v.dias >= 30 ? 'text-warn' : ''}`}>
+                  <TableRow key={`${v.desde}-${v.hasta}`}>
+                    <TableCell className="font-mono text-caption tabular-nums">{v.desde}</TableCell>
+                    <TableCell className="font-mono text-caption tabular-nums">{v.hasta}</TableCell>
+                    <TableCell className={`px-3 py-2.5 font-mono text-caption tabular-nums ${v.dias >= 60 ? 'text-danger' : v.dias >= 30 ? 'text-warning' : ''}`}>
                       {dias(v.dias)}
-                    </td>
-                    <td className="px-3 py-2.5 font-mono text-xs tabular-nums text-fg-muted">
+                    </TableCell>
+                    <TableCell className="font-mono text-caption tabular-nums text-fg-muted">
                       #{v.entreContratos[0]} → #{v.entreContratos[1]}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         )}
       </Seccion>
 
@@ -354,14 +352,14 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
         {reparaciones.porTipo.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-3" data-testid="reparaciones-por-tipo">
             {reparaciones.porTipo.map((t) => (
-              <div key={t.tipo} className={`card px-3 py-2 text-sm ${t.recurrente ? 'border-l-4 border-l-bad' : ''}`}>
+              <div key={t.tipo} className={`card px-3 py-2 text-sm ${t.recurrente ? '' : ''}`}>
                 <span className="font-medium text-fg">{TIPO_DE_REPARACION[t.tipo]}</span>
                 <span className="text-fg-muted"> · {t.cantidad}</span>
                 {t.cadaDias !== null && (
-                  <span className={t.recurrente ? 'text-bad' : 'text-fg-muted'}> · cada {dias(t.cadaDias)}</span>
+                  <span className={t.recurrente ? 'text-danger' : 'text-fg-muted'}> · cada {dias(t.cadaDias)}</span>
                 )}
                 {t.recurrente && (
-                  <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.12em] text-bad">tendencia</span>
+                  <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.12em] text-danger">tendencia</span>
                 )}
               </div>
             ))}

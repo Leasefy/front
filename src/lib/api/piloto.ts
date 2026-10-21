@@ -917,6 +917,11 @@ export interface AgenteDeLaFlota {
   /** Corre para esta inmobiliaria: bandera del servidor Y lista de la agencia. */
   corre: boolean
   porQueNoCorre?: string | null
+  /**
+   * NITI-2 (QA 19-10-2026): corre, pero Leasefy le apagó una parte; lo que le
+   * queda («sólo lo que ya propuso»). Un micro anterior no lo manda.
+   */
+  enParte?: string | null
   /** ¿El modo cambia lo que el agente hace? `false` = «todavía no actúa solo». */
   gobierna?: boolean
   /** Corre y el modo lo gobierna. */

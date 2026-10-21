@@ -1,16 +1,18 @@
 'use client'
 
+import { Buildings, PhoneCall, Scales, Users, WarningOctagon } from '@phosphor-icons/react'
+import { MonoLabel } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
-import { Pagination } from '@/components/admin/screen/Pagination'
-import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
+import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { Tarjeta } from '@/components/admin/screen/Tarjeta'
+import { legible } from '@/lib/admin/textos-del-admin'
 
-const PAGE_SIZE = 50
 
 // ─── Types (co-located, per FRONT.md §6.19) ────────────────────────────────
 
@@ -88,6 +90,11 @@ const DAY_NAMES: Record<number, string> = {
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
+/**
+ * Una casilla del mapa: verde (del tema) si es horario permitido, roja si no;
+ * más intensa con más intentos. Los colores salen de los tokens de Cadence
+ * (`--success`, `--danger`) mezclados con transparente, para claro y oscuro.
+ */
 function HeatmapCell({
   n,
   max,
@@ -102,36 +109,34 @@ function HeatmapCell({
   hour: number
 }) {
   const intensity = max > 0 ? Math.min(1, n / max) : 0
-  let bg = '#EFEFEC' // empty / bg-hover equivalent
+  const mezcla = (token: string, pct: number) => `color-mix(in srgb, var(${token}) ${Math.round(pct)}%, transparent)`
+  const background =
+    n > 0
+      ? allowed
+        ? mezcla('--success', 18 + intensity * 62)
+        : mezcla('--danger', 28 + intensity * 62)
+      : allowed
+        ? 'var(--surface-muted)'
+        : mezcla('--danger', 10)
 
-  if (n > 0) {
-    bg = allowed
-      ? `rgba(0, 168, 120, ${0.15 + intensity * 0.6})`    // ok-ish green
-      : `rgba(211, 53, 71, ${0.25 + intensity * 0.65})`   // bad red (violation)
-  } else if (!allowed) {
-    bg = '#F7DCE0' // very light red — visually marks prohibited slot
-  }
-
-  const tooltip = `${DAY_NAMES[dow]} ${String(hour).padStart(2, '0')}:00 · ${n} intento${n === 1 ? '' : 's'} · ${
+  const tooltip = `${DAY_NAMES[dow]} ${String(hour).padStart(2, '0')}:00 · ${n} ${n === 1 ? 'intento' : 'intentos'} · ${
     allowed ? 'permitido' : 'fuera de horario'
   }`
 
   return (
     <div
       title={tooltip}
-      className="w-7 h-7 border border-bg-border flex items-center justify-center text-[9px] font-mono tabular-nums text-fg"
-      style={{ background: bg }}
+      className="flex h-7 w-7 items-center justify-center rounded-[6px] font-mono text-[10px] tabular-nums text-fg"
+      style={{ background }}
     >
       {n > 0 ? n : ''}
     </div>
   )
 }
 
-// ─── Page ──────────────────────────────────────────────────────────────────
-
 /** /ley-2300 — Compliance window monitoring (BACK.md §8.15 + §7.2 · FRONT.md §6.19). */
 export default function Ley2300Page() {
-  const { data, isLoading, error } = useApiQuery<Ley2300Response>(
+  const { data, isLoading, error, refetch } = useApiQuery<Ley2300Response>(
     (signal) => adminApi('/ley-2300', { signal }),
     [],
   )
@@ -143,171 +148,143 @@ export default function Ley2300Page() {
   const maxN = Math.max(1, ...Array.from(heatmapMap.values()))
 
   const violations = data?.violations ?? []
-  /* Violaciones de los últimos 30 días: sin tope. El contador del encabezado
-     sigue mostrando el total, no el de la página. */
-  const violationsPaging = useClientPagination(violations, PAGE_SIZE)
+
+  const violationColumns: Column<ViolationRow>[] = [
+    {
+      header: 'Cuándo',
+      orden: (v) => v.timestamp,
+      ordenPrimero: 'desc',
+      texto: (v) => fmtDateTime(v.timestamp),
+      cell: (v) => <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(v.timestamp)}</span>,
+    },
+    {
+      header: 'Tipo',
+      orden: (v) => v.event_type,
+      texto: (v) => legible(v.event_type),
+      cell: (v) => <Pill tone={v.event_type.includes('inbound') ? 'muted' : 'bad'}>{legible(v.event_type)}</Pill>,
+    },
+    { header: 'Canal', orden: (v) => v.channel, texto: (v) => (v.channel ? legible(v.channel) : ''), cell: (v) => <span className="text-fg-muted">{v.channel ? legible(v.channel) : '—'}</span> },
+    { header: 'Deudor', orden: (v) => v.debtor_name, texto: (v) => v.debtor_name, cell: (v) => <span className="block max-w-[180px] truncate">{v.debtor_name ?? '—'}</span> },
+    { header: 'Inmobiliaria', orden: (v) => v.legal_name, texto: (v) => v.legal_name, cell: (v) => <span className="block max-w-[160px] truncate text-fg-muted">{v.legal_name ?? '—'}</span> },
+    {
+      header: 'Detalles',
+      texto: (v) => (v.details ? JSON.stringify(v.details) : ''),
+      cell: (v) => (
+        <span className="block max-w-[260px] truncate font-mono text-caption text-fg-muted" title={v.details ? JSON.stringify(v.details) : undefined}>
+          {v.details ? JSON.stringify(v.details).slice(0, 100) : '—'}
+        </span>
+      ),
+    },
+  ]
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="compliance"
-        title="Ventanas de contacto"
-        description="Ley 2300/2023 Art. 7 · Lun-Vie 07:00–19:00 · Sáb 08:00–15:00 · Dom/festivos prohibido · 30 días."
+        title="Ley 2300"
+        description="Las ventanas de contacto de la Ley 2300 de 2023 (art. 7): lunes a viernes de 7:00 a 19:00, sábados de 8:00 a 15:00; domingos y festivos, nunca. Últimos 30 días."
       />
 
-      {isLoading && <LoadingBlock />}
-      {!isLoading && error && <ErrorBlock error={error} />}
+      {isLoading && <LoadingBlock filas={6} />}
+      {!isLoading && error && <ErrorBlock error={error} onReintentar={refetch} />}
 
       {data && (
         <>
-          {/* KPIs */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <KpiCard icon={<PhoneCall />} label="Llamadas · 30 días" value={Number(data.stats.total_calls) || 0} hint="Todas" />
             <KpiCard
-              label="Llamadas · 30d"
-              value={Number(data.stats.total_calls) || 0}
-              hint="volumen total"
-            />
-            <KpiCard
-              label="Violaciones · 30d"
+              icon={<WarningOctagon />}
+              label="Por fuera de la ley · 30 días"
               value={Number(data.stats.total_violations) || 0}
-              hint="schedule / frequency"
+              hint="Por horario o por frecuencia"
               tone={Number(data.stats.total_violations) > 0 ? 'bad' : 'ok'}
             />
+            <KpiCard icon={<Users />} label="Deudores afectados" value={Number(data.stats.debtors_affected) || 0} hint="Con al menos una" />
             <KpiCard
-              label="Deudores afectados"
-              value={Number(data.stats.debtors_affected) || 0}
-              hint="con ≥1 violación"
-            />
-            <KpiCard
-              label="Agencias afectadas"
+              icon={<Buildings />}
+              label="Inmobiliarias afectadas"
               value={Number(data.stats.tenants_affected) || 0}
-              hint="con ≥1 violación"
+              hint="Con al menos una"
               tone={Number(data.stats.tenants_affected) > 0 ? 'warn' : 'ok'}
             />
           </div>
 
-          {/* Heatmap */}
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-            heatmap · intentos × hora local Bogotá · 30d
-          </div>
-          <div className="card p-5 overflow-x-auto mb-6">
-            <table className="text-xs border-separate border-spacing-0">
-              <thead>
-                <tr>
-                  <th className="text-left pr-3 pb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle whitespace-nowrap">
-                    día / hora
-                  </th>
-                  {HOURS.map((h) => (
-                    <th
-                      key={h}
-                      className="pb-2 font-mono text-[9px] text-fg-subtle tabular-nums text-center w-7"
-                    >
-                      {String(h).padStart(2, '0')}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {DAYS.map((d) => (
-                  <tr key={d.dow}>
-                    <td className="pr-3 py-0.5 font-mono text-[11px] text-fg-muted whitespace-nowrap">
-                      {d.name}
-                    </td>
-                    {HOURS.map((h) => {
-                      const n = heatmapMap.get(`${d.dow}-${h}`) ?? 0
-                      const allowed = isAllowed(d.dow, h)
-                      return (
-                        <td key={h} className="p-0">
-                          <HeatmapCell n={n} max={maxN} allowed={allowed} dow={d.dow} hour={h} />
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Legend */}
-            <div className="mt-4 flex flex-wrap items-center gap-6 text-xs font-mono text-fg-muted">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border border-bg-border" style={{ background: 'rgba(0,168,120,0.5)' }} />
-                permitido
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border border-bg-border" style={{ background: 'rgba(211,53,71,0.5)' }} />
-                fuera de horario (violación si N &gt; 0)
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-bg-border border border-bg-border" />
-                0 intentos / permitido
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border border-bg-border" style={{ background: '#F7DCE0' }} />
-                0 intentos / prohibido
-              </div>
-            </div>
-          </div>
-
-          {/* Violations table */}
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-            violaciones recientes · 30d ({violations.length})
-          </div>
-          {violations.length === 0 ? (
-            <div className="card p-6 text-center text-fg-muted text-sm">
-              Sin violaciones registradas. Todo dentro del horario.
-            </div>
-          ) : (
-            <div className="card overflow-x-auto">
-              <table className="w-full text-sm table-zebra">
+          <Tarjeta titulo="Intentos por día y hora" descripcion="Hora de Bogotá, últimos 30 días.">
+            <div className="overflow-x-auto" data-lenis-prevent>
+              <table className="border-separate border-spacing-[3px] text-caption">
                 <thead>
-                  <tr className="border-b border-bg-border">
-                    {['Cuándo', 'Tipo', 'Canal', 'Deudor', 'Agencia', 'Detalles'].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle whitespace-nowrap"
-                      >
-                        {h}
+                  <tr>
+                    <th className="whitespace-nowrap pb-1 pr-2 text-left">
+                      <MonoLabel>Día / hora</MonoLabel>
+                    </th>
+                    {HOURS.map((h) => (
+                      <th key={h} className="w-7 pb-1 text-center font-mono text-[10px] font-normal tabular-nums text-fg-subtle">
+                        {String(h).padStart(2, '0')}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {(violationsPaging.pageRows ?? []).map((v) => (
-                    <tr key={v.id} className="border-b border-bg-border last:border-0">
-                      <td className="px-3 py-2.5 whitespace-nowrap font-mono text-xs text-fg-muted tabular-nums">
-                        {fmtDateTime(v.timestamp)}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <Pill tone={v.event_type.includes('inbound') ? 'muted' : 'bad'}>
-                          {v.event_type}
-                        </Pill>
-                      </td>
-                      <td className="px-3 py-2.5 font-mono text-[11px] text-fg-muted uppercase tracking-[0.12em]">
-                        {v.channel ?? '—'}
-                      </td>
-                      <td className="px-3 py-2.5 truncate max-w-[180px]">{v.debtor_name ?? '—'}</td>
-                      <td className="px-3 py-2.5 text-fg-muted text-xs truncate max-w-[160px]">
-                        {v.legal_name ?? '—'}
-                      </td>
-                      <td
-                        className="px-3 py-2.5 text-xs text-fg-muted font-mono max-w-[260px] truncate"
-                        title={v.details ? JSON.stringify(v.details) : undefined}
-                      >
-                        {v.details ? JSON.stringify(v.details).slice(0, 100) : '—'}
-                      </td>
+                  {DAYS.map((d) => (
+                    <tr key={d.dow}>
+                      <td className="whitespace-nowrap pr-2 text-body-sm text-fg-muted">{d.name}</td>
+                      {HOURS.map((h) => {
+                        const n = heatmapMap.get(`${d.dow}-${h}`) ?? 0
+                        const allowed = isAllowed(d.dow, h)
+                        return (
+                          <td key={h} className="p-0">
+                            <HeatmapCell n={n} max={maxN} allowed={allowed} dow={d.dow} hour={h} />
+                          </td>
+                        )
+                      })}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          )}
 
-          <Pagination
-            page={violationsPaging.page}
-            total={violationsPaging.total}
-            pageSize={PAGE_SIZE}
-            onPage={violationsPaging.setPage}
-          />
+            <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-caption text-fg-muted">
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-[4px]" style={{ background: 'color-mix(in srgb, var(--success) 50%, transparent)' }} />
+                Permitido
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-[4px]" style={{ background: 'color-mix(in srgb, var(--danger) 55%, transparent)' }} />
+                Fuera de horario (con intentos, es una falta)
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-[4px] bg-surface-muted" />
+                Sin intentos, permitido
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-[4px]" style={{ background: 'color-mix(in srgb, var(--danger) 10%, transparent)' }} />
+                Sin intentos, prohibido
+              </span>
+            </div>
+          </Tarjeta>
+
+          <section className="space-y-3" aria-label="Faltas recientes">
+            <MonoLabel className="block">
+              <Scales className="mr-1.5 inline h-3.5 w-3.5 align-[-2px]" aria-hidden="true" />
+              Faltas recientes · 30 días ({violations.length.toLocaleString('es-CO')})
+            </MonoLabel>
+            <DataTable
+              columns={violationColumns}
+              rows={violations}
+              getKey={(v) => v.id}
+              emptyTitle="Ninguna falta: todo dentro del horario"
+              emptyIcon={<Scales weight="bold" />}
+              aria-label="Faltas a la Ley 2300"
+              queSon={['falta', 'faltas']}
+              buscar="Deudor, inmobiliaria o tipo"
+              segmentos={[
+                { valor: 'todas', nombre: 'Todas', cumple: () => true },
+                { valor: 'salientes', nombre: 'Contactos fuera de horario', cumple: (v) => !v.event_type.includes('inbound') },
+                { valor: 'entrantes', nombre: 'Entrantes', cumple: (v) => v.event_type.includes('inbound') },
+              ]}
+              ordenInicial={{ columna: 0, sentido: 'desc' }}
+              exportar="faltas-ley-2300"
+            />
+          </section>
         </>
       )}
     </div>

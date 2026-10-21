@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect, useId } from 'react';
+import { useState, useCallback, useEffect, useId, useRef } from 'react';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -743,22 +744,25 @@ export function ConfigPerfilAgencia({
     return payload;
   };
 
-  const handleSave = async () => {
+  /**
+   * Guarda lo escrito. `true` = guardado (o no había nada que guardar);
+   * `false` = no pasó la validación o el servidor lo rechazó, y el error ya
+   * quedó en su campo o en un toast. Lo usan el botón propio y la barra de
+   * Configuración.
+   */
+  const guardarLoEscrito = async (): Promise<boolean> => {
     if (!validate()) {
       toast.error(t('inmobiliaria.config.profile.validation.fixErrors'));
-      return;
+      return false;
     }
 
     const payload = buildChangedPayload();
-    if (Object.keys(payload).length === 0) {
-      setIsEditing(false);
-      return;
-    }
+    if (Object.keys(payload).length === 0) return true;
 
     setIsSaving(true);
     try {
       await onSave?.(payload);
-      setIsEditing(false);
+      return true;
     } catch (error) {
       // El formulario se queda en edición con lo escrito. Un fallo SIN campos
       // (un 403, un 5xx, la red) ya lo dijo el padre en un toast (por el
@@ -775,9 +779,14 @@ export function ConfigPerfilAgencia({
         if (primero) requestAnimationFrame(() => enfocarElCampo(primero));
         if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
       }
+      return false;
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSave = async () => {
+    if (await guardarLoEscrito()) setIsEditing(false);
   };
 
   const handleCancel = () => {
@@ -792,6 +801,35 @@ export function ConfigPerfilAgencia({
     setFormData(buildFormState(agency));
     setIsEditing(true);
   };
+
+  /*
+   * 🔴 Guardado de Configuración (Nico, 20-10-2026): dentro de Configuración
+   * los campos se editan directo —sin «Editar»— y lo pendiente va a la barra de
+   * abajo («N cambios sin guardar · Descartar · Guardar cambios»). Fuera de
+   * ella (sin la barra), queda el «Editar» y el botón propio de siempre.
+   */
+  const cambiosPendientes = canEdit ? Object.keys(buildChangedPayload()).length : 0;
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'perfil-datos-de-la-inmobiliaria',
+    cambios: cambiosPendientes,
+    guardar: guardarLoEscrito,
+    descartar: () => {
+      setFormData(buildFormState(agency));
+      setErrors({});
+      setTouched({});
+      setPlazoTocado(false);
+    },
+    activo: canEdit && !isLoading,
+  });
+  const editando = isEditing || conBarra;
+  // Si llega una versión nueva de la inmobiliaria (otra tarjeta guardó) y acá
+  // no había nada pendiente, el formulario muestra lo nuevo.
+  const habiaCambios = useRef(cambiosPendientes);
+  useEffect(() => {
+    if (conBarra && habiaCambios.current === 0) setFormData(buildFormState(agency));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agency]);
+  habiaCambios.current = cambiosPendientes;
 
   /*
    * 🔴 CONSISTENCIA (04-10-2026): «Fijar los días de plazo» (Cartera, Cobranza,
@@ -826,7 +864,7 @@ export function ConfigPerfilAgencia({
       if (campo instanceof HTMLInputElement) campo.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(marco);
-  }, [llegoAlPlazo, isEditing]);
+  }, [llegoAlPlazo, editando]);
 
   if (isLoading) {
     return (
@@ -861,7 +899,7 @@ export function ConfigPerfilAgencia({
             </p>
           )}
         </div>
-        {!isEditing && canEdit && (
+        {!editando && canEdit && (
           <Button hideArrow size="sm" className="shrink-0" onClick={handleStartEditing}>
             {t('inmobiliaria.common.edit')}
           </Button>
@@ -869,7 +907,7 @@ export function ConfigPerfilAgencia({
       </div>
 
       {/* Agency Name */}
-      {isEditing && (
+      {editando && (
         <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
           <SectionHeader icon={Buildings} title={t('inmobiliaria.config.profile.agencyName')} />
           <InputWrapper
@@ -904,7 +942,7 @@ export function ConfigPerfilAgencia({
           color="text-fg-muted"
         />
 
-        {isEditing ? (
+        {editando ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InputWrapper label={t('inmobiliaria.config.profile.mainPhone')} campo="phone" error={errors.phone}>
               <div className="relative">
@@ -1126,7 +1164,7 @@ export function ConfigPerfilAgencia({
           color="text-fg-muted"
         />
 
-        {isEditing ? (
+        {editando ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InputWrapper
               label={t('inmobiliaria.config.profile.nit')}
@@ -1271,7 +1309,7 @@ export function ConfigPerfilAgencia({
           color="text-fg-muted"
         />
 
-        {isEditing ? (
+        {editando ? (
           <>
             <div className="p-4 rounded-lg bg-primary-soft border border-primary/30">
               <div className="flex gap-3">
@@ -1417,7 +1455,7 @@ export function ConfigPerfilAgencia({
             <Bell className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium text-foreground">{t('inmobiliaria.config.profile.reminders')}</span>
           </div>
-          {isEditing ? (
+          {editando ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <InputWrapper
                 label={t('inmobiliaria.config.profile.daysBeforeDue')}
@@ -1486,7 +1524,7 @@ export function ConfigPerfilAgencia({
       <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader icon={Receipt} title="Cobros y mora" />
 
-        {isEditing ? (
+        {editando ? (
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4">
               <div className="space-y-1">
@@ -1691,7 +1729,7 @@ export function ConfigPerfilAgencia({
       <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader icon={Bank} title="Dispersiones" />
 
-        {isEditing ? (
+        {editando ? (
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4">
               <div className="space-y-1">
@@ -1761,7 +1799,7 @@ export function ConfigPerfilAgencia({
           retiene y si el inmueble es comercial.
         </p>
 
-        {isEditing ? (
+        {editando ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <InputWrapper label="IVA (%)" error={errors.ivaPorcentaje} hint="Canon comercial, comisiones y servicios gravados." campo="ivaPorcentaje">
               <Input
@@ -1981,7 +2019,7 @@ export function ConfigPerfilAgencia({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <span className="block text-sm font-medium text-foreground">Agente retenedor de renta</span>
-              {isEditing ? (
+              {editando ? (
                 <EstadoFiscalControl
                   valor={formData.agenteRetenedorRenta}
                   onChange={(v) => updateField('agenteRetenedorRenta', v)}
@@ -1997,7 +2035,7 @@ export function ConfigPerfilAgencia({
             </div>
             <div className="space-y-1.5">
               <span className="block text-sm font-medium text-foreground">Agente retenedor de IVA</span>
-              {isEditing ? (
+              {editando ? (
                 <EstadoFiscalControl
                   valor={formData.agenteRetenedorIva}
                   onChange={(v) => updateField('agenteRetenedorIva', v)}
@@ -2008,12 +2046,12 @@ export function ConfigPerfilAgencia({
                 <span className="text-sm text-foreground">{textoEstadoFiscal(agency.agenteRetenedorIva)}</span>
               )}
               <p className="text-xs text-muted-foreground" data-testid="efecto-agenteRetenedorIva">
-                {efectoDeRetencionIva(isEditing ? formData.agenteRetenedorIva : (agency.agenteRetenedorIva ?? null))}
+                {efectoDeRetencionIva(editando ? formData.agenteRetenedorIva : (agency.agenteRetenedorIva ?? null))}
               </p>
             </div>
             <div className="space-y-1.5">
               <span className="block text-sm font-medium text-foreground">Agente retenedor de ICA</span>
-              {isEditing ? (
+              {editando ? (
                 <EstadoFiscalControl
                   valor={formData.agenteRetenedorIca}
                   onChange={(v) => updateField('agenteRetenedorIca', v)}
@@ -2024,7 +2062,7 @@ export function ConfigPerfilAgencia({
                 <span className="text-sm text-foreground">{textoEstadoFiscal(agency.agenteRetenedorIca)}</span>
               )}
               <p className="text-xs text-muted-foreground" data-testid="efecto-agenteRetenedorIca">
-                {efectoDeRetencionIca(isEditing ? formData.agenteRetenedorIca : (agency.agenteRetenedorIca ?? null))}
+                {efectoDeRetencionIca(editando ? formData.agenteRetenedorIca : (agency.agenteRetenedorIca ?? null))}
               </p>
             </div>
           </div>
@@ -2036,7 +2074,7 @@ export function ConfigPerfilAgencia({
       </div>
 
       {/* Actions */}
-      {isEditing && (
+      {isEditing && !conBarra && (
         <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
           <Button
             type="button"

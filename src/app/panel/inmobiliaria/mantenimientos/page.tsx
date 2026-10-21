@@ -56,6 +56,7 @@ import type {
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { MOTIVO_EL_AUXILIAR_NO_APRUEBA_COSTOS, elAuxiliarNoApruebaCostos } from '@/lib/auth/lo-que-no-hacen-los-auxiliares';
 
 // ============================================================================
 // Types
@@ -198,8 +199,10 @@ function MantenimientosContent() {
    * nadie arrastra; cuando los permisos llegan, el tablero se vuelve
    * arrastrable solo.
    */
-  const { canAccess } = usePermissions();
+  const { canAccess, agencyRole } = usePermissions();
   const puedeEditar = canAccess('operaciones', 'edit');
+  // Roles auxiliares (20-10-2026): coordinan la reparación, pero el costo lo aprueba el administrador o el coordinador.
+  const noApruebaCostos = elAuxiliarNoApruebaCostos(agencyRole);
   /*
    * 🔴 Crear una solicitud pide DOS permisos (QA 22-09): `operaciones:create`
    * para la solicitud y `portafolio:view` para elegir el inmueble (el
@@ -656,6 +659,15 @@ function MantenimientosContent() {
   const [porCompletar, setPorCompletar] = useState<SolicitudMantenimiento | null>(null);
   const alSoltarEnElTablero = useCallback(
     (solicitud: SolicitudMantenimiento, destino: MantenimientoStatus): boolean => {
+      if (
+        noApruebaCostos &&
+        (destino === 'approved' || (destino === 'completed' && solicitud.approvedAmount != null))
+      ) {
+        toast.info('Esto lo hace el administrador o el coordinador', {
+          description: MOTIVO_EL_AUXILIAR_NO_APRUEBA_COSTOS,
+        });
+        return false;
+      }
       if (destino === 'completed') {
         if (solicitud.aprobacionDelPropietario?.estado === 'PENDIENTE') return false;
         setPorCompletar(solicitud);
@@ -685,7 +697,7 @@ function MantenimientosContent() {
       }
       return false;
     },
-    [handleRequestQuote, handleApproveQuote, handleViewMantenimiento],
+    [handleRequestQuote, handleApproveQuote, handleViewMantenimiento, noApruebaCostos],
   );
 
   // Consignaciones for form (rented properties only)
@@ -936,7 +948,7 @@ function MantenimientosContent() {
         onStatusChange={puedeEditar ? cambiarEstadoSinEsperar : undefined}
         // Aprobar es editar: CONTADOR y VIEWER veían «Seleccionar» y el back
         // les contestaba 403. Sin el callback el comparador no lo ofrece.
-        onApproveQuote={puedeEditar ? handleApproveQuote : undefined}
+        onApproveQuote={puedeEditar && !noApruebaCostos ? handleApproveQuote : undefined}
         onRequestQuote={puedeEditar ? handleRequestQuote : undefined}
         // «Marcar como completada» con las fotos del trabajo (02-10-2026).
         onCompletada={puedeEditar ? handleSolicitudCompletada : undefined}

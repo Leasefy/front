@@ -78,7 +78,7 @@ describe('LandingHeaderV2', () => {
   it('trae los mismos enlaces del nav de la landing', () => {
     montar({ fxExterno: true })
     const rutas = [...container.querySelectorAll('nav.main a')].map((a) => a.getAttribute('href'))
-    expect(rutas).toEqual(['/es/propiedades', '/publicar', '#producto', '/es/avaluo', '/es/blog', '/es/contacto'])
+    expect(rutas).toEqual(['/es/propiedades', '/publica', '#producto', '/es/avaluo', '/es/blog', '/es/contacto'])
   })
 
   it('el marketplace va primero y se llama igual en todas partes (Nico, 16-10-2026)', () => {
@@ -219,12 +219,12 @@ describe('LandingHeaderV2', () => {
       expect(enlaces[0]?.getAttribute('href')).toBe('/es/propiedades')
     })
 
-    it('la inmobiliaria SÍ ve «Publicar inmueble», y la lleva a publicar desde su panel (Nico, 09-10)', () => {
+    it('la inmobiliaria SÍ ve «Publicar inmueble», y desde aquí también publica con el rápido (Nico, 09-10 y 20-10)', () => {
       entrarComo('agency')
       montar({ fxExterno: true })
       const enlace = container.querySelector('nav.main a[data-nav="publicar"]')
-      expect(enlace?.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/nuevo')
-      expect([...container.querySelectorAll('#mmenu nav a')].some((a) => a.getAttribute('href') === '/panel/inmobiliaria/inmuebles/nuevo')).toBe(true)
+      expect(enlace?.getAttribute('href')).toBe('/publica')
+      expect([...container.querySelectorAll('#mmenu nav a')].some((a) => a.getAttribute('href') === '/publica')).toBe(true)
     })
 
     it('su contador o una cuenta de sólo lectura no publican: no se les ofrece', () => {
@@ -234,9 +234,9 @@ describe('LandingHeaderV2', () => {
       expect(container.querySelector('nav.main a[data-nav="publicar"]')).toBeNull()
     })
 
-    it('sin sesión, «Publicar inmueble» va al asistente de /publicar', () => {
+    it('sin sesión, «Publicar inmueble» va al publicador rápido de /publica', () => {
       montar({ fxExterno: true })
-      expect(container.querySelector('nav.main a[data-nav="publicar"]')?.getAttribute('href')).toBe('/publicar')
+      expect(container.querySelector('nav.main a[data-nav="publicar"]')?.getAttribute('href')).toBe('/publica')
     })
 
     it('para el resto, el menu movil trae 07 (con «Publicar inmueble», 09-10-2026; sin «Planes» desde el 12-10)', () => {
@@ -303,7 +303,7 @@ describe('LandingHeaderV2', () => {
       // suave del home las siga atendiendo.
       montar()
       const rutas = [...container.querySelectorAll('nav.main a')].map((a) => a.getAttribute('href'))
-      expect(rutas).toEqual(['/es/propiedades', '/publicar', '/es#producto', '/es/avaluo', '/es/blog', '/es/contacto'])
+      expect(rutas).toEqual(['/es/propiedades', '/publica', '/es#producto', '/es/avaluo', '/es/blog', '/es/contacto'])
       const movil = [...container.querySelectorAll('#mmenu nav a')].map((a) => a.getAttribute('href'))
       expect(movil).toContain('/es#producto')
     })

@@ -3,7 +3,7 @@
  * prefill (see agency-step-prefill.ts header for the full rationale).
  */
 import { describe, it, expect } from 'vitest'
-import { computeAgencyStepPrefill } from './agency-step-prefill'
+import { celularParaElCampo, computeAgencyStepPrefill } from './agency-step-prefill'
 
 describe('computeAgencyStepPrefill', () => {
   it('prefills legalName and nit from the in-session pre-step values', () => {
@@ -108,5 +108,41 @@ describe('computeAgencyStepPrefill — el borrador real del micro (draft.agency)
       primaryContactPhone: '3001234567',
       address: { calle: 'Calle 10 # 5-55', ciudad: 'Medellín', departamento: 'Antioquia', codigoPostal: '' },
     })
+  })
+})
+
+describe('computeAgencyStepPrefill — el WhatsApp que ya dio en el marketplace (20-10-2026)', () => {
+  it('🔴 al «Activar», el teléfono sale del que dio en el registro rápido (sin indicativo)', () => {
+    const result = computeAgencyStepPrefill({ legalName: 'Arriendos La Ceja S.A.S.', nit: '943571028-6' }, {}, {
+      telefono: '+573005551234',
+    })
+    expect(result.primaryContactPhone).toBe('3005551234')
+  })
+
+  it('lo que el asistente ya guardó gana sobre el conocido', () => {
+    const result = computeAgencyStepPrefill(null, { agency: { primaryContactPhone: '3109998877' } }, {
+      telefono: '+573005551234',
+    })
+    expect(result.primaryContactPhone).toBe('3109998877')
+  })
+
+  it('sin teléfono conocido no inventa uno', () => {
+    expect(computeAgencyStepPrefill(null, {}, { telefono: null })).toEqual({})
+    expect(computeAgencyStepPrefill(null, {})).toEqual({})
+  })
+})
+
+describe('celularParaElCampo', () => {
+  it('quita el indicativo de Colombia y deja los 10 dígitos', () => {
+    expect(celularParaElCampo('+57 300 555 1234')).toBe('3005551234')
+    expect(celularParaElCampo('573005551234')).toBe('3005551234')
+    expect(celularParaElCampo('300 555 1234')).toBe('3005551234')
+  })
+
+  it('lo que no es un celular de Colombia no se adivina', () => {
+    expect(celularParaElCampo('+1 415 555 0100')).toBeUndefined()
+    expect(celularParaElCampo('6044445566')).toBeUndefined()
+    expect(celularParaElCampo('')).toBeUndefined()
+    expect(celularParaElCampo(undefined)).toBeUndefined()
   })
 })

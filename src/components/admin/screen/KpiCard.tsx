@@ -1,33 +1,57 @@
-import { AnimatedNumber } from '@leasefy/cadence'
+import { AnimatedNumber, KpiCard as DSKpiCard } from '@leasefy/cadence'
 
-/** El conteo escribe la cifra igual que antes (`String(value)`): mismos decimales, sin separador agregado. */
+/** El conteo escribe la cifra con miles con punto y los decimales que trae. */
 function comoElValor(valor: number): (n: number) => string {
   const decimales = Math.min((String(valor).split('.')[1] ?? '').length, 6)
-  return (n) => n.toFixed(decimales)
+  const nf = new Intl.NumberFormat('es-CO', { minimumFractionDigits: decimales, maximumFractionDigits: decimales })
+  return (n) => nf.format(n)
 }
 
-/** Hero KPI stat card (dashboard, payments, QA, etc.). */
+const TONO = {
+  default: '',
+  ok: 'text-success',
+  warn: 'text-warning',
+  bad: 'text-danger',
+} as const
+
+/**
+ * La tarjeta de una cifra del admin: el `KpiCard` de Cadence (rótulo mono,
+ * cifra en JetBrains Mono que cuenta al cambiar, ícono neutro arriba a la
+ * derecha y una línea de apoyo). `tone` tiñe la cifra con los tonos de Cadence
+ * cuando la cifra misma es la alerta (fallidos, vencidos).
+ */
 export function KpiCard({
   label,
   value,
   hint,
   tone = 'default',
+  icon,
+  className,
 }: {
   label: string
   value: React.ReactNode
-  hint?: React.ReactNode
-  tone?: 'default' | 'ok' | 'warn' | 'bad'
+  hint?: string
+  tone?: keyof typeof TONO
+  icon?: React.ReactNode
+  className?: string
 }) {
-  const valueColor =
-    tone === 'ok' ? 'text-ok' : tone === 'warn' ? 'text-warn' : tone === 'bad' ? 'text-bad' : 'text-fg'
+  const esCifra = typeof value === 'number' && Number.isFinite(value)
+  const valor =
+    tone === 'default' ? (
+      value
+    ) : (
+      <span className={TONO[tone]}>
+        {esCifra ? <AnimatedNumber value={value as number} format={comoElValor(value as number)} /> : value}
+      </span>
+    )
   return (
-    <div className="card p-4">
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">{label}</div>
-      <div className={`text-2xl font-semibold tabular-nums mt-1 ${valueColor}`}>
-        {/* Un número cuenta desde el anterior cuando cambia (Cadence); texto y nodos, tal cual. */}
-        {typeof value === 'number' && Number.isFinite(value) ? <AnimatedNumber value={value} format={comoElValor(value)} /> : value}
-      </div>
-      {hint != null && <div className="text-xs text-fg-muted mt-1">{hint}</div>}
-    </div>
+    <DSKpiCard
+      label={label}
+      value={valor}
+      format={esCifra && tone === 'default' ? comoElValor(value as number) : undefined}
+      sublabel={hint}
+      icon={icon}
+      className={className}
+    />
   )
 }

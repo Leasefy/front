@@ -1,19 +1,7 @@
 'use client'
 
-import {
-  Wrench,
-  Siren,
-  WarningCircle,
-  Clock,
-  CheckCircle,
-  CurrencyDollar,
-  UserCircle,
-  ArrowsClockwise,
-  Hourglass,
-  type Icon,
-} from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
-import { CrossFade } from '@leasefy/cadence'
+import { Cifra, CrossFade, FranjaDeCifras, type TonoDeCifra } from '@leasefy/cadence'
 import type { MaintenanceKpis } from '@/lib/types/mantenimiento'
 
 interface MantenimientoKpiStripProps {
@@ -44,34 +32,26 @@ interface KpiCardModel {
   key: string
   label: string
   value: string
-  Icon: Icon
-  iconColor: string
+  /** Punto de estado: sólo cuando la cifra pide atención (una emergencia activa, algo vencido). */
+  tono?: TonoDeCifra
 }
 
-function KpiCard({
-  card,
-  isLoading,
-}: {
-  card: KpiCardModel
-  isLoading: boolean
-}) {
-  const { label, value, Icon, iconColor } = card
+/** Una celda de la franja. Cargando, un hueco; después, la cifra con un fundido. */
+function Celda({ card, isLoading }: { card: KpiCardModel; isLoading: boolean }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Icon size={18} className={iconColor} weight="duotone" />
-        <p className="text-xs text-fg-muted leading-tight">{label}</p>
-      </div>
-      {/* Hueco → cifra con un fundido; si la cifra cambia (se releen los
-          indicadores), se cruza con la nueva. */}
-      <CrossFade swapKey={isLoading ? 'cargando' : value}>
-        {isLoading ? (
-          <div className="h-6 w-16 rounded bg-surface-muted animate-pulse" />
-        ) : (
-          <p className="text-xl font-semibold text-fg mt-1">{value}</p>
-        )}
-      </CrossFade>
-    </div>
+    <Cifra
+      etiqueta={card.label}
+      tono={isLoading ? undefined : card.tono}
+      valor={
+        <CrossFade swapKey={isLoading ? 'cargando' : card.value}>
+          {isLoading ? (
+            <span className="mt-1 block h-6 w-16 rounded bg-surface-muted animate-pulse" />
+          ) : (
+            <span data-kpi-valor>{card.value}</span>
+          )}
+        </CrossFade>
+      }
+    />
   )
 }
 
@@ -91,50 +71,39 @@ export function MantenimientoKpiStrip({
       key: 'ticketsAbiertos',
       label: k('ticketsAbiertos'),
       value: kpis ? String(kpis.ticketsAbiertos) : SIN_DATO,
-      Icon: Wrench,
-      iconColor: 'text-primary',
     },
     {
       key: 'emergenciasActivas',
       label: k('emergenciasActivas'),
       value: kpis ? String(kpis.emergenciasActivas) : SIN_DATO,
-      Icon: Siren,
-      iconColor: 'text-danger',
+      tono: kpis && kpis.emergenciasActivas > 0 ? 'peligro' : undefined,
     },
     {
       key: 'vencidos',
       label: k('vencidos'),
       value: kpis ? String(kpis.vencidos) : SIN_DATO,
-      Icon: WarningCircle,
-      iconColor: 'text-warning',
+      tono: kpis && kpis.vencidos > 0 ? 'aviso' : undefined,
     },
     {
       key: 'tiempoPrimeraRespuesta',
       label: k('tiempoPrimeraRespuesta'),
       value: kpis ? `${kpis.tiempoPrimeraRespuestaMin} ${unitMin}` : SIN_DATO,
-      Icon: Clock,
-      iconColor: 'text-info',
     },
     {
       key: 'slaCumplido',
       label: k('slaCumplido'),
       value: kpis ? `${kpis.slaCumplidoPct}%` : SIN_DATO,
-      Icon: CheckCircle,
-      iconColor: 'text-success',
     },
     {
       key: 'costoEstimado',
       label: k('costoEstimado'),
       value: kpis ? formatCOP(kpis.costoEstimadoAbiertoCop) : SIN_DATO,
-      Icon: CurrencyDollar,
-      iconColor: 'text-success',
     },
     {
       key: 'propietariosEnRiesgo',
       label: k('propietariosEnRiesgo'),
       value: kpis ? String(kpis.propietariosEnRiesgo) : SIN_DATO,
-      Icon: UserCircle,
-      iconColor: 'text-warning',
+      tono: kpis && kpis.propietariosEnRiesgo > 0 ? 'aviso' : undefined,
     },
   ]
 
@@ -144,37 +113,33 @@ export function MantenimientoKpiStrip({
       key: 'reaperturas30d',
       label: k('reaperturas30d'),
       value: kpis ? `${kpis.reaperturas30dPct}%` : SIN_DATO,
-      Icon: ArrowsClockwise,
-      iconColor: 'text-danger',
     },
     {
       key: 'tiempoResolucionReal',
       label: k('tiempoResolucionReal'),
       value: kpis ? `${kpis.tiempoResolucionRealDias} ${unitDias}` : SIN_DATO,
-      Icon: Hourglass,
-      iconColor: 'text-info',
     },
   ]
 
   return (
     <div className="space-y-6" data-testid="kpi-strip">
-      {/* Operational-health KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* La salud de la operación: una franja (de a cuatro por fila) */}
+      <FranjaDeCifras columnas={4}>
         {healthCards.map((card) => (
-          <KpiCard key={card.key} card={card} isLoading={isLoading} />
+          <Celda key={card.key} card={card} isLoading={isLoading} />
         ))}
-      </div>
+      </FranjaDeCifras>
 
       {/* Anti-gaming KPIs — separated block (CONTEXT §compliance, non-negotiable) */}
-      <div data-testid="anti-gaming">
-        <h2 className="text-sm font-medium text-fg-muted mb-3">
+      <div data-testid="anti-gaming" className="space-y-2.5">
+        <h2 className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">
           {t('inmobiliaria.ai.mantenimiento.overview.antiGamingLabel')}
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <FranjaDeCifras columnas={2} className="md:max-w-[50%]">
           {antiGamingCards.map((card) => (
-            <KpiCard key={card.key} card={card} isLoading={isLoading} />
+            <Celda key={card.key} card={card} isLoading={isLoading} />
           ))}
-        </div>
+        </FranjaDeCifras>
       </div>
     </div>
   )

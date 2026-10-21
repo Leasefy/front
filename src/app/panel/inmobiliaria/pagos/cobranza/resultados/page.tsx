@@ -25,30 +25,16 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
-import {
-  ChartLineUp,
-  ChatCircleText,
-  CheckCircle,
-  Clock,
-  CurrencyDollar,
-  FileText,
-  Handshake,
-  PhoneCall,
-  Scales,
-  TrendDown,
-  TrendUp,
-  Wallet,
-  Warning,
-} from '@phosphor-icons/react'
-import type { Icon } from '@phosphor-icons/react'
+import { ChartLineUp, Warning } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
-import { EmptyState } from '@/components/data-display/EmptyState'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Button, Spinner } from '@/components/ui'
-import { CrossFade, KpiCard, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { Cifra, CrossFade, FranjaDeCifras, Presence } from '@leasefy/cadence'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { useRecovery } from '@/lib/hooks/cobranza/use-recovery'
@@ -56,6 +42,7 @@ import { useRecovery } from '@/lib/hooks/cobranza/use-recovery'
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const ANALITICA_HREF = `${BASE}/analitica`
 const REPORTE_HREF = `${BASE}/reporte`
+const ESCALACIONES_HREF = `${BASE}/escalaciones`
 
 const EM_DASH = '—'
 
@@ -64,8 +51,11 @@ const EM_DASH = '—'
 interface ResultadoKpi {
   key: string
   label: string
-  icon: Icon
-  /** Valor formateado, o null → renderiza em-dash + sublabel "Sin dato aún". */
+  /** Lo que recuperó (el resultado) o cómo trabajó (el esfuerzo). */
+  grupo: 'recupero' | 'trabajo'
+  /** Punto de estado junto a la etiqueta (la mora que sube, en rojo). */
+  tono?: 'exito' | 'peligro'
+  /** Valor formateado, o null → «—» y su detalle dice que aún no hay dato. */
   value: string | null
   /** Pie de la card (siempre presente; describe la fuente o el estado). */
   sublabel: string
@@ -136,8 +126,8 @@ function ResultadosContent() {
     return [
       {
         key: 'recuperado',
+        grupo: 'recupero',
         label: 'Valor recuperado',
-        icon: CurrencyDollar,
         value: recuperadoCop != null ? formatCurrency(recuperadoCop) : null,
         sublabel:
           recuperadoCop != null
@@ -146,8 +136,8 @@ function ResultadosContent() {
       },
       {
         key: 'casos-cerrados',
+        grupo: 'recupero',
         label: 'Casos cerrados',
-        icon: CheckCircle,
         value: casosCerrados != null ? formatNumber(casosCerrados) : null,
         sublabel:
           casosCerrados != null
@@ -156,15 +146,15 @@ function ResultadosContent() {
       },
       {
         key: 'gestionados',
+        grupo: 'trabajo',
         label: 'Casos gestionados',
-        icon: PhoneCall,
         value: gestionados != null ? formatNumber(gestionados) : null,
         sublabel: 'Casos trabajados por el agente',
       },
       {
         key: 'tiempo-recuperacion',
+        grupo: 'recupero',
         label: 'Tiempo prom. de recuperación',
-        icon: Clock,
         value:
           tiempoRecuperacion != null
             ? `${formatNumber(tiempoRecuperacion)} ${tiempoRecuperacion === 1 ? 'día' : 'días'}`
@@ -176,8 +166,8 @@ function ResultadosContent() {
       },
       {
         key: 'tasa-respuesta',
+        grupo: 'trabajo',
         label: 'Tasa de respuesta',
-        icon: ChatCircleText,
         value: tasaRespuesta != null ? `${formatNumber(tasaRespuesta)}%` : null,
         sublabel:
           tasaRespuesta != null
@@ -186,8 +176,8 @@ function ResultadosContent() {
       },
       {
         key: 'promesas-cumplidas',
+        grupo: 'trabajo',
         label: 'Promesas cumplidas',
-        icon: Handshake,
         value:
           promesasKept != null
             ? promesasTotal != null
@@ -201,8 +191,8 @@ function ResultadosContent() {
       },
       {
         key: 'acuerdos-cumplidos',
+        grupo: 'trabajo',
         label: 'Acuerdos cumplidos',
-        icon: FileText,
         value:
           acuerdosKept != null
             ? acuerdosTotal != null
@@ -216,8 +206,8 @@ function ResultadosContent() {
       },
       {
         key: 'escalados',
+        grupo: 'trabajo',
         label: 'Casos escalados',
-        icon: Warning,
         value: escalados != null ? formatNumber(escalados) : null,
         sublabel: 'Subidos a revisión humana',
       },
@@ -229,13 +219,14 @@ function ResultadosContent() {
         // manda sobre el título, el ícono y el texto, y el número va en
         // magnitud para que no se lea dos veces la dirección.
         key: 'mora-reducida',
+        grupo: 'recupero',
         label:
           moraReducida == null || moraReducida === 0
             ? 'Variación de mora'
             : moraReducida > 0
               ? 'Mora reducida'
               : 'Mora aumentada',
-        icon: moraReducida != null && moraReducida < 0 ? TrendUp : TrendDown,
+        tono: moraReducida == null || moraReducida === 0 ? undefined : moraReducida > 0 ? 'exito' : 'peligro',
         value:
           moraReducida != null
             ? `${formatNumber(Math.abs(moraReducida))} pts`
@@ -248,14 +239,6 @@ function ResultadosContent() {
               : moraReducida > 0
                 ? `Bajó en ${moraVentanaDias} días`
                 : `Subió en ${moraVentanaDias} días`,
-      },
-      {
-        key: 'ahorro-operativo',
-        label: 'Ahorro operativo',
-        icon: Wallet,
-        // Sin fuente de ahorro operativo en estos hooks → em-dash honesto.
-        value: null,
-        sublabel: 'Disponible en analítica',
       },
     ]
   }, [recovery.data, overview.data, daily.data, formatCurrency, formatNumber])
@@ -317,51 +300,77 @@ function ResultadosContent() {
 
   useAutoRefresh(handleRefetch)
 
-  // ── Header reutilizado en todos los estados ────────────────────────────────
+  /*
+   * GLOW UP 21-10 · el trabajo de esta pantalla es saber si el agente rinde y
+   * qué espera de ti. Antes: diez tarjetas iguales (una, «Ahorro operativo»,
+   * siempre en «—») y una tarjeta de enlaces al final. Ahora: el encabezado con
+   * lo que se hace (revisar lo escalado, si hay; la analítica y el reporte del
+   * día como apoyo), la frase del agente y dos franjas — lo que recuperó y
+   * cómo trabajó.
+   *
+   * 🔴 «Revisar N escalados» usa las escalaciones PENDIENTES del overview, no
+   * `casesEscalated` del agregado (ese cuenta todas las de la ventana, también
+   * las ya resueltas).
+   */
+  const pendientes = overview.data?.kpis.escalacionesPendientes ?? 0
   const header = (
-    <header className="flex items-start justify-between gap-4 flex-wrap">
-      <div>
-        <h1 className="text-h2 text-fg">
-          Resultados del agente
-        </h1>
-        <p className="text-sm text-fg-muted max-w-2xl mt-0.5 line-clamp-2">
-          Cómo rinde tu agente de cobranza, leído como evaluarías a un equipo:
-          qué recuperó, cuántos casos gestionó y escaló, y qué tan rápido
-          respondió. Para el detalle por etapa, objeciones y costo, abre la
-          analítica.
-        </p>
-      </div>
-    </header>
+    <EncabezadoDePantalla
+      seccion="Cobranza"
+      titulo="Resultados del agente"
+      descripcion="Lo que recuperó tu agente de cobranza y cómo trabajó, leído como evaluarías a un equipo."
+      acciones={
+        <>
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href={ANALITICA_HREF} data-testid="resultados-ver-analitica">
+              Ver analítica
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href={REPORTE_HREF} data-testid="resultados-ver-reporte">
+              Reporte del día
+            </Link>
+          </Button>
+        </>
+      }
+      accionPrincipal={
+        pendientes > 0 ? (
+          <Button asChild size="sm" hideArrow>
+            <Link href={ESCALACIONES_HREF} data-testid="resultados-revisar-escalados">
+              {pendientes === 1 ? 'Revisar 1 escalado' : `Revisar ${formatNumber(pendientes)} escalados`}
+            </Link>
+          </Button>
+        ) : undefined
+      }
+      data-testid="resultados-encabezado"
+    />
   )
 
-  // ── Cross-links a las superficies de detalle (siempre visibles) ────────────
-  const crossLinks = (
-    <section
-      aria-label="Ver el detalle"
-      className="rounded-lg border border-border bg-card p-5 space-y-3 max-w-2xl"
-    >
-      <h2 className="text-base font-semibold text-fg">¿Quieres el detalle?</h2>
-      <p className="text-sm text-fg-muted">
-        Esta vista es el resumen ejecutivo. El detalle por etapa, objeciones,
-        cadencia y costo vive en la analítica; el corte operativo del día, en el
-        reporte.
-      </p>
-      <div className="flex flex-wrap items-center gap-2">
-        <Button asChild variant="secondary" size="sm" hideArrow>
-          <Link href={ANALITICA_HREF}>
-            <ChartLineUp className="w-4 h-4" aria-hidden="true" />
-            Ver analítica
-          </Link>
-        </Button>
-        <Button asChild variant="secondary" size="sm" hideArrow>
-          <Link href={REPORTE_HREF}>
-            <Scales className="w-4 h-4" aria-hidden="true" />
-            Ver reporte diario
-          </Link>
-        </Button>
-      </div>
-    </section>
-  )
+  const franja = (grupo: ResultadoKpi['grupo'], titulo: string, explicacion: string) => {
+    const deEste = kpis.filter((k) => k.grupo === grupo)
+    const id = `resultados-${grupo}`
+    return (
+      <section className="space-y-3" aria-labelledby={id}>
+        <div className="space-y-0.5">
+          <h2 id={id} className="text-sm font-semibold text-fg">
+            {titulo}
+          </h2>
+          <p className="text-caption text-fg-muted">{explicacion}</p>
+        </div>
+        <FranjaDeCifras fila={deEste.length > 4 ? 'lg' : 'md'} aria-label={titulo} data-testid={`franja-${grupo}`}>
+          {deEste.map((kpi) => (
+            <Cifra
+              key={kpi.key}
+              etiqueta={kpi.label}
+              valor={kpi.value ?? EM_DASH}
+              detalle={kpi.sublabel}
+              tono={kpi.value != null ? kpi.tono : undefined}
+              data-testid={`resultado-kpi-${kpi.key}`}
+            />
+          ))}
+        </FranjaDeCifras>
+      </section>
+    )
+  }
 
   // ── Primer load ────────────────────────────────────────────────────────────
   // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
@@ -369,12 +378,12 @@ function ResultadosContent() {
   if (isLoading && !hasAnyData) {
     return (
       <CrossFade swapKey="cargando">
-      <div className="p-6 lg:p-8 space-y-6">
-        {header}
-        <div className="flex items-center justify-center py-12">
-          <Spinner size="md" />
+        <div className="p-6 lg:p-8 space-y-6">
+          {header}
+          <div className="flex items-center justify-center py-12">
+            <Spinner size="md" />
+          </div>
         </div>
-      </div>
       </CrossFade>
     )
   }
@@ -383,66 +392,48 @@ function ResultadosContent() {
   if (!isLoading && !hasAnyData) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-6 lg:p-8 space-y-6">
-        {header}
-        <EmptyState
-          icon={ChartLineUp}
-          title="Aún no hay resultados para mostrar"
-          description="Cuando el agente empiece a gestionar tu cartera, acá vas a ver lo que recuperó, los casos que cerró y escaló, y su tasa de respuesta."
-        />
-        {crossLinks}
-      </div>
+        <div className="p-6 lg:p-8 space-y-6">
+          {header}
+          <section className="rounded-lg border border-border bg-surface" data-testid="resultados-vacio">
+            <EmptyState
+              icon={ChartLineUp}
+              ilustracion="monedas"
+              title="Aún no hay resultados para mostrar"
+              description="Cuando el agente empiece a gestionar tu cartera, aquí ves lo que recuperó, los casos que cerró y escaló, y su tasa de respuesta."
+            />
+          </section>
+        </div>
       </CrossFade>
     )
   }
 
   return (
     <CrossFade swapKey="resultados">
-    <div className="p-6 lg:p-8 space-y-6">
-      {header}
+      <div className="p-6 lg:p-8 space-y-8">
+        <div className="space-y-4">
+          {header}
 
-      {/* Error parcial — alguna fuente falló pero la otra rindió datos */}
-      <Presence show={Boolean((recovery.error || overview.error || daily.error) && hasAnyData)}
-          role="alert"
-          className="rounded-lg bg-warning-soft border border-warning/30 p-3 text-sm text-warning flex items-center gap-2 max-w-2xl"
-        >
-          <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>
-            Algunas métricas no se pudieron cargar; mostramos lo disponible.
-          </span>
-      </Presence>
+          {/* Error parcial — alguna fuente falló pero la otra rindió datos */}
+          <Presence
+            show={Boolean((recovery.error || overview.error || daily.error) && hasAnyData)}
+            role="alert"
+            className="rounded-lg bg-warning-soft border border-warning/30 p-3 text-sm text-warning flex items-center gap-2 max-w-2xl"
+          >
+            <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
+            <span>Algunas métricas no se pudieron cargar; mostramos lo disponible.</span>
+          </Presence>
 
-      {/* Narrativa resumen del agente */}
-      {narrativa && (
-        <section className="rounded-lg border border-border bg-surface p-5 max-w-2xl">
-          <p className="text-sm leading-relaxed text-fg">{narrativa}</p>
-        </section>
-      )}
+          {/* Lo que hizo el agente, en una frase: es lo primero que se lee. */}
+          {narrativa && (
+            <p className="max-w-3xl text-body leading-relaxed text-fg" data-testid="resultados-narrativa">
+              {narrativa}
+            </p>
+          )}
+        </div>
 
-      {/* Fila de métricas — KpiCard del DS; "—" donde no hay dato real */}
-      <Stagger
-        as="section"
-        aria-label="Métricas de resultados"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3"
-      >
-        {kpis.map((kpi) => {
-          const KpiIcon = kpi.icon
-          return (
-            <StaggerItem key={kpi.key} className="min-w-0 [&>*]:h-full">
-              <KpiCard
-                label={kpi.label}
-                value={kpi.value ?? EM_DASH}
-                sublabel={kpi.sublabel}
-                icon={<KpiIcon weight="duotone" aria-hidden="true" />}
-                data-testid={`resultado-kpi-${kpi.key}`}
-              />
-            </StaggerItem>
-          )
-        })}
-      </Stagger>
-
-      {crossLinks}
-    </div>
+        {franja('recupero', 'Lo que recuperó', 'La plata y los casos que el agente llevó hasta el pago.')}
+        {franja('trabajo', 'Cómo trabajó', 'Los casos que tocó, quiénes respondieron, lo que se cumplió y lo que subió a revisión humana.')}
+      </div>
     </CrossFade>
   )
 }

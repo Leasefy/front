@@ -3,6 +3,8 @@
  * Used throughout the app for property listings, cards, and details
  */
 
+import { CARACTERISTICAS } from '@/lib/inmuebles/caracteristicas';
+
 export type PropertyStatus = 'available' | 'rented' | 'pending';
 /**
  * Mirrors the backend `PropertyType` Prisma enum (contract.md §3.2, T-0011).
@@ -232,22 +234,11 @@ export const COLOMBIAN_CITIES: string[] = [
 ];
 
 /**
- * Common amenities available in Colombian properties
+ * Las características del inmueble, para pintarlas (id → nombre). Salen de la
+ * única lista, `src/lib/inmuebles/caracteristicas.ts` (21-10-2026): antes eran
+ * 12 escritas acá y la ficha no mostraba las demás que el inmueble tenía.
  */
-export const PROPERTY_AMENITIES: PropertyAmenity[] = [
-  { id: 'parking', name: 'Parqueadero', icon: 'car' },
-  { id: 'gym', name: 'Gimnasio', icon: 'dumbbell' },
-  { id: 'pool', name: 'Piscina', icon: 'waves' },
-  { id: 'security', name: 'Seguridad 24h', icon: 'shield' },
-  { id: 'elevator', name: 'Ascensor', icon: 'arrow-up' },
-  { id: 'balcony', name: 'Balcón', icon: 'sun' },
-  { id: 'laundry', name: 'Zona de lavado', icon: 'shirt' },
-  { id: 'pets', name: 'Acepta mascotas', icon: 'dog' },
-  { id: 'furnished', name: 'Amoblado', icon: 'sofa' },
-  { id: 'storage', name: 'Depósito', icon: 'archive' },
-  { id: 'terrace', name: 'Terraza', icon: 'home' },
-  { id: 'bbq', name: 'Zona BBQ', icon: 'flame' },
-];
+export const PROPERTY_AMENITIES: PropertyAmenity[] = CARACTERISTICAS.map((c) => ({ id: c.id, name: c.nombre }));
 
 /**
  * Days of the week for availability schedule

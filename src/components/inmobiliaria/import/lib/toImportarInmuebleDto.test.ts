@@ -332,3 +332,16 @@ describe('toImportarInmuebleDto — propietarios[]', () => {
     expect(r).toEqual([{ documento: '1', canon: 660000 }, { documento: '2', canon: 440000 }]);
   });
 });
+
+describe('toImportarInmuebleDto — la columna «Características» (21-10-2026)', () => {
+  it('viajan como `amenities` sólo las que se reconocen por su nombre', () => {
+    const dto = toImportarInmuebleDto(inmueble({ caracteristicas: 'Piscina, Ascensor; Helipuerto / Balcón' }));
+    expect(dto.amenities).toEqual(['pool', 'elevator', 'balcony']);
+  });
+
+  it('una celda sin ninguna reconocida no manda la clave (nada se inventa)', () => {
+    expect(toImportarInmuebleDto(inmueble({ caracteristicas: 'Helipuerto' }))).toEqual({});
+    expect(toImportarInmuebleDto(inmueble({ caracteristicas: '' }))).toEqual({});
+  });
+});
+

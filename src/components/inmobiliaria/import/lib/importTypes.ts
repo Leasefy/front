@@ -124,6 +124,12 @@ export interface ImportProperty {
   videoUrl?: string;
   /** Los enlaces de sus fotos, tal como vienen en la celda (separados por coma o espacio). */
   fotos?: string;
+  /**
+   * La celda de «Características» tal como viene («Piscina, gimnasio;
+   * Balcón»), 21-10-2026. `toImportarInmuebleDto` la lee a ids con
+   * `caracteristicasDelTexto`; lo que no reconoce no viaja.
+   */
+  caracteristicas?: string;
   suggestions: AISuggestion[];
   selected: boolean;
   hasErrors: boolean;
@@ -216,4 +222,5 @@ export const TARGET_FIELDS = [
   { key: 'creadaPor', label: 'Creada por', required: false },
   { key: 'videoUrl', label: 'Video (Instagram, TikTok, YouTube o Facebook)', required: false },
   { key: 'fotos', label: 'Fotos (enlaces de Drive, Dropbox o tu web)', required: false },
+  { key: 'caracteristicas', label: 'Características (piscina, ascensor, balcón…)', required: false },
 ] as const;

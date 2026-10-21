@@ -56,6 +56,9 @@ function Publica() {
   const paginaPublica = usePaginaPublica(esInmobiliaria ? agency?.id : null);
   const traer = sp.get('traer');
   const caminoInicial = CAMINOS.find((c) => c === traer) ?? null;
+  // «Publicar para venta» desde algún lado: `?operacion=venta` (o `arriendo`) se salta la pregunta.
+  const operacionPedida = sp.get('operacion');
+  const operacionInicial = operacionPedida === 'venta' ? 'sale' : operacionPedida === 'arriendo' ? 'rent' : null;
 
   const delParametro = sp.get('perfil');
   const perfilPedido: PerfilQuePublica | null =
@@ -115,6 +118,7 @@ function Publica() {
         usuario={user.id}
         paginaPublica={paginaPublica}
         caminoInicial={caminoInicial}
+        operacionInicial={operacionInicial}
         alTerminar={
           esInmobiliaria
             ? { href: '/panel/inmobiliaria/inmuebles', texto: 'Entrar a mi cuenta' }

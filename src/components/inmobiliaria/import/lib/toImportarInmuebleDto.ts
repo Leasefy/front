@@ -22,6 +22,7 @@ import type {
   PropietarioDelInmuebleDto,
 } from '@/lib/api/inmuebles-importacion.service';
 import { repartoEnBps } from '@/lib/migracion/valores-de-origen';
+import { caracteristicasDelTexto } from '@/lib/inmuebles/caracteristicas';
 
 export function toImportarInmuebleDto(p: ImportProperty): ImportarInmuebleDto {
   const dto: ImportarInmuebleDto = {};
@@ -120,6 +121,10 @@ export function toImportarInmuebleDto(p: ImportProperty): ImportarInmuebleDto {
   // Las fotos por enlace (09-10-2026): la celda partida en enlaces; el back filtra y las baja.
   const fotos = (p.fotos ?? '').split(/[\s,;]+/).map((f) => f.trim()).filter(Boolean);
   if (fotos.length > 0) dto.fotos = fotos;
+  // Las características (21-10-2026): sólo las que se reconocen por su nombre
+  // completo; nada se adivina de un pedazo.
+  const { ids: caracteristicas } = caracteristicasDelTexto(p.caracteristicas);
+  if (caracteristicas.length > 0) dto.amenities = caracteristicas;
   if (p.ownerPhone?.trim()) dto.propietarioTelefono = p.ownerPhone.trim();
   if (p.status?.trim()) dto.estadoOrigen = p.status.trim();
 

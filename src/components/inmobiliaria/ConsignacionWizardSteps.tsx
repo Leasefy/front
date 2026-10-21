@@ -52,6 +52,7 @@ import { PropertyLocationField, type PropertyLocationValue } from '@/components/
 import { PropertyPhotoPicker } from './PropertyPhotoPicker';
 import { LARGO_MAXIMO_DEL_ENLACE, MENSAJE_DEL_VIDEO, videoInvalido } from '@/lib/marketplace/video';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { SelectorDeCaracteristicas } from '@/components/property/SelectorDeCaracteristicas';
 import { idDelCampoDelAsistente, topesDelPasoDelInmueble } from '@/lib/inmuebles/errores-del-asistente';
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 
@@ -114,6 +115,8 @@ export interface WizardFormData extends ConsignacionFormData {
    * que «Editar» y `/publicar` (`lib/marketplace/video.ts`).
    */
   videoUrl?: string;
+  /** Las características (ids de `lib/inmuebles/caracteristicas.ts`), 21-10-2026. Opcionales. */
+  amenities?: string[];
   /**
    * 🔴 «Publicar en el marketplace» (Nico, 10-10-2026): ENCENDIDO por defecto
    * (ausente = sí). Apagado, el inmueble queda en el portafolio y no sale en
@@ -652,6 +655,30 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
             })}
           </p>
           <ErrorDelCampo id={`${idDelCampoDelAsistente('propertyDescription')}-error`} mensaje={errors.propertyDescription} />
+        </div>
+
+        {/*
+          Las características (Juan y Nico, 21-10-2026: «yo estaba creando un
+          inmueble» y no había dónde ponerlas: sólo se podían agregar después,
+          editándolo). Opcionales; la misma lista de «Editar» y del marketplace.
+        */}
+        <div className="space-y-1.5" id={idDelCampoDelAsistente('amenities')} data-testid="asistente-caracteristicas">
+          <p id={`${idDelCampoDelAsistente('amenities')}-titulo`} className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            {t('inmobiliaria.consignaciones.wizard.step2.amenitiesLabel')}{' '}
+            <span className="font-normal text-fg-muted">{t('inmobiliaria.consignaciones.wizard.step5.optional')}</span>
+          </p>
+          <p className="text-caption text-fg-muted">{t('inmobiliaria.consignaciones.wizard.step2.amenitiesHint')}</p>
+          <SelectorDeCaracteristicas
+            value={formData.amenities ?? []}
+            onChange={(amenities) => updateFormData({ amenities })}
+            tituloId={`${idDelCampoDelAsistente('amenities')}-titulo`}
+            ariaDelError={
+              erroresDelServidor?.amenities
+                ? { 'aria-invalid': true, 'aria-describedby': `${idDelCampoDelAsistente('amenities')}-error` }
+                : undefined
+            }
+          />
+          <ErrorDelCampo id={`${idDelCampoDelAsistente('amenities')}-error`} mensaje={erroresDelServidor?.amenities} />
         </div>
 
         {/*

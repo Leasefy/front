@@ -26,6 +26,8 @@ import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { seLePuedePrometerSinCodeudor } from '@/lib/api/aprobacion.service';
 import { horaDeLaCasa } from '@/lib/agenda/hora-de-la-casa';
 import { TeLlamamosParaLaVisita } from '@/components/property/TeLlamamosParaLaVisita';
+import { CompartirLaFicha } from '@/components/property/CompartirLaFicha';
+import type { InmuebleParaCompartir } from '@/lib/inmuebles/ficha-para-compartir';
 
 interface StickyCTAProps {
   propertyId: string;
@@ -65,6 +67,11 @@ interface StickyCTAProps {
   listingType?: 'rent' | 'sale';
   /** contract.md T-0038 §3.2.3 — `null`/absent renders "Sin dato", never `$0` (C6). */
   salePrice?: number | null;
+  /**
+   * Los datos de la «mini ficha» (21-10-2026): con ellos, la inmobiliaria
+   * tiene además «Copiar ficha» y «WhatsApp» en «Comparte esta propiedad».
+   */
+  ficha?: InmuebleParaCompartir;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -287,6 +294,7 @@ export function StickyCTA({
   className,
   listingType = 'rent',
   salePrice,
+  ficha,
 }: StickyCTAProps) {
   const { user, isAuthenticated, hasActiveAgencyMembership } = useAuth();
   const router = useRouter();
@@ -501,8 +509,8 @@ export function StickyCTA({
       >
         <div className="p-6">
           {/* Header */}
-          <div className="flex items-start justify-between mb-6">
-            <div>
+          <div className="flex items-start justify-between gap-3 mb-6">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1">
                 {/* Encabeza quien administra el inmueble (Nico, 2026-09-15). Si es
                     otra inmobiliaria, su logo y su nombre; si es Leasefy o no hay
@@ -511,7 +519,8 @@ export function StickyCTA({
                 {administrador && !esLeasefy(administrador.agencyId) ? (
                   <>
                     <LogoDelAdministrador administrador={administrador} tamano={28} />
-                    <span className="max-w-[12rem] truncate text-[15px] font-semibold text-foreground">
+                    {/* Entero, en dos líneas si hace falta: nunca «Portofino Propiedad Raiz…» (21-10-2026). */}
+                    <span className="min-w-0 break-words text-[15px] font-semibold leading-snug text-foreground">
                       {administrador.nombre}
                     </span>
                   </>
@@ -527,7 +536,7 @@ export function StickyCTA({
               ) : null}
               {sobreLaInmobiliaria && <div className="mt-2">{sobreLaInmobiliaria}</div>}
             </div>
-            <div className="flex gap-2">
+            <div className="flex shrink-0 gap-2">
               {onWishlistToggle && (
                 <Button
                   type="button"
@@ -631,6 +640,8 @@ export function StickyCTA({
                   </>
                 )}
               </Button>
+
+              {ficha && <CompartirLaFicha propertyId={propertyId} ficha={ficha} className="mt-2" />}
 
               <p className="text-[11px] text-muted-foreground text-center mt-3">
                 Como inmobiliaria no aplicas ni agendas visitas — comparte el enlace con tus clientes.

@@ -46,6 +46,8 @@ export const COLUMN_KEYWORDS: Record<string, string[]> = {
   /** El enlace del video en Instagram, TikTok, YouTube o Facebook (marketplace, 09-10-2026). */
   videoUrl:         ['enlace del video', 'link del video', 'url del video', 'video del inmueble', 'video'],
   /** Enlaces a las fotos (Drive, Dropbox, su web): el back las baja (09-10-2026). */
+  /** Las características en una celda («Piscina, gimnasio; balcón»), 21-10-2026. */
+  caracteristicas:  ['caracteristicas del inmueble', 'caracteristicas', 'comodidades', 'amenidades', 'amenities', 'dotacion'],
   fotos:            ['enlaces de las fotos', 'links de las fotos', 'url de las fotos', 'fotos del inmueble', 'fotografias', 'fotos', 'imagenes'],
   // T-0038 §3.2.1 — the department (not the municipality/city). Kept
   // distinct from propertyCity's 'municipio'/'ciudad'.

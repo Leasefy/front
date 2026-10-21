@@ -91,7 +91,8 @@ export function AdministradoPor({
   return (
     <div data-testid="administrado-por" className={cn('flex min-w-0 items-center gap-2', className)}>
       <LogoDelAdministrador administrador={administrador} tamano={tamano} />
-      <p className="min-w-0 truncate text-[12px] text-muted-foreground">
+      {/* Hasta dos líneas antes que cortar el nombre (Juan, 21-10-2026). */}
+      <p className="min-w-0 line-clamp-2 break-words text-[12px] leading-snug text-muted-foreground">
         Administrado por <span className="font-medium text-foreground">{nombre}</span>
       </p>
     </div>

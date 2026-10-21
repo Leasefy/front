@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Storefront } from '@phosphor-icons/react'
 
+import { CompartirLaFicha } from '@/components/property/CompartirLaFicha'
 import { Card } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
@@ -20,13 +21,21 @@ import {
   marketplaceDelPortafolioApi,
   type InmuebleParaElegir,
 } from '@/lib/api/marketplace-del-portafolio.service'
+import type { InmuebleParaCompartir } from '@/lib/inmuebles/ficha-para-compartir'
 
 export function PublicadoEnElMarketplace({
   propertyId,
   puedeCambiar,
+  ficha,
 }: {
   propertyId: string
   puedeCambiar: boolean
+  /**
+   * Con los datos del inmueble y mientras SALE en el marketplace: «Copiar
+   * enlace», «Copiar ficha» y «WhatsApp» (Juan y Nico, 21-10-2026). Un enlace
+   * de un inmueble que no sale lleva a una ficha que el cliente no puede ver.
+   */
+  ficha?: InmuebleParaCompartir
 }) {
   const [inmueble, setInmueble] = useState<InmuebleParaElegir | null>(null)
   const [guardando, setGuardando] = useState(false)
@@ -65,21 +74,34 @@ export function PublicadoEnElMarketplace({
       ? 'Sale en el marketplace de Leasefy.'
       : `Publicado, pero todavía no sale: ${(inmueble.porQueNoSeVe ?? '').replace(/^./, (c) => c.toLowerCase())}`
 
+  const seComparte = !!ficha && inmueble.publicado && inmueble.seVe
+
   return (
-    <Card className="flex items-start justify-between gap-4 p-4" data-testid="publicado-en-el-marketplace">
-      <div className="flex items-start gap-3">
-        <Storefront className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-        <div>
-          <p className="text-sm font-medium text-fg">Publicado en el marketplace</p>
-          <p className="text-body-sm text-fg-muted">{explicacion}</p>
+    <Card className="p-4" data-testid="publicado-en-el-marketplace">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <Storefront className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-fg">Publicado en el marketplace</p>
+            <p className="text-body-sm text-fg-muted">{explicacion}</p>
+          </div>
         </div>
+        <Switch
+          checked={inmueble.publicado}
+          onCheckedChange={(v) => void cambiar(v)}
+          disabled={guardando || !puedeCambiar}
+          aria-label="Publicado en el marketplace"
+        />
       </div>
-      <Switch
-        checked={inmueble.publicado}
-        onCheckedChange={(v) => void cambiar(v)}
-        disabled={guardando || !puedeCambiar}
-        aria-label="Publicado en el marketplace"
-      />
+      {seComparte && (
+        <div className="mt-3 border-t border-border pt-3" data-testid="compartir-desde-el-panel">
+          <p className="mb-2 text-body-sm text-fg-muted">
+            Compártelo con un cliente: la ficha lleva el precio, los m², las habitaciones y los baños, y el enlace arma la vista
+            previa con la foto.
+          </p>
+          <CompartirLaFicha propertyId={propertyId} ficha={ficha} conEnlace />
+        </div>
+      )}
     </Card>
   )
 }

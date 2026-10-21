@@ -11,6 +11,7 @@ import { PROPERTY_TYPES } from '@/lib/types/publish';
 import { cn } from '@/lib/utils';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { ariaDelCampo, idDelCampo, idDelError } from '../campos-con-error';
+import { nombreDeLaCaracteristica } from '@/lib/inmuebles/caracteristicas';
 
 function useTextTwriter() {
   const [isTyping, setIsTyping] = useState(false);
@@ -74,7 +75,13 @@ export function StepDescription() {
     parts.push(`Hermoso ${typeLabel.toLowerCase()} de ${draft.area}m² ubicado en ${draft.neighborhood}, ${draft.city}.`);
     parts.push(`Cuenta con ${draft.bedrooms} habitación${draft.bedrooms > 1 ? 'es' : ''} y ${draft.bathrooms} baño${draft.bathrooms > 1 ? 's' : ''}.`);
     if (draft.amenities.length > 0) {
-      parts.push(`Incluye ${draft.amenities.slice(0, 3).join(', ')}.`);
+      // Por su nombre: antes salía «Incluye pool, gym, parking.» (los ids).
+      const nombres = draft.amenities
+        .map((id) => nombreDeLaCaracteristica(id))
+        .filter((n): n is string => !!n)
+        .slice(0, 3)
+        .map((n) => n.charAt(0).toLowerCase() + n.slice(1));
+      if (nombres.length > 0) parts.push(`Incluye ${nombres.join(', ')}.`);
     }
     parts.push('Excelente ubicación con fácil acceso a transporte público y comercio.');
     return parts.join(' ');

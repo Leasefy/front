@@ -15,7 +15,7 @@ import { AUTH_DIR, PERSONAS, authFile, personaSkipReason, statusFile } from '../
  * lists it.
  */
 setup.describe.configure({ mode: 'parallel' });
-setup.setTimeout(180_000);
+setup.setTimeout(300_000);
 
 for (const persona of PERSONAS) {
   if (!persona.envPrefix) continue;

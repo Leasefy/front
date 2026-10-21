@@ -20,7 +20,10 @@ pnpm e2e:responsive -- --project "Pixel 7-8 412x915" -g "pagos/cartera"   # extr
 | `PLAYWRIGHT_BASE_URL` | Default `http://localhost:3001`. |
 | `RESPONSIVE_WORKERS` | Parallel workers (default 4). The dev server is the bottleneck. |
 | `RESPONSIVE_REPORT_DIR` | Output dir (default `./responsive-report`). It is wiped at the start of a run unless `RESPONSIVE_REPORT_KEEP=1`. |
-| `RESPONSIVE_ALLOW_POST` | Regex of URLs the read-only guard may let through. Default: none. |
+| `RESPONSIVE_ALLOW_POST` | Regex of URLs the read-only guard may let through. Default: none (Supabase token refresh is always allowed). |
+| `RESPONSIVE_SAMPLE` | Keep every Nth route of each persona (default 1 = all). |
+| `RESPONSIVE_ROUTE_FILTER` | Regex tested against `<persona> <route>`; only matches run. |
+| `RESPONSIVE_REUSE_AUTH` / `RESPONSIVE_REUSE_RESOLVED` | `1` = keep the session / resolved ids of a previous run (iterating on the suite). |
 
 Credentials come from `E2E_TENANT_*`, `E2E_LANDLORD_*`, `E2E_AGENCY_ADMIN_*`, `E2E_AGENCY_AGENT_*`
 (`_EMAIL` / `_PASSWORD`). A persona with an empty password is skipped with a message, the run does
@@ -75,8 +78,9 @@ The suite never submits, creates, edits, deletes, pays, signs or uploads.
 
 - Interactions are an allowlist (`support/interactions.ts`): navigation toggles, `aria-haspopup`
   dialog/menu triggers (minus logout/download/pay/export/print), tabs, close controls, Escape.
-- Every non-GET/HEAD/OPTIONS request is aborted at the network layer (`support/guard.ts`) and listed
-  as `blocked-mutation` in the report. The only form the suite submits is the login in the auth setup
+- Every non-GET/HEAD/OPTIONS request is aborted at the network layer (`support/guard.ts`; the only
+  exception is the Supabase access-token refresh) and summarised in the report under "Requests
+  aborted by the read-only guard". The only form the suite submits is the login in the auth setup
   (and the re-login fallback), which runs outside the guard.
 
 ## False-positive risks

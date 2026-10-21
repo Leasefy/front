@@ -11,7 +11,11 @@ export interface Resolution {
 
 export const isDynamic = (pattern: string): boolean => /\[[^\]]+\]/.test(pattern.split('?')[0]);
 
-const escapeRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const firstLine = (error: unknown): string => String(error).split(String.fromCharCode(10))[0].slice(0, 200);
+
+const isParam = (segment: string): boolean => /^\[.+\]$/.test(segment);
+
+const escapeRegex =(s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Pathname of a route that may carry a query string. */
 export const pathnameOf = (route: string): string => route.split('?')[0].replace(/\/+$/, '') || '/';
@@ -51,13 +55,13 @@ async function resolveUncached(pattern: string, ctx: ResolveContext): Promise<Re
   const segments = pattern.split('/').filter(Boolean);
   let last = -1;
   segments.forEach((s, i) => {
-    if (/^[.+]$/.test(s)) last = i;
+    if (isParam(s)) last = i;
   });
   const tail = segments.slice(last + 1);
 
   // Everything before the last dynamic segment must itself be concrete.
   const parentPattern = '/' + segments.slice(0, last).join('/');
-  const parent = segments.slice(0, last).some((s) => /^[.+]$/.test(s))
+  const parent = segments.slice(0, last).some(isParam)
     ? await resolvePattern(parentPattern, ctx)
     : { path: parentPattern === '/' ? '' : parentPattern };
   if (parent.path === null) {
@@ -76,6 +80,7 @@ async function resolveUncached(pattern: string, ctx: ResolveContext): Promise<Re
     try {
       pages.push({ source, links: await ctx.getLinks(source) });
     } catch (error) {
+      console.warn(`[resolve] could not read ${source}: ${firstLine(error)}`);
       continue;
     }
   }
@@ -98,6 +103,7 @@ async function resolveUncached(pattern: string, ctx: ResolveContext): Promise<Re
         const found = await ctx.discoverByClick(source, headOnly, ctx.staticRoutes);
         if (found) return { path: found + tailPath };
       } catch (error) {
+        console.warn(`[resolve] click discovery failed on ${source}: ${firstLine(error)}`);
         continue;
       }
     }

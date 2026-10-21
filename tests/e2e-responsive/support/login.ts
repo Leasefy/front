@@ -25,8 +25,9 @@ export async function loginThroughUi(page: Page, persona: Persona, log: (m: stri
   await page.locator('form input[type=password]').fill(creds.password);
   await submit.click();
 
-  const deadline = Date.now() + 120_000;
+  const deadline = Date.now() + 240_000;
   let lastMfaAttempt = 0;
+  let mfaAttempts = 0;
   while (Date.now() < deadline) {
     await page.waitForTimeout(700);
     const url = new URL(page.url());
@@ -34,14 +35,18 @@ export async function loginThroughUi(page: Page, persona: Persona, log: (m: stri
 
     const onMfa = path.startsWith('/auth/mfa-verify') || path.startsWith('/auth/mfa-enroll');
     if (onMfa) {
-      // Retry the code now and then: enrolment first shows a QR step, the code box comes later.
-      if (Date.now() - lastMfaAttempt > 3500) {
+      // One attempt per ~12s. The first one waits for hydration (digits typed earlier are
+      // lost); a retry reloads the page so the boxes start empty instead of appending.
+      if (Date.now() - lastMfaAttempt > 12_000) {
         lastMfaAttempt = Date.now();
+        mfaAttempts++;
+        if (mfaAttempts > 1) await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+        await page.waitForTimeout(3000);
         const box = page.locator('input:visible').first();
-        if (await box.count()) {
+        if (await box.waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false)) {
           await box.click({ timeout: 2000 }).catch(() => {});
-          await page.keyboard.type(MFA_CODE, { delay: 60 });
-          log(`${persona.id}: typed the dev MFA code on ${path}`);
+          await page.keyboard.type(MFA_CODE, { delay: 80 }).catch(() => {});
+          log(`${persona.id}: typed the dev MFA code on ${path} (attempt ${mfaAttempts})`);
         }
       }
       continue;
@@ -57,5 +62,5 @@ export async function loginThroughUi(page: Page, persona: Persona, log: (m: stri
       if (text) throw new Error(`Login for ${persona.id} was rejected: ${text}`);
     }
   }
-  throw new Error(`Login for ${persona.id} did not leave /auth within 120s (last URL ${page.url()})`);
+  throw new Error(`Login for ${persona.id} did not leave /auth within 240s (last URL ${page.url()})`);
 }

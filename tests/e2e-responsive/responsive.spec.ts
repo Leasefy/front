@@ -204,13 +204,25 @@ function findingsFromSweep(sweep: SweepResult, touch: boolean): Finding[] {
   return out;
 }
 
+/**
+ * RESPONSIVE_ROUTE_FILTER: regex tested against "<persona> <route>"; only matches run.
+ * RESPONSIVE_SAMPLE=N: keep every Nth route of each persona (deterministic, always keeps the
+ * first). The default is every route; both exist because a dev server needs hours for the full
+ * list on several devices.
+ */
+function selectRoutes(persona: PersonaId, routes: string[]): string[] {
+  const filter = process.env.RESPONSIVE_ROUTE_FILTER ? new RegExp(process.env.RESPONSIVE_ROUTE_FILTER) : null;
+  const every = Math.max(1, Number(process.env.RESPONSIVE_SAMPLE ?? 1));
+  return routes.filter((route, index) => index % every === 0 && (!filter || filter.test(`${persona} ${route}`)));
+}
+
 // ---- tests -------------------------------------------------------------------------------
 
 for (const persona of PERSONAS) {
   test.describe(persona.id, () => {
     test.use({ storageState: persona.envPrefix ? authFile(persona.id) : { cookies: [], origins: [] } });
 
-    for (const route of ROUTES[persona.id]) {
+    for (const route of selectRoutes(persona.id, ROUTES[persona.id])) {
       test(route, async ({ page, context, browser, baseURL, guard }, testInfo) => {
         const meta = metaOf(testInfo);
         const status = personaStatus(persona);

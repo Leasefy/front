@@ -16,6 +16,13 @@ import type { BrowserContext } from '@playwright/test';
 
 const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
+/**
+ * Supabase access-token refresh (`POST /auth/v1/token?grant_type=refresh_token`). It only
+ * renews the session already in use and writes no application data; blocking it would log the
+ * persona out after the first hour of a long run.
+ */
+const SESSION_REFRESH = /\/auth\/v1\/token\?grant_type=refresh_token/;
+
 export interface BlockedRequest {
   method: string;
   url: string;
@@ -31,7 +38,7 @@ export async function installReadOnlyGuard(context: BrowserContext): Promise<Gua
   await context.route('**/*', async (route) => {
     const request = route.request();
     const method = request.method();
-    if (READ_METHODS.has(method) || (allow && allow.test(request.url()))) {
+    if (READ_METHODS.has(method) || SESSION_REFRESH.test(request.url()) || (allow && allow.test(request.url()))) {
       await route.continue();
       return;
     }

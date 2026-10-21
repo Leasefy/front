@@ -3458,7 +3458,7 @@
       "subtitle": "Manage the flow of leads and negotiations",
       "search": "Search lead...",
       "addLead": "New lead",
-      "noLeads": "No leads in pipeline",
+      "noLeads": "No one at this stage",
       "noLeadsDesc": "Start by adding your first lead",
       "stages": {
         "newLead": "New Lead",

@@ -19,7 +19,6 @@ import { toast } from '@/components/ui/toast';
 import {
   CaretDown,
   CaretUp,
-  DotsSixVertical,
   ArrowsOutSimple,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -165,7 +164,6 @@ function DroppableColumn({
 
   // Extract background and text color classes from stageInfo
   const bgColorClass = stageInfo?.color?.split(' ')[0] || 'bg-surface-muted';
-  const textColorClass = stageInfo?.color?.split(' ')[1] || 'text-fg';
 
   // Calculate if we need to show "Ver todo" button (show when 3+ items)
   const showExpandButton = items.length >= maxVisibleCards;
@@ -174,19 +172,17 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'flex flex-col h-full rounded-lg border bg-muted/40 transition-[border-color,box-shadow] duration-base',
+        // Cadence 2: la columna es un carril de arena, sin marco; al arrastrar encima se enciende.
+        'flex flex-col h-full rounded-[18px] transition-[background-color,box-shadow] duration-base',
         isOver
-          ? 'border-primary/30 border-dashed ring-2 ring-primary/20'
-          : 'border-border'
+          ? 'bg-primary-soft/50 ring-2 ring-primary/25'
+          : 'bg-surface-muted/70'
       )}
       style={{ width: '280px', minWidth: '280px' }}
     >
       {/* Column Header */}
       <div
-        className={cn(
-          'flex items-center justify-between p-3 rounded-t-xl border-b',
-          'bg-card border-border'
-        )}
+        className="flex items-center justify-between px-3.5 pb-1.5 pt-3"
       >
         {/* Left side: color indicator + label + count */}
         <div className="flex items-center gap-2.5">
@@ -199,18 +195,12 @@ function DroppableColumn({
           />
 
           {/* Stage label */}
-          <h3 className="font-semibold text-sm text-foreground">
+          <h3 className="text-sm font-medium text-fg">
             {tr(stageInfo?.labelEs || stage)}
           </h3>
 
-          {/* Count badge */}
-          <span
-            className={cn(
-              'px-2 py-0.5 rounded-full text-xs font-medium',
-              bgColorClass,
-              textColorClass
-            )}
-          >
+          {/* Cuántos: la cifra en mono, sin pastilla de color */}
+          <span className="font-mono text-[12px] tabular-nums text-fg-subtle">
             {items.length}
           </span>
         </div>
@@ -248,19 +238,12 @@ function DroppableColumn({
                 /* Empty State */
                 <div
                   className={cn(
-                    'flex flex-col items-center justify-center py-8 px-4 rounded-md border-2 border-dashed',
-                    isOver
-                      ? 'border-primary/30 bg-primary-soft/50'
-                      : 'border-border bg-muted/40'
+                    'flex items-center justify-center rounded-[14px] border border-dashed px-4 py-5 text-center text-caption',
+                    isOver ? 'border-primary/40 text-primary' : 'border-border text-fg-subtle'
                   )}
                 >
-                  <DotsSixVertical className="w-6 h-6 text-muted-foreground/60 mb-2" />
-                  <p className="text-xs text-muted-foreground text-center">
-                    {t('inmobiliaria.pipeline.noLeads')}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground/70 text-center mt-1">
-                    {t('inmobiliaria.pipeline.dragHere')}
-                  </p>
+                  {/* Vacía: una línea; arrastrando encima, dice dónde soltar */}
+                  {isOver ? t('inmobiliaria.pipeline.dropHere') : t('inmobiliaria.pipeline.noLeads')}
                 </div>
               ) : (
                 /* Cards */

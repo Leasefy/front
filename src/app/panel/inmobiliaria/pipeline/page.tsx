@@ -28,7 +28,8 @@ import {
   PipelineDetail,
   type PipelineFiltersState,
 } from '@/components/inmobiliaria';
-import { KpiCard } from '@leasefy/cadence';
+import { FranjaDeCifras, KpiCard } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -331,19 +332,24 @@ function PipelineContent() {
     ) as unknown as string;
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.pipeline.title')}
-        </h1>
-        <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
-          {t('inmobiliaria.pipeline.subtitle')}
-        </p>
-      </div>
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* Encabezado por tarea: qué es y, a la derecha, lo que más se hace aquí. */}
+      <EncabezadoDePantalla
+        seccion={tr('Captación y arriendo')}
+        titulo={t('inmobiliaria.pipeline.title')}
+        descripcion={t('inmobiliaria.pipeline.subtitle')}
+        accionPrincipal={
+          <PermissionGate module="pipeline" action="create" fallback={null}>
+            <Button onClick={() => setCreandoLead(true)} data-testid="pipeline-nuevo-lead">
+              <Plus className="w-4 h-4" />
+              {tr("Nuevo interesado")}
+            </Button>
+          </PermissionGate>
+        }
+      />
 
-      {/* Stats Row — sin entrada propia: la página entra con su template. */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Las cifras juntas, en una franja — sin entrada propia: la página entra con su template. */}
+      <FranjaDeCifras data-testid="cifras-del-embudo">
         <KpiCard
           label={t('inmobiliaria.pipeline.stats.totalLeads')}
           value={valorDeTile(stats.total)}
@@ -364,12 +370,12 @@ function PipelineContent() {
           value={valorDeTile(textoDeTasa(stats.conversionRate, 0))}
           icon={<ChartLineUp />}
         />
-      </div>
+      </FranjaDeCifras>
 
       {/* Unified Data Card - Filters + Content */}
       <div className="rounded-lg border border-border bg-card overflow-hidden">
         {/* Header with count */}
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3 bg-muted/20">
+        <div className="px-4 py-3 border-b border-border-faint flex items-center justify-between gap-3">
           <span className="text-sm font-medium text-foreground">
             {t('inmobiliaria.pipeline.board.title')}
           </span>
@@ -380,17 +386,6 @@ function PipelineContent() {
                 {t('inmobiliaria.pipeline.board.count', { filtered: filteredItems.length, total: items.length })}
               </span>
             )}
-            <PermissionGate module="pipeline" action="create" fallback={null}>
-              <Button
-                size="sm"
-                hideArrow
-                onClick={() => setCreandoLead(true)}
-                data-testid="pipeline-nuevo-lead"
-              >
-                <Plus className="w-4 h-4" />
-                {tr("Nuevo interesado")}
-              </Button>
-            </PermissionGate>
           </div>
         </div>
 

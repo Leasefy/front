@@ -3493,7 +3493,7 @@
       "subtitle": "Los interesados, de la primera pregunta al contrato",
       "search": "Buscar interesado…",
       "addLead": "Nuevo interesado",
-      "noLeads": "No hay interesados en el embudo",
+      "noLeads": "Nadie en esta etapa",
       "noLeadsDesc": "Comienza agregando tu primer interesado",
       "stages": {
         "newLead": "Nuevo Lead",

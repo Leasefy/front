@@ -26,7 +26,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Buildings, MagnifyingGlass, PaperPlaneTilt, Users } from '@phosphor-icons/react';
-import { SegmentedControl, type SegmentedOption } from '@leasefy/cadence';
+import { Avatar, SegmentedControl, type SegmentedOption } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 import { mensajeDelHiloDirecto } from './fallo-del-hilo-directo';
 
@@ -58,16 +58,6 @@ import { EntraAlCambiar } from '@/components/portales/EntraAlCambiar';
 function perfilDe(role: string): PerfilEnLaConversacion {
   if (role === 'TENANT' || role === 'LANDLORD' || role === 'AGENT') return role;
   return 'DESCONOCIDO';
-}
-
-function iniciales(nombre: string): string {
-  return nombre
-    .split(' ')
-    .map((p) => p[0])
-    .filter(Boolean)
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
 }
 
 /** Las tres pestañas del lado de la inmobiliaria. */
@@ -394,13 +384,8 @@ function FilaPersona({
         className={FILA}
         data-testid={`destinatario-${persona.id}`}
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-soft text-sm font-semibold text-primary">
-          {persona.avatarUrl ? (
-            <img src={persona.avatarUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            iniciales(nombre)
-          )}
-        </span>
+        {/* GLOW UP (21-10): el Avatar de Cadence 2 (la foto si la hay; si no, iniciales y el tono del nombre). */}
+        <Avatar name={nombre} src={persona.avatarUrl || undefined} className="shrink-0" />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
             <span className="truncate text-sm font-medium text-fg">{nombre}</span>

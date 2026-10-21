@@ -15,7 +15,7 @@ import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MAXIMO_A_COMPARAR, MINIMO_A_COMPARAR } from '@/lib/inmobiliaria/comparacion';
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
-import { AnimatedNumber, BackButton, CrossFade } from '@leasefy/cadence';
+import { AnimatedNumber, Avatar, BackButton, CrossFade } from '@leasefy/cadence';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
@@ -471,9 +471,6 @@ function CandidatosContent() {
               <TableBodyAnimado>
                 {candidatosPagina.map((candidate) => {
                   const statusCfg = STATUS_CONFIG[candidate.status] ?? FALLBACK_STATUS;
-                  const initials = candidate.tenantName
-                    ? candidate.tenantName.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
-                    : '?';
 
                   return (
                     <TableRowAnimada
@@ -498,11 +495,8 @@ function CandidatosContent() {
                       {/* Tenant */}
                       <TableCell className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
-                            <span className="text-sm font-medium text-primary">
-                              {initials}
-                            </span>
-                          </div>
+                          {/* GLOW UP (21-10): el Avatar de Cadence 2 (iniciales y el tono del nombre), no un círculo a mano. */}
+                          <Avatar name={candidate.tenantName || '?'} size="sm" className="shrink-0" />
                           <div>
                             <p className="text-sm font-medium text-fg flex items-center gap-1.5">
                               {candidate.tenantName || '—'}

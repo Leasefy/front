@@ -85,7 +85,7 @@ import {
   UserCircleMinus,
   Warning,
 } from '@phosphor-icons/react';
-import { CrossFade, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
+import { Avatar, CrossFade, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 
 import { Badge } from '@/components/ui/badge';
@@ -381,11 +381,9 @@ export function CuerpoDelCajon({
             nombre: las acciones bajan a su propio renglón en vez de apretarlo
             letra por letra (I-28). */}
         <div className="flex flex-wrap items-start gap-3">
-          <span
-            aria-hidden="true"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary"
-          >
-            {inicialesDe(persona.nombre)}
+          {/* GLOW UP (21-10): el Avatar de Cadence 2, el mismo que lo acompaña en la lista y en Contratos. */}
+          <span aria-hidden="true" className="shrink-0">
+            <Avatar name={persona.nombre} />
           </span>
           <div className="min-w-0 flex-1 basis-[12rem]">
             {/* UN solo encabezado con el nombre: el accesible es el

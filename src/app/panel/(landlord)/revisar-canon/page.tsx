@@ -258,7 +258,7 @@ export default function RevisarCanonPage() {
     <div className="min-h-screen bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
-          seccion="Por decidir"
+          seccion="Solicitudes"
           titulo="Revisar el canon"
           descripcion="Cuando tu inmueble lleva más de un mes desocupado, tu inmobiliaria te cuenta lo que te ha costado y te pregunta si quieres revisar el canon. Tú decides."
         />

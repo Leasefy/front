@@ -25,6 +25,14 @@ import {
   esRutaDelPropietarioDeInmobiliaria,
 } from '@/lib/context/PropietarioDeInmobiliariaContext';
 import { pasosDelPerfilDelPropietario } from '@/lib/perfil/pasos-del-perfil-del-propietario';
+import { useUnreadMessages } from '@/lib/hooks/useMessages';
+import { SeccionesDelPortal } from '@/components/portales/SeccionesDelPortal';
+import {
+  MI_PLATA,
+  SOLICITUDES_DEL_PROPIETARIO,
+  rutasDelPropietario,
+  seccionDelPropietario,
+} from '@/lib/nav/portal-del-propietario';
 
 const LANDLORD_NAV_ITEMS: NavItem[] = [
   {
@@ -161,23 +169,32 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
  * El menú de quien tiene a una INMOBILIARIA como administradora: sólo lo suyo.
  * Sin Candidatos, Visitas, Arriendos ni «Pronto» (eso es del propietario
  * independiente, y sus rutas responden «panel en pausa»), ni plan que mejorar.
+ *
+ * Nico eligió «Tablero + 3 secciones» (21-10-2026): de 10 filas a cuatro. Lo de
+ * cada sección va en pestañas arriba (`SeccionesDelPortal`, mapa en
+ * `lib/nav/portal-del-propietario.ts`); nada se borró.
  */
 const AGENCY_OWNER_NAV_ITEMS: NavItem[] = [
   { label: 'Inicio', href: '/panel', icon: SquaresFour, exact: true },
-  { label: 'Estado de cuenta', href: '/panel/estado-de-cuenta', icon: Receipt },
-  // QA 11-10 (Nico): a qué cuenta le giran, el giro devuelto y lo girado mes a mes.
-  { label: 'Mis giros', href: '/panel/giros', icon: Bank },
-  { label: 'Aprobar reparaciones', href: '/panel/aprobaciones', icon: Wrench },
-  // 🔴 #14 (MANOS-1, 04-10-2026): escoger entre los candidatos de su inmueble.
-  { label: 'Escoger inquilino', href: '/panel/escoger-inquilino', icon: UsersThree },
-  // MANOS-2 (04-10-2026): revisar el canon del inmueble desocupado (el número lo pone él).
-  { label: 'Revisar el canon', href: '/panel/revisar-canon', icon: Tag },
-  // SO-27 (PQRS-FIX, 04-10-2026): radicar PQRS y reportar daños desde su portal.
-  { label: 'Solicitudes', href: '/panel/solicitudes', icon: Lifebuoy },
-  { label: 'Mis informes', href: '/panel/informes', icon: Receipt },
-  { label: 'Certificados y facturas', href: '/panel/certificados', icon: SealCheck },
+  {
+    label: MI_PLATA.es,
+    href: MI_PLATA.pestanas[0].href,
+    icon: Wallet,
+    tambienEn: rutasDelPropietario(MI_PLATA),
+  },
+  {
+    label: SOLICITUDES_DEL_PROPIETARIO.es,
+    href: SOLICITUDES_DEL_PROPIETARIO.pestanas[0].href,
+    icon: Lifebuoy,
+    tambienEn: rutasDelPropietario(SOLICITUDES_DEL_PROPIETARIO),
+  },
   { label: 'Mensajes', href: '/panel/mensajes', icon: Chat },
 ];
+
+/** El número de no leídos en la fila de Mensajes (la reunión: «mensajes, más visible»). */
+function conNoLeidos(filas: NavItem[], noLeidos: number): NavItem[] {
+  return filas.map((f) => (f.href === '/panel/mensajes' && noLeidos > 0 ? { ...f, badge: noLeidos } : f));
+}
 
 /**
  * AVALI-3 (QA de agentes 17-10; Nico: «una cuenta, dos portales»): el
@@ -214,6 +231,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const propietarioGratis = showUpgrade && !administrados.cargando;
   const pathname = usePathname();
   const router = useRouter();
+  const { unreadCount } = useUnreadMessages();
   useEffect(() => {
     // AVALI-3: una cuenta de inquilino que NO es propietario no tiene nada acá.
     if (esCuentaDeInquilino && !administrados.cargando && !esPropietarioConfirmado) {
@@ -251,15 +269,16 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-plan-page">
       {/* PLan CRM Sidebar */}
       <PlanSidebar
-        navItems={
+        navItems={conNoLeidos(
           deInmobiliaria
             ? esCuentaDeInquilino
               ? [...AGENCY_OWNER_NAV_ITEMS, PORTAL_DEL_INQUILINO]
               : AGENCY_OWNER_NAV_ITEMS
             : propietarioGratis
               ? LANDLORD_NAV_ITEMS.map((f) => (abiertaParaElPropietarioGratis(f.href) ? f : { ...f, tag: 'Demo' }))
-              : LANDLORD_NAV_ITEMS
-        }
+              : LANDLORD_NAV_ITEMS,
+          unreadCount,
+        )}
         logo={{
           title: 'PLan',
           // 🔴 Adentro de la plataforma el logo vuelve al inicio del panel, no
@@ -296,6 +315,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
           <PlanHeader showMagnifyingGlass={!deInmobiliaria} />
         </PropietarioDeInmobiliariaProvider>
         <main id="main-content" tabIndex={-1}>
+          {deInmobiliaria ? <SeccionesDelPortal seccion={seccionDelPropietario(pathname ?? '')} /> : null}
           {/* Una pantalla del propietario independiente no se monta para quien
               tiene inmobiliaria: ni pide datos (503) ni muestra ceros. */}
           {(deInmobiliaria && !esRutaDelPropietarioDeInmobiliaria(pathname)) ||

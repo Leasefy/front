@@ -273,7 +273,7 @@ export default function MisGirosPage() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
-        seccion="Tu plata"
+        seccion="Mi plata"
         titulo="Mis giros"
         descripcion="A qué cuenta te giran, lo que ya te giraron mes por mes y el extracto de cada mes."
       />

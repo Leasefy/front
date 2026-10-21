@@ -126,7 +126,7 @@ export default function MisInformesPage() {
   return (
     <div className="space-y-8 p-6 lg:p-8">
       <EncabezadoDePantalla
-        seccion="Tus documentos"
+        seccion="Mi plata"
         titulo="Mis informes"
         descripcion="Tu certificado anual de ingresos y el historial de reparaciones de tus inmuebles."
       />

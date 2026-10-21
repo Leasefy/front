@@ -59,7 +59,7 @@ export default function MisCertificadosPage() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
-        seccion="Tus documentos"
+        seccion="Mi plata"
         titulo="Certificados y facturas"
         descripcion="Lo que los inquilinos te retuvieron en el año, para tu declaración. La cuota quedó saldada con el canon completo y lo retenido se te descontó en tu liquidación: es tu impuesto, y esto es el papel con el que lo acreditas."
       />

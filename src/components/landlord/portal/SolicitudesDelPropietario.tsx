@@ -75,7 +75,7 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
-        seccion="Con tu inmobiliaria"
+        seccion="Solicitudes"
         titulo="Solicitudes"
         descripcion="Peticiones, quejas, reclamos y daños de tus inmuebles. Tu inmobiliaria te responde aquí."
         accionPrincipal={

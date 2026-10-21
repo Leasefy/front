@@ -261,7 +261,7 @@ export default function EscogerInquilinoPage() {
     <div className="min-h-screen bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
-          seccion="Por decidir"
+          seccion="Solicitudes"
           titulo="Escoger inquilino"
           descripcion="Cuando tu inmueble tiene candidatos, tú escoges quién lo arrienda. Tu inmobiliaria lo adjudica y les avisa a los demás."
         />

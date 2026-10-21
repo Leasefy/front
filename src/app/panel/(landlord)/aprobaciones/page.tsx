@@ -196,7 +196,7 @@ export default function AprobarReparacionesPage() {
     <div className="min-h-screen bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
-          seccion="Por decidir"
+          seccion="Solicitudes"
           titulo="Aprobar reparaciones"
           descripcion="Las reparaciones a tu cargo las apruebas tú. Nada se te descuenta sin tu aprobación, salvo una emergencia, que se te avisa el mismo día."
         />

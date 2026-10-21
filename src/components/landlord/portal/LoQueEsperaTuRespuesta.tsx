@@ -44,6 +44,15 @@ const ICONO = 'mt-0.5 h-5 w-5 shrink-0 text-warning';
 
 /** Lo que espera al propietario, en el orden en que más le cuesta no hacerlo. */
 export function usePendientesDelPropietario(): Pendiente[] {
+  return usePendientesDelPropietarioConEstado().pendientes;
+}
+
+/**
+ * Lo mismo, diciendo si todavía se está leyendo (las cinco fuentes): «Por
+ * decidir» no puede afirmar «no tienes nada» mientras alguna no ha contestado.
+ */
+export function usePendientesDelPropietarioConEstado(): { pendientes: Pendiente[]; cargando: boolean } {
+  const [listas, setListas] = useState(0);
   const [giro, setGiro] = useState<Pendiente[]>([]);
   const [reparaciones, setReparaciones] = useState<Pendiente[]>([]);
   const [sobrecostos, setSobrecostos] = useState<Pendiente[]>([]);
@@ -54,6 +63,9 @@ export function usePendientesDelPropietario(): Pendiente[] {
     let vivo = true;
     const si = (f: (p: Pendiente[]) => void) => (p: Pendiente[]) => {
       if (vivo) f(p);
+    };
+    const listo = () => {
+      if (vivo) setListas((n) => n + 1);
     };
 
     portalDelPropietarioApi
@@ -72,7 +84,8 @@ export function usePendientesDelPropietario(): Pendiente[] {
           })),
       )
       .then(si(setGiro))
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(listo);
 
     aprobacionesDeReparacionApi
       .delPortal()
@@ -97,7 +110,8 @@ export function usePendientesDelPropietario(): Pendiente[] {
         ];
       })
       .then(si(setReparaciones))
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(listo);
 
     portalDelPropietarioApi
       .sobrecostos()
@@ -122,7 +136,8 @@ export function usePendientesDelPropietario(): Pendiente[] {
         ];
       })
       .then(si(setSobrecostos))
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(listo);
 
     eleccionesDeInquilinoApi
       .delPortal()
@@ -147,7 +162,8 @@ export function usePendientesDelPropietario(): Pendiente[] {
         ];
       })
       .then(si(setElecciones))
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(listo);
 
     revisionesDelCanonApi
       .delPortal()
@@ -172,14 +188,18 @@ export function usePendientesDelPropietario(): Pendiente[] {
         ];
       })
       .then(si(setCanon))
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(listo);
 
     return () => {
       vivo = false;
     };
   }, []);
 
-  return [...giro, ...reparaciones, ...sobrecostos, ...elecciones, ...canon];
+  return {
+    pendientes: [...giro, ...reparaciones, ...sobrecostos, ...elecciones, ...canon],
+    cargando: listas < 5,
+  };
 }
 
 export function LoQueEsperaTuRespuesta({ pendientes }: { pendientes: Pendiente[] }) {

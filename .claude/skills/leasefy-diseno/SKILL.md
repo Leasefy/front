@@ -18,7 +18,7 @@ Cualquier tarea que cree o cambie algo que se ve: pantallas, componentes, correo
 También cuando alguien pide «hazlo más bonito», «glow up», «rediseña», «mejora la UX».
 
 ## Hard Rules — siempre
-1. **Construir con Cadence.** Botón, Badge/StatusBadge, Input/Select, Tabs/SegmentedControl, Table, Card, KpiCard,
+1. **Construir con Cadence.** Botón, Badge/StatusBadge, Input/Select, Tabs/SegmentedControl, Table, Card, FranjaDeCifras (varias cifras) / KpiCard (una),
    EmptyState, Dialog/Cajón salen de `@/components/ui/*` (adaptadores) o de `@leasefy/cadence`. Nada de estilos
    inventados en la pantalla: si falta una pieza, se agrega a Cadence o a `src/components/pantalla/`.
 2. **La esquina suavizada** (la de Mollie): todo lo redondeado lleva `corner-shape: superellipse(1.5)`. Ya lo pone la

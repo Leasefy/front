@@ -1548,6 +1548,11 @@ nombre nuevo de Phosphor que no esté en el mapa sale con el dibujo de Phosphor:
   sm en tablas y barras, md en todo lo demás, lg sólo en la entrada y formularios de una columna.
 - **Tabla**: la barra (buscar · vista · filtros · densidad · acción de la tabla) va DENTRO de la tarjeta
   (`<Table toolbar footer>`); cifras en mono a la derecha; la fila abre el cajón; paginación en el pie.
+- **Cifras**: varias cifras de una pantalla van JUNTAS en una `FranjaDeCifras` (una tarjeta con líneas finas entre ellas),
+  nunca en una fila de `KpiCard` sueltos con su ícono; un `KpiCard` dentro de la franja se vuelve celda solo. La cifra que
+  filtra la lista es `<Cifra onClick activa>` (botón con `aria-pressed`) y, si filtra una tabla, la franja va DENTRO de la
+  tarjeta de la tabla, arriba de la búsqueda — y entonces no lleva además un selector con los mismos estados. Punto de
+  estado (`tono`) sólo cuando la cifra pide atención. `fila="xl"` cuando son montos largos que con el menú abierto no caben.
 - **Cajón**: ver o editar una cosa sin perder la lista. **Modal**: decidir algo que no puede esperar o no se deshace.
   **Página**: una tarea de más de 3 pasos o algo que se comparte con un enlace.
 - **Modal**: título = la pregunta; el porqué en una línea con la cifra o el nombre que importa; botones que dicen lo que

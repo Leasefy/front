@@ -56,6 +56,8 @@ export interface VideoPublico {
 }
 
 export interface PaginaDeInmobiliaria extends TarjetaDeInmobiliaria {
+  /** 21-10-2026: no ha pagado ningún plan → al final, la zona de publicidad. Un back anterior no lo manda. */
+  muestraVitrina?: boolean;
   redes: Record<RedDeLaInmobiliaria, string | null>;
   whatsapp: string | null;
   opiniones: OpinionPublica[];

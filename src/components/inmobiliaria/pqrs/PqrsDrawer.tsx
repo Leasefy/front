@@ -35,6 +35,7 @@ import type {
   ResponsableDePqrs,
 } from '@/lib/api/pqrs-agencia.types'
 import { MEDIOS_SIN_PORTAL } from '@/lib/api/pqrs-agencia.types'
+import { getRoleLabel, type AgencyRole } from '@/lib/types/inmobiliaria'
 import { ACCEPT_DE_ADJUNTOS, problemaDelAdjunto } from '@/lib/api/pqrs-adjuntos'
 import {
   ESTADO_BADGE,
@@ -118,7 +119,8 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
     if (open) cargarDetalle()
   }, [open, cargarDetalle])
   const agentes = useMemo(
-    () => responsables.map((r) => ({ userId: r.userId, name: r.nombre })),
+    // 21-10-2026 (Nico): «el nombre y el área, para saber bien a quién le va a caer».
+    () => responsables.map((r) => ({ userId: r.userId, name: etiquetaDelResponsable(r) })),
     [responsables],
   )
 
@@ -587,4 +589,10 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
       )}
     </Cajon>
   )
+}
+
+/** «Laura Sánchez · Operaciones»: el cargo si lo tiene, si no el nombre del rol. */
+export function etiquetaDelResponsable(r: { nombre: string; rol: string; cargo?: string | null }): string {
+  const area = r.cargo?.trim() || getRoleLabel(r.rol.toLowerCase() as AgencyRole)
+  return area && area !== '—' ? `${r.nombre} · ${area}` : r.nombre
 }

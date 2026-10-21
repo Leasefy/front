@@ -448,6 +448,12 @@ export interface DestinatarioPersona {
   role: string;
   email: string;
   avatarUrl: string | null;
+  /**
+   * 21-10-2026: la relación con la inmobiliaria (no el rol de la cuenta: un
+   * propietario migrado puede tener la cuenta como inquilino). Un back
+   * anterior no la manda: entonces se usa `role`.
+   */
+  relacion?: 'INQUILINO' | 'PROPIETARIO';
 }
 
 /** Una inmobiliaria a la que un inquilino o un propietario le puede escribir. */
@@ -465,6 +471,12 @@ export interface DestinatariosDirectos {
   tipo: 'PERSONAS' | 'AGENCIAS';
   personas: DestinatarioPersona[];
   agencias: DestinatarioAgencia[];
+  /** 21-10-2026: los conteos de las pestañas, del lado de la inmobiliaria (con la búsqueda). */
+  conteos?: { todos: number; inquilinos: number; propietarios: number };
+  /** Cuántos de la pestaña quedaron fuera por el tope (hay que buscar). */
+  hayMas?: number;
+  /** Fichas de propietario sin cuenta en el portal: no se les puede escribir por aquí. */
+  propietariosSinCuenta?: number;
 }
 
 /** Cómo nombrar a un destinatario en la lista. */

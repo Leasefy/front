@@ -85,6 +85,8 @@ interface ConfigUsuariosProps {
   onUpdateRole?: (userId: string, role: AgencyRole) => void;
   onToggleStatus?: (userId: string) => void;
   onResendInvite?: (userId: string) => void;
+  /** Portofino 21-10: cambiar el correo de una invitación pendiente. */
+  onCambiarCorreo?: (user: AgencyUser) => void;
   onDelete?: (userId: string) => void;
   /** Abrir la ficha de la persona. Sin esto, la fila no es clickeable. */
   onVerFicha?: (user: AgencyUser) => void;
@@ -260,6 +262,7 @@ export function ConfigUsuarios({
   onUpdateRole,
   onToggleStatus,
   onResendInvite,
+  onCambiarCorreo,
   onDelete,
   onVerFicha,
   onPermisos,
@@ -565,11 +568,39 @@ export function ConfigUsuarios({
                       </span>
                     </TableCell>
 
-                    {/* Status */}
-                    <TableCell className="p-4">
+                    {/* Status. Una invitación pendiente trae sus dos acciones A LA
+                        VISTA (Portofino 21-10: «que quien invita pueda reenviarla»;
+                        antes vivían escondidas en el menú «…»). */}
+                    <TableCell className="p-4" onClick={(e) => user.status === 'invited' && e.stopPropagation()}>
                       <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', statusColor)}>
                         {getUserStatusLabel(user.status)}
                       </span>
+                      {user.status === 'invited' && (onResendInvite || onCambiarCorreo) && (
+                        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                          {onResendInvite && (
+                            <button
+                              type="button"
+                              onClick={() => onResendInvite(user.id)}
+                              className="inline-flex items-center gap-1 rounded text-caption font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                              data-testid={`reenviar-${user.id}`}
+                            >
+                              <ArrowClockwise className="size-3.5" aria-hidden="true" />
+                              Reenviar
+                            </button>
+                          )}
+                          {onCambiarCorreo && (
+                            <button
+                              type="button"
+                              onClick={() => onCambiarCorreo(user)}
+                              className="inline-flex items-center gap-1 rounded text-caption font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                              data-testid={`cambiar-correo-${user.id}`}
+                            >
+                              <PencilSimple className="size-3.5" aria-hidden="true" />
+                              Cambiar correo
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </TableCell>
 
                     {/* Last Login */}
@@ -660,6 +691,12 @@ export function ConfigUsuarios({
                             >
                               <ArrowClockwise className="w-4 h-4" />
                               <span className="text-sm">{t('inmobiliaria.config.users.resendInvite')}</span>
+                            </DropdownListItem>
+                          )}
+                          {user.status === 'invited' && onCambiarCorreo && (
+                            <DropdownListItem className="gap-3" onClick={() => onCambiarCorreo(user)}>
+                              <EnvelopeSimple className="w-4 h-4" />
+                              <span className="text-sm">Cambiar el correo</span>
                             </DropdownListItem>
                           )}
 

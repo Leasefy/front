@@ -2990,7 +2990,13 @@ export type PermissionModule =
    * «Ver bitácora» (22-09-2026): quién hizo qué, con su rol, en toda la
    * inmobiliaria. Sólo `view` significa algo. De fábrica sólo el ADMIN.
    */
-  | 'bitacora';
+  | 'bitacora'
+  /**
+   * «Mensajes» (21-10-2026, Portofino: Aleja no lo veía en «Permisos»): los
+   * hilos con inquilinos y propietarios. De fábrica, administrador, asesor,
+   * coordinador y auxiliar comercial; se le puede dar a cualquiera.
+   */
+  | 'mensajes';
 
 export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
 
@@ -3182,6 +3188,7 @@ export function getModuleLabel(module: PermissionModule): string {
     subscription: 'Suscripción',
     avaluos: 'Avalúos',
     bitacora: 'Bitácora',
+    mensajes: 'Mensajes',
   };
   return labels[module];
 }
@@ -3226,6 +3233,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RolDeLaMatriz, RolePermissions> = 
       { module: 'subscription', actions: ['view', 'edit'] },
       { module: 'avaluos', actions: ['view', 'create', 'edit', 'delete', 'export'] },
       { module: 'bitacora', actions: ['view'] },
+      { module: 'mensajes', actions: ['view', 'create', 'edit', 'delete', 'export'] },
     ],
   },
   // El ASESOR COMERCIAL (Nico, 17-09-2026): «sólo los apartados comerciales,
@@ -3240,6 +3248,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RolDeLaMatriz, RolePermissions> = 
       { module: 'documentos', actions: ['view', 'create', 'edit'] },
       { module: 'subscription', actions: ['view'] },
       { module: 'avaluos', actions: ['view', 'create'] },
+      { module: 'mensajes', actions: ['view', 'create', 'edit'] },
     ],
   },
   contador: {
@@ -3282,6 +3291,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RolDeLaMatriz, RolePermissions> = 
       { module: 'contratos', actions: ['view'] },
       { module: 'subscription', actions: ['view'] },
       { module: 'avaluos', actions: ['view'] },
+      { module: 'mensajes', actions: ['view', 'create', 'edit'] },
     ],
   },
   auxiliar_cartera: {
@@ -3313,6 +3323,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RolDeLaMatriz, RolePermissions> = 
       { module: 'pipeline', actions: ['view', 'create', 'edit'] },
       { module: 'documentos', actions: ['view'] },
       { module: 'avaluos', actions: ['view'] },
+      { module: 'mensajes', actions: ['view', 'create', 'edit'] },
     ],
   },
   auxiliar_administrativo: {
@@ -3364,6 +3375,7 @@ export const ALL_PERMISSION_MODULES: PermissionModule[] = [
   'subscription',
   'avaluos',
   'bitacora',
+  'mensajes',
 ];
 
 // All actions for permission matrix

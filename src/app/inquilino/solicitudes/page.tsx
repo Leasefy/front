@@ -48,7 +48,7 @@ import type { BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { AvanceDeLaSolicitud } from '@/components/estado/AvanceDeLaSolicitud';
-import { avanceDeLaPqrs } from '@/lib/estado/avance-de-la-solicitud';
+import { avanceDeLaSolicitudDelPortal } from '@/lib/estado/avance-de-la-solicitud';
 import { resolveExpectedResponse } from '@/lib/date/business-days';
 import { pqrsStatusToTone, pqrsStatusToLabel } from '@/lib/types/tenant-case';
 import type { CaseTone } from '@/lib/types/tenant-case';
@@ -165,7 +165,7 @@ function SolicitudRow({ s, locale }: { s: SolicitudPqrs; locale: string }) {
             <AvanceDeLaSolicitud
               compacta
               className="mt-3 max-w-sm"
-              {...avanceDeLaPqrs(s.estado, s.tipo === 'reparacion')}
+              {...avanceDeLaSolicitudDelPortal(s.estado, s.tipo === 'reparacion', s.mantenimiento)}
             />
           </div>
 

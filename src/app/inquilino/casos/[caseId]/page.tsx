@@ -53,7 +53,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { AvanceDeLaSolicitud } from '@/components/estado/AvanceDeLaSolicitud';
-import { avanceDeLaPqrs } from '@/lib/estado/avance-de-la-solicitud';
+import { avanceDeLaSolicitudDelPortal } from '@/lib/estado/avance-de-la-solicitud';
 import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
 import type { BadgeProps } from '@/components/ui/badge';
 import type { CaseTone, CaseType, TenantCase } from '@/lib/types/tenant-case';
@@ -211,7 +211,11 @@ function CaseDetail({
         <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
           <h2 className="mb-3 text-sm font-medium text-fg">Dónde va tu solicitud</h2>
           <AvanceDeLaSolicitud
-            {...avanceDeLaPqrs(caso.solicitud.estado, Boolean(caso.solicitud.cotizacionId ?? caso.solicitud.costoResponsable))}
+            {...avanceDeLaSolicitudDelPortal(
+              caso.solicitud.estado,
+              caso.type === 'mantenimiento' || Boolean(caso.solicitud.cotizacionId ?? caso.solicitud.costoResponsable),
+              caso.solicitud.mantenimiento,
+            )}
           />
         </section>
       )}

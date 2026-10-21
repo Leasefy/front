@@ -6,6 +6,7 @@ import { Inter, Inter_Tight, IBM_Plex_Mono } from "next/font/google";
 import { ForceLightMode } from "@/components/providers/ForceLightMode";
 import { LandingHeaderV2 } from "./LandingHeaderV2";
 import LogoDefs from "./LogoDefs";
+import { EntradaAlMarketplace } from "./marketplace/EntradaAlMarketplace";
 import "@/app/(landing)/landing-v2.css";
 
 /**
@@ -97,6 +98,8 @@ export function LandingChrome({ activo, children }: LandingChromeProps) {
         <LogoDefs />
         <LandingHeaderV2 activo={activo} />
       </div>
+      {/* 21-10-2026: la entrada animada al marketplace (sin el flash negro). */}
+      <EntradaAlMarketplace />
       {children}
     </ForceLightMode>
   );

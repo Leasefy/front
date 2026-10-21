@@ -36,6 +36,7 @@ function buildQueryString(filters: PropertyFiltersParams): string {
   if (filters.searchQuery) params.set('searchQuery', filters.searchQuery);
   if (filters.naturalQuery) params.set('naturalQuery', filters.naturalQuery);
   if (filters.agencyId) params.set('agencyId', filters.agencyId);
+  if (filters.vitrinaDe) params.set('vitrinaDe', filters.vitrinaDe);
   if (filters.page != null) params.set('page', String(filters.page));
   if (filters.limit != null) params.set('limit', String(filters.limit));
 

@@ -30,6 +30,7 @@ import {
   CreditCard,
   Scales,
   ClockCounterClockwise,
+  ChatCircleText,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -114,6 +115,7 @@ const MODULE_ICONS: Record<PermissionModule, React.ElementType> = {
   subscription: CreditCard,
   avaluos: Scales,
   bitacora: ClockCounterClockwise,
+  mensajes: ChatCircleText,
 };
 
 // Action icons map

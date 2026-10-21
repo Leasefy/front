@@ -108,7 +108,7 @@ import { diaLegible, hoy } from '@/lib/contabilidad/fechas';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Monto } from '../Monto';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
-import { Presence } from '@leasefy/cadence';
+import { Cifra, FranjaDeCifras, Presence } from '@leasefy/cadence';
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
 import { usePuedeCambiarEgresos, usePuedeEscribir } from '../use-puede-escribir';
 import { CajonDelEgreso } from './CajonDelEgreso';
@@ -156,6 +156,9 @@ export const PARTES_DE_EGRESOS: readonly ParteDeEgresos[] = ['egresos', 'lotes']
 export function parteDeEgresos(valor: string | null | undefined): ParteDeEgresos {
   return PARTES_DE_EGRESOS.find((p) => p === valor) ?? 'egresos';
 }
+
+/** La suma de una lista de pesos. */
+const sumar = (xs: number[]) => xs.reduce((t, x) => t + (x ?? 0), 0);
 
 export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = {}) {
   const { t } = useI18n();
@@ -543,6 +546,14 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
     );
   };
 
+  // En qué va cada pago (la franja de arriba): lo que ya vino, sin pedir nada más.
+  const enCamino = {
+    porArmar: egresos.filter((e) => e.estado === 'PENDIENTE'),
+    porAprobar: lotes.filter((l) => l.estado === 'BORRADOR' || l.estado === 'ESPERANDO_APROBACION'),
+    porPagar: lotes.filter((l) => l.estado === 'APROBADO' || l.estado === 'ARCHIVO_GENERADO'),
+    pagados: egresos.filter((e) => e.estado === 'PAGADO'),
+  };
+
   return (
     <div className="space-y-6" data-testid="egresos">
       {/* 🔴 UNA SOLA COSA (Nico, 21-09): «switch tab afuera… deberían estar
@@ -559,6 +570,38 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
              el pie pegajoso de adentro deja de medirse contra la ventana. */
           className="overflow-x-clip rounded-lg border border-border bg-surface"
         >
+          {/* GLOW UP 21-10 · el trabajo de esta pantalla es sacar la plata a un proveedor con doble
+              firma: orden de pago → lote → la aprueba OTRA persona → se paga en el banco. La franja
+              dice en qué va cada cosa y qué pide trabajo (punto), antes de entrar a las pestañas. */}
+          <FranjaDeCifras
+            aria-label="En qué va cada pago"
+            data-testid="egresos-en-camino"
+            className="rounded-none border-0 border-b border-border"
+          >
+            <Cifra
+              etiqueta="Por armar en lote"
+              valor={enCamino.porArmar.length}
+              detalle={enCamino.porArmar.length ? <Monto valor={sumar(enCamino.porArmar.map((e) => e.netoCop))} className="text-caption" /> : 'Órdenes sueltas'}
+              tono={enCamino.porArmar.length ? 'voltaje' : undefined}
+            />
+            <Cifra
+              etiqueta="Esperando la firma"
+              valor={enCamino.porAprobar.length}
+              detalle={enCamino.porAprobar.length ? <Monto valor={sumar(enCamino.porAprobar.map((l) => l.totalCop))} className="text-caption" /> : 'Lotes por aprobar'}
+              tono={enCamino.porAprobar.length ? 'aviso' : undefined}
+            />
+            <Cifra
+              etiqueta="Por pagar en el banco"
+              valor={enCamino.porPagar.length}
+              detalle={enCamino.porPagar.length ? <Monto valor={sumar(enCamino.porPagar.map((l) => l.totalCop))} className="text-caption" /> : 'Lotes aprobados'}
+              tono={enCamino.porPagar.length ? 'voltaje' : undefined}
+            />
+            <Cifra
+              etiqueta="Pagados"
+              valor={enCamino.pagados.length}
+              detalle={enCamino.pagados.length ? <Monto valor={sumar(enCamino.pagados.map((e) => e.netoCop))} className="text-caption" /> : 'Egresos'}
+            />
+          </FranjaDeCifras>
           <div className="space-y-2 border-b border-border p-4">
             <TabsList variant="segmented" className="justify-start">
               <TabsTrigger value="egresos" data-testid="parte-egresos" className="whitespace-nowrap">

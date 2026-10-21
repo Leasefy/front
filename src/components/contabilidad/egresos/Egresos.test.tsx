@@ -1078,3 +1078,22 @@ describe('Egresos · errores de los diálogos', () => {
     expect((q('referencia-del-banco') as HTMLInputElement).maxLength).toBe(120);
   });
 });
+
+describe('Egresos · glow up 21-10, en qué va cada pago', () => {
+  it('la franja dice cuántas órdenes faltan por armar y cuántos lotes esperan la firma', async () => {
+    // Por defecto: un egreso PENDIENTE y un lote BORRADOR.
+    await pintar();
+    const franja = q('egresos-en-camino')!;
+    expect(franja).not.toBeNull();
+    const texto = franja.textContent ?? '';
+    expect(texto).toContain('Por armar en lote');
+    expect(texto).toContain('Esperando la firma');
+    expect(texto).toContain('Por pagar en el banco');
+    expect(texto).toContain('Pagados');
+    // La cifra de «Por armar» es la del egreso pendiente, con su punto de trabajo.
+    const celdas = [...franja.querySelectorAll(':scope > div > *')];
+    expect(celdas[0].textContent).toContain('1');
+    expect(celdas[1].textContent).toContain('1');
+    expect(celdas[2].textContent).toContain('0');
+  });
+});

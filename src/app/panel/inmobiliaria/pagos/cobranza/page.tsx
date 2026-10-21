@@ -30,7 +30,8 @@ import { CobranzaNextActionsPanel } from '@/components/inmobiliaria/cobranza/Cob
 import { CobranzaOverviewSkeleton } from '@/components/skeleton/panel/CobranzaOverviewSkeleton'
 import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaImportCard'
 import { AvisoPlazoSinFijarEnCobranza } from '@/components/inmobiliaria/cobranza/AvisoPlazoSinFijarEnCobranza'
-import { EmptyState } from '@/components/data-display/EmptyState'
+import { EmptyState } from '@/components/ui/empty-state'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { Button } from '@/components/ui'
 import { CrossFade, Presence } from '@leasefy/cadence'
@@ -72,7 +73,6 @@ function ComoFuncionaCobranza() {
       titulo={t(`${PAGES_NS}.comoFunciona.titulo`)}
       descripcion={t(`${PAGES_NS}.comoFunciona.descripcion`)}
       variante="secundario"
-      className="self-start sm:shrink-0"
     >
       <PasosExplicados
         data-testid="cobranza-como-funciona"
@@ -204,6 +204,19 @@ export default function CobranzaOverviewPage() {
     [handleStageClick],
   )
 
+  // GLOW UP 21-10: el encabezado común, el mismo en el fallo y en el panorama.
+  // Sin acción principal a propósito: lo que te toca hacer vive en «Te toca a
+  // ti», con su botón en cada fila; «¿Cómo funciona?» va donde iría la acción.
+  const encabezado = (
+    <EncabezadoDePantalla
+      seccion={t('inmobiliaria.ai.nav.cobranza')}
+      titulo={t('inmobiliaria.ai.cobranza.overview.title')}
+      descripcion={t(`${PAGES_NS}.salaDesc`)}
+      ayuda={<ComoFuncionaCobranza />}
+      data-testid="cobranza-encabezado"
+    />
+  )
+
   // ¿Se vio la carga? Entonces las cifras de las etapas que llegan cuentan
   // desde 0; si el panorama ya estaba (volver a la pantalla), sólo cuentan
   // cuando cambian.
@@ -227,11 +240,14 @@ export default function CobranzaOverviewPage() {
     return (
       <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-4">
-        <EmptyState
-          icon={FolderOpen}
-          title={t('inmobiliaria.ai.cobranza.overview.empty.title')}
-          description={t('inmobiliaria.ai.cobranza.overview.empty.description')}
-        />
+        <section className="rounded-lg border border-border bg-surface">
+          <EmptyState
+            icon={FolderOpen}
+            ilustracion="monedas"
+            title={t('inmobiliaria.ai.cobranza.overview.empty.title')}
+            description={t('inmobiliaria.ai.cobranza.overview.empty.description')}
+          />
+        </section>
         {/* Importar cartera — ahora cableada al endpoint POST /cartera/import.
             FAIL-SOFT: si el backend no está desplegado (404/red), el card
             degrada a "Próximamente — requiere despliegue" sin romper. Tras un
@@ -250,15 +266,7 @@ export default function CobranzaOverviewPage() {
     return (
       <CrossFade swapKey="fallo">
       <div className="p-6 lg:p-8 space-y-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.cobranza.overview.title')}</h1>
-            <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
-              {t(`${PAGES_NS}.salaDesc`)}
-            </p>
-          </div>
-          <ComoFuncionaCobranza />
-        </header>
+        {encabezado}
         <FalloDeCarga
           error={error}
           queEs="el panorama de tu cartera"
@@ -295,18 +303,7 @@ export default function CobranzaOverviewPage() {
       {/* Header. Sin el «Actualizado hace ahora mismo» de la derecha: la
           página se carga al entrar y no hay botón de refrescar al que ese
           dato le sirva (Nico, 2026-09-03). */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cobranza.overview.title')}
-          </h1>
-          <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
-            {t(`${PAGES_NS}.salaDesc`)}
-          </p>
-        </div>
-        {/* ¿Cómo funciona? — donde iría el botón de acción (05-10-2026). */}
-        <ComoFuncionaCobranza />
-      </header>
+      {encabezado}
 
       {/* QA-IA-B (04-10-2026): sin días de plazo fijados, lo vencido no entra a
           la cobranza; la portada lo dice con el camino para fijarlos. */}

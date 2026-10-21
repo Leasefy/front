@@ -17,12 +17,28 @@
  *
  * PURO: lo prueba `portal-del-propietario.test.ts`.
  */
-import { Bank, ClipboardText, Lifebuoy, Receipt, SealCheck, Wrench, ChartBar } from '@phosphor-icons/react';
+import {
+  Bank,
+  Bell,
+  Buildings,
+  CalendarBlank,
+  ChartBar,
+  ClipboardText,
+  FileText,
+  House,
+  Lifebuoy,
+  Receipt,
+  SealCheck,
+  Users,
+  UsersThree,
+  Wallet,
+  Wrench,
+} from '@phosphor-icons/react';
 
 import { esLaPestana, type PestanaDelPortal } from './portal-del-inquilino';
 
 export interface SeccionDelPropietario {
-  clave: 'mi-plata' | 'solicitudes';
+  clave: 'mi-plata' | 'solicitudes' | 'mis-inmuebles' | 'contratos-y-plata';
   es: string;
   en: string;
   pestanas: readonly PestanaDelPortal[];
@@ -70,4 +86,52 @@ export function seccionDelPropietario(pathname: string): SeccionDelPropietario |
 
 export function rutasDelPropietario(seccion: SeccionDelPropietario): string[] {
   return seccion.pestanas.flatMap((p) => [p.href, ...(p.tambienEn ?? [])]);
+}
+
+/*
+ * ── El propietario INDEPENDIENTE (sin inmobiliaria) — Nico eligió «sí, el
+ * mismo criterio» (21-10-2026). Antes: 14 filas + una sección «Mi arriendo»
+ * con cuatro «Pronto». Ahora: Inicio · Mis inmuebles · Contratos y plata ·
+ * Solicitudes · Mensajes, con sus pestañas. Nada se borra.
+ */
+export const MIS_INMUEBLES: SeccionDelPropietario = {
+  clave: 'mis-inmuebles',
+  es: 'Mis inmuebles',
+  en: 'My properties',
+  pestanas: [
+    { href: '/panel/propiedades', es: 'Propiedades', en: 'Properties', icon: Buildings, tambienEn: ['/panel/revisar-canon'] },
+    { href: '/panel/candidatos', es: 'Candidatos', en: 'Candidates', icon: Users },
+    { href: '/panel/visitas', es: 'Visitas', en: 'Visits', icon: CalendarBlank },
+    { href: '/panel/seleccion', es: 'Elegir inquilino', en: 'Choose a tenant', icon: UsersThree, tambienEn: ['/panel/escoger-inquilino'] },
+  ],
+};
+
+export const CONTRATOS_Y_PLATA: SeccionDelPropietario = {
+  clave: 'contratos-y-plata',
+  es: 'Contratos y plata',
+  en: 'Contracts and money',
+  pestanas: [
+    { href: '/panel/contratos', es: 'Contratos', en: 'Contracts', icon: FileText },
+    { href: '/panel/leases', es: 'Arriendos', en: 'Leases', icon: House },
+    { href: '/panel/estado-de-cuenta', es: 'Estado de cuenta', en: 'Account statement', icon: Receipt },
+    { href: '/panel/portafolio', es: 'Mi plata', en: 'My money', icon: Wallet },
+    { href: '/panel/informes', es: 'Informes', en: 'Reports', icon: ChartBar, tambienEn: ['/panel/certificados'] },
+  ],
+};
+
+export const SOLICITUDES_DEL_INDEPENDIENTE: SeccionDelPropietario = {
+  clave: 'solicitudes',
+  es: 'Solicitudes',
+  en: 'Requests',
+  pestanas: [
+    { href: '/panel/solicitudes', es: 'Solicitudes', en: 'Requests', icon: Lifebuoy, tambienEn: ['/panel/aprobaciones'] },
+    { href: '/panel/novedades', es: 'Novedades', en: 'Updates', icon: Bell },
+  ],
+};
+
+export function seccionDelIndependiente(pathname: string): SeccionDelPropietario | null {
+  for (const s of [MIS_INMUEBLES, CONTRATOS_Y_PLATA, SOLICITUDES_DEL_INDEPENDIENTE]) {
+    if (s.pestanas.some((p) => esLaPestana(p, pathname))) return s;
+  }
+  return null;
 }

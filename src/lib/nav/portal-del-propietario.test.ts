@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { MI_PLATA, SOLICITUDES_DEL_PROPIETARIO, RUTA_POR_DECIDIR, seccionDelPropietario } from './portal-del-propietario'
+import { MI_PLATA, SOLICITUDES_DEL_PROPIETARIO, RUTA_POR_DECIDIR, seccionDelPropietario, seccionDelIndependiente } from './portal-del-propietario'
 import { esRutaDelPropietarioDeInmobiliaria } from '@/lib/context/PropietarioDeInmobiliariaContext'
 
 describe('las secciones del propietario', () => {
@@ -57,6 +57,43 @@ describe('🔴 nada se perdió al reagrupar', () => {
       const enElMenu = layout.includes(`href: '${r}'`)
       const enUnaPestana = seccionDelPropietario(r) !== null
       expect(enElMenu || enUnaPestana, r).toBe(true)
+    }
+  })
+})
+
+describe('el propietario INDEPENDIENTE (Nico: «el mismo criterio», 21-10)', () => {
+  it.each([
+    ['/panel/propiedades', 'mis-inmuebles'],
+    ['/panel/candidatos', 'mis-inmuebles'],
+    ['/panel/visitas', 'mis-inmuebles'],
+    ['/panel/seleccion', 'mis-inmuebles'],
+    ['/panel/escoger-inquilino', 'mis-inmuebles'],
+    ['/panel/revisar-canon', 'mis-inmuebles'],
+    ['/panel/contratos', 'contratos-y-plata'],
+    ['/panel/leases', 'contratos-y-plata'],
+    ['/panel/estado-de-cuenta', 'contratos-y-plata'],
+    ['/panel/portafolio', 'contratos-y-plata'],
+    ['/panel/informes', 'contratos-y-plata'],
+    ['/panel/certificados', 'contratos-y-plata'],
+    ['/panel/solicitudes', 'solicitudes'],
+    ['/panel/aprobaciones', 'solicitudes'],
+    ['/panel/novedades', 'solicitudes'],
+  ])('%s → %s', (ruta, clave) => {
+    expect(seccionDelIndependiente(ruta)?.clave).toBe(clave)
+  })
+
+  it('el menú tiene cinco filas y las 18 pantallas de antes siguen a un clic', () => {
+    const layout = readFileSync(join(__dirname, '../../app/panel/(landlord)/layout.tsx'), 'utf8')
+    const i = layout.indexOf('const LANDLORD_NAV_ITEMS')
+    const menu = layout.slice(i, layout.indexOf('];', i))
+    expect((menu.match(/label:/g) ?? []).length).toBe(5)
+    for (const r of [
+      '/panel/propiedades', '/panel/candidatos', '/panel/visitas', '/panel/contratos', '/panel/leases',
+      '/panel/estado-de-cuenta', '/panel/aprobaciones', '/panel/escoger-inquilino', '/panel/revisar-canon',
+      '/panel/solicitudes', '/panel/mensajes', '/panel/informes', '/panel/certificados', '/panel/portafolio',
+      '/panel/seleccion', '/panel/novedades',
+    ]) {
+      expect(menu.includes(`href: '${r}'`) || seccionDelIndependiente(r) !== null, r).toBe(true)
     }
   })
 })

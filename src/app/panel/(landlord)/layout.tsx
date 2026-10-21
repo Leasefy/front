@@ -1,7 +1,7 @@
 'use client';
 
 import { Toaster } from '@/components/ui/toast';
-import { Bank, SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, SealCheck, Wrench, Lifebuoy, Tag, ArrowsLeftRight } from '@phosphor-icons/react';
+import { SquaresFour, Buildings, Chat, FileText, Wallet, Lifebuoy, ArrowsLeftRight } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -28,141 +28,33 @@ import { pasosDelPerfilDelPropietario } from '@/lib/perfil/pasos-del-perfil-del-
 import { useUnreadMessages } from '@/lib/hooks/useMessages';
 import { SeccionesDelPortal } from '@/components/portales/SeccionesDelPortal';
 import {
+  CONTRATOS_Y_PLATA,
+  MIS_INMUEBLES,
   MI_PLATA,
+  SOLICITUDES_DEL_INDEPENDIENTE,
   SOLICITUDES_DEL_PROPIETARIO,
   rutasDelPropietario,
+  seccionDelIndependiente,
   seccionDelPropietario,
 } from '@/lib/nav/portal-del-propietario';
 
+/**
+ * El menú del propietario INDEPENDIENTE — Nico eligió «el mismo criterio»
+ * (21-10-2026): de 14 filas y una sección de «Pronto» a cinco, con las
+ * pestañas de cada sección arriba (`lib/nav/portal-del-propietario.ts`). Las
+ * pantallas que eran «Pronto» siguen en su pestaña; nada se borró.
+ */
 const LANDLORD_NAV_ITEMS: NavItem[] = [
+  { label: 'Inicio', href: '/panel', icon: SquaresFour, exact: true },
+  { label: MIS_INMUEBLES.es, href: MIS_INMUEBLES.pestanas[0].href, icon: Buildings, tambienEn: rutasDelPropietario(MIS_INMUEBLES) },
+  { label: CONTRATOS_Y_PLATA.es, href: CONTRATOS_Y_PLATA.pestanas[0].href, icon: FileText, tambienEn: rutasDelPropietario(CONTRATOS_Y_PLATA) },
   {
-    label: 'Panel',
-    href: '/panel',
-    icon: SquaresFour,
-    exact: true,
-  },
-  {
-    label: 'Mis Propiedades',
-    href: '/panel/propiedades',
-    icon: Buildings,
-  },
-  {
-    label: 'Candidatos',
-    href: '/panel/candidatos',
-    icon: Users,
-  },
-  {
-    label: 'Visitas',
-    href: '/panel/visitas',
-    icon: CalendarBlank,
-  },
-  {
-    label: 'Contratos',
-    href: '/panel/contratos',
-    icon: FileText,
-  },
-  {
-    label: 'Arriendos',
-    href: '/panel/leases',
-    icon: House,
-  },
-  // Lo que la inmobiliaria le ha girado y lo que le falta por girar, contrato
-  // por contrato. Es el papel que el propietario necesita para la exógena.
-  {
-    label: 'Estado de cuenta',
-    href: '/panel/estado-de-cuenta',
-    icon: Receipt,
-  },
-  // 🔴 D12 (17-09-2026): las reparaciones a su cargo las aprueba él, con un
-  // clic. Es real (back), no un shell «Pronto».
-  {
-    label: 'Aprobar reparaciones',
-    href: '/panel/aprobaciones',
-    icon: Wrench,
-  },
-  // 🔴 #14 (MANOS-1, 04-10-2026): cuando su inmueble tiene candidatos, el
-  // propietario escoge quién lo arrienda (Avali se lo pide y se lo recuerda).
-  {
-    label: 'Escoger inquilino',
-    href: '/panel/escoger-inquilino',
-    icon: UsersThree,
-  },
-  // MANOS-2 (04-10-2026): cuando su inmueble lleva más de un mes desocupado,
-  // la inmobiliaria le pregunta si quiere revisar el canon; el número lo pone él.
-  {
-    label: 'Revisar el canon',
-    href: '/panel/revisar-canon',
-    icon: Tag,
-  },
-  // SO-27 (PQRS-FIX, 04-10-2026): el propietario radica sus PQRS y reporta
-  // daños desde su portal (antes sólo podía escribir en Mensajes).
-  {
-    label: 'Solicitudes',
-    href: '/panel/solicitudes',
+    label: SOLICITUDES_DEL_INDEPENDIENTE.es,
+    href: SOLICITUDES_DEL_INDEPENDIENTE.pestanas[0].href,
     icon: Lifebuoy,
+    tambienEn: rutasDelPropietario(SOLICITUDES_DEL_INDEPENDIENTE),
   },
-  {
-    label: 'Mensajes',
-    href: '/panel/mensajes',
-    icon: Chat,
-    // Sin `badge`: el 3 estaba escrito a mano, no contaba nada.
-  },
-  /*
-   * 🔴 (21-09-2026) Estas dos pantallas EXISTÍAN y nadie podía llegar a ellas:
-   * `/panel/certificados` estaba construida desde el 17-09 y no figuraba en
-   * ningún menú, así que sólo la veía quien escribiera la URL. «Mis informes»
-   * es nueva (certificado anual de ingresos + historial de reparaciones con su
-   * comprobante). Las dos son reales: sin `tag: 'Pronto'`.
-   */
-  {
-    label: 'Mis informes',
-    href: '/panel/informes',
-    icon: Receipt,
-  },
-  {
-    label: 'Certificados de retención',
-    href: '/panel/certificados',
-    icon: SealCheck,
-  },
-  // --- Portal del Propietario (post-firma) — capa aditiva v8.0 ---
-  // Shells "Pronto" hasta que cada ola (v8-02..v8-05) los llene con la vista real
-  // cableada al back owner-facing. El `tag` se quita cuando la ola aterriza.
-  {
-    kind: 'section',
-    label: 'Mi arriendo',
-    href: '#sec-mi-arriendo',
-    icon: House,
-  },
-  {
-    label: 'Mi plata',
-    href: '/panel/portafolio',
-    icon: Wallet,
-    tag: 'Pronto',
-  },
-  {
-    label: 'Elegir inquilino',
-    href: '/panel/seleccion',
-    icon: UsersThree,
-    tag: 'Pronto',
-  },
-  {
-    label: 'Solicitudes',
-    href: '/panel/solicitudes',
-    icon: ChatCircleText,
-    tag: 'Pronto',
-  },
-  {
-    label: 'Novedades',
-    href: '/panel/novedades',
-    icon: Bell,
-    tag: 'Pronto',
-  },
-  // --- AI Beta section (hidden — re-enable when ready) ---
-  // {
-  //   label: 'AI Beta',
-  //   href: '/panel/beta',
-  //   icon: Sparkle,
-  // },
+  { label: 'Mensajes', href: '/panel/mensajes', icon: Chat },
 ];
 
 /**
@@ -315,7 +207,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
           <PlanHeader showMagnifyingGlass={!deInmobiliaria} />
         </PropietarioDeInmobiliariaProvider>
         <main id="main-content" tabIndex={-1}>
-          {deInmobiliaria ? <SeccionesDelPortal seccion={seccionDelPropietario(pathname ?? '')} /> : null}
+          <SeccionesDelPortal
+            seccion={deInmobiliaria ? seccionDelPropietario(pathname ?? '') : seccionDelIndependiente(pathname ?? '')}
+          />
           {/* Una pantalla del propietario independiente no se monta para quien
               tiene inmobiliaria: ni pide datos (503) ni muestra ceros. */}
           {(deInmobiliaria && !esRutaDelPropietarioDeInmobiliaria(pathname)) ||

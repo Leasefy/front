@@ -14,8 +14,6 @@ import {
   DotsThree,
   Eye,
   PencilSimple,
-  MapPin,
-  User,
   CalendarPlus,
   ArrowSquareOut,
   Users,
@@ -26,7 +24,7 @@ import {
   CloudArrowDown,
   EyeSlash,
 } from '@phosphor-icons/react';
-import { IconButton } from '@leasefy/cadence';
+import { Avatar, IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -323,7 +321,7 @@ export function ConsignacionTable({
     children: React.ReactNode;
     className?: string;
   }) => (
-    <TableHead className={cn('p-4 text-left', className)}>
+    <TableHead className={cn('px-3 text-left', className)}>
       {/*
         allowlist: disparador de orden — Cadence no trae uno (DataTable no
         ordena). El botón HEREDA el tratamiento del encabezado del DS en vez de
@@ -363,7 +361,7 @@ export function ConsignacionTable({
               bug de esta unidad de trabajo).
             */}
             {sePuedeElegir && (
-              <TableHead className="w-10 py-4 pl-4 pr-0">
+              <TableHead className="w-10 py-3 pl-4 pr-0">
                 {elegiblesDeLaPagina.length > 0 && (
                   <Checkbox
                     checked={
@@ -385,34 +383,30 @@ export function ConsignacionTable({
                 )}
               </TableHead>
             )}
-            <TableHead className="text-left p-4 w-16">
+            <TableHead className="text-left px-3 w-16">
               {t('inmobiliaria.consignaciones.table.code')}
             </TableHead>
             <SortableHeader field="propertyTitle">
               {t('inmobiliaria.consignaciones.table.property')}
             </SortableHeader>
-            <SortableHeader field="propertyZone">
-              {t('inmobiliaria.consignaciones.table.zone')}
+            {/* GLOW UP 21-10: el estado, al lado del inmueble (antes era la última columna y a 1440
+                quedaba cortado en el borde). */}
+            <SortableHeader field="availability">
+              {t('inmobiliaria.consignaciones.table.status')}
             </SortableHeader>
             <SortableHeader field="monthlyRent">
-              {t('inmobiliaria.consignaciones.table.rent')}
-            </SortableHeader>
-            <SortableHeader field="commissionPercent">
-              {t('inmobiliaria.consignaciones.table.commission')}
+              {t('inmobiliaria.consignaciones.table.rent')} · {t('inmobiliaria.consignaciones.table.commission')}
             </SortableHeader>
             {/* Sin ordenamiento: el `TH` del DS ya viste la etiqueta (mono 11px
                 en mayúscula). Envolverla en un `span` con tipografía propia era
                 justamente lo que hacía convivir dos estilos en la misma fila. */}
-            <TableHead className="text-left p-4 hidden lg:table-cell">
+            <TableHead className="text-left px-3 hidden lg:table-cell">
               {t('inmobiliaria.consignaciones.table.owner')}
             </TableHead>
-            <TableHead className="text-left p-4 hidden md:table-cell">
+            <TableHead className="text-left px-3 hidden md:table-cell">
               {t('inmobiliaria.consignaciones.table.agent')}
             </TableHead>
-            <SortableHeader field="availability">
-              {t('inmobiliaria.consignaciones.table.status')}
-            </SortableHeader>
-            <TableHead className="w-12 p-4"></TableHead>
+            <TableHead className="w-12 px-3"></TableHead>
           </TableRow>
         </TableHeader>
         {/* Al filtrar, ordenar, paginar o retirar un inmueble, las filas
@@ -481,7 +475,7 @@ export function ConsignacionTable({
                 className="border-b last:border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
               >
                 {sePuedeElegir && (
-                  <TableCell className="w-10 py-4 pl-4 pr-0" onClick={(e) => e.stopPropagation()}>
+                  <TableCell className="w-10 py-3 pl-4 pr-0" onClick={(e) => e.stopPropagation()}>
                     {row.propertyId && publicado !== undefined && (
                       <Checkbox
                         checked={elegidos?.has(row.propertyId) ?? false}
@@ -494,58 +488,72 @@ export function ConsignacionTable({
                 )}
 
                 {/* Code (T-0038 §3.2.5) */}
-                <TableCell className="p-4">
+                <TableCell className="px-3 py-3">
                   <span className="font-mono tabular-nums text-fg-muted text-sm">
                     {propertyCode != null ? `#${propertyCode}` : '—'}
                   </span>
                 </TableCell>
 
-                {/* Property */}
-                <TableCell className="p-4">
+                {/* Inmueble — GLOW UP 21-10: la zona y la ciudad van en la segunda línea (antes eran su
+                    propia columna) y la comisión debajo del canon: así la tabla cabe entera a 1440 y el
+                    ESTADO —lo que se viene a mirar— queda al lado del inmueble, no cortado en el borde. */}
+                <TableCell className="px-3 py-3">
                   <div className="flex items-center gap-3">
-                    {row.propertyThumbnail ? (
-                      <div className="w-12 h-12 rounded-md overflow-hidden shrink-0">
-                        <img
-                          src={row.propertyThumbnail}
-                          alt={row.propertyTitle}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center shrink-0">
-                        <PropertyIcon className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                    )}
+                    <Avatar kind="inmueble" name={row.propertyTitle} src={row.propertyThumbnail || undefined} size="md">
+                      <PropertyIcon className="size-5" />
+                    </Avatar>
                     <div className="min-w-0">
-                      <p className="font-medium text-foreground truncate max-w-[200px]">
+                      <p className="font-medium text-foreground truncate max-w-[260px]" title={row.propertyTitle}>
                         {row.propertyTitle}
                       </p>
-                      {/* IN-02: si el título ES la dirección, no se repite debajo. */}
-                      {row.propertyAddress && row.propertyAddress.trim() !== row.propertyTitle.trim() ? (
-                        <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                          {row.propertyAddress}
-                        </p>
-                      ) : null}
+                      {(() => {
+                        // IN-02: si el título ES la dirección, no se repite debajo. Zona vacía (posible en
+                        // el back, contract.md T-0030 §3.2): sólo la ciudad.
+                        const direccion =
+                          row.propertyAddress && row.propertyAddress.trim() !== row.propertyTitle.trim()
+                            ? row.propertyAddress
+                            : null;
+                        const lugar = [zoneText, row.propertyCity].filter(Boolean).join(', ');
+                        const segunda = [direccion, lugar].filter(Boolean).join(' · ');
+                        return segunda ? (
+                          <p className="text-sm text-muted-foreground truncate max-w-[260px]" title={segunda} data-testid="lugar-del-inmueble">
+                            {segunda}
+                          </p>
+                        ) : null;
+                      })()}
                     </div>
                   </div>
                 </TableCell>
 
-                {/* Zone */}
-                <TableCell className="p-4">
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <div className="min-w-0">
-                      {/* Zona vacía (posible en el back, contract.md T-0030
-                          §3.2) → se omite la línea entera, nunca un renglón
-                          en blanco arriba de la ciudad. */}
-                      {zoneText && (
-                        <p className="text-foreground truncate">{zoneText}</p>
-                      )}
-                      <p className="text-sm text-muted-foreground">
-                        {row.propertyCity}
-                      </p>
-                    </div>
-                  </div>
+                {/* Status — sin mandato, el Estado ES el alert de R4: no hay
+                    `availability` que pintar (contract.md T-0030 §3.2,
+                    "availability trap"), así que la celda entera se vuelve el
+                    disparador que manda a llenar el mandato. */}
+                <TableCell className="px-3 py-3">
+                  {availability ? (
+                    <>
+                      <Badge variant={availability.variant}>
+                        {t(availability.labelKey)}
+                      </Badge>
+                      {/* COMERCIAL: «Vacante hace 42 días» / «Mandato vence el …». */}
+                      <SituacionComercialCorta className="max-w-[9rem]" datos={row.kind === 'consignacion' ? comercialPorConsignacion?.[row.id] : undefined} />
+                    </>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      hideArrow
+                      disabled={!puedeCrearMandato}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCompletarMandato();
+                      }}
+                      className="h-auto gap-1.5 bg-warning-soft px-3 py-1 text-xs font-medium text-warning hover:bg-warning-soft hover:opacity-80"
+                    >
+                      <WarningCircle className="w-3.5 h-3.5" weight="fill" />
+                      {t('inmobiliaria.consignaciones.table.missingMandate')}
+                    </Button>
+                  )}
                 </TableCell>
 
                 {/* Canon */}
@@ -555,7 +563,7 @@ export function ConsignacionTable({
                   otra cifra, así que acá el número manda sobre el ancho — para
                   eso la tabla tiene su propio scroll horizontal.
                 */}
-                <TableCell className="p-4 whitespace-nowrap">
+                <TableCell className="px-3 py-3 whitespace-nowrap">
                   <div>
                     {/*
                       contract-addendum-2.md §A.10 — CORRECTION: this used to
@@ -611,38 +619,29 @@ export function ConsignacionTable({
                         {t('inmobiliaria.consignaciones.table.adminFee', { amount: formatCurrency(row.adminFee) })}
                       </p>
                     )}
+                    {/* Comisión — antes su propia columna. No existe sin mandato; con mandato de venta
+                        (§A.3), `commissionPercent` es siempre 0 y se muestra `saleCommissionPercent`.
+                        IN-03 (QA 04-10): «10 %» una vez, con la misma regla de la tarjeta y la ficha
+                        (`textoDeLaComision`), que dice «No venía en el archivo» en vez de un 0. */}
+                    {row.kind === 'consignacion' ? (
+                      <Badge
+                        variant="secondary"
+                        className="mt-1 whitespace-nowrap tabular-nums"
+                        title={textoCortoDeLaComision(row).explicacion}
+                        data-testid="comision-de-la-fila"
+                      >
+                        {textoCortoDeLaComision(row).texto}
+                      </Badge>
+                    ) : null}
                   </div>
                 </TableCell>
 
-                {/* Commission — no existe sin mandato. Con mandato de venta
-                    (§A.3), `commissionPercent` es siempre 0: se muestra
-                    `saleCommissionPercent` en su lugar. */}
-                <TableCell className="p-4">
-                  {/* IN-03 (QA 04-10): decía «% 10%» (el ícono de porcentaje
-                      y el «%» del número). Ahora «10 %» una vez, con la misma
-                      regla de la tarjeta y la ficha (`textoDeLaComision`),
-                      que además dice «No venía en el archivo» en vez de un 0. */}
-                  {row.kind === 'consignacion' ? (
-                    <Badge
-                      variant="secondary"
-                      className="whitespace-nowrap tabular-nums"
-                      title={textoCortoDeLaComision(row).explicacion}
-                    >
-                      {textoCortoDeLaComision(row).texto}
-                    </Badge>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-
-                {/* Propietario */}
-                <TableCell className="p-4 hidden lg:table-cell">
+                {/* Propietario — con su Avatar de Cadence (antes, el muñequito igual para todos). */}
+                <TableCell className="px-3 py-3 hidden lg:table-cell">
                   {propietarioName ? (
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
-                      </div>
-                      <span className="text-foreground truncate max-w-[120px]">
+                      <Avatar name={propietarioName} size="xs" />
+                      <span className="text-foreground truncate max-w-[150px]" title={propietarioName}>
                         {propietarioName}
                       </span>
                     </div>
@@ -651,24 +650,12 @@ export function ConsignacionTable({
                   )}
                 </TableCell>
 
-                {/* Agente */}
-                <TableCell className="p-4 hidden md:table-cell">
+                {/* Agente — su foto o su Avatar con iniciales y su tono. */}
+                <TableCell className="px-3 py-3 hidden md:table-cell">
                   {agenteInfo ? (
                     <div className="flex items-center gap-2">
-                      {agenteInfo.avatar ? (
-                        <img
-                          src={agenteInfo.avatar}
-                          alt={agenteInfo.name}
-                          className="w-7 h-7 rounded-full object-cover shrink-0"
-                        />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
-                          <span className="text-xs font-medium text-primary">
-                            {agenteInfo.name.charAt(0)}
-                          </span>
-                        </div>
-                      )}
-                      <span className="text-foreground truncate max-w-[100px]">
+                      <Avatar name={agenteInfo.name} src={agenteInfo.avatar || undefined} size="xs" />
+                      <span className="text-foreground truncate max-w-[110px]" title={agenteInfo.name}>
                         {agenteInfo.name}
                       </span>
                     </div>
@@ -677,39 +664,8 @@ export function ConsignacionTable({
                   )}
                 </TableCell>
 
-                {/* Status — sin mandato, el Estado ES el alert de R4: no hay
-                    `availability` que pintar (contract.md T-0030 §3.2,
-                    "availability trap"), así que la celda entera se vuelve el
-                    disparador que manda a llenar el mandato. */}
-                <TableCell className="p-4">
-                  {availability ? (
-                    <>
-                      <Badge variant={availability.variant}>
-                        {t(availability.labelKey)}
-                      </Badge>
-                      {/* COMERCIAL: «Vacante hace 42 días» / «Mandato vence el …». */}
-                      <SituacionComercialCorta className="max-w-[7.5rem]" datos={row.kind === 'consignacion' ? comercialPorConsignacion?.[row.id] : undefined} />
-                    </>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      hideArrow
-                      disabled={!puedeCrearMandato}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCompletarMandato();
-                      }}
-                      className="h-auto gap-1.5 bg-warning-soft px-3 py-1 text-xs font-medium text-warning hover:bg-warning-soft hover:opacity-80"
-                    >
-                      <WarningCircle className="w-3.5 h-3.5" weight="fill" />
-                      {t('inmobiliaria.consignaciones.table.missingMandate')}
-                    </Button>
-                  )}
-                </TableCell>
-
                 {/* Actions */}
-                <TableCell className="p-4" onClick={(e) => e.stopPropagation()}>
+                <TableCell className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                   {/* Sin mandato la única acción es completarlo: sin permiso
                       para crearlo, un menú vacío no es una acción. */}
                   {(row.kind === 'consignacion' || puedeCrearMandato || opcionDelMarketplace) && (

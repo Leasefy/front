@@ -13,7 +13,6 @@ import {
   Timer,
   Wrench,
   FileArrowUp,
-  Sparkle,
   WarningCircle,
   SignOut,
 } from '@phosphor-icons/react';
@@ -25,6 +24,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { Button, EmptyState } from '@/components/ui';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { TablePagination } from '@/components/ui/pagination';
 import {
   useTablePagination,
@@ -522,48 +522,36 @@ function PortafolioContent() {
   }, [porEliminar, eliminando]);
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.portafolio.title')}
-          </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* GLOW UP 21-10: el encabezado de todas las pantallas (sección · título · una línea | la
+          secundaria y la única azul, chicas). La «Captura con IA» sigue apagada a pedido de Nico
+          (2026-09-02: «eso no sirve ahora»); el componente PropertyIACapture sigue entero. */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secCaptacion')}
+        titulo={t('inmobiliaria.portafolio.title')}
+        descripcion={
+          <>
             {t('inmobiliaria.portafolio.subtitle')}
-          </p>
-          {soloDisponibles && (
-            <p className="text-xs text-fg-muted" data-testid="portafolio-solo-disponibles">
-              Ves los inmuebles disponibles. Los arrendados son operación de un contrato en curso y no hacen parte de tu rol.
-            </p>
-          )}
-        </div>
-        {/* IN-19: a 390 px los botones van apilados a lo ancho; antes «Nueva
-            consignación» se salía por la derecha. */}
-        <div className="flex flex-col-reverse gap-2 shrink-0 sm:flex-row sm:items-center [&>button]:w-full sm:[&>button]:w-auto">
-          {/* Captura con IA — venía de «Inmuebles · catálogo». Apagada a pedido
-              de Nico (2026-09-02: «eso no sirve ahora»). Desde el 15-09 la ruta
-              /inmuebles/captura REDIRIGE acá (W6): estaba viva sin un solo
-              enlace que llegara a ella. El componente PropertyIACapture sigue
-              entero; cuando la captura esté a la altura, se descomenta este
-              botón y se vuelve a montar la pantalla.
-          <Button variant="secondary" hideArrow onClick={handleCaptura}>
-            <Sparkle className="w-4 h-4 text-primary" weight="fill" />
-            {t('inmobiliaria.inmuebles.acciones.captura')}
-          </Button>
-          */}
-          {/* Import (secundaria) */}
-          <Button variant="secondary" hideArrow onClick={handleImportar}>
+            {soloDisponibles && (
+              <span className="mt-1 block text-xs" data-testid="portafolio-solo-disponibles">
+                Ves los inmuebles disponibles. Los arrendados son operación de un contrato en curso y no hacen parte de tu rol.
+              </span>
+            )}
+          </>
+        }
+        acciones={
+          <Button variant="secondary" size="sm" hideArrow onClick={handleImportar}>
             <FileArrowUp className="w-4 h-4" />
             {t('inmobiliaria.import.title')}
           </Button>
-          {/* Nueva consignación (principal) */}
-          <Button hideArrow onClick={handleNuevaConsignacion}>
+        }
+        accionPrincipal={
+          <Button size="sm" hideArrow onClick={handleNuevaConsignacion}>
             <Plus className="w-4 h-4" />
             {t('inmobiliaria.portafolio.addProperty')}
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Qué inmuebles puede abrir esta persona, en este teléfono, sin red.
           No aparece hasta que hay al menos uno preparado. */}

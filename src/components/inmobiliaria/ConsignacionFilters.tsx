@@ -329,6 +329,9 @@ export function ConsignacionFilters({
             className="whitespace-nowrap"
             data-testid={`cajon-${cajon}`}
           >
+            {/* GLOW UP 21-10: el punto ámbar sólo donde algo pide atención (como en la franja de
+                cifras): los que no tienen mandato no cobran ni se publican. */}
+            {cajon === 'sinMandato' && conteo !== null && conteo[cajon] > 0 ? <PuntoDeAtencion /> : null}
             {t(ROTULO_DEL_CAJON[cajon])}
             {conteo === null ? '' : ` ${conteo[cajon].toLocaleString(localeDeLasCifras())}`}
           </Chip>
@@ -346,6 +349,7 @@ export function ConsignacionFilters({
                 className="whitespace-nowrap"
                 data-testid={`filtro-${f.id}`}
               >
+                {conteoComercial[f.id] > 0 ? <PuntoDeAtencion /> : null}
                 {f.rotulo} {conteoComercial[f.id].toLocaleString(localeDeLasCifras())}
               </Chip>
             ))}
@@ -354,6 +358,11 @@ export function ConsignacionFilters({
       </div>
     </div>
   );
+}
+
+/** El punto de «esto pide atención»: el mismo ámbar de los estados, sin texto (el rótulo lo dice). */
+function PuntoDeAtencion() {
+  return <span className="mr-1.5 inline-block size-1.5 shrink-0 rounded-full bg-warning align-middle" aria-hidden="true" data-testid="punto-de-atencion" />;
 }
 
 export default ConsignacionFilters;

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, TrendUp, Shield, SealCheck, Funnel, CaretLeft, CaretRight, Lightning, Target, Trophy } from '@phosphor-icons/react';
+import { ArrowUpRight } from '@phosphor-icons/react';
 
 import { IconButton } from '@leasefy/cadence';
 
@@ -408,6 +409,18 @@ export default function ParaTiPage() {
                     ? 'property fits your cap'
                     : 'properties fit your cap'}
               </span>
+              {/* Reunión 21-10: para seguir buscando, el marketplace (la interfaz «pro»), en OTRA pestaña. */}
+              <a
+                href="/propiedades"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm font-medium text-white underline-offset-4 hover:underline lg:mt-3"
+                data-testid="ver-el-marketplace"
+              >
+                {locale === 'es' ? 'Ver el marketplace' : 'Open the marketplace'}
+                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                <span className="sr-only">{locale === 'es' ? ' (se abre en otra pestaña)' : ' (opens in a new tab)'}</span>
+              </a>
             </div>
           </div>
         </section>

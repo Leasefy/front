@@ -363,6 +363,8 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
             <Button
               variant="secondary"
               hideArrow
+              /* A 1024 px la columna de la derecha es angosta: el texto baja de renglón en vez de salirse. */
+              className="h-auto min-h-10 max-w-full whitespace-normal py-2 text-center"
               disabled={!tokenizacion?.disponible}
               title={tokenizacion?.motivo ?? undefined}
               onClick={() => setFormulario(true)}

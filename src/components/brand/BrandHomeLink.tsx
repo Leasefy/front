@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useContext, type ComponentProps } from 'react'
 import { AuthContext } from '@/lib/auth/auth-context'
-import { getUserHomeRoute } from '@/lib/auth/role-routes'
+import { inicioDeLaPersona } from '@/lib/auth/role-routes'
 
 /**
  * Brand/logo link honoring the owner rule "logged in → dashboard, everywhere":
@@ -18,5 +18,7 @@ export function BrandHomeLink(props: Omit<ComponentProps<typeof Link>, 'href'>) 
   const auth = useContext(AuthContext)
   // For dual-context users the destination follows the active context; for
   // single-context users activeContext mirrors their role, so this is a no-op.
-  return <Link href={getUserHomeRoute(auth?.user, auth?.activeContext)} {...props} />
+  // «Cambiar de cuenta» (21-10-2026): con varias cuentas, a la última que usó.
+  if (!auth?.user) return <Link href="/" {...props} />
+  return <Link href={inicioDeLaPersona(auth.user, auth.agencyRole, auth.ultimaCuenta, auth.activeContext)} {...props} />
 }

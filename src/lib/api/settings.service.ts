@@ -4,6 +4,7 @@
  */
 import { apiClient, getAccessToken, ApiError } from './client'
 import type { TeamMember, TeamRole } from '@/lib/types/team'
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
 
@@ -105,6 +106,7 @@ export const settingsApi = {
 
     const headers: Record<string, string> = {}
     if (token) headers['Authorization'] = `Bearer ${token}`
+    Object.assign(headers, cabecerasDeLaCuenta())
 
     let res: Response
     try {

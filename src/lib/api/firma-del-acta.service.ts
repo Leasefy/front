@@ -23,6 +23,7 @@
 
 import { apiClient, ApiError, getAccessToken } from './client';
 import type { SendOtpResponse, VerifyOtpResponse } from './contracts.types';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
@@ -188,7 +189,7 @@ export const firmaDelActaApi = {
     try {
       respuesta = await fetch(`${BACKEND_URL}${BASE}/${id(actaId)}/fotos`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasDeLaCuenta() },
         body: formulario,
       });
     } catch (error) {

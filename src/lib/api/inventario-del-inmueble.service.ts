@@ -10,6 +10,7 @@ import type {
   ItemDeVersion,
   ParaIniciarUnContrato,
 } from '@/lib/types/inventario-del-inmueble';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BASE = '/inmobiliaria';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
@@ -72,7 +73,7 @@ export const inventarioDelInmuebleApi = {
     try {
       res = await fetch(`${BACKEND_URL}${BASE}/consignaciones/${consignacionId}/inventarios/borrador/foto`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasDeLaCuenta() },
         body: formData,
       });
     } catch (err) {

@@ -20,6 +20,7 @@ import { AvisoDeConexion } from "@/components/estado/AvisoDeConexion";
 import { AceptarLegalesAlEntrar } from "@/components/legal/AceptarLegalesAlEntrar";
 import { LlavesDeLaPlata } from "@/components/plata/LlavesDeLaPlata";
 import { MotionProvider } from "@leasefy/cadence";
+import { RecordarLaCuenta } from "@/components/auth/RecordarLaCuenta";
 
 // Cadence: Schibsted Grotesk — Regular (cuerpo) + Semibold (títulos).
 // Una sola familia para sans + heading; se mapea en globals.css.
@@ -156,6 +157,8 @@ export default async function RootLayout({
               <SessionRevocationHandler />
               <IdleSessionGuard />
               <SesionDeRecuperacionGuard />
+              {/* «Cambiar de cuenta» (21-10-2026): recuerda la última cuenta usada. */}
+              <RecordarLaCuenta />
               {/* FALTANTES (05-10-2026, decisión 1): la política v4.0 y los términos v2.1 se aceptan una vez al próximo ingreso. */}
               <AceptarLegalesAlEntrar />
               <SmoothScroll>{children}</SmoothScroll>

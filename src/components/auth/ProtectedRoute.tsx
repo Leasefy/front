@@ -7,7 +7,8 @@ import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { NoPudimosConfirmarTuSesion } from './NoPudimosConfirmarTuSesion'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useSinSenal } from '@/lib/hooks/use-sin-senal'
-import { getRoleHomeRoute, isPanelRoleAllowed } from '@/lib/auth/role-routes'
+import { getRoleHomeRoute, inicioDeLaPersona, isPanelRoleAllowed } from '@/lib/auth/role-routes'
+import { tieneElPapelDeLaRuta } from '@/lib/auth/cuenta-activa'
 import { olvidarQueContinuo } from '@/lib/auth/regreso-tras-continuar'
 import type { AgencyMemberRole } from '@/lib/auth/types'
 
@@ -51,7 +52,7 @@ interface ProtectedRouteProps {
  * <ProtectedRoute allowedRoles={['landlord']}>{children}</ProtectedRoute>
  */
 export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, allowAgencyMembers }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading, mfaRequired, mfaEnrollRequired, mfaCheckStatus, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked, refreshUser, confirmacionDeLaSesion, signOut } = useAuth()
+  const { user, isAuthenticated, isLoading, mfaRequired, mfaEnrollRequired, mfaCheckStatus, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked, refreshUser, confirmacionDeLaSesion, signOut, cuentas, ultimaCuenta } = useAuth()
   /*
    * 🔴 Nico, 02-10-2026: sin saber si a la sesión le falta el código, no se
    * entra. `pending` = todavía se pregunta (cargador); `failed` = no respondió
@@ -61,6 +62,13 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   const sinVerificarElSegundoFactor = isAuthenticated && (mfaCheckStatus === 'pending' || mfaCheckStatus === 'failed')
   const router = useRouter()
   const pathname = usePathname()
+  /*
+   * 🔴 «Cambiar de cuenta» (Nico, 21-10-2026): cada portal deja entrar por el
+   * PAPEL de la persona (lo dice el back, de sus datos), no sólo por el rol con
+   * que se registró: la cuenta de inmobiliaria que también arrienda entra a su
+   * portal de inquilino, el propietario que arrienda también.
+   */
+  const porSuPapel = tieneElPapelDeLaRuta(pathname, cuentas)
   const sinSenal = useSinSenal()
   const [isCheckingStorage, setIsCheckingStorage] = useState(true)
   const [storageUser, setStorageUser] = useState<{ role: string } | null>(null)
@@ -178,7 +186,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
     }
 
     // Check role restriction
-    if (allowedRoles && effectiveUser && !isPanelRoleAllowed(effectiveUser.role, allowedRoles, { allowAgencyMembers, hasActiveAgencyMembership })) {
+    if (allowedRoles && effectiveUser && !porSuPapel && !isPanelRoleAllowed(effectiveUser.role, allowedRoles, { allowAgencyMembers, hasActiveAgencyMembership })) {
       /*
        * 🔴 Un perfil DEGRADADO no expulsa a nadie.
        *
@@ -203,7 +211,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
       // User is authenticated but doesn't have required role (and, for the
       // agency panel, has no ACTIVE agency membership either).
       // Redirect to appropriate dashboard based on their role
-      router.replace(getRoleHomeRoute(effectiveUser.role))
+      router.replace(ultimaCuenta ? inicioDeLaPersona(effectiveUser, agencyRole, ultimaCuenta) : getRoleHomeRoute(effectiveUser.role))
       return
     }
 
@@ -212,7 +220,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
       router.replace('/panel/inmobiliaria')
       return
     }
-  }, [sinVerificarElSegundoFactor, isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, blockedAgencyRoles, allowAgencyMembers, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, isAgencyUser, pathname, router, mfaRequired, mfaEnrollRequired, user, needsOnboarding, perfilElegido])
+  }, [sinVerificarElSegundoFactor, porSuPapel, ultimaCuenta, isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, blockedAgencyRoles, allowAgencyMembers, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, isAgencyUser, pathname, router, mfaRequired, mfaEnrollRequired, user, needsOnboarding, perfilElegido])
 
   // Show loading state while checking auth
   if (isLoading || isCheckingStorage) {
@@ -322,7 +330,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   }
 
   // Check role restriction
-  if (allowedRoles && effectiveUser && !isPanelRoleAllowed(effectiveUser.role, allowedRoles, { allowAgencyMembers, hasActiveAgencyMembership })) {
+  if (allowedRoles && effectiveUser && !porSuPapel && !isPanelRoleAllowed(effectiveUser.role, allowedRoles, { allowAgencyMembers, hasActiveAgencyMembership })) {
     // Distinguish HOLD (waiting for the membership probe — the effect is NOT
     // redirecting yet, up to ~8s) from an imminent REDIRECT (probe settled,
     // access denied). The hold shows the neutral auth-loading copy; only a real

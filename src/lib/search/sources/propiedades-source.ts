@@ -16,6 +16,7 @@ import type { SearchSource, SearchResult } from '@/lib/hooks/useFederatedSearch'
 import { House } from '@phosphor-icons/react';
 import { formatoPesos } from '@/lib/plata/formato';
 import { numeroDeLaConsulta } from '@/lib/search/consulta-del-buscador';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? '';
 
@@ -94,6 +95,7 @@ export const propiedadesSource: SearchSource = {
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...cabecerasDeLaCuenta(),
       },
       signal,
     });

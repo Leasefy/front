@@ -24,6 +24,7 @@ function comoNumero(q: string): string {
 }
 import type { SearchSource, SearchResult } from '@/lib/hooks/useFederatedSearch';
 import { FileText } from '@phosphor-icons/react';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? '';
 
@@ -132,6 +133,7 @@ export const contratosSource: SearchSource = {
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...cabecerasDeLaCuenta(),
       },
       signal,
     });

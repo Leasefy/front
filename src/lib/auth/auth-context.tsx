@@ -34,6 +34,14 @@ import {
   isDualContextUser,
   type ActiveContext,
 } from './active-context'
+import {
+  fijarCuentasDeLaSesion,
+  inmobiliariaQueAbre,
+  leerCuentaGuardada,
+  leerCuentasDeLaPersona,
+  ultimaCuentaValida,
+  type CuentasDeLaPersona,
+} from './cuenta-activa'
 import { requestNotificationPermission, removeFcmToken } from '@/lib/firebase/messaging'
 import type { Session } from '@supabase/supabase-js'
 import { esCorreoYaRegistrado } from './correo'
@@ -330,6 +338,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [lastProbeTransient, setLastProbeTransient] = useState(false)
   // Persisted active-context choice for dual-context users (null = unset).
   const [persistedContext, setPersistedContext] = useState<ActiveContext | null>(null)
+  // «Cambiar de cuenta» (21-10-2026): los papeles de la persona, del arranque.
+  // `null` = no se saben (back viejo, arranque caído): una sola cuenta, como antes.
+  const [cuentas, setCuentas] = useState<CuentasDeLaPersona | null>(null)
 
   /**
    * ¿El SIGNED_OUT que viene es porque el usuario apretó "Cerrar sesión"?
@@ -510,7 +521,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
   ): Promise<{ user: User | null; needsOnboarding: boolean; agencyResult: AgencyFetchResult | null }> => {
     const token = session?.access_token
     try {
-      const data = await getBootstrap(token)
+      let data = await getBootstrap(token)
+      /*
+       * «Cambiar de cuenta» (21-10-2026): quien trabaja en varias inmobiliarias
+       * entra a la última que usó. El primer arranque sale sin saberlo (todavía
+       * no se conocían sus cuentas) y trae la más vieja; se pide una vez más con
+       * la elegida para que el nombre de arriba y los datos sean de la misma.
+       */
+      const papelesDelArranque = leerCuentasDeLaPersona(data.cuentas)
+      if (papelesDelArranque && papelesDelArranque.inmobiliarias.length > 1) {
+        fijarCuentasDeLaSesion(data.user.id, papelesDelArranque)
+        const abre = inmobiliariaQueAbre(papelesDelArranque, leerCuentaGuardada(data.user.id))
+        if (abre && data.agency?.id && data.agency.id !== abre) {
+          data = await getBootstrap(token)
+        }
+      }
       // Same PanelPrefsContext seed `fetchUser` already did for /users/me —
       // see the comment there. The bootstrap's `user.preferences` is the
       // exact same field, just nested one level deeper.
@@ -542,6 +567,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // ref) — `fetchBootstrap` always resolves before `alSoltarElLock`
         // schedules that check in every caller.
         segundoFactorExigidoRef.current = data.segundoFactor.exigido
+        // Antes de que el panel pida nada: el cliente HTTP ya sabe con qué
+        // cuenta pedir en cada pantalla.
+        const papeles = leerCuentasDeLaPersona(data.cuentas)
+        fijarCuentasDeLaSesion(data.user.id, papeles)
+        setCuentas(papeles)
       }
       return {
         user: mapBackendUser({ ...data.user, role: data.role }, session?.user?.email_confirmed_at ?? undefined),
@@ -1466,6 +1496,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setLastProbeTransient(false)
           setPersistedContext(null)
           clearActiveContext()
+          // La última cuenta usada se queda (es por persona): la próxima vez entra ahí.
+          fijarCuentasDeLaSesion(null, null)
+          setCuentas(null)
           setMfaRequired(false)
           // T-0099 WU-4: mfaEnrollRequired/segundoFactorExigidoRef were left
           // out of this reset — an asymmetry with mfaRequired above. Inert
@@ -1846,6 +1879,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setLastProbeTransient(false)
     setPersistedContext(null)
     clearActiveContext()
+    fijarCuentasDeLaSesion(null, null)
+    setCuentas(null)
     setMfaRequired(false)
     sesionDelChequeoRef.current = null
     setMfaCheckStatus('pending')
@@ -1952,7 +1987,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         ? 'revisando'
         : 'no-aplica'
 
+  // La última cuenta que usó, si todavía la tiene (decide a dónde entra).
+  const ultimaCuenta = user?.id ? ultimaCuentaValida(cuentas, leerCuentaGuardada(user.id)) : null
+
   const value: AuthContextType = {
+    cuentas,
+    ultimaCuenta,
     user,
     isAuthenticated: !!user,
     isLoading,

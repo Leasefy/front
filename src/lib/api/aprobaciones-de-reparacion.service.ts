@@ -22,6 +22,7 @@ import type {
   PaginaDelHistorialDeAprobaciones,
 } from '@/lib/types/deducciones';
 import type { SolicitudMantenimiento } from '@/lib/types/inmobiliaria';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
@@ -48,7 +49,7 @@ export const aprobacionesDeReparacionApi = {
         `${BACKEND_URL}/inmobiliaria/mantenimiento/${solicitudId}/emergencia`,
         {
           method: 'POST',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasDeLaCuenta() },
           body: formulario,
         },
       );

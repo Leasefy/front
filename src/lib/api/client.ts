@@ -22,6 +22,7 @@ import {
 } from '@/lib/conexion/servicio-no-disponible'
 import { CODIGO_PLAN_REQUERIDO } from '@/lib/errores/codigos-del-plan'
 import { cabeceraDelIdiomaDelPanel } from '@/lib/i18n/idioma-del-panel'
+import { cabecerasDeLaCuenta, claveDeLasCabeceras } from '@/lib/auth/cuenta-activa'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
 
@@ -514,6 +515,10 @@ function getAuthHeaders(): Record<string, string> {
     headers['Authorization'] = `Bearer ${_accessToken}`
   }
 
+  // «Cambiar de cuenta» (21-10-2026): con qué cuenta pide esta pantalla. Vacío
+  // para quien tiene una sola cuenta y fuera de los portales (ver el archivo).
+  Object.assign(headers, cabecerasDeLaCuenta())
+
   return headers
 }
 
@@ -543,7 +548,7 @@ async function request<T>(
 
   const tokenUsado = token ?? getAccessToken()
   const headers: Record<string, string> = token
-    ? { 'Content-Type': 'application/json', 'Accept-Language': cabeceraDelIdiomaDelPanel(), 'Authorization': `Bearer ${token}` }
+    ? { 'Content-Type': 'application/json', 'Accept-Language': cabeceraDelIdiomaDelPanel(), 'Authorization': `Bearer ${token}`, ...cabecerasDeLaCuenta() }
     : getAuthHeaders()
   if (cabecerasExtra) Object.assign(headers, cabecerasExtra)
 
@@ -771,7 +776,11 @@ async function requestBlob(path: string, token?: string, yaSeReintento = false):
  * la petición, una identidad a la vez por pestaña).
  */
 function claveDeGet(path: string, token?: string): string {
-  return token ? `${path}\0${token}` : path
+  // La cuenta va en la clave: el mismo `path` pedido como inquilino y como
+  // inmobiliaria son dos respuestas distintas («Cambiar de cuenta», 21-10-2026).
+  const cuenta = claveDeLasCabeceras()
+  const base = token ? `${path}\0${token}` : path
+  return cuenta ? `${base}\0${cuenta}` : base
 }
 
 export const apiClient = {

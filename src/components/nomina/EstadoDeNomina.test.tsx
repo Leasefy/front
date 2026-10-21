@@ -114,6 +114,15 @@ describe('requisitosParaLiquidar', () => {
     expect(String(r.find((x) => x.id === 'conceptos')!.detalle)).toContain('HE-D');
   });
 
+  it('con el año vacío (el back dice «todo») nombra las tres cifras, no «Falta todo»', () => {
+    const r = requisitosParaLiquidar(
+      estado({ parametros: { disponible: true, motivo: null, completos: false, queFalta: ['todo'], confirmados: false } }),
+    );
+    const detalle = String(r.find((x) => x.id === 'cifras')!.detalle);
+    expect(detalle).toContain('salario mínimo, auxilio de transporte y UVT');
+    expect(detalle).not.toContain('Falta todo');
+  });
+
   it('lo que no se pudo revisar va como desconocido (no cuenta como hecho)', () => {
     const r = requisitosParaLiquidar(
       estado({

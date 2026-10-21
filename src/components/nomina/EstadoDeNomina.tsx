@@ -288,7 +288,10 @@ export function requisitosParaLiquidar(e: Estado): Requisito[] {
       titulo: `Las cifras de ${e.anio}`,
       detalle: P.completos
         ? 'Salario mínimo, auxilio de transporte y UVT cargados.'
-        : `Falta ${P.queFalta.join(', ')}. Los fijan el Gobierno y la DIAN cada año.`,
+        : P.queFalta.length === 0 || P.queFalta.includes('todo')
+          ? // El back responde `["todo"]` cuando el año no tiene ninguna cifra.
+            'Todavía no hay ninguna: salario mínimo, auxilio de transporte y UVT. Los fijan el Gobierno y la DIAN cada año.'
+          : `Falta ${P.queFalta.join(', ')}. Los fijan el Gobierno y la DIAN cada año.`,
       estado: P.completos ? 'listo' : 'falta',
       accion: <Ir href={`${PANEL}/configuracion`} testId="requisito-cargar-cifras">Cargarlas</Ir>,
       accionListo: <Ir href={`${PANEL}/configuracion`} testId="requisito-ver-cifras" variant="ghost">Ver</Ir>,

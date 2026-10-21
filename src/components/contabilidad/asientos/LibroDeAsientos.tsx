@@ -27,7 +27,7 @@
  * vacía le dice al contador que el libro está en blanco.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BookOpenText, LockSimple, Plus } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,8 @@ import {
   TableRowAnimada,
 } from '@/components/ui/table';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { SegmentedControl } from '@leasefy/cadence';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { SinDatos } from '@/components/estado/SinDatos';
 import {
   contabilidadApi,
@@ -84,7 +86,53 @@ import { DetalleDeAsiento } from './DetalleDeAsiento';
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
 
 const TODOS = '__todos__';
-const COLUMNAS = 7;
+// N.º · fecha · descripción (con su estado) · origen · valor (antes: débitos, créditos y estado aparte).
+const COLUMNAS = 5;
+
+/** Los atajos de período (glow up 21-10): lo que más se filtra, a un toque. */
+type Atajo = 'mes' | 'anterior' | 'anio' | 'todo' | 'otro';
+
+/** Hoy en Colombia, `AAAA-MM-DD`. */
+function hoyEnColombia(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Bogota',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+function ultimoDia(anio: number, mes: number): string {
+  const d = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
+  return `${anio}-${String(mes).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+/** El rango de cada atajo. */
+function rangoDelAtajo(atajo: Exclude<Atajo, 'otro'>): { desde: string; hasta: string } {
+  if (atajo === 'todo') return { desde: '', hasta: '' };
+  const [anio, mes] = hoyEnColombia().split('-').map(Number);
+  if (atajo === 'anio') return { desde: `${anio}-01-01`, hasta: `${anio}-12-31` };
+  if (atajo === 'mes') return { desde: `${anio}-${String(mes).padStart(2, '0')}-01`, hasta: ultimoDia(anio, mes) };
+  const [a2, m2] = mes === 1 ? [anio - 1, 12] : [anio, mes - 1];
+  return { desde: `${a2}-${String(m2).padStart(2, '0')}-01`, hasta: ultimoDia(a2, m2) };
+}
+
+/** Qué atajo es el rango puesto («otro» si no es ninguno). */
+function atajoDe(desde: string, hasta: string): Atajo {
+  for (const a of ['todo', 'mes', 'anterior', 'anio'] as const) {
+    const r = rangoDelAtajo(a);
+    if (r.desde === desde && r.hasta === hasta) return a;
+  }
+  return 'otro';
+}
+
+const ATAJOS: { value: Atajo; label: string }[] = [
+  { value: 'mes', label: 'Este mes' },
+  { value: 'anterior', label: 'Mes pasado' },
+  { value: 'anio', label: 'Este año' },
+  { value: 'todo', label: 'Todo' },
+  { value: 'otro', label: 'Otro rango' },
+];
 
 interface Filtros {
   desde: string;
@@ -100,7 +148,15 @@ function hayFiltros(f: Filtros): boolean {
   return Boolean(f.desde || f.hasta || f.cuentaId || f.origen || f.cerrado);
 }
 
-export function LibroDeAsientos() {
+export interface LibroDeAsientosProps {
+  /**
+   * El encabezado de la pantalla, con la acción principal («Asiento manual») a la derecha: la
+   * página lo pinta con lo que abre el asiento manual. Sin él, el botón va en la barra del libro.
+   */
+  encabezado?: (abrirAsientoManual: () => void) => ReactNode;
+}
+
+export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
   const esCelular = useIsMobile();
   const { cuentas, error: errorDeCuentas } = useCuentas();
   const [filtros, setFiltros] = useState<Filtros>(SIN_FILTROS);
@@ -111,6 +167,8 @@ export function LibroDeAsientos() {
   const [error, setError] = useState<unknown>(null);
   const [seleccionado, setSeleccionado] = useState<AsientoContable | null>(null);
   const [manualAbierto, setManualAbierto] = useState(false);
+  /** «Otro rango» abierto: se ven las dos fechas. */
+  const [verRango, setVerRango] = useState(false);
   const [cierre, setCierre] = useState<Cierre | null>(null);
   const [cargandoCierre, setCargandoCierre] = useState(true);
   const [falloDelCierre, setFalloDelCierre] = useState(false);
@@ -181,6 +239,7 @@ export function LibroDeAsientos() {
 
   const total = datos?.total ?? 0;
   const conFiltros = hayFiltros(filtros);
+  const atajo = atajoDe(filtros.desde, filtros.hasta);
 
   const filas = useMemo(
     () => (datos?.asientos ?? []).map((a) => ({ asiento: a, totales: totalesDeAsiento(a) })),
@@ -189,6 +248,7 @@ export function LibroDeAsientos() {
 
   return (
     <div className="space-y-6">
+      {encabezado ? encabezado(() => setManualAbierto(true)) : null}
       {/* ── Filtros y tabla: UNA tarjeta ──────────────────────────────────
           🔴 20-09 · Eran dos, separadas por 24 px. Nico lo dijo de
           Facturación —«porque esto no está pegado a la tabla»— y valía igual
@@ -198,72 +258,93 @@ export function LibroDeAsientos() {
         className="overflow-x-clip rounded-lg border border-border bg-surface"
         aria-label="Filtros del libro"
       >
-      <div className="space-y-4 border-b border-border p-4">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="grid flex-1 gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(300px,1.2fr)_minmax(200px,1fr)_160px_150px]">
+      <div className="space-y-3 border-b border-border p-4">
+        {/* GLOW UP 21-10 · el trabajo de esta pantalla es ENCONTRAR un asiento: el período va en
+            atajos (lo que más se filtra, a un toque) y los demás filtros en una línea. Antes eran
+            cinco campos con rótulo encima y la acción principal metida entre los filtros. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <SegmentedControl<Atajo>
+            aria-label="Período del libro"
+            value={verRango ? 'otro' : atajo}
+            onChange={(a) => {
+              if (a === 'otro') {
+                setVerRango(true);
+                return;
+              }
+              setVerRango(false);
+              cambiarFiltros(rangoDelAtajo(a));
+            }}
+            options={ATAJOS}
+          />
+          <div className="min-w-[200px] flex-1 sm:max-w-[280px]">
+            <Label className="sr-only">Cuenta</Label>
+            <SelectorDeCuenta
+              cuentas={cuentas}
+              value={filtros.cuentaId}
+              onChange={(cuentaId) => cambiarFiltros({ cuentaId })}
+              placeholder="Todas las cuentas"
+              className="w-full"
+            />
+          </div>
+          <div className="w-[170px]">
+            <Label id="filtro-origen" className="sr-only">Origen</Label>
+            <Select
+              value={filtros.origen || TODOS}
+              onValueChange={(v) => cambiarFiltros({ origen: v === TODOS ? '' : (v as OrigenDelAsiento) })}
+            >
+              <SelectTrigger aria-labelledby="filtro-origen" data-testid="filtro-origen">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={TODOS}>Todos los orígenes</SelectItem>
+                {ORIGENES.map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {NOMBRE_DE_ORIGEN[o]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-[170px]">
+            <Label id="filtro-cerrado" className="sr-only">Período</Label>
+            <Select
+              value={filtros.cerrado || TODOS}
+              onValueChange={(v) => cambiarFiltros({ cerrado: v === TODOS ? '' : (v as 'true' | 'false') })}
+            >
+              <SelectTrigger aria-labelledby="filtro-cerrado" data-testid="filtro-cerrado">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={TODOS}>Todos los períodos</SelectItem>
+                <SelectItem value="false">De meses sin cerrar</SelectItem>
+                <SelectItem value="true">De meses cerrados</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            {conFiltros ? (
+              <Button variant="ghost" size="sm" hideArrow onClick={() => { setVerRango(false); cambiarFiltros(SIN_FILTROS); }}>
+                Limpiar
+              </Button>
+            ) : null}
+            {encabezado ? null : (
+              <Button hideArrow onClick={() => setManualAbierto(true)} data-testid="abrir-asiento-manual">
+                <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                Asiento manual
+              </Button>
+            )}
+          </div>
+        </div>
+        {/* «Otro rango»: las dos fechas, sólo cuando se piden. */}
+        {verRango || atajo === 'otro' ? (
+          <div className="max-w-xl">
             <RangoDeFechas
               desde={filtros.desde}
               hasta={filtros.hasta}
               onChange={(r) => cambiarFiltros(r)}
             />
-            <div className="space-y-1.5">
-              <Label>Cuenta</Label>
-              <SelectorDeCuenta
-                cuentas={cuentas}
-                value={filtros.cuentaId}
-                onChange={(cuentaId) => cambiarFiltros({ cuentaId })}
-                placeholder="Todas las cuentas"
-                className="w-full"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label id="filtro-origen">Origen</Label>
-              <Select
-                value={filtros.origen || TODOS}
-                onValueChange={(v) => cambiarFiltros({ origen: v === TODOS ? '' : (v as OrigenDelAsiento) })}
-              >
-                <SelectTrigger aria-labelledby="filtro-origen" data-testid="filtro-origen">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={TODOS}>Todos</SelectItem>
-                  {ORIGENES.map((o) => (
-                    <SelectItem key={o} value={o}>
-                      {NOMBRE_DE_ORIGEN[o]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label id="filtro-cerrado">Período</Label>
-              <Select
-                value={filtros.cerrado || TODOS}
-                onValueChange={(v) => cambiarFiltros({ cerrado: v === TODOS ? '' : (v as 'true' | 'false') })}
-              >
-                <SelectTrigger aria-labelledby="filtro-cerrado" data-testid="filtro-cerrado">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={TODOS}>Todos</SelectItem>
-                  <SelectItem value="false">Abiertos</SelectItem>
-                  <SelectItem value="true">Cerrados</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {conFiltros ? (
-              <Button variant="ghost" hideArrow onClick={() => cambiarFiltros(SIN_FILTROS)}>
-                Limpiar
-              </Button>
-            ) : null}
-            <Button hideArrow onClick={() => setManualAbierto(true)} data-testid="abrir-asiento-manual">
-              <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
-              Asiento manual
-            </Button>
-          </div>
-        </div>
+        ) : null}
         {errorDeCuentas ? (
           <p className="text-caption text-warning" role="status">
             No se pudo cargar el plan de cuentas: el filtro por cuenta y el asiento manual no van a
@@ -346,9 +427,9 @@ export function LibroDeAsientos() {
                   <TableHead>Fecha</TableHead>
                   <TableHead>Descripción</TableHead>
                   <TableHead>Origen</TableHead>
-                  <TableHead numeric>Débitos</TableHead>
-                  <TableHead numeric>Créditos</TableHead>
-                  <TableHead>Estado</TableHead>
+                  {/* Un asiento siempre cuadra: débitos y créditos eran la misma cifra dos veces.
+                      Va una, el valor; si alguna vez no cuadra, lo dice ahí mismo. */}
+                  <TableHead numeric>Valor</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBodyAnimado>
@@ -389,13 +470,19 @@ export function LibroDeAsientos() {
                       <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
                         {diaLegible(asiento.fecha)}
                       </TableCell>
-                      <TableCell className="max-w-[340px]">
+                      <TableCell className="max-w-[420px]">
                         <span className="flex items-baseline gap-1.5">
                           <span className="truncate text-fg" title={conLaPlataPegada(asiento.descripcion)}>
                             {conLaPlataPegada(asiento.descripcion)}
                           </span>
                           <span className="shrink-0 whitespace-nowrap text-caption text-fg-muted">
                             · {textoDeLineas(asiento.movimientos.length)}
+                          </span>
+                          {/* 🔴 CB-14: lo que el asiento ES —reversado, reversa o de un período
+                              cerrado— y nada si es un asiento vivo (nunca «Abierto»). Antes iba en
+                              una columna propia, casi siempre vacía. */}
+                          <span className="shrink-0" data-testid="estado-de-la-fila">
+                            <EstadoDeLaFila asiento={asiento} />
                           </span>
                         </span>
                       </TableCell>
@@ -411,16 +498,9 @@ export function LibroDeAsientos() {
                       </TableCell>
                       <TableCell numeric className="whitespace-nowrap">
                         <Monto valor={totales.debitos} />
-                      </TableCell>
-                      <TableCell numeric className="whitespace-nowrap">
-                        <Monto valor={totales.creditos} />
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap" data-testid="estado-de-la-fila">
-                        {/* 🔴 CB-14: decía «Abierto» en cada fila (= el PERÍODO está
-                            abierto), que no dice nada del asiento. Ahora dice lo
-                            que el asiento ES — reversado, reversa o de un período
-                            cerrado — y nada si es un asiento vivo. */}
-                        <EstadoDeLaFila asiento={asiento} />
+                        {totales.debitos !== totales.creditos ? (
+                          <span className="block text-caption text-danger">no cuadra</span>
+                        ) : null}
                       </TableCell>
                     </TableRowAnimada>
                   ))
@@ -445,13 +525,25 @@ export function LibroDeAsientos() {
         </EstadoDeDatos>
       </section>
 
-      <CierreDePeriodo
-        cierre={cierre}
-        cargando={cargandoCierre}
-        fallo={falloDelCierre}
-        onCerrado={refrescarTodo}
-        onReabierto={refrescarTodo}
-      />
+      {/* El cierre del mes se hace desde la portada de Contabilidad (paso 3 del cierre). Aquí se
+          consulta y, si hace falta, se cierra o reabre sin salir del libro: plegado, para que el
+          libro sea lo primero. */}
+      <MasDetalles
+        etiqueta={
+          cierre?.cerradaHasta
+            ? `El período contable · cerrado hasta el ${fechaCorta(cierre.cerradaHasta)}`
+            : 'El período contable · nada cerrado todavía'
+        }
+        montadoSiempre
+      >
+        <CierreDePeriodo
+          cierre={cierre}
+          cargando={cargandoCierre}
+          fallo={falloDelCierre}
+          onCerrado={refrescarTodo}
+          onReabierto={refrescarTodo}
+        />
+      </MasDetalles>
 
       <DetalleDeAsiento
         asiento={seleccionado}

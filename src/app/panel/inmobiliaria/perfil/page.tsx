@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { User, Envelope, Phone, MapPin, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, TrashSimple, Pencil, Upload, Buildings } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { Button, Input, Spinner } from '@/components/ui';
-import { AnimatedNumber, CrossFade, IconButton, motionDuration, motionEase } from '@leasefy/cadence';
+import { Avatar, CrossFade, IconButton } from '@leasefy/cadence';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import {
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar';
 import {
   enfocarCampoPersonal,
   idDelCampoPersonal,
@@ -175,6 +176,26 @@ export default function InmobiliariaPerfilPage() {
       completed: !!(user?.emergencyContactName && user?.emergencyContactPhone),
     },
   ];
+
+  /** Abre la sección donde se completa el paso y la trae a la vista. */
+  const irA = (seccion: 'personal' | 'emergency', id: string) => {
+    setEditingSection(seccion);
+    requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
+  const accionDelPaso = (id: string) => {
+    const etiqueta = locale === 'es' ? 'Completar' : 'Complete';
+    if (id === 'emergency-contact') {
+      return <Button size="sm" variant="secondary" hideArrow onClick={() => irA('emergency', 'perfil-emergencia')}>{etiqueta}</Button>;
+    }
+    if (id === 'agency-info') {
+      return (
+        <Button asChild size="sm" variant="secondary" hideArrow>
+          <Link href="/panel/inmobiliaria/configuracion/perfil">{etiqueta}</Link>
+        </Button>
+      );
+    }
+    return <Button size="sm" variant="secondary" hideArrow onClick={() => irA('personal', 'perfil-personal')}>{etiqueta}</Button>;
+  };
 
   const completedSteps = setupSteps.filter(s => s.completed).length;
   const totalSteps = setupSteps.length;
@@ -431,127 +452,22 @@ export default function InmobiliariaPerfilPage() {
           </p>
         </div>
 
-        {/* Setup Progress Section — hidden once the profile is 100% complete */}
+        {/* Lo que falta del perfil (Cadence 2, «Lo que falta para empezar»): antes el avance salía
+            TRES veces —barra, anillo de 60 % y cinco tarjetas—; ahora es una lista con lo que falta
+            arriba, cada cosa con el botón que la resuelve. Se esconde con el perfil completo. */}
         {completionPercentage < 100 && (
-        <section className="rounded-lg bg-primary-soft border border-border p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            {/* Progress Info */}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-lg bg-card flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-primary" weight="duotone" />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-fg">
-                    {locale === 'es' ? 'Completar perfil' : 'Complete profile'}
-                  </h2>
-                  <p className="text-sm text-primary">
-                    {locale === 'es'
-                      ? `${completedSteps} de ${totalSteps} pasos completados`
-                      : `${completedSteps} of ${totalSteps} steps completed`}
-                  </p>
-                </div>
-              </div>
-              <div className="h-2 bg-card/60 rounded-full overflow-hidden">
-                {/* Avanza con `translateX` (sólo transform; el extremo redondo
-                    no se deforma como con `scaleX`), con la curva del sistema. */}
-                <motion.div
-                  initial={{ x: '-100%' }}
-                  animate={{ x: `${completionPercentage - 100}%` }}
-                  transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                  className="h-full w-full bg-primary rounded-full"
-                />
-              </div>
-              <p className="text-xs text-fg-muted mt-2">
-                {completionPercentage === 100
-                  ? (locale === 'es' ? '¡Perfil completo! Tienes acceso a todas las funciones.' : 'Profile complete! You have access to all features.')
-                  : (locale === 'es' ? 'Completa tu perfil para acceder a todas las funciones' : 'Complete your profile to access all features')}
-              </p>
-            </div>
-
-            {/* Percentage Badge */}
-            <div className="flex items-center justify-center">
-              <div className="relative w-24 h-24">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    className="text-card"
-                  />
-                  <motion.circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    className="text-primary"
-                    initial={{ strokeDasharray: '0 251.2' }}
-                    animate={{ strokeDasharray: `${completionPercentage * 2.512} 251.2` }}
-                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  {/* Cuenta junto con el anillo; si cambia, desde la anterior. */}
-                  <AnimatedNumber
-                    value={completionPercentage}
-                    from={0}
-                    format={(n) => `${Math.round(n)}%`}
-                    className="text-2xl font-semibold tabular-nums text-fg"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Steps List — iconography step pattern (DS, duotone icons) */}
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            {setupSteps.map((step) => {
-              const Icon = step.icon;
-              return (
-                <div
-                  key={step.id}
-                  className={cn(
-                    'rounded-lg p-4 transition-colors',
-                    step.completed
-                      ? 'bg-card'
-                      : 'bg-card border border-dashed border-primary/30'
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={cn(
-                      'w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0',
-                      step.completed
-                        ? 'bg-success-soft text-success'
-                        : 'bg-primary-soft text-primary'
-                    )}>
-                      {step.completed ? (
-                        <CheckCircle className="w-4 h-4" weight="fill" />
-                      ) : (
-                        <Icon className="w-4 h-4" weight="duotone" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-fg truncate">
-                        {step.label}
-                      </p>
-                      {step.completed ? (
-                        <span className="text-xs text-success">{locale === 'es' ? 'Completado' : 'Completed'}</span>
-                      ) : (
-                        <span className="text-xs text-fg-muted">{locale === 'es' ? 'Pendiente' : 'Pending'}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+          <ListaParaEmpezar
+            paraQue={locale === 'es' ? 'completar tu perfil' : 'complete your profile'}
+            recordarComo="perfil"
+            data-testid="lo-que-falta-del-perfil"
+            requisitos={setupSteps.map((step) => ({
+              id: step.id,
+              titulo: step.label,
+              detalle: step.completed ? undefined : step.description,
+              estado: step.completed ? 'listo' : 'falta',
+              accion: accionDelPaso(step.id),
+            }))}
+          />
         )}
 
         {/* Visit hours — each agent sets their own schedule for visits */}
@@ -562,7 +478,7 @@ export default function InmobiliariaPerfilPage() {
           <div className="lg:col-span-1 space-y-6">
             {/* Avatar Card */}
             <div className="rounded-lg border border-border bg-card overflow-hidden">
-              <div className="relative bg-primary-soft h-28">
+              <div className="relative bg-surface-muted h-28">
                 {editingSection !== 'avatar' && (
                   <IconButton
                     variant="ghost"
@@ -594,7 +510,7 @@ export default function InmobiliariaPerfilPage() {
                 <div className="relative -mt-14 mb-4">
                   <div
                     className={cn(
-                      "w-28 h-28 rounded-full border-4 border-card overflow-hidden",
+                      "w-28 h-28 rounded-[30%] border-4 border-card overflow-hidden",
                       editingSection === 'avatar' && "cursor-pointer"
                     )}
                     onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
@@ -608,9 +524,12 @@ export default function InmobiliariaPerfilPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-4xl">
-                        {(formData.firstName || user?.email || '?').charAt(0).toUpperCase()}
-                      </div>
+                      // Cadence 2: la persona con su tono (sale del nombre: el mismo que en el resto).
+                      <Avatar
+                        name={[formData.firstName, formData.lastName].filter(Boolean).join(' ') || user?.email || '?'}
+                        size="xl"
+                        className="!size-full [&>span]:!size-full [&>span]:!rounded-none [&>span]:!text-[40px]"
+                      />
                     )}
                   </div>
                   {editingSection === 'avatar' && (
@@ -767,7 +686,7 @@ export default function InmobiliariaPerfilPage() {
           {/* Profile Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Personal Information */}
-            <div className="rounded-lg border border-border bg-card p-6">
+            <div id="perfil-personal" className="scroll-mt-6 rounded-lg border border-border bg-card p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-base font-semibold text-fg">
                   {locale === 'es' ? 'Información personal' : 'Personal information'}
@@ -890,7 +809,7 @@ export default function InmobiliariaPerfilPage() {
             </div>
 
             {/* Emergency Contact */}
-            <div className="rounded-lg border border-border bg-card p-6">
+            <div id="perfil-emergencia" className="scroll-mt-6 rounded-lg border border-border bg-card p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-base font-semibold text-fg">
                   {locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}

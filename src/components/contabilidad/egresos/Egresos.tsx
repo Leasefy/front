@@ -576,7 +576,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
           <FranjaDeCifras
             aria-label="En qué va cada pago"
             data-testid="egresos-en-camino"
-            className="rounded-none border-0 border-b border-border"
+            // La tarjeta recorta sólo de lado (overflow-x-clip): la franja conserva sus esquinas de arriba.
+            className="rounded-b-none border-0 border-b border-border"
           >
             <Cifra
               etiqueta="Por armar en lote"
@@ -635,7 +636,9 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 queSon="egresos"
                 ilustracion="billetera"
                 titulo="Todavía no hay egresos"
-                descripcion="Se crean desde una factura de proveedor causada, o sueltos para un anticipo."
+                descripcion="Nacen al pagar una factura de proveedor causada (en Gastos, «Pagar»): ahí se crea su orden de pago, que luego se arma en un lote."
+                // El siguiente paso real del recorrido: las facturas causadas, que esperan su pago.
+                crear={{ label: 'Ver las facturas por pagar', href: '/panel/inmobiliaria/contabilidad/gastos?estado=CAUSADA' }}
               />
             ) : esCelular ? (
               /* 🔴 CB-22 (QA de Contabilidad, 03-10-2026): a 390 px la tabla se

@@ -247,16 +247,33 @@ function enfocarElCampo(campo: string) {
   control?.focus();
 }
 
+/** El id de un bloque para el índice «En esta sección» (glow up 21-10). */
+const idDelBloque = (titulo: string) =>
+  'cfg-' +
+  titulo
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+
 const SectionHeader = ({
   icon: Icon,
   title,
   color = 'text-fg-muted',
+  enElIndice = true,
 }: {
   icon: React.ElementType;
   title: string;
   color?: string;
+  /** Entra al índice de la página (`IndiceDeLaPagina`). */
+  enElIndice?: boolean;
 }) => (
-  <div className="flex items-center gap-2 text-foreground">
+  <div
+    id={enElIndice ? idDelBloque(title) : undefined}
+    data-indice={enElIndice ? title : undefined}
+    className="flex scroll-mt-16 items-center gap-2 text-foreground"
+  >
     <Icon className={cn('w-5 h-5', color)} weight="duotone" />
     <h3 className="text-base font-semibold">{title}</h3>
   </div>
@@ -909,7 +926,7 @@ export function ConfigPerfilAgencia({
       {/* Agency Name */}
       {editando && (
         <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
-          <SectionHeader icon={Buildings} title={t('inmobiliaria.config.profile.agencyName')} />
+          <SectionHeader icon={Buildings} title={t('inmobiliaria.config.profile.agencyName')} enElIndice={false} />
           <InputWrapper
             label={t('inmobiliaria.config.profile.agencyName')}
             required

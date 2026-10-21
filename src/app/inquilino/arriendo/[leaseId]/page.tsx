@@ -324,14 +324,15 @@ export default function LeaseDetailPage() {
 
         {/* Back Button */}
         <div className="mb-6">
-          <BackButton label={locale === 'es' ? 'Volver a mis arriendos' : 'Back to my rentals'} />
+          <BackButton href="/inquilino/arriendo" label={locale === 'es' ? 'Volver a Mi arriendo' : 'Back to My rental'} />
         </div>
 
         {/* Hero Section - Property Card */}
         <div className="rounded-xl border border-border bg-surface overflow-hidden mb-8">
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
-            <div className="relative w-full lg:w-[400px] h-64 lg:h-auto flex-shrink-0">
+            {/* En el celular la foto más baja: lo del arriendo se ve sin bajar tanto. */}
+            <div className="relative w-full lg:w-[400px] h-48 sm:h-64 lg:h-auto flex-shrink-0">
               {/* Sin foto, «Sin fotos» y no `<Image src={null}>`, que tumbaba la pantalla (QA 22-09). */}
               <PortadaDelInmueble
                 property={{ thumbnailUrl: lease.propertyThumbnail }}
@@ -447,6 +448,92 @@ export default function LeaseDetailPage() {
           {/* Main Content - 2 columns */}
           <div className="lg:col-span-2 space-y-6">
 
+            {/* Pay Rent CTA — visible cuando lease está activo y se puede pagar.
+                GLOW UP (21-10-2026): es lo que más se viene a hacer; va primero,
+                antes de la renovación. */}
+            {/* La info del período llega en su propia consulta: si llega
+                después del arriendo, la tarjeta entra; si ya estaba, no. */}
+            <Presence
+              show={Boolean(isActive && paymentInfo)}
+              initial={false}
+              className={cn(
+                'rounded-xl border p-6 lg:p-8 transition-colors duration-base',
+                periodStatus === 'PENDING_VALIDATION'
+                  ? 'bg-warning-soft border-warning/30'
+                  : periodStatus === 'APPROVED'
+                    ? 'bg-success-soft border-success/30'
+                    : 'bg-primary-soft border-primary/30'
+              )}
+            >
+              {paymentInfo && (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+                  <div>
+                    {/* Pagar → «en verificación» → «confirmado»: la línea del
+                        estado se cruza con la nueva. */}
+                    <CrossFade swapKey={periodStatus ?? 'NONE'} className="flex items-center gap-2 mb-2">
+                      {periodStatus === 'PENDING_VALIDATION' ? (
+                        <>
+                          <Clock className="w-4 h-4 text-warning" />
+                          <span className="text-sm text-warning font-medium">
+                            {locale === 'es' ? 'Pago en verificación bancaria' : 'Payment in bank verification'}
+                          </span>
+                        </>
+                      ) : periodStatus === 'APPROVED' ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 text-success" />
+                          <span className="text-sm text-success font-medium">
+                            {locale === 'es' ? 'Pago confirmado' : 'Payment confirmed'}
+                          </span>
+                        </>
+                      ) : periodStatus === 'REJECTED' ? (
+                        <>
+                          <WarningCircle className="w-4 h-4 text-danger" />
+                          <span className="text-sm text-danger font-medium">
+                            {locale === 'es' ? 'Pago rechazado — reintentar' : 'Payment rejected — retry'}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-4 h-4 text-primary" />
+                          <span className="text-sm text-primary font-medium">
+                            {locale === 'es' ? 'Pagar arriendo' : 'Pay rent'}
+                          </span>
+                        </>
+                      )}
+                    </CrossFade>
+                    <p className="text-4xl font-bold tracking-tight text-fg">
+                      {formatCurrency(paymentInfo.monthlyRent)}
+                    </p>
+                    <p className="text-fg-muted mt-1 flex items-center gap-1.5 capitalize">
+                      <Calendar className="w-4 h-4" />
+                      {formatPeriod(paymentInfo.currentPeriod.month, paymentInfo.currentPeriod.year)}
+                    </p>
+                    {periodStatus === 'REJECTED' && paymentInfo.currentPeriodRejectionReason && (
+                      <p className="text-xs text-danger mt-2 italic max-w-md">
+                        {paymentInfo.currentPeriodRejectionReason}
+                      </p>
+                    )}
+                  </div>
+                  {canPay && (
+                    <Button
+                      type="button"
+                      size="lg"
+                      hideArrow
+                      onClick={() => setPayModalOpen(true)}
+                      className="px-8 py-4"
+                    >
+                      <Wallet className="w-5 h-5" />
+                      {periodStatus === 'REJECTED'
+                        ? (locale === 'es' ? 'Reintentar' : 'Retry')
+                        : (locale === 'es' ? 'Pagar arriendo' : 'Pay rent')}
+                      <ArrowUpRight className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </Presence>
+
+
             {/* Renewal — request / awaiting proposal / accept, or ending-soon prompt.
 
                 🔴 Con un aviso de no renovación ya dado, TODO este bloque se
@@ -556,88 +643,6 @@ export default function LeaseDetailPage() {
               <NoVoyARenovar lease={lease} onCambio={refetchLease} />
             ) : null}
 
-            {/* Pay Rent CTA — visible cuando lease está activo y se puede pagar */}
-            {/* La info del período llega en su propia consulta: si llega
-                después del arriendo, la tarjeta entra; si ya estaba, no. */}
-            <Presence
-              show={Boolean(isActive && paymentInfo)}
-              initial={false}
-              className={cn(
-                'rounded-xl border p-6 lg:p-8 transition-colors duration-base',
-                periodStatus === 'PENDING_VALIDATION'
-                  ? 'bg-warning-soft border-warning/30'
-                  : periodStatus === 'APPROVED'
-                    ? 'bg-success-soft border-success/30'
-                    : 'bg-primary-soft border-primary/30'
-              )}
-            >
-              {paymentInfo && (
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-                  <div>
-                    {/* Pagar → «en verificación» → «confirmado»: la línea del
-                        estado se cruza con la nueva. */}
-                    <CrossFade swapKey={periodStatus ?? 'NONE'} className="flex items-center gap-2 mb-2">
-                      {periodStatus === 'PENDING_VALIDATION' ? (
-                        <>
-                          <Clock className="w-4 h-4 text-warning" />
-                          <span className="text-sm text-warning font-medium">
-                            {locale === 'es' ? 'Pago en verificación bancaria' : 'Payment in bank verification'}
-                          </span>
-                        </>
-                      ) : periodStatus === 'APPROVED' ? (
-                        <>
-                          <CheckCircle className="w-4 h-4 text-success" />
-                          <span className="text-sm text-success font-medium">
-                            {locale === 'es' ? 'Pago confirmado' : 'Payment confirmed'}
-                          </span>
-                        </>
-                      ) : periodStatus === 'REJECTED' ? (
-                        <>
-                          <WarningCircle className="w-4 h-4 text-danger" />
-                          <span className="text-sm text-danger font-medium">
-                            {locale === 'es' ? 'Pago rechazado — reintentar' : 'Payment rejected — retry'}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="w-4 h-4 text-primary" />
-                          <span className="text-sm text-primary font-medium">
-                            {locale === 'es' ? 'Pagar arriendo' : 'Pay rent'}
-                          </span>
-                        </>
-                      )}
-                    </CrossFade>
-                    <p className="text-4xl font-bold tracking-tight text-fg">
-                      {formatCurrency(paymentInfo.monthlyRent)}
-                    </p>
-                    <p className="text-fg-muted mt-1 flex items-center gap-1.5 capitalize">
-                      <Calendar className="w-4 h-4" />
-                      {formatPeriod(paymentInfo.currentPeriod.month, paymentInfo.currentPeriod.year)}
-                    </p>
-                    {periodStatus === 'REJECTED' && paymentInfo.currentPeriodRejectionReason && (
-                      <p className="text-xs text-danger mt-2 italic max-w-md">
-                        {paymentInfo.currentPeriodRejectionReason}
-                      </p>
-                    )}
-                  </div>
-                  {canPay && (
-                    <Button
-                      type="button"
-                      size="lg"
-                      hideArrow
-                      onClick={() => setPayModalOpen(true)}
-                      className="px-8 py-4"
-                    >
-                      <Wallet className="w-5 h-5" />
-                      {periodStatus === 'REJECTED'
-                        ? (locale === 'es' ? 'Reintentar' : 'Retry')
-                        : (locale === 'es' ? 'Pagar arriendo' : 'Pay rent')}
-                      <ArrowUpRight className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              )}
-            </Presence>
 
             {/* Quick Stats — las cifras cuentan cuando cambian (un pago aprobado). */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">

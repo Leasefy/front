@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Stagger, StaggerItem } from '@leasefy/cadence';
+import { Stagger, StaggerItem, Avatar } from '@leasefy/cadence';
 import {
   Trophy,
   Medal,
@@ -90,15 +90,6 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
     return sorted;
   }, [agentes, timeRange]);
 
-  // Get initials for avatar
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-  };
 
   const handleRowClick = (agenteId: string) => {
     router.push(`/panel/inmobiliaria/configuracion/equipo/${agenteId}`);
@@ -213,22 +204,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
 
                   {/* Agent */}
                   <div className="col-span-4 flex items-center gap-3">
-                    <div className={cn(
-                      'w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0',
-                      isFirst
-                        ? 'bg-warning-soft'
-                        : 'bg-gradient-to-br from-primary to-fg-muted'
-                    )}>
-                      {agente.avatar ? (
-                        <img
-                          src={agente.avatar}
-                          alt={agente.name}
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      ) : (
-                        getInitials(agente.name)
-                      )}
-                    </div>
+                    <Avatar name={agente.name} src={agente.avatar || undefined} size="sm" ring={isFirst} />
                     <div className="min-w-0">
                       <p className={cn(
                         'font-medium truncate text-sm',

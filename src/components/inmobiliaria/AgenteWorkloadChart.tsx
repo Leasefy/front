@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Stagger, StaggerItem } from '@leasefy/cadence';
+import { Stagger, StaggerItem, Avatar } from '@leasefy/cadence';
 import {
   ChartBar,
   Buildings,
@@ -78,15 +78,6 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
   // Get max for scaling (at least OVERLOADED_THRESHOLD for consistent scale)
   const scaleMax = Math.max(stats.max, OVERLOADED_THRESHOLD);
 
-  // Get initials for avatar
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-  };
 
   return (
     <div className={cn('rounded-lg border border-border bg-card overflow-hidden', className)}>
@@ -176,19 +167,7 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
                 >
                   <div className="flex items-center gap-4 mb-2">
                     {/* Avatar */}
-                    {agente.avatar ? (
-                      <img
-                        src={agente.avatar}
-                        alt={agente.name}
-                        className="w-8 h-8 rounded-full object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
-                        <span className="text-xs font-semibold text-primary">
-                          {getInitials(agente.name)}
-                        </span>
-                      </div>
-                    )}
+                    <Avatar name={agente.name} src={agente.avatar || undefined} size="sm" />
 
                     {/* Name and Zone */}
                     <div className="flex-1 min-w-0">

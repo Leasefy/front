@@ -15,7 +15,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select';
-import { Chip, DatePicker, IconButton, Presence } from '@leasefy/cadence';
+import { Chip, DatePicker, IconButton, Presence, Avatar } from '@leasefy/cadence';
 import { aFechaIso, fechaLocal } from '@/lib/fechas-locales';
 import type { Agente, Consignacion } from '@/lib/types/inmobiliaria';
 import { useTr } from '@/lib/i18n/use-tr';
@@ -147,15 +147,6 @@ export function PipelineFilters({
     return consignacion?.propertyTitle || t('inmobiliaria.pipeline.property');
   };
 
-  // Get initials for avatar fallback
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-  };
 
   return (
     <div className="p-4 space-y-4 border-b border-border">
@@ -198,17 +189,7 @@ export function PipelineFilters({
               .map((agente) => (
                 <SelectItem key={agente.id} value={agente.id}>
                   <span className="flex items-center gap-2">
-                    {agente.avatar ? (
-                      <img
-                        src={agente.avatar}
-                        alt={agente.name}
-                        className="w-6 h-6 rounded-full"
-                      />
-                    ) : (
-                      <span className="w-6 h-6 rounded-full bg-primary-soft flex items-center justify-center text-xs font-medium text-primary">
-                        {getInitials(agente.name)}
-                      </span>
-                    )}
+                    <Avatar name={agente.name} src={agente.avatar || undefined} size="xs" />
                     <span className="min-w-0">
                       <span className="truncate block">{agente.name}</span>
                       <span className="text-xs text-muted-foreground">{agente.zone}</span>

@@ -58,7 +58,7 @@ import {
   DropdownListSeparator,
   DropdownListTrigger,
 } from '@/components/ui/dropdown-menu';
-import { IconButton } from '@leasefy/cadence';
+import { IconButton, Avatar } from '@leasefy/cadence';
 import type {
   AgencyUser,
   AgencyRole,
@@ -346,18 +346,6 @@ export function ConfigUsuarios({
     };
   }, [users]);
 
-  // Get initials for avatar fallback. Falls back to the email when a member
-  // has no name yet (e.g. an invited member who has not completed onboarding).
-  const getInitials = (name?: string, email?: string) => {
-    const source = (name && name.trim()) || (email && email.trim()) || '';
-    if (!source) return '?';
-    return source
-      .split(/\s+/)
-      .map((n) => n[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
-  };
 
   // Handle invite submit
   const handleInvite = async (invite: UserInvite) => {
@@ -497,7 +485,6 @@ export function ConfigUsuarios({
               </TableRow>
             )}
               {pageItems.map((user) => {
-                const initials = getInitials(user.name, user.email);
                 const roleColor = getRoleColor(user.role);
                 const statusColor = getUserStatusColor(user.status);
 
@@ -524,22 +511,7 @@ export function ConfigUsuarios({
                     {/* User Info */}
                     <TableCell className="p-4">
                       <div className="flex items-center gap-3">
-                        {user.avatar ? (
-                          <img
-                            src={user.avatar}
-                            alt={user.name}
-                            className="w-10 h-10 rounded-full object-cover shrink-0"
-                          />
-                        ) : (
-                          <div className={cn(
-                            'w-10 h-10 rounded-full flex items-center justify-center shrink-0',
-                            roleColor.split(' ')[0] // Just the bg class
-                          )}>
-                            <span className={cn('text-sm font-semibold', roleColor.split(' ').slice(1).join(' '))}>
-                              {initials}
-                            </span>
-                          </div>
-                        )}
+                        <Avatar name={user.name || user.email || '?'} src={user.avatar || undefined} size="md" />
                         <div className="min-w-0">
                           <p className="font-medium text-fg dark:text-white truncate max-w-[200px]">
                             {user.name?.trim() || user.email}

@@ -18,12 +18,15 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { fetchPilotoInboxConteo } from '@/lib/api/piloto'
+import { enModoComercial } from '@/lib/nav/modo-comercial'
 
 const REFRESCO_MS = 60_000
 
 export function usePilotoBadge(): { total: number | undefined } {
   const { agency } = useAuth()
-  const agencyId = agency?.id ?? null
+  // En modo comercial el Piloto se ve en demo: no se le pregunta al micro,
+  // que todavía no conoce a esa inmobiliaria (cada pregunta era un 401).
+  const agencyId = enModoComercial(agency) ? null : agency?.id ?? null
 
   const [total, setTotal] = useState<number | undefined>(undefined)
 

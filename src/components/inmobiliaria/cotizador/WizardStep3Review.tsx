@@ -151,7 +151,7 @@ export function WizardStep3Review({
           </span>
         </label>
         <Presence show={intentoSinAutorizacion && !autorizacion}>
-          <p role="alert" className="mt-2 text-xs text-danger" data-testid="cotizador-autorizacion-falta">
+          <p role="alert" className="mt-2 text-caption text-danger" data-testid="cotizador-autorizacion-falta">
             {tf(`${S}.autorizacionFalta`, 'Marca la casilla para consultar.')}
           </p>
         </Presence>

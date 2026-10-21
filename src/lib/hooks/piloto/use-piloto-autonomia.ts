@@ -24,6 +24,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import type { VallaItem } from '@/lib/api/agent-workspace'
 import { fetchPilotoFlota, putPilotoAutonomia, type AutonomiaModo } from '@/lib/api/piloto'
+import { enModoComercial } from '@/lib/nav/modo-comercial'
 import type { AgenteId } from '@/lib/api/work-item'
 
 /**
@@ -113,7 +114,9 @@ export interface UsePilotoAutonomiaResult {
 
 export function usePilotoAutonomia(): UsePilotoAutonomiaResult {
   const { agency } = useAuth()
-  const agencyId = agency?.id ?? null
+  // En modo comercial el Piloto se ve en demo: no se le pregunta al micro,
+  // que todavía no conoce a esa inmobiliaria (cada pregunta era un 401).
+  const agencyId = enModoComercial(agency) ? null : agency?.id ?? null
 
   const [rows, setRows] = useState<AutonomiaRow[]>([])
   const [isLoading, setIsLoading] = useState(true)

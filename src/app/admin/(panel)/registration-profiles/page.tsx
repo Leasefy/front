@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Switch } from '@/components/ui/switch'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
@@ -17,6 +18,7 @@ import {
   REGISTRATION_PROFILES,
   type RegistrationProfileKey,
 } from '@/lib/constants/registration-profiles'
+import { Alert, Card } from '@leasefy/cadence'
 
 // ── Merge helpers ─────────────────────────────────────────────────────────────
 
@@ -66,32 +68,21 @@ function Toggle({
   disabled,
   busy,
   onToggle,
+  ariaLabel,
 }: {
   enabled: boolean
   disabled: boolean
   busy: boolean
   onToggle: () => void
+  ariaLabel: string
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={enabled}
+    <Switch
+      checked={enabled}
       disabled={disabled || busy}
-      onClick={onToggle}
-      className={
-        'relative inline-flex h-6 w-11 shrink-0 items-center border transition-colors rounded-none ' +
-        'disabled:opacity-40 disabled:cursor-not-allowed ' +
-        (enabled ? 'bg-ok/20 border-ok/50' : 'bg-bg-hover border-bg-border-strong')
-      }
-    >
-      <span
-        className={
-          'inline-block h-4 w-4 transition-transform ' +
-          (enabled ? 'translate-x-6 bg-ok' : 'translate-x-1 bg-fg-subtle')
-        }
-      />
-    </button>
+      onCheckedChange={() => onToggle()}
+      aria-label={ariaLabel}
+    />
   )
 }
 
@@ -153,60 +144,46 @@ export default function RegistrationProfilesPage() {
   const notReady = error instanceof ApiError && error.status === 404
 
   return (
-    <div className="p-6 lg:p-8 max-w-3xl">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="29 · registration"
         title="Perfiles de registro"
-        description="Activa o desactiva los perfiles que un usuario puede elegir al registrarse. Global a toda la plataforma. Un perfil desactivado desaparece del signup; las cuentas existentes no se tocan."
+        description="Qué puede elegir una persona al crear su cuenta en Leasefy: inquilino, propietario o inmobiliaria. Vale para toda la plataforma. Un perfil apagado deja de aparecer en el registro; las cuentas que ya existen no cambian."
       />
 
       {/* Endpoint-pending notice (backend not shipped yet) */}
       {notReady && (
-        <div className="card p-5 border-l-4 border-l-warn mb-6">
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warn">
-            backend pendiente
-          </span>
-          <p className="text-sm text-fg mt-2">
-            El endpoint <code className="font-mono">GET /registration-profiles</code> todavía no
-            existe. Mientras tanto se muestran los perfiles con su estado por defecto (todos
-            activos) y los toggles quedan deshabilitados. Ver el contrato en{' '}
-            <code className="font-mono">docs/registration-profiles.md</code>.
-          </p>
-        </div>
+        <Alert variant="warning" title="Todavía no se puede cambiar desde acá">
+          El servidor no tiene esta función (falta <code className="font-mono">GET /registration-profiles</code>). Se
+          muestran los tres perfiles encendidos, como están por defecto, y los interruptores quedan apagados.
+        </Alert>
       )}
 
       {/* Load error that is NOT a 404 */}
-      {error && !notReady && <div className="mb-6"><ErrorBlock error={error} /></div>}
+      {error && !notReady ? <ErrorBlock error={error} /> : null}
 
       {/* Action error (toggle failed / guard) */}
       {actionError && (
-        <div className="card p-4 border-l-4 border-l-bad mb-6">
-          <p className="text-sm text-bad">{actionError}</p>
-        </div>
+        <Alert variant="danger">{actionError}</Alert>
       )}
 
       {isLoading ? (
         <LoadingBlock label="cargando perfiles" />
       ) : (
-        <div className="space-y-px">
+        <div className="space-y-3">
           {rows.map((row) => (
-            <div
-              key={row.key}
-              className="card p-5 flex items-center gap-4"
-            >
+            <Card className="p-5 flex items-center gap-4" key={row.key}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-fg">{row.label}</span>
-                  <span className="font-mono text-[10px] text-fg-subtle">{row.key}</span>
                   <Pill tone={row.enabled ? 'ok' : 'muted'}>
-                    {row.enabled ? 'activo' : 'inactivo'}
+                    {row.enabled ? 'Encendido' : 'Apagado'}
                   </Pill>
                 </div>
-                <p className="text-[13px] text-fg-muted mt-1">{row.description}</p>
-                <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mt-2">
-                  últ. cambio: {fmtWhen(row.updated_at)}
+                <p className="text-caption text-fg-muted mt-1">{row.description}</p>
+                <p className="mt-2 text-caption text-fg-subtle">
+                  {row.updated_at ? `Último cambio: ${fmtWhen(row.updated_at)}` : 'Nadie lo ha cambiado'}
                   {row.updated_by ? ` · ${row.updated_by}` : ''}
-                </div>
+                </p>
               </div>
 
               <Toggle
@@ -214,17 +191,17 @@ export default function RegistrationProfilesPage() {
                 disabled={notReady}
                 busy={busyKey === row.key}
                 onToggle={() => handleToggle(row, !row.enabled)}
+                ariaLabel={`Permitir el registro como ${row.label.toLowerCase()}`}
               />
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
-      <div className="card p-4 border-l-4 border-l-brand text-xs text-fg-muted mt-6">
-        <strong>Seguro por diseño.</strong> El signup falla ABIERTO: si el backend de config no
-        responde, todos los perfiles quedan visibles para no romper el registro. Desactivar es una
-        acción explícita que persiste en el backend con audit_log.
-      </div>
+      <p className="text-caption text-fg-muted">
+        Si el servidor no responde, el registro muestra los tres perfiles para no dejar a nadie por fuera. Apagar uno
+        queda guardado y registrado con tu correo.
+      </p>
     </div>
   )
 }

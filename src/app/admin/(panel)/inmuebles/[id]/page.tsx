@@ -7,6 +7,8 @@ import { historialDelInmueble, type HistorialDelInmueble } from '@/lib/admin/inm
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { HistorialView } from './HistorialView'
+import { Card } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
 
 /**
  * /admin/inmuebles/:id — historial interno de riesgo de un inmueble
@@ -27,15 +29,15 @@ export default function HistorialDelInmueblePage() {
   if (error instanceof ApiError && error.status === 404) {
     return (
       <div className="p-6 lg:p-8">
-        <div className="card p-8 text-center">
+        <Card className="p-8 text-center">
           <p className="text-sm font-medium text-fg">Inmueble no encontrado</p>
-          <p className="text-xs text-fg-muted mt-1">
+          <p className="text-caption text-fg-muted mt-1">
             El inmueble <span className="font-mono">{id}</span> no existe en la base.
           </p>
-          <Link href="/admin/inmuebles" className="btn mt-4 inline-flex">
+          <Button asChild variant="outline" hideArrow><Link href="/admin/inmuebles" className="mt-4 inline-flex">
             ← Volver a Inmuebles
-          </Link>
-        </div>
+          </Link></Button>
+        </Card>
       </div>
     )
   }

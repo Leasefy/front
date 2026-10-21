@@ -37,6 +37,15 @@ describe('Asegurabilidad › Resumen en español de la casa (QA-IA-95)', () => {
     expect(t).not.toMatch(/\$\d+K|\d+(\.\d)?M\b/)
   })
 
+  it('la prima promedio y el costo por consulta salen al peso (son promedios, no plata guardada)', () => {
+    const kpis = { quotesHoy: 6, approvalRate: 0.41, primaPromedioMonthlyCop: 132328.57142857142, costPerQuoteCop: 12.6 } as never
+    act(() => root.render(<CotizadorKpiStrip kpis={kpis} />))
+    const t = container.textContent ?? ''
+    expect(t).toMatch(/\$\s132\.329(?![\d,])/)
+    expect(t).toMatch(/\$\s13(?![\d.,])/)
+    expect(t).not.toMatch(/,\d/)
+  })
+
   it('las aseguradoras simuladas dicen «De prueba (simulada)» y su estado en palabras, sin «Stub» ni «SLA:»', () => {
     const carriers = [
       { name: 'sura', enabled: true, mode: 'stub', slaState: 'healthy', lastVerdictAt: null },

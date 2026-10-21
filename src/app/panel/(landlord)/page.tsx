@@ -32,6 +32,7 @@ import {
 } from '@/components/landlord/ContratosConLaInmobiliaria';
 import type { LandlordProperty } from '@/lib/types/landlord';
 import type { DashboardUrgentAction, DashboardUpcomingEvent, DashboardData } from '@/lib/api/landlord.types';
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 
 const ACTION_ICONS: Record<DashboardUrgentAction['type'], React.ElementType> = {
   signature: FileText,
@@ -619,7 +620,7 @@ function PanelDelPropietarioIndependiente() {
                                     </h3>
                                     <p className="text-sm text-fg-muted mt-0.5 flex items-center gap-1.5">
                                       <MapPin className="w-3.5 h-3.5" />
-                                      {property.neighborhood}, {property.city}
+                                      {barrioYCiudad(property.neighborhood, property.city)}
                                     </p>
                                   </div>
                                   <div className="text-right">

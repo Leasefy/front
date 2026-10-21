@@ -98,6 +98,7 @@ import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { Monto } from '../Monto';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
 import { usePuedeEscribir } from '../use-puede-escribir';
+import { usePuedeRegistrar } from '../use-puede-registrar';
 import { PagarFactura } from './PagarFactura';
 import { egresoDeLaFacturaEnPalabras, sePuedePagar } from '@/lib/contabilidad/pagar-factura';
 import { CampoDeDia } from '../CampoDeDia';
@@ -153,6 +154,8 @@ export function FacturasDeProveedor({
   const [enviandoAnulacion, setEnviandoAnulacion] = useState(false);
 
   const escritura = usePuedeEscribir();
+  // El auxiliar contable registra (factura, causarla, su egreso) pero no anula.
+  const registro = usePuedeRegistrar();
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -247,9 +250,9 @@ export function FacturasDeProveedor({
   };
 
   /** Qué se puede hacer con una factura según su estado, con su motivo. */
-  const permisos = (f: FacturaDeProveedor) => {
-    if (!escritura.puede) {
-      return { causar: { puede: false, motivo: escritura.motivo }, anular: { puede: false, motivo: escritura.motivo } };
+  const permisosBase = (f: FacturaDeProveedor) => {
+    if (!registro.puede) {
+      return { causar: { puede: false, motivo: registro.motivo }, anular: { puede: false, motivo: escritura.motivo } };
     }
     if (f.estado === 'ANULADA') {
       const m = 'Esta factura está anulada.';
@@ -272,6 +275,11 @@ export function FacturasDeProveedor({
       };
     }
     return { causar: { puede: true, motivo: null }, anular: { puede: true, motivo: null } };
+  };
+  /** El auxiliar contable causa pero no anula: «anular» sigue la regla de escritura. */
+  const permisos = (f: FacturaDeProveedor) => {
+    const p = permisosBase(f);
+    return escritura.puede ? p : { ...p, anular: { puede: false, motivo: escritura.motivo } };
   };
 
   const totales = pagina?.totales;
@@ -312,8 +320,8 @@ export function FacturasDeProveedor({
         titulo="Facturas de proveedor"
         accion={
           <AccionConMotivo
-            puede={escritura.puede}
-            motivo={escritura.motivo}
+            puede={registro.puede}
+            motivo={registro.motivo}
             onClick={() => setFormularioAbierto(true)}
             variant="default"
             testId="abrir-formulario-de-factura"
@@ -561,8 +569,8 @@ export function FacturasDeProveedor({
                           {/* 🔴 CB-R21: pagar la causada crea SU egreso (Egresos → lote → doble firma). */}
                           {sePuedePagar(f) ? (
                             <AccionConMotivo
-                              puede={escritura.puede}
-                              motivo={escritura.motivo}
+                              puede={registro.puede}
+                              motivo={registro.motivo}
                               onClick={() => setPagando(f)}
                               testId={`pagar-${f.id}`}
                             >

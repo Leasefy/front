@@ -1,16 +1,16 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { ChatCircleDots, Coins, Robot, Waveform } from '@phosphor-icons/react'
+import { Alert, MonoLabel } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
-import { fmtCOP } from '@/lib/admin/format'
+import { fmtCOP, fmtDiaCorto, USD_TO_COP } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
-import { useClientPagination } from '@/lib/admin/use-client-pagination'
+import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 
-const PAGE_SIZE = 50
 
 /* ── Types (match ADMIN-API-CONTRACT.md — Costs) ────────────────────────── */
 
@@ -58,8 +58,16 @@ function num(s: string | null | undefined): number {
 
 // ── Stacked daily bar chart (plain divs, no chart lib) ─────────────────────
 
+/**
+ * Vapi y Claude cobran en dólares; acá todo va en pesos (Nico: «ninguna
+ * pantalla con dólares»), a la tasa fija del admin (`USD_TO_COP`, la misma del
+ * back y del Resumen).
+ */
+const alPeso = (dolares: number) => Math.round(dolares * USD_TO_COP)
+const pesos = (dolares: number) => fmtCOP(alPeso(dolares))
+
 function DailyStackedBars({ daily }: { daily: DailyRow[] }) {
-  if (daily.length === 0) return <div className="text-sm text-fg-muted">Sin datos.</div>
+  if (daily.length === 0) return <p className="text-body-sm text-fg-muted">Todavía no hay datos.</p>
 
   const vapiVals = daily.map((d) => num(d.vapi_cost_usd))
   const claudeVals = daily.map((d) => num(d.claude_cost_usd))
@@ -70,39 +78,35 @@ function DailyStackedBars({ daily }: { daily: DailyRow[] }) {
   const claudeTotal = claudeVals.reduce((a, b) => a + b, 0)
 
   return (
-    <div>
-      {/* Legend */}
-      <div className="flex items-center gap-4 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2 bg-bad/70" /> vapi</span>
-        <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2 bg-warn/70" /> claude</span>
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-4 text-caption text-fg-muted">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-primary" /> Vapi · {pesos(vapiTotal)}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-primary/35" /> Claude · {pesos(claudeTotal)}
+        </span>
       </div>
-      <div className="flex items-end gap-1 h-32">
+      <div className="flex h-36 items-end gap-1.5" role="img" aria-label={`Costo diario de los últimos ${daily.length} días`}>
         {totals.map((t, i) => {
           const v = vapiVals[i] ?? 0
           const c = claudeVals[i] ?? 0
-          const vH = (v / max) * 100
-          const cH = (c / max) * 100
           return (
             <div
               key={i}
-              className="flex-1 flex flex-col justify-end"
-              title={`${daily[i]?.day?.slice(5)}: Vapi USD ${v.toFixed(4)} · Claude USD ${c.toFixed(4)}`}
+              className="flex flex-1 flex-col justify-end gap-px overflow-hidden rounded-t-[6px]"
+              title={`${fmtDiaCorto(daily[i]?.day)}: Vapi ${pesos(v)} · Claude ${pesos(c)}`}
             >
-              {cH > 0 && <div className="bg-warn/70" style={{ height: `${Math.max(1, cH)}%` }} />}
-              {vH > 0 && <div className="bg-bad/70" style={{ height: `${Math.max(1, vH)}%` }} />}
-              {t === 0 && <div className="bg-bg-border" style={{ height: '2px' }} />}
+              {c > 0 && <div className="bg-primary/35" style={{ height: `${Math.max(1, (c / max) * 100)}%` }} />}
+              {v > 0 && <div className="bg-primary" style={{ height: `${Math.max(1, (v / max) * 100)}%` }} />}
+              {t === 0 && <div className="h-0.5 bg-border" />}
             </div>
           )
         })}
       </div>
-      <div className="mt-2 flex justify-between font-mono text-[10px] text-fg-subtle">
-        <span>{daily[0]?.day?.slice(5)}</span>
-        <span className="tabular-nums">
-          <span className="text-bad">Vapi USD {vapiTotal.toFixed(2)}</span>
-          {' · '}
-          <span className="text-warn">Claude USD {claudeTotal.toFixed(2)}</span>
-        </span>
-        <span>{daily[daily.length - 1]?.day?.slice(5)}</span>
+      <div className="flex justify-between font-mono text-caption text-fg-subtle">
+        <span>{fmtDiaCorto(daily[0]?.day)}</span>
+        <span>{fmtDiaCorto(daily[daily.length - 1]?.day)}</span>
       </div>
     </div>
   )
@@ -119,9 +123,6 @@ export default function CostsPage() {
 
   const mtd = costs.data?.mtd
   const perTenant = costs.data?.perTenant ?? []
-  /* Una fila por agencia ⇒ crece con el negocio. El mix por modelo de abajo NO
-     se pagina: es el conjunto cerrado de modelos LLM en uso. */
-  const perTenantPaging = useClientPagination(perTenant, PAGE_SIZE)
   const daily = costs.data?.dailySeries ?? []
   const modelMix = costs.data?.modelMix ?? []
 
@@ -134,163 +135,81 @@ export default function CostsPage() {
   // Per-tenant columns
 
   const tenantColumns: Column<PerTenantRow>[] = [
-    {
-      header: 'Inmobiliaria',
-      cell: (r) => <span className="font-medium">{r.legal_name}</span>,
-    },
-    {
-      header: 'Vapi USD',
-      align: 'right',
-      cell: (r) => (
-        <span className="tabular-nums font-mono text-xs text-bad">
-          {num(r.vapi_cost_usd).toFixed(2)}
-        </span>
-      ),
-    },
-    {
-      header: 'Claude USD',
-      align: 'right',
-      cell: (r) => (
-        <span className="tabular-nums font-mono text-xs text-bad">
-          {num(r.claude_cost_usd).toFixed(2)}
-        </span>
-      ),
-    },
-    {
-      header: 'Total USD',
-      align: 'right',
-      cell: (r) => (
-        <span className="tabular-nums font-mono text-xs">
-          {num(r.total_cost_usd).toFixed(2)}
-        </span>
-      ),
-    },
-    {
-      header: 'Total COP',
-      align: 'right',
-      cell: (r) => {
-        const totalCop = num(r.total_cost_cop)
-        return (
-          <span className="tabular-nums font-mono text-xs">
-            {totalCop > 0 ? fmtCOP(totalCop) : '—'}
-          </span>
-        )
-      },
-    },
+    { header: 'Inmobiliaria', orden: (r) => r.legal_name, texto: (r) => r.legal_name, cell: (r) => <span className="font-medium">{r.legal_name}</span> },
+    { header: 'Vapi', align: 'right', orden: (r) => num(r.vapi_cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.vapi_cost_usd)), cell: (r) => <span className="font-mono tabular-nums">{pesos(num(r.vapi_cost_usd))}</span> },
+    { header: 'Claude', align: 'right', orden: (r) => num(r.claude_cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.claude_cost_usd)), cell: (r) => <span className="font-mono tabular-nums">{pesos(num(r.claude_cost_usd))}</span> },
+    { header: 'Total', align: 'right', orden: (r) => num(r.total_cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.total_cost_usd)), cell: (r) => <span className="font-mono font-medium tabular-nums">{pesos(num(r.total_cost_usd))}</span> },
   ]
 
-  // Model mix columns
-
   const modelColumns: Column<ModelMixRow>[] = [
-    {
-      header: 'Modelo',
-      cell: (r) => <span className="font-mono text-xs">{r.model_used}</span>,
-    },
-    {
-      header: 'Invocaciones',
-      align: 'right',
-      cell: (r) => (
-        <span className="tabular-nums font-mono text-xs">
-          {num(r.count).toLocaleString('es-CO')}
-        </span>
-      ),
-    },
-    {
-      header: 'Cost USD',
-      align: 'right',
-      cell: (r) => (
-        <span className="tabular-nums font-mono text-xs text-bad">
-          {num(r.cost_usd).toFixed(4)}
-        </span>
-      ),
-    },
+    { header: 'Modelo', orden: (r) => r.model_used, texto: (r) => r.model_used, cell: (r) => <span className="font-mono text-caption">{r.model_used}</span> },
+    { header: 'Usos', align: 'right', orden: (r) => num(r.count), ordenPrimero: 'desc', texto: (r) => num(r.count), cell: (r) => <span className="font-mono tabular-nums">{num(r.count).toLocaleString('es-CO')}</span> },
+    { header: 'Costo', align: 'right', orden: (r) => num(r.cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.cost_usd)), cell: (r) => <span className="font-mono tabular-nums">{pesos(num(r.cost_usd))}</span> },
   ]
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="10 · costos"
-        title="Burn de plataforma."
-        description="Vapi + Claude (mes corriente). WhatsApp pendiente."
+        title="Costos"
+        description={`Lo que cuesta operar la plataforma este mes: voz (Vapi) y modelo (Claude). Los dos cobran en dólares; acá van en pesos a ${fmtCOP(USD_TO_COP)} por dólar. WhatsApp todavía no se mide.`}
       />
 
-      {/* ── KPIs ─────────────────────────────────────────────────────── */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <KpiCard
-          label="Vapi · mes"
-          value={`USD ${vapiMtdUsd.toFixed(2)}`}
-          hint={fmtCOP(vapiMtdCop)}
-          tone="bad"
-        />
-        <KpiCard
-          label="Claude · mes"
-          value={`USD ${claudeMtdUsd.toFixed(2)}`}
-          hint={fmtCOP(claudeMtdCop)}
-          tone="bad"
-        />
-        <KpiCard
-          label="WhatsApp · mes"
-          value="—"
-          hint="pendiente"
-        />
-        <KpiCard
-          label="Total · mes"
-          value={totalCostCop > 0 ? fmtCOP(totalCostCop) : '—'}
-          hint="Vapi + Claude en COP"
-        />
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumen del mes">
+        <KpiCard icon={<Waveform />} label="Vapi · este mes" value={fmtCOP(vapiMtdCop || vapiMtdUsd * USD_TO_COP)} hint="Las llamadas de voz" />
+        <KpiCard icon={<Robot />} label="Claude · este mes" value={fmtCOP(claudeMtdCop || claudeMtdUsd * USD_TO_COP)} hint="El modelo de los agentes" />
+        <KpiCard icon={<ChatCircleDots />} label="WhatsApp · este mes" value="—" hint="Todavía no se mide" />
+        <KpiCard icon={<Coins />} label="Total · este mes" value={totalCostCop > 0 ? fmtCOP(totalCostCop) : '—'} hint="Vapi y Claude, en pesos" />
       </section>
 
-      {/* ── Per-tenant table ──────────────────────────────────────────── */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        por inmobiliaria
-      </div>
-      <div className="mb-6">
+      <section className="space-y-3" aria-label="Por inmobiliaria">
+        <MonoLabel className="block">Por inmobiliaria</MonoLabel>
         <DataTable
           columns={tenantColumns}
-          rows={perTenantPaging.pageRows}
+          rows={costs.data ? perTenant : undefined}
           getKey={(r) => r.tenant_id}
           isLoading={costs.isLoading}
           error={costs.error}
-          emptyTitle="Sin datos de costos."
+          onReintentar={costs.refetch}
+          emptyTitle="Todavía no hay costos este mes"
+          emptyIcon={<Coins weight="bold" />}
+          aria-label="Costos por inmobiliaria"
           onRowClick={(r) => router.push(`/admin/tenants/${r.tenant_id}`)}
+          id="inmobiliarias"
+          queSon={['inmobiliaria', 'inmobiliarias']}
+          buscar="Buscar inmobiliaria"
+          ordenInicial={{ columna: 3, sentido: 'desc' }}
+          exportar="costos-por-inmobiliaria"
         />
+      </section>
 
-        <Pagination
-          page={perTenantPaging.page}
-          total={perTenantPaging.total}
-          pageSize={PAGE_SIZE}
-          onPage={perTenantPaging.setPage}
-        />
-      </div>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <section className="space-y-3" aria-label="Por modelo">
+          <MonoLabel className="block">Por modelo · este mes</MonoLabel>
+          <DataTable
+            columns={modelColumns}
+            rows={modelMix}
+            getKey={(r, i) => r.model_used ?? String(i)}
+            isLoading={costs.isLoading}
+            error={costs.error}
+            emptyTitle="No se usó ningún modelo este mes"
+            aria-label="Costos por modelo"
+            id="modelos"
+            queSon={['modelo', 'modelos']}
+            filasPorPagina={10}
+            ordenInicial={{ columna: 2, sentido: 'desc' }}
+            exportar="costos-por-modelo"
+          />
+        </section>
 
-      {/* ── Model mix ─────────────────────────────────────────────────── */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        mix por modelo · mes
-      </div>
-      <div className="mb-6">
-        <DataTable
-          columns={modelColumns}
-          rows={modelMix}
-          getKey={(r, i) => r.model_used ?? String(i)}
-          isLoading={costs.isLoading}
-          error={costs.error}
-          emptyTitle="Sin invocaciones este mes."
-        />
-      </div>
-
-      {/* ── 14-day stacked bars ───────────────────────────────────────── */}
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        vapi + claude · últimos 14 días (USD)
-      </div>
-      <div className="card p-5">
-        <DailyStackedBars daily={daily} />
+        <Tarjeta titulo="Últimos 14 días" descripcion="Vapi y Claude, en pesos.">
+          <DailyStackedBars daily={daily} />
+        </Tarjeta>
       </div>
 
-      {/* Note */}
-      <div className="card p-4 border-l-4 border-l-warn mt-6 text-sm text-fg-muted">
-        WhatsApp ($/mensaje por 360dialog) no está trackeado aún — pendiente en agent.
-        Cuando se cierre, este dashboard queda 100%.
-      </div>
+      <Alert variant="info" role="note" title="Falta WhatsApp">
+        El costo por mensaje de WhatsApp (360dialog) todavía no se registra en el micro. Cuando se registre, este
+        tablero queda completo.
+      </Alert>
     </div>
   )
 }

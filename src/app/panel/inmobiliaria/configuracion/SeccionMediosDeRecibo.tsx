@@ -36,6 +36,7 @@ import {
   apagadosDespuesDe,
   normalizarMedio,
 } from '@/lib/finanzas/medios';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { EsqueletoDeSeccion, VacioDeSeccion } from './piezas';
 
 /** Las familias en el orden en que se leen: primero lo que Portofino usa. */
@@ -77,29 +78,44 @@ export function SeccionMediosDeRecibo() {
     }));
   }, [datos]);
 
-  const cambiado = useMemo(() => {
+  /** Cuántos medios cambiaron de prendido a apagado o al revés. */
+  const cambios = useMemo(() => {
     const antes = new Set((datos?.apagados ?? []).map(normalizarMedio));
     const ahora = new Set(apagados);
-    return antes.size !== ahora.size || [...ahora].some((m) => !antes.has(m));
+    return [...ahora].filter((m) => !antes.has(m)).length + [...antes].filter((m) => !ahora.has(m)).length;
   }, [datos, apagados]);
+  const cambiado = cambios > 0;
 
-  async function guardar() {
+  async function guardar(): Promise<boolean> {
     setGuardando(true);
     try {
       const r = await finanzasApi.guardarMedios(apagados);
       setDatos(r);
       setApagados(r.apagados.map(normalizarMedio));
-      toast.success('Medios de recibo guardados.', {
-        description: 'Los recibos que ya existen no se tocan: son hechos.',
-      });
+      // Con la barra de abajo, ella dice «Cambios guardados».
+      if (!conBarra) {
+        toast.success('Medios de recibo guardados.', {
+          description: 'Los recibos que ya existen no se tocan: son hechos.',
+        });
+      }
+      return true;
     } catch (e) {
       toast.error('No se pudieron guardar los medios.', {
         description: explicar(e, 'No se pudieron guardar los medios.'),
       });
+      return false;
     } finally {
       setGuardando(false);
     }
   }
+
+  // La barra de guardado de Configuración (Nico, 20-10-2026).
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'medios-de-recibo',
+    cambios,
+    guardar,
+    descartar: () => setApagados((datos?.apagados ?? []).map(normalizarMedio)),
+  });
 
   return (
     <EstadoDeDatos
@@ -183,11 +199,17 @@ export function SeccionMediosDeRecibo() {
             </section>
           ))}
 
-          <div className="flex justify-end">
-            <Button size="sm" hideArrow onClick={() => void guardar()} disabled={!cambiado} isLoading={guardando}>
-              Guardar
-            </Button>
-          </div>
+          {conBarra ? (
+            <p className="text-caption text-fg-muted">
+              Los recibos que ya existen no se tocan al guardar: son hechos.
+            </p>
+          ) : (
+            <div className="flex justify-end">
+              <Button size="sm" hideArrow onClick={() => void guardar()} disabled={!cambiado} isLoading={guardando}>
+                Guardar
+              </Button>
+            </div>
+          )}
         </div>
       ) : null}
     </EstadoDeDatos>

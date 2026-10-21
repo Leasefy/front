@@ -1,4 +1,5 @@
 'use client';
+import { usePuedeDescargar } from '@/lib/permisos/puede-descargar';
 import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas';
 import { PropietariosMarcados } from '@/components/inmobiliaria/PropietariosMarcados';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -57,6 +58,7 @@ import { TablePagination } from '@/components/ui/pagination';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { KpiValor } from '@/components/estado/KpiValor';
+import { CifraQueCabe } from '@/components/estado/CifraQueCabe';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
@@ -527,8 +529,14 @@ function PropietariosContent() {
    * hay un filtro puesto, el archivo trae lo filtrado, no toda la base.
    */
   const [exportando, setExportando] = useState(false);
+  // 🔴 Política de datos (20-10-2026): sólo descarga quien tenga «Exportar» de Propietarios.
+  const descarga = usePuedeDescargar('propietarios');
   const handleExport = async () => {
     if (exportando) return; // dos clics seguidos = dos libros armados
+    if (!descarga.puede) {
+      toast.error('No puedes descargar el directorio', { description: descarga.porQue ?? undefined });
+      return;
+    }
     setExportando(true);
     try {
       const archivo = await descargarListaDePropietarios(propietariosFiltrados);
@@ -574,7 +582,7 @@ function PropietariosContent() {
   const valorDeTile = (valor: string) =>
     (
       <KpiValor cargando={cargandoPropietarios} fallo={errorPropietarios}>
-        {valor}
+        <CifraQueCabe>{valor}</CifraQueCabe>
       </KpiValor>
     ) as unknown as string;
 

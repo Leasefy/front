@@ -231,11 +231,11 @@ afterEach(async () => {
 })
 
 const TITULOS = [
-  'Extractos Propietarios', 'Cartera por Edades', 'Comisiones por Agente',
+  'Extractos de propietarios', 'Cartera por edades', 'Comisiones por agente',
   // 20-09: el catálogo se escribió sin tildes («Ocupacion», «Analisis de mora
   // segmentado por antiguedad», «proximos 90 dias») y se lee así en pantalla.
-  'Ocupación del Portafolio', 'Vencimientos de Contratos', 'Rendimiento de Agentes',
-  'Flujo de Caja', 'Rentabilidad por inmueble',
+  'Ocupación del portafolio', 'Vencimientos de contratos', 'Rendimiento de agentes',
+  'Flujo de caja', 'Rentabilidad por inmueble',
 ]
 
 async function montar() {
@@ -306,7 +306,7 @@ describe('/reportes — la consola queda limpia', () => {
     })
     await act(async () => { await new Promise((r) => setTimeout(r, 400)) })
 
-    expect(container.textContent).not.toContain('Cartera por Edades')
+    expect(container.textContent).not.toContain('Cartera por edades')
     expect(avisosReales(), 'búsqueda sin resultados').toEqual([])
   })
 })
@@ -344,7 +344,7 @@ describe('«Reportes» — un reporte a la vez (Nico, 01-10)', () => {
 
   it('🔴 la vista completa vive en el cajón: ocupación trae su detalle por propiedad', async () => {
     await montar()
-    const cajon = await abrirCajon('Ocupación del Portafolio')
+    const cajon = await abrirCajon('Ocupación del portafolio')
     expect(cajon.textContent).toContain('Detalle por propiedad')
     expect(cajon.textContent).toContain('Apto 101')
   })
@@ -362,14 +362,14 @@ describe('«Reportes» — un reporte a la vez (Nico, 01-10)', () => {
 
   it('los extractos dicen dónde están, y su cajón no ofrece un «Descargar CSV» que no baja nada', async () => {
     await montar()
-    const cajon = await abrirCajon('Extractos Propietarios')
+    const cajon = await abrirCajon('Extractos de propietarios')
     expect(cajon.textContent).toContain('Ir a dispersiones')
     expect(cajon.textContent).not.toContain('Descargar CSV')
   })
 
   it('cada cajón dice qué hace el archivo con el período elegido, al lado del botón', async () => {
     await montar()
-    const cajon = await abrirCajon('Cartera por Edades')
+    const cajon = await abrirCajon('Cartera por edades')
     expect(cajon.querySelector('[data-testid="nota-del-archivo"]')?.textContent).toContain('foto de hoy')
   })
 

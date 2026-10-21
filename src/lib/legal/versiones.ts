@@ -26,14 +26,17 @@
 /**
  * Política de tratamiento de datos personales publicada en `/privacidad`.
  *
- * v5.0 (15-10-2026): la inmobiliaria escribe por WhatsApp a quien firmó
- * contrato con ella, sin un «sí» aparte (§4 y §5; Nico). La v4.0 sigue en
- * `politica-v4.ts` y la v3.0 en `politica-v3.ts`.
+ * v6.0 (20-10-2026): la política de datos hermética (Nico): los agentes
+ * trabajan dentro de la plataforma (§6), el control antes de que algo salga
+ * (§11), quién ve y quién descarga (§17), y las grabaciones y transcripciones
+ * de cobranza se guardan 2 años o mientras el caso siga en jurídico (§7 y §13).
+ * La v5.0 sigue en `politica-v5.ts`, la v4.0 en `politica-v4.ts` y la v3.0 en
+ * `politica-v3.ts`.
  */
-export const VERSION_POLITICA_DE_TRATAMIENTO = 'politica-tratamiento-v5.0';
+export const VERSION_POLITICA_DE_TRATAMIENTO = 'politica-tratamiento-v6.0';
 
 /** Desde cuándo rige la versión publicada (AAAA-MM-DD). */
-export const VIGENCIA_POLITICA_DE_TRATAMIENTO = '2026-10-15';
+export const VIGENCIA_POLITICA_DE_TRATAMIENTO = '2026-10-20';
 
 /**
  * Términos y condiciones publicados en `/terminos`.

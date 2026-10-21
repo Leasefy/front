@@ -6,9 +6,16 @@
  *
  *   POST {NEXT_PUBLIC_AGENT_URL}/api/agency/{agencyId}/cartera/import
  *
- * Sube un CSV (multipart/form-data, campo `file`) y devuelve el resumen
- * { creados, actualizados, omitidos, errores[], totalRecibidos, truncado }.
- * (XLSX: el operador debe exportar a CSV — el backend no decodifica binario.)
+ * Manda las filas YA LEÍDAS en el navegador (`importRows`, JSON `{ rows }`) y
+ * devuelve el resumen { creados, actualizados, omitidos, errores[],
+ * totalRecibidos, truncado }.
+ *
+ * 🔴 20-10-2026: antes subía el ARCHIVO (multipart) y el micro lo leía como
+ * CSV. Un .xlsx —que la tarjeta aceptaba— llegaba como bytes de un ZIP y
+ * salían 26 filas «Missing required field(s)». Ahora el archivo se lee acá
+ * (`lib/importar/leer-planilla.ts`: xlsx, xls, csv, ods, cualquier hoja y
+ * encabezado) y al micro le llegan filas limpias. `importFile` queda para un
+ * CSV suelto.
  *
  * T-323: la importación es una carga de datos. NO contacta al deudor, no inicia
  * cadencia, no reporta a central. La acción requiere un click HUMANO explícito
@@ -88,6 +95,8 @@ export interface UseCarteraImportResult {
   fallo: unknown
   /** Sube un archivo CSV. Devuelve el summary o null si degradó / falló. */
   importFile: (file: File) => Promise<CarteraImportSummary | null>
+  /** Manda filas ya leídas (claves que el micro conoce). */
+  importRows: (rows: Record<string, unknown>[]) => Promise<CarteraImportSummary | null>
   /** Limpia el resumen/estado para volver a subir otro archivo. */
   reset: () => void
 }
@@ -121,8 +130,8 @@ export function useCarteraImport(): UseCarteraImportResult {
     )
   }, [])
 
-  const importFile = useCallback(
-    async (file: File): Promise<CarteraImportSummary | null> => {
+  const enviar = useCallback(
+    async (body: FormData | Record<string, unknown>): Promise<CarteraImportSummary | null> => {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       // Fail-soft silencioso: sin URL o sin agencyId no rompemos ni hacemos ruido.
       if (!agentUrl || !agencyId) {
@@ -136,16 +145,16 @@ export function useCarteraImport(): UseCarteraImportResult {
       setFallo(null)
 
       try {
-        const form = new FormData()
-        form.set('file', file, file.name)
-
+        const esArchivo = body instanceof FormData
         // multipart: NO fijamos content-type — el navegador agrega el boundary.
         const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cartera/import`,
           {
             method: 'POST',
-            headers: agentAuthHeaders(),
-            body: form,
+            headers: esArchivo
+              ? agentAuthHeaders()
+              : agentAuthHeaders({ 'Content-Type': 'application/json' }),
+            body: esArchivo ? body : JSON.stringify(body),
           },
         )
 
@@ -178,5 +187,19 @@ export function useCarteraImport(): UseCarteraImportResult {
     [agencyId, registrarFallo],
   )
 
-  return { status, summary, message, fallo, importFile, reset }
+  const importFile = useCallback(
+    (file: File) => {
+      const form = new FormData()
+      form.set('file', file, file.name)
+      return enviar(form)
+    },
+    [enviar],
+  )
+
+  const importRows = useCallback(
+    (rows: Record<string, unknown>[]) => enviar({ format: 'json', rows }),
+    [enviar],
+  )
+
+  return { status, summary, message, fallo, importFile, importRows, reset }
 }

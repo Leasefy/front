@@ -21,6 +21,9 @@ import { Button } from '@/components/ui/button'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 import type { FinalVerdict } from '@/lib/cotizador/verdict-derive'
 import { formatPrimaCop } from '@/lib/cotizador/verdict-derive'
+import { nombreDeLaAseguradora } from '@/lib/cotizador/nombre-de-la-aseguradora'
+import type { SeguimientoDeLaCotizacion } from '@/lib/cotizador/seguimiento'
+import { Spinner } from '@/components/ui/spinner'
 import { PostSeleccionSheet, type PostSeleccionCode } from './PostSeleccionSheet'
 
 const NS = 'inmobiliaria.ai.cotizador'
@@ -34,6 +37,13 @@ interface RecomendacionRailProps {
   onReQuote: () => void
   /** Pasos post-selección (visión #22) → padre. */
   onPostSeleccion: (code: PostSeleccionCode) => void
+  /** COTIZ-17: la elegida y la póliza que ya quedaron. */
+  seguimiento?: SeguimientoDeLaCotizacion | null
+  /** «Avanzar» está guardando la elegida. */
+  guardando?: boolean
+  /** El panel de pasos, abierto desde afuera. */
+  pasosAbiertos?: boolean
+  onPasosAbiertosChange?: (abierto: boolean) => void
 }
 
 export function RecomendacionRail({
@@ -42,6 +52,10 @@ export function RecomendacionRail({
   onAvanzar,
   onReQuote,
   onPostSeleccion,
+  seguimiento = null,
+  guardando = false,
+  pasosAbiertos,
+  onPasosAbiertosChange,
 }: RecomendacionRailProps) {
   const { t } = useI18n()
 
@@ -57,6 +71,7 @@ export function RecomendacionRail({
   const hasAsegurable = carriers.some(
     (c) => c.status === 'approved' || c.status === 'conditional',
   )
+  const elegida = seguimiento?.opcionElegida ?? null
 
   // Eyebrow compartido por los estados (con / sin recomendación).
   const eyebrow = (
@@ -100,8 +115,8 @@ export function RecomendacionRail({
         {mejor ? (
           <p className="mt-2 text-sm leading-snug text-fg">
             {tf(`${NS}.recomendacion.mejorOpcion`, 'Mejor opción')}:{' '}
-            <span className="font-semibold text-fg capitalize">
-              {mejor.carrier}
+            <span className="font-semibold text-fg">
+              {nombreDeLaAseguradora(mejor.carrier)}
             </span>
             {mejor.prima_mensual_cop != null && (
               <>
@@ -143,15 +158,34 @@ export function RecomendacionRail({
         <h3 className="text-sm font-semibold text-fg">
           {tf(`${NS}.recomendacion.siguienteAccion`, 'Siguiente mejor acción')}
         </h3>
+        {/* COTIZ-17: lo que ya quedó elegido (quién lo eligió está en el seguimiento). */}
+        {elegida && (
+          <p className="mt-2 text-sm text-fg" data-testid="recomendacion-elegida">
+            {tf(`${NS}.recomendacion.elegida`, 'Opción elegida')}:{' '}
+            <span className="font-semibold">{nombreDeLaAseguradora(elegida)}</span>
+            {seguimiento?.polizaNumero && (
+              <span className="text-fg-muted">{` · póliza N.º ${seguimiento.polizaNumero}`}</span>
+            )}
+          </p>
+        )}
         {hasAsegurable ? (
           <Button
             hideArrow
             onClick={onAvanzar}
+            disabled={guardando}
             data-action="avanzar"
             className="mt-3 w-full"
           >
-            {tf(`${NS}.recomendacion.avanzar`, 'Avanzar con la recomendada')}
-            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden="true" />
+            {guardando ? (
+              <Spinner size="sm" variant="current" />
+            ) : (
+              <>
+                {elegida
+                  ? tf(`${NS}.recomendacion.verPasos`, 'Ver los siguientes pasos')
+                  : tf(`${NS}.recomendacion.avanzar`, 'Avanzar con la recomendada')}
+                <ArrowRight className="w-4 h-4" weight="bold" aria-hidden="true" />
+              </>
+            )}
           </Button>
         ) : (
           <Button
@@ -168,7 +202,18 @@ export function RecomendacionRail({
       </section>
 
       {/* Post-selección (visión #22) */}
-      <PostSeleccionSheet onAction={onPostSeleccion} disabled={!hasAsegurable} />
+      <PostSeleccionSheet
+        onAction={onPostSeleccion}
+        disabled={!hasAsegurable}
+        {...(pasosAbiertos !== undefined ? { abierto: pasosAbiertos } : {})}
+        {...(onPasosAbiertosChange ? { onAbiertoChange: onPasosAbiertosChange } : {})}
+        conPoliza={Boolean(seguimiento?.polizaNumero)}
+        resumen={
+          elegida
+            ? `Sobre ${nombreDeLaAseguradora(elegida)}${seguimiento?.polizaNumero ? `, póliza N.º ${seguimiento.polizaNumero}` : ''}.`
+            : null
+        }
+      />
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
+import { enModoComercial } from '@/lib/nav/modo-comercial'
 import {
   fetchPilotoActivity,
   fetchPilotoFlota,
@@ -73,7 +74,9 @@ export interface UseEstadoDelEquipo {
 
 export function useEstadoDelEquipo(abierto: boolean): UseEstadoDelEquipo {
   const { agency } = useAuth()
-  const agencyId = agency?.id ?? null
+  // En modo comercial el Piloto se ve en demo: no se le pregunta al micro,
+  // que todavía no conoce a esa inmobiliaria (cada pregunta era un 401).
+  const agencyId = enModoComercial(agency) ? null : agency?.id ?? null
   const [flota, setFlota] = useState<PilotoFlotaResponse | null>(null)
   const [actividad, setActividad] = useState<ActivityItem[]>([])
   const [cargando, setCargando] = useState(false)

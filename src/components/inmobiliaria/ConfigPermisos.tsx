@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { Presence } from '@leasefy/cadence';
 import {
   ArrowClockwise,
@@ -85,7 +86,7 @@ type Matrices = Partial<Record<RolDeLaMatriz, RolePermissions>>;
 
 interface ConfigPermisosProps {
   permissions: Matrices;
-  onSave?: (permissions: Matrices) => void;
+  onSave?: (permissions: Matrices) => Promise<boolean | void> | boolean | void;
   /**
    * Reset every role to the system defaults on the server (destructive — also
    * clears per-member overrides). When provided, "Restablecer" delegates here
@@ -409,11 +410,41 @@ export function ConfigPermisos({
     setHasChanges(true);
   };
 
+  /*
+   * Dentro de Configuración (Nico, 20-10-2026): «Guardar cambios» de la barra
+   * de abajo abre la MISMA confirmación de siempre —con qué cambia— y espera la
+   * respuesta. Cancelar deja todo como estaba, sin error.
+   */
+  const alConfirmar = useRef<((r: boolean | 'cancelado') => void) | null>(null);
+  const responder = (r: boolean | 'cancelado') => {
+    alConfirmar.current?.(r);
+    alConfirmar.current = null;
+  };
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'permisos-por-rol',
+    cambios: hasChanges ? Math.max(1, cambios.length) : 0,
+    guardar: () =>
+      new Promise<boolean | 'cancelado'>((resolve) => {
+        alConfirmar.current = resolve;
+        setConfirmDialogOpen(true);
+      }),
+    descartar: () => {
+      setPermissions(initialPermissions);
+      setHasChanges(false);
+    },
+  });
+
   // Save changes
-  const handleSave = () => {
-    onSave?.(permissions);
-    setHasChanges(false);
+  const handleSave = async () => {
     setConfirmDialogOpen(false);
+    let ok: boolean | void = true;
+    try {
+      ok = await onSave?.(permissions);
+    } catch {
+      ok = false;
+    }
+    if (ok !== false) setHasChanges(false);
+    responder(ok !== false);
   };
 
   return (
@@ -439,6 +470,7 @@ export function ConfigPermisos({
             <ArrowClockwise className="w-4 h-4 mr-2" />
             {t('inmobiliaria.config.permissions.reset')}
           </Button>
+          {conBarra ? null : (
           <Button
             size="sm"
             hideArrow
@@ -457,13 +489,14 @@ export function ConfigPermisos({
               </>
             )}
           </Button>
+          )}
         </div>
       </div>
 
       {/* Unsaved changes indicator */}
       {/* Entra bajando y, al guardar o descartar, SALE (antes desaparecía de golpe). */}
       <Presence
-        show={hasChanges}
+        show={hasChanges && !conBarra}
         direction="down"
         className="flex items-center gap-2 p-3 rounded-md bg-warning-soft border border-warning/30"
       >
@@ -695,7 +728,13 @@ export function ConfigPermisos({
       </Tabs>
 
       {/* Confirm Save Dialog */}
-      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+      <Dialog
+        open={confirmDialogOpen}
+        onOpenChange={(abierto) => {
+          setConfirmDialogOpen(abierto);
+          if (!abierto) responder('cancelado');
+        }}
+      >
         <DialogContent size="sm" variant="confirm" icon={<ShieldCheck weight="bold" />}>
           <DialogHeader>
             <DialogTitle>{t('inmobiliaria.config.permissions.confirmTitle')}</DialogTitle>
@@ -715,7 +754,13 @@ export function ConfigPermisos({
             </ul>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setConfirmDialogOpen(false);
+                responder('cancelado');
+              }}
+            >
               {t('inmobiliaria.config.permissions.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={isLoading}>

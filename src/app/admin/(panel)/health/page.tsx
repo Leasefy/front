@@ -8,6 +8,8 @@ import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import type { PillTone } from '@/lib/admin/types'
+import { Card, MonoLabel } from '@leasefy/cadence'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 // ─── Types (co-located, per FRONT.md §6.21) ────────────────────────────────
 
@@ -80,10 +82,9 @@ export default function HealthPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-5xl">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="sistema"
-        title="System status"
+        title="Salud del sistema"
         description="13 checks en paralelo · timeout individual 5 s · auto-refresca cada 30 s."
       />
 
@@ -94,9 +95,9 @@ export default function HealthPage() {
         <>
           {/* Global status (worst-of-13, computed server-side) */}
           <div className="flex items-center gap-3 mb-4">
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
+            <MonoLabel>
               estado global
-            </span>
+            </MonoLabel>
             <Pill tone={statusTone(data.status)}>{data.status}</Pill>
           </div>
 
@@ -114,56 +115,56 @@ export default function HealthPage() {
             if (!checks?.length) return null
             return (
               <section key={cat} className="mb-6">
-                <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+                <MonoLabel className="block mb-3">
                   {CATEGORY_LABEL[cat]}
-                </div>
-                <div className="card overflow-x-auto">
-                  <table className="w-full text-sm table-zebra">
-                    <thead>
-                      <tr className="border-b border-bg-border">
-                        <th className="text-left px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle w-28">
+                </MonoLabel>
+                <Card className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-border">
+                        <TableHead >
                           Status
-                        </th>
-                        <th className="text-left px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
+                        </TableHead>
+                        <TableHead >
                           Servicio
-                        </th>
-                        <th className="text-right px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle w-20">
+                        </TableHead>
+                        <TableHead className="text-right">
                           Latencia
-                        </th>
-                        <th className="text-left px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
+                        </TableHead>
+                        <TableHead >
                           Detalle
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {checks.map((c) => (
-                        <tr key={c.name} className="border-b border-bg-border last:border-0">
-                          <td className="px-3 py-2.5">
+                        <TableRow key={c.name} className="border-b border-border last:border-0">
+                          <TableCell >
                             <Pill tone={statusTone(c.status)}>{c.status}</Pill>
-                          </td>
-                          <td className="px-3 py-2.5 font-medium text-fg">{c.name}</td>
-                          <td className="px-3 py-2.5 text-right tabular-nums font-mono text-xs text-fg-muted">
+                          </TableCell>
+                          <TableCell className="font-medium text-fg">{c.name}</TableCell>
+                          <TableCell className="text-right tabular-nums font-mono text-caption text-fg-muted">
                             {c.latency_ms != null ? `${c.latency_ms}ms` : '—'}
-                          </td>
-                          <td className="px-3 py-2.5 text-xs text-fg-muted font-mono">
+                          </TableCell>
+                          <TableCell className="text-caption text-fg-muted font-mono">
                             {c.detail ?? '—'}
                             {c.required_env && (
-                              <span className="ml-2 pill pill-warn text-[9px]">{c.required_env}</span>
+                              <Pill tone="warn" className="ml-2 text-[9px]">{c.required_env}</Pill>
                             )}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
+                    </TableBody>
+                  </Table>
+                </Card>
               </section>
             )
           })}
 
-          <div className="card p-4 mt-2 border-l-4 border-l-fg-subtle text-xs text-fg-muted">
-            Para activar un check <span className="pill">unconfigured</span>, agrega el env var indicado
+          <Card className="p-4 mt-2 border-l-4 border-l-fg-subtle text-caption text-fg-muted">
+            Para activar un check <Pill tone="neutral">unconfigured</Pill>, agrega el env var indicado
             a <code className="font-mono">.env.local</code> y recarga la página.
-          </div>
+          </Card>
         </>
       )}
     </div>

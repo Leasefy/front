@@ -42,7 +42,7 @@ export function CalificacionDelPostulante({ applicationId }: { applicationId: st
       {r && (
         <section className="space-y-1.5" data-testid="calificacion-del-postulante">
           <TarjetaDeCalificacion calificacion={r.calificacion} className="p-4" compacta />
-          <p className="text-xs text-fg-subtle">
+          <p className="text-caption text-fg-subtle">
             {r.alcance === 'TODO_LEASEFY'
               ? tr('Con todo su historial en Leasefy.')
               : tr('Sólo lo que pasó con tu inmobiliaria: no autorizó compartir su calificación.')}

@@ -6,9 +6,10 @@
 // agency-cotizador-quote-detail.ts endpoint added in the same commit batch.
 // Without this, the page renders `—`/`0` placeholders for inputs.
 
-import { useEffect, useState } from 'react'
-import { useAuth } from '@/lib/auth'
+import { useContext, useEffect, useState } from 'react'
+import { AuthContext } from '@/lib/auth/auth-context'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import type { SeguimientoDeLaCotizacion } from '@/lib/cotizador/seguimiento'
 
 export interface QuoteMetadata {
   quoteId: string
@@ -27,15 +28,23 @@ export interface QuoteMetadata {
   // Backend (Plan 33-03) returns null for first-time quotes. Surfaces the
   // ReQuoteOfBadge subtitle on the detail page.
   reQuoteOf: string | null
+  /**
+   * COTIZ-17/18 (19-10-2026): el nombre del candidato, la elegida y la póliza.
+   * Un micro anterior no lo manda; `disponible: false` = falta la migración.
+   */
+  seguimiento?: SeguimientoDeLaCotizacion
 }
 
 export function useQuoteMetadata(quoteId: string): {
   data: QuoteMetadata | null
   isLoading: boolean
   error: string | null
+  /** COTIZ-17: lo que devolvió el PUT del seguimiento, sin volver a pedir el detalle. */
+  actualizarSeguimiento: (s: SeguimientoDeLaCotizacion) => void
 } {
-  const { agency } = useAuth()
-  const agencyId = agency?.id ?? null
+  // Sin exigir la sesión (COTIZ-17: «Nuevo contrato» lo usa sólo con
+  // `?cotizacion=`): sin sesión o sin cotización, no pide nada.
+  const agencyId = useContext(AuthContext)?.agency?.id ?? null
   const [data, setData] = useState<QuoteMetadata | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -80,5 +89,8 @@ export function useQuoteMetadata(quoteId: string): {
     }
   }, [quoteId, agencyId])
 
-  return { data, isLoading, error }
+  const actualizarSeguimiento = (seguimiento: SeguimientoDeLaCotizacion) =>
+    setData((d) => (d ? { ...d, seguimiento } : d))
+
+  return { data, isLoading, error, actualizarSeguimiento }
 }

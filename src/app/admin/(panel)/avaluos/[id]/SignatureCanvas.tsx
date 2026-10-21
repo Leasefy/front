@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
 
 /**
  * SignatureCanvas — the reviewer's mouse/touch-drawn signature (FASE FIRMA).
@@ -110,18 +111,18 @@ export function SignatureCanvas({
         onPointerUp={end}
         onPointerLeave={end}
         className={
-          'w-full max-w-[480px] rounded border border-bg-border bg-white touch-none ' +
+          'w-full max-w-[480px] rounded border border-border bg-white touch-none ' +
           (disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-crosshair')
         }
         aria-label="Panel de firma — dibuja tu firma con el mouse o el dedo"
       />
       <div className="flex items-center justify-between mt-2 max-w-[480px]">
-        <span className="text-xs text-fg-muted">
+        <span className="text-caption text-fg-muted">
           {hasDrawn ? 'Firma capturada.' : 'Opcional — sin firma se usa la constancia electrónica.'}
         </span>
-        <button type="button" onClick={clear} disabled={disabled || !hasDrawn} className="btn">
+        <Button variant="outline" hideArrow type="button" onClick={clear} disabled={disabled || !hasDrawn}>
           Limpiar
-        </button>
+        </Button>
       </div>
     </div>
   )

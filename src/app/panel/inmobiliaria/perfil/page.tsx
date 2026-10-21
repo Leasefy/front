@@ -64,6 +64,10 @@ const AGENCY_ROLE_LABELS: Record<string, string> = {
   COORDINADOR: 'Coordinador',
   AUXILIAR_CARTERA: 'Auxiliar de cartera',
   ABOGADO_EXTERNO: 'Abogado externo',
+  AUXILIAR_COMERCIAL: 'Auxiliar comercial',
+  AUXILIAR_ADMINISTRATIVO: 'Auxiliar administrativo',
+  AUXILIAR_CONTABLE: 'Auxiliar contable',
+  AUXILIAR_MANTENIMIENTO: 'Auxiliar de mantenimiento',
 };
 
 const AGENCY_ROLE_DESC: Record<string, string> = {
@@ -74,6 +78,10 @@ const AGENCY_ROLE_DESC: Record<string, string> = {
   COORDINADOR: 'Ve el equipo y reasigna. No mueve plata.',
   AUXILIAR_CARTERA: 'Hace recibos. No anula ni condona.',
   ABOGADO_EXTERNO: 'Sólo sus casos jurídicos.',
+  AUXILIAR_COMERCIAL: 'Apoya al asesor: interesados, visitas e inmuebles. No ve la plata del propietario ni firma.',
+  AUXILIAR_ADMINISTRATIVO: 'Arma contratos, documentos y actas; atiende solicitudes. No firma, no ve plata, no termina contratos.',
+  AUXILIAR_CONTABLE: 'Registra asientos, egresos y facturas de proveedor. No cierra el mes, no aprueba pagos, no anula ni emite facturas.',
+  AUXILIAR_MANTENIMIENTO: 'Solicitudes y reparaciones; coordina proveedores. No aprueba costos ni pagos.',
 };
 
 /** Prefijo de los `id` de los campos de esta pantalla (foco y `aria-describedby`). */

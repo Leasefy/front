@@ -70,8 +70,8 @@ vi.mock('@/lib/reportes/exportables', async (importOriginal) => ({
   descargarBlob: descargarBlobMock,
 }))
 
-vi.mock('@/components/inmobiliaria/reports/GraficoDeRentabilidad', () => ({
-  TOP_DEL_GRAFICO: 10,
+vi.mock('@/components/inmobiliaria/reports/GraficoDeRentabilidad', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/components/inmobiliaria/reports/GraficoDeRentabilidad')>()),
   GraficoDeRentabilidad: ({ filas }: { filas: unknown[] }) =>
     React.createElement('div', { 'data-testid': 'grafico', 'data-barras': filas.length }),
 }))

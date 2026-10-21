@@ -214,6 +214,14 @@ export function TripulanteConPopover({ m, pilotoEncendido, accionesHoy, esperan 
                 </span>
                 {m.ultimo && <span className="shrink-0 font-mono text-caption tabular-nums text-fg-subtle">{relativeTime(m.ultimo.at, t)}</span>}
               </span>
+              {/* NITI-2 (Nico 19-10): «Copiloto · sólo lo que ya propuso» cuando Leasefy
+                  le apagó una parte (la revisión de avisos de Niti). En su propia
+                  línea: a 4 columnas la tarjeta mide 264 px y junto al modo se cortaba. */}
+              {m.corre && m.enParte && (
+                <span className="text-caption leading-snug text-fg-muted" data-fila="en-parte" data-testid={`tripulante-${m.agente}-en-parte`}>
+                  {TEXTOS.tripulacion.enParte(m.enParte)}
+                </span>
+              )}
               <span className="block min-w-0 truncate text-caption text-fg-muted" title={linea} data-fila="ultimo">
                 {m.trabajando ? <span className="font-medium text-primary">{TEXTOS.enVivo.ahora} · </span> : null}
                 {linea}
@@ -293,7 +301,7 @@ function DetalleDelAgente({
       )}
 
       <section className="space-y-1">
-        <MonoLabel>{m.corre ? TEXTOS.agente.suModo(modo) : TEXTOS.tripulacion.apagado}</MonoLabel>
+        <MonoLabel>{m.corre ? TEXTOS.agente.suModo(m.enParte ? `${modo} · ${m.enParte}` : modo) : TEXTOS.tripulacion.apagado}</MonoLabel>
         <p className="line-clamp-3 text-caption text-fg-muted">{m.corre ? (m.efectoReal ?? (m.actua ? '' : TEXTOS.tripulacion.corre)) : (m.porQueNoCorre ?? TEXTOS.tripulacion.apagado)}</p>
       </section>
 

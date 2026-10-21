@@ -54,6 +54,14 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { leerPlanilla } from '@/lib/importar/leer-planilla';
+import {
+  CAMPOS_DE_EXTRACTO,
+  ajustarMapeoDeExtracto,
+  armarFilasDeExtracto,
+  faltantesDelMapeo,
+} from '@/lib/cobros/extracto-bancario';
+import { csvParaElAgente } from '@/lib/cobros/extracto-para-el-agente';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { Button } from '@/components/ui/button';
@@ -451,15 +459,48 @@ export function ConciliacionDelAgente() {
     e.target.value = ''; // reset so re-selecting the same file fires onChange
     if (!file) return;
 
-    const text = await file.text();
-    if (!text.trim()) {
-      toast.error(t(k('uploadError')), { description: t(k('uploadEmptyFile')) });
+    // 🔴 20-10-2026 (Nico: «igual para conciliación»): el extracto se lee COMO
+    // VENGA (Excel o CSV, cualquier orden de columnas, con la cuenta arriba) y
+    // se reescribe en el formato del banco que el micro lee por posición.
+    setUploading(true);
+    let csv: string;
+    let descartadas = 0;
+    try {
+      const leida = await leerPlanilla(file, CAMPOS_DE_EXTRACTO);
+      const mapeo = ajustarMapeoDeExtracto(leida.mapeo);
+      const faltan = faltantesDelMapeo(mapeo);
+      if (faltan.length > 0) {
+        setUploading(false);
+        toast.error(t(k('uploadError')), {
+          description: `No encontramos ${faltan.join(', ').toLowerCase()} en el archivo. Usa «Cargar extracto» arriba para elegir las columnas a mano.`,
+        });
+        return;
+      }
+      const armadas = armarFilasDeExtracto(leida.filas, mapeo);
+      descartadas = armadas.descartadas.length;
+      if (armadas.filas.length === 0) {
+        setUploading(false);
+        toast.error(t(k('uploadError')), { description: t(k('uploadEmptyFile')) });
+        return;
+      }
+      csv = csvParaElAgente(armadas.filas, bank);
+    } catch (error) {
+      setUploading(false);
+      toast.error(t(k('uploadError')), {
+        description: mensajeParaLaPersona(error, { porDefecto: 'No se pudo leer el archivo.' }),
+      });
       return;
     }
 
-    setUploading(true);
-    const result = await ingestStatement(bank, text);
+    const result = await ingestStatement(bank, csv);
     setUploading(false);
+    if (result.ok && descartadas > 0) {
+      toast.warning(
+        descartadas === 1
+          ? '1 línea del archivo no se pudo leer (sin fecha o sin valor) y no se mandó.'
+          : `${descartadas} líneas del archivo no se pudieron leer (sin fecha o sin valor) y no se mandaron.`,
+      );
+    }
 
     if (result.ok) {
       toast.success(t(k('uploadSuccess')), {
@@ -708,7 +749,7 @@ export function ConciliacionDelAgente() {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv,text/csv"
+            accept=".csv,.txt,.xlsx,.xls,.ods,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             className="hidden"
             onChange={handleFileSelected}
           />

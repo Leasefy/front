@@ -2048,6 +2048,10 @@
               "COORDINADOR",
               "AUXILIAR_CARTERA",
               "ABOGADO_EXTERNO",
+              "AUXILIAR_COMERCIAL",
+              "AUXILIAR_ADMINISTRATIVO",
+              "AUXILIAR_CONTABLE",
+              "AUXILIAR_MANTENIMIENTO",
               "OPERATOR"
             ],
             "example": "ADMIN"
@@ -2693,6 +2697,10 @@
               "COORDINADOR",
               "AUXILIAR_CARTERA",
               "ABOGADO_EXTERNO",
+              "AUXILIAR_COMERCIAL",
+              "AUXILIAR_ADMINISTRATIVO",
+              "AUXILIAR_CONTABLE",
+              "AUXILIAR_MANTENIMIENTO",
               "OPERATOR"
             ]
           }
@@ -4363,6 +4371,12 @@
             "minLength": 8,
             "maxLength": 8
           },
+          "nombreCandidato": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "canonCop": {
             "type": "number",
             "minimum": 0
@@ -5040,6 +5054,128 @@
           "autorizacionConfirmada"
         ]
       },
+      "AgencyCotizadorSeguimiento": {
+        "type": "object",
+        "properties": {
+          "disponible": {
+            "type": "boolean"
+          },
+          "nombreCandidato": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "opcionElegida": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "opcionElegidaPor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "opcionElegidaAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "polizaNumero": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "polizaRegistradaPor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "polizaRegistradaAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "disponible",
+          "nombreCandidato",
+          "opcionElegida",
+          "opcionElegidaPor",
+          "opcionElegidaAt",
+          "polizaNumero",
+          "polizaRegistradaPor",
+          "polizaRegistradaAt"
+        ]
+      },
+      "AgencyCotizadorSeguimientoError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "campos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SobreDeErrorCampo"
+            }
+          },
+          "referencia": {
+            "type": "string"
+          },
+          "servicio": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AgencyCotizadorSeguimientoBody": {
+        "type": "object",
+        "properties": {
+          "opcionElegida": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "polizaNumero": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          }
+        }
+      },
       "AgencyCotizadorQuoteDetailResponse": {
         "type": "object",
         "properties": {
@@ -5077,6 +5213,9 @@
               "null"
             ],
             "format": "uuid"
+          },
+          "seguimiento": {
+            "$ref": "#/components/schemas/AgencyCotizadorSeguimiento"
           }
         },
         "required": [
@@ -13052,6 +13191,10 @@
             "minimum": 0,
             "description": "Deudores que ENTRARON al embudo (fila nueva en agent.debtor_states). Sin esa fila no los llama la cadencia ni aparecen en el panel, así que este número —y no `creados`— dice cuántos empiezan a gestionarse."
           },
+          "moriAvisado": {
+            "type": "boolean",
+            "description": "Se le avisó a Mori que arranque con esta cartera (20-10-2026). Que llame o no lo deciden sus rejas: horario, frecuencia, autonomía del Piloto y arranque en frío."
+          },
           "sinVencimiento": {
             "type": "integer",
             "minimum": 0,
@@ -15493,11 +15636,15 @@
             "items": {
               "type": "string"
             }
+          },
+          "pausadaPorLeasefy": {
+            "type": "boolean"
           }
         },
         "required": [
           "agentes",
-          "llavesFinas"
+          "llavesFinas",
+          "pausadaPorLeasefy"
         ]
       },
       "AiHubGobiernoPutBody": {
@@ -15564,6 +15711,12 @@
             "type": "boolean"
           },
           "porQueNoCorre": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "enParte": {
             "type": [
               "string",
               "null"
@@ -40713,6 +40866,122 @@
         }
       }
     },
+    "/api/agency/{agencyId}/cotizador/quote/{quoteId}/seguimiento": {
+      "put": {
+        "operationId": "putAgencyCotizadorSeguimiento",
+        "summary": "Guarda la aseguradora elegida y/o el número de la póliza de una cotización.",
+        "description": "COTIZ-17 (19-10-2026): «Avanzar con la recomendada» guarda la elegida (quién y cuándo); «Radicar la póliza» registra a mano su número. La elegida tiene que haber respaldado al candidato; la póliza necesita una elegida. Sin la migración del seguimiento: 503 FALTA_UNA_MIGRACION.",
+        "tags": [
+          "agency-cotizador"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "quoteId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyCotizadorSeguimientoBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "El seguimiento como quedó",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyCotizadorSeguimiento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos o una aseguradora que no respaldó al candidato",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyCotizadorSeguimientoError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyCotizadorSeguimientoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin cotizador:create-quote",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyCotizadorSeguimientoError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "La cotización no es de esta inmobiliaria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyCotizadorSeguimientoError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SIN_OPCION_ELEGIDA o POLIZA_REGISTRADA",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyCotizadorSeguimientoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin base o FALTA_UNA_MIGRACION",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyCotizadorSeguimientoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agency/{agencyId}/cotizador/quote/{quoteId}": {
       "get": {
         "operationId": "getAgencyCotizadorQuoteDetail",
@@ -54474,6 +54743,55 @@
           },
           "404": {
             "description": "Agente desconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Leasefy pausó los agentes de esta inmobiliaria",
             "content": {
               "application/json": {
                 "schema": {

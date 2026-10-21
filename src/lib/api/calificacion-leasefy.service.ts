@@ -87,7 +87,7 @@ export interface ContratoDeLaPersona {
   cuotasContadas: number;
   cuotasATiempo: number;
   peorAtrasoDias: number;
-  termino: 'VIGENTE' | 'SIN_DEUDA' | 'CON_DEUDA' | 'JURIDICO';
+  termino: 'VIGENTE' | 'SIN_DEUDA' | 'CON_DEUDA' | 'JURIDICO' | 'EVALUADO';
   deudaVencidaCop: number;
 }
 

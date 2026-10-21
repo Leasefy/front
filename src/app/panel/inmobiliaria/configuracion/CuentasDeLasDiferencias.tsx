@@ -55,6 +55,7 @@ import {
   type EventoDeDiferencia,
   type ResultadoDelReproceso,
 } from '@/lib/api/cuentas-de-las-diferencias';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { EsqueletoDeSeccion } from './piezas';
 import { ESPACIO_DE_LA_PLATA, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
@@ -131,7 +132,43 @@ export function CuentasDeLasDiferencias() {
     void cargar();
   }, [cargar]);
 
+  /*
+   * Dentro de Configuración (Nico, 20-10-2026): elegir una cuenta sólo marca;
+   * todas las elegidas se guardan juntas, en una escritura, con la barra.
+   */
+  const [elegidas, setElegidas] = useState<Partial<Record<EventoDeDiferencia, string | null>>>({});
+  const pendientes = (Object.entries(elegidas) as Array<[EventoDeDiferencia, string | null]>).filter(
+    ([evento, cuentaId]) => (cuentaId ?? null) !== (datos?.eventos.find((e) => e.evento === evento)?.cuenta?.id ?? null),
+  );
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'cuentas-de-las-diferencias',
+    cambios: pendientes.length,
+    guardar: async () => {
+      if (pendientes.length === 0) return true;
+      setGuardando(pendientes[0][0]);
+      try {
+        setDatos(await cuentasDeLasDiferenciasApi.guardar(pendientes.map(([evento, cuentaId]) => ({ evento, cuentaId }))));
+        setElegidas({});
+        setPorAsentar(await cuentasDeLasDiferenciasApi.porAsentar().catch(() => null));
+        return true;
+      } catch (e) {
+        toast.error(
+          mensajeParaLaPersona(e, { porDefecto: 'No se pudieron guardar las cuentas.', accion: 'guardar las cuentas de las diferencias' }),
+        );
+        return false;
+      } finally {
+        setGuardando(null);
+      }
+    },
+    descartar: () => setElegidas({}),
+    activo: Boolean(datos?.disponible) && escritura.puede,
+  });
+
   async function elegir(evento: EventoDeDiferencia, cuentaId: string | null) {
+    if (conBarra) {
+      setElegidas((x) => ({ ...x, [evento]: cuentaId }));
+      return;
+    }
     setGuardando(evento);
     try {
       const r = await cuentasDeLasDiferenciasApi.guardar([{ evento, cuentaId }]);
@@ -237,7 +274,7 @@ export function CuentasDeLasDiferencias() {
                   <div className="space-y-1.5">
                     <SelectorDeCuenta
                       cuentas={cuentas}
-                      value={e.cuenta?.id ?? ''}
+                      value={(e.evento in elegidas ? elegidas[e.evento] : e.cuenta?.id) ?? ''}
                       onChange={(id) => void elegir(e.evento, id || null)}
                       soloImputables
                       disabled={

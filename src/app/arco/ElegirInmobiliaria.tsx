@@ -101,7 +101,7 @@ export function ElegirInmobiliaria({ inmobiliarias }: { inmobiliarias: Inmobilia
             </Stagger>
           )}
           {visibles.length > 0 && (
-            <p className="mt-4 text-xs text-fg-subtle">{t('inmobiliaria.ai.arco.public.elegir.noEsta')}</p>
+            <p className="mt-4 text-caption text-fg-subtle">{t('inmobiliaria.ai.arco.public.elegir.noEsta')}</p>
           )}
         </>
       )}

@@ -24,6 +24,16 @@ import en from './locales/en.json';
 
 const BLOQUES = ['inquilinos', 'migracion'] as const;
 
+/**
+ * Claves que son iguales en los dos idiomas porque no tienen palabras: sólo
+ * los valores que llegan de afuera. La cartera por factura (develop, 18-10)
+ * las trajo para la fila que no tiene número.
+ */
+const IGUALES_A_PROPOSITO: readonly string[] = [
+  'migracion.cartera.sinEnviarItemSinNumero', // '{{motivo}}'
+  'migracion.cartera.problemasItemSinNumero', // '{{documento}}: {{motivo}}'
+];
+
 /** Lo que consume `/panel/inmobiliaria/inquilinos`. */
 const CLAVES_DE_INQUILINOS = [
   'eyebrow',
@@ -195,6 +205,7 @@ describe('las claves de Inquilinos y Migración', () => {
     for (const bloque of BLOQUES) {
       const identicas = hojas(leer(es, bloque))
         .map((c) => `${bloque}.${c}`)
+        .filter((c) => !IGUALES_A_PROPOSITO.includes(c))
         .filter((c) => leer(es, c) === leer(en, c));
       expect(identicas, `sin traducir en ${bloque}`).toEqual([]);
     }

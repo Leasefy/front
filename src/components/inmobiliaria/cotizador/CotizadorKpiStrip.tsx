@@ -25,9 +25,11 @@ import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotiza
 /**
  * QA-IA-95 (05-10-2026): la plata como en la casa («$ 54.600», «$ 1.400.000»),
  * no «$55K» ni «$1.4M» (abreviaturas y punto decimal en inglés).
+ * Al peso (QA 19-10-2026): la prima promedio y el costo por consulta son
+ * promedios calculados, no plata guardada; sin redondear decían «$ 132.328,57».
  */
 function formatCOP(value: number): string {
-  return formatCurrency(value)
+  return formatCurrency(Math.round(value))
 }
 
 /** t() with raw-key fallback so a missing key never renders the path. */

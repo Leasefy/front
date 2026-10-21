@@ -40,7 +40,7 @@ import {
   useCobros,
   useMantenimientos,
 } from '@/lib/hooks/useInmobiliaria';
-import { SIN_MEDIR, anchoDeBarra, tasaMedida, textoDeTasa } from '@/lib/tasas';
+import { SIN_MEDIR, anchoDeBarra, tasaMedida, tasaEnPantalla } from '@/lib/tasas';
 import { claveDelRotulo, fraseDeLasCifras, tasaDelTablero } from '@/lib/tasa-de-recaudo';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
@@ -107,7 +107,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
               <TrendDown weight="bold" className="h-3 w-3 text-ink-fg/80" />
             )}
             <span className="font-sans text-[11.5px] font-medium tabular-nums text-ink-fg/90">
-              {trend.isPositive ? '+' : ''}{trend.value}%
+              {trend.isPositive ? '+' : ''}{tasaEnPantalla(trend.value, Number.isInteger(trend.value) ? 0 : 1)}
             </span>
             <span className="font-sans text-[11.5px] text-ink-fg/60">{t('inmobiliaria.common.vsLastMonth')}</span>
           </div>
@@ -144,7 +144,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
             <TrendDown weight="bold" className="h-3 w-3 text-danger" />
           )}
           <span className={cn('text-xs font-medium tabular-nums', trend.isPositive ? 'text-fg-muted' : 'text-danger')}>
-            {trend.isPositive ? '+' : ''}{trend.value}%
+            {trend.isPositive ? '+' : ''}{tasaEnPantalla(trend.value, Number.isInteger(trend.value) ? 0 : 1)}
           </span>
           <span className="text-xs text-fg-muted">{t('inmobiliaria.common.vsLastMonth')}</span>
         </div>
@@ -233,13 +233,17 @@ function PipelineMiniCard({ item }: { item: PipelineItem }) {
 
   return (
     <div className="flex items-center gap-3 rounded-md border border-border bg-surface-muted p-3">
-      <div className="h-10 w-10 rounded-md bg-surface-muted overflow-hidden">
-        {item.propertyThumbnail && (
+      {/* QA 20-10: sin foto, la caja era del mismo color que la fila y quedaba un
+          hueco vacío a la izquierda: sin foto va el ícono del inmueble. */}
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-surface">
+        {item.propertyThumbnail ? (
           <img
             src={item.propertyThumbnail}
             alt=""
             className="h-full w-full object-cover"
           />
+        ) : (
+          <House weight="duotone" className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
         )}
       </div>
       <div className="flex-1 min-w-0">
@@ -277,7 +281,7 @@ function AgentMiniCard({
           {agent.name}
         </p>
         <p className="text-xs text-fg-muted">
-          {t('inmobiliaria.dashboard.team.closedThisMonth', { count: agent.metrics.closedThisMonth })}
+          {t(agent.metrics.closedThisMonth === 1 ? 'inmobiliaria.dashboard.team.closedThisMonthUno' : 'inmobiliaria.dashboard.team.closedThisMonth', { count: agent.metrics.closedThisMonth })}
         </p>
       </div>
       {/* 🔴 17-09: acá iba la comisión del asesor. Se paga por fuera de
@@ -511,7 +515,7 @@ function ResumenDelNegocio() {
           title={t('inmobiliaria.dashboard.kpi.monthlyCollection')}
           value={formatCurrency(kpis.collectedRevenue)}
           subtitle={t('inmobiliaria.dashboard.kpi.collectionRateLabel', {
-            rate: textoDeTasa(tasaDeRecaudo),
+            rate: tasaEnPantalla(tasaDeRecaudo),
             rotulo: rotuloDeLaTasa,
           })}
           trend={laVariacion(kpis.collectedRevenue, kpis.collectionTrend)}
@@ -545,7 +549,7 @@ function ResumenDelNegocio() {
         />
         <KPICard
           title={t('inmobiliaria.dashboard.kpi.occupancy')}
-          value={textoDeTasa(tasaDeOcupacion)}
+          value={tasaEnPantalla(tasaDeOcupacion)}
           subtitle={
             // El número dice QUÉ cuenta: nunca un porcentaje suelto.
             fueraDelCatalogo > 0
@@ -622,7 +626,7 @@ function ResumenDelNegocio() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.team.title')}</h2>
-              <p className="text-sm text-fg-muted mt-0.5">{t('inmobiliaria.dashboard.team.activeAgents', { count: activeAgents.length })}</p>
+              <p className="text-sm text-fg-muted mt-0.5">{t(activeAgents.length === 1 ? 'inmobiliaria.dashboard.team.activeAgentsUno' : 'inmobiliaria.dashboard.team.activeAgents', { count: activeAgents.length })}</p>
             </div>
             <Link
               href="/panel/inmobiliaria/configuracion/equipo"
@@ -714,7 +718,7 @@ function ResumenDelNegocio() {
         carteraDelMes.cuotasEnCartera > 0 && (
           <AlertaAccionable
             severidad="warning"
-            titulo={t('inmobiliaria.dashboard.alerts.carteraDelMes', {
+            titulo={t(carteraDelMes.cuotasEnCartera === 1 ? 'inmobiliaria.dashboard.alerts.carteraDelMesUna' : 'inmobiliaria.dashboard.alerts.carteraDelMes', {
               count: carteraDelMes.cuotasEnCartera,
               amount: formatCurrency(carteraDelMes.carteraCop),
             })}
@@ -756,7 +760,7 @@ function ResumenDelNegocio() {
       {pendingMaintenance.length > 0 && (
         <AlertaAccionable
           severidad="info"
-          titulo={t('inmobiliaria.dashboard.alerts.pendingMaintenance', { count: pendingMaintenance.length })}
+          titulo={t(pendingMaintenance.length === 1 ? 'inmobiliaria.dashboard.alerts.pendingMaintenanceUno' : 'inmobiliaria.dashboard.alerts.pendingMaintenance', { count: pendingMaintenance.length })}
           accion={{ label: t('inmobiliaria.dashboard.alerts.viewRequests'), href: '/panel/inmobiliaria/mantenimientos' }}
           data-testid="alerta-mantenimientos"
         >
@@ -820,7 +824,7 @@ function ResumenDelNegocio() {
                 emitido» son dos números distintos. */}
             <MonoLabel data-testid="resumen-rotulo-de-la-tasa">{rotuloDeLaTasa}</MonoLabel>
             <span className="font-heading font-semibold text-fg tabular-nums" data-testid="resumen-tasa-de-recaudo">
-              {textoDeTasa(tasaDeRecaudo)}
+              {tasaEnPantalla(tasaDeRecaudo)}
             </span>
           </div>
           <div className="h-2 rounded-full bg-surface-muted overflow-hidden">

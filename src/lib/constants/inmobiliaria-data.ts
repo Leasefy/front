@@ -126,7 +126,7 @@ export function etiquetaDelMesIPC(record: Pick<IPCRecord, 'year' | 'month'>, loc
 export const REPORT_DEFINITIONS: ReportDefinition[] = [
   {
     id: 'extractos-propietarios',
-    title: 'Extractos Propietarios',
+    title: 'Extractos de propietarios',
     description: 'Extracto mensual detallado por propietario con cobros y comisiones',
     icon: 'FileText',
     category: 'financiero',
@@ -136,7 +136,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   },
   {
     id: 'cartera-edades',
-    title: 'Cartera por Edades',
+    title: 'Cartera por edades',
     description: 'Análisis de mora segmentado por antigüedad (30/60/90+ días)',
     icon: 'Clock',
     category: 'financiero',
@@ -146,7 +146,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   },
   {
     id: 'comisiones-agente',
-    title: 'Comisiones por Agente',
+    title: 'Comisiones por agente',
     description: 'Desglose de comisiones generadas por cada agente',
     icon: 'Users',
     category: 'agentes',
@@ -156,7 +156,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   },
   {
     id: 'ocupacion-portafolio',
-    title: 'Ocupación del Portafolio',
+    title: 'Ocupación del portafolio',
     description: 'Porcentaje de ocupación por zona y tipo de propiedad',
     icon: 'ChartPie',
     category: 'operativo',
@@ -169,7 +169,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   },
   {
     id: 'vencimientos',
-    title: 'Vencimientos de Contratos',
+    title: 'Vencimientos de contratos',
     description: 'Contratos próximos a vencer en los próximos 90 días',
     icon: 'Calendar',
     category: 'operativo',
@@ -179,7 +179,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   },
   {
     id: 'rendimiento-agentes',
-    title: 'Rendimiento de Agentes',
+    title: 'Rendimiento de agentes',
     description: 'KPIs comparativos de desempeño del equipo comercial',
     icon: 'ChartBar',
     category: 'agentes',
@@ -189,7 +189,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   },
   {
     id: 'flujo-caja',
-    title: 'Flujo de Caja',
+    title: 'Flujo de caja',
     description: 'Ingresos vs dispersiones con proyección mensual',
     icon: 'CurrencyDollar',
     category: 'financiero',

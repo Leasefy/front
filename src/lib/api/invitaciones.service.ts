@@ -49,6 +49,9 @@ export interface Pendientes {
 
 export interface FilaDeTanda {
   userId: string;
+  /** A quién (aditivo, 20-10-2026): un back anterior no lo manda. */
+  nombre?: string | null;
+  correo?: string | null;
   enviada: boolean;
   /**
    * `RECIEN_ENVIADA` · `DOMINIO_NO_ENTREGABLE` · `CORREO_NO_CONFIGURADO` ·

@@ -19,6 +19,7 @@
  * procesos (`enBloqueEnElServidor`): el back topa los envíos por persona.
  */
 
+import { usePuedeDescargar } from '@/lib/permisos/puede-descargar';
 import { useState } from 'react';
 import { EnvelopeSimple, FileXls, PaperPlaneTilt, WhatsappLogo } from '@phosphor-icons/react';
 
@@ -156,6 +157,10 @@ export function InquilinosMarcados({
     }
   };
 
+  // 🔴 Política de datos (20-10-2026): sólo descarga quien tenga «Exportar» de clientes.
+
+  const descarga = usePuedeDescargar('clientes');
+
   const exportar = async () => {
     setOcupado(true);
     try {
@@ -180,7 +185,7 @@ export function InquilinosMarcados({
       ocupado={ocupado}
       cuandoNoHayNada="Marca inquilinos para mandarles el estado de cuenta, reenviarles la invitación o exportarlos."
     >
-      <Button variant="ghost" size="sm" hideArrow disabled={ocupado || nada} onClick={() => void exportar()} data-testid="exportar-marcados">
+      <Button variant="ghost" size="sm" hideArrow disabled={ocupado || nada || !descarga.puede} onClick={() => void exportar()} data-testid="exportar-marcados" title={descarga.porQue ?? undefined}>
         <FileXls className="h-4 w-4" />
         Exportar
       </Button>

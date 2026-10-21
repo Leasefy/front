@@ -212,7 +212,8 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: unknown) => [formatCurrency(Number(value) || 0), '']}
+          // Al peso (QA 19-10-2026): sumas de dólares × la tasa, no plata guardada.
+          formatter={(value: unknown) => [formatCurrency(Math.round(Number(value) || 0)), '']}
         />
         <Legend
           layout="vertical"

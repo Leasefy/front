@@ -39,6 +39,7 @@ import { toast } from '@/components/ui/toast';
 import { finanzasApi } from '@/lib/api/finanzas.service';
 import type { CostoDeLaPlata, CostosDeLaPlata } from '@/lib/api/finanzas.types';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import { EsqueletoDeSeccion, VacioDeSeccion } from './piezas';
 
 /** Un número escrito a mano; `''` o basura → `null` (= sin configurar). */
@@ -96,7 +97,7 @@ export function SeccionCostosDeLaPlata() {
 
   const disponible = datos?.disponible !== false;
 
-  async function guardar() {
+  async function guardar(): Promise<boolean> {
     setGuardando(true);
     try {
       const r = await finanzasApi.guardarCostos({
@@ -107,17 +108,45 @@ export function SeccionCostosDeLaPlata() {
         trasladaPasarelaAlInquilino: trasladaPasarela,
       });
       aplicar(r);
-      toast.success('Costos de la plata guardados.', {
-        description: 'Aplican a los giros y recibos que se hagan desde ahora.',
-      });
+      // Con la barra de abajo, ella dice «Cambios guardados».
+      if (!conBarra) {
+        toast.success('Costos de la plata guardados.', {
+          description: 'Aplican a los giros y recibos que se hagan desde ahora.',
+        });
+      }
+      return true;
     } catch (e) {
       toast.error('No se pudieron guardar los costos.', {
         description: explicar(e, 'No se pudieron guardar los costos.'),
       });
+      return false;
     } finally {
       setGuardando(false);
     }
   }
+
+  // La barra de guardado de Configuración (Nico, 20-10-2026): lo que difiere
+  // de lo guardado, campo por campo.
+  const texto = (n: number | null | undefined) => (n === null || n === undefined ? '' : String(n));
+  const cfg = datos?.config;
+  const cambios = cfg
+    ? [
+        gmf.trim() !== texto(cfg.gmfPorMil),
+        trasladaGmf !== (cfg.trasladaGmfAlPropietario === true),
+        pasarelaPct.trim() !== texto(cfg.costoPasarelaPct),
+        pasarelaFijo.trim() !== texto(cfg.costoPasarelaFijoCop),
+        trasladaPasarela !== (cfg.trasladaPasarelaAlInquilino === true),
+      ].filter(Boolean).length
+    : 0;
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'costos-de-la-plata',
+    cambios,
+    guardar,
+    descartar: () => {
+      if (datos) aplicar(datos);
+    },
+    activo: disponible,
+  });
 
   return (
     <EstadoDeDatos
@@ -248,11 +277,15 @@ export function SeccionCostosDeLaPlata() {
             />
           </section>
 
-          <div className="flex justify-end">
-            <Button size="sm" hideArrow disabled={!disponible} isLoading={guardando} onClick={() => void guardar()}>
-              Guardar
-            </Button>
-          </div>
+          {conBarra ? (
+            <p className="text-caption text-fg-muted">Al guardar, aplican a los giros y recibos que se hagan desde ahora.</p>
+          ) : (
+            <div className="flex justify-end">
+              <Button size="sm" hideArrow disabled={!disponible} isLoading={guardando} onClick={() => void guardar()}>
+                Guardar
+              </Button>
+            </div>
+          )}
         </div>
       ) : null}
     </EstadoDeDatos>

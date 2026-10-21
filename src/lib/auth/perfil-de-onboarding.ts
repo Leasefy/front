@@ -58,7 +58,21 @@ export function rutaDeOnboardingConRegreso(
   perfil: PerfilDeOnboarding | null | undefined,
   destino: string | null | undefined,
 ): string {
+  if (esDestinoQueRegistraSolo(destino)) return destino as string
   const ruta = rutaDeOnboarding(perfil)
   if (!destino || destino === '/' || (perfil !== 'tenant' && perfil !== 'landlord')) return ruta
   return `${ruta}?returnUrl=${encodeURIComponent(destino)}`
+}
+
+/** El publicador rápido del marketplace (Juan y Nico, 19-10-2026). */
+export const RUTA_DEL_PUBLICADOR = '/publica'
+
+/**
+ * Destinos que hacen su propio registro, más corto: quien creó la cuenta para
+ * publicar va al publicador (que le pide nombre y WhatsApp), NO al registro
+ * completo del perfil («esos datos los tomamos después», Juan).
+ */
+export function esDestinoQueRegistraSolo(destino: string | null | undefined): boolean {
+  if (!destino) return false
+  return destino === RUTA_DEL_PUBLICADOR || destino.startsWith(`${RUTA_DEL_PUBLICADOR}?`) || destino.startsWith(`${RUTA_DEL_PUBLICADOR}/`)
 }

@@ -99,10 +99,23 @@ export function usePuedeEscribir(): PuedeEscribir {
 
   return {
     puede: false,
-    motivo: MOTIVO_SIN_ESCRITURA,
+    motivo: agencyRole === AGENCY_ROLES.AUXILIAR_CONTABLE ? MOTIVO_DEL_AUXILIAR_CONTABLE : MOTIVO_SIN_ESCRITURA,
     usuarioId,
   };
 }
+
+/**
+ * 🔴 ROLES AUXILIARES (Nico, 20-10-2026): el AUXILIAR CONTABLE «registra
+ * asientos, egresos y facturas de proveedor; no cierra el mes, no aprueba
+ * pagos, no anula ni emite facturas». Para él `usePuedeEscribir` es «no» (con
+ * este motivo) y `usePuedeRegistrar` es «sí» SÓLO en lo que registra: el
+ * asiento manual, la factura de proveedor y su causación, y el egreso (también
+ * el que nace de «Pagar» una factura). Espejo de `@TambienElAuxiliarContable`
+ * del back; si se equivoca hacia el «sí», el 403 del back sigue ahí.
+ */
+export const MOTIVO_DEL_AUXILIAR_CONTABLE =
+  'El auxiliar contable registra asientos, egresos y facturas de proveedor. Cerrar el mes, reversar, anular y aprobar pagos lo hacen el contador o el administrador.';
+
 
 /**
  * El mismo texto que `mensajeDeContabilidad` usa para el 403 del back, para que

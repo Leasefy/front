@@ -1,10 +1,11 @@
 'use client';
 
 import { useCallback, useState, type ComponentType, type MouseEvent } from 'react';
-import { House, UserPlus } from '@phosphor-icons/react';
+import { UserPlus } from '@phosphor-icons/react';
 
 import { AuthModal } from '@/components/auth/AuthModal';
 import { useAuth } from '@/lib/auth/use-auth';
+import { VentanaParaPublicar } from './VentanaParaPublicar';
 
 /**
  * La ventana de la cuenta encima de la pantalla (Nico, 09-10-2026, con
@@ -60,21 +61,45 @@ export function useVentanaDeCuenta({
 }
 
 /**
+ * A dónde sigue quien acaba de crear la cuenta para publicar: al publicador
+ * rápido (`/publica`), que le pide nombre y WhatsApp y lo deja publicar. El
+ * perfil viaja en la dirección (Google no lo guarda en la cuenta).
+ */
+export const DESTINOS_PARA_PUBLICAR = {
+  landlord: '/publica?perfil=landlord',
+  agency: '/publica?perfil=agency',
+  entrar: '/publica',
+} as const;
+
+/**
+ * Confirmar el correo con el código de 6 dígitos dentro de la ventana (Nico,
+ * 19-10-2026). Se prende con `NEXT_PUBLIC_CONFIRMAR_CON_CODIGO=true` DESPUÉS de
+ * que Víctor pegue en Supabase la plantilla que trae el código
+ * (`back/supabase/templates/confirmar-registro.html`): antes, el correo no lo
+ * trae y pedirlo confundiría. Apagado, «Revisa tu correo» es el de siempre.
+ */
+export const CONFIRMAR_CON_CODIGO = process.env.NEXT_PUBLIC_CONFIRMAR_CON_CODIGO === 'true';
+
+/**
  * «Publicar inmueble» sin sesión. Sólo una sesión CONFIRMADA navega. Mientras
  * se confirma (en la página pública puede tardar) también se abre la ventana:
- * si la sesión llega, `AuthForm` sigue sola a `destino`.
+ * si la sesión llega, `AuthForm` sigue sola a su destino.
+ *
+ * La ventana es la de publicar (Nico y Juan, 19-10-2026): primero «¿Quién va a
+ * publicar?» —propietario o inmobiliaria— y después la cuenta.
  */
-export function useCuentaParaPublicar(destino: string) {
+export function useCuentaParaPublicar(_destino?: string) {
   const { isAuthenticated } = useAuth();
-  const { abrir, ventana } = useVentanaDeCuenta({
-    destino,
-    rol: 'landlord',
-    titulo: 'Para publicar tu inmueble necesitas una cuenta',
-    detalle:
-      'Créala gratis aquí mismo, o inicia sesión si ya tienes una. Tu inmueble queda a tu nombre y lo manejas desde tu panel.',
-    Icono: House,
-    testId: 'aviso-cuenta-para-publicar',
-  });
+  const [abierta, setAbierta] = useState(false);
+  const abrir = useCallback(() => setAbierta(true), []);
+  const ventana = (
+    <VentanaParaPublicar
+      abierta={abierta}
+      alCambiar={setAbierta}
+      destinos={DESTINOS_PARA_PUBLICAR}
+      confirmarConCodigo={CONFIRMAR_CON_CODIGO}
+    />
+  );
 
   const alTocar = useCallback(
     (e: MouseEvent) => {

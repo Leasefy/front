@@ -13,6 +13,7 @@ import {
 import { CurrencyDollar } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { SinDatos } from '@/components/estado/SinDatos'
+import { Button } from '@/components/ui/button'
 import type { MonthlyCostTrendRow } from '@/lib/hooks/cotizador/use-insights'
 
 // Tokens del tema, no hex: recharts pinta atributos SVG y el navegador
@@ -66,10 +67,12 @@ export function InsightsMonthlyCostPreview({
         icono={CurrencyDollar}
         titulo={t('inmobiliaria.ai.cotizador.insights.costPreview.empty')}
         descripcion="Cuando haya consultas con costo en más de un mes, la tendencia se grafica acá."
-        crear={{
-          label: t('inmobiliaria.ai.cotizador.insights.costPreview.viewAll'),
-          href: COSTOS_HREF,
-        }}
+        // COTIZ-16 (19-10-2026): es ir a ver, no crear: sin el «+» de `crear`.
+        accion={
+          <Button asChild variant="outline">
+            <Link href={COSTOS_HREF}>{t('inmobiliaria.ai.cotizador.insights.costPreview.viewAll')}</Link>
+          </Button>
+        }
         className="py-10"
       />
     )

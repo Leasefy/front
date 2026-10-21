@@ -51,6 +51,7 @@ import { elPeriodoEnUnaFrase, estadoDelPeriodo } from '@/lib/contabilidad/el-per
 import { CampoDeDia } from '../CampoDeDia';
 import { Reapertura } from './Reapertura';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { useSoloRegistraLaContabilidad } from '../use-puede-registrar';
 
 export interface CierreDePeriodoProps {
   cierre: Cierre | null;
@@ -109,6 +110,8 @@ export function CierreDePeriodo({
   onCerrado,
   onReabierto,
 }: CierreDePeriodoProps) {
+  // Roles auxiliares (20-10-2026): el auxiliar contable entra al libro pero no cierra ni reversa.
+  const soloRegistra = useSoloRegistraLaContabilidad();
   const id = useId();
   const cerradaHasta = cierre?.cerradaHasta ?? null;
   /** Back 26beefbc (CB-R06): sólo se cierran meses terminados, hasta este día. */
@@ -304,6 +307,7 @@ export function CierreDePeriodo({
               testid="cierre-hasta"
             />
           </div>
+{!soloRegistra ? (
           <Button
             variant="outline"
             hideArrow
@@ -315,6 +319,7 @@ export function CierreDePeriodo({
             <LockSimple className="h-4 w-4" aria-hidden="true" />
             Cerrar período…
           </Button>
+          ) : null}
         </div>
         <ErrorDelCampo id={`${id}-hasta-error`} mensaje={!cargando ? problema : null} />
         {/* Back 26beefbc: cerrar con movimientos sin asiento los deja afuera del período. */}

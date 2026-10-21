@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { House } from '@phosphor-icons/react'
 import { listarInmuebles, ESTADO_DE_INMUEBLE, type InmuebleAdminRow } from '@/lib/admin/inmuebles'
+import { traerTodasLasPaginas } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import type { Paginated, PillTone } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { Pagination } from '@/components/admin/screen/Pagination'
+import { BarraDeFiltros, Buscador, Filtro, SelectorDeInmobiliaria } from '@/components/admin/screen/Filtros'
 import { Pill } from '@/components/admin/Pill'
 
 const TONO_DEL_ESTADO: Record<InmuebleAdminRow['status'], PillTone> = {
@@ -34,80 +36,88 @@ export default function InmueblesPage() {
   const agencyId = get('agencyId')
   const [busqueda, setBusqueda] = useState(q)
 
-  // La URL manda: si alguien llega con `?q=` desde un enlace, el input lo muestra.
+  // La URL manda: si alguien llega con `?q=` desde un enlace, el campo lo muestra.
   useEffect(() => {
     setBusqueda(q)
   }, [q])
 
-  const { data, isLoading, error } = useApiQuery<Paginated<InmuebleAdminRow>>(
+  // La búsqueda viaja al back: se manda al dejar de escribir (no con cada tecla).
+  useEffect(() => {
+    if (busqueda.trim() === q) return
+    const t = setTimeout(() => setFilters({ q: busqueda.trim() || undefined, page: undefined }), 400)
+    return () => clearTimeout(t)
+  }, [busqueda, q, setFilters])
+
+  const { data, isLoading, error, refetch } = useApiQuery<Paginated<InmuebleAdminRow>>(
     (signal) => listarInmuebles({ q, agencyId, page }, signal),
     [q, agencyId, page],
   )
 
-  const agenciaFiltrada = agencyId
-    ? data?.data.find((r) => r.agencia?.id === agencyId)?.agencia?.name
-    : undefined
-
   const columns: Column<InmuebleAdminRow>[] = [
     {
       header: '# Leasefy',
-      cell: (r) => <span className="font-mono text-xs tabular-nums text-fg">{r.code}</span>,
+      texto: (r) => r.code,
+      cell: (r) => <span className="font-mono text-caption tabular-nums text-fg">{r.code}</span>,
     },
     {
       header: '# inmobiliaria',
-      cell: (r) => (
-        <span className="font-mono text-xs tabular-nums text-fg-muted">{r.externalId ?? '—'}</span>
-      ),
+      texto: (r) => r.externalId,
+      cell: (r) => <span className="font-mono text-caption tabular-nums text-fg-muted">{r.externalId ?? '—'}</span>,
     },
     {
       header: 'Dirección',
+      className: 'min-w-[220px]',
+      texto: (r) => r.address,
       cell: (r) => (
         <div className="min-w-0">
-          <div className="font-medium text-fg leading-snug">{r.address}</div>
-          <div className="text-xs text-fg-muted">{r.city}</div>
+          <div className="font-medium leading-snug text-fg">{r.address}</div>
+          <div className="text-caption text-fg-muted">{r.city}</div>
         </div>
       ),
     },
     {
       header: 'Inmobiliaria',
+      texto: (r) => r.agencia?.name ?? '',
       cell: (r) =>
         r.agencia ? (
+          // allowlist: atajo de filtro dentro de la celda — tocar el nombre acota la lista sin abrir la fila.
           <button
             type="button"
-            className="text-xs text-fg-muted hover:text-brand transition-colors text-left"
+            className="rounded-sm text-left text-body-sm text-fg-muted underline-offset-4 outline-none transition-colors hover:text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring"
             title="Ver sólo esta inmobiliaria"
             onClick={(e) => {
               e.stopPropagation()
-              setFilters({ agencyId: r.agencia?.id }, { resetPage: true })
+              setFilters({ agencyId: r.agencia?.id, page: undefined })
             }}
           >
             {r.agencia.name}
           </button>
         ) : (
-          <span className="text-xs text-fg-subtle">(sin inmobiliaria)</span>
+          <span className="text-caption text-fg-subtle">(sin inmobiliaria)</span>
         ),
     },
     {
       header: 'Estado',
+      texto: (r) => ESTADO_DE_INMUEBLE[r.status],
       cell: (r) => <Pill tone={TONO_DEL_ESTADO[r.status]}>{ESTADO_DE_INMUEBLE[r.status]}</Pill>,
     },
     {
       header: 'Contratos',
       align: 'right',
+      texto: (r) => r.contratos,
       cell: (r) => (
-        <span className="font-mono text-xs tabular-nums text-fg">
+        <span className="font-mono text-caption tabular-nums text-fg">
           {r.contratos}
-          <span className="text-fg-subtle"> · {r.activos} act.</span>
+          <span className="text-fg-subtle"> · {r.activos} vigentes</span>
         </span>
       ),
     },
     {
       header: 'Reparaciones',
       align: 'right',
+      texto: (r) => r.reparaciones,
       cell: (r) => (
-        <span
-          className={`font-mono text-xs tabular-nums ${r.reparaciones > 0 ? 'text-warn' : 'text-fg-subtle'}`}
-        >
+        <span className={`font-mono text-caption tabular-nums ${r.reparaciones > 0 ? 'text-warning' : 'text-fg-subtle'}`}>
           {r.reparaciones}
         </span>
       ),
@@ -115,55 +125,11 @@ export default function InmueblesPage() {
   ]
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="inmuebles · historial interno"
-        title="Riesgo por inmueble"
-        description="Cuántas veces se arrendó, cuánto estuvo desocupado y qué se le reparó. Interno de Leasefy: la inmobiliaria no ve esta pantalla."
+        title="Inmuebles"
+        description="Cuántas veces se arrendó cada inmueble, cuánto estuvo desocupado y qué se le reparó. Interno de Leasefy: la inmobiliaria no ve esta pantalla. Toca uno para ver su historia."
       />
-
-      <form
-        className="flex flex-wrap items-center gap-2 mb-4"
-        onSubmit={(e) => {
-          e.preventDefault()
-          setFilters({ q: busqueda.trim() || undefined }, { resetPage: true })
-        }}
-      >
-        <input
-          type="search"
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Consecutivo, código de la inmobiliaria o dirección"
-          aria-label="Buscar inmueble"
-          className="input w-full sm:w-96"
-        />
-        <button type="submit" className="btn btn-primary">
-          Buscar
-        </button>
-        {q && (
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => setFilters({ q: undefined }, { resetPage: true })}
-          >
-            Limpiar
-          </button>
-        )}
-        {agencyId && (
-          <button
-            type="button"
-            className="pill pill-info"
-            title="Quitar el filtro de inmobiliaria"
-            onClick={() => setFilters({ agencyId: undefined }, { resetPage: true })}
-          >
-            sólo {agenciaFiltrada ?? 'esta inmobiliaria'} ×
-          </button>
-        )}
-      </form>
-
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-        {data ? `${data.total.toLocaleString('es-CO')} inmuebles · más contratos primero` : 'inmuebles'}
-      </div>
 
       <DataTable
         columns={columns}
@@ -172,13 +138,41 @@ export default function InmueblesPage() {
         onRowClick={(r) => router.push(`/admin/inmuebles/${r.id}`)}
         isLoading={isLoading}
         error={error}
-        emptyTitle="Sin inmuebles"
-        emptyHint={q ? `Nada coincide con «${q}».` : 'Todavía no hay inmuebles cargados.'}
+        onReintentar={refetch}
+        emptyTitle="Todavía no hay inmuebles cargados"
+        emptyIcon={<House weight="bold" />}
+        aria-label="Inmuebles"
+        paginacion={data ? { page, total: data.total, pageSize: data.pageSize, onPage: setPage } : undefined}
+        queSon={['inmueble', 'inmuebles']}
+        filtrosEnLaUrl={['q', 'agencyId']}
+        onLimpiarFiltros={() => setBusqueda('')}
+        exportar="inmuebles"
+        traerTodoParaElExcel={() => traerTodasLasPaginas<InmuebleAdminRow>('/inmuebles', { q: q || undefined, agencyId: agencyId || undefined })}
+        masEnElExcel={[
+          { header: 'Ciudad', texto: (r) => r.city },
+          { header: 'Contratos vigentes', texto: (r) => r.activos },
+        ]}
+        barra={
+          <BarraDeFiltros>
+            <Filtro etiqueta="Buscar" htmlFor="buscar-inmueble" className="sm:min-w-72 sm:flex-1">
+              <Buscador
+                id="buscar-inmueble"
+                value={busqueda}
+                onChange={setBusqueda}
+                placeholder="Consecutivo, código de la inmobiliaria o dirección"
+              />
+            </Filtro>
+            <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria">
+              <SelectorDeInmobiliaria
+                id="filtro-inmobiliaria"
+                value={agencyId}
+                onChange={(v) => setFilters({ agencyId: v, page: undefined })}
+              />
+            </Filtro>
+          </BarraDeFiltros>
+        }
       />
-
-      {data && (
-        <Pagination page={data.page} total={data.total} pageSize={data.pageSize} onPage={setPage} />
-      )}
+      <p className="text-caption text-fg-subtle">Primero los que más contratos han tenido.</p>
     </div>
   )
 }

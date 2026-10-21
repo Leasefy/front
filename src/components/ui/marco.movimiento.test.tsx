@@ -123,9 +123,9 @@ describe('La tabla del /admin', () => {
 })
 
 describe('El KpiCard del /admin', () => {
-  it('escribe la cifra igual que antes (sin separador de miles agregado)', async () => {
+  it('escribe la cifra como el KpiCard de Cadence: miles con punto (19-10-2026, el admin pasó a Cadence)', async () => {
     await render(<KpiCard label="Pagos" value={12345} />)
-    expect(host.textContent).toContain('12345')
+    expect(host.textContent).toContain('12.345')
     await render(<KpiCard label="Pagos" value="$ 1.000" />)
     expect(host.textContent).toContain('$ 1.000')
   })

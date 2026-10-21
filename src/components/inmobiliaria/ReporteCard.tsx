@@ -308,8 +308,11 @@ export function ReporteCard({
         </span>
       </div>
 
-      {/* Actions Section */}
-      <div className="px-5 py-4 border-t border-border flex items-center gap-2">
+      {/* Actions Section.
+          QA 20-10: a tres columnas (1440) «Vista previa» no cabía y la tarjeta
+          (overflow-hidden) le cortaba el borde. Botones chicos, del mismo
+          ancho, y si aun así no caben, el segundo baja de renglón. */}
+      <div className="px-5 py-4 border-t border-border flex flex-wrap items-center gap-2">
         {isLocked ? (
           <Button
             hideArrow
@@ -333,6 +336,7 @@ export function ReporteCard({
             {onGenerate && (
               <Button
                 hideArrow
+                size="sm"
                 variant={descargable ? 'default' : 'secondary'}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -365,11 +369,12 @@ export function ReporteCard({
               <Button
                 variant="secondary"
                 hideArrow
+                size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
                   onPreview();
                 }}
-                className="gap-2"
+                className="flex-1 gap-2"
               >
                 <Eye className="w-4 h-4" />
                 {t('inmobiliaria.reporte.preview')}

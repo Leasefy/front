@@ -16,7 +16,9 @@
  */
 
 import { useState } from 'react'
-import { Presence } from '@leasefy/cadence'
+import { Eyebrow, Presence } from '@leasefy/cadence'
+import { Desplegable } from '@/components/admin/screen/Filtros'
+import { Switch } from '@/components/ui/switch'
 
 import { Pill } from '@/components/admin/Pill'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
@@ -32,6 +34,9 @@ import {
   type VistaPreviaDeLiquidaciones,
 } from '@/lib/admin/recaudo-en-linea'
 import { Cifra, ErrorDeLaAccion, Etiqueta } from './partes'
+import { Card } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const NOMBRE_DEL_RESULTADO: Record<EstadoDelResultado, string> = {
   creada: 'generada',
@@ -152,9 +157,9 @@ export function GenerarLiquidaciones({
   const generables = vista?.propuestas.filter((p) => !p.bloqueo) ?? []
 
   return (
-    <div className="card p-5" data-testid="generar-liquidaciones">
-      <div className="section-label">generar liquidaciones a mano</div>
-      <p className="text-[13px] text-fg-muted mt-2">
+    <Card className="p-5" data-testid="generar-liquidaciones">
+      <Eyebrow>Generar liquidaciones a mano</Eyebrow>
+      <p className="text-caption text-fg-muted mt-2">
         La frecuencia del giro está <strong>por definir</strong>: aquí se liquida el rango que elijas,
         por la fecha del pago. Un pago ya liquidado no vuelve a entrar.
       </p>
@@ -162,17 +167,17 @@ export function GenerarLiquidaciones({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mt-4">
         <label className="block">
           <Etiqueta>pagos desde</Etiqueta>
-          <input type="date" className="input mt-1" value={desde} onChange={(e) => cambio(setDesde)(e.target.value)} data-testid="generar-desde" />
+          <Input type="date" className="mt-1" value={desde} onChange={(e) => cambio(setDesde)(e.target.value)} data-testid="generar-desde" />
         </label>
         <label className="block">
           <Etiqueta>pagos hasta</Etiqueta>
-          <input type="date" className="input mt-1" value={hasta} onChange={(e) => cambio(setHasta)(e.target.value)} data-testid="generar-hasta" />
+          <Input type="date" className="mt-1" value={hasta} onChange={(e) => cambio(setHasta)(e.target.value)} data-testid="generar-hasta" />
         </label>
         <label className="block">
           <Etiqueta>fecha del giro</Etiqueta>
-          <input
+          <Input
             type="date"
-            className="input mt-1"
+            className="mt-1"
             value={fechaDelGiro}
             onChange={(e) => cambio(setFechaDelGiro)(e.target.value)}
             data-testid="generar-fecha-del-giro"
@@ -180,43 +185,43 @@ export function GenerarLiquidaciones({
         </label>
         <label className="block">
           <Etiqueta>inmobiliaria</Etiqueta>
-          <select className="input mt-1" value={agencyId} onChange={(e) => cambio(setAgencyId)(e.target.value)} data-testid="generar-inmobiliaria">
-            <option value="">Todas</option>
-            {inmobiliarias.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.nombre}
-              </option>
-            ))}
-          </select>
+          <Desplegable
+            value={agencyId}
+            onChange={(v) => cambio(setAgencyId)(v)}
+            todas="Todas"
+            aria-label="Inmobiliaria"
+            data-testid="generar-inmobiliaria"
+            className="mt-1"
+            opciones={inmobiliarias.map((i) => ({ valor: i.id, nombre: i.nombre }))}
+          />
         </label>
       </div>
-      <label className="flex items-start gap-2 mt-4 text-sm text-fg">
-        <input
-          type="checkbox"
-          className="mt-1"
+      <label className="mt-4 flex cursor-pointer items-start gap-3 text-body-sm text-fg">
+        <Switch
+          className="mt-0.5"
           checked={soloDesembolsadas}
-          onChange={(e) => cambio(setSoloDesembolsadas)(e.target.checked)}
+          onCheckedChange={(v) => cambio(setSoloDesembolsadas)(v)}
           data-testid="solo-desembolsadas"
+          aria-label="Sólo los pagos que Wompi ya le desembolsó a Leasefy"
         />
         <span>
           Sólo los pagos que Wompi ya le desembolsó a Leasefy
-          <span className="block text-[13px] text-fg-muted">
+          <span className="block text-caption text-fg-muted">
             Recomendado: así no se le gira a una inmobiliaria plata que Leasefy todavía no tiene.
           </span>
         </span>
       </label>
-      {problema ? <p className="text-[13px] text-bad mt-3">{problema}</p> : null}
+      {problema ? <p className="text-caption text-danger mt-3">{problema}</p> : null}
 
       <div className="flex flex-wrap gap-2 mt-4">
-        <button
-          type="button"
-          className="btn"
+        <Button variant="outline" hideArrow type="button"
+          
           disabled={ocupado !== null || problema !== null || !!descuentoMalo}
           onClick={() => void verVistaPrevia()}
           data-testid="ver-vista-previa"
         >
           {ocupado === 'viendo' ? 'Armando…' : vista ? 'Actualizar la vista previa' : 'Ver qué se liquidaría'}
-        </button>
+        </Button>
       </div>
 
       <ErrorDeLaAccion mensaje={error} testId="error-de-generar" />
@@ -230,12 +235,12 @@ export function GenerarLiquidaciones({
             ) : (
               <ul className="mt-2 space-y-1">
                 {resultado.resultados.map((r) => (
-                  <li key={`${r.agencyId}-${r.numero}`} className="text-[13px] text-fg flex flex-wrap items-center gap-2">
+                  <li key={`${r.agencyId}-${r.numero}`} className="text-caption text-fg flex flex-wrap items-center gap-2">
                     <Pill tone={TONO_DEL_RESULTADO[r.estado]}>{NOMBRE_DEL_RESULTADO[r.estado]}</Pill>
                     <span className="font-mono">{r.numero}</span>
                     <span>{r.inmobiliaria ?? 'Sin nombre'}</span>
                     <span className="tabular-nums">{pesos(r.netoCop)}</span>
-                    {r.motivo ? <span className="text-bad">{r.motivo}</span> : null}
+                    {r.motivo ? <span className="text-danger">{r.motivo}</span> : null}
                   </li>
                 ))}
               </ul>
@@ -248,7 +253,7 @@ export function GenerarLiquidaciones({
         {vista ? (
           <div className="mt-5" data-testid="vista-previa-de-liquidaciones">
             {vistaVieja ? (
-              <p className="text-[13px] text-warn mb-3" data-testid="vista-vieja">
+              <p className="text-caption text-warning mb-3" data-testid="vista-vieja">
                 Cambiaste algo: actualiza la vista previa antes de generar.
               </p>
             ) : null}
@@ -266,10 +271,10 @@ export function GenerarLiquidaciones({
                 {vista.propuestas.map((p) => {
                   const d = descuentos[p.agencyId] ?? { concepto: '', valor: '' }
                   return (
-                    <div key={p.agencyId} className="border border-bg-border p-4" data-testid={`propuesta-${p.agencyId}`}>
+                    <div key={p.agencyId} className="border border-border p-4" data-testid={`propuesta-${p.agencyId}`}>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-medium text-fg">{p.inmobiliaria ?? 'Sin nombre'}</span>
-                        <span className="font-mono text-[13px] text-fg-subtle">{p.numero}</span>
+                        <span className="font-mono text-caption text-fg-subtle">{p.numero}</span>
                         {p.bloqueo ? <Pill tone="bad">no se puede generar</Pill> : null}
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-3">
@@ -281,12 +286,12 @@ export function GenerarLiquidaciones({
                         <Cifra nombre="otros de leasefy" valor={pesos(p.otrosDescuentosCop)} />
                         <Cifra nombre="neto" valor={pesos(p.netoCop)} tono={p.bloqueo ? 'mal' : 'bien'} />
                       </div>
-                      {p.bloqueo ? <p className="text-[13px] text-bad mt-2">{p.bloqueo}</p> : null}
+                      {p.bloqueo ? <p className="text-caption text-danger mt-2">{p.bloqueo}</p> : null}
                       <div className="grid gap-3 sm:grid-cols-[1fr_12rem] mt-3">
                         <label className="block">
                           <Etiqueta>otro descuento de leasefy (opcional, tal como viene)</Etiqueta>
-                          <input
-                            className="input mt-1"
+                          <Input
+                            className="mt-1"
                             value={d.concepto}
                             maxLength={120}
                             placeholder="Concepto"
@@ -299,8 +304,8 @@ export function GenerarLiquidaciones({
                         </label>
                         <label className="block">
                           <Etiqueta>valor (pesos)</Etiqueta>
-                          <input
-                            className="input mt-1"
+                          <Input
+                            className="mt-1"
                             value={d.valor}
                             inputMode="numeric"
                             placeholder="0"
@@ -319,7 +324,7 @@ export function GenerarLiquidaciones({
             )}
 
             {descuentoMalo ? (
-              <p className="text-[13px] text-bad mt-3" data-testid="descuento-malo">
+              <p className="text-caption text-danger mt-3" data-testid="descuento-malo">
                 Un descuento de Leasefy lleva su concepto y un valor en pesos enteros mayor que cero.
               </p>
             ) : null}
@@ -329,7 +334,7 @@ export function GenerarLiquidaciones({
                 <Etiqueta>pagos que quedan fuera</Etiqueta>
                 <ul className="mt-2 space-y-1">
                   {vista.fuera.map((f) => (
-                    <li key={f.transaccionId} className="text-[13px] text-fg">
+                    <li key={f.transaccionId} className="text-caption text-fg">
                       <span className="font-mono text-fg-subtle">
                         {f.transaccionId}
                         {f.fecha ? ` · ${f.fecha}` : ''} · {pesos(f.brutoCop)}
@@ -342,7 +347,7 @@ export function GenerarLiquidaciones({
               </div>
             ) : null}
             {vista.sinFecha > 0 ? (
-              <p className="text-[13px] text-warn mt-3">
+              <p className="text-caption text-warning mt-3">
                 {vista.sinFecha} {vista.sinFecha === 1 ? 'pago aprobado no trae' : 'pagos aprobados no traen'} fecha
                 ni desembolso en el reporte: ningún rango {vista.sinFecha === 1 ? 'lo' : 'los'} alcanza. Sube un
                 reporte que traiga la fecha.
@@ -352,18 +357,17 @@ export function GenerarLiquidaciones({
             {generables.length > 0 ? (
               <div className="mt-5">
                 {!confirmando ? (
-                  <button
-                    type="button"
-                    className="btn btn-primary"
+                  <Button hideArrow type="button"
+                    
                     disabled={ocupado !== null || vistaVieja || !!descuentoMalo}
                     onClick={() => setConfirmando(true)}
                     data-testid="generar"
                   >
                     Generar {generables.length} {generables.length === 1 ? 'liquidación' : 'liquidaciones'}
-                  </button>
+                  </Button>
                 ) : null}
                 <Presence show={confirmando}>
-                  <div className="card p-4 border-l-4 border-l-brand" data-testid="confirmar-generar">
+                  <Card className="p-4 " data-testid="confirmar-generar">
                     <p className="text-sm text-fg">
                       Se van a generar {generables.length}{' '}
                       {generables.length === 1 ? 'liquidación' : 'liquidaciones'} por{' '}
@@ -371,26 +375,25 @@ export function GenerarLiquidaciones({
                       plata: el giro lo hace Leasefy en su banco.
                     </p>
                     <div className="flex gap-2 mt-3">
-                      <button
-                        type="button"
-                        className="btn btn-primary"
+                      <Button hideArrow type="button"
+                        
                         disabled={ocupado !== null || vistaVieja}
                         onClick={() => void generar()}
                         data-testid="confirmar-generar-si"
                       >
                         {ocupado === 'generando' ? 'Generando…' : 'Sí, generarlas'}
-                      </button>
-                      <button type="button" className="btn btn-ghost" disabled={ocupado !== null} onClick={() => setConfirmando(false)}>
+                      </Button>
+                      <Button variant="ghost" hideArrow type="button"  disabled={ocupado !== null} onClick={() => setConfirmando(false)}>
                         Cancelar
-                      </button>
+                      </Button>
                     </div>
-                  </div>
+                  </Card>
                 </Presence>
               </div>
             ) : null}
           </div>
         ) : null}
       </Presence>
-    </div>
+    </Card>
   )
 }

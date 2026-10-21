@@ -152,7 +152,20 @@ const GESTION_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.A
  * 🔴 Mensajes (Nico, 14-10-2026): administrador, asesor y coordinador — el
  * espejo de `ROLES_QUE_USAN_LOS_MENSAJES` y de `AgencyRoleGuard allowed="mensajes"`.
  */
-const MENSAJES_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.AGENTE, AGENCY_ROLES.COORDINADOR];
+const MENSAJES_ROLES: readonly AgencyRole[] = [
+  AGENCY_ROLES.ADMIN,
+  AGENCY_ROLES.AGENTE,
+  AGENCY_ROLES.COORDINADOR,
+  // El auxiliar comercial responde a los interesados (20-10-2026).
+  AGENCY_ROLES.AUXILIAR_COMERCIAL,
+];
+
+/**
+ * 🔴 La contabilidad también la abre el AUXILIAR CONTABLE (20-10-2026): registra
+ * asientos, egresos y facturas de proveedor. Facturación, nómina y
+ * liquidaciones siguen con `CONTADOR_ROLES`.
+ */
+const CONTABILIDAD_ROLES: readonly AgencyRole[] = [...CONTADOR_ROLES, AGENCY_ROLES.AUXILIAR_CONTABLE];
 
 /**
  * Todos menos el abogado externo (QA-INQ E-05, 03-10-2026). Tiene `contratos`
@@ -707,7 +720,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       },
       { key: 'facturacion', labelKey: 'inmobiliaria.nav.facturacion', href: r('/facturacion'), icon: Receipt, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
       // Conciliación (la Sala de su agente) se mudó a «Agentes IA» el 2026-09-16.
-      { key: 'contabilidad', labelKey: 'inmobiliaria.nav.contabilidadCorta', href: r('/contabilidad'), icon: Calculator, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
+      { key: 'contabilidad', labelKey: 'inmobiliaria.nav.contabilidadCorta', href: r('/contabilidad'), icon: Calculator, module: null, roles: CONTABILIDAD_ROLES, scope: 'finanzas' },
       // 🔴 NÓMINA es un módulo de PAGO (Nico, 17-09): `moduloPago` hace que la
       // fila no exista para quien no lo compró — ni siquiera un instante mientras
       // cargan los permisos, porque el gate falla cerrado. Y `CONTADOR_ROLES`

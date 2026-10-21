@@ -80,3 +80,55 @@ export interface DescargaDeProceso {
   nombre: string
   venceAt: string | null
 }
+
+// ── Lo que hizo cada proceso, renglón por renglón (Nico, 20-10-2026) ────────
+// `GET /inmobiliaria/procesos/:id/renglones` (back `renglones-de-los-procesos.ts`).
+
+/** OK = salió · FALLO = no salió (con su motivo) · OMITIDO = no tocaba. */
+export type EstadoDeRenglon = 'OK' | 'FALLO' | 'OMITIDO'
+
+export interface RenglonDelProceso {
+  /** Orden de llegada (BIGINT como texto): el cursor de la página siguiente. */
+  n: string
+  estado: EstadoDeRenglon
+  /** «FE-1203 · Mateo Giraldo» */
+  titulo: string
+  detalle: string | null
+  motivo: string | null
+  montoCop: number | null
+  /** Qué cosa es, para abrir SU cajón (`FACTURA`, `CONTRATO`…). */
+  recurso: { tipo: string; id: string } | null
+  createdAt: string
+}
+
+export interface ResumenDeRenglones {
+  OK: number
+  FALLO: number
+  OMITIDO: number
+  total: number
+}
+
+export interface PaginaDeRenglones {
+  /** `false` = falta la migración de los renglones: el cajón muestra lo de antes. */
+  disponible: boolean
+  renglones: RenglonDelProceso[]
+  siguiente: string | null
+  resumen: ResumenDeRenglones
+}
+
+/** Lo que anota el NAVEGADOR (`POST /inmobiliaria/procesos/:id/renglones`). */
+export interface RenglonNuevoDelNavegador {
+  estado: EstadoDeRenglon
+  titulo: string
+  detalle?: string | null
+  motivo?: string | null
+  montoCop?: number | null
+  recurso?: { tipo: string; id: string } | null
+}
+
+export interface FiltrosDeRenglones {
+  estado?: EstadoDeRenglon
+  buscar?: string
+  despuesDe?: string
+  limite?: number
+}

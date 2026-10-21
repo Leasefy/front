@@ -17,7 +17,7 @@
  * Sin la migración del back, se dice por qué y no se puede guardar.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarCheck, Coins, Bank } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,7 @@ import {
   type ConfiguracionDeLaConciliacion,
   type CuentasContables,
 } from '@/lib/api/cierre-de-conciliacion';
+import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 
 /** El mismo rango que el back (1 a 365 días). */
 export function diasDeAlertaValidos(texto: string): number | null {
@@ -89,6 +90,34 @@ export function ConciliacionCierreYEfectivo() {
     void leer();
   }, [leer]);
 
+  /*
+   * Dentro de Configuración (Nico, 20-10-2026): los días, el efectivo y la
+   * cuenta contable de cada cuenta bancaria sólo marcan; se guardan con la
+   * barra de abajo. `undefined` / sin llave = no lo han tocado.
+   */
+  const [efectivoElegido, setEfectivoElegido] = useState<boolean | undefined>(undefined);
+  const [contablesElegidas, setContablesElegidas] = useState<Record<string, string>>({});
+  const conBarraRef = useRef(false);
+  const diasPendientes = config !== null && dias.trim() !== String(config.diasDeAlerta);
+  const efectivoPendiente = config !== null && efectivoElegido !== undefined && efectivoElegido !== config.efectivoActivo;
+  const contablesPendientes = Object.entries(contablesElegidas).filter(
+    ([cuentaId, puc]) => puc && puc !== (contables?.cuentas.find((c) => c.id === cuentaId)?.cuentaPuc?.id ?? ''),
+  );
+  const guardarConLaBarra = useRef<() => Promise<boolean>>(async () => true);
+  const { conBarra } = useCambiosPorGuardar({
+    id: 'conciliacion-cierre-y-efectivo',
+    cambios: (diasPendientes ? 1 : 0) + (efectivoPendiente ? 1 : 0) + contablesPendientes.length,
+    guardar: () => guardarConLaBarra.current(),
+    descartar: () => {
+      if (config) setDias(String(config.diasDeAlerta));
+      setErrorDeDias(null);
+      setEfectivoElegido(undefined);
+      setContablesElegidas({});
+    },
+    activo: puede || puedeElEfectivo,
+  });
+  conBarraRef.current = conBarra;
+
   if (fallo) {
     return (
       <p className="text-caption text-fg-muted" data-testid="conciliacion-config-fallo">
@@ -101,13 +130,18 @@ export function ConciliacionCierreYEfectivo() {
   }
   if (!config || !contables) return null;
 
-  const guardar = async (cambios: { diasDeAlerta?: number; efectivoActivo?: boolean }, que: string) => {
+  const guardar = async (
+    cambios: { diasDeAlerta?: number; efectivoActivo?: boolean },
+    que: string,
+  ): Promise<boolean> => {
     setGuardando(que);
     setErrorDeDias(null);
     try {
       const c = await cierreDeConciliacionApi.guardarConfiguracion(cambios);
       setConfig(c);
       setDias(String(c.diasDeAlerta));
+      setEfectivoElegido(undefined);
+      if (conBarraRef.current) return true;
       toast.success(
         cambios.efectivoActivo === undefined
           ? `La alerta avisa desde los ${c.diasDeAlerta} días.`
@@ -115,6 +149,7 @@ export function ConciliacionCierreYEfectivo() {
             ? 'Efectivo prendido: ya se pueden registrar recibos en efectivo y la planilla de caja de cada día entra a la conciliación.'
             : 'Efectivo apagado: ya no se registran recibos en efectivo y la planilla de caja deja de entrar a la conciliación.',
       );
+      return true;
     } catch (e) {
       const { porCampo, sueltos } = repartirErroresDelServidor(e, {
         campos: ['diasDeAlerta'] as const,
@@ -123,25 +158,48 @@ export function ConciliacionCierreYEfectivo() {
       });
       if (porCampo.diasDeAlerta) setErrorDeDias(porCampo.diasDeAlerta);
       if (sueltos.length > 0) toast.error(sueltos.join(' · '));
+      return false;
     } finally {
       setGuardando(null);
     }
   };
 
-  const asignar = async (cuentaId: string, cuentaPucId: string) => {
-    if (!cuentaPucId) return;
+  const asignar = async (cuentaId: string, cuentaPucId: string): Promise<boolean> => {
+    if (!cuentaPucId) return true;
     setGuardando(cuentaId);
     try {
       setContables(await cierreDeConciliacionApi.asignarCuentaContable(cuentaId, cuentaPucId));
-      toast.success('Cuenta contable guardada.');
+      setContablesElegidas(({ [cuentaId]: _hecha, ...resto }) => resto);
+      if (!conBarraRef.current) toast.success('Cuenta contable guardada.');
+      return true;
     } catch (e) {
       toast.error(mensajeParaLaPersona(e, { porDefecto: 'No se pudo guardar la cuenta contable.', accion: 'asignar la cuenta contable' }));
+      return false;
     } finally {
       setGuardando(null);
     }
   };
 
   const diasLeidos = diasDeAlertaValidos(dias);
+
+  // Lo que guarda la barra: los días y el efectivo en una escritura, y cada
+  // cuenta contable elegida.
+  guardarConLaBarra.current = async () => {
+    const cambios: { diasDeAlerta?: number; efectivoActivo?: boolean } = {};
+    if (diasPendientes) {
+      if (diasLeidos === null) {
+        setErrorDeDias('Escribe un número de días entre 1 y 365.');
+        return false;
+      }
+      cambios.diasDeAlerta = diasLeidos;
+    }
+    if (efectivoPendiente) cambios.efectivoActivo = efectivoElegido;
+    if (Object.keys(cambios).length > 0 && !(await guardar(cambios, 'barra'))) return false;
+    for (const [cuentaId, puc] of contablesPendientes) {
+      if (!(await asignar(cuentaId, puc))) return false;
+    }
+    return true;
+  };
 
   return (
     // Sin entrada propia al montarse: la sección ya entra con el marco de
@@ -182,6 +240,7 @@ export function ConciliacionCierreYEfectivo() {
           <Button
             hideArrow
             variant="outline"
+            className={conBarra ? 'hidden' : undefined}
             disabled={!config.disponible || !puede || diasLeidos === null || diasLeidos === config.diasDeAlerta}
             isLoading={guardando === 'dias'}
             onClick={() => diasLeidos !== null && void guardar({ diasDeAlerta: diasLeidos }, 'dias')}
@@ -214,9 +273,11 @@ export function ConciliacionCierreYEfectivo() {
         </div>
         <Switch
           id="efectivo-activo"
-          checked={config.efectivoActivo}
+          checked={efectivoElegido ?? config.efectivoActivo}
           disabled={!efectivoSePuedeGuardar(config) || !puedeElEfectivo || guardando === 'efectivo'}
-          onCheckedChange={(v) => void guardar({ efectivoActivo: v === true }, 'efectivo')}
+          onCheckedChange={(v) =>
+            conBarra ? setEfectivoElegido(v === true) : void guardar({ efectivoActivo: v === true }, 'efectivo')
+          }
           data-testid="efectivo-activo"
         />
       </div>
@@ -247,8 +308,10 @@ export function ConciliacionCierreYEfectivo() {
                 <div className="sm:w-80">
                   <SelectorDeCuenta
                     cuentas={delDisponible}
-                    value={c.cuentaPuc?.id ?? ''}
-                    onChange={(id) => void asignar(c.id, id)}
+                    value={contablesElegidas[c.id] ?? c.cuentaPuc?.id ?? ''}
+                    onChange={(id) =>
+                      conBarra ? setContablesElegidas((x) => ({ ...x, [c.id]: id })) : void asignar(c.id, id)
+                    }
                     disabled={!contables.disponible || !puede || guardando === c.id}
                     placeholder="Sin cuenta contable"
                   />

@@ -21,8 +21,9 @@
  *
  * ── Qué se permite y qué no ───────────────────────────────────────────────
  *
- *   · `src/app/admin/`: es el backoffice INTERNO de Leasefy. Ahí el lector ES
- *     el operador y nombrarlo es lo correcto.
+ *   · `src/app/admin/`, `src/components/admin/` y `src/lib/admin/`: el
+ *     backoffice INTERNO de Leasefy (sus piezas no las importa el panel del
+ *     cliente). Ahí el lector ES el operador y nombrarlo es lo correcto.
  *   · Comentarios de código: son para quien lee el código.
  *   · El `motivo` del back sigue viajando entero: queda en el `title`, en el
  *     DOM y en el log. Lo que cambia es lo que se PINTA.
@@ -41,7 +42,7 @@ import { join } from 'node:path';
 const TIEMPO_DE_RECORRER_EL_REPO = 60_000
 
 const RAIZ = join(process.cwd(), 'src');
-const EXCEPCIONES = [join(RAIZ, 'app/admin')];
+const EXCEPCIONES = [join(RAIZ, 'app/admin'), join(RAIZ, 'components/admin'), join(RAIZ, 'lib/admin')];
 
 /**
  * El nombre de quien despliega, que el cliente no tiene por qué leer.

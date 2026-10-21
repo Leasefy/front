@@ -82,7 +82,7 @@ describe('FranjaDelMarketplace', () => {
     await montar()
     expect(franja()).not.toBeNull()
     expect(franja()!.compareDocumentPosition(header()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(franja()!.querySelector('a.mk-anuncio-t')?.getAttribute('href')).toBe('/publicar')
+    expect(franja()!.querySelector('a.mk-anuncio-t')?.getAttribute('href')).toBe('/publica')
     // El header baja para dejarla ver.
     expect(header()?.hasAttribute('data-franja')).toBe(true)
   })

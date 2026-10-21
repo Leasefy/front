@@ -29,23 +29,24 @@ export default function RecaudoBancarioPage() {
             <h1 className="text-h2 text-fg">Recaudo por convenio con el banco</h1>
             <ParaEntenderMas
               etiqueta="Cómo funciona el recaudo por convenio"
-              descripcion="Qué hace el banco, qué hace Leasefy y qué aprueba una persona."
+              descripcion="Qué hace el banco, qué hace Leasefy solo y qué decide una persona."
             >
               <div className="space-y-3 text-sm text-fg-muted">
                 <p>
-                  Cada contrato paga con su <strong className="text-fg">referencia única</strong>,
-                  la que se imprime en su recibo. El inquilino paga en el banco o por su
-                  canal, y el banco te manda un archivo con todo lo que recaudó.
+                  El inquilino paga en el banco con la <strong className="text-fg">referencia de su
+                  contrato o con su cédula</strong>, y el banco te manda cada día un archivo con todo
+                  lo que recaudó.
                 </p>
                 <p>
-                  Ese archivo se importa acá. Lo que calza exacto entra al{' '}
-                  <strong className="text-fg">mismo lote</strong> que ya apruebas en
-                  Conciliación, y lo que no calza cae en la cola manual de siempre.
+                  Ese archivo se importa acá y cada línea se cruza de la regla más estricta a la más
+                  laxa: primero la referencia del contrato, después la cédula de un inquilino con un
+                  solo contrato con deuda. Nunca por el nombre.
                 </p>
                 <p>
-                  <strong className="text-fg">Nada se aplica sin que una persona lo
-                  apruebe.</strong> Esta pantalla no emite un solo recibo de caja: los emite
-                  quien aprueba el lote.
+                  <strong className="text-fg">Lo que cruza sin dudas y con el valor exacto de una
+                  cuota se concilia solo</strong> y sale su recibo de caja. Lo demás queda «Por
+                  conciliar» con su razón y una persona lo concilia con un toque. Lo de antes de
+                  facturar en Leasefy se omite.
                 </p>
                 <p>
                   Lo que necesitas para empezar es el{' '}
@@ -57,7 +58,8 @@ export default function RecaudoBancarioPage() {
             </ParaEntenderMas>
           </div>
           <p className="max-w-2xl text-sm text-fg-muted">
-            El archivo del banco entra acá y se aplica en un lote que una persona aprueba.
+            Sube el archivo de recaudo del banco: lo que se identifica sin dudas se concilia solo, con su recibo, y
+            ves por qué no se concilió lo demás.
           </p>
         </header>
         <RecaudoBancarioPanel />

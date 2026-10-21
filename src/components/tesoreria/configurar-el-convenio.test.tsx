@@ -39,6 +39,8 @@ const h = vi.hoisted(() => ({
   guardarConvenio: vi.fn(),
   previa: vi.fn(),
   importar: vi.fn(),
+  detectarFormato: vi.fn(),
+  listarArchivos: vi.fn(),
 }));
 
 vi.mock('@/lib/api/tesoreria.service', () => ({
@@ -48,6 +50,8 @@ vi.mock('@/lib/api/tesoreria.service', () => ({
     guardarConvenio: h.guardarConvenio,
     previa: h.previa,
     importar: h.importar,
+    detectarFormato: h.detectarFormato,
+    listarArchivos: h.listarArchivos,
   },
 }));
 
@@ -239,6 +243,8 @@ describe('el preset es por dónde se empieza', () => {
     h.listarConvenios.mockResolvedValue(SIN_CONVENIOS);
     await abrirElFormulario();
 
+    // Desde el 20-10-2026 los formatos hechos viven en «Ajustes avanzados».
+    await clic(enElCajon('ajustes-avanzados'));
     await clic(document.body.querySelector(`#preset-${PRESET.clave}`));
 
     expect(enElCajon('advertencia-del-preset')?.textContent).toContain(
@@ -290,6 +296,7 @@ describe('lo que se escribe es lo que viaja', () => {
     await escribir('convenio-banco', 'Davivienda');
     await escribir('convenio-codigo', '77123');
     await escribir('convenio-nombre', 'Recaudo');
+    await clic(enElCajon('ajustes-avanzados'));
     await escribir('convenio-encabezado', '');
     await clic(enElCajon('guardar-convenio'));
 
@@ -480,5 +487,95 @@ describe('los errores del convenio, en su campo', () => {
     await clic(enElCajon('guardar-convenio'));
 
     expect(enElCajon('convenio-error')?.textContent).toMatch(/conexión/);
+  });
+});
+
+/**
+ * 🔴 EL CONVENIO, ASISTIDO (Nico, 20-10-2026): «la gente no está entendiendo
+ * qué agregar ahí». El banco con un toque y un archivo de ejemplo que se lee solo.
+ */
+describe('el convenio asistido (20-10)', () => {
+  const ASOBANCARIA = {
+    clave: 'asobancaria-2001',
+    nombre: 'Asobancaria 2001 (el estándar de los bancos)',
+    advertencia: 'Registros de 162 caracteres.',
+    formato: {
+      tipo: 'ANCHO_FIJO' as const,
+      columnas: { referencia: { desde: 3, largo: 48 }, valor: { desde: 51, largo: 14 } },
+      formatoDeFecha: 'YYYYMMDD',
+      decimales: 2,
+      lineasDeEncabezado: 0,
+      lineasDePie: 0,
+      marcaDeDetalle: '06',
+      marcaEn: 1,
+      fechaDelEncabezado: { marca: '01', marcaEn: 1, desde: 13, largo: 8 },
+      controlDelArchivo: { marca: '09', marcaEn: 1, registros: { desde: 3, largo: 9 }, total: { desde: 12, largo: 18 }, decimales: 2 },
+    },
+  };
+
+  it('🔴 el banco con un toque deja el estándar, sugiere el nombre y la fecha del encabezado VIAJA', async () => {
+    h.listarConvenios.mockResolvedValue({ ...SIN_CONVENIOS, presets: [ASOBANCARIA, PRESET] });
+    h.crearConvenio.mockResolvedValue({ ejemploDeReferencia: '1850' });
+    await abrirElFormulario();
+    await clic(enElCajon('banco-Bancolombia'));
+    expect((enElCajon('convenio-banco') as HTMLInputElement).value).toBe('Bancolombia');
+    expect((enElCajon('convenio-nombre') as HTMLInputElement).value).toBe('Recaudo Bancolombia');
+    expect(enElCajon('formato-puesto')?.textContent).toContain('Asobancaria 2001');
+    await escribir('convenio-codigo', '7701234500');
+    await clic(enElCajon('guardar-convenio'));
+    const dto = h.crearConvenio.mock.calls[0][0] as Record<string, unknown>;
+    expect(dto.marcaDeDetalle).toBe('06');
+    expect(dto.fechaDelEncabezado).toEqual(ASOBANCARIA.formato.fechaDelEncabezado);
+    expect(dto.controlDelArchivo).toEqual(ASOBANCARIA.formato.controlDelArchivo);
+  });
+
+  it('el archivo de ejemplo pone el formato que leyó, muestra sus pagos y trae el código del convenio', async () => {
+    h.listarConvenios.mockResolvedValue({ ...SIN_CONVENIOS, presets: [ASOBANCARIA, PRESET] });
+    h.detectarFormato.mockResolvedValue({
+      codigoDelConvenio: '7701234500',
+      primerasLineas: ['01', '0600000000001046667907'],
+      candidatos: [
+        {
+          clave: 'detectado',
+          nombre: 'Detectado con las columnas del archivo',
+          formato: {
+            tipo: 'DELIMITADO',
+            separador: ';',
+            columnas: { referencia: { indice: 1 }, valor: { indice: 3 }, fecha: { indice: 0 } },
+            formatoDeFecha: 'DD/MM/YYYY',
+            decimales: 2,
+            lineasDeEncabezado: 1,
+            lineasDePie: 1,
+            marcaDeDetalle: null,
+            marcaEn: null,
+          },
+          leidas: 2,
+          rechazadas: 0,
+          totalCop: 3211930,
+          muestra: [
+            { linea: 2, crudo: '', referencia: '1046667907', nucleo: '1046667907', nucleoAlterno: null, dvValido: true, valorCop: 1845151, fecha: '2026-11-02', secuencia: null, oficina: null },
+          ],
+          confianza: 'alta',
+          porQue: 'Archivo separado por punto y coma.',
+        },
+      ],
+    });
+    await abrirElFormulario();
+    const input = enElCajon('archivo-de-ejemplo-input') as HTMLInputElement;
+    const archivo = new File(['x'], 'recaudo.csv', { type: 'text/plain' });
+    await act(async () => {
+      Object.defineProperty(input, 'files', { value: [archivo], configurable: true });
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    for (let i = 0; i < 5; i++) await act(async () => { await new Promise((r) => setTimeout(r, 10)); });
+    expect(h.detectarFormato).toHaveBeenCalled();
+    expect(enElCajon('candidato-detectado')?.getAttribute('aria-pressed')).toBe('true');
+    expect(enElCajon('muestra-del-candidato')?.textContent).toContain('1046667907');
+    expect((enElCajon('convenio-codigo') as HTMLInputElement).value).toBe('7701234500');
+    await escribir('convenio-banco', 'Davivienda');
+    await escribir('convenio-nombre', 'Recaudo');
+    await clic(enElCajon('guardar-convenio'));
+    const dto = h.crearConvenio.mock.calls.at(-1)![0] as Record<string, unknown>;
+    expect(dto).toMatchObject({ tipo: 'DELIMITADO', separador: ';', decimales: 2, formatoDeFecha: 'DD/MM/YYYY' });
   });
 });

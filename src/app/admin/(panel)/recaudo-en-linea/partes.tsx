@@ -8,10 +8,11 @@
 
 import { useRef } from 'react'
 import { Presence } from '@leasefy/cadence'
+import { Card, MonoLabel } from '@leasefy/cadence'
 
 export function Etiqueta({ children }: { children: React.ReactNode }) {
   return (
-    <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">{children}</span>
+    <MonoLabel>{children}</MonoLabel>
   )
 }
 
@@ -25,7 +26,7 @@ export function Cifra({
   tono?: 'normal' | 'bien' | 'mal' | 'ojo'
 }) {
   const color =
-    tono === 'bien' ? 'text-ok' : tono === 'mal' ? 'text-bad' : tono === 'ojo' ? 'text-warn' : 'text-fg'
+    tono === 'bien' ? 'text-success' : tono === 'mal' ? 'text-danger' : tono === 'ojo' ? 'text-warning' : 'text-fg'
   return (
     <div className="min-w-0">
       <Etiqueta>{nombre}</Etiqueta>
@@ -41,9 +42,9 @@ export function ErrorDeLaAccion({ mensaje, testId }: { mensaje: string | null; t
   if (mensaje !== null) ultimo.current = mensaje
   return (
     <Presence show={mensaje !== null}>
-      <div className="card p-4 border-l-4 border-l-bad mt-4" data-testid={testId} role="alert">
-        <p className="text-sm text-bad">{ultimo.current}</p>
-      </div>
+      <Card className="p-4  mt-4" data-testid={testId} role="alert">
+        <p className="text-sm text-danger">{ultimo.current}</p>
+      </Card>
     </Presence>
   )
 }

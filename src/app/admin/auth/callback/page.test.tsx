@@ -49,6 +49,18 @@ vi.mock('@/lib/supabase/client', () => ({
   }),
 }))
 
+// El marco de la entrada (video de marca, logotipo) no es lo que se prueba acá:
+// la prueba es sobre la sesión. En happy-dom el video y la imagen de Next fallan.
+vi.mock('@/components/admin/acceso/MarcoDeAcceso', () => ({
+  MarcoDeAcceso: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TituloDeAcceso: ({ titulo, bajada }: { titulo: React.ReactNode; bajada?: React.ReactNode }) => (
+    <div>
+      {titulo}
+      {bajada}
+    </div>
+  ),
+}))
+
 import AdminAuthCallbackPage from './page'
 
 const SESSION = { access_token: 'tok', user: { email: 'admin@leasefy.co' } }

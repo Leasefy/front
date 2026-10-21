@@ -16,6 +16,7 @@
  * procesos (`enBloqueEnElServidor`).
  */
 
+import { usePuedeDescargar } from '@/lib/permisos/puede-descargar';
 import { useState } from 'react';
 import { EnvelopeSimple, FileXls, UserPlus, WhatsappLogo } from '@phosphor-icons/react';
 
@@ -97,6 +98,10 @@ export function ContratosMarcados({
     }
   };
 
+  // 🔴 Política de datos (20-10-2026): sólo descarga quien tenga «Exportar» de contratos.
+
+  const descarga = usePuedeDescargar('contratos');
+
   const exportar = async () => {
     setOcupado(true);
     try {
@@ -121,7 +126,7 @@ export function ContratosMarcados({
       ocupado={ocupado}
       cuandoNoHayNada="Marca contratos para mandarles el estado de cuenta a sus inquilinos, invitarlos al portal o exportarlos."
     >
-      <Button variant="ghost" size="sm" hideArrow disabled={ocupado || nada} onClick={() => void exportar()} data-testid="exportar-marcados">
+      <Button variant="ghost" size="sm" hideArrow disabled={ocupado || nada || !descarga.puede} onClick={() => void exportar()} data-testid="exportar-marcados" title={descarga.porQue ?? undefined}>
         <FileXls className="h-4 w-4" />
         Exportar
       </Button>

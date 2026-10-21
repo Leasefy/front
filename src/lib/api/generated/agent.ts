@@ -2805,6 +2805,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cotizador/quote/{quoteId}/seguimiento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Guarda la aseguradora elegida y/o el número de la póliza de una cotización.
+         * @description COTIZ-17 (19-10-2026): «Avanzar con la recomendada» guarda la elegida (quién y cuándo); «Radicar la póliza» registra a mano su número. La elegida tiene que haber respaldado al candidato; la póliza necesita una elegida. Sin la migración del seguimiento: 503 FALTA_UNA_MIGRACION.
+         */
+        put: operations["putAgencyCotizadorSeguimiento"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cotizador/quote/{quoteId}": {
         parameters: {
             query?: never;
@@ -9923,7 +9943,7 @@ export interface components {
              * @example ADMIN
              * @enum {string}
              */
-            role: "ADMIN" | "AGENTE" | "CONTADOR" | "VIEWER" | "COORDINADOR" | "AUXILIAR_CARTERA" | "ABOGADO_EXTERNO" | "OPERATOR";
+            role: "ADMIN" | "AGENTE" | "CONTADOR" | "VIEWER" | "COORDINADOR" | "AUXILIAR_CARTERA" | "ABOGADO_EXTERNO" | "AUXILIAR_COMERCIAL" | "AUXILIAR_ADMINISTRATIVO" | "AUXILIAR_CONTABLE" | "AUXILIAR_MANTENIMIENTO" | "OPERATOR";
         };
         OnboardingMembersRequest: {
             members: components["schemas"]["OnboardingMemberInput"][];
@@ -10107,7 +10127,7 @@ export interface components {
             /** Format: email */
             email: string;
             /** @enum {string} */
-            role: "ADMIN" | "AGENTE" | "CONTADOR" | "VIEWER" | "COORDINADOR" | "AUXILIAR_CARTERA" | "ABOGADO_EXTERNO" | "OPERATOR";
+            role: "ADMIN" | "AGENTE" | "CONTADOR" | "VIEWER" | "COORDINADOR" | "AUXILIAR_CARTERA" | "ABOGADO_EXTERNO" | "AUXILIAR_COMERCIAL" | "AUXILIAR_ADMINISTRATIVO" | "AUXILIAR_CONTABLE" | "AUXILIAR_MANTENIMIENTO" | "OPERATOR";
         };
         OnboardingSessionMembersRequest: {
             members: components["schemas"]["OnboardingSessionMemberInput"][];
@@ -10520,6 +10540,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             cedulaHashPrefix8: string;
+            nombreCandidato?: string | null;
             canonCop: number;
             ciudad: string;
             createdAt: string;
@@ -10673,6 +10694,29 @@ export interface components {
             priority?: "rapidez" | "costo" | "cobertura" | "probabilidad";
             carriers?: string[];
         };
+        AgencyCotizadorSeguimiento: {
+            disponible: boolean;
+            nombreCandidato: string | null;
+            opcionElegida: string | null;
+            opcionElegidaPor: string | null;
+            opcionElegidaAt: string | null;
+            polizaNumero: string | null;
+            polizaRegistradaPor: string | null;
+            polizaRegistradaAt: string | null;
+        };
+        AgencyCotizadorSeguimientoError: {
+            error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
+        };
+        AgencyCotizadorSeguimientoBody: {
+            opcionElegida?: string | null;
+            polizaNumero?: string | null;
+        };
         AgencyCotizadorQuoteDetailResponse: {
             /** Format: uuid */
             quoteId: string;
@@ -10685,6 +10729,7 @@ export interface components {
             completedAt: string | null;
             /** Format: uuid */
             reQuoteOf: string | null;
+            seguimiento?: components["schemas"]["AgencyCotizadorSeguimiento"];
         };
         AgencyCotizadorQuoteDetailError: {
             error: string;
@@ -12512,6 +12557,8 @@ export interface components {
             obligacionesActualizadas: number;
             /** @description Deudores que ENTRARON al embudo (fila nueva en agent.debtor_states). Sin esa fila no los llama la cadencia ni aparecen en el panel, así que este número —y no `creados`— dice cuántos empiezan a gestionarse. */
             altasAlEmbudo: number;
+            /** @description Se le avisó a Mori que arranque con esta cartera (20-10-2026). Que llame o no lo deciden sus rejas: horario, frecuencia, autonomía del Piloto y arranque en frío. */
+            moriAvisado?: boolean;
             /** @description Filas con monto pero sin fecha de vencimiento legible. Se importó el deudor, pero no entra a cobranza: sin vencimiento no hay días de mora, y una fecha inventada dispararía llamadas y una carta con cifras falsas. */
             sinVencimiento: number;
             /** @description Índices de filas cuyo teléfono ya pertenece a OTRO deudor del tenant con una cédula distinta. Se importaron como deudor nuevo a propósito: dos codeudores comparten teléfono, y fusionarlos dejaría a uno debiendo los dos cánones. Revisa si son la misma persona; para fusionarlas está scripts/normalizar-telefonos-deudores.ts. */
@@ -13082,6 +13129,7 @@ export interface components {
         AiHubGobiernoResponse: {
             agentes: components["schemas"]["AiHubGobiernoItem"][];
             llavesFinas: string[];
+            pausadaPorLeasefy: boolean;
         };
         AiHubGobiernoPutBody: {
             habilitado: boolean;
@@ -13101,6 +13149,7 @@ export interface components {
             origen: "piloto" | "politica" | "default";
             corre: boolean;
             porQueNoCorre: string | null;
+            enParte?: string | null;
             gobierna: boolean;
             actua: boolean;
             efectoReal: string;
@@ -19093,6 +19142,87 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CarrierOverrideError"];
+                };
+            };
+        };
+    };
+    putAgencyCotizadorSeguimiento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AgencyCotizadorSeguimientoBody"];
+            };
+        };
+        responses: {
+            /** @description El seguimiento como quedó */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimiento"];
+                };
+            };
+            /** @description Datos inválidos o una aseguradora que no respaldó al candidato */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimientoError"];
+                };
+            };
+            /** @description Missing/invalid JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimientoError"];
+                };
+            };
+            /** @description Sin cotizador:create-quote */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimientoError"];
+                };
+            };
+            /** @description La cotización no es de esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimientoError"];
+                };
+            };
+            /** @description SIN_OPCION_ELEGIDA o POLIZA_REGISTRADA */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimientoError"];
+                };
+            };
+            /** @description Sin base o FALTA_UNA_MIGRACION */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorSeguimientoError"];
                 };
             };
         };
@@ -26690,6 +26820,23 @@ export interface operations {
             };
             /** @description Agente desconocido */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Leasefy pausó los agentes de esta inmobiliaria */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

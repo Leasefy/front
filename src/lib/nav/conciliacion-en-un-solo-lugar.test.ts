@@ -144,7 +144,10 @@ describe('la conciliación bancaria en un solo lugar', { timeout: 60_000 }, () =
       join(RAIZ, 'components/cobros/extracto-bancario/CargarExtracto.tsx'),
       'utf8',
     )
-    expect(cargar).toContain('parseSpreadsheetFile')
+    // CSV **y** Excel en el navegador: desde el 20-10-2026 por el lector de
+    // planillas (`leerPlanilla`, que usa `parseSpreadsheetFile` por dentro y
+    // además elige la hoja y la fila de los títulos).
+    expect(cargar).toMatch(/parseSpreadsheetFile|leerPlanilla\(/)
   }, TIEMPO_DE_RECORRER_EL_REPO)
 
   it('lo del micro no se borró: sigue montado debajo', () => {

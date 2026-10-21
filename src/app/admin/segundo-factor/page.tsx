@@ -4,7 +4,11 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getSupabase } from '@/lib/supabase/client'
 import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect'
-import { Wordmark } from '@/components/admin/Wordmark'
+import { ShieldCheck } from '@phosphor-icons/react'
+import { CrossFade, Presence, Spinner } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo'
+import { MarcoDeAcceso, TituloDeAcceso } from '@/components/admin/acceso/MarcoDeAcceso'
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection'
 import { leerErrorDeSupabase } from '@/lib/auth/errores-de-supabase'
 import { mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor'
@@ -37,7 +41,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
  */
 export default function AdminSegundoFactorPage() {
   return (
-    <Suspense fallback={<Marco><Estado texto="verificando sesión" /></Marco>}>
+    <Suspense fallback={<Marco><Estado texto="Verificando tu sesión…" /></Marco>}>
       <SegundoFactor />
     </Suspense>
   )
@@ -125,16 +129,16 @@ function SegundoFactor() {
     return () => subscription.unsubscribe()
   }, [cargarFactores, next])
 
-  async function verificar() {
+  async function verificar(elCodigo: string = codigo) {
     const sb = getSupabase()
-    if (!sb || !factorId || codigo.length !== 6) return
+    if (!sb || !factorId || elCodigo.length !== 6 || verificando) return
     setVerificando(true)
     setError(null)
     try {
       const { data: desafio, error: errorDelDesafio } = await conTope(sb.auth.mfa.challenge({ factorId }))
       if (errorDelDesafio) throw errorDelDesafio
       const { error: errorDelCodigo } = await conTope(
-        sb.auth.mfa.verify({ factorId, challengeId: desafio.id, code: codigo }),
+        sb.auth.mfa.verify({ factorId, challengeId: desafio.id, code: elCodigo }),
       )
       if (errorDelCodigo) throw errorDelCodigo
       // Recarga entera: el guard del panel lee la sesión nueva (aal2) al montar.
@@ -160,98 +164,102 @@ function SegundoFactor() {
     window.location.href = '/admin/login'
   }
 
+  const titulo = paso === 'inscribir' ? 'Activa tu segundo factor' : 'Verificación de seguridad'
+  const bajada =
+    paso === 'inscribir'
+      ? 'El admin ve los datos de todas las inmobiliarias: entrar con el enlace del correo no alcanza. Actívalo una vez con tu app de autenticación.'
+      : recienActivado
+        ? 'Ya quedó activado. Para entrar, escribe el código que muestra AHORA tu app (si es el mismo que acabas de usar, espera al siguiente).'
+        : 'Abre tu app de autenticación y escribe el código de seis dígitos.'
+
   return (
     <Marco>
-      <div className="section-label justify-center mb-3">segundo factor</div>
-      <h1 className="font-display text-display tracking-tight mb-2 text-fg">
-        {paso === 'inscribir' ? 'Activa tu segundo factor' : 'Escribe tu código'}
-      </h1>
-      <p className="text-sm text-fg-muted mb-8">
-        {paso === 'inscribir'
-          ? 'Este panel ve los datos de todas las inmobiliarias: entrar con el enlace del correo no alcanza. Actívalo una vez con tu app de autenticación.'
-          : recienActivado
-            ? 'Ya quedó activado. Para entrar, escribe el código que muestra AHORA tu app (si es el mismo que acabas de usar, espera al siguiente).'
-            : 'Este panel exige segundo factor. Abre tu app de autenticación y escribe el código de seis dígitos.'}
-      </p>
+      <div className="flex h-14 w-14 items-center justify-center rounded-md bg-primary-soft ring-1 ring-primary/10">
+        <ShieldCheck className="h-7 w-7 text-primary" weight="fill" aria-hidden="true" />
+      </div>
 
-      {paso === 'cargando' ? <Estado texto="revisando tu segundo factor" /> : null}
+      <CrossFade swapKey={paso === 'inscribir' ? 'inscribir' : recienActivado ? 'activado' : 'codigo'}>
+        <TituloDeAcceso titulo={titulo} bajada={bajada} />
+      </CrossFade>
 
-      {paso === 'inscribir' ? (
-        <div className="text-left" data-testid="inscribir-segundo-factor-admin">
-          <MfaSetupSection
-            onActivado={(id) => {
-              setFactorId(id)
-              setRecienActivado(true)
-              setPaso('codigo')
+      <CrossFade swapKey={paso}>
+        {paso === 'cargando' ? <Estado texto="Revisando tu segundo factor…" /> : null}
+
+        {paso === 'inscribir' ? (
+          <div data-testid="inscribir-segundo-factor-admin">
+            <MfaSetupSection
+              onActivado={(id) => {
+                setFactorId(id)
+                setRecienActivado(true)
+                setPaso('codigo')
+              }}
+            />
+          </div>
+        ) : null}
+
+        {paso === 'codigo' ? (
+          <form
+            className="space-y-5"
+            onSubmit={(e) => {
+              e.preventDefault()
+              void verificar()
             }}
-          />
-        </div>
-      ) : null}
+          >
+            <div data-testid="codigo-segundo-factor-admin">
+              <CasillasDeCodigo
+                aria-label="Código de verificación de 6 dígitos"
+                value={codigo}
+                onChange={(valor) => {
+                  setCodigo(valor.replace(/\D/g, ''))
+                  if (error) setError(null)
+                }}
+                // Con el sexto dígito entra solo, como en la entrada de la plataforma.
+                onCompleto={(completo) => void verificar(completo)}
+                hayError={Boolean(error)}
+                disabled={verificando}
+                autoFocus
+              />
+            </div>
+            <Button
+              type="submit"
+              isLoading={verificando}
+              disabled={verificando || codigo.length !== 6}
+              hideArrow
+              className="h-12 w-full rounded-full text-[14px]"
+            >
+              {verificando ? 'Verificando…' : 'Entrar al admin'}
+            </Button>
+            <p className="text-pretty text-center text-caption text-fg-subtle">
+              Cambia cada 30 segundos: si te lo rechaza, espera el siguiente.
+            </p>
+          </form>
+        ) : null}
+      </CrossFade>
 
-      {paso === 'codigo' ? (
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault()
-            void verificar()
-          }}
-        >
-          <input
-            aria-label="Código de verificación de 6 dígitos"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            autoFocus
-            maxLength={6}
-            value={codigo}
-            onChange={(e) => {
-              setCodigo(e.target.value.replace(/\D/g, ''))
-              if (error) setError(null)
-            }}
-            className="w-full border border-border bg-bg px-3 py-2 text-center font-mono text-2xl tracking-[0.3em] text-fg"
-            data-testid="codigo-segundo-factor-admin"
-          />
-          <button type="submit" className="btn w-full" disabled={verificando || codigo.length !== 6}>
-            {verificando ? 'Verificando…' : 'Entrar →'}
-          </button>
-        </form>
-      ) : null}
-
-      {error ? (
-        <p className="mt-4 text-sm text-bad" role="alert">
+      <Presence show={Boolean(error)}>
+        <p className="text-body-sm text-danger" role="alert">
           {error}
         </p>
-      ) : null}
+      </Presence>
 
-      <button
-        type="button"
-        onClick={() => void cerrarSesion()}
-        className="mt-8 text-sm text-fg-muted underline-offset-4 hover:underline"
-      >
-        Cerrar sesión
-      </button>
+      <div className="border-t border-border-faint pt-5">
+        <Button type="button" variant="link" size="sm" hideArrow onClick={() => void cerrarSesion()}>
+          Cerrar sesión
+        </Button>
+      </div>
     </Marco>
   )
 }
 
 function Marco({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-bg">
-      <div className="w-full max-w-md text-center">
-        <div className="flex flex-col items-center gap-2 mb-6">
-          <Wordmark size="md" variant="blue" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">admin</span>
-        </div>
-        {children}
-      </div>
-    </div>
-  )
+  return <MarcoDeAcceso data-testid="admin-segundo-factor">{children}</MarcoDeAcceso>
 }
 
 function Estado({ texto }: { texto: string }) {
   return (
-    <div className="font-mono text-[11px] uppercase tracking-[0.12em] flex items-center justify-center gap-2 text-fg-muted">
-      <span className="inline-block w-2 h-2 bg-brand animate-pulse" />
-      {texto}
+    <div className="flex items-center gap-3 text-body-sm text-fg-muted" role="status">
+      <Spinner size="sm" />
+      <span>{texto}</span>
     </div>
   )
 }

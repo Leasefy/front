@@ -81,7 +81,7 @@ function Buscar() {
             {buscando ? tr('Buscando…') : tr('Buscar')}
           </Button>
         </div>
-        <p className="mt-3 text-xs text-fg-subtle">
+        <p className="mt-3 text-caption text-fg-subtle">
           {tr('La persona verá que tu inmobiliaria consultó su calificación. Sólo aparece quien autorizó compartirla o quien tuvo contrato con ustedes.')}
         </p>
       </form>
@@ -114,7 +114,7 @@ function Buscar() {
                       <p className="text-sm text-fg">
                         <span className="text-fg-muted">{tr('Cuenta de:')}</span> <span className="font-medium">{r.persona.nombre}</span>
                       </p>
-                      <p className="text-xs text-fg-muted">
+                      <p className="text-caption text-fg-muted">
                         {r.alcance === 'TODO_LEASEFY'
                           ? r.historial.inmobiliarias === 1
                             ? tr('Con todo su historial en Leasefy (1 inmobiliaria)')
@@ -123,7 +123,7 @@ function Buscar() {
                       </p>
                     </div>
                     <TarjetaDeCalificacion calificacion={r.calificacion} />
-                    <p className="text-xs text-fg-subtle">
+                    <p className="text-caption text-fg-subtle">
                       {r.historial.porcentajeATiempo !== null
                         ? `${
                             r.historial.cuotasContadas === 1
@@ -245,7 +245,7 @@ function Evaluar({ puedeEvaluar }: { puedeEvaluar: boolean }) {
                 className="w-full"
               />
             </div>
-            <span className="whitespace-nowrap text-xs font-medium tabular-nums text-fg-muted">
+            <span className="whitespace-nowrap text-caption font-medium tabular-nums text-fg-muted">
               {filtrados.length === 1 ? tr('1 contrato') : tr('{n} contratos', { n: filtrados.length })}
             </span>
           </div>
@@ -258,10 +258,10 @@ function Evaluar({ puedeEvaluar }: { puedeEvaluar: boolean }) {
                   <div key={k.contractId} className="flex flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-fg">{k.inquilino ?? tr('Sin nombre')}</p>
-                      <p className="truncate text-xs text-fg-muted">{k.direccion ?? '—'}</p>
+                      <p className="truncate text-caption text-fg-muted">{k.direccion ?? '—'}</p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-mono text-xs tabular-nums text-fg-muted">
+                      <span className="font-mono text-caption tabular-nums text-fg-muted">
                         {k.terminoEl ? new Date(`${k.terminoEl}T12:00:00`).toLocaleDateString(localeFechas) : '—'}
                       </span>
                       {puedeEvaluar && (

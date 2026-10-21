@@ -6,6 +6,8 @@ import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 // ---------- Types ----------
 
@@ -68,93 +70,85 @@ export default function DebtorsPage() {
   const columns: Column<DebtorRow>[] = [
     {
       header: 'Nombre',
+      orden: (r) => r.full_name,
       cell: (r) => <span className="font-medium text-fg">{r.full_name}</span>,
     },
     {
       header: 'Cédula',
+      orden: (r) => r.document_number,
       cell: (r) => (
-        <span className="font-mono text-xs text-fg-muted">{r.document_number ?? '—'}</span>
+        <span className="font-mono text-caption text-fg-muted">{r.document_number ?? '—'}</span>
       ),
     },
     {
       header: 'Teléfono',
       cell: (r) => (
-        <span className="font-mono text-xs text-fg-muted">{r.phone_primary ?? '—'}</span>
+        <span className="font-mono text-caption text-fg-muted">{r.phone_primary ?? '—'}</span>
       ),
     },
     {
-      header: 'Email',
-      cell: (r) => <span className="text-xs text-fg-muted">{r.email ?? '—'}</span>,
+      header: 'Correo',
+      orden: (r) => r.email,
+      cell: (r) => <span className="text-caption text-fg-muted">{r.email ?? '—'}</span>,
     },
     {
-      header: 'Agencia',
-      cell: (r) => <span className="text-xs">{r.legal_name ?? '—'}</span>,
+      header: 'Inmobiliaria',
+      orden: (r) => r.legal_name,
+      cell: (r) => <span className="text-caption">{r.legal_name ?? '—'}</span>,
     },
     {
       header: 'Llamadas',
       align: 'right',
+      orden: (r) => Number(r.calls_count) || 0,
+      ordenPrimero: 'desc',
       cell: (r) => (
-        <span className="tabular-nums font-mono text-xs">{r.calls_count}</span>
+        <span className="tabular-nums font-mono text-caption">{r.calls_count}</span>
       ),
     },
   ]
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl">
+    <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        label="21 · debtors"
-        title="Búsqueda de deudores"
-        description="Datos sensibles. Cada búsqueda queda registrada en audit_log (action='debtor.search') antes de devolver resultados. Sin búsqueda, sin filas."
+        title="Deudores"
+        description="Busca un deudor por nombre, cédula o teléfono en todas las inmobiliarias. Son datos personales: cada búsqueda queda registrada con tu correo antes de mostrar resultados."
       />
 
-      {/* PII audit notice */}
-      <div className="mb-4 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-        <span className="inline-block w-2 h-2 bg-warn" />
-        PII — acceso auditado · audit_log.action=&apos;debtor.search&apos;
-      </div>
-
-      {/* Search form — submit-triggered to avoid audit log spam on keystrokes */}
-      <form className="card p-4 mb-6 flex gap-3 items-end" onSubmit={handleSubmit}>
-        <label className="flex-1">
-          <span className="block mb-1 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
-            nombre · cédula · teléfono
-          </span>
-          <input
+      {/* Se busca al enviar, no con cada tecla: cada búsqueda queda registrada. */}
+      <form className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface p-4" onSubmit={handleSubmit}>
+        <label className="min-w-[240px] flex-1" htmlFor="buscar-deudor">
+          <span className="mb-1.5 block text-body-sm font-medium text-fg">Nombre, cédula o teléfono</span>
+          <Input
+            id="buscar-deudor"
             type="search"
-            className="input w-full"
+            className="w-full"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="ej: 1234567 o +57300…"
+            placeholder="Ej.: 1234567 o 300 123 4567"
             autoComplete="off"
           />
         </label>
-        <button type="submit" className="btn btn-primary">
-          Buscar →
-        </button>
+        <Button hideArrow type="submit">
+          Buscar
+        </Button>
         {committedQ && (
-          <button type="button" className="btn" onClick={handleClear}>
-            × limpiar
-          </button>
+          <Button variant="outline" hideArrow type="button" onClick={handleClear}>
+            Limpiar
+          </Button>
         )}
       </form>
 
-      {/* Idle state — no search yet */}
       {!committedQ ? (
-        <div className="card p-8 text-center">
-          <p className="text-sm text-fg-muted">
-            Ingresa un término para encontrar deudores.
-          </p>
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mt-2">
-            sin búsqueda · sin filas · sin auditoría
-          </p>
-        </div>
+        <p className="rounded-lg border border-border bg-surface px-4 py-3 text-body-sm text-fg-muted">
+          Escribe un nombre, una cédula o un teléfono. Hasta que busques no se muestra ni se registra nada.
+        </p>
       ) : (
         <>
           {debtors.data && (
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
-              resultados · {debtors.data.data.length}
-              {debtors.data.data.length === 50 && ' (cap 50)'}
-            </div>
+            <p className="text-caption text-fg-muted">
+              {debtors.data.data.length === 1 ? '1 resultado' : `${debtors.data.data.length} resultados`}
+              {debtors.data.data.length === 50 && ' (se muestran los primeros 50: afina la búsqueda)'}
+            </p>
           )}
           <DataTable
             columns={columns}
@@ -162,8 +156,11 @@ export default function DebtorsPage() {
             getKey={(r) => r.id}
             isLoading={debtors.isLoading}
             error={debtors.error}
-            emptyTitle={`Sin resultados para "${committedQ}"`}
+            emptyTitle={`Nada con «${committedQ}»`}
             emptyHint="Revisa la cédula o intenta con otro nombre."
+            aria-label="Deudores encontrados"
+            queSon={['deudor', 'deudores']}
+            filasPorPagina={10}
           />
         </>
       )}

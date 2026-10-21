@@ -55,7 +55,8 @@ export function CarrierDeepDiveKpiStrip({ kpis, isLoading = false }: CarrierDeep
     {
       label: t('inmobiliaria.ai.cotizador.aseguradoras.carrier.kpis.costPerQuote'),
       // 🔴 En pesos (Nico, 04-10-2026); un micro anterior mandaba dólares.
-      value: kpis && typeof kpis.costPerQuoteCop30d === 'number' ? formatCurrency(kpis.costPerQuoteCop30d) : '—',
+      // Al peso (QA 19-10-2026): es un promedio calculado, no plata guardada.
+      value: kpis && typeof kpis.costPerQuoteCop30d === 'number' ? formatCurrency(Math.round(kpis.costPerQuoteCop30d)) : '—',
       Icon: CurrencyDollar,
       iconColor: 'text-primary',
       valueMono: true,

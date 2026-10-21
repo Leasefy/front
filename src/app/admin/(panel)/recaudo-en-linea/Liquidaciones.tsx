@@ -14,6 +14,9 @@
 
 import { useState } from 'react'
 import { Collapse, Presence } from '@leasefy/cadence'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Desplegable } from '@/components/admin/screen/Filtros'
+import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
 
 import { Pill } from '@/components/admin/Pill'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/admin/screen/states'
@@ -47,6 +50,9 @@ import {
 } from '@/lib/admin/recaudo-en-linea'
 import { Cifra, ErrorDeLaAccion, Etiqueta } from './partes'
 import { GenerarLiquidaciones } from './GenerarLiquidaciones'
+import { Card, MonoLabel } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const POR_PAGINA = 25
 
@@ -80,76 +86,65 @@ export function Liquidaciones({
 
   return (
     <div data-testid="liquidaciones">
-      <div className="card p-5">
+      <Card className="p-5">
         <div className="flex flex-wrap items-end gap-4">
           <label className="block min-w-[14rem]">
             <Etiqueta>inmobiliaria</Etiqueta>
-            <select
-              className="input mt-1"
+            <Desplegable
               value={filtros.agencyId ?? ''}
-              onChange={(e) => cambiar({ agencyId: e.target.value || undefined })}
+              onChange={(v) => cambiar({ agencyId: v || undefined })}
+              todas="Todas"
+              aria-label="Inmobiliaria"
               data-testid="filtro-inmobiliaria"
-            >
-              <option value="">Todas</option>
-              {inmobiliarias.map((i) => (
-                <option key={i.id} value={i.id}>
-                  {i.nombre}
-                </option>
-              ))}
-            </select>
+              className="mt-1"
+              opciones={inmobiliarias.map((i) => ({ valor: i.id, nombre: i.nombre }))}
+            />
           </label>
           <label className="block">
             <Etiqueta>giro desde</Etiqueta>
-            <input
-              type="date"
-              className="input mt-1"
-              value={filtros.desde ?? ''}
-              onChange={(e) => cambiar({ desde: e.target.value || undefined })}
-              data-testid="filtro-desde"
-            />
+            <div className="mt-1 w-44">
+              <CampoDeFecha id="filtro-desde" testid="filtro-desde" value={filtros.desde ?? ''} onChange={(v) => cambiar({ desde: v || undefined })} />
+            </div>
           </label>
           <label className="block">
             <Etiqueta>giro hasta</Etiqueta>
-            <input
-              type="date"
-              className="input mt-1"
-              value={filtros.hasta ?? ''}
-              onChange={(e) => cambiar({ hasta: e.target.value || undefined })}
-              data-testid="filtro-hasta"
-            />
+            <div className="mt-1 w-44">
+              <CampoDeFecha id="filtro-hasta" testid="filtro-hasta" value={filtros.hasta ?? ''} onChange={(v) => cambiar({ hasta: v || undefined })} />
+            </div>
           </label>
           <label className="block">
             <Etiqueta>estado</Etiqueta>
-            <select
-              className="input mt-1"
+            <Desplegable
               value={filtros.estado ?? ''}
-              onChange={(e) => cambiar({ estado: (e.target.value || undefined) as EstadoDeLaLiquidacion | undefined })}
+              onChange={(v) => cambiar({ estado: (v || undefined) as EstadoDeLaLiquidacion | undefined })}
+              todas="Todos"
+              aria-label="Estado"
               data-testid="filtro-estado"
-            >
-              <option value="">Todos</option>
-              <option value="generada">Generada</option>
-              <option value="girada">Girada</option>
-              <option value="conciliada">Conciliada en el banco</option>
-            </select>
+              className="mt-1"
+              opciones={[
+                { valor: 'generada', nombre: 'Generada' },
+                { valor: 'girada', nombre: 'Girada' },
+                { valor: 'conciliada', nombre: 'Conciliada en el banco' },
+              ]}
+            />
           </label>
           <div className="ml-auto">
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button hideArrow type="button"
+              
               onClick={() => setGenerando((g) => !g)}
               aria-expanded={generando}
               data-testid="abrir-generar"
             >
               {generando ? 'Cerrar' : 'Generar liquidaciones'}
-            </button>
+            </Button>
           </div>
         </div>
         {rangoInvertido ? (
-          <p className="text-[13px] text-bad mt-3" data-testid="rango-invertido">
+          <p className="text-body-sm text-danger mt-3" data-testid="rango-invertido">
             La fecha «desde» va antes de la fecha «hasta».
           </p>
         ) : null}
-      </div>
+      </Card>
 
       <Collapse open={generando}>
         <div className="pt-4">
@@ -165,15 +160,15 @@ export function Liquidaciones({
 
       {data && data.disponible && data.total > 0 ? (
         <div className="grid grid-cols-3 gap-4 mt-4" data-testid="totales-de-liquidaciones">
-          <div className="card p-4">
+          <Card className="p-4">
             <Cifra nombre="liquidaciones" valor={data.totales.liquidaciones} />
-          </div>
-          <div className="card p-4">
+          </Card>
+          <Card className="p-4">
             <Cifra nombre="bruto" valor={pesos(data.totales.brutoCop)} />
-          </div>
-          <div className="card p-4">
+          </Card>
+          <Card className="p-4">
             <Cifra nombre="neto que se gira" valor={pesos(data.totales.netoCop)} />
-          </div>
+          </Card>
         </div>
       ) : null}
 
@@ -221,10 +216,10 @@ function FilaDeLiquidacion({
   alCambiar: () => void
 }) {
   return (
-    <div className="card" data-testid={`liquidacion-${l.numero}`}>
+    <Card data-testid={`liquidacion-${l.numero}`}>
       <button
         type="button"
-        className="w-full text-left p-4 hover:bg-bg-hover transition-colors"
+        className="w-full text-left p-4 hover:bg-surface-hover transition-colors"
         onClick={alAbrir}
         aria-expanded={abierta}
         data-testid={`abrir-${l.numero}`}
@@ -248,7 +243,7 @@ function FilaDeLiquidacion({
       <Collapse open={abierta}>
         <DetalleDeLiquidacion id={l.id} giroDisponible={giroDisponible} alCambiar={alCambiar} />
       </Collapse>
-    </div>
+    </Card>
   )
 }
 
@@ -294,17 +289,17 @@ function DetalleDeLiquidacion({
   if (!l) return null
 
   return (
-    <div className="px-4 pb-5 border-t border-bg-border" data-testid={`detalle-${l.numero}`}>
+    <div className="px-4 pb-5 border-t border-border" data-testid={`detalle-${l.numero}`}>
       <div className="grid gap-4 sm:grid-cols-2 pt-4">
         <div>
           <Etiqueta>la inmobiliaria</Etiqueta>
           <p className="text-sm text-fg mt-1">
             {l.inmobiliaria ?? 'Sin nombre'} · NIT {l.nit ?? 'sin registrar'}
           </p>
-          <p className="text-[13px] text-fg-muted mt-1">
+          <p className="text-body-sm text-fg-muted mt-1">
             Referencia del giro: <span className="font-mono">{l.referenciaDelGiro}</span>
           </p>
-          <p className="text-[13px] text-fg-muted">
+          <p className="text-body-sm text-fg-muted">
             Generada por {l.creadaPor}
             {l.createdAt ? ` el ${fmtDateTime(l.createdAt)}` : ''}
           </p>
@@ -312,7 +307,7 @@ function DetalleDeLiquidacion({
         </div>
         <div>
           <Etiqueta>bruto, descuentos y neto (tal como vienen)</Etiqueta>
-          <ul className="mt-1 space-y-0.5 text-[13px]" data-testid="descuentos">
+          <ul className="mt-1 space-y-0.5 text-body-sm" data-testid="descuentos">
             <li className="flex justify-between gap-3">
               <span className="text-fg">Recaudado (bruto)</span>
               <span className="tabular-nums">{pesos(l.brutoCop)}</span>
@@ -321,14 +316,14 @@ function DetalleDeLiquidacion({
               <li key={`${d.concepto}-${i}`} className="flex justify-between gap-3">
                 <span className="text-fg-muted">
                   {d.concepto}{' '}
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
+                  <MonoLabel>
                     {d.fuente === 'leasefy' ? 'leasefy' : 'reporte de wompi'}
-                  </span>
+                  </MonoLabel>
                 </span>
                 <span className="tabular-nums">−{pesos(d.valorCop)}</span>
               </li>
             ))}
-            <li className="flex justify-between gap-3 border-t border-bg-border pt-1 font-medium">
+            <li className="flex justify-between gap-3 border-t border-border pt-1 font-medium">
               <span className="text-fg">Neto que se gira</span>
               <span className="tabular-nums">{pesos(l.netoCop)}</span>
             </li>
@@ -337,24 +332,22 @@ function DetalleDeLiquidacion({
       </div>
 
       <div className="flex flex-wrap gap-2 mt-4">
-        <button
-          type="button"
-          className="btn"
+        <Button variant="outline" hideArrow type="button"
+          
           disabled={exportando !== null}
           onClick={() => void exportar('xlsx', l)}
           data-testid="descargar-excel"
         >
           {exportando === 'xlsx' ? 'Armando el Excel…' : 'Descargar Excel'}
-        </button>
-        <button
-          type="button"
-          className="btn"
+        </Button>
+        <Button variant="outline" hideArrow type="button"
+          
           disabled={exportando !== null}
           onClick={() => void exportar('pdf', l)}
           data-testid="descargar-pdf"
         >
           {exportando === 'pdf' ? 'Armando el PDF…' : 'Descargar PDF'}
-        </button>
+        </Button>
       </div>
 
       {l.estado === 'generada' ? (
@@ -387,36 +380,36 @@ function DetalleDeLiquidacion({
       <div className="mt-5">
         <Etiqueta>los pagos en línea que incluye</Etiqueta>
         <div className="overflow-x-auto mt-2">
-          <table className="w-full text-[13px] table-zebra" data-testid="pagos-de-la-liquidacion">
-            <thead>
-              <tr className="border-b border-bg-border text-left">
-                <th className="px-2 py-1.5"><Etiqueta>fecha</Etiqueta></th>
-                <th className="px-2 py-1.5"><Etiqueta>transacción</Etiqueta></th>
-                <th className="px-2 py-1.5"><Etiqueta>referencia</Etiqueta></th>
-                <th className="px-2 py-1.5"><Etiqueta>recibo</Etiqueta></th>
-                <th className="px-2 py-1.5 text-right"><Etiqueta>bruto</Etiqueta></th>
-                <th className="px-2 py-1.5 text-right"><Etiqueta>comisión</Etiqueta></th>
-                <th className="px-2 py-1.5 text-right"><Etiqueta>iva</Etiqueta></th>
-                <th className="px-2 py-1.5 text-right"><Etiqueta>retenciones</Etiqueta></th>
-                <th className="px-2 py-1.5 text-right"><Etiqueta>neto de wompi</Etiqueta></th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table data-testid="pagos-de-la-liquidacion">
+            <TableHeader>
+              <TableRow className="border-b border-border text-left">
+                <TableHead ><Etiqueta>fecha</Etiqueta></TableHead>
+                <TableHead ><Etiqueta>transacción</Etiqueta></TableHead>
+                <TableHead ><Etiqueta>referencia</Etiqueta></TableHead>
+                <TableHead ><Etiqueta>recibo</Etiqueta></TableHead>
+                <TableHead className="text-right"><Etiqueta>bruto</Etiqueta></TableHead>
+                <TableHead className="text-right"><Etiqueta>comisión</Etiqueta></TableHead>
+                <TableHead className="text-right"><Etiqueta>iva</Etiqueta></TableHead>
+                <TableHead className="text-right"><Etiqueta>retenciones</Etiqueta></TableHead>
+                <TableHead className="text-right"><Etiqueta>neto de wompi</Etiqueta></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {l.pagos.map((p) => (
-                <tr key={p.transaccionId}>
-                  <td className="px-2 py-1.5">{p.fecha ?? '—'}</td>
-                  <td className="px-2 py-1.5 font-mono">{p.transaccionId}</td>
-                  <td className="px-2 py-1.5 font-mono">{p.referencia ?? '—'}</td>
-                  <td className="px-2 py-1.5 font-mono">{p.reciboNumero ?? '—'}</td>
-                  <td className="px-2 py-1.5 text-right tabular-nums">{pesos(p.brutoCop)}</td>
-                  <td className="px-2 py-1.5 text-right tabular-nums">{pesos(p.comisionCop)}</td>
-                  <td className="px-2 py-1.5 text-right tabular-nums">{pesos(p.ivaCop)}</td>
-                  <td className="px-2 py-1.5 text-right tabular-nums">{pesos(p.retencionesCop)}</td>
-                  <td className="px-2 py-1.5 text-right tabular-nums">{pesos(p.netoCop)}</td>
-                </tr>
+                <TableRow key={p.transaccionId}>
+                  <TableCell className="px-2 py-1.5">{p.fecha ?? '—'}</TableCell>
+                  <TableCell className="px-2 py-1.5 font-mono">{p.transaccionId}</TableCell>
+                  <TableCell className="px-2 py-1.5 font-mono">{p.referencia ?? '—'}</TableCell>
+                  <TableCell className="px-2 py-1.5 font-mono">{p.reciboNumero ?? '—'}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(p.brutoCop)}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(p.comisionCop)}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(p.ivaCop)}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(p.retencionesCop)}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-right tabular-nums">{pesos(p.netoCop)}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
     </div>
@@ -428,14 +421,14 @@ function EstadoEnPalabras({ l }: { l: DetalleDeLaLiquidacion }) {
     const quien = l.conciliadaPor ? (NOMBRE_DE_QUIEN_CONCILIO[l.conciliadaPor] ?? l.conciliadaPor) : null
     const detalle = [l.conciliadaAt ? fmtDateTime(l.conciliadaAt) : null, quien].filter(Boolean).join(', ')
     return (
-      <p className="text-[13px] text-ok mt-2" data-testid="estado-en-palabras">
+      <p className="text-body-sm text-success mt-2" data-testid="estado-en-palabras">
         La línea del giro ya está conciliada en el banco de la inmobiliaria{detalle ? ` (${detalle})` : ''}.
       </p>
     )
   }
   if (l.estado === 'girada') {
     return (
-      <p className="text-[13px] text-fg mt-2" data-testid="estado-en-palabras">
+      <p className="text-body-sm text-fg mt-2" data-testid="estado-en-palabras">
         Leasefy la giró el {l.giradaEl ?? '—'}
         {l.giradaPor ? ` (marcó ${l.giradaPor})` : ''}
         {l.referenciaBancariaDelGiro ? ` · comprobante ${l.referenciaBancariaDelGiro}` : ''}. Falta que la
@@ -444,7 +437,7 @@ function EstadoEnPalabras({ l }: { l: DetalleDeLaLiquidacion }) {
     )
   }
   return (
-    <p className="text-[13px] text-warn mt-2" data-testid="estado-en-palabras">
+    <p className="text-body-sm text-warning mt-2" data-testid="estado-en-palabras">
       Generada: todavía no se ha girado.
     </p>
   )
@@ -473,7 +466,7 @@ function MarcarGirada({
 
   if (!giroDisponible) {
     return (
-      <p className="text-[13px] text-fg-muted mt-4" data-testid="giro-sin-migracion">
+      <p className="text-body-sm text-fg-muted mt-4" data-testid="giro-sin-migracion">
         Marcar «girada» todavía no está habilitado en esta base (falta una migración que aplica Víctor).
       </p>
     )
@@ -497,12 +490,12 @@ function MarcarGirada({
   return (
     <div className="mt-4">
       {!abierto ? (
-        <button type="button" className="btn btn-primary" onClick={() => setAbierto(true)} data-testid="marcar-girada">
+        <Button hideArrow type="button"  onClick={() => setAbierto(true)} data-testid="marcar-girada">
           Marcar como girada
-        </button>
+        </Button>
       ) : null}
       <Presence show={abierto}>
-        <div className="card p-4 border-l-4 border-l-brand" data-testid="confirmar-girada">
+        <Card className="p-4 " data-testid="confirmar-girada">
           <p className="text-sm text-fg">
             Esto deja dicho que Leasefy ya le transfirió {pesos(l.netoCop)} a {(l.inmobiliaria ?? 'la inmobiliaria').replace(/\.+$/, '')}.
             ¿Ya salió la plata?
@@ -510,9 +503,9 @@ function MarcarGirada({
           <div className="grid gap-4 sm:grid-cols-2 mt-3">
             <label className="block">
               <Etiqueta>día de la transferencia</Etiqueta>
-              <input
+              <Input
                 type="date"
-                className="input mt-1"
+                className="mt-1"
                 value={fecha}
                 max={hoy}
                 onChange={(e) => setFecha(e.target.value)}
@@ -521,8 +514,8 @@ function MarcarGirada({
             </label>
             <label className="block">
               <Etiqueta>comprobante o referencia (opcional)</Etiqueta>
-              <input
-                className="input mt-1"
+              <Input
+                className="mt-1"
                 value={referencia}
                 maxLength={120}
                 onChange={(e) => setReferencia(e.target.value)}
@@ -530,27 +523,26 @@ function MarcarGirada({
               />
             </label>
           </div>
-          {problema ? <p className="text-[13px] text-bad mt-2">{problema}</p> : null}
-          <p className="text-[13px] text-fg-muted mt-2">
+          {problema ? <p className="text-body-sm text-danger mt-2">{problema}</p> : null}
+          <p className="text-body-sm text-fg-muted mt-2">
             Si la línea del banco todavía no ha llegado, la fecha del giro pasa a ser este día: con ella
             se busca en el extracto de la inmobiliaria.
           </p>
           <div className="flex gap-2 mt-3">
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button hideArrow type="button"
+              
               disabled={enviando || problema !== null}
               onClick={() => void confirmar()}
               data-testid="confirmar-girada-si"
             >
               {enviando ? 'Guardando…' : 'Sí, ya se giró'}
-            </button>
-            <button type="button" className="btn btn-ghost" disabled={enviando} onClick={() => setAbierto(false)}>
+            </Button>
+            <Button variant="ghost" hideArrow type="button"  disabled={enviando} onClick={() => setAbierto(false)}>
               Cancelar
-            </button>
+            </Button>
           </div>
           <ErrorDeLaAccion mensaje={error} testId="error-de-girada" />
-        </div>
+        </Card>
       </Presence>
     </div>
   )
@@ -584,7 +576,7 @@ function DesmarcarGirada({
   if (l.desmarcarDisponible === undefined) return null
   if (!l.desmarcarDisponible) {
     return (
-      <p className="text-[13px] text-fg-muted mt-4" data-testid="desmarcar-sin-migracion">
+      <p className="text-body-sm text-fg-muted mt-4" data-testid="desmarcar-sin-migracion">
         Desmarcar «girada» todavía no está habilitado en esta base (falta la migración de la bitácora del giro,
         que aplica Víctor).
       </p>
@@ -615,12 +607,12 @@ function DesmarcarGirada({
   return (
     <div className="mt-4">
       {!abierto ? (
-        <button type="button" className="btn" onClick={() => setAbierto(true)} data-testid="desmarcar-girada">
+        <Button variant="outline" hideArrow type="button"  onClick={() => setAbierto(true)} data-testid="desmarcar-girada">
           Desmarcar como girada
-        </button>
+        </Button>
       ) : null}
       <Presence show={abierto}>
-        <div className="card p-4 border-l-4 border-l-warn" data-testid="confirmar-desmarcar">
+        <Card className="p-4 " data-testid="confirmar-desmarcar">
           <p className="text-sm text-fg">
             La liquidación {l.numero} vuelve a «generada»: deja de decir que Leasefy le giró {pesos(l.netoCop)} a{' '}
             {l.inmobiliaria ?? 'la inmobiliaria'} el {l.giradaEl ?? '—'}. Queda escrito en la bitácora del giro con tu
@@ -637,23 +629,21 @@ function DesmarcarGirada({
               data-testid="motivo-de-desmarcar"
             />
           </label>
-          <p className="text-[13px] text-fg-muted mt-1 tabular-nums">
+          <p className="text-body-sm text-fg-muted mt-1 tabular-nums">
             {largo} de {MOTIVO_MAXIMO_PARA_DESMARCAR}
           </p>
-          {problema && largo > 0 ? <p className="text-[13px] text-bad mt-1">{problema}</p> : null}
+          {problema && largo > 0 ? <p className="text-body-sm text-danger mt-1">{problema}</p> : null}
           <div className="flex gap-2 mt-3">
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button hideArrow type="button"
+              
               disabled={enviando || problema !== null}
               onClick={() => void confirmar()}
               data-testid="confirmar-desmarcar-si"
             >
               {enviando ? 'Guardando…' : 'Sí, desmarcar'}
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost"
+            </Button>
+            <Button variant="ghost" hideArrow type="button"
+              
               disabled={enviando}
               onClick={() => {
                 setAbierto(false)
@@ -661,10 +651,10 @@ function DesmarcarGirada({
               }}
             >
               Cancelar
-            </button>
+            </Button>
           </div>
           <ErrorDeLaAccion mensaje={error} testId="error-de-desmarcar" />
-        </div>
+        </Card>
       </Presence>
     </div>
   )
@@ -675,7 +665,7 @@ function HistoriaDelGiro({ historia }: { historia: MovimientoDelGiro[] }) {
   return (
     <div className="mt-5" data-testid="historia-del-giro">
       <Etiqueta>historia del giro</Etiqueta>
-      <ul className="mt-2 space-y-1.5 text-[13px]">
+      <ul className="mt-2 space-y-1.5 text-body-sm">
         {historia.map((h, i) => (
           <li key={`${h.accion}-${h.at ?? i}`} className="text-fg">
             {h.accion === 'marcada' ? (

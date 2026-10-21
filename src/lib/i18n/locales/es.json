@@ -1818,12 +1818,12 @@
       "cancelled": "Cancelado"
     },
     "dashboard": {
-      "title": "Dashboard Inmobiliaria",
+      "title": "Dashboard inmobiliaria",
       "subtitle": "Resumen de operaciones y métricas clave",
       "kpi": {
-        "totalProperties": "Propiedades Totales",
+        "totalProperties": "Propiedades totales",
         "rentedAndAvailable": "{{rented}} arrendadas · {{available}} disponibles",
-        "monthlyCollection": "Recaudo del Mes",
+        "monthlyCollection": "Recaudo del mes",
         "collectionRateLabel": "{{rate}} · {{rotulo}}",
         "commissions": "Comisiones",
         "commissionsGenerated": "Generadas este mes",
@@ -1839,7 +1839,7 @@
         "cuotasPendientesSinDato": "El servidor todavía no manda las cuotas del contrato"
       },
       "pipeline": {
-        "title": "Pipeline Activo",
+        "title": "Pipeline activo",
         "subtitle": "Leads y negociaciones en curso",
         "empty": "No hay leads activos"
       },
@@ -1849,17 +1849,19 @@
         "closedThisMonth": "{{count}} cerrados este mes",
         "closedThisMonthLabel": "Cerrados este mes",
         "avgDaysToClose": "Promedio días cierre",
-        "days": "{{count}} días"
+        "days": "{{count}} días",
+        "activeAgentsUno": "1 agente activo",
+        "closedThisMonthUno": "1 cerrado este mes"
       },
       "quickActions": {
-        "title": "Acciones Rápidas",
-        "newOwner": "Nuevo Propietario",
+        "title": "Acciones rápidas",
+        "newOwner": "Nuevo propietario",
         "newOwnerDesc": "Registrar propietario",
-        "newConsignment": "Nueva Consignación",
+        "newConsignment": "Nueva consignación",
         "newConsignmentDesc": "Agregar propiedad",
-        "registerPayment": "Registrar Cobro",
+        "registerPayment": "Registrar cobro",
         "registerPaymentDesc": "Recibir pago",
-        "viewReports": "Ver Reportes",
+        "viewReports": "Ver reportes",
         "viewReportsDesc": "Extractos y cartera"
       },
       "alerts": {
@@ -1868,15 +1870,17 @@
         "viewPayments": "Ver cobros",
         "pendingMaintenance": "{{count}} solicitudes de mantenimiento sin cerrar",
         "latePaymentsDetalle": "Canon vencido que todavía no entró. Desde Cobros se registra el pago o se manda el recordatorio.",
-        "pendingMaintenanceDetalle": "Solicitudes abiertas o en curso. Asigna quién las atiende y cerralas cuando estén resueltas.",
+        "pendingMaintenanceDetalle": "Solicitudes abiertas o en curso. Asigna quién las atiende y ciérralas cuando estén resueltas.",
         "viewRequests": "Ver solicitudes",
         "carteraDelMes": "{{count}} cuotas del mes en cartera por {{amount}}",
         "carteraDelMesDetalle": "Canon que pasó el plazo del contrato y todavía no entró. Desde Cartera se registra el pago o se manda el recordatorio.",
         "verCartera": "Ver cartera",
-        "verRecaudo": "Ver recaudo"
+        "verRecaudo": "Ver recaudo",
+        "pendingMaintenanceUno": "1 solicitud de mantenimiento sin cerrar",
+        "carteraDelMesUna": "1 cuota del mes en cartera por {{amount}}"
       },
       "financial": {
-        "title": "Resumen Financiero",
+        "title": "Resumen financiero",
         "viewFullReports": "Ver reportes completos",
         "expected": "Esperado",
         "collected": "Recaudado",
@@ -4656,17 +4660,17 @@
       }
     },
     "reportes": {
-      "title": "Centro de Reportes",
+      "title": "Centro de reportes",
       "subtitle": "Genera, visualiza y exporta reportes del portafolio",
       "search": "Buscar reporte...",
       "generate": "Generar reporte",
-      "generateAll": "Generar Todos",
+      "generateAll": "Generar todos",
       "noReports": "Sin reportes",
       "noReportsDesc": "No hay reportes que coincidan con los filtros seleccionados.",
       "clearSearch": "Limpiar búsqueda",
       "viewCards": "Tarjetas",
       "viewList": "Lista",
-      "otherReports": "Otros Reportes",
+      "otherReports": "Otros reportes",
       "stats": {
         "reports": "Reportes",
         "report": "reporte",
@@ -4675,12 +4679,12 @@
         "never": "Nunca"
       },
       "types": {
-        "ownerStatement": "Extracto de Propietario",
-        "portfolio": "Reporte de Portafolio",
-        "aging": "Cartera por Edades",
-        "commissions": "Reporte de Comisiones",
-        "occupancy": "Reporte de Ocupación",
-        "cashFlow": "Flujo de Caja",
+        "ownerStatement": "Extracto del propietario",
+        "portfolio": "Reporte del portafolio",
+        "aging": "Cartera por edades",
+        "commissions": "Reporte de comisiones",
+        "occupancy": "Reporte de ocupación",
+        "cashFlow": "Flujo de caja",
         "expirations": "Vencimientos",
         "rentabilidad": "Rentabilidad por inmueble"
       },
@@ -4697,7 +4701,7 @@
         "netPayment": "Pago neto"
       },
       "aging": {
-        "title": "Cartera por Edades",
+        "title": "Cartera por edades",
         "current": "Vigente",
         "days30": "1-30 días",
         "days60": "31-60 días",
@@ -4734,7 +4738,9 @@
         },
         "chart": {
           "title": "Top {{n}} por neto al propietario",
-          "subtitle": "Lo que cada inmueble deja después de comisión, retenciones y gastos."
+          "titleEmpty": "Neto al propietario por inmueble",
+          "subtitle": "Lo que cada inmueble deja después de comisión, retenciones y gastos.",
+          "empty": "Ningún inmueble le dejó neto al propietario en este periodo."
         },
         "table": {
           "title": "Detalle por inmueble",
@@ -6474,11 +6480,10 @@
           "postSeleccion": {
             "titulo": "¿Qué quieres hacer ahora?",
             "radicar": "Radicar la póliza",
+            "cambiarPoliza": "Cambiar el número de la póliza",
             "expediente": "Generar expediente",
             "notificar": "Notificar al asesor",
-            "propietario": "Compartir con el propietario",
             "contrato": "Pasar a contrato",
-            "guardar": "Guardar la opción elegida",
             "sinOpcion": "Disponible cuando haya una opción asegurable."
           }
         },
@@ -6939,6 +6944,8 @@
           "porQue": "Por qué",
           "siguienteAccion": "Siguiente mejor acción",
           "avanzar": "Avanzar con la recomendada",
+          "elegida": "Opción elegida",
+          "verPasos": "Ver los siguientes pasos",
           "recotizar": "Re-cotizar con cambios"
         },
         "comparar": {
@@ -8623,7 +8630,7 @@
             },
             "c3": {
               "titulo": "Te avisa de la vacancia",
-              "texto": "Con un inmueble desocupado hace más de un mes, prepara la pregunta al propietario sobre el canon. El número lo pone él."
+              "texto": "Con un inmueble desocupado hace más de un mes, prepara la pregunta al propietario sobre el canon: por su portal o, si no tiene cuenta, como una tarea para llamarlo. Si tiene varios vacíos, es una sola pregunta con todos. El número lo pone él."
             }
           },
           "necesita": {
@@ -8633,7 +8640,7 @@
           "modo": {
             "sombra": "No le escribe al propietario: te propone cuándo preguntarle por el canon y, si quieres, sale con un clic.",
             "copiloto": "Te deja en la Bandeja, lista para un clic, la pregunta al propietario de un inmueble desocupado hace más de un mes.",
-            "autonomo": "Le pregunta solo al propietario, en su portal, si quiere revisar el canon. Cambiar el canon y pedir un avalúo siempre te piden un clic."
+            "autonomo": "Le pregunta solo al propietario, en su portal, si quiere revisar el canon; si no tiene cuenta, le deja al asesor la tarea de llamarlo; si tiene varios inmuebles vacíos, se lo pregunta una sola vez. Cambiar el canon y pedir un avalúo siempre te piden un clic."
           },
           "empezar": "Ver mis avalúos"
         },
@@ -9150,10 +9157,10 @@
             "salaTitulo": "Avalúos",
             "salaDesc": "Estimación de valor referencial, 100% remota y asistida por IA. Sin visita física: el certificado se genera con datos de mercado y lo firma un revisor de Leasefy.",
             "colaTitle": "Mis solicitudes de avalúo",
-            "colaDesc": "Cada avalúo que pediste, de principio a fin: solicitud → estimación con datos de mercado → revisión → certificado firmado. Siempre ves el estado al día; la revisión y la firma las hace un revisor de Leasefy. No se realiza visita física.",
+            "colaDesc": "Cada avalúo que pediste, paso a paso: lo pides, un revisor de Leasefy lo revisa, lo firma y se entrega. Ves cuándo lo pediste, cuándo se firmó y el certificado apenas esté. No se realiza visita física.",
             "colaKpiLabel": "Activas",
             "colaEmptyTitle": "Aún no tienes solicitudes",
-            "colaEmptyHint": "Pide tu primer avalúo: generás el link, se genera la estimación y aquí sigues cada paso hasta el certificado firmado.",
+            "colaEmptyHint": "Pide tu primer avalúo desde el Resumen: generas el link, se hace la estimación y aquí sigues cada paso hasta el certificado firmado.",
             "casoColaLabel": "Mis solicitudes",
             "solicitarTitle": "Solicitar un avalúo",
             "solicitarCta": "Solicitar avalúo",
@@ -9219,7 +9226,19 @@
                 "tuParte": "búscalo en el correo de la inmobiliaria y compártelo con tu cliente."
               }
             },
-            "firmaNota": "La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza visita física al inmueble."
+            "firmaNota": "La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza visita física al inmueble.",
+            "colaSinServicio": "No se pueden ver tus solicitudes: este entorno no tiene conectado el servicio de avalúos. Escríbele a tu contacto de Leasefy para activarlo.",
+            "colaPasosAria": "En qué va: {{paso}}",
+            "colaPedidoEl": "Pedido el {{fecha}}",
+            "colaFirmadoEl": "firmado el {{fecha}}",
+            "colaVerEstado": "Ver en qué va",
+            "colaPasos": {
+              "solicitado": "Pedido",
+              "enRevision": "En revisión",
+              "firmado": "Firmado",
+              "entregado": "Entregado",
+              "rechazado": "Rechazado"
+            }
           },
           "cobranza": {
             "salaDesc": "El agente trabaja la mora estándar por ti — llamadas, WhatsApp y cartas cumpliendo la ley — y te escala solo los casos críticos.",
@@ -10123,7 +10142,7 @@
       "m2BannerTitle": "Conciliación activa — revisión humana e ingesta de extractos conectadas",
       "m2BannerDesc": "Sube el extracto del banco y el agente sugiere coincidencias contra recaudos, dispersiones y comisiones. El matching corre en segundo plano en modo sombra: solo sugiere, nada se confirma automáticamente.",
       "uploadTitle": "Cargar fuente bancaria",
-      "uploadHint": "Elige el banco y sube el CSV del extracto. La conciliación corre en segundo plano.",
+      "uploadHint": "Elige el banco y sube el extracto como te lo dio (Excel o CSV). La conciliación corre en segundo plano.",
       "uploadBankLabel": "Banco",
       "bankBancolombia": "Bancolombia",
       "bankDavivienda": "Davivienda",

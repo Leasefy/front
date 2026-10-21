@@ -1,29 +1,24 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './admin.css'
 
 /**
- * /admin root layout. Wraps every admin route (incl. login/callback/forbidden)
- * in `.admin-scope` so the nest-brandbook theme applies ONLY here and never
- * leaks into the customer app. Loads Inter (self-hosted by next/font) for the
- * admin body font without touching the customer app's Schibsted/JetBrains.
+ * /admin — el layout raíz del admin de Leasefy (login, enlace, prohibido,
+ * segundo factor y el panel).
  *
- * This is an internal, cross-tenant PII tool — keep it out of search indexes.
+ * 🔴 19-10-2026 (Nico): el admin es de Leasefy y se ve como Leasefy. Ya no
+ * carga su propia letra ni su papel y tinta fijos: usa la Schibsted Grotesk y
+ * la JetBrains Mono del layout raíz y los tokens de Cadence, con tema claro y
+ * oscuro como el resto de la plataforma. `.admin-scope` queda sólo como el
+ * alcance del puente de `admin.css` (clases viejas de otras ramas).
+ *
+ * Es una herramienta interna con datos de todas las inmobiliarias: fuera de los
+ * buscadores.
  */
-const inter = Inter({
-  variable: '--font-admin-sans',
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-})
-
 export const metadata: Metadata = {
-  title: 'Leasefy Admin',
+  title: 'Admin',
   robots: { index: false, follow: false },
 }
 
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className={`admin-scope ${inter.variable}`}>{children}</div>
-  )
+  return <div className="admin-scope min-h-screen bg-bg text-fg antialiased">{children}</div>
 }

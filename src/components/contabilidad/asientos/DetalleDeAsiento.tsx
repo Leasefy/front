@@ -69,6 +69,7 @@ import { diaLegible, hoy } from '@/lib/contabilidad/fechas';
 import { CampoDeDia } from '../CampoDeDia';
 import { Monto } from '../Monto';
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
+import { useSoloRegistraLaContabilidad } from '../use-puede-registrar';
 
 const LARGO_MAXIMO_DEL_MOTIVO = 200;
 
@@ -81,6 +82,8 @@ export interface DetalleDeAsientoProps {
 }
 
 export function DetalleDeAsiento({ asiento: delPadre, abierto, onCerrar, onReversado }: DetalleDeAsientoProps) {
+  // Roles auxiliares (20-10-2026): el auxiliar contable entra al libro pero no cierra ni reversa.
+  const soloRegistra = useSoloRegistraLaContabilidad();
   const { stop: pararLenis, start: seguirLenis } = useLenis();
   const [reversando, setReversando] = useState(false);
   /**
@@ -266,7 +269,7 @@ export function DetalleDeAsiento({ asiento: delPadre, abierto, onCerrar, onRever
                     : 'Un asiento no se edita ni se borra. Si está mal, se reversa: se crea su espejo y los dos quedan en el libro.'
               }
             >
-              {sePuedeReversar(asiento) ? (
+              {sePuedeReversar(asiento) && !soloRegistra ? (
                 <Button
                   variant="outline"
                   hideArrow

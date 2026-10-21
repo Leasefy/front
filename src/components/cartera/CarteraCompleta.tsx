@@ -88,6 +88,8 @@ import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { CarteraMarcada } from '@/components/cartera/CarteraMarcada'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar'
 import { useRouter } from 'next/navigation'
 import {
   CurrencyCircleDollar,
@@ -556,32 +558,47 @@ export function CarteraCompleta() {
           amortización no es un contrato sin deuda: es una deuda que todavía
           nadie generó. Callarlo deja la franja mintiendo por omisión.
         */}
-        <Presence show={avisos.length > 0} initial={false}>
-          <div
-            className="flex gap-2 rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm text-fg"
+        {/* GLOW UP (21-10): los avisos son lo que falta para que la cartera esté completa → UNA lista con
+            su paso siguiente («Sigue») y, en las reglas de mora, su botón. Se pliega cuando no falta nada. */}
+        {avisos.length > 0 ? (
+          <ListaParaEmpezar
+            paraQue="ver la cartera completa"
+            recordarComo="cartera"
             data-testid="avisos-de-la-cartera"
-          >
-            <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-            <div className="space-y-2">
-              <ul className="space-y-1">
-                {avisos.map((aviso) => (
-                  <li key={aviso}>{aviso}</li>
-                ))}
-              </ul>
-              {/* Sin reglas de mora el interés sale en cero y NO porque no haya
-                  mora: se lleva a donde se arregla. */}
-              {sinReglasDeMora ? (
-                <Link
-                  href={RUTA_DE_REGLAS_DE_MORA}
-                  className="inline-block font-medium underline underline-offset-4"
-                  data-testid="cartera-configurar-reglas"
-                >
-                  {t(CLAVE_DE_MORA.configurarReglas)}
-                </Link>
-              ) : null}
-            </div>
-          </div>
-        </Presence>
+            requisitos={avisos.map((aviso, i) => {
+              const esDeMora = sinReglasDeMora && /reglas de mora/i.test(aviso)
+              return {
+                id: `aviso-${i}`,
+                titulo: aviso,
+                estado: 'falta' as const,
+                accion: esDeMora ? (
+                  <Button asChild size="sm" variant="secondary">
+                    <Link href={RUTA_DE_REGLAS_DE_MORA} data-testid="cartera-configurar-reglas">
+                      {t(CLAVE_DE_MORA.configurarReglas)}
+                    </Link>
+                  </Button>
+                ) : undefined,
+              }
+            }).concat(
+              sinReglasDeMora && !avisos.some((a) => /reglas de mora/i.test(a))
+                ? [
+                    {
+                      id: 'reglas-de-mora',
+                      titulo: t(CLAVE_DE_MORA.configurarReglas),
+                      estado: 'falta' as const,
+                      accion: (
+                        <Button asChild size="sm" variant="secondary">
+                          <Link href={RUTA_DE_REGLAS_DE_MORA} data-testid="cartera-configurar-reglas">
+                            {t(CLAVE_DE_MORA.configurarReglas)}
+                          </Link>
+                        </Button>
+                      ),
+                    },
+                  ]
+                : [],
+            )}
+          />
+        ) : null}
 
         {/* ── La edad DE LA CARTERA. Cada ficha es un filtro. ──────────── */}
         <div>

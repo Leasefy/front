@@ -28,12 +28,10 @@
  */
 
 import { use, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useEntradaTrasCargar, type EntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   Scroll,
-  CaretLeft,
   CheckCircle,
   Clock,
   Warning,
@@ -56,6 +54,8 @@ import { AvisoDelPagoDelAcuerdo } from '@/components/tenant/AvisoDelPagoDelAcuer
 import { transaccionDelRetorno } from '@/lib/payments/verificar-pago-al-volver';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
+import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import type { BadgeProps } from '@/components/ui/badge';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
@@ -111,13 +111,9 @@ function PageShell({ children }: { children: React.ReactNode }) {
 
 function BackLink({ locale }: { locale: string }) {
   return (
-    <Link
-      href="/inquilino/acuerdos"
-      className="inline-flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white transition-colors mb-6"
-    >
-      <CaretLeft className="w-4 h-4" aria-hidden="true" />
-      {locale === 'es' ? 'Volver a Acuerdos' : 'Back to Agreements'}
-    </Link>
+    <div className="mb-6" data-testid="acuerdo-volver">
+      <BackButton href="/inquilino/acuerdos" label={locale === 'es' ? 'Volver a Acuerdos' : 'Back to Agreements'} />
+    </div>
   );
 }
 
@@ -181,43 +177,42 @@ function AcuerdoDetailView({
     });
   }
 
+  // GLOW UP (21-10-2026): en el orden del trabajo. Vienes a firmar el acuerdo
+  // o a pagar la cuota que sigue: eso va arriba, debajo del encabezado; el plan
+  // de cuotas se consulta después y el historial va al final.
+  const aceptado = !saldado && firma === 'aceptado';
+
   return (
     <motion.div {...entrada} className="space-y-6">
-      {/* Header — title + neutral status badge */}
-      <header className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-          <Scroll className="w-6 h-6 text-fg-muted dark:text-fg-subtle" aria-hidden="true" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-medium text-fg dark:text-white tracking-tight">
-            {es ? 'Acuerdo de pago' : 'Payment agreement'}
-          </h1>
-          <div className="mt-2">
-            <Badge variant={badge.variant} className="inline-flex items-center gap-1">
-              <ToneIcon className="w-3 h-3" aria-hidden="true" />
-              {etiquetaDelAcuerdo(plan)}
-            </Badge>
-          </div>
-        </div>
-      </header>
-
-      {/* Total — rendered VERBATIM from the record (no saldo/total math) */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
-        <p className="text-xs text-fg-subtle dark:text-fg-muted">
-          {es ? 'Total del acuerdo' : 'Agreement total'}
-        </p>
-        <p className="mt-1 text-2xl font-mono tabular-nums font-semibold text-fg dark:text-white">
-          {formatCurrency(plan.totalDueCop)}
-        </p>
-      </section>
-
-      {/* Cuota plan — verbatim installments (CuotaPlanTable) */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
-        <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
-          {es ? 'Plan de cuotas' : 'Installment plan'}
-        </h2>
-        <CuotaPlanTable installments={plan.installments} locale={locale} acuerdoCerrado={cerrado} />
-      </section>
+      <EncabezadoDePantalla
+        seccion={es ? 'Mi arriendo' : 'My rental'}
+        titulo={es ? 'Acuerdo de pago' : 'Payment agreement'}
+        junto={
+          <Badge variant={badge.variant} className="inline-flex items-center gap-1" data-testid="acuerdo-estado">
+            <ToneIcon className="w-3 h-3" aria-hidden="true" />
+            {etiquetaDelAcuerdo(plan)}
+          </Badge>
+        }
+        descripcion={
+          /* Total — rendered VERBATIM from the record (no saldo/total math) */
+          <span data-testid="acuerdo-total">
+            {es ? 'Total del acuerdo: ' : 'Agreement total: '}
+            <span className="font-mono tabular-nums text-fg">{formatCurrency(plan.totalDueCop)}</span>
+            {plan.installments.length > 0 ? (
+              <>
+                {' · '}
+                {plan.installments.length === 1
+                  ? es
+                    ? '1 cuota'
+                    : '1 installment'
+                  : es
+                    ? `${plan.installments.length} cuotas`
+                    : `${plan.installments.length} installments`}
+              </>
+            ) : null}
+          </span>
+        }
+      />
 
       {/* Accept-by-signing (ACUE-02) — only while OFFERED, APPROVED and unaccepted; else a factual state.
           Un acuerdo cancelado (la inmobiliaria lo rechazó) o roto ya no se acepta: el back
@@ -243,7 +238,10 @@ function AcuerdoDetailView({
           </div>
         </section>
       ) : firma === 'firmar' ? (
-        <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
+        <section
+          data-testid="acuerdo-firmar"
+          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+        >
           <AcuerdoAcceptPanel planId={plan.planId} onAccepted={onAccepted} />
         </section>
       ) : firma === 'por-aprobar' ? (
@@ -276,8 +274,37 @@ function AcuerdoDetailView({
               : 'This agreement can no longer be accepted. If you want a payment agreement, request one from your agency in Agreements.'}
           </p>
         </section>
-      ) : (
-        <section className="rounded-xl border border-success/30 bg-success-soft p-5 sm:p-6">
+      ) : null}
+
+      {/* Pagar cuota (ACUE-03) — por la sesión de pago de la ruta; sólo con el plan aceptado */}
+      {nextCuota && (
+        <div data-testid="acuerdo-pagar">
+          <PagarCuota
+            planId={plan.planId}
+            cuota={nextCuota}
+            locale={locale}
+            pagoPendienteDeRevision={plan.pagoPendienteDeRevision === true}
+          />
+        </div>
+      )}
+
+      {/* Cuota plan — verbatim installments (CuotaPlanTable) */}
+      <section
+        data-testid="acuerdo-plan"
+        className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+      >
+        <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
+          {es ? 'Plan de cuotas' : 'Installment plan'}
+        </h2>
+        <CuotaPlanTable installments={plan.installments} locale={locale} acuerdoCerrado={cerrado} />
+      </section>
+
+      {/* Aceptado: un hecho que se consulta, no algo por hacer — va con el historial. */}
+      {aceptado ? (
+        <section
+          data-testid="acuerdo-aceptado"
+          className="rounded-xl border border-success/30 bg-success-soft p-5 sm:p-6"
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-success flex items-center justify-center flex-shrink-0">
               <SealCheck className="w-5 h-5 text-white" aria-hidden="true" />
@@ -294,20 +321,13 @@ function AcuerdoDetailView({
             </div>
           </div>
         </section>
-      )}
-
-      {/* Pagar cuota (ACUE-03) — por la sesión de pago de la ruta; sólo con el plan aceptado */}
-      {nextCuota && (
-        <PagarCuota
-          planId={plan.planId}
-          cuota={nextCuota}
-          locale={locale}
-          pagoPendienteDeRevision={plan.pagoPendienteDeRevision === true}
-        />
-      )}
+      ) : null}
 
       {/* State timeline — source-timestamp-only events */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
+      <section
+        data-testid="acuerdo-historial"
+        className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+      >
         <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
           {es ? 'Historial' : 'Timeline'}
         </h2>

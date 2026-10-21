@@ -132,6 +132,40 @@ vi.mock('@leasefy/cadence', () => ({
     React.createElement('p', null, children),
   // Cadence 2: el inquilino con su Avatar (iniciales y tono). Acá un span vacío: no suma texto a la fila.
   Avatar: () => React.createElement('span', { 'data-avatar': 'persona' }),
+  // GLOW UP 21-10: las cifras de la tabla son la `Cifra` de Cadence dentro de su franja; la que
+  // filtra es un botón con `aria-pressed`.
+  // El sobretítulo del encabezado (`EncabezadoDePantalla` → `SectionLabel`).
+  MonoLabel: ({ children }: { children?: React.ReactNode }) => React.createElement('span', null, children),
+  FranjaDeCifras: ({ children, ...rest }: Record<string, unknown> & { children?: React.ReactNode }) =>
+    React.createElement('div', rest, children),
+  Cifra: ({
+    etiqueta,
+    valor,
+    detalle,
+    tono,
+    onClick,
+    activa,
+    'data-testid': testid,
+  }: {
+    etiqueta: string
+    valor: React.ReactNode
+    detalle?: React.ReactNode
+    tono?: string
+    onClick?: () => void
+    activa?: boolean
+    'data-testid'?: string
+  }) =>
+    React.createElement(
+      onClick ? 'button' : 'div',
+      {
+        'data-testid': testid,
+        'data-tono': tono,
+        ...(onClick ? { type: 'button', onClick, 'aria-pressed': Boolean(activa) } : {}),
+      },
+      React.createElement('span', null, etiqueta),
+      React.createElement('span', null, valor),
+      detalle ? React.createElement('span', null, detalle) : null,
+    ),
   // Movimiento (03-10-2026): la cifra que cuenta y el «Limpiar» que entra y
   // sale. Acá se pintan en su valor final, sin animar.
   AnimatedNumber: ({ value, format }: { value: number; format?: (n: number) => string }) =>
@@ -763,5 +797,64 @@ describe('ContratosPage — QA-CONT-95 (MC-15): quien sólo ve contratos no reci
     const menu = container.querySelector('[data-testid="menu-configuracion"]')!
     const enlaces = Array.from(menu.querySelectorAll('a')).map((a) => a.getAttribute('href'))
     expect(enlaces).toEqual(['/panel/inmobiliaria/contratos/conceptos'])
+  })
+})
+
+/*
+ * GLOW UP 21-10 · las cifras de la tabla FILTRAN (como en Postulaciones, PQRS y Documentos): un
+ * toque deja sólo esos y otro vuelve a la lista entera. «Por firmar» son los dos que esperan una
+ * firma, lo mismo que cuenta la cifra. Los vencidos sin renovar son su propia cifra, con punto.
+ */
+describe('ContratosPage — las cifras filtran la tabla (glow up 21-10)', () => {
+  const LISTA = [
+    contract({ id: 'a', code: 1, tenantName: 'Ana Activa', status: 'active' }),
+    contract({ id: 'b', code: 2, tenantName: 'Bruno Borrador', status: 'draft' }),
+    contract({ id: 'c', code: 3, tenantName: 'Carla Propietario', status: 'pending_landlord' }),
+    contract({ id: 'd', code: 4, tenantName: 'Diana Inquilina', status: 'pending_tenant' }),
+  ]
+  const STATS = { ...EMPTY_STATS, total: 4, active: 1, draft: 1, pendingLandlord: 1, pendingTenant: 1 }
+  const filas = () => Array.from(container.querySelectorAll('tbody tr'))
+  const nombres = () => filas().map((r) => r.querySelectorAll('td')[2]?.querySelector('p')?.textContent ?? '')
+  const cifra = (etiqueta: string) =>
+    Array.from(container.querySelectorAll<HTMLElement>('[data-testid="contratos-kpi"]')).find((c) =>
+      c.textContent?.startsWith(etiqueta),
+    )!
+
+  it('«Borradores» deja sólo los borradores y se marca; otro toque, la lista entera', async () => {
+    withContracts(LISTA, { stats: STATS })
+    await renderPage()
+    expect(filas()).toHaveLength(4)
+
+    await act(async () => cifra('Borradores').click())
+    expect(nombres()).toEqual(['Bruno Borrador'])
+    expect(cifra('Borradores').getAttribute('aria-pressed')).toBe('true')
+
+    await act(async () => cifra('Borradores').click())
+    expect(filas()).toHaveLength(4)
+  })
+
+  it('«Por firmar» son los dos que esperan una firma (propietario e inquilino), con su punto', async () => {
+    withContracts(LISTA, { stats: STATS })
+    await renderPage()
+    expect(cifra('Por firmar').getAttribute('data-tono')).toBe('aviso')
+    await act(async () => cifra('Por firmar').click())
+    expect(nombres().sort()).toEqual(['Carla Propietario', 'Diana Inquilina'])
+  })
+
+  it('sin vencidos sin renovar, esa cifra no aparece (quedan las cuatro de siempre)', async () => {
+    withContracts(LISTA, { stats: STATS })
+    await renderPage()
+    expect(container.querySelector('[data-testid="ver-vencidos-sin-renovar"]')).toBeNull()
+    expect(container.querySelectorAll('[data-testid="contratos-kpi"]')).toHaveLength(4)
+  })
+
+  it('con vencidos sin renovar, su cifra (con punto) deja sólo esos', async () => {
+    const vencido = contract({ id: 'v', code: 9, tenantName: 'Vera Vencida', status: 'active', startDate: '2024-01-01', endDate: '2025-01-01' })
+    withContracts([...LISTA, vencido], { stats: { ...STATS, total: 5, active: 2 } })
+    await renderPage()
+    const v = container.querySelector<HTMLElement>('[data-testid="ver-vencidos-sin-renovar"]')!
+    expect(v.getAttribute('data-tono')).toBe('aviso')
+    await act(async () => v.click())
+    expect(nombres()).toEqual(['Vera Vencida'])
   })
 })

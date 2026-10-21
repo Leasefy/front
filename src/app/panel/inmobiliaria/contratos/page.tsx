@@ -16,7 +16,7 @@
 import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas';
 import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla';
 import { ContratosMarcados } from '@/components/contratos/ContratosMarcados';
-import { useEffect, useState, useMemo, useRef, type KeyboardEvent } from 'react';
+import { useEffect, useState, useMemo, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { MagnifyingGlass, SortAscending, SortDescending } from '@phosphor-icons/react';
 import {
@@ -24,6 +24,7 @@ import {
   hayFiltros,
   FILTROS_INICIALES,
   type CampoDeOrden,
+  type EstadoDeFiltro,
   type FiltrosDeContratos,
   vencidoSinRenovar,
 } from '@/lib/contratos/filtrar-contratos';
@@ -52,7 +53,8 @@ import { useI18n } from '@/lib/i18n';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
-import { AnimatedNumber, Avatar, Eyebrow } from '@leasefy/cadence';
+import { Avatar, Cifra, FranjaDeCifras } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -116,51 +118,33 @@ function propietarioDeLaFila(c: Contract): string | null {
 function CifraDeLaTabla({
   label,
   value,
-  dot,
   sub,
-  accion,
+  tono,
+  onClick,
+  activa,
+  testid = 'contratos-kpi',
 }: {
   label: string;
   value: number | string;
-  dot: string;
   /** La línea de abajo: «No se pudo traer» cuando el número es una raya por un fallo. */
   sub?: string;
-  /** 🔴 Juan (15-10-2026): un enlace debajo que filtra la lista («ver cuáles»). */
-  accion?: { texto: string; onClick: () => void; testid: string };
+  /** El punto, sólo cuando la cifra pide atención (por firmar, vencidos sin renovar). */
+  tono?: 'aviso';
+  /** GLOW UP 21-10: la cifra filtra la tabla (la misma `Cifra` de Postulaciones, PQRS y Documentos). */
+  onClick?: () => void;
+  activa?: boolean;
+  testid?: string;
 }) {
-  // La cifra que llega DESPUÉS de cargar (montó con la raya) cuenta desde 0;
-  // la que ya estaba al montarse no se anima, y si después cambia cuenta desde
-  // la anterior. El texto final es el de siempre (sin separador de miles).
-  const llegaDespues = useRef(typeof value !== 'number');
   return (
-    <div className="px-5 py-4" data-testid="contratos-kpi">
-      <div className="flex items-center gap-2">
-        <span className={cn('w-2 h-2 rounded-full flex-shrink-0', dot)} />
-        <span className="text-caption text-muted-foreground truncate">{label}</span>
-      </div>
-      <p className="mt-1.5 text-2xl font-medium tabular-nums text-foreground">
-        {typeof value === 'number' ? (
-          <AnimatedNumber
-            value={value}
-            from={llegaDespues.current ? 0 : undefined}
-            format={(n) => String(Math.round(n))}
-          />
-        ) : (
-          value
-        )}
-      </p>
-      {sub ? <p className="mt-0.5 text-caption text-muted-foreground">{sub}</p> : null}
-      {accion ? (
-        <button
-          type="button"
-          onClick={accion.onClick}
-          className="mt-0.5 text-caption font-medium text-primary underline-offset-2 hover:underline"
-          data-testid={accion.testid}
-        >
-          {accion.texto}
-        </button>
-      ) : null}
-    </div>
+    <Cifra
+      etiqueta={label}
+      valor={value}
+      detalle={sub}
+      tono={tono}
+      onClick={onClick}
+      activa={activa}
+      data-testid={testid}
+    />
   );
 }
 
@@ -281,6 +265,13 @@ function ContratosContent() {
     () => contracts.filter((c) => vencidoSinRenovar(c)).length,
     [contracts],
   );
+  /** GLOW UP 21-10: tocar una cifra deja sólo esos; tocarla otra vez, la lista entera. Conserva la búsqueda y el orden. */
+  const verSoloEstos = (estado: EstadoDeFiltro) =>
+    setFiltros((f) => ({
+      ...f,
+      estado: f.estado === estado && f.vigencia === 'all' ? 'all' : estado,
+      vigencia: 'all',
+    }));
   const limpiarFiltros = () =>
     // El orden no es un filtro: se conserva.
     setFiltros({ ...FILTROS_INICIALES, campo: filtros.campo, sentido: filtros.sentido });
@@ -360,24 +351,17 @@ function ContratosContent() {
           acciones iban lado a lado desde `sm` y las acciones se partían en
           dos filas contra el subtítulo. Ahora van apiladas hasta `lg`, y la
           fila de acciones no se envuelve nunca: son dos controles. */}
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-1">
-          <Eyebrow>{tx('Portafolio', 'Portfolio')}</Eyebrow>
-          <h1 className="text-h2 text-fg">{tx('Contratos', 'Contracts')}</h1>
-          <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
-            {tx(
-              'Gestiona los contratos de arrendamiento de tu inmobiliaria: firma, vigencia y estado.',
-              'Manage your agency rental contracts: signing, term and status.',
-            )}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {/*
-           * Nico (2026-09-02): «Migrar» y «Conceptos» no son acciones del
-           * día a día — son configuración. Un engranaje con la jerarquía del
-           * botón secundario, y adentro las dos: migrar contratos y agregar
-           * conceptos. El botón primario queda solo con «Nuevo contrato».
-           */}
+      {/* GLOW UP 21-10: el encabezado de todas las pantallas. La tarjeta de la tabla repetía
+          «Contratos» con un ícono: su pista («toca uno…») pasó a esta línea. El engranaje (migrar y
+          conceptos) sigue siendo configuración, callado; la única azul es «Nuevo contrato». */}
+      <EncabezadoDePantalla
+        seccion={tx('Operación', 'Operations')}
+        titulo={tx('Contratos', 'Contracts')}
+        descripcion={tx(
+          'La firma, la vigencia y el estado de cada contrato. Toca uno para ver su detalle.',
+          'Signing, term and status of each contract. Tap one to see its details.',
+        )}
+        acciones={
           <DropdownList>
             <DropdownListTrigger asChild>
               <Button
@@ -407,13 +391,9 @@ function ContratosContent() {
               </DropdownListItem>
             </DropdownListContent>
           </DropdownList>
-          {/* Antes navegaba a /contratos/nuevo a secas, y esa pantalla exige
-              `?applicationId=`: el botón principal de Contratos mostraba
-              "Falta el parámetro applicationId" en vez de crear nada. Ahora
-              pregunta sobre qué postulación aprobada se arma el contrato. */}
-          <NuevoContratoBoton />
-        </div>
-      </header>
+        }
+        accionPrincipal={<NuevoContratoBoton />}
+      />
 
       {/*
         Dos deudas distintas, dos alertas distintas: la que existe y no cobra
@@ -481,21 +461,6 @@ function ContratosContent() {
 
       {/* Table */}
       <section className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 p-5 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
-              <FileText className="w-[18px] h-[18px] text-fg-muted" weight="duotone" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-foreground">{tx('Contratos', 'Contracts')}</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {tx('Toca un contrato para ver el detalle y la firma.', 'Tap a contract to see detail and signing.')}
-              </p>
-            </div>
-          </div>
-
-        </div>
-
         {/*
           🔴 19-09-2026 · Las cuatro cifras viven DENTRO de la tarjeta.
           
@@ -512,15 +477,20 @@ function ContratosContent() {
           («no tienes contratos activos») y encima tranquiliza. Cuando la
           consulta falló va una raya, y se dice por qué.
         */}
-        <div
-          className="grid grid-cols-2 divide-x divide-border border-b border-border md:grid-cols-4"
+        {/* GLOW UP 21-10: las cifras FILTRAN la tabla (como en Postulaciones, PQRS y Documentos): un
+            toque y la lista muestra esos; otro toque (o «Total»), la lista entera. Los vencidos sin
+            renovar dejan de ser un enlace escondido debajo de «Activos»: son su propia cifra, con el
+            punto ámbar, y sólo cuando hay alguno. */}
+        <FranjaDeCifras
           data-testid="resumen-de-contratos"
+          className="rounded-none border-0 border-b border-border"
         >
           <CifraDeLaTabla
             label={tx('Total', 'Total')}
             value={isLoading || error ? '—' : stats.total}
             sub={error ? sinDato : undefined}
-            dot="bg-fg-subtle"
+            onClick={isLoading || error ? undefined : () => verSoloEstos('all')}
+            activa={!isLoading && !error && filtros.estado === 'all' && filtros.vigencia === 'all'}
           />
           <CifraDeLaTabla
             label={tx('Activos', 'Active')}
@@ -529,47 +499,45 @@ function ContratosContent() {
               error
                 ? sinDato
                 : !isLoading && porEmpezar > 0
-                  ? [
-                      porEmpezar > 0 ? tx(`+ ${porEmpezar} por empezar`, `+ ${porEmpezar} not started yet`) : null,
-                      // Los vencidos sin renovar van abajo, como enlace a la lista (Juan, 15-10).
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')
+                  ? tx(`+ ${porEmpezar} por empezar`, `+ ${porEmpezar} not started yet`)
                   : undefined
             }
-            dot="bg-success"
-            accion={
-              !error && !isLoading && vencidosSinRenovar > 0
-                ? {
-                    texto: tx(
-                      `+ ${vencidosSinRenovar} ${vencidosSinRenovar === 1 ? 'vencido sin renovar' : 'vencidos sin renovar'} · ver cuáles`,
-                      `+ ${vencidosSinRenovar} ended, not renewed · see which`,
-                    ),
-                    onClick: () =>
-                      setFiltros({
-                        ...FILTROS_INICIALES,
-                        campo: filtros.campo,
-                        sentido: filtros.sentido,
-                        vigencia: 'vencido_sin_renovar',
-                      }),
-                    testid: 'ver-vencidos-sin-renovar',
-                  }
-                : undefined
-            }
+            onClick={isLoading || error ? undefined : () => verSoloEstos('active')}
+            activa={filtros.estado === 'active' && filtros.vigencia === 'all'}
           />
           <CifraDeLaTabla
-            label={tx('Pendientes de firma', 'Pending signature')}
+            label={tx('Por firmar', 'Awaiting signature')}
             value={isLoading || error ? '—' : stats.pendingLandlord + stats.pendingTenant}
             sub={error ? sinDato : undefined}
-            dot="bg-warning"
+            tono={!isLoading && !error && stats.pendingLandlord + stats.pendingTenant > 0 ? 'aviso' : undefined}
+            onClick={isLoading || error ? undefined : () => verSoloEstos('por_firmar')}
+            activa={filtros.estado === 'por_firmar' && filtros.vigencia === 'all'}
           />
           <CifraDeLaTabla
             label={tx('Borradores', 'Drafts')}
             value={isLoading || error ? '—' : stats.draft}
             sub={error ? sinDato : undefined}
-            dot="bg-fg-subtle"
+            onClick={isLoading || error ? undefined : () => verSoloEstos('draft')}
+            activa={filtros.estado === 'draft' && filtros.vigencia === 'all'}
           />
-        </div>
+          {/* 🔴 Juan (15-10-2026): «dice 5 vencidos sin renovar, pero no cuáles». */}
+          {!error && !isLoading && vencidosSinRenovar > 0 ? (
+            <CifraDeLaTabla
+              label={tx('Vencidos sin renovar', 'Ended, not renewed')}
+              value={vencidosSinRenovar}
+              tono="aviso"
+              onClick={() =>
+                setFiltros((f) =>
+                  f.vigencia === 'vencido_sin_renovar'
+                    ? { ...FILTROS_INICIALES, campo: f.campo, sentido: f.sentido }
+                    : { ...FILTROS_INICIALES, campo: f.campo, sentido: f.sentido, vigencia: 'vencido_sin_renovar' },
+                )
+              }
+              activa={filtros.vigencia === 'vencido_sin_renovar'}
+              testid="ver-vencidos-sin-renovar"
+            />
+          ) : null}
+        </FranjaDeCifras>
 
         {/*
           La barra de búsqueda y filtros, debajo de la cabecera y encima de la

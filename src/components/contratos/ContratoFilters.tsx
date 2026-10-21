@@ -160,11 +160,15 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
             <span className="truncate">
               {filtros.estado === 'all'
                 ? tx('Todos los estados', 'All statuses')
-                : etiquetaDelEstado(filtros.estado)}
+                : filtros.estado === 'por_firmar'
+                  ? tx('Por firmar', 'Awaiting signature')
+                  : etiquetaDelEstado(filtros.estado)}
             </span>
           </SelectTrigger>
           <SelectContent className="max-h-72">
             <SelectItem value="all">{tx('Todos los estados', 'All statuses')}</SelectItem>
+            {/* Los dos que esperan una firma, como la cifra «Por firmar» de la tabla. */}
+            <SelectItem value="por_firmar">{tx('Por firmar', 'Awaiting signature')}</SelectItem>
             {ESTADOS.map((s) => (
               <SelectItem key={s} value={s}>
                 {etiquetaDelEstado(s)}

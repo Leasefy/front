@@ -25,7 +25,14 @@
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { fechaDeVigencia } from './fecha-de-vigencia';
 
-export type EstadoDeFiltro = ContractStatus | 'all';
+/**
+ * GLOW UP 21-10 · `por_firmar`: los dos estados que esperan una firma (`pending_landlord` y
+ * `pending_tenant`), lo mismo que cuenta la cifra «Por firmar» de la tabla, que ahora filtra.
+ */
+export type EstadoDeFiltro = ContractStatus | 'all' | 'por_firmar';
+
+/** Los estados que cuenta y filtra «Por firmar». */
+export const ESTADOS_POR_FIRMAR: readonly ContractStatus[] = ['pending_landlord', 'pending_tenant'];
 /**
  * La vigencia se mide por FECHAS, no por el estado del flujo de firma: un
  * contrato migrado entra «activo» aunque su fecha de fin ya haya pasado.
@@ -278,7 +285,9 @@ export function filtrarContratos<T extends Partial<Contract>>(
 
   let resultado = contratos.filter((c) => {
     if (q && !coincideBusqueda(c, q)) return false;
-    if (filtros.estado !== 'all' && c.status !== filtros.estado) return false;
+    if (filtros.estado === 'por_firmar') {
+      if (!c.status || !ESTADOS_POR_FIRMAR.includes(c.status)) return false;
+    } else if (filtros.estado !== 'all' && c.status !== filtros.estado) return false;
     // QA-CONT-95 (A-11): «Activo» es lo que la fila llama «Activo»: sin los que
     // todavía no empiezan («Empieza el…») ni los vencidos sin renovar («Vencido»).
     if (filtros.estado === 'active' && !esActivoDeVerdad(c, hoy)) return false;

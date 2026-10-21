@@ -255,15 +255,16 @@ describe('solicitudes — el resumen no afirma ceros que no sabe (S1 · S2 · S3
     resueltas: 0,
     cerradas: 0,
   }
-  const grilla = () => container.querySelector('.lg\\:grid-cols-6')
+  // GLOW UP 21-10: la franja de la tabla (plazo + estados), que también filtra.
+  const grilla = () => container.querySelector('[data-testid="pqrs-por-estado"]')
 
-  it('🔴 con la lista caída, las seis tarjetas dicen «—» y «No se pudo traer», no 0', async () => {
+  it('🔴 con la lista caída, las ocho cifras dicen «—» y «No se pudo traer», no 0', async () => {
     listarMock.mockRejectedValue(new ApiError(500, 'Internal server error'))
     await montar()
 
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
     const valores = Array.from(container.querySelectorAll('[data-testid="pqrs-resumen-valor"]'))
-    expect(valores).toHaveLength(6)
+    expect(valores).toHaveLength(8)
     for (const v of valores) expect(v.textContent).toBe('—')
     expect(grilla()!.textContent).toContain('No se pudo traer')
     expect(grilla()!.textContent).not.toMatch(/\d/)

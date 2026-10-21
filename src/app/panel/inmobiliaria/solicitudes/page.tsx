@@ -6,21 +6,12 @@ import { PqrsMarcadas } from '@/components/pqrs/PqrsMarcadas';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, Lifebuoy, Plus, Wrench, ArrowRight } from '@phosphor-icons/react';
+import { ArrowLeft, Lifebuoy, Plus } from '@phosphor-icons/react';
 import { lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { AnimatedNumber, CrossFade, SearchInput } from '@leasefy/cadence';
+import { Cifra, FranjaDeCifras, SearchInput, type TonoDeCifra } from '@leasefy/cadence';
 
-/** El número tal cual se escribía antes (`{n}`): sin separador de miles. */
-const enteroTalCual = (n: number) => String(Math.round(n));
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Spinner } from '@/components/ui/spinner';
@@ -56,14 +47,24 @@ import {
 import { AvisoDeVencidas } from '@/components/inmobiliaria/pqrs/AvisoDeVencidas';
 
 /** Resumen por estado del ciclo PQRS — color por estado (token semántico). */
-const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_PQRS_VACIO }[] = [
-  { key: 'recibidas', dot: 'bg-primary', field: 'recibidas' },
-  { key: 'asignadas', dot: 'bg-primary', field: 'asignadas' },
-  { key: 'enProceso', dot: 'bg-warning', field: 'enProceso' },
-  { key: 'enCotizacion', dot: 'bg-warning', field: 'enCotizacion' },
-  { key: 'resueltas', dot: 'bg-success', field: 'resueltas' },
-  { key: 'cerradas', dot: 'bg-fg-subtle', field: 'cerradas' },
+/** La franja de la tabla: primero lo urgente (el plazo es lo que se cumple o no), luego los estados. */
+const CIFRAS_DE_PQRS: {
+  key: string;
+  etiqueta?: string;
+  field: keyof typeof RESUMEN_PQRS_VACIO;
+  filtro: FiltrosDePqrs['estado'];
+  tono?: TonoDeCifra;
+}[] = [
+  { key: 'vencidas', etiqueta: 'Vencidas', field: 'vencidas', filtro: 'vencidas', tono: 'peligro' },
+  { key: 'porVencer', etiqueta: 'Por vencer', field: 'porVencer', filtro: 'porVencer', tono: 'aviso' },
+  { key: 'recibidas', field: 'recibidas', filtro: 'RECIBIDA', tono: 'voltaje' },
+  { key: 'asignadas', field: 'asignadas', filtro: 'ASIGNADA' },
+  { key: 'enProceso', field: 'enProceso', filtro: 'EN_PROCESO' },
+  { key: 'enCotizacion', field: 'enCotizacion', filtro: 'EN_COTIZACION' },
+  { key: 'resueltas', field: 'resueltas', filtro: 'RESUELTA' },
+  { key: 'cerradas', field: 'cerradas', filtro: 'CERRADA' },
 ];
+
 
 /**
  * Cómo se nombra la vuelta. Espeja `VUELVE_A` de la ficha del contrato: un
@@ -96,8 +97,6 @@ function PqrsContent() {
   const [data, setData] = useState<PqrsListResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // ¿Se vio la carga? Entonces las cifras del resumen que llegan cuentan desde 0.
-  const huboCarga = useRef(false);
-  if (isLoading) huboCarga.current = true;
   // El error entero, no un booleano: `FalloDeCarga` decide si reintentar sirve.
   const [error, setError] = useState<unknown>(null);
   const [nuevaOpen, setNuevaOpen] = useState(false);
@@ -224,50 +223,6 @@ function PqrsContent() {
         />
       ) : null}
 
-      {/* Resumen por estado */}
-      <section className="space-y-3">
-        <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
-        {/* GLOW UP (21-10): UNA franja dividida con los seis estados, no seis tarjetas sueltas. */}
-        <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-surface md:grid-cols-3 lg:grid-cols-6 [&>*]:border-border max-lg:[&>*]:border-b lg:divide-x lg:divide-border">
-          {RESUMEN_ITEMS.map((item) => (
-            <div key={item.key} className="p-4">
-              <div className="flex items-center gap-2">
-                <span className={cn('w-2 h-2 rounded-full flex-shrink-0', item.dot)} />
-                <span className="text-caption text-fg-muted truncate">{t(k(`estado_${item.key}`))}</span>
-              </div>
-              {/* Un 0 mientras carga o cuando la consulta falló afirma «no hay
-                  ninguna», que no se sabe. Esqueleto mientras carga; raya y
-                  motivo cuando falló. */}
-              {/* Hueco → cifra con un fundido; la cifra que llega después de
-                  cargar cuenta desde 0, y cuenta otra vez cuando cambia. */}
-              <CrossFade swapKey={isLoading ? 'cargando' : 'listo'}>
-              {isLoading ? (
-                <div className="mt-2.5 h-7 w-10 rounded bg-surface-muted animate-pulse" aria-hidden="true" />
-              ) : (
-                <p
-                  className="mt-1.5 text-2xl font-semibold tabular-nums text-fg"
-                  data-testid="pqrs-resumen-valor"
-                >
-                  {error ? (
-                    '—'
-                  ) : (
-                    <AnimatedNumber
-                      value={resumen[item.field]}
-                      from={huboCarga.current ? 0 : undefined}
-                      format={enteroTalCual}
-                    />
-                  )}
-                </p>
-              )}
-              </CrossFade>
-              {!isLoading && error ? (
-                <p className="text-caption text-fg-subtle">No se pudo traer</p>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      </section>
-
       {pedidaNoEsta ? (
         <FalloDeCarga
           error={new ApiError(404, `La solicitud ${pqrsPedida} no está en la lista`)}
@@ -280,27 +235,43 @@ function PqrsContent() {
         />
       ) : null}
 
-      {/* Reparación → cotización (PQRS-03) */}
-      <Link
-        href="/panel/inmobiliaria/mantenimientos"
-        className="flex items-center gap-3 rounded-lg border border-border bg-surface hover:bg-surface-muted/50 transition-colors p-4"
-      >
-        <div className="w-9 h-9 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
-          <Wrench className="w-[18px] h-[18px] text-fg-muted" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-body-sm font-medium text-fg">{t(k('repairFlowTitle'))}</p>
-          <p className="text-caption text-fg-muted mt-0.5">{t(k('repairFlowDesc'))}</p>
-        </div>
-        <ArrowRight className="w-4 h-4 text-fg-muted flex-shrink-0" />
-      </Link>
-
       {/* Solicitudes — la tabla sola dentro de la tarjeta, sin título encima
           (Nico: «nosotros no nombramos las tablas»). */}
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
         {/* Buscador + filtro por estado: la primera fila de la card, como en
             Documentos. Van DENTRO de la tarjeta y FUERA del `EstadoDeDatos`
             para que no desaparezcan mientras recarga. */}
+        {/* GLOW UP 21-10 · el trabajo de esta pantalla es RESPONDER CADA PQRS DENTRO DEL PLAZO: la
+            franja empieza por lo urgente (vencidas, por vencer) y sigue con los estados; cada cifra
+            filtra la tabla y se vuelve a tocar para quitar el filtro. Antes los estados eran una
+            franja aparte que sólo informaba y un desplegable con lo mismo. */}
+        <FranjaDeCifras
+          columnas={4}
+          aria-label="Filtrar por plazo y estado"
+          data-testid="pqrs-por-estado"
+          className="rounded-none border-0 border-b border-border"
+        >
+          {CIFRAS_DE_PQRS.map((item) => (
+            <Cifra
+              key={item.key}
+              etiqueta={item.etiqueta ?? t(k(`estado_${item.key}`))}
+              tono={!isLoading && !error && resumen[item.field] > 0 ? item.tono : undefined}
+              detalle={!isLoading && error ? 'No se pudo traer' : undefined}
+              activa={filtros.estado === item.filtro}
+              onClick={() =>
+                setFiltros((f) => ({ ...f, estado: f.estado === item.filtro ? 'todos' : item.filtro }))
+              }
+              valor={
+                isLoading ? (
+                  // Un 0 mientras carga afirma «no hay ninguna», que no se sabe: esqueleto.
+                  <span className="mt-1 block h-7 w-10 animate-pulse rounded bg-surface-muted" aria-hidden="true" />
+                ) : (
+                  <span data-testid="pqrs-resumen-valor">{error ? '—' : resumen[item.field]}</span>
+                )
+              }
+            />
+          ))}
+        </FranjaDeCifras>
         <div className="flex flex-col gap-2 border-b border-border p-4 sm:flex-row sm:items-center">
           <SearchInput
             value={filtros.texto}
@@ -311,24 +282,6 @@ function PqrsContent() {
             className="w-full sm:w-80"
             data-testid="pqrs-buscar"
           />
-          <Select
-            value={filtros.estado}
-            onValueChange={(v) => setFiltros((f) => ({ ...f, estado: v as FiltrosDePqrs['estado'] }))}
-          >
-            <SelectTrigger className="w-full whitespace-nowrap sm:w-48" data-testid="pqrs-filtro-estado">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los estados</SelectItem>
-              <SelectItem value="vencidas">Vencidas</SelectItem>
-              <SelectItem value="porVencer">Vencen en 2 días hábiles</SelectItem>
-              {PQRS_ESTADOS.map((e) => (
-                <SelectItem key={e} value={e}>
-                  {ESTADO_LABEL[e]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           {hayFiltros && (
             <span className="text-caption text-fg-muted tabular-nums" data-testid="pqrs-cuantas-filtradas">
               {solicitudes.length} de {todas.length}
@@ -461,6 +414,14 @@ function PqrsContent() {
           )}
         </EstadoDeDatos>
       </section>
+
+      {/* Reparación → cotización (PQRS-03): una línea bajo la tabla, no una tarjeta con flecha. */}
+      <p className="text-caption text-fg-muted">
+        {t(k('repairFlowDesc'))}{' '}
+        <Link href="/panel/inmobiliaria/mantenimientos" className="font-medium text-fg underline decoration-border-strong underline-offset-2 hover:decoration-fg">
+          Ver mantenimientos
+        </Link>
+      </p>
 
       <NuevaPqrsDrawer open={nuevaOpen} onOpenChange={setNuevaOpen} onCreated={load} />
       <PqrsDrawer

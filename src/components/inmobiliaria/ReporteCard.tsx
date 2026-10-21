@@ -25,7 +25,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@leasefy/cadence';
 import type { ReportDefinition } from '@/lib/types/inmobiliaria';
 import {
-  getReportCategoryColor,
   getReportCategoryLabel,
   getReportFrequencyLabel,
 } from '@/lib/types/inmobiliaria';
@@ -63,15 +62,17 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 // Category colors for icon backgrounds
+// Cadence 2: el ícono va en arena para todas las categorías — los colores son de los estados,
+// no de las categorías (y un ícono en un círculo de color no dice nada que el título no diga).
 const CATEGORY_BG_COLORS: Record<string, string> = {
-  financiero: 'bg-success-soft',
-  operativo: 'bg-primary-soft',
+  financiero: 'bg-surface-muted dark:bg-ink',
+  operativo: 'bg-surface-muted dark:bg-ink',
   agentes: 'bg-surface-muted dark:bg-ink',
 };
 
 const CATEGORY_ICON_COLORS: Record<string, string> = {
-  financiero: 'text-success',
-  operativo: 'text-primary',
+  financiero: 'text-fg-muted dark:text-fg-subtle',
+  operativo: 'text-fg-muted dark:text-fg-subtle',
   agentes: 'text-fg-muted dark:text-fg-subtle',
 };
 
@@ -274,18 +275,13 @@ export function ReporteCard({
       <div className="px-5 pb-4">
         <div className="flex flex-wrap items-center gap-2">
           {/* Category Badge */}
-          <span
-            className={cn(
-              'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium',
-              getReportCategoryColor(report.category)
-            )}
-          >
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle">
             {getReportCategoryLabel(report.category)}
           </span>
 
           {/* Formato del archivo — sólo cuando hay archivo */}
           {formatoDelArchivoQueBaja && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-success-soft text-success">
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle">
               <FileCsv className="w-3.5 h-3.5" />
               {formatoDelArchivoQueBaja}
             </span>
@@ -337,7 +333,9 @@ export function ReporteCard({
               <Button
                 hideArrow
                 size="sm"
-                variant={descargable ? 'default' : 'secondary'}
+                // Una sola acción azul en la pantalla («Generar todos»): bajar es la principal de
+                // la tarjeta, en arena; lo que todavía no se puede bajar, en fantasma.
+                variant={descargable ? 'secondary' : 'ghost'}
                 onClick={(e) => {
                   e.stopPropagation();
                   onGenerate();
@@ -367,7 +365,7 @@ export function ReporteCard({
             {/* Preview Button */}
             {onPreview && (
               <Button
-                variant="secondary"
+                variant="ghost"
                 hideArrow
                 size="sm"
                 onClick={(e) => {

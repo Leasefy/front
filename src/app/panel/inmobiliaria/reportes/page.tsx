@@ -6,10 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
 import {
-  ChartLine,
   Lightning,
   Star,
-  Clock,
   MagnifyingGlass,
   SquaresFour,
   Table,
@@ -18,10 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui';
-import { AnimatedNumber, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
-
-/** El número tal cual se escribía antes (`{n}`): sin separador de miles. */
-const enteroTalCual = (n: number) => String(Math.round(n));
+import { SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import type { ReportDefinition, ReportId, ReportCategory } from '@/lib/types/inmobiliaria';
 import { REPORT_DEFINITIONS } from '@/lib/constants/inmobiliaria-data';
 import {
@@ -444,7 +439,7 @@ function ReportesContent() {
   }, [filteredReports, filters.period]);
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
@@ -453,6 +448,14 @@ function ReportesContent() {
           </h1>
           <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.reportes.subtitle')}
+            {/* Glow up 21-10: lo único que decían las tres tarjetas de arriba que no se repite más
+                abajo (cuántos hay y cuántos favoritos ya los dicen las pestañas y la sección). */}
+            {stats.lastGeneratedReport !== '—' && (
+              <span data-testid="ultimo-reporte-generado">
+                {' · '}
+                {t('inmobiliaria.reportes.stats.lastGenerated')}: {stats.lastGeneratedReport}, {stats.lastGeneratedTime}
+              </span>
+            )}
           </p>
         </div>
         {/* TODO Backend: Los reportes deben actualizarse en tiempo real via subscriptions/websockets */}
@@ -467,54 +470,6 @@ function ReportesContent() {
             {!enviandoTodos && <Lightning className="w-5 h-5" weight="fill" />}
             {t('inmobiliaria.reportes.generateAll')}
           </Button>
-        </div>
-      </div>
-
-      {/* Quick Stats — sin entrada propia (la página entra con su template);
-          las cifras cuentan cuando cambian (marcar o quitar un favorito). */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-lg border border-border bg-card">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
-              <ChartLine className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">
-                <AnimatedNumber value={stats.totalReports} format={enteroTalCual} />
-              </p>
-              <p className="text-xs text-muted-foreground">{t('inmobiliaria.reportes.stats.reports')}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-lg border border-border bg-card">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-md bg-warning-soft flex items-center justify-center">
-              <Star className="w-5 h-5 text-warning" weight="fill" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">
-                <AnimatedNumber value={stats.favoritesCount} format={enteroTalCual} />
-              </p>
-              <p className="text-xs text-muted-foreground">{t('inmobiliaria.reportes.stats.favorites')}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-lg border border-border bg-card col-span-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center">
-              <Clock className="w-5 h-5 text-success" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-foreground truncate">
-                {stats.lastGeneratedReport}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {t('inmobiliaria.reportes.stats.lastGenerated')}: {stats.lastGeneratedTime}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 

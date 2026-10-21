@@ -31,6 +31,7 @@ import type { Icon } from '@phosphor-icons/react'
 
 import { MonoLabel } from '@leasefy/cadence'
 import { PageGuard } from '@/components/auth/PageGuard'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { useI18n } from '@/lib/i18n'
 
 const NS = 'inmobiliaria.ai.asegurabilidad.equipo'
@@ -232,18 +233,14 @@ function EquipoAsegurabilidad() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="min-w-0">
-        <h1 className="text-h2 text-fg">
-          {tf(`${NS}.title`, 'Equipo IA')}
-        </h1>
-        <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm max-w-2xl">
-          {tf(
-            `${NS}.subtitle`,
-            'Por cada caso, Leasefy consulta varias aseguradoras a la vez y luego compara y recomienda la mejor opción. Aquí ves cómo trabaja, paso a paso, el equipo de IA que hace ese trabajo.',
-          )}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.ai.nav.cotizador')}
+        titulo={tf(`${NS}.title`, 'Equipo IA')}
+        descripcion={tf(
+          `${NS}.subtitle`,
+          'Por cada caso, Leasefy consulta varias aseguradoras a la vez y luego compara y recomienda la mejor opción. Aquí ves cómo trabaja, paso a paso, el equipo de IA que hace ese trabajo.',
+        )}
+      />
 
       {/* Flujo funcional conectado */}
       <section

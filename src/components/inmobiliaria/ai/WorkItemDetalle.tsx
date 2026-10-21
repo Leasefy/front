@@ -249,7 +249,7 @@ export function WorkItemDetalle({
     <div className="p-6 lg:p-8 space-y-6" data-testid={`caso-${item.id}`}>
       {/* Header */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">{item.titulo}</h1>
+        <h1 className="text-h2 text-fg">{item.titulo}</h1>
         <div className="flex items-center gap-1.5 flex-wrap">
           <MonoLabel
             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ${sev.bg} ${sev.text} ${sev.ring}`}

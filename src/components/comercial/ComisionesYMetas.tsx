@@ -13,6 +13,8 @@
  * ganado. Sin regla configurada no se inventa ninguna.
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { DownloadSimple, Flag, Handshake, Target, Wallet, WarningCircle } from '@phosphor-icons/react';
@@ -448,31 +450,41 @@ export function ComisionesYMetas() {
   }, [cargar]);
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Comisiones y metas</h1>
-          <p className="text-sm text-fg-muted">
-            {isAdmin
-              ? 'Lo que gana cada asesor en el mes y cómo va contra su meta.'
-              : 'Lo que llevas ganado en el mes y cómo vas contra tu meta.'}
-          </p>
-        </div>
-        <div className="w-full sm:w-56">
-          <Select value={mes} onValueChange={setMes}>
-            <SelectTrigger aria-label="Mes" data-testid="elegir-mes">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {meses.map((m) => (
-                <SelectItem key={m} value={m}>
-                  {nombreDelMes(m)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      <EncabezadoDePantalla
+        seccion="Captación y arriendo"
+        titulo="Comisiones y metas"
+        descripcion={
+          isAdmin
+            ? 'Lo que gana cada asesor en el mes y cómo va contra su meta.'
+            : 'Lo que llevas ganado en el mes y cómo vas contra tu meta.'
+        }
+        acciones={
+          <div className="w-full sm:w-56">
+            <Select value={mes} onValueChange={setMes}>
+              <SelectTrigger aria-label="Mes" data-testid="elegir-mes">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {meses.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {nombreDelMes(m)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        }
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: comisiones y metas" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>Captó es el asesor asignado al inmueble. Cerró es el asesor del proceso del embudo que terminó en el contrato.</p>
+              <p>La comisión sale de los contratos del mes; un contrato sin asesor no le suma a nadie hasta que le asignes el agente al inmueble desde su ficha.</p>
+              {isAdmin ? <p>Las metas se ponen por asesor y por mes: cierres y captaciones.</p> : null}
+            </div>
+          </ParaEntenderMas>
+        }
+      />
 
       <EstadoDeDatos cargando={cargando && !comision} error={error} queEs="la comisión y las metas" onReintentar={cargar}>
         <CrossFade swapKey={comision && metas ? `${comision.mes}` : 'vacio'}>

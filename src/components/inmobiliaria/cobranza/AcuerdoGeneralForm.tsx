@@ -16,6 +16,7 @@
  * de guardar, si dice lo que uno cree que dice.
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -280,11 +281,12 @@ export function AcuerdoGeneralForm({
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           Volver a Acuerdos de pago
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-fg">{titulo}</h1>
-        <p className="mt-1 text-sm text-fg-muted">
-          Una regla que el agente cierra sin preguntarte. Nunca puede ofrecer más
-          que los límites que ya configuraste.
-        </p>
+        <EncabezadoDePantalla
+          className="mt-3"
+          seccion="Cobranza"
+          titulo={titulo}
+          descripcion="Una regla que el agente cierra sin preguntarte. Nunca puede ofrecer más que los límites que ya configuraste."
+        />
       </div>
 
       {/* 1 — Qué es */}

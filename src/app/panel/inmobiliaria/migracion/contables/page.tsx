@@ -12,9 +12,9 @@
 
 import Link from 'next/link';
 import { ArrowLeft } from '@phosphor-icons/react';
-import { Eyebrow } from '@leasefy/cadence';
 
 import { PageGuard } from '@/components/auth/PageGuard';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { RegistrosContables } from '@/components/migracion/RegistrosContables';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { useI18n } from '@/lib/i18n';
@@ -32,7 +32,7 @@ function ContenidoDeContables() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1">
+      <div className="space-y-3">
         <Link
           href="/panel/inmobiliaria/contabilidad"
           className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
@@ -40,12 +40,12 @@ function ContenidoDeContables() {
           <ArrowLeft className="h-4 w-4" />
           {t('inmobiliaria.nav.contabilidad')}
         </Link>
-        <Eyebrow>{t('migracion.eyebrow')}</Eyebrow>
-        <h1 className="text-h2 text-fg">
-          {t('migracion.contables.titulo')}
-        </h1>
-        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">{t('migracion.contables.subtitulo')}</p>
-      </header>
+        <EncabezadoDePantalla
+          seccion={t('migracion.eyebrow')}
+          titulo={t('migracion.contables.titulo')}
+          descripcion={t('migracion.contables.subtitulo')}
+        />
+      </div>
 
       <RegistrosContables />
     </div>

@@ -18,6 +18,7 @@
  * Does NOT render raw cédula / phone / email anywhere.
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import * as React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -302,19 +303,14 @@ export default function DeudoresListClient() {
   return (
     <CrossFade swapKey="lista">
     <div className="p-6 lg:p-8 space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cobranza.deudores.title')}
-          </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            {t('inmobiliaria.ai.cobranza.deudores.subtitle')}
-          </p>
-        </div>
-        {/* COBRANZA-MANUAL: la cartera de los contratos llega cada noche; este
-            botón la trae ya. No contacta a nadie. */}
-        <TraerLaCartera compacto onTraida={() => void refetch()} />
-      </header>
+      {/* COBRANZA-MANUAL: la cartera de los contratos llega cada noche; el
+          botón del encabezado la trae ya. No contacta a nadie. */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.ai.nav.cobranza')}
+        titulo={t('inmobiliaria.ai.cobranza.deudores.title')}
+        descripcion={t('inmobiliaria.ai.cobranza.deudores.subtitle')}
+        acciones={<TraerLaCartera compacto onTraida={() => void refetch()} />}
+      />
 
       <AvisoPlazoSinFijarEnCobranza />
 

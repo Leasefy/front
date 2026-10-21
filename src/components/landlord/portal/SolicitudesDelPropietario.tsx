@@ -8,12 +8,14 @@
  * radicar una PQRS ni reportar un daño. Ahora usa las MISMAS rutas que el
  * inquilino (`GET /pqrs/mine`, `POST /pqrs`) con SUS inmuebles, y el MISMO modal.
  */
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { EmptyState } from '@/components/ui/empty-state';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { CaretRight, ChatCircleText, Plus } from '@phosphor-icons/react';
 
-import { Button, Card } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { Badge } from '@/components/ui/badge';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -72,24 +74,23 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">Solicitudes</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Peticiones, quejas, reclamos y daños de tus inmuebles. Tu inmobiliaria te responde aquí.
-          </p>
-        </div>
-        <Button
-          hideArrow
-          className="shrink-0"
-          onClick={() => setNueva(true)}
-          disabled={contratos.length === 0}
-          data-testid="propietario-nueva-solicitud"
-        >
-          <Plus className="h-4 w-4" weight="bold" />
-          Nueva solicitud
-        </Button>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Con tu inmobiliaria"
+        titulo="Solicitudes"
+        descripcion="Peticiones, quejas, reclamos y daños de tus inmuebles. Tu inmobiliaria te responde aquí."
+        accionPrincipal={
+          <Button
+            hideArrow
+            size="sm"
+            onClick={() => setNueva(true)}
+            disabled={contratos.length === 0}
+            data-testid="propietario-nueva-solicitud"
+          >
+            <Plus className="h-4 w-4" weight="bold" />
+            Nueva solicitud
+          </Button>
+        }
+      />
       {contratos.length === 0 && !error && (
         <p className="text-sm text-fg-muted">
           Para radicar una solicitud necesitas un inmueble consignado con una inmobiliaria.
@@ -98,10 +99,12 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
       {error ? (
         <FalloDeCarga error={error} queEs="tus solicitudes" onReintentar={cargar} />
       ) : items.length === 0 ? (
-        <Card className="p-8 text-center">
-          <ChatCircleText className="mx-auto h-8 w-8 text-fg-subtle" />
-          <p className="mt-3 text-sm text-fg-muted">Todavía no has radicado ninguna solicitud.</p>
-        </Card>
+        <EmptyState
+          icon={ChatCircleText}
+          title="Todavía no has radicado ninguna solicitud"
+          description="Cuando algo de tu inmueble necesite a tu inmobiliaria —una petición, una queja o un daño— la radicas aquí y aquí mismo te responden."
+          action={contratos.length > 0 ? { label: 'Nueva solicitud', onClick: () => setNueva(true) } : undefined}
+        />
       ) : (
         <ul className="space-y-2" data-testid="propietario-solicitudes">
           {items.map((s) => {

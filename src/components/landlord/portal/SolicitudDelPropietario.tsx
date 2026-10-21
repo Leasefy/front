@@ -4,6 +4,7 @@
  * SO-27 (PQRS-FIX, 04-10-2026): una solicitud del propietario — número, estado,
  * plazo, historial, la respuesta de la inmobiliaria y sus archivos.
  */
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from '@phosphor-icons/react';
@@ -54,13 +55,11 @@ export function SolicitudDelPropietario({ id }: { id: string }) {
       <Link href="/panel/solicitudes" className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg">
         <ArrowLeft className="h-4 w-4" /> Volver a solicitudes
       </Link>
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">{s.asunto}</h1>
-        <p className="font-mono text-sm text-fg-muted" data-testid="solicitud-radicado">
-          {s.radicado}
-        </p>
-        <Badge variant="secondary">{caso.estadoLabel}</Badge>
-      </header>
+      <EncabezadoDePantalla
+        seccion={<span data-testid="solicitud-radicado">{s.radicado}</span>}
+        titulo={s.asunto}
+        junto={<Badge variant="secondary">{caso.estadoLabel}</Badge>}
+      />
       <dl className="grid grid-cols-1 gap-3 rounded-lg border border-border bg-surface p-4 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-xs text-fg-muted">Inmueble</dt>

@@ -10,9 +10,10 @@
 
 import Link from 'next/link'
 import { ArrowLeft } from '@phosphor-icons/react'
-import { Eyebrow } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { ROLES_DE_CONTRATOS } from '@/lib/contratos/roles-de-contratos'
 import { MigrarContratos } from '@/components/contratos/MigrarContratos'
 import {
@@ -54,7 +55,7 @@ export default function MigrarContratosPage() {
   return (
     <PageGuard module="contratos" roles={ROLES_DE_CONTRATOS}>
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1">
+        <div className="space-y-3">
           <Link
             href="/panel/inmobiliaria/contratos"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -62,20 +63,24 @@ export default function MigrarContratosPage() {
             <ArrowLeft className="h-4 w-4" />
             Contratos
           </Link>
-          <Eyebrow>Portafolio</Eyebrow>
-          <h1 className="text-h2 text-fg">
-            Migrar contratos
-          </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
-            Trae los contratos que ya tienes en otro sistema, con sus inquilinos
-            y su cartera. Entran vigentes y firmados: no hay que volver a
-            firmarlos.{' '}
-            <span className="text-foreground">
-              El contrato se pega al inmueble por su código o por la dirección
-            </span>{' '}
-            — y si el inmueble no está cargado, se crea desde el archivo.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Portafolio"
+            titulo="Migrar contratos"
+            descripcion="Trae los contratos que ya tienes en otro sistema, con sus inquilinos y su cartera. Entran vigentes y firmados."
+            ayuda={
+              <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: migrar contratos" variante="secundario">
+                <div className="space-y-3 text-body-sm text-fg-muted">
+                  <p>Los contratos entran vigentes y firmados: no hay que volver a firmarlos.</p>
+                  <p>
+                    <span className="text-fg">El contrato se pega al inmueble por su código o por la dirección</span>; si
+                    el inmueble no está cargado, se crea desde el archivo.
+                  </p>
+                  <p>Lo que no entra queda frenado con su motivo, para resolverlo aquí mismo.</p>
+                </div>
+              </ParaEntenderMas>
+            }
+          />
+        </div>
 
         {deuda ? (
           <>

@@ -415,6 +415,22 @@ export const LIST_SOURCES: Record<string, string[]> = {
   ],
 };
 
+/**
+ * Ids that come from a read-only GET of a list endpoint (pattern ending at the dynamic segment ->
+ * endpoint on the back, optional id key). Used before crawling because most lists are tables
+ * whose rows navigate on click (no anchors to follow). The persona's own session is used.
+ */
+export const API_ID_SOURCES: Record<string, { endpoint: string; idKey?: string }> = {
+  '/panel/inmobiliaria/contratos/[id]': { endpoint: '/contracts' },
+  '/panel/inmobiliaria/propietarios/[id]': { endpoint: '/inmobiliaria/propietarios' },
+  '/panel/inmobiliaria/inmuebles/[id]': { endpoint: '/properties' },
+  '/panel/inmobiliaria/estado-de-cuenta/inquilino/[id]': { endpoint: '/inmobiliaria/inquilinos', idKey: 'tenantId' },
+  '/panel/inmobiliaria/estado-de-cuenta/propietario/[id]': { endpoint: '/inmobiliaria/propietarios' },
+  '/propiedades/[id]': { endpoint: '/properties' },
+  '/panel/[propertyId]': { endpoint: '/properties' },
+  '/panel/inmuebles/[contractId]': { endpoint: '/contracts' },
+};
+
 /** Intentionally not covered, with the reason (kept here so the report can list them). */
 export const EXCLUDED: Array<{ path: string; reason: string }> = [
   { path: '/admin/*', reason: 'Internal backoffice: out of scope for T-0173' },

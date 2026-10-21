@@ -30,6 +30,13 @@ export async function waitForSettled(page: Page, opts: { quick?: boolean } = {})
       { timeout: opts.quick ? 3_000 : 7_000 },
     )
     .catch(() => {});
+  // The panel shell shows a "preparing your panel" splash while the session/permissions load;
+  // measuring under it would report everything as occluded.
+  await page
+    .waitForFunction(() => !document.querySelector('[data-testid="muro-esperando-estado"]'), undefined, {
+      timeout: opts.quick ? 4_000 : 25_000,
+    })
+    .catch(() => {});
   // Entrance animations (framer-motion / CSS) settle before geometry is measured.
   await page.waitForTimeout(opts.quick ? 1_200 : 450);
 }

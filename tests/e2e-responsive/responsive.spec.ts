@@ -7,7 +7,7 @@ import { FINDINGS_ATTACHMENT, HARD_TYPES, type Finding, type TestFindings } from
 import { installReadOnlyGuard, type Guard } from './support/guard';
 import { checkMobileNavigation, checkOverlays, checkTabs } from './support/interactions';
 import type { DeviceMeta } from './support/devices';
-import { pageSweep, type SweepResult } from './support/measure';
+import { overlayProbe, pageSweep, type SweepResult } from './support/measure';
 import { openAndSettle, waitForSettled, type OpenResult } from './support/page-ready';
 import {
   PERSONAS,
@@ -346,6 +346,17 @@ for (const persona of PERSONAS) {
           detail: opened.error.isError
             ? `${opened.error.reason}: mobile navigation not checked.`
             : `Redirected to ${opened.finalPath}: mobile navigation not checked.`,
+        });
+        await attach(testInfo, payload);
+        return;
+      }
+      const blocking = await page.evaluate(overlayProbe);
+      if (blocking.found) {
+        findings.push({
+          type: 'note',
+          severity: 'info',
+          selector: blocking.selector,
+          detail: 'A modal (e.g. terms acceptance) is open on load and makes the page behind it inert: mobile navigation not checked.',
         });
         await attach(testInfo, payload);
         return;

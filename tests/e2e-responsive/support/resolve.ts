@@ -32,6 +32,11 @@ export interface ResolveContext {
    * row-like elements and return the pathname the app navigated to, if it matches.
    */
   discoverByClick?: (source: string, matcher: RegExp, exclude: Set<string>) => Promise<string | null>;
+  /**
+   * Read-only API lookup for an id (a GET of a list endpoint with the persona's own session).
+   * Tried before crawling: many lists are tables whose rows navigate on click, with no anchors.
+   */
+  idFromApi?: (headPattern: string) => Promise<string | null>;
   /** Memo shared across calls. */
   memo: Map<string, Resolution>;
 }
@@ -72,6 +77,9 @@ async function resolveUncached(pattern: string, ctx: ResolveContext): Promise<Re
   const tailPath = tail.length ? '/' + tail.join('/') : '';
   const withTail = new RegExp(`^${escapeRegex(prefix)}/([^/?#]+)${escapeRegex(tailPath)}$`);
   const headOnly = new RegExp(`^${escapeRegex(prefix)}/[^/?#]+$`);
+
+  const apiId = ctx.idFromApi ? await ctx.idFromApi(headOf(segments, last)) : null;
+  if (apiId) return { path: `${prefix}/${encodeURIComponent(apiId)}${tailPath}` };
 
   const tried: string[] = [];
   const pages: Array<{ source: string; links: string[] }> = [];

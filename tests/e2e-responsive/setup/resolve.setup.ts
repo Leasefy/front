@@ -12,7 +12,7 @@ import {
   type Resolution,
   type ResolveContext,
 } from '../support/resolve';
-import { LIST_SOURCES, ROUTES, SHARES_RESOLVED_IDS_WITH } from '../support/routes';
+import { API_ID_SOURCES, LIST_SOURCES, ROUTES, SHARES_RESOLVED_IDS_WITH } from '../support/routes';
 
 /**
  * Resolves every `[param]` route to a real path with the persona's own session, never from a
@@ -26,6 +26,7 @@ import { LIST_SOURCES, ROUTES, SHARES_RESOLVED_IDS_WITH } from '../support/route
  * Read-only: pages are only navigated (and, for the click fallback, table rows are clicked);
  * the network guard aborts anything that is not a read.
  *
+ * RESPONSIVE_RESOLVE_CRAWL=0 skips the link crawl (API lookups only): seconds instead of minutes.
  * RESPONSIVE_REUSE_RESOLVED=1 keeps an existing shard file instead of crawling again.
  */
 setup.describe.configure({ mode: 'parallel' });
@@ -83,6 +84,45 @@ for (const persona of PERSONAS) {
       const linkCache = new Map<string, string[]>();
       const clickCache = new Map<string, string | null>();
 
+      // Back API origin + bearer token, taken from the page's own requests (the token lives in
+      // memory, not in storage). Only used for GET list endpoints.
+      let api: { origin: string; authorization: string } | null = null;
+      page.on('request', (request) => {
+        const authorization = request.headers()['authorization'];
+        if (authorization && !api && new URL(request.url()).origin !== new URL(baseURL ?? 'http://localhost:3001').origin) {
+          api = { origin: new URL(request.url()).origin, authorization };
+        }
+      });
+      const needsApi = patterns.some((p) => API_ID_SOURCES[p]);
+      const apiCache = new Map<string, string | null>();
+      const idFromApi = async (headPattern: string): Promise<string | null> => {
+        const source = API_ID_SOURCES[headPattern];
+        if (!source) return null;
+        if (apiCache.has(source.endpoint + source.idKey)) return apiCache.get(source.endpoint + source.idKey) ?? null;
+        let id: string | null = null;
+        if (api) {
+          try {
+            const response = await context.request.get(api.origin + source.endpoint, {
+              headers: { authorization: api.authorization },
+              timeout: 60_000,
+            });
+            if (response.ok()) {
+              const body = (await response.json()) as unknown;
+              const list = Array.isArray(body)
+                ? body
+                : (Object.values((body ?? {}) as Record<string, unknown>).find(Array.isArray) as unknown[] | undefined);
+              const first = (list?.[0] ?? null) as Record<string, unknown> | null;
+              const value = first ? first[source.idKey ?? 'id'] : null;
+              id = typeof value === 'string' || typeof value === 'number' ? String(value) : null;
+            }
+          } catch {
+            id = null;
+          }
+        }
+        apiCache.set(source.endpoint + source.idKey, id);
+        return id;
+      };
+
       const open = async (target: string) => {
         if (pathOf(page.url()) === target) return;
         await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 75_000 });
@@ -126,7 +166,11 @@ for (const persona of PERSONAS) {
         listSources: LIST_SOURCES,
         staticRoutes: new Set(ROUTES[persona.id].filter((r) => !isDynamic(r)).map(pathnameOf)),
         memo: new Map(),
+        idFromApi,
         discoverByClick: async (source, matcher, exclude) => {
+          // Opt-in: in practice no list in this app navigates through a plain row click, and the
+          // attempts cost minutes per list on a dev server.
+          if (process.env.RESPONSIVE_CLICK_DISCOVERY !== '1') return null;
           const key = source + '|' + matcher.source;
           if (clickCache.has(key)) return clickCache.get(key) ?? null;
           const found = await clickThrough(source, matcher, exclude);
@@ -134,6 +178,7 @@ for (const persona of PERSONAS) {
           return found;
         },
         getLinks: async (target: string) => {
+          if (process.env.RESPONSIVE_RESOLVE_CRAWL === '0') return [];
           const cached = linkCache.get(target);
           if (cached) return cached;
           await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 75_000 });
@@ -155,6 +200,12 @@ for (const persona of PERSONAS) {
           return unique;
         },
       };
+
+      if (needsApi && persona.envPrefix) {
+        // Warm-up navigation so the page issues authenticated API calls we can borrow the token from.
+        await page.goto(persona.id.startsWith('agency') ? '/panel/inmobiliaria' : persona.id === 'tenant' ? '/inquilino' : '/panel', { waitUntil: 'domcontentloaded', timeout: 120_000 }).catch(() => {});
+        for (let i = 0; i < 40 && !api; i++) await page.waitForTimeout(500);
+      }
 
       for (const pattern of patterns) {
         try {

@@ -35,7 +35,7 @@ export default defineConfig({
   outputDir: './test-results-responsive',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: 0,
+  retries: Number(process.env.RESPONSIVE_RETRIES ?? 1),
   workers: Number(process.env.RESPONSIVE_WORKERS ?? 4),
   timeout: 180_000,
   reporter: [

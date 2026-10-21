@@ -39,6 +39,14 @@ describe('«Mejorar mi plan» va a nuestro WhatsApp (Nico, 20-10)', () => {
     expect(texto).not.toContain('marketplace');
   });
 
+  it('una empresa que termina en punto («S.A.S.») no queda con dos puntos', () => {
+    for (const vinoDelMarketplace of [true, false]) {
+      const texto = mensajeParaMejorarElPlan({ nombre: 'Lucía', empresa: 'Arriendos La Ceja S.A.S.', vinoDelMarketplace });
+      expect(texto).toContain('Soy Lucía, de Arriendos La Ceja S.A.S. ');
+      expect(texto).not.toContain('..');
+    }
+  });
+
   it('sin nombre ni empresa no inventa nada', () => {
     const texto = mensajeParaMejorarElPlan({});
     expect(texto).not.toContain('undefined');

@@ -22,6 +22,11 @@ export interface ContextoDelMensaje {
   queVio?: string | null;
 }
 
+/** Cierra la frase con punto, sin duplicarlo («… S.A.S.» no queda «S.A.S..»). */
+function conPunto(texto: string): string {
+  return /[.!?…]$/.test(texto) ? texto : `${texto}.`;
+}
+
 /** El primer mensaje, ya escrito, para que sólo toque «Enviar». */
 export function mensajeParaVentas({ quien, nombre, empresa, queVio }: ContextoDelMensaje): string {
   const soy = nombre?.trim() ? `Soy ${nombre.trim()}` : 'Hola';
@@ -29,7 +34,7 @@ export function mensajeParaVentas({ quien, nombre, empresa, queVio }: ContextoDe
     const de = empresa?.trim() ? `, de ${empresa.trim()}` : '';
     const vi = queVio?.trim() ? ` Estaba mirando ${queVio.trim()} en mi cuenta.` : '';
     return (
-      `Hola, Leasefy. ${soy}${de}. Ya publiqué nuestros inmuebles en su marketplace.${vi} ` +
+      `Hola, Leasefy. ${conPunto(`${soy}${de}`)} Ya publiqué nuestros inmuebles en su marketplace.${vi} ` +
       'Quiero saber cómo pueden manejar mi inmobiliaria en piloto automático: cobranza, contratos, pagos a propietarios y contabilidad.'
     );
   }
@@ -61,9 +66,9 @@ export interface ContextoDeMejorarElPlan {
 export function mensajeParaMejorarElPlan({ nombre, empresa, queVio, vinoDelMarketplace }: ContextoDeMejorarElPlan): string {
   if (vinoDelMarketplace) return mensajeParaVentas({ quien: 'inmobiliaria', nombre, empresa, queVio });
   const quien = nombre?.trim()
-    ? `Soy ${nombre.trim()}${empresa?.trim() ? `, de ${empresa.trim()}` : ''}.`
+    ? conPunto(`Soy ${nombre.trim()}${empresa?.trim() ? `, de ${empresa.trim()}` : ''}`)
     : empresa?.trim()
-      ? `Les escribo de ${empresa.trim()}.`
+      ? conPunto(`Les escribo de ${empresa.trim()}`)
       : '';
   return [
     'Hola, Leasefy.',

@@ -156,6 +156,10 @@ export default class FindingsReporter implements Reporter {
   }
 
   onEnd(result: FullResult): void {
+    // The same test can appear twice (a retry that was appended, or two overlapping runs): keep the last.
+    const latest = new Map<string, Row>();
+    for (const row of this.rows) latest.set(row.persona + "|" + row.route + "|" + row.device, row);
+    this.rows = [...latest.values()];
     const dir = reportDir();
     const routes = this.buildRoutes();
     const skipped = this.rows.filter((r) => r.status === 'skipped');

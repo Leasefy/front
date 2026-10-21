@@ -9,7 +9,8 @@ import { ArrowLeft } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { PeriodosDeNominaPanel } from '@/components/nomina/PeriodosDeNomina';
 
 /**
@@ -26,20 +27,26 @@ export default function PeriodosDeNominaPage() {
   return (
     <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <Link
-            href="/panel/inmobiliaria/nomina"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
-          >
+        <div className="space-y-3">
+          <Link href="/panel/inmobiliaria/nomina" className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Nómina
           </Link>
-          <SectionLabel>Nómina</SectionLabel>
-          <h1 className="text-h2 text-fg">Liquidación</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Un borrador se recalcula tantas veces como haga falta. Aprobar congela las líneas y escribe las provisiones del mes; asentar exige el período contable abierto y todos los conceptos mapeados. Aprobar no es pagar.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Nómina"
+            titulo="Liquidación"
+            descripcion="Armar el borrador de cada período, aprobarlo, asentarlo y marcarlo pagado."
+            ayuda={
+              <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: Liquidación" variante="secundario">
+                <div className="space-y-3 text-body-sm text-fg-muted">
+                  <p>Un borrador se recalcula tantas veces como haga falta.</p>
+                  <p>Aprobar congela las líneas, escribe las provisiones del mes y le manda a cada persona su desprendible. Aprobar no es pagar.</p>
+                  <p>Asentar exige el período contable abierto y todos los conceptos con su cuenta del PUC.</p>
+                </div>
+              </ParaEntenderMas>
+            }
+          />
+        </div>
         <PeriodosDeNominaPanel />
       </div>
     </PageGuard>

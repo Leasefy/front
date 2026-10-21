@@ -9,7 +9,8 @@ import { ArrowLeft } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { NominaElectronicaPanel } from '@/components/nomina/NominaElectronica';
 
 /**
@@ -26,20 +27,26 @@ export default function NominaElectronicaPage() {
   return (
     <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <Link
-            href="/panel/inmobiliaria/nomina"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
-          >
+        <div className="space-y-3">
+          <Link href="/panel/inmobiliaria/nomina" className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Nómina
           </Link>
-          <SectionLabel>Nómina</SectionLabel>
-          <h1 className="text-h2 text-fg">Nómina electrónica (DIAN)</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Leasefy informa la nómina electrónica por el mismo proveedor de la factura electrónica. Generar numera el documento; transmitir es el que habla con el proveedor. Un CUNE que empieza por «PRUEBA-» no llegó a la DIAN. La planilla PILA se hace por fuera.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Nómina"
+            titulo="Nómina electrónica (DIAN)"
+            descripcion="Los documentos de nómina electrónica, su CUNE y lo que falta por transmitir."
+            ayuda={
+              <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: Nómina electrónica (DIAN)" variante="secundario">
+                <div className="space-y-3 text-body-sm text-fg-muted">
+                  <p>Leasefy informa la nómina electrónica por el mismo proveedor de la factura electrónica.</p>
+                  <p>Generar numera el documento; transmitir es lo que habla con el proveedor. Un CUNE que empieza por «PRUEBA-» no llegó a la DIAN.</p>
+                  <p>La planilla PILA se hace por fuera.</p>
+                </div>
+              </ParaEntenderMas>
+            }
+          />
+        </div>
         <NominaElectronicaPanel />
       </div>
     </PageGuard>

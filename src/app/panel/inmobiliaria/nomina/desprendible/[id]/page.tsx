@@ -14,7 +14,7 @@ import { ArrowLeft } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { DesprendiblePanel } from '@/components/nomina/Desprendible';
 
 export default function DesprendiblePage() {
@@ -24,22 +24,17 @@ export default function DesprendiblePage() {
   return (
     <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <Link
-            href="/panel/inmobiliaria/nomina/periodos"
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
-          >
+        <div className="space-y-3">
+          <Link href="/panel/inmobiliaria/nomina/periodos" className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Liquidación
           </Link>
-          <SectionLabel>Nómina</SectionLabel>
-          <h1 className="text-h2 text-fg">Desprendible de pago</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Cada renglón con su base, sus días u horas y su norma. Los aportes del
-            empleador aparecen porque son parte del costo, aunque no se le
-            descuenten a la persona.
-          </p>
-        </header>
+          <EncabezadoDePantalla
+            seccion="Nómina"
+            titulo="Desprendible de pago"
+            descripcion="Cada renglón con su base, sus días u horas y su norma; los aportes del empleador van aparte porque son costo, no descuento."
+          />
+        </div>
         {id ? <DesprendiblePanel liquidacionId={id} /> : null}
       </div>
     </PageGuard>

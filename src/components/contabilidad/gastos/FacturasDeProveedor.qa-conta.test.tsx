@@ -239,7 +239,8 @@ describe('<FacturasDeProveedor> · CB-17', () => {
     expect(q('facturas-de-proveedor')!.querySelector('input[type="date"]')).toBeNull();
     // El doble del `Select` sólo pinta un <select> con el testid si la pantalla usa el del DS.
     expect(q('filtro-rubro')!.tagName).toBe('SELECT');
-    expect(q('filtro-desde')!.querySelector('button')).not.toBeNull();
+    // El período: los atajos del DS (y las fechas con «Otro rango»), nunca el campo del navegador.
+    expect(q('facturas-de-proveedor')!.querySelector('[role="radiogroup"]')).not.toBeNull();
     // GLOW UP 21-10: el estado se elige en la franja de cifras (botones del DS con aria-pressed),
     // no en un desplegable: lo que está por causar y por pagar se ve sin abrir nada.
     const franja = q('estados-de-las-facturas')!;

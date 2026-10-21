@@ -72,6 +72,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { RangoDeFechas } from '../RangoDeFechas';
 import { Cifra, FranjaDeCifras, type TonoDeCifra } from '@leasefy/cadence';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
 import { TituloDeBloque } from '@/components/finanzas/piezas';
@@ -103,7 +104,6 @@ import { usePuedeEscribir } from '../use-puede-escribir';
 import { usePuedeRegistrar } from '../use-puede-registrar';
 import { PagarFactura } from './PagarFactura';
 import { egresoDeLaFacturaEnPalabras, sePuedePagar } from '@/lib/contabilidad/pagar-factura';
-import { CampoDeDia } from '../CampoDeDia';
 import { FormularioDeFactura } from './FormularioDeFactura';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
@@ -437,30 +437,17 @@ export function FacturasDeProveedor({
         </FranjaDeCifras>
 
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
-        <div className="w-[170px] min-w-0">
-          <Label htmlFor="facturas-desde" className="sr-only">Desde</Label>
-          <CampoDeDia
-            id="facturas-desde"
-            value={desde}
-            max={hasta || undefined}
-            onChange={setDesde}
-            placeholder="Sin fecha"
-            quitable
-            etiquetaDeQuitar="Quitar la fecha «desde»"
-            testid="filtro-desde"
-          />
-        </div>
-        <div className="w-[170px] min-w-0">
-          <Label htmlFor="facturas-hasta" className="sr-only">Hasta</Label>
-          <CampoDeDia
-            id="facturas-hasta"
-            value={hasta}
-            min={desde || undefined}
-            onChange={setHasta}
-            placeholder="Sin fecha"
-            quitable
-            etiquetaDeQuitar="Quitar la fecha «hasta»"
-            testid="filtro-hasta"
+        {/* El período, con los mismos atajos del libro y los informes (antes, dos campos «Sin
+            fecha» sin decir cuál era cuál). */}
+        <div className="min-w-0">
+          <RangoDeFechas
+            atajos
+            desde={desde}
+            hasta={hasta}
+            onChange={(r) => {
+              setDesde(r.desde);
+              setHasta(r.hasta);
+            }}
           />
         </div>
         <div className="w-[200px]">
@@ -642,7 +629,7 @@ export function FacturasDeProveedor({
         )}
 
         {/* Los totales del filtro, al pie de la lista (antes, una tarjeta aparte arriba). */}
-        {totales ? (
+        {totales && pagina.total > 0 ? (
           <dl
             className="flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-border bg-surface-muted/40 px-4 py-3"
             aria-label="Totales de las facturas del filtro"

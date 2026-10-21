@@ -32,7 +32,9 @@ import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { CalendarCheck, UserPlus } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
-import { Stagger, StaggerItem } from '@leasefy/cadence'
+import { Cifra, FranjaDeCifras, Stagger, StaggerItem } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import {
   Badge,
@@ -171,8 +173,14 @@ export function VisitasClient() {
     }
   }
 
+  // GLOW UP (21-10-2026): arriba, cuántas visitas tienen algo por resolver y de
+  // qué tipo; abajo, la lista de trabajo y los recordatorios. Las reglas (sin
+  // asesor no se confirma, el aviso al inquilino, «esta pantalla no envía») van
+  // en «¿Cómo funciona?».
+  const sinAsesor = ordenadas.filter((v) => v.faltaElAsesor).length
+  const sinAviso = ordenadas.filter((v) => v.faltaElAvisoAlInquilino).length
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="space-y-6 p-6 lg:p-8">
       {/*
         🔴 Se llamaba «Visitas», y Nico preguntó lo obvio el 21-09: «¿para qué
         existe esta sección si existe la de Agenda?». La Agenda YA muestra las
@@ -193,14 +201,59 @@ export function VisitasClient() {
         Meter esta lista dentro de la Agenda sería empeorar las dos: un
         calendario no es el sitio donde se persigue lo que falta.
       */}
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Preparar visitas</h1>
-        <p className="text-muted-foreground text-sm">
-          Lo que le falta a cada visita para poder hacerse. Ninguna se confirma sin asesor, y
-          al inmueble ocupado se le avisa al inquilino {horas} horas antes. El calendario
-          completo está en Agenda.
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Captación y arriendo"
+        titulo="Preparar visitas"
+        descripcion="Lo que le falta a cada visita para poder hacerse. El calendario completo está en Agenda."
+        acciones={
+          <Button size="sm" variant="outline" asChild>
+            <Link href="/panel/inmobiliaria/agenda">Ver la agenda</Link>
+          </Button>
+        }
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: preparar visitas" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>Ninguna visita se confirma sin asesor: asígnale uno desde su fila.</p>
+              <p>
+                Si el inmueble está ocupado, al inquilino se le avisa {horas} horas antes; cuando le avises, márcalo con
+                «Ya le avisé».
+              </p>
+              <p>
+                Los recordatorios aparecen 24 horas antes de cada visita confirmada. Esta pantalla no los envía: arma
+                el texto y deja la constancia.
+              </p>
+              <p>Agenda es el calendario (cuándo pasa cada cosa); esta pantalla es la lista de lo que falta.</p>
+            </div>
+          </ParaEntenderMas>
+        }
+      />
+
+      {!porAtender.noHabilitado && !porAtender.cargando && !porAtender.errorCrudo && ordenadas.length > 0 ? (
+        <FranjaDeCifras fila="md" aria-label="Lo que falta en las visitas" data-testid="franja-visitas">
+          <Cifra etiqueta="Próximas" valor={ordenadas.length} detalle="Visitas por atender" data-testid="cifra-proximas" />
+          <Cifra
+            etiqueta="Sin asesor"
+            valor={sinAsesor}
+            detalle={sinAsesor > 0 ? 'No se pueden confirmar' : 'Todas tienen asesor'}
+            tono={sinAsesor > 0 ? 'peligro' : 'exito'}
+            data-testid="cifra-sin-asesor"
+          />
+          <Cifra
+            etiqueta="Avisar al inquilino"
+            valor={sinAviso}
+            detalle={sinAviso > 0 ? 'Inmuebles ocupados' : 'Nada pendiente'}
+            tono={sinAviso > 0 ? 'aviso' : undefined}
+            data-testid="cifra-sin-aviso"
+          />
+          <Cifra
+            etiqueta="Recordatorios"
+            valor={pendientes.length}
+            detalle={pendientes.length > 0 ? 'Por mandar' : 'Ninguno pendiente'}
+            tono={pendientes.length > 0 ? 'aviso' : undefined}
+            data-testid="cifra-recordatorios"
+          />
+        </FranjaDeCifras>
+      ) : null}
 
       {sinHorario && sinHorario.sinHorario > 0 && (
         <div
@@ -239,7 +292,7 @@ export function VisitasClient() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Por atender</CardTitle>
+          <CardTitle className="text-base">Visitas por preparar</CardTitle>
         </CardHeader>
         <CardContent>
           {porAtender.noHabilitado ? (

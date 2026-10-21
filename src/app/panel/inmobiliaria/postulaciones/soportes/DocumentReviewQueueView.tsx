@@ -13,7 +13,6 @@
  */
 
 import {
-  FileText,
   FolderOpen,
   Clock,
   CheckCircle,
@@ -23,6 +22,8 @@ import {
 import type { Icon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { Badge, Button } from '@/components/ui';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { AnimatedNumber, CrossFade } from '@leasefy/cadence';
 
 /** El número tal cual se escribía antes: sin separador de miles. */
@@ -132,22 +133,30 @@ export function DocumentReviewQueueView({
   const filas: Fila[] = items.flatMap((item) => item.documents.map((doc) => ({ item, doc })));
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-h2 text-fg flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
-            <FileText className="w-5 h-5 text-fg-muted" />
-          </div>
-          Soportes de candidatos
-        </h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
-          Los papeles que el candidato adjunta al postularse —cédula, comprobante
-          de ingresos, carta laboral—. Acá los abres y decides: si apruebas, su
-          postulación sigue; si rechazas, tienes que escribir el motivo, y ese
-          motivo es el que él recibe para volver a mandarlo bien.
-        </p>
-      </div>
+    <div className="space-y-6 p-6 lg:p-8">
+      <EncabezadoDePantalla
+        seccion="Captación y arriendo"
+        titulo="Soportes de candidatos"
+        descripcion="Los papeles que el candidato adjunta al postularse: ábrelos y decide si la postulación sigue."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: soportes de candidatos" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>
+                Llegan los papeles que el candidato adjunta al postularse: cédula, comprobante de ingresos, carta
+                laboral.
+              </p>
+              <p>
+                «Tomar» lo marca en revisión para que nadie más de tu equipo lo revise a la vez. Si apruebas, su
+                postulación sigue.
+              </p>
+              <p>
+                Si rechazas, tienes que escribir el motivo: es el que él recibe para volver a mandarlo bien.
+              </p>
+              <p>Lo que se le pide a cada perfil lo defines en «Requisitos».</p>
+            </div>
+          </ParaEntenderMas>
+        }
+      />
 
       {/* El resumen: una cifra que es trabajo, y el resto acompañando. */}
       <div

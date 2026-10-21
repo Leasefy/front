@@ -31,6 +31,7 @@ import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { ChatCircleDots, Eye, ShieldWarning, Clock } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { toast } from '@/components/ui/toast'
@@ -160,17 +161,19 @@ export function ReclamosClient() {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <header className="max-w-2xl space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Reclamos de candidatos
-        </h1>
-        <p className="text-sm text-fg-muted">
-          A quien no pasó el estudio se le da el motivo general y este canal.
-          Acá llega lo que escribe —pidiendo detalle o avisando que un dato está
-          mal— y acá se le responde.
-        </p>
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      <EncabezadoDePantalla
+        seccion="Captación y arriendo"
+        titulo="Reclamos de candidatos"
+        descripcion="Lo que escribe quien no pasó el estudio —pidiendo detalle o avisando que un dato está mal— y su respuesta."
+        junto={
+          sinResponder > 0 ? (
+            <Badge variant="warning" data-testid="sin-responder">
+              {sinResponder} sin responder
+            </Badge>
+          ) : null
+        }
+      />
 
       {/* ── La regla, antes de escribir y no dentro del formulario ───────── */}
       <section

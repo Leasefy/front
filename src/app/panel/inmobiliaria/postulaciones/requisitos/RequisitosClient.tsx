@@ -32,6 +32,7 @@
  *      desconfiar de la pantalla.
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { useId, useMemo, useState } from 'react'
 import { CrossFade, MotionIndicator, Stagger, StaggerItem } from '@leasefy/cadence'
 import { Checkbox } from '@/components/ui/checkbox';
@@ -563,33 +564,34 @@ export function RequisitosClient() {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="max-w-2xl space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Requisitos por tipo de inquilino
-          </h1>
-          {/*
-            🔴 QA-IA-A (04-10-2026): decía «Esto es exactamente lo que ve quien
-            se postula», y no era cierto: el formulario de postulación le pide
-            a TODOS la cédula y el extracto bancario, sin leer esta lista (ni
-            conoce los perfiles Empresa y Extranjero). Hasta que el formulario
-            la lea, la pantalla dice cómo se usa hoy.
-          */}
-          <p className="text-sm text-fg-muted" data-testid="requisitos-como-se-usa">
+    <div className="space-y-6 p-6 lg:p-8">
+      {/*
+        🔴 QA-IA-A (04-10-2026): decía «Esto es exactamente lo que ve quien
+        se postula», y no era cierto: el formulario de postulación le pide
+        a TODOS la cédula y el extracto bancario, sin leer esta lista (ni
+        conoce los perfiles Empresa y Extranjero). Hasta que el formulario
+        la lea, la pantalla dice cómo se usa hoy.
+      */}
+      <EncabezadoDePantalla
+        seccion="Captación y arriendo"
+        titulo="Requisitos por tipo de inquilino"
+        descripcion={
+          <span data-testid="requisitos-como-se-usa">
             Los papeles que le pides a cada perfil: es la política de riesgo de
             esta inmobiliaria, y la defines tú. Hoy el formulario de postulación
             le pide a todos la cédula y el extracto bancario; lo demás de esta
             lista se lo pides al candidato con «Pedir info» desde su ficha.
-          </p>
-        </div>
-        {puedeEditar && !esElPreset && perfiles.length > 0 ? (
-          <Button size="sm" onClick={() => setAgregando(true)} data-testid="abrir-agregar">
-            <Plus className="mr-1.5 h-4 w-4" />
-            Agregar requisito
-          </Button>
-        ) : null}
-      </header>
+          </span>
+        }
+        accionPrincipal={
+          puedeEditar && !esElPreset && perfiles.length > 0 ? (
+            <Button size="sm" onClick={() => setAgregando(true)} data-testid="abrir-agregar">
+              <Plus className="mr-1.5 h-4 w-4" />
+              Agregar requisito
+            </Button>
+          ) : null
+        }
+      />
 
       {datos.noHabilitado ? (
         <Card>

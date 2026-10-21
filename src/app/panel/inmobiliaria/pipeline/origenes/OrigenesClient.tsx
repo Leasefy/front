@@ -30,6 +30,8 @@ import { TrendUp } from '@phosphor-icons/react'
 
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { KpiValor } from '@/components/estado/KpiValor'
 import {
@@ -125,90 +127,30 @@ export function OrigenesClient() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Origen de los leads
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Cuántos leads trajo cada portal y cuántos terminaron en arriendo. Es
-          con lo que se decide qué cuenta seguir pagando.
-        </p>
-      </header>
-
-      {/* El plazo de respuesta (B-01). Va acá porque es la otra mitad del
-          mismo tema: de nada sirve saber qué portal trae leads si nadie los
-          contesta. */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Cuánto tiene el asesor para responder
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {configuracion.noHabilitado ? (
-            <p className="text-muted-foreground text-sm" data-testid="config-no-habilitada">
-              {motivoEnCristiano(configuracion.noHabilitado)}
-            </p>
-          ) : (
-            <>
-              <p className="text-sm">
-                Hoy:{' '}
-                <strong>
-                  <KpiValor
-                    cargando={configuracion.cargando}
-                    fallo={configuracion.errorCrudo}
-                  >
-                    {configuracion.datos?.horasParaResponderLead} horas
-                  </KpiValor>
-                </strong>
-                . Pasado el plazo, el lead pasa al siguiente asesor del turno y
-                queda el registro de quién lo tenía.
+    <div className="space-y-6 p-6 lg:p-8">
+      <EncabezadoDePantalla
+        seccion="Captación y arriendo"
+        titulo="Origen de los leads"
+        descripcion="Cuántos leads trajo cada portal y cuántos terminaron en arriendo: con eso se decide qué cuenta seguir pagando."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: origen de los leads" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>
+                La columna que decide es «Arriendos cerrados», no «Leads»: un portal que trae 400 leads y no cierra
+                ninguno vale menos que uno que trae 12 y cierra 3.
               </p>
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="space-y-1">
-                  <Label htmlFor="horas-lead">Horas</Label>
-                  <Input
-                    id="horas-lead"
-                    type="number"
-                    min={PLAZO_PARA_RESPONDER_MINIMO_HORAS}
-                    max={PLAZO_PARA_RESPONDER_MAXIMO_HORAS}
-                    value={horas}
-                    onChange={(e) => {
-                      setHoras(e.target.value)
-                      setFalloAlGuardar(null)
-                    }}
-                    aria-invalid={errorDelPlazo ? true : undefined}
-                    aria-describedby={errorDelPlazo ? 'horas-lead-error' : undefined}
-                    placeholder={String(
-                      configuracion.datos?.horasParaResponderLead ?? 24,
-                    )}
-                    className="w-28"
-                    data-testid="input-horas-lead"
-                  />
-                </div>
-                <Button
-                  onClick={guardarPlazo}
-                  disabled={guardando || horas.trim() === '' || Boolean(errorDelCliente)}
-                  data-testid="guardar-horas-lead"
-                >
-                  {guardando ? 'Guardando…' : 'Guardar'}
-                </Button>
-              </div>
-              <ErrorDelCampo id="horas-lead-error" mensaje={errorDelPlazo} className="mt-0" />
-              {configuracion.datos?.origenesDeLead?.length ? (
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {configuracion.datos.origenesDeLead.map((o) => (
-                    <Badge key={o} variant="secondary">
-                      {nombreDelOrigen(o)}
-                    </Badge>
-                  ))}
-                </div>
-              ) : null}
-            </>
-          )}
-        </CardContent>
-      </Card>
+              <p>
+                Un portal configurado que no trajo nada sale en cero, no desaparece: ese cero es el dato con el que se
+                cancela una cuenta.
+              </p>
+              <p>
+                No hay costo por lead: Leasefy no sabe cuánto pagas por cada portal, y un costo inventado sería peor que
+                no tenerlo.
+              </p>
+            </div>
+          </ParaEntenderMas>
+        }
+      />
 
       <Card>
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -259,6 +201,26 @@ export function OrigenesClient() {
                 />
               }
             >
+              {/* La lectura, dicha en palabras y ANTES de la tabla (glow up 21-10):
+                  la conclusión es lo que se vino a buscar; la tabla la respalda. */}
+              {mejor || peor ? (
+                <div className="mb-4 space-y-1 rounded-lg border border-border bg-surface p-4 text-sm text-fg-muted" data-testid="lectura">
+                  {mejor ? (
+                    <p>
+                      Lo que más produjo: <strong>{mejor.nombre}</strong>, con{' '}
+                      {mejor.cerrados} arriendo{mejor.cerrados === 1 ? '' : 's'}{' '}
+                      de {mejor.leads} lead{mejor.leads === 1 ? '' : 's'}.
+                    </p>
+                  ) : null}
+                  {peor ? (
+                    <p>
+                      <strong>{peor.nombre}</strong> trajo {peor.leads} lead
+                      {peor.leads === 1 ? '' : 's'} y no cerró ninguno en este
+                      rango. Míralo antes de renovar esa cuenta.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" data-testid="tabla-por-origen">
                   <thead>
@@ -334,29 +296,86 @@ export function OrigenesClient() {
                 </table>
               </div>
 
-              {/* La lectura, dicha en palabras: el número solo no decide. */}
-              {mejor || peor ? (
-                <div className="text-muted-foreground mt-4 space-y-1 text-sm" data-testid="lectura">
-                  {mejor ? (
-                    <p>
-                      Lo que más produjo: <strong>{mejor.nombre}</strong>, con{' '}
-                      {mejor.cerrados} arriendo{mejor.cerrados === 1 ? '' : 's'}{' '}
-                      de {mejor.leads} lead{mejor.leads === 1 ? '' : 's'}.
-                    </p>
-                  ) : null}
-                  {peor ? (
-                    <p>
-                      <strong>{peor.nombre}</strong> trajo {peor.leads} lead
-                      {peor.leads === 1 ? '' : 's'} y no cerró ninguno en este
-                      rango. Míralo antes de renovar esa cuenta.
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
             </EstadoDeDatos>
           )}
         </CardContent>
       </Card>
+
+      {/* El plazo de respuesta (B-01). Va en la misma pantalla porque es la otra
+          mitad del tema (de nada sirve saber qué portal trae leads si nadie los
+          contesta), pero DESPUÉS del informe: se configura una vez y el informe
+          se consulta cada mes (glow up 21-10). */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Cuánto tiene el asesor para responder
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {configuracion.noHabilitado ? (
+            <p className="text-muted-foreground text-sm" data-testid="config-no-habilitada">
+              {motivoEnCristiano(configuracion.noHabilitado)}
+            </p>
+          ) : (
+            <>
+              <p className="text-sm">
+                Hoy:{' '}
+                <strong>
+                  <KpiValor
+                    cargando={configuracion.cargando}
+                    fallo={configuracion.errorCrudo}
+                  >
+                    {configuracion.datos?.horasParaResponderLead} horas
+                  </KpiValor>
+                </strong>
+                . Pasado el plazo, el lead pasa al siguiente asesor del turno y
+                queda el registro de quién lo tenía.
+              </p>
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="horas-lead">Horas</Label>
+                  <Input
+                    id="horas-lead"
+                    type="number"
+                    min={PLAZO_PARA_RESPONDER_MINIMO_HORAS}
+                    max={PLAZO_PARA_RESPONDER_MAXIMO_HORAS}
+                    value={horas}
+                    onChange={(e) => {
+                      setHoras(e.target.value)
+                      setFalloAlGuardar(null)
+                    }}
+                    aria-invalid={errorDelPlazo ? true : undefined}
+                    aria-describedby={errorDelPlazo ? 'horas-lead-error' : undefined}
+                    placeholder={String(
+                      configuracion.datos?.horasParaResponderLead ?? 24,
+                    )}
+                    className="w-28"
+                    data-testid="input-horas-lead"
+                  />
+                </div>
+                <Button
+                  onClick={guardarPlazo}
+                  disabled={guardando || horas.trim() === '' || Boolean(errorDelCliente)}
+                  data-testid="guardar-horas-lead"
+                >
+                  {guardando ? 'Guardando…' : 'Guardar'}
+                </Button>
+              </div>
+              <ErrorDelCampo id="horas-lead-error" mensaje={errorDelPlazo} className="mt-0" />
+              {configuracion.datos?.origenesDeLead?.length ? (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {configuracion.datos.origenesDeLead.map((o) => (
+                    <Badge key={o} variant="secondary">
+                      {nombreDelOrigen(o)}
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
     </div>
   )
 }

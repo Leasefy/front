@@ -96,6 +96,9 @@ export function EstadoDeNominaPanel() {
   // La acción principal sólo existe con el módulo abierto: con el cartel de
   // «no está habilitada», un botón a Liquidación llevaría al mismo cartel.
   const abierta = carga.datos != null;
+  // 🔴 Y sólo con las cifras del año: sin ellas armar el borrador es un 422
+  // («falta salario mínimo…»). La lista de arriba dice cómo cargarlas.
+  const sePuedeLiquidar = puedeLiquidar(carga.datos?.estado);
 
   return (
     <div className="space-y-6">
@@ -113,7 +116,7 @@ export function EstadoDeNominaPanel() {
           ) : undefined
         }
         accionPrincipal={
-          abierta ? (
+          abierta && sePuedeLiquidar ? (
             <Button asChild size="sm" hideArrow>
               <Link href={`${PANEL}/periodos`} data-testid="ir-a-liquidacion">
                 Liquidar un período
@@ -152,7 +155,7 @@ function Contenido({
         {aprendices ? <Avisos avisos={[aprendices]} testId="cuota-de-aprendices" /> : null}
       </div>
 
-      <NominaDelMes mes={mes} periodos={periodos} />
+      <NominaDelMes mes={mes} periodos={periodos} sePuedeLiquidar={puedeLiquidar(estado)} />
 
       <section className="space-y-3" aria-labelledby="costo-de-la-nomina">
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -389,7 +392,7 @@ export function periodoEnFoco(periodos: PeriodoDeNomina[]): Foco {
   return { tipo: 'periodo', periodo: ultimo };
 }
 
-export function pasosDelPeriodo(foco: Foco): PasoDeLaTarea[] {
+export function pasosDelPeriodo(foco: Foco, sePuedeLiquidar = true): PasoDeLaTarea[] {
   const p = foco.tipo === 'periodo' ? foco.periodo : null;
   const aLiquidacion = (texto: string, testId: string) => (
     <Button asChild size="sm" variant="secondary" hideArrow>
@@ -404,7 +407,9 @@ export function pasosDelPeriodo(foco: Foco): PasoDeLaTarea[] {
       id: 'liquidar',
       titulo: 'Liquidar el período',
       descripcion: 'El borrador con las personas activas y sus novedades. Se recalcula las veces que haga falta.',
-      estado: p ? 'hecho' : 'actual',
+      // Sin las cifras del año no hay borrador posible: el paso espera, y dice por qué.
+      estado: p ? 'hecho' : sePuedeLiquidar ? 'actual' : 'pendiente',
+      bloqueadoPorque: 'Primero, lo que falta arriba: las cifras del año.',
       resumen: p
         ? `${p.personas} persona${p.personas === 1 ? '' : 's'} · neto ${formatCurrency(p.totalNetoCop)}`
         : undefined,
@@ -461,7 +466,20 @@ export function pasosDelPeriodo(foco: Foco): PasoDeLaTarea[] {
   ];
 }
 
-function NominaDelMes({ mes, periodos }: { mes: string; periodos: PeriodoDeNomina[] | null }) {
+/** Con las cifras del año cargadas (las que el back exige para armar un borrador). */
+export function puedeLiquidar(e: Estado | undefined): boolean {
+  return Boolean(e?.parametros.disponible && e.parametros.completos);
+}
+
+function NominaDelMes({
+  mes,
+  periodos,
+  sePuedeLiquidar,
+}: {
+  mes: string;
+  periodos: PeriodoDeNomina[] | null;
+  sePuedeLiquidar: boolean;
+}) {
   if (periodos === null) {
     return (
       <section
@@ -483,7 +501,7 @@ function NominaDelMes({ mes, periodos }: { mes: string; periodos: PeriodoDeNomin
   return (
     <PasosDeLaTarea
       titulo={`La nómina de ${nombreDelPeriodo(mes, quincena)}`}
-      pasos={pasosDelPeriodo(foco)}
+      pasos={pasosDelPeriodo(foco, sePuedeLiquidar)}
       data-testid="nomina-del-mes"
     />
   );

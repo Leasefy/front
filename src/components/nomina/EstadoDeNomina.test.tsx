@@ -167,6 +167,12 @@ describe('periodoEnFoco y pasosDelPeriodo', () => {
     expect(foco.tipo === 'periodo' && foco.periodo.id).toBe('q2');
   });
 
+  it('sin las cifras del año, liquidar espera y dice por qué (armar el borrador sería un 422)', () => {
+    const pasos = pasosDelPeriodo(periodoEnFoco([]), false)
+    expect(pasos.map((p) => p.estado)).toEqual(['pendiente', 'pendiente', 'pendiente'])
+    expect(String(pasos[0].bloqueadoPorque)).toContain('cifras del año')
+  })
+
   it('pagado sin asiento lo dice en el resumen', () => {
     const pasos = pasosDelPeriodo(periodoEnFoco([periodo({ estado: 'PAGADO', pagadoAt: '2026-10-31T15:00:00Z' })]));
     expect(String(pasos[2].resumen)).toContain('sin asiento contable');
@@ -218,6 +224,17 @@ describe('<EstadoDeNominaPanel />', () => {
     expect(host.querySelector('[data-testid="costo-de-la-nomina"]')).not.toBeNull();
     expect(host.querySelector('[data-testid="puerta-periodos"]')).not.toBeNull();
   });
+
+  it('sin las cifras del año no ofrece «Liquidar un período»', async () => {
+    h.estado.mockResolvedValue(
+      estado({ parametros: { disponible: true, motivo: null, completos: false, queFalta: ['todo'], confirmados: false } }),
+    )
+    h.resumen.mockResolvedValue(resumen)
+    h.periodos.mockResolvedValue({ disponible: true, periodos: [] })
+    await montar()
+    expect(host.querySelector('[data-testid="ir-a-liquidacion"]')).toBeNull()
+    expect(host.querySelector('[data-testid="lista-para-liquidar"]')).not.toBeNull()
+  })
 
   it('con el módulo sin comprar no ofrece «Liquidar un período»: sólo el cartel', async () => {
     const e402 = new Error('402');

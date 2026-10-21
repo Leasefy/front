@@ -45,7 +45,7 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
-import { KpiCard, Stagger, StaggerItem } from '@leasefy/cadence'
+import { FranjaDeCifras, KpiCard } from '@leasefy/cadence'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { useRecovery } from '@/lib/hooks/cobranza/use-recovery'
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
@@ -234,22 +234,23 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
           (`layout`), en vez de saltar de golpe. */}
       {/* QA-IA-95 (IA-B-09): en cinco columnas a 1440 px los rótulos se cortaban («TASA DE RESPUES…»,
           «VARIACIÓN DE MO…»): las cinco en fila sólo con pantalla ancha. */}
-      <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 min-[1680px]:grid-cols-5 gap-3">
+      {/* GLOW UP 21-10: una franja de cifras como el resto del panel (de a tres:
+          cinco en fila cortaban los rótulos a 1440 px, QA-IA-95). */}
+      <FranjaDeCifras fila="lg" columnas={metricas.length > 4 ? 3 : undefined} aria-label={tr("Cómo va el agente")}>
         {metricas.map((m) => {
           const MetricaIcon = m.icon
           return (
-            <StaggerItem key={m.key} className="min-w-0 [&>*]:h-full">
-              <KpiCard
-                label={tr(m.label)}
-                value={m.value as string}
-                sublabel={tr(m.sublabel)}
-                icon={<MetricaIcon weight="duotone" aria-hidden="true" />}
-                data-testid={`cobranza-kpi-${m.key}`}
-              />
-            </StaggerItem>
+            <KpiCard
+              key={m.key}
+              label={tr(m.label)}
+              value={m.value as string}
+              sublabel={tr(m.sublabel)}
+              icon={<MetricaIcon weight="duotone" aria-hidden="true" />}
+              data-testid={`cobranza-kpi-${m.key}`}
+            />
           )
         })}
-      </Stagger>
+      </FranjaDeCifras>
     </section>
   )
 }

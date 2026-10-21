@@ -59,6 +59,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TablePagination } from '@/components/ui/pagination'
 // Piezas que resuelve el design system: no rehacerlas a mano.
 import { AnimatedNumber, Banner, Callout, Card, CrossFade, Eyebrow, FranjaDeCifras, KpiCard, MonoLabel, Presence } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const NS = 'inmobiliaria.ai.arco'
 
@@ -476,15 +477,14 @@ function BandejaArco() {
 
   return (
     <CrossFade swapKey="bandeja">
-    <div className="space-y-6 p-4 md:p-6">
-      {/* Encabezado */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-h2 text-fg">{t(`${NS}.title`)}</h1>
-          <p
-            className="mt-1 flex items-center gap-1.5 text-xs text-fg-subtle"
-            aria-live="polite"
-          >
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* GLOW UP 21-10: el encabezado común. Junto al título, si la bandeja está
+          al día (en vivo); a la derecha, «¿Cómo funciona?» y actualizar. */}
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t(`${NS}.title`)}
+        junto={
+          <span className="flex items-center gap-1.5 text-caption text-fg-subtle" aria-live="polite">
             <span
               className={cn(
                 'inline-block h-1.5 w-1.5 shrink-0 rounded-full',
@@ -495,12 +495,10 @@ function BandejaArco() {
             {isRefreshing
               ? t(`${NS}.live.refreshing`)
               : `${updatedAgo ?? t(`${NS}.live.auto`)} · ${t(`${NS}.live.auto`)}`}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {/* ¿Cómo funciona? — el cajón con el viaje de una solicitud (05-10-2026). */}
-          <ComoFuncionaArco />
+          </span>
+        }
+        ayuda={<ComoFuncionaArco />}
+        acciones={
           <Button
             variant="outline"
             size="sm"
@@ -516,8 +514,9 @@ function BandejaArco() {
             />
             {t('common.refresh')}
           </Button>
-        </div>
-      </div>
+        }
+        data-testid="arco-encabezado"
+      />
 
       <IntroPanel terms={slaTerms} />
 

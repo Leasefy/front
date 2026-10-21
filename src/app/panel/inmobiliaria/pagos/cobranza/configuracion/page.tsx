@@ -75,6 +75,7 @@ import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // ─── Negotiation draft ──────────────────────────────────────────────────────
 
@@ -555,14 +556,15 @@ function CobranzaConfiguracionContent() {
             </Link>
           </Button>
         )}
-        <h1 className="text-h2 text-fg">
-          Configuración de cobranza
-        </h1>
-        {!canEdit && (
-          <p className="mt-1 text-sm text-fg-muted line-clamp-2 max-w-2xl" data-testid="readonly-banner">
-            Tu rol solo tiene acceso de lectura a esta configuración.
-          </p>
-        )}
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo="Configuración de cobranza"
+          descripcion={
+            !canEdit ? (
+              <span data-testid="readonly-banner">Tu rol solo tiene acceso de lectura a esta configuración.</span>
+            ) : undefined
+          }
+        />
       </div>
 
       {/* El acuerdo general NO vive acá — ni siquiera como puntero. Se arma en

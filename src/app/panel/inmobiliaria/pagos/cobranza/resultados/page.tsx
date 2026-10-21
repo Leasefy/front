@@ -149,7 +149,7 @@ function ResultadosContent() {
         grupo: 'trabajo',
         label: 'Casos gestionados',
         value: gestionados != null ? formatNumber(gestionados) : null,
-        sublabel: 'Casos trabajados por el agente',
+        sublabel: 'Trabajados por el agente',
       },
       {
         key: 'tiempo-recuperacion',
@@ -186,7 +186,7 @@ function ResultadosContent() {
             : null,
         sublabel:
           promesasKept != null
-            ? 'Promesas de pago que se cumplieron'
+            ? 'De las promesas de pago'
             : 'Aún sin promesas cumplidas',
       },
       {
@@ -201,7 +201,7 @@ function ResultadosContent() {
             : null,
         sublabel:
           acuerdosKept != null
-            ? 'Planes de pago que se cumplieron'
+            ? 'De los planes de pago'
             : 'Aún sin acuerdos cumplidos',
       },
       {

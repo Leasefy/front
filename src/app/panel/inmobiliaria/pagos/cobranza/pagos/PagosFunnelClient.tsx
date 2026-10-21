@@ -47,7 +47,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { AnimatedNumber, Card, Chip, CrossFade, Presence, SegmentedControl } from '@leasefy/cadence'
+import { AnimatedNumber, Card, Chip, Cifra, CrossFade, FranjaDeCifras, Presence, SegmentedControl } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import {
   PAGE_SIZE_OPTIONS,
@@ -121,27 +121,26 @@ function KpiCard({
    */
   cifra?: { valor: number; formato: (n: number) => string }
 }) {
+  // Una celda de la franja de cifras (Cadence 2): etiqueta en mono, la cifra que cuenta al cambiar
+  // y su línea de apoyo. La franja es el marco: aquí no va tarjeta propia.
   return (
-    <Card data-testid={testId} className="px-4 py-3">
-      <p className="text-xs font-medium text-fg-muted uppercase tracking-wider">
-        {label}
-      </p>
-      {/* Hueco → cifra con un fundido (`CrossFade`). */}
-      <CrossFade swapKey={isLoading ? 'cargando' : 'cifra'}>
-      {isLoading ? (
-        <div className="mt-1 h-5 w-24 animate-pulse rounded bg-surface-muted" />
-      ) : (
-        // Los números van monoespaciados y tabulares para que las columnas de
-        // cifras se alineen entre tarjetas.
-        <p className="mt-1 text-lg font-semibold text-fg font-mono tabular-nums">
-          {cifra ? <AnimatedNumber value={cifra.valor} format={cifra.formato} /> : value}
-        </p>
-      )}
-      </CrossFade>
-      {!isLoading && hint && (
-        <p className="mt-0.5 text-xs text-fg-subtle">{hint}</p>
-      )}
-    </Card>
+    <Cifra
+      data-testid={testId}
+      etiqueta={label}
+      valor={
+        /* Hueco → cifra con un fundido (`CrossFade`). */
+        <CrossFade swapKey={isLoading ? 'cargando' : 'cifra'}>
+          {isLoading ? (
+            <span className="mt-1 block h-6 w-24 animate-pulse rounded bg-surface-muted" />
+          ) : cifra ? (
+            <AnimatedNumber value={cifra.valor} format={cifra.formato} />
+          ) : (
+            value
+          )}
+        </CrossFade>
+      }
+      detalle={!isLoading && hint ? hint : undefined}
+    />
   )
 }
 
@@ -280,7 +279,8 @@ export default function PagosFunnelClient() {
   // leía como «no hubo comisión». Para reponerla hay que empezar por el
   // writer, no por la tarjeta.
   const renderKpis = (k: PaymentsFunnelKpis | null) => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+    // Seis montos: de a tres en escritorio para que «$ 12.500.000» quepa entero.
+    <FranjaDeCifras fila="xl" columnas={3} className="mb-5">
       <KpiCard
         testId="pagos-kpi-por-cobrar"
         label={t('inmobiliaria.ai.cobranza.pagos.kpi.porCobrar')}
@@ -332,7 +332,7 @@ export default function PagosFunnelClient() {
         cifra={k?.totalDisbursedCop != null ? { valor: k.totalDisbursedCop, formato: formatCop } : undefined}
         isLoading={isLoading && !k}
       />
-    </div>
+    </FranjaDeCifras>
   )
 
   return (

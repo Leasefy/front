@@ -2,7 +2,7 @@
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
   "cuando": "2026-10-21",
-  "cuantas": 1544,
+  "cuantas": 1545,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -837,6 +837,7 @@
     "PATCH /contracts/migrar/filas/:id/propietario",
     "PATCH /contracts/migrar/filas/:id/reparto",
     "PATCH /conversations/:conversationId/read",
+    "PATCH /inmobiliaria/agency/members/:memberId/invitacion",
     "PATCH /inmobiliaria/agency/members/:memberId/profile",
     "PATCH /inmobiliaria/agenda/citas/:visitId/aceptar",
     "PATCH /inmobiliaria/agenda/citas/:visitId/cancelar",

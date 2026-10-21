@@ -6,6 +6,7 @@ import { separarIdioma } from '@/lib/idioma/idioma'
 import { Inter, Inter_Tight, IBM_Plex_Mono } from 'next/font/google'
 import { LandingChrome } from '@/components/landing-v2/LandingChrome'
 import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2'
+import { EntradaAlMarketplace } from '@/components/landing-v2/marketplace/EntradaAlMarketplace'
 import './landing.css'
 import './landing-v2.css'
 
@@ -99,7 +100,11 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
       }
     >
       {hasOwnChrome ? (
-        children
+        <>
+          {children}
+          {/* El home trae su propio header: la entrada al marketplace va aparte (21-10-2026). */}
+          <EntradaAlMarketplace />
+        </>
       ) : (
         <LandingChrome activo={navActivo(pathname)}>
           {children}

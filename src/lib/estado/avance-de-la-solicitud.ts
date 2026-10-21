@@ -2,7 +2,7 @@
  * Los pasos de la barra de avance (`AvanceDeLaSolicitud`) para cada cosa que
  * sigue una persona desde su portal (Portofino, 21-10-2026).
  */
-import type { PqrsEstado } from '@/lib/types/tenant-case'
+import type { EstadoDeLaReparacion, PqrsEstado } from '@/lib/api/pqrs.types'
 import type { PasoDelAvance } from '@/components/estado/AvanceDeLaSolicitud'
 
 export interface AvanceCalculado {
@@ -44,4 +44,18 @@ export function avanceDelMantenimiento(
     return { pasos, actual: pasos.findIndex((p) => p.clave === iba), detenida: 'No aprobada' }
   }
   return { pasos, actual: Math.max(0, pasos.findIndex((p) => p.clave === estado)), detenida: null }
+}
+
+/**
+ * La barra de una solicitud del portal: una REPARACIÓN que ya llegó a
+ * Mantenimiento se sigue por su tarjeta del tablero (Portofino 21-10: «dónde
+ * va»); lo demás, por el estado de la PQRS.
+ */
+export function avanceDeLaSolicitudDelPortal(
+  estado: PqrsEstado,
+  esReparacion: boolean,
+  mantenimiento?: EstadoDeLaReparacion | null,
+): AvanceCalculado {
+  if (mantenimiento) return avanceDelMantenimiento(mantenimiento.estado, mantenimiento.iba)
+  return avanceDeLaPqrs(estado, esReparacion)
 }

@@ -196,6 +196,8 @@ export interface PropertyFiltersParams {
   naturalQuery?: string;
   /** Sólo los de esta inmobiliaria (marketplace, 09-10-2026). */
   agencyId?: string;
+  /** 21-10-2026: la vitrina de publicidad del perfil de ESTA inmobiliaria (inmuebles de las que pagan). */
+  vitrinaDe?: string;
   page?: number;
   limit?: number;
   /** contract.md T-0038 §3.7 — absent means no constraint; NOT a default to RENT. */

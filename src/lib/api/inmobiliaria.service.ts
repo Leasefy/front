@@ -2573,6 +2573,21 @@ export const agencyApi = {
   },
 
   /**
+   * PATCH /inmobiliaria/agency/members/:memberId/invitacion (Portofino 21-10):
+   * cambia el correo de una invitación PENDIENTE. El back cierra la vieja e
+   * invita al correo nuevo; un 409 trae el mismo aviso de invitar.
+   */
+  async cambiarCorreoDeLaInvitacion(
+    memberId: string,
+    datos: { email: string; mismaPersona?: true; elCorreoEsDelInvitado?: true },
+  ): Promise<AgencyInviteResult> {
+    return apiClient.patch<AgencyInviteResult>(
+      `${BASE}/agency/members/${encodeURIComponent(memberId)}/invitacion`,
+      datos,
+    );
+  },
+
+  /**
    * PATCH /inmobiliaria/agency/members/:memberId/profile
    * Updates a member's profile fields (position, agent business fields). Admin only.
    */

@@ -28,6 +28,9 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Paso {n}, hecho': 'Step {n}, done',
   'Paso {n}, el que sigue': 'Step {n}, next',
   'Paso {n}, después': 'Step {n}, later',
+  // app/panel/inmobiliaria/reportes/resumen/page.tsx
+  'Cómo va el mes y qué atender primero.': 'How the month is going and what to handle first.',
+  'Para atender': 'To handle',
   // components/pantalla/MasDetalles.tsx
   'Ver detalles': 'Show details',
   'Ocultar detalles': 'Hide details',

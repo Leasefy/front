@@ -11,7 +11,6 @@ import {
   TrendUp,
   TrendDown,
   ArrowRight,
-  ChartLine,
   Kanban,
   UserCircle,
   Clock,
@@ -25,7 +24,9 @@ import {
 import { cn } from '@/lib/utils';
 import { AnimatedNumber, CrossFade } from '@leasefy/cadence';
 import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece';
-import { EmptyState } from '@/components/ui';
+import { Button, EmptyState } from '@/components/ui';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { useTr } from '@/lib/i18n/use-tr';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -198,34 +199,6 @@ function SecondaryStat({
 }
 
 /**
- * Quick Action Card
- */
-interface QuickActionProps {
-  title: string;
-  description: string;
-  href: string;
-  icon: React.ElementType;
-}
-
-function QuickAction({ title, description, href, icon: Icon }: QuickActionProps) {
-  return (
-    <Link
-      href={href}
-      className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:bg-surface-hover transition-colors"
-    >
-      <div className="rounded-md p-2.5 bg-surface-muted text-fg-muted">
-        <Icon weight="duotone" className="h-5 w-5" />
-      </div>
-      <div className="flex-1">
-        <p className="text-sm font-medium text-fg">{title}</p>
-        <p className="text-xs text-fg-muted">{description}</p>
-      </div>
-      <CaretRight className="h-3.5 w-3.5 text-fg-subtle group-hover:text-primary transition-colors" weight="bold" />
-    </Link>
-  );
-}
-
-/**
  * Pipeline Mini Card
  */
 function PipelineMiniCard({ item }: { item: PipelineItem }) {
@@ -338,6 +311,7 @@ function SinAcceso({ que }: { que: string }) {
 
 function ResumenDelNegocio() {
   const { t, locale } = useI18n();
+  const tr = useTr();
   const { canAccess, isLoading: permLoading } = usePermissions();
 
   const {
@@ -496,18 +470,104 @@ function ResumenDelNegocio() {
   return (
     <CrossFade swapKey="resumen">
     <div className="p-6 lg:p-8 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col gap-1">
-        <span className="inline-flex items-center gap-2 mb-1">
-          <BrandDot />
-          <MonoLabel className="text-[11px] font-medium text-primary">
-            {t('inmobiliaria.dashboard.title')}
-          </MonoLabel>
-        </span>
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.dashboard.subtitle')}
-        </h1>
-      </div>
+      {/* GLOW UP 21-10: el trabajo de esta pantalla es «ver cómo va el mes y
+          atender lo que se cae». Arriba lo que hay que atender; después las
+          cifras que deciden; al final lo que se consulta (captación y equipo).
+          Tres de los cuatro atajos que vivían en tarjetas al fondo suben al
+          encabezado; «Ver reportes» ya está en el resumen financiero. */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.reportes.title')}
+        titulo={t('inmobiliaria.nav.resumenDelNegocio')}
+        descripcion={tr('Cómo va el mes y qué atender primero.')}
+        acciones={
+          <>
+            <Button size="sm" variant="outline" hideArrow asChild>
+              <Link href="/panel/inmobiliaria/propietarios?nuevo=true" data-testid="resumen-nuevo-propietario">
+                <UserCircle className="mr-2 h-4 w-4" aria-hidden="true" />
+                {t('inmobiliaria.dashboard.quickActions.newOwner')}
+              </Link>
+            </Button>
+            <Button size="sm" variant="outline" hideArrow asChild>
+              <Link href="/panel/inmobiliaria/inmuebles/nuevo" data-testid="resumen-nueva-consignacion">
+                <Buildings className="mr-2 h-4 w-4" aria-hidden="true" />
+                {t('inmobiliaria.dashboard.quickActions.newConsignment')}
+              </Link>
+            </Button>
+            <Button size="sm" variant="outline" hideArrow asChild>
+              <Link href="/panel/inmobiliaria/pagos/cartera/cobros?status=pending" data-testid="resumen-hacer-recibo">
+                <CurrencyDollar className="mr-2 h-4 w-4" aria-hidden="true" />
+                {t('recibos.hacer')}
+              </Link>
+            </Button>
+          </>
+        }
+      />
+
+      {/* Lo que hay que atender, PRIMERO: antes estaba debajo de los atajos,
+          después de captación y equipo — lo urgente era lo último que se veía.
+          Juntas y cerca (una lista), y sin hueco cuando no hay nada. */}
+      <section aria-label={tr('Para atender')} className="space-y-3 empty:hidden" data-testid="resumen-para-atender">
+        {/* Alertas: una por asunto, cada una con el número, qué hacer y el botón.
+
+            🔴 La cartera sale de las CUOTAS del contrato, no de los cobros. Visto
+            en vivo el 16-09 en la agencia de QA: la alerta decía «5 cobros en mora
+            por $11.705.223» con 97 cuotas del mes en cartera por $321.945.650 —el
+            número estaba en `kpis.deuda` y nadie lo leía—. Los cobros quedan sólo
+            para un back que todavía no manda `deuda`. */}
+        {carteraDelMes ? (
+          carteraDelMes.cuotasEnCartera > 0 && (
+            <AlertaAccionable
+              severidad="warning"
+              titulo={t(carteraDelMes.cuotasEnCartera === 1 ? 'inmobiliaria.dashboard.alerts.carteraDelMesUna' : 'inmobiliaria.dashboard.alerts.carteraDelMes', {
+                count: carteraDelMes.cuotasEnCartera,
+                amount: formatCurrency(carteraDelMes.carteraCop),
+              })}
+              accion={{ label: t('inmobiliaria.dashboard.alerts.verCartera'), href: '/panel/inmobiliaria/pagos/cartera' }}
+              data-testid="alerta-cartera-del-mes"
+            >
+              {t('inmobiliaria.dashboard.alerts.carteraDelMesDetalle')}
+            </AlertaAccionable>
+          )
+        ) : cobrosEnMora.length > 0 && (
+          <AlertaAccionable
+            severidad="warning"
+            titulo={t('inmobiliaria.dashboard.alerts.latePayments', {
+              count: cobrosEnMora.length,
+              amount: formatCurrency(cobrosEnMora.reduce((sum, c) => sum + c.pendingAmount, 0)),
+            })}
+            accion={{ label: t('inmobiliaria.dashboard.alerts.viewPayments'), href: '/panel/inmobiliaria/pagos/cartera/cobros?status=late' }}
+            data-testid="alerta-cobros-en-mora"
+          >
+            {t('inmobiliaria.dashboard.alerts.latePaymentsDetalle')}
+          </AlertaAccionable>
+        )}
+        {/* Lo que el back vio raro en la plata y ya viene dicho en palabras. El
+            caso que lo pidió: «Recaudo del mes $0» con $8.200.000 en recibos de
+            caja que no bajaron ninguna cuota; sin el aviso el cero era
+            inexplicable. */}
+        {avisosDeLaDeuda.map((aviso) => (
+          <AlertaAccionable
+            key={aviso}
+            severidad="info"
+            titulo={aviso}
+            accion={{ label: t('inmobiliaria.dashboard.alerts.verRecaudo'), href: '/panel/inmobiliaria/pagos/recaudo' }}
+            data-testid="aviso-de-la-deuda"
+          />
+        ))}
+        {/* AVISO-TIPO-DOC: sólo para quien puede completarlo (administrador, o
+            contador que edita propietarios); se va solo con la última ficha. */}
+        <AvisoTipoDeDocumento />
+        {pendingMaintenance.length > 0 && (
+          <AlertaAccionable
+            severidad="info"
+            titulo={t(pendingMaintenance.length === 1 ? 'inmobiliaria.dashboard.alerts.pendingMaintenanceUno' : 'inmobiliaria.dashboard.alerts.pendingMaintenance', { count: pendingMaintenance.length })}
+            accion={{ label: t('inmobiliaria.dashboard.alerts.viewRequests'), href: '/panel/inmobiliaria/mantenimientos' }}
+            data-testid="alerta-mantenimientos"
+          >
+            {t('inmobiliaria.dashboard.alerts.pendingMaintenanceDetalle')}
+          </AlertaAccionable>
+        )}
+      </section>
 
       {/* Main KPIs Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -584,6 +644,81 @@ function ResumenDelNegocio() {
           }
           testId="resumen-cuotas-pendientes"
         />
+      </div>
+
+      {/* Financial Summary */}
+      <div className="rounded-lg border border-border bg-card p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.financial.title')}</h2>
+            <p className="text-sm text-fg-muted mt-0.5">{currentMonthLabel}</p>
+          </div>
+          <Link
+            href="/panel/inmobiliaria/reportes"
+            className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            {t('inmobiliaria.dashboard.financial.viewFullReports')}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+          <div>
+            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.expected')}</MonoLabel>
+            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
+              {formatCurrency(kpis.expectedRevenue)}
+            </p>
+          </div>
+          <div>
+            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.collected')}</MonoLabel>
+            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
+              {formatCurrency(kpis.collectedRevenue)}
+            </p>
+          </div>
+          <div>
+            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.pendingLabel')}</MonoLabel>
+            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
+              {formatCurrency(kpis.pendingCollections)}
+            </p>
+          </div>
+          <div>
+            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.late')}</MonoLabel>
+            <p className="font-heading text-lg font-semibold text-danger tabular-nums tracking-tight leading-none">
+              {formatCurrency(kpis.lateCollections)}
+            </p>
+          </div>
+          <div>
+            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.pendingDispersions')}</MonoLabel>
+            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
+              {kpis.pendingDispersions}
+            </p>
+          </div>
+        </div>
+
+        {/* Collection Rate Progress */}
+        <div className="mt-6 pt-5 border-t border-border">
+          <div className="flex items-center justify-between text-sm mb-2">
+            {/* Con qué fórmula se midió: «Recaudo sobre lo causado» y «Pagado de lo
+                emitido» son dos números distintos. */}
+            <MonoLabel data-testid="resumen-rotulo-de-la-tasa">{rotuloDeLaTasa}</MonoLabel>
+            <span className="font-heading font-semibold text-fg tabular-nums" data-testid="resumen-tasa-de-recaudo">
+              {tasaEnPantalla(tasaDeRecaudo)}
+            </span>
+          </div>
+          <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
+            {/* Crece desde la izquierda al aparecer (`scaleX`); el ancho es el
+                dato y ya no se anima (`transition-all` movía el layout). */}
+            <BarraQueCrece
+              eje="x"
+              className="h-full rounded-full bg-primary"
+              // Topada al 100: con sobre-recaudo la barra se salía del riel.
+              style={{ width: anchoDeBarra(tasaDeRecaudo) }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-fg-muted tabular-nums" data-testid="resumen-cifras-de-la-tasa">
+            {fraseDeLasCifras(tasa, t, formatCurrency)}
+          </p>
+        </div>
       </div>
 
       {/* Main Content Grid */}
@@ -676,172 +811,6 @@ function ResumenDelNegocio() {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div>
-        <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight mb-4"><BrandDot />{t('inmobiliaria.dashboard.quickActions.title')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <QuickAction
-            title={t('inmobiliaria.dashboard.quickActions.newOwner')}
-            description={t('inmobiliaria.dashboard.quickActions.newOwnerDesc')}
-            href="/panel/inmobiliaria/propietarios?nuevo=true"
-            icon={UserCircle}
-          />
-          <QuickAction
-            title={t('inmobiliaria.dashboard.quickActions.newConsignment')}
-            description={t('inmobiliaria.dashboard.quickActions.newConsignmentDesc')}
-            href="/panel/inmobiliaria/inmuebles/nuevo"
-            icon={Buildings}
-          />
-          <QuickAction
-            title={t('recibos.hacer')}
-            description={t('recibos.queEs')}
-            href="/panel/inmobiliaria/pagos/cartera/cobros?status=pending"
-            icon={CurrencyDollar}
-          />
-          <QuickAction
-            title={t('inmobiliaria.dashboard.quickActions.viewReports')}
-            description={t('inmobiliaria.dashboard.quickActions.viewReportsDesc')}
-            href="/panel/inmobiliaria/reportes"
-            icon={ChartLine}
-          />
-        </div>
-      </div>
-
-      {/* Alertas: una por asunto, cada una con el número, qué hacer y el botón.
-
-          🔴 La cartera sale de las CUOTAS del contrato, no de los cobros. Visto
-          en vivo el 16-09 en la agencia de QA: la alerta decía «5 cobros en mora
-          por $11.705.223» con 97 cuotas del mes en cartera por $321.945.650 —el
-          número estaba en `kpis.deuda` y nadie lo leía—. Los cobros quedan sólo
-          para un back que todavía no manda `deuda`. */}
-      {carteraDelMes ? (
-        carteraDelMes.cuotasEnCartera > 0 && (
-          <AlertaAccionable
-            severidad="warning"
-            titulo={t(carteraDelMes.cuotasEnCartera === 1 ? 'inmobiliaria.dashboard.alerts.carteraDelMesUna' : 'inmobiliaria.dashboard.alerts.carteraDelMes', {
-              count: carteraDelMes.cuotasEnCartera,
-              amount: formatCurrency(carteraDelMes.carteraCop),
-            })}
-            accion={{ label: t('inmobiliaria.dashboard.alerts.verCartera'), href: '/panel/inmobiliaria/pagos/cartera' }}
-            data-testid="alerta-cartera-del-mes"
-          >
-            {t('inmobiliaria.dashboard.alerts.carteraDelMesDetalle')}
-          </AlertaAccionable>
-        )
-      ) : cobrosEnMora.length > 0 && (
-        <AlertaAccionable
-          severidad="warning"
-          titulo={t('inmobiliaria.dashboard.alerts.latePayments', {
-            count: cobrosEnMora.length,
-            amount: formatCurrency(cobrosEnMora.reduce((sum, c) => sum + c.pendingAmount, 0)),
-          })}
-          accion={{ label: t('inmobiliaria.dashboard.alerts.viewPayments'), href: '/panel/inmobiliaria/pagos/cartera/cobros?status=late' }}
-          data-testid="alerta-cobros-en-mora"
-        >
-          {t('inmobiliaria.dashboard.alerts.latePaymentsDetalle')}
-        </AlertaAccionable>
-      )}
-      {/* Lo que el back vio raro en la plata y ya viene dicho en palabras. El
-          caso que lo pidió: «Recaudo del mes $0» con $8.200.000 en recibos de
-          caja que no bajaron ninguna cuota; sin el aviso el cero era
-          inexplicable. */}
-      {avisosDeLaDeuda.map((aviso) => (
-        <AlertaAccionable
-          key={aviso}
-          severidad="info"
-          titulo={aviso}
-          accion={{ label: t('inmobiliaria.dashboard.alerts.verRecaudo'), href: '/panel/inmobiliaria/pagos/recaudo' }}
-          data-testid="aviso-de-la-deuda"
-        />
-      ))}
-      {/* AVISO-TIPO-DOC: sólo para quien puede completarlo (administrador, o
-          contador que edita propietarios); se va solo con la última ficha. */}
-      <AvisoTipoDeDocumento />
-      {pendingMaintenance.length > 0 && (
-        <AlertaAccionable
-          severidad="info"
-          titulo={t(pendingMaintenance.length === 1 ? 'inmobiliaria.dashboard.alerts.pendingMaintenanceUno' : 'inmobiliaria.dashboard.alerts.pendingMaintenance', { count: pendingMaintenance.length })}
-          accion={{ label: t('inmobiliaria.dashboard.alerts.viewRequests'), href: '/panel/inmobiliaria/mantenimientos' }}
-          data-testid="alerta-mantenimientos"
-        >
-          {t('inmobiliaria.dashboard.alerts.pendingMaintenanceDetalle')}
-        </AlertaAccionable>
-      )}
-
-      {/* Financial Summary */}
-      <div className="rounded-lg border border-border bg-card p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.financial.title')}</h2>
-            <p className="text-sm text-fg-muted mt-0.5">{currentMonthLabel}</p>
-          </div>
-          <Link
-            href="/panel/inmobiliaria/reportes"
-            className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
-          >
-            {t('inmobiliaria.dashboard.financial.viewFullReports')}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-          <div>
-            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.expected')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
-              {formatCurrency(kpis.expectedRevenue)}
-            </p>
-          </div>
-          <div>
-            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.collected')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
-              {formatCurrency(kpis.collectedRevenue)}
-            </p>
-          </div>
-          <div>
-            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.pendingLabel')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
-              {formatCurrency(kpis.pendingCollections)}
-            </p>
-          </div>
-          <div>
-            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.late')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-danger tabular-nums tracking-tight leading-none">
-              {formatCurrency(kpis.lateCollections)}
-            </p>
-          </div>
-          <div>
-            <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.pendingDispersions')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
-              {kpis.pendingDispersions}
-            </p>
-          </div>
-        </div>
-
-        {/* Collection Rate Progress */}
-        <div className="mt-6 pt-5 border-t border-neutral-100 dark:border-neutral-700">
-          <div className="flex items-center justify-between text-sm mb-2">
-            {/* Con qué fórmula se midió: «Recaudo sobre lo causado» y «Pagado de lo
-                emitido» son dos números distintos. */}
-            <MonoLabel data-testid="resumen-rotulo-de-la-tasa">{rotuloDeLaTasa}</MonoLabel>
-            <span className="font-heading font-semibold text-fg tabular-nums" data-testid="resumen-tasa-de-recaudo">
-              {tasaEnPantalla(tasaDeRecaudo)}
-            </span>
-          </div>
-          <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
-            {/* Crece desde la izquierda al aparecer (`scaleX`); el ancho es el
-                dato y ya no se anima (`transition-all` movía el layout). */}
-            <BarraQueCrece
-              eje="x"
-              className="h-full rounded-full bg-primary"
-              // Topada al 100: con sobre-recaudo la barra se salía del riel.
-              style={{ width: anchoDeBarra(tasaDeRecaudo) }}
-            />
-          </div>
-          <p className="mt-2 text-xs text-fg-muted tabular-nums" data-testid="resumen-cifras-de-la-tasa">
-            {fraseDeLasCifras(tasa, t, formatCurrency)}
-          </p>
-        </div>
-      </div>
     </div>
     </CrossFade>
   );

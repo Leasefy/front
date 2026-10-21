@@ -4510,7 +4510,7 @@
         "step2": {
           "dondeVanLasFotos": "Las fotos y el video del inmueble se suben en el paso «Fotos e inventario»; puedes elegir varias fotos a la vez.",
           "amenitiesLabel": "Características",
-          "amenitiesHint": "Opcional. Lo que más miran quienes buscan: márcalas aquí y salen en la ficha y en los filtros del marketplace.",
+          "amenitiesHint": "Lo que más miran quienes buscan: las que marques salen en la ficha y en los filtros del marketplace.",
           "title": "Datos del inmueble",
           "subtitle": "Ingresa la información básica del inmueble. Los campos con * son obligatorios.",
           "propertyTypeLabel": "Tipo de inmueble",

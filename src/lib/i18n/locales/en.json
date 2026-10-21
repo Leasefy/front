@@ -4475,7 +4475,7 @@
         "step2": {
           "dondeVanLasFotos": "Photos and the property video are uploaded in the «Photos & inventory» step; you can pick several photos at once.",
           "amenitiesLabel": "Features",
-          "amenitiesHint": "Optional. What people searching look at most: tick them here and they show on the listing and in the marketplace filters.",
+          "amenitiesHint": "What people searching look at most: the ones you tick show on the listing and in the marketplace filters.",
           "title": "Property Data",
           "subtitle": "Enter the basic property information",
           "propertyTypeLabel": "Property type",

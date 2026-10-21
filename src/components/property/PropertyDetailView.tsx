@@ -30,6 +30,7 @@ import {
   DatosClave,
   Descripcion,
   LoEspecial,
+  CaracteristicasDelInmueble,
   MasDeLaInmobiliaria,
   MosaicoDeFotos,
   OfrecidoPor,
@@ -390,6 +391,7 @@ export function PropertyDetailView({
               */}
 
               <LoEspecial p={property} />
+              <CaracteristicasDelInmueble p={property} />
               <Descripcion texto={property.description} />
               <CostosDelArriendo p={property} />
 

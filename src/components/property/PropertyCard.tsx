@@ -348,7 +348,7 @@ export function PropertyCard({
         </div>
 
         {/* Title */}
-        <h3 className="text-[16px] font-heading font-semibold text-foreground tracking-[-0.02em] leading-snug truncate group-hover:text-primary transition-colors duration-base">
+        <h3 className="text-[16px] font-heading font-semibold text-foreground tracking-[-0.02em] leading-snug line-clamp-2 break-words group-hover:text-primary transition-colors duration-base">
           {title}
         </h3>
 

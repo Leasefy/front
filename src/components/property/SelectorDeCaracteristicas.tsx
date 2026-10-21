@@ -53,7 +53,7 @@ function Chip({
       data-testid={`amenidad-${id}`}
       data-activa={activa ? 'si' : 'no'}
       className={cn(
-        'flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors duration-fast',
+        'flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13.5px] transition-colors duration-fast sm:px-3 sm:text-sm',
         disabled && 'cursor-not-allowed opacity-50',
         activa
           ? aviso
@@ -63,7 +63,7 @@ function Chip({
       )}
     >
       <Checkbox checked={activa} disabled={disabled} onCheckedChange={alAlternar} aria-label={nombre} />
-      {/* Sin `truncate`: «Acceso para silla de ruedas» se parte en dos líneas antes que cortarse. */}
+      {/* Sin `truncate`: en el celular van dos por fila y «Acceso para silla de ruedas» se parte en dos líneas antes que cortarse. */}
       <span className="min-w-0 break-words leading-snug">{nombre}</span>
     </label>
   );
@@ -87,7 +87,7 @@ export function SelectorDeCaracteristicas({
       {caracteristicasPorGrupo().map(({ grupo, nombre, items }) => (
         <fieldset key={grupo} className="min-w-0" data-testid={`caracteristicas-${grupo}`}>
           <legend className="mb-2 text-[12px] font-medium uppercase tracking-[0.08em] text-fg-subtle">{nombre}</legend>
-          <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {items.map((c) => {
               const activa = value.includes(c.id);
               return (
@@ -113,7 +113,7 @@ export function SelectorDeCaracteristicas({
           <p className="mb-2 text-[13px] text-fg-muted">
             Quítalas para poder guardar. Si importan, escríbelas en la descripción.
           </p>
-          <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {desconocidas.map((id) => (
               <Chip key={id} id={id} nombre={id} activa aviso disabled={disabled} alAlternar={() => alternar(id)} />
             ))}

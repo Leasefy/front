@@ -17,6 +17,8 @@ import { loadE2eEnv } from './tests/e2e-responsive/support/env';
  *   RESPONSIVE_FAST=1       restrict to the FAST subset (set by the :fast script)
  *   RESPONSIVE_WORKERS      parallel workers (default 4; the dev server is the bottleneck)
  *   RESPONSIVE_REPORT_DIR   findings.json / summary.md / screenshots (default ./responsive-report)
+ *   RESPONSIVE_REUSE_AUTH=1 / RESPONSIVE_REUSE_RESOLVED=1   skip re-login / re-crawl when the files from
+ *                           a previous run exist (iterating on the suite)
  *   RESPONSIVE_ALLOW_POST   regex of URLs the read-only guard may let through (default none)
  *
  * Browsers: `npx playwright install chromium firefox webkit` and, for the Edge projects,

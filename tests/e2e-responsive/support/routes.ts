@@ -402,6 +402,9 @@ export const SHARES_RESOLVED_IDS_WITH: Partial<Record<PersonaId, PersonaId>> = {
  */
 export const LIST_SOURCES: Record<string, string[]> = {
   '/arrendar/[id]': ['/propiedades'],
+  '/inquilino/propiedades/[id]': ['/inquilino/explorar', '/inquilino/para-ti', '/inquilino/guardados'],
+  '/inquilino/contratos/[contractId]': ['/inquilino/contratos', '/inquilino'],
+  '/aplicar/[propertyId]': ['/propiedades', '/inquilino/explorar'],
   '/panel/[propertyId]': ['/panel/propiedades', '/panel'],
   '/panel/inmobiliaria/estado-de-cuenta/inquilino/[id]': ['/panel/inmobiliaria/inquilinos'],
   '/panel/inmobiliaria/estado-de-cuenta/propietario/[id]': ['/panel/inmobiliaria/propietarios'],

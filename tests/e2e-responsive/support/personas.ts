@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 import { loadE2eEnv } from './env';
@@ -61,8 +62,23 @@ export function personaSkipReason(persona: Persona): string | null {
   return null;
 }
 
-export function resolvedFile(id: PersonaId): string {
-  return path.join(AUTH_DIR, `resolved-${id}.json`);
+export function resolvedPartFile(id: PersonaId, part: number): string {
+  return path.join(AUTH_DIR, `resolved-${id}.part${part}.json`);
+}
+
+/** Merges every resolved-<persona>.part*.json written by the resolve shards. */
+export function readResolved(id: PersonaId): Record<string, { path: string | null; reason?: string }> {
+  const merged: Record<string, { path: string | null; reason?: string }> = {};
+  if (!fs.existsSync(AUTH_DIR)) return merged;
+  for (const name of fs.readdirSync(AUTH_DIR)) {
+    if (!name.startsWith(`resolved-${id}.part`) || !name.endsWith('.json')) continue;
+    try {
+      Object.assign(merged, JSON.parse(fs.readFileSync(path.join(AUTH_DIR, name), 'utf8')));
+    } catch {
+      // A half-written part is treated as missing.
+    }
+  }
+  return merged;
 }
 
 export function statusFile(id: PersonaId): string {

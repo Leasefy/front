@@ -21,6 +21,11 @@ for (const persona of PERSONAS) {
   if (!persona.envPrefix) continue;
   setup(`auth: ${persona.id}`, async ({ page }) => {
     fs.mkdirSync(AUTH_DIR, { recursive: true });
+    // Iterating on the suite: keep a session that already logged in (tokens last ~1h).
+    if (process.env.RESPONSIVE_REUSE_AUTH === '1' && fs.existsSync(statusFile(persona.id))) {
+      const previous = JSON.parse(fs.readFileSync(statusFile(persona.id), 'utf8')) as { ok: boolean };
+      if (previous.ok && fs.existsSync(authFile(persona.id))) return;
+    }
     // An empty (but valid) state keeps the dependent projects' context creation working
     // for a persona that cannot log in; the spec then skips it using the status file.
     const emptyState = JSON.stringify({ cookies: [], origins: [] });

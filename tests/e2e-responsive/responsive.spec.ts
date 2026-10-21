@@ -12,7 +12,7 @@ import { openAndSettle, waitForSettled, type OpenResult } from './support/page-r
 import {
   PERSONAS,
   authFile,
-  resolvedFile,
+  readResolved,
   statusFile,
   type Persona,
   type PersonaId,
@@ -58,12 +58,7 @@ function resolvedFor(id: PersonaId): Record<string, Resolution> {
   const source = SHARES_RESOLVED_IDS_WITH[id] ?? id;
   const cached = resolvedCache.get(source);
   if (cached) return cached;
-  let data: Record<string, Resolution> = {};
-  try {
-    data = JSON.parse(fs.readFileSync(resolvedFile(source), 'utf8'));
-  } catch {
-    // Missing file: every dynamic route is reported as unresolved.
-  }
+  const data = readResolved(source) as Record<string, Resolution>;
   resolvedCache.set(source, data);
   return data;
 }

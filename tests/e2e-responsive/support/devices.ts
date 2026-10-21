@@ -1,6 +1,9 @@
 import { devices, type PlaywrightTestOptions, type PlaywrightWorkerOptions } from '@playwright/test';
 
-export type DeviceUse = Partial<PlaywrightTestOptions & PlaywrightWorkerOptions>;
+/** `screen` is a valid context option that Playwright's own device descriptors carry but its `use` typings omit. */
+export type DeviceUse = Partial<PlaywrightTestOptions & PlaywrightWorkerOptions> & {
+  screen?: { width: number; height: number };
+};
 
 export interface DeviceSpec {
   /** Project name (also shown in reports). */

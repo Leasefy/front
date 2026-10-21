@@ -23,6 +23,11 @@ export interface ResolveContext {
   listSources: Record<string, string[]>;
   /** Every static (non-dynamic) route of the persona, so `/x/nuevo` is not mistaken for an id. */
   staticRoutes: Set<string>;
+  /**
+   * Fallback when no anchor matches (rows that navigate on click): open `source`, click a few
+   * row-like elements and return the pathname the app navigated to, if it matches.
+   */
+  discoverByClick?: (source: string, matcher: RegExp, exclude: Set<string>) => Promise<string | null>;
   /** Memo shared across calls. */
   memo: Map<string, Resolution>;
 }
@@ -46,43 +51,64 @@ async function resolveUncached(pattern: string, ctx: ResolveContext): Promise<Re
   const segments = pattern.split('/').filter(Boolean);
   let last = -1;
   segments.forEach((s, i) => {
-    if (/^\[.+\]$/.test(s)) last = i;
+    if (/^[.+]$/.test(s)) last = i;
   });
   const tail = segments.slice(last + 1);
 
-  if (tail.length > 0) {
-    // Resolve the pattern that ends at the last dynamic segment, then append the static tail.
-    const headPattern = '/' + segments.slice(0, last + 1).join('/');
-    const head = await resolvePattern(headPattern, ctx);
-    if (!head.path) return { path: null, reason: `parent ${headPattern} unresolved: ${head.reason}` };
-    return { path: `${head.path}/${tail.join('/')}` };
-  }
-
+  // Everything before the last dynamic segment must itself be concrete.
   const parentPattern = '/' + segments.slice(0, last).join('/');
-  const parent = segments.slice(0, last).some((s) => /^\[.+\]$/.test(s))
+  const parent = segments.slice(0, last).some((s) => /^[.+]$/.test(s))
     ? await resolvePattern(parentPattern, ctx)
     : { path: parentPattern === '/' ? '' : parentPattern };
   if (parent.path === null) {
     return { path: null, reason: `parent ${parentPattern} unresolved: ${parent.reason}` };
   }
   const prefix = parent.path;
-  const sources = ctx.listSources[pattern] ?? [prefix === '' ? '/' : prefix];
-  const matcher = new RegExp(`^${escapeRegex(prefix)}/[^/?#]+$`);
+  const sources = ctx.listSources[pattern] ?? ctx.listSources[headOf(segments, last)] ?? [prefix === '' ? '/' : prefix];
+  const tailPath = tail.length ? '/' + tail.join('/') : '';
+  const withTail = new RegExp(`^${escapeRegex(prefix)}/([^/?#]+)${escapeRegex(tailPath)}$`);
+  const headOnly = new RegExp(`^${escapeRegex(prefix)}/[^/?#]+$`);
 
   const tried: string[] = [];
+  const pages: Array<{ source: string; links: string[] }> = [];
   for (const source of sources) {
     tried.push(source);
-    let links: string[];
     try {
-      links = await ctx.getLinks(source);
+      pages.push({ source, links: await ctx.getLinks(source) });
     } catch (error) {
       continue;
     }
-    for (const href of links) {
-      if (!matcher.test(href)) continue;
-      if (ctx.staticRoutes.has(href)) continue; // e.g. /contratos/nuevo
-      return { path: href };
+  }
+  // (a) a link that already carries the whole path (e.g. /contratos/<id>/firmar)
+  if (tail.length) {
+    for (const { links } of pages) {
+      const hit = links.find((href) => withTail.test(href) && !ctx.staticRoutes.has(href));
+      if (hit) return { path: hit };
     }
   }
-  return { path: null, reason: `no link matching ${prefix}/<id> on ${tried.join(', ')}` };
+  // (b) a link to the detail page; the static tail is appended unverified
+  for (const { links } of pages) {
+    const hit = links.find((href) => headOnly.test(href) && !ctx.staticRoutes.has(href));
+    if (hit) return { path: hit + tailPath };
+  }
+  // (c) rows that navigate on click
+  if (ctx.discoverByClick) {
+    for (const source of sources) {
+      try {
+        const found = await ctx.discoverByClick(source, headOnly, ctx.staticRoutes);
+        if (found) return { path: found + tailPath };
+      } catch (error) {
+        continue;
+      }
+    }
+  }
+  return {
+    path: null,
+    reason: `no link or clickable row leading to ${prefix}/<id>${tailPath} on ${tried.join(', ') || '(no list page)'}`,
+  };
+}
+
+/** The pattern that ends at the last dynamic segment (the key LIST_SOURCES overrides use for deep routes). */
+function headOf(segments: string[], last: number): string {
+  return '/' + segments.slice(0, last + 1).join('/');
 }

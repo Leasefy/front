@@ -78,6 +78,7 @@ export default class FindingsReporter implements Reporter {
   private started = 0;
   private projectNames: string[] = [];
   private workers = 0;
+  private blocked = new Map<string, number>();
 
   onBegin(config: FullConfig, suite: Suite): void {
     this.started = Date.now();
@@ -173,6 +174,7 @@ export default class FindingsReporter implements Reporter {
       },
       countsByType,
       setupNotes: this.setupNotes,
+      blockedRequests: Object.fromEntries([...this.blocked.entries()].sort((a, b) => b[1] - a[1])),
       skipped: this.groupSkips(skipped),
       routes,
     };
@@ -197,6 +199,12 @@ export default class FindingsReporter implements Reporter {
       let soft = 0;
       for (const row of rows) {
         for (const f of row.findings) {
+          if (f.type === 'blocked-mutation') {
+            // Same few endpoints on every page: summarised once instead of per route.
+            const key = f.detail.replace(/^A /, '').replace(/ request was aborted by the read-only guard:/, '').replace(/\?.*$/, '');
+            this.blocked.set(key, (this.blocked.get(key) ?? 0) + 1);
+            continue;
+          }
           if (f.severity === 'hard') hard++;
           if (f.severity === 'soft' && f.type !== 'page-error') soft++;
           const key = `${f.type}|${f.selector ?? ''}`;
@@ -328,6 +336,12 @@ export default class FindingsReporter implements Reporter {
         L.push(`| ${r.persona} | \`${r.route}\` | ${r.softOccurrences} | ${types} |`);
       }
       if (soft.length > 60) L.push(`| ... | ${soft.length - 60} more in findings.json | | |`);
+      L.push('');
+    }
+
+    if (this.blocked.size) {
+      L.push('## Requests aborted by the read-only guard', '', 'Informational: mutations the pages tried to send while being measured (count = route x device).', '');
+      for (const [key, n] of [...this.blocked.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) L.push('- '+'`' + key + '` - ' + n);
       L.push('');
     }
 

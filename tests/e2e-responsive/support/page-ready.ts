@@ -12,8 +12,8 @@ export interface OpenResult {
 }
 
 /** Waits until network is quiet and the loading skeletons are gone (both capped). */
-export async function waitForSettled(page: Page): Promise<void> {
-  await page.waitForLoadState('networkidle', { timeout: 6_000 }).catch(() => {});
+export async function waitForSettled(page: Page, opts: { quick?: boolean } = {}): Promise<void> {
+  await page.waitForLoadState('networkidle', { timeout: opts.quick ? 4_000 : 6_000 }).catch(() => {});
   await page
     .waitForFunction(
       () => {
@@ -27,11 +27,11 @@ export async function waitForSettled(page: Page): Promise<void> {
         return true;
       },
       undefined,
-      { timeout: 7_000 },
+      { timeout: opts.quick ? 3_000 : 7_000 },
     )
     .catch(() => {});
   // Entrance animations (framer-motion / CSS) settle before geometry is measured.
-  await page.waitForTimeout(450);
+  await page.waitForTimeout(opts.quick ? 1_200 : 450);
 }
 
 const pathnameOnly = (u: string): string => {

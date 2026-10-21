@@ -79,6 +79,19 @@ describe('AceptarLegalesAlEntrar', () => {
     expect(ventana()).toBeNull();
   });
 
+  it('quien ya tiene los términos al día lee «Actualizamos la política de datos», sin «y los términos» (20-10)', async () => {
+    api.estado.mockResolvedValue({
+      ...PIDE,
+      terminos: { ...PIDE.terminos, aceptada: true, aceptadaEl: '2026-10-16T15:00:00.000Z' },
+      cambios: ['Política de tratamiento de datos, versión 6.0 (desde el 20 de octubre de 2026): cambiaron las secciones 6, 7, 11, 13 y 17.'],
+    });
+    await act(async () => root.render(<AceptarLegalesAlEntrar />));
+    await esperar();
+    expect(ventana()!.textContent).toMatch(/Actualizamos la política de datos/);
+    expect(ventana()!.textContent).not.toMatch(/y los términos/);
+    expect(document.querySelector('[data-testid="aceptar-legales-cambios"]')!.textContent).toMatch(/versión 6\.0/);
+  });
+
   it('quien NUNCA aceptó nada (el propietario invitado) no lee «Actualizamos» ni «Qué cambió» (QA 11-10)', async () => {
     api.estado.mockResolvedValue({ ...PIDE, primeraVez: true });
     await act(async () => root.render(<AceptarLegalesAlEntrar />));

@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { CABECERA_DEL_NONCE } from "@/lib/seguridad/politica-de-contenido";
 import { CABECERA_DEL_IDIOMA, IDIOMA_POR_DEFECTO, esIdioma } from "@/lib/idioma/idioma";
 import { IdiomaDeLaPagina } from "@/lib/idioma/use-idioma";
-import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Host_Grotesk, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { AuthProvider } from "@/lib/auth/auth-context";
@@ -21,20 +21,20 @@ import { AceptarLegalesAlEntrar } from "@/components/legal/AceptarLegalesAlEntra
 import { LlavesDeLaPlata } from "@/components/plata/LlavesDeLaPlata";
 import { MotionProvider } from "@leasefy/cadence";
 
-// Cadence: Schibsted Grotesk — Regular (cuerpo) + Semibold (títulos).
-// Una sola familia para sans + heading; se mapea en globals.css.
-const schibsted = Schibsted_Grotesk({
-  variable: "--font-schibsted",
+// Cadence 2 (20-10-2026): Host Grotesk para leer — títulos livianos y texto —
+// en una sola familia variable (300–800). Se mapea en globals.css.
+const hostGrotesk = Host_Grotesk({
+  variable: "--font-host",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-// JetBrains Mono — numerals / labels / tags / overlines (UPPERCASE)
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains",
+// DM Mono — cifras, etiquetas y textos cortos en MAYÚSCULA (Nico, 20-10-2026).
+const dmMono = DM_Mono({
+  variable: "--font-dm-mono",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["300", "400", "500"],
+  display: "swap",
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co';
@@ -130,7 +130,7 @@ export default async function RootLayout({
   const deLaUrl = cabeceras.get(CABECERA_DEL_IDIOMA);
   const idioma = esIdioma(deLaUrl) ? deLaUrl : IDIOMA_POR_DEFECTO;
   return (
-    <html lang={idioma} className={`lenis ${schibsted.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang={idioma} className={`lenis ${hostGrotesk.variable} ${dmMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

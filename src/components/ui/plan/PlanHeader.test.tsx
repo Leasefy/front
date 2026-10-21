@@ -378,9 +378,10 @@ describe('«Tu suscripción» con su glow up (Nico, 03-10-2026)', () => {
     const aspa = p.querySelector<HTMLButtonElement>('button[aria-label="common.close"]')!;
     expect(aspa.className).toContain('rounded-full');
     expect(aspa.className).toMatch(/\bborder\b/);
-    // `surface-muted` y `plan-primary` en oscuro son grises amarillentos sobre el negro.
-    // (El `active:bg-surface-muted` del botón secundario de Cadence es el de presionar: se vale.)
-    const fondos = Array.from(p.querySelectorAll('*')).flatMap((el) => Array.from(el.classList));
+    // `surface-muted` y `plan-primary` en oscuro eran grises amarillentos sobre el negro:
+    // ninguna FRANJA del panel los lleva. Los botones sí van en arena desde Cadence 2
+    // (20-10-2026, Nico: «el estilo de botones de Mollie»): el secundario ES arena.
+    const fondos = Array.from(p.querySelectorAll('*:not(button):not(a)')).flatMap((el) => Array.from(el.classList));
     expect(fondos).not.toContain('bg-surface-muted');
     expect(fondos).not.toContain('bg-plan-primary');
   });

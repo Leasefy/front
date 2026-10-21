@@ -80,7 +80,7 @@ import { generadoSinGirarDeLaLista } from '@/lib/propietarios/giros-del-propieta
 // AVISO-TIPO-DOC (05-10-2026): el aviso y la lista filtrada por lo que falta.
 import { AvisoTipoDeDocumento } from '@/components/inmobiliaria/AvisoTipoDeDocumento';
 import { FALTA_TIPO_DE_DOCUMENTO, PARAMETRO_FALTA } from '@/lib/propietarios/falta-del-documento';
-import { SegmentedControl, KpiCard, AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
+import { SegmentedControl, Cifra, FranjaDeCifras, KpiCard, AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 
 type ViewMode = 'table' | 'grid';
 
@@ -668,7 +668,7 @@ function PropietariosContent() {
           cortaba («$96.600.0») y las etiquetas también («PROPIETA…»). Una
           columna en el celular, dos en tableta y cuatro desde `xl`, donde la
           cifra cabe con el menú abierto. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <FranjaDeCifras fila="xl" data-testid="cifras-de-propietarios">
         <KpiCard
           label={t('inmobiliaria.propietarios.title')}
           value={valorDeTile(String(stats.totalPropietarios))}
@@ -688,32 +688,32 @@ function PropietariosContent() {
         {/* Sin dato, la etiqueta tampoco puede decir «Sin pendientes» ni
             pintarse en verde: es la misma afirmación que el «$0». Sin acceso
             a la plata (P-21), tampoco. */}
-        <KpiCard
-          label={
+        <Cifra
+          etiqueta={
             kpiSinDato || plataOculta
               ? 'Giros atrasados'
               : stats.pendingCount > 0
                 ? t('inmobiliaria.propietarios.withBalance', { count: stats.pendingCount })
                 : t('inmobiliaria.propietarios.noPending')
           }
-          value={
+          valor={
             plataOculta
               ? tileSinPlata
               : valorDeTile(
                   stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate'),
                 )
           }
-          sublabel={
+          detalle={
             plataOculta
               ? sinAccesoALaPlata
               : !kpiSinDato && (stats.generadoSinGirar ?? 0) > 0
                 ? t('inmobiliaria.propietarios.generadoSinGirar', { monto: formatCurrency(stats.generadoSinGirar ?? 0) })
                 : undefined
           }
-          icon={!kpiSinDato && !plataOculta && stats.pendingCount > 0 ? <Warning /> : <CurrencyDollar />}
-          deltaDirection={kpiSinDato || plataOculta ? 'neutral' : stats.pendingCount > 0 ? 'down' : 'up'}
+          // El punto ámbar dice «hay giros atrasados» (antes, el ícono de alerta de la tarjeta).
+          tono={!kpiSinDato && !plataOculta && stats.pendingCount > 0 ? 'aviso' : undefined}
         />
-      </div>
+      </FranjaDeCifras>
 
       {/* AVISO-TIPO-DOC: qué filtra la lista y cómo volver a verla entera. */}
       <Presence

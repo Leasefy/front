@@ -58,7 +58,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TablePagination } from '@/components/ui/pagination'
 // Piezas que resuelve el design system: no rehacerlas a mano.
-import { AnimatedNumber, Banner, Callout, Card, CrossFade, Eyebrow, KpiCard, MonoLabel, Presence } from '@leasefy/cadence'
+import { AnimatedNumber, Banner, Callout, Card, CrossFade, Eyebrow, FranjaDeCifras, KpiCard, MonoLabel, Presence } from '@leasefy/cadence'
 
 const NS = 'inmobiliaria.ai.arco'
 
@@ -544,7 +544,7 @@ function BandejaArco() {
 
       {/* KPIs — KpiCard del DS: número mono tabular, tile de icono y elevación
           los resuelve Cadence. `sublabel` explica qué cuenta cada uno. */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+      <FranjaDeCifras data-testid="cifras-de-arco">
         <KpiCard
           icon={<WarningCircle className="h-5 w-5 text-danger" weight="duotone" />}
           label={t(`${NS}.kpi.overdue`)}
@@ -569,7 +569,7 @@ function BandejaArco() {
           sublabel={t(`${NS}.kpi.closedHint`)}
           value={String(kpis.closed)}
         />
-      </div>
+      </FranjaDeCifras>
 
       {/* Filtro activo desde la banda de atención */}
       <Presence show={onlyAttention} direction="none" initial={false} className="flex items-center gap-2">

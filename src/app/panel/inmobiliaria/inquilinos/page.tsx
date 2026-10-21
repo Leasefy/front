@@ -76,7 +76,7 @@ import {
   UserCircle,
   Users,
 } from '@phosphor-icons/react';
-import { KpiCard, Eyebrow, Presence } from '@leasefy/cadence';
+import { FranjaDeCifras, KpiCard, Eyebrow, Presence } from '@leasefy/cadence';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { PermissionGate } from '@/components/auth/PermissionGate';
@@ -457,7 +457,7 @@ function ContenidoDeInquilinos() {
 
       {/* Los tres números miden lo VIGENTE, no lo histórico: un canon que suma
           contratos terminados no es plata que entra este mes. */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <FranjaDeCifras fila="xl" data-testid="cifras-de-inquilinos">
         <KpiCard
           label={t('inquilinos.kpi.personas')}
           value={valorDeTile(String(totales?.personas ?? ''))}
@@ -473,7 +473,7 @@ function ContenidoDeInquilinos() {
           value={valorDeTile(totales ? formatCurrency(totales.canon) : '')}
           icon={<CurrencyDollar />}
         />
-      </div>
+      </FranjaDeCifras>
 
       {/* QA-INQ-95 (E-18 / XE-03): la lista es el dato PRINCIPAL: si el servidor
           la niega (403), `PageGuard` cambia la pantalla entera por el cartel y no

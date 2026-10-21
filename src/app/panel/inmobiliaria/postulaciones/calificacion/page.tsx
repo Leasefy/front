@@ -29,6 +29,7 @@ import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pag
 import { normalizarParaBuscar } from '@/lib/inmuebles/buscar-en-el-portafolio';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { TarjetaDeCalificacion } from '@/components/calificacion/TarjetaDeCalificacion';
 import {
   calificacionLeasefyApi,
@@ -87,7 +88,7 @@ function Buscar() {
       </form>
 
       <Presence show={!!error}>
-        <p className="rounded-md bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>
+        <p role="alert" className="rounded-md bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>
       </Presence>
 
       <CrossFade swapKey={resultado ? `r-${resultado.resultados.length}-${resultado.resultados[0]?.persona.userId ?? ''}` : 'vacio'}>
@@ -160,13 +161,42 @@ function Buscar() {
  * paginados (en Portofino son 350). Evaluar pide `contratos:edit`: quien sólo
  * ve contratos (consulta, coordinación) ve la lista sin el botón.
  */
-function Evaluar({ puedeEvaluar }: { puedeEvaluar: boolean }) {
-  const tr = useTr();
-  const localeFechas = useLocaleDeFechas();
+/**
+ * Los contratos por evaluar y las preguntas. Vive en la página (no en la
+ * pestaña) para que la pestaña diga cuántos esperan antes de abrirla: con 350
+ * en Portofino, «Contratos terminados» a secas no decía que había trabajo.
+ * Sólo se pide con `contratos:view` (el asesor comercial no lo tiene).
+ */
+function usePorEvaluar(activo: boolean) {
   const [contratos, setContratos] = useState<ContratoPorEvaluar[] | null>(null);
   const [disponible, setDisponible] = useState(true);
   const [preguntas, setPreguntas] = useState<PreguntaDeFin[]>([]);
   const [error, setError] = useState<unknown>(null);
+  const cargar = useCallback(() => {
+    if (!activo) return;
+    Promise.all([calificacionLeasefyApi.porEvaluar(), calificacionLeasefyApi.preguntas()])
+      .then(([p, q]) => {
+        setContratos(p.contratos);
+        setDisponible(p.disponible);
+        setPreguntas(q.preguntas);
+        setError(null);
+      })
+      .catch(setError);
+  }, [activo]);
+  useEffect(cargar, [cargar]);
+  return { contratos, disponible, preguntas, error, cargar };
+}
+
+function Evaluar({
+  puedeEvaluar,
+  porEvaluar,
+}: {
+  puedeEvaluar: boolean;
+  porEvaluar: ReturnType<typeof usePorEvaluar>;
+}) {
+  const tr = useTr();
+  const localeFechas = useLocaleDeFechas();
+  const { contratos, disponible, preguntas, error, cargar } = porEvaluar;
   const [abierto, setAbierto] = useState<ContratoPorEvaluar | null>(null);
   const [respuestas, setRespuestas] = useState<Record<string, string>>({});
   const [nota, setNota] = useState('');
@@ -186,19 +216,8 @@ function Evaluar({ puedeEvaluar }: { puedeEvaluar: boolean }) {
     resetKey: busqueda.trim(),
   });
 
-  const cargar = useCallback(() => {
-    Promise.all([calificacionLeasefyApi.porEvaluar(), calificacionLeasefyApi.preguntas()])
-      .then(([p, q]) => {
-        setContratos(p.contratos);
-        setDisponible(p.disponible);
-        setPreguntas(q.preguntas);
-        setError(null);
-      })
-      .catch(setError);
-  }, []);
-  useEffect(cargar, [cargar]);
-
   const completas = preguntas.every((p) => respuestas[p.clave]);
+  const faltan = preguntas.filter((p) => !respuestas[p.clave]).length;
   const guardar = async () => {
     if (!abierto) return;
     setGuardando(true);
@@ -323,7 +342,15 @@ function Evaluar({ puedeEvaluar }: { puedeEvaluar: boolean }) {
             </div>
           </div>
         </CajonCuerpo>
-        <CajonPie ayuda={completas ? tr('El inquilino podrá responder una vez; su respuesta se muestra al lado.') : tr('Responde las cuatro preguntas.')}>
+        <CajonPie
+          ayuda={
+            completas
+              ? tr('El inquilino podrá responder una vez; su respuesta se muestra al lado.')
+              : faltan === 1
+                ? tr('Te falta 1 pregunta.')
+                : tr('Te faltan {n} preguntas.', { n: faltan })
+          }
+        >
           <Button variant="ghost" hideArrow onClick={() => setAbierto(null)}>{tr('Cancelar')}</Button>
           <Button hideArrow disabled={!completas || guardando} onClick={guardar}>{tr('Guardar evaluación')}</Button>
         </CajonPie>
@@ -339,25 +366,38 @@ export default function CalificacionLeasefyPanelPage() {
   // Los contratos terminados piden `contratos:view` (el asesor comercial no lo tiene): sin él, sólo buscar.
   const veContratos = canAccess('contratos', 'view');
   const puedeEvaluar = canAccess('contratos', 'edit');
+  const porEvaluar = usePorEvaluar(veContratos);
+  const esperan = porEvaluar.disponible ? (porEvaluar.contratos?.length ?? 0) : 0;
   return (
     <PageGuard module="portafolio">
       <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1">
-          <h1 className="text-h2 text-fg">{tr('Calificación Leasefy')}</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            {tr('Cómo le ha ido a una persona arrendando en Leasefy, más sus documentos: si se le arrienda fácil, con condiciones o no, y hasta qué canon.')}
-          </p>
-        </header>
+        <EncabezadoDePantalla
+          seccion={tr('Postulaciones')}
+          titulo={tr('Calificación Leasefy')}
+          descripcion={tr('Cómo le ha ido a una persona arrendando en Leasefy, más sus documentos: si se le arrienda fácil, con condiciones o no, y hasta qué canon.')}
+        />
         {veContratos && (
           <Tabs value={pestana} onValueChange={(v) => setPestana(v as 'buscar' | 'evaluar')}>
             <TabsList>
               <TabsTrigger value="buscar">{tr('Buscar a una persona')}</TabsTrigger>
-              <TabsTrigger value="evaluar">{tr('Contratos terminados')}</TabsTrigger>
+              <TabsTrigger value="evaluar">
+                {tr('Contratos terminados')}
+                {/* Lo que espera evaluación se ve sin abrir la pestaña. */}
+                {esperan > 0 ? (
+                  <span
+                    className="ml-2 rounded-full bg-surface-muted px-1.5 font-mono text-caption tabular-nums text-fg-muted"
+                    data-testid="calificacion-por-evaluar"
+                    aria-label={esperan === 1 ? tr('1 por evaluar') : tr('{n} por evaluar', { n: esperan })}
+                  >
+                    {esperan}
+                  </span>
+                ) : null}
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         )}
         <CrossFade swapKey={veContratos ? pestana : 'buscar'}>
-          {veContratos && pestana === 'evaluar' ? <Evaluar puedeEvaluar={puedeEvaluar} /> : <Buscar />}
+          {veContratos && pestana === 'evaluar' ? <Evaluar puedeEvaluar={puedeEvaluar} porEvaluar={porEvaluar} /> : <Buscar />}
         </CrossFade>
       </motion.div>
     </PageGuard>

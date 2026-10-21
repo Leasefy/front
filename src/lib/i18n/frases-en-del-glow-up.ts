@@ -31,6 +31,12 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   // app/panel/inmobiliaria/reportes/resumen/page.tsx
   'Cómo va el mes y qué atender primero.': 'How the month is going and what to handle first.',
   'Para atender': 'To handle',
+  // app/panel/inmobiliaria/postulaciones/calificacion/page.tsx
+  'Postulaciones': 'Applications',
+  'Te falta 1 pregunta.': '1 question left.',
+  'Te faltan {n} preguntas.': '{n} questions left.',
+  '1 por evaluar': '1 to review',
+  '{n} por evaluar': '{n} to review',
   // components/pantalla/MasDetalles.tsx
   'Ver detalles': 'Show details',
   'Ocultar detalles': 'Hide details',

@@ -227,9 +227,10 @@ function PqrsContent() {
       {/* Resumen por estado */}
       <section className="space-y-3">
         <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* GLOW UP (21-10): UNA franja dividida con los seis estados, no seis tarjetas sueltas. */}
+        <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-surface md:grid-cols-3 lg:grid-cols-6 [&>*]:border-border max-lg:[&>*]:border-b lg:divide-x lg:divide-border">
           {RESUMEN_ITEMS.map((item) => (
-            <div key={item.key} className="rounded-lg border border-border bg-surface p-4">
+            <div key={item.key} className="p-4">
               <div className="flex items-center gap-2">
                 <span className={cn('w-2 h-2 rounded-full flex-shrink-0', item.dot)} />
                 <span className="text-caption text-fg-muted truncate">{t(k(`estado_${item.key}`))}</span>

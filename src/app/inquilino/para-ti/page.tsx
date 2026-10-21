@@ -287,7 +287,7 @@ export default function ParaTiPage() {
                 </Link>
               </Button>
               <Button asChild variant="secondary">
-                <Link href="/inquilino/explorar">
+                <Link href="/propiedades" target="_blank" rel="noopener noreferrer">
                   {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
                 </Link>
               </Button>

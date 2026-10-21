@@ -109,7 +109,7 @@ export default function GuardadosPage() {
                 sobre cuál es el camino. */}
             {properties.length > 0 && (
               <Link
-                href="/inquilino/explorar"
+                href="/propiedades" target="_blank" rel="noopener noreferrer"
                 className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
               >
                 <MagnifyingGlass className="w-4 h-4" />
@@ -284,7 +284,7 @@ export default function GuardadosPage() {
               {/* Add More Card */}
               <StaggerItem key="agregar-mas">
                 <Link
-                  href="/inquilino/explorar"
+                  href="/propiedades" target="_blank" rel="noopener noreferrer"
                   className="flex flex-col items-center justify-center h-full min-h-[280px] rounded-xl border-2 border-dashed border-border bg-surface-muted/50 hover:border-primary/30 hover:bg-primary-soft/50 transition-colors group"
                 >
                   <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mb-3 group-hover:bg-primary-soft transition-colors">
@@ -317,7 +317,7 @@ export default function GuardadosPage() {
                   </div>
                 </div>
                 <Link
-                  href="/inquilino/explorar"
+                  href="/propiedades" target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
                 >
                   <MagnifyingGlass className="w-4 h-4" />

@@ -407,7 +407,7 @@ export default function InquilinoPage() {
           )}
 
           {/* Sin arriendo: por dónde empezar (con arriendo, el próximo pago está en «Tu arriendo»). */}
-          <Link href="/inquilino/explorar" className="group">
+          <Link href="/propiedades" target="_blank" rel="noopener noreferrer" className="group">
             <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
               <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
                 <MagnifyingGlass className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
@@ -690,7 +690,9 @@ export default function InquilinoPage() {
                   },
                 ] : [
                   {
-                    href: '/inquilino/explorar',
+                    // Buscar se hace en el marketplace, en OTRA pestaña (reunión 21-10).
+                    href: '/propiedades',
+                    externo: true,
                     icon: MagnifyingGlass,
                     label: locale === 'es' ? 'Buscar propiedades' : 'Search properties',
                     desc: locale === 'es' ? 'Explora el mercado' : 'Explore the market',
@@ -713,8 +715,12 @@ export default function InquilinoPage() {
                     label: locale === 'es' ? 'Mi perfil' : 'My profile',
                     desc: locale === 'es' ? 'Editar información' : 'Edit information'
                   },
-                ]).map((action) => (
-                  <Link key={action.href} href={action.href}>
+                ] as { href: string; icon: typeof MagnifyingGlass; label: string; desc: string; externo?: boolean }[]).map((action) => (
+                  <Link
+                    key={action.href}
+                    href={action.href}
+                    {...(action.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  >
                     <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface dark:hover:bg-border transition-colors group">
                       <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center transition-shadow">
                         <action.icon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />

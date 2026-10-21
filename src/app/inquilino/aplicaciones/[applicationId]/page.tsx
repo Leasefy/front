@@ -679,7 +679,7 @@ export default function ApplicationDetailPage() {
                             : 'The history shows the reason the agency left. If you want to know more or a detail is wrong, write to them below.'}
                       </p>
                       <Link
-                        href="/inquilino/explorar"
+                        href="/propiedades" target="_blank" rel="noopener noreferrer"
                         className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-danger hover:bg-danger text-white rounded-xl text-sm font-semibold transition-colors"
                       >
                         {locale === 'es' ? 'Explorar otras propiedades' : 'Explore other properties'}

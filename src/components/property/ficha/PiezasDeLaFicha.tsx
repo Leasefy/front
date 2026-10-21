@@ -266,11 +266,17 @@ export function OfrecidoPor({
       data-testid="ofrecido-por"
     >
       <LogoDeLaInmobiliaria i={i} tamano={36} />
-      <div className="min-w-0 flex-1">
+      {/*
+        El nombre entero, nunca «Portofino…» (Juan, 21-10-2026: en el celular
+        «las palabras se nos quedan» cortadas). `min-w-[12rem]`: si no cabe con
+        «% la recomienda» al lado, eso baja a la línea siguiente y el nombre se
+        queda con el ancho; si aun así no cabe, parte en dos líneas.
+      */}
+      <div className="min-w-[12rem] flex-1">
         <p className="text-[12.5px] text-fg-muted">Ofrecido por</p>
-        <p className="flex items-center gap-1 text-[15px] font-semibold text-fg">
-          <span className="truncate">{p.agencyName}</span>
-          {t?.verificada && <SelloVerificada />}
+        <p className="flex items-start gap-1 text-[15px] font-semibold leading-snug text-fg">
+          <span className="min-w-0 break-words">{p.agencyName}</span>
+          {t?.verificada && <SelloVerificada className="mt-0.5 shrink-0" />}
         </p>
       </div>
       {t && <Recomienda r={t.recomendacion} conVotos />}

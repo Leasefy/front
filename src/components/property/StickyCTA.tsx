@@ -509,8 +509,8 @@ export function StickyCTA({
       >
         <div className="p-6">
           {/* Header */}
-          <div className="flex items-start justify-between mb-6">
-            <div>
+          <div className="flex items-start justify-between gap-3 mb-6">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1">
                 {/* Encabeza quien administra el inmueble (Nico, 2026-09-15). Si es
                     otra inmobiliaria, su logo y su nombre; si es Leasefy o no hay
@@ -519,7 +519,8 @@ export function StickyCTA({
                 {administrador && !esLeasefy(administrador.agencyId) ? (
                   <>
                     <LogoDelAdministrador administrador={administrador} tamano={28} />
-                    <span className="max-w-[12rem] truncate text-[15px] font-semibold text-foreground">
+                    {/* Entero, en dos líneas si hace falta: nunca «Portofino Propiedad Raiz…» (21-10-2026). */}
+                    <span className="min-w-0 break-words text-[15px] font-semibold leading-snug text-foreground">
                       {administrador.nombre}
                     </span>
                   </>
@@ -535,7 +536,7 @@ export function StickyCTA({
               ) : null}
               {sobreLaInmobiliaria && <div className="mt-2">{sobreLaInmobiliaria}</div>}
             </div>
-            <div className="flex gap-2">
+            <div className="flex shrink-0 gap-2">
               {onWishlistToggle && (
                 <Button
                   type="button"

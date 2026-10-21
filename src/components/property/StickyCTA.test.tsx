@@ -362,6 +362,14 @@ describe('<StickyCTA> — quién administra el inmueble (2026-09-15)', () => {
     expect(container.textContent).toContain('Administra este inmueble')
   })
 
+  it('🔴 el nombre va entero, en dos líneas si hace falta: nunca «Portofino Propiedad Raiz…» (21-10-2026)', () => {
+    render({ administrador: { agencyId: 'agencia-1', nombre: 'Portofino Propiedad Raiz S.A.S.', logoUrl: null } })
+    const nombre = [...container.querySelectorAll('span')].find((e) => e.textContent === 'Portofino Propiedad Raiz S.A.S.')
+    expect(nombre).toBeDefined()
+    expect(nombre!.className).not.toMatch(/\btruncate\b|max-w-/)
+    expect(nombre!.className).toContain('break-words')
+  })
+
   it('si la administra Leasefy, encabeza el logotipo de Leasefy', () => {
     vi.stubEnv('NEXT_PUBLIC_LEASEFY_AGENCY_ID', 'agencia-leasefy')
     render({ administrador: { agencyId: 'agencia-leasefy', nombre: 'Leasefy.co', logoUrl: null } })

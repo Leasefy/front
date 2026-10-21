@@ -615,25 +615,25 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 {/* 🔴 A-04 (QA-PAGOS-95): «Fíjalos en Configuración → Perfil» sin
                     enlace dejaba a la persona buscando; el mismo enlace que el
                     Tablero y el estado de cuenta, con el foco en el campo. */}
-                {hayVencidasSinPlazo ? (
-                  <Link
-                    href={RUTA_PARA_FIJAR_EL_PLAZO}
-                    className="mr-4 inline-block font-medium underline underline-offset-4"
-                    data-testid="mes-fijar-el-plazo"
-                  >
-                    Fijar los días de plazo
-                  </Link>
-                ) : null}
-                {/* Sin reglas de mora el interés sale en cero y NO porque no haya
-                    mora: se lleva a donde se arregla. */}
-                {datos?.sinReglasDeMora ? (
-                  <Link
-                    href={RUTA_DE_REGLAS_DE_MORA}
-                    className="inline-block font-medium underline underline-offset-4"
-                    data-testid="mes-configurar-reglas"
-                  >
-                    {traducir(CLAVE_DE_MORA.configurarReglas)}
-                  </Link>
+                {/* GLOW UP (21-10): lo que se arregla desde acá son ACCIONES (botones secundarios chicos), no
+                    enlaces dentro del párrafo. Sin reglas de mora el interés sale en cero y NO porque no haya mora. */}
+                {hayVencidasSinPlazo || datos?.sinReglasDeMora ? (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {hayVencidasSinPlazo ? (
+                      <Button asChild size="sm" variant="secondary">
+                        <Link href={RUTA_PARA_FIJAR_EL_PLAZO} data-testid="mes-fijar-el-plazo">
+                          Fijar los días de plazo
+                        </Link>
+                      </Button>
+                    ) : null}
+                    {datos?.sinReglasDeMora ? (
+                      <Button asChild size="sm" variant="secondary">
+                        <Link href={RUTA_DE_REGLAS_DE_MORA} data-testid="mes-configurar-reglas">
+                          {traducir(CLAVE_DE_MORA.configurarReglas)}
+                        </Link>
+                      </Button>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             </div>

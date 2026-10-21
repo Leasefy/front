@@ -242,7 +242,6 @@ const DECLARADOS: readonly string[] = [
   'renovacionAutomaticaApi.borrarAviso',
   'renovacionAutomaticaApi.registrarAviso',
   'renovacionesApi.getUpcoming',
-  'sessionApi.revoke',
   'subscriptionsApi.cancelSubscription',
   'subscriptionsApi.getPlan',
   'tesoreriaApi.pendientesDelContrato',

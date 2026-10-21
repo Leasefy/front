@@ -35,6 +35,7 @@
  * quedaron y no «el asiento N.º X»: no hay uno.
  */
 
+import { SinDatos } from '@/components/estado/SinDatos';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CheckCircle,
@@ -586,10 +587,13 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
         <TabsContent value="egresos" className="mt-0">
           <div>
             {egresos.length === 0 ? (
-              <p className="p-8 text-center text-sm text-fg-muted">
-                Todavía no hay egresos. Se crean desde una factura de proveedor causada, o sueltos
-                para un anticipo.
-              </p>
+              // GLOW UP (21-10): el vacío dice qué falta y cómo nace un egreso, con su ilustración (no una frase gris).
+              <SinDatos
+                queSon="egresos"
+                ilustracion="billetera"
+                titulo="Todavía no hay egresos"
+                descripcion="Se crean desde una factura de proveedor causada, o sueltos para un anticipo."
+              />
             ) : esCelular ? (
               /* 🔴 CB-22 (QA de Contabilidad, 03-10-2026): a 390 px la tabla se
                  corría de lado. Bajo 768 px cada egreso es una tarjeta —

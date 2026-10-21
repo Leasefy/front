@@ -102,6 +102,7 @@ export function RenovacionesMarcadas({
           });
         },
         accion: 'mandar la propuesta',
+        recurso: 'RENOVACION',
         recursos: ['renovaciones'],
       });
       avisarDelBloque(r, { todas: 'Mandamos las propuestas de renovación', ninguna: 'No salió ninguna propuesta' });

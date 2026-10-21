@@ -202,6 +202,8 @@ export function InvitacionesPendientes({ version = 0 }: {
     let salieron = 0;
     let quedan = total ?? 0;
     let ultimosResultados: FilaDeTanda[] = [];
+    // Todas las vueltas, para «Ver detalle» del centro de procesos (20-10-2026).
+    const todos: FilaDeTanda[] = [];
     try {
       /*
        * QA-INQ-95 (E-28): por el centro de procesos, como toda acción masiva
@@ -218,6 +220,7 @@ export function InvitacionesPendientes({ version = 0 }: {
           for (let vuelta = 0; vuelta < 40; vuelta += 1) {
             const r = await invitacionesApi.enviar({});
             ultimosResultados = r.resultados ?? [];
+            todos.push(...ultimosResultados);
             salieron += r.enviadas;
             quedan = r.restantes;
             setYaSalieron(salieron);
@@ -234,6 +237,13 @@ export function InvitacionesPendientes({ version = 0 }: {
               quedan > 0
                 ? `Salieron ${salieron}; quedan ${quedan} por mandar`
                 : `Salieron ${salieron}; no queda ninguna pendiente`,
+            renglones: todos.map((f) => ({
+              estado: f.enviada ? ('OK' as const) : ('FALLO' as const),
+              titulo: f.nombre?.trim() || f.correo?.trim() || 'Inquilino',
+              detalle: f.nombre?.trim() ? (f.correo ?? null) : null,
+              motivo: f.enviada ? null : fraseDelMotivo(f.motivo),
+              recurso: { tipo: 'INQUILINO', id: f.userId },
+            })),
           };
         },
       });

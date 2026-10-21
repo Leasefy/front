@@ -250,12 +250,14 @@ describe('<BotonDelCentroDeProcesos> — se hace presente (22-09)', () => {
     vi.mocked(procesosApi.listar).mockResolvedValue(lista(viejos))
     await montar(<BotonDelCentroDeProcesos />)
     expect(todas('fila-de-proceso')).toHaveLength(5)
-    expect(todas('ver-resultado-proceso')).toHaveLength(5)
+    // Nico, 20-10: ya no hay «Ver en …»; todo va por «Ver detalle».
+    expect(todas('ver-resultado-proceso')).toHaveLength(0)
+    expect(todas('ver-detalle-proceso')).toHaveLength(5)
   })
 })
 
 describe('<FilaDeProceso> — acciones según el estado', () => {
-  it('terminado: «Ver en Facturación» lleva a su pantalla; falló: «Reintentar» relanza el reproceso', async () => {
+  it('terminado: ya no lleva a la pantalla del módulo (todo por «Ver detalle»); falló: «Reintentar» relanza el reproceso', async () => {
     reprocesarMock.mockResolvedValue({ asentados: 1, sinResolver: 0, motivos: [] })
     const onCambio = vi.fn()
     await montar(
@@ -267,7 +269,8 @@ describe('<FilaDeProceso> — acciones según el estado', () => {
         <FilaDeProceso proceso={FALLIDO} onCambio={onCambio} ahora={AHORA} />
       </ul>,
     )
-    expect(q('ver-resultado-proceso')?.getAttribute('href')).toBe('/panel/inmobiliaria/facturacion')
+    expect(q('ver-resultado-proceso')).toBeNull()
+    expect(q('ver-detalle-proceso')).not.toBeNull()
     await act(async () => {
       ;(q('reintentar-proceso') as HTMLButtonElement).click()
       await new Promise((r) => setTimeout(r, 0))
@@ -538,7 +541,7 @@ describe('Wompi en el centro (23-09)', () => {
     )
     expect(container.textContent).toContain('Pagando en Wompi')
     expect(q('avance-del-proceso')?.textContent).toBe('37 de 120')
-    expect(q('ver-resultado-proceso')?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/dispersiones/lotes/lote-7')
+    expect(q('ver-resultado-proceso')).toBeNull()
   })
 })
 

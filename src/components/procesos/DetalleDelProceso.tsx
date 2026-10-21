@@ -17,6 +17,7 @@ import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/caj
 import type { Proceso } from '@/lib/api/procesos.types'
 import { formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { RenglonesDelProceso } from './renglones/RenglonesDelProceso'
 import {
   NOMBRE_DEL_ESTADO,
   NOMBRE_DEL_TIPO,
@@ -105,7 +106,11 @@ export function DetalleDelProceso({
             titulo={proceso.titulo}
             descripcion={`${NOMBRE_DEL_TIPO[proceso.tipo] ?? proceso.tipo} · ${NOMBRE_DEL_ESTADO[proceso.estado]}`}
           />
-          <CajonCuerpo className="space-y-4">
+          <CajonCuerpo className="space-y-6">
+            <RenglonesDelProceso
+              procesoId={proceso.id}
+              activo={proceso.estado === 'CORRIENDO' || proceso.estado === 'EN_COLA'}
+            />
             <p className="text-label uppercase text-fg-subtle">Registro</p>
             <ol className="space-y-3" data-testid="registro-del-proceso">
               {pasos.map((paso, i) => (

@@ -43,6 +43,7 @@ import { useI18n } from '@/lib/i18n';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { NuevaSolicitudModal } from '@/components/tenant/NuevaSolicitudModal';
 import { EmptyState } from '@/components/ui/empty-state';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Badge } from '@/components/ui/badge';
 import type { BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -207,7 +208,7 @@ export default function SolicitudesPage() {
   // Loading gate — never flash a fake-empty while a source is in flight.
   if (isOnboardingLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+      <div className="min-h-screen bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -246,38 +247,37 @@ export default function SolicitudesPage() {
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
       <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
-        {/* Header */}
-        <header className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
-              {locale === 'es' ? 'Solicitudes' : 'Requests'}
-            </h1>
-            <p className="mt-1 text-fg-muted dark:text-fg-subtle">
-              {locale === 'es'
-                ? 'Abre y sigue tus solicitudes de mantenimiento y PQRS, en un solo lugar.'
-                : 'Open and track your maintenance requests and PQRS, all in one place.'}
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+        {/* GLOW UP (21-10): el encabezado de todas las pantallas; «Nueva solicitud» es la única azul. */}
+        <EncabezadoDePantalla
+          className="mb-6"
+          seccion={locale === 'es' ? 'Tu arriendo' : 'Your rental'}
+          titulo={locale === 'es' ? 'Solicitudes' : 'Requests'}
+          descripcion={
+            locale === 'es'
+              ? 'Abre y sigue tus solicitudes de mantenimiento y PQRS, en un solo lugar.'
+              : 'Open and track your maintenance requests and PQRS, all in one place.'
+          }
+          accionPrincipal={
             <Button
               type="button"
+              size="sm"
               onClick={() => setModalOpen(true)}
               disabled={sinRadicar}
               title={sinRadicar ? motivoSinRadicar : undefined}
               hideArrow
-              className="inline-flex items-center gap-2"
+              className="inline-flex items-center gap-2 max-lg:flex-1"
               data-testid="nueva-solicitud"
             >
               <Plus className="w-4 h-4" />
               {locale === 'es' ? 'Nueva solicitud' : 'New request'}
             </Button>
-            {sinRadicar && (
-              <p className="max-w-xs text-right text-sm text-fg-muted" data-testid="nueva-solicitud-motivo">
-                {motivoSinRadicar}
-              </p>
-            )}
-          </div>
-        </header>
+          }
+        />
+        {sinRadicar && (
+          <p className="-mt-3 mb-6 text-sm text-fg-muted lg:text-right" data-testid="nueva-solicitud-motivo">
+            {motivoSinRadicar}
+          </p>
+        )}
 
         {/* List — real own-requests, or an honest empty-state (incl. not-live []).
             Vacío → primera solicitud se cruzan. Lo que ya estaba al llegar no se
@@ -293,30 +293,25 @@ export default function SolicitudesPage() {
               </AnimatePresence>
             </div>
           ) : (
-            <div className="space-y-4">
+            <section className="rounded-lg border border-border bg-surface">
+              {/* GLOW UP (21-10): un solo botón azul en la pantalla (el del encabezado); el vacío ofrece la misma
+                  acción en tono secundario y no la ofrece si todavía no se puede radicar. */}
               <EmptyState
                 icon={Lifebuoy}
+                ilustracion="casa"
                 title={locale === 'es' ? 'Aún no tienes solicitudes' : 'No requests yet'}
                 description={
                   locale === 'es'
                     ? 'Abre una solicitud de mantenimiento o una PQRS y hazle seguimiento aquí.'
                     : 'Open a maintenance request or a PQRS and track it here.'
                 }
+                action={
+                  sinRadicar
+                    ? undefined
+                    : { label: locale === 'es' ? 'Nueva solicitud' : 'New request', onClick: () => setModalOpen(true) }
+                }
               />
-              <div className="flex justify-center">
-                <Button
-                  type="button"
-                  onClick={() => setModalOpen(true)}
-                  disabled={sinRadicar}
-                  title={sinRadicar ? motivoSinRadicar : undefined}
-                  hideArrow
-                  className="inline-flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  {locale === 'es' ? 'Nueva solicitud' : 'New request'}
-                </Button>
-              </div>
-            </div>
+            </section>
           )}
           </CrossFade>
         </section>

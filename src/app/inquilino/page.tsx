@@ -1,6 +1,7 @@
 'use client';
 
 import { PreguntaDeLaRecomendacion } from '@/components/marketplace/inmobiliaria/PreguntaDeLaRecomendacion';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useState, useEffect, useMemo } from 'react';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PortadaDelInmueble, primeraFoto } from '@/components/property/PortadaDelInmueble';
@@ -234,7 +235,7 @@ export default function InquilinoPage() {
   const entrada = useEntradaTrasCargar(cargandoElPanel);
   if (cargandoElPanel) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+      <div className="min-h-screen bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="dashboard" className="mx-auto max-w-7xl" />
       </div>
@@ -290,18 +291,15 @@ export default function InquilinoPage() {
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
       <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
-        {/* Hero Header */}
-        <header className="mb-8">
-          <p className="text-sm font-medium text-fg-muted dark:text-fg-subtle mb-1">
-            {greeting}
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-medium text-fg dark:text-white tracking-tight">
-            {t('dashboard.hello', { name: firstName })}
-          </h1>
-          {/* Acá iba un "¡Tu perfil está listo!" que repetía, palabra por
-              palabra, la tarjeta que viene justo debajo. Dos felicitaciones
-              seguidas por el mismo hecho. Queda una. */}
-        </header>
+        {/* GLOW UP (21-10): el encabezado de todas las pantallas (antes, un saludo grande propio). */}
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={greeting}
+          titulo={t('dashboard.hello', { name: firstName })}
+        />
+        {/* Acá iba un "¡Tu perfil está listo!" que repetía, palabra por
+            palabra, la tarjeta que viene justo debajo. Dos felicitaciones
+            seguidas por el mismo hecho. Queda una. */}
 
         {/* «¿Recomendarías a tu inmobiliaria?» (marketplace, 09-10-2026): a
             los 3 meses del contrato y al terminar, hasta que vote. */}
@@ -432,7 +430,6 @@ export default function InquilinoPage() {
             {esArrendatario && (
               <div className="space-y-4">
                 <TuArriendo estado={estadoDelPortal} hoy={hoyLocal()} titulos={titulosDeLosInmuebles} />
-                <PreguntaDeLaRecomendacion />
                 {(hayCasos || activeApplications.length > 0) && (
                   <div
                     className={`grid grid-cols-1 gap-4 ${hayCasos && activeApplications.length > 0 ? 'sm:grid-cols-2' : ''}`}
@@ -466,6 +463,9 @@ export default function InquilinoPage() {
                     )}
                   </div>
                 )}
+                {/* GLOW UP (21-10): lo que tiene abierto (casos, postulaciones) va antes que la pregunta de la
+                    recomendación, que no es su trabajo; sigue debajo de «Tu arriendo» (Nico, 17-10). */}
+                <PreguntaDeLaRecomendacion />
               </div>
             )}
 

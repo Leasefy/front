@@ -5,14 +5,15 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AnimatedNumber, Banner, CrossFade, Presence, StaggerItem } from '@leasefy/cadence';
+import { AnimatedNumber, Banner, Cifra, CrossFade, FranjaDeCifras, Presence, StaggerItem } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 // I1 (auditoría 13-09): el toast sale del design system, no de `sonner` pelado.
 // Importarlo directo del paquete se salta el `<Toaster>` configurado de la casa
 // (posición, duración, estilos) y produce un aviso que no se parece a los demás
 // del producto — o que no se ve, si el proveedor montado es el del DS.
 import { toast } from '@/components/ui/toast';
-import { Check, Clock, WarningCircle, CreditCard, CurrencyCircleDollar, Calendar, Buildings, ArrowUpRight, CaretRight, Receipt, Prohibit, XCircle, Download } from '@phosphor-icons/react';
+import { Check, Clock, CreditCard, CurrencyCircleDollar, Buildings, ArrowUpRight, CaretRight, Receipt, Prohibit, XCircle, Download } from '@phosphor-icons/react';
 
 import { useLeases, useMyPaymentRequests, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
@@ -435,15 +436,22 @@ function PagosPageContent() {
     <div className="min-h-screen bg-bg">
       <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
-        {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-3xl font-medium text-fg tracking-tight">
-            {t('payments.title')}
-          </h1>
-          <p className="mt-1 text-fg-muted">
-            {t('payments.subtitle')}
-          </p>
-        </header>
+        {/* GLOW UP (21-10): el encabezado de todas las pantallas, con el trabajo de esta: pagar y ver lo pagado. */}
+        <EncabezadoDePantalla
+          className="mb-6"
+          seccion={locale === 'es' ? 'Tu arriendo' : 'Your rental'}
+          titulo={t('payments.title')}
+          descripcion={
+            locale === 'es'
+              ? 'Cuánto debes y cuándo vence, cómo pagarlo y lo que ya pagaste.'
+              : 'What you owe and when it is due, how to pay it and what you have already paid.'
+          }
+          acciones={
+            <Button asChild variant="outline" size="sm" hideArrow className="max-lg:flex-1">
+              <Link href="/inquilino/estado-de-cuenta">{locale === 'es' ? 'Ver mi estado de cuenta' : 'View my statement'}</Link>
+            </Button>
+          }
+        />
 
         {/* N-21 (QA-PAGOS-95): con contrato y sin arriendo del portal, la deuda se
             ve igual, pero el pago en línea todavía no: se dice y se ofrece cómo pagar. */}
@@ -474,74 +482,49 @@ function PagosPageContent() {
               <Spinner size="md" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Próxima cuota */}
-              <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
-                <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-                  <CreditCard className="w-5 h-5 text-primary" />
-                </div>
-                <p className="text-sm text-primary mb-1">{locale === 'es' ? 'Próxima cuota' : 'Next installment'}</p>
-                <p className="text-3xl font-bold font-mono text-fg tracking-tight">
-                  {resumen.proxima ? (
-                    <AnimatedNumber
-                      value={resumen.proxima.valor}
-                      from={0}
-                      format={plataQueLlega(resumen.proxima.valor, formatCurrencyI18n)}
-                    />
-                  ) : '—'}
-                </p>
-                <p className="text-sm text-fg-muted mt-2">
-                  {resumen.proxima
+            /* GLOW UP (21-10): las tres cifras en la franja común (antes, tres tarjetas teñidas con su ícono en
+               caja); la próxima cuota primero, lo vencido con su punto. */
+            <FranjaDeCifras fila="lg" data-testid="cifras-de-pagos">
+              <Cifra
+                etiqueta={locale === 'es' ? 'Próxima cuota' : 'Next installment'}
+                valor={resumen.proxima ? resumen.proxima.valor : '—'}
+                format={resumen.proxima ? plataQueLlega(resumen.proxima.valor, formatCurrencyI18n) : undefined}
+                tono="voltaje"
+                detalle={
+                  resumen.proxima
                     ? resumen.proxima.diasQueFaltan === 0
                       ? t('dashboard.dueToday')
                       : `${locale === 'es' ? 'Vence el' : 'Due'} ${fechaLegible(resumen.proxima.fecha)}`
                     : locale === 'es'
                       ? 'No quedan cuotas por vencer'
-                      : 'No upcoming installments'}
-                </p>
-              </div>
-
-              {/* Vencido */}
-              <div className={cn('rounded-xl p-6', resumen.vencidoCop > 0 ? 'bg-danger-soft border border-danger/30' : 'bg-surface-muted')}>
-                <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-                  <WarningCircle className={cn('w-5 h-5', resumen.vencidoCop > 0 ? 'text-danger' : 'text-success')} />
-                </div>
-                <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Vencido' : 'Overdue'}</p>
-                <p className="text-3xl font-bold font-mono text-fg tracking-tight">
-                  <AnimatedNumber
-                    value={resumen.vencidoCop}
-                    from={0}
-                    format={plataQueLlega(resumen.vencidoCop, formatCurrencyI18n)}
-                  />
-                </p>
-                <p className="text-sm text-fg-muted mt-2">
-                  {resumen.cuotasVencidas === 0
-                    ? (locale === 'es' ? 'Estás al día' : 'You are up to date')
+                      : 'No upcoming installments'
+                }
+                data-testid="cifra-proxima-cuota"
+              />
+              <Cifra
+                etiqueta={locale === 'es' ? 'Vencido' : 'Overdue'}
+                valor={resumen.vencidoCop}
+                format={plataQueLlega(resumen.vencidoCop, formatCurrencyI18n)}
+                tono={resumen.vencidoCop > 0 ? 'peligro' : 'exito'}
+                detalle={
+                  resumen.cuotasVencidas === 0
+                    ? locale === 'es'
+                      ? 'Estás al día'
+                      : 'You are up to date'
                     : locale === 'es'
                       ? `${resumen.cuotasVencidas} ${resumen.cuotasVencidas === 1 ? 'cuota vencida' : 'cuotas vencidas'}`
-                      : `${resumen.cuotasVencidas} overdue`}
-                </p>
-              </div>
-
-              {/* Resta por pagar */}
-              <div className="rounded-xl bg-surface-muted p-6">
-                <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-                  <Calendar className="w-5 h-5 text-fg-muted" />
-                </div>
-                <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Resta por pagar' : 'Remaining'}</p>
-                <p className="text-3xl font-bold font-mono text-fg tracking-tight">
-                  <AnimatedNumber
-                    value={resumen.restaPorPagar}
-                    from={0}
-                    format={plataQueLlega(resumen.restaPorPagar, formatCurrencyI18n)}
-                  />
-                </p>
-                <Link href="/inquilino/estado-de-cuenta" className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline">
-                  {locale === 'es' ? 'Ver mi estado de cuenta' : 'View my statement'}
-                  <CaretRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </div>
+                      : `${resumen.cuotasVencidas} overdue`
+                }
+                data-testid="cifra-vencido"
+              />
+              <Cifra
+                etiqueta={locale === 'es' ? 'Resta por pagar' : 'Remaining'}
+                valor={resumen.restaPorPagar}
+                format={plataQueLlega(resumen.restaPorPagar, formatCurrencyI18n)}
+                detalle={locale === 'es' ? 'Hasta el fin del contrato' : 'Until the end of the contract'}
+                data-testid="cifra-resta-por-pagar"
+              />
+            </FranjaDeCifras>
           )}
         </CrossFade>
 

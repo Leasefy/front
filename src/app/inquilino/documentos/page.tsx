@@ -13,6 +13,7 @@ import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -358,15 +359,17 @@ export default function DocumentosPage() {
   return (
     <div className="min-h-screen bg-bg">
       <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
-            {t('documents.title')}
-          </h1>
-          <p className="mt-1 text-fg-muted dark:text-fg-subtle">
-            {t('documents.subtitle')}
-          </p>
-        </header>
+        {/* GLOW UP (21-10): el encabezado de todas las pantallas, con lo que de verdad hay aquí. */}
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Tu arriendo' : 'Your rental'}
+          titulo={t('documents.title')}
+          descripcion={
+            locale === 'es'
+              ? 'Tu contrato firmado, el recibo de cada pago, tus certificados y lo que subiste al postularte.'
+              : 'Your signed contract, the receipt for each payment, your certificates and what you uploaded when applying.'
+          }
+        />
 
         {/* Documentos del arriendo (contrato firmado + recibos) */}
         <section className="mb-8">
@@ -677,7 +680,7 @@ export default function DocumentosPage() {
           {documents.length > 0 && (
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-fg">
-                {t('nav.documents')}
+                {locale === 'es' ? 'Documentos de tus postulaciones' : 'Your application documents'}
               </h2>
               <span className="text-sm text-fg-muted">
                 <AnimatedNumber value={filteredDocuments.length} /> {locale === 'es'
@@ -687,10 +690,19 @@ export default function DocumentosPage() {
             </div>
           )}
 
-          {documents.length === 0 ? (
+          {documents.length === 0 && hasLeaseDocs ? (
+            /* GLOW UP (21-10): con los documentos del arriendo arriba, un «No hay documentos» grande debajo
+               contradecía la pantalla. Lo de las postulaciones queda en una línea callada. */
+            <p className="text-sm text-fg-muted" data-testid="sin-documentos-de-postulacion">
+              {locale === 'es'
+                ? 'Si te postulas a otro inmueble, los documentos que subas también aparecen aquí.'
+                : 'If you apply to another property, the documents you upload also appear here.'}
+            </p>
+          ) : documents.length === 0 ? (
             /* "aplicaciones" está muerto (docs/VOCABULARIO.md) y además mandaba
                al historial. Lo siguiente que haría es postularse. */
             <EmptyState
+              ilustracion="casa"
               icon={FolderOpen}
               title={locale === 'es' ? 'No hay documentos' : 'No documents'}
               description={locale === 'es'

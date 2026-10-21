@@ -3,9 +3,11 @@
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { CrossFade } from '@leasefy/cadence';
+import { Cifra, CrossFade, FranjaDeCifras } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock, WarningCircle } from '@phosphor-icons/react';
+import { MapPin, Calendar, House, ArrowUpRight, CheckCircle, Clock } from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
 
 import { toast } from 'sonner';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -162,32 +164,31 @@ export default function ArriendoPage() {
     ? {
         label: locale === 'es' ? estadoGeneral.etiqueta : estadoEn(estadoGeneral.etiqueta),
         detail: estadoGeneral.detalle,
-        Icon: estadoGeneral.tono === 'ok' ? CheckCircle : estadoGeneral.tono === 'peligro' ? WarningCircle : Clock,
-        iconColor:
-          estadoGeneral.tono === 'ok'
-            ? 'text-success'
-            : estadoGeneral.tono === 'peligro'
-              ? 'text-danger'
-              : estadoGeneral.tono === 'espera'
-                ? 'text-warning'
-                : 'text-fg-subtle',
       }
     : null;
-  const OverallStatusIcon = overallStatus?.Icon ?? Clock;
 
   return (
     <div className="min-h-screen bg-bg">
       <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
-        {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-3xl font-medium text-fg tracking-tight">
-            {t('rental.title')}
-          </h1>
-          <p className="mt-1 text-fg-muted">
-            {locale === 'es' ? 'Gestiona tus contratos de arriendo activos' : 'Manage your active rental contracts'}
-          </p>
-        </header>
+        {/* GLOW UP (21-10): el encabezado de todas las pantallas; la acción que más se hace desde aquí es pagar. */}
+        <EncabezadoDePantalla
+          className="mb-6"
+          seccion={locale === 'es' ? 'Tu arriendo' : 'Your rental'}
+          titulo={t('rental.title')}
+          descripcion={
+            locale === 'es'
+              ? 'Tu contrato, lo que pagas cada mes y cuánto le queda.'
+              : 'Your contract, what you pay each month and how long it has left.'
+          }
+          accionPrincipal={
+            activeLeases.length > 0 ? (
+              <Button asChild size="sm" hideArrow className="max-lg:flex-1">
+                <Link href="/inquilino/pagos">{locale === 'es' ? 'Pagar' : 'Pay'}</Link>
+              </Button>
+            ) : undefined
+          }
+        />
 
         {/*
           Los KPI solo cuando hay algo que resumir.
@@ -196,52 +197,36 @@ export default function ArriendoPage() {
           Un resumen de nada no informa, y encima ocupa el lugar donde debería
           estar lo único útil de esta pantalla: qué hacer para tener un arriendo.
         */}
+        {/* GLOW UP (21-10): las tres cifras en la franja común (antes, tres tarjetas teñidas con su ícono en
+            caja). El estado va primero: es lo que se viene a mirar. Status refleja las cuotas, no una constante. */}
         {activeLeases.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          {/* Active Leases */}
-          <div className="rounded-xl bg-surface-muted p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <House className="w-5 h-5 text-fg-subtle" />
-            </div>
-            <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Arriendos activos' : 'Active rentals'}</p>
-            <p className="text-3xl font-bold text-fg tracking-tight">
-              {activeLeases.length}
-            </p>
-            <p className="text-sm text-fg-muted mt-2">
-              {locale === 'es' ? 'Contratos vigentes' : 'Current contracts'}
-            </p>
-          </div>
-
-          {/* Total Monthly */}
-          <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <CreditCard className="w-5 h-5 text-primary" />
-            </div>
-            <p className="text-sm text-primary mb-1">{locale === 'es' ? 'Total mensual' : 'Monthly total'}</p>
-            <p className="text-3xl font-bold text-fg tracking-tight">
-              {formatCurrency(totalMonthlyRent)}
-            </p>
-            <p className="text-sm text-fg-muted mt-2">
-              {locale === 'es' ? 'Arriendo + administración' : 'Rent + admin fee'}
-            </p>
-          </div>
-
-          {/* Status — refleja el currentPeriodStatus real, no una constante */}
-          <div className="rounded-xl bg-surface-muted p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <OverallStatusIcon className={cn('w-5 h-5', overallStatus?.iconColor ?? 'text-fg-subtle')} />
-            </div>
-            <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Estado general' : 'Overall status'}</p>
-            <p className="text-3xl font-bold text-fg tracking-tight">
-              {overallStatus ? overallStatus.label : '—'}
-            </p>
-            <p className="text-sm text-fg-muted mt-2">
-              {overallStatus
-                ? overallStatus.detail
-                : (locale === 'es' ? 'Sin información de pago' : 'No payment info')}
-            </p>
-          </div>
-        </div>
+          <FranjaDeCifras className="mb-8" data-testid="cifras-del-arriendo">
+            <Cifra
+              etiqueta={locale === 'es' ? 'Estado' : 'Status'}
+              valor={overallStatus ? overallStatus.label : '—'}
+              tono={
+                estadoGeneral?.tono === 'ok'
+                  ? 'exito'
+                  : estadoGeneral?.tono === 'peligro'
+                    ? 'peligro'
+                    : estadoGeneral?.tono === 'espera'
+                      ? 'aviso'
+                      : undefined
+              }
+              detalle={overallStatus ? overallStatus.detail : locale === 'es' ? 'Sin información de pago' : 'No payment info'}
+              data-testid="cifra-estado-del-arriendo"
+            />
+            <Cifra
+              etiqueta={locale === 'es' ? 'Total mensual' : 'Monthly total'}
+              valor={formatCurrency(totalMonthlyRent)}
+              detalle={locale === 'es' ? 'Arriendo + administración' : 'Rent + admin fee'}
+            />
+            <Cifra
+              etiqueta={locale === 'es' ? 'Arriendos activos' : 'Active rentals'}
+              valor={activeLeases.length}
+              detalle={locale === 'es' ? 'Contratos vigentes' : 'Current contracts'}
+            />
+          </FranjaDeCifras>
         )}
 
         {/* Leases List */}

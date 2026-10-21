@@ -44,7 +44,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
-import { IconButton, Presence, SearchInput } from '@leasefy/cadence';
+import { Cifra, FranjaDeCifras, IconButton, Presence, SearchInput } from '@leasefy/cadence';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -520,26 +520,39 @@ function DocumentosContent() {
                 ))}
               </SelectContent>
             </Select>
-            <Select
-              value={filtros.estado}
-              onValueChange={(v) =>
-                setFiltros((f) => ({ ...f, estado: v as FiltrosDeDocumentos['estado'] }))
-              }
-            >
-              <SelectTrigger className="w-full whitespace-nowrap sm:w-44" data-testid="documentos-filtro-estado">
-                <SelectValue placeholder={t(k('estado'))} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">{t(k('todosLosEstados'))}</SelectItem>
-                {ESTADOS.map((e) => (
-                  <SelectItem key={e} value={e}>
-                    {ESTADO_LABEL[e]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </Presence>
         </div>
+
+        {/* GLOW UP 21-10 · el trabajo es generar el documento, mandarlo a firmar y encontrarlo: los
+            estados filtran a un toque —«Por firmar» es lo que espera a alguien—; antes era un
+            desplegable. */}
+        {pestana === 'documentos' && documentos.length > 0 ? (
+          <FranjaDeCifras
+            aria-label="Filtrar por estado"
+            data-testid="documentos-por-estado"
+            className="rounded-none border-0 border-b border-border"
+          >
+            <Cifra
+              etiqueta="Todos"
+              valor={documentos.length}
+              activa={filtros.estado === 'todos'}
+              onClick={() => setFiltros((f) => ({ ...f, estado: 'todos' }))}
+            />
+            {ESTADOS.map((e) => {
+              const n = documentos.filter((d) => d.status === e).length;
+              return (
+                <Cifra
+                  key={e}
+                  etiqueta={ESTADO_LABEL[e]}
+                  valor={n}
+                  tono={n > 0 ? (e === 'PENDING_SIGNATURE' ? 'aviso' : e === 'DOC_EXPIRED' ? 'peligro' : undefined) : undefined}
+                  activa={filtros.estado === e}
+                  onClick={() => setFiltros((f) => ({ ...f, estado: f.estado === e ? 'todos' : e }))}
+                />
+              );
+            })}
+          </FranjaDeCifras>
+        ) : null}
 
         <EstadoDeDatos
           cargando={pestana === 'actas' ? cargandoActas : cargando}

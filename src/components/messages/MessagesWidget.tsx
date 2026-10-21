@@ -245,6 +245,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   // keying on it made every null-application thread match the first one).
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [soloSinLeer, setSoloSinLeer] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
@@ -379,11 +380,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     [refetchConversations],
   );
 
+  // GLOW UP 21-10 · el trabajo de la bandeja es RESPONDER a quien espera: «Sin leer» a un toque.
+  const sinLeer = conversations.filter((c) => c.unreadCount > 0).length;
   const filteredConversations = conversations.filter(
     (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.tema ?? '').toLowerCase().includes(searchQuery.toLowerCase()),
+      (!soloSinLeer || c.unreadCount > 0) &&
+      (c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.tema ?? '').toLowerCase().includes(searchQuery.toLowerCase())),
   );
 
   useEffect(() => {
@@ -745,6 +749,33 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                   onClick={() => setNuevoMensajeAbierto(true)}
                 />
               </div>
+              {/* Lo que espera respuesta, a un toque (sólo si hay algo sin leer o el filtro está puesto). */}
+              {sinLeer > 0 || soloSinLeer ? (
+                <div className="flex items-center gap-1.5 border-b border-border bg-card px-3 py-2">
+                  {[
+                    { activo: !soloSinLeer, texto: locale === 'es' ? 'Todas' : 'All', onClick: () => setSoloSinLeer(false) },
+                    {
+                      activo: soloSinLeer,
+                      texto: locale === 'es' ? `Sin leer · ${sinLeer}` : `Unread · ${sinLeer}`,
+                      onClick: () => setSoloSinLeer(true),
+                    },
+                  ].map((o) => (
+                    <button
+                      key={o.texto}
+                      type="button"
+                      aria-pressed={o.activo}
+                      onClick={o.onClick}
+                      data-testid={o.activo && soloSinLeer ? 'filtro-sin-leer-activo' : undefined}
+                      className={cn(
+                        'rounded-full px-3 py-1 text-[13px] transition-colors',
+                        o.activo ? 'bg-surface-muted font-medium text-fg' : 'text-fg-muted hover:bg-surface-muted/60',
+                      )}
+                    >
+                      {o.texto}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
               {/* Conversations — cargando → lista (o el fallo, o el vacío) se
                   cruzan; dentro de la lista, buscar o una conversación nueva

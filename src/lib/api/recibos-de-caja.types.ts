@@ -568,3 +568,20 @@ export interface MediosDelRecibo {
   medios: MedioDelRecibo[];
   cuentas: CuentaDelRecibo[];
 }
+
+/**
+ * Un recibo con el resumen de su cobro, como lo manda
+ * `GET /inmobiliaria/recibos-de-caja/:id` (centro de procesos, 21-10-2026).
+ */
+export interface ReciboConSuCobro extends ReciboDeCaja {
+  cobro: {
+    id: string;
+    month: string;
+    propertyTitle: string | null;
+    tenantName: string | null;
+    totalWithFees: number;
+    paidAmount: number;
+    pendingAmount: number;
+    status: string;
+  } | null;
+}

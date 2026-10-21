@@ -11,6 +11,18 @@ import {
   POLITICA_V5,
   SUBTITULO_DE_WHATSAPP,
 } from './politica-v5'
+import {
+  CONTROL_DE_SALIDA,
+  GRABACIONES_EN_LA_CONSERVACION,
+  GRABACIONES_EN_LA_CONSERVACION_VIEJO,
+  GRABACIONES_EN_LAS_LLAMADAS,
+  GRABACIONES_EN_LAS_LLAMADAS_VIEJO,
+  PARRAFO_DE_LOS_AGENTES,
+  POLITICA_V6,
+  QUIEN_VE_Y_QUIEN_DESCARGA,
+  REGLAS_DE_SALIDA,
+  SUBTITULO_DE_LOS_AGENTES,
+} from './politica-v6'
 
 /**
  * La versión que se guarda como prueba tiene que ser la que está publicada.
@@ -114,12 +126,9 @@ describe('WhatsApp a quien firmó contrato (v5.0 y v2.2)', () => {
   const textoDe = (secciones: typeof POLITICA_V5, n: number) =>
     JSON.stringify(secciones.find((s) => s.n === n)?.bloques ?? [])
 
-  it('la publicada es la 5.0 desde el 15-10, y /privacidad la muestra', () => {
-    expect(VERSION_POLITICA_DE_TRATAMIENTO).toBe('politica-tratamiento-v5.0')
-    expect(VIGENCIA_POLITICA_DE_TRATAMIENTO).toBe('2026-10-15')
-    const pagina = leer('src/app/privacidad/page.tsx')
-    expect(pagina).toContain('POLITICA_V5')
-    expect(pagina).not.toContain('POLITICA_V4')
+  it('la v5.0 sigue escrita aparte (desde el 20-10 la publicada es la 6.0)', () => {
+    expect(POLITICA_V5.length).toBe(19)
+    expect(leer('src/app/privacidad/page.tsx')).not.toContain('POLITICA_V5')
   })
 
   it('§4 trae el subtítulo y el párrafo de WhatsApp después de «Operar el arrendamiento» (inquilinos y propietarios)', () => {
@@ -150,5 +159,69 @@ describe('WhatsApp a quien firmó contrato (v5.0 y v2.2)', () => {
     const terminos = leer('src/components/legal/TerminosContenido.tsx').replace(/\s+/g, ' ')
     expect(terminos).toContain('Contar con la autorización de sus inquilinos y propietarios con contrato firmado para escribirles por WhatsApp')
     expect(terminos).toContain('lo apaga en la ficha de quien le pida no recibir más mensajes por WhatsApp')
+  })
+})
+
+/**
+ * 🔴 La política de datos hermética (Nico, 20-10-2026): política v6.0. La v5.0
+ * queda intacta; los términos siguen en la v2.2.
+ */
+describe('la política de datos hermética (v6.0)', () => {
+  const seccion = (secciones: typeof POLITICA_V6, n: number) => secciones.find((s) => s.n === n)!.bloques
+  const texto = (secciones: typeof POLITICA_V6, n: number) => JSON.stringify(seccion(secciones, n))
+
+  it('la publicada es la 6.0 desde el 20-10, y /privacidad la muestra', () => {
+    expect(VERSION_POLITICA_DE_TRATAMIENTO).toBe('politica-tratamiento-v6.0')
+    expect(VIGENCIA_POLITICA_DE_TRATAMIENTO).toBe('2026-10-20')
+    expect(VERSION_TERMINOS).toBe('terminos-v2.2')
+    const pagina = leer('src/app/privacidad/page.tsx')
+    expect(pagina).toContain('POLITICA_V6')
+    expect(pagina).not.toContain('POLITICA_V5')
+  })
+
+  it('§6 cierra con los agentes dentro de la plataforma', () => {
+    const s6 = seccion(POLITICA_V6, 6)
+    expect(s6.slice(-2)).toEqual([
+      { tipo: 'sub', texto: SUBTITULO_DE_LOS_AGENTES },
+      { tipo: 'p', texto: PARRAFO_DE_LOS_AGENTES },
+    ])
+  })
+
+  it('§7 y §13: las grabaciones y transcripciones se guardan 2 años o mientras siga el caso jurídico (ya no 12 meses)', () => {
+    expect(texto(POLITICA_V6, 7)).toContain(JSON.stringify(GRABACIONES_EN_LAS_LLAMADAS).slice(1, -1))
+    expect(texto(POLITICA_V6, 13)).toContain(JSON.stringify(GRABACIONES_EN_LA_CONSERVACION).slice(1, -1))
+    expect(texto(POLITICA_V6, 7) + texto(POLITICA_V6, 13)).not.toMatch(/12 meses, o hasta/)
+    // La v5.0 publicada decía 12 meses: queda así, es lo que aceptó quien aceptó.
+    expect(texto(POLITICA_V5, 7)).toContain(JSON.stringify(GRABACIONES_EN_LAS_LLAMADAS_VIEJO).slice(1, -1))
+  })
+
+  it('§11 trae el control antes de que algo salga, después del aviso', () => {
+    const s11 = seccion(POLITICA_V6, 11)
+    const i = s11.findIndex((b) => b.tipo === 'aviso')
+    expect(s11[i + 1]).toEqual({ tipo: 'p', texto: CONTROL_DE_SALIDA })
+    expect(s11[i + 2]).toEqual({ tipo: 'lista', items: [...REGLAS_DE_SALIDA] })
+  })
+
+  it('§17 dice quién ve y quién descarga, y §5 dice «versión 6.0»', () => {
+    expect(texto(POLITICA_V6, 17)).toContain(JSON.stringify(QUIEN_VE_Y_QUIEN_DESCARGA).slice(1, -1))
+    expect(texto(POLITICA_V6, 5)).toContain('la versión 6.0')
+    expect(texto(POLITICA_V5, 5)).toContain('la versión 5.0')
+  })
+
+  it('fuera de eso, la 6.0 es la 5.0 sin tocar', () => {
+    const sinLoNuevo = JSON.stringify(POLITICA_V6)
+      .replace(',' + JSON.stringify({ tipo: 'sub', texto: SUBTITULO_DE_LOS_AGENTES }), '')
+      .replace(',' + JSON.stringify({ tipo: 'p', texto: PARRAFO_DE_LOS_AGENTES }), '')
+      .replace(',' + JSON.stringify({ tipo: 'p', texto: CONTROL_DE_SALIDA }), '')
+      .replace(',' + JSON.stringify({ tipo: 'lista', items: [...REGLAS_DE_SALIDA] }), '')
+      .replace(',' + JSON.stringify({ tipo: 'p', texto: QUIEN_VE_Y_QUIEN_DESCARGA }), '')
+      .replace(JSON.stringify(GRABACIONES_EN_LAS_LLAMADAS), JSON.stringify(GRABACIONES_EN_LAS_LLAMADAS_VIEJO))
+      .replace(JSON.stringify(GRABACIONES_EN_LA_CONSERVACION), JSON.stringify(GRABACIONES_EN_LA_CONSERVACION_VIEJO))
+      .replace('la versión 6.0', 'la versión 5.0')
+    expect(sinLoNuevo).toBe(JSON.stringify(POLITICA_V5))
+  })
+
+  it('no promete lo que todavía no está firmado con los proveedores de IA', () => {
+    expect(JSON.stringify(POLITICA_V6)).not.toMatch(/no (los )?usan para (sus )?fines propios|no entrenan/i)
   })
 })

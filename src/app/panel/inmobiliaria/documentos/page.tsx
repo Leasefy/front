@@ -89,6 +89,7 @@ import {
 import { GenerarDocumentoDialog } from '@/components/documentos/GenerarDocumentoDialog';
 import { EditorDePlantilla } from '@/components/documentos/EditorDePlantilla';
 import { useDocumentosLegales } from '@/components/documentos/useDocumentosLegales';
+import { elAuxiliarNoFirma } from '@/lib/auth/lo-que-no-hacen-los-auxiliares';
 import {
   CATEGORIA_LABEL,
   ESTADO_BADGE,
@@ -207,7 +208,7 @@ function DocumentosContent() {
    * pide `portafolio:create` (`POST /inmobiliaria/actas`). Un CONTADOR no tiene
    * ninguno de los dos; un VIEWER, tampoco.
    */
-  const { canAccess } = usePermissions();
+  const { canAccess, agencyRole: agencyRoleDeLaPagina } = usePermissions();
   const puedeCrearDocumentos = canAccess('documentos', 'create');
   const puedeCrearActas = canAccess('portafolio', 'create');
   /* Editar y borrar plantillas son permisos PROPIOS en el back
@@ -1080,7 +1081,9 @@ function DocumentosContent() {
                 consiga un testigo y descubra después que no hacía falta.
               */}
               {actaVisible.status !== 'completed' &&
-                sePuedeCerrarSinFirma(actaVisible) && (
+                sePuedeCerrarSinFirma(actaVisible) &&
+                // Roles auxiliares (20-10-2026): el administrativo arma el acta; cerrarla no.
+                !elAuxiliarNoFirma(agencyRoleDeLaPagina) && (
                   <div className="mt-4 border-t border-border pt-4">
                     <Button
                       variant="secondary"

@@ -14,15 +14,15 @@ import { useSearchParams } from 'next/navigation';
 import { ArrowLeft } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Egresos, parteDeEgresos } from '@/components/contabilidad/egresos/Egresos';
+import { ROLES_DE_LA_CONTABILIDAD } from '@/lib/auth/roles-de-la-contabilidad';
 
 export default function EgresosPage() {
   const parte = parteDeEgresos(useSearchParams().get('parte'));
 
   return (
-    <PageGuard module="reportes" roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]} seccion="Contabilidad" action="view">
+    <PageGuard module="reportes" roles={ROLES_DE_LA_CONTABILIDAD} seccion="Contabilidad" action="view">
       <div className="space-y-6 p-6 lg:p-8">
         <header className="space-y-1.5">
           <Link

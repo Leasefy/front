@@ -39,6 +39,11 @@ export type MemberRole =
   | 'COORDINADOR'
   | 'AUXILIAR_CARTERA'
   | 'ABOGADO_EXTERNO'
+  // Roles auxiliares (20-10-2026).
+  | 'AUXILIAR_COMERCIAL'
+  | 'AUXILIAR_ADMINISTRATIVO'
+  | 'AUXILIAR_CONTABLE'
+  | 'AUXILIAR_MANTENIMIENTO'
 
 export const MEMBER_ROLE_OPTIONS: { value: MemberRole; label: string }[] = [
   { value: 'AGENTE', label: 'Asesor comercial' },
@@ -48,6 +53,10 @@ export const MEMBER_ROLE_OPTIONS: { value: MemberRole; label: string }[] = [
   { value: 'COORDINADOR', label: 'Coordinador' },
   { value: 'AUXILIAR_CARTERA', label: 'Auxiliar de cartera' },
   { value: 'ABOGADO_EXTERNO', label: 'Abogado externo' },
+  { value: 'AUXILIAR_COMERCIAL', label: 'Auxiliar comercial' },
+  { value: 'AUXILIAR_ADMINISTRATIVO', label: 'Auxiliar administrativo' },
+  { value: 'AUXILIAR_CONTABLE', label: 'Auxiliar contable' },
+  { value: 'AUXILIAR_MANTENIMIENTO', label: 'Auxiliar de mantenimiento' },
 ]
 
 const memberRowSchema = z.object({
@@ -60,7 +69,19 @@ const memberRowSchema = z.object({
    * derivarlo del correo sería inventarle un nombre a alguien.
    */
   nombre: z.string().trim().max(120, 'El nombre no puede pasar de 120 caracteres.').optional(),
-  role: z.enum(['AGENTE', 'CONTADOR', 'ADMIN', 'VIEWER', 'COORDINADOR', 'AUXILIAR_CARTERA', 'ABOGADO_EXTERNO'], {
+  role: z.enum([
+    'AGENTE',
+    'CONTADOR',
+    'ADMIN',
+    'VIEWER',
+    'COORDINADOR',
+    'AUXILIAR_CARTERA',
+    'ABOGADO_EXTERNO',
+    'AUXILIAR_COMERCIAL',
+    'AUXILIAR_ADMINISTRATIVO',
+    'AUXILIAR_CONTABLE',
+    'AUXILIAR_MANTENIMIENTO',
+  ], {
     errorMap: () => ({ message: 'Selecciona un rol.' }),
   }),
 })
@@ -106,7 +127,12 @@ export const MEMBERS_STEP_DEFAULT_VALUES: MembersStepFormValues = {
 
 export function toMembersRequest(values: MembersStepFormValues): OnboardingSessionMembersRequest {
   return {
-    members: values.members.map((member) => ({ email: member.email.trim(), role: member.role })),
+    // Los roles auxiliares (20-10-2026) ya los acepta el micro; el tipo generado
+    // se pone al día con `pnpm api:gen` contra un micro con esa versión.
+    members: values.members.map((member) => ({
+      email: member.email.trim(),
+      role: member.role as OnboardingSessionMembersRequest['members'][number]['role'],
+    })),
   }
 }
 

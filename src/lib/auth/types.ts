@@ -167,6 +167,12 @@ export interface Agency {
    * back anterior = como siempre.
    */
   modoComercial?: boolean
+  /**
+   * Llegó por el registro rápido del marketplace (Nico, 20-10-2026:
+   * «márcalas»); sigue en `true` después de activarla. Ausente en un back
+   * anterior = no se sabe (se trata como `false`).
+   */
+  vinoDelMarketplace?: boolean
 }
 
 export type AgencySize = 'small' | 'medium' | 'large' | 'enterprise'

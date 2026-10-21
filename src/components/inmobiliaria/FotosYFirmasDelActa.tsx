@@ -49,6 +49,7 @@ import { SignaturePad } from '@/components/contract/SignaturePad';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { elAuxiliarNoFirma } from '@/lib/auth/lo-que-no-hacen-los-auxiliares';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cargoAparteDelCierre, elCargoEntro } from '@/lib/actas/acta-del-back';
 import {
@@ -408,6 +409,8 @@ function FirmasDelActa({
   puedeEditar: boolean;
   onFirmada: (d: ActaConSusArchivos) => void;
 }) {
+  // Roles auxiliares (20-10-2026): el administrativo arma el acta, pero no firma.
+  const elRol = usePermissionsContextSafe()?.agencyRole ?? null;
   const cerrada = detalle.status === 'ACTA_COMPLETED';
   const { paraFirmar } = detalle;
   const asesor = firmaDe(detalle.firmas, 'ASESOR');
@@ -490,12 +493,12 @@ function FirmasDelActa({
             <p className="text-sm text-fg-muted">El acta se cerró sin esta firma.</p>
           ) : !paraFirmar.fotos.completas ? (
             <p className="text-sm text-fg-muted">{paraFirmar.fotos.motivo ?? 'Sube las fotos por espacio antes de firmar.'}</p>
-          ) : puedeEditar ? (
+          ) : puedeEditar && !elAuxiliarNoFirma(elRol) ? (
             <Button type="button" hideArrow onClick={() => setFirmando(true)} data-testid="firmar-como-asesor">
               Firmar como asesor
             </Button>
           ) : (
-            <p className="text-sm text-fg-muted">Firma alguien del equipo con permiso para editar contratos.</p>
+            <p className="text-sm text-fg-muted">Firma el administrador o el asesor de la inmobiliaria.</p>
           )}
         </div>
 

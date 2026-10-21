@@ -83,6 +83,10 @@ export const NOMBRE_DEL_ROL_EN_LA_INMOBILIARIA: Record<string, string> = {
   COORDINADOR: 'Coordinador',
   AUXILIAR_CARTERA: 'Auxiliar de cartera',
   ABOGADO_EXTERNO: 'Abogado externo',
+  AUXILIAR_COMERCIAL: 'Auxiliar comercial',
+  AUXILIAR_ADMINISTRATIVO: 'Auxiliar administrativo',
+  AUXILIAR_CONTABLE: 'Auxiliar contable',
+  AUXILIAR_MANTENIMIENTO: 'Auxiliar de mantenimiento',
 }
 
 /** «Inquilino» o «Propietario»: la cuenta personal. */

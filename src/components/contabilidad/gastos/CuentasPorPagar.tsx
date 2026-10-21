@@ -44,7 +44,7 @@ import {
 } from '@/lib/contabilidad/pagar-factura';
 import { Monto } from '../Monto';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
-import { usePuedeEscribir } from '../use-puede-escribir';
+import { usePuedeRegistrar } from '../use-puede-registrar';
 import { PagarFactura, numeroDeLaFactura } from './PagarFactura';
 
 type Vista = 'por-pagar' | 'vencidas' | 'pagadas';
@@ -86,7 +86,8 @@ export function CuentasPorPagar({
   /** `false` donde la pantalla ya tiene su propio «Registrar» (Facturación → Compras). */
   conRegistrar?: boolean;
 } = {}) {
-  const escritura = usePuedeEscribir();
+  // «Pagar» crea el egreso: el auxiliar contable también lo registra.
+  const escritura = usePuedeRegistrar();
   const [vista, setVista] = useState<Vista>('por-pagar');
   const [pagina, setPagina] = useState<PaginaDeFacturas | null>(null);
   const [cargando, setCargando] = useState(true);

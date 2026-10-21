@@ -53,6 +53,10 @@ const ROL: Record<string, string> = {
   COORDINADOR: 'coordinador',
   AUXILIAR_CARTERA: 'auxiliar de cartera',
   ABOGADO_EXTERNO: 'abogado externo',
+  AUXILIAR_COMERCIAL: 'auxiliar comercial',
+  AUXILIAR_ADMINISTRATIVO: 'auxiliar administrativo',
+  AUXILIAR_CONTABLE: 'auxiliar contable',
+  AUXILIAR_MANTENIMIENTO: 'auxiliar de mantenimiento',
 }
 
 /**

@@ -22,6 +22,16 @@ export const AGENCY_ROLES = {
   COORDINADOR: 'COORDINADOR',
   AUXILIAR_CARTERA: 'AUXILIAR_CARTERA',
   ABOGADO_EXTERNO: 'ABOGADO_EXTERNO',
+  /**
+   * 🔴 Roles auxiliares (Nico, 20-10-2026): «tienen menos permisos y son de
+   * menor rango». Lo que su matriz no alcanza a decir (firmar, aprobar costos,
+   * cerrar la contabilidad) lo cierra el back y lo esconde
+   * `lo-que-no-hacen-los-auxiliares.ts`. Migración `20261020210000`.
+   */
+  AUXILIAR_COMERCIAL: 'AUXILIAR_COMERCIAL',
+  AUXILIAR_ADMINISTRATIVO: 'AUXILIAR_ADMINISTRATIVO',
+  AUXILIAR_CONTABLE: 'AUXILIAR_CONTABLE',
+  AUXILIAR_MANTENIMIENTO: 'AUXILIAR_MANTENIMIENTO',
 } as const;
 
 export type AgencyRole = typeof AGENCY_ROLES[keyof typeof AGENCY_ROLES];
@@ -59,6 +69,8 @@ export const ROLES_QUE_USAN_LOS_MENSAJES: readonly string[] = [
   AGENCY_ROLES.ADMIN,
   AGENCY_ROLES.AGENTE,
   AGENCY_ROLES.COORDINADOR,
+  // El auxiliar comercial responde a los interesados (20-10-2026).
+  AGENCY_ROLES.AUXILIAR_COMERCIAL,
 ];
 
 export function usaLosMensajes(params: { isAdmin: boolean; agencyRole: string | null }): boolean {
@@ -66,4 +78,4 @@ export function usaLosMensajes(params: { isAdmin: boolean; agencyRole: string | 
 }
 
 export const MOTIVO_SIN_ACCESO_A_MENSAJES =
-  'Los mensajes con inquilinos y propietarios los manejan el administrador, el asesor y el coordinador de la inmobiliaria. Si los necesitas, pídeselos a un administrador.';
+  'Los mensajes con inquilinos y propietarios los manejan el administrador, el asesor, el auxiliar comercial y el coordinador de la inmobiliaria. Si los necesitas, pídeselos a un administrador.';

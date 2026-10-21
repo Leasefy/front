@@ -104,6 +104,7 @@ export function DataTable<T>({
   pie,
   filaMarcada,
   rowClassName,
+  filaTestid,
   className,
   id,
   queSon,
@@ -148,6 +149,8 @@ export function DataTable<T>({
   filaMarcada?: (row: T) => boolean
   /** Clases propias de una fila (p. ej. atenuar lo desactivado). */
   rowClassName?: (row: T) => string | undefined
+  /** `data-testid` de cada fila (tabla y tarjeta), para las pruebas de la pantalla. */
+  filaTestid?: (row: T) => string
   className?: string
   /** Prefijo de la URL cuando hay más de una tabla en la pantalla. */
   id?: string
@@ -350,6 +353,7 @@ export function DataTable<T>({
         onRowClick={onRowClick}
         filaMarcada={filaMarcada}
         rowClassName={rowClassName}
+        filaTestid={filaTestid}
         ariaLabel={ariaLabel}
       />
     )
@@ -365,6 +369,7 @@ export function DataTable<T>({
           {filasVisibles.map((row, ri) => (
             <TableRowAnimada
               key={getKey(row, ri)}
+              data-testid={filaTestid?.(row)}
               selected={filaMarcada?.(row) ?? false}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
               onKeyDown={abrirConTeclado(row)}
@@ -513,6 +518,7 @@ function TarjetasDeLaTabla<T>({
   onRowClick,
   filaMarcada,
   rowClassName,
+  filaTestid,
   ariaLabel,
 }: {
   columns: Column<T>[]
@@ -521,6 +527,7 @@ function TarjetasDeLaTabla<T>({
   onRowClick?: (row: T) => void
   filaMarcada?: (row: T) => boolean
   rowClassName?: (row: T) => string | undefined
+  filaTestid?: (row: T) => string
   ariaLabel?: string
 }) {
   const [principal, ...resto] = columns
@@ -532,6 +539,7 @@ function TarjetasDeLaTabla<T>({
         <StaggerItem
           as="li"
           key={getKey(row, i)}
+          data-testid={filaTestid?.(row)}
           className={cn(
             'px-4 py-3.5',
             filaMarcada?.(row) && 'bg-surface-muted',

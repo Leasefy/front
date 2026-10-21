@@ -7,7 +7,8 @@
  * saber de qué se trata; si la cosa tiene su pantalla, el pie lleva a ella.
  *
  * Una ficha por tipo de recurso, todas con la misma forma: así el contrato,
- * el propietario, el cobro, el inmueble, el giro y el asiento se leen igual.
+ * el propietario, el cobro, el inmueble, el giro, el asiento, la postulación,
+ * la renovación, la PQRS, el recibo y el lote de giros se leen igual.
  * La factura y el inquilino tienen su propio cajón (más completo).
  */
 
@@ -25,6 +26,17 @@ import { formatCurrency, formatDate } from '@/lib/format'
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract'
 import { getDispersionStatusLabel } from '@/lib/types/inmobiliaria'
 import { mesEnTitulo } from '@/lib/utils/mes'
+import { landlordApplicationsApi } from '@/lib/api/applications.service'
+import { pqrsApi } from '@/lib/api/pqrs-agencia.service'
+import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service'
+import { lotesDeDispersionApi } from '@/lib/api/lotes-de-dispersion.service'
+import { renovacionesApi } from '@/lib/api/inmobiliaria.service'
+import { getRenovacionStatusLabel } from '@/lib/types/inmobiliaria'
+import { nombreDelCandidato } from '@/lib/contratos/nombre-del-candidato'
+import { NOMBRE_DEL_ESTADO_DE_LA_POSTULACION } from '@/lib/postulaciones/estado-de-la-postulacion'
+import { ESTADO_LABEL as ESTADO_DE_LA_PQRS, TIPO_LABEL as TIPO_DE_PQRS } from '@/components/inmobiliaria/pqrs/pqrs-reglas'
+import { NOMBRE_DEL_ESTADO as ESTADO_DEL_LOTE } from '@/components/dispersiones/lotes/estado-del-lote'
+import { medioLegible } from '@/components/cobros/extracto-bancario/muchos-a-uno'
 
 interface Dato {
   etiqueta: string
@@ -187,6 +199,92 @@ const FICHAS: Record<string, (id: string) => Promise<Ficha>> = {
         debito: m.debitoCop,
         credito: m.creditoCop,
       })),
+    }
+  },
+
+  // 21-10-2026 (Nico: «sí, después de los roles»): lo que anotan las acciones en
+  // bloque de Postulaciones, Solicitudes y Renovaciones, y el reproceso de asientos.
+  async POSTULACION(id) {
+    const a = await landlordApplicationsApi.getDetail(id)
+    const nombre = nombreDelCandidato(a)
+    return {
+      titulo: nombre === '—' ? 'Postulación' : nombre,
+      descripcion: o(a.property?.title, 'Sin inmueble'),
+      datos: [
+        { etiqueta: 'Estado', valor: NOMBRE_DEL_ESTADO_DE_LA_POSTULACION[a.status] ?? a.status },
+        { etiqueta: 'Se postuló', valor: a.submittedAt ? formatDate(a.submittedAt) : 'Sin fecha' },
+        { etiqueta: 'Canon', valor: a.property?.monthlyRent != null ? formatCurrency(a.property.monthlyRent) : 'Sin canon' },
+        { etiqueta: 'Teléfono', valor: o(a.tenant?.phone) },
+        { etiqueta: 'Correo', valor: o(a.tenant?.email ?? a.tenantEmail), ancho: true },
+      ],
+      enlace: { href: '/panel/inmobiliaria/postulaciones', texto: 'Ir a Postulaciones' },
+    }
+  },
+
+  async RENOVACION(id) {
+    const r = await renovacionesApi.getById(id)
+    const propuesto = r.negotiatedRent ?? r.proposedRent
+    return {
+      titulo: `Renovación de ${o(r.tenantName, 'sin inquilino')}`,
+      descripcion: o(r.propertyAddress || r.propertyTitle, 'Sin inmueble'),
+      datos: [
+        { etiqueta: 'Estado', valor: getRenovacionStatusLabel(r.status) },
+        { etiqueta: 'El contrato vence', valor: r.leaseEndDate ? formatDate(r.leaseEndDate) : 'Sin fecha' },
+        { etiqueta: 'Canon de hoy', valor: formatCurrency(r.currentRent) },
+        { etiqueta: 'Canon propuesto', valor: propuesto != null ? formatCurrency(propuesto) : 'Sin proponer' },
+        { etiqueta: 'Propietario', valor: o(r.propietarioName), ancho: true },
+      ],
+      enlace: { href: '/panel/inmobiliaria/contratos/renovaciones', texto: 'Ir a Renovaciones' },
+    }
+  },
+
+  async PQRS(id) {
+    const p = await pqrsApi.detalle(id)
+    return {
+      titulo: `${p.radicado} · ${TIPO_DE_PQRS[p.tipo] ?? p.tipo}`,
+      descripcion: p.asunto,
+      datos: [
+        { etiqueta: 'Estado', valor: ESTADO_DE_LA_PQRS[p.estado] ?? p.estado },
+        { etiqueta: 'Vence', valor: p.slaVenceAt ? formatDate(p.slaVenceAt) : 'Sin fecha' },
+        { etiqueta: 'Quién la radicó', valor: o(p.solicitanteNombre) },
+        { etiqueta: 'Responsable', valor: o(p.asignadoANombre, 'Sin asignar') },
+        { etiqueta: 'Inmueble', valor: o(p.inmuebleLabel, 'Sin inmueble'), ancho: true },
+        ...(p.descripcion?.trim() ? [{ etiqueta: 'Qué pidió', valor: p.descripcion.trim(), ancho: true }] : []),
+      ],
+      enlace: { href: '/panel/inmobiliaria/solicitudes', texto: 'Ir a Solicitudes' },
+    }
+  },
+
+  async RECIBO(id) {
+    const r = await recibosDeCajaApi.ver(id)
+    return {
+      titulo: `Recibo de caja N.º ${r.numero}`,
+      descripcion: r.cobro ? o(r.cobro.tenantName, 'Sin inquilino') : 'Sin cobro asociado',
+      datos: [
+        { etiqueta: 'Valor', valor: formatCurrency(r.valorCop) },
+        { etiqueta: 'Fecha', valor: r.fecha ? formatDate(r.fecha) : 'Sin fecha' },
+        { etiqueta: 'Medio', valor: medioLegible(r.medio) ?? 'Sin medio' },
+        { etiqueta: 'Estado', valor: r.anuladoAt ? `Anulado el ${formatDate(r.anuladoAt)}` : 'Vigente' },
+        ...(r.cobro ? [{ etiqueta: 'Cobro', valor: mesEnTitulo(r.cobro.month) }] : []),
+        ...(r.referencia?.trim() ? [{ etiqueta: 'Referencia', valor: r.referencia.trim() }] : []),
+        ...(r.cobro?.propertyTitle?.trim() ? [{ etiqueta: 'Inmueble', valor: r.cobro.propertyTitle.trim(), ancho: true }] : []),
+      ],
+      enlace: { href: '/panel/inmobiliaria/pagos/recibos', texto: 'Ir a Recibos' },
+    }
+  },
+
+  async LOTE_DE_DISPERSION(id) {
+    const { lote } = await lotesDeDispersionApi.ver(id)
+    return {
+      titulo: `Lote de giros de ${mesEnTitulo(lote.month).toLowerCase()}`,
+      descripcion: `${lote.cantidad} ${lote.cantidad === 1 ? 'giro' : 'giros'}`,
+      datos: [
+        { etiqueta: 'Estado', valor: ESTADO_DEL_LOTE[lote.estado] ?? lote.estado },
+        { etiqueta: 'Total', valor: formatCurrency(lote.totalCop) },
+        { etiqueta: 'Aprobado', valor: lote.aprobadoAt ? formatDate(lote.aprobadoAt) : 'Sin aprobar' },
+        { etiqueta: 'Pagado', valor: lote.pagadoAt ? formatDate(lote.pagadoAt) : 'Sin pagar' },
+      ],
+      enlace: { href: `/panel/inmobiliaria/pagos/dispersiones/lotes/${id}`, texto: 'Abrir el lote' },
     }
   },
 }

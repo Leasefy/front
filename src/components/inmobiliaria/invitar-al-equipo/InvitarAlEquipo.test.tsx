@@ -280,7 +280,8 @@ describe('InvitarAlEquipo — las dos pestañas', () => {
     expect(document.querySelector('#invitar-nombre')).toBeTruthy();
     expect(document.querySelector('#invitar-correo')).toBeTruthy();
     // Los siete roles del back, cada uno con su explicación.
-    expect(document.querySelectorAll('[data-testid="rol"] option')).toHaveLength(7);
+    // Los once roles del back (los cuatro auxiliares desde el 20-10-2026).
+    expect(document.querySelectorAll('[data-testid="rol"] option')).toHaveLength(11);
     expect(document.querySelector('#invitar-rol-ayuda')!.textContent).toBe('Consulta la operación sin cambiar nada.');
   });
 

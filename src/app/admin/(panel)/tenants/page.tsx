@@ -34,6 +34,12 @@ const FILTRO_DE_MIGRACION = [
   { valor: 'omitida', nombre: 'No la hizo' },
 ]
 
+// 20-10-2026 (Nico: «márcalas»): de dónde llegó.
+const FILTRO_DE_ORIGEN = [
+  { valor: 'marketplace', nombre: 'Del marketplace' },
+  { valor: 'registro', nombre: 'Registro completo' },
+]
+
 const FILTRO_DE_COBRANZA = [
   { valor: 'si', nombre: 'Con cobranza por voz' },
   { valor: 'no', nombre: 'Sin cobranza por voz' },
@@ -57,14 +63,17 @@ export default function TenantsPage() {
   const { get, setFilters } = useUrlFilters()
   const voz = get('voz')
   const migracion = get('migracion')
+  const origen = get('origen')
 
   const tenants = useApiQuery<InmobiliariaDeLaLista[]>((signal) => adminApi('/tenants', { signal }))
 
   const todas = tenants.data
   const filtrar = useMemo(
     () => (f: InmobiliariaDeLaLista) =>
-      pasaLosFiltros(f, { q: '', plan: '', voz }) && (!migracion || f.migracion === migracion),
-    [voz, migracion],
+      pasaLosFiltros(f, { q: '', plan: '', voz }) &&
+      (!migracion || f.migracion === migracion) &&
+      (!origen || (origen === 'marketplace') === (f.del_marketplace === true)),
+    [voz, migracion, origen],
   )
 
   const cifras = useMemo(() => {
@@ -91,6 +100,7 @@ export default function TenantsPage() {
             <span className="font-medium text-fg">{r.nombre ?? r.legal_name}</span>
             {r.activa === false ? <Pill tone="muted">Inactiva</Pill> : null}
             {r.solo_en_el_agente ? <Pill tone="warn">Sólo en la cobranza</Pill> : null}
+            {r.del_marketplace ? <Pill tone="info">Del marketplace</Pill> : null}
           </div>
           <div className="mt-0.5 text-caption text-fg-subtle">
             {[r.nit ? `NIT ${r.nit}` : 'Sin NIT', r.ciudad].filter(Boolean).join(' · ')}
@@ -218,7 +228,7 @@ export default function TenantsPage() {
         textoExtra={(r) => [r.legal_name, r.nit, r.ciudad, r.correo, r.primary_contact_email].filter(Boolean).join(' ')}
         segmentos={SEGMENTOS}
         filtrar={filtrar}
-        filtrosEnLaUrl={['voz', 'migracion']}
+        filtrosEnLaUrl={['voz', 'migracion', 'origen']}
         ordenInicial={{ columna: 6, sentido: 'desc' }}
         exportar="inmobiliarias"
         masEnElExcel={[
@@ -228,6 +238,7 @@ export default function TenantsPage() {
           { header: 'Contratos en total', texto: (r) => r.contratos ?? 0 },
           { header: 'Migración', texto: (r) => (r.migracion === 'completada' ? 'Completada' : r.migracion === 'omitida' ? 'No la hizo' : 'Pendiente') },
           { header: 'Activa', texto: (r) => r.activa !== false },
+          { header: 'Del marketplace', texto: (r) => r.del_marketplace === true },
         ]}
         barra={
           <BarraDeFiltros>
@@ -249,6 +260,16 @@ export default function TenantsPage() {
                 todas="Todas"
                 aria-label="Migración"
                 data-testid="filtro-migracion"
+              />
+            </Filtro>
+            <Filtro etiqueta="Origen">
+              <Desplegable
+                value={origen}
+                onChange={(v) => setFilters({ origen: v, page: undefined })}
+                opciones={FILTRO_DE_ORIGEN}
+                todas="Todas"
+                aria-label="Origen"
+                data-testid="filtro-origen"
               />
             </Filtro>
           </BarraDeFiltros>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { CaretLeft, WarningCircle, SealCheck, ArrowRight, Info, FileText, HourglassMedium } from '@phosphor-icons/react';
+import { WarningCircle, SealCheck, ArrowRight, Info, FileText, HourglassMedium } from '@phosphor-icons/react';
 import { Appear, CrossFade } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import { leerFallo } from '@/lib/errores/traductor-de-errores';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { EmptyState } from '@/components/ui/empty-state';
 
 /**
@@ -204,7 +205,7 @@ function FirmarContratoContent() {
   // recién firmado, el contrato ya no está pendiente y se pintaba el aviso.
   if (signed) {
     return (
-      <div className="max-w-2xl mx-auto p-8">
+      <div className="max-w-2xl p-6 lg:p-8">
         <div className="rounded-lg border border-success/30 bg-success-soft p-8 text-center space-y-4">
           <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto">
             <SealCheck className="w-8 h-8 text-success" />
@@ -240,7 +241,8 @@ function FirmarContratoContent() {
 
   if (contract.status !== 'pending_landlord' && !esperaAlInquilino) {
     return (
-      <div className="max-w-2xl mx-auto p-8 space-y-4">
+      <div className="max-w-2xl space-y-4 p-6 lg:p-8">
+        <BackButton href={`/panel/inmobiliaria/contratos/${contract.id}`} label="El contrato" />
         {/* El estado va traducido: antes salía el enum crudo del back
             («pending_tenant») en la cara de la persona. */}
         <AlertaAccionable
@@ -257,31 +259,33 @@ function FirmarContratoContent() {
   }
 
 
+  /*
+   * GLOW UP 21-10. El estado va ANTES del documento: si el inquilino todavía no
+   * firmó, eso se dice arriba (antes aparecía debajo de un documento de 600 px,
+   * después de bajar todo). La vuelta es a la ficha del contrato, no «atrás».
+   */
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div>
-        <Button
-          onClick={() => router.back()}
-          variant="link"
-          hideArrow
-          className="mb-3 h-auto gap-1 px-0 text-muted-foreground hover:text-foreground hover:no-underline"
-        >
-          <CaretLeft className="w-4 h-4" /> Volver
-        </Button>
-        <h1 className="text-h2 text-fg">Firmar contrato</h1>
-        {/* La inmobiliaria firma ÚLTIMA (el back exige la firma del inquilino
-            antes), así que firmar acá no «envía» nada: cierra el contrato. */}
-        <p className="text-sm text-muted-foreground mt-1 line-clamp-2 max-w-2xl">
-          {esperaAlInquilino
+    <div className="space-y-6 p-6 lg:p-8">
+      <BackButton href={`/panel/inmobiliaria/contratos/${contract.id}`} label="El contrato" />
+      <EncabezadoDePantalla
+        seccion="Contratos"
+        titulo="Firmar el contrato"
+        // La inmobiliaria firma ÚLTIMA (el back exige la firma del inquilino
+        // antes), así que firmar acá no «envía» nada: cierra el contrato.
+        descripcion={
+          esperaAlInquilino
             ? 'Puedes revisar el documento mientras el inquilino firma.'
-            : 'El inquilino ya firmó. Revisa el documento y firma para cerrar el contrato.'}
-        </p>
-      </div>
+            : 'El inquilino ya firmó. Revisa el documento y firma para cerrar el contrato.'
+        }
+      />
+
+      <div className="max-w-4xl space-y-6">
+      {esperaAlInquilino ? <InquilinoSinFirmar /> : null}
 
       {/* Preview */}
       <section className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
-          <h3 className="text-base font-semibold text-foreground">Documento a firmar</h3>
+          <h2 className="text-base font-semibold text-fg">Revisa el documento</h2>
         </div>
         <div className="p-5 space-y-3">
           {inquilinoYaFirmo && (
@@ -350,10 +354,8 @@ function FirmarContratoContent() {
         </div>
       </section>
 
-      {/* Signature form */}
-      {esperaAlInquilino ? (
-        <InquilinoSinFirmar />
-      ) : (
+      {/* La firma, debajo del documento: sólo cuando ya le toca a la inmobiliaria. */}
+      {esperaAlInquilino ? null : (
         <SignatureForm
           onSign={handleSign}
           contractId={contract.id}
@@ -367,6 +369,7 @@ function FirmarContratoContent() {
           requireOTP={true}
         />
       )}
+      </div>
     </div>
   );
 }

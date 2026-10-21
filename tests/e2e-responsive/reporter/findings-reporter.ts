@@ -49,7 +49,9 @@ interface RouteReport {
   findings: MergedFinding[];
 }
 
-const reportDir = () => path.resolve(process.env.RESPONSIVE_REPORT_DIR ?? 'responsive-report');
+const NEWLINE = /\r?\n/;
+
+const reportDir =() => path.resolve(process.env.RESPONSIVE_REPORT_DIR ?? 'responsive-report');
 
 const TYPE_TITLES: Record<string, string> = {
   'horizontal-overflow': 'Horizontal overflow / cut-off content',
@@ -86,6 +88,19 @@ export default class FindingsReporter implements Reporter {
     this.projectNames = config.projects.map((p) => p.name).filter((n) => !n.startsWith('setup'));
     if (process.env.RESPONSIVE_REPORT_KEEP !== '1') fs.rmSync(reportDir(), { recursive: true, force: true });
     fs.mkdirSync(reportDir(), { recursive: true });
+    // Rows are appended to rows.ndjson as tests finish, so a run that dies half way (or several
+    // invocations, one per device) still produces a complete report with RESPONSIVE_REPORT_KEEP=1.
+    const rowsFile = path.join(reportDir(), 'rows.ndjson');
+    if (process.env.RESPONSIVE_REPORT_KEEP === '1' && fs.existsSync(rowsFile)) {
+      for (const line of fs.readFileSync(rowsFile, 'utf8').split(NEWLINE)) {
+        if (!line.trim()) continue;
+        try {
+          this.rows.push(JSON.parse(line) as Row);
+        } catch {
+          // A half-written last line is ignored.
+        }
+      }
+    }
     void suite;
   }
 
@@ -137,6 +152,7 @@ export default class FindingsReporter implements Reporter {
       });
     }
     this.rows.push(row);
+    fs.appendFileSync(path.join(reportDir(), 'rows.ndjson'), JSON.stringify(row) + String.fromCharCode(10));
   }
 
   onEnd(result: FullResult): void {

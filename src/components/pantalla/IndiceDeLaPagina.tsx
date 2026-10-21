@@ -82,6 +82,8 @@ export function IndiceDeLaPagina({
       className={cn(
         'sticky top-0 z-20 -mx-1 flex items-center gap-1 overflow-x-auto bg-bg/90 px-1 py-2 backdrop-blur-sm',
         '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+        // En pantalla grande, todas a la vista (en dos líneas si hace falta); en el celular, se desliza.
+        'lg:flex-wrap lg:overflow-visible',
         className,
       )}
     >

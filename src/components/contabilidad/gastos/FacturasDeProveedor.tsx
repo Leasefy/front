@@ -33,7 +33,7 @@
  * pantalla lo dice en vez de dejar intentar.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowsClockwise, FileText, Money, Plus, Prohibit } from '@phosphor-icons/react';
 
@@ -71,6 +71,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { SinDatos } from '@/components/estado/SinDatos';
+import { Cifra, FranjaDeCifras, type TonoDeCifra } from '@leasefy/cadence';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
 import { TituloDeBloque } from '@/components/finanzas/piezas';
 import {
@@ -118,6 +120,17 @@ const TONO_DEL_ESTADO: Record<
   ANULADA: 'destructive',
 };
 
+/**
+ * Los estados en la franja (glow up 21-10), con el nombre del trabajo que piden: una factura en
+ * borrador está POR CAUSAR (no está en el libro) y una causada está POR PAGAR.
+ */
+const ESTADOS_EN_LA_FRANJA: { estado: EstadoDeFacturaDeProveedor; etiqueta: string; tono?: TonoDeCifra }[] = [
+  { estado: 'BORRADOR', etiqueta: 'Por causar', tono: 'aviso' },
+  { estado: 'CAUSADA', etiqueta: 'Por pagar', tono: 'voltaje' },
+  { estado: 'PAGADA', etiqueta: 'Pagadas' },
+  { estado: 'ANULADA', etiqueta: 'Anuladas' },
+];
+
 /** `?estado=` de la alerta de la portada. Lo que no exista no filtra nada. */
 export function estadoDe(valor: string | null | undefined): EstadoDeFacturaDeProveedor | '' {
   return ESTADOS_DE_FACTURA.find((e) => e === valor) ?? '';
@@ -125,8 +138,14 @@ export function estadoDe(valor: string | null | undefined): EstadoDeFacturaDePro
 
 export function FacturasDeProveedor({
   estadoInicial = '',
+  encabezado,
 }: {
   estadoInicial?: EstadoDeFacturaDeProveedor | '';
+  /**
+   * El encabezado de la pantalla con la acción principal («Registrar una factura», con su
+   * permiso y su motivo) a la derecha. Sin él, la acción va en el título del bloque.
+   */
+  encabezado?: (accionPrincipal: ReactNode) => ReactNode;
 }) {
   const [pagina, setPagina] = useState<PaginaDeFacturas | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -180,6 +199,47 @@ export function FacturasDeProveedor({
     void cargar();
   }, [cargar]);
 
+  /** Después de causar, anular, registrar o pagar: la lista y los conteos de la franja. */
+  const [version, setVersion] = useState(0);
+  const releer = useCallback(async () => {
+    setVersion((v) => v + 1);
+    await cargar();
+  }, [cargar]);
+
+  /*
+   * GLOW UP 21-10 · cuántas hay en cada estado, con su plata, para la franja que filtra: lo que
+   * está por causar y lo que está por pagar es lo que pide trabajo. Un pedido chico por estado
+   * (`limite: 1`, sólo se leen `total` y `totales`); el que falla deja su cifra en «—».
+   */
+  const [conteos, setConteos] = useState<Partial<Record<EstadoDeFacturaDeProveedor, { n: number; neto: number } | null>>>({});
+  useEffect(() => {
+    let vivo = true;
+    void Promise.allSettled(
+      ESTADOS_DE_FACTURA.map((e) =>
+        gastosApi.facturas.listar({
+          desde: desde || undefined,
+          hasta: hasta || undefined,
+          estado: e,
+          rubro: rubroFiltro || undefined,
+          limite: 1,
+        }),
+      ),
+    ).then((rs) => {
+      if (!vivo) return;
+      const c: Partial<Record<EstadoDeFacturaDeProveedor, { n: number; neto: number } | null>> = {};
+      rs.forEach((r, i) => {
+        c[ESTADOS_DE_FACTURA[i]] =
+          r.status === 'fulfilled' && r.value?.disponible
+            ? { n: r.value.total, neto: r.value.totales?.netoCop ?? 0 }
+            : null;
+      });
+      setConteos(c);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [desde, hasta, rubroFiltro, version]);
+
   /*
    * Lo del formulario, en cuatro pedidos independientes. Si los proveedores no
    * cargan, el formulario sigue sirviendo con los datos a mano — que es
@@ -225,7 +285,7 @@ export function FacturasDeProveedor({
           setAsiento(null);
         }
       }
-      await cargar();
+      await releer();
     } catch (e) {
       toast.error(mensajeDeContabilidad(e, 'No se pudo causar la factura.'));
     } finally {
@@ -241,7 +301,7 @@ export function FacturasDeProveedor({
       toast.success('Factura anulada. Su asiento quedó reversado, no borrado.');
       setAnulando(null);
       setMotivo('');
-      await cargar();
+      await releer();
     } catch (e) {
       toast.error(mensajeDeContabilidad(e, 'No se pudo anular la factura.'));
     } finally {
@@ -312,32 +372,73 @@ export function FacturasDeProveedor({
     );
   }
 
+  /** «Todas»: la suma de los estados si se pudieron contar todos; si no, el total de la lista. */
+  const conteoTotal = ESTADOS_DE_FACTURA.every((e) => conteos[e])
+    ? ESTADOS_DE_FACTURA.reduce((t, e) => t + (conteos[e]?.n ?? 0), 0)
+    : estado === ''
+      ? pagina.total
+      : null;
+
+  const accionRegistrar = (
+    <AccionConMotivo
+              puede={registro.puede}
+              motivo={registro.motivo}
+              onClick={() => setFormularioAbierto(true)}
+              variant="default"
+              testId="abrir-formulario-de-factura"
+            >
+              <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              Registrar una factura
+            </AccionConMotivo>
+  );
+
   return (
     <div className="space-y-6" data-testid="facturas-de-proveedor">
-      {/* 🔴 CB-17: la explicación ya la dice la cabecera de la pantalla, palabra
-          por palabra; acá se repetía a 80 px. Queda una vez, arriba. */}
-      <TituloDeBloque
-        titulo="Facturas de proveedor"
-        accion={
-          <AccionConMotivo
-            puede={registro.puede}
-            motivo={registro.motivo}
-            onClick={() => setFormularioAbierto(true)}
-            variant="default"
-            testId="abrir-formulario-de-factura"
-          >
-            <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
-            Registrar una factura
-          </AccionConMotivo>
-        }
-      />
+      {/* 🔴 CB-17: la explicación la dice la cabecera de la pantalla, una vez. GLOW UP 21-10: la
+          acción principal («Registrar una factura») va en el encabezado, a la derecha. */}
+      {encabezado ? (
+        encabezado(accionRegistrar)
+      ) : (
+        <TituloDeBloque titulo="Facturas de proveedor" accion={accionRegistrar} />
+      )}
 
-      {/* ── Filtros ───────────────────────────────────────────────────── */}
-      <section className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-4">
-        {/* 🔴 CB-04 / CB-17: el selector de fecha y el `Select` del DS, no el
-            `<input type="date">` ni el `<select>` del navegador. */}
-        <div className="min-w-0 space-y-1.5">
-          <Label htmlFor="facturas-desde">Desde</Label>
+      {/* ═══ GLOW UP 21-10 · el trabajo de esta pantalla: registrar la factura de un proveedor,
+          causarla (que quede en el libro) y pagarla. Antes eran cuatro bloques sueltos —filtros,
+          totales, nota y lista— con el estado en un desplegable. Ahora es UNA tarjeta: arriba los
+          estados con su plata (lo que está por causar y por pagar es lo que pide trabajo), cada
+          uno filtra; debajo fechas y rubro; la lista; y los totales del filtro al pie. */}
+      <section className="overflow-hidden rounded-lg border border-border bg-surface">
+        <FranjaDeCifras
+          aria-label="Filtrar por estado"
+          data-testid="estados-de-las-facturas"
+          className="rounded-none border-0 border-b border-border"
+        >
+          <Cifra
+            etiqueta="Todas"
+            valor={conteoTotal ?? '—'}
+            activa={estado === ''}
+            onClick={() => setEstado('')}
+          />
+          {ESTADOS_EN_LA_FRANJA.map(({ estado: e, etiqueta, tono }) => {
+            const c = conteos[e];
+            return (
+              <Cifra
+                key={e}
+                etiqueta={etiqueta}
+                valor={c ? c.n : '—'}
+                detalle={c && c.n > 0 ? <Monto valor={c.neto} className="text-caption" /> : undefined}
+                tono={c && c.n > 0 ? tono : undefined}
+                activa={estado === e}
+                onClick={() => setEstado(estado === e ? '' : e)}
+                data-testid={`estado-${e.toLowerCase()}`}
+              />
+            );
+          })}
+        </FranjaDeCifras>
+
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
+        <div className="w-[170px] min-w-0">
+          <Label htmlFor="facturas-desde" className="sr-only">Desde</Label>
           <CampoDeDia
             id="facturas-desde"
             value={desde}
@@ -349,8 +450,8 @@ export function FacturasDeProveedor({
             testid="filtro-desde"
           />
         </div>
-        <div className="min-w-0 space-y-1.5">
-          <Label htmlFor="facturas-hasta">Hasta</Label>
+        <div className="w-[170px] min-w-0">
+          <Label htmlFor="facturas-hasta" className="sr-only">Hasta</Label>
           <CampoDeDia
             id="facturas-hasta"
             value={hasta}
@@ -362,27 +463,8 @@ export function FacturasDeProveedor({
             testid="filtro-hasta"
           />
         </div>
-        <div className="space-y-1.5">
-          <Label id="facturas-estado">Estado</Label>
-          <Select
-            value={estado || TODOS}
-            onValueChange={(v) => setEstado(v === TODOS ? '' : (v as EstadoDeFacturaDeProveedor))}
-          >
-            <SelectTrigger aria-labelledby="facturas-estado" data-testid="filtro-estado">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={TODOS}>Todas</SelectItem>
-              {ESTADOS_DE_FACTURA.map((e) => (
-                <SelectItem key={e} value={e}>
-                  {NOMBRE_DEL_ESTADO_DE_FACTURA[e]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label id="facturas-rubro">Rubro</Label>
+        <div className="w-[200px]">
+          <Label id="facturas-rubro" className="sr-only">Rubro</Label>
           <Select
             value={rubroFiltro || TODOS}
             onValueChange={(v) => setRubroFiltro(v === TODOS ? '' : v)}
@@ -391,7 +473,7 @@ export function FacturasDeProveedor({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={TODOS}>Todos</SelectItem>
+              <SelectItem value={TODOS}>Todos los rubros</SelectItem>
               {rubros.map((r) => (
                 <SelectItem key={r.rubro} value={r.rubro}>
                   {r.nombre}
@@ -400,50 +482,11 @@ export function FacturasDeProveedor({
             </SelectContent>
           </Select>
         </div>
-      </section>
+        </div>
 
-      {/* ── Totales del filtro ────────────────────────────────────────── */}
-      {totales ? (
-        <dl
-          className="grid gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-5"
-          aria-label="Totales de las facturas del filtro"
-          data-testid="totales-de-facturas"
-        >
-          <div>
-            <dt className="text-caption text-fg-muted">Facturas</dt>
-            <dd className="font-mono text-lg tabular-nums text-fg">
-              {pagina.total.toLocaleString(localeDeLasCifras())}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-caption text-fg-muted">Subtotal</dt>
-            <dd>
-              <Monto valor={totales.subtotalCop} className="text-lg" />
-            </dd>
-          </div>
-          <div>
-            <dt className="text-caption text-fg-muted">IVA</dt>
-            <dd>
-              <Monto valor={totales.ivaCop} className="text-lg" />
-            </dd>
-          </div>
-          <div>
-            <dt className="text-caption text-fg-muted">Retenciones</dt>
-            <dd>
-              <Monto valor={totales.retencionesCop} className="text-lg" />
-            </dd>
-          </div>
-          <div>
-            <dt className="text-caption text-fg-muted">Se les paga (neto)</dt>
-            <dd>
-              <Monto valor={totales.netoCop} className="text-lg font-medium" />
-            </dd>
-          </div>
-        </dl>
-      ) : null}
-
-      {sinCausar > 0 ? (
-        <Nota testId="nota-sin-causar">
+        {sinCausar > 0 ? (
+          <div className="border-b border-border px-4 py-3">
+          <Nota testId="nota-sin-causar">
           <p>
             {sinCausar === 1
               ? 'Hay 1 factura en borrador: no está en el libro.'
@@ -451,15 +494,25 @@ export function FacturasDeProveedor({
             Una factura sin causar no aparece en el P&G ni en la exógena, y el proveedor ya está
             esperando el pago.
           </p>
-        </Nota>
-      ) : null}
+          </Nota>
+          </div>
+        ) : null}
 
-      {/* ── La lista ──────────────────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-lg border border-border bg-surface">
         {pagina.facturas.length === 0 ? (
-          <p className="p-8 text-center text-sm text-fg-muted">
-            No hay facturas con este filtro. Registra la primera con el botón de arriba.
-          </p>
+          <SinDatos
+            hayFiltros={Boolean(desde || hasta || estado || rubroFiltro)}
+            queSon="facturas"
+            ilustracion="billetera"
+            titulo="Todavía no hay facturas de proveedor"
+            descripcion="Registra la primera (el contador, la luz de la oficina, una cerradura), cáusala para que quede en el libro y págala: el pago sale por Egresos, con la firma de otra persona."
+            crear={registro.puede ? { label: 'Registrar una factura', onClick: () => setFormularioAbierto(true) } : undefined}
+            onLimpiarFiltros={() => {
+              setDesde('');
+              setHasta('');
+              setEstado('');
+              setRubroFiltro('');
+            }}
+          />
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -587,6 +640,38 @@ export function FacturasDeProveedor({
             </Table>
           </div>
         )}
+
+        {/* Los totales del filtro, al pie de la lista (antes, una tarjeta aparte arriba). */}
+        {totales ? (
+          <dl
+            className="flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-border bg-surface-muted/40 px-4 py-3"
+            aria-label="Totales de las facturas del filtro"
+            data-testid="totales-de-facturas"
+          >
+            <div className="flex items-baseline gap-2">
+              <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">Facturas</dt>
+              <dd className="font-mono text-sm tabular-nums text-fg">
+                {pagina.total.toLocaleString(localeDeLasCifras())}
+              </dd>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">Subtotal</dt>
+              <dd><Monto valor={totales.subtotalCop} className="text-sm" /></dd>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">IVA</dt>
+              <dd><Monto valor={totales.ivaCop} className="text-sm" /></dd>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">Retenciones</dt>
+              <dd><Monto valor={totales.retencionesCop} className="text-sm" /></dd>
+            </div>
+            <div className="ml-auto flex items-baseline gap-2">
+              <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">Se les paga (neto)</dt>
+              <dd><Monto valor={totales.netoCop} className="text-sm font-medium" /></dd>
+            </div>
+          </dl>
+        ) : null}
       </section>
 
       {/* ── 🔴 El asiento que quedó ───────────────────────────────────── */}
@@ -653,7 +738,7 @@ export function FacturasDeProveedor({
         abierto={formularioAbierto}
         onCerrar={() => setFormularioAbierto(false)}
         onRegistrada={(factura, seCauso) => {
-          void cargar();
+          void releer();
           if (seCauso && factura.asientoId) {
             void contabilidadApi.asientos
               .detalle(factura.asientoId)
@@ -728,7 +813,7 @@ export function FacturasDeProveedor({
         onCerrar={() => setPagando(null)}
         onPagada={() => {
           setPagando(null);
-          void cargar();
+          void releer();
         }}
       />
     </div>

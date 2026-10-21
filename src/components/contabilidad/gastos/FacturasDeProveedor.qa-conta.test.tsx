@@ -234,12 +234,17 @@ describe('<FacturasDeProveedor> · CB-17', () => {
     expect(q('facturas-de-proveedor')!.textContent).not.toContain('gasta en sí misma');
   });
 
-  it('🔴 sin campos de fecha del navegador; el estado y el rubro son el Select del DS', async () => {
+  it('🔴 sin campos de fecha del navegador; el rubro es el Select del DS y el estado, la franja', async () => {
     await pintar();
     expect(q('facturas-de-proveedor')!.querySelector('input[type="date"]')).toBeNull();
     // El doble del `Select` sólo pinta un <select> con el testid si la pantalla usa el del DS.
-    expect(q('filtro-estado')!.tagName).toBe('SELECT');
     expect(q('filtro-rubro')!.tagName).toBe('SELECT');
     expect(q('filtro-desde')!.querySelector('button')).not.toBeNull();
+    // GLOW UP 21-10: el estado se elige en la franja de cifras (botones del DS con aria-pressed),
+    // no en un desplegable: lo que está por causar y por pagar se ve sin abrir nada.
+    const franja = q('estados-de-las-facturas')!;
+    expect(franja.querySelectorAll('button[aria-pressed]').length).toBe(5);
+    expect(franja.textContent).toContain('Por causar');
+    expect(franja.textContent).toContain('Por pagar');
   });
 });

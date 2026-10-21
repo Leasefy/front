@@ -1,4 +1,5 @@
 'use client';
+import { usePuedeDescargar } from '@/lib/permisos/puede-descargar';
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -468,6 +469,8 @@ function FilaDeContacto({
 
 function PropietarioDetailContent() {
   const { t, locale } = useI18n();
+  // 🔴 Política de datos (20-10-2026): sólo descarga quien tenga «Exportar» de Propietarios.
+  const descarga = usePuedeDescargar('propietarios');
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -749,6 +752,10 @@ function PropietarioDetailContent() {
   };
 
   const handleExport = async () => {
+    if (!descarga.puede) {
+      toast.error(t('inmobiliaria.propietarios.detail.exportError'), { description: descarga.porQue ?? undefined });
+      return;
+    }
     /*
      * 🔴 No se exporta lo que no se pudo leer.
      *
@@ -905,7 +912,7 @@ function PropietarioDetailContent() {
                   <span className="text-sm">{t('inmobiliaria.propietarios.detail.generateStatement')}</span>
                 </DropdownListItem>
               )}
-              <DropdownListItem onSelect={() => void handleExport()} disabled={isExporting} data-testid="accion-exportar">
+              <DropdownListItem onSelect={() => void handleExport()} disabled={isExporting || !descarga.puede} data-testid="accion-exportar">
                 <Download className="w-4 h-4" />
                 <span className="text-sm">{t('inmobiliaria.propietarios.detail.exportData')}</span>
               </DropdownListItem>

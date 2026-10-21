@@ -1,29 +1,36 @@
 'use client'
 
+/**
+ * /admin/inngest-monitor — las tareas programadas y los flujos por eventos.
+ *
+ * El back no le pregunta a Inngest: deduce si cada tarea corre por lo último
+ * que dejó escrito en Postgres (`last_run`) y cuenta las corridas de 24 h de
+ * cada flujo en `agent_execution_metrics` (ADMIN-API-CONTRACT.md).
+ *
+ * 20-10-2026 (Nico: «que las tablas tengan paginación, filtros y todo lo que
+ * tienen las tablas de la plataforma»): las dos listas van en `DataTable`
+ * (pestañas por estado, buscar, ordenar, Excel) y todo en español (antes:
+ * «ok · stale · down · sin signal», «side-effect»).
+ */
+
+import { Clock, FlowArrow } from '@phosphor-icons/react'
+import { Alert, Card } from '@leasefy/cadence'
+
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
+import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
-import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import type { PillTone } from '@/lib/admin/types'
-import { Card, MonoLabel } from '@leasefy/cadence'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-// ─── Types (co-located, per FRONT.md §6.22) ────────────────────────────────
-
-type CronStatus = 'ok' | 'degraded' | 'down' | 'unknown'
-
-/**
- * Per-cron freshness inferred from Postgres side-effects
- * (ADMIN-API-CONTRACT.md — Inngest monitor). `last_run` null = no signal.
- */
+/** `last_run` null = la tarea no ha dejado ningún rastro en la base. */
 interface CronRow {
   cron: string
   last_run: string | null
 }
 
-/** Workflow run counts 24h, grouped (ADMIN-API-CONTRACT.md). */
+/** Corridas de 24 h por flujo. */
 interface WorkflowRow {
   workflow_id: string
   run_count: number | string
@@ -35,193 +42,191 @@ interface InngestMonitorResponse {
   workflowRuns: WorkflowRow[]
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
+type EstadoDeLaTarea = 'al-dia' | 'atrasada' | 'detenida' | 'sin-rastro'
 
-/** Hours since an ISO timestamp; null when there is no signal. */
-function hoursAgo(iso: string | null): number | null {
+interface Tarea extends CronRow {
+  estado: EstadoDeLaTarea
+  horas: number | null
+}
+
+/** Horas desde un instante; `null` sin rastro. */
+function horasDesde(iso: string | null, ahora = Date.now()): number | null {
   if (!iso) return null
-  const ms = Date.now() - new Date(iso).getTime()
+  const ms = ahora - new Date(iso).getTime()
   return Number.isFinite(ms) ? ms / 3_600_000 : null
 }
 
-/**
- * Staleness computed client-side (the back only sends last_run):
- * <26h ok · 26–72h degraded (stale) · >72h down · null unknown.
- */
-function cronStatus(lastRun: string | null): CronStatus {
-  const h = hoursAgo(lastRun)
-  if (h == null) return 'unknown'
-  if (h < 26) return 'ok'
-  if (h <= 72) return 'degraded'
-  return 'down'
+/** Menos de 26 h: al día · hasta 72 h: atrasada · más: detenida · sin rastro. */
+function estadoDeLaTarea(horas: number | null): EstadoDeLaTarea {
+  if (horas == null) return 'sin-rastro'
+  if (horas < 26) return 'al-dia'
+  if (horas <= 72) return 'atrasada'
+  return 'detenida'
 }
 
-function cronTone(s: CronStatus): PillTone {
-  switch (s) {
-    case 'ok':       return 'ok'
-    case 'degraded': return 'warn'
-    case 'down':     return 'bad'
-    case 'unknown':  return 'muted'
-  }
+const NOMBRE: Record<EstadoDeLaTarea, string> = {
+  'al-dia': 'Al día',
+  atrasada: 'Atrasada',
+  detenida: 'Detenida',
+  'sin-rastro': 'Sin rastro',
 }
 
-function cronLabel(s: CronStatus): string {
-  return s === 'unknown' ? 'sin signal' : s
+const TONO: Record<EstadoDeLaTarea, PillTone> = {
+  'al-dia': 'ok',
+  atrasada: 'warn',
+  detenida: 'bad',
+  'sin-rastro': 'muted',
 }
 
-// ─── Page ──────────────────────────────────────────────────────────────────
+/** «hace 3 h», «hace 2 días». */
+function haceCuanto(horas: number): string {
+  if (horas < 1) return 'hace menos de 1 h'
+  if (horas < 48) return `hace ${Math.round(horas)} h`
+  return `hace ${Math.round(horas / 24)} días`
+}
 
-/** /inngest-monitor — Crons + workflows (BACK.md §8.19 · FRONT.md §6.22). */
+const SEGMENTOS_DE_TAREAS: Segmento<Tarea>[] = [
+  { valor: 'todas', nombre: 'Todas', cumple: () => true },
+  ...(['al-dia', 'atrasada', 'detenida', 'sin-rastro'] as const).map((e) => ({
+    valor: e,
+    nombre: NOMBRE[e],
+    cumple: (t: Tarea) => t.estado === e,
+  })),
+]
+
+const corridas = (w: WorkflowRow) => Number(w.run_count) || 0
+
+const SEGMENTOS_DE_FLUJOS: Segmento<WorkflowRow>[] = [
+  { valor: 'todos', nombre: 'Todos', cumple: () => true },
+  { valor: 'con', nombre: 'Corrieron', cumple: (w) => corridas(w) > 0 },
+  { valor: 'sin', nombre: 'Sin corridas', cumple: (w) => corridas(w) === 0 },
+]
+
+const COLUMNAS_DE_TAREAS: Column<Tarea>[] = [
+  {
+    header: 'Tarea',
+    cell: (t) => <span className="font-mono text-caption text-fg">{t.cron}</span>,
+    orden: (t) => t.cron,
+    texto: (t) => t.cron,
+  },
+  {
+    header: 'Último rastro en la base',
+    cell: (t) =>
+      t.last_run ? (
+        <span className="whitespace-nowrap font-mono text-caption text-fg-muted">
+          {fmtDateTime(t.last_run)}
+          {t.horas != null ? <span className="ml-1.5 text-fg-subtle">({haceCuanto(t.horas)})</span> : null}
+        </span>
+      ) : (
+        <span className="text-fg-subtle">Nunca</span>
+      ),
+    orden: (t) => t.last_run ?? '',
+    texto: (t) => (t.last_run ? fmtDateTime(t.last_run) : ''),
+  },
+  {
+    header: 'Estado',
+    cell: (t) => <Pill tone={TONO[t.estado]}>{NOMBRE[t.estado]}</Pill>,
+    orden: (t) => ['detenida', 'atrasada', 'sin-rastro', 'al-dia'].indexOf(t.estado),
+    texto: (t) => NOMBRE[t.estado],
+  },
+]
+
+const COLUMNAS_DE_FLUJOS: Column<WorkflowRow>[] = [
+  {
+    header: 'Flujo',
+    cell: (w) => <span className="font-mono text-caption text-fg">{w.workflow_id}</span>,
+    orden: (w) => w.workflow_id,
+    texto: (w) => w.workflow_id,
+  },
+  {
+    header: 'Corridas en 24 h',
+    align: 'right',
+    cell: (w) => (
+      <span className={`font-mono text-caption tabular-nums ${corridas(w) > 0 ? 'text-success' : 'text-fg-subtle'}`}>
+        {corridas(w)}
+      </span>
+    ),
+    orden: corridas,
+    ordenPrimero: 'desc',
+    texto: corridas,
+  },
+]
+
 export default function InngestMonitorPage() {
-  const { data, isLoading, error } = useApiQuery<InngestMonitorResponse>(
+  const { data, isLoading, error, refetch } = useApiQuery<InngestMonitorResponse>(
     (signal) => adminApi('/inngest-monitor', { signal }),
     [],
   )
 
-  const crons = (data?.crons ?? []).map((c) => ({
-    ...c,
-    status: cronStatus(c.last_run),
-    hours_ago: hoursAgo(c.last_run),
-  }))
-  const workflows = data?.workflowRuns ?? []
-  const allSilent = crons.length > 0 && crons.every((c) => c.last_run == null)
-
-  const cronCounts = {
-    ok:      crons.filter((c) => c.status === 'ok').length,
-    degraded: crons.filter((c) => c.status === 'degraded').length,
-    down:    crons.filter((c) => c.status === 'down').length,
-    unknown: crons.filter((c) => c.status === 'unknown').length,
-  }
+  const tareas: Tarea[] | undefined = data?.crons.map((c) => {
+    const horas = horasDesde(c.last_run)
+    return { ...c, horas, estado: estadoDeLaTarea(horas) }
+  })
+  const ningunaDejoRastro = Boolean(tareas?.length) && tareas!.every((t) => t.last_run == null)
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Tareas programadas"
-        description="Salud inferida vía side-effects en Postgres · volumen workflows desde agent_execution_metrics."
+        description="Si cada tarea programada está corriendo y cuántas veces corrió cada flujo en las últimas 24 horas. Se deduce de lo que cada una deja escrito en la base, no de Inngest."
       />
 
-      {isLoading && <LoadingBlock />}
-      {!isLoading && error && <ErrorBlock error={error} />}
+      {ningunaDejoRastro ? (
+        <Alert variant="warning">
+          Ninguna tarea ha dejado rastro en la base. Revisa que Inngest esté corriendo y que sus llaves estén puestas en el back.
+        </Alert>
+      ) : null}
 
-      {data && (
-        <>
-          {/* All-silent warning: no cron has any observable side-effect */}
-          {allSilent && (
-            <Card className="p-4  mb-6 text-caption text-fg-muted">
-              Ningún cron tiene side-effect observable en Postgres — verifica que
-              Inngest esté corriendo y las keys configuradas en el back.
-            </Card>
-          )}
+      <section className="space-y-3" aria-label="Tareas programadas">
+        <h2 className="text-subtitle font-semibold text-fg">Tareas programadas</h2>
+        <p className="text-body-sm text-fg-muted">
+          Al día: dejó rastro hace menos de 26 h · Atrasada: entre 26 y 72 h · Detenida: más de 72 h. Horas de Colombia.
+        </p>
+        <DataTable
+          id="tareas"
+          columns={COLUMNAS_DE_TAREAS}
+          rows={tareas}
+          getKey={(t) => t.cron}
+          isLoading={isLoading}
+          error={error}
+          onReintentar={refetch}
+          emptyTitle="Sin tareas registradas"
+          emptyIcon={<Clock weight="bold" />}
+          aria-label="Tareas programadas"
+          queSon={['tarea', 'tareas']}
+          buscar="Buscar una tarea"
+          segmentos={SEGMENTOS_DE_TAREAS}
+          ordenInicial={{ columna: 2, sentido: 'asc' }}
+          exportar="tareas-programadas"
+        />
+      </section>
 
-          {/* Cron summary pills */}
-          <div className="flex flex-wrap gap-4 mb-4 text-sm">
-            <span><span className="tabular-nums text-success font-semibold">{cronCounts.ok}</span> <span className="text-fg-muted">ok</span></span>
-            <span><span className="tabular-nums text-warning font-semibold">{cronCounts.degraded}</span> <span className="text-fg-muted">stale</span></span>
-            <span><span className="tabular-nums text-danger font-semibold">{cronCounts.down}</span> <span className="text-fg-muted">down</span></span>
-            <span><span className="tabular-nums text-fg-muted font-semibold">{cronCounts.unknown}</span> <span className="text-fg-muted">sin signal</span></span>
-          </div>
+      <section className="space-y-3" aria-label="Flujos por eventos">
+        <h2 className="text-subtitle font-semibold text-fg">Flujos por eventos</h2>
+        <p className="text-body-sm text-fg-muted">Corren cuando pasa algo (un pago, una llamada, un mensaje), no a una hora fija.</p>
+        <DataTable
+          id="flujos"
+          columns={COLUMNAS_DE_FLUJOS}
+          rows={data?.workflowRuns}
+          getKey={(w) => w.workflow_id}
+          isLoading={isLoading}
+          error={error}
+          onReintentar={refetch}
+          emptyTitle="Sin flujos registrados"
+          emptyIcon={<FlowArrow weight="bold" />}
+          aria-label="Flujos por eventos"
+          queSon={['flujo', 'flujos']}
+          buscar="Buscar un flujo"
+          segmentos={SEGMENTOS_DE_FLUJOS}
+          ordenInicial={{ columna: 1, sentido: 'desc' }}
+          exportar="flujos-por-eventos"
+        />
+      </section>
 
-          {/* Crons table */}
-          <MonoLabel className="block mb-3">
-            crons · {crons.length} registrados · TZ=America/Bogota
-          </MonoLabel>
-          <Card className="overflow-x-auto mb-6">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b border-border">
-                  {['Cron', 'Último side-effect', 'Status'].map((h) => (
-                    <TableHead
-                      key={h}
-                      
-                    >
-                      {h}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {crons.map((c) => (
-                  <TableRow key={c.cron} className="border-b border-border last:border-0">
-                    <TableCell className="font-mono text-caption text-fg">{c.cron}</TableCell>
-                    <TableCell className="text-caption text-fg-muted font-mono whitespace-nowrap">
-                      {c.last_run ? (
-                        <>
-                          {fmtDateTime(c.last_run)}
-                          {c.hours_ago != null && (
-                            <span className="ml-1 text-[10px] text-fg-subtle">
-                              (hace {c.hours_ago.toFixed(1)}h)
-                            </span>
-                          )}
-                        </>
-                      ) : '—'}
-                    </TableCell>
-                    <TableCell >
-                      <Pill tone={cronTone(c.status)}>{cronLabel(c.status)}</Pill>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {crons.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={3} className="px-4 py-8 text-center text-fg-muted text-sm">
-                      Sin crons registrados.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-
-          {/* Workflows table */}
-          <MonoLabel className="block mb-3">
-            workflows event-driven · volumen 24h
-          </MonoLabel>
-          <Card className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b border-border">
-                  {['ID', 'Invocaciones 24h'].map((h, i) => (
-                    <TableHead
-                      key={h}
-                      className={`px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle whitespace-nowrap ${i >= 1 ? 'text-right' : 'text-left'}`}
-                    >
-                      {h}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {workflows.map((w) => {
-                  const runs = Number(w.run_count) || 0
-                  return (
-                    <TableRow key={w.workflow_id} className="border-b border-border last:border-0">
-                      <TableCell className="font-mono text-caption text-fg">{w.workflow_id}</TableCell>
-                      <TableCell className="text-right tabular-nums font-mono text-caption">
-                        {runs > 0 ? (
-                          <span className="text-success">{runs}</span>
-                        ) : (
-                          <span className="text-fg-subtle">0</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-                {workflows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={2} className="px-4 py-8 text-center text-fg-muted text-sm">
-                      Sin workflows registrados.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-
-          <Card className="p-4 mt-6 border-l-4 border-l-fg-subtle text-caption text-fg-muted">
-            Para status live (last_error, queue_depth, retry count) integrar Inngest Cloud API
-            con <code className="font-mono">INNGEST_SIGNING_KEY</code>.
-          </Card>
-        </>
-      )}
+      <Card className="border-l-4 border-l-fg-subtle p-4 text-caption text-fg-muted">
+        Para ver el último error, la cola y los reintentos de cada tarea, hay que conectar la API de Inngest Cloud con{' '}
+        <code className="font-mono">INNGEST_SIGNING_KEY</code>.
+      </Card>
     </div>
   )
 }

@@ -93,6 +93,13 @@ export function AceptarLegalesAlEntrar() {
 
   const abierta = pide && enElHome && enCalma;
   const primeraVez = estado?.primeraVez === true;
+  // 20-10-2026: quien ya tiene los términos al día lee sólo «la política».
+  const tituloDeLaActualizacion =
+    estado?.terminos?.aceptada === true
+      ? 'Actualizamos la política de datos'
+      : estado?.politica?.aceptada === true
+        ? 'Actualizamos los términos'
+        : 'Actualizamos la política de datos y los términos';
 
   const aceptar = async () => {
     if (enviando) return;
@@ -127,7 +134,7 @@ export function AceptarLegalesAlEntrar() {
           <DialogTitle>
             {primeraVez
               ? 'La política de datos y los términos de Leasefy'
-              : 'Actualizamos la política de datos y los términos'}
+              : tituloDeLaActualizacion}
           </DialogTitle>
           <DialogDescription>
             {primeraVez

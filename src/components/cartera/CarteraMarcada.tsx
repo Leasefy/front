@@ -13,6 +13,7 @@
  * procesos: el back topa los envíos por persona.
  */
 
+import { usePuedeDescargar } from '@/lib/permisos/puede-descargar';
 import { useState } from 'react'
 import { BellRinging, EnvelopeSimple, FileXls, WhatsappLogo } from '@phosphor-icons/react'
 
@@ -128,6 +129,10 @@ export function CarteraMarcada({
     }
   }
 
+  // 🔴 Política de datos (20-10-2026): sólo descarga quien tenga «Exportar» de cobros.
+
+  const descarga = usePuedeDescargar('cobros');
+
   const exportar = async () => {
     setOcupado(true)
     try {
@@ -158,7 +163,7 @@ export function CarteraMarcada({
       ocupado={ocupado}
       cuandoNoHayNada="Marca cuotas para mandarles el estado de cuenta o el recordatorio a sus inquilinos, o exportarlas."
     >
-      <Button variant="ghost" size="sm" hideArrow disabled={ocupado || nada} onClick={() => void exportar()} data-testid="exportar-marcados">
+      <Button variant="ghost" size="sm" hideArrow disabled={ocupado || nada || !descarga.puede} onClick={() => void exportar()} data-testid="exportar-marcados" title={descarga.porQue ?? undefined}>
         <FileXls className="h-4 w-4" />
         Exportar
       </Button>

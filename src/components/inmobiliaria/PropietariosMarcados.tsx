@@ -18,6 +18,7 @@
  * repetir el de la ficha cortaba en el 31.
  */
 
+import { usePuedeDescargar } from '@/lib/permisos/puede-descargar';
 import { useState } from 'react';
 import { EnvelopeSimple, FileXls, UserPlus } from '@phosphor-icons/react';
 
@@ -118,6 +119,10 @@ export function PropietariosMarcados({
     }
   };
 
+  // 🔴 Política de datos (20-10-2026): sólo descarga quien tenga «Exportar» de propietarios.
+
+  const descarga = usePuedeDescargar('propietarios');
+
   const exportar = async () => {
     setOcupado(true);
     try {
@@ -143,7 +148,7 @@ export function PropietariosMarcados({
       ocupado={ocupado}
       cuandoNoHayNada="Marca propietarios para mandarles el extracto, invitarlos al portal o exportarlos."
     >
-      <Button variant="ghost" size="sm" hideArrow disabled={ocupado || marcados.length === 0} onClick={() => void exportar()} data-testid="exportar-marcados">
+      <Button variant="ghost" size="sm" hideArrow disabled={ocupado || marcados.length === 0 || !descarga.puede} onClick={() => void exportar()} data-testid="exportar-marcados" title={descarga.porQue ?? undefined}>
         <FileXls className="h-4 w-4" />
         Exportar
       </Button>

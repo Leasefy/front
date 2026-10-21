@@ -600,121 +600,117 @@ export function CarteraCompleta() {
           />
         ) : null}
 
-        {/* ── La edad DE LA CARTERA. Cada ficha es un filtro. ──────────── */}
-        <div>
-          <p className="mb-2 text-xs text-fg-muted">{t('cartera.porEdad.edadDeLaCartera')}</p>
-          {/*
-            🔴 21-09-2026, abriendo esta pantalla con la agencia migrada:
-            «31 a 60», «61 a 90» y «Más de 90 días» salían en $0 con 788 casos
-            de 259 días de mora al lado. No es un error de la cuenta: con el
-            siniestro a los 30 días, TODA la cartera de más de 30 días sale de
-            los tramos y se va a «En siniestro», así que esos tres tramos no
-            pueden llenarse nunca. Tres ceros permanentes sin explicación se
-            leen como «no hay mora vieja», que es lo contrario de la verdad.
-          */}
-          {tramosQueNoSeLlenan.length > 0 ? (
-            <p className="mb-2 text-xs text-fg-muted" data-testid="tramos-que-no-se-llenan">
-              Con el siniestro a los {siniestros!.diasParaSiniestro} días, la cartera viva
-              no llega a {tramosQueNoSeLlenan.map((e) => NOMBRE_DE_EDAD[e]).join(', ')}:
-              esa mora está en «En siniestro».
-            </p>
-          ) : null}
-          <div
-            className={cn('grid grid-cols-2 gap-3', siniestros ? 'lg:grid-cols-5' : 'lg:grid-cols-4')}
-            role="group"
-            aria-label="Edad de la cartera"
-            data-testid="tramos-de-la-cartera"
-          >
-            {cartera.tramos.map((tramo) => {
-              const activa = edad === tramo.edad && vista !== 'siniestros'
-              return (
-                <button
-                  key={tramo.edad}
-                  type="button"
-                  onClick={() => elegirTramo(tramo.edad)}
-                  aria-pressed={activa}
-                  data-testid={`tramo-${tramo.edad}`}
-                  className={cn(
-                    'relative rounded-lg border bg-surface p-3 text-left transition-colors',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                    activa ? 'border-transparent' : 'border-border hover:border-fg-subtle',
-                  )}
-                >
-                  {/* El marco de la ficha elegida SE DESLIZA a la nueva. */}
-                  {activa ? (
-                    <MotionIndicator
-                      layoutId={`${marca}-tramo`}
-                      className="-inset-px rounded-lg border border-primary ring-1 ring-primary"
-                    />
-                  ) : null}
-                  <p className="text-xs text-fg-muted">{NOMBRE_DE_EDAD[tramo.edad]}</p>
-                  {/* COLA-01: a 390 px la ficha deja ≈149 px; text-base cabe una cifra de diez dígitos. */}
-                  <p className={cn('mt-1 font-mono text-base font-semibold tabular-nums sm:text-lg', TONO[tramo.edad])}>
-                    {formatCurrency(tramo.monto)}
-                  </p>
-                  <p className="mt-0.5 text-xs text-fg-muted">
-                    {tramo.items.length} {tramo.items.length === 1 ? 'deuda' : 'deudas'}
-                  </p>
-                </button>
-              )
-            })}
-            {/* 🔴 El quinto tramo: la cartera que ya es reclamación. Sin él,
-                los tramos no sumaban la cartera y nadie sabía por qué. */}
-            {siniestros ? (
-              <button
-                type="button"
-                onClick={() => setVista('siniestros')}
-                aria-pressed={vista === 'siniestros'}
-                data-testid="tramo-siniestro"
-                className={cn(
-                  'relative rounded-lg border bg-surface p-3 text-left transition-colors',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                  vista === 'siniestros' ? 'border-transparent' : 'border-border hover:border-fg-subtle',
-                )}
-              >
-                {vista === 'siniestros' ? (
-                  <MotionIndicator
-                    layoutId={`${marca}-tramo`}
-                    className="-inset-px rounded-lg border border-primary ring-1 ring-primary"
-                  />
-                ) : null}
-                <p className="text-xs text-fg-muted">{t('cartera.porEdad.tramoEnSiniestro')}</p>
-                <p className="mt-1 font-mono text-base font-semibold tabular-nums text-danger sm:text-lg">
-                  {formatCurrency(cartera.enSiniestro.monto)}
-                </p>
-                <p className="mt-0.5 text-xs text-fg-muted">
-                  {t('cartera.porEdad.desdeLosDias', { dias: siniestros.diasParaSiniestro })}
-                </p>
-              </button>
-            ) : null}
-          </div>
-        </div>
-
-        {(edad || cajon) && vista !== 'siniestros' ? (
-          // Entra con un fundido; al cambiar de filtro, la frase nueva también.
-          <Appear
-            as="p"
-            key={edad ?? cajon ?? ''}
-            direction="none"
-            className="text-sm text-fg-muted"
-            data-testid="que-significa"
-          >
-            {edad ? QUE_SIGNIFICA[edad] : queSignificaElCajon(cajon!)}{' '}
-            <button
-              type="button"
-              className="underline underline-offset-2 hover:text-fg"
-              onClick={() => {
-                setEdad(null)
-                setCajon(null)
-              }}
-            >
-              Ver toda la deuda
-            </button>
-          </Appear>
-        ) : null}
 
         {/* ── LA tabla, sin título encima: no se nombran las tablas. ───── */}
         <section className="overflow-hidden rounded-lg border border-border bg-surface">
+          {/* GLOW UP (21-10): la edad de la cartera es un FILTRO de esta tabla → vive dentro de su tarjeta,
+              arriba, como una franja (no como tarjetas sueltas encima). */}
+          {/* ── La edad DE LA CARTERA. Cada ficha es un filtro. ──────────── */}
+          <div className="border-b border-border" data-testid="edad-en-la-tabla">
+            <p className="px-4 pt-3 text-xs text-fg-muted">{t('cartera.porEdad.edadDeLaCartera')}</p>
+            {/*
+              🔴 21-09-2026, abriendo esta pantalla con la agencia migrada:
+              «31 a 60», «61 a 90» y «Más de 90 días» salían en $0 con 788 casos
+              de 259 días de mora al lado. No es un error de la cuenta: con el
+              siniestro a los 30 días, TODA la cartera de más de 30 días sale de
+              los tramos y se va a «En siniestro», así que esos tres tramos no
+              pueden llenarse nunca. Tres ceros permanentes sin explicación se
+              leen como «no hay mora vieja», que es lo contrario de la verdad.
+            */}
+            {tramosQueNoSeLlenan.length > 0 ? (
+              <p className="px-4 pt-1 text-xs text-fg-muted" data-testid="tramos-que-no-se-llenan">
+                Con el siniestro a los {siniestros!.diasParaSiniestro} días, la cartera viva
+                no llega a {tramosQueNoSeLlenan.map((e) => NOMBRE_DE_EDAD[e]).join(', ')}:
+                esa mora está en «En siniestro».
+              </p>
+            ) : null}
+            <div
+              className="mt-2 flex divide-x divide-border overflow-x-auto border-t border-border"
+              role="group"
+              aria-label="Edad de la cartera"
+              data-testid="tramos-de-la-cartera"
+            >
+              {cartera.tramos.map((tramo) => {
+                const activa = edad === tramo.edad && vista !== 'siniestros'
+                return (
+                  <button
+                    key={tramo.edad}
+                    type="button"
+                    onClick={() => elegirTramo(tramo.edad)}
+                    aria-pressed={activa}
+                    data-testid={`tramo-${tramo.edad}`}
+                    className={cn(
+                      'relative isolate min-w-[150px] flex-1 px-4 py-3 text-left transition-colors',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
+                      activa ? '' : 'hover:bg-surface-muted',
+                    )}
+                  >
+                    {/* El marco de la ficha elegida SE DESLIZA a la nueva. */}
+                    {activa ? (
+                      <MotionIndicator layoutId={`${marca}-tramo`} className="inset-0 -z-10 bg-primary-soft" />
+                    ) : null}
+                    <p className="text-xs text-fg-muted">{NOMBRE_DE_EDAD[tramo.edad]}</p>
+                    {/* COLA-01: a 390 px la ficha deja ≈149 px; text-base cabe una cifra de diez dígitos. */}
+                    <p className={cn('mt-1 font-mono text-base font-semibold tabular-nums sm:text-lg', TONO[tramo.edad])}>
+                      {formatCurrency(tramo.monto)}
+                    </p>
+                    <p className="mt-0.5 text-xs text-fg-muted">
+                      {tramo.items.length} {tramo.items.length === 1 ? 'deuda' : 'deudas'}
+                    </p>
+                  </button>
+                )
+              })}
+              {/* 🔴 El quinto tramo: la cartera que ya es reclamación. Sin él,
+                  los tramos no sumaban la cartera y nadie sabía por qué. */}
+              {siniestros ? (
+                <button
+                  type="button"
+                  onClick={() => setVista('siniestros')}
+                  aria-pressed={vista === 'siniestros'}
+                  data-testid="tramo-siniestro"
+                  className={cn(
+                    'relative isolate min-w-[150px] flex-1 px-4 py-3 text-left transition-colors',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
+                    vista === 'siniestros' ? '' : 'hover:bg-surface-muted',
+                  )}
+                >
+                  {vista === 'siniestros' ? (
+                    <MotionIndicator layoutId={`${marca}-tramo`} className="inset-0 -z-10 bg-primary-soft" />
+                  ) : null}
+                  <p className="text-xs text-fg-muted">{t('cartera.porEdad.tramoEnSiniestro')}</p>
+                  <p className="mt-1 font-mono text-base font-semibold tabular-nums text-danger sm:text-lg">
+                    {formatCurrency(cartera.enSiniestro.monto)}
+                  </p>
+                  <p className="mt-0.5 text-xs text-fg-muted">
+                    {t('cartera.porEdad.desdeLosDias', { dias: siniestros.diasParaSiniestro })}
+                  </p>
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          {(edad || cajon) && vista !== 'siniestros' ? (
+            // Entra con un fundido; al cambiar de filtro, la frase nueva también.
+            <Appear
+              as="p"
+              key={edad ?? cajon ?? ''}
+              direction="none"
+              className="border-b border-border px-4 py-2.5 text-sm text-fg-muted"
+              data-testid="que-significa"
+            >
+              {edad ? QUE_SIGNIFICA[edad] : queSignificaElCajon(cajon!)}{' '}
+              <button
+                type="button"
+                className="underline underline-offset-2 hover:text-fg"
+                onClick={() => {
+                  setEdad(null)
+                  setCajon(null)
+                }}
+              >
+                Ver toda la deuda
+              </button>
+            </Appear>
+          ) : null}
           <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <SegmentedControl<Vista>
               size="sm"

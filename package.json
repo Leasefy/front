@@ -17,7 +17,9 @@
     "postinstall": "prisma generate && node scripts/copiar-trabajador-de-maplibre.mjs",
     "api:gen": "bash scripts/api-gen.sh",
     "api:gen:back": "node scripts/api-gen-back.mjs",
-    "api:check": "bash scripts/api-gen.sh && git diff --exit-code src/lib/api/generated/agent.ts || (echo 'ERROR: Generated types are stale. Run pnpm api:gen and commit.' && exit 1)"
+    "api:check": "bash scripts/api-gen.sh && git diff --exit-code src/lib/api/generated/agent.ts || (echo 'ERROR: Generated types are stale. Run pnpm api:gen and commit.' && exit 1)",
+    "e2e:responsive": "node scripts/run-responsive.mjs",
+    "e2e:responsive:fast": "node scripts/run-responsive.mjs --fast"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

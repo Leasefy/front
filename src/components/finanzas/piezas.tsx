@@ -246,7 +246,7 @@ export function TarjetaDeCifras({
   const [abiertas, setAbiertas] = useState(false);
   return (
     <section
-      className={cn('overflow-hidden rounded-xl border border-border bg-surface', className)}
+      className={cn('overflow-hidden rounded-[20px] border border-border bg-surface', className)}
       data-testid={testId}
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-5 pb-4 pt-5">

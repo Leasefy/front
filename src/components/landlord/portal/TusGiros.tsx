@@ -13,6 +13,8 @@
  *   · Por girar → `doc.porGirar` (hasta el mes en curso, neto de deducciones).
  *     Sin el campo (back anterior) no se pinta: el estado de cuenta lo explica.
  *   · Contratos vigentes → los del lado PROPIETARIO del mismo documento.
+ *   · Te han girado en el año → la suma de los giros girados (o vueltos a girar)
+ *     de este año, de la misma lista de giros (tablero, Nico 21-10-2026).
  * Si los giros no responden, esa cifra dice «—» y las demás siguen.
  */
 
@@ -21,12 +23,16 @@ import { Cifra, FranjaDeCifras } from '@leasefy/cadence';
 
 import { estadoDe } from '@/lib/estado-de-cuenta/sello-del-contrato';
 import { formatCurrency } from '@/lib/format';
-import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
+import { fechaCorta, hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa';
+import { giradoEnElAnio } from '@/lib/propietario/el-mes-del-contrato';
 import { nombreDelMes } from '@/lib/recaudo/meses';
 import { portalDelPropietarioApi, type GiroDelPropietario } from '@/lib/api/portal-del-propietario.service';
 import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
 
-type Giros = { estado: 'cargando' } | { estado: 'listo'; ultimo: GiroDelPropietario | null } | { estado: 'fallo' };
+type Giros =
+  | { estado: 'cargando' }
+  | { estado: 'listo'; ultimo: GiroDelPropietario | null; todos: GiroDelPropietario[] }
+  | { estado: 'fallo' };
 
 function estadoDelGiro(g: GiroDelPropietario): { texto: string; tono?: 'exito' | 'aviso' | 'peligro' } {
   switch (g.estado) {
@@ -53,7 +59,7 @@ export function TusGiros({ doc }: { doc: EstadoDeCuenta }) {
       .then((r) => {
         const lista = Array.isArray(r?.giros) ? [...r.giros] : [];
         lista.sort((a, b) => b.mes.localeCompare(a.mes));
-        if (vivo) setGiros({ estado: 'listo', ultimo: lista[0] ?? null });
+        if (vivo) setGiros({ estado: 'listo', ultimo: lista[0] ?? null, todos: lista });
       })
       .catch(() => {
         if (vivo) setGiros({ estado: 'fallo' });
@@ -67,8 +73,18 @@ export function TusGiros({ doc }: { doc: EstadoDeCuenta }) {
   const ultimo = giros.estado === 'listo' ? giros.ultimo : null;
   const sello = ultimo ? estadoDelGiro(ultimo) : null;
 
+  // Tablero (Nico, 21-10): «cuánto he generado» = lo que la inmobiliaria ya le giró este año.
+  const hoy = hoyEnColombia();
   return (
     <FranjaDeCifras fila="lg" data-testid="tus-giros">
+      <Cifra
+        etiqueta={`Te han girado en ${hoy.slice(0, 4)}`}
+        valor={
+          giros.estado === 'cargando' ? '…' : giros.estado === 'listo' ? formatCurrency(giradoEnElAnio(giros.todos, hoy)) : '—'
+        }
+        detalle={giros.estado === 'fallo' ? 'No se pudo consultar ahora' : 'Lo que ya llegó a tu cuenta'}
+        data-testid="cifra-girado-en-el-anio"
+      />
       <Cifra
         etiqueta="Último giro"
         valor={giros.estado === 'cargando' ? '…' : ultimo ? formatCurrency(ultimo.valorCop) : '—'}

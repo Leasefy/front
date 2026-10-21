@@ -20,11 +20,10 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { formatCurrency } from '@/lib/format';
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
-import { nombreDelMes } from '@/lib/recaudo/meses';
+import { CLASES_DEL_TONO, fraseDelMesDelInquilino } from '@/lib/propietario/el-mes-del-contrato';
 import {
   portalDelPropietarioApi,
   type EstadoDelContratoEnElPortal,
-  type EstadoDelMes,
   type FichaDelInmueble,
 } from '@/lib/api/portal-del-propietario.service';
 
@@ -36,16 +35,10 @@ const ESTADO_DEL_CONTRATO: Record<EstadoDelContratoEnElPortal, string> = {
   CANCELADO: 'Contrato cancelado',
 };
 
+/** La frase sale de `lib/propietario/el-mes-del-contrato` (la misma del Inicio). */
 function fraseDelMes(m: NonNullable<FichaDelInmueble['mesActual']>): { texto: string; tono: string } {
-  const mes = nombreDelMes(m.mes);
-  const porEstado: Record<EstadoDelMes, { texto: string; tono: string }> = {
-    PAGADO: { texto: `Pagó ${mes}${m.pagadoEl ? ` el ${fechaLarga(m.pagadoEl)}` : ''}`, tono: 'bg-success-soft text-success' },
-    ABONADO: { texto: `Abonó ${formatCurrency(m.pagadoCop)} de ${mes}; le faltan ${formatCurrency(m.pendienteCop)}`, tono: 'bg-warning-soft text-warning' },
-    PENDIENTE: { texto: `${mes.charAt(0).toUpperCase()}${mes.slice(1)} vence${m.vence ? ` el ${fechaLarga(m.vence)}` : ''}`, tono: 'bg-surface-muted text-fg-muted' },
-    VENCIDO: { texto: `No ha pagado ${mes}${m.vence ? ` (venció el ${fechaLarga(m.vence)})` : ''}`, tono: 'bg-danger-soft text-danger' },
-    SIN_CUOTA: { texto: `No hay cobro de ${mes} en este contrato`, tono: 'bg-surface-muted text-fg-muted' },
-  };
-  return porEstado[m.estado];
+  const f = fraseDelMesDelInquilino(m);
+  return { texto: f.texto, tono: CLASES_DEL_TONO[f.tono] };
 }
 
 function BotonDelDocumento({ contractId, cual, etiqueta }: { contractId: string; cual: 'mandato' | 'contrato'; etiqueta: string }) {

@@ -25,6 +25,21 @@ import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
 import { informesDelPropietarioApi } from '@/lib/api/informes-del-propietario.service';
 import { numeroDelContratoDelEstado } from '@/components/estado-de-cuenta/numero';
 import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
+import {
+  portalDelPropietarioApi,
+  type FichaDelInmueble,
+  type GiroDelPropietario,
+} from '@/lib/api/portal-del-propietario.service';
+import {
+  CLASES_DEL_TONO,
+  avanceDelContrato,
+  fraseDelGiroDelMes,
+  fraseDelMesDelInquilino,
+  teGiraronAunqueNoPago,
+} from '@/lib/propietario/el-mes-del-contrato';
+import { hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa';
+import { nombreDelMes } from '@/lib/recaudo/meses';
+import { concurrencia } from '@/lib/procesos/en-el-centro';
 
 export interface ContratosAdministrados {
   doc: EstadoDeCuenta | null;
@@ -79,12 +94,104 @@ export function useContratosAdministrados(): ContratosAdministrados {
   return estado;
 }
 
+/** Cuántos contratos del Inicio leen su ficha (una lectura por contrato). */
+const CON_DETALLE = 8;
+
+type Ficha = FichaDelInmueble | 'fallo';
+
+/**
+ * Cómo va cada contrato vigente (tablero, Nico 21-10-2026): la ficha de su
+ * inmueble (el mes del inquilino, inicio y fin) y los giros del propietario.
+ * Cada lectura falla sola: si una no responde, esa fila queda como antes.
+ */
+function useComoVaCadaContrato(ids: readonly string[]): {
+  fichas: Record<string, Ficha>;
+  giros: GiroDelPropietario[] | null;
+} {
+  const [fichas, setFichas] = React.useState<Record<string, Ficha>>({});
+  const [giros, setGiros] = React.useState<GiroDelPropietario[] | null>(null);
+  const clave = ids.slice(0, CON_DETALLE).join(',');
+  React.useEffect(() => {
+    let vivo = true;
+    const lista = clave ? clave.split(',') : [];
+    if (lista.length === 0) return;
+    portalDelPropietarioApi
+      .giros()
+      .then((r) => vivo && setGiros(Array.isArray(r?.giros) ? r.giros : []))
+      .catch(() => undefined);
+    // De a tres: un propietario con muchos inmuebles no dispara todo de una vez.
+    void concurrencia(lista, 3, async (id) => {
+      try {
+        const f = await portalDelPropietarioApi.inmueble(id);
+        if (vivo) setFichas((x) => ({ ...x, [id]: f }));
+      } catch {
+        if (vivo) setFichas((x) => ({ ...x, [id]: 'fallo' }));
+      }
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [clave]);
+  return { fichas, giros };
+}
+
+/** La línea de «cómo va» de un contrato: inquilino, avance, su mes y el giro. */
+function ComoVa({ ficha, giros }: { ficha: FichaDelInmueble; giros: GiroDelPropietario[] | null }) {
+  const avance = avanceDelContrato(ficha.contrato.inicio, ficha.contrato.fin, hoyEnColombia());
+  const delInquilino = ficha.mesActual ? fraseDelMesDelInquilino(ficha.mesActual) : null;
+  const delGiro = ficha.mesActual ? fraseDelGiroDelMes(giros, ficha.mesActual.mes) : null;
+  const aunqueNoPago = teGiraronAunqueNoPago(ficha.mesActual, giros);
+  return (
+    <div className="mt-2 w-full space-y-2" data-testid="como-va-el-contrato">
+      {(ficha.inquilino?.nombre || avance) && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {ficha.inquilino?.nombre ? (
+            <span className="text-body-sm text-fg">Inquilino: {ficha.inquilino.nombre}</span>
+          ) : null}
+          {avance ? (
+            <span className="inline-flex items-center gap-2" data-testid="avance-del-contrato">
+              <span className="h-1.5 w-24 overflow-hidden rounded-full bg-surface-muted" aria-hidden>
+                <span className="block h-full rounded-full bg-primary" style={{ width: `${Math.round((avance.mes / avance.de) * 100)}%` }} />
+              </span>
+              <span className="font-mono text-caption tabular-nums text-fg-muted">
+                Mes {avance.mes} de {avance.de}
+              </span>
+            </span>
+          ) : null}
+        </div>
+      )}
+      {(delInquilino || delGiro) && (
+        <div className="flex flex-wrap gap-2">
+          {delInquilino ? (
+            <span className={`rounded-full px-2.5 py-0.5 text-caption ${CLASES_DEL_TONO[delInquilino.tono]}`} data-testid="mes-del-inquilino">
+              {delInquilino.texto}
+            </span>
+          ) : null}
+          {delGiro ? (
+            <span className={`rounded-full px-2.5 py-0.5 text-caption ${CLASES_DEL_TONO[delGiro.tono]}`} data-testid="giro-del-mes">
+              Inmobiliaria: {delGiro.texto.charAt(0).toLowerCase()}{delGiro.texto.slice(1)}
+            </span>
+          ) : null}
+        </div>
+      )}
+      {aunqueNoPago ? (
+        <p className="text-caption text-fg-muted" data-testid="te-giraron-aunque-no-pago">
+          Tu inquilino todavía no paga {ficha.mesActual ? nombreDelMes(ficha.mesActual.mes) : 'el mes'}, y tu inmobiliaria igual ya te giró.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export function ContratosConLaInmobiliaria({ doc }: { doc: EstadoDeCuenta }) {
   // QA-PROP-95 (PO-01): un firmado que todavía no empieza no es «vigente».
   const vigentes = doc.contratos.filter((c) => estadoDe(c) === 'VIGENTE').length;
   // El nombre comercial, el mismo de «¿Recomendarías a…?» (QA 11-10); la razón
   // social es para el documento del estado de cuenta.
   const quien = doc.inmobiliaria.nombre || doc.inmobiliaria.razonSocial || 'Tu inmobiliaria';
+  const { fichas, giros } = useComoVaCadaContrato(
+    doc.contratos.filter((c) => estadoDe(c) === 'VIGENTE').map((c) => c.id),
+  );
   return (
     <section
       data-testid="contratos-con-la-inmobiliaria"
@@ -134,6 +241,7 @@ export function ContratosConLaInmobiliaria({ doc }: { doc: EstadoDeCuenta }) {
             >
               {selloDelContrato(c).texto}
             </span>
+            {fichas[c.id] && fichas[c.id] !== 'fallo' ? <ComoVa ficha={fichas[c.id] as FichaDelInmueble} giros={giros} /> : null}
             </Link>
           </li>
         ))}

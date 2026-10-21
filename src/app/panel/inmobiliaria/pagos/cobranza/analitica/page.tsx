@@ -19,6 +19,7 @@ import { CostPerPesoKpi }         from '@/components/inmobiliaria/cobranza/CostP
 import { TopScriptsTable }        from '@/components/inmobiliaria/cobranza/TopScriptsTable'
 import { FalloDeCarga }           from '@/components/estado/FalloDeCarga'
 import { CrossFade } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 export default function CobranzaAnaliticaPage() {
   const { t } = useI18n()
@@ -32,14 +33,11 @@ export default function CobranzaAnaliticaPage() {
     return (
       <CrossFade swapKey="esqueleto">
       <div className="p-6 lg:p-8 space-y-6">
-        <header>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cobranza.analitica.title')}
-          </h1>
-          <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
-            {t('inmobiliaria.ai.cobranza.analitica.subtitle')}
-          </p>
-        </header>
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={t('inmobiliaria.ai.cobranza.analitica.title')}
+          descripcion={t('inmobiliaria.ai.cobranza.analitica.subtitle')}
+        />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
           {[0, 1, 2, 3, 4].map((i) => (
             <div
@@ -62,11 +60,10 @@ export default function CobranzaAnaliticaPage() {
     return (
       <CrossFade swapKey="fallo">
       <div className="p-6 lg:p-8 space-y-6">
-        <header>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cobranza.analitica.title')}
-          </h1>
-        </header>
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={t('inmobiliaria.ai.cobranza.analitica.title')}
+        />
         {/* El mensaje crudo del backend —en inglés, con nombres de endpoint—
             no le sirve a nadie que esté mirando esta pantalla. `FalloDeCarga`
             lo deja en el DOM para diagnóstico y en pantalla dice qué pasó. */}
@@ -94,11 +91,10 @@ export default function CobranzaAnaliticaPage() {
     return (
       <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-6">
-        <header>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cobranza.analitica.title')}
-          </h1>
-        </header>
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={t('inmobiliaria.ai.cobranza.analitica.title')}
+        />
         <EmptyState
           icon={PhoneCall}
           title={t('inmobiliaria.ai.cobranza.analitica.empty.title')}
@@ -114,11 +110,11 @@ export default function CobranzaAnaliticaPage() {
     return (
       <CrossFade swapKey="sin-datos">
       <div className="p-6 lg:p-8">
-        <header className="mb-6">
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cobranza.analitica.title')}
-          </h1>
-        </header>
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={t('inmobiliaria.ai.cobranza.analitica.title')}
+          className="mb-6"
+        />
         <NoDataYetBadge
           phase={37}
           reason={t('inmobiliaria.ai.cobranza.analitica.agencyGate.reason')}
@@ -139,14 +135,11 @@ export default function CobranzaAnaliticaPage() {
     <CrossFade swapKey="analitica">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Page header */}
-      <header>
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.cobranza.analitica.title')}
-        </h1>
-        <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
-          {t('inmobiliaria.ai.cobranza.analitica.subtitle')}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.analitica.title')}
+        descripcion={t('inmobiliaria.ai.cobranza.analitica.subtitle')}
+      />
 
       {/* 5-widget grid — XR-03: responsive cols */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

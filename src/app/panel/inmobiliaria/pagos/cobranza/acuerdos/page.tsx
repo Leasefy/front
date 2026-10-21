@@ -97,6 +97,7 @@ import { AcuerdosGeneralesCard } from '@/components/inmobiliaria/cobranza/Acuerd
 import { AcuerdosGeneralesTabla } from '@/components/inmobiliaria/cobranza/AcuerdosGeneralesTabla'
 import { CrossFade, Presence } from '@leasefy/cadence'
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // Etapas donde NO hay superficie de negociación (espejo del backend:
 // agency-cobranza-promises.ts NEGOTIATION_UNAVAILABLE_STAGES). En esas etapas el
@@ -852,16 +853,11 @@ function AcuerdosContent() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">
-            Acuerdos de pago
-          </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            Lo que cada deudor se comprometió a pagar: los compromisos que el
-            agente toma en una llamada y los planes de cuotas que armes acá.
-            Ningún plan se activa sin que una persona lo apruebe.
-          </p>
-        </div>
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo="Acuerdos de pago"
+          descripcion="Lo que cada deudor se comprometió a pagar: los compromisos que el agente toma en una llamada y los planes de cuotas que armes acá. Ningún plan se activa sin que una persona lo apruebe."
+        />
         <Button
           hideArrow
           onClick={() => setCrearAbierto(true)}

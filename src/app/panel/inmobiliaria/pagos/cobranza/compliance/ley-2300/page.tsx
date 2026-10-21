@@ -39,6 +39,7 @@ import {
   type ComplianceLogResponse,
   type RawAttempt,
 } from '@/lib/hooks/cobranza/compliance-entries'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // El contrato real del agente y su normalización viven en un solo lugar:
 // `compliance-entries.ts`. Acá se leían `json.items` / `json.next_cursor`, que
@@ -122,11 +123,10 @@ function Ley2300Content() {
   return (
     <CrossFade swapKey="lista">
     <div className="p-4 md:p-6 space-y-6">
-      <div>
-        <h1 className="text-h2 font-heading text-fg mt-2">
-          {t('inmobiliaria.ai.cobranza.compliance.subPages.ley2300Title')}
-        </h1>
-      </div>
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.compliance.subPages.ley2300Title')}
+      />
 
       <Presence show={Boolean(error)} className="rounded-lg bg-danger-soft text-danger">
           Error: {error}

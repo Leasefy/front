@@ -167,7 +167,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
   if (envMissing) {
     return (
       <CrossFade swapKey="sin-agente">
-      <div className="p-4 lg:p-8">
+      <div className="p-6 lg:p-8">
         <div className="rounded-md border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
           {t('inmobiliaria.ai.cobranza.cartas.envMissing')}
         </div>
@@ -201,7 +201,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
 
   return (
     <CrossFade swapKey="carta">
-    <div className="p-4 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Back */}
       <div className="flex items-center justify-between">
         <Button

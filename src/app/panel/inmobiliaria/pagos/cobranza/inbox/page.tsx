@@ -60,6 +60,7 @@ import { PauseModal } from '@/components/inmobiliaria/cobranza/intervention/Paus
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const LLAMADAS_HREF = `${BASE}/llamadas`
@@ -226,14 +227,11 @@ function InboxContent() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-h2 text-fg">
-          {tr("Inbox de conversaciones")}
-        </h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          {tr("Las respuestas de tus inquilinos, agrupadas por intención. Cada conversación muestra el último mensaje y la acción sugerida. Los mensajes sin entender y los que requieren humano nunca se responden solos: los atiendes tú.")}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={tr("Inbox de conversaciones")}
+        descripcion={tr("Las respuestas de tus inquilinos, agrupadas por intención. Cada conversación muestra el último mensaje y la acción sugerida. Los mensajes sin entender y los que requieren humano nunca se responden solos: los atiendes tú.")}
+      />
 
       {/* Resumen del agente */}
       <section

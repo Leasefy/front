@@ -32,6 +32,7 @@ import { cuantosDelEquipo, fraseDelGuardado } from '@/lib/cobranza/suscripcion-a
 import { useAgencyPolicy } from '@/lib/hooks/cobranza/use-agency-policy'
 import { SubscriptionToggles } from '@/components/inmobiliaria/cobranza/SubscriptionToggles'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 interface SubscriptionStats {
   email_subscribed: number
@@ -99,11 +100,10 @@ function SuscripcionContent() {
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-h2 font-heading text-foreground mt-2">
-          {t('inmobiliaria.ai.cobranza.reporte.subscription.pageTitle')}
-        </h1>
-      </div>
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.reporte.subscription.pageTitle')}
+      />
 
       {/* Phase 38-05a: PageSkeleton primitive (list variant) replaces inline spinner.
          No page-level EmptyState — this is a per-user toggle form (Habeas Data

@@ -38,6 +38,7 @@ import {
   type PendienteItem,
   type PendientePrioridad,
 } from '@/lib/hooks/cobranza/use-pendientes'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const NS = 'inmobiliaria.ai.cobranza.pendientes'
@@ -261,14 +262,11 @@ function PendientesContent() {
     return (
       <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-6">
-        <header>
-          <h1 className="text-h2 text-fg">
-            {t(`${NS}.pageTitle`)}
-          </h1>
-          <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
-            {t(`${NS}.desc`)}
-          </p>
-        </header>
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={<>{t(`${NS}.pageTitle`)}</>}
+          descripcion={<>{t(`${NS}.desc`)}</>}
+        />
         <EmptyState
           icon={CheckCircle}
           title={t(`${NS}.vacio`)}
@@ -283,14 +281,11 @@ function PendientesContent() {
     <CrossFade swapKey="pendientes">
     <div className="p-6 lg:p-8 space-y-6">
       <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-h2 text-fg">
-            {t(`${NS}.pageTitle`)}
-          </h1>
-          <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
-            {t(`${NS}.desc`)}
-          </p>
-        </div>
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={<>{t(`${NS}.pageTitle`)}</>}
+          descripcion={<>{t(`${NS}.desc`)}</>}
+        />
       </header>
 
       {/* Error total — solo cuando ninguna fuente rindió datos */}

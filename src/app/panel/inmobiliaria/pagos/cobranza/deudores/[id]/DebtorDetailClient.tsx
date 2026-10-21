@@ -229,7 +229,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
 
   return (
     <CrossFade swapKey="ficha">
-    <div className="p-4 lg:p-8 pb-8">
+    <div className="p-6 lg:p-8 pb-8">
       {/* Header */}
       <header className="mb-5">
         <VolverALaLista

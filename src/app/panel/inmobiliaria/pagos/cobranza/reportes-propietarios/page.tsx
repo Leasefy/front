@@ -64,6 +64,7 @@ import {
 } from '@/lib/hooks/cobranza/use-owner-reports'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const PROPIETARIOS_HREF = '/panel/inmobiliaria/propietarios'
@@ -557,15 +558,11 @@ function ReportesPropietariosContent() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">
-            Reportes a propietarios
-          </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            Resúmenes de gestión de cobranza por propietario: estado de mora, gestiones realizadas y
-            recomendación, listos para que los revises y envíes al dueño del inmueble.
-          </p>
-        </div>
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo="Reportes a propietarios"
+          descripcion="Resúmenes de gestión de cobranza por propietario: estado de mora, gestiones realizadas y recomendación, listos para que los revises y envíes al dueño del inmueble."
+        />
         <NuevoReporte isGenerating={isGenerating} onGenerar={onGenerarParaDeudor} />
       </header>
 

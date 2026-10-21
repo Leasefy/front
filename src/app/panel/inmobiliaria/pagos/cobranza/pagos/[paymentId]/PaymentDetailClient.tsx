@@ -167,7 +167,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
   if (!data) {
     return (
       <CrossFade swapKey="no-disponible">
-      <div className="p-4 lg:p-8 max-w-3xl mx-auto space-y-6">
+      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         <BackLink />
         <h1 className="text-h2 text-fg">Detalle de pago</h1>
         <EmptyState
@@ -190,7 +190,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
 
   return (
     <CrossFade swapKey="pago">
-    <div className="p-4 lg:p-8 max-w-3xl mx-auto space-y-6">
+    <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
       <BackLink />
 
       <div className="flex items-start justify-between gap-4">

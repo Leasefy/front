@@ -42,6 +42,7 @@ import {
   TabsContent,
 } from '@/components/ui/tabs'
 import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // =============================================================================
 // Constants
@@ -274,11 +275,10 @@ export default function PlantillasPage() {
     return (
       <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-6">
-        <header>
-          <h1 className="text-h2 text-fg" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
-            {t('inmobiliaria.ai.templates.title')}
-          </h1>
-        </header>
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={t('inmobiliaria.ai.templates.title')}
+        />
         {/*
           Sin CTA a propósito. Había un «Crear plantilla» que apuntaba a
           `?tab=drafts` — un parámetro que esta página no lee — así que
@@ -301,11 +301,10 @@ export default function PlantillasPage() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-h2 text-fg" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
-            {t('inmobiliaria.ai.templates.title')}
-          </h1>
-        </div>
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={t('inmobiliaria.ai.templates.title')}
+        />
         <Button
           variant="outline"
           size="sm"

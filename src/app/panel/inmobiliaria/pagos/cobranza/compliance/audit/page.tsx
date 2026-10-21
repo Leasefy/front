@@ -69,6 +69,7 @@ import {
 import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // D-34-08 + 34-04 (extended): audit action enum dropdown values.
 // Plan note: free-text override allowed for forward compat. Implemented via
@@ -216,16 +217,13 @@ function AuditContent() {
     <CrossFade swapKey="bitacora">
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-h2 font-heading text-foreground mt-2">
-            {t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle')}
-          </h1>
-          <p className="mt-1 text-caption text-muted-foreground">
-            {locale.startsWith('es')
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle')}
+          descripcion={locale.startsWith('es')
               ? 'Lo que pasó en la cobranza, quién lo hizo y cuándo. Es sólo lectura y los datos personales no se muestran aquí.'
               : 'Forensic read-only view — PII is never revealable on this page.'}
-          </p>
-        </div>
+        />
         {/* Phase 38-07 (D-38-10): export CSV button. Visible only when data
             exists per D-38-04 ("export CTA appears when data exists"). */}
         {items.length > 0 && agencyId && (

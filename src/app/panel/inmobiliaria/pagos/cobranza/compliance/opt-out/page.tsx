@@ -44,6 +44,7 @@ import {
   type ComplianceLogResponse,
   type RawOptOut,
 } from '@/lib/hooks/cobranza/compliance-entries'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // Mismo desajuste que en la bitácora de Ley 2300: acá se leía `json.items` /
 // `json.next_cursor` y el agente manda `entries` / `nextCursor`, así que el
@@ -172,11 +173,10 @@ function OptOutContent() {
   return (
     <CrossFade swapKey="lista">
     <div className="p-4 md:p-6 space-y-6">
-      <div>
-        <h1 className="text-h2 font-heading text-fg mt-2">
-          {t('inmobiliaria.ai.cobranza.compliance.subPages.optOutTitle')}
-        </h1>
-      </div>
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.compliance.subPages.optOutTitle')}
+      />
 
       {/* `error` ya es la frase del traductor (antes: «Error: 500»). */}
       <Presence show={Boolean(error)} role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">

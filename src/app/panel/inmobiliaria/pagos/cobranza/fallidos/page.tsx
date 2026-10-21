@@ -39,6 +39,7 @@ import { useLinksDeCobriQueNoSePagaron } from '@/lib/hooks/use-links-de-cobri-qu
 import { useCobrosEnLaBandeja } from '@/lib/hooks/use-cobros-en-la-bandeja'
 import { LinksFallidosDeCobri } from '@/components/inmobiliaria/pagos/LinksFallidosDeCobri'
 import { CrossFade, Presence } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 function PagosFallidos() {
   const router = useRouter()
@@ -64,13 +65,11 @@ function PagosFallidos() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
-          <h1 className="text-h2 text-fg">Pagos fallidos</h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            Los cobros que no se completaron, agrupados por motivo, para que recuperes el
-            recaudo con la acción correcta en cada caso.
-          </p>
-        </div>
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo="Pagos fallidos"
+          descripcion="Los cobros que no se completaron, agrupados por motivo, para que recuperes el recaudo con la acción correcta en cada caso."
+        />
 
         {/* KPI: total de fallidos */}
         <div className="shrink-0 rounded-lg border border-border bg-card px-4 py-3 text-center">

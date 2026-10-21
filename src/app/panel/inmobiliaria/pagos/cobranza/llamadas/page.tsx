@@ -66,6 +66,7 @@ import {
   outcomeBadgeVariant,
 } from '@/lib/cobranza/call-vocab'
 import { formatCurrency } from '@/lib/format'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // ── Filtros ───────────────────────────────────────────────────────────────────
 
@@ -283,7 +284,7 @@ function LlamadasContent() {
   if (isLoading && calls.length === 0 && !error) {
     return (
       <CrossFade swapKey="esqueleto">
-      <div className="p-4 lg:p-8" aria-busy="true">
+      <div className="p-6 lg:p-8" aria-busy="true">
         <header className="mb-5 space-y-2">
           <div className="h-7 w-40 rounded bg-surface-muted animate-pulse" />
           <div className="h-4 w-64 rounded bg-surface-muted animate-pulse" />
@@ -344,15 +345,13 @@ function LlamadasContent() {
 
   return (
     <CrossFade swapKey="llamadas">
-    <div className="p-4 lg:p-8">
-      <div className="mb-5 space-y-1">
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.cobranza.llamadas.list.pageTitle')}
-        </h1>
-        <p className="text-sm text-fg-muted line-clamp-2 max-w-2xl">
-          {t('inmobiliaria.ai.cobranza.llamadas.list.pageSubtitle')}
-        </p>
-      </div>
+    <div className="p-6 lg:p-8">
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.llamadas.list.pageTitle')}
+        descripcion={t('inmobiliaria.ai.cobranza.llamadas.list.pageSubtitle')}
+        className="mb-5"
+      />
 
       {/*
         Contenedor canónico del panel: UNA tarjeta con su barra de filtros, la

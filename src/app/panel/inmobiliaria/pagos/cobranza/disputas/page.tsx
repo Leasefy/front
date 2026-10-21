@@ -62,6 +62,7 @@ import {
   type PickedDebtor,
 } from '@/components/inmobiliaria/cobranza/DebtorPicker'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const DEUDORES_HREF = `${BASE}/deudores`
@@ -426,16 +427,11 @@ function DisputasContent() {
   // ── Header (compartido) ────────────────────────────────────────────────────
   const header = (
     <header className="flex items-start justify-between gap-4 flex-wrap">
-      <div className="space-y-1">
-        <h1 className="text-h2 text-fg">
-          Disputas
-        </h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          Las disputas que los deudores levantaron sobre su saldo o un cargo.
-          Abrir o resolver una disputa es una decisión humana: el agente nunca
-          pausa ni reactiva la cobranza por su cuenta.
-        </p>
-      </div>
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo="Disputas"
+        descripcion="Las disputas que los deudores levantaron sobre su saldo o un cargo. Abrir o resolver una disputa es una decisión humana: el agente nunca pausa ni reactiva la cobranza por su cuenta."
+      />
       {puedeActuar && !sinPermiso && (
         <Button
           size="sm"

@@ -43,6 +43,7 @@ import {
   type LegalArtifactKind,
   type LegalArtifactStatus,
 } from '@/lib/hooks/cobranza/use-legal-artifacts'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // ── Status badge colours — tokens semánticos del DS (contrato §8) ─────────────
 function statusBadgeVariant(
@@ -146,7 +147,7 @@ function CartasContent() {
   if (isLoading && !data) {
     return (
       <CrossFade swapKey="esqueleto">
-      <div className="p-4 lg:p-8" aria-busy="true">
+      <div className="p-6 lg:p-8" aria-busy="true">
         <header className="mb-5">
           <div className="h-7 w-40 bg-surface-muted rounded animate-pulse" />
           <div className="h-4 w-64 bg-surface-muted rounded animate-pulse mt-2" />
@@ -196,17 +197,14 @@ function CartasContent() {
 
   return (
     <CrossFade swapKey="lista">
-    <div className="p-4 lg:p-8">
+    <div className="p-6 lg:p-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-5">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cobranza.cartas.pageTitle')}
-          </h1>
-          <p className="text-sm text-fg-muted line-clamp-2 max-w-2xl">
-            {t('inmobiliaria.ai.cobranza.cartas.pageSubtitle')}
-          </p>
-        </div>
+        <EncabezadoDePantalla
+          seccion="Cobranza"
+          titulo={t('inmobiliaria.ai.cobranza.cartas.pageTitle')}
+          descripcion={t('inmobiliaria.ai.cobranza.cartas.pageSubtitle')}
+        />
       </div>
 
       {/* Filters */}

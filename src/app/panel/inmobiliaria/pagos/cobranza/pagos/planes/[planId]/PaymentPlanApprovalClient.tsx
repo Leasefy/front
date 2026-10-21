@@ -162,7 +162,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
   if (envMissing) {
     return (
-      <div className="p-4 lg:p-8">
+      <div className="p-6 lg:p-8">
         <div className="rounded-md border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
           {t('inmobiliaria.ai.cobranza.planes.envMissing')}
         </div>
@@ -182,7 +182,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
   if (error && !plan) {
     return (
-      <div className="p-4 lg:p-8">
+      <div className="p-6 lg:p-8">
         <div className="rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger">
           {t('inmobiliaria.ai.cobranza.planes.loadError')}
         </div>
@@ -376,7 +376,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-4 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       <VolverALaLista
         href="/panel/inmobiliaria/pagos/cobranza/pagos"
         label={t('inmobiliaria.ai.volverA.pagos')}

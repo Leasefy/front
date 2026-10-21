@@ -222,7 +222,7 @@ export default function PagosFunnelClient() {
   if (!isLoading && !error && rows.length === 0 && !hasActiveFilters) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-4 lg:p-8">
+      <div className="p-6 lg:p-8">
         <header className="mb-5">
           <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.pagos.title')}
@@ -337,7 +337,7 @@ export default function PagosFunnelClient() {
 
   return (
     <CrossFade swapKey="pagos">
-    <div className="p-4 lg:p-8">
+    <div className="p-6 lg:p-8">
       <header className="mb-5">
         <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.cobranza.pagos.title')}

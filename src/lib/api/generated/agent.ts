@@ -2805,26 +2805,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/agency/{agencyId}/cotizador/quote/{quoteId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get quote metadata (inputs + status) for the operator UI.
-         * @description Returns the persisted quote inputs (canon, ciudad, tipoInmueble) + cédula hash prefix + status timestamps. Used by the mvp streaming page to populate the header and the PDF inputs summary. No PII — cédula is only exposed as an 8-char prefix.
-         */
-        get: operations["getAgencyCotizadorQuoteDetail"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/agency/{agencyId}/cotizador/quote/{quoteId}/seguimiento": {
         parameters: {
             query?: never;
@@ -2838,6 +2818,26 @@ export interface paths {
          * @description COTIZ-17 (19-10-2026): «Avanzar con la recomendada» guarda la elegida (quién y cuándo); «Radicar la póliza» registra a mano su número. La elegida tiene que haber respaldado al candidato; la póliza necesita una elegida. Sin la migración del seguimiento: 503 FALTA_UNA_MIGRACION.
          */
         put: operations["putAgencyCotizadorSeguimiento"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/quote/{quoteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get quote metadata (inputs + status) for the operator UI.
+         * @description Returns the persisted quote inputs (canon, ciudad, tipoInmueble) + cédula hash prefix + status timestamps. Used by the mvp streaming page to populate the header and the PDF inputs summary. No PII — cédula is only exposed as an 8-char prefix.
+         */
+        get: operations["getAgencyCotizadorQuoteDetail"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -9943,7 +9943,7 @@ export interface components {
              * @example ADMIN
              * @enum {string}
              */
-            role: "ADMIN" | "AGENTE" | "CONTADOR" | "VIEWER" | "COORDINADOR" | "AUXILIAR_CARTERA" | "ABOGADO_EXTERNO" | "OPERATOR";
+            role: "ADMIN" | "AGENTE" | "CONTADOR" | "VIEWER" | "COORDINADOR" | "AUXILIAR_CARTERA" | "ABOGADO_EXTERNO" | "AUXILIAR_COMERCIAL" | "AUXILIAR_ADMINISTRATIVO" | "AUXILIAR_CONTABLE" | "AUXILIAR_MANTENIMIENTO" | "OPERATOR";
         };
         OnboardingMembersRequest: {
             members: components["schemas"]["OnboardingMemberInput"][];
@@ -10127,7 +10127,7 @@ export interface components {
             /** Format: email */
             email: string;
             /** @enum {string} */
-            role: "ADMIN" | "AGENTE" | "CONTADOR" | "VIEWER" | "COORDINADOR" | "AUXILIAR_CARTERA" | "ABOGADO_EXTERNO" | "OPERATOR";
+            role: "ADMIN" | "AGENTE" | "CONTADOR" | "VIEWER" | "COORDINADOR" | "AUXILIAR_CARTERA" | "ABOGADO_EXTERNO" | "AUXILIAR_COMERCIAL" | "AUXILIAR_ADMINISTRATIVO" | "AUXILIAR_CONTABLE" | "AUXILIAR_MANTENIMIENTO" | "OPERATOR";
         };
         OnboardingSessionMembersRequest: {
             members: components["schemas"]["OnboardingSessionMemberInput"][];
@@ -10693,6 +10693,29 @@ export interface components {
             /** @enum {string} */
             priority?: "rapidez" | "costo" | "cobertura" | "probabilidad";
             carriers?: string[];
+        };
+        AgencyCotizadorSeguimiento: {
+            disponible: boolean;
+            nombreCandidato: string | null;
+            opcionElegida: string | null;
+            opcionElegidaPor: string | null;
+            opcionElegidaAt: string | null;
+            polizaNumero: string | null;
+            polizaRegistradaPor: string | null;
+            polizaRegistradaAt: string | null;
+        };
+        AgencyCotizadorSeguimientoError: {
+            error: string;
+            statusCode?: number;
+            code?: string;
+            message?: string | string[];
+            campos?: components["schemas"]["SobreDeErrorCampo"][];
+            referencia?: string;
+            servicio?: string;
+        };
+        AgencyCotizadorSeguimientoBody: {
+            opcionElegida?: string | null;
+            polizaNumero?: string | null;
         };
         AgencyCotizadorQuoteDetailResponse: {
             /** Format: uuid */
@@ -12534,6 +12557,8 @@ export interface components {
             obligacionesActualizadas: number;
             /** @description Deudores que ENTRARON al embudo (fila nueva en agent.debtor_states). Sin esa fila no los llama la cadencia ni aparecen en el panel, así que este número —y no `creados`— dice cuántos empiezan a gestionarse. */
             altasAlEmbudo: number;
+            /** @description Se le avisó a Mori que arranque con esta cartera (20-10-2026). Que llame o no lo deciden sus rejas: horario, frecuencia, autonomía del Piloto y arranque en frío. */
+            moriAvisado?: boolean;
             /** @description Filas con monto pero sin fecha de vencimiento legible. Se importó el deudor, pero no entra a cobranza: sin vencimiento no hay días de mora, y una fecha inventada dispararía llamadas y una carta con cifras falsas. */
             sinVencimiento: number;
             /** @description Índices de filas cuyo teléfono ya pertenece a OTRO deudor del tenant con una cédula distinta. Se importaron como deudor nuevo a propósito: dos codeudores comparten teléfono, y fusionarlos dejaría a uno debiendo los dos cánones. Revisa si son la misma persona; para fusionarlas está scripts/normalizar-telefonos-deudores.ts. */
@@ -13104,6 +13129,7 @@ export interface components {
         AiHubGobiernoResponse: {
             agentes: components["schemas"]["AiHubGobiernoItem"][];
             llavesFinas: string[];
+            pausadaPorLeasefy: boolean;
         };
         AiHubGobiernoPutBody: {
             habilitado: boolean;
@@ -17320,29 +17346,6 @@ export interface components {
             referencia?: string;
             servicio?: string;
         };
-        AgencyCotizadorSeguimiento: {
-            disponible: boolean;
-            nombreCandidato: string | null;
-            opcionElegida: string | null;
-            opcionElegidaPor: string | null;
-            opcionElegidaAt: string | null;
-            polizaNumero: string | null;
-            polizaRegistradaPor: string | null;
-            polizaRegistradaAt: string | null;
-        };
-        AgencyCotizadorSeguimientoBody: {
-            opcionElegida?: string | null;
-            polizaNumero?: string | null;
-        };
-        AgencyCotizadorSeguimientoError: {
-            error: string;
-            statusCode?: number;
-            code?: string;
-            message?: string | string[];
-            campos?: components["schemas"]["SobreDeErrorCampo"][];
-            referencia?: string;
-            servicio?: string;
-        };
     };
     responses: never;
     parameters: never;
@@ -19143,65 +19146,6 @@ export interface operations {
             };
         };
     };
-    getAgencyCotizadorQuoteDetail: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                quoteId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Quote metadata for the operator UI */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailResponse"];
-                };
-            };
-            /** @description Missing/invalid JWT */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
-                };
-            };
-            /** @description agencyId mismatch or no cotizador:view */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
-                };
-            };
-            /** @description Quote not found in this tenant */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
-                };
-            };
-            /** @description Database unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
-                };
-            };
-        };
-    };
     putAgencyCotizadorSeguimiento: {
         parameters: {
             query?: never;
@@ -19279,6 +19223,65 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgencyCotizadorSeguimientoError"];
+                };
+            };
+        };
+    };
+    getAgencyCotizadorQuoteDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Quote metadata for the operator UI */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailResponse"];
+                };
+            };
+            /** @description Missing/invalid JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
+                };
+            };
+            /** @description agencyId mismatch or no cotizador:view */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
+                };
+            };
+            /** @description Quote not found in this tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
                 };
             };
         };
@@ -26817,6 +26820,23 @@ export interface operations {
             };
             /** @description Agente desconocido */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Leasefy pausó los agentes de esta inmobiliaria */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

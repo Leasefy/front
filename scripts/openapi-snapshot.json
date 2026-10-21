@@ -2048,6 +2048,10 @@
               "COORDINADOR",
               "AUXILIAR_CARTERA",
               "ABOGADO_EXTERNO",
+              "AUXILIAR_COMERCIAL",
+              "AUXILIAR_ADMINISTRATIVO",
+              "AUXILIAR_CONTABLE",
+              "AUXILIAR_MANTENIMIENTO",
               "OPERATOR"
             ],
             "example": "ADMIN"
@@ -2693,6 +2697,10 @@
               "COORDINADOR",
               "AUXILIAR_CARTERA",
               "ABOGADO_EXTERNO",
+              "AUXILIAR_COMERCIAL",
+              "AUXILIAR_ADMINISTRATIVO",
+              "AUXILIAR_CONTABLE",
+              "AUXILIAR_MANTENIMIENTO",
               "OPERATOR"
             ]
           }
@@ -5045,6 +5053,128 @@
           "codeudoresCount",
           "autorizacionConfirmada"
         ]
+      },
+      "AgencyCotizadorSeguimiento": {
+        "type": "object",
+        "properties": {
+          "disponible": {
+            "type": "boolean"
+          },
+          "nombreCandidato": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "opcionElegida": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "opcionElegidaPor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "opcionElegidaAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "polizaNumero": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "polizaRegistradaPor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "polizaRegistradaAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "disponible",
+          "nombreCandidato",
+          "opcionElegida",
+          "opcionElegidaPor",
+          "opcionElegidaAt",
+          "polizaNumero",
+          "polizaRegistradaPor",
+          "polizaRegistradaAt"
+        ]
+      },
+      "AgencyCotizadorSeguimientoError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "campos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SobreDeErrorCampo"
+            }
+          },
+          "referencia": {
+            "type": "string"
+          },
+          "servicio": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AgencyCotizadorSeguimientoBody": {
+        "type": "object",
+        "properties": {
+          "opcionElegida": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "polizaNumero": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          }
+        }
       },
       "AgencyCotizadorQuoteDetailResponse": {
         "type": "object",
@@ -13061,6 +13191,10 @@
             "minimum": 0,
             "description": "Deudores que ENTRARON al embudo (fila nueva en agent.debtor_states). Sin esa fila no los llama la cadencia ni aparecen en el panel, así que este número —y no `creados`— dice cuántos empiezan a gestionarse."
           },
+          "moriAvisado": {
+            "type": "boolean",
+            "description": "Se le avisó a Mori que arranque con esta cartera (20-10-2026). Que llame o no lo deciden sus rejas: horario, frecuencia, autonomía del Piloto y arranque en frío."
+          },
           "sinVencimiento": {
             "type": "integer",
             "minimum": 0,
@@ -15502,11 +15636,15 @@
             "items": {
               "type": "string"
             }
+          },
+          "pausadaPorLeasefy": {
+            "type": "boolean"
           }
         },
         "required": [
           "agentes",
-          "llavesFinas"
+          "llavesFinas",
+          "pausadaPorLeasefy"
         ]
       },
       "AiHubGobiernoPutBody": {
@@ -33294,128 +33432,6 @@
           "success",
           "error"
         ]
-      },
-      "AgencyCotizadorSeguimiento": {
-        "type": "object",
-        "properties": {
-          "disponible": {
-            "type": "boolean"
-          },
-          "nombreCandidato": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "opcionElegida": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "opcionElegidaPor": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "opcionElegidaAt": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "polizaNumero": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "polizaRegistradaPor": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "polizaRegistradaAt": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "disponible",
-          "nombreCandidato",
-          "opcionElegida",
-          "opcionElegidaPor",
-          "opcionElegidaAt",
-          "polizaNumero",
-          "polizaRegistradaPor",
-          "polizaRegistradaAt"
-        ]
-      },
-      "AgencyCotizadorSeguimientoBody": {
-        "type": "object",
-        "properties": {
-          "opcionElegida": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "minLength": 1,
-            "maxLength": 40
-          },
-          "polizaNumero": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 80
-          }
-        }
-      },
-      "AgencyCotizadorSeguimientoError": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "string"
-          },
-          "statusCode": {
-            "type": "integer"
-          },
-          "code": {
-            "type": "string"
-          },
-          "message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            ]
-          },
-          "campos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SobreDeErrorCampo"
-            }
-          },
-          "referencia": {
-            "type": "string"
-          },
-          "servicio": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "error"
-        ]
       }
     },
     "parameters": {}
@@ -40850,93 +40866,6 @@
         }
       }
     },
-    "/api/agency/{agencyId}/cotizador/quote/{quoteId}": {
-      "get": {
-        "operationId": "getAgencyCotizadorQuoteDetail",
-        "summary": "Get quote metadata (inputs + status) for the operator UI.",
-        "description": "Returns the persisted quote inputs (canon, ciudad, tipoInmueble) + cédula hash prefix + status timestamps. Used by the mvp streaming page to populate the header and the PDF inputs summary. No PII — cédula is only exposed as an 8-char prefix.",
-        "tags": [
-          "agency-cotizador"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "agencyId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "quoteId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Quote metadata for the operator UI",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgencyCotizadorQuoteDetailResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing/invalid JWT",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgencyCotizadorQuoteDetailError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "agencyId mismatch or no cotizador:view",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgencyCotizadorQuoteDetailError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Quote not found in this tenant",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgencyCotizadorQuoteDetailError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Database unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgencyCotizadorQuoteDetailError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/agency/{agencyId}/cotizador/quote/{quoteId}/seguimiento": {
       "put": {
         "operationId": "putAgencyCotizadorSeguimiento",
@@ -41046,6 +40975,93 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AgencyCotizadorSeguimientoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/cotizador/quote/{quoteId}": {
+      "get": {
+        "operationId": "getAgencyCotizadorQuoteDetail",
+        "summary": "Get quote metadata (inputs + status) for the operator UI.",
+        "description": "Returns the persisted quote inputs (canon, ciudad, tipoInmueble) + cédula hash prefix + status timestamps. Used by the mvp streaming page to populate the header and the PDF inputs summary. No PII — cédula is only exposed as an 8-char prefix.",
+        "tags": [
+          "agency-cotizador"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "quoteId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quote metadata for the operator UI",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyCotizadorQuoteDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyCotizadorQuoteDetailError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId mismatch or no cotizador:view",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyCotizadorQuoteDetailError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quote not found in this tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyCotizadorQuoteDetailError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyCotizadorQuoteDetailError"
                 }
               }
             }
@@ -54727,6 +54743,55 @@
           },
           "404": {
             "description": "Agente desconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "campos": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SobreDeErrorCampo"
+                      }
+                    },
+                    "referencia": {
+                      "type": "string"
+                    },
+                    "servicio": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Leasefy pausó los agentes de esta inmobiliaria",
             "content": {
               "application/json": {
                 "schema": {

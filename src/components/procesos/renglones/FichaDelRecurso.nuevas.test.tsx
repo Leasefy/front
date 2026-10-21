@@ -132,7 +132,28 @@ describe('las fichas nuevas del centro de procesos', () => {
     expect(texto).toContain('Mateo Giraldo')
     expect(texto).toContain('Vigente')
     expect(texto).toMatch(/octubre/i)
+    expect(texto).toContain('Transferencia')
     expect(enlace()).toBe('/panel/inmobiliaria/pagos/recibos')
+  })
+
+  it('el recibo sin cobro lo dice, y el medio en minúscula se lee bien', async () => {
+    vi.mocked(recibosDeCajaApi.ver).mockResolvedValue({
+      id: 'r-1',
+      numero: 8,
+      valorCop: 850_000,
+      fecha: '2026-10-14',
+      medio: 'transferencia',
+      referencia: null,
+      notas: null,
+      registradoPorUserId: 'u',
+      anuladoAt: null,
+      cobro: null,
+    } as never)
+    const texto = await abrir('RECIBO')
+    expect(texto).toContain('Sin cobro asociado')
+    expect(texto).not.toContain('Sin inquilino')
+    expect(texto).toContain('Transferencia')
+    expect(texto).not.toContain('transferencia')
   })
 
   it('el lote de giros: mes, cuántos giros, total y su enlace', async () => {

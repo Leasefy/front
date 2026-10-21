@@ -36,7 +36,7 @@ import { nombreDelCandidato } from '@/lib/contratos/nombre-del-candidato'
 import { NOMBRE_DEL_ESTADO_DE_LA_POSTULACION } from '@/lib/postulaciones/estado-de-la-postulacion'
 import { ESTADO_LABEL as ESTADO_DE_LA_PQRS, TIPO_LABEL as TIPO_DE_PQRS } from '@/components/inmobiliaria/pqrs/pqrs-reglas'
 import { NOMBRE_DEL_ESTADO as ESTADO_DEL_LOTE } from '@/components/dispersiones/lotes/estado-del-lote'
-import { NOMBRE_DEL_TIPO as NOMBRE_DEL_MEDIO } from '@/components/inmobiliaria/medios-de-pago/legible'
+import { medioLegible } from '@/components/cobros/extracto-bancario/muchos-a-uno'
 
 interface Dato {
   etiqueta: string
@@ -259,11 +259,11 @@ const FICHAS: Record<string, (id: string) => Promise<Ficha>> = {
     const r = await recibosDeCajaApi.ver(id)
     return {
       titulo: `Recibo de caja N.º ${r.numero}`,
-      descripcion: o(r.cobro?.tenantName, 'Sin inquilino'),
+      descripcion: r.cobro ? o(r.cobro.tenantName, 'Sin inquilino') : 'Sin cobro asociado',
       datos: [
         { etiqueta: 'Valor', valor: formatCurrency(r.valorCop) },
         { etiqueta: 'Fecha', valor: r.fecha ? formatDate(r.fecha) : 'Sin fecha' },
-        { etiqueta: 'Medio', valor: NOMBRE_DEL_MEDIO[r.medio as keyof typeof NOMBRE_DEL_MEDIO] ?? o(r.medio) },
+        { etiqueta: 'Medio', valor: medioLegible(r.medio) ?? 'Sin medio' },
         { etiqueta: 'Estado', valor: r.anuladoAt ? `Anulado el ${formatDate(r.anuladoAt)}` : 'Vigente' },
         ...(r.cobro ? [{ etiqueta: 'Cobro', valor: mesEnTitulo(r.cobro.month) }] : []),
         ...(r.referencia?.trim() ? [{ etiqueta: 'Referencia', valor: r.referencia.trim() }] : []),

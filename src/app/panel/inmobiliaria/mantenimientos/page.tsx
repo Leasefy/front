@@ -14,11 +14,11 @@ import {
   CAMPOS_DEL_MANTENIMIENTO,
   type CampoDelMantenimiento,
 } from '@/components/inmobiliaria/MantenimientoForm';
-import { Wrench, Plus, CurrencyDollar, SquaresFour, Kanban } from '@phosphor-icons/react';
+import { Plus, SquaresFour, Kanban } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
-import { AnimatedNumber, CrossFade, SegmentedControl } from '@leasefy/cadence';
+import { AnimatedNumber, Cifra, CrossFade, FranjaDeCifras, SegmentedControl } from '@leasefy/cadence';
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import type {
   SolicitudMantenimiento,
@@ -91,6 +91,9 @@ type MantenimientoViewMode = 'cards' | 'kanban';
 // Helper Functions
 // ============================================================================
 
+/** El número tal cual (sin separador de miles): la cuenta de solicitudes. */
+const enteroTalCual = (n: number) => String(Math.round(n));
+
 function getQuickStats(mantenimientos: SolicitudMantenimiento[]) {
   const activeMantenimientos = mantenimientos.filter((m) =>
     ['reported', 'quoted', 'approved', 'in_progress'].includes(m.status)
@@ -115,67 +118,6 @@ function getQuickStats(mantenimientos: SolicitudMantenimiento[]) {
   };
 }
 
-// ============================================================================
-// Stat Card Component
-// ============================================================================
-
-interface StatCardProps {
-  icon: React.ElementType;
-  label: string;
-  value: string | number;
-  subValue?: string;
-  subValueColor?: 'warning' | 'info' | 'default';
-  bgColor: string;
-  iconColor: string;
-  /** La cifra llegó después de cargar: cuenta desde 0 (como `KpiValor`). */
-  contarDesdeCero?: boolean;
-}
-
-/** El número tal cual se escribía antes (`{value}`): sin separador de miles. */
-const enteroTalCual = (n: number) => String(Math.round(n));
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  subValue,
-  subValueColor = 'default',
-  bgColor,
-  iconColor,
-  contarDesdeCero = false,
-}: StatCardProps) {
-  const subValueColors = {
-    warning: 'text-warning font-medium',
-    info: 'text-primary',
-    default: 'text-muted-foreground',
-  };
-
-  return (
-    <div className="p-4 rounded-lg border border-border bg-card">
-      <div className="flex items-center gap-3">
-        <div className={cn('w-10 h-10 rounded-md flex items-center justify-center', bgColor)}>
-          <Icon className={cn('w-5 h-5', iconColor)} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-2xl font-bold text-foreground">
-            {/* La cifra cuenta al llegar y cuando cambia (aprobar, cerrar). */}
-            {typeof value === 'number' ? (
-              <AnimatedNumber value={value} from={contarDesdeCero ? 0 : undefined} format={enteroTalCual} />
-            ) : (
-              value
-            )}
-          </p>
-          <p className="text-xs text-muted-foreground">{label}</p>
-          {subValue && (
-            <p className={cn('text-xs mt-0.5', subValueColors[subValueColor])}>
-              {subValue}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ============================================================================
 // Main Component
@@ -268,6 +210,15 @@ function MantenimientosContent() {
 
   // Calculate quick stats
   const stats = useMemo(() => getQuickStats(mantenimientos), [mantenimientos]);
+  /** Cuántos hay en cada etapa del arreglo (la franja de arriba). */
+  const etapas = useMemo(
+    () => ({
+      porCotizar: mantenimientos.filter((m) => m.status === 'reported').length,
+      enArreglo: mantenimientos.filter((m) => m.status === 'approved' || m.status === 'in_progress').length,
+      cerradas: mantenimientos.filter((m) => m.status === 'completed').length,
+    }),
+    [mantenimientos],
+  );
 
   /*
    * Después de cada mutación se relee del servidor, en vez de parchear la fila
@@ -710,8 +661,6 @@ function MantenimientosContent() {
   const isLoading = isLoadingMantenimientos || isLoadingConsignaciones;
   // ¿Se vio la carga? Entonces las cifras que llegan cuentan desde 0; las que
   // ya estaban al montarse (caché) no se animan.
-  const huboCarga = useRef(false);
-  if (isLoading) huboCarga.current = true;
 
   return (
     // GLOW UP (21-10): el mismo margen del resto del panel (p-6 lg:p-8; 16 px en el celular).
@@ -756,61 +705,40 @@ function MantenimientosContent() {
           cuenta donde vive —en la lista, con su «Reintentar»— y los números
           que no se pudieron traer no se inventan. */}
 
-      {/* Quick Stats - Informational Only. Esqueleto → cifras con un fundido. */}
-      <CrossFade swapKey={isLoading ? 'cargando' : 'listo'}>
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="p-4 rounded-lg border border-border bg-card animate-pulse">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-md bg-muted" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-8 bg-muted rounded w-12" />
-                  <div className="h-3 bg-muted rounded w-24" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Un cero que en realidad es «no lo pudimos traer» afirma algo
-              falso, y encima tranquiliza: «no tienes nada pendiente». Cuando
-              la consulta falló va una raya. */}
-          <StatCard
-            icon={Wrench}
-            label={t('inmobiliaria.operaciones.stats.activeMaintenance')}
-            value={mantenimientosError ? '—' : stats.active}
-            subValue={
-              mantenimientosError
-                ? 'No se pudo traer'
-                : stats.quoted > 0
-                  ? t('inmobiliaria.operaciones.stats.toApproveCount', { count: stats.quoted })
-                  : undefined
-            }
-            subValueColor={stats.quoted > 0 && !mantenimientosError ? 'info' : 'default'}
-            bgColor="bg-primary-soft"
-            iconColor="text-primary"
-            contarDesdeCero={huboCarga.current}
-          />
-          <StatCard
-            icon={CurrencyDollar}
-            label={t('inmobiliaria.operaciones.stats.pendingQuotes')}
-            value={mantenimientosError ? '—' : stats.quoted}
-            subValue={
-              mantenimientosError
-                ? 'No se pudo traer'
-                : stats.esperanAlPropietario > 0
-                  ? `${stats.esperanAlPropietario} ${stats.esperanAlPropietario === 1 ? 'espera' : 'esperan'} al propietario`
-                  : undefined
-            }
-            bgColor="bg-neutral-100 dark:bg-neutral-800"
-            iconColor="text-neutral-600 dark:text-neutral-300"
-            contarDesdeCero={huboCarga.current}
-          />
-        </div>
-      )}
-      </CrossFade>
+      {/* GLOW UP 21-10 · el trabajo de esta pantalla es que cada arreglo quede RESUELTO: cotizar →
+          que lo apruebe quien decide → arreglar → cerrar con fotos. Antes eran dos tarjetas sueltas
+          («activos», «cotizaciones pendientes»); ahora la franja dice cuántos hay en cada etapa y
+          qué pide cada una (punto en lo que te toca a ti). Lo que no se pudo traer va con raya. */}
+      <FranjaDeCifras aria-label="Lo que pide cada etapa" data-testid="etapas-de-mantenimiento" columnas={5}>
+        <Cifra
+          etiqueta="Por cotizar"
+          valor={isLoading ? <span className="block h-7 w-10 animate-pulse rounded bg-surface-muted" /> : mantenimientosError ? '—' : etapas.porCotizar}
+          detalle="Pedir el precio al proveedor"
+          tono={!mantenimientosError && etapas.porCotizar > 0 ? 'voltaje' : undefined}
+        />
+        <Cifra
+          etiqueta="Por aprobar"
+          valor={isLoading ? <span className="block h-7 w-10 animate-pulse rounded bg-surface-muted" /> : mantenimientosError ? '—' : stats.quoted}
+          detalle="La cotización la decides tú"
+          tono={!mantenimientosError && stats.quoted > 0 ? 'voltaje' : undefined}
+        />
+        <Cifra
+          etiqueta="Esperan al propietario"
+          valor={isLoading ? <span className="block h-7 w-10 animate-pulse rounded bg-surface-muted" /> : mantenimientosError ? '—' : stats.esperanAlPropietario}
+          detalle="Ya se le pidió que apruebe"
+          tono={!mantenimientosError && stats.esperanAlPropietario > 0 ? 'aviso' : undefined}
+        />
+        <Cifra
+          etiqueta="En arreglo"
+          valor={isLoading ? <span className="block h-7 w-10 animate-pulse rounded bg-surface-muted" /> : mantenimientosError ? '—' : etapas.enArreglo}
+          detalle="Al terminar, se cierra con fotos"
+        />
+        <Cifra
+          etiqueta="Cerradas"
+          valor={isLoading ? <span className="block h-7 w-10 animate-pulse rounded bg-surface-muted" /> : mantenimientosError ? '—' : etapas.cerradas}
+          detalle="Con su costo a cargo de quien corresponde"
+        />
+      </FranjaDeCifras>
 
       {/* 🔴 D12: lo que espera al propietario y lo que él rechazó. */}
       <BandejaDeAprobacionesDelPropietario

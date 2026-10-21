@@ -380,22 +380,12 @@ function KanbanColumnComponent({
   return (
     <div className="flex flex-col min-w-0" data-testid={`columna-${column.id}`}>
       {/* Column Header */}
-      <div
-        className={cn(
-          'flex items-center gap-2 px-3 py-2.5 rounded-t-xl border border-b-0',
-          'border-border dark:border-border-strong',
-          column.bgColor
-        )}
-      >
-        <Icon className={cn('w-4 h-4', column.color)} />
-        <span className={cn('font-semibold text-sm', column.color)}>{t(column.titleKey)}</span>
-        <span
-          className={cn(
-            'ml-auto px-2 py-0.5 rounded-full text-xs font-medium',
-            'bg-surface-muted',
-            column.color
-          )}
-        >
+      {/* Cadence 2 (glow up 21-10): la columna es un carril de arena, sin color por etapa (el
+          color es de los estados que piden algo, no de las columnas); la cuenta en mono. */}
+      <div className="flex items-center gap-2 rounded-t-[18px] bg-surface-muted/70 px-3.5 pb-1.5 pt-3">
+        <Icon className="h-4 w-4 text-fg-muted" />
+        <span className="text-sm font-medium text-fg">{t(column.titleKey)}</span>
+        <span className="ml-auto font-mono text-[12px] tabular-nums text-fg-subtle">
           {items.length}
         </span>
       </div>
@@ -404,12 +394,9 @@ function KanbanColumnComponent({
       <div
         ref={setNodeRef}
         className={cn(
-          'relative flex-1 p-2 space-y-2 rounded-b-xl border overflow-y-auto transition-[border-color,box-shadow] duration-base',
-          'bg-surface-muted',
+          'relative flex-1 p-2 space-y-2 rounded-b-[18px] overflow-y-auto transition-[background-color,box-shadow] duration-base',
           'min-h-[200px] max-h-[calc(100vh-400px)]',
-          encima
-            ? 'border-dashed border-primary/30 ring-2 ring-primary/20'
-            : 'border-border dark:border-border-strong'
+          encima ? 'bg-primary-soft/50 ring-2 ring-primary/25' : 'bg-surface-muted/70'
         )}
       >
         {/* Sin `AnimatePresence mode="popLayout"` DIRECTO sobre las tarjetas:
@@ -450,15 +437,12 @@ function KanbanColumnComponent({
         ) : (
           <div
             className={cn(
-              'flex flex-col items-center justify-center h-full py-8 text-fg-subtle',
-              encima && 'rounded-md border-2 border-dashed border-primary/30 bg-primary-soft/50'
+              'flex items-center justify-center rounded-[14px] border border-dashed px-4 py-5 text-center text-caption',
+              encima ? 'border-primary/40 text-primary' : 'border-border text-fg-subtle'
             )}
           >
-            <Icon className="w-8 h-8 mb-2 opacity-50" />
-            <p className="text-xs">{t('inmobiliaria.mantenimiento.noRequests')}</p>
-            {arrastrable && (
-              <p className="text-[10px] mt-1 opacity-70">{t('inmobiliaria.pipeline.dragHere')}</p>
-            )}
+            {/* Vacía: una línea; arrastrando encima, dice dónde soltar. */}
+            {encima ? t('inmobiliaria.pipeline.dropHere') : t('inmobiliaria.mantenimiento.noRequests')}
           </div>
         )}
         </CrossFade>

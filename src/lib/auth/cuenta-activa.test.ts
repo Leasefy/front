@@ -63,8 +63,8 @@ describe('opcionesDeCuenta', () => {
     expect(opcionesDeCuenta(ANA).map((o) => [o.clave, o.titulo, o.detalle])).toEqual([
       ['inmobiliaria:alfa', 'Alfa Inmobiliaria', 'Inmobiliaria · Administrador'],
       ['inmobiliaria:beta', 'Beta', 'Inmobiliaria · Coordinador'],
-      ['inquilino', 'Inquilino', 'Tu arriendo, pagos y contratos'],
-      ['propietario', 'Propietario', 'Tus inmuebles, giros y certificados'],
+      ['inquilino', 'Inquilino', 'Arriendo, pagos y contratos'],
+      ['propietario', 'Propietario', 'Inmuebles, giros y certificados'],
     ])
     expect(tieneVariasCuentas(ANA)).toBe(true)
   })
@@ -107,10 +107,9 @@ describe('cabeceras de cada petición', () => {
   it('🔴 en el portal del inquilino pide como inquilino (nunca la cartera de la inmobiliaria)', () => {
     expect(cabecerasParaLaRuta('/inquilino/contratos', ANA, null)).toEqual({ 'x-inmobiliaria': 'alfa', 'x-cuenta': 'inquilino' })
   })
-  it('en el panel de la inmobiliaria: la elegida', () => {
+  it('en el panel de la inmobiliaria: sólo cuál (el panel queda como antes)', () => {
     expect(cabecerasParaLaRuta('/panel/inmobiliaria', ANA, { tipo: 'inmobiliaria', inmobiliariaId: 'beta' })).toEqual({
       'x-inmobiliaria': 'beta',
-      'x-cuenta': 'inmobiliaria',
     })
   })
   it('fuera de los portales sólo la inmobiliaria (el arranque trae la misma que mostrará el panel)', () => {

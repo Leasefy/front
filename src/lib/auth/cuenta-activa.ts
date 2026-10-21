@@ -156,7 +156,7 @@ export function opcionesDeCuenta(
       cuenta: { tipo: 'inquilino' },
       tipo: 'inquilino',
       titulo: es ? 'Inquilino' : 'Tenant',
-      detalle: es ? 'Tu arriendo, pagos y contratos' : 'Your rental, payments and contracts',
+      detalle: es ? 'Arriendo, pagos y contratos' : 'Rental, payments and contracts',
     })
   }
   if (cuentas.propietario) {
@@ -165,7 +165,7 @@ export function opcionesDeCuenta(
       cuenta: { tipo: 'propietario' },
       tipo: 'propietario',
       titulo: es ? 'Propietario' : 'Owner',
-      detalle: es ? 'Tus inmuebles, giros y certificados' : 'Your properties, payouts and certificates',
+      detalle: es ? 'Inmuebles, giros y certificados' : 'Properties, payouts and certificates',
     })
   }
   return opciones
@@ -269,8 +269,14 @@ export function cabecerasParaLaRuta(
   const cabeceras: Record<string, string> = {}
   const inmobiliaria = inmobiliariaQueAbre(cuentas, guardada)
   if (cuentas.inmobiliarias.length > 1 && inmobiliaria) cabeceras['x-inmobiliaria'] = inmobiliaria
+  // `x-cuenta` sólo en los portales PERSONALES. En el panel de la inmobiliaria
+  // basta con cuál inmobiliaria: así el panel se comporta EXACTAMENTE como
+  // antes para quien se registró como inquilino o propietario y trabaja ahí
+  // (el back ya lo deja entrar por su membresía). Hallado en el laboratorio:
+  // con `x-cuenta: inmobiliaria`, lo de su cuenta personal que la app pide en
+  // todas las pantallas (los favoritos) respondía 403.
   const portal = portalDeLaRuta(pathname)
-  if (portal && tieneElPapelDeLaRuta(pathname, cuentas)) cabeceras['x-cuenta'] = portal
+  if (portal && portal !== 'inmobiliaria' && tieneElPapelDeLaRuta(pathname, cuentas)) cabeceras['x-cuenta'] = portal
   return cabeceras
 }
 

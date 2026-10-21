@@ -75,7 +75,7 @@ export function CambiarDeCuenta({ cuentas, enPantalla, locale, onElegir }: Cambi
                 onElegir(o.cuenta);
               }}
               className={cn(
-                'relative flex w-full min-w-0 items-center gap-2.5 rounded-md px-2 py-1.5 text-left outline-none transition-colors',
+                'relative flex w-full min-w-0 items-start gap-2.5 rounded-md px-2 py-1.5 text-left outline-none transition-colors',
                 'focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-default',
                 esLaActiva ? 'cursor-default' : 'hover:bg-surface-muted/60',
               )}
@@ -97,11 +97,13 @@ export function CambiarDeCuenta({ cuentas, enPantalla, locale, onElegir }: Cambi
               >
                 <Icono className="h-4 w-4" />
               </span>
+              {/* Hasta dos renglones: el nombre de una inmobiliaria («Prueba RESTO
+                  Inmobiliaria S.A.S.») se lee entero, sin agrandar el menú. */}
               <span className="relative min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-medium text-fg">{o.titulo}</span>
-                <span className="block truncate text-[12px] text-fg-muted">{o.detalle}</span>
+                <span className="block line-clamp-2 break-words text-[13px] font-medium leading-snug text-fg">{o.titulo}</span>
+                <span className="block line-clamp-2 break-words text-[12px] leading-snug text-fg-muted">{o.detalle}</span>
               </span>
-              <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+              <span className="relative mt-1.5 flex h-4 w-4 shrink-0 items-center justify-center">
                 {abriendoEsta ? (
                   <Spinner size="sm" label={es ? `Abriendo ${o.titulo}…` : `Opening ${o.titulo}…`} />
                 ) : esLaActiva ? (

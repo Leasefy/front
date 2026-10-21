@@ -35,6 +35,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -83,13 +84,23 @@ function ContenidoDeClausulas() {
     void cargar();
   }, [cargar]);
 
-  const alternarActiva = async (c: ClausulaPropia) => {
+  const alternarActiva = async (c: ClausulaPropia, deshaciendo = false) => {
     try {
       await clausulasPropiasApi.actualizar(c.id, { activa: !c.activa });
+      // GLOW UP 21-10: el cambio se hace al instante y se puede deshacer desde
+      // el aviso (antes, para arrepentirse había que encontrar la fila otra vez).
       toast.success(
         c.activa
           ? 'Ya no se ofrece en contratos nuevos. Los firmados no cambian.'
           : 'Vuelve a ofrecerse en los contratos nuevos.',
+        deshaciendo
+          ? undefined
+          : {
+              action: {
+                label: 'Deshacer',
+                onClick: () => void alternarActiva({ ...c, activa: !c.activa }, true),
+              },
+            },
       );
       await cargar();
     } catch (e) {
@@ -103,32 +114,24 @@ function ContenidoDeClausulas() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="space-y-6 p-6 lg:p-8">
       {/* 🔴 Sin «Volver a Contratos» (Nico, 18-09-2026: «tiene un devolver que
           ni se pa que está ahí»). Esta pantalla ES una pestaña de Contratos: el
           camino de vuelta son las pestañas de arriba, y un botón que repite lo
           que la navegación ya hace sólo agrega una decisión más. */}
-      <div className="space-y-6 p-4 md:p-6">
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="flex items-center gap-2 text-h2 text-fg">
-              <Scroll className="h-6 w-6 text-primary" weight="duotone" />
-              Cláusulas propias
-            </h1>
-            <p className="max-w-2xl text-sm text-fg-muted">
-              Lo que tu inmobiliaria agrega a sus contratos, además del texto
-              legal. El articulado de la ley no se edita: estas cláusulas se
-              suman al final y pasan por el mismo validador que revisa todo
-              contrato.
-            </p>
-          </div>
-          {puedeEditar && (
-            <Button hideArrow onClick={() => setEditando('nueva')}>
-              <Plus className="mr-1.5 h-4 w-4" />
-              Escribir una cláusula
-            </Button>
-          )}
-        </header>
+        <EncabezadoDePantalla
+          seccion="Contratos"
+          titulo="Cláusulas propias"
+          descripcion="Lo que tu inmobiliaria agrega a sus contratos, además del texto legal. El articulado de la ley no se edita: estas cláusulas se suman al final y pasan por el mismo validador que revisa todo contrato."
+          accionPrincipal={
+            puedeEditar ? (
+              <Button size="sm" hideArrow onClick={() => setEditando('nueva')}>
+                <Plus className="mr-1.5 h-4 w-4" />
+                Escribir una cláusula
+              </Button>
+            ) : undefined
+          }
+        />
 
         <EstadoDeDatos
           cargando={cargando}
@@ -228,7 +231,6 @@ function ContenidoDeClausulas() {
             ))}
           </Stagger>
         </EstadoDeDatos>
-      </div>
 
       {editando && (
         <EditorDeClausula

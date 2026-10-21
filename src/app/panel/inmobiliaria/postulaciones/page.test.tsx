@@ -171,8 +171,11 @@ vi.mock('@/components/ui/para-entender-mas', () => ({
 vi.mock('@leasefy/cadence', async (importOriginal) => ({
   // El movimiento (ola 2): las primitivas reales. Con las animaciones apagadas
   // (`vitest.setup.ts`) muestran el estado final de una.
-  ...(({ AnimatedNumber, CrossFade, MotionIndicator, Presence, FormError }) => ({
+  ...(({ AnimatedNumber, Cifra, CrossFade, FranjaDeCifras, MotionIndicator, Presence, FormError }) => ({
     AnimatedNumber,
+    // La franja de cifras por estado (glow up 21-10): las reales, son las que filtran.
+    Cifra,
+    FranjaDeCifras,
     CrossFade,
     MotionIndicator,
     Presence,
@@ -372,20 +375,21 @@ describe('PostulacionesPage', () => {
     expect(container.textContent).toContain('Juan Pérez')
   })
 
-  it('filters rows from the segmented control, in sync with the tiles', async () => {
+  it('las cifras por estado son el ÚNICO filtro por estado (antes había un selector repetido)', async () => {
+    // Glow up 21-10: seis tarjetas MÁS un selector con los mismos seis estados era
+    // decir lo mismo dos veces. Las cifras viven dentro de la tabla y filtran.
     getAllCandidatesMock.mockResolvedValue(RESPONSE)
 
     await renderPage()
 
-    const segment = container.querySelector('[data-segment="NEEDS_INFO"]') as HTMLButtonElement
-    expect(segment).toBeTruthy()
+    expect(container.querySelector('[data-segment]')).toBeNull()
+    const franja = container.querySelector('[data-testid="estados-de-las-postulaciones"]')
+    expect(franja).toBeTruthy()
 
     await act(async () => {
-      segment.click()
+      tiles().find((b) => b.textContent?.includes('Pide info'))!.click()
     })
     expect(container.querySelectorAll('tbody tr').length).toBe(1)
-    expect(container.textContent).toContain('Ana Gómez')
-    // The matching tile reflects the same active filter
     const activeTile = tiles().find((b) => b.getAttribute('aria-pressed') === 'true')
     expect(activeTile?.textContent).toContain('Pide info')
   })

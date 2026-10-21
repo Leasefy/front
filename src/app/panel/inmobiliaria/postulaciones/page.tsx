@@ -3,13 +3,9 @@
 import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas'
 import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla'
 import { PostulacionesMarcadas } from '@/components/inmobiliaria/PostulacionesMarcadas'
-import { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ClipboardText,
-  Hourglass,
-  WarningCircle,
-  CheckCircle,
-  XCircle,
   MagnifyingGlass,
   X,
 } from '@phosphor-icons/react'
@@ -25,16 +21,13 @@ import { Table, TableBodyAnimado, TableCell, TableHead, TableHeader, TableRow, T
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import {
-  AnimatedNumber,
+  Cifra,
   CrossFade,
+  FranjaDeCifras,
   IconButton,
-  MotionIndicator,
   Presence,
-  SegmentedControl,
+  type TonoDeCifra,
 } from '@leasefy/cadence'
-
-/** El número tal cual se escribía antes (`{value}`): sin separador de miles. */
-const enteroTalCual = (n: number) => String(Math.round(n))
 import { RecorridoMapa } from '@/components/inmobiliaria/recorrido/RecorridoMapa'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer'
@@ -80,85 +73,29 @@ const SCORE_COLORS: Record<string, string> = {
   D: 'text-danger bg-danger-soft',
 };
 
-// ─── Clickable stat tiles (same visual language as propiedades StatTile) ──────
+// ─── Los estados por los que se filtra (las cifras de la franja) ──────────────
 
 type FilterKey = 'ALL' | 'IN_REVIEW' | 'NEEDS_INFO' | 'APPROVED' | 'REJECTED' | 'NOT_AWARDED'
-
-const TILE_TONES = {
-  neutral: 'bg-surface-muted text-fg-muted',
-  ok: 'bg-success-soft text-success',
-  info: 'bg-primary-soft text-primary',
-  warn: 'bg-warning-soft text-warning',
-  bad: 'bg-danger-soft text-danger',
-} as const;
 
 const FILTERS: {
   key: FilterKey;
   label: string;
-  tone: keyof typeof TILE_TONES;
-  icon: typeof ClipboardText;
+  /** El punto de la cifra cuando hay alguna: lo que espera tu decisión (voltaje) o tu seguimiento (aviso). */
+  tono?: TonoDeCifra;
   statuses: LandlordApplicationStatus[] | null;
 }[] = [
-  { key: 'ALL',         label: 'Total',         tone: 'neutral', icon: ClipboardText, statuses: null },
-  { key: 'IN_REVIEW',   label: 'En revisión',   tone: 'info',    icon: Hourglass,     statuses: ['SUBMITTED', 'UNDER_REVIEW', 'PREAPPROVED'] },
-  { key: 'NEEDS_INFO',  label: 'Pide info',     tone: 'warn',    icon: WarningCircle, statuses: ['NEEDS_INFO'] },
-  { key: 'APPROVED',    label: 'Aprobadas',     tone: 'ok',      icon: CheckCircle,   statuses: ['APPROVED'] },
-  { key: 'REJECTED',    label: 'Rechazadas',    tone: 'bad',     icon: XCircle,       statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED'] },
+  { key: 'ALL',         label: 'Total',          statuses: null },
+  { key: 'IN_REVIEW',   label: 'En revisión',    tono: 'voltaje', statuses: ['SUBMITTED', 'UNDER_REVIEW', 'PREAPPROVED'] },
+  { key: 'NEEDS_INFO',  label: 'Pide info',      tono: 'aviso',   statuses: ['NEEDS_INFO'] },
+  { key: 'APPROVED',    label: 'Aprobadas',      statuses: ['APPROVED'] },
+  { key: 'REJECTED',    label: 'Rechazadas',     statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED'] },
   // QA-IA-A (04-10-2026): el no adjudicado NO es un rechazo —el inmueble quedó
   // para otro— y es a quien hay que ofrecerle otras opciones (F-06). Contarlo
   // entre las rechazadas lo escondía; el back ya lo devuelve en la lista.
-  { key: 'NOT_AWARDED', label: 'No adjudicadas', tone: 'neutral', icon: Hourglass,     statuses: ['NO_ADJUDICADO'] },
+  { key: 'NOT_AWARDED', label: 'No adjudicadas', statuses: ['NO_ADJUDICADO'] },
 ];
 
-function StatTile({
-  value,
-  label,
-  tone,
-  icon: Icon,
-  active,
-  onClick,
-  indicador,
-}: {
-  value: number;
-  label: string;
-  tone: keyof typeof TILE_TONES;
-  icon: typeof ClipboardText;
-  active: boolean;
-  onClick: () => void;
-  /** `layoutId` compartido por las seis: el marco del filtro activo se DESLIZA de una a otra. */
-  indicador: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'relative flex items-center gap-3 p-4 rounded-lg border border-border bg-card text-left transition-colors',
-        !active && 'hover:bg-surface-muted',
-      )}
-    >
-      {/* El marco cobalto del filtro activo (el mismo `border-primary ring-1`
-          de antes), ahora como `MotionIndicator`: viaja a la tarjeta elegida. */}
-      {active && (
-        <MotionIndicator
-          layoutId={indicador}
-          className="-inset-px rounded-lg border border-primary ring-1 ring-primary"
-        />
-      )}
-      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', TILE_TONES[tone])}>
-        <Icon className="w-5 h-5" weight="duotone" />
-      </div>
-      <div className="min-w-0">
-        {/* Cuenta cuando cambia (se aprueba, rechaza o llega una nueva). */}
-        <p className="text-2xl font-semibold text-fg tabular-nums leading-none">
-          <AnimatedNumber value={value} format={enteroTalCual} />
-        </p>
-        <p className="text-xs text-fg-muted mt-1 truncate">{label}</p>
-      </div>
-    </button>
-  );
-}
+
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -178,7 +115,6 @@ function initials(name: string): string {
 function PostulacionesContenido() {
   const tr = useTr();
   const fechas = useLocaleDeFechas();
-  const indicadorDelFiltro = `${useId()}-filtro`
   const [items, setItems] = useState<AllCandidatesItem[]>([])
   const [filter, setFilter] = useState<FilterKey>('ALL')
   const [search, setSearch] = useState('')
@@ -398,24 +334,29 @@ function PostulacionesContenido() {
         </div>
       ) : (
         <>
-          {/* Stats — clickable, they filter the table */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {FILTERS.map((f) => (
-              <StatTile
-                key={f.key}
-                value={countFor(f.statuses)}
-                label={tr(f.label)}
-                tone={f.tone}
-                icon={f.icon}
-                active={filter === f.key}
-                onClick={() => setFilter(filter === f.key ? 'ALL' : f.key)}
-                indicador={indicadorDelFiltro}
-              />
-            ))}
-          </div>
-
-          {/* Search + table (same container language as Propiedades) */}
+          {/* La tabla con sus filtros ADENTRO (Cadence 2): arriba, las cifras por estado —cada una
+              filtra la lista y se vuelve a tocar para quitar el filtro—; debajo, la búsqueda. Antes
+              eran seis tarjetas sueltas MÁS un selector con los mismos seis estados. */}
           <div className="rounded-lg border border-border bg-card overflow-hidden">
+            <FranjaDeCifras
+              data-testid="estados-de-las-postulaciones"
+              aria-label={tr("Filtrar por estado")}
+              className="rounded-none border-0 border-b border-border"
+            >
+              {FILTERS.map((f) => {
+                const cuantas = countFor(f.statuses);
+                return (
+                  <Cifra
+                    key={f.key}
+                    etiqueta={tr(f.label)}
+                    valor={cuantas}
+                    tono={cuantas > 0 ? f.tono : undefined}
+                    activa={filter === f.key}
+                    onClick={() => setFilter(filter === f.key ? 'ALL' : f.key)}
+                  />
+                );
+              })}
+            </FranjaDeCifras>
             <div className="px-4 py-3 border-b border-border flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="relative flex-1 max-w-sm">
                 <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-muted z-10 pointer-events-none" />
@@ -438,16 +379,6 @@ function PostulacionesContenido() {
                 )}
               </div>
 
-              {/* Status filter (selector excluyente, sincronizado con las tarjetas) */}
-              <SegmentedControl<FilterKey>
-                aria-label={tr("Filtrar por estado")}
-                value={filter}
-                onChange={setFilter}
-                options={FILTERS.map((f) => ({
-                  value: f.key,
-                  label: tr(f.key === 'ALL' ? 'Todas' : f.label),
-                }))}
-              />
             </div>
 
             {visibleItems.length === 0 ? (

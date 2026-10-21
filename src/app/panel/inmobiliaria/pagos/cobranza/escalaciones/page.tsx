@@ -17,7 +17,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle, Warning } from '@phosphor-icons/react'
+import { CheckCircle } from '@phosphor-icons/react'
 import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -38,6 +38,8 @@ import { CobranzaEscalacionesSkeleton } from '@/components/skeleton/panel/Cobran
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Spinner, toast } from '@/components/ui'
 import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 
 function EscalacionesContent() {
   const { t, locale } = useI18n()
@@ -234,9 +236,9 @@ function EscalacionesContent() {
         {escalacionAnnouncement}
       </div>
 
-      {/* Header — DESIGN.md §3 typography */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
+      {/* La vuelta y el encabezado común (GLOW UP 21-10). */}
+      <div className="space-y-3">
+        <div>
           {/* Se llega acá desde el caso («Escalaciones →») o desde el tablero
               del Resumen, y no había forma de devolverse. `router.back()`
               regresa a donde estabas; sin historial (pestaña nueva) cae al
@@ -254,15 +256,18 @@ function EscalacionesContent() {
           >
             ← Volver
           </Button>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
-          </h1>
-          {lastUpdated && (
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {lastUpdated}
-            </p>
-          )}
         </div>
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
+        descripcion="Los casos que el agente subió a una persona: tómalos, asígnalos o resuélvelos."
+        junto={
+          lastUpdated ? (
+            <span className="text-caption tabular-nums text-fg-muted">{lastUpdated}</span>
+          ) : null
+        }
+        data-testid="escalaciones-encabezado"
+      />
       </div>
 
       {/* Loading state — DESIGN.md §11 */}
@@ -273,14 +278,12 @@ function EscalacionesContent() {
       )}
 
       {/* Error state — color+icon+text (a11y: not color-only per XR-06) */}
-      <Presence
-        show={Boolean(error && !data)}
-        role="alert"
-        className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
-      >
-          <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>Error: {error}</span>
-      </Presence>
+      {/* GLOW UP 21-10: el hook guarda el error como texto crudo («500», el
+          nombre de una variable) y aquí salía tal cual, con «Error:» adelante.
+          Ahora es el cartel de siempre: qué no cargó y su reintento. */}
+      {error && !data ? (
+        <FalloDeCarga error={new Error(error)} queEs="las escalaciones" onReintentar={() => mutate()} />
+      ) : null}
 
       {/* Kanban — 3 columns md+, stacked sm. Las columnas ya no animan su
           propia entrada (la página entra con su template): se anima el

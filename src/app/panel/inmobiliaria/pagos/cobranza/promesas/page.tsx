@@ -51,6 +51,7 @@ import {
   type Promesa,
   type PromesaEstado,
 } from '@/components/inmobiliaria/cobranza/PromesaCard'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const DEUDORES_HREF = `${BASE}/deudores`
@@ -142,17 +143,12 @@ function PromesasContent() {
 
   // ── Header (compartido) ────────────────────────────────────────────────────
   const header = (
-    <header className="flex items-start justify-between gap-4 flex-wrap">
-      <div className="space-y-1">
-        <h1 className="text-h2 text-fg">
-          Promesas de pago
-        </h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          Las que registró tu equipo y las que los inquilinos le hicieron al agente, con su
-          estado de hoy. El seguimiento se hace desde el detalle del deudor.
-        </p>
-      </div>
-    </header>
+    <EncabezadoDePantalla
+      seccion="Cobranza"
+      titulo="Promesas de pago"
+      descripcion="Las que registró tu equipo y las que los inquilinos le hicieron al agente, con su estado de hoy. El seguimiento se hace desde el detalle del deudor."
+      data-testid="promesas-encabezado"
+    />
   )
 
   // El modal de WhatsApp se montaba con `{x && <Modal open />}`: cerraba de

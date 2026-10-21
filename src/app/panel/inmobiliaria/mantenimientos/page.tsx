@@ -714,7 +714,8 @@ function MantenimientosContent() {
   if (isLoading) huboCarga.current = true;
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    // GLOW UP (21-10): el mismo margen del resto del panel (p-6 lg:p-8; 16 px en el celular).
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header — el nombre del menú y nada más. Antes decía la pestaña en la
           que estabas, y antes de eso siempre «Operaciones», que no es como se
           llama esto en ningún menú. */}

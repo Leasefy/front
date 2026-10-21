@@ -233,9 +233,18 @@ export function desdeImportProperty(
   p: ImportProperty,
   clave: string,
   origen?: OrigenDelInmueble,
+  /**
+   * Lo que respondió a «¿Lo publicas para arriendo o para venta?». Manda sólo
+   * cuando la fila no lo dice: ni categoría («Venta», «Arriendo») ni precio de
+   * venta propio. Con «venta», el «Precio» suelto de la fila (que el lector
+   * pone en el canon) es el precio de venta.
+   */
+  operacionElegida?: Operacion | null,
 ): { inmueble: InmuebleRapido; fotos: string[] } {
-  const operacion = tipoEfectivo(p);
-  const precio = operacion === 'sale' ? numeroPositivo(p.salePrice) : numeroPositivo(p.monthlyRent);
+  const filaSinOperacion = !(p.listingType ?? '').trim() && !numeroPositivo(p.salePrice);
+  const operacion = operacionElegida === 'sale' && filaSinOperacion ? 'sale' : tipoEfectivo(p);
+  const precio =
+    operacion === 'sale' ? numeroPositivo(p.salePrice) ?? (filaSinOperacion ? numeroPositivo(p.monthlyRent) : null) : numeroPositivo(p.monthlyRent);
   const inmueble: InmuebleRapido = {
     ...inmuebleVacio(clave),
     operacion,

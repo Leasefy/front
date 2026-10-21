@@ -83,3 +83,9 @@ dump.rdb
 # Worker de MapLibre: lo copia el postinstall desde node_modules (ver
 # scripts/copiar-trabajador-de-maplibre.mjs). No se versiona.
 /public/maplibre/
+
+# Responsive e2e suite (T-0173): storageState holds auth tokens, the rest is run output.
+/tests/e2e-responsive/.auth/
+/responsive-report/
+/playwright-report-responsive/
+/test-results-responsive/

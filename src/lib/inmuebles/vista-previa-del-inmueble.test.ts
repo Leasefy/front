@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  fotoParaLaVistaPrevia,
   metadataDeLaVistaPrevia,
+  pedirInmobiliariaDeLaVistaPrevia,
   pedirInmuebleParaLaVistaPrevia,
   primeraFoto,
+  rutaDeLaImagen,
   type InmuebleDeLaVistaPrevia,
 } from './vista-previa-del-inmueble';
 
@@ -13,6 +14,11 @@ const FOTO = `https://rsywnqqrxuzylangbgmh.supabase.co/storage/v1/object/public/
 
 /** Lo que devolvió producción el 21-10 para el inmueble que compartió Nico. */
 const DEL_YERBAL: InmuebleDeLaVistaPrevia = {
+  id: ID,
+  type: 'APARTMENT',
+  stratum: 4,
+  updatedAt: '2026-10-21T15:00:00.000Z',
+  agencyId: 'e7b9937d-81f7-4447-a006-732b579193c4',
   title: 'Apartamento en El Yerbal, Envigado',
   city: 'Envigado',
   neighborhood: 'EL YERBAL',
@@ -47,29 +53,19 @@ describe('primeraFoto', () => {
   });
 });
 
-describe('fotoParaLaVistaPrevia', () => {
-  it('una foto del almacén pasa por el optimizador a 1200 px y calidad 75', () => {
-    expect(fotoParaLaVistaPrevia(FOTO)).toBe(`/_next/image?url=${encodeURIComponent(FOTO)}&w=1200&q=75`);
-  });
-
-  it('la del almacén del laboratorio también', () => {
-    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'http://localhost:3309');
-    const local = 'http://localhost:3309/storage/v1/object/public/property-images/x.jpg';
-    expect(fotoParaLaVistaPrevia(local)).toBe(`/_next/image?url=${encodeURIComponent(local)}&w=1200&q=75`);
-  });
-
-  it('cualquier otra va tal cual (el optimizador la rechazaría)', () => {
-    expect(fotoParaLaVistaPrevia('https://portofinopr.arrendasoft.co/img/fotos/1.jpg')).toBe(
-      'https://portofinopr.arrendasoft.co/img/fotos/1.jpg',
-    );
-    expect(fotoParaLaVistaPrevia('no es una url')).toBe('no es una url');
+describe('rutaDeLaImagen', () => {
+  it('la tarjeta del inmueble, con la fecha del último cambio para que nadie guarde una vieja', () => {
+    expect(rutaDeLaImagen(DEL_YERBAL)).toBe(`/api/og/inmueble/${ID}?v=${Date.parse('2026-10-21T15:00:00.000Z').toString(36)}`);
+    expect(rutaDeLaImagen({ id: ID, updatedAt: '' })).toBe(`/api/og/inmueble/${ID}`);
   });
 });
 
 describe('metadataDeLaVistaPrevia', () => {
-  it('título, descripción con el lugar y el precio, la foto y la URL', () => {
+  const IMAGEN = rutaDeLaImagen(DEL_YERBAL);
+
+  it('título, la línea «precio · cifras · lugar», la tarjeta de 1200 × 630 y la URL', () => {
     const m = metadataDeLaVistaPrevia(DEL_YERBAL, { idioma: 'es', url: `/es/propiedades/${ID}` });
-    const descripcion = 'Arriendo en El Yerbal, Envigado — $ 12.000.000 / mes';
+    const descripcion = '$\u00a012.000.000 / mes · Estrato 4 · El Yerbal, Envigado';
     expect(m.title).toBe('Apartamento en El Yerbal, Envigado');
     expect(m.description).toBe(descripcion);
     expect(m.openGraph).toMatchObject({
@@ -79,15 +75,14 @@ describe('metadataDeLaVistaPrevia', () => {
       url: `/es/propiedades/${ID}`,
       title: 'Apartamento en El Yerbal, Envigado',
       description: descripcion,
-      images: [{ url: fotoParaLaVistaPrevia(FOTO), alt: 'Apartamento en El Yerbal, Envigado' }],
+      images: [{ url: IMAGEN, width: 1200, height: 630, alt: 'Apartamento en El Yerbal, Envigado', type: 'image/jpeg' }],
     });
-    expect(m.twitter).toMatchObject({ card: 'summary_large_image', images: [fotoParaLaVistaPrevia(FOTO)] });
+    expect(m.twitter).toMatchObject({ card: 'summary_large_image', images: [IMAGEN] });
   });
 
-  it('sin fotos no pone `images` (queda la imagen de Leasefy del layout raíz)', () => {
+  it('sin fotos también va la tarjeta (con el fondo de la marca)', () => {
     const m = metadataDeLaVistaPrevia({ ...DEL_YERBAL, images: [] }, { idioma: 'es', url: '/es/propiedades/x' });
-    expect(m.openGraph && 'images' in m.openGraph).toBe(false);
-    expect(m.twitter && 'images' in m.twitter).toBe(false);
+    expect(m.openGraph).toMatchObject({ images: [{ url: IMAGEN }] });
   });
 
   it('una venta y en inglés', () => {
@@ -95,8 +90,32 @@ describe('metadataDeLaVistaPrevia', () => {
       { ...DEL_YERBAL, listingType: 'SALE', monthlyRent: null, salePrice: 480_000_000, bedrooms: 3 },
       { idioma: 'en', url: `/en/propiedades/${ID}` },
     );
-    expect(m.description).toBe('For sale in El Yerbal, Envigado — $ 480,000,000 · 3 bedrooms');
+    expect(m.description).toBe('For sale · $\u00a0480,000,000 · 3 bd · Stratum 4 · El Yerbal, Envigado');
     expect(m.openGraph).toMatchObject({ locale: 'en_US' });
+  });
+});
+
+describe('pedirInmobiliariaDeLaVistaPrevia', () => {
+  const PORTOFINO = { id: 'e7b9937d-81f7-4447-a006-732b579193c4', nombre: 'Portofino Propiedad Raiz S.A.S.', logoUrl: 'https://x.supabase.co/l.webp' };
+
+  it('busca la inmobiliaria del inmueble en el directorio público del marketplace', async () => {
+    vi.stubEnv('NEXT_PUBLIC_BACKEND_URL', 'https://api.leasefy.co/api');
+    const fetchFalso = vi.fn().mockResolvedValue(new Response(JSON.stringify([{ id: 'otra', nombre: 'Otra' }, PORTOFINO]), { status: 200 }));
+    vi.stubGlobal('fetch', fetchFalso);
+    await expect(pedirInmobiliariaDeLaVistaPrevia(PORTOFINO.id)).resolves.toEqual({ nombre: PORTOFINO.nombre, logoUrl: PORTOFINO.logoUrl });
+    expect(fetchFalso).toHaveBeenCalledWith('https://api.leasefy.co/api/marketplace/inmobiliarias', expect.anything());
+  });
+
+  it('sin id, con un id raro, sin encontrarla o con el back caído: null', async () => {
+    const fetchFalso = vi.fn();
+    vi.stubGlobal('fetch', fetchFalso);
+    await expect(pedirInmobiliariaDeLaVistaPrevia(null)).resolves.toBeNull();
+    await expect(pedirInmobiliariaDeLaVistaPrevia('../x')).resolves.toBeNull();
+    expect(fetchFalso).not.toHaveBeenCalled();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('[]', { status: 200 })));
+    await expect(pedirInmobiliariaDeLaVistaPrevia(PORTOFINO.id)).resolves.toBeNull();
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('fetch failed')));
+    await expect(pedirInmobiliariaDeLaVistaPrevia(PORTOFINO.id)).resolves.toBeNull();
   });
 });
 

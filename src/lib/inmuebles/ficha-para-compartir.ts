@@ -36,6 +36,8 @@ export interface InmuebleParaCompartir {
   habitaciones?: number | null;
   banos?: number | null;
   parqueaderos?: number | null;
+  /** El estrato (1–6); sólo la vista previa lo usa, cuando faltan las demás cifras. */
+  estrato?: number | null;
 }
 
 /** Los campos del inmueble del front (`Property`) que la ficha usa. */
@@ -137,19 +139,42 @@ export function tituloParaCompartir(d: InmuebleParaCompartir, idioma: IdiomaDeLa
   return lugar ? `${negocio} ${en ? 'in' : 'en'} ${lugar}` : negocio;
 }
 
+/** Cuántas cifras caben en la vista previa (la tarjeta de la imagen y su línea de texto). */
+const CIFRAS_DE_LA_VISTA_PREVIA = 4;
+
 /**
- * La línea de la vista previa, como la de Portofino («ARRIENDO EN CALDAS,
- * CALDAS • PRIMAVERA — $ 2.900.000 / mes») pero sin gritar y con las cifras:
- * «Arriendo en El Yerbal, Envigado — $ 12.000.000 / mes · 80 m² · 3 habitaciones · 2 baños».
+ * Las cifras cortas de la vista previa, en el orden en que se buscan:
+ * «2 hab · 2 baños · 50 m² · 1 parq.». Si faltan, el estrato completa
+ * («Estrato 4»), que es lo único que trae mucho de lo migrado.
+ */
+export function cifrasCortas(d: InmuebleParaCompartir, idioma: IdiomaDeLaFicha = 'es'): string[] {
+  const en = idioma === 'en';
+  const cifras: string[] = [];
+  if (positivo(d.habitaciones)) cifras.push(`${d.habitaciones} ${en ? 'bd' : 'hab'}`);
+  if (positivo(d.banos)) cifras.push(en ? `${d.banos} ba` : cuantos(d.banos, 'baño', 'baños'));
+  if (positivo(d.area)) cifras.push(`${Math.round(d.area).toLocaleString(en ? 'en-US' : 'es-CO')} m²`);
+  if (positivo(d.parqueaderos)) cifras.push(`${d.parqueaderos} ${en ? 'parking' : 'parq.'}`);
+  if (cifras.length < CIFRAS_DE_LA_VISTA_PREVIA && positivo(d.estrato) && d.estrato <= 6) {
+    cifras.push(`${en ? 'Stratum' : 'Estrato'} ${d.estrato}`);
+  }
+  return cifras;
+}
+
+/**
+ * La línea de texto de la vista previa (debajo del título, en WhatsApp):
+ * «$ 1.200.000 / mes · 2 hab · 2 baños · 50 m² · Poblado, Medellín». Es la
+ * que Nico vio en las simulaciones del 21-10-2026. En venta el precio va
+ * solo, así que empieza con «Venta».
  */
 export function descripcionParaLaVistaPrevia(d: InmuebleParaCompartir, idioma: IdiomaDeLaFicha = 'es'): string {
   const en = idioma === 'en';
-  const negocio = esVenta(d) ? (en ? 'For sale' : 'Venta') : en ? 'For rent' : 'Arriendo';
-  const lugar = lugarDelInmueble(d);
-  const cabeza = lugar ? `${negocio} ${en ? 'in' : 'en'} ${lugar}` : negocio;
-  const precio = precioDelInmueble(d, idioma);
-  const cifras = cifrasDelInmueble(d, idioma);
-  return [precio ? `${cabeza} — ${precio}` : cabeza, ...cifras].join(' · ');
+  const partes = [
+    esVenta(d) ? (en ? 'For sale' : 'Venta') : '',
+    precioDelInmueble(d, idioma) ?? '',
+    ...cifrasCortas(d, idioma),
+    lugarDelInmueble(d),
+  ].filter(Boolean);
+  return partes.length > 0 ? partes.join(' · ') : en ? 'For rent' : 'Arriendo';
 }
 
 /**

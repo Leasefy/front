@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   cifrasDelInmueble,
+  cifrasCortas,
   descripcionParaLaVistaPrevia,
   fichaDelInmueble,
   lugarDelInmueble,
@@ -136,28 +137,37 @@ describe('las piezas de la ficha', () => {
 });
 
 describe('descripcionParaLaVistaPrevia', () => {
-  it('como la de Portofino, sin gritar y con las cifras', () => {
-    expect(descripcionParaLaVistaPrevia(CASA_FINCA)).toBe(
-      `Arriendo en Primavera, Caldas — ${$('2.900.000')} / mes · 100 m² · 2 habitaciones · 1 baño`,
-    );
+  it('🔴 el formato que Nico aprobó: precio · cifras · lugar', () => {
+    expect(
+      descripcionParaLaVistaPrevia({ tipoDeNegocio: 'rent', canon: 1_200_000, habitaciones: 2, banos: 2, area: 50, parqueaderos: 1, barrio: 'Poblado', ciudad: 'Medellín' }),
+    ).toBe(`${$('1.200.000')} / mes · 2 hab · 2 baños · 50 m² · 1 parq. · Poblado, Medellín`);
+    expect(descripcionParaLaVistaPrevia(CASA_FINCA)).toBe(`${$('2.900.000')} / mes · 2 hab · 1 baño · 100 m² · Primavera, Caldas`);
   });
 
-  it('lo migrado sin cifras: sólo el lugar y el precio, sin «0 habitaciones»', () => {
-    expect(descripcionParaLaVistaPrevia(DEL_YERBAL)).toBe(`Arriendo en El Yerbal, Envigado — ${$('12.000.000')} / mes`);
+  it('lo migrado sin cifras: el estrato completa; nunca «0 habitaciones»', () => {
+    expect(descripcionParaLaVistaPrevia(DEL_YERBAL)).toBe(`${$('12.000.000')} / mes · El Yerbal, Envigado`);
+    expect(descripcionParaLaVistaPrevia({ ...DEL_YERBAL, estrato: 4 })).toBe(`${$('12.000.000')} / mes · Estrato 4 · El Yerbal, Envigado`);
   });
 
   it('venta, sin precio y sin lugar', () => {
     expect(descripcionParaLaVistaPrevia({ tipoDeNegocio: 'sale', precioDeVenta: 300_000_000, ciudad: 'Sabaneta' })).toBe(
-      `Venta en Sabaneta — ${$('300.000.000')}`,
+      `Venta · ${$('300.000.000')} · Sabaneta`,
     );
-    expect(descripcionParaLaVistaPrevia({ ciudad: 'Itagüí', habitaciones: 3 })).toBe('Arriendo en Itagüí · 3 habitaciones');
+    expect(descripcionParaLaVistaPrevia({ ciudad: 'Itagüí', habitaciones: 3 })).toBe('3 hab · Itagüí');
     expect(descripcionParaLaVistaPrevia({})).toBe('Arriendo');
   });
 
   it('en inglés', () => {
-    expect(descripcionParaLaVistaPrevia(CASA_FINCA, 'en')).toBe(
-      `For rent in Primavera, Caldas — ${$('2,900,000')} / month · 100 m² · 2 bedrooms · 1 bathroom`,
-    );
+    expect(descripcionParaLaVistaPrevia(CASA_FINCA, 'en')).toBe(`${$('2,900,000')} / month · 2 bd · 1 ba · 100 m² · Primavera, Caldas`);
+  });
+});
+
+describe('cifrasCortas', () => {
+  it('hab, baños, m² y parqueaderos; el estrato sólo si quedan menos de cuatro', () => {
+    expect(cifrasCortas({ habitaciones: 2, banos: 2, area: 50, parqueaderos: 1, estrato: 4 })).toEqual(['2 hab', '2 baños', '50 m²', '1 parq.']);
+    expect(cifrasCortas({ habitaciones: 1, banos: 1, estrato: 3 })).toEqual(['1 hab', '1 baño', 'Estrato 3']);
+    expect(cifrasCortas({ estrato: 0 })).toEqual([]);
+    expect(cifrasCortas({ estrato: 9 })).toEqual([]);
   });
 });
 

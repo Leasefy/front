@@ -55,6 +55,11 @@ const nextConfig = {
   // `NEXT_DIST_DIR=.next-build pnpm build` cada uno usa el suyo.
   // Por defecto no cambia nada.
   ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
+  // La imagen de la vista previa de un inmueble lee sus fuentes del disco
+  // (`assets/og/fuentes`, ver su LEEME): que viajen con esa función al desplegar.
+  outputFileTracingIncludes: {
+    "/api/og/inmueble/[id]": ["./assets/og/fuentes/**"],
+  },
   // @leasefy/cadence is symlinked (file:../cadence) and resolves its own copy of
   // @radix-ui/react-accordion from ../cadence/node_modules, while this app's
   // accordion adapter (src/components/ui/accordion.tsx) uses the local copy.

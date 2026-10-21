@@ -30,6 +30,10 @@ const ESPERA_MAXIMA_MS = 2500;
 /** Los campos del inmueble que la vista previa usa (el `GET /properties/:id` público). */
 export type InmuebleDeLaVistaPrevia = Pick<
   BackendProperty,
+  | 'id'
+  | 'type'
+  | 'stratum'
+  | 'updatedAt'
   | 'title'
   | 'city'
   | 'neighborhood'
@@ -42,7 +46,10 @@ export type InmuebleDeLaVistaPrevia = Pick<
   | 'bathrooms'
   | 'parkingSpaces'
   | 'images'
->;
+> & {
+  /** La inmobiliaria que lo publica (el público lo trae aunque el tipo del front no lo declare). */
+  agencyId?: string | null;
+};
 
 /** Del cable a los datos de la ficha. */
 export function paraCompartir(p: InmuebleDeLaVistaPrevia): InmuebleParaCompartir {
@@ -58,6 +65,7 @@ export function paraCompartir(p: InmuebleDeLaVistaPrevia): InmuebleParaCompartir
     habitaciones: p.bedrooms,
     banos: p.bathrooms,
     parqueaderos: p.parkingSpaces,
+    estrato: p.stratum,
   };
 }
 
@@ -69,40 +77,56 @@ export function primeraFoto(p: Pick<InmuebleDeLaVistaPrevia, 'images'>): string 
   return fotos[0]?.url ?? null;
 }
 
+export const ANCHO_DE_LA_IMAGEN = 1200;
+export const ALTO_DE_LA_IMAGEN = 630;
+
 /**
- * La foto pasada por el optimizador de imágenes de Next, a 1200 px: una foto
- * de celular pesa varios MB y WhatsApp descarta la imagen de la vista previa
- * si pesa mucho (la de Portofino pasa igual por su proxy, a 1600 px). 75 es
- * una de las calidades permitidas en `next.config.mjs`.
- *
- * Sólo las fotos del almacén (Supabase): el optimizador rechaza cualquier
- * otro origen, así que otra URL va tal cual.
+ * La dirección de la imagen de la vista previa. `v` cambia cada vez que el
+ * inmueble cambia: WhatsApp y Facebook guardan la imagen por dirección, y así
+ * un precio nuevo no sigue mostrando el viejo.
  */
-export function fotoParaLaVistaPrevia(url: string): string {
-  let host = '';
+export function rutaDeLaImagen(p: Pick<InmuebleDeLaVistaPrevia, 'id' | 'updatedAt'>): string {
+  const cuando = Date.parse(p.updatedAt ?? '');
+  const v = Number.isFinite(cuando) ? `?v=${cuando.toString(36)}` : '';
+  return `/api/og/inmueble/${encodeURIComponent(p.id)}${v}`;
+}
+
+/** La inmobiliaria que publica el inmueble: su nombre entero y su logo. `null` si no se sabe. */
+export async function pedirInmobiliariaDeLaVistaPrevia(
+  agencyId: string | null | undefined,
+): Promise<{ nombre: string; logoUrl: string | null } | null> {
+  if (!agencyId || !UUID.test(agencyId)) return null;
+  const back = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
   try {
-    host = new URL(url).hostname;
+    const res = await fetch(`${back}/marketplace/inmobiliarias`, {
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(ESPERA_MAXIMA_MS),
+    });
+    if (!res.ok) return null;
+    const cuerpo = (await res.json()) as unknown;
+    const lista = Array.isArray(cuerpo) ? cuerpo : (cuerpo as { data?: unknown })?.data;
+    if (!Array.isArray(lista)) return null;
+    const i = lista.find((x) => (x as { id?: string })?.id === agencyId) as
+      | { nombre?: string; logoUrl?: string | null }
+      | undefined;
+    const nombre = i?.nombre?.trim();
+    return nombre ? { nombre, logoUrl: i?.logoUrl ?? null } : null;
   } catch {
-    return url;
+    return null;
   }
-  let almacen = '';
-  try {
-    almacen = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').hostname;
-  } catch {
-    /* sin almacén configurado */
-  }
-  const esDelAlmacen = host.endsWith('.supabase.co') || (almacen !== '' && host === almacen);
-  return esDelAlmacen ? `/_next/image?url=${encodeURIComponent(url)}&w=1200&q=75` : url;
 }
 
 /** Pide el inmueble al back como lo vería cualquiera, sin sesión. `null` si no se pudo. */
-export async function pedirInmuebleParaLaVistaPrevia(id: string): Promise<InmuebleDeLaVistaPrevia | null> {
+export async function pedirInmuebleParaLaVistaPrevia(
+  id: string,
+  esperaMs: number = ESPERA_MAXIMA_MS,
+): Promise<InmuebleDeLaVistaPrevia | null> {
   if (!UUID.test(id)) return null;
   const back = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
   try {
     const res = await fetch(`${back}/properties/${encodeURIComponent(id)}`, {
       next: { revalidate: 300 },
-      signal: AbortSignal.timeout(ESPERA_MAXIMA_MS),
+      signal: AbortSignal.timeout(esperaMs),
     });
     if (!res.ok) return null;
     const p = (await res.json()) as InmuebleDeLaVistaPrevia | null;
@@ -124,8 +148,10 @@ export function metadataDeLaVistaPrevia(
   const datos = paraCompartir(p);
   const titulo = tituloParaCompartir(datos, idioma);
   const descripcion = descripcionParaLaVistaPrevia(datos, idioma);
-  const foto = primeraFoto(p);
-  const imagenes = foto ? [{ url: fotoParaLaVistaPrevia(foto), alt: titulo }] : undefined;
+  // La tarjeta diseñada (diseño A, Nico 21-10-2026), con foto o sin ella.
+  const imagenes = [
+    { url: rutaDeLaImagen(p), width: ANCHO_DE_LA_IMAGEN, height: ALTO_DE_LA_IMAGEN, alt: titulo, type: 'image/jpeg' },
+  ];
   return {
     // La plantilla del layout raíz ya agrega «| Leasefy».
     title: titulo,
@@ -137,14 +163,13 @@ export function metadataDeLaVistaPrevia(
       url,
       title: titulo,
       description: descripcion,
-      // Sin foto, queda la imagen de Leasefy del layout raíz.
-      ...(imagenes ? { images: imagenes } : {}),
+      images: imagenes,
     },
     twitter: {
       card: 'summary_large_image',
       title: titulo,
       description: descripcion,
-      ...(imagenes ? { images: imagenes.map((i) => i.url) } : {}),
+      images: imagenes.map((i) => i.url),
     },
   };
 }

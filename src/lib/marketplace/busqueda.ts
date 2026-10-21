@@ -80,6 +80,11 @@ const TIPOS: readonly { api: TipoDeLaApi; url: string; nombre: string; plural: s
   { api: 'WAREHOUSE', url: 'bodega', nombre: 'Bodega', plural: 'Bodegas' },
 ];
 
+/** «Apartamento», «Casa»… del tipo que manda la API (`APARTMENT`); `null` si no lo conoce. */
+export function nombreDelTipo(api: string | null | undefined): string | null {
+  return TIPOS.find((t) => t.api === api)?.nombre ?? null;
+}
+
 /**
  * La palabra de cada característica en la URL (`?comodidades=mascotas,balcon`).
  * Estas 15 son las de antes y no cambian: hay enlaces guardados y compartidos

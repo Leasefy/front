@@ -12,7 +12,7 @@
 import { Check, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { GrupoDeAvisos } from '@/lib/api/avisos-agrupados.service';
-import { etiquetaDeCategoria, iconoDelAviso } from '@/lib/notificaciones/aviso';
+import { avisoPideAtencion, etiquetaDeCategoria, iconoDelAviso } from '@/lib/notificaciones/aviso';
 import { formatNotificationTime } from '@/lib/types/notification';
 
 export interface FilaDelAvisoProps {
@@ -26,6 +26,7 @@ export interface FilaDelAvisoProps {
 export function FilaDelAviso({ aviso, compacta = false, onAbrir, onMarcarLeido, onQuitar }: FilaDelAvisoProps) {
   const Icono = iconoDelAviso(aviso.type, aviso.category, aviso.metadata);
   const grupo = aviso.cantidad > 1;
+  const urgente = avisoPideAtencion(aviso.type);
   return (
     <div
       data-testid="fila-del-aviso"
@@ -33,9 +34,13 @@ export function FilaDelAviso({ aviso, compacta = false, onAbrir, onMarcarLeido, 
       className={cn(
         'group relative flex items-start gap-3 border-b border-border-faint transition-colors last:border-b-0 hover:bg-surface-hover',
         compacta ? 'px-5 py-3.5' : 'px-5 py-4',
-        !aviso.read && 'bg-muted',
       )}
     >
+      {/* Sin leer = un punto de voltaje a la izquierda y el título más fuerte (Cadence 2); antes la
+          fila entera iba en gris y, con todo sin leer, la bandeja era un solo bloque gris. */}
+      {!aviso.read && (
+        <span aria-hidden="true" data-testid="punto-sin-leer" className="absolute left-2 top-[26px] size-1.5 rounded-full bg-primary" />
+      )}
       <button
         type="button"
         onClick={() => onAbrir(aviso)}
@@ -44,13 +49,13 @@ export function FilaDelAviso({ aviso, compacta = false, onAbrir, onMarcarLeido, 
         <span
           aria-hidden="true"
           className={cn(
-            'relative mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full',
-            aviso.read ? 'bg-surface-muted text-fg-muted' : 'bg-primary-soft text-primary',
+            'relative mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[11px]',
+            urgente ? 'bg-danger-soft text-danger' : 'bg-surface-muted text-fg-muted',
           )}
         >
-          <Icono className="h-[18px] w-[18px]" weight={aviso.read ? 'regular' : 'fill'} />
+          <Icono className="h-[18px] w-[18px]" weight="regular" />
           {grupo && (
-            <span className="absolute -right-1.5 -top-1.5 min-w-[18px] rounded-full bg-primary px-1 text-center font-mono text-[10px] leading-[18px] text-primary-fg tabular-nums">
+            <span className="absolute -right-1.5 -top-1.5 min-w-[18px] rounded-full bg-ink px-1 text-center font-mono text-[10px] leading-[18px] text-ink-fg tabular-nums">
               {aviso.cantidad > 99 ? '99+' : aviso.cantidad}
             </span>
           )}

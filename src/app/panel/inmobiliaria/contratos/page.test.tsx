@@ -130,6 +130,8 @@ vi.mock('@/components/ui/pagination', () => ({
 vi.mock('@leasefy/cadence', () => ({
   Eyebrow: ({ children }: { children?: React.ReactNode }) =>
     React.createElement('p', null, children),
+  // Cadence 2: el inquilino con su Avatar (iniciales y tono). Acá un span vacío: no suma texto a la fila.
+  Avatar: () => React.createElement('span', { 'data-avatar': 'persona' }),
   // Movimiento (03-10-2026): la cifra que cuenta y el «Limpiar» que entra y
   // sale. Acá se pintan en su valor final, sin animar.
   AnimatedNumber: ({ value, format }: { value: number; format?: (n: number) => string }) =>

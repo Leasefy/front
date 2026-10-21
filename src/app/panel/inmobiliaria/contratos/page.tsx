@@ -52,7 +52,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
-import { AnimatedNumber, Eyebrow } from '@leasefy/cadence';
+import { AnimatedNumber, Avatar, Eyebrow } from '@leasefy/cadence';
 
 import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -765,9 +765,14 @@ function ContratosContent() {
                 </TableCell>
                 <TableCell className="px-4 py-4 max-w-[240px] max-md:order-1 max-md:block max-md:max-w-none max-md:p-0">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="grid place-items-center w-8 h-8 rounded-full bg-muted flex-shrink-0 max-md:hidden">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                    </div>
+                    {/* Cadence 2: la persona con sus iniciales y SU tono (el mismo en todo el panel), no un muñequito igual para todos. */}
+                    {c.tenantName ? (
+                      <Avatar name={c.tenantName} size="sm" className="max-md:hidden" />
+                    ) : (
+                      <div className="grid place-items-center w-8 h-8 rounded-full bg-muted flex-shrink-0 max-md:hidden">
+                        <User className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    )}
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate">{c.tenantName || '—'}</p>
                       <p className="text-caption text-muted-foreground truncate max-md:hidden">{c.tenantEmail}</p>

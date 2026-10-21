@@ -2,6 +2,7 @@
 
 import { CuantoCuestaVivirAqui } from '@/components/property/CuantoCuestaVivirAqui'
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
+import { fichaDelInmueble } from '@/lib/inmuebles/ficha-para-compartir';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -461,6 +462,7 @@ export function PropertyDetailView({
                 listingType={property.listingType}
                 salePrice={property.salePrice}
                 visitTypes={property.visitTypes}
+                ficha={fichaDelInmueble(property)}
               />
             </div>
           </div>

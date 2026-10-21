@@ -20,6 +20,7 @@ import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FotosDelInmueble } from '@/components/inmobiliaria/FotosDelInmueble';
 import { PublicadoEnElMarketplace } from '@/components/inmobiliaria/marketplace/PublicadoEnElMarketplace';
+import { fichaDelInmueble } from '@/lib/inmuebles/ficha-para-compartir';
 import { VisitasDelInmueble } from '@/components/inmobiliaria/VisitasDelInmueble';
 import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { VisorDeFotos } from '@/components/inmobiliaria/inmueble/VisorDeFotos';
@@ -647,6 +648,7 @@ function ConsignacionDetailContent() {
             <PublicadoEnElMarketplace
               propertyId={consignacion.propertyId}
               puedeCambiar={puedeEditarPortafolio}
+              ficha={property ? fichaDelInmueble(property) : undefined}
             />
           )}
 

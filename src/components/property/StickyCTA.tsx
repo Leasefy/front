@@ -26,6 +26,8 @@ import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { seLePuedePrometerSinCodeudor } from '@/lib/api/aprobacion.service';
 import { horaDeLaCasa } from '@/lib/agenda/hora-de-la-casa';
 import { TeLlamamosParaLaVisita } from '@/components/property/TeLlamamosParaLaVisita';
+import { CompartirLaFicha } from '@/components/property/CompartirLaFicha';
+import type { InmuebleParaCompartir } from '@/lib/inmuebles/ficha-para-compartir';
 
 interface StickyCTAProps {
   propertyId: string;
@@ -65,6 +67,11 @@ interface StickyCTAProps {
   listingType?: 'rent' | 'sale';
   /** contract.md T-0038 §3.2.3 — `null`/absent renders "Sin dato", never `$0` (C6). */
   salePrice?: number | null;
+  /**
+   * Los datos de la «mini ficha» (21-10-2026): con ellos, la inmobiliaria
+   * tiene además «Copiar ficha» y «WhatsApp» en «Comparte esta propiedad».
+   */
+  ficha?: InmuebleParaCompartir;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -287,6 +294,7 @@ export function StickyCTA({
   className,
   listingType = 'rent',
   salePrice,
+  ficha,
 }: StickyCTAProps) {
   const { user, isAuthenticated, hasActiveAgencyMembership } = useAuth();
   const router = useRouter();
@@ -631,6 +639,8 @@ export function StickyCTA({
                   </>
                 )}
               </Button>
+
+              {ficha && <CompartirLaFicha propertyId={propertyId} ficha={ficha} className="mt-2" />}
 
               <p className="text-[11px] text-muted-foreground text-center mt-3">
                 Como inmobiliaria no aplicas ni agendas visitas — comparte el enlace con tus clientes.

@@ -150,6 +150,35 @@ describe('<StickyCTA> — inmobiliaria / agent viewer', () => {
     expect(writeText.mock.calls[0][0]).toContain('/propiedades/p1')
   })
 
+  it('con la ficha, la inmobiliaria copia además la ficha del inmueble (21-10-2026)', async () => {
+    authState = { user: { role: 'agency' }, isAuthenticated: true, hasActiveAgencyMembership: false }
+    render({ ficha: { titulo: 'Casa Finca', canon: 2_900_000, ciudad: 'Caldas', habitaciones: 2 } })
+
+    const copiarFicha = q('[data-testid="agency-share-panel"] [data-testid="copiar-ficha"]') as HTMLButtonElement
+    expect(copiarFicha).toBeTruthy()
+    expect(q('[data-testid="agency-share-panel"] [data-testid="enviar-por-whatsapp"]')).toBeTruthy()
+
+    await act(async () => {
+      copiarFicha.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    const texto = writeText.mock.calls[0][0] as string
+    expect(texto.startsWith('CASA FINCA\nCaldas\nPrecio: $ 2.900.000 / mes\n2 habitaciones\n')).toBe(true)
+    expect(texto.endsWith('Conoce más detalles aquí:\nhttp://localhost:3000/propiedades/p1')).toBe(true)
+    expect(toast.success).toHaveBeenCalledWith('Copiamos la ficha del inmueble', expect.anything())
+  })
+
+  it('sin la ficha, el panel queda como antes (sólo «Copiar enlace»)', () => {
+    authState = { user: { role: 'agency' }, isAuthenticated: true, hasActiveAgencyMembership: false }
+    render()
+    expect(q('[data-testid="copiar-ficha"]')).toBeNull()
+  })
+
+  it('un inquilino no ve «Copiar ficha»: su ícono de compartir sigue copiando sólo el enlace', () => {
+    render({ ficha: { titulo: 'Casa Finca', canon: 2_900_000 } })
+    expect(q('[data-testid="copiar-ficha"]')).toBeNull()
+  })
+
   it('an agency viewer sees the share panel on a SALE listing too (unconditional, before the listingType branch)', () => {
     authState = { user: { role: 'agency' }, isAuthenticated: true, hasActiveAgencyMembership: false }
     render({ listingType: 'sale', salePrice: 500_000_000 })

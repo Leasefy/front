@@ -30,6 +30,9 @@ import { applySharedSession, refreshSharedSession } from './support/session';
  * page ("No pudimos cargar esto", 5xx, 404) is reported as its own category, not as layout.
  */
 
+/** Tallest screenshot taken, in CSS px. */
+const MAX_SHOT_HEIGHT = 12_000;
+
 const REPORT_DIR = path.resolve(process.env.RESPONSIVE_REPORT_DIR ?? 'responsive-report');
 
 const test = base.extend<{ guard: Guard }>({
@@ -254,14 +257,37 @@ for (const persona of PERSONAS) {
         const screenshotAbs = path.join(REPORT_DIR, screenshotRel);
         const takeScreenshot = async () => {
           fs.mkdirSync(path.dirname(screenshotAbs), { recursive: true });
+          // Full page, in CSS pixels, capped in height: WebKit hangs on very tall captures at
+          // 3x DPR (a 25,000px landing page never finished). The cap is recorded in the findings.
+          const pageHeight = await page
+            .evaluate(() => Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight ?? 0))
+            .catch(() => 0);
+          const width = page.viewportSize()?.width ?? 400;
+          const capped = pageHeight > MAX_SHOT_HEIGHT;
           try {
-            await page.screenshot({ path: screenshotAbs, fullPage: true, type: 'jpeg', quality: 55, animations: 'disabled' });
+            await page.screenshot({
+              path: screenshotAbs,
+              fullPage: true,
+              ...(pageHeight > 0 ? { clip: { x: 0, y: 0, width, height: Math.min(pageHeight, MAX_SHOT_HEIGHT) } } : {}),
+              scale: 'css',
+              type: 'jpeg',
+              quality: 55,
+              animations: 'disabled',
+              timeout: 30_000,
+            });
           } catch {
             await page
-              .screenshot({ path: screenshotAbs, type: 'jpeg', quality: 55 })
+              .screenshot({ path: screenshotAbs, scale: 'css', type: 'jpeg', quality: 55, timeout: 15_000 })
               .catch(() => {});
           }
           if (fs.existsSync(screenshotAbs)) payload.screenshot = screenshotRel.split(path.sep).join('/');
+          if (capped) {
+            findings.push({
+              type: 'note',
+              severity: 'info',
+              detail: `Screenshot truncated at ${MAX_SHOT_HEIGHT}px of a ${pageHeight}px page.`,
+            });
+          }
         };
 
         if (opened.redirected) {

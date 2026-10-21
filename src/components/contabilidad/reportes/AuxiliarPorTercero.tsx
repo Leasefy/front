@@ -119,6 +119,7 @@ export function AuxiliarPorTercero() {
         <>
         <div className="sm:col-span-2">
           <RangoDeFechas
+            atajos
             desde={rango.desde}
             hasta={rango.hasta}
             onChange={(r) => {

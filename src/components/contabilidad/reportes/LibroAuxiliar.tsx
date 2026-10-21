@@ -126,7 +126,7 @@ export function LibroAuxiliar() {
             </p>
           ) : null}
         </div>
-        <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
+        <RangoDeFechas atajos desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
         {/* CB-C-13 (QA-FACT-CONTA-95 r2): lo que el contador firma se baja, con TODAS las filas. */}
         <div className="lg:col-span-2">
           <DescargarElInforme

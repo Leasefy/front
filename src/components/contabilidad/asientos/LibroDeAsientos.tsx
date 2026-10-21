@@ -51,7 +51,6 @@ import {
   TableRowAnimada,
 } from '@/components/ui/table';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { SegmentedControl } from '@leasefy/cadence';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { SinDatos } from '@/components/estado/SinDatos';
 import {
@@ -89,50 +88,7 @@ const TODOS = '__todos__';
 // N.º · fecha · descripción (con su estado) · origen · valor (antes: débitos, créditos y estado aparte).
 const COLUMNAS = 5;
 
-/** Los atajos de período (glow up 21-10): lo que más se filtra, a un toque. */
-type Atajo = 'mes' | 'anterior' | 'anio' | 'todo' | 'otro';
-
-/** Hoy en Colombia, `AAAA-MM-DD`. */
-function hoyEnColombia(): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Bogota',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
-}
-
-function ultimoDia(anio: number, mes: number): string {
-  const d = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
-  return `${anio}-${String(mes).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-}
-
-/** El rango de cada atajo. */
-function rangoDelAtajo(atajo: Exclude<Atajo, 'otro'>): { desde: string; hasta: string } {
-  if (atajo === 'todo') return { desde: '', hasta: '' };
-  const [anio, mes] = hoyEnColombia().split('-').map(Number);
-  if (atajo === 'anio') return { desde: `${anio}-01-01`, hasta: `${anio}-12-31` };
-  if (atajo === 'mes') return { desde: `${anio}-${String(mes).padStart(2, '0')}-01`, hasta: ultimoDia(anio, mes) };
-  const [a2, m2] = mes === 1 ? [anio - 1, 12] : [anio, mes - 1];
-  return { desde: `${a2}-${String(m2).padStart(2, '0')}-01`, hasta: ultimoDia(a2, m2) };
-}
-
-/** Qué atajo es el rango puesto («otro» si no es ninguno). */
-function atajoDe(desde: string, hasta: string): Atajo {
-  for (const a of ['todo', 'mes', 'anterior', 'anio'] as const) {
-    const r = rangoDelAtajo(a);
-    if (r.desde === desde && r.hasta === hasta) return a;
-  }
-  return 'otro';
-}
-
-const ATAJOS: { value: Atajo; label: string }[] = [
-  { value: 'mes', label: 'Este mes' },
-  { value: 'anterior', label: 'Mes pasado' },
-  { value: 'anio', label: 'Este año' },
-  { value: 'todo', label: 'Todo' },
-  { value: 'otro', label: 'Otro rango' },
-];
+// Los atajos de período viven en `RangoDeFechas` (`atajos`): iguales en el libro y en los informes.
 
 interface Filtros {
   desde: string;
@@ -167,8 +123,6 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
   const [error, setError] = useState<unknown>(null);
   const [seleccionado, setSeleccionado] = useState<AsientoContable | null>(null);
   const [manualAbierto, setManualAbierto] = useState(false);
-  /** «Otro rango» abierto: se ven las dos fechas. */
-  const [verRango, setVerRango] = useState(false);
   const [cierre, setCierre] = useState<Cierre | null>(null);
   const [cargandoCierre, setCargandoCierre] = useState(true);
   const [falloDelCierre, setFalloDelCierre] = useState(false);
@@ -239,7 +193,6 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
 
   const total = datos?.total ?? 0;
   const conFiltros = hayFiltros(filtros);
-  const atajo = atajoDe(filtros.desde, filtros.hasta);
 
   const filas = useMemo(
     () => (datos?.asientos ?? []).map((a) => ({ asiento: a, totales: totalesDeAsiento(a) })),
@@ -263,19 +216,9 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
             atajos (lo que más se filtra, a un toque) y los demás filtros en una línea. Antes eran
             cinco campos con rótulo encima y la acción principal metida entre los filtros. */}
         <div className="flex flex-wrap items-center gap-2">
-          <SegmentedControl<Atajo>
-            aria-label="Período del libro"
-            value={verRango ? 'otro' : atajo}
-            onChange={(a) => {
-              if (a === 'otro') {
-                setVerRango(true);
-                return;
-              }
-              setVerRango(false);
-              cambiarFiltros(rangoDelAtajo(a));
-            }}
-            options={ATAJOS}
-          />
+          <div className="min-w-0">
+            <RangoDeFechas atajos desde={filtros.desde} hasta={filtros.hasta} onChange={(r) => cambiarFiltros(r)} />
+          </div>
           <div className="min-w-[200px] flex-1 sm:max-w-[280px]">
             <Label className="sr-only">Cuenta</Label>
             <SelectorDeCuenta
@@ -323,7 +266,7 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
           </div>
           <div className="ml-auto flex items-center gap-2">
             {conFiltros ? (
-              <Button variant="ghost" size="sm" hideArrow onClick={() => { setVerRango(false); cambiarFiltros(SIN_FILTROS); }}>
+              <Button variant="ghost" size="sm" hideArrow onClick={() => cambiarFiltros(SIN_FILTROS)}>
                 Limpiar
               </Button>
             ) : null}
@@ -335,16 +278,7 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
             )}
           </div>
         </div>
-        {/* «Otro rango»: las dos fechas, sólo cuando se piden. */}
-        {verRango || atajo === 'otro' ? (
-          <div className="max-w-xl">
-            <RangoDeFechas
-              desde={filtros.desde}
-              hasta={filtros.hasta}
-              onChange={(r) => cambiarFiltros(r)}
-            />
-          </div>
-        ) : null}
+
         {errorDeCuentas ? (
           <p className="text-caption text-warning" role="status">
             No se pudo cargar el plan de cuentas: el filtro por cuenta y el asiento manual no van a

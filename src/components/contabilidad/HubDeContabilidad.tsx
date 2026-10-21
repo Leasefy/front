@@ -710,7 +710,8 @@ function ParaElContador({ incrustado = false }: { incrustado?: boolean } = {}) {
           metido entre el texto y los enlaces, y los enlaces quedaban colgando
           debajo. */}
       <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 border-b border-border px-5 py-4">
-        <div className="min-w-0 space-y-0.5">
+        {/* Incrustado en el paso «Entregarle al contador», el título ya lo dice el paso. */}
+        <div className={cn('min-w-0 space-y-0.5', incrustado && 'sr-only')}>
           <h2 id="para-el-contador-titulo" className="text-sm font-semibold text-fg">
             Para el contador
           </h2>
@@ -748,6 +749,7 @@ function ParaElContador({ incrustado = false }: { incrustado?: boolean } = {}) {
         />
         <CajonCuerpo className="space-y-4">
           <RangoDeFechas
+              atajos
             desde={rango.desde}
             hasta={rango.hasta}
             onChange={setRango}

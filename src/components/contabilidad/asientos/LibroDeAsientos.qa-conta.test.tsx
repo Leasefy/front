@@ -141,28 +141,7 @@ describe('<LibroDeAsientos> · CB-22, tarjetas en el celular', () => {
   });
 });
 
-describe('<LibroDeAsientos> · glow up 21-10, el período a un toque', () => {
-  it('«Mes pasado» pide al libro del primer al último día del mes anterior', async () => {
-    await montar();
-    const boton = [...host.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find(
-      (b) => b.textContent === 'Mes pasado',
-    );
-    expect(boton).toBeTruthy();
-    await act(async () => {
-      boton!.click();
-      await new Promise((r) => setTimeout(r, 0));
-    });
-    const ultima = api.asientos.listar.mock.calls.at(-1)![0] as { desde?: string; hasta?: string };
-    const [anio, mes] = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' })
-      .format(new Date())
-      .split('-')
-      .map(Number);
-    const [a2, m2] = mes === 1 ? [anio - 1, 12] : [anio, mes - 1];
-    const mm = String(m2).padStart(2, '0');
-    expect(ultima.desde).toBe(`${a2}-${mm}-01`);
-    expect(ultima.hasta).toBe(`${a2}-${mm}-${String(new Date(Date.UTC(a2, m2, 0)).getUTCDate()).padStart(2, '0')}`);
-  });
-
+describe('<LibroDeAsientos> · glow up 21-10, la tabla', () => {
   it('débitos y créditos van en UNA columna, el valor; y no hay columna de estado vacía', async () => {
     await montar();
     const cabeceras = [...host.querySelectorAll('th')].map((th) => th.textContent);

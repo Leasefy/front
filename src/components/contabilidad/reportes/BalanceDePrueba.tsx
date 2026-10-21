@@ -325,8 +325,8 @@ export function BalanceDePrueba() {
       testId="informe-balance-de-prueba"
       filtros={
         <>
-          <div className="w-full max-w-md">
-            <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
+          <div className="w-full max-w-xl">
+            <RangoDeFechas atajos desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
           </div>
           <div className="flex items-center gap-2 pb-2">
             <Checkbox

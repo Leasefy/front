@@ -718,3 +718,88 @@ describe('HubDeContabilidad · el glow-up del 22-09', () => {
     expect(api.asientos.listar.mock.calls.length).toBe(pedidosAntes);
   });
 });
+
+/**
+ * GLOW UP 21-10 · el recorrido del cierre del mes (Nico: «que el flujo realmente quede optimizado
+ * para lo que un usuario haría para su job to be done, no solo colocarle la UI nueva»).
+ *
+ * Lo que fija: cada aviso va al paso que resuelve; con todo en orden los dos primeros pasos quedan
+ * hechos y el cierre queda abierto; con algo por asentar, el cierre espera pero se puede forzar;
+ * lo del año (exógena) va aparte; y «Para el contador» está siempre a la mano.
+ */
+describe('HubDeContabilidad — el cierre del mes, paso por paso', () => {
+  const paso = (id: string) => $(`[data-testid="cierre-del-mes-${id}"]`);
+
+  it('con todo asentado y cuadrando: pasos 1 y 2 hechos, el cierre abierto', async () => {
+    await montar();
+    expect(paso('asentado')?.getAttribute('data-estado')).toBe('hecho');
+    expect(paso('cuadra')?.getAttribute('data-estado')).toBe('hecho');
+    expect(paso('cerrar')?.getAttribute('data-estado')).toBe('actual');
+    // «Para el contador» se ve aunque el mes no esté cerrado.
+    expect($('[data-testid="descargar-csv"]')).not.toBeNull();
+  });
+
+  it('una factura sin causar va al paso 1, y el cierre espera con «Cerrar de todos modos»', async () => {
+    gastos.facturas.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 3,
+      limite: 1,
+      desplazamiento: 0,
+      totales: { subtotalCop: 0, ivaCop: 0, retencionesCop: 0, totalCop: 1_200_000, netoCop: 0 },
+      facturas: [],
+    });
+    await montar();
+
+    expect(paso('asentado')?.getAttribute('data-estado')).toBe('actual');
+    expect(paso('asentado')?.querySelector('[data-testid="alerta-facturas-sin-causar"]')).not.toBeNull();
+    expect(paso('cerrar')?.getAttribute('data-estado')).toBe('pendiente');
+
+    await clic($('[data-testid="cerrar-de-todos-modos"]'));
+    expect(paso('cerrar')?.getAttribute('data-estado')).toBe('actual');
+  });
+
+  it('el libro que no cuadra abre el paso 2 con su aviso', async () => {
+    api.reportes.balanceDePrueba.mockResolvedValue({ cuadra: false, diferenciaCop: 15_000 });
+    await montar();
+    expect(paso('cuadra')?.getAttribute('data-estado')).toBe('actual');
+    expect(paso('cuadra')?.querySelector('[data-testid="alerta-no-cuadra"]')).not.toBeNull();
+  });
+
+  it('la exógena no es del cierre del mes: va a «Este año»', async () => {
+    const anioPasado = new Date().getFullYear() - 1;
+    exogena.resumen.mockResolvedValue({
+      anio: anioPasado,
+      disponible: true,
+      cuantiasMenores: { activa: false, topeCop: 0, nit: '222222222', filas: 0 },
+      formatos: [
+        {
+          formato: '1001',
+          nombre: 'Pagos',
+          filas: 128,
+          totalCop: 1,
+          estado: 'GENERADA',
+          aprobadoPorUserId: null,
+          aprobadoAt: null,
+          observaciones: null,
+          bloqueos: [],
+          avisos: [],
+          necesitaContador: true,
+        },
+      ],
+    });
+    await montar();
+    const exo = $('[data-testid="alerta-exogena-sin-visto-bueno"]');
+    expect(exo).not.toBeNull();
+    expect(exo!.closest('[aria-label="Lo del año"]')).not.toBeNull();
+    expect(paso('asentado')?.getAttribute('data-estado')).toBe('hecho');
+  });
+
+  it('las pantallas van por cuándo se usan, sin flechas', async () => {
+    await montar();
+    const nav = $('nav[aria-label="Secciones de contabilidad"]')!;
+    const grupos = [...nav.querySelectorAll('h3')].map((h) => h.textContent);
+    expect(grupos).toEqual(['Día a día', 'Cada mes', 'Cada año', 'Configurar']);
+    expect(nav.querySelectorAll('svg.lucide-arrow-right, [data-icono="flecha"]').length).toBe(0);
+  });
+});

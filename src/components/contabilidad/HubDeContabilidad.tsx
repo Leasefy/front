@@ -69,7 +69,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
-  ArrowRight,
   ArrowsClockwise,
   Bank,
   BookOpenText,
@@ -103,7 +102,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
+import { CrossFade } from '@leasefy/cadence';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toast';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
@@ -148,6 +147,7 @@ import { Monto } from './Monto';
 import { RangoDeFechas } from './RangoDeFechas';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { CierreDePeriodo } from './asientos/CierreDePeriodo';
+import { PasosDeLaTarea, type EstadoDelPaso } from '@/components/pantalla/PasosDeLaTarea';
 import { EN_CURSO_EN_EL_CENTRO } from '@/components/procesos/estado-del-proceso';
 import { DetalleDeAsiento } from './asientos/DetalleDeAsiento';
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
@@ -545,16 +545,10 @@ function UltimosAsientos({
           </h2>
           <p className="text-caption text-fg-muted">Lo último que entró al libro.</p>
         </div>
-        <Link
-          href={`${BASE}/asientos`}
-          className="group inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline"
-        >
-          Ver el libro
-          <ArrowRight
-            className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
-            aria-hidden="true"
-          />
-        </Link>
+        {/* Cadence 2: sin flecha decorativa; un secundario chico, como las acciones de tarjeta. */}
+        <Button asChild size="sm" variant="secondary" hideArrow>
+          <Link href={`${BASE}/asientos`}>Ver el libro</Link>
+        </Button>
       </header>
 
       {/* Esqueleto → lo último que entró (o el vacío, o el fallo) con fundido. */}
@@ -632,7 +626,7 @@ function UltimosAsientos({
  *
  * Ahora la portada tiene el botón, y el botón abre el cajón que pide el rango.
  */
-function ParaElContador() {
+function ParaElContador({ incrustado = false }: { incrustado?: boolean } = {}) {
   const inicial = useMemo(() => rangoDelMesAnterior(), []);
   const [rango, setRango] = useState({ desde: inicial.desde, hasta: inicial.hasta });
   const [bajando, setBajando] = useState(false);
@@ -703,7 +697,12 @@ function ParaElContador() {
 
   return (
     <section
-      className="overflow-x-clip rounded-lg border border-border bg-surface"
+      // Incrustado en el paso 4 del cierre: sin marco propio (una tarjeta con borde dentro de
+      // otra con borde no va en Cadence 2), sobre una bandeja de arena.
+      className={cn(
+        'overflow-x-clip',
+        incrustado ? 'rounded-[14px] bg-surface-muted/50' : 'rounded-lg border border-border bg-surface',
+      )}
       aria-labelledby="para-el-contador-titulo"
     >
       {/* 🔴 22-09 · La acción de la tarjeta va en su cabecera, a la derecha,
@@ -1029,6 +1028,43 @@ const DESTINOS: Destino[] = [
  * Las revisiones que alimentan las alertas. Si una no carga, «no hay alertas»
  * deja de significar «está todo bien», y eso se dice.
  */
+/** Los avisos que NO son del paso 1 (asentar): el descuadre, el mes por cerrar y lo del año. */
+const FUERA_DEL_PASO_1 = new Set(['no-cuadra', 'mes-sin-cerrar', 'exogena-sin-visto-bueno']);
+
+/** «septiembre» de `2026-09` (el mes de la casa, sin correrse por la zona horaria). */
+function nombreDelMes(aaaaMm: string): string {
+  return new Date(`${aaaaMm}-15T12:00:00Z`).toLocaleDateString(localeDeLasCifras(), {
+    month: 'long',
+    timeZone: 'UTC',
+  });
+}
+
+/** Las pantallas, por CUÁNDO se usan. Una que no esté en la lista cae en «Configurar». */
+const GRUPOS_DE_DESTINOS: { titulo: string; rutas: string[] }[] = [
+  { titulo: 'Día a día', rutas: ['asientos', 'gastos', 'egresos'] },
+  { titulo: 'Cada mes', rutas: ['deterioro', 'reportes', 'estados-financieros', 'presupuesto'] },
+  { titulo: 'Cada año', rutas: ['exogena', 'certificados'] },
+  { titulo: 'Configurar', rutas: ['puc', 'mapeo', 'copropiedades'] },
+];
+
+const gruposDeDestinos = (() => {
+  const ruta = (href: string) => href.slice(href.lastIndexOf('/') + 1);
+  const usados = new Set<string>();
+  const grupos = GRUPOS_DE_DESTINOS.map((g) => ({
+    titulo: g.titulo,
+    destinos: g.rutas
+      .map((r) => DESTINOS.find((d) => ruta(d.href) === r))
+      .filter((d): d is (typeof DESTINOS)[number] => {
+        if (!d) return false;
+        usados.add(d.href);
+        return true;
+      }),
+  }));
+  const sueltos = DESTINOS.filter((d) => !usados.has(d.href));
+  if (sueltos.length) grupos[grupos.length - 1].destinos.push(...sueltos);
+  return grupos.filter((g) => g.destinos.length > 0);
+})();
+
 const REVISIONES: { consulta: ConsultaDeLaPortada; que: string }[] = [
   { consulta: 'faltantes', que: 'Si hay movimientos sin asiento' },
   { consulta: 'balance', que: 'Si el libro cuadra' },
@@ -1136,6 +1172,41 @@ export function HubDeContabilidad() {
   const revisionesCaidas = cargando ? [] : REVISIONES.filter((r) => r.consulta in datos.fallos);
   const faltantes = datos.faltantes;
 
+  // ── El cierre del mes, paso por paso (glow up 21-10) ──────────────────────
+  // Cada aviso va al paso que resuelve; lo del año (exógena) va aparte.
+  const porAsentar = alertas.filter((a) => !FUERA_DEL_PASO_1.has(a.clave));
+  const alertaNoCuadra = alertas.find((a) => a.clave === 'no-cuadra');
+  const alertaMes = alertas.find((a) => a.clave === 'mes-sin-cerrar');
+  const delAnio = alertas.filter((a) => a.clave === 'exogena-sin-visto-bueno');
+  const fallo = (cs: ConsultaDeLaPortada[]) => cs.some((c) => c in datos.fallos);
+  // Lo que no se pudo revisar no se da por hecho: «no hay avisos» sólo vale si se preguntó.
+  const falla1 = fallo(['cuentas', 'faltantes', 'rubros', 'facturas', 'lotes']);
+  const falla2 = fallo(['balance']);
+  const [forzarCierre, setForzarCierre] = useState(false);
+  /** El último día que se puede cerrar (el mes que se cierra ahora). */
+  const hastaPorCerrar = datos.cierre?.sePuedeCerrarHasta ?? datos.mesAnterior?.hasta ?? null;
+  const mesPorCerrar = hastaPorCerrar ? hastaPorCerrar.slice(0, 7) : null;
+  const cerradoAlDia =
+    !!hastaPorCerrar && !!datos.cierre?.cerradaHasta && datos.cierre.cerradaHasta >= hastaPorCerrar;
+  const paso1: EstadoDelPaso = cargando ? 'pendiente' : porAsentar.length > 0 || falla1 ? 'actual' : 'hecho';
+  const paso2: EstadoDelPaso = cargando
+    ? 'pendiente'
+    : alertaNoCuadra || falla2 || datos.balance?.cuadra !== true
+      ? 'actual'
+      : 'hecho';
+  const paso3: EstadoDelPaso = cargando
+    ? 'pendiente'
+    : cerradoAlDia
+      ? 'hecho'
+      : (paso1 === 'hecho' && paso2 === 'hecho') || forzarCierre
+        ? 'actual'
+        : 'pendiente';
+  const paso4: EstadoDelPaso = cargando ? 'pendiente' : paso3 === 'hecho' ? 'actual' : 'pendiente';
+  const tituloDelCierre =
+    mesPorCerrar && !cerradoAlDia
+      ? `El cierre de ${nombreDelMes(mesPorCerrar)}`
+      : 'El cierre del mes';
+
   return (
     <div className="space-y-6">
       {/* 🔴 EL RESUMEN ES UNA FRASE (regla 1 del molde, Nico 22-09: «esto
@@ -1218,99 +1289,191 @@ export function HubDeContabilidad() {
         </section>
       ) : null}
 
-      {/* Las alertas entran escalonadas y, al resolverse (reprocesar, cerrar
-          el mes), SALEN; sin ninguna, el bloque no ocupa lugar (`empty:hidden`). */}
-      <Stagger
-        as="section"
-        className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface empty:hidden"
-        aria-label="Alertas de contabilidad"
-      >
-          {alertas.length > 0 ? (
-            <StaggerItem key="cabeza">
-              <p className="px-4 pb-2 pt-3 text-xs text-fg-muted" data-testid="necesita-tu-atencion">
-                Necesita tu atención · <span className="font-mono tabular-nums">{alertas.length}</span>
-              </p>
-            </StaggerItem>
-          ) : null}
-          {alertas.map((a) => (
-            <StaggerItem key={a.clave}>
-            <Alerta
-              alerta={a}
-              onReprocesar={() => setConfirmandoReproceso(true)}
-              ocupado={reprocesando}
-            />
-            </StaggerItem>
-          ))}
-      </Stagger>
+      {/* ═══ GLOW UP 21-10 · EL TRABAJO DE ESTA PANTALLA ES CERRAR EL MES ═══
+          Nico: «el flujo realmente quede optimizado para lo que un usuario haría para su job to be
+          done, no solo colocarle la UI nueva». Antes la portada era un resumen, una tarjeta de
+          avisos, los últimos asientos al lado del cierre (que proponía una fecha sin decir si el
+          mes estaba listo), «Para el contador» y doce tarjetas iguales: todo del mismo peso, sin
+          decir qué va primero. Ahora es el recorrido del contador, en orden:
+            1. que todo quede asentado (cada aviso que lo impide, con su botón),
+            2. que el libro cuadre,
+            3. cerrar el mes (sin bloquear: «Cerrar de todos modos»),
+            4. entregarle al contador lo que firma.
+          Lo del año (exógena), el libro para consultar y las pantallas, debajo. */}
+      <PasosDeLaTarea
+        titulo={tituloDelCierre}
+        data-testid="cierre-del-mes"
+        pasos={[
+          {
+            id: 'asentado',
+            titulo: 'Que todo quede asentado',
+            descripcion: 'Cada cobro, recibo, giro, gasto y factura del mes con su asiento.',
+            estado: paso1,
+            resumen: 'Todo lo que pasó tiene su asiento.',
+            extra:
+              paso1 === 'actual' && porAsentar.length > 0 ? (
+                <span className="font-mono text-caption tabular-nums text-fg-muted">
+                  {porAsentar.length === 1 ? '1 por resolver' : `${porAsentar.length} por resolver`}
+                </span>
+              ) : null,
+            contenido:
+              porAsentar.length > 0 ? (
+                <div
+                  className="-mx-4 divide-y divide-border-faint"
+                  aria-label="Alertas de contabilidad"
+                  data-testid="necesita-tu-atencion"
+                >
+                  {porAsentar.map((a) => (
+                    <Alerta
+                      key={a.clave}
+                      alerta={a}
+                      onReprocesar={() => setConfirmandoReproceso(true)}
+                      ocupado={reprocesando}
+                    />
+                  ))}
+                </div>
+              ) : falla1 ? (
+                <p className="text-sm text-fg-muted">
+                  No pude revisar todo (arriba dice qué no cargó): hasta que cargue, no sé si falta algo.
+                </p>
+              ) : null,
+          },
+          {
+            id: 'cuadra',
+            titulo: 'Que el libro cuadre',
+            descripcion: 'Débitos y créditos iguales, y un resultado del mes que tenga sentido.',
+            estado: paso2,
+            resumen: 'Débitos y créditos iguales.',
+            contenido: (
+              <div className="space-y-3">
+                {alertaNoCuadra ? (
+                  <div className="-mx-4">
+                    <Alerta alerta={alertaNoCuadra} onReprocesar={() => setConfirmandoReproceso(true)} ocupado={reprocesando} />
+                  </div>
+                ) : falla2 ? (
+                  <p className="text-sm text-fg-muted">No pude leer el balance: no sé todavía si cuadra.</p>
+                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild size="sm" variant="secondary" hideArrow>
+                    <Link href={`${BASE}/reportes?informe=balance`} data-testid="revisar-balance-de-prueba">
+                      Revisar el balance de prueba
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" variant="ghost" hideArrow>
+                    <Link href={`${BASE}/estados-financieros`}>Ver el resultado del mes</Link>
+                  </Button>
+                </div>
+              </div>
+            ),
+          },
+          {
+            id: 'cerrar',
+            titulo: mesPorCerrar && !cerradoAlDia ? `Cerrar ${nombreDelMes(mesPorCerrar)}` : 'Cerrar el mes',
+            descripcion:
+              'Al cerrarlo nadie asienta con fecha de ese mes; si hace falta, el administrador lo reabre con motivo.',
+            estado: paso3,
+            resumen: datos.cierre?.cerradaHasta
+              ? `Cerrado hasta el ${fechaCorta(datos.cierre.cerradaHasta)}.`
+              : 'Al día.',
+            bloqueadoPorque: (
+              <span className="inline-flex flex-wrap items-center gap-x-2">
+                Primero, que todo quede asentado y el libro cuadre.
+                <button
+                  type="button"
+                  onClick={() => setForzarCierre(true)}
+                  className="font-medium text-fg underline decoration-border-strong underline-offset-2 hover:decoration-fg"
+                  data-testid="cerrar-de-todos-modos"
+                >
+                  Cerrar de todos modos
+                </button>
+              </span>
+            ),
+            contenido: (
+              // `tabIndex={-1}`: el bloque del cierre puede recibir el foco.
+              <div ref={cierreRef} tabIndex={-1} className="space-y-3 outline-none">
+                {alertaMes ? (
+                  <div className="-mx-4">
+                    <Alerta alerta={alertaMes} onReprocesar={() => setConfirmandoReproceso(true)} ocupado={reprocesando} />
+                  </div>
+                ) : null}
+                <CierreDePeriodo
+                  cierre={datos.cierre}
+                  cargando={cargando}
+                  fallo={'cierre' in datos.fallos}
+                  onCerrado={() => void recargar()}
+                  onReabierto={() => void recargar()}
+                />
+                {!cargando && falloDe('cierre') ? <NoCargo {...falloDe('cierre')!} /> : null}
+              </div>
+            ),
+          },
+          {
+            id: 'contador',
+            titulo: 'Entregarle al contador',
+            // Siempre a la mano (el contador puede pedir el libro cualquier día); lo que se recomienda
+            // es entregarlo con el mes cerrado, y eso se dice, sin bloquear.
+            descripcion:
+              paso3 === 'hecho'
+                ? 'El libro del mes en CSV y los informes que firma.'
+                : 'El libro del mes en CSV y los informes que firma. Mejor con el mes cerrado: así no cambia después.',
+            estado: paso4,
+            fijo: <ParaElContador incrustado />,
+          },
+        ]}
+      />
 
-      {/* 🔴 22-09 · LA JERARQUÍA (Nico: «no le hiciste el glow up y eso se ve
-          por ahí tirado todo»). Lo que un contador hace acá, en orden:
-            1. ¿Cómo está el libro? — la frase de arriba y las alertas.
-            2. ¿Hasta dónde está cerrado, y cierro el mes? — el período, que
-               en pantalla ancha va a la derecha de lo último que entró y en
-               el teléfono va PRIMERO (por eso es primero en el DOM).
-            3. Mandarle el libro y los informes al contador.
-            4. Ir a una pantalla puntual — la grilla, al final.
-          Antes el período era una tarjeta del ancho entero debajo de las
-          otras dos, con cinco bloques apilados de igual peso.
-
-          🔴 20-09 (navegador abierto, 1440): `items-start` — cada tarjeta mide
-          lo que mide su contenido, sin estirarse a la altura de la vecina.
-          🔴 22-09 (QA a 390 px): `grid-cols-1` es `minmax(0, 1fr)`; sin eso la
-          columna implícita es `auto` y la glosa más larga estiraba la página a
-          1.606 px. Las columnas de `lg` también son `minmax(0, …)` por lo
-          mismo. */}
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-        {/* `tabIndex={-1}`: el bloque del cierre puede recibir el foco. (Desde
-            CB-04 la alerta «Cerrar el mes» ya no trae botón: la acción es ésta.) */}
-        <div
-          ref={cierreRef}
-          tabIndex={-1}
-          className="space-y-2 outline-none lg:col-start-2 lg:row-start-1"
+      {/* Lo del año: no es del cierre del mes, pero no se puede perder. */}
+      {delAnio.length > 0 ? (
+        <section
+          className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border bg-surface"
+          aria-label="Lo del año"
         >
-          <CierreDePeriodo
-            cierre={datos.cierre}
-            cargando={cargando}
-            fallo={'cierre' in datos.fallos}
-            onCerrado={() => void recargar()}
-            onReabierto={() => void recargar()}
-          />
-          {!cargando && falloDe('cierre') ? <NoCargo {...falloDe('cierre')!} /> : null}
-        </div>
-        <UltimosAsientos
-          asientos={datos.ultimos}
-          cargando={cargando}
-          fallo={falloDe('libro')}
-          onAbrir={setAsientoAbierto}
-          className="lg:col-start-1 lg:row-start-1"
-        />
-      </div>
+          <p className="px-4 pb-2 pt-3 font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">
+            Este año
+          </p>
+          {delAnio.map((a) => (
+            <Alerta key={a.clave} alerta={a} onReprocesar={() => setConfirmandoReproceso(true)} ocupado={reprocesando} />
+          ))}
+        </section>
+      ) : null}
 
-      <ParaElContador />
+      {/* Para consultar: lo último que entró al libro (la fila abre el asiento). */}
+      <UltimosAsientos
+        asientos={datos.ultimos}
+        cargando={cargando}
+        fallo={falloDe('libro')}
+        onAbrir={setAsientoAbierto}
+      />
 
+      {/* Las pantallas, agrupadas por CUÁNDO se usan (antes, doce tarjetas iguales con ícono en un
+          círculo de color y flecha). */}
       <section className="space-y-3" aria-labelledby="pantallas-de-contabilidad">
         <h2 id="pantallas-de-contabilidad" className="text-sm font-semibold text-fg">
           Todas las pantallas de contabilidad
         </h2>
-        <nav aria-label="Secciones de contabilidad" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {DESTINOS.map((d) => (
-            <Link
-              key={d.href}
-              href={d.href}
-              className="group flex items-start gap-3 rounded-lg border border-border bg-surface p-4 transition-colors hover:bg-surface-muted"
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft">
-                <d.icono className="h-5 w-5 text-primary" aria-hidden="true" />
-              </div>
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="text-sm font-semibold text-fg">{d.titulo}</p>
-                <p className="text-caption text-fg-muted">{d.texto}</p>
-              </div>
-              <ArrowRight
-                className="mt-1 h-4 w-4 shrink-0 text-fg-subtle transition group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
-            </Link>
+        <nav aria-label="Secciones de contabilidad" className="grid gap-x-5 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
+          {gruposDeDestinos.map((g) => (
+            <div key={g.titulo} className="min-w-0 space-y-2">
+              <h3 className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">
+                {g.titulo}
+              </h3>
+              <ul className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border bg-surface">
+                {g.destinos.map((d) => (
+                  <li key={d.href}>
+                    <Link
+                      href={d.href}
+                      className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+                    >
+                      <d.icono className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+                      <span className="min-w-0 space-y-0.5">
+                        <span className="block text-sm font-medium text-fg">{d.titulo}</span>
+                        <span className="block text-caption text-fg-muted">{d.texto}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
         </nav>
       </section>

@@ -11,7 +11,7 @@ import { Pill } from '@/components/admin/Pill'
 import { EditarModeloDeCobro } from '@/components/admin/EditarModeloDeCobro'
 import { NOMBRE_DEL_MODELO, fraccionAPorcentaje, type ModeloDeCobro } from '@/lib/admin/modelo-de-cobro'
 import { Button } from '@/components/ui/button'
-import { Alert } from '@leasefy/cadence'
+import { Alert, FranjaDeCifras } from '@leasefy/cadence'
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon'
 
 import type { PillTone } from '@/lib/admin/types'
@@ -261,13 +261,13 @@ export default function PricingConfigPage() {
         description="Cuánto le cobra Leasefy a cada inmobiliaria por Mori. Sólo Leasefy lo cambia (la inmobiliaria lo ve sin poder editarlo) y cada cambio queda registrado con quién, cuándo y de qué a qué. El cobro del mes es un estimado con lo de hoy y la misma fórmula de su factura."
       />
 
-      <section aria-label="Cifras de los precios" className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <FranjaDeCifras fila="lg" aria-label="Cifras de los precios">
         <KpiCard label="Inmobiliarias" value={rows ? rows.length : '—'} />
         <KpiCard label={NOMBRE_DEL_MODELO.performance} value={rows ? cuantas('performance') : '—'} />
         <KpiCard label={NOMBRE_DEL_MODELO.standard} value={rows ? cuantas('standard') : '—'} />
         <KpiCard label={NOMBRE_DEL_MODELO.hybrid} value={rows ? cuantas('hybrid') : '—'} />
         <KpiCard label="Cobro estimado del mes" value={estimadoDelMes != null ? fmtCOP(estimadoDelMes) : '—'} tone="ok" />
-      </section>
+      </FranjaDeCifras>
 
       {rows && cuantas(null) > 0 ? (
         <Alert variant="warning" title={`${cuantas(null) === 1 ? 'Una inmobiliaria no tiene' : `${cuantas(null)} inmobiliarias no tienen`} modelo de cobro`}>

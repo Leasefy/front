@@ -19,7 +19,7 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
-import { Card, Eyebrow, MonoLabel } from '@leasefy/cadence'
+import { Card, Eyebrow, FranjaDeCifras, MonoLabel } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { BackButton } from '@/components/ui/back-button'
 
@@ -230,7 +230,7 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
       </Card>
 
       {/* Los números que resumen la historia */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <FranjaDeCifras fila="lg">
         <KpiCard
           label="contratos"
           value={contratos.total}
@@ -285,7 +285,7 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
               : `${canon.variacionPct >= 0 ? '+' : ''}${canon.variacionPct} % desde ${fmtCOP(canon.inicial)}`
           }
         />
-      </div>
+      </FranjaDeCifras>
 
       <Seccion label="ocupación" title="Vacancias entre contratos">
         <Card className="p-4 mb-3 text-sm flex flex-wrap items-center gap-x-6 gap-y-1" data-testid="ocupacion-ahora">

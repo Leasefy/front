@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { ChartBar, CheckCircle, Gauge as GaugeIcon, ListChecks, PhoneCall, WarningOctagon } from '@phosphor-icons/react'
-import { MonoLabel, Progress } from '@leasefy/cadence'
+import { FranjaDeCifras, MonoLabel, Progress } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
@@ -107,7 +107,7 @@ export default function QaPage() {
         description="Cómo puntúa el revisor automático cada llamada de los últimos 30 días, qué alertas salen y cuáles hay que escuchar (puntaje menor a 70)."
       />
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5" aria-label="Resumen">
+      <FranjaDeCifras fila="lg" aria-label="Resumen">
         <KpiCard icon={<PhoneCall />} label="Llamadas · 30 días" value={num(stats?.total_calls)} hint="Todas" />
         <KpiCard icon={<ListChecks />} label="Con puntaje" value={num(stats?.scored_calls)} hint="El revisor ya las escuchó" />
         <KpiCard
@@ -117,7 +117,7 @@ export default function QaPage() {
         />
         <KpiCard icon={<CheckCircle />} label="Cumplen" value={num(stats?.compliant_count)} tone="ok" />
         <KpiCard icon={<WarningOctagon />} label="No cumplen" value={num(stats?.non_compliant_count)} tone="bad" />
-      </section>
+      </FranjaDeCifras>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Tarjeta titulo="Cómo se reparten los puntajes" descripcion="De 0 a 100, en tramos de 10.">

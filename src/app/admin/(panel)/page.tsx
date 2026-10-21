@@ -11,7 +11,7 @@ import { LaPlataforma, type ResumenDeLaPlataforma } from '@/components/admin/LaP
 import { ErrorBlock, LoadingBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 import type { PillTone } from '@/lib/admin/types'
-import { Card, MonoLabel, StatusBadge } from '@leasefy/cadence'
+import { Card, FranjaDeCifras, MonoLabel, StatusBadge } from '@leasefy/cadence'
 import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -304,7 +304,7 @@ export default function AdminDashboard() {
 
       {/* ── 1. Hero KPI strip ───────────────────────────────────────────── */}
       {dash.isLoading ? <LoadingBlock label="Cargando la cobranza por voz" filas={4} /> : kpis ? (
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5" aria-label="El mes">
+        <FranjaDeCifras fila="lg" aria-label="El mes">
           <KpiCard
             label="Cobrado · este mes"
             value={fmtCOP(cobrado)}
@@ -338,7 +338,7 @@ export default function AdminDashboard() {
             hint={fmtCOP(num(kpis.cartera_atrasada_amount))}
             tone="warn"
           />
-        </section>
+        </FranjaDeCifras>
       ) : (
         dash.error ? null : <p className="text-body-sm text-fg-muted">Las cifras del mes no llegaron.</p>
       )}

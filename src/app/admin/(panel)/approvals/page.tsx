@@ -10,6 +10,7 @@ import { fmtDateTime } from '@/lib/admin/format'
 import { tipoDeDecision } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { FranjaDeCifras } from '@leasefy/cadence'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
 import { Pill } from '@/components/admin/Pill'
@@ -148,10 +149,10 @@ export default function ApprovalsPage() {
         description="Toda decisión de un agente con efecto legal pasa por acá antes de ejecutarse (sentencia T-323 de 2024). Toca una para revisarla y decidir."
       />
 
-      <section aria-label="Cifras de la cola" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <FranjaDeCifras fila="lg" aria-label="Cifras de la cola">
         <KpiCard label="Esperando" value={data ? totalPending : '—'} tone={totalPending ? 'warn' : 'default'} />
         <KpiCard label="Más de 3 días" value={data ? vencidas : '—'} tone={vencidas ? 'bad' : 'default'} />
-      </section>
+      </FranjaDeCifras>
 
       <DataTable
         columns={columnas}

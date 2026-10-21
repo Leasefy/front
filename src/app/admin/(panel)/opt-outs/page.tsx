@@ -1,7 +1,7 @@
 'use client'
 
 import { BellSlash, HandPalm, Scales, Users } from '@phosphor-icons/react'
-import { Alert } from '@leasefy/cadence'
+import { Alert, FranjaDeCifras } from '@leasefy/cadence'
 import { adminApi, traerTodasLasPaginas } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
@@ -103,12 +103,12 @@ export default function OptOutsPage() {
         description="Habeas Data (Ley 1581) y Ley 2300: los deudores que pidieron no ser contactados. Es un registro que no se revoca; sólo lectura."
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <FranjaDeCifras fila="lg">
         <KpiCard icon={<Users />} label="Bajas en total" value={result.isLoading ? '—' : Number(stats?.total ?? 0)} hint="Desde que existe Leasefy" />
         <KpiCard icon={<HandPalm />} tone="bad" label="Lo pidió en la llamada" value={result.isLoading ? '—' : Number(stats?.opt_out_invoked ?? 0)} />
         <KpiCard icon={<BellSlash />} tone="warn" label="Solicitudes" value={result.isLoading ? '—' : Number(stats?.opt_out_request ?? 0)} />
         <KpiCard icon={<Scales />} label="Habeas Data" value={result.isLoading ? '—' : Number(stats?.habeas_data_opt_out ?? 0)} />
-      </div>
+      </FranjaDeCifras>
 
       <DataTable
         columns={columns}

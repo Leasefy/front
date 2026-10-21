@@ -3,7 +3,7 @@
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import Link from 'next/link'
-import { Alert } from '@leasefy/cadence'
+import { Alert, FranjaDeCifras } from '@leasefy/cadence'
 import { fmtDateTime, fmtNumero } from '@/lib/admin/format'
 import { accionDelAdmin } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
@@ -201,12 +201,12 @@ export default function UsersPage() {
         description="Quiénes entran al admin y lo último que hizo cada persona. Para sumar o quitar a alguien se cambia la lista ADMIN_EMAILS del servidor y se reinicia."
       />
 
-      <section aria-label="Cifras del equipo" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <FranjaDeCifras fila="lg" aria-label="Cifras del equipo">
         <KpiCard label="Personas" value={data ? admins.length : '—'} />
         <KpiCard label="Activas en 30 días" value={data ? activos30 : '—'} tone="ok" />
         <KpiCard label="Nunca han entrado" value={data ? nuncaEntraron : '—'} tone={nuncaEntraron ? 'warn' : 'default'} />
         <KpiCard label="Acciones en 30 días" value={data ? acciones30 : '—'} />
-      </section>
+      </FranjaDeCifras>
 
       {data?.supabase_error ? (
         <Alert variant="warning">No se pudo leer el inicio de sesión de cada persona: las columnas de sesión pueden venir incompletas.</Alert>

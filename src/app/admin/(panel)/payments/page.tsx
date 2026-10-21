@@ -1,7 +1,7 @@
 'use client'
 
 import { CheckCircle, CreditCard, CurrencyCircleDollar, HourglassMedium, Prohibit, X } from '@phosphor-icons/react'
-import { Alert } from '@leasefy/cadence'
+import { Alert, FranjaDeCifras } from '@leasefy/cadence'
 import { adminApi, traerTodasLasPaginas } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
@@ -171,7 +171,7 @@ export default function PaymentsPage() {
         description="El embudo de los pagos en línea (Wompi y Bold) de los últimos 30 días: aprobados, pendientes, rechazados, reembolsados y desembolsados."
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <FranjaDeCifras fila="lg">
         <KpiCard
           tone="ok"
           icon={<CheckCircle />}
@@ -199,7 +199,7 @@ export default function PaymentsPage() {
           value={result.isLoading ? '—' : fmtCOP(num(kpis?.disbursed_total))}
           hint={`${num(kpis?.disbursed_count).toLocaleString('es-CO')} giros · comisiones ${fmtCOP(num(kpis?.fees_total))}`}
         />
-      </div>
+      </FranjaDeCifras>
 
       {pendingDisbursementCount > 0 && (
         <Alert variant="warning" title="Pagos sin desembolsar">

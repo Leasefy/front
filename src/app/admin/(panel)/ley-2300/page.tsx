@@ -1,7 +1,7 @@
 'use client'
 
 import { Buildings, PhoneCall, Scales, Users, WarningOctagon } from '@phosphor-icons/react'
-import { MonoLabel } from '@leasefy/cadence'
+import { FranjaDeCifras, MonoLabel } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
@@ -189,7 +189,7 @@ export default function Ley2300Page() {
 
       {data && (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <FranjaDeCifras fila="lg">
             <KpiCard icon={<PhoneCall />} label="Llamadas · 30 días" value={Number(data.stats.total_calls) || 0} hint="Todas" />
             <KpiCard
               icon={<WarningOctagon />}
@@ -206,7 +206,7 @@ export default function Ley2300Page() {
               hint="Con al menos una"
               tone={Number(data.stats.tenants_affected) > 0 ? 'warn' : 'ok'}
             />
-          </div>
+          </FranjaDeCifras>
 
           <Tarjeta titulo="Intentos por día y hora" descripcion="Hora de Bogotá, últimos 30 días.">
             <div className="overflow-x-auto" data-lenis-prevent>

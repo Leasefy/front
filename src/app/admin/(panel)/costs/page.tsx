@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { ChatCircleDots, Coins, Robot, Waveform } from '@phosphor-icons/react'
-import { Alert, MonoLabel } from '@leasefy/cadence'
+import { Alert, FranjaDeCifras, MonoLabel } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtDiaCorto, USD_TO_COP } from '@/lib/admin/format'
@@ -154,12 +154,12 @@ export default function CostsPage() {
         description={`Lo que cuesta operar la plataforma este mes: voz (Vapi) y modelo (Claude). Los dos cobran en dólares; acá van en pesos a ${fmtCOP(USD_TO_COP)} por dólar. WhatsApp todavía no se mide.`}
       />
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumen del mes">
+      <FranjaDeCifras fila="lg" aria-label="Resumen del mes">
         <KpiCard icon={<Waveform />} label="Vapi · este mes" value={fmtCOP(vapiMtdCop || vapiMtdUsd * USD_TO_COP)} hint="Las llamadas de voz" />
         <KpiCard icon={<Robot />} label="Claude · este mes" value={fmtCOP(claudeMtdCop || claudeMtdUsd * USD_TO_COP)} hint="El modelo de los agentes" />
         <KpiCard icon={<ChatCircleDots />} label="WhatsApp · este mes" value="—" hint="Todavía no se mide" />
         <KpiCard icon={<Coins />} label="Total · este mes" value={totalCostCop > 0 ? fmtCOP(totalCostCop) : '—'} hint="Vapi y Claude, en pesos" />
-      </section>
+      </FranjaDeCifras>
 
       <section className="space-y-3" aria-label="Por inmobiliaria">
         <MonoLabel className="block">Por inmobiliaria</MonoLabel>

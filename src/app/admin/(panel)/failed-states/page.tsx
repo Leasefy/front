@@ -10,7 +10,7 @@ import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
 import { ArrowsClockwise, CheckCircle, IdentificationCard, Scales } from '@phosphor-icons/react'
 import { legible } from '@/lib/admin/textos-del-admin'
-import { MonoLabel } from '@leasefy/cadence'
+import { FranjaDeCifras, MonoLabel } from '@leasefy/cadence'
 
 // ─── Types (match ADMIN-API-CONTRACT.md — Failed states) ───────────────────
 
@@ -173,7 +173,7 @@ export default function FailedStatesPage() {
       {data && (
         <>
           {/* Counters */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <FranjaDeCifras fila="lg">
             <KpiCard
               icon={<IdentificationCard />}
               label="Centrales de riesgo"
@@ -195,7 +195,7 @@ export default function FailedStatesPage() {
               hint="Certicámara sin acuse de recibo"
               tone={legal.length > 0 ? 'bad' : 'ok'}
             />
-          </div>
+          </FranjaDeCifras>
 
           {total === 0 && (
             <EmptyBlock icono={<CheckCircle weight="bold" />} title="No hay nada caído" hint="Todo lo de abajo está al día." />

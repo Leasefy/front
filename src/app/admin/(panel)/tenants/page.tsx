@@ -11,6 +11,7 @@ import { pasaLosFiltros, type InmobiliariaDeLaLista } from '@/lib/admin/inmobili
 import { estadoDelPlan } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { FranjaDeCifras } from '@leasefy/cadence'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
 import { Pill } from '@/components/admin/Pill'
@@ -196,7 +197,7 @@ export default function TenantsPage() {
         description="Todas las inmobiliarias de Leasefy: su plan, su operación y su equipo. Toca una para ver su ficha."
       />
 
-      <section aria-label="Cifras de las inmobiliarias" className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <FranjaDeCifras fila="lg" aria-label="Cifras de las inmobiliarias">
         <KpiCard label="Inmobiliarias" value={tenants.data ? cifras.total : '—'} />
         <KpiCard label="Plan al día" value={tenants.data ? cifras.alDia : '—'} tone="ok" />
         <KpiCard
@@ -206,7 +207,7 @@ export default function TenantsPage() {
         />
         <KpiCard label="Contratos vigentes" value={tenants.data ? cifras.contratos : '—'} />
         <KpiCard label="Inmuebles" value={tenants.data ? cifras.inmuebles : '—'} />
-      </section>
+      </FranjaDeCifras>
 
       {/* (08-10-2026, Nico) Lo que quedó en «No pudimos abrir tu registro», con su motivo. */}
       <RegistrosSinAsistente />

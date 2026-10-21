@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Power } from '@phosphor-icons/react'
-import { Alert } from '@leasefy/cadence'
+import { Alert, FranjaDeCifras } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
@@ -102,10 +102,10 @@ export default function PausaDeEmergenciaPage() {
         title="Pausa de emergencia"
         description="Detiene de inmediato TODOS los agentes de una inmobiliaria: llamadas, mensajes y piloto automático. Pide motivo, queda registrado y sólo Leasefy la quita."
       />
-      <section aria-label="Cifras de la pausa" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <FranjaDeCifras fila="lg" aria-label="Cifras de la pausa">
         <KpiCard label="Con agentes" value={data ? filas.length : '—'} />
         <KpiCard label="En pausa" value={data ? enPausa : '—'} tone={enPausa ? 'bad' : 'default'} />
-      </section>
+      </FranjaDeCifras>
       <DataTable
         columns={columnas}
         rows={data ? filas : undefined}

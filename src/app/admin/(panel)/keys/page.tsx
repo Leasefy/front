@@ -4,6 +4,7 @@ import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { FranjaDeCifras } from '@leasefy/cadence'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import type { PillTone } from '@/lib/admin/types'
@@ -143,12 +144,12 @@ export default function KeysPage() {
         description={`Las llaves de los servicios externos (Vapi, Wompi, Anthropic…). Por la Ley 2157 y SAGRILAFT se rotan cada 90 días; avisa cuando faltan ${KEY_ROTATION_WARN_DAYS} o menos. Nunca se muestra el valor de una llave.`}
       />
 
-      <section aria-label="Cifras de las llaves" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <FranjaDeCifras fila="lg" aria-label="Cifras de las llaves">
         <KpiCard label="Al día" value={keys ? counts.ok : '—'} tone="ok" />
         <KpiCard label="Por rotar pronto" value={keys ? counts.warn : '—'} tone={counts.warn ? 'warn' : 'default'} />
         <KpiCard label="Vencidas" value={keys ? counts.overdue : '—'} tone={counts.overdue ? 'bad' : 'default'} />
         <KpiCard label="Nunca rotadas" value={keys ? counts.never : '—'} />
-      </section>
+      </FranjaDeCifras>
 
       <DataTable
         columns={columns}

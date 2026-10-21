@@ -22,7 +22,7 @@
  */
 
 import { useState } from 'react'
-import { Alert, Card, Chip, MonoLabel, Sheet, SheetBody, SheetContent, SheetHeader } from '@leasefy/cadence'
+import { Alert, Card, Chip, FranjaDeCifras, MonoLabel, Sheet, SheetBody, SheetContent, SheetHeader } from '@leasefy/cadence'
 import {
   getChatPreguntas,
   type SugerenciaDelChat,
@@ -412,7 +412,7 @@ export default function ChatPreguntasPage() {
             {fechaLarga(hasta || diaDeBogota(data.ventana.hasta))}
             {data.ventana.truncado ? ' · las 5.000 más recientes' : ''}
           </MonoLabel>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+          <FranjaDeCifras fila="lg">
             <KpiCard label="Preguntas" value={totales!.preguntas} hint={`${totales!.inmobiliarias} ${totales!.inmobiliarias === 1 ? 'inmobiliaria' : 'inmobiliarias'}`} />
             <KpiCard
               label="Sin respuesta"
@@ -428,7 +428,7 @@ export default function ChatPreguntasPage() {
               value={totales!.turnosConCosto === 0 ? '—' : costo(totales!.costoUsd)}
               hint={totales!.turnosConCosto === 0 ? 'Todavía sin costo anotado' : `${totales!.turnosConCosto} turnos con costo`}
             />
-          </div>
+          </FranjaDeCifras>
 
           {/* Sugerencias. */}
           <h2 className="text-subtitle font-semibold text-fg">Qué mejorar del chat</h2>

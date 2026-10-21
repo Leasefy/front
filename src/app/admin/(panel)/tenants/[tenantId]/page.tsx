@@ -18,7 +18,7 @@ import {
   UsersThree,
   Wallet,
 } from '@phosphor-icons/react'
-import { Alert, KeyValueList, MonoLabel } from '@leasefy/cadence'
+import { Alert, FranjaDeCifras, KeyValueList, MonoLabel } from '@leasefy/cadence'
 import { adminApi, ApiError } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { NOMBRE_DEL_MODELO } from '@/lib/admin/modelo-de-cobro'
@@ -444,7 +444,7 @@ export default function TenantDetailPage() {
       {p ? (
         <>
           {/* Lo que maneja en la plataforma. */}
-          <section aria-label="La inmobiliaria en Leasefy" className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+          <FranjaDeCifras fila="lg" aria-label="La inmobiliaria en Leasefy">
             <KpiCard
               label="Contratos vigentes"
               value={p.conteos.contratos_activos}
@@ -463,7 +463,7 @@ export default function TenantDetailPage() {
               }
               icon={<UsersThree />}
             />
-          </section>
+          </FranjaDeCifras>
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
             <Tarjeta titulo="Datos de la inmobiliaria">
@@ -638,7 +638,7 @@ export default function TenantDetailPage() {
           />
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <FranjaDeCifras fila="lg">
               {data.counters.map((c) => (
                 <KpiCard
                   key={c.label}
@@ -647,7 +647,7 @@ export default function TenantDetailPage() {
                   icon={ICONO_DE_LA_METRICA[c.label]}
                 />
               ))}
-            </div>
+            </FranjaDeCifras>
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
               <section className="space-y-3">
                 <MonoLabel className="block">Últimas llamadas</MonoLabel>

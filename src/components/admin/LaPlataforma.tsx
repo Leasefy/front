@@ -4,6 +4,7 @@ import { Buildings, FileText, HandCoins, HouseLine, Receipt, UsersThree } from '
 
 import { fmtCOP, fmtNumero } from '@/lib/admin/format'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { FranjaDeCifras } from '@leasefy/cadence'
 import { ErrorBlock, LoadingBlock } from '@/components/admin/screen/states'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 
@@ -64,7 +65,7 @@ export function LaPlataforma({
 
   return (
     <section aria-label="La plataforma" className="space-y-4">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 2xl:grid-cols-6">
+      <FranjaDeCifras fila="lg">
         <KpiCard
           label="Inmobiliarias"
           value={d.inmobiliarias.total}
@@ -106,7 +107,7 @@ export function LaPlataforma({
           hint={`${fmtNumero(d.recaudo.recibosEsteMes)} ${d.recaudo.recibosEsteMes === 1 ? 'recibo de caja' : 'recibos de caja'}`}
           icon={<Receipt />}
         />
-      </div>
+      </FranjaDeCifras>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Tarjeta

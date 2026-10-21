@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Card, MonoLabel, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
+import { Card, FranjaDeCifras, MonoLabel, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
@@ -179,11 +179,11 @@ export default function EscalationsPage() {
         right={cambiarVista}
       />
 
-      <section aria-label="Cifras de las escalaciones" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <FranjaDeCifras fila="lg" aria-label="Cifras de las escalaciones">
         <KpiCard label="Abiertas" value={data ? open.length : '—'} tone={open.length ? 'bad' : 'default'} hint="Sin nadie asignado" />
         <KpiCard label="En curso" value={data ? assigned.length : '—'} hint="Alguien las tiene" />
         <KpiCard label="Resueltas" value={data ? resolved.length : '—'} tone="ok" hint="Últimos 7 días" />
-      </section>
+      </FranjaDeCifras>
 
       {vista === 'tabla' ? (
         <DataTable

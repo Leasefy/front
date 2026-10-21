@@ -8,7 +8,7 @@ import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import type { PillTone } from '@/lib/admin/types'
-import { Card, MonoLabel } from '@leasefy/cadence'
+import { Card, FranjaDeCifras, MonoLabel } from '@leasefy/cadence'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 // ─── Types (co-located, per FRONT.md §6.21) ────────────────────────────────
@@ -102,12 +102,12 @@ export default function HealthPage() {
           </div>
 
           {/* KPI summary */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <FranjaDeCifras fila="lg" className="mb-6">
             <KpiCard label="OK"              value={counts.ok}           tone="ok" />
             <KpiCard label="Degradados"      value={counts.degraded}     tone="warn" />
             <KpiCard label="Caídos"          value={counts.down}         tone="bad" />
             <KpiCard label="No configurados" value={counts.unconfigured} />
-          </div>
+          </FranjaDeCifras>
 
           {/* Per-category tables */}
           {CATEGORY_ORDER.map((cat) => {

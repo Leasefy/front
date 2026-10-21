@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChartLineUp } from '@phosphor-icons/react'
-import { Alert } from '@leasefy/cadence'
+import { Alert, FranjaDeCifras } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtFecha } from '@/lib/admin/format'
@@ -192,13 +192,13 @@ export default function IngresosPage() {
         description="Lo que Leasefy cobra a cada inmobiliaria: la mensualidad de su plan y lo que se le cobra por la cobranza por voz. Toca una para ver su ficha."
       />
 
-      <section aria-label="Cifras de los ingresos" className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <FranjaDeCifras fila="lg" aria-label="Cifras de los ingresos">
         <KpiCard label="Mensualidades de los planes" value={t ? fmtCOP(t.mensualidadesCop) : '—'} hint="Planes fijos al día o en mora" />
         <KpiCard label={`Cobrado en ${mes || 'el mes'}`} value={t ? fmtCOP(t.cobradoEsteMesCop) : '—'} tone="ok" hint={t ? `Mes pasado ${fmtCOP(t.cobradoMesPasadoCop)}` : undefined} />
         <KpiCard label="Por cobrar" value={t ? fmtCOP(t.pendienteCop) : '—'} tone={t && t.pendienteCop > 0 ? 'warn' : 'default'} hint="Cobros de planes sin pagar" />
         <KpiCard label="Cobros fallidos" value={t ? t.cobrosFallidosEsteMes : '—'} tone={t && t.cobrosFallidosEsteMes > 0 ? 'bad' : 'default'} hint={`En ${mes || 'el mes'}`} />
         <KpiCard label="Cobranza por voz" value={t ? fmtCOP(t.estimadoPorVozCop) : '—'} hint="Estimado del mes" />
-      </section>
+      </FranjaDeCifras>
 
       {d && !d.vozDisponible ? (
         <Alert variant="warning">No se pudo leer la base de los agentes: lo de la cobranza por voz no aparece (no es cero).</Alert>

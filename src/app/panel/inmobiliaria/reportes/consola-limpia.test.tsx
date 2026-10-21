@@ -186,8 +186,9 @@ vi.mock('@/components/inmobiliaria/reports/GraficoDeRentabilidad', () => ({
   ),
 }))
 
+const plan = vi.hoisted(() => ({ hasAdvancedReports: true }))
 vi.mock('@/lib/hooks/useAgencyPlan', () => ({
-  useAgencyPlan: () => ({ hasAdvancedReports: true, hasFeature: () => true, plan: 'pro' }),
+  useAgencyPlan: () => ({ hasAdvancedReports: plan.hasAdvancedReports, hasFeature: () => true, plan: 'pro' }),
 }))
 
 import ReportesPage from './page'
@@ -230,13 +231,31 @@ afterEach(async () => {
   console.warn = origWarn
 })
 
+// Los que abren su vista en el cajón. Los extractos no: se arman por propietario y su fila lleva
+// a dispersiones (glow up 21-10).
 const TITULOS = [
-  'Extractos de propietarios', 'Cartera por edades', 'Comisiones por agente',
+  'Cartera por edades', 'Comisiones por agente',
   // 20-09: el catálogo se escribió sin tildes («Ocupacion», «Analisis de mora
   // segmentado por antiguedad», «proximos 90 dias») y se lee así en pantalla.
   'Ocupación del portafolio', 'Vencimientos de contratos', 'Rendimiento de agentes',
   'Flujo de caja', 'Rentabilidad por inmueble',
 ]
+
+/** La fila del reporte con ese título (glow up 21-10: una tabla, una fila por reporte). */
+function filaDe(titulo: string): HTMLElement | undefined {
+  return Array.from(container.querySelectorAll<HTMLElement>('[data-testid="fila-del-reporte"]')).find(
+    // El primer texto del título: al lado puede ir la insignia «Pro».
+    (f) => f.querySelector('h3')?.firstChild?.textContent?.trim() === titulo,
+  )
+}
+
+function botonDeLaFila(titulo: string, texto: RegExp) {
+  const fila = filaDe(titulo)
+  return fila ? Array.from(fila.querySelectorAll('button')).find((b) => texto.test(b.textContent ?? '')) : undefined
+}
+
+const radio = (texto: string) =>
+  Array.from(container.querySelectorAll<HTMLButtonElement>('[role="radio"]')).find((b) => b.textContent === texto)
 
 async function montar() {
   await act(async () => { root.render(<React.StrictMode><ReportesPage /></React.StrictMode>) })
@@ -260,12 +279,7 @@ describe('/reportes — la consola queda limpia', () => {
 
     let abiertos = 0
     for (const titulo of TITULOS) {
-      const tarjeta = Array.from(container.querySelectorAll('div')).find(
-        (d) => d.querySelector('h3')?.textContent?.trim() === titulo,
-      )
-      const ver = tarjeta
-        ? Array.from(tarjeta.querySelectorAll('button')).find((b) => /vista previa|previa|ver/i.test(b.textContent ?? ''))
-        : undefined
+      const ver = botonDeLaFila(titulo, /^ver$/i)
       expect(ver, `no encontré cómo abrir «${titulo}»`).toBeTruthy()
 
       await act(async () => { ver!.click() })
@@ -288,38 +302,24 @@ describe('/reportes — la consola queda limpia', () => {
     expect(abiertos).toBe(TITULOS.length)
   })
 
-  it('en vista de lista y con una búsqueda sin resultados', async () => {
+  it('al cambiar el período con los atajos y con «Otro rango»', async () => {
     await montar()
-
-    const lista = botonPorTexto('lista')
-    expect(lista, 'no encontré el cambio a vista de lista').toBeTruthy()
-    await act(async () => { lista!.click() })
-    await act(async () => { await Promise.resolve() })
-    expect(avisosReales(), 'vista de lista').toEqual([])
-
-    const input = container.querySelector('input') as HTMLInputElement | null
-    expect(input, 'no encontré el buscador').toBeTruthy()
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
-    await act(async () => {
-      setter?.call(input!, 'zzzzz')
-      input!.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-    await act(async () => { await new Promise((r) => setTimeout(r, 400)) })
-
-    expect(container.textContent).not.toContain('Cartera por edades')
-    expect(avisosReales(), 'búsqueda sin resultados').toEqual([])
+    for (const atajo of ['Mes pasado', 'Último trimestre', 'Este año', 'Otro rango']) {
+      const r = radio(atajo)
+      expect(r, `no encontré el atajo «${atajo}»`).toBeTruthy()
+      await act(async () => { r!.click() })
+      await act(async () => { await Promise.resolve() })
+      expect(avisosReales(), `atajo «${atajo}»`).toEqual([])
+    }
+    // Con «Otro rango» se ven las dos fechas.
+    expect(container.querySelector('[data-testid="rango-desde"]')).not.toBeNull()
   })
 })
 
 /** Abre el cajón de la tarjeta con ese título y devuelve el cajón. */
 async function abrirCajon(titulo: string): Promise<HTMLElement> {
-  const tarjeta = Array.from(container.querySelectorAll('div')).find(
-    (d) => d.querySelector('h3')?.textContent?.trim() === titulo,
-  )
-  const ver = tarjeta
-    ? Array.from(tarjeta.querySelectorAll('button')).find((b) => /vista previa/i.test(b.textContent ?? ''))
-    : undefined
-  expect(ver, `no encontré «Vista previa» de «${titulo}»`).toBeTruthy()
+  const ver = botonDeLaFila(titulo, /^ver$/i)
+  expect(ver, `no encontré «Ver» de «${titulo}»`).toBeTruthy()
   await act(async () => { ver!.click() })
   await act(async () => { await Promise.resolve() })
   const cajon = document.querySelector<HTMLElement>('[role="dialog"]')
@@ -360,11 +360,14 @@ describe('«Reportes» — un reporte a la vez (Nico, 01-10)', () => {
     expect(push).toHaveBeenCalledWith('/panel/inmobiliaria/reportes/rentabilidad')
   })
 
-  it('los extractos dicen dónde están, y su cajón no ofrece un «Descargar CSV» que no baja nada', async () => {
+  it('los extractos dicen dónde están, y su fila no ofrece un «Bajar CSV» que no baja nada', async () => {
     await montar()
-    const cajon = await abrirCajon('Extractos de propietarios')
-    expect(cajon.textContent).toContain('Ir a dispersiones')
-    expect(cajon.textContent).not.toContain('Descargar CSV')
+    const fila = filaDe('Extractos de propietarios')!
+    expect(fila).toBeTruthy()
+    const ir = fila.querySelector<HTMLAnchorElement>('a[href="/panel/inmobiliaria/pagos/dispersiones"]')
+    expect(ir?.textContent).toContain('Ir a dispersiones')
+    expect(fila.textContent).not.toContain('Bajar CSV')
+    expect(fila.querySelector('[data-testid="sale-con"]')?.textContent).toBe('Uno por propietario')
   })
 
   it('cada cajón dice qué hace el archivo con el período elegido, al lado del botón', async () => {
@@ -373,10 +376,11 @@ describe('«Reportes» — un reporte a la vez (Nico, 01-10)', () => {
     expect(cajon.querySelector('[data-testid="nota-del-archivo"]')?.textContent).toContain('foto de hoy')
   })
 
-  it('🔴 «Generar todos» manda UN pedido al centro de procesos y lo abre: sin pila de avisos', async () => {
+  it('🔴 «Bajar los 6 en un archivo» manda UN pedido al centro de procesos y lo abre: sin pila de avisos', async () => {
     exportarReportes.mockResolvedValue({ procesoId: 'proc-1' })
     await montar()
-    const generar = botonPorTexto('generar')
+    const generar = botonPorTexto('en un archivo')
+    expect(generar?.textContent).toContain('Bajar los 6 en un archivo')
     expect(generar).toBeTruthy()
     await act(async () => { generar!.click() })
     await act(async () => { await Promise.resolve() })
@@ -408,7 +412,7 @@ describe('«Generar todos» — los fallos (02-10)', () => {
   async function generarCon(error: unknown) {
     exportarReportes.mockRejectedValue(error)
     await montar()
-    await act(async () => { botonPorTexto('generar')!.click() })
+    await act(async () => { botonPorTexto('en un archivo')!.click() })
     await act(async () => { await Promise.resolve() })
     const [titulo, opciones] = toast.error.mock.calls.at(-1) as [string, { description: string }]
     return { titulo, descripcion: opciones.description }
@@ -435,5 +439,86 @@ describe('«Generar todos» — los fallos (02-10)', () => {
   it('sin respuesta: ahí sí habla de la conexión', async () => {
     const { descripcion } = await generarCon(new ApiError(0, 'Failed to fetch'))
     expect(descripcion).toMatch(/conexi[oó]n/)
+  })
+})
+
+/*
+ * GLOW UP 21-10 · el período se dice ANTES de bajar. Antes el período vivía en un desplegable entre
+ * los filtros y sólo cambiaba dos de los ocho archivos: quien elegía agosto bajaba la cartera y se
+ * enteraba en el aviso de la descarga de que era «la foto de hoy».
+ */
+describe('«Reportes» — cada fila dice con qué fechas sale (glow up 21-10)', () => {
+  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+  const hoy = () =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' })
+      .format(new Date())
+      .split('-')
+      .map(Number)
+  const saleCon = (titulo: string) => filaDe(titulo)?.querySelector('[data-testid="sale-con"]')?.textContent
+
+  afterEach(() => {
+    plan.hasAdvancedReports = true
+  })
+
+  it('las fotos de hoy dicen «Hoy», el flujo su ventana, y los del período el mes elegido', async () => {
+    await montar()
+    const [anio, mes, dia] = hoy()
+    expect(saleCon('Cartera por edades')).toBe(`Hoy, ${dia} ${MESES[mes - 1]}`)
+    expect(saleCon('Vencimientos de contratos')).toBe(`Hoy, ${dia} ${MESES[mes - 1]}`)
+    expect(saleCon('Flujo de caja')).toBe('Últimos 6 meses')
+    expect(saleCon('Rentabilidad por inmueble')).toBe(`${MESES[mes - 1]} ${anio}`)
+    expect(saleCon('Comisiones por agente')).toBe(`${MESES[mes - 1]} ${anio}`)
+  })
+
+  it('el selector del período vive en el grupo de los dos que lo usan, y al tocarlo cambian sólo esos', async () => {
+    await montar()
+    const grupo = container.querySelector('[data-testid="grupo-del-periodo"]')!
+    expect(grupo.querySelector('[data-testid="rango-con-atajos"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="grupo-sin-fechas"] [data-testid="rango-con-atajos"]')).toBeNull()
+
+    const cartera = saleCon('Cartera por edades')
+    await act(async () => { radio('Mes pasado')!.click() })
+    const [anio, mes] = hoy()
+    const [a2, m2] = mes === 1 ? [anio - 1, 12] : [anio, mes - 1]
+    expect(saleCon('Rentabilidad por inmueble')).toBe(`${MESES[m2 - 1]} ${a2}`)
+    expect(saleCon('Cartera por edades')).toBe(cartera)
+  })
+
+  it('con un período de varios meses, las comisiones avisan que salen de a un mes', async () => {
+    await montar()
+    await act(async () => { radio('Último trimestre')!.click() })
+    const aviso = filaDe('Comisiones por agente')!.querySelector('[data-testid="aviso-de-fechas"]')
+    expect(aviso?.textContent).toBe('Sale de a un mes: el primero del período.')
+    expect(saleCon('Rentabilidad por inmueble')).toMatch(/^[a-z]{3} – [a-z]{3} \d{4}$|^[a-z]{3} \d{4} – [a-z]{3} \d{4}$/)
+  })
+
+  it('bajar un reporte manda el período elegido y la fila dice que lo bajaste', async () => {
+    const getBlob = vi.spyOn((await import('@/lib/api/client')).apiClient, 'getBlob').mockResolvedValue(new Blob(['x']))
+    const antes = { crear: URL.createObjectURL, soltar: URL.revokeObjectURL }
+    URL.createObjectURL = vi.fn(() => 'blob:x')
+    URL.revokeObjectURL = vi.fn()
+    await montar()
+    await act(async () => { radio('Mes pasado')!.click() })
+    await act(async () => { botonDeLaFila('Rentabilidad por inmueble', /bajar csv/i)!.click() })
+    await act(async () => { await Promise.resolve() })
+    const [anio, mes] = hoy()
+    const [a2, m2] = mes === 1 ? [anio - 1, 12] : [anio, mes - 1]
+    const ym = `${a2}-${String(m2).padStart(2, '0')}`
+    expect(getBlob).toHaveBeenCalledWith(`/inmobiliaria/reports/export?type=rentabilidad-inmueble&desde=${ym}&hasta=${ym}`)
+    expect(filaDe('Rentabilidad por inmueble')!.querySelector('[data-testid="bajado-a-las"]')).not.toBeNull()
+    getBlob.mockRestore()
+    URL.createObjectURL = antes.crear
+    URL.revokeObjectURL = antes.soltar
+  })
+
+  it('sin el plan Pro: los avanzados lo dicen y llevan a hablar con Leasefy; no entran en «Bajar todos»', async () => {
+    plan.hasAdvancedReports = false
+    await montar()
+    for (const titulo of ['Comisiones por agente', 'Flujo de caja', 'Rendimiento de agentes']) {
+      expect(saleCon(titulo), titulo).toBe('Viene con el plan Pro')
+      expect(filaDe(titulo)!.querySelector('a[href="/panel/inmobiliaria/upgrade"]')?.textContent).toBe('Hablar con Leasefy')
+      expect(filaDe(titulo)!.textContent).not.toContain('Bajar CSV')
+    }
+    expect(botonPorTexto('en un archivo')?.textContent).toContain('Bajar los 4 en un archivo')
   })
 })

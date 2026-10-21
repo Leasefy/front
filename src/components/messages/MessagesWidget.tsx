@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
   AnimatedNumber,
+  Avatar,
   CrossFade,
   IconButton,
   MonoLabel,
@@ -98,15 +99,6 @@ export interface MessagesWidgetProps {
 // ============================================================================
 // Helpers
 // ============================================================================
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 function formatMessageTime(isoStr: string): string {
   const date = new Date(isoStr);
@@ -829,9 +821,8 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         )}
                       >
                         <div className="relative flex-shrink-0">
-                          <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center text-primary font-semibold text-sm overflow-hidden">
-                            {getInitials(conversation.name)}
-                          </div>
+                          {/* Cadence 2: cada persona con su tono (sale del nombre: el mismo en todas partes) */}
+                          <Avatar name={conversation.name} size="md" />
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -932,9 +923,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         icon={<ArrowLeft className="w-5 h-5" />}
                         className="md:hidden -ml-2 rounded-full text-muted-foreground"
                       />
-                      <div className="w-11 h-11 rounded-full bg-primary-soft flex items-center justify-center text-primary font-semibold text-sm">
-                        {getInitials(selectedConversation.name)}
-                      </div>
+                      <Avatar name={selectedConversation.name} size="md" />
                       <div>
                         {fichaDeLaContraparte ? (
                           <button
@@ -1486,9 +1475,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
 
                           <div className="p-6">
                             <div className="text-center mb-6">
-                              <div className="w-20 h-20 rounded-full bg-primary-soft flex items-center justify-center text-primary font-semibold text-2xl mx-auto mb-3">
-                                {getInitials(selectedConversation.name)}
-                              </div>
+                              <Avatar name={selectedConversation.name} size="xl" className="mx-auto mb-3" />
                               <h4 className="text-base font-semibold text-foreground">
                                 {selectedConversation.name}
                               </h4>

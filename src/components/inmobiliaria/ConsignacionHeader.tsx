@@ -24,9 +24,8 @@ import {
   Car,
   Mountains,
   Prohibit,
-  Plus,
+  ArrowUUpLeft,
 } from '@phosphor-icons/react';
-import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
@@ -67,6 +66,12 @@ interface ConsignacionHeaderProps {
   onViewPortal?: () => void;
   onChangeStatus?: (status: PropertyAvailability) => void;
   onTerminate?: () => void;
+  /**
+   * 🔴 «Reactivar consignación» (Portofino, 21-10-2026): un mandato terminado
+   * se vuelve a abrir con sus mismos términos. Antes la ficha sólo ofrecía
+   * «Nueva consignación», que no puede reabrir ESTE inmueble.
+   */
+  onReactivar?: () => void;
   /**
    * Cuándo terminó el mandato (ISO), sacado del evento `consignacion_terminada`
    * del historial. `null` = terminó antes de que existiera ese evento: el
@@ -166,6 +171,7 @@ export function ConsignacionHeader({
   onViewPortal,
   onChangeStatus,
   onTerminate,
+  onReactivar,
   fechaDeTerminacion,
   contratoVigente,
 }: ConsignacionHeaderProps) {
@@ -426,21 +432,21 @@ export function ConsignacionHeader({
             </Button>
 
             {terminada ? (
-              // La salida correcta. El wizard «existente» sólo lista inmuebles
-              // SIN mandato y `agencyId + propertyId` es único: hoy no hay un
-              // flujo que reabra ESTE inmueble; el enlace lleva a Nueva
-              // consignación y el reporte lo deja dicho.
-              <Button
-                variant="secondary"
-                hideArrow
-                asChild
-                title={t('inmobiliaria.consignaciones.header.terminada.nuevaConsignacionAyuda')}
-              >
-                <Link href="/panel/inmobiliaria/inmuebles/nuevo?origen=existente" data-testid="header-nueva-consignacion">
-                  <Plus className="w-4 h-4" />
-                  {t('inmobiliaria.consignaciones.header.terminada.nuevaConsignacion')}
-                </Link>
-              </Button>
+              // 🔴 La salida correcta es REACTIVAR este mismo mandato (21-10):
+              // «Nueva consignación» lleva al asistente «existente», que sólo
+              // lista inmuebles SIN mandato (`agencyId + propertyId` es único),
+              // así que nunca podía volver a administrar ESTE inmueble.
+              onReactivar ? (
+                <Button
+                  hideArrow
+                  onClick={onReactivar}
+                  title={t('inmobiliaria.consignaciones.header.terminada.reactivarAyuda')}
+                  data-testid="header-reactivar-consignacion"
+                >
+                  <ArrowUUpLeft className="w-4 h-4" />
+                  {t('inmobiliaria.consignaciones.header.terminada.reactivar')}
+                </Button>
+              ) : null
             ) : (
               <>
                 {/* Status Dropdown */}

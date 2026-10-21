@@ -157,6 +157,18 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
     color: 'text-success',
     bgColor: 'bg-success-soft',
   },
+  /*
+   * 🔴 21-10-2026 (Juan y Laura, Portofino: «las no aprobadas, sí, también»):
+   * lo que no siguió (el propietario no aprobó, o se canceló) a la vista en
+   * su columna, en vez de desaparecer del tablero.
+   */
+  {
+    id: 'cancelled',
+    titleKey: 'inmobiliaria.mantenimiento.colCancelled',
+    icon: XCircle,
+    color: 'text-danger',
+    bgColor: 'bg-danger-soft',
+  },
 ];
 
 // ============================================================================
@@ -624,7 +636,7 @@ export function MantenimientoKanban({
       {/* SO-15 (QA 04-10): las cinco columnas a la vista (a 1440 la de
           «Completada» quedaba fuera, a la derecha). En pantallas chicas se
           apilan; nunca hay que desplazar de lado para encontrar una tarjeta. */}
-      <div className="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {KANBAN_COLUMNS.map((column) => (
           <KanbanColumnComponent
             key={column.id}

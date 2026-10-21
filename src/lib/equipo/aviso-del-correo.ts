@@ -21,6 +21,13 @@ export type AvisoDelCorreo =
       nombreDeLaCuenta: string | null;
       relacion: 'inquilino' | 'propietario' | 'equipo' | null;
       sePuedeInvitarIgual: true;
+      /**
+       * 🔴 21-10-2026 (Portofino, Laura): el correo quedó como usuario de un
+       * inquilino que nunca entró. Se le puede DAR a quien se invita
+       * (`elCorreoEsDelInvitado: true`): el inquilino sigue con su contrato y
+       * queda sin correo; la persona invitada crea su propia cuenta.
+       */
+      sePuedeDarAlInvitado: boolean;
     }
   | {
       code: 'ACTIVO_EN_OTRA_INMOBILIARIA';
@@ -47,6 +54,7 @@ export function leerAvisoDelCorreo(cuerpo: unknown): AvisoDelCorreo | null {
           ? (c.relacion as 'inquilino' | 'propietario' | 'equipo')
           : null,
       sePuedeInvitarIgual: true,
+      sePuedeDarAlInvitado: c.sePuedeDarAlInvitado === true,
     };
   }
   if (c.code === 'ACTIVO_EN_OTRA_INMOBILIARIA') {
@@ -64,4 +72,16 @@ export function leerAvisoDelCorreo(cuerpo: unknown): AvisoDelCorreo | null {
 export function avisoDelError(error: unknown): AvisoDelCorreo | null {
   if (!(error instanceof ApiError) || error.status !== 409) return null;
   return leerAvisoDelCorreo({ ...error.detalle, code: error.code ?? error.detalle?.code, message: error.message });
+}
+
+/** Lo que decidió quien invita frente al aviso. */
+export type DecisionDelCorreo = 'misma-persona' | 'es-del-invitado';
+
+/** Lo que va en la invitación según esa decisión. */
+export function camposDeLaDecision(
+  decision: DecisionDelCorreo | null | undefined,
+): { mismaPersona?: true; elCorreoEsDelInvitado?: true } {
+  if (decision === 'misma-persona') return { mismaPersona: true };
+  if (decision === 'es-del-invitado') return { elCorreoEsDelInvitado: true };
+  return {};
 }

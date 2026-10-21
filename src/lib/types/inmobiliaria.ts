@@ -3075,6 +3075,12 @@ export interface UserInvite {
    * Sin esto el back responde 409 `CORREO_DE_OTRA_PERSONA`.
    */
   mismaPersona?: boolean;
+  /**
+   * «Es de …: dárselo e invitar» (21-10-2026): el correo quedó como usuario de
+   * un inquilino que nunca entró y es de la persona invitada. El back deja esa
+   * cuenta sin correo y la invitación sale como para una persona nueva.
+   */
+  elCorreoEsDelInvitado?: boolean;
 }
 
 // Helper functions for users/roles
@@ -3587,6 +3593,11 @@ export interface InvitationInfo {
   invitedBy?: string;
   invitedEmail?: string;
   expiresAt?: string;
+  /**
+   * La invitación va a una cuenta que existe pero nunca entró (la que creó la
+   * migración): no tiene contraseña, así que se ofrece crearla (21-10-2026).
+   */
+  cuentaSinEstrenar?: boolean;
 }
 
 // ============================================================================

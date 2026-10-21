@@ -4157,7 +4157,9 @@
           "viewOnPortal": "The consignment ended: the property is no longer shown on the portal through this mandate.",
           "pedirCita": "The consignment ended: no visits are scheduled.",
           "nuevaConsignacion": "New consignment",
-          "nuevaConsignacionAyuda": "To manage this property again."
+          "nuevaConsignacionAyuda": "To manage this property again.",
+          "reactivar": "Reactivate consignment",
+          "reactivarAyuda": "Manage this property again with the same terms: owner, rent and commission."
         }
       },
       "filters": {
@@ -5406,6 +5408,7 @@
       "colApproved": "Approved",
       "colInProgress": "In Progress",
       "colCompleted": "Completed",
+      "colCancelled": "Not approved",
       "noRequests": "No requests",
       "cancelledNotice": "{{count}} cancelled requests not shown",
       "paidByOwner": "Owner",
@@ -5423,9 +5426,9 @@
       "noPropertiesFound": "No properties found",
       "maintenanceType": "Maintenance type",
       "priorityLabel": "Priority",
-      "photosOptional": "Photos (optional)",
-      "photosHint": "Add photos of the issue to help with diagnosis",
-      "addPhoto": "Add photo",
+      "photosOptional": "Photos or videos (optional)",
+      "photosHint": "Add photos or videos of the problem to help the diagnosis. Photos up to 5 MB; videos up to 20 MB (about 20 seconds), at most 5.",
+      "addPhoto": "Add photo or video",
       "paymentResponsible": "Payment responsible",
       "paymentInfo": "Will be determined based on issue type and contract",
       "errSelectProperty": "Select a property",

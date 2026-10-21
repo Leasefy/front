@@ -53,6 +53,8 @@ export interface FormularioDeInvitacionProps {
   onEnviar: () => void;
   /** «Es la misma persona, invitar igual». */
   onInvitarIgual?: () => void;
+  /** «Es de <nombre>: dárselo e invitar» (21-10-2026). */
+  onDarElCorreo?: () => void;
   onVerPlanes: () => void;
 }
 
@@ -77,6 +79,7 @@ export const FormularioDeInvitacion = forwardRef<HTMLInputElement, FormularioDeI
       onRol,
       onEnviar,
       onInvitarIgual,
+      onDarElCorreo,
       onVerPlanes,
     },
     correoRef,
@@ -162,7 +165,13 @@ export const FormularioDeInvitacion = forwardRef<HTMLInputElement, FormularioDeI
 
         {/* El correo ya es la cuenta de otra persona: se dice antes de elegir
             el rol, pegado a los dos campos que lo causan. */}
-        <AvisoDelCorreo aviso={aviso} enviando={enviando} onInvitarIgual={onInvitarIgual} />
+        <AvisoDelCorreo
+          aviso={aviso}
+          enviando={enviando}
+          nombreEscrito={nombre}
+          onInvitarIgual={onInvitarIgual}
+          onDarElCorreo={onDarElCorreo}
+        />
 
         <div className="space-y-1.5">
           <Label htmlFor="invitar-rol" className="block font-medium text-fg">

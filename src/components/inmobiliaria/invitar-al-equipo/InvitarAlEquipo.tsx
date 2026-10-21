@@ -27,7 +27,7 @@ import { copiarAlPortapapeles, enlaceDeLaInvitacion } from './enlace-de-la-invit
 import { estadoDelCorreo } from './estado-de-la-invitacion';
 import { ROL_POR_DEFECTO } from './roles-para-invitar';
 import { useMovimiento } from './movimiento';
-import { avisoDelError } from '@/lib/equipo/aviso-del-correo';
+import { avisoDelError, camposDeLaDecision, type DecisionDelCorreo } from '@/lib/equipo/aviso-del-correo';
 import { useAvisoDelCorreo, type RevisarCorreo } from './use-aviso-del-correo';
 
 /**
@@ -214,7 +214,7 @@ export function InvitarAlEquipo({
     if (v.ok) void avisoDelCorreo.revisar(v.correo, nombre.trim());
   };
 
-  const enviar = async (mismaPersona = false) => {
+  const enviar = async (decision: DecisionDelCorreo | null = null) => {
     if (enviando) return;
     const nombreLimpio = nombre.trim();
     const v = validarCorreo(correo);
@@ -236,7 +236,7 @@ export function InvitarAlEquipo({
         email,
         name: nombreLimpio,
         role: rol,
-        ...(mismaPersona && { mismaPersona: true }),
+        ...camposDeLaDecision(decision),
       });
       avisoDelCorreo.limpiar();
       const enlaceNuevo = enlaceDeLaInvitacion(respuesta);
@@ -465,7 +465,8 @@ export function InvitarAlEquipo({
                 setFallo(null);
               }}
               onEnviar={() => void enviar()}
-              onInvitarIgual={() => void enviar(true)}
+              onInvitarIgual={() => void enviar('misma-persona')}
+              onDarElCorreo={() => void enviar('es-del-invitado')}
               onVerPlanes={() => cambiarAbierto(false)}
             />
           </TabsContent>

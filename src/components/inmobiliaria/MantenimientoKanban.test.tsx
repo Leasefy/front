@@ -202,7 +202,7 @@ describe('soltar la tarjeta en otra columna', () => {
     montar();
     const columna = document.body.querySelector('[data-testid="columna-completed"]')!;
     const grilla = columna.parentElement!;
-    expect(grilla.className).toContain('xl:grid-cols-5');
+    expect(grilla.className).toContain('xl:grid-cols-6');
     expect(grilla.className).not.toContain('overflow-x-auto');
     expect(columna.className).not.toContain('min-w-[280px]');
   });

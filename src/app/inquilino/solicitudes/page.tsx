@@ -47,6 +47,8 @@ import { Badge } from '@/components/ui/badge';
 import type { BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
+import { AvanceDeLaSolicitud } from '@/components/estado/AvanceDeLaSolicitud';
+import { avanceDeLaPqrs } from '@/lib/estado/avance-de-la-solicitud';
 import { resolveExpectedResponse } from '@/lib/date/business-days';
 import { pqrsStatusToTone, pqrsStatusToLabel } from '@/lib/types/tenant-case';
 import type { CaseTone } from '@/lib/types/tenant-case';
@@ -159,6 +161,12 @@ function SolicitudRow({ s, locale }: { s: SolicitudPqrs; locale: string }) {
             <p className="text-xs text-fg-muted dark:text-fg-subtle mt-1">
               <ExpectedResponseLine s={s} locale={locale} />
             </p>
+            {/* 21-10-2026 (Portofino): dónde va, como una barra que se llena. */}
+            <AvanceDeLaSolicitud
+              compacta
+              className="mt-3 max-w-sm"
+              {...avanceDeLaPqrs(s.estado, s.tipo === 'reparacion')}
+            />
           </div>
 
           <CaretRight className="w-5 h-5 text-fg-subtle group-hover:text-primary transition-colors flex-shrink-0" />

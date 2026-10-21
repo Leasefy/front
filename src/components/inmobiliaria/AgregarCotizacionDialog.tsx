@@ -32,6 +32,12 @@ import {
 } from '@/lib/api/proveedores-de-mantenimiento.service';
 import { EN_PALABRAS } from '@/components/mantenimientos/especialidades';
 import { useI18n } from '@/lib/i18n';
+import { TipoDeDocumentoDelProveedor } from './mantenimiento/TipoDeDocumentoDelProveedor';
+import {
+  EJEMPLO_DEL_TIPO_DE_DOCUMENTO,
+  revisarDocumentoDelProveedor,
+  type TipoDeDocumentoDelProveedor as TipoDelDocumento,
+} from '@/lib/mantenimiento/documento-del-proveedor';
 import type { NuevaCotizacion, SolicitudMantenimiento } from '@/lib/types/inmobiliaria';
 
 export interface AgregarCotizacionDialogProps {
@@ -50,6 +56,7 @@ export interface AgregarCotizacionDialogProps {
 
 type CampoDeLaCotizacion =
   | 'providerName'
+  | 'tipoDocumento'
   | 'documento'
   | 'providerPhone'
   | 'amount'
@@ -59,6 +66,7 @@ type CampoDeLaCotizacion =
 /** En el orden en que se ven: el foco va al primero con error. */
 const CAMPOS: readonly CampoDeLaCotizacion[] = [
   'providerName',
+  'tipoDocumento',
   'documento',
   'providerPhone',
   'amount',
@@ -69,6 +77,7 @@ const CAMPOS: readonly CampoDeLaCotizacion[] = [
 /** El id de cada control, para el foco y el `aria-describedby`. */
 const ID_DEL_CAMPO: Record<CampoDeLaCotizacion, string> = {
   providerName: 'cotizacion-proveedor',
+  tipoDocumento: 'cotizacion-tipo-documento',
   documento: 'cotizacion-documento',
   providerPhone: 'cotizacion-telefono',
   amount: 'cotizacion-monto',
@@ -86,6 +95,7 @@ const oficioDelBack = (tipo: string) =>
 
 const VACIO = {
   providerName: '',
+  tipoDocumento: '' as TipoDelDocumento | '',
   documento: '',
   providerPhone: '',
   amount: '',
@@ -219,8 +229,31 @@ export function AgregarCotizacionDialog({
       if (!campos.providerName.trim()) {
         nuevos.providerName = t('inmobiliaria.mantenimiento.nuevaCotizacion.errorProveedor');
       }
-      if (!campos.documento.trim()) {
-        nuevos.documento = 'Escribe el NIT o la cédula del proveedor.';
+      /*
+       * 🔴 21-10-2026 (Nico, reunión con Portofino: «se deben pedir datos
+       * reales»): el tipo aparte, el número revisado según su tipo (12 dígitos
+       * no es una cédula; el NIT con su dígito de verificación) y, si es una
+       * persona, nombre y apellido («Leon» solo no dice a quién se le paga).
+       */
+      if (!campos.tipoDocumento) {
+        nuevos.tipoDocumento = 'Elige el tipo de documento del proveedor.';
+      } else {
+        const revision = revisarDocumentoDelProveedor(campos.tipoDocumento, campos.documento);
+        if (!revision.ok) nuevos.documento = revision.mensaje;
+      }
+      if (
+        !nuevos.providerName &&
+        campos.tipoDocumento &&
+        campos.tipoDocumento !== 'NIT' &&
+        campos.providerName.trim().split(/\s+/).filter((p) => p.length > 1).length < 2
+      ) {
+        nuevos.providerName = 'Escribe el nombre completo de la persona: nombre y apellido.';
+      }
+      if (campos.providerPhone.trim()) {
+        const digitos = campos.providerPhone.replace(/\D/g, '').replace(/^57(?=\d{10}$)/, '');
+        if (!/^(3\d{9}|60\d{8})$/.test(digitos)) {
+          nuevos.providerPhone = 'Escribe un celular de 10 dígitos (3001234567) o un fijo con indicativo (6041234567).';
+        }
       }
     } else if (!proveedorId) {
       nuevos.providerName = 'Escoge el proveedor de la lista o regístralo.';
@@ -253,9 +286,13 @@ export function AgregarCotizacionDialog({
       let id = proveedorId;
       if (registrando) {
         // El registro rápido: queda en Proveedores con el oficio de la solicitud.
+        const revision = campos.tipoDocumento
+          ? revisarDocumentoDelProveedor(campos.tipoDocumento, campos.documento)
+          : null;
         const nuevo = await proveedoresDeMantenimientoApi.crear({
           nombre: campos.providerName.trim(),
-          documento: campos.documento.trim(),
+          documento: revision?.ok ? revision.numero : campos.documento.trim(),
+          ...(campos.tipoDocumento ? { tipoDocumento: campos.tipoDocumento } : {}),
           ...(campos.providerPhone.trim() ? { telefono: campos.providerPhone.trim() } : {}),
           especialidades: [oficio],
         });
@@ -349,24 +386,46 @@ export function AgregarCotizacionDialog({
                 />
                 <ErrorDelCampo id="cotizacion-proveedor-error" mensaje={errores.providerName} />
               </div>
-              <div className="space-y-2">
-                <label
-                  htmlFor="cotizacion-documento"
-                  className="block text-sm font-medium text-fg dark:text-fg-subtle"
-                >
-                  NIT o cédula <span className="text-danger">*</span>
-                </label>
-                <Input
-                  id="cotizacion-documento"
-                  aria-required="true"
-                  value={campos.documento}
-                  maxLength={20}
-                  onChange={(e) => poner('documento', e.target.value)}
-                  placeholder="900123456"
-                  {...aria('documento')}
-                />
-                <ErrorDelCampo id="cotizacion-documento-error" mensaje={errores.documento} />
-                <p className="text-xs text-fg-muted">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
+                <div className="space-y-2 min-w-0">
+                  <label
+                    htmlFor="cotizacion-tipo-documento"
+                    className="block text-sm font-medium text-fg dark:text-fg-subtle"
+                  >
+                    Tipo de documento <span className="text-danger">*</span>
+                  </label>
+                  <TipoDeDocumentoDelProveedor
+                    id="cotizacion-tipo-documento"
+                    valor={campos.tipoDocumento}
+                    onCambiar={(tipo) => {
+                      setCampos((c) => ({ ...c, tipoDocumento: tipo }));
+                      setErrores((e) => ({ ...e, tipoDocumento: undefined, documento: undefined }));
+                    }}
+                    conError={Boolean(errores.tipoDocumento)}
+                    describedBy={errores.tipoDocumento ? 'cotizacion-tipo-documento-error' : undefined}
+                  />
+                  <ErrorDelCampo id="cotizacion-tipo-documento-error" mensaje={errores.tipoDocumento} />
+                </div>
+                <div className="space-y-2 min-w-0">
+                  <label
+                    htmlFor="cotizacion-documento"
+                    className="block text-sm font-medium text-fg dark:text-fg-subtle"
+                  >
+                    Número <span className="text-danger">*</span>
+                  </label>
+                  <Input
+                    id="cotizacion-documento"
+                    aria-required="true"
+                    value={campos.documento}
+                    maxLength={20}
+                    inputMode={campos.tipoDocumento === 'PASSPORT' ? 'text' : 'numeric'}
+                    onChange={(e) => poner('documento', e.target.value)}
+                    placeholder={campos.tipoDocumento ? EJEMPLO_DEL_TIPO_DE_DOCUMENTO[campos.tipoDocumento] : 'Elige primero el tipo'}
+                    {...aria('documento')}
+                  />
+                  <ErrorDelCampo id="cotizacion-documento-error" mensaje={errores.documento} />
+                </div>
+                <p className="text-xs text-fg-muted sm:col-span-2">
                   Queda en Proveedores; ahí le subes el RUT y la seguridad social.
                 </p>
               </div>

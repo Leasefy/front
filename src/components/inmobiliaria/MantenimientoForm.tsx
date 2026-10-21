@@ -27,6 +27,7 @@ import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import {
   MAX_LARGO_TITULO_DEL_MANTENIMIENTO,
   MENSAJES_DEL_MANTENIMIENTO,
+  esArchivoDeVideo,
   fotosQueEntran,
 } from '@/lib/mantenimiento/limites-del-mantenimiento';
 import { SelectorDeFotosDelMantenimiento } from '@/components/inmobiliaria/mantenimiento/SelectorDeFotosDelMantenimiento';
@@ -558,7 +559,7 @@ export function MantenimientoForm({
    * motivo sale bajo las fotos. Las que sí sirven entran igual.
    */
   const agregarFotos = (elegidas: File[]) => {
-    const { entran, problemas } = fotosQueEntran(formData.fotos.length, elegidas);
+    const { entran, problemas } = fotosQueEntran(formData.fotos.length, elegidas, formData.fotos.filter(esArchivoDeVideo).length);
     if (entran.length > 0) {
       setFormData((prev) => ({ ...prev, fotos: [...prev.fotos, ...entran] }));
     }

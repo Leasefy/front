@@ -183,6 +183,7 @@ export function PendientesDeAplicarPanel() {
             <SinDatos
               queSon="plata pendiente de aplicar"
               icono={Hourglass}
+              ilustracion="escudo"
               titulo="No hay nada pendiente, y está bien"
               descripcion="Toda la plata que entró ya se aplicó o se devolvió. Acá va a aparecer una fila el día que una aseguradora pague más de lo que un inquilino tiene vencido."
             />

@@ -21,6 +21,7 @@
  * Ver `src/components/estado/EstadoDeDatos.tsx`.
  */
 
+import { Ilustracion, type NombreIlustracion } from '@leasefy/cadence'
 import Link from 'next/link'
 import { MagnifyingGlass, Plus, type Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -57,6 +58,11 @@ export interface SinDatosProps {
   accion?: React.ReactNode
   /** Volver a ver todo. Sólo aparece cuando SÍ hay filtros. */
   onLimpiarFiltros?: () => void
+  /**
+   * Cadence 2: una ilustración 3D (casa, alcancia, billetera, escudo, monedas) en lugar del ícono,
+   * para el vacío GRANDE que invita a empezar o dice «todo al día». Con filtros puestos no se usa.
+   */
+  ilustracion?: NombreIlustracion
   className?: string
 }
 
@@ -64,6 +70,7 @@ export function SinDatos({
   hayFiltros = false,
   queSon,
   icono: IconoDelDominio,
+  ilustracion,
   titulo,
   descripcion,
   crear,
@@ -105,9 +112,13 @@ export function SinDatos({
       data-testid="sin-datos"
       data-caso={hayFiltros ? 'filtros' : 'vacio'}
     >
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface-muted">
-        <Icono weight="duotone" className="h-6 w-6 text-fg-subtle" aria-hidden="true" />
-      </div>
+      {ilustracion && !hayFiltros ? (
+        <Ilustracion nombre={ilustracion} tamano={136} className="mx-auto" />
+      ) : (
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface-muted">
+          <Icono weight="duotone" className="h-6 w-6 text-fg-subtle" aria-hidden="true" />
+        </div>
+      )}
 
       <div className="mt-4 space-y-1.5">
         <p className="text-[15px] font-semibold text-fg">{tituloFinal}</p>

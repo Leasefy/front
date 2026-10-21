@@ -185,6 +185,51 @@ export function TrasladoDeComisionPanel() {
           />
         ) : null}
 
+        {/* GLOW UP (21-10): primero lo que espera una decisión; después, proponer lo nuevo. */}
+        {lista?.propuestos.length ? (
+          <section className="space-y-4">
+            <TituloDeBloque
+              titulo="Esperando tu aprobación"
+              explicacion="Los propuso el sistema al quedar pagado un lote de liquidación, o alguien desde acá. Aprobar mueve la plata y le pone comprobante: no sale solo."
+            />
+            <ul className="space-y-4" data-testid="traslados-propuestos">
+              {lista.propuestos.map((t) => (
+                <li
+                  key={t.id}
+                  className="space-y-3 rounded-lg border border-warning/40 bg-surface p-5"
+                  data-testid={`traslado-${t.id}`}
+                >
+                  <FilaDelTraslado traslado={t} />
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="ink"
+                      onClick={() => void aprobar(t)}
+                      disabled={trabajando}
+                      data-testid={`aprobar-${t.id}`}
+                    >
+                      <CheckCircle className="h-4 w-4" aria-hidden="true" />
+                      Aprobar y trasladar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setRechazando(t);
+                        setMotivo('');
+                        setErrorDelMotivo(null);
+                      }}
+                      disabled={trabajando}
+                      data-testid={`rechazar-${t.id}`}
+                    >
+                      <Prohibit className="h-4 w-4" aria-hidden="true" />
+                      Rechazar
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
         <section className="space-y-4">
           {/* 🔴 Dos arreglos del 21-09, los dos por lo mismo.
               · La explicación de este bloque decía LA MISMA FRASE que el
@@ -219,48 +264,6 @@ export function TrasladoDeComisionPanel() {
           ) : null}
         </section>
 
-        {lista?.propuestos.length ? (
-          <section className="space-y-4">
-            <TituloDeBloque
-              titulo="Esperando tu aprobación"
-              explicacion="Los propuso el sistema al quedar pagado un lote de liquidación, o alguien desde acá. Aprobar mueve la plata y le pone comprobante: no sale solo."
-            />
-            <ul className="space-y-4" data-testid="traslados-propuestos">
-              {lista.propuestos.map((t) => (
-                <li
-                  key={t.id}
-                  className="space-y-3 rounded-lg border border-warning/40 bg-surface p-5"
-                  data-testid={`traslado-${t.id}`}
-                >
-                  <FilaDelTraslado traslado={t} />
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      onClick={() => void aprobar(t)}
-                      disabled={trabajando}
-                      data-testid={`aprobar-${t.id}`}
-                    >
-                      <CheckCircle className="h-4 w-4" aria-hidden="true" />
-                      Aprobar y trasladar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setRechazando(t);
-                        setMotivo('');
-                        setErrorDelMotivo(null);
-                      }}
-                      disabled={trabajando}
-                      data-testid={`rechazar-${t.id}`}
-                    >
-                      <Prohibit className="h-4 w-4" aria-hidden="true" />
-                      Rechazar
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
 
         {lista?.recientes.length ? (
           <section className="space-y-4">

@@ -18,6 +18,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { KpiValor } from '@/components/estado/KpiValor';
+import { Cifra, FranjaDeCifras, type TonoDeCifra } from '@leasefy/cadence';
 import { ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { EVENTOS_POR_PAGINA, RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
@@ -36,13 +37,13 @@ import { aFechaIso } from '@/lib/fechas-locales';
 import { tareaIdOf, type VistaDeAgenda } from '@/lib/api/agenda.types';
 
 /** Resumen por tipo de evento — color por tipo (estático). */
-const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_AGENDA_VACIO }[] = [
-  { key: 'visitas', dot: 'bg-primary', field: 'visitas' },
-  { key: 'firmas', dot: 'bg-warning-500', field: 'firmasPendientes' },
-  { key: 'vencimientos', dot: 'bg-error-500', field: 'vencimientos' },
-  { key: 'seguimientos', dot: 'bg-primary', field: 'seguimientos' },
-  { key: 'inspecciones', dot: 'bg-neutral-300 dark:bg-neutral-600', field: 'inspecciones' },
-  { key: 'tareas', dot: 'bg-neutral-300 dark:bg-neutral-600', field: 'tareas' },
+const RESUMEN_ITEMS: { key: string; tono?: TonoDeCifra; field: keyof typeof RESUMEN_AGENDA_VACIO }[] = [
+  { key: 'visitas', tono: 'voltaje', field: 'visitas' },
+  { key: 'firmas', tono: 'aviso', field: 'firmasPendientes' },
+  { key: 'vencimientos', tono: 'peligro', field: 'vencimientos' },
+  { key: 'seguimientos', tono: 'voltaje', field: 'seguimientos' },
+  { key: 'inspecciones', field: 'inspecciones' },
+  { key: 'tareas', field: 'tareas' },
 ];
 
 /**
@@ -71,9 +72,22 @@ const TIPO_DOT: Record<EventoTipo, string> = {
   tarea: 'bg-neutral-300 dark:bg-neutral-600',
 };
 
+/**
+ * El título sin el inmueble cuando el inmueble ya va en «Vínculo», al lado (glow up 21-10):
+ * «Vence el contrato · Apartamento en La 50, Caldas» | «Apartamento en La 50, Caldas» decía lo
+ * mismo dos veces y cortaba las dos.
+ */
+function tituloSinElVinculo(e: EventoAgenda): string {
+  const v = e.vinculoLabel?.trim();
+  if (!v) return e.titulo;
+  const cola = ` · ${v}`;
+  return e.titulo.endsWith(cola) && e.titulo.length > cola.length ? e.titulo.slice(0, -cola.length) : e.titulo;
+}
+
 /** Badge classes per event status. */
 const ESTADO_BADGE: Record<EventoEstado, string> = {
-  pendiente: 'bg-primary/10 text-primary',
+  // Pendiente es lo normal de lo que viene: en arena. El color queda para lo que pide algo (vencido).
+  pendiente: 'bg-surface-muted text-fg-muted',
   confirmado: 'bg-success-500/10 text-success',
   completado: 'bg-success-500/10 text-success',
   vencido: 'bg-error-500/10 text-danger',
@@ -405,25 +419,24 @@ function AgendaContent() {
         <SectionLabel>
           {pestana === 'vencidas' ? 'Vencidas' : pestana === 'hechas' ? 'Hechas (última semana)' : pestana === 'semana' ? 'Esta semana' : t(k('resumenLabel'))}
         </SectionLabel>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* Cadence 2: los seis tipos en UNA franja (antes, seis tarjetas sueltas). */}
+        <FranjaDeCifras data-testid="agenda-resumen">
           {RESUMEN_ITEMS.map((item) => (
-            <div key={item.key} className="rounded-lg border border-border bg-card p-4">
-              <div className="flex items-center gap-2">
-                <span className={cn('w-2 h-2 rounded-full flex-shrink-0', item.dot)} />
-                <span className="text-caption text-muted-foreground truncate">{t(k(`tipo_${item.key}`))}</span>
-              </div>
-              {/* El número entra a los cuatro estados: con la carga caída, la
-                  tabla decía «no se pudo cargar» y un renglón más arriba los
-                  tiles afirmaban «0 visitas · 0 firmas». Un cero es un dato;
-                  «no sé» no es cero. */}
-              <p className="mt-1.5 text-2xl font-semibold tabular-nums text-foreground">
+            <Cifra
+              key={item.key}
+              etiqueta={t(k(`tipo_${item.key}`))}
+              tono={item.tono}
+              // El número entra a los cuatro estados: con la carga caída, la tabla decía «no se
+              // pudo cargar» y un renglón más arriba los tiles afirmaban «0 visitas · 0 firmas».
+              // Un cero es un dato; «no sé» no es cero.
+              valor={
                 <KpiValor cargando={isLoading} fallo={error}>
                   {resumen[item.field]}
                 </KpiValor>
-              </p>
-            </div>
+              }
+            />
           ))}
-        </div>
+        </FranjaDeCifras>
       </section>
 
       {/* La tabla, sin título encima: no se nombran las tablas (Nico, 2026-09-03). */}
@@ -596,7 +609,7 @@ function AgendaContent() {
                     </TableCell>
                     <TableCell className="max-w-[320px]">
                       <div className="min-w-0">
-                        <p className="text-foreground font-medium truncate">{e.titulo}</p>
+                        <p className="text-foreground font-medium truncate" title={e.titulo}>{tituloSinElVinculo(e)}</p>
                         <p className="text-caption text-muted-foreground truncate">
                           <span className="inline-flex items-center gap-1.5">
                             <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', TIPO_DOT[e.tipo])} />

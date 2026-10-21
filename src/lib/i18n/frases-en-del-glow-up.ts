@@ -85,4 +85,29 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Lo que se le gira a cada propietario en el mes, y en qué va cada giro.':
     'What each owner is paid this month, and where each payout stands.',
   'Generar la dispersión': 'Generate the payout',
+  // components/finanzas/piezas.tsx — TarjetaDeCifras
+  'Qué mide cada cifra': 'What each figure measures',
+  'Ocultar qué mide cada cifra': 'Hide what each figure measures',
+  // components/finanzas/TableroFinanciero.tsx
+  'Finanzas': 'Finance',
+  'Tablero financiero': 'Financial dashboard',
+  'Lo que entró, lo que deben, lo que hay que girar y lo que ganó la inmobiliaria: las cuatro preguntas de la mañana, en un mes y una sede.':
+    "What came in, what's owed, what has to be paid out and what the agency earned: the four morning questions, for one month and one branch.",
+  'Todo el tablero, de': 'The whole dashboard, for',
+  'Sede': 'Branch',
+  'Recaudo': 'Collections',
+  '¿Cuánto entró, y qué parte de lo del mes ya llegó?': 'How much came in, and how much of this month has arrived?',
+  'Ver el recaudo': 'See collections',
+  'Qué parte de lo del mes ya llegó': 'How much of this month has arrived',
+  'Cartera por edades': 'Aging of overdue balances',
+  '¿Cuánto pasó el plazo, de qué edad, y quiénes pesan más?': 'How much is past due, how old is it, and who owes the most?',
+  'Ver la cartera entera': 'See all receivables',
+  'Plata de los propietarios': "Owners' money",
+  '¿Cuánto hay que girarles, y qué está trabado?': 'How much has to be paid out to them, and what is stuck?',
+  'Ir a dispersiones': 'Go to payouts',
+  'Ver el lote por aprobar': 'See the batch awaiting approval',
+  'Ver los {n} lotes por aprobar': 'See the {n} batches awaiting approval',
+  'Lo que gana la inmobiliaria': 'What the agency earns',
+  '¿Cuánto le quedó a la inmobiliaria, después de lo que cuesta mover la plata?':
+    'How much did the agency keep, after the cost of moving the money?',
 }

@@ -19,9 +19,12 @@
  */
 
 import { AnimatedNumber } from '@leasefy/cadence';
-import type { ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import { enCristiano } from '@/lib/errores/en-cristiano';
-import { Warning, WarningOctagon } from '@phosphor-icons/react';
+import { Info, Warning, WarningOctagon } from '@phosphor-icons/react';
+
+import { CifraQueCabe } from '@/components/estado/CifraQueCabe';
+import { useTr } from '@/lib/i18n/use-tr';
 
 import { SIN_MEDIR } from '@/lib/tasas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -48,6 +51,15 @@ export interface CifraProps {
    * «−$ 119.100»; CB-17, 03-10-2026). Opcional: las demás no cambian.
    */
   formato?: (n: number) => string;
+  /**
+   * GLOW UP (20-10-2026): dentro de una `TarjetaDeCifras`, la cifra que
+   * contesta la pregunta del bloque. Va más grande; las demás la acompañan.
+   */
+  destacada?: boolean;
+  /** Una marca antes de la etiqueta (el color de su tramo en una barra). */
+  marca?: ReactNode;
+  /** Clases de la celda dentro de una `TarjetaDeCifras` (p. ej. cuántas columnas ocupa). */
+  className?: string;
 }
 
 const TONO: Record<NonNullable<CifraProps['tono']>, string> = {
@@ -57,8 +69,38 @@ const TONO: Record<NonNullable<CifraProps['tono']>, string> = {
 };
 
 /** Una cifra en pesos, con su definición debajo. */
-export function Cifra({ id, etiqueta, valor, definicion, sinMedir, tono, pie, formato = formatCurrency }: CifraProps) {
+export function Cifra({
+  id,
+  etiqueta,
+  valor,
+  definicion,
+  sinMedir,
+  tono,
+  pie,
+  formato = formatCurrency,
+  destacada,
+  marca,
+  className,
+}: CifraProps) {
+  const enTarjeta = useContext(QueMideCadaCifra);
   const medido = valor !== null && Number.isFinite(valor);
+  if (enTarjeta) {
+    return (
+      <CeldaDeCifra
+        id={id}
+        etiqueta={etiqueta}
+        marca={marca}
+        destacada={destacada}
+        className={className}
+        tono={medido ? tono : undefined}
+        texto={medido ? formato(valor as number) : SIN_MEDIR}
+        definicion={medido ? definicion : (sinMedir ?? definicion)}
+        pie={pie}
+      >
+        {medido ? <AnimatedNumber value={valor as number} format={formato} /> : SIN_MEDIR}
+      </CeldaDeCifra>
+    );
+  }
   return (
     <section
       className="space-y-2 rounded-lg border border-border bg-surface p-5"
@@ -92,14 +134,49 @@ export interface CifraDeTextoProps {
   definicion: string;
   tono?: CifraProps['tono'];
   pie?: ReactNode;
+  destacada?: boolean;
+  marca?: ReactNode;
+  className?: string;
+  /** Lo que va entre la cifra y el pie dentro de una tarjeta (una barra de avance). */
+  extra?: ReactNode;
 }
 
 /**
  * Una cifra que NO son pesos: un porcentaje, un conteo, una fecha. Quien llama
  * la formatea —y si no se midió, pasa `SIN_MEDIR`—.
  */
-export function CifraDeTexto({ id, etiqueta, texto, definicion, tono, pie }: CifraDeTextoProps) {
+export function CifraDeTexto({
+  id,
+  etiqueta,
+  texto,
+  definicion,
+  tono,
+  pie,
+  destacada,
+  marca,
+  className,
+  extra,
+}: CifraDeTextoProps) {
+  const enTarjeta = useContext(QueMideCadaCifra);
   const medido = texto !== SIN_MEDIR;
+  if (enTarjeta) {
+    return (
+      <CeldaDeCifra
+        id={id}
+        etiqueta={etiqueta}
+        marca={marca}
+        destacada={destacada}
+        className={className}
+        tono={medido ? tono : undefined}
+        texto={texto}
+        definicion={definicion}
+        pie={pie}
+        extra={extra}
+      >
+        {texto}
+      </CeldaDeCifra>
+    );
+  }
   return (
     <section
       className="space-y-2 rounded-lg border border-border bg-surface p-5"
@@ -118,6 +195,220 @@ export function CifraDeTexto({ id, etiqueta, texto, definicion, tono, pie }: Cif
       <p className="text-caption leading-relaxed text-fg-muted">{definicion}</p>
       {pie ? <div className="text-caption leading-relaxed text-fg-muted">{pie}</div> : null}
     </section>
+  );
+}
+
+// ── Tarjeta de cifras (GLOW UP, 20-10-2026) ─────────────────────────────────
+
+/**
+ * Si las cifras de esta tarjeta muestran qué mide cada una. `null` = la cifra
+ * no está en una tarjeta y se pinta como siempre (con su definición debajo).
+ */
+const QueMideCadaCifra = createContext<{ abiertas: boolean } | null>(null);
+
+/**
+ * Un bloque de cifras que contesta UNA pregunta, en una sola tarjeta — GLOW UP
+ * (Nico, 20-10-2026: «minimizando carga cognitiva… esconder información
+ * irrelevante en la misma pantalla presentada de otra manera»).
+ *
+ * Antes cada cifra era su propia tarjeta con un párrafo debajo: dieciocho
+ * tarjetas del mismo peso y otros tantos párrafos, y la cifra que contesta la
+ * pregunta no se distinguía de las que la explican. Ahora:
+ *
+ *   · arriba, el título del bloque y su pregunta en una línea, con su acción;
+ *   · las cifras en una fila de celdas separadas por una línea fina, la que
+ *     contesta la pregunta más grande (`destacada`);
+ *   · qué mide cada cifra sigue en la pantalla —una cifra sin definición no se
+ *     publica—, plegado detrás de «Qué mide cada cifra», que abre todas las del
+ *     bloque a la vez. Lo que es DATO (una comparación, lo que va aparte) va en
+ *     el `pie` y se ve siempre.
+ */
+export function TarjetaDeCifras({
+  titulo,
+  pregunta,
+  explicacion,
+  accion,
+  children,
+  testId,
+  className,
+}: {
+  titulo: string;
+  /** Una línea: la pregunta que contesta el bloque. */
+  pregunta?: string;
+  /** El párrafo largo del bloque: se ve con «Qué mide cada cifra». */
+  explicacion?: ReactNode;
+  accion?: ReactNode;
+  children: ReactNode;
+  testId?: string;
+  className?: string;
+}) {
+  const tr = useTr();
+  const [abiertas, setAbiertas] = useState(false);
+  return (
+    <section
+      className={cn('overflow-hidden rounded-xl border border-border bg-surface', className)}
+      data-testid={testId}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-5 pb-4 pt-5">
+        <div className="min-w-0 space-y-0.5">
+          <h2 className="text-h3 text-fg">{titulo}</h2>
+          {pregunta ? <p className="text-body-sm text-fg-muted">{pregunta}</p> : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-full text-body-sm font-medium text-fg-muted underline-offset-4 transition-colors duration-fast hover:text-fg hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-pressed={abiertas}
+            onClick={() => setAbiertas((v) => !v)}
+            data-testid={testId ? `${testId}-que-mide` : undefined}
+          >
+            <Info className="h-4 w-4" aria-hidden="true" />
+            {abiertas ? tr('Ocultar qué mide cada cifra') : tr('Qué mide cada cifra')}
+          </button>
+          {accion}
+        </div>
+      </div>
+      {explicacion ? (
+        <p
+          hidden={!abiertas}
+          className={cn(
+            'max-w-3xl px-5 pb-4 text-caption leading-relaxed text-fg-muted',
+            abiertas && 'animate-rise-in',
+          )}
+        >
+          {explicacion}
+        </p>
+      ) : null}
+      <QueMideCadaCifra.Provider value={{ abiertas }}>{children}</QueMideCadaCifra.Provider>
+    </section>
+  );
+}
+
+/**
+ * Las celdas de una `TarjetaDeCifras`, separadas por una línea fina (la grilla
+ * pinta el borde por el hueco de 1 px). Quien la usa elige las columnas, y que
+ * cada fila quede llena: una celda de menos dejaría un hueco gris.
+ */
+export function FilaDeCifras({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn('grid gap-px border-t border-border bg-border', className)}>{children}</div>;
+}
+
+function CeldaDeCifra({
+  id,
+  etiqueta,
+  marca,
+  destacada,
+  className,
+  tono,
+  texto,
+  definicion,
+  pie,
+  extra,
+  children,
+}: {
+  id: string;
+  etiqueta: string;
+  marca?: ReactNode;
+  destacada?: boolean;
+  className?: string;
+  tono?: CifraProps['tono'];
+  /** La cifra ya escrita: con ella se achica la letra para que quepa entera. */
+  texto: string;
+  definicion: string;
+  pie?: ReactNode;
+  extra?: ReactNode;
+  children: ReactNode;
+}) {
+  const { abiertas } = useContext(QueMideCadaCifra) ?? { abiertas: true };
+  return (
+    <section
+      className={cn('flex min-w-0 flex-col gap-1.5 bg-surface px-5 py-4', className)}
+      data-testid={`cifra-${id}`}
+      data-destacada={destacada ? '' : undefined}
+    >
+      <p className="flex items-center gap-2 text-label text-fg-muted">
+        {marca}
+        <span className="min-w-0">{etiqueta}</span>
+      </p>
+      <p
+        className={cn(
+          'font-mono font-medium tabular-nums text-fg',
+          destacada ? 'text-stat' : 'text-h2',
+          tono && TONO[tono],
+        )}
+        data-testid={`valor-${id}`}
+      >
+        <CifraQueCabe texto={texto}>{children}</CifraQueCabe>
+      </p>
+      {extra}
+      {pie ? <div className="text-caption leading-relaxed text-fg-muted">{pie}</div> : null}
+      <p
+        hidden={!abiertas}
+        className={cn('text-caption leading-relaxed text-fg-muted', abiertas && 'animate-rise-in')}
+      >
+        {definicion}
+      </p>
+    </section>
+  );
+}
+
+/**
+ * Un renglón de una cuenta dentro de una `TarjetaDeCifras`: «Comisiones
+ * $ 770.000», «− 4x1000 $ 27.134,80», con el subtotal en negrilla y con línea
+ * arriba. Para lo que se SUMA y se RESTA hasta un resultado: leído como cuenta
+ * se entiende de dónde sale el resultado sin explicarlo.
+ */
+export function RenglonDeCifra({
+  id,
+  etiqueta,
+  valor,
+  definicion,
+  signo,
+  subtotal,
+  tono,
+  formato = formatCurrency,
+}: {
+  id: string;
+  etiqueta: string;
+  valor: number | null;
+  definicion: string;
+  /** `'-'` = se resta: se escribe «−» delante de la cifra. */
+  signo?: '+' | '-';
+  subtotal?: boolean;
+  tono?: CifraProps['tono'];
+  formato?: (n: number) => string;
+}) {
+  const { abiertas } = useContext(QueMideCadaCifra) ?? { abiertas: true };
+  const medido = valor !== null && Number.isFinite(valor);
+  return (
+    <div
+      className={cn('py-2', subtotal && 'border-t border-border')}
+      data-testid={`cifra-${id}`}
+    >
+      <div className="flex items-baseline justify-between gap-4">
+        <p className={cn('text-body-sm', subtotal ? 'font-semibold text-fg' : 'text-fg-muted')}>
+          {etiqueta}
+        </p>
+        <p
+          className={cn(
+            'shrink-0 font-mono text-body-sm tabular-nums',
+            subtotal ? 'font-semibold text-fg' : 'text-fg',
+            medido && tono && TONO[tono],
+          )}
+        >
+          {signo === '-' && medido ? <span aria-hidden="true">− </span> : null}
+          <span data-testid={`valor-${id}`}>
+            {medido ? <AnimatedNumber value={valor as number} format={formato} /> : SIN_MEDIR}
+          </span>
+        </p>
+      </div>
+      <p
+        hidden={!abiertas}
+        className={cn('pt-0.5 text-caption leading-relaxed text-fg-muted', abiertas && 'animate-rise-in')}
+      >
+        {definicion}
+      </p>
+    </div>
   );
 }
 

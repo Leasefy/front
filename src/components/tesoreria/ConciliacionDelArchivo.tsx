@@ -216,7 +216,7 @@ export function ConciliacionDelArchivo({ archivoId, onCambio }: { archivoId: str
         cargando={cargando && !datos}
         error={datos ? null : fallo}
         queEs="la conciliación de este archivo"
-        onReintentar={() => void cargar()}
+        onReintentar={() => cargar()}
       >
         {datos ? (
           <Appear key={archivoId} distance="xs">

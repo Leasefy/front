@@ -84,6 +84,29 @@ function tituloSinElVinculo(e: EventoAgenda): string {
   return e.titulo.endsWith(cola) && e.titulo.length > cola.length ? e.titulo.slice(0, -cola.length) : e.titulo;
 }
 
+/** El grupo del día de un evento, según hoy en Colombia. */
+type GrupoDelDia = 'pasado' | 'hoy' | 'manana' | 'semana' | 'despues';
+const NOMBRE_DEL_GRUPO: Record<GrupoDelDia, string> = {
+  pasado: 'Ya pasó',
+  hoy: 'Hoy',
+  manana: 'Mañana',
+  semana: 'Esta semana',
+  despues: 'Más adelante',
+};
+function diaEnColombia(desplazamiento = 0): string {
+  const d = new Date(Date.now() + desplazamiento * 86_400_000);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+function grupoDelDia(fecha: string): GrupoDelDia {
+  const dia = fecha.slice(0, 10);
+  const hoy = diaEnColombia();
+  if (dia < hoy) return 'pasado';
+  if (dia === hoy) return 'hoy';
+  if (dia === diaEnColombia(1)) return 'manana';
+  if (dia <= diaEnColombia(7)) return 'semana';
+  return 'despues';
+}
+
 /** Badge classes per event status. */
 const ESTADO_BADGE: Record<EventoEstado, string> = {
   // Pendiente es lo normal de lo que viene: en arena. El color queda para lo que pide algo (vencido).
@@ -595,7 +618,24 @@ function AgendaContent() {
                   </TableCell>
                 </TableRowAnimada>
               ) : (
-                eventos.map((e: EventoAgenda) => (
+                // GLOW UP 21-10 · la agenda se lee por DÍA: «Hoy», «Mañana», «Esta semana», «Más adelante»
+                // (y «Ya pasó» en las vencidas). Antes era una lista plana de fechas largas.
+                eventos.flatMap((e: EventoAgenda, i: number) => {
+                  const grupo = grupoDelDia(e.fecha);
+                  const nuevoGrupo = i === 0 || grupoDelDia(eventos[i - 1].fecha) !== grupo;
+                  return [
+                    ...(nuevoGrupo
+                      ? [
+                          <TableRowAnimada key={`grupo-${grupo}`} className="hover:bg-transparent" data-testid="agenda-grupo">
+                            <TableCell
+                              colSpan={COLUMNS.length}
+                              className="bg-surface-muted/50 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle"
+                            >
+                              {NOMBRE_DEL_GRUPO[grupo]} · {eventos.filter((x) => grupoDelDia(x.fecha) === grupo).length}
+                            </TableCell>
+                          </TableRowAnimada>,
+                        ]
+                      : []),
                   <TableRowAnimada
                     key={e.id}
                     onClick={() => setSeleccionado(e)}
@@ -707,8 +747,9 @@ function AgendaContent() {
                         )}
                       </div>
                     </TableCell>
-                  </TableRowAnimada>
-                ))
+                  </TableRowAnimada>,
+                  ];
+                })
               )}
             </TableBodyAnimado>
           </Table>

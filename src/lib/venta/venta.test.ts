@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { enlaceDeWhatsApp, mensajeParaVentas } from './whatsapp-de-leasefy';
+import { enlaceDeWhatsApp, enlaceParaMejorarElPlan, mensajeParaMejorarElPlan, mensajeParaVentas } from './whatsapp-de-leasefy';
 import { abiertaParaElPropietarioGratis, claveDeDemoDelPropietario } from './propietario-gratis';
 import { demoDeLaInmobiliaria } from './demos-del-panel';
 
@@ -19,6 +19,32 @@ describe('el WhatsApp de ventas (Nico, 20-10)', () => {
     expect(texto).toContain('administrarlo');
     expect(texto).not.toContain('undefined');
     expect(texto).not.toContain('null');
+  });
+});
+
+describe('«Mejorar mi plan» va a nuestro WhatsApp (Nico, 20-10)', () => {
+  it('a la que vino del marketplace le sale el mensaje de ventas', () => {
+    const texto = mensajeParaMejorarElPlan({ nombre: 'Camila', empresa: 'Los Almendros', queVio: 'Cobranza con IA', vinoDelMarketplace: true });
+    expect(texto).toBe(mensajeParaVentas({ quien: 'inmobiliaria', nombre: 'Camila', empresa: 'Los Almendros', queVio: 'Cobranza con IA' }));
+    expect(texto).toContain('marketplace');
+  });
+
+  it('a las demás del plan gratis no les dice que publicaron en el marketplace', () => {
+    const url = enlaceParaMejorarElPlan({ nombre: 'Andrés', empresa: 'Inmobiliaria Sur', queVio: 'Piloto automático' });
+    expect(url.startsWith('https://wa.me/573013075347?text=')).toBe(true);
+    const texto = decodeURIComponent(url.split('text=')[1]!);
+    expect(texto).toContain('Soy Andrés, de Inmobiliaria Sur');
+    expect(texto).toContain('plan gratis');
+    expect(texto).toContain('Piloto automático');
+    expect(texto).not.toContain('marketplace');
+  });
+
+  it('sin nombre ni empresa no inventa nada', () => {
+    const texto = mensajeParaMejorarElPlan({});
+    expect(texto).not.toContain('undefined');
+    expect(texto).not.toContain('null');
+    expect(texto.startsWith('Hola, Leasefy. Tengo el plan gratis')).toBe(true);
+    expect(mensajeParaMejorarElPlan({ empresa: 'Inmobiliaria Sur' })).toContain('Les escribo de Inmobiliaria Sur.');
   });
 });
 

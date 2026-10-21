@@ -43,3 +43,39 @@ export function mensajeParaVentas({ quien, nombre, empresa, queVio }: ContextoDe
 export function enlaceDeWhatsApp(contexto: ContextoDelMensaje): string {
   return `https://wa.me/${WHATSAPP_DE_VENTAS}?text=${encodeURIComponent(mensajeParaVentas(contexto))}`;
 }
+
+/**
+ * «Mejorar mi plan» (Nico, 20-10-2026: a nuestro WhatsApp, para TODAS las del
+ * plan gratis). A la que vino del marketplace le sale el mensaje de siempre de
+ * ventas; a las demás, uno que no dice «publiqué en su marketplace», porque no
+ * lo hicieron. El precio se habla por WhatsApp.
+ */
+export interface ContextoDeMejorarElPlan {
+  nombre?: string | null;
+  empresa?: string | null;
+  /** La función de la invitación que estaba mirando («Cobranza con IA»…). */
+  queVio?: string | null;
+  vinoDelMarketplace?: boolean;
+}
+
+export function mensajeParaMejorarElPlan({ nombre, empresa, queVio, vinoDelMarketplace }: ContextoDeMejorarElPlan): string {
+  if (vinoDelMarketplace) return mensajeParaVentas({ quien: 'inmobiliaria', nombre, empresa, queVio });
+  const quien = nombre?.trim()
+    ? `Soy ${nombre.trim()}${empresa?.trim() ? `, de ${empresa.trim()}` : ''}.`
+    : empresa?.trim()
+      ? `Les escribo de ${empresa.trim()}.`
+      : '';
+  return [
+    'Hola, Leasefy.',
+    quien,
+    'Tengo el plan gratis y quiero mejorarlo.',
+    queVio?.trim() ? `Estaba mirando ${queVio.trim()} en mi cuenta.` : '',
+    'Quiero saber cómo pueden manejar mi inmobiliaria en piloto automático: cobranza, contratos, pagos a propietarios y contabilidad.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+export function enlaceParaMejorarElPlan(contexto: ContextoDeMejorarElPlan): string {
+  return `https://wa.me/${WHATSAPP_DE_VENTAS}?text=${encodeURIComponent(mensajeParaMejorarElPlan(contexto))}`;
+}

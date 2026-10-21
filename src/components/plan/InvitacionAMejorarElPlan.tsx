@@ -10,13 +10,16 @@
  *  - Sólo para la inmobiliaria en el plan gratuito (`isDefault`), y sólo al
  *    administrador, que es quien puede mejorarlo.
  *  - Un modal por función, al entrar a su pantalla.
- *  - «Mejorar mi plan» lleva a /panel/inmobiliaria/upgrade; «Ahora no» lo cierra.
+ *  - «Mejorar mi plan» abre NUESTRO WhatsApp con el mensaje ya escrito (Nico,
+ *    20-10-2026: «a todas las del plan gratis»; antes llevaba a
+ *    /panel/inmobiliaria/upgrade, que sólo ofrece el correo). A la que vino del
+ *    marketplace le sale el mensaje de ventas; «Ahora no» lo cierra.
  *  - La misma función no vuelve a salir en 7 días (en este navegador).
  *  - Sin precios, y no cierra NADA de lo que hoy se puede usar.
  */
 
 import { useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   ArrowsLeftRight,
@@ -31,6 +34,8 @@ import { enterTransition, Stagger, StaggerItem, usePrefersReducedMotion } from '
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useAuth } from '@/lib/auth/use-auth'
+import { enlaceParaMejorarElPlan } from '@/lib/venta/whatsapp-de-leasefy'
 
 export interface Invitacion {
   clave: string
@@ -159,7 +164,7 @@ function marcarComoMostrada(clave: string) {
 
 export function InvitacionAMejorarElPlan({ activa }: { activa: boolean }) {
   const ruta = usePathname()
-  const router = useRouter()
+  const { agency, user } = useAuth()
   const reducido = usePrefersReducedMotion()
   const [abierta, setAbierta] = useState<Invitacion | null>(null)
 
@@ -226,14 +231,20 @@ export function InvitacionAMejorarElPlan({ activa }: { activa: boolean }) {
               <Button variant="ghost" hideArrow onClick={() => setAbierta(null)} data-testid="invitacion-ahora-no">
                 Ahora no
               </Button>
-              <Button
-                onClick={() => {
-                  setAbierta(null)
-                  router.push('/panel/inmobiliaria/upgrade')
-                }}
-                data-testid="invitacion-mejorar"
-              >
-                Mejorar mi plan
+              <Button asChild onClick={() => setAbierta(null)}>
+                <a
+                  href={enlaceParaMejorarElPlan({
+                    nombre: user?.firstName ?? null,
+                    empresa: agency?.name ?? null,
+                    queVio: abierta.eyebrow,
+                    vinoDelMarketplace: agency?.vinoDelMarketplace === true,
+                  })}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  data-testid="invitacion-mejorar"
+                >
+                  Mejorar mi plan
+                </a>
               </Button>
             </div>
           </div>

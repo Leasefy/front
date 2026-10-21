@@ -24,6 +24,8 @@ export interface InmobiliariaDeLaLista {
   inmuebles?: number
   equipo?: number
   migracion?: 'completada' | 'omitida' | 'pendiente'
+  /** Llegó por el registro rápido del marketplace (Nico, 20-10-2026: «márcalas»). */
+  del_marketplace?: boolean
 }
 
 /** ¿La fila pasa los filtros de la pantalla? */

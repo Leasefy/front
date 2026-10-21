@@ -3301,7 +3301,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RolDeLaMatriz, RolePermissions> = 
   auxiliar_comercial: {
     role: 'auxiliar_comercial',
     permissions: [
-      { module: 'propietarios', actions: ['view'] },
+      // Consigna (Nico 20-10): crea y edita al propietario, sin su plata ni su cuenta.
+      { module: 'propietarios', actions: ['view', 'create', 'edit'] },
       { module: 'portafolio', actions: ['view', 'create', 'edit'] },
       { module: 'pipeline', actions: ['view', 'create', 'edit'] },
       { module: 'documentos', actions: ['view'] },

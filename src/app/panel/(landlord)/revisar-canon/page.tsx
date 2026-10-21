@@ -18,6 +18,8 @@
 import { useCallback, useEffect, useId, useState } from 'react';
 import { Presence } from '@leasefy/cadence';
 import { CheckCircle, Hourglass, Tag, XCircle, FileMagnifyingGlass } from '@phosphor-icons/react';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { EmptyState } from '@/components/ui/empty-state';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui';
@@ -255,10 +257,11 @@ export default function RevisarCanonPage() {
   return (
     <div className="min-h-screen bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1">
-          <h1 className="text-h2 text-fg">Revisar el canon</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">Cuando tu inmueble lleva más de un mes desocupado, tu inmobiliaria te cuenta lo que te ha costado y te pregunta si quieres revisar el canon. Tú decides.</p>
-        </header>
+        <EncabezadoDePantalla
+          seccion="Por decidir"
+          titulo="Revisar el canon"
+          descripcion="Cuando tu inmueble lleva más de un mes desocupado, tu inmobiliaria te cuenta lo que te ha costado y te pregunta si quieres revisar el canon. Tú decides."
+        />
         <EstadoDeDatos
           cargando={cargando}
           error={error}
@@ -266,19 +269,23 @@ export default function RevisarCanonPage() {
           onReintentar={cargar}
           vacio={!datos || (datos.pendientes.length === 0 && datos.historial.length === 0)}
           cuandoVacio={
-            <Card className="p-6">
-              {noDisponible ? (
+            noDisponible ? (
+              <Card className="p-6">
                 <p className="text-sm text-fg-muted" data-testid="revisiones-no-disponible">
                   Revisar el canon desde aquí todavía no está disponible. Si un inmueble tuyo lleva tiempo desocupado, tu
                   inmobiliaria te puede contar cómo va.
                 </p>
-              ) : (
-                <p className="text-sm text-fg-muted" data-testid="revisiones-vacio">
-                  No tienes nada por revisar. Si un inmueble tuyo lleva más de un mes desocupado, tu inmobiliaria te avisa y va a
-                  aparecer aquí.
-                </p>
-              )}
-            </Card>
+              </Card>
+            ) : (
+              <section className="rounded-lg border border-border bg-surface" data-testid="revisiones-vacio">
+                <EmptyState
+                  icon={Tag}
+                  ilustracion="casa"
+                  title="No tienes nada por revisar"
+                  description="Si un inmueble tuyo lleva más de un mes desocupado, tu inmobiliaria te avisa y va a aparecer aquí."
+                />
+              </section>
+            )
           }
         >
           {datos && datos.pendientes.length > 0 && (

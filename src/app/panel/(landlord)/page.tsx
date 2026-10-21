@@ -2,7 +2,11 @@
 
 import { plataQueLlega } from '@/lib/plata/plata-que-llega';
 import { PreguntaDeLaRecomendacion } from '@/components/marketplace/inmobiliaria/PreguntaDeLaRecomendacion';
-import { ReparacionesPorAprobar } from '@/components/landlord/portal/ReparacionesPorAprobar';
+import { LoQueEsperaTuRespuesta, usePendientesDelPropietario } from '@/components/landlord/portal/LoQueEsperaTuRespuesta';
+import { TusGiros } from '@/components/landlord/portal/TusGiros';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -117,45 +121,67 @@ function UrgentActionsBanner({ actions, entra }: { actions: DashboardUrgentActio
  * sus contratos y el camino a su estado de cuenta. No pide nada del panel del
  * propietario independiente (esas rutas responden «panel en pausa»).
  */
+/**
+ * GLOW UP (21-10-2026) — el Inicio del propietario de inmobiliaria, por su trabajo.
+ *
+ * Viene a dos cosas: decidir lo que la inmobiliaria le pregunta y saber cuánto y
+ * cuándo le giran. Antes: un saludo grande, el aviso de reparaciones (lo único
+ * pendiente que se decía), la pregunta de la recomendación, la lista de contratos
+ * y cuatro tarjetas-enlace iguales. Ahora, en el orden en que lo hace:
+ *   1. Encabezado común: el saludo, para qué es el portal, «Ver mi estado de
+ *      cuenta» (la única azul) y «Mis giros».
+ *   2. «Lo que espera tu respuesta»: TODO lo que espera una decisión suya
+ *      (giro devuelto, reparaciones, sobrecostos, escoger inquilino, canon), con
+ *      su botón. Sin nada pendiente no se pinta.
+ *   3. Su plata en una franja: último giro, próximo giro, por girar, vigentes.
+ *   4. Sus contratos (cada uno abre su inmueble).
+ *   5. Sus documentos (informes y certificados), callados, y al final la
+ *      pregunta de la recomendación.
+ */
 function InicioDelPropietarioDeInmobiliaria({ doc }: { doc: NonNullable<ReturnType<typeof useContratosAdministrados>['doc']> }) {
   const { user } = useAuth();
   const { greeting } = useTimeGreeting();
   const { t } = useI18n();
   const firstName = user?.name?.split(' ')[0] || t('landlord.dashboard.defaultName');
+  const pendientes = usePendientesDelPropietario();
+  const quien = doc.inmobiliaria.nombre || doc.inmobiliaria.razonSocial || 'tu inmobiliaria';
   return (
     <div className="min-h-screen bg-bg">
-      <div className="space-y-8 p-6 lg:p-8">
-        <header>
-          <span className="inline-flex items-center gap-2 mb-2">
-            <BrandDot />
-            <MonoLabel className="text-[11px] font-medium text-primary">{greeting}</MonoLabel>
-          </span>
-          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-fg tracking-tight">
-            {t('dashboard.hello', { name: firstName })}
-          </h1>
-        </header>
-        {/* SO-10 (QA 04-10): lo que espera su respuesta, arriba de todo. */}
-        <ReparacionesPorAprobar />
-        {/* «¿Recomendarías a la inmobiliaria?» (marketplace, 09-10-2026). */}
-        <PreguntaDeLaRecomendacion />
+      <div className="space-y-6 p-6 lg:p-8">
+        <EncabezadoDePantalla
+          seccion={greeting}
+          titulo={t('dashboard.hello', { name: firstName })}
+          descripcion={`Lo que ${quien} te administra: cuánto te gira, cuándo y lo que te pregunta.`}
+          acciones={
+            <Button asChild variant="outline" size="sm" hideArrow className="max-lg:flex-1">
+              <Link href="/panel/giros">Mis giros</Link>
+            </Button>
+          }
+          accionPrincipal={
+            <Button asChild size="sm" hideArrow className="max-lg:flex-1">
+              <Link href="/panel/estado-de-cuenta">Ver mi estado de cuenta</Link>
+            </Button>
+          }
+          data-testid="encabezado-del-propietario"
+        />
+        {/* SO-10 (QA 04-10) y el glow up: TODO lo que espera su respuesta, arriba de todo. */}
+        <LoQueEsperaTuRespuesta pendientes={pendientes} />
+        <TusGiros doc={doc} />
         <ContratosConLaInmobiliaria doc={doc} />
-        <nav aria-label="Lo tuyo" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <nav aria-label="Tus documentos" className="flex flex-wrap items-center gap-x-5 gap-y-2" data-testid="tus-documentos">
+          <span className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">Tus documentos</span>
           {[
-            { href: '/panel/estado-de-cuenta', titulo: 'Estado de cuenta', texto: 'Lo girado, lo que falta y por qué.' },
-            { href: '/panel/informes', titulo: 'Mis informes', texto: 'Certificado anual de ingresos y detalle por inmueble.' },
-            { href: '/panel/certificados', titulo: 'Certificados de retención', texto: 'Se generan al cerrar el año.' },
-            { href: '/panel/aprobaciones', titulo: 'Aprobar reparaciones', texto: 'Nada se descuenta sin tu aprobación, salvo emergencia.' },
+            { href: '/panel/informes', titulo: 'Mis informes', texto: 'certificado anual de ingresos y detalle por inmueble' },
+            { href: '/panel/certificados', titulo: 'Certificados y facturas', texto: 'se generan al cerrar el año' },
           ].map((a) => (
-            <Link
-              key={a.href}
-              href={a.href}
-              className="rounded-lg border border-border bg-surface p-4 transition-colors hover:border-border-strong"
-            >
-              <p className="text-body-sm font-medium text-fg">{a.titulo}</p>
-              <p className="mt-1 text-body-sm text-fg-muted">{a.texto}</p>
+            <Link key={a.href} href={a.href} className="text-body-sm text-fg-muted hover:text-fg">
+              <span className="font-medium text-fg underline decoration-border-strong underline-offset-4">{a.titulo}</span>
+              <span className="max-sm:hidden"> · {a.texto}</span>
             </Link>
           ))}
         </nav>
+        {/* «¿Recomendarías a la inmobiliaria?» (marketplace, 09-10-2026): al final, no es la tarea. */}
+        <PreguntaDeLaRecomendacion />
       </div>
     </div>
   );
@@ -173,34 +199,21 @@ function InicioSinContratos({ inmobiliaria }: { inmobiliaria: string }) {
   const firstName = user?.name?.split(' ')[0] || t('landlord.dashboard.defaultName');
   return (
     <div className="min-h-screen bg-bg">
-      <div className="space-y-8 p-6 lg:p-8">
-        <header>
-          <span className="inline-flex items-center gap-2 mb-2">
-            <BrandDot />
-            <MonoLabel className="text-[11px] font-medium text-primary">{greeting}</MonoLabel>
-          </span>
-          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-fg tracking-tight">
-            {t('dashboard.hello', { name: firstName })}
-          </h1>
-        </header>
-        <section className="rounded-lg border border-border bg-surface px-5 py-6" data-testid="inicio-sin-contratos">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-muted">
-              <Buildings className="h-5 w-5 text-fg-muted" aria-hidden />
-            </div>
-            <div className="min-w-0 space-y-1">
-              <h2 className="text-subtitle text-fg">{inmobiliaria} todavía no tiene contratos tuyos en Leasefy</h2>
-              <p className="text-body-sm text-fg-muted">
-                Cuando registre el contrato de uno de tus inmuebles, aquí ves lo que te gira, lo que falta y tus
-                informes. Mientras tanto puedes escribirle por Mensajes.
-              </p>
-            </div>
-          </div>
-          <div className="mt-4">
-            <Link href="/panel/mensajes" className="text-body-sm font-medium text-primary hover:underline">
-              Escribirle a {inmobiliaria}
-            </Link>
-          </div>
+      <div className="space-y-6 p-6 lg:p-8">
+        <EncabezadoDePantalla
+          seccion={greeting}
+          titulo={t('dashboard.hello', { name: firstName })}
+          descripcion={`Tu portal con ${inmobiliaria}: lo que te gira, lo que falta y tus informes.`}
+        />
+        {/* GLOW UP (21-10): el vacío grande con su ilustración, qué va a aparecer, quién lo trae y su botón. */}
+        <section className="rounded-lg border border-border bg-surface" data-testid="inicio-sin-contratos">
+          <EmptyState
+            icon={Buildings}
+            ilustracion="casa"
+            title={`${inmobiliaria} todavía no tiene contratos tuyos en Leasefy`}
+            description="Cuando registre el contrato de uno de tus inmuebles, aquí ves lo que te gira, lo que falta y tus informes. Mientras tanto puedes escribirle por Mensajes."
+            action={{ label: `Escribirle a ${inmobiliaria}`, href: '/panel/mensajes' }}
+          />
         </section>
       </div>
     </div>

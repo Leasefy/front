@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Buildings, CaretRight } from '@phosphor-icons/react';
+import { CaretRight } from '@phosphor-icons/react';
 
 import { estadoDe, selloDelContrato } from '@/lib/estado-de-cuenta/sello-del-contrato';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
@@ -90,26 +90,21 @@ export function ContratosConLaInmobiliaria({ doc }: { doc: EstadoDeCuenta }) {
       data-testid="contratos-con-la-inmobiliaria"
       className="rounded-lg border border-border bg-surface"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-muted">
-            <Buildings className="h-5 w-5 text-fg-muted" aria-hidden />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-subtitle text-fg">Tus contratos con {quien}</h2>
-            <p className="text-body-sm text-fg-muted">
-              {doc.contratos.length === 1 ? '1 contrato' : `${doc.contratos.length} contratos`}
-              {' · '}
-              {vigentes === 1 ? '1 vigente' : `${vigentes} vigentes`}. La inmobiliaria los administra y te gira lo
-              recaudado.
-            </p>
-          </div>
+      {/* GLOW UP (21-10): sin el ícono en caja; el título dice cuántos y la pista va en una línea. */}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-border-faint px-5 py-3.5">
+        <div className="min-w-0">
+          <h2 className="text-body font-medium text-fg">Tus contratos con {quien}</h2>
+          <p className="text-body-sm text-fg-muted">
+            {doc.contratos.length === 1 ? '1 contrato' : `${doc.contratos.length} contratos`}
+            {' · '}
+            {vigentes === 1 ? '1 vigente' : `${vigentes} vigentes`}. Toca uno para ver su inmueble y el mes en curso.
+          </p>
         </div>
         <Link
           href="/panel/estado-de-cuenta"
-          className="inline-flex items-center gap-1 text-body-sm font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1 text-body-sm font-medium text-fg-muted hover:text-fg"
         >
-          Ver mi estado de cuenta
+          Estado de cuenta por contrato
           <CaretRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
       </div>

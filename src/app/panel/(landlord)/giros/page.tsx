@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toast';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -272,13 +272,11 @@ export default function MisGirosPage() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1.5">
-        <SectionLabel>Tu plata</SectionLabel>
-        <h1 className="text-h2 text-fg">Mis giros</h1>
-        <p className="max-w-2xl text-body-sm text-fg-muted">
-          A qué cuenta te giran, lo que ya te giraron mes por mes y el extracto de cada mes.
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Tu plata"
+        titulo="Mis giros"
+        descripcion="A qué cuenta te giran, lo que ya te giraron mes por mes y el extracto de cada mes."
+      />
       <EstadoDeDatos cargando={cargando} error={fallo} queEs="tus giros" onReintentar={cargar}>
         <div className="space-y-6">
           {(cuentas ?? []).map((f) => (

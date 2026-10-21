@@ -20,6 +20,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Presence } from '@leasefy/cadence';
 import { CheckCircle, UserCircle, XCircle, Hourglass } from '@phosphor-icons/react';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { EmptyState } from '@/components/ui/empty-state';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui';
@@ -258,10 +260,11 @@ export default function EscogerInquilinoPage() {
   return (
     <div className="min-h-screen bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1">
-          <h1 className="text-h2 text-fg">Escoger inquilino</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">Cuando tu inmueble tiene candidatos, tú escoges quién lo arrienda. Tu inmobiliaria lo adjudica y les avisa a los demás.</p>
-        </header>
+        <EncabezadoDePantalla
+          seccion="Por decidir"
+          titulo="Escoger inquilino"
+          descripcion="Cuando tu inmueble tiene candidatos, tú escoges quién lo arrienda. Tu inmobiliaria lo adjudica y les avisa a los demás."
+        />
         <EstadoDeDatos
           cargando={cargando}
           error={error}
@@ -269,12 +272,14 @@ export default function EscogerInquilinoPage() {
           onReintentar={cargar}
           vacio={!datos || (datos.pendientes.length === 0 && datos.historial.length === 0)}
           cuandoVacio={
-            <Card className="p-6">
-              <p className="text-sm text-fg-muted" data-testid="elecciones-vacio">
-                No tienes candidatos por escoger. Cuando tu inmueble tenga candidatos, tu inmobiliaria te avisa y van a
-                aparecer aquí.
-              </p>
-            </Card>
+            <section className="rounded-lg border border-border bg-surface" data-testid="elecciones-vacio">
+              <EmptyState
+                icon={UserCircle}
+                ilustracion="casa"
+                title="No tienes candidatos por escoger"
+                description="Cuando tu inmueble tenga candidatos, tu inmobiliaria te avisa y van a aparecer aquí."
+              />
+            </section>
           }
         >
           {datos && datos.pendientes.length > 0 && (

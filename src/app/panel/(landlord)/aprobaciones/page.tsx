@@ -17,7 +17,9 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle, XCircle, Siren, Hourglass } from '@phosphor-icons/react';
+import { CheckCircle, XCircle, Siren, Hourglass, Wrench } from '@phosphor-icons/react';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { EmptyState } from '@/components/ui/empty-state';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui';
@@ -193,10 +195,11 @@ export default function AprobarReparacionesPage() {
   return (
     <div className="min-h-screen bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1">
-          <h1 className="text-h2 text-fg">Aprobar reparaciones</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">Las reparaciones a tu cargo las apruebas tú. Nada se te descuenta sin tu aprobación, salvo una emergencia, que se te avisa el mismo día.</p>
-        </header>
+        <EncabezadoDePantalla
+          seccion="Por decidir"
+          titulo="Aprobar reparaciones"
+          descripcion="Las reparaciones a tu cargo las apruebas tú. Nada se te descuenta sin tu aprobación, salvo una emergencia, que se te avisa el mismo día."
+        />
         <EstadoDeDatos
           cargando={cargando}
           error={error}
@@ -204,12 +207,14 @@ export default function AprobarReparacionesPage() {
           onReintentar={cargar}
           vacio={!datos || (datos.pendientes.length === 0 && datos.historial.length === 0)}
           cuandoVacio={
-            <Card className="p-6">
-              <p className="text-sm text-fg-muted" data-testid="aprobaciones-vacio">
-                No tienes reparaciones por aprobar. Cuando tu inmobiliaria necesite tu aprobación para descontarte una
-                reparación, va a aparecer acá.
-              </p>
-            </Card>
+            <section className="rounded-lg border border-border bg-surface" data-testid="aprobaciones-vacio">
+              <EmptyState
+                icon={Wrench}
+                ilustracion="escudo"
+                title="No tienes reparaciones por aprobar"
+                description="Cuando tu inmobiliaria necesite tu aprobación para descontarte una reparación, va a aparecer acá."
+              />
+            </section>
           }
         >
           {/* Nico, 11-10: el costo final que pasa lo aprobado vuelve a pedirte aprobación. */}

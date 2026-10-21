@@ -125,7 +125,7 @@ export function siguienteOrden(
 }
 
 /** Cuántas columnas tiene la tabla: el vacío las abarca todas. */
-export const COLUMNAS_DE_CARTERA = 9
+export const COLUMNAS_DE_CARTERA = 8
 
 /**
  * Qué tan grave está una fila, como UN número comparable.
@@ -282,8 +282,7 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
             </TableHead>
           )}
           <Ordenable campo="inquilino">{t('cartera.tabla.inquilino')}</Ordenable>
-          <TableHead className="whitespace-nowrap">{t('cartera.tabla.inmueble')}</TableHead>
-          <TableHead className="whitespace-nowrap">{t('cartera.tabla.propietario')}</TableHead>
+          <TableHead className="whitespace-nowrap">{t('cartera.tabla.inmueble')} · {t('cartera.tabla.propietario')}</TableHead>
           <Ordenable campo="mes">{t('cartera.tabla.mes')}</Ordenable>
           <Ordenable campo="estado">{t('cartera.tabla.mora')}</Ordenable>
           <Ordenable campo="debe" alineado="right">
@@ -430,23 +429,20 @@ function FilaDeCartera({
         </div>
       </TableCell>
 
-      {/* Inmueble */}
+      {/* Inmueble, y debajo el propietario —a quién le estamos quedando mal—: una columna menos y la
+          tabla cabe a 1440 (GLOW UP 21-10; el mismo dibujo de Contratos, C-16). */}
       <TableCell className="align-middle">
         {inmueble ? (
-          <span className="block max-w-[11rem] truncate text-fg-muted">{inmueble}</span>
+          <span className="block max-w-[14rem] truncate text-fg">{inmueble}</span>
         ) : (
           <span className="text-warning">{t('cartera.tabla.sinDireccion')}</span>
         )}
-      </TableCell>
-
-      {/* Propietario — a quién le estamos quedando mal. */}
-      <TableCell className="align-middle">
         {item.propietarioName ? (
-          <span className="block max-w-[9rem] truncate text-fg-muted">
+          <span className="mt-0.5 block max-w-[14rem] truncate text-xs text-fg-muted" data-testid="propietario-de-la-deuda">
             {item.propietarioName}
           </span>
         ) : (
-          <span className="text-warning">{t('cartera.tabla.sinPropietario')}</span>
+          <span className="mt-0.5 block text-xs text-warning">{t('cartera.tabla.sinPropietario')}</span>
         )}
       </TableCell>
 

@@ -153,7 +153,7 @@ export function PipelineCard({
         <div className="flex items-center justify-between gap-2 border-t border-border-faint pt-2.5">
           <span
             className={cn(
-              'inline-flex items-center gap-1 font-mono text-[10.5px] uppercase tracking-[0.04em] tabular-nums',
+              'inline-flex shrink-0 items-center gap-1 whitespace-nowrap font-mono text-[10.5px] uppercase tracking-[0.04em] tabular-nums',
               daysCritical ? 'text-danger' : daysWarning ? 'text-warning' : 'text-fg-subtle',
             )}
           >
@@ -162,7 +162,7 @@ export function PipelineCard({
           </span>
           <span className="inline-flex min-w-0 items-center gap-1.5 text-[11px] text-fg-muted">
             {nombreDelAgente ? <Avatar name={nombreDelAgente} size="xs" /> : <User className="size-3 shrink-0" />}
-            <span className="max-w-[96px] truncate">{nombreDelAgente ?? 'Sin asignar'}</span>
+            <span className="min-w-0 truncate">{nombreDelAgente ?? 'Sin asignar'}</span>
           </span>
         </div>
       </div>

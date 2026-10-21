@@ -190,7 +190,7 @@ function DroppableColumn({
           <div
             className={cn(
               'w-2.5 h-2.5 rounded-full',
-              bgColorClass.replace('-100', '-500')
+              bgColorClass.replace('-100', '-500').replace('-soft', '')
             )}
           />
 
@@ -311,7 +311,7 @@ function DroppableColumn({
               <div
                 className={cn(
                   'w-3 h-3 rounded-full',
-                  bgColorClass.replace('-100', '-500')
+                  bgColorClass.replace('-100', '-500').replace('-soft', '')
                 )}
               />
             }

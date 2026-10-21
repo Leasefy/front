@@ -21,6 +21,7 @@ import { Table, TableBodyAnimado, TableCell, TableHead, TableHeader, TableRow, T
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import {
+  Avatar,
   Cifra,
   CrossFade,
   FranjaDeCifras,
@@ -105,11 +106,6 @@ function formatDate(iso: string, fechas: 'es-CO' | 'en-US' = 'es-CO'): string {
   if (Number.isNaN(d.getTime())) return '—'
   // La fecha de la casa: «4 de octubre de 2026» (no «04 de oct de 2026»).
   return d.toLocaleDateString(fechas, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Bogota' })
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?'
 }
 
 function PostulacionesContenido() {
@@ -444,9 +440,7 @@ function PostulacionesContenido() {
                         )}
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
-                              <span className="text-xs font-medium text-primary">{initials(c.tenantName)}</span>
-                            </div>
+                            <Avatar name={c.tenantName} size="sm" />
                             <div className="min-w-0">
                               <p className="font-medium text-fg truncate">{c.tenantName}</p>
                               <p className="text-xs text-fg-muted truncate">{c.tenantEmail}</p>

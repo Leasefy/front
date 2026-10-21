@@ -1,5 +1,6 @@
 'use client';
 
+import { NOMBRE_DEL_ESTADO_DE_LA_POSTULACION } from '@/lib/postulaciones/estado-de-la-postulacion';
 import { CalificacionDelPostulante } from '@/components/calificacion/CalificacionDelPostulante';
 import { TarjetaDeCalificacion } from '@/components/calificacion/TarjetaDeCalificacion';
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -85,18 +86,7 @@ interface CandidateDrawerProps {
 // Constants
 // ============================================================================
 
-const STATUS_LABELS: Record<LandlordApplicationStatus, string> = {
-  DRAFT: 'Borrador',
-  SUBMITTED: 'Postulado',
-  UNDER_REVIEW: 'En revisión',
-  APPROVED: 'Aprobado',
-  REJECTED: 'Rechazado',
-  NEEDS_INFO: 'Pide info',
-  WITHDRAWN: 'Retirado',
-  CONTRACT_FAILED: 'Contrato fallido',
-  NO_ADJUDICADO: 'No adjudicado',
-  PREAPPROVED: 'Preaprobado',
-};
+const STATUS_LABELS: Record<LandlordApplicationStatus, string> = NOMBRE_DEL_ESTADO_DE_LA_POSTULACION;
 
 const LEVEL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   A: { bg: 'bg-success-soft', text: 'text-success', border: 'border-success/30' },

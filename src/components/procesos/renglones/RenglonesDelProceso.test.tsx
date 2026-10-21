@@ -6,7 +6,7 @@
  *  1. El resumen dice cuántas salieron y cuántas no.
  *  2. Una fila de un contrato (o propietario, cobro…) se abre en su ficha, con
  *     los datos de ESE contrato y el enlace a su pantalla.
- *  3. Una fila sin cajón (una postulación) se lee, no se abre.
+ *  3. Una fila sin cajón (un lote de importación) se lee, no se abre.
  */
 
 import * as React from 'react'
@@ -133,12 +133,12 @@ describe('RenglonesDelProceso', () => {
     expect(enlace.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/ct-9')
   })
 
-  it('una fila sin cajón (una postulación) se lee, no se abre', async () => {
+  it('una fila sin cajón (un lote de importación) se lee, no se abre', async () => {
     vi.mocked(procesosApi.renglones).mockResolvedValue(
-      pagina([renglon({ titulo: 'Ana Ruiz', recurso: { tipo: 'POSTULACION', id: 'ap-1' } })]),
+      pagina([renglon({ titulo: 'Carga de inmuebles', recurso: { tipo: 'LOTE_DE_IMPORTACION', id: 'li-1' } })]),
     )
     await montar(<RenglonesDelProceso procesoId="p-1" activo={false} />)
     expect(container.querySelector('[data-testid="renglon-del-proceso"] button')).toBeNull()
-    expect(container.textContent).toContain('Ana Ruiz')
+    expect(container.textContent).toContain('Carga de inmuebles')
   })
 })

@@ -8,6 +8,7 @@
  * certificado verificable para mostrarlo afuera.
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -307,12 +308,10 @@ export default function MiCalificacionPage({
 
   return (
     <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1">
-        <h1 className="text-h2 text-fg">{tr('Mi Calificación Leasefy')}</h1>
-        <p className="max-w-2xl text-sm text-fg-muted">
-          {tr('Cómo te ven para arrendar: tu historial de pagos en Leasefy y tus documentos. Verla es gratis, siempre.')}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        titulo={tr('Mi Calificación Leasefy')}
+        descripcion={tr('Cómo te ven para arrendar: tu historial de pagos en Leasefy y tus documentos. Verla es gratis, siempre.')}
+      />
 
       {datos.calificacion ? (
         <TarjetaDeCalificacion calificacion={datos.calificacion} deTu />

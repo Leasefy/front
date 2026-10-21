@@ -23,6 +23,7 @@
  * credit-bureau copy). Buttons/labels sentence case (DESIGN §4).
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -178,30 +179,25 @@ export default function AcuerdosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div className="min-h-screen bg-bg">
+      <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
 
         {/* Header */}
-        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
-              {locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
-            </h1>
-            <p className="mt-1 text-fg-muted dark:text-fg-subtle">
-              {locale === 'es'
-                ? 'Consulta los acuerdos de pago aprobados por tu inmobiliaria y su plan de cuotas.'
-                : 'Review the payment agreements approved by your agency and their installment plan.'}
-            </p>
-          </div>
-          <Button
-            type="button"
-            onClick={() => setRequestOpen(true)}
-            hideArrow
-            className="flex-shrink-0"
-          >
-            {locale === 'es' ? 'Solicitar un plan de pago' : 'Request a payment plan'}
-          </Button>
-        </header>
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
+          titulo={locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
+          descripcion={
+            locale === 'es'
+              ? 'Consulta los acuerdos de pago aprobados por tu inmobiliaria y su plan de cuotas.'
+              : 'Review the payment agreements approved by your agency and their installment plan.'
+          }
+          accionPrincipal={
+            <Button type="button" size="sm" onClick={() => setRequestOpen(true)} hideArrow>
+              {locale === 'es' ? 'Solicitar un plan de pago' : 'Request a payment plan'}
+            </Button>
+          }
+        />
 
         {/* List — real own-acuerdos, or an honest empty-state (incl. not-live []) */}
         <section>

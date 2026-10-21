@@ -1,5 +1,6 @@
 'use client';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
@@ -181,19 +182,16 @@ export default function ContratosPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
         {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-3xl font-medium text-fg tracking-tight">
-            {/* Sentence case, como el resto del panel. */}
-            {locale === 'es' ? 'Mis contratos' : 'My contracts'}
-          </h1>
-          <p className="mt-1 text-fg-muted">
-            {locale === 'es'
-              ? 'Revisa y firma tus contratos de arrendamiento'
-              : 'Review and sign your rental contracts'}
-          </p>
-        </header>
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
+          titulo={locale === 'es' ? 'Mis contratos' : 'My contracts'}
+          descripcion={
+            locale === 'es' ? 'Revisa y firma tus contratos de arrendamiento.' : 'Review and sign your rental contracts.'
+          }
+        />
 
         {/* Empty state */}
         {sorted.length === 0 ? (

@@ -1,5 +1,6 @@
 'use client';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useId, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -279,17 +280,15 @@ export default function AplicacionesPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
 
         {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-3xl font-medium text-fg tracking-tight">
-            {t('applications.title')}
-          </h1>
-          <p className="mt-1 text-fg-muted">
-            {t('applications.subtitle')}
-          </p>
-        </header>
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Buscar arriendo' : 'Find a rental'}
+          titulo={t('applications.title')}
+          descripcion={t('applications.subtitle')}
+        />
 
         {/* Stats Grid */}
         {!sinPostulaciones && (

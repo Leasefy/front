@@ -27,6 +27,7 @@
  * poller for cases here.
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { AnimatedNumber } from '@leasefy/cadence';
@@ -204,20 +205,20 @@ export default function CasosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div className="min-h-screen bg-bg">
+      <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
 
         {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
-            {locale === 'es' ? 'Mis casos' : 'My cases'}
-          </h1>
-          <p className="mt-1 text-fg-muted dark:text-fg-subtle">
-            {locale === 'es'
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
+          titulo={locale === 'es' ? 'Mis casos' : 'My cases'}
+          descripcion={
+            locale === 'es'
               ? 'Tus pagos y postulaciones en curso, en un solo lugar.'
-              : 'Your ongoing payments and applications, all in one place.'}
-          </p>
-        </header>
+              : 'Your ongoing payments and applications, all in one place.'
+          }
+        />
 
         {/* CASO-03 — el aviso dentro del portal (real); sin promesas de push ni WhatsApp (QA-INQ-95). */}
         <div

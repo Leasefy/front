@@ -139,7 +139,9 @@ export function RecibosDeCajaDeLaInmobiliaria() {
 
   return (
     <div className="space-y-4" data-testid="recibos-de-caja-de-la-inmobiliaria">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      {/* GLOW UP (21-10): UNA tarjeta — la barra (buscar, qué recibos, cuántos) es parte de la tabla. */}
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center">
         <div className="relative flex-1 sm:max-w-md">
           <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-fg-muted" />
           <Input
@@ -182,7 +184,9 @@ export function RecibosDeCajaDeLaInmobiliaria() {
       </div>
 
       {error && !datos ? (
-        <FalloDeCarga error={error} queEs="los recibos de caja" onReintentar={cargar} />
+        <div className="p-4">
+          <FalloDeCarga error={error} queEs="los recibos de caja" onReintentar={cargar} />
+        </div>
       ) : cargando && !datos ? (
         <EsqueletoTabla columnas={7} />
       ) : datos && datos.recibos.length === 0 ? (
@@ -202,7 +206,7 @@ export function RecibosDeCajaDeLaInmobiliaria() {
           }}
         />
       ) : datos ? (
-        <div className={cn('overflow-x-auto rounded-lg border border-border', cargando && 'opacity-70')}>
+        <div className={cn('overflow-x-auto', cargando && 'opacity-70')}>
           <Table>
             <TableHeader>
               <TableRow>
@@ -231,7 +235,7 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                     {r.mes && <p className="text-caption text-fg-muted">Cuota de {nombreDelMes(r.mes)}</p>}
                   </TableCell>
                   <TableCell>
-                    <span className={cn(!r.inquilino && 'text-fg-muted')}>{r.inquilino ?? 'Sin nombre registrado'}</span>
+                    <span className={cn('whitespace-nowrap', !r.inquilino && 'text-fg-muted')}>{r.inquilino ?? 'Sin nombre registrado'}</span>
                     {r.documento && <p className="text-caption text-fg-muted">{r.documento}</p>}
                   </TableCell>
                   <TableCell className="max-w-[18rem]">
@@ -248,9 +252,14 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                       <p className="text-caption text-danger">Anulado: {r.motivoDeLaAnulacion}</p>
                     )}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">
+                  <TableCell className="max-w-[15rem]">
                     {r.medioLegible}
-                    {r.referencia && <p className="text-caption text-fg-muted">Ref. {r.referencia}</p>}
+                    {/* La referencia larga del banco no estira la tabla: un renglón y el texto entero al pasar el cursor. */}
+                    {r.referencia && (
+                      <p className="truncate text-caption text-fg-muted" title={`Ref. ${r.referencia}`}>
+                        Ref. {r.referencia}
+                      </p>
+                    )}
                   </TableCell>
                   <TableCell className={cn('text-right font-mono tabular-nums', r.anulado ? 'line-through' : 'text-fg')}>
                     {formatCurrency(r.valorCop)}
@@ -296,6 +305,7 @@ export function RecibosDeCajaDeLaInmobiliaria() {
           </div>
         </div>
       ) : null}
+      </div>
 
       <AnularElRecibo
         recibo={aAnular}

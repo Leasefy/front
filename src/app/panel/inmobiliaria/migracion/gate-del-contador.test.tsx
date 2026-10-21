@@ -91,6 +91,13 @@ const MODULOS_POR_ROL: Record<AgencyRole, Record<string, string[]>> = {
   COORDINADOR: { configuracion: [], reportes: ['view'] },
   AUXILIAR_CARTERA: { configuracion: [], reportes: ['view'] },
   ABOGADO_EXTERNO: { configuracion: [], reportes: [] },
+  // Roles auxiliares (20-10-2026), espejados de `AGENCY_ROLE_DEFAULTS`: ninguno
+  // tiene `configuracion`; sólo el auxiliar contable ve reportes (y con ellos
+  // la contabilidad en lectura).
+  AUXILIAR_COMERCIAL: { configuracion: [], reportes: [] },
+  AUXILIAR_ADMINISTRATIVO: { configuracion: [], reportes: [] },
+  AUXILIAR_CONTABLE: { configuracion: [], reportes: ['view'] },
+  AUXILIAR_MANTENIMIENTO: { configuracion: [], reportes: [] },
 };
 
 function comoRol(rol: AgencyRole) {

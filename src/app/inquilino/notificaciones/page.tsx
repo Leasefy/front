@@ -1,5 +1,6 @@
 'use client';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
@@ -199,35 +200,25 @@ export default function NotificacionesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        {/* Header */}
-        <header className="mb-8">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                <Bell className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-semibold text-fg dark:text-white tracking-tight">
-                  {locale === 'es' ? 'Notificaciones' : 'Notifications'}
-                </h1>
-                {/* "Todas leídas" sin una sola notificación afirma que hubo
-                    algo que leer. Sin nada, mejor no decir nada. */}
-                {notifications.length > 0 && (
-                  <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
-                    {unreadCount > 0
+    <div className="min-h-screen bg-bg">
+      <div className="space-y-6 p-6 lg:p-8">
+        {/* GLOW UP 21-10: el encabezado común (sin el ícono en caja ni sus colores fijos). */}
+        <EncabezadoDePantalla
+          className="mb-8"
+          titulo={locale === 'es' ? 'Notificaciones' : 'Notifications'}
+          descripcion={
+            notifications.length > 0 ? (
+              unreadCount > 0
                       ? locale === 'es'
                         ? `${unreadCount} sin leer`
                         : `${unreadCount} unread`
                       : locale === 'es'
                       ? 'Todas leídas'
-                      : 'All read'}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
+                      : 'All read'
+            ) : undefined
+          }
+          acciones={
+            <>
               {unreadCount > 0 && (
                 <Button
                   variant="ghost"
@@ -248,9 +239,9 @@ export default function NotificacionesPage() {
                 aria-label={locale === 'es' ? 'Configuración' : 'Settings'}
                 icon={<Gear className="w-5 h-5" />}
               />
-            </div>
-          </div>
-        </header>
+            </>
+          }
+        />
 
         {/* Filtros — solo con notificaciones. Seis pestañas para filtrar nada
             es andamiaje alrededor de un vacío. */}

@@ -24,6 +24,7 @@
  * ni "estudio": se dice **aprobación** y **tope aprobado**.
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useCallback } from 'react'
 
 import { usePreScoringCurrent } from '@/lib/hooks/use-prescoring-current'
@@ -86,15 +87,12 @@ export default function AprobacionPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
-      <header>
-        <h1 className="text-3xl font-medium text-fg tracking-tight">
-          {tf(`${NS}.titulo`, 'Mi tope de arriendo')}
-        </h1>
-        <p className="mt-1 text-fg-muted">
-          {tf(`${NS}.subtitulo`, 'Hasta cuánto te respaldan las aseguradoras')}
-        </p>
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      <EncabezadoDePantalla
+        seccion={tf('nav.buscarArriendo', 'Buscar arriendo')}
+        titulo={tf(`${NS}.titulo`, 'Mi tope de arriendo')}
+        descripcion={tf(`${NS}.subtitulo`, 'Hasta cuánto te respaldan las aseguradoras')}
+      />
 
       {/* Paso 3 de 3 cuando llegó desde «¿Te podemos arrendar este inmueble?». */}
       <RespuestaDelArriendo

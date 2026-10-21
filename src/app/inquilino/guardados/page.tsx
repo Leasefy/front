@@ -1,5 +1,6 @@
 'use client';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useState } from 'react';
 import { Heart, MagnifyingGlass, TrashSimple, MapPin, CaretRight, House, Plus, Check } from '@phosphor-icons/react';
 import Link from 'next/link';
@@ -87,37 +88,30 @@ export default function GuardadosPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        {/* Header */}
-        <header className="mb-8">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-medium text-fg tracking-tight">
-                {t('saved.title')}
-              </h1>
-              <p className="mt-2 text-fg-muted">
-                {displayCount === 0
+      <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Buscar arriendo' : 'Find a rental'}
+          titulo={t('saved.title')}
+          descripcion={
+            displayCount === 0
                   ? (locale === 'es' ? 'Guarda propiedades que te interesen para verlas después' : 'Save properties you like to view them later')
                   : displayCount === 1
                   ? (locale === 'es' ? '1 propiedad guardada' : '1 saved property')
-                  : (locale === 'es' ? `${displayCount} propiedades guardadas` : `${displayCount} saved properties`)}
-              </p>
-            </div>
-            {/* El botón del encabezado solo cuando hay guardadas: sin nada, el
-                estado vacío ya ofrece la misma acción justo debajo, y dos
-                botones distintos para lo mismo en la misma pantalla confunden
-                sobre cuál es el camino. */}
-            {properties.length > 0 && (
-              <Link
-                href="/propiedades" target="_blank" rel="noopener noreferrer"
-                className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
-              >
-                <MagnifyingGlass className="w-4 h-4" />
-                {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
-              </Link>
-            )}
-          </div>
-        </header>
+                  : (locale === 'es' ? `${displayCount} propiedades guardadas` : `${displayCount} saved properties`)
+          }
+          acciones={
+            properties.length > 0 ? (
+              // Buscar se hace en el marketplace, en OTRA pestaña (reunión 21-10).
+              <Button asChild size="sm" variant="outline" hideArrow>
+                <a href="/propiedades" target="_blank" rel="noopener noreferrer">
+                  <MagnifyingGlass className="mr-2 h-4 w-4" aria-hidden="true" />
+                  {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
+                </a>
+              </Button>
+            ) : undefined
+          }
+        />
 
         {/* Content
 

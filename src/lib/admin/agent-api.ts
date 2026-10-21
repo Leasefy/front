@@ -449,7 +449,8 @@ export interface LaboratorioResponse {
   bitacora: PasoDelMaestro[]
   inmobiliarias: InmobiliariaDelLaboratorio[]
   propuestas: PropuestaDelLaboratorio[]
-  mediciones: Array<{ propuestaId: string; que: string | null; veredicto: VeredictoDeLaMedicion; resumen: string; medidaEn: string; serie: { dias: string[]; valores: Array<number | null> } }>
+  /** `aLosDias`: 14 o 30 (la segunda medición, 20-10-2026); la serie trae los 14 días antes y todos los del plazo. */
+  mediciones: Array<{ propuestaId: string; aLosDias: number; que: string | null; veredicto: VeredictoDeLaMedicion; resumen: string; medidaEn: string; serie: { dias: string[]; valores: Array<number | null> } }>
   ontologia: { agentes: Array<{ id: string; nombre: string | null; funcion: string }>; limites: number }
   generadoEn: string
 }

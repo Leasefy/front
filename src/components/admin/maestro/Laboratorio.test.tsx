@@ -122,6 +122,26 @@ describe('el laboratorio del maestro', () => {
     expect(red.lab).toHaveBeenCalledWith(null, expect.anything())
   })
 
+  it('[LAB-F:sirvio-30] una mejora medida a los 14 y a los 30 días: dos filas, cada una con la raya el día que se aplicó', async () => {
+    const serie = (n: number) => ({ dias: Array.from({ length: n }, (_, i) => `d${i}`), valores: Array.from({ length: n }, (_, i) => (i < 14 ? 0.1 : 0.3)) })
+    const mediciones = [
+      { propuestaId: 'p1', aLosDias: 30, que: 'Fixi (mantenimiento) en Automático', veredicto: 'empeoro', resumen: 'A los 30 días, en 3 inmobiliarias: empeoró; los 14 días antes contra los días 17 a 30 después.', medidaEn: '2026-10-19T06:31:00.000Z', serie: serie(44) },
+      { propuestaId: 'p1', aLosDias: 14, que: 'Fixi (mantenimiento) en Automático', veredicto: 'sin_cambio', resumen: 'A los 14 días, en 3 inmobiliarias: sin cambio claro.', medidaEn: '2026-10-03T06:31:00.000Z', serie: serie(28) },
+    ]
+    red.lab.mockResolvedValue({ ...LAB, mediciones })
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await act(async () => root.render(<Laboratorio onVerMejoras={() => undefined} />))
+    await asentar()
+    const filas = [...container.querySelectorAll('li')].filter((li) => li.textContent?.includes('Fixi (mantenimiento) en Automático'))
+    expect(filas).toHaveLength(2)
+    expect(filas[0]?.textContent).toContain('A los 30 días')
+    const raya = (li: Element) => Number(li.querySelector('line')?.getAttribute('x1'))
+    expect(raya(filas[0] as Element)).toBeCloseTo((14 / 43) * 100, 3)
+    expect(raya(filas[1] as Element)).toBeCloseTo((14 / 27) * 100, 3)
+    expect(error.mock.calls.some((c) => String(c[0]).includes('same key'))).toBe(false)
+    error.mockRestore()
+  })
+
   it('[LAB-F:correr] «Correr ahora» pide confirmar con el costo y el tope; confirmado, abre la noche nueva', async () => {
     red.correr.mockResolvedValue({ corridaId: 'c-nueva', como: 'inngest', mensaje: 'Empezó. La ves en vivo aquí.' })
     await act(async () => root.render(<Laboratorio onVerMejoras={() => undefined} />))

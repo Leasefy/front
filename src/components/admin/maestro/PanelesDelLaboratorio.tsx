@@ -291,26 +291,31 @@ export function PanelIndice({ propuestas, inmobiliarias, elegida, onElegir }: { 
   )
 }
 
-/** El reparto de lo aprobado y «¿sirvió?» con su curva (la parte que salió mal por día, antes y después). */
+/**
+ * El reparto de lo aprobado y «¿sirvió?» con su curva (la parte que salió mal por día, antes y después). Una mejora se
+ * mide a los 14 y a los 30 días: puede tener dos filas. La raya va el día que se aplicó (la serie trae los días del plazo
+ * al final, así que se aplicó `largo − aLosDias` días después de su comienzo).
+ */
 export function PanelSirvio({ mediciones }: { mediciones: LaboratorioResponse['mediciones'] }) {
   return (
     <Panel titulo="¿Sirvió? / lo aplicado" nota={mediciones.length ? `${mediciones.length} medidas` : undefined}>
       {mediciones.length === 0 ? (
         <p className="font-mono text-[11px] leading-relaxed text-white/40">
-          Todavía no hay mejoras aplicadas con 14 días. Cuando las haya, el medidor compara antes y después en cada inmobiliaria y, si empeoró, propone deshacerla.
+          Todavía no hay mejoras aplicadas con 14 días. Cuando las haya, el medidor compara antes y después en cada inmobiliaria, a los 14 y a los 30 días, y si empeoró propone deshacerla.
         </p>
       ) : (
         <ul className="max-h-[220px] space-y-3 overflow-y-auto">
           {mediciones.map((m) => {
             const vals = m.serie.valores
             const max = Math.max(0.01, ...vals.map((v) => v ?? 0))
-            const mitad = Math.floor(vals.length / 2)
+            const aplicada = Math.max(0, vals.length - (m.aLosDias || Math.ceil(vals.length / 2)))
+            const xDeLaRaya = (aplicada / Math.max(1, vals.length - 1)) * 100
             const puntos = vals.map((v, i) => (v === null ? null : `${(i / Math.max(1, vals.length - 1)) * 100},${30 - (v / max) * 28}`)).filter(Boolean)
             return (
-              <li key={m.propuestaId} className="font-mono text-[11px]">
+              <li key={`${m.propuestaId}|${m.aLosDias}`} className="font-mono text-[11px]">
                 <p className="truncate text-white/80">{m.que ?? m.propuestaId}</p>
                 <svg viewBox="0 0 100 32" className="mt-1 h-8 w-full" preserveAspectRatio="none" aria-label={m.resumen}>
-                  <line x1={(mitad / Math.max(1, vals.length - 1)) * 100} x2={(mitad / Math.max(1, vals.length - 1)) * 100} y1="0" y2="32" stroke="rgba(255,255,255,0.25)" strokeDasharray="2 2" />
+                  <line x1={xDeLaRaya} x2={xDeLaRaya} y1="0" y2="32" stroke="rgba(255,255,255,0.25)" strokeDasharray="2 2" />
                   <polyline points={puntos.join(' ')} fill="none" stroke={m.veredicto === 'empeoro' ? ROJO : 'rgba(255,255,255,0.8)'} strokeWidth="1" vectorEffect="non-scaling-stroke" />
                 </svg>
                 <p className={m.veredicto === 'empeoro' ? 'text-[#e84855]' : 'text-white/50'}>{m.resumen}</p>

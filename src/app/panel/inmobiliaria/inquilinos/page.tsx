@@ -76,7 +76,7 @@ import {
   UserCircle,
   Users,
 } from '@phosphor-icons/react';
-import { FranjaDeCifras, KpiCard, Eyebrow, Presence } from '@leasefy/cadence';
+import { FranjaDeCifras, KpiCard, Presence } from '@leasefy/cadence';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { PermissionGate } from '@/components/auth/PermissionGate';
@@ -86,6 +86,7 @@ import { KpiValor } from '@/components/estado/KpiValor';
 import { CifraQueCabe } from '@/components/estado/CifraQueCabe';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { Button } from '@/components/ui/button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination } from '@/lib/hooks/use-table-pagination';
 import {
@@ -127,13 +128,14 @@ import {
  * simplemente no se pinta (el default de `PermissionGate` es un cartel de
  * «acceso restringido», que adentro de un encabezado no tiene sentido).
  */
-function CrearContratoBoton() {
+function CrearContratoBoton({ size }: { size?: 'sm' }) {
   const { t } = useI18n();
   return (
     <PermissionGate module="contratos" action="create" fallback={null}>
       <Button
         asChild
         hideArrow
+        size={size}
         variant="outline"
         className="shrink-0 gap-2"
         data-testid="crear-contrato-manual"
@@ -154,12 +156,13 @@ function CrearContratoBoton() {
  * que el back protege `POST /inmobiliaria/inquilinos`): un botón que abre un
  * cajón cuyo guardar devuelve 403 es peor que no tener botón.
  */
-function NuevoInquilinoBoton({ onAbrir }: { onAbrir: () => void }) {
+function NuevoInquilinoBoton({ onAbrir, size }: { onAbrir: () => void; size?: 'sm' }) {
   const { t } = useI18n();
   return (
     <PermissionGate module="contratos" action="create" fallback={null}>
       <Button
         hideArrow
+        size={size}
         className="shrink-0 gap-2"
         onClick={onAbrir}
         data-testid="nuevo-inquilino"
@@ -412,22 +415,18 @@ function ContenidoDeInquilinos() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      {/* El botón vive en el encabezado y no en el vacío: con la lista llena
+      {/* GLOW UP 21-10: el encabezado de todas las pantallas (sección del menú · título · una línea
+          | la secundaria y la única azul, chicas).
+          El botón vive en el encabezado y no en el vacío: con la lista llena
           también hace falta —una inmobiliaria que ya tiene 40 inquilinos y
           firma el 41 no pasa por un estado vacío nunca más—. */}
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <Eyebrow>{t('inquilinos.eyebrow')}</Eyebrow>
-          <h1 className="text-h2 text-fg">
-            {t('inquilinos.titulo')}
-          </h1>
-          <p className="max-w-2xl text-body text-fg-muted line-clamp-2">{t('inquilinos.subtitulo')}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <CrearContratoBoton />
-          <NuevoInquilinoBoton onAbrir={() => setCreando(true)} />
-        </div>
-      </header>
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secDirectorio')}
+        titulo={t('inquilinos.titulo')}
+        descripcion={t('inquilinos.subtitulo')}
+        acciones={<CrearContratoBoton size="sm" />}
+        accionPrincipal={<NuevoInquilinoBoton size="sm" onAbrir={() => setCreando(true)} />}
+      />
 
       {/* El clic que llegó de otra pantalla y no encontró a nadie. Se cuenta,
           no se traga: es la diferencia entre «la app no anda» y «esa persona no

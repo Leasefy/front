@@ -52,7 +52,7 @@ import {
   SortDescending,
   Warning,
 } from '@phosphor-icons/react';
-import { IconButton, SearchInput, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
+import { Avatar, IconButton, SearchInput, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -520,10 +520,10 @@ function FilaDeInquilino({
           ) : null}
         </TableCell>
 
-        {/* Nombre + correo, como en la tabla de propietarios — pero SIN el
-            avatar: allá el ícono distingue persona de empresa, y acá todos
-            los inquilinos son personas, así que serían 52 px que no dicen
-            nada.
+        {/* Nombre + correo, con su Avatar (GLOW UP 21-10). Antes iba SIN avatar porque el de
+            entonces era el mismo muñequito para todos («52 px que no dicen nada»); el de Cadence 2
+            lleva sus iniciales y un tono que sale del nombre —se reconoce a la persona de un
+            vistazo— y es el mismo que la acompaña en Contratos y en Mensajes.
 
             allowlist: el nombre es un <button> porque es el ÚNICO camino de
             teclado al cajón desde que se fue la columna «Ver ficha» — un
@@ -539,14 +539,17 @@ function FilaDeInquilino({
             // Un nombre de empresa de 80 letras no puede empujar el estado y el
             // canon fuera de la tabla: se corta a 20rem y el completo va en `title`.
             title={persona.nombre}
-            className="block min-w-0 max-w-[20rem] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex min-w-0 max-w-[22rem] items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             data-testid="inquilino-abrir"
           >
-            <span className="block truncate font-medium text-fg group-hover:text-primary">
-              {persona.nombre}
-            </span>
-            <span className="block truncate text-sm text-fg-muted">
-              {persona.email ?? t('inquilinos.tabla.sinCorreo')}
+            <Avatar name={persona.nombre} size="sm" className="shrink-0" />
+            <span className="min-w-0">
+              <span className="block truncate font-medium text-fg group-hover:text-primary" data-testid="nombre-del-inquilino">
+                {persona.nombre}
+              </span>
+              <span className="block truncate text-sm text-fg-muted">
+                {persona.email ?? t('inquilinos.tabla.sinCorreo')}
+              </span>
             </span>
           </button>
           {/* T-0128: creado por la migración sin documento. */}
@@ -753,9 +756,10 @@ function TarjetasDeInquilinos({
               data-testid="inquilino-abrir"
             >
               <span className="flex items-start justify-between gap-3">
-                <span className="min-w-0">
+                <Avatar name={persona.nombre} size="sm" className="mt-0.5 shrink-0" />
+                <span className="min-w-0 flex-1">
                   {/* El nombre se ajusta en dos renglones; nunca «Ana So…». */}
-                  <span className="block break-words font-medium text-fg">{persona.nombre}</span>
+                  <span className="block break-words font-medium text-fg" data-testid="nombre-del-inquilino">{persona.nombre}</span>
                   <span className="block truncate text-sm text-fg-muted">
                     {persona.email ?? persona.telefono ?? t('inquilinos.tabla.sinCorreo')}
                   </span>

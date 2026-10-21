@@ -140,7 +140,8 @@ function montar() {
 
 const nombresVisibles = () =>
   Array.from(host.querySelectorAll('[data-testid="inquilino-abrir"]')).map(
-    (b) => b.querySelector('span')?.textContent,
+    // El nombre, no las iniciales del Avatar que va antes (glow up 21-10).
+    (b) => b.querySelector('[data-testid="nombre-del-inquilino"]')?.textContent,
   );
 
 function clic(el: Element) {

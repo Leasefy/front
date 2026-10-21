@@ -236,7 +236,7 @@ export default function ApplicationDetailPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="p-6 lg:p-8">
         {/* Back Button */}
         <div className="mb-6">
           <BackButton label={locale === 'es' ? 'Volver a aplicaciones' : 'Back to applications'} />

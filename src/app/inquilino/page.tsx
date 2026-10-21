@@ -266,7 +266,7 @@ export default function InquilinoPage() {
    */
   if (errorPostulaciones || errorArriendos) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+      <div className="min-h-screen bg-bg">
         <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
           <FalloDeCarga
             error={errorPostulaciones ?? errorArriendos}
@@ -300,8 +300,8 @@ export default function InquilinoPage() {
   const hayCasos = !isNewUser && openCasesCount > 0;
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div className="min-h-screen bg-bg">
+      <motion.div {...entrada} className="p-6 lg:p-8">
 
         {/* GLOW UP (21-10): el encabezado de todas las pantallas (antes, un saludo grande propio). */}
         <EncabezadoDePantalla

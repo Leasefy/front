@@ -218,8 +218,8 @@ export default function SolicitudesPage() {
   // Onboarding gate.
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="min-h-screen bg-bg">
+        <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="rental" />
         </div>
       </div>
@@ -230,8 +230,8 @@ export default function SolicitudesPage() {
   // fires on a genuine (non-404/403/0) failure.
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="min-h-screen bg-bg">
+        <div className="p-6 lg:p-8">
           <EmptyState
             icon={XCircle}
             title={locale === 'es' ? 'Error al cargar tus solicitudes' : 'Error loading your requests'}
@@ -244,8 +244,8 @@ export default function SolicitudesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div className="min-h-screen bg-bg">
+      <motion.div {...entrada} className="p-6 lg:p-8">
 
         {/* GLOW UP (21-10): el encabezado de todas las pantallas; «Nueva solicitud» es la única azul. */}
         <EncabezadoDePantalla

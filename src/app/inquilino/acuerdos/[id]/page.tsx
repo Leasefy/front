@@ -103,8 +103,8 @@ function nextPayableCuota(installments: AcuerdoInstallment[]): AcuerdoInstallmen
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">{children}</div>
+    <div className="min-h-screen bg-bg">
+      <div className="max-w-3xl p-6 lg:p-8">{children}</div>
     </div>
   );
 }
@@ -350,7 +350,7 @@ export default function AcuerdoDetailPage(props: { params: Promise<{ id: string 
   // Loading gate — never flash a fake not-found while the source is in flight.
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+      <div className="min-h-screen bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="detail" className="mx-auto max-w-3xl" />
       </div>

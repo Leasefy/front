@@ -489,7 +489,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
 
   return (
     <div className="min-h-screen bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="p-6 lg:p-8">
         {/* Back */}
         <div className="mb-6">
           <BackButton href="/inquilino/contratos" label={locale === 'es' ? 'Volver a contratos' : 'Back to contracts'} />

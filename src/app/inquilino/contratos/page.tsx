@@ -162,7 +162,7 @@ export default function ContratosPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <div className="p-6 lg:p-8">
           <FalloDeCarga
             error={errorCrudo ?? error}
             queEs="tus contratos"

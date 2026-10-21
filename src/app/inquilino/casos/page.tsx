@@ -169,7 +169,7 @@ export default function CasosPage() {
   // Loading gate — never flash a fake-empty while any source is in flight.
   if (isOnboardingLoading || isCasesLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+      <div className="min-h-screen bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -179,8 +179,8 @@ export default function CasosPage() {
   // Onboarding gate.
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="min-h-screen bg-bg">
+        <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="rental" />
         </div>
       </div>
@@ -191,8 +191,8 @@ export default function CasosPage() {
   // this only fires on a hard aggregate failure.
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="min-h-screen bg-bg">
+        <div className="p-6 lg:p-8">
           <EmptyState
             icon={XCircle}
             title={locale === 'es' ? 'Error al cargar tus casos' : 'Error loading your cases'}

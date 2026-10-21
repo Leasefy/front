@@ -466,10 +466,12 @@ function Alerta({
   onReprocesar: () => void;
   ocupado: boolean;
 }) {
-  const { caja, icono, Icono } = PINTURA[alerta.severidad];
+  const { icono, Icono } = PINTURA[alerta.severidad];
   return (
     <div
-      className={cn('flex flex-wrap items-start gap-3 rounded-lg border p-4', caja)}
+      // GLOW UP (21-10): una FILA dentro de la tarjeta «Necesita tu atención», no un recuadro de color suelto;
+      // la gravedad la dice el ícono.
+      className="flex flex-wrap items-start gap-3 px-4 py-3.5"
       data-testid={`alerta-${alerta.clave}`}
     >
       <Icono className={cn('mt-0.5 h-5 w-5 shrink-0', icono)} aria-hidden="true" />
@@ -1218,7 +1220,18 @@ export function HubDeContabilidad() {
 
       {/* Las alertas entran escalonadas y, al resolverse (reprocesar, cerrar
           el mes), SALEN; sin ninguna, el bloque no ocupa lugar (`empty:hidden`). */}
-      <Stagger as="section" className="space-y-3 empty:hidden" aria-label="Alertas de contabilidad">
+      <Stagger
+        as="section"
+        className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface empty:hidden"
+        aria-label="Alertas de contabilidad"
+      >
+          {alertas.length > 0 ? (
+            <StaggerItem key="cabeza">
+              <p className="px-4 pb-2 pt-3 text-xs text-fg-muted" data-testid="necesita-tu-atencion">
+                Necesita tu atención · <span className="font-mono tabular-nums">{alertas.length}</span>
+              </p>
+            </StaggerItem>
+          ) : null}
           {alertas.map((a) => (
             <StaggerItem key={a.clave}>
             <Alerta

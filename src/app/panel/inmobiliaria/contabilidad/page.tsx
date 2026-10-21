@@ -14,13 +14,13 @@
  */
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { SectionLabel } from '@/components/ui/section-label';
 import { HubDeContabilidad } from '@/components/contabilidad/HubDeContabilidad';
+import { ROLES_DE_LA_CONTABILIDAD } from '@/lib/auth/roles-de-la-contabilidad';
 
 export default function ContabilidadPage() {
   return (
-    <PageGuard module="reportes" roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]} seccion="Contabilidad">
+    <PageGuard module="reportes" roles={ROLES_DE_LA_CONTABILIDAD} seccion="Contabilidad">
       <div className="space-y-6 p-6 lg:p-8">
         <header className="space-y-1.5">
           <SectionLabel>Finanzas</SectionLabel>

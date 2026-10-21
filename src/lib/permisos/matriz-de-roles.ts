@@ -35,6 +35,10 @@ export const ROL_EN_EL_BACK: Record<AgencyRole, keyof RoleMatrices['roles']> = {
   coordinador: 'COORDINADOR',
   auxiliar_cartera: 'AUXILIAR_CARTERA',
   abogado_externo: 'ABOGADO_EXTERNO',
+  auxiliar_comercial: 'AUXILIAR_COMERCIAL',
+  auxiliar_administrativo: 'AUXILIAR_ADMINISTRATIVO',
+  auxiliar_contable: 'AUXILIAR_CONTABLE',
+  auxiliar_mantenimiento: 'AUXILIAR_MANTENIMIENTO',
 };
 
 /** PermMap del back (módulo → acciones) → RolePermissions de la UI. */

@@ -95,6 +95,7 @@ import { BloqueoPorInventario } from '@/components/inmobiliaria/inventario/Bloqu
 import { falloDeLaFicha } from '@/lib/contratos/fallo-de-la-ficha';
 import { fundirContrato } from '@/lib/contratos/fundir-contrato';
 import { CertificadosDeSuTiempo } from '@/components/contratos/CertificadosDeSuTiempo';
+import { elAuxiliarNoFirma } from '@/lib/auth/lo-que-no-hacen-los-auxiliares';
 import {
   bloqueoDelError,
   type BloqueoPorInventario as BloqueoPorInventarioDatos,
@@ -176,10 +177,12 @@ function ContratoDetalleContent() {
   const { url: signedPdfUrl, isLoading: isLoadingSignedPdf } = useSignedPdfUrl(id, {
     enabled: hasAnySignature,
   });
-  const { canAccess } = usePermissions();
+  const { canAccess, agencyRole } = usePermissions();
   // Chat todavía se gate por rol porque 'mensajes' aún no es módulo del backend.
   const { isManager } = useAgencyAccess();
   const canEditContracts = canAccess('contratos', 'edit');
+  // Roles auxiliares (20-10-2026): el administrativo arma, pero no envía, firma, activa, cancela ni termina.
+  const noFirma = elAuxiliarNoFirma(agencyRole);
   // T-0036 §3.2.B6/Y2 — el botón de invitar al inquilino gatea con el MISMO
   // permiso que exige el back (`contratos:create`, no `contratos:edit`):
   // usar `canEditContracts` acá mostraría el botón a un rol que el back le
@@ -568,6 +571,7 @@ function ContratoDetalleContent() {
               onCeder: () => setCesionAbierta(true),
               onCambiarInquilino: () => setCambioDeInquilinoAbierto(true),
               onIrAInvitar: canInviteTenant ? irAInvitarAlInquilino : undefined,
+              noFirma,
             })
           : {})}
       />
@@ -829,7 +833,7 @@ function ContratoDetalleContent() {
                   solos contra un back sin WU-4 (404 en E1/E5). */}
               {/* QA-CONT-95 (B-16): a un contrato cancelado o vencido no se le agregan codeudores ni pagarés. */}
               <CodeudoresSection contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
-              <PagareSection contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
+              <PagareSection contractId={contract.id} puedeEditar={canEditContracts && !esTerminado && !noFirma} />
               {/* D-24: si su cartera está castigada (o propuesta), se dice acá, con que sigue debiéndose. */}
               <CastigoDelContrato contractId={contract.id} />
               <CobrosDelContrato
@@ -1053,6 +1057,7 @@ function decisionesDelContrato({
   onCeder,
   onCambiarInquilino,
   onIrAInvitar,
+  noFirma = false,
 }: {
   contract: { id: string; status: string; startDate?: string | null; tenantId?: string | null };
   isSubmitting: boolean;
@@ -1073,6 +1078,8 @@ function decisionesDelContrato({
   onCambiarInquilino?: () => void;
   /** CONT-4 (QA 19-10): lleva a «Invitar al portal» de Partes. Sin él (sin permiso de invitar), no se ofrece. */
   onIrAInvitar?: () => void;
+  /** Roles auxiliares (20-10-2026): sin enviar, firmar, activar, cancelar ni terminar. */
+  noFirma?: boolean;
 }): { aviso?: React.ReactNode; acciones?: React.ReactNode } {
   const status = contract.status as ContractStatus;
   const enVozBaja = 'h-auto gap-1.5 px-0 text-caption font-medium text-fg-muted hover:text-fg hover:no-underline';
@@ -1105,13 +1112,13 @@ function decisionesDelContrato({
       Cambiar de inquilino
     </Button>
   ) : null;
-  const terminar = (
+  const terminar = noFirma ? null : (
     <Button type="button" variant="link" hideArrow onClick={onTerminar} className={enVozBaja} data-testid="abrir-terminar">
       <CalendarX className="w-3.5 h-3.5" aria-hidden="true" />
       Terminar el arriendo
     </Button>
   );
-  const cancelar = canCancel ? (
+  const cancelar = canCancel && !noFirma ? (
     <Button
       type="button"
       variant="link"
@@ -1154,12 +1161,16 @@ function decisionesDelContrato({
           icono={FileText}
           titulo="Contrato en borrador"
           detalle="Cuando lo envíes para firma, el inquilino firmará primero. Después te toca firmar a ti para cerrar."
-          principal={{
-            label: 'Enviar al inquilino',
-            icon: PaperPlaneTilt,
-            onClick: onSend,
-            loading: isSubmitting && pendingAction === 'send',
-          }}
+          principal={
+            noFirma
+              ? undefined
+              : {
+                  label: 'Enviar al inquilino',
+                  icon: PaperPlaneTilt,
+                  onClick: onSend,
+                  loading: isSubmitting && pendingAction === 'send',
+                }
+          }
           secundaria={editar}
         />
       ),
@@ -1198,7 +1209,7 @@ function decisionesDelContrato({
           icono={PencilSimpleLine}
           titulo="El inquilino ya firmó — firma para cerrar"
           detalle="Es tu turno. Firma y el contrato queda listo para activar en la fecha pactada."
-          principal={{ label: 'Firmar como propietario', icon: PencilSimpleLine, onClick: onSign }}
+          principal={noFirma ? undefined : { label: 'Firmar como propietario', icon: PencilSimpleLine, onClick: onSign }}
           secundaria={editar}
         />
       ),
@@ -1251,12 +1262,16 @@ function decisionesDelContrato({
           icono={CheckCircle}
           titulo="Contrato firmado"
           detalle="Ambas partes firmaron. Actívalo para iniciar el arrendamiento."
-          principal={{
-            label: 'Activar contrato',
-            icon: CheckCircle,
-            onClick: onActivate,
-            loading: isSubmitting && pendingAction === 'activate',
-          }}
+          principal={
+            noFirma
+              ? undefined
+              : {
+                  label: 'Activar contrato',
+                  icon: CheckCircle,
+                  onClick: onActivate,
+                  loading: isSubmitting && pendingAction === 'activate',
+                }
+          }
         />
       ),
     };

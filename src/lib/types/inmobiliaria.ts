@@ -2963,7 +2963,12 @@ export type AgencyRole =
   | 'viewer'
   | 'coordinador'
   | 'auxiliar_cartera'
-  | 'abogado_externo';
+  | 'abogado_externo'
+  // Roles auxiliares (20-10-2026).
+  | 'auxiliar_comercial'
+  | 'auxiliar_administrativo'
+  | 'auxiliar_contable'
+  | 'auxiliar_mantenimiento';
 
 export type PermissionModule =
   | 'dashboard'
@@ -3088,6 +3093,10 @@ export function getRoleLabel(role: AgencyRole | null | undefined): string {
     coordinador: 'Coordinador',
     auxiliar_cartera: 'Auxiliar de cartera',
     abogado_externo: 'Abogado externo',
+    auxiliar_comercial: 'Auxiliar comercial',
+    auxiliar_administrativo: 'Auxiliar administrativo',
+    auxiliar_contable: 'Auxiliar contable',
+    auxiliar_mantenimiento: 'Auxiliar de mantenimiento',
   };
   // Unknown/undefined role (e.g. an invited member with incomplete data) → '—'.
   return (role && labels[role]) || '—';
@@ -3103,8 +3112,12 @@ export const ROLES_DEL_SISTEMA: readonly AgencyRole[] = [
   'admin',
   'coordinador',
   'agente',
+  'auxiliar_comercial',
+  'auxiliar_administrativo',
+  'auxiliar_mantenimiento',
   'auxiliar_cartera',
   'contador',
+  'auxiliar_contable',
   'abogado_externo',
   'viewer',
 ];
@@ -3118,6 +3131,10 @@ export function getRoleColor(role: AgencyRole | null | undefined): string {
     coordinador: 'bg-primary-soft text-primary',
     auxiliar_cartera: 'bg-success-soft text-success',
     abogado_externo: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
+    auxiliar_comercial: 'bg-primary-soft text-primary',
+    auxiliar_administrativo: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
+    auxiliar_contable: 'bg-success-soft text-success',
+    auxiliar_mantenimiento: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
   };
   // Always a valid color-class string, even for an unknown/undefined role.
   return (role && colors[role]) || NEUTRAL_BADGE_COLOR;
@@ -3276,6 +3293,46 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RolDeLaMatriz, RolePermissions> = 
     role: 'abogado_externo',
     permissions: [
       { module: 'cobros', actions: ['view', 'edit'] },
+      { module: 'documentos', actions: ['view'] },
+      { module: 'contratos', actions: ['view'] },
+    ],
+  },
+  // Roles auxiliares (20-10-2026). Espejo de `AGENCY_ROLE_DEFAULTS` del back.
+  auxiliar_comercial: {
+    role: 'auxiliar_comercial',
+    permissions: [
+      { module: 'propietarios', actions: ['view'] },
+      { module: 'portafolio', actions: ['view', 'create', 'edit'] },
+      { module: 'pipeline', actions: ['view', 'create', 'edit'] },
+      { module: 'documentos', actions: ['view'] },
+      { module: 'avaluos', actions: ['view'] },
+    ],
+  },
+  auxiliar_administrativo: {
+    role: 'auxiliar_administrativo',
+    permissions: [
+      { module: 'propietarios', actions: ['view'] },
+      { module: 'portafolio', actions: ['view'] },
+      { module: 'operaciones', actions: ['view', 'create', 'edit'] },
+      { module: 'documentos', actions: ['view', 'create', 'edit'] },
+      { module: 'contratos', actions: ['view', 'create', 'edit'] },
+      { module: 'avaluos', actions: ['view'] },
+    ],
+  },
+  auxiliar_contable: {
+    role: 'auxiliar_contable',
+    permissions: [
+      { module: 'propietarios', actions: ['view'] },
+      { module: 'reportes', actions: ['view'] },
+      { module: 'documentos', actions: ['view'] },
+    ],
+  },
+  auxiliar_mantenimiento: {
+    role: 'auxiliar_mantenimiento',
+    permissions: [
+      { module: 'propietarios', actions: ['view'] },
+      { module: 'portafolio', actions: ['view'] },
+      { module: 'operaciones', actions: ['view', 'create', 'edit'] },
       { module: 'documentos', actions: ['view'] },
       { module: 'contratos', actions: ['view'] },
     ],

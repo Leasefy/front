@@ -21,6 +21,10 @@ const QUE_PUEDE_HACER: Record<AgencyRole, string> = {
   contador: 'Cobros, dispersiones, reportes y contabilidad. Puede pagar el plan.',
   abogado_externo: 'Sólo ve y lleva sus casos jurídicos.',
   viewer: 'Consulta la operación sin cambiar nada.',
+  auxiliar_comercial: 'Apoya al asesor: responde interesados, agenda visitas y sube inmuebles. No ve plata ni firma.',
+  auxiliar_administrativo: 'Arma contratos, documentos y actas, y atiende solicitudes. No firma ni ve plata.',
+  auxiliar_contable: 'Registra asientos, egresos y facturas de proveedor. No cierra el mes ni aprueba pagos.',
+  auxiliar_mantenimiento: 'Lleva las reparaciones y coordina proveedores. No aprueba costos ni pagos.',
 };
 
 export interface RolParaInvitar {

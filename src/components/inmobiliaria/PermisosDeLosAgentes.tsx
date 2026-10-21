@@ -76,6 +76,10 @@ const NOMBRE_DEL_ROL: Record<string, string> = {
   COORDINADOR: 'Coordinador',
   AUXILIAR_CARTERA: 'Auxiliar de cartera',
   ABOGADO_EXTERNO: 'Abogado externo',
+  AUXILIAR_COMERCIAL: 'Auxiliar comercial',
+  AUXILIAR_ADMINISTRATIVO: 'Auxiliar administrativo',
+  AUXILIAR_CONTABLE: 'Auxiliar contable',
+  AUXILIAR_MANTENIMIENTO: 'Auxiliar de mantenimiento',
 };
 
 const AVISO_DEL_ABOGADO =

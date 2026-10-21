@@ -59,6 +59,17 @@ export const ROLE_MODULE_SCOPE: Record<AgencyRole, readonly BusinessModule[]> = 
   [AGENCY_ROLES.COORDINADOR]: ['comercial', 'administracion', 'general'],
   [AGENCY_ROLES.AUXILIAR_CARTERA]: ['administracion', 'finanzas', 'general'],
   [AGENCY_ROLES.ABOGADO_EXTERNO]: ['administracion', 'general'],
+  /*
+   * 🔴 Roles auxiliares (20-10-2026): cada uno ve el módulo de su trabajo.
+   * · AUXILIAR_COMERCIAL: comercial, y administración por la agenda y los
+   *   mensajes con los interesados (como el asesor).
+   * · AUXILIAR_ADMINISTRATIVO y AUXILIAR_MANTENIMIENTO: administración.
+   * · AUXILIAR_CONTABLE: finanzas (la contabilidad).
+   */
+  [AGENCY_ROLES.AUXILIAR_COMERCIAL]: ['comercial', 'administracion', 'general'],
+  [AGENCY_ROLES.AUXILIAR_ADMINISTRATIVO]: ['administracion', 'general'],
+  [AGENCY_ROLES.AUXILIAR_CONTABLE]: ['finanzas', 'general'],
+  [AGENCY_ROLES.AUXILIAR_MANTENIMIENTO]: ['administracion', 'general'],
 };
 
 export interface ModuleScopeContext {

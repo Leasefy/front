@@ -225,7 +225,13 @@ describe('gates del panel — lo que se muestra a todos se abre para todos', () 
 
   it('Mensajes declara los roles que efectivamente lo abren', () => {
     const mensajes = pantallas.find((p) => p.href === `${PANEL}/mensajes`);
-    // ROLES (Nico, 14-10-2026): administrador, asesor y coordinador.
-    expect(mensajes?.roles).toEqual([AGENCY_ROLES.ADMIN, AGENCY_ROLES.AGENTE, AGENCY_ROLES.COORDINADOR]);
+    // ROLES (Nico, 14-10-2026): administrador, asesor y coordinador; y desde el
+    // 20-10-2026 el auxiliar comercial (responde a los interesados).
+    expect(mensajes?.roles).toEqual([
+      AGENCY_ROLES.ADMIN,
+      AGENCY_ROLES.AGENTE,
+      AGENCY_ROLES.COORDINADOR,
+      AGENCY_ROLES.AUXILIAR_COMERCIAL,
+    ]);
   });
 });

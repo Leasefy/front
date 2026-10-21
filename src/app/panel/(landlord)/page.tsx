@@ -7,6 +7,7 @@ import { TusGiros } from '@/components/landlord/portal/TusGiros';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -247,7 +248,7 @@ function PanelDelPropietarioIndependiente() {
   const { getUpcoming: getUpcomingVisitsFromApi } = useVisits();
 
   // ALL hooks must be called before any conditional returns (React rules of hooks)
-  const { properties: apiProperties, isLoading: propertiesLoading } = useLandlordProperties();
+  const { properties: apiProperties, isLoading: propertiesLoading, error: propertiesError, refetch: recargarPropiedades } = useLandlordProperties();
   const { dashboard, isLoading: dashboardLoading } = useLandlordDashboard();
   // Propietario de una inmobiliaria: sus contratos no salen por `landlordId`.
   const administrados = useContratosAdministrados();
@@ -560,7 +561,9 @@ function PanelDelPropietarioIndependiente() {
               </div>
 
               {/* Cargando → inmuebles (o el vacío): se cruzan. */}
-              <CrossFade swapKey={propertiesLoading ? 'cargando' : properties.length > 0 ? 'lista' : 'vacio'}>
+              {/* Si la lista no cargó, se dice con su reintento: un fallo nunca se
+                  pinta como «no tienes inmuebles publicados». */}
+              <CrossFade swapKey={propertiesLoading ? 'cargando' : properties.length > 0 ? 'lista' : propertiesError ? 'fallo' : 'vacio'}>
               {propertiesLoading ? (
                 <div className="space-y-4">
                   {[0, 1, 2].map((i) => (
@@ -695,6 +698,8 @@ function PanelDelPropietarioIndependiente() {
                     );
                   })}
                 </div>
+              ) : propertiesError ? (
+                <FalloDeCarga error={propertiesError} queEs="tus inmuebles" onReintentar={recargarPropiedades} />
               ) : (
                 <div className="rounded-lg bg-surface-muted py-14 px-6 text-center">
                   <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center mx-auto mb-5">

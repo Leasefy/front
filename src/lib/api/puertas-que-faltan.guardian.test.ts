@@ -242,6 +242,10 @@ const DECLARADOS: readonly string[] = [
   'renovacionAutomaticaApi.borrarAviso',
   'renovacionAutomaticaApi.registrarAviso',
   'renovacionesApi.getUpcoming',
+  // Sí tiene puerta, pero por un envoltorio del mismo servicio (`revokeSession` →
+  // `revocarSesion`, que usan IdleSessionGuard y auth-context): el barrido no sigue
+  // envoltorios. El 21-10 lo sacaron de la lista y la prueba quedó roja.
+  'sessionApi.revoke',
   'subscriptionsApi.cancelSubscription',
   'subscriptionsApi.getPlan',
   'tesoreriaApi.pendientesDelContrato',

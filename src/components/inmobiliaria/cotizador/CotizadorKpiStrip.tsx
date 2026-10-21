@@ -13,7 +13,7 @@ import {
   Vault,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
-import { KpiCard, Stagger, StaggerItem } from '@leasefy/cadence'
+import { FranjaDeCifras, KpiCard } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { formatCurrency } from '@/lib/format'
 import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotizador-overview'
@@ -159,16 +159,23 @@ export function CotizadorKpiStrip({ kpis, isLoading = false }: CotizadorKpiStrip
     // Las tarjetas entran escalonadas (techo 320 ms); las opcionales que llegan
     // después se suman con su animación y las demás se corren.
     // QA-IA-95: a 390 px, en dos columnas los rótulos se cortaban («TASA DE …»): una columna hasta 480 px.
-    <Stagger className="grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-4 gap-4">
+    // GLOW UP 21-10: una franja de cifras (como el resto del panel), no tarjetas
+    // sueltas; con las opcionales (hasta 8) van de a cuatro por fila. La plata
+    // es larga: `fila="lg"` (de a dos hasta 1024 px) evita cortarla.
+    <FranjaDeCifras
+      fila="lg"
+      columnas={cards.length > 4 ? 4 : undefined}
+      aria-label={tf('inmobiliaria.ai.cotizador.overview.kpis.titulo', 'Resumen de asegurabilidad')}
+      data-testid="cotizador-cifras"
+    >
       {cards.map(({ label, value, Icon }) => (
-        <StaggerItem key={label} className="min-w-0 [&>*]:h-full">
-          <KpiCard
-            label={label}
-            value={isLoading ? '—' : value}
-            icon={<Icon weight="duotone" aria-hidden="true" />}
-          />
-        </StaggerItem>
+        <KpiCard
+          key={label}
+          label={label}
+          value={isLoading ? '—' : value}
+          icon={<Icon weight="duotone" aria-hidden="true" />}
+        />
       ))}
-    </Stagger>
+    </FranjaDeCifras>
   )
 }

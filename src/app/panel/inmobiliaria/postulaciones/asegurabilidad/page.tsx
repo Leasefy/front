@@ -24,7 +24,7 @@ import { CotizadorOverviewSkeleton } from '@/components/skeleton/panel/Cotizador
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { Button } from '@/components/ui/button'
-import { SectionLabel } from '@/components/ui/section-label'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
 import { relativeTime } from '@/lib/cartera'
@@ -143,51 +143,38 @@ export default function CotizadorOverviewPage() {
       {/* Encabezado de la casa: etiqueta de sección + título + qué es. Antes el
           vacío salía SIN encabezado: la persona caía en un recuadro suelto sin
           saber en qué pantalla estaba. Ahora las dos ramas comparten el mismo. */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1.5">
-          <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.nav.cotizadorResumen')}
-          </h1>
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-            {/* Positioning copy (visión #1: "radar de asegurabilidad"). Cae al
-                subtítulo de beneficio existente si la clave nueva falta. */}
-            {tf(
-              'inmobiliaria.ai.cotizador.overview.radarSubtitle',
-              t(`${PAGES_NS}.salaSubtitle`),
-            )}
-          </p>
-        </div>
-        {/* QA-IA-95: a 390 px las tres piezas no caben en un renglón (se corría 118 px): bajan. */}
-        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-          {data?.generatedAt && (
-            <p className="text-xs text-fg-muted whitespace-nowrap flex items-center gap-2 mr-1">
-              {t('inmobiliaria.ai.cotizador.overview.lastUpdated')}{' '}
-              {relativeTime(data.generatedAt, locale)}
+      {/* GLOW UP 21-10: el encabezado común. Lo de siempre se conserva: «¿Cómo
+          funciona?» como ayuda, «Nueva cotización» como ÚNICA acción azul
+          (COTI-UI-01) y, junto al título, cuándo se actualizó (en vivo, con su
+          punto). «Por revisar» sigue fuera: su cola siempre vuelve vacía
+          (`sin-cola-que-nadie-llena.test.tsx`). */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.ai.nav.cotizador')}
+        titulo={t('inmobiliaria.ai.nav.cotizadorResumen')}
+        descripcion={tf(
+          'inmobiliaria.ai.cotizador.overview.radarSubtitle',
+          t(`${PAGES_NS}.salaSubtitle`),
+        )}
+        junto={
+          data?.generatedAt ? (
+            <span className="inline-flex items-center gap-2 whitespace-nowrap text-caption text-fg-muted">
+              {t('inmobiliaria.ai.cotizador.overview.lastUpdated')} {relativeTime(data.generatedAt, locale)}
               {isRealtimeConnected && (
-                <span
-                  className="inline-flex h-1.5 w-1.5 rounded-full bg-success animate-ping"
-                  aria-hidden="true"
-                />
+                <span className="inline-flex h-1.5 w-1.5 rounded-full bg-success animate-ping" aria-hidden="true" />
               )}
-            </p>
-          )}
-          {/* ¿Cómo funciona? — el cajón con los cuatro pasos (05-10-2026). */}
-          <ComoFuncionaCotizador />
-          {/* «Por revisar» se fue (PROMESAS-Y-DIRECTOR, 05-10-2026): llevaba a la
-              cola del cotizador, que el micro devuelve SIEMPRE vacía a propósito
-              (`agency-ai-hub-work-items.ts`, `case 'cotizador'`: el motor resuelve
-              cada cotización solo, no hay nada que aprobar). Un botón que lleva a
-              nada es un botón muerto. Prueba: `sin-cola-que-nadie-llena.test.tsx`. */}
-          {/* Nueva cotización — único CTA primario de la vista (COTI-UI-01) */}
+            </span>
+          ) : null
+        }
+        ayuda={<ComoFuncionaCotizador />}
+        accionPrincipal={
           <Button size="sm" hideArrow asChild>
             <Link href="/panel/inmobiliaria/postulaciones/asegurabilidad/nueva">
               <Plus className="h-4 w-4" weight="bold" />
               {t('inmobiliaria.ai.cotizador.overview.newQuoteCta')}
             </Link>
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       {/* El fallo va ACÁ ARRIBA y reemplaza los datos, no debajo de ellos:
           estaba al final de la página, después de los indicadores en cero y
@@ -208,6 +195,7 @@ export default function CotizadorOverviewPage() {
             <SinDatos
               queSon="cotizaciones"
               icono={Tray}
+              ilustracion="escudo"
               titulo={t('inmobiliaria.ai.cotizador.overview.empty.title')}
               descripcion={t('inmobiliaria.ai.cotizador.overview.empty.description')}
               crear={{

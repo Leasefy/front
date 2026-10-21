@@ -35,7 +35,6 @@ import {
   Clock,
   CalendarBlank,
   Warning,
-  CaretLeft,
   MagnifyingGlass,
   ArrowUpRight,
   ChatCircle,
@@ -51,6 +50,8 @@ import { useI18n } from '@/lib/i18n';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
 import type { BadgeProps } from '@/components/ui/badge';
@@ -119,15 +120,25 @@ function PageShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function BackLink({ locale }: { locale: string }) {
+/**
+ * GLOW UP (21-10-2026): la vuelta lleva a la lista de donde se viene. Una
+ * solicitud (PQRS o mantenimiento) se abre desde «Solicitudes»; lo demás
+ * (pagos, postulaciones) desde «Mis casos».
+ */
+function volverA(caso: TenantCase | undefined, locale: string): { href: string; label: string } {
+  const esSolicitud = caso?.type === 'pqrs' || caso?.type === 'mantenimiento';
+  if (esSolicitud) {
+    return { href: '/inquilino/solicitudes', label: locale === 'es' ? 'Volver a Solicitudes' : 'Back to Requests' };
+  }
+  return { href: '/inquilino/casos', label: locale === 'es' ? 'Volver a Mis casos' : 'Back to My cases' };
+}
+
+function BackLink({ locale, caso }: { locale: string; caso?: TenantCase }) {
+  const v = volverA(caso, locale);
   return (
-    <Link
-      href="/inquilino/casos"
-      className="inline-flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white transition-colors mb-6"
-    >
-      <CaretLeft className="w-4 h-4" aria-hidden="true" />
-      {locale === 'es' ? 'Volver a Mis casos' : 'Back to My cases'}
-    </Link>
+    <div className="mb-6" data-testid="caso-volver">
+      <BackButton href={v.href} label={v.label} />
+    </div>
   );
 }
 
@@ -179,34 +190,78 @@ function CaseDetail({
       }).format(sla.date)
     : '';
 
+  // GLOW UP (21-10-2026): la pantalla en el orden del trabajo — «¿en qué va mi
+  // solicitud y qué me toca?». Lo que le toca hacer al inquilino (aprobar la
+  // cotización) va primero; después en qué va y la respuesta; el historial al final.
+  const teTocaAprobar =
+    caso.solicitud?.costoResponsable === 'inquilino' &&
+    caso.solicitud?.estado === 'en_cotizacion' &&
+    !caso.solicitud?.cotizacionAprobadaAt;
+  const tarjetaDelCosto =
+    caso.solicitud && caso.solicitud.costoResponsable ? (
+      <div data-testid={teTocaAprobar ? 'caso-te-toca-aprobar' : 'caso-costo'}>
+        <CostoResponsabilidadCard caseId={caso.id} solicitud={caso.solicitud} />
+      </div>
+    ) : null;
+  // «Ver en …» sólo cuando lleva a otra parte (no a la misma lista de la vuelta).
+  const verEnElOrigen =
+    caso.sourceLink !== '/inquilino/solicitudes' && caso.sourceLink !== '/inquilino/casos';
+
   return (
     <motion.div {...entrada} className="space-y-6">
-      {/* Header — title + neutral status badge */}
-      <header className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-          <TypeIcon className="w-6 h-6 text-fg-muted dark:text-fg-subtle" aria-hidden="true" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-medium text-fg dark:text-white tracking-tight">
-            {caso.titulo}
-          </h1>
-          {caso.solicitud?.radicado && (
-            <p className="mt-1 font-mono text-sm text-fg-muted" data-testid="caso-radicado">
+      <EncabezadoDePantalla
+        seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
+        titulo={caso.titulo}
+        junto={
+          <Badge variant={badge.variant} className="inline-flex items-center gap-1" data-testid="caso-estado">
+            <ToneIcon className="w-3 h-3" aria-hidden="true" />
+            {caso.estadoLabel}
+          </Badge>
+        }
+        descripcion={
+          caso.solicitud?.radicado ? (
+            <span className="font-mono" data-testid="caso-radicado">
               {caso.solicitud.radicado}
-            </p>
-          )}
-          <div className="mt-2">
-            <Badge variant={badge.variant} className="inline-flex items-center gap-1">
-              <ToneIcon className="w-3 h-3" aria-hidden="true" />
-              {caso.estadoLabel}
-            </Badge>
-          </div>
-        </div>
-      </header>
+            </span>
+          ) : undefined
+        }
+        acciones={
+          <>
+            {verEnElOrigen ? (
+              <Button asChild variant="outline" size="sm" hideArrow>
+                <Link href={caso.sourceLink} className="inline-flex items-center gap-1.5" data-testid="caso-ver-en-origen">
+                  {locale === 'es'
+                    ? `Ver en ${sourceLabel(caso.type, locale)}`
+                    : `View in ${sourceLabel(caso.type, locale)}`}
+                  <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+                </Link>
+              </Button>
+            ) : null}
+            {/*
+              Real "contactar" affordance for the case → the messages INBOX only.
+              TenantCase carries no applicationId/leaseId, so we deep-link to the
+              inbox and NEVER fabricate a preselected thread (no fabricated query param).
+            */}
+            <Button asChild variant="outline" size="sm" hideArrow>
+              <Link href="/inquilino/mensajes" className="inline-flex items-center gap-1.5" data-testid="caso-escribir">
+                <ChatCircle className="w-4 h-4" aria-hidden="true" />
+                {locale === 'es' ? 'Escribir a la inmobiliaria' : 'Message the agency'}
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
-      {/* Summary card — role responsable + relative updatedAt + source out-link */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6 space-y-4">
-        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Lo que te toca: aprobar la cotización (SOLI-04), antes que todo lo demás. */}
+      {teTocaAprobar ? tarjetaDelCosto : null}
+
+      {/* En qué va — quién la atiende, cuándo se movió y cuándo se espera respuesta. */}
+      <section
+        className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+        aria-label={locale === 'es' ? 'En qué va' : 'Status'}
+        data-testid="caso-en-que-va"
+      >
+        <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="flex items-center gap-2.5">
             <User className="w-4 h-4 text-fg-subtle flex-shrink-0" aria-hidden="true" />
             <div className="min-w-0">
@@ -263,28 +318,6 @@ function CaseDetail({
             </div>
           )}
         </dl>
-
-        <div className="pt-1 flex flex-wrap items-center gap-2">
-          <Button asChild variant="secondary" size="sm">
-            <Link href={caso.sourceLink} className="inline-flex items-center gap-1.5">
-              {locale === 'es'
-                ? `Ver en ${sourceLabel(caso.type, locale)}`
-                : `View in ${sourceLabel(caso.type, locale)}`}
-              <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
-            </Link>
-          </Button>
-          {/*
-            Real "contactar" affordance for the case → the messages INBOX only.
-            TenantCase carries no applicationId/leaseId, so we deep-link to the
-            inbox and NEVER fabricate a preselected thread (no fabricated query param).
-          */}
-          <Button asChild variant="secondary" size="sm">
-            <Link href="/inquilino/mensajes" className="inline-flex items-center gap-1.5">
-              <ChatCircle className="w-4 h-4" aria-hidden="true" />
-              {locale === 'es' ? 'Escribir a la inmobiliaria' : 'Message the agency'}
-            </Link>
-          </Button>
-        </div>
       </section>
 
       {/* SO-06/SO-18 (PQRS-FIX): la respuesta de la inmobiliaria y los archivos. */}
@@ -292,14 +325,14 @@ function CaseDetail({
         <RespuestaYArchivosDelCaso caseId={caso.id} solicitud={caso.solicitud} />
       )}
 
-      {/* Ley 820 cost responsibility + approve-only quote affordance (SOLI-04) —
-          shown only for PQRS cases with a backend-set cost determination. */}
-      {caso.solicitud && caso.solicitud.costoResponsable && (
-        <CostoResponsabilidadCard caseId={caso.id} solicitud={caso.solicitud} />
-      )}
+      {/* Ley 820: quién paga — informativo cuando no hay nada que aprobar. */}
+      {teTocaAprobar ? null : tarjetaDelCosto}
 
       {/* State timeline (CASO-02 core) — source-timestamp-only events */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
+      <section
+        className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+        data-testid="caso-historial"
+      >
         <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
           {locale === 'es' ? 'Historial' : 'Timeline'}
         </h2>
@@ -374,7 +407,7 @@ export default function CaseDetailPage(props: { params: Promise<{ caseId: string
 
   return (
     <PageShell>
-      <BackLink locale={locale} />
+      <BackLink locale={locale} caso={caso} />
       <CaseDetail caso={caso} locale={locale} entrada={entrada} />
     </PageShell>
   );

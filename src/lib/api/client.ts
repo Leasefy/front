@@ -817,13 +817,17 @@ export const apiClient = {
    * se llama SIEMPRE al cerrar sesión: una implícita que quedó en vuelo para
    * la sesión anterior no puede quedar disponible para la que entra después.
    */
-  get: <T>(path: string, token?: string) =>
-    compartirGet(claveDeGet(path, token), () => request<T>('GET', path, undefined, token)),
+  get: <T>(path: string, token?: string, cabecerasExtra?: Record<string, string>) =>
+    compartirGet(
+      cabecerasExtra ? `${claveDeGet(path, token)}\0${JSON.stringify(cabecerasExtra)}` : claveDeGet(path, token),
+      () => request<T>('GET', path, undefined, token, false, cabecerasExtra),
+    ),
   post: <T>(path: string, body?: unknown, token?: string, cabecerasExtra?: Record<string, string>) =>
     request<T>('POST', path, body, token, false, cabecerasExtra),
   put: <T>(path: string, body?: unknown, token?: string) => request<T>('PUT', path, body, token),
   patch: <T>(path: string, body?: unknown, token?: string) => request<T>('PATCH', path, body, token),
-  delete: <T>(path: string, token?: string) => request<T>('DELETE', path, undefined, token),
+  delete: <T>(path: string, token?: string, cabecerasExtra?: Record<string, string>) =>
+    request<T>('DELETE', path, undefined, token, false, cabecerasExtra),
   getBlob: (path: string) => requestBlob(path),
 }
 

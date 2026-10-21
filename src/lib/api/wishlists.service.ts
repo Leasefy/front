@@ -9,6 +9,7 @@
  */
 
 import { apiClient } from '@/lib/api/client';
+import { cabecerasComoInquilino } from '@/lib/auth/cuenta-activa';
 
 export interface WishlistItem {
   userId: string;
@@ -22,7 +23,7 @@ export const wishlistsApi = {
    * Get all wishlisted property IDs for the current user (newest first)
    */
   async getMine(): Promise<string[]> {
-    const items = await apiClient.get<WishlistItem[]>('/wishlists');
+    const items = await apiClient.get<WishlistItem[]>('/wishlists', undefined, cabecerasComoInquilino());
     return items.map((item) => item.propertyId);
   },
 
@@ -30,13 +31,13 @@ export const wishlistsApi = {
    * Add a property to the wishlist (idempotent)
    */
   async add(propertyId: string): Promise<void> {
-    await apiClient.post('/wishlists/items', { propertyId });
+    await apiClient.post('/wishlists/items', { propertyId }, undefined, cabecerasComoInquilino());
   },
 
   /**
    * Remove a property from the wishlist (idempotent, 204)
    */
   async remove(propertyId: string): Promise<void> {
-    await apiClient.delete(`/wishlists/items/${propertyId}`);
+    await apiClient.delete(`/wishlists/items/${propertyId}`, undefined, cabecerasComoInquilino());
   },
 };

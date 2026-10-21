@@ -357,6 +357,17 @@ export function cabecerasDeLaCuenta(): Record<string, string> {
   return cabecerasParaLaRuta(window.location.pathname, _sesion.cuentas, leerCuentaGuardada(_sesion.userId))
 }
 
+/**
+ * Lo que es de la cuenta de INQUILINO (los favoritos) se pide como inquilino
+ * desde cualquier pantalla: en el panel del propietario la petición iría como
+ * propietario y el back respondería 403. Vacío si no aplica (una sola cuenta o
+ * sin cuenta de inquilino): todo como antes.
+ */
+export function cabecerasComoInquilino(): Record<string, string> {
+  if (!_sesion || !_sesion.cuentas.inquilino || !tieneVariasCuentas(_sesion.cuentas)) return {}
+  return { ...cabecerasDeLaCuenta(), 'x-cuenta': 'inquilino' }
+}
+
 /** Para la clave de los GET compartidos: dos cuentas nunca comparten respuesta. */
 export function claveDeLasCabeceras(): string {
   const c = cabecerasDeLaCuenta()

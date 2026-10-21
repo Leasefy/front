@@ -62,10 +62,15 @@ export function useContratosAdministrados(): ContratosAdministrados {
     let vivo = true;
     estadoDeCuentaApi
       .mio()
-      .then((doc) => {
+      .then(async (doc) => {
         if (!vivo) return;
         const propios = doc.contratos.filter((c) => c.rol === 'PROPIETARIO');
-        setEstado({ doc: propios.length > 0 ? { ...doc, contratos: propios } : null, cargando: false, fichaSinContratos: null });
+        // «Cambiar de cuenta» (21-10-2026): quien arrienda Y es propietario sin
+        // contratos todavía trae contratos —los de inquilino— y no el «sin
+        // contratos»: también se le pregunta por su ficha, o el panel lo sacaba.
+        const ficha = propios.length === 0 ? await fichaSinContratos() : null;
+        if (!vivo) return;
+        setEstado({ doc: propios.length > 0 ? { ...doc, contratos: propios } : null, cargando: false, fichaSinContratos: ficha });
       })
       .catch(async (e: unknown) => {
         // Sólo el «no tienes contratos» pregunta por la ficha: otro fallo no se adivina.

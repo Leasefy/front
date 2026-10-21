@@ -11,6 +11,7 @@
  * Si la ruta no responde (un back anterior), no se pinta nada.
  */
 
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { useEffect, useState } from 'react';
 import { AnimatedNumber, Presence } from '@leasefy/cadence';
 
@@ -58,7 +59,10 @@ export function PorGirarDeLaInmobiliaria() {
             >
               <AnimatedNumber value={cifra.porGirarCop} format={formatCurrency} />
             </p>
-            <p className="mt-1 text-caption text-fg-muted">{definicionDePorGirar(cifra.hastaMes)}</p>
+            {/* GLOW UP (21-10): la cifra primero; lo que cuenta, plegado (la misma frase del Tablero y de Cartera). */}
+            <MasDetalles etiqueta="Qué cuenta esta cifra" montadoSiempre className="mt-1">
+              <p className="text-caption text-fg-muted">{definicionDePorGirar(cifra.hastaMes)}</p>
+            </MasDetalles>
           </div>
           <div className="min-w-0 sm:border-l sm:border-border sm:pl-5">
             <p className="text-sm text-muted-foreground">

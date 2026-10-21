@@ -119,9 +119,10 @@ export interface InmuebleDuplicado {
  * Every field is optional (C13: origin governs validation; completeness is
  * enforced at activation, not here). The back declares 23 fields; the ones
  * it accepts that no import source can produce (`description`, `deposit`,
- * `floor`, `parkingSpaces`, `yearBuilt`, `amenities`) are
+ * `floor`, `parkingSpaces`, `yearBuilt`) are
  * deliberately absent — `ImportProperty` has no column for any of them, and
  * an unused field on a hand-mirrored boundary is surface without a consumer.
+ * `amenities` sí está desde el 21-10-2026: la columna «Características».
  *
  * `externalId` y `stratum` SÍ están: el archivo real de la inmobiliaria
  * (Propiedades.csv) trae «Código» y «Estrato» en todas sus filas.
@@ -210,6 +211,12 @@ export interface ImportarInmuebleDto {
   estadoOrigen?: string;
   /** «Urbanización»: el conjunto. El back lo guarda dentro de `description`. */
   urbanizacion?: string;
+  /**
+   * Las características (ids de `lib/inmuebles/caracteristicas.ts`), leídas de
+   * la columna «Características» del archivo (21-10-2026). Sólo viajan las que
+   * se reconocieron.
+   */
+  amenities?: string[];
   /** «Llaves en»: dónde están las llaves. Mismo destino que `urbanizacion`. */
   llavesEn?: string;
   /**

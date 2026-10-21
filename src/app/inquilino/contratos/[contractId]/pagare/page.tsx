@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useState, use } from 'react';
 import { ArrowSquareOut, CheckCircle, Receipt, WarningCircle } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -49,9 +50,14 @@ export default function MiFirmaDelPagarePage(props: Props) {
   }, [cargar]);
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <BackButton href="/inquilino/contratos" label="Mis contratos" />
-      <h1 className="text-h2 text-fg">Pagaré</h1>
+    // GLOW UP (21-10-2026): el contenedor, la vuelta y el encabezado del portal.
+    <div className="max-w-3xl p-6 lg:p-8 space-y-6">
+      <BackButton href="/inquilino/contratos" label="Volver a Mis contratos" />
+      <EncabezadoDePantalla
+        seccion="Mi arriendo"
+        titulo="Pagaré"
+        descripcion="El pagaré que respalda tu contrato. Se firma con nuestro proveedor de firma electrónica."
+      />
 
       {cargando ? (
         <div className="min-h-[30vh] flex items-center justify-center">

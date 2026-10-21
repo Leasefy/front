@@ -10,6 +10,7 @@ import { MonoLabel } from '@leasefy/cadence';
 import { toast } from 'sonner';
 
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
@@ -451,8 +452,8 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
   if (!activeContract) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          <BackButton href="/inquilino/contratos" label={locale === 'es' ? 'Volver a contratos' : 'Back to contracts'} />
+        <div className="max-w-3xl p-6 lg:p-8">
+          <BackButton href="/inquilino/contratos" label={locale === 'es' ? 'Volver a Mis contratos' : 'Back to My contracts'} />
           <div className="mt-8 text-center py-16">
             <div className="w-16 h-16 rounded-xl bg-surface-muted flex items-center justify-center mx-auto mb-4">
               <WarningCircle className="w-8 h-8 text-fg-subtle" />
@@ -475,7 +476,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
   if (signedSuccess) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <div className="max-w-3xl p-6 lg:p-8" data-testid="firma-lista">
           <SigningSuccess locale={locale} estado={activeContract?.status} />
           {/* 🔴 Nico, 2026-09-17: al iniciar el contrato, el inquilino firma
               también el inventario con el que lo recibe. No bloquea nada. */}
@@ -491,21 +492,32 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
     <div className="min-h-screen bg-bg">
       <motion.div {...entrada} className="p-6 lg:p-8">
         {/* Back */}
-        <div className="mb-6">
-          <BackButton href="/inquilino/contratos" label={locale === 'es' ? 'Volver a contratos' : 'Back to contracts'} />
+        <div className="mb-6" data-testid="firmar-volver">
+          <BackButton href="/inquilino/contratos" label={locale === 'es' ? 'Volver a Mis contratos' : 'Back to My contracts'} />
         </div>
 
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-fg">
-            {isPendingTenant
+        {/* GLOW UP (21-10-2026): el encabezado común; el chat con la inmobiliaria va arriba. */}
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
+          titulo={
+            isPendingTenant
               ? (locale === 'es' ? 'Firmar el contrato' : 'Sign contract')
-              : (locale === 'es' ? 'Contrato de arrendamiento' : 'Rental contract')}
-          </h1>
-          <p className="mt-1 text-fg-muted">
-            {activeContract.propertyAddress} — {activeContract.propertyCity}
-          </p>
-        </div>
+              : (locale === 'es' ? 'Contrato de arrendamiento' : 'Rental contract')
+          }
+          descripcion={`${activeContract.propertyAddress} — ${activeContract.propertyCity}`}
+          acciones={
+            // Sólo mientras le toca firmar: la vista de lectura trae su propio chat en la franja.
+            chatHref && isPendingTenant ? (
+              <Button asChild variant="outline" size="sm" hideArrow>
+                <Link href={chatHref} className="inline-flex items-center gap-1.5" data-testid="firmar-abrir-chat">
+                  <ChatCircle className="w-4 h-4" aria-hidden="true" />
+                  {locale === 'es' ? 'Abrir chat' : 'Open chat'}
+                </Link>
+              </Button>
+            ) : undefined
+          }
+        />
 
         {/* Non-signing state — read only */}
         {!isPendingTenant && (
@@ -570,15 +582,12 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
                     : 'Review the contract and sign. The landlord will sign next to close the process.'}
                 </p>
               </div>
-              {chatHref && (
-                <Link
-                  href={chatHref}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface border border-primary/30 text-primary text-xs font-medium hover:bg-primary-soft transition-colors"
-                >
-                  <ChatCircle className="w-3.5 h-3.5" />
-                  {locale === 'es' ? 'Abrir chat' : 'Open chat'}
-                </Link>
-              )}
+              {/* En el celular la firma queda debajo del contrato entero: un atajo para llegar. */}
+              <Button asChild size="sm" hideArrow className="lg:hidden">
+                <a href="#firmar" data-testid="ir-a-firmar">
+                  {locale === 'es' ? 'Ir a firmar' : 'Go to signature'}
+                </a>
+              </Button>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
@@ -590,7 +599,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
 
               {/* Sidebar — Signature + info */}
               <div className="lg:col-span-1">
-                <div className="sticky top-6 space-y-4">
+                <div id="firmar" className="sticky top-6 scroll-mt-24 space-y-4" data-testid="firmar-formulario">
                   {/* Signing Form */}
                   <SignatureForm
                     onSign={handleSign}

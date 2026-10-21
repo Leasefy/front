@@ -10608,8 +10608,8 @@
         "statusPendingApproval": "Pdte. aprobación",
         "statusRejected": "Rechazada",
         "statusVoid": "Anulada",
-        "m1BannerTitle": "Detalle de la factura AP",
-        "m1BannerDesc": "Los pagos y flujos de aprobación avanzados se conectan en una fase posterior (M1).",
+        "m1BannerTitle": "Sólo para consultar",
+        "m1BannerDesc": "Por ahora la factura se registra y se consulta en Leasefy: aprobarla y pagarla todavía se hace por fuera.",
         "loadingError": "Error al cargar la factura",
         "fetching": "Cargando factura…"
       }

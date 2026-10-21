@@ -10573,8 +10573,8 @@
         "statusPendingApproval": "Pending approval",
         "statusRejected": "Rejected",
         "statusVoid": "Void",
-        "m1BannerTitle": "AP Invoice detail",
-        "m1BannerDesc": "Payments and advanced approval flows connect in a later phase (M1).",
+        "m1BannerTitle": "View only",
+        "m1BannerDesc": "For now the bill is recorded and viewed in Leasefy: approving and paying it is still done outside.",
         "loadingError": "Error loading invoice",
         "fetching": "Loading invoice…"
       }

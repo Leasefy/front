@@ -229,7 +229,7 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
               className="w-full"
             />
           </div>
-          <div className="w-[170px]">
+          <div className="w-[200px] [&_button]:whitespace-nowrap">
             <Label id="filtro-origen" className="sr-only">Origen</Label>
             <Select
               value={filtros.origen || TODOS}
@@ -248,7 +248,7 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
               </SelectContent>
             </Select>
           </div>
-          <div className="w-[170px]">
+          <div className="w-[200px] [&_button]:whitespace-nowrap">
             <Label id="filtro-cerrado" className="sr-only">Período</Label>
             <Select
               value={filtros.cerrado || TODOS}

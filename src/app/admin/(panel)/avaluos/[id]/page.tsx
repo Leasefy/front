@@ -1,7 +1,8 @@
 'use client'
 
+import { PageHeader } from '@/components/admin/screen/PageHeader';
+import { BackButton } from '@/components/ui/back-button';
 import { useState } from 'react'
-import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { ApiError } from '@/lib/admin/api'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
@@ -156,22 +157,17 @@ export default function AvaluoDetailPage() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      {/* Header */}
-      <div>
-        <Link
-          href="/admin/avaluos"
-          className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle hover:text-fg"
-        >
-          ← Cola
-        </Link>
-        <h1 className="text-h2 text-fg mt-2">
-          {pending ? 'Revisar y firmar.' : done === 'rechazado' ? 'Avalúo rechazado.' : 'Avalúo resuelto.'}
-        </h1>
-        <p className="text-sm text-fg-muted mt-1">
-          <span className="font-mono">{item?.slug ?? id}</span>
-          {item?.method ? ` · ${item.method}` : ''}
-        </p>
-      </div>
+      {/* GLOW UP 21-10: la vuelta y el encabezado de las demás pantallas del admin. */}
+      <BackButton href="/admin/avaluos" label="Cola de avalúos" />
+      <PageHeader
+        title={pending ? 'Revisar y firmar' : done === 'rechazado' ? 'Avalúo rechazado' : 'Avalúo resuelto'}
+        description={
+          <>
+            <span className="font-mono">{item?.slug ?? id}</span>
+            {item?.method ? ` · ${item.method}` : ''}
+          </>
+        }
+      />
 
       {/* Resolved / not-pending banner */}
       {!pending && (

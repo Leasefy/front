@@ -229,3 +229,57 @@ describe('🔴 QA-IA-95 (IA95-08): los agentes con manos tienen tarjeta', () => 
     expect(container.querySelector('[data-testid="desempeno-con-manos-sin-dato"]')?.textContent).toContain('No pudimos leer')
   })
 })
+
+describe('GLOW UP 21-10: la pantalla en el orden del trabajo', () => {
+  const agente = (a: string, nombre: string, extra: Record<string, number> = {}) => ({ agente: a, nombre, hechas: 0, fallidas: 0, deshechas: 0, descartadas: 0, programadas: 0, esperan: 0, ...extra })
+  const sinPiloto = { data: null as unknown, isLoading: false, error: null as unknown, sinLaRuta: true, refetch: () => {} }
+  afterEach(() => {
+    conManos.valor = sinPiloto
+  })
+
+  it('lo que espera tu decisión sale arriba, con cuántas, quién las propuso y el camino al Piloto', async () => {
+    conManos.valor = {
+      data: {
+        disponible: true, dias: 30, recortado: false,
+        agentes: [
+          agente('mantenimiento', 'Fixi · mantenimiento', { hechas: 3, esperan: 2 }),
+          agente('inspeccion', 'Vidi · inspección', { esperan: 1 }),
+          agente('calidad', 'Niti · calidad', { hechas: 1 }),
+        ],
+      },
+      isLoading: false, error: null, sinLaRuta: false, refetch: () => {},
+    }
+    await render()
+    const aviso = container.querySelector('[data-testid="desempeno-esperan"]')
+    expect(aviso?.textContent).toContain('3 acciones de los agentes esperan tu decisión')
+    expect(aviso?.textContent).toContain('Fixi · mantenimiento, Vidi · inspección')
+    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/piloto')
+    // Va antes que cualquier tarjeta.
+    const primera = container.querySelector('[data-testid="desempeno-cobranza"]')!
+    expect(aviso!.compareDocumentPosition(primera) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('sin nada esperando, no hay aviso', async () => {
+    conManos.valor = sinPiloto
+    await render()
+    expect(container.querySelector('[data-testid="desempeno-esperan"]')).toBeNull()
+  })
+
+  it('los que trabajaron van arriba; los que no, juntos en la lista de abajo', async () => {
+    conManos.valor = sinPiloto
+    await render()
+    const lista = container.querySelector('[data-testid="desempeno-sin-actividad"]')!
+    expect(lista.contains(container.querySelector('[data-testid="desempeno-cobranza"]'))).toBe(false)
+    for (const id of ['pagos', 'conciliacion', 'matching', 'cotizador', 'estudio', 'chat']) {
+      expect(lista.contains(container.querySelector(`[data-testid="desempeno-${id}"]`)), id).toBe(true)
+    }
+    const cobranza = container.querySelector('[data-testid="desempeno-cobranza"]')!
+    expect(cobranza.compareDocumentPosition(lista) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('sin los permisos a mano no ofrece ir a la pantalla del agente (nunca una puerta cerrada)', async () => {
+    conManos.valor = sinPiloto
+    await render()
+    expect(container.querySelector('[data-testid="desempeno-cobranza-ir"]')).toBeNull()
+  })
+})

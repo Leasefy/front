@@ -1698,12 +1698,14 @@ function NuevoContratoContent() {
             <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
             <p className="text-sm text-danger">{submitError}</p>
           </Presence>
-          <div className="flex items-center justify-end gap-2">
+          {/* Ronda 12 (390): «Crear contrato» a lo ancho y primero; «Cancelar» debajo. */}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
             <Button
               type="button"
               variant="secondary"
               hideArrow
               onClick={() => router.back()}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
@@ -1717,7 +1719,7 @@ function NuevoContratoContent() {
                 (!esManual && property?.canonPorConfirmar === true) ||
                 (esManual && inmuebleManualSinCanon !== null)
               }
-              className="gap-2"
+              className="w-full gap-2 sm:w-auto"
             >
               {actions.isSubmitting ? (
                 <Spinner size="sm" variant="current" />

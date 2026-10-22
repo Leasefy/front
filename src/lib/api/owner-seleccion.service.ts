@@ -10,12 +10,8 @@ import { ownerGet, ownerGetConEstado, ownerPost, type OwnerActionResult } from '
 import type { EleccionProceso, EleccionComparacion, EleccionOk } from './owner-seleccion.types';
 
 export const ownerSeleccionApi = {
-  /** GET /procesos — procesos de elección del propietario. `[]` si no-disponible. */
-  getProcesos: async (agencyId: string | null): Promise<EleccionProceso[]> =>
-    (await ownerGet<EleccionProceso[]>(agencyId, '/procesos')) ?? [],
-
   /**
-   * Lo mismo, diciendo si FALLÓ (guardián de los cuatro estados, 22-10-2026): con el micro caído
+   * GET /procesos — procesos de elección del propietario, diciendo si FALLÓ (guardián de los cuatro estados, 22-10-2026): con el micro caído
    * la lista no puede decir «no tienes elecciones abiertas». `no-habilitado` sigue siendo `[]`.
    */
   getProcesosConEstado: (agencyId: string | null) => ownerGetConEstado<EleccionProceso[]>(agencyId, '/procesos'),

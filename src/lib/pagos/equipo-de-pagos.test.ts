@@ -17,7 +17,7 @@ import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 
 import type { GobiernoItem } from '@/lib/api/piloto'
-import { modulosDelPanel, pestanasDelModulo } from '@/lib/nav/arquitectura-del-panel'
+import { modulosDelPanel, pestanaActiva, pestanasDelModulo } from '@/lib/nav/arquitectura-del-panel'
 import {
   AGENTE_GOBERNADO,
   EQUIPO_DE_PAGOS,
@@ -147,9 +147,8 @@ describe('EQUIPO_DE_PAGOS', () => {
       }
       // La pantalla del menú de la que cuelga (la pestaña de Cartera o de
       // Cobranza hereda el gate de su sección).
-      const duena = todas
-        .filter((p) => href === p.href || href.startsWith(`${p.href}/`))
-        .sort((a, b) => b.href.length - a.href.length)[0]
+      // La MISMA regla del menú (`pestanaActiva`, con `tambienEn`: «Giros a propietarios», 22-10).
+      const duena = pestanaActiva(todas, href)
       expect(duena, href).toBeTruthy()
       expect(module, href).toBe(duena!.module)
       expect(roles ?? [], href).toEqual(duena!.roles ?? [])

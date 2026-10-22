@@ -930,7 +930,7 @@
       "completado": "Inventario completado: la versión {{version}} queda fija.",
       "errorAlCompletar": "No se pudo completar el inventario.",
       "historialTitulo": "Historial de versiones",
-      "historialVacio": "Cuando completes el primer inventario, sus versiones aparecen acá.",
+      "historialVacio": "Cuando completes el primer inventario, sus versiones aparecen aquí.",
       "estadoBorrador": "Borrador",
       "estadoCompleto": "Completo",
       "items": "{{n}} ítems",
@@ -1194,7 +1194,7 @@
         "sinFuente": "No pudimos consultar lo que hizo el Piloto",
         "sinFuenteHint": "La fuente no respondió; esto no significa que no haya pasado nada.",
         "fuenteCaida": "{{fuente}} no respondió: lo suyo no está en esta lista.",
-        "sinBack": "La conciliación del Piloto todavía no está activada para tu inmobiliaria: los depósitos del banco no se ven acá ni llegan a la Bandeja. La activa el equipo de Leasefy.",
+        "sinBack": "La conciliación del Piloto todavía no está activada para tu inmobiliaria: los depósitos del banco no se ven aquí ni llegan a la Bandeja. La activa el equipo de Leasefy.",
         "contador": "{{visibles}} de {{total}}",
         "verPasos": "Ver pasos",
         "ocultarPasos": "Ocultar pasos",
@@ -1269,7 +1269,7 @@
         "enlaces": "Dónde seguir",
         "verDetalle": "Ver el detalle",
         "casos": "Los casos detrás de este número",
-        "sinCasos": "Esta alerta cuenta casos que no se pudieron listar acá. El número del título sí se midió; ábrelo en su pantalla para verlos.",
+        "sinCasos": "Esta alerta cuenta casos que no se pudieron listar aquí. El número del título sí se midió; ábrelo en su pantalla para verlos.",
         "abrirPantalla": "Abrir la pantalla completa",
         "volver": "Volver"
       },
@@ -2032,7 +2032,7 @@
         "passwordModalTitle": "Cambiar tu contraseña",
         "passwordModalLead": "Al confirmar te llega un enlace a {{email}}, y desde ahí eliges tu contraseña nueva.",
         "passwordModalWhy": "Se hace por correo a propósito: así nadie que se siente frente a tu pantalla abierta puede cambiarte la clave sin tener también tu correo.",
-        "passwordModalExpiry": "El enlace sirve una sola vez y vence en una hora. Si se vence, vuelve acá y pide otro.",
+        "passwordModalExpiry": "El enlace sirve una sola vez y vence en una hora. Si se vence, vuelve aquí y pide otro.",
         "passwordModalSpam": "Si no llega en unos minutos, revisa el correo no deseado.",
         "passwordModalSend": "Enviarme el enlace",
         "passwordModalSending": "Enviando...",
@@ -2388,7 +2388,7 @@
         "detailCategory": "Categoría",
         "detailLastSync": "Última sincronización",
         "detailNeverSynced": "Todavía no sincronizó",
-        "keysNotHere": "Las llaves y los webhooks de esta integración todavía no se configuran desde el panel. Desde acá la prendes o la apagas; el resto lo hacemos nosotros contigo.",
+        "keysNotHere": "Las llaves y los webhooks de esta integración todavía no se configuran desde el panel. Desde aquí la prendes o la apagas; el resto lo hacemos nosotros contigo.",
         "close": "Cerrar"
       },
       "billing": {
@@ -3052,7 +3052,7 @@
         "conteoUno": "1 cuota",
         "conteoVarios": "{{total}} cuotas",
         "vacioTitulo": "No hay cuotas que venzan en {{mes}}",
-        "vacioDescripcion": "Cobri trabaja sobre las cuotas de los contratos: cuando un contrato tenga cuota en este mes, aparece acá con el estado de su link."
+        "vacioDescripcion": "Cobri trabaja sobre las cuotas de los contratos: cuando un contrato tenga cuota en este mes, aparece aquí con el estado de su link."
       }
     },
     "dispersiones": {
@@ -3605,7 +3605,7 @@
       "to": "a",
       "clear": "Limpiar",
       "enteredPipeline": "Entró al embudo",
-      "historyNotRecorded": "Del recorrido anterior no hay registro: hoy sólo se guarda la etapa actual y desde cuándo entró. Cuando se registren los cambios de etapa, la línea de tiempo completa aparece acá.",
+      "historyNotRecorded": "Del recorrido anterior no hay registro: hoy sólo se guarda la etapa actual y desde cuándo entró. Cuando se registren los cambios de etapa, la línea de tiempo completa aparece aquí.",
       "overdueSentence": "Vencida"
     },
     "agente": {
@@ -4101,7 +4101,7 @@
       },
       "portal": {
         "title": "Traer tus inmuebles desde un portal",
-        "subtitle": "Baja tu inventario del panel del portal y súbelo acá. Nosotros acomodamos las columnas.",
+        "subtitle": "Baja tu inventario del panel del portal y súbelo aquí. Nosotros acomodamos las columnas.",
         "porQue": "Los portales no entregan tus inmuebles por API: la integración que existe va al revés, publicando desde tu sistema hacia ellos. Pero el inventario ya lo tienes en tu panel del portal, y de ahí sí se puede bajar.",
         "abrirPanel": "Ir a mi panel",
         "yaLoTengo": "Ya tengo el archivo del portal",
@@ -4153,7 +4153,7 @@
         "showLess": "Ver menos",
         "showMoreEvents": "Ver {{count}} eventos más",
         "noEvents": "Todavía no hay actividad",
-        "noEventsDesc": "Acá vas a ver las visitas, firmas y vencimientos de este inmueble a medida que ocurran.",
+        "noEventsDesc": "Aquí vas a ver las visitas, firmas y vencimientos de este inmueble a medida que ocurran.",
         "loadFailed": "No pudimos traer la actividad de este inmueble.",
         "events": {
           "consignacionCreated": "Consignación creada",
@@ -4336,7 +4336,7 @@
         "consignedAtHelper": "Cuándo entró el inmueble a la inmobiliaria. Sólo la ve la inmobiliaria.",
         "publicado": "Publicado en el portal",
         "publicadoHelper": "Apagado, el inmueble queda como borrador: no sale en el portal ni cuenta en la ocupación.",
-        "publicacionNoAplica": "El estado de este inmueble ({{estado}}) lo maneja su contrato: no se publica ni se despublica desde acá.",
+        "publicacionNoAplica": "El estado de este inmueble ({{estado}}) lo maneja su contrato: no se publica ni se despublica desde aquí.",
         "inmuebleCargando": "Cargando el inmueble…",
         "inmuebleNoCargo": "No se pudo cargar el inmueble: por ahora sólo se edita el mandato.",
         "sinInmueble": "Este mandato no tiene un inmueble vinculado: se editan los datos copiados en el mandato.",
@@ -4801,7 +4801,7 @@
         "tryAgain": "Prueba de nuevo en un momento.",
         "empty": {
           "title": "Sin inmuebles con cobros en este periodo",
-          "description": "Cuando haya contratos con cobros en el rango elegido, la rentabilidad aparece acá. Prueba con un periodo más amplio."
+          "description": "Cuando haya contratos con cobros en el rango elegido, la rentabilidad aparece aquí. Prueba con un periodo más amplio."
         },
         "notes": "Notas del cálculo"
       },
@@ -5363,7 +5363,7 @@
         "photoHelp": "La foto se guarda en este teléfono y se sube cuando haya señal. JPG, PNG o WebP, hasta 5 MB. O pega el enlace de una foto que ya esté publicada:",
         "photoUrl": "Foto (enlace)",
         "photoUrlPlaceholder": "https://…",
-        "photoUrlHelp": "Un enlace a la foto. La subida de fotos desde acá viene después.",
+        "photoUrlHelp": "Un enlace a la foto. La subida de fotos desde aquí viene después.",
         "nameRequired": "Dinos qué es.",
         "quantityInvalid": "Una cantidad entre 1 y 999.",
         "save": "Guardar",
@@ -7422,7 +7422,7 @@
             "forceStage": {
               "cta": "Forzar etapa",
               "modalTitle": "Forzar etapa",
-              "modalDescription": "La etapa decide qué hace el agente con este caso: a quién contacta, cuándo, y si deja de hacerlo. Normalmente avanza sola con los días de mora — acá la cambias a mano, y queda registrado quién lo hizo.",
+              "modalDescription": "La etapa decide qué hace el agente con este caso: a quién contacta, cuándo, y si deja de hacerlo. Normalmente avanza sola con los días de mora — aquí la cambias a mano, y queda registrado quién lo hizo.",
               "targetLabel": "Etapa destino",
               "reasonLabel": "Por qué la cambias (requerido)",
               "reasonPlaceholder": "Queda en la auditoría junto a tu nombre. Mínimo 10 caracteres…",
@@ -7626,7 +7626,7 @@
           "emptyFiltered": "Sin pagos en este período",
           "empty": {
             "title": "Aún no hay pagos procesados",
-            "description": "Los pagos aparecerán acá cuando un deudor liquide.",
+            "description": "Los pagos aparecerán aquí cuando un deudor liquide.",
             "cta": {
               "label": "Ver deudores"
             }
@@ -8124,7 +8124,7 @@
         "arco": {
           "empty": {
             "title": "Sin solicitudes de Habeas Data pendientes",
-            "description": "Las solicitudes Ley 1581 aparecerán acá."
+            "description": "Las solicitudes Ley 1581 aparecerán aquí."
           }
         },
         "llamadas": {
@@ -8271,7 +8271,7 @@
         },
         "empty": {
           "title": "Sin solicitudes de Habeas Data",
-          "body": "Cuando alguien pida ver, corregir, eliminar u oponerse al uso de sus datos, la solicitud aparece acá con su plazo.",
+          "body": "Cuando alguien pida ver, corregir, eliminar u oponerse al uso de sus datos, la solicitud aparece aquí con su plazo.",
           "filteredTitle": "Sin solicitudes de este tipo",
           "filteredBody": "No hay solicitudes de {type} en este momento."
         },
@@ -9065,7 +9065,7 @@
             "queEs": "el resumen de Matching",
             "sinTrabajo": {
               "title": "Matching todavía no tiene casos en tu cartera",
-              "desc": "Cuando un candidato se quede sin inmueble, o cuando pidas compatibles desde su ficha, acá verás las opciones que encontró y podrás decidir si se le mandan."
+              "desc": "Cuando un candidato se quede sin inmueble, o cuando pidas compatibles desde su ficha, aquí verás las opciones que encontró y podrás decidir si se le mandan."
             },
             "comoFunciona": {
               "title": "¿Cómo funciona?",
@@ -9221,7 +9221,7 @@
             "queEs": "los avalúos",
             "queSon": "avalúos",
             "vacioTitulo": "Todavía no hay avalúos",
-            "vacioDesc": "Cuando solicites un avalúo, aparece acá con su estado y su valor de mercado.",
+            "vacioDesc": "Cuando solicites un avalúo, aparece aquí con su estado y su valor de mercado.",
             "sinNombre": "Propietario sin nombre",
             "conteoUno": "1 avalúo",
             "conteo": "{{n}} avalúos",
@@ -9425,13 +9425,13 @@
           "conversaciones": {
             "empty": {
               "title": "Todavía no podemos mostrar el hilo",
-              "description": "Los mensajes con el candidato se guardan contra su postulación, y esta ficha se abre con el identificador del análisis. Falta la conexión entre los dos: hasta que exista, cualquier conversación que mostráramos acá no sería necesariamente la de esta persona."
+              "description": "Los mensajes con el candidato se guardan contra su postulación, y esta ficha se abre con el identificador del análisis. Falta la conexión entre los dos: hasta que exista, cualquier conversación que mostráramos aquí no sería necesariamente la de esta persona."
             }
           },
           "codeudores": {
             "empty": {
               "title": "Todavía no se pueden registrar codeudores",
-              "description": "Hoy el sistema sólo guarda si la postulación declaró un codeudor, sin sus datos: no hay identidad, ingresos ni documentos que mostrar. Cuando el codeudor exista como ficha propia, su validación aparece acá."
+              "description": "Hoy el sistema sólo guarda si la postulación declaró un codeudor, sin sus datos: no hay identidad, ingresos ni documentos que mostrar. Cuando el codeudor exista como ficha propia, su validación aparece aquí."
             },
             "recomendado": "Este estudio mejoraría su viabilidad con un codeudor. Cuando se agregue, su validación aparecerá aquí.",
             "porQue": "El ingreso detectado cubre",
@@ -10518,8 +10518,8 @@
       "colCuenta": "Cuenta destino",
       "colEstado": "Estado",
       "emptyTitle": "Este mes todavía no hay nada que liquidar",
-      "emptyDesc": "Aparece un propietario acá cuando sus contratos tienen cuotas del mes por girar, haya pagado o no el inquilino. El giro se ejecuta en Dispersiones.",
-      "emptyDescRecaudado": "Aparece un propietario acá cuando el inquilino ya pagó completa la cuota del mes. El giro se ejecuta en Dispersiones.",
+      "emptyDesc": "Aparece un propietario aquí cuando sus contratos tienen cuotas del mes por girar, haya pagado o no el inquilino. El giro se ejecuta en Dispersiones.",
+      "emptyDescRecaudado": "Aparece un propietario aquí cuando el inquilino ya pagó completa la cuota del mes. El giro se ejecuta en Dispersiones.",
       "registrarFacturaCta": "Registrar factura",
       "facturasCardTitle": "Facturas de proveedores",
       "facturasCardDesc": "Sube la foto o el PDF de una factura y la IA la lee: proveedor, número, montos y fechas. Tú revisas y la registras en cuentas por pagar.",
@@ -10697,7 +10697,7 @@
       "colPersona": "Persona",
       "colEstado": "Estado",
       "emptyTitle": "Sin eventos aún",
-      "emptyDesc": "Tus visitas, firmas, vencimientos e inspecciones aparecen acá solas; las tareas, con «Nueva tarea».",
+      "emptyDesc": "Tus visitas, firmas, vencimientos e inspecciones aparecen aquí solas; las tareas, con «Nueva tarea».",
       "loadError": "No pudimos cargar la agenda. Reintenta.",
       "retry": "Reintentar",
       "origen_sistema": "Sistema",
@@ -10950,9 +10950,9 @@
       },
       "bandeja": {
         "titulo": "Postulaciones que te llegaron",
-        "desc": "Entran acá apenas el inquilino se postula, con la evaluación ya hecha. Las más viejas van primero.",
+        "desc": "Entran aquí apenas el inquilino se postula, con la evaluación ya hecha. Las más viejas van primero.",
         "vacioTitulo": "Todavía no te ha llegado ninguna postulación",
-        "vacioDesc": "Cuando alguien con asegurabilidad vigente se postule a uno de tus inmuebles, aparece acá con su nivel y su puntaje. Así es el recorrido completo:",
+        "vacioDesc": "Cuando alguien con asegurabilidad vigente se postule a uno de tus inmuebles, aparece aquí con su nivel y su puntaje. Así es el recorrido completo:",
         "errorTitulo": "No pudimos cargar las postulaciones",
         "errorDesc": "Esto no quiere decir que no haya ninguna. Vuelve a intentar en un momento.",
         "reintentar": "Reintentar",
@@ -11200,18 +11200,18 @@
       },
       "pasos": {
         "buscador": {
-          "titulo": "Busca cualquier cosa desde acá",
+          "titulo": "Busca cualquier cosa desde aquí",
           "cuerpo": "Un inmueble, un contrato, una persona o una pantalla del panel.",
           "dato": "También se abre con ⌘K, sin soltar el teclado."
         },
         "nuevo": {
-          "titulo": "Acá empieza todo lo nuevo",
+          "titulo": "Aquí empieza todo lo nuevo",
           "cuerpo": "«Nueva consignación» es el acuerdo con el propietario para administrar su inmueble: eliges al propietario, cargas el inmueble y el canon, y defines la comisión.",
           "dato": "El chevron de al lado abre los otros arranques: avalúo, asegurabilidad y contrato."
         },
         "inmuebles": {
           "titulo": "Inmuebles es tu portafolio",
-          "cuerpo": "Cada inmueble con su ficha, sus fotos, su propietario y su historial. De acá salen las publicaciones y las visitas.",
+          "cuerpo": "Cada inmueble con su ficha, sus fotos, su propietario y su historial. De aquí salen las publicaciones y las visitas.",
           "dato": "El valor comercial de uno lo calcula el agente de Avalúos, arriba en «Agentes IA»."
         },
         "postulaciones": {
@@ -11290,7 +11290,7 @@
           "descripcionEnCurso": "Lo que llegó por recibos de caja, acumulado por día del mes. {{mesAnterior}} va entero; {{mes}}, hasta hoy (día {{dia}}).",
           "descripcionCerrado": "Lo que llegó por recibos de caja, acumulado por día del mes, con los dos meses enteros.",
           "resumen": "Al día {{dia}} de {{mes}} llegaron {{actual}}; al día {{diaAnterior}} de {{mesAnterior}} habían llegado {{anterior}}.",
-          "sinRecibos": "Ningún recibo de caja en {{mes}} ni en {{mesAnterior}}: no hay líneas que dibujar. Cuando se registre un pago, aparece acá.",
+          "sinRecibos": "Ningún recibo de caja en {{mes}} ni en {{mesAnterior}}: no hay líneas que dibujar. Cuando se registre un pago, aparece aquí.",
           "dia": "Día {{dia}}"
         },
         "proyeccion": {
@@ -12425,7 +12425,7 @@
       "especialistas": "Según lo que pidas, el chat llama a su especialista: reportes, cobranza, pagos, conciliación y más.",
       "historyLocal": "Se guardan en este navegador",
       "historyTrigger": "Conversaciones recientes ({{n}})",
-      "vozHabla": "Habla con naturalidad: lo que digas aparece acá.",
+      "vozHabla": "Habla con naturalidad: lo que digas aparece aquí.",
       "vozHablaGrabando": "Habla con naturalidad. Cuando termines, toca «Listo» y lo escribo.",
       "vozTope": "hasta 1:00",
       "vozTranscribiendo": "Escribiendo lo que dijiste…",
@@ -12956,11 +12956,11 @@
         },
         "respuesta": {
           "titulo": "Te dan una respuesta",
-          "texto": "Te avisamos acá y por correo si te eligieron. Si no te eligieron también te lo decimos, no te quedas esperando."
+          "texto": "Te avisamos aquí y por correo si te eligieron. Si no te eligieron también te lo decimos, no te quedas esperando."
         },
         "firma": {
           "titulo": "Firmas en línea",
-          "texto": "Si te eligen, el contrato se firma desde acá. No tienes que ir a ninguna oficina."
+          "texto": "Si te eligen, el contrato se firma desde aquí. No tienes que ir a ninguna oficina."
         }
       }
     },
@@ -13264,7 +13264,7 @@
     "historial": {
       "titulo": "Recibos de caja",
       "vacio": "Todavía no hay recibos de caja",
-      "vacioDesc": "Cuando registres el primer abono, aparece acá con su número.",
+      "vacioDesc": "Cuando registres el primer abono, aparece aquí con su número.",
       "cargando": "Buscando los recibos…",
       "fallo": "No pudimos traer los recibos de este cobro.",
       "reintentar": "Reintentar",
@@ -13375,8 +13375,8 @@
       "arriendosVigentes": "Arriendos vigentes",
       "canonVigente": "Canon mensual vigente"
     },
-    "vacioDescripcion": "Trae los que ya tienes en otro sistema, o carga uno acá mismo.",
-    "vacioDescripcionSinPermiso": "Aparecen acá cuando tu inmobiliaria cargue sus arriendos.",
+    "vacioDescripcion": "Trae los que ya tienes en otro sistema, o carga uno aquí mismo.",
+    "vacioDescripcionSinPermiso": "Aparecen aquí cuando tu inmobiliaria cargue sus arriendos.",
     "vacioContrato": "Migrar contratos",
     "crearContrato": "Crear un contrato",
     "nuevoInquilino": "Nuevo inquilino",
@@ -13547,7 +13547,7 @@
     "enLaLista": {
       "titulo": "{{n}} contratos migrados todavía no están completos",
       "tituloUno": "1 contrato migrado todavía no está completo",
-      "detalle": "{{deuda}}. Hasta que no queden asociados no generan cobros ni aparecen acá.",
+      "detalle": "{{deuda}}. Hasta que no queden asociados no generan cobros ni aparecen aquí.",
       "accion": "Completar la migración"
     },
     "puc": {
@@ -13659,7 +13659,7 @@
       "cerrar": "Cerrar y seguir después",
       "eyebrow": "Puesta en marcha",
       "titulo": "Trae tu operación antes de empezar",
-      "subtitulo": "Todo pasa acá adentro: carga lo que ya tienes en tu sistema actual, en orden — cada paso necesita al anterior, salvo el plan de cuentas, que puedes subir cuando quieras.",
+      "subtitulo": "Todo pasa aquí adentro: carga lo que ya tienes en tu sistema actual, en orden — cada paso necesita al anterior, salvo el plan de cuentas, que puedes subir cuando quieras.",
       "progreso": "Progreso de la migración",
       "hecho": "Listo",
       "falta": "Queda por hacer: {{detalle}}",
@@ -13686,7 +13686,7 @@
       "todoListo": {
         "eyebrow": "Todo listo",
         "titulo": "Tu operación ya está adentro",
-        "detalle": "Los pasos están completos. Puedes seguir cargando desde acá o entrar al panel; la migración queda en el menú por si te falta algo."
+        "detalle": "Los pasos están completos. Puedes seguir cargando desde aquí o entrar al panel; la migración queda en el menú por si te falta algo."
       },
       "veredicto": {
         "eyebrow": "Cómo quedó tu migración",
@@ -13811,7 +13811,7 @@
     },
     "terceros": {
       "titulo": "Terceros: propietarios e inquilinos",
-      "subtitulo": "Sube el archivo que ya tienes — no hace falta que tenga nuestro formato. Nada se crea hasta que revises: lo que le falte a una fila se completa acá mismo, sin volver a subir nada."
+      "subtitulo": "Sube el archivo que ya tienes — no hace falta que tenga nuestro formato. Nada se crea hasta que revises: lo que le falte a una fila se completa aquí mismo, sin volver a subir nada."
     }
   },
   "reglasDeMora": {

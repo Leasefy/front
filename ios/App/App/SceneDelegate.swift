@@ -42,18 +42,65 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 /// La plataforma de Leasefy a pantalla completa. La web dibuja debajo de la hora y de la
 /// isla y respeta el área segura en sus barras (env(safe-area-inset-*)).
 final class VistaDeLeasefy: CAPBridgeViewController {
+    private var filtroDeNavegacion: FiltroDeErroresDeNavegacion?
+
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(LeasefyNativoPlugin())
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        // Capacitor muestra «Sin conexión» ante CUALQUIER carga fallida, también cuando una
+        // carga se cancela porque empezó otra (tocar dos veces, una redirección). El filtro
+        // deja pasar sólo los fallos de red de verdad.
+        if let original = webView?.navigationDelegate as? (NSObject & WKNavigationDelegate) {
+            let filtro = FiltroDeErroresDeNavegacion(original: original)
+            filtroDeNavegacion = filtro
+            webView?.navigationDelegate = filtro
+        }
         // Deslizar desde el borde izquierdo vuelve a la pantalla anterior, como en Safari.
         webView?.allowsBackForwardNavigationGestures = true
         // Mientras la web carga se ve el fondo de la marca, no un gris.
         webView?.isOpaque = false
         webView?.backgroundColor = .systemBackground
         webView?.scrollView.backgroundColor = .systemBackground
+    }
+}
+
+/// Se pone delante del manejador de navegación de Capacitor: le pasa todo igual, menos
+/// los «fallos» que no son de red (carga cancelada por otra, interrumpida por una regla).
+final class FiltroDeErroresDeNavegacion: NSObject, WKNavigationDelegate {
+    private weak var original: (NSObject & WKNavigationDelegate)?
+
+    init(original: NSObject & WKNavigationDelegate) {
+        self.original = original
+    }
+
+    override func responds(to aSelector: Selector!) -> Bool {
+        super.responds(to: aSelector) || (original?.responds(to: aSelector) ?? false)
+    }
+
+    override func forwardingTarget(for aSelector: Selector!) -> Any? {
+        original
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        if Self.esUnaInterrupcion(error) { return }
+        original?.webView?(webView, didFail: navigation, withError: error)
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        if Self.esUnaInterrupcion(error) { return }
+        original?.webView?(webView, didFailProvisionalNavigation: navigation, withError: error)
+    }
+
+    static func esUnaInterrupcion(_ error: Error) -> Bool {
+        let e = error as NSError
+        if e.domain == NSURLErrorDomain && e.code == NSURLErrorCancelled { return true }
+        // 101: dirección que la vista no muestra (la abre el sistema); 102: carga interrumpida
+        // por una regla (se volvió descarga o la canceló la app).
+        if e.domain == "WebKitErrorDomain" && (e.code == 101 || e.code == 102) { return true }
+        return false
     }
 }
 

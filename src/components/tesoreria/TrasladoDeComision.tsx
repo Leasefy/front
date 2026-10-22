@@ -45,6 +45,7 @@ import type {
   PropuestaDeTraslado,
   Traslado,
 } from '@/lib/api/tesoreria.types';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
@@ -56,6 +57,14 @@ function mesAnterior(): string {
   const d = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() - 1, 1));
   return d.toISOString().slice(0, 7);
 }
+
+/** El estado en palabras (22-10: se pintaba «PROPUESTO», el código del back). */
+const NOMBRE_DEL_ESTADO: Record<string, string> = {
+  PROPUESTO: 'Por aprobar',
+  APROBADO: 'Trasladado',
+  RECHAZADO: 'Rechazado',
+  ANULADO: 'Anulado',
+};
 
 const TONO_DEL_ESTADO: Record<Traslado['estado'], 'success' | 'warning' | 'outline' | 'destructive'> = {
   PROPUESTO: 'warning',
@@ -379,33 +388,27 @@ function Propuesta({ propuesta }: { propuesta: PropuestaDeTraslado }) {
       </div>
 
       {propuesta.renglones.length > 0 ? (
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm" data-testid="renglones-del-traslado">
-            <caption className="p-3 text-left text-xs text-fg-muted">
-              Renglón por renglón, con el porqué de cada uno. Es lo que lee quien aprueba.
-            </caption>
-            <thead className="bg-bg text-xs text-fg-muted">
-              <tr>
-                <th className="p-3 text-left">Concepto</th>
-                <th className="p-3 text-right">Valor</th>
-                <th className="p-3 text-left">Por qué</th>
-              </tr>
-            </thead>
-            <tbody>
-              {propuesta.renglones.map((r) => (
-                <tr key={r.concepto} className="border-t border-border align-top">
-                  <td className="p-3 text-fg">{r.concepto}</td>
-                  <td
-                    className={`p-3 text-right font-mono tabular-nums ${r.valorCop < 0 ? 'text-warning' : 'text-fg'}`}
-                  >
-                    {formatCurrency(r.valorCop)}
-                  </td>
-                  <td className="p-3 text-xs leading-relaxed text-fg-muted">{r.porQue}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        // 22-10 (revisión de Dinero: «tabla rota a 390»): renglón por renglón como un
+        // recibo —el concepto y su porqué a la izquierda, la cifra a la derecha—.
+        <section className="space-y-2">
+          <p className="text-caption text-fg-muted">Renglón por renglón, con el porqué de cada uno. Es lo que lee quien aprueba.</p>
+          <ol className="rounded-2xl border border-border bg-surface px-5 py-1 sm:px-6" data-testid="renglones-del-traslado">
+            {propuesta.renglones.map((r) => (
+              <li
+                key={r.concepto}
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 border-t border-border-faint py-3 first:border-t-0 dark:border-border-strong"
+              >
+                <div className="min-w-0 space-y-0.5">
+                  <p className="text-body-sm text-fg">{r.concepto}</p>
+                  <p className="text-caption leading-relaxed text-fg-muted">{r.porQue}</p>
+                </div>
+                <p className={`shrink-0 font-mono text-body-sm tabular-nums ${r.valorCop < 0 ? 'text-warning-ink' : 'text-fg'}`}>
+                  {r.valorCop < 0 ? `− ${formatCurrency(Math.abs(r.valorCop))}` : formatCurrency(r.valorCop)}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </section>
       ) : null}
     </div>
   );
@@ -427,10 +430,10 @@ function FilaDelTraslado({ traslado }: { traslado: Traslado }) {
             {traslado.comprobanteNumero !== null
               ? ` · comprobante ${traslado.comprobanteNumero}`
               : ''}
-            {traslado.fecha ? ` · ${traslado.fecha}` : ''}
+            {traslado.fecha ? ` · ${fechaCorta(traslado.fecha)}` : ''}
           </p>
         </div>
-        <Badge variant={TONO_DEL_ESTADO[traslado.estado]}>{traslado.estado}</Badge>
+        <Badge variant={TONO_DEL_ESTADO[traslado.estado]}>{NOMBRE_DEL_ESTADO[traslado.estado] ?? traslado.estado}</Badge>
       </div>
       <dl className="grid grid-cols-2 gap-2 text-xs text-fg-muted sm:grid-cols-4">
         <div>
@@ -448,9 +451,9 @@ function FilaDelTraslado({ traslado }: { traslado: Traslado }) {
           </dd>
         </div>
         <div>
-          <dt className="text-fg">Retenciones (−)</dt>
+          <dt className="text-fg">Retenciones</dt>
           <dd className="font-mono tabular-nums">
-            {formatCurrency(traslado.retencionesComisionCop)}
+            − {formatCurrency(traslado.retencionesComisionCop)}
           </dd>
         </div>
       </dl>

@@ -48,6 +48,7 @@ import type {
 } from '@/lib/api/tesoreria.types';
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { plataPareja } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
@@ -226,7 +227,7 @@ export function TrasladoDeComisionPanel() {
                   className="space-y-3 rounded-lg border border-warning/40 bg-surface p-5"
                   data-testid={`traslado-${t.id}`}
                 >
-                  <FilaDelTraslado traslado={t} plata={plata} />
+                  <FilaDelTraslado traslado={t} plata={plata} destacada />
                   {/* Ronda 11 (390): la acción de la tarjeta va a lo ancho. */}
                   <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                     {/* 22-10 (revisión): aprobarlo es LA acción de la pantalla → la azul. */}
@@ -380,6 +381,21 @@ export function TrasladoDeComisionPanel() {
 
 type FormatoDePlata = (n: number | null | undefined) => string;
 
+/*
+ * Ronda 12 de la revisión: el back resta como «Ya trasladado» lo PROPUESTO y lo
+ * APROBADO del período (traslado.service.ts, `estado in [PROPUESTO, APROBADO]`),
+ * pero lo nombra «aprobados». Aquí se dice como es, sin cambiar la cifra.
+ */
+const YA_TRASLADADO = 'Ya trasladado de este período';
+function conceptoDelRenglon(concepto: string): string {
+  return concepto === YA_TRASLADADO ? 'Ya propuesto o trasladado de este período' : concepto;
+}
+function porQueDelRenglon(concepto: string, porQue: string): string {
+  return concepto === YA_TRASLADADO
+    ? 'Hay traslados propuestos o aprobados por esta misma plata: sin restarlos se sacaría dos veces de la cuenta de recaudo.'
+    : porQue;
+}
+
 /** Las cifras de un traslado que se pintan (para la pareja de formato de la página). */
 function valoresDelTraslado(t: Traslado): number[] {
   return [t.totalCop, t.comisionCop, t.ivaComisionCop, t.interesesCop + t.gastosDeCobranzaCop, t.retencionesComisionCop];
@@ -439,11 +455,11 @@ function Propuesta({ propuesta, plata: plataDeLaPagina }: { propuesta: Propuesta
                   key={r.concepto}
                   className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-0.5 border-t border-border-faint py-3 first:border-t-0 dark:border-border-strong"
                 >
-                  <p className="min-w-0 text-body-sm text-fg">{r.concepto}</p>
+                  <p className="min-w-0 text-body-sm text-fg">{conceptoDelRenglon(r.concepto)}</p>
                   <p className={`shrink-0 font-mono text-body-sm tabular-nums ${r.valorCop < 0 ? 'text-warning-ink' : 'text-fg'}`}>
                     {r.valorCop === 0 ? '—' : r.valorCop < 0 ? `− ${plata(Math.abs(r.valorCop))}` : plata(r.valorCop)}
                   </p>
-                  <p className="col-span-2 text-caption leading-relaxed text-fg-muted">{r.porQue}</p>
+                  <p className="col-span-2 text-caption leading-relaxed text-fg-muted">{porQueDelRenglon(r.concepto, r.porQue)}</p>
                 </li>
               ))}
             </ol>
@@ -454,14 +470,23 @@ function Propuesta({ propuesta, plata: plataDeLaPagina }: { propuesta: Propuesta
   );
 }
 
-function FilaDelTraslado({ traslado, plata: plataDeLaPagina }: { traslado: Traslado; plata?: FormatoDePlata }) {
+function FilaDelTraslado({
+  traslado,
+  plata: plataDeLaPagina,
+  destacada = false,
+}: {
+  traslado: Traslado;
+  plata?: FormatoDePlata;
+  /** Ronda 12: en la tarjeta que se aprueba, el monto es LA cifra de la pantalla. */
+  destacada?: boolean;
+}) {
   // Los mismos decimales en toda la tarjeta (revisión 22-10).
   const plata = plataDeLaPagina ?? plataPareja(valoresDelTraslado(traslado));
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-mono text-lg tabular-nums text-fg">
+          <p className={cn('font-mono tabular-nums text-fg', destacada ? 'text-[28px] leading-tight tracking-[-0.02em] sm:text-[32px]' : 'text-lg')}>
             {plata(traslado.totalCop)}
           </p>
           <p className="text-sm text-fg-muted">

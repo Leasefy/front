@@ -295,8 +295,11 @@ export function CuotasDelMesTabla({
                     </p>
                   )}
                   {f.pagadoCop > 0 && f.pendienteCop > 0 ? (
+                    // Ronda 12 (390): corto en el celular («entró $ X»); el «de $ Y» se encimaba
+                    // sobre el chip de la izquierda. Lo completo está en el cajón.
                     <p className="text-caption text-fg-muted" data-testid="cuota-abono">
-                      entró {plataDeLaColumna(f.pagadoCop)} de {plataDeLaColumna(f.totalCop)}
+                      entró {plataDeLaColumna(f.pagadoCop)}
+                      <span className="max-md:hidden"> de {plataDeLaColumna(f.totalCop)}</span>
                     </p>
                   ) : f.pendienteCop <= 0 && f.pagadoCop > 0 ? (
                     <p className="text-caption text-fg-muted" data-testid="cuota-pagada">

@@ -489,23 +489,21 @@ export function CarteraCompleta() {
               </button>
             </div>
 
-            {/* Cómo se reparte la deuda: por vencer · vencido en plazo · cartera. */}
-            {cartera.deudaTotal > 0 ? (
-              <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-surface-muted" role="img" aria-label="Cómo se reparte la deuda" data-testid="barra-de-la-deuda">
-                {(['POR_VENCER', 'VENCIDA_EN_PLAZO', 'CARTERA'] as const).map((cual) => {
-                  const monto = Math.max(0, montoDelCajon(cual).monto)
-                  if (monto <= 0) return null
-                  return (
+            {/* Ronda 12: la barra bajo la cifra de la CARTERA reparte la cartera por edad
+                (color por gravedad). Antes medía la deuda total y la cartera era una
+                astilla de 2 px al final. */}
+            {montoDelCajon('CARTERA').monto > 0 ? (
+              <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-surface-muted" role="img" aria-label="Cómo se reparte la cartera por edad" data-testid="barra-de-la-deuda">
+                {[...cartera.tramos.map((t, i) => ({ clave: t.edad, monto: t.monto, tono: ['bg-warning-500', 'bg-error-500/60', 'bg-error-500/80', 'bg-error-500'][i] ?? 'bg-error-500' })),
+                  { clave: 'siniestro', monto: cartera.enSiniestro.monto, tono: 'bg-error-700' }]
+                  .filter((t) => t.monto > 0)
+                  .map((t) => (
                     <span
-                      key={cual}
-                      className={cn(
-                        'h-full first:rounded-l-full last:rounded-r-full',
-                        cual === 'POR_VENCER' ? 'bg-sand-300 dark:bg-neutral-600' : cual === 'VENCIDA_EN_PLAZO' ? 'bg-warning-500' : 'bg-error-500',
-                      )}
-                      style={{ width: `${(monto / cartera.deudaTotal) * 100}%` }}
+                      key={t.clave}
+                      className={cn('h-full first:rounded-l-full last:rounded-r-full', t.tono)}
+                      style={{ width: `${(t.monto / montoDelCajon('CARTERA').monto) * 100}%` }}
                     />
-                  )
-                })}
+                  ))}
               </div>
             ) : null}
           </div>
@@ -659,15 +657,17 @@ export function CarteraCompleta() {
             */}
             {tramosVaciosPorElSiniestro.length > 0 ? (
               <p className="px-4 pt-1 text-xs text-fg-muted" data-testid="tramos-que-no-se-llenan">
-                Con el siniestro a los {siniestros!.diasParaSiniestro} días, la cartera viva
-                no llega a {tramosVaciosPorElSiniestro.map((e) => NOMBRE_DE_EDAD[e]).join(', ')}:
-                esa mora está en «En siniestro».
+                {/* Ronda 12: dicho como es —sólo un contrato con respaldo pasa a siniestro—,
+                    para no contradecir las deudas viejas de la tabla sin respaldo. */}
+                {tramosVaciosPorElSiniestro.map((e) => NOMBRE_DE_EDAD[e]).join(', ')}: con el
+                siniestro a los {siniestros!.diasParaSiniestro} días, la mora de los contratos
+                con respaldo pasa a «En siniestro».
               </p>
             ) : null}
             {/* Ronda 11 (390): en el celular los tramos van en una grilla de dos —el riel
                 que se desplazaba escondía justo los más graves—. */}
             <div
-              className="mt-2 grid grid-cols-2 gap-px border-t border-border bg-border sm:flex sm:gap-0 sm:divide-x sm:divide-border sm:overflow-x-auto sm:bg-transparent"
+              className="mt-2 grid grid-cols-2 gap-px border-t border-border bg-border sm:flex sm:gap-0 sm:divide-x sm:divide-border sm:overflow-x-auto sm:bg-transparent [&>*:last-child:nth-child(odd)]:col-span-2"
               role="group"
               aria-label="Edad de la cartera"
               data-testid="tramos-de-la-cartera"
@@ -795,7 +795,7 @@ export function CarteraCompleta() {
                 />
                 <Input
                   className="pl-9"
-                  placeholder="Inquilino, inmueble, propietario o contrato"
+                  placeholder="Buscar inquilino o inmueble"
                   aria-label="Buscar en la cartera"
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}

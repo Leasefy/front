@@ -149,7 +149,7 @@ export function RecibosDeCajaDeLaInmobiliaria() {
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar recibo, inquilino o referencia"
+            placeholder="Buscar recibo o inquilino"
             aria-label="Buscar recibos"
             className="pl-9 pr-9"
             data-testid="buscar-recibos"

@@ -564,8 +564,8 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                     TODO lo que falta, no de la cartera: va en la línea de la
                     cifra grande, no bajo el tramo «Cartera». */}
                 {interesDelMes > 0 ? (
-                  <span className="whitespace-nowrap" data-testid="mes-falta-con-intereses">
-                    {' · '}
+                  <span className="block whitespace-nowrap sm:inline" data-testid="mes-falta-con-intereses">
+                    <span className="hidden sm:inline">{' · '}</span>
                     <span className="font-mono tabular-nums">
                       {traducir(CLAVE_DE_MORA.conIntereses, {
                         monto: plata(
@@ -789,7 +789,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
               />
               <Input
                 className="h-9 pl-9"
-                placeholder="Inquilino, documento, contrato o inmueble"
+                placeholder="Buscar inquilino o contrato"
                 aria-label="Buscar en las cuotas del mes"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}

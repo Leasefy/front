@@ -480,7 +480,7 @@ export function CarteraPorConcepto() {
               />
               <Input
                 className="pl-9"
-                placeholder="Inquilino, documento, contrato o inmueble"
+                placeholder="Buscar inquilino o contrato"
                 aria-label="Buscar en la cartera"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}

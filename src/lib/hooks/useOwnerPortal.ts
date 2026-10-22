@@ -7,7 +7,7 @@
  */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth/use-auth';
 import { ownerPortalApi } from '@/lib/api/owner-portal.service';
 import { ownerFinanzasApi } from '@/lib/api/owner-finanzas.service';
@@ -220,6 +220,10 @@ export interface UseOwnerProcesosResult {
   isLoading: boolean;
   unavailable: boolean;
   agencyId: string | null;
+  /** El fallo de la lectura (micro caído, 5xx): la página dice que no se pudo traer, no «no tienes». */
+  error: unknown;
+  /** Volver a pedir la lista (el «Reintentar»); se espera a que llegue. */
+  refetch: () => Promise<void>;
 }
 
 /**
@@ -231,25 +235,35 @@ export function useOwnerProcesos(): UseOwnerProcesosResult {
   const agencyId = useOwnerAgencyId();
   const [procesos, setProcesos] = useState<EleccionProceso[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
+  const vivo = useRef(true);
 
-  useEffect(() => {
-    let alive = true;
+  const pedir = useCallback(async () => {
     if (!agencyId) {
       setIsLoading(false);
       return;
     }
     setIsLoading(true);
-    ownerSeleccionApi.getProcesos(agencyId).then((p) => {
-      if (!alive) return;
-      setProcesos(p);
-      setIsLoading(false);
-    });
-    return () => {
-      alive = false;
-    };
+    const r = await ownerSeleccionApi.getProcesosConEstado(agencyId);
+    if (!vivo.current) return;
+    if (r.estado === 'fallo') {
+      setError(r.error);
+    } else {
+      setError(null);
+      setProcesos(r.estado === 'ok' ? r.data ?? [] : []);
+    }
+    setIsLoading(false);
   }, [agencyId]);
 
-  return { procesos, isLoading, unavailable: !agencyId, agencyId };
+  useEffect(() => {
+    vivo.current = true;
+    void pedir();
+    return () => {
+      vivo.current = false;
+    };
+  }, [pedir]);
+
+  return { procesos, isLoading, unavailable: !agencyId, agencyId, error, refetch: pedir };
 }
 
 export interface UseOwnerComparacionResult {

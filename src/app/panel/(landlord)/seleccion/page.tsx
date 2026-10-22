@@ -5,6 +5,7 @@ import { UsersThree, CaretRight, CheckCircle } from '@phosphor-icons/react';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { useOwnerProcesos } from '@/lib/hooks/useOwnerPortal';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
 
@@ -12,8 +13,14 @@ import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholde
  * Elegir inquilino (F2) — lista de procesos. Loading→Spinner; portal no cableado→"Próximamente";
  * con agencyId pero sin procesos → estado legítimo "no tienes procesos"; con procesos → lista.
  */
+/** «EN_COMPARACION» → «En comparacion»: la frase con mayúscula inicial (la clase `capitalize` subía cada palabra). */
+function estadoEnFrase(estado: string): string {
+  const texto = estado.replace(/_/g, ' ').toLowerCase().trim();
+  return texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : texto;
+}
+
 export default function SeleccionPage() {
-  const { procesos, isLoading, unavailable } = useOwnerProcesos();
+  const { procesos, isLoading, unavailable, error, refetch } = useOwnerProcesos();
 
   if (isLoading) {
     return (
@@ -51,7 +58,12 @@ export default function SeleccionPage() {
           descripcion="Compara los postulados asegurables y elige tú quién vive en tu inmueble."
         />
 
-        {procesos.length === 0 ? (
+        {error ? (
+          /* Con el micro caído no se dice «no tienes elecciones»: no se pudo traer la lista. */
+          <div className="mt-6">
+            <FalloDeCarga error={error} queEs="tus elecciones de inquilino" onReintentar={refetch} />
+          </div>
+        ) : procesos.length === 0 ? (
           <EmptyState
             ilustracion="casa"
             icon={UsersThree}
@@ -70,15 +82,15 @@ export default function SeleccionPage() {
                   >
                     <div className="min-w-0">
                       <p className="font-medium truncate">{p.propertyLabel}</p>
-                      <p className="text-sm text-fg-muted capitalize">
-                        {resuelto ? 'Inquilino elegido' : p.status.replace(/_/g, ' ')}
+                      <p className="text-sm text-fg-muted">
+                        {resuelto ? 'Inquilino elegido' : estadoEnFrase(p.status)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {resuelto ? (
                         <CheckCircle className="w-5 h-5 text-primary" weight="fill" />
                       ) : (
-                        <span className="text-xs font-medium text-primary">Comparar</span>
+                        <span className="text-caption font-medium text-primary">Comparar</span>
                       )}
                       <CaretRight className="w-4 h-4 text-fg-muted" />
                     </div>

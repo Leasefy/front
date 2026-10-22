@@ -222,7 +222,7 @@ export default function CasosPage() {
           }
         />
 
-        <AvisoDeFuentesCaidas fuentes={fuentesQueFallaron} locale={locale} onReintentar={() => void refetch()} className="mb-6" />
+        <AvisoDeFuentesCaidas fuentes={fuentesQueFallaron} locale={locale} onReintentar={refetch} className="mb-6" />
 
         {/* CASO-03 — el aviso dentro del portal (real); sin promesas de push ni WhatsApp (QA-INQ-95). */}
         <div

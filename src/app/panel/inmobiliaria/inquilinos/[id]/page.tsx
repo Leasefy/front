@@ -52,7 +52,7 @@ export default function FichaDelInquilinoPage(props: { params: Promise<{ id: str
         {cargando && !persona ? (
           <EsqueletoDePagina variante="detail" />
         ) : error && !persona ? (
-          <FalloDeCarga error={error} queEs="este inquilino" onReintentar={() => void refrescar()} />
+          <FalloDeCarga error={error} queEs="este inquilino" onReintentar={refrescar} />
         ) : !persona ? (
           <EmptyState
             icon={User}

@@ -444,7 +444,7 @@ export default function VisitasPage() {
   if (error) {
     return (
       <div className="p-6 lg:p-8">
-        <FalloDeCarga error={error} queEs="tus visitas" onReintentar={() => void refetch()} />
+        <FalloDeCarga error={error} queEs="tus visitas" onReintentar={refetch} />
       </div>
     );
   }

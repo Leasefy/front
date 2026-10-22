@@ -6,13 +6,19 @@
  * distinguir éxito de `terms_changed` (WYSIWYS) / conflict (CAS single-winner). El `snapshotHash`
  * que se envía DEBE ser el de la comparación mostrada (no uno stale).
  */
-import { ownerGet, ownerPost, type OwnerActionResult } from './owner-portal.http';
+import { ownerGet, ownerGetConEstado, ownerPost, type OwnerActionResult } from './owner-portal.http';
 import type { EleccionProceso, EleccionComparacion, EleccionOk } from './owner-seleccion.types';
 
 export const ownerSeleccionApi = {
   /** GET /procesos — procesos de elección del propietario. `[]` si no-disponible. */
   getProcesos: async (agencyId: string | null): Promise<EleccionProceso[]> =>
     (await ownerGet<EleccionProceso[]>(agencyId, '/procesos')) ?? [],
+
+  /**
+   * Lo mismo, diciendo si FALLÓ (guardián de los cuatro estados, 22-10-2026): con el micro caído
+   * la lista no puede decir «no tienes elecciones abiertas». `no-habilitado` sigue siendo `[]`.
+   */
+  getProcesosConEstado: (agencyId: string | null) => ownerGetConEstado<EleccionProceso[]>(agencyId, '/procesos'),
 
   /** GET /procesos/{id}/comparacion — postulados asegurables + snapshotHash WYSIWYS. */
   getComparacion: (agencyId: string | null, processId: string): Promise<EleccionComparacion | null> =>

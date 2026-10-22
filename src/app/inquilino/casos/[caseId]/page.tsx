@@ -410,7 +410,7 @@ export default function CaseDetailPage(props: { params: Promise<{ caseId: string
   return (
     <PageShell>
       <BackLink locale={locale} caso={caso} />
-      <AvisoDeFuentesCaidas fuentes={fuentesQueFallaron} locale={locale} onReintentar={() => void refetch()} className="mb-6" />
+      <AvisoDeFuentesCaidas fuentes={fuentesQueFallaron} locale={locale} onReintentar={refetch} className="mb-6" />
       <CaseDetail caso={caso} locale={locale} entrada={entrada} />
     </PageShell>
   );

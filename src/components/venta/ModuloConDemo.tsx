@@ -8,7 +8,7 @@ import { ArrowLeft, ArrowRight, CheckCircle, PlayCircle, Sparkle, WhatsappLogo }
 import { motionDuration, motionEase } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { DemoDelModulo } from '@/lib/venta/demos-del-panel';
 import { enlaceDeWhatsApp, type QuienCompra } from '@/lib/venta/whatsapp-de-leasefy';
 import { cn } from '@/lib/utils';
@@ -140,23 +140,17 @@ function DemoEnGrande({
   const pantalla = actual?.src;
   return (
     <Dialog open={abierta} onOpenChange={(o) => !o && alCerrar()}>
-      <DialogContent size="xl" className="max-w-[1180px] p-0" data-testid="demo-en-grande">
-        <DialogTitle className="sr-only">Demo: {demo.titulo}</DialogTitle>
-        <div className="flex items-center justify-between gap-3 border-b border-border py-3 pl-4 pr-16 sm:pl-5">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-[12px] font-semibold text-primary-fg">
-              {(empresa?.trim()?.[0] ?? 'L').toUpperCase()}
-            </span>
-            <span className="truncate text-[14px] font-medium text-fg">{empresa ?? 'Tu cuenta'}</span>
-            <span className="hidden rounded-full bg-surface-muted px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.06em] text-fg-muted sm:inline">
-              Demo · datos de ejemplo
-            </span>
-          </div>
-          <span className="font-mono text-[12px] text-fg-subtle">
-            {Math.min(i, total - 1) + 1} / {total}
-          </span>
-        </div>
-        <div className="relative aspect-[16/10] w-full bg-surface-muted">
+      <DialogContent size="xl" className="max-w-[1180px]" data-testid="demo-en-grande">
+        {/* La cabecera de todos los modales (guardián «una sola cabecera», 22-10): título de 16 px,
+            filete y la ✕. Antes era una barra propia con la inicial pintada a mano. */}
+        <DialogHeader>
+          <DialogTitle>Demo: {demo.titulo}</DialogTitle>
+          <DialogDescription>
+            {empresa ?? 'Tu cuenta'} · datos de ejemplo
+            <span className="font-mono tabular-nums"> · {Math.min(i, total - 1) + 1} / {total}</span>
+          </DialogDescription>
+        </DialogHeader>
+        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg bg-surface-muted">
           <AnimatePresence mode="wait" initial={false}>
             {pantalla && (
             <motion.div
@@ -178,7 +172,7 @@ function DemoEnGrande({
             </>
           )}
         </div>
-        <div className="flex flex-col gap-3 border-t border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <DialogFooter className="sm:justify-between">
           <p className="text-[14px] text-fg-muted">{actual?.alt ? `${actual.alt}.` : ''}</p>
           <Button asChild className="h-11 rounded-full px-5">
             <a href={whatsapp} target="_blank" rel="noreferrer noopener" data-testid="quiero-leasefy-demo">
@@ -186,7 +180,7 @@ function DemoEnGrande({
               {llamado}
             </a>
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

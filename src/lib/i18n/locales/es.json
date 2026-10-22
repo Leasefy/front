@@ -221,7 +221,7 @@
     "viewProperty": "Ver inmueble",
     "viewApplication": "Ver postulación",
     "withdrawApplication": "Retirar postulación",
-    "confirmWithdraw": "¿Estás seguro de que deseas retirar esta postulación?",
+    "confirmWithdraw": "¿Retirar esta postulación? La inmobiliaria deja de verla.",
     "steps": {
       "submitted": "Enviada",
       "review": "En revisión",
@@ -318,7 +318,7 @@
       "method": "Método de pago",
       "process": "Procesar pago",
       "processing": "Procesando...",
-      "success": "Pago realizado exitosamente",
+      "success": "Listo: el pago quedó registrado.",
       "error": "Error al procesar el pago"
     }
   },
@@ -334,7 +334,7 @@
       "maxSize": "Tamaño máximo: {{size}}MB",
       "allowedTypes": "Tipos permitidos: {{types}}",
       "uploading": "Subiendo...",
-      "success": "Documento subido exitosamente",
+      "success": "Listo: el documento quedó subido.",
       "error": "Error al subir el documento"
     },
     "download": "Descargar",
@@ -2162,12 +2162,12 @@
           "nameRequired": "El nombre de la agencia es obligatorio",
           "phoneRequired": "El teléfono es obligatorio",
           "emailRequired": "El correo es obligatorio",
-          "emailInvalid": "Correo electrónico inválido",
+          "emailInvalid": "Ese correo no está bien escrito: revisa la @ y lo que va después.",
           "addressRequired": "La dirección es obligatoria",
           "cityRequired": "La ciudad es obligatoria",
           "departmentRequired": "El departamento es obligatorio",
           "nitRequired": "El NIT es obligatorio",
-          "nitInvalid": "Formato de NIT inválido (XXX.XXX.XXX-X)",
+          "nitInvalid": "El NIT va así: 900.123.456-7 (nueve números y el de verificación).",
           "razonSocialRequired": "La razon social es obligatoria",
           "representanteRequired": "El representante legal es obligatorio",
           "cedulaRequired": "La cedula del representante es obligatoria",
@@ -2221,12 +2221,12 @@
         "uploading": "Subiendo logo...",
         "saveColors": "Guardar colores",
         "colorsSaved": "Colores actualizados",
-        "invalidHex": "Color inválido. Usa el formato #RRGGBB.",
+        "invalidHex": "Ese color no se reconoce: escríbelo como #1A40FF.",
         "socials": "Redes sociales",
         "socialsDesc": "Enlaces a tus redes; se muestran en tus inmuebles publicados",
         "saveSocials": "Guardar redes",
         "socialsSaved": "Redes sociales actualizadas",
-        "invalidUrl": "Enlace inválido. Debe empezar con http:// o https://"
+        "invalidUrl": "El enlace tiene que empezar con http:// o https://"
       },
       "users": {
         "title": "Equipo",
@@ -2370,7 +2370,7 @@
           "updateError": "Error al actualizar {{name}}",
           "configSaved": "Configuración de {{name}} guardada",
           "configError": "No se pudo guardar la configuración de {{name}}",
-          "connectionSuccess": "Conexion con {{name}} exitosa",
+          "connectionSuccess": "Listo: {{name}} quedó conectado.",
           "connectionError": "Error al conectar con {{name}}"
         },
         "active": "activas",
@@ -3445,13 +3445,13 @@
         },
         "completed": {
           "title": "Renovacion completada",
-          "description": "El contrato ha sido renovado exitosamente",
+          "description": "Listo: el contrato quedó renovado.",
           "property": "Inmueble:",
           "tenant": "Inquilino:",
           "newRent": "Nuevo canon:",
           "term": "Vigencia:",
           "termMonths": "12 meses",
-          "desc": "El contrato ha sido renovado exitosamente."
+          "desc": "Listo: el contrato quedó renovado."
         },
         "sidebar": {
           "statusLabel": "Estado:",
@@ -3501,7 +3501,7 @@
         "notificationSent": "Notificación enviada",
         "notificationSentDesc": "Se envió notificación a {{name}}",
         "requestCreated": "Solicitud creada",
-        "requestCreatedDesc": "{{title}} reportada exitosamente",
+        "requestCreatedDesc": "Listo: {{title}} quedó reportada.",
         "statusUpdated": "Estado actualizado: {{status}}",
         "statusQuoted": "Cotizada",
         "statusApproved": "Aprobada",
@@ -3884,7 +3884,7 @@
         },
         "toasts": {
           "propertyUpdated": "Inmueble actualizado correctamente",
-          "changesSaved": "Los cambios se han guardado exitosamente",
+          "changesSaved": "Listo: los cambios quedaron guardados.",
           "statusChanged": "Estado cambiado a: {{status}}",
           "autoSave": "Los cambios se guardarán automáticamente",
           "terminateConsignment": "Terminar consignación",
@@ -4032,7 +4032,7 @@
         "viewPortfolio": "Ver portafolio",
         "importMore": "Importar más",
         "toast": {
-          "successTitle": "Importación exitosa",
+          "successTitle": "Listo: la importación terminó",
           "successDesc": "{{count}} inmuebles importados correctamente"
         },
         "mandateBatch": {
@@ -4917,7 +4917,7 @@
         "severityHigh": "Alta",
         "severityMedium": "Media",
         "severityLow": "Baja",
-        "noData": "No hay datos de tendencias disponibles."
+        "noData": "Todavía no hay meses suficientes para ver la tendencia."
       },
       "forecastComp": {
         "projections": "Proyecciones",
@@ -4939,7 +4939,7 @@
         "influenceFactors": "Factores de influencia",
         "export": "Exportar",
         "lastUpdated": "Ultima actualizacion",
-        "noData": "No hay datos de proyeccion disponibles."
+        "noData": "Todavía no hay datos para proyectar: aparece con los primeros meses de recaudo."
       },
       "kpiCards": {
         "all": "Todos",
@@ -5232,7 +5232,7 @@
         },
         "success": {
           "welcome": "¡Bienvenido, {{agencyName}}!",
-          "description": "Tu inmobiliaria ha sido registrada exitosamente. Accede a tu panel para comenzar.",
+          "description": "Listo: tu inmobiliaria quedó registrada. Entra a tu panel para empezar.",
           "goToPanel": "Ir al panel",
           "planIncludes": "Tu plan incluye:",
           "ownerManagement": "Gestión de propietarios",
@@ -5322,9 +5322,9 @@
       "creating": "Creando...",
       "createActa": "Crear Acta",
       "draftSaved": "Borrador guardado",
-      "draftSavedDesc": "El borrador del acta ha sido guardado exitosamente",
+      "draftSavedDesc": "Listo: el borrador del acta quedó guardado.",
       "actaCreated": "Acta creada",
-      "actaCreatedDesc": "El acta de entrega ha sido creada exitosamente",
+      "actaCreatedDesc": "Listo: el acta de entrega quedó creada.",
       "actaError": "Error al crear acta",
       "actaErrorDesc": "Hubo un error al crear el acta. Intenta de nuevo.",
       "condExcellent": "Excelente",
@@ -5716,14 +5716,14 @@
         "errEmailRequired": "El correo es obligatorio",
         "errEmailInvalid": "Ese correo no es válido",
         "errPhoneRequired": "El teléfono es requerido",
-        "errPhoneInvalid": "Teléfono inválido",
+        "errPhoneInvalid": "El celular va con 10 números, sin espacios: 3001234567.",
         "errDocRequired": "El documento es requerido",
         "errCCInvalid": "La cédula tiene entre 3 y 10 dígitos",
-        "errNITInvalid": "NIT inválido",
+        "errNITInvalid": "El NIT va con nueve números y el de verificación: 900123456-7.",
         "errBankRequired": "Selecciona un banco",
         "errAccountTypeRequired": "Selecciona tipo de cuenta",
         "errAccountNumRequired": "Número de cuenta requerido",
-        "errAccountNumInvalid": "Número de cuenta inválido (10-20 dígitos)",
+        "errAccountNumInvalid": "El número de cuenta va con 10 a 20 números, sin guiones.",
         "titularPregunta": "¿A quién pertenece la cuenta?",
         "titularDelPropietario": "Del propietario",
         "titularDeOtraPersona": "De otra persona",
@@ -5995,14 +5995,14 @@
         "trend": "Tendencia",
         "vsLeader": "vs Líder",
         "noData": "Sin datos de comisiones",
-        "noDataDesc": "No hay datos de comisiones para el período seleccionado"
+        "noDataDesc": "En este período no hubo comisiones. Aparecen cuando se recauda un canon."
       },
       "occupancy": {
         "occupancy": "Ocupación",
         "occupancyByZone": "Ocupación por zona",
         "portfolioDistribution": "Distribución del portafolio",
         "bars": "Barras",
-        "cards": "Cards",
+        "cards": "Tarjetas",
         "vsPrevMonth": "vs mes anterior",
         "noChange": "sin cambio",
         "occupiedPlural": "ocupadas",
@@ -6629,7 +6629,7 @@
             "colTenantEnabled": "Tu configuración",
             "colGlobalPriority": "Prioridad global",
             "colTenantPriority": "Tu prioridad",
-            "colBreachStatus": "Estado SLA",
+            "colBreachStatus": "Plazo",
             "colActions": "Acciones",
             "inheritsMuted": "Hereda — {{value}}",
             "overridePill": "Personalizado",
@@ -6667,10 +6667,10 @@
           },
           "overrideConflictWarning": "Esta aseguradora está deshabilitada globalmente. Tu configuración local no tendrá efecto hasta que Leasefy la reactive.",
           "sla": {
-            "pageTitle": "SLA — {{carrier}}",
+            "pageTitle": "Plazos de respuesta — {{carrier}}",
             "stateHealthy": "Operando normalmente",
             "stateDegraded": "Degradado",
-            "stateBreached": "Incumplimiento SLA",
+            "stateBreached": "Fuera de plazo",
             "stateUnknown": "Estado desconocido",
             "since": "Desde hace {{duration}}",
             "sinceUnknown": "Estado actual",
@@ -6681,8 +6681,8 @@
             "breachColResolution": "Resolución",
             "noBreaches": "Sin incumplimientos en los últimos 90 días",
             "empty": {
-              "title": "Aún no hay datos de SLA para esta aseguradora",
-              "description": "Los SLA se calculan a partir de la actividad histórica."
+              "title": "Todavía no hay plazos medidos para esta aseguradora",
+              "description": "Los plazos se calculan con las respuestas que ya ha dado."
             }
           },
           "detail": {
@@ -6712,7 +6712,7 @@
             "verdictRejected": "Rechazado",
             "noSlaMetricData": "Sin datos de latencia",
             "noSlaMetricDataHelper": "Esta aseguradora opera en modo simulado. Los datos de latencia se generarán cuando se active en modo real.",
-            "viewSlaLink": "Ver SLA",
+            "viewSlaLink": "Ver los plazos",
             "loadError": "No se pudo cargar el detalle de esta aseguradora. Intenta de nuevo.",
             "retry": "Reintentar"
           },
@@ -7025,7 +7025,7 @@
             "emergenciasActivas": "Emergencias activas",
             "vencidos": "Vencidos",
             "tiempoPrimeraRespuesta": "Tiempo 1ª respuesta",
-            "slaCumplido": "SLA cumplido",
+            "slaCumplido": "Dentro del plazo",
             "reaperturas30d": "Reaperturas (30d)",
             "tiempoResolucionReal": "Tiempo resolución real",
             "costoEstimado": "Costo estimado abierto",
@@ -7036,13 +7036,13 @@
         },
         "inbox": {
           "title": "Bandeja priorizada",
-          "subtitle": "Tickets ordenados por score de prioridad",
+          "subtitle": "Las solicitudes, de la más urgente a la menos urgente",
           "empty": "No hay tickets de mantenimiento",
           "emptyFiltered": "Ningún ticket coincide con los filtros",
-          "sortedByScore": "Ordenado por score",
+          "sortedByScore": "Por prioridad",
           "errorLoading": "Error al cargar la bandeja",
           "card": {
-            "score": "Score",
+            "score": "Prioridad",
             "provider": "Proveedor sugerido",
             "proveedorSugerido": "Proveedor sugerido",
             "noProvider": "Sin proveedor",
@@ -7056,7 +7056,7 @@
             "retencionRiesgo": "Riesgo de retención",
             "estCost": "Costo estimado",
             "createdAgo": "Creado hace",
-            "slaDue": "Vence SLA"
+            "slaDue": "Vence el plazo"
           }
         },
         "filters": {
@@ -7065,7 +7065,7 @@
           "severidad": "Severidad",
           "categoria": "Categoría",
           "estado": "Estado",
-          "sla": "SLA",
+          "sla": "Plazo",
           "proveedor": "Proveedor",
           "propietario": "Propietario",
           "inmueble": "Inmueble",
@@ -7140,7 +7140,7 @@
           }
         },
         "card": {
-          "score": "Score",
+          "score": "Prioridad",
           "proveedorSugerido": "Proveedor sugerido",
           "requiereAprobacion": "Requiere aprobación",
           "reabierto": "Reabierto",
@@ -11577,7 +11577,7 @@
       "processing": "Procesando...",
       "securePayment": "Pago seguro por PSE, procesado por Wompi",
       "cancelAnytime": "Puedes cancelar en cualquier momento. Sin compromisos.",
-      "paymentSuccess": "Pago exitoso! Plan {{name}} activado.",
+      "paymentSuccess": "Listo: el plan {{name}} quedó activo.",
       "pseTitle": "Datos del pago por PSE",
       "pseHint": "Te llevamos a tu banco para aprobar el pago. El plan se activa cuando el banco lo confirma.",
       "bank": "Banco",
@@ -11668,7 +11668,7 @@
       "riskFairDesc": "Perfil con factores mixtos. Se recomienda solicitar garantías adicionales como un codeudor o depósito mayor.",
       "riskPoor": "Riesgoso",
       "riskPoorDesc": "Perfil con factores de riesgo significativos. Se recomienda precaución y condiciones especiales si se decide aprobar.",
-      "scoreRange": "Score {{range}}",
+      "scoreRange": "Puntaje {{range}}",
       "scoringNote": "El scoring es una herramienta de apoyo, no una decisión automática. Siempre revisa el perfil completo del candidato antes de aprobar o rechazar.",
       "scoringNoteLabel": "Nota:",
       "totalCandidates": "Total candidatos",
@@ -11689,7 +11689,7 @@
       "colCandidate": "Candidato",
       "colProperty": "Inmueble",
       "colRisk": "Riesgo",
-      "colScore": "Score",
+      "colScore": "Puntaje",
       "colIncome": "Ingresos",
       "colStatus": "Estado",
       "colDate": "Fecha",
@@ -11802,7 +11802,7 @@
       "scheduleNotesPlaceholder": "Notas adicionales para la visita...",
       "scheduleCancel": "Cancelar",
       "scheduleConfirm": "Confirmar",
-      "scheduleSuccessToast": "Visita agendada exitosamente",
+      "scheduleSuccessToast": "Listo: la visita quedó agendada.",
       "scheduleSuccessDesc": "Se ha programado la visita.",
       "visitStatusRequested": "Solicitada",
       "visitStatusConfirmed": "Confirmada",
@@ -11940,14 +11940,14 @@
         "trend": "Tendencia",
         "vsLeader": "vs Líder",
         "noData": "Sin datos de comisiones",
-        "noDataDesc": "No hay datos de comisiones para el período seleccionado"
+        "noDataDesc": "En este período no hubo comisiones. Aparecen cuando se recauda un canon."
       },
       "occupancy": {
         "occupancy": "Ocupación",
         "occupancyByZone": "Ocupación por zona",
         "portfolioDistribution": "Distribución del portafolio",
         "bars": "Barras",
-        "cards": "Cards",
+        "cards": "Tarjetas",
         "vsPrevMonth": "vs mes anterior",
         "noChange": "sin cambio",
         "occupiedPlural": "ocupadas",
@@ -12114,16 +12114,16 @@
         "errNameRequired": "El nombre es requerido",
         "errNameMin": "El nombre debe tener al menos 3 caracteres",
         "errEmailRequired": "El correo es requerido",
-        "errEmailInvalid": "Correo inválido",
+        "errEmailInvalid": "Ese correo no está bien escrito: revisa la @ y lo que va después.",
         "errPhoneRequired": "El teléfono es requerido",
-        "errPhoneInvalid": "Teléfono inválido",
+        "errPhoneInvalid": "El celular va con 10 números, sin espacios: 3001234567.",
         "errDocRequired": "El documento es requerido",
-        "errCCInvalid": "Cédula inválida (6-12 dígitos)",
-        "errNITInvalid": "NIT inválido",
+        "errCCInvalid": "La cédula va con 6 a 12 números, sin puntos.",
+        "errNITInvalid": "El NIT va con nueve números y el de verificación: 900123456-7.",
         "errBankRequired": "Selecciona un banco",
         "errAccountTypeRequired": "Selecciona tipo de cuenta",
         "errAccountNumRequired": "Número de cuenta requerido",
-        "errAccountNumInvalid": "Número de cuenta inválido (10-20 dígitos)",
+        "errAccountNumInvalid": "El número de cuenta va con 10 a 20 números, sin guiones.",
         "errHolderRequired": "Nombre del titular requerido"
       },
       "stats": {

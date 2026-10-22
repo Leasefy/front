@@ -344,7 +344,13 @@ function CuerpoDelGrafico({
   const mesAnterior = soloElMes(c.mesAnterior, locale);
   const hayRecibos = c.dias.some((d) => (d.esteMesCop ?? 0) > 0 || (d.mesAnteriorCop ?? 0) > 0);
   const llego = c.vsMesAnterior.llego;
-  const resumen = t(`${C}.diaADia.resumen`, {
+  // Ronda 12: sin mes con qué comparar, el día a día es sólo de este mes.
+  const sinMesAnterior = sinComparacionEnNinguna(c);
+  const resumen = sinMesAnterior
+    ? locale === 'en'
+      ? `By day ${c.dia}, ${formato(llego.actualCop)} had come in.`
+      : `Al día ${c.dia} llegaron ${formato(llego.actualCop)}.`
+    : t(`${C}.diaADia.resumen`, {
     dia: c.dia,
     mes,
     actual: formato(llego.actualCop),
@@ -360,9 +366,13 @@ function CuerpoDelGrafico({
     >
       <div className="space-y-1">
         <h2 id="dia-a-dia-titulo" className="text-sm font-semibold text-fg">
-          {t(`${C}.diaADia.titulo`, { mes: conMayuscula(mes), mesAnterior })}
+          {sinMesAnterior
+            ? locale === 'en'
+              ? `Day by day: ${conMayuscula(mes)}`
+              : `Día a día de ${mes}`
+            : t(`${C}.diaADia.titulo`, { mes: conMayuscula(mes), mesAnterior })}
         </h2>
-        <p className="text-caption text-fg-muted">
+        <p className="text-caption text-fg-muted" hidden={sinMesAnterior}>
           {c.enCurso
             ? t(`${C}.diaADia.descripcionEnCurso`, {
                 mes,
@@ -380,8 +390,10 @@ function CuerpoDelGrafico({
             nombreMesAnterior={conMayuscula(mesAnterior)}
             resumen={resumen}
             rotuloDelDia={(dia) => t(`${C}.diaADia.dia`, { dia })}
+            sinMesAnterior={sinMesAnterior}
           />
-          <p className="font-mono text-caption tabular-nums text-fg-muted" data-testid="dia-a-dia-resumen">
+          {/* Ronda 12: la frase en letra normal (sólo las cifras van en mono, adentro). */}
+          <p className="text-caption tabular-nums text-fg-muted" data-testid="dia-a-dia-resumen">
             {resumen}
           </p>
         </>

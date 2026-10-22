@@ -55,7 +55,11 @@ export function GraficoDiaADia({
   nombreMesAnterior,
   resumen,
   rotuloDelDia,
-}: Props) {
+  sinMesAnterior = false,
+}: Props & {
+  /** Ronda 12: sin mes con qué comparar no se pinta su línea ni su leyenda (eran todo ceros). */
+  sinMesAnterior?: boolean;
+}) {
   const nombre: Record<string, string> = {
     esteMesCop: nombreEsteMes,
     mesAnteriorCop: nombreMesAnterior,
@@ -90,12 +94,15 @@ export function GraficoDiaADia({
               fontVariantNumeric: 'tabular-nums',
             }}
           />
+          {sinMesAnterior ? null : (
           <Legend
             iconType="plainline"
             iconSize={14}
             formatter={(clave) => nombre[String(clave)] ?? String(clave)}
             wrapperStyle={{ fontSize: 12 }}
           />
+          )}
+          {sinMesAnterior ? null : (
           <Line
             type="monotone"
             dataKey="mesAnteriorCop"
@@ -106,6 +113,7 @@ export function GraficoDiaADia({
             connectNulls={false}
             isAnimationActive={false}
           />
+          )}
           <Line
             type="monotone"
             dataKey="esteMesCop"

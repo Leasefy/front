@@ -255,7 +255,9 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                   <TableCell className="max-w-[15rem]">
                     {r.medioLegible}
                     {/* La referencia larga del banco no estira la tabla: un renglón y el texto entero al pasar el cursor. */}
-                    {r.referencia && (
+                    {/* Revisión de Dinero (22-10): la referencia INTERNA («cobro-<uuid>», la del pago en
+                        línea) no se muestra; la del banco sí, en un renglón. */}
+                    {r.referencia && !/^cobro-[0-9a-f]{8}-/i.test(r.referencia) && (
                       <p className="truncate text-caption text-fg-muted" title={`Ref. ${r.referencia}`}>
                         Ref. {r.referencia}
                       </p>

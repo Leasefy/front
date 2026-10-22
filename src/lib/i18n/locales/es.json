@@ -2694,7 +2694,7 @@
       "metrics": "Métricas",
       "pipeline": "Pipeline",
       "viewTable": "Tabla",
-      "viewCards": "Cards",
+      "viewCards": "Tarjetas",
       "closingsMonth": "Cierres mes",
       "commissionsMonth": "Comisiones mes",
       "tabs": {
@@ -2748,7 +2748,7 @@
       "noPayments": "No hay cobros registrados",
       "noPaymentsDesc": "Los cobros aparecerán cuando tengas propiedades activas",
       "viewTable": "Tabla",
-      "viewCards": "Cards",
+      "viewCards": "Tarjetas",
       "filters": {
         "all": "Todos",
         "pending": "Pendientes",
@@ -3047,7 +3047,7 @@
       "noDispersions": "No hay dispersiones registradas",
       "noDispersionsDesc": "Las dispersiones se generan a partir de los cobros recibidos",
       "viewTable": "Tabla",
-      "viewCards": "Cards",
+      "viewCards": "Tarjetas",
       "downloadPdf": "Descargar PDF",
       "filters": {
         "all": "Todas",

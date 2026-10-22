@@ -189,14 +189,17 @@ function Cuadre({ datos }: { datos: Respuesta }) {
           <div className="flex flex-wrap items-center gap-2" data-testid="cuadre-acciones">
             {hayTraslado ? (
               // 🔴 (18-09) El número que cierra el cuadre, con su acción a la mano.
-              <Button asChild size="sm" hideArrow>
+              // Revisión de Dinero (22-10): a 390 el botón se salía 33 px. A lo ancho en el celular,
+              // con el monto en mono; el texto puede partirse en dos renglones.
+              <Button asChild size="sm" hideArrow className="h-auto min-h-9 w-full whitespace-normal py-1.5 text-left sm:w-auto">
                 <Link href="/panel/inmobiliaria/pagos/traslados" data-testid="ir-a-traslados">
-                  Proponer el traslado a tu cuenta propia ({formatCurrency(datos.comisionEnLaCuentaCop)})
+                  Proponer el traslado a tu cuenta propia{' '}
+                  <span className="font-mono tabular-nums">{formatCurrency(datos.comisionEnLaCuentaCop)}</span>
                 </Link>
               </Button>
             ) : null}
             {hayPartidas ? (
-              <Button asChild size="sm" variant="outline" hideArrow>
+              <Button asChild size="sm" variant="outline" hideArrow className="h-auto min-h-9 w-full whitespace-normal py-1.5 sm:w-auto">
                 <Link href="/panel/inmobiliaria/pagos/recaudo" data-testid="ir-a-identificar-partidas">
                   {datos.partidasPorIdentificar === 1
                     ? 'Identificar la partida en Conciliación'

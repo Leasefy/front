@@ -20,6 +20,7 @@
  *    explicación: esa plata la inmobiliaria no la recibió.
  */
 
+import { nombreDelMes } from '@/lib/recaudo/meses';
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowsLeftRight, CheckCircle, Prohibit, XCircle } from '@phosphor-icons/react';
 
@@ -417,7 +418,7 @@ function FilaDelTraslado({ traslado }: { traslado: Traslado }) {
             {formatCurrency(traslado.totalCop)}
           </p>
           <p className="text-sm text-fg-muted">
-            {traslado.periodo} ·{' '}
+            {/^\d{4}-\d{2}$/.test(traslado.periodo) ? nombreDelMes(traslado.periodo) : traslado.periodo} ·{' '}
             {traslado.origen === 'LOTE'
               ? 'lo propuso el sistema al cerrar la liquidación'
               : 'propuesto a mano'}

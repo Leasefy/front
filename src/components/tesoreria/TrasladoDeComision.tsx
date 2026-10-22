@@ -209,7 +209,7 @@ export function TrasladoDeComisionPanel() {
           <section className="space-y-4">
             <TituloDeBloque
               titulo="Esperando tu aprobación"
-              explicacion="Los propuso el sistema al quedar pagado un lote de liquidación, o alguien desde acá. Aprobar mueve la plata y le pone comprobante: no sale solo."
+              explicacion="Los propuso el sistema al quedar pagado un lote de liquidación, o alguien desde aquí. Aprobar mueve la plata y le pone comprobante: no sale solo."
             />
             <ul className="space-y-4" data-testid="traslados-propuestos">
               {lista.propuestos.map((t) => (
@@ -255,7 +255,7 @@ export function TrasladoDeComisionPanel() {
                 párrafo de la pantalla («mientras no los muevas… el cuadre de
                 plata de terceros va a mostrar esa diferencia»), cinco renglones
                 más abajo. El porqué se fue a un solo lugar —el botón del
-                encabezado— y acá queda el título y el mes.
+                encabezado— y aquí queda el título y el mes.
               · El mes era un `<input type="month">`, que pinta el nombre del mes
                 EN EL IDIOMA DEL NAVEGADOR: decía «August 2026» en una pantalla
                 entera en español. Ahora es `SelectorDeMes`, el de la casa, que
@@ -322,7 +322,7 @@ export function TrasladoDeComisionPanel() {
             <DialogDescription>
               La comisión se queda en la cuenta de recaudo y el cuadre de plata de terceros va a
               seguir mostrando esa diferencia. El traslado queda como rechazado, no se borra, y esa
-              plata vuelve a quedar por trasladar: se puede proponer otro desde acá. Deja escrito
+              plata vuelve a quedar por trasladar: se puede proponer otro desde aquí. Deja escrito
               por qué.
             </DialogDescription>
           </DialogHeader>

@@ -273,7 +273,7 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
 
   return (
     <>
-    <Table className="max-md:block md:min-w-[960px] xl:min-w-0" data-testid="cartera-tabla">
+    <Table className="max-md:block md:min-w-[960px] xl:min-w-0 md:[&_td]:px-3 md:[&_th]:px-3" data-testid="cartera-tabla">
       <TableHeader className="max-md:hidden">
         <TableRow>
           {conCasillas && marcadas && onMarcar && (
@@ -298,7 +298,7 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
           <Ordenable campo="total" alineado="right">
             {t(CLAVE_DE_MORA.columnaTotal)}
           </Ordenable>
-          <TableHead className="w-24" />
+          <TableHead className="w-[76px]" />
         </TableRow>
       </TableHeader>
       {/* Movimiento (ola 2, 03-10-2026): filas escalonadas con techo. */}
@@ -383,7 +383,7 @@ function FilaDeCartera({
       {casilla !== undefined && <TableCell className="w-10 pl-4 pr-0 align-middle">{casilla}</TableCell>}
       {/* Inquilino: quién debe y por dónde se le habla. */}
       <TableCell className="align-middle max-md:block max-md:p-0">
-        <div className="min-w-0 max-w-[18rem]">
+        <div className="min-w-0 max-w-[15rem]">
           {item.tenantName ? (
             refDelInquilino({ documento: item.tenantDocument }) ? (
               <Link
@@ -465,7 +465,7 @@ function FilaDeCartera({
           {/* «2026-09» es el identificador del mes, no cómo se lee: la casa
               lo escribe con letras (`nombreDelMes`, ver DispersionCard). */}
           <div className="whitespace-nowrap text-fg">{nombreDelMes(item.month, locale)}</div>
-          <div className="font-mono text-xs tabular-nums text-fg-subtle">
+          <div className="text-caption tabular-nums text-fg-subtle">
             {t('cartera.tabla.vence', { fecha: formatDate(item.vence) })}
           </div>
         </div>
@@ -570,7 +570,7 @@ function FilaDeCartera({
         {onGestiones ? (
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             hideArrow
             title="Registrar gestión"
             onClick={(e) => {
@@ -588,7 +588,7 @@ function FilaDeCartera({
             🔴 Sin cobro emitido no hay cobro que abrir: el enlace va al
             CONTRATO, que es de donde nace la deuda. Un `?cobro=null` era una
             pestaña en blanco. */}
-        <Button asChild variant="ghost" size="sm" hideArrow>
+        <Button asChild variant="ghost" size="icon" hideArrow>
           <Link
             href={aDondeLleva(item)}
             onClick={(e) => e.stopPropagation()}

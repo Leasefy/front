@@ -89,7 +89,7 @@ import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { CarteraMarcada } from '@/components/cartera/CarteraMarcada'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { useRouter } from 'next/navigation'
 import {
   CurrencyCircleDollar,
@@ -382,24 +382,14 @@ export function CarteraCompleta() {
       }
     >
       <div className="space-y-6">
-        {/* ── UNA franja de resumen. Cada cifra es un filtro. ──────────── */}
-        {/* 🔴 COLA-01 (QA-PAGOS-95): a 390 px dos columnas dejaban ≈147 px a una
-            cifra de diez dígitos («$ 2.535.172.123», ≈216 px en text-2xl mono)
-            y la franja la cortaba (overflow-hidden). Una debajo de otra en el
-            teléfono, como el resumen de Cobros. */}
-        {/* COLA-01 a 1440: con 5 o 6 fichas en fila cada una deja 157–195 px y
-            «$ 1.636.622.564» en text-2xl (≈216 px) se montaba sobre la de al
-            lado. La cifra baja de tamaño SÓLO en esa franja de anchos. */}
+        {/* ── La cartera: UNA cifra grande y su barra. Cada monto es un filtro. ──
+            GLOW UP (revisión de Dinero, 22-10-2026: «6 cifras del mismo peso»): la
+            cifra que se persigue —la cartera— va grande; de cuánta deuda es parte,
+            al lado; la barra dice cómo se reparte la deuda (por vencer · vencido en
+            plazo · cartera) y, debajo de la cartera, qué parte ya es siniestro o
+            está castigada. Las palabras siguen siendo las de «Cartera por concepto». */}
         <div
-          className={cn(
-            'grid grid-cols-1 sm:grid-cols-2 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface',
-            'lg:divide-x lg:divide-y-0',
-            castigada && siniestros
-              ? 'lg:grid-cols-6'
-              : castigada || siniestros
-                ? 'lg:grid-cols-5'
-                : 'lg:grid-cols-4',
-          )}
+          className="grid grid-cols-1 overflow-hidden rounded-2xl border border-border bg-surface"
           data-testid="resumen-de-cartera"
           // 15-10: con centavos la cifra no cabía; cada ficha la achica a su ancho (`cifra-que-cabe`).
           style={estiloDeLaFranja([
@@ -409,148 +399,186 @@ export function CarteraCompleta() {
             ...(castigada ? [formatCurrency(castigada.totalCop)] : []),
           ])}
         >
-          {/* La deuda entera. Tocarla quita los filtros: es «ver todo». */}
-          <button
-            type="button"
-            onClick={limpiar}
-            aria-pressed={cajon === null && edad === null}
-            className="ficha-con-cifra p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
-            data-testid="resumen-deuda-total"
-          >
-            <p className="text-xs text-fg-muted">Deuda total</p>
-            <p className="cifra-que-cabe mt-1 font-mono font-semibold tabular-nums text-fg" data-testid="cifra-deuda-total">
-              {formatCurrency(cartera.deudaTotal)}
-            </p>
-            <p className="mt-0.5 text-xs text-fg-muted">
-              {todas.length} {todas.length === 1 ? 'cuota' : 'cuotas'} · nace con el contrato
-            </p>
-            {interesTotal > 0 ? (
-              <p
-                className="mt-0.5 font-mono text-xs tabular-nums text-fg-muted"
-                data-testid="resumen-deuda-con-intereses"
-              >
-                {t(CLAVE_DE_MORA.conIntereses, {
-                  monto: formatCurrency(cartera.deudaTotal + interesTotal),
-                })}
-              </p>
-            ) : null}
-          </button>
-
-          {/*
-            🔴 Los tres cajones, en el orden en que una deuda los recorre: nace
-            futura, vence, y recién después es cartera. Cada uno con su propia
-            cifra: el que quiera el total lo tiene a la izquierda, ya sumado.
-            Las mismas palabras que «Cartera por concepto».
-          */}
-          {(['POR_VENCER', 'VENCIDA_EN_PLAZO', 'CARTERA'] as const).map((cual) => {
-            const suyo = montoDelCajon(cual)
-            const activo = cajon === cual
-            return (
+          <div className="space-y-4 px-5 py-5 sm:px-6">
+            <p className="font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle">{nombreDelCajon('CARTERA')}</p>
+            <div className="flex flex-col gap-x-4 gap-y-2 lg:flex-row lg:items-end lg:justify-between">
+              {/* La cartera: la cifra grande. Tocarla deja la tabla en la cartera. */}
               <button
-                key={cual}
                 type="button"
-                onClick={() => elegirCajon(cual)}
-                aria-pressed={activo}
-                data-testid={`resumen-${cual.toLowerCase()}`}
-                className="ficha-con-cifra relative isolate p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+                onClick={() => elegirCajon('CARTERA')}
+                aria-pressed={cajon === 'CARTERA'}
+                data-testid="resumen-cartera"
+                className="ficha-con-cifra min-w-0 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                {/* El fondo del cajón elegido SE DESLIZA al nuevo. */}
-                {activo ? (
-                  <MotionIndicator layoutId={`${marca}-cajon`} className="inset-0 -z-10 bg-surface-muted" />
-                ) : null}
-                <p className="text-xs text-fg-muted">{nombreDelCajon(cual)}</p>
-                <p
+                <span
                   className={cn(
-                    'cifra-que-cabe mt-1 font-mono font-semibold tabular-nums',
-                    cual === 'CARTERA' ? 'text-danger' : TONO[cual],
+                    'cifra-que-cabe block font-mono text-[32px] font-medium leading-none tracking-[-0.02em] tabular-nums text-danger sm:text-[40px]',
+                    cajon === 'CARTERA' && 'underline decoration-dotted decoration-1 underline-offset-[0.2em]',
                   )}
                 >
-                  {formatCurrency(suyo.monto)}
-                </p>
-                <p className="mt-0.5 text-xs text-fg-muted">{queSignificaElCajon(cual)}</p>
-                {/* 🔴 La cartera INCLUYE el siniestro, y lo dice: restarlo en
-                    silencio es lo que hacía que esta cifra no fuera la de «Por
-                    concepto». */}
-                {cual === 'CARTERA' && cartera.enSiniestro.monto > 0 ? (
-                  <p
-                    className="mt-0.5 font-mono text-xs tabular-nums text-fg-muted"
+                  {formatCurrency(montoDelCajon('CARTERA').monto)}
+                </span>
+                <span className="mt-2 block text-body-sm text-fg-muted">{queSignificaElCajon('CARTERA')}</span>
+                {/* El interés corre SÓLO sobre la cartera. */}
+                {interesDeLaCartera > 0 ? (
+                  <span
+                    className="mt-0.5 block font-mono text-caption tabular-nums text-danger"
+                    data-testid="resumen-intereses-cartera"
+                    title={t(CLAVE_DE_MORA.explicacion)}
+                  >
+                    {t(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesDeLaCartera) })}
+                  </span>
+                ) : null}
+                {/* 🔴 La cartera INCLUYE el siniestro, y lo dice. */}
+                {cartera.enSiniestro.monto > 0 ? (
+                  <span
+                    className="mt-0.5 block font-mono text-caption tabular-nums text-fg-muted"
                     data-testid="resumen-cartera-en-siniestro"
                   >
                     {t('cartera.porEdad.deLaCualEnSiniestro', {
                       monto: formatCurrency(cartera.enSiniestro.monto),
                     })}
-                  </p>
-                ) : null}
-                {/* El interés corre SÓLO sobre la cartera: los otros dos cajones
-                    no lo llevan, y un «+ $0» ahí sería ruido. */}
-                {cual === 'CARTERA' && interesDeLaCartera > 0 ? (
-                  <p
-                    className="mt-0.5 font-mono text-xs tabular-nums text-danger"
-                    data-testid="resumen-intereses-cartera"
-                    title={t(CLAVE_DE_MORA.explicacion)}
-                  >
-                    {t(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesDeLaCartera) })}
-                  </p>
+                  </span>
                 ) : null}
               </button>
-            )
-          })}
 
-          {siniestros ? (
-            /* La cifra abre el segmento: es el mismo dato, visto de cerca. */
-            <button
-              type="button"
-              onClick={() => setVista('siniestros')}
-              className="ficha-con-cifra p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
-              data-testid="resumen-en-siniestro"
-            >
-              <p className="flex items-center gap-1.5 text-xs text-fg-muted">
-                <ShieldWarning className="h-3.5 w-3.5" aria-hidden="true" />
-                En siniestro
-              </p>
-              <p className="cifra-que-cabe mt-1 font-mono font-semibold tabular-nums text-danger">
-                {formatCurrency(siniestros.totalCop)}
-              </p>
-              <p className="mt-0.5 text-xs text-fg-muted">
-                {siniestros.cantidad === 0
-                  ? 'Ningún caso'
-                  : `${siniestros.cantidad} ${siniestros.cantidad === 1 ? 'caso' : 'casos'}`}
-                {' · '}a los {siniestros.diasParaSiniestro} días de mora
-              </p>
-              {interesEnSiniestro > 0 ? (
-                <p className="mt-0.5 font-mono text-xs tabular-nums text-danger">
-                  {t(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesEnSiniestro) })}
-                </p>
-              ) : null}
-            </button>
-          ) : null}
+              {/* La deuda entera, de la que la cartera es una parte. Tocarla quita los filtros. */}
+              <button
+                type="button"
+                onClick={limpiar}
+                aria-pressed={cajon === null && edad === null}
+                className="ficha-con-cifra min-w-0 rounded-lg text-left lg:text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                data-testid="resumen-deuda-total"
+              >
+                <span className="block text-caption text-fg-muted">Deuda total · nace con el contrato</span>
+                <span className="cifra-que-cabe block font-mono text-[17px] tabular-nums text-fg" data-testid="cifra-deuda-total">
+                  {formatCurrency(cartera.deudaTotal)}
+                </span>
+                <span className="block text-caption text-fg-muted">
+                  {todas.length} {todas.length === 1 ? 'cuota' : 'cuotas'}
+                </span>
+                {interesTotal > 0 ? (
+                  <span
+                    className="block font-mono text-caption tabular-nums text-fg-muted"
+                    data-testid="resumen-deuda-con-intereses"
+                  >
+                    {t(CLAVE_DE_MORA.conIntereses, {
+                      monto: formatCurrency(cartera.deudaTotal + interesTotal),
+                    })}
+                  </span>
+                ) : null}
+              </button>
+            </div>
 
-          {castigada ? (
-            /*
-             * Enlace y no botón: lo castigado vive en otra pantalla porque el
-             * pedido es que SALGA de la cartera activa. Filtrar acá la
-             * volvería a poner en la lista de a quién llamar.
-             */
-            <Link
-              href="/panel/inmobiliaria/pagos/cartera/castigada"
-              className="ficha-con-cifra block p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
-              data-testid="resumen-castigada"
-            >
-              <p className="flex items-center gap-1.5 text-xs text-fg-muted">
-                <Scales className="h-3.5 w-3.5" aria-hidden="true" />
-                Castigada
-              </p>
-              <p className="cifra-que-cabe mt-1 font-mono font-semibold tabular-nums text-fg-muted">
-                {formatCurrency(castigada.totalCop)}
-              </p>
-              <p className="mt-0.5 text-xs text-fg-muted">
-                {castigada.cantidad === 0
-                  ? 'Ninguna'
-                  : `${castigada.cantidad} ${castigada.cantidad === 1 ? 'cuota' : 'cuotas'}`}
-                {' · '}ya no se persigue
-              </p>
-            </Link>
-          ) : null}
+            {/* Cómo se reparte la deuda: por vencer · vencido en plazo · cartera. */}
+            {cartera.deudaTotal > 0 ? (
+              <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-surface-muted" role="img" aria-label="Cómo se reparte la deuda" data-testid="barra-de-la-deuda">
+                {(['POR_VENCER', 'VENCIDA_EN_PLAZO', 'CARTERA'] as const).map((cual) => {
+                  const monto = Math.max(0, montoDelCajon(cual).monto)
+                  if (monto <= 0) return null
+                  return (
+                    <span
+                      key={cual}
+                      className={cn(
+                        'h-full first:rounded-l-full last:rounded-r-full',
+                        cual === 'POR_VENCER' ? 'bg-sand-300 dark:bg-neutral-600' : cual === 'VENCIDA_EN_PLAZO' ? 'bg-warning-500' : 'bg-error-500',
+                      )}
+                      style={{ width: `${(monto / cartera.deudaTotal) * 100}%` }}
+                    />
+                  )
+                })}
+              </div>
+            ) : null}
+          </div>
+
+          {/* La leyenda: lo que NO es cartera (por vencer, vencido en plazo) y qué parte
+              de la cartera ya no se persigue igual (siniestro, castigada). */}
+          <div
+            className="grid grid-cols-1 gap-px border-t border-border bg-border sm:grid-cols-2 lg:grid-cols-4"
+            data-testid="leyenda-de-la-cartera"
+          >
+            {(['POR_VENCER', 'VENCIDA_EN_PLAZO'] as const).map((cual) => {
+              const suyo = montoDelCajon(cual)
+              const activo = cajon === cual
+              return (
+                <button
+                  key={cual}
+                  type="button"
+                  onClick={() => elegirCajon(cual)}
+                  aria-pressed={activo}
+                  data-testid={`resumen-${cual.toLowerCase()}`}
+                  className="ficha-con-cifra relative isolate bg-surface px-5 py-3.5 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-6"
+                >
+                  {activo ? (
+                    <MotionIndicator layoutId={`${marca}-cajon`} className="inset-0 -z-10 bg-surface-muted" />
+                  ) : null}
+                  <span className="flex items-center gap-1.5 text-caption text-fg-muted">
+                    <span className={cn('h-2 w-2 shrink-0 rounded-full', cual === 'POR_VENCER' ? 'bg-sand-300 dark:bg-neutral-600' : 'bg-warning-500')} />
+                    {nombreDelCajon(cual)}
+                  </span>
+                  <span className={cn('cifra-que-cabe mt-1 block font-mono text-[17px] tabular-nums', TONO[cual])}>
+                    {formatCurrency(suyo.monto)}
+                  </span>
+                  <span className="mt-0.5 block text-caption text-fg-muted">{queSignificaElCajon(cual)}</span>
+                </button>
+              )
+            })}
+
+            {siniestros ? (
+              /* La cifra abre el segmento: es el mismo dato, visto de cerca. */
+              <button
+                type="button"
+                onClick={() => setVista('siniestros')}
+                className="ficha-con-cifra bg-surface px-5 py-3.5 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-6"
+                data-testid="resumen-en-siniestro"
+              >
+                <span className="flex items-center gap-1.5 text-caption text-fg-muted">
+                  <ShieldWarning className="h-3.5 w-3.5" aria-hidden="true" />
+                  En siniestro
+                </span>
+                <span className="cifra-que-cabe mt-1 block font-mono text-[17px] tabular-nums text-fg">
+                  {formatCurrency(siniestros.totalCop)}
+                </span>
+                <span className="mt-0.5 block text-caption text-fg-muted">
+                  {siniestros.cantidad === 0
+                    ? 'Ningún caso'
+                    : `${siniestros.cantidad} ${siniestros.cantidad === 1 ? 'caso' : 'casos'}`}
+                  {' · '}a los {siniestros.diasParaSiniestro} días de mora
+                </span>
+                {interesEnSiniestro > 0 ? (
+                  <span className="mt-0.5 block font-mono text-caption tabular-nums text-danger">
+                    {t(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesEnSiniestro) })}
+                  </span>
+                ) : null}
+              </button>
+            ) : null}
+
+            {castigada ? (
+              /*
+               * Enlace y no botón: lo castigado vive en otra pantalla porque el
+               * pedido es que SALGA de la cartera activa.
+               */
+              <Link
+                href="/panel/inmobiliaria/pagos/cartera/castigada"
+                className="ficha-con-cifra block bg-surface px-5 py-3.5 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-6"
+                data-testid="resumen-castigada"
+              >
+                <span className="flex items-center gap-1.5 text-caption text-fg-muted">
+                  <Scales className="h-3.5 w-3.5" aria-hidden="true" />
+                  Castigada
+                </span>
+                <span className="cifra-que-cabe mt-1 block font-mono text-[17px] tabular-nums text-fg-muted">
+                  {formatCurrency(castigada.totalCop)}
+                </span>
+                <span className="mt-0.5 block text-caption text-fg-muted">
+                  {castigada.cantidad === 0
+                    ? 'Ninguna'
+                    : `${castigada.cantidad} ${castigada.cantidad === 1 ? 'cuota' : 'cuotas'}`}
+                  {' · '}ya no se persigue
+                </span>
+              </Link>
+            ) : null}
+          </div>
         </div>
 
         {/*
@@ -560,44 +588,37 @@ export function CarteraCompleta() {
         */}
         {/* GLOW UP (21-10): los avisos son lo que falta para que la cartera esté completa → UNA lista con
             su paso siguiente («Sigue») y, en las reglas de mora, su botón. Se pliega cuando no falta nada. */}
+        {/* GLOW UP (22-10, revisión de Dinero: «lista 0/3 → una línea»): lo que estos
+            números no cuentan, en UN renglón junto a la cifra, plegado con su salida. */}
         {avisos.length > 0 ? (
-          <ListaParaEmpezar
-            paraQue="ver la cartera completa"
-            recordarComo="cartera"
-            data-testid="avisos-de-la-cartera"
-            requisitos={avisos.map((aviso, i) => {
-              const esDeMora = sinReglasDeMora && /reglas de mora/i.test(aviso)
-              return {
-                id: `aviso-${i}`,
-                titulo: aviso,
-                estado: 'falta' as const,
-                accion: esDeMora ? (
-                  <Button asChild size="sm" variant="secondary">
-                    <Link href={RUTA_DE_REGLAS_DE_MORA} data-testid="cartera-configurar-reglas">
-                      {t(CLAVE_DE_MORA.configurarReglas)}
-                    </Link>
-                  </Button>
-                ) : undefined,
-              }
-            }).concat(
-              sinReglasDeMora && !avisos.some((a) => /reglas de mora/i.test(a))
-                ? [
-                    {
-                      id: 'reglas-de-mora',
-                      titulo: t(CLAVE_DE_MORA.configurarReglas),
-                      estado: 'falta' as const,
-                      accion: (
-                        <Button asChild size="sm" variant="secondary">
-                          <Link href={RUTA_DE_REGLAS_DE_MORA} data-testid="cartera-configurar-reglas">
-                            {t(CLAVE_DE_MORA.configurarReglas)}
-                          </Link>
-                        </Button>
-                      ),
-                    },
-                  ]
-                : [],
-            )}
-          />
+          <div className="flex items-start gap-2.5 text-body-sm text-fg" data-testid="avisos-de-la-cartera" role="status">
+            <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-warning-500" aria-hidden="true" />
+            <MasDetalles
+              montadoSiempre
+              etiqueta={(() => {
+                const n = avisos.length + (sinReglasDeMora && !avisos.some((a) => /reglas de mora/i.test(a)) ? 1 : 0)
+                return n === 1 ? '1 cosa afecta estas cifras' : `${n} cosas afectan estas cifras`
+              })()}
+              etiquetaAbierto="Ocultar"
+              classNameDelContenido="space-y-3"
+            >
+              <ul className="list-disc space-y-1 pl-4 text-fg-muted marker:text-fg-subtle">
+                {avisos.map((aviso) => (
+                  <li key={aviso}>{aviso}</li>
+                ))}
+                {sinReglasDeMora && !avisos.some((a) => /reglas de mora/i.test(a)) ? (
+                  <li>{t(CLAVE_DE_MORA.configurarReglas)}</li>
+                ) : null}
+              </ul>
+              {sinReglasDeMora ? (
+                <Button asChild size="sm" variant="secondary">
+                  <Link href={RUTA_DE_REGLAS_DE_MORA} data-testid="cartera-configurar-reglas">
+                    {t(CLAVE_DE_MORA.configurarReglas)}
+                  </Link>
+                </Button>
+              ) : null}
+            </MasDetalles>
+          </div>
         ) : null}
 
 

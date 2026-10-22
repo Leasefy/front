@@ -257,10 +257,14 @@ describe('CarteraCompleta', () => {
   it('🔴 COLA-01: a 390 px las cifras de la franja van una debajo de otra y las fichas de edad caben', () => {
     conReporte(reporte())
     montar()
+    // 22-10 (glow up): la cifra grande va sola arriba; la leyenda, una debajo de
+    // otra en el teléfono y en dos columnas desde sm.
     const franja = $('[data-testid="resumen-de-cartera"]').className.split(/\s+/)
     expect(franja).toContain('grid-cols-1')
-    expect(franja).toContain('sm:grid-cols-2')
     expect(franja).not.toContain('grid-cols-2')
+    const leyenda = $('[data-testid="leyenda-de-la-cartera"]').className.split(/\s+/)
+    expect(leyenda).toContain('grid-cols-1')
+    expect(leyenda).toContain('sm:grid-cols-2')
     for (const ficha of todos('[data-testid="tramos-de-la-cartera"] button')) {
       const cifra = ficha.querySelectorAll('p')[1]
       const clases = cifra.className.split(/\s+/)

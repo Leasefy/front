@@ -28,7 +28,8 @@
  */
 
 import Link from 'next/link'
-import { useId } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { CaretDown } from '@phosphor-icons/react'
 import { usePathname } from 'next/navigation'
 import { MotionIndicator } from '@leasefy/cadence'
 import type { Icon } from '@phosphor-icons/react'
@@ -47,17 +48,50 @@ export interface RielDePestanasProps {
   items: readonly PestanaDelRiel[]
   /** Cómo se llama el conjunto para un lector de pantalla (clave i18n o texto). */
   ariaLabel: string
+  /**
+   * Cuántas se ven en el riel (22-10, revisión de Dinero: «7 pestañas → 4 + Más»).
+   * Las demás van en «Más ▾»; la elegida siempre está a la vista. Sin el dato,
+   * todas en fila como siempre.
+   */
+  visibles?: number
 }
 
-export function RielDePestanas({ items, ariaLabel }: RielDePestanasProps) {
+export function RielDePestanas({ items, ariaLabel, visibles }: RielDePestanasProps) {
   const pathname = usePathname() ?? ''
   const { t } = useI18n()
-  const indicador = `${useId()}-activa`
+  const id = useId()
+  const indicador = `${id}-activa`
+  const [masAbierto, setMasAbierto] = useState(false)
+  const masRef = useRef<HTMLDivElement>(null)
+
+  // Las que van en el riel y las que van en «Más»: la elegida nunca se esconde.
+  const cuantas = visibles && items.length > visibles + 1 ? visibles : items.length
+  const enElRiel = items.slice(0, cuantas)
+  const enMas = items.slice(cuantas)
+  const activaEscondida = enMas.find((p) => p.href === pathname)
+  const riel = activaEscondida ? [...enElRiel, activaEscondida] : enElRiel
+  const menu = enMas.filter((p) => p !== activaEscondida)
+
+  useEffect(() => {
+    if (!masAbierto) return
+    const fuera = (e: MouseEvent) => {
+      if (masRef.current && !masRef.current.contains(e.target as Node)) setMasAbierto(false)
+    }
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMasAbierto(false)
+    }
+    document.addEventListener('mousedown', fuera)
+    document.addEventListener('keydown', escape)
+    return () => {
+      document.removeEventListener('mousedown', fuera)
+      document.removeEventListener('keydown', escape)
+    }
+  }, [masAbierto])
 
   return (
     <nav aria-label={ariaLabel}>
       <div className="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-[12px] bg-surface-muted p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {items.map((p) => {
+        {riel.map((p) => {
           const activa = pathname === p.href
           const Icono = p.icon
           return (
@@ -89,7 +123,48 @@ export function RielDePestanas({ items, ariaLabel }: RielDePestanasProps) {
             </Link>
           )
         })}
+        {menu.length > 0 ? (
+          <div ref={masRef} className="relative shrink-0">
+            <button
+              type="button"
+              aria-expanded={masAbierto}
+              aria-controls={`${id}-mas`}
+              onClick={() => setMasAbierto((v) => !v)}
+              className="flex h-8 items-center gap-1 rounded-sm px-3 text-[13px] text-fg-muted transition-colors hover:bg-surface/60 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              data-testid="riel-mas"
+            >
+              {t('common.more')}
+              <CaretDown className={cn('h-3.5 w-3.5 transition-transform', masAbierto && 'rotate-180')} aria-hidden="true" />
+            </button>
+          </div>
+        ) : null}
       </div>
+      {/* El menú va FUERA del riel (que recorta con overflow) y montado siempre: sus
+          enlaces existen para el teclado, la búsqueda y las pruebas aunque esté cerrado. */}
+      {menu.length > 0 ? (
+        <div
+          id={`${id}-mas`}
+          hidden={!masAbierto}
+          className="relative z-20"
+        >
+          <div className="absolute left-0 top-1 min-w-[220px] rounded-[12px] border border-border bg-surface p-1 shadow-lg">
+            {menu.map((p) => {
+              const Icono = p.icon
+              return (
+                <Link
+                  key={p.href}
+                  href={p.href}
+                  onClick={() => setMasAbierto(false)}
+                  className="flex h-9 items-center gap-2 rounded-sm px-3 text-[13px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Icono className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
+                  {t(p.labelKey)}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      ) : null}
     </nav>
   )
 }

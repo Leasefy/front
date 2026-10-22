@@ -60,7 +60,7 @@ interface QuoteAnalysis {
 
 function formatDate(dateString: string, loc: string): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', {
+  return date.toLocaleDateString(loc === 'es' ? 'es-CO' : 'en-US', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',

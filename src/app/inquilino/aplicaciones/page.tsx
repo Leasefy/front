@@ -159,7 +159,7 @@ export default function AplicacionesPage() {
   const idDeLaVista = useId();
 
   const formatShortDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
     });

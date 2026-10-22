@@ -656,25 +656,25 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-plan-secondary">Salario mensual</span>
-              <span className="text-plan-primary font-medium">${selectedCandidate.monthlySalary?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
+              <span className="text-plan-primary font-medium">${selectedCandidate.monthlySalary?.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}</span>
             </div>
             {selectedCandidate.additionalIncome > 0 && (
               <div className="flex justify-between">
                 <span className="text-plan-secondary">Ingresos adicionales</span>
-                <span className="text-plan-primary">${selectedCandidate.additionalIncome?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
+                <span className="text-plan-primary">${selectedCandidate.additionalIncome?.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}</span>
               </div>
             )}
             <div className="flex justify-between">
               <span className="text-plan-secondary">Ingreso total</span>
-              <span className="text-plan-primary font-semibold">${selectedCandidate.totalIncome?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
+              <span className="text-plan-primary font-semibold">${selectedCandidate.totalIncome?.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-plan-secondary">Obligaciones mensuales</span>
-              <span className="text-plan-primary">${selectedCandidate.monthlyObligations?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
+              <span className="text-plan-primary">${selectedCandidate.monthlyObligations?.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}</span>
             </div>
             <div className="flex justify-between bg-success-soft p-2 rounded">
               <span className="text-success">Disponible para arriendo</span>
-              <span className="text-success font-semibold">${selectedCandidate.availableForRent?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
+              <span className="text-success font-semibold">${selectedCandidate.availableForRent?.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}</span>
             </div>
           </div>
         </div>
@@ -968,13 +968,13 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                         {activeContract.landlordSignature && (
                           <p className="text-xs text-success dark:text-[#3EAE70] flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" />
-                            Arrendador — {new Date(activeContract.landlordSignature.signedAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
+                            Arrendador — {new Date(activeContract.landlordSignature.signedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
                           </p>
                         )}
                         {activeContract.tenantSignature && (
                           <p className="text-xs text-success dark:text-[#3EAE70] flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" />
-                            Arrendatario — {new Date(activeContract.tenantSignature.signedAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
+                            Arrendatario — {new Date(activeContract.tenantSignature.signedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
                           </p>
                         )}
                       </div>
@@ -1154,7 +1154,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                       sortable: true,
                       render: (row: Visit) => (
                         <span className="text-sm text-plan-secondary">
-                          {new Date(row.requestedDate + 'T12:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {new Date(row.requestedDate + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       ),
                     },

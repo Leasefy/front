@@ -21,7 +21,7 @@ export function StepPricing() {
 
   const formatInputValue = (value: number) => {
     if (value === 0) return '';
-    return value.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US');
+    return value.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US');
   };
 
   const parseInputValue = (value: string) => {

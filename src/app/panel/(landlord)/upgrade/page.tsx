@@ -158,7 +158,7 @@ export default function UpgradePage() {
                       <>
                         {t('landlord.upgrade.nextPayment')} <span className="font-medium text-fg">{precioLegible(currentPlan!.price.monthly)}</span> {t('landlord.upgrade.nextPaymentDate')}{' '}
                         <span className="font-medium text-fg">
-                          {new Date(subscription?.currentPeriodEnd ?? new Date().toISOString()).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+                          {new Date(subscription?.currentPeriodEnd ?? new Date().toISOString()).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
                             day: 'numeric',
                             month: 'long',
                           })}

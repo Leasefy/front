@@ -407,7 +407,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    return plataEnPantalla(locale === 'es' ? 'es-CL' : 'en-US', {
+    return plataEnPantalla(locale === 'es' ? 'es-CO' : 'en-US', {
       style: 'currency',
       currency: 'COP',
       minimumFractionDigits: 0,

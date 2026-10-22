@@ -536,7 +536,7 @@ export function PropietarioTable({
                     ) : (
                     <span className="text-muted-foreground text-sm tabular-nums">
                       {propietario.lastPaymentDate
-                        ? new Date(propietario.lastPaymentDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+                        ? new Date(propietario.lastPaymentDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
                             day: 'numeric',
                             month: 'short',
                             year: 'numeric',

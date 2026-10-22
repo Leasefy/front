@@ -148,7 +148,7 @@ export function StepHousingPreferences() {
   const [otraAmenidad, setOtraAmenidad] = useState('')
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat(locale === 'es' ? 'es-CL' : 'en-US', {
+    return new Intl.NumberFormat(locale === 'es' ? 'es-CO' : 'en-US', {
       style: 'currency',
       currency: 'COP',
       minimumFractionDigits: 0,

@@ -244,7 +244,7 @@ export function CobroCard({
           <CalendarBlank className="w-4 h-4 text-fg-subtle" />
           <span className="text-fg-muted">{t('inmobiliaria.cobros.card.dueDate')}</span>
           <span className="text-fg-muted font-mono tabular-nums">
-            {new Date(cobro.dueDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+            {new Date(cobro.dueDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
               day: 'numeric',
               month: 'short',
               year: 'numeric',
@@ -269,7 +269,7 @@ export function CobroCard({
         {cobro.status === 'paid' && cobro.paidDate && (
           <div className="flex items-center gap-2 text-sm text-success">
             <CheckCircle className="w-4 h-4" weight="fill" />
-            <span>{t('inmobiliaria.cobros.card.paidOn', { date: new Date(cobro.paidDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+            <span>{t('inmobiliaria.cobros.card.paidOn', { date: new Date(cobro.paidDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
               day: 'numeric',
               month: 'short',
             }) })}</span>

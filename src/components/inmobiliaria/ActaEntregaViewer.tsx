@@ -545,7 +545,7 @@ export function ActaEntregaViewer({
             <div className="flex items-center justify-between p-4 rounded-lg bg-surface-muted border border-border">
               <span className="text-fg-muted">{t('inmobiliaria.acta.originalDeposit')}</span>
               <span className="font-mono font-bold tabular-nums text-fg">
-                ${acta.depositAmount.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
+                ${acta.depositAmount.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}
               </span>
             </div>
 
@@ -569,7 +569,7 @@ export function ActaEntregaViewer({
                       )}
                     </div>
                     <span className="font-mono font-medium tabular-nums text-danger">
-                      -${deduction.amount.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
+                      -${deduction.amount.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}
                     </span>
                   </div>
                 ))}
@@ -583,7 +583,7 @@ export function ActaEntregaViewer({
                   {t('inmobiliaria.acta.amountToReturn')}
                 </span>
                 <span className="text-xl font-mono font-bold tabular-nums text-success">
-                  ${acta.depositToReturn.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
+                  ${acta.depositToReturn.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}
                 </span>
               </div>
             )}

@@ -167,7 +167,7 @@ export default function ApplicationDetailPage() {
   const currentStep = getCurrentStepIndex();
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -175,14 +175,14 @@ export default function ApplicationDetailPage() {
   };
 
   const formatShortDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
     });
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return new Date(dateString).toLocaleTimeString(locale === 'es' ? 'es-CO' : 'en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });

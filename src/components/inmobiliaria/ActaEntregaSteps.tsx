@@ -774,7 +774,7 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
               <Input
                 id="acta-deposito"
                 type="text"
-                value={formData.depositAmount?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') || ''}
+                value={formData.depositAmount?.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US') || ''}
                 onChange={(e) => {
                   const value = parseInt(e.target.value.replace(/\D/g, '')) || 0;
                   updateFormData({ depositAmount: value });
@@ -829,7 +829,7 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-fg-muted text-sm">$</span>
                   <Input
                     type="text"
-                    value={deduction.amount.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
+                    value={deduction.amount.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}
                     onChange={(e) => {
                       const newDeductions = [...(formData.deductions || [])];
                       newDeductions[index].amount = parseInt(e.target.value.replace(/\D/g, '')) || 0;
@@ -863,7 +863,7 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
                 formData.depositAmount,
                 formData.deductions,
               );
-              const pesos = (n: number) => `$${n.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}`;
+              const pesos = (n: number) => `$${n.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US')}`;
               return (
                 <div className="space-y-2">
                   <div className="p-4 rounded-lg bg-success-soft border border-success" data-testid="acta-a-devolver">

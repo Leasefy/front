@@ -180,7 +180,7 @@ function formatMonthYear(monthStr: string, loc: string): string {
  * Format date for display
  */
 function formatDate(dateStr: string, loc: string): string {
-  return new Date(dateStr).toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', {
+  return new Date(dateStr).toLocaleDateString(loc === 'es' ? 'es-CO' : 'en-US', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -192,7 +192,7 @@ function formatDate(dateStr: string, loc: string): string {
  */
 function formatDateShort(dateStr: string | undefined, loc: string): string {
   if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', {
+  return new Date(dateStr).toLocaleDateString(loc === 'es' ? 'es-CO' : 'en-US', {
     day: 'numeric',
     month: 'short',
   });

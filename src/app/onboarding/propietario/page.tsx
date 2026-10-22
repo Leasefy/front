@@ -611,7 +611,7 @@ function OnboardingPropietarioContent() {
                       value={data.expectedRent}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '')
-                        const formatted = value ? parseInt(value).toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : ''
+                        const formatted = value ? parseInt(value).toLocaleString(locale === 'es' ? 'es-CO' : 'en-US') : ''
                         updateData({ expectedRent: formatted })
                       }}
                       placeholder="2.500.000"

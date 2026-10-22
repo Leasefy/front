@@ -373,7 +373,7 @@ export function ConsignacionCard({
             {consignacion.leaseEndDate && (
               <p className="text-xs text-primary mt-1">
                 {t('inmobiliaria.portafolio.card.leaseUntil', {
-                  date: new Date(consignacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+                  date: new Date(consignacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
                     day: 'numeric',
                     month: 'short',
                     year: 'numeric',

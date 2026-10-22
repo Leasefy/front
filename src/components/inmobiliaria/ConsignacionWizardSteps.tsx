@@ -513,7 +513,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
                 <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
                 <Input
                   type="text"
-                  value={formData.salePrice ? formData.salePrice.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : ''}
+                  value={formData.salePrice ? formData.salePrice.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US') : ''}
                   onChange={(e) => {
                     const value = e.target.value.replace(/[^0-9]/g, '');
                     updateFormData({ salePrice: value ? parseInt(value) : undefined });
@@ -535,7 +535,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
                 <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
                 <Input
                   type="text"
-                  value={formData.monthlyRent ? formData.monthlyRent.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : ''}
+                  value={formData.monthlyRent ? formData.monthlyRent.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US') : ''}
                   onChange={(e) => {
                     const value = e.target.value.replace(/[^0-9]/g, '');
                     updateFormData({ monthlyRent: value ? parseInt(value) : 0 });
@@ -558,7 +558,7 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
               <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
               <Input
                 type="text"
-                value={formData.adminFee ? formData.adminFee.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : ''}
+                value={formData.adminFee ? formData.adminFee.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US') : ''}
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9]/g, '');
                   updateFormData({ adminFee: value ? parseInt(value) : undefined });

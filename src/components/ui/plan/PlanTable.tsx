@@ -177,7 +177,7 @@ export function PlanTable<T extends object>({
         const date = value instanceof Date ? value : new Date(String(value));
         return (
           <span className="text-sm text-plan-secondary">
-            {date.toLocaleDateString('es-CL', {
+            {date.toLocaleDateString('es-CO', {
               day: '2-digit',
               month: 'short',
               year: 'numeric',
@@ -188,7 +188,7 @@ export function PlanTable<T extends object>({
       case 'currency':
         return (
           <span className="text-sm font-medium text-plan-primary">
-            ${Number(value).toLocaleString('es-CL')}
+            ${Number(value).toLocaleString('es-CO')}
           </span>
         );
 

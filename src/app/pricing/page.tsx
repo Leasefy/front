@@ -668,7 +668,7 @@ export default function PricingPage() {
                       <input
                         type="text"
                         inputMode="numeric"
-                        value={exampleRent ? exampleRent.toLocaleString('es-CL') : ''}
+                        value={exampleRent ? exampleRent.toLocaleString('es-CO') : ''}
                         onChange={(e) => {
                           const rawValue = e.target.value.replace(/[^\d]/g, '');
                           if (rawValue === '') {
@@ -694,13 +694,13 @@ export default function PricingPage() {
                   <div className="px-4 py-3 rounded-md bg-surface border border-border-faint text-center min-w-[100px]">
                     <p className="text-[11px] font-mono tabular-nums text-muted-foreground mb-0.5">5%</p>
                     <p className="text-[18px] font-mono font-bold tabular-nums text-foreground">
-                      ${(exampleRent * 0.05).toLocaleString('es-CL')}
+                      ${(exampleRent * 0.05).toLocaleString('es-CO')}
                     </p>
                   </div>
                   <div className="px-4 py-3 rounded-md bg-success-soft border border-success/30 text-center min-w-[100px]">
                     <p className="text-[11px] font-mono tabular-nums text-success mb-0.5">6%</p>
                     <p className="text-[18px] font-mono font-bold tabular-nums text-foreground">
-                      ${(exampleRent * 0.06).toLocaleString('es-CL')}
+                      ${(exampleRent * 0.06).toLocaleString('es-CO')}
                     </p>
                   </div>
                 </div>
@@ -709,7 +709,7 @@ export default function PricingPage() {
               {/* Savings indicator - compact */}
               <div className="mt-4 pt-3 border-t border-border-faint flex flex-wrap items-center gap-4 text-[12px]">
                 <span className="text-muted-foreground">
-                  Ahorro: <span className="text-success font-medium font-mono tabular-nums">${(exampleRent * 0.05).toLocaleString('es-CL')}</span>/mes
+                  Ahorro: <span className="text-success font-medium font-mono tabular-nums">${(exampleRent * 0.05).toLocaleString('es-CO')}</span>/mes
                 </span>
                 <span className="text-fg-subtle">•</span>
                 <span className="text-muted-foreground">Sin compromisos</span>

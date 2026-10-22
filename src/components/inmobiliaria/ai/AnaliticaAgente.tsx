@@ -43,7 +43,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import type { AgentAnaliticaResponse, AnaliticaSerie } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
 import { formatKpiValue } from './SalaAgente'
-import { AnimatedNumber, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
+import { AnimatedNumber, Cifra, CrossFade, FranjaDeCifras } from '@leasefy/cadence'
 import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece'
 import { useRef } from 'react'
 
@@ -194,26 +194,25 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
   return (
     <CrossFade swapKey="analitica">
     <div className="space-y-6" data-testid="analitica-agente">
-      {/* Resumen KPI strip: entran escalonadas y cada cifra cuenta. */}
+      {/* GLOW UP 22-10: las cifras del agente en la franja de Cadence (como el resto del panel), no en
+          tarjetas hechas a mano; cada cifra cuenta. */}
       {data.resumen.length > 0 && (
-        <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="analitica-resumen">
+        <FranjaDeCifras data-testid="analitica-resumen" aria-label="Resumen del agente">
           {data.resumen.map((kpi) => (
-            <StaggerItem
+            <Cifra
               key={kpi.id}
-              className="rounded-lg border border-border bg-card p-4"
-              data-testid={`analitica-kpi-${kpi.id}`}
-            >
-              <p className="text-caption text-muted-foreground leading-tight">{kpi.label}</p>
-              <p className="text-xl font-medium text-foreground mt-1 tabular-nums">
+              etiqueta={kpi.label}
+              valor={
                 <AnimatedNumber
                   value={kpi.value}
                   from={huboCarga.current ? 0 : undefined}
                   format={(n) => formatKpiValue(n, kpi.format)}
                 />
-              </p>
-            </StaggerItem>
+              }
+              data-testid={`analitica-kpi-${kpi.id}`}
+            />
           ))}
-        </Stagger>
+        </FranjaDeCifras>
       )}
 
       {/* One bar-chart block per serie */}

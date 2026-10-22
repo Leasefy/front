@@ -1,4 +1,5 @@
 'use client';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -631,7 +632,8 @@ function PortafolioContent() {
                   filteredConsignaciones.length === 1
                     ? 'inmobiliaria.portafolio.stats.propertyCountUno'
                     : 'inmobiliaria.portafolio.stats.propertyCount',
-                  { count: filteredConsignaciones.length },
+                  // Revisora r23 (Inmuebles #2): con separador de miles («2.923», VOZ §4).
+                  { count: filteredConsignaciones.length.toLocaleString(localeDeLasCifras()) },
                 )
               : t('inmobiliaria.portafolio.stats.propertyCountSinContar')}
           </span>

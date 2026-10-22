@@ -151,14 +151,15 @@ export function getPropertyIcon(propertyType: string): React.ElementType {
 // Availability status (labels resolved via i18n in component) → Cadence Badge variant
 const AVAILABILITY_COLORS: Record<
   PropertyAvailability,
-  { variant: 'success' | 'default' | 'warning' | 'destructive'; labelKey: string }
+  { variant: 'success' | 'default' | 'secondary' | 'warning' | 'destructive'; labelKey: string }
 > = {
   available: {
     variant: 'success',
     labelKey: 'inmobiliaria.consignaciones.availability.available',
   },
+  // Revisora r23 (Inmuebles #4): el azul es la acción; «Arrendado» va neutro y sólo «Disponible» en verde.
   rented: {
-    variant: 'default',
+    variant: 'secondary',
     labelKey: 'inmobiliaria.consignaciones.availability.rented',
   },
   in_process: {
@@ -603,7 +604,7 @@ export function ConsignacionTable({
                         </p>
                       )
                     ) : (
-                      <p className="font-semibold text-foreground tabular-nums">
+                      <p className="font-mono text-foreground tabular-nums">
                         {row.canonPorConfirmar
                           ? TEXTO_CANON_POR_CONFIRMAR
                           : row.monthlyRent != null ? formatCurrency(row.monthlyRent) : '—'}
@@ -633,7 +634,8 @@ export function ConsignacionTable({
                         (§A.3), `commissionPercent` es siempre 0 y se muestra `saleCommissionPercent`.
                         IN-03 (QA 04-10): «10 %» una vez, con la misma regla de la tarjeta y la ficha
                         (`textoDeLaComision`), que dice «No venía en el archivo» en vez de un 0. */}
-                    {row.kind === 'consignacion' ? (
+                    {/* Revisora r23 (Inmuebles #5): sin dato de comisión, nada (antes un chip «—»). */}
+                    {row.kind === 'consignacion' && textoCortoDeLaComision(row).texto !== '—' ? (
                       <Badge
                         variant="secondary"
                         className="mt-1 whitespace-nowrap tabular-nums"

@@ -682,7 +682,11 @@ export function ConversacionDelMarketplace() {
         const pregunta = !iaAgotada.current && esPreguntaParaLaIa(t, entendioAlgo);
         // Una pregunta que no trae filtros nuevos no toca la búsqueda: la IA
         // contesta sobre lo que la persona ya tiene a la vista.
-        seguir(t, pregunta && !entendioAlgo ? ultimo.busqueda : nueva, true, pregunta);
+        // En una pregunta, el texto suelto no se vuelve filtro (dejaba pastillas
+        // como «¿cuál más cómo visito?»): sólo cuenta lo que el buscador entendió.
+        const sinTextoSuelto: Busqueda = { ...nueva, q: ultimo.busqueda.q };
+        if (!sinTextoSuelto.q) delete sinTextoSuelto.q;
+        seguir(t, pregunta ? (entendioAlgo ? sinTextoSuelto : ultimo.busqueda) : nueva, true, pregunta);
       } finally {
         setAfinando(false);
       }

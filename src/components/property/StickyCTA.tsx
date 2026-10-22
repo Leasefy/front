@@ -936,28 +936,32 @@ export function StickyCTA({
               {/* Error message */}
               <ErrorDelCampo id="visita-error" mensaje={scheduleError} className="text-[12px] text-center" />
 
-              {/* CTA button */}
-              <Button
-                onClick={handleScheduleVisit}
-                aria-describedby={scheduleError ? 'visita-error' : undefined}
-                disabled={!selectedDay || !selectedTime || isSubmitting || slotsLoading}
-                hideArrow
-                className="w-full h-auto py-4 rounded-xl text-[14px] gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Spinner size="sm" variant="current" />
-                    Agendando...
-                  </>
-                ) : selectedDay && selectedTime ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    Confirmar visita
-                  </>
-                ) : (
-                  'Selecciona fecha y hora'
-                )}
-              </Button>
+              {/* CTA button. Sin horarios no hay fecha que elegir: el
+                  formulario de «te contactamos» trae su propio botón y este
+                  quedaba gris y sin sentido debajo (QA 21-10-2026). */}
+              {(slotsLoading || availableDates.length > 0) && (
+                <Button
+                  onClick={handleScheduleVisit}
+                  aria-describedby={scheduleError ? 'visita-error' : undefined}
+                  disabled={!selectedDay || !selectedTime || isSubmitting || slotsLoading}
+                  hideArrow
+                  className="w-full h-auto py-4 rounded-xl text-[14px] gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Spinner size="sm" variant="current" />
+                      Agendando...
+                    </>
+                  ) : selectedDay && selectedTime ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Confirmar visita
+                    </>
+                  ) : (
+                    'Selecciona fecha y hora'
+                  )}
+                </Button>
+              )}
 
               <p className="text-[11px] text-muted-foreground text-center flex items-center justify-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-[hsl(var(--success-500))]" />

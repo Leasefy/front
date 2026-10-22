@@ -90,6 +90,7 @@ import {
   Receipt,
   SealWarning,
   Warning,
+  CaretDown,
 } from '@phosphor-icons/react'
 import {
   generarPorTandas,
@@ -2286,8 +2287,11 @@ export function NuevaFactura({
                   <Warning className="h-4 w-4 text-fg-muted" weight="fill" />
                   {datos.omitidos.length}{' '}
                   {datos.omitidos.length === 1
-                    ? 'cuota no genera factura'
-                    : 'cuotas no generan factura'}
+                    ? 'cuota del mes no genera factura'
+                    : 'cuotas del mes no generan factura'}
+                  {/* Revisora r23 (Facturación #4): que se note que se abre y que adentro está el porqué. */}
+                  <span className="text-primary">· Ver por qué</span>
+                  <CaretDown className="h-3.5 w-3.5 text-fg-muted transition-transform [[open]>summary_&]:rotate-180" aria-hidden="true" />
                 </summary>
                 <ul className="mt-3 space-y-1.5">
                   {datos.omitidos.slice(0, 50).map((o) => (

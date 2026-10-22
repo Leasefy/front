@@ -712,7 +712,7 @@ describe('NuevaFactura', () => {
     );
     await montar();
     const bloque = q('[data-testid="facturacion-omitidos"]')!;
-    expect(bloque.textContent).toContain('1 cuota no genera factura');
+    expect(bloque.textContent).toContain('1 cuota del mes no genera factura');
     expect(bloque.textContent).toContain('El mandato no pactó comisión de administración.');
   });
 

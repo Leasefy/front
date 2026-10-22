@@ -211,14 +211,14 @@ export function TrasladoDeComisionPanel() {
                 >
                   <FilaDelTraslado traslado={t} />
                   <div className="flex flex-wrap gap-2">
+                    {/* 22-10 (revisión): aprobarlo es LA acción de la pantalla → la azul. */}
                     <Button
-                      variant="ink"
                       onClick={() => void aprobar(t)}
                       disabled={trabajando}
                       data-testid={`aprobar-${t.id}`}
                     >
                       <CheckCircle className="h-4 w-4" aria-hidden="true" />
-                      Aprobar y trasladar
+                      Aprobar y trasladar {formatCurrency(t.totalCop)}
                     </Button>
                     <Button
                       variant="outline"

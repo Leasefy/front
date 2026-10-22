@@ -206,7 +206,8 @@ export function RecibosDeCajaDeLaInmobiliaria() {
           }}
         />
       ) : datos ? (
-        <div className={cn('overflow-x-auto', cargando && 'opacity-70')}>
+        // 22-10 (revisión, 390): en el celular son tarjetas; el desplazamiento lateral sólo desde md.
+        <div className={cn('md:overflow-x-auto', cargando && 'opacity-70')}>
           {/* GLOW UP (revisión de Dinero, 22-10-2026): cinco columnas —el recibo con su
               fecha, quién y dónde, el medio, el valor y las acciones— y, bajo 768,
               una tarjeta por recibo. */}

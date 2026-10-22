@@ -283,6 +283,17 @@ function EnlaceDelBloque({ href, children }: { href: string; children: string })
 
 // ══ (a) Recaudo ═════════════════════════════════════════════════════════════
 
+function plataDelTablero(t: Tablero) {
+  return plataPareja([
+    t.recaudo.delMesCop, t.recaudo.delDiaCop, t.recaudo.causadoDelMesCop,
+    t.cartera.totalCop, t.cartera.enSiniestroCop, ...t.cartera.tramos.map((x) => x.carteraCop),
+    t.propietarios.porGirarCop, t.propietarios.retenidoCop, t.propietarios.enLotesPorAprobarCop,
+    t.propietarios.giradoDelMesCop, t.propietarios.proximosGiros?.totalCop,
+    t.margen.margenCop, t.margen.comisionesCop, t.margen.interesesCop, t.margen.gastosDeCobranzaCop,
+    t.margen.ingresosPropiosCop, t.margen.gmfCop, t.margen.pasarelaCop, t.margen.costosCop,
+  ]);
+}
+
 function Renglones({ children }: { children: ReactNode }) {
   return <div className="border-t border-border px-5 py-2">{children}</div>;
 }
@@ -290,8 +301,8 @@ function Renglones({ children }: { children: ReactNode }) {
 function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
   const tr = useTr();
   const { recaudo } = tablero;
-  // Los mismos decimales en todo el bloque (revisión 22-10).
-  const plata = plataPareja([recaudo.delMesCop, recaudo.delDiaCop, recaudo.causadoDelMesCop]);
+  // Los mismos decimales en TODO el tablero (revisión 22-10: las cuatro cifras héroe no coincidían).
+  const plata = plataDelTablero(tablero);
   const base =
     recaudo.base === 'EMITIDO'
       ? 'lo que se emitió en cobros'
@@ -397,8 +408,8 @@ function MarcaDelTramo({ i, total }: { i: number; total: number }) {
 function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
   const tr = useTr();
   const { cartera } = tablero;
-  // Los mismos decimales en todo el bloque (revisión 22-10).
-  const plata = plataPareja([cartera.totalCop, ...cartera.tramos.map((t) => t.carteraCop)]);
+  // Los mismos decimales en TODO el tablero (revisión 22-10: las cuatro cifras héroe no coincidían).
+  const plata = plataDelTablero(tablero);
   const sumaDeTramos = cartera.tramos.reduce((a, t) => a + Math.max(t.carteraCop, 0), 0);
   return (
     <TarjetaDeCifras
@@ -565,8 +576,8 @@ function BloqueDeDeudores({ tablero }: { tablero: Tablero }) {
 function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
   const tr = useTr();
   const { propietarios } = tablero;
-  // Los mismos decimales en todo el bloque (revisión 22-10).
-  const plata = plataPareja([propietarios.porGirarCop, propietarios.retenidoCop, propietarios.enLotesPorAprobarCop, propietarios.giradoDelMesCop, propietarios.proximosGiros?.totalCop]);
+  // Los mismos decimales en TODO el tablero (revisión 22-10: las cuatro cifras héroe no coincidían).
+  const plata = plataDelTablero(tablero);
   return (
     <TarjetaDeCifras
       testId="bloque-propietarios"
@@ -651,8 +662,8 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
 function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
   const tr = useTr();
   const { margen } = tablero;
-  // Los mismos decimales en todo el bloque (revisión 22-10).
-  const plata = plataPareja([margen.margenCop, margen.comisionesCop, margen.interesesCop, margen.gastosDeCobranzaCop, margen.ingresosPropiosCop, margen.gmfCop, margen.pasarelaCop, margen.costosCop]);
+  // Los mismos decimales en TODO el tablero (revisión 22-10: las cuatro cifras héroe no coincidían).
+  const plata = plataDelTablero(tablero);
   return (
     <TarjetaDeCifras
       testId="bloque-margen"

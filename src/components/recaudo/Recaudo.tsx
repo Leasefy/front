@@ -84,7 +84,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { SinDatos } from '@/components/estado/SinDatos';
 import type { PuntoDeLaSerie, ResumenDeRecaudo } from '@/lib/api/recaudo.types';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, plataPareja } from '@/lib/format';
 import { useRecaudo } from '@/lib/hooks/use-recaudo';
 import { useComparativaDelRecaudo } from '@/lib/hooks/use-comparativa-del-recaudo';
 import { esFuturo, mesActual, nombreDelMes, sumarMeses } from '@/lib/recaudo/meses';
@@ -281,6 +281,8 @@ export function Recaudo() {
   // 22-10 (revisión de Dinero): las definiciones, detrás de «Qué mide cada cifra».
   const [verDefiniciones, setVerDefiniciones] = useState(false);
   const siguiente = sumarMeses(month, 1);
+  // Los mismos decimales en las cinco cifras (revisión 22-10).
+  const plata = plataPareja(resumen ? [resumen.deudaDelMesCop, resumen.recaudadoCop, resumen.pendienteCop, resumen.dispersadoCop, resumen.disponibleCop] : []);
   const puedeAvanzar = !esFuturo(siguiente);
 
   const puntos = useMemo(() => serieParaLaTabla(serie ?? []), [serie]);
@@ -398,6 +400,7 @@ export function Recaudo() {
                   cuelgan las demás, y la que existe desde que se firma cada
                   contrato: no hay que emitir nada para que haya deuda. */}
               <Cifra
+                formato={plata}
                 id="se-debe"
                 verDefinicion={verDefiniciones}
                 className="lg:col-start-2 lg:row-start-1"
@@ -411,6 +414,7 @@ export function Recaudo() {
                 }
               />
               <Cifra
+                formato={plata}
                 id="llego"
                 destacada
                 verDefinicion={verDefiniciones}
@@ -427,9 +431,19 @@ export function Recaudo() {
                         />
                       </div>
                       <p className="text-body-sm text-fg-muted">
-                        {tr('de')} <span className="font-mono tabular-nums text-fg">{formatCurrency(resumen.deudaDelMesCop)}</span>{' '}
+                        {tr('de')} <span className="font-mono tabular-nums text-fg">{plata(resumen.deudaDelMesCop)}</span>{' '}
                         {tr('que se deben en')} {nombreDelMes(month, locale)}
                       </p>
+                      {/* 22-10 (revisión: «la cuenta no cierra»): lo que llegó incluye pagos de
+                          otros meses; se dice qué parte es de las cuotas del mes. */}
+                      {resumen.pagadoDeLasCuotasDelMesCop != null && resumen.recaudadoCop - resumen.pagadoDeLasCuotasDelMesCop > 0 ? (
+                        <p className="text-caption text-fg-muted" data-testid="llego-de-otros-meses">
+                          <span className="font-mono tabular-nums text-fg">{plata(resumen.pagadoDeLasCuotasDelMesCop)}</span>{' '}
+                          {tr('son de las cuotas del mes y')}{' '}
+                          <span className="font-mono tabular-nums text-fg">{plata(resumen.recaudadoCop - resumen.pagadoDeLasCuotasDelMesCop)}</span>{' '}
+                          {tr('de meses anteriores.')}
+                        </p>
+                      ) : null}
                     </div>
                   ) : null
                 }
@@ -442,6 +456,7 @@ export function Recaudo() {
                 definicion={definicionDeLoQueLlego(resumen, month, locale)}
               />
               <Cifra
+                formato={plata}
                 id="pendiente"
                 verDefinicion={verDefiniciones}
                 className="lg:col-start-3 lg:row-start-1"
@@ -461,6 +476,7 @@ export function Recaudo() {
                 }
               />
               <Cifra
+                formato={plata}
                 id="dispersado"
                 verDefinicion={verDefiniciones}
                 className="lg:col-start-2 lg:row-start-2"
@@ -474,6 +490,7 @@ export function Recaudo() {
                 }
               />
               <Cifra
+                formato={plata}
                 id="disponible"
                 verDefinicion={verDefiniciones}
                 className="lg:col-start-3 lg:row-start-2"
@@ -761,6 +778,7 @@ function Cifra({
   verDefinicion = false,
   extra,
   className,
+  formato = formatCurrency,
 }: {
   id: string;
   etiqueta: string;
@@ -775,6 +793,7 @@ function Cifra({
   verDefinicion?: boolean;
   extra?: ReactNode;
   className?: string;
+  formato?: (n: number) => string;
 }) {
   return (
     <section
@@ -794,7 +813,7 @@ function Cifra({
         data-testid={`valor-${id}`}
       >
         {/* Cuenta desde la del mes anterior al cambiar de mes. */}
-        <AnimatedNumber value={valor} format={formatCurrency} />
+        <AnimatedNumber value={valor} format={formato} />
       </p>
       {extra}
       {comparacion}

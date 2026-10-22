@@ -1828,7 +1828,7 @@
       "title": "Dashboard inmobiliaria",
       "subtitle": "Resumen de operaciones y métricas clave",
       "kpi": {
-        "totalProperties": "Propiedades totales",
+        "totalProperties": "Inmuebles totales",
         "rentedAndAvailable": "{{rented}} arrendadas · {{available}} disponibles",
         "monthlyCollection": "Recaudo del mes",
         "collectionRateLabel": "{{rate}} · {{rotulo}}",
@@ -1865,7 +1865,7 @@
         "newOwner": "Nuevo propietario",
         "newOwnerDesc": "Registrar propietario",
         "newConsignment": "Nueva consignación",
-        "newConsignmentDesc": "Agregar propiedad",
+        "newConsignmentDesc": "Agregar inmueble",
         "registerPayment": "Registrar cobro",
         "registerPaymentDesc": "Recibir pago",
         "viewReports": "Ver reportes",
@@ -1972,7 +1972,7 @@
         "title": "Notificaciones",
         "subtitle": "Configura tus alertas por email y push",
         "newLeads": "Nuevos interesados",
-        "newLeadsDesc": "Cuando un candidato aplica a una propiedad",
+        "newLeadsDesc": "Cuando un candidato aplica a un inmueble",
         "paymentsReceived": "Pagos recibidos",
         "paymentsReceivedDesc": "Cuando se registra un pago de arriendo",
         "contractExpiry": "Vencimiento de contratos",
@@ -2294,7 +2294,7 @@
         "create": "Crear",
         "editPerm": "Editar",
         "deletePerm": "Eliminar",
-        "properties": "Propiedades",
+        "properties": "Inmuebles",
         "owners": "Propietarios",
         "agents": "Agentes",
         "payments": "Cobros",
@@ -2400,7 +2400,7 @@
         "nextBilling": "Próximo cobro: {{date}}",
         "upgradePlan": "Mejorar plan",
         "planUsage": "Uso del plan",
-        "properties": "Propiedades",
+        "properties": "Inmuebles",
         "users": "Usuarios",
         "agentsLabel": "Agentes",
         "paymentMethod": "Método de pago",
@@ -2443,7 +2443,7 @@
           }
         },
         "features": {
-          "properties": "Propiedades",
+          "properties": "Inmuebles",
           "users": "Usuarios",
           "agents": "Agentes",
           "reports": "Reportes",
@@ -2483,7 +2483,7 @@
       "editOwner": "Editar propietario",
       "deleteOwner": "Eliminar propietario",
       "deleteConfirm": "Al eliminar a {{name}} se borra su ficha: datos de contacto, cuenta bancaria, perfil tributario y notas internas. No se puede deshacer.",
-      "deleteWarningProperties": "Este propietario tiene {{count}} propiedad(es) consignadas.",
+      "deleteWarningProperties": "Este propietario tiene {{count}} inmueble(s) consignados.",
       "deleteBloqueado": {
         "titulo": "No se puede eliminar: tiene {{count}} inmueble(s) consignado(s)",
         "tituloCopropietario": "No se puede eliminar: es copropietario en {{count}} inmueble(s)",
@@ -2503,7 +2503,7 @@
       "name": "Nombre",
       "email": "Correo",
       "phone": "Teléfono",
-      "properties": "Propiedades",
+      "properties": "Inmuebles",
       "status": "Estado",
       "active": "Activo",
       "inactive": "Inactivo",
@@ -2511,7 +2511,7 @@
       "edit": "Editar",
       "totalOwners": "Total propietarios",
       "activeOwners": "Propietarios activos",
-      "totalProperties": "Total propiedades",
+      "totalProperties": "Total inmuebles",
       "monthlyRevenue": "Canon mensual",
       "upToDate": "Al día",
       "withBalance": "{{count}} con giros atrasados",
@@ -2523,10 +2523,10 @@
       "ofTotal": "de {{total}} propietarios",
       "propietarioUno": "propietario",
       "card": {
-        "property": "propiedad",
-        "properties": "propiedades",
+        "property": "inmueble",
+        "properties": "inmuebles",
         "pendingBadge": "Giro atrasado",
-        "propertiesLabel": "Propiedades",
+        "propertiesLabel": "Inmuebles",
         "rented": "arrendadas",
         "rentedOne": "arrendada",
         "monthlyRent": "Canon mensual",
@@ -2551,7 +2551,7 @@
       "detail": {
         "title": "Detalle del Propietario",
         "personalInfo": "Información Personal",
-        "properties": "Propiedades",
+        "properties": "Inmuebles",
         "bankInfo": "Información Bancaria",
         "stats": "Estadísticas",
         "documents": "Documentos",
@@ -2562,7 +2562,7 @@
         "copyError": "Error al copiar",
         "payments": "Pagos",
         "notes": "Notas",
-        "noProperties": "No hay propiedades consignadas",
+        "noProperties": "No hay inmuebles consignados",
         "newConsignment": "Nueva consignación",
         "noPayments": "No hay historial de pagos",
         "internalNotes": "Notas internas",
@@ -2660,8 +2660,8 @@
         "statusInProcess": "En proceso",
         "tenant": "Inquilino",
         "saleCommission": "Comisión de venta",
-        "propertiesCount": "propiedades",
-        "propertiesCountUno": "propiedad",
+        "propertiesCount": "inmuebles",
+        "propertiesCountUno": "inmueble",
         "copropiedadPct": "Copropiedad · {{pct}}",
         "suParteAlMes": "su parte al mes",
         "suParteDe": "su parte de {{canon}} al mes",
@@ -2702,7 +2702,7 @@
       "status": "Estado",
       "active": "Activo",
       "inactive": "Inactivo",
-      "assignedProperties": "Propiedades asignadas",
+      "assignedProperties": "Inmuebles asignados",
       "closedDeals": "Negocios cerrados",
       "commission": "Comisión",
       "viewProfile": "Ver perfil",
@@ -2737,7 +2737,7 @@
           "onLeave": "Licencia",
           "invited": "Invitado"
         },
-        "properties": "Propiedades",
+        "properties": "Inmuebles",
         "leases": "Arriendos",
         "closingsMonth": "Cierres mes",
         "commissions": "Comisiones",
@@ -2750,7 +2750,7 @@
         "title": "Detalle del Agente",
         "personalInfo": "Información Personal",
         "performance": "Rendimiento",
-        "properties": "Propiedades Asignadas",
+        "properties": "Inmuebles Asignados",
         "pipeline": "Pipeline Activo",
         "commissions": "Comisiones",
         "commissionsDesc": "Historial detallado de pagos y comisiones del agente"
@@ -2762,7 +2762,7 @@
       "search": "Buscar cobro...",
       "registerPayment": "Registrar pago",
       "noPayments": "No hay cobros registrados",
-      "noPaymentsDesc": "Los cobros aparecerán cuando tengas propiedades activas",
+      "noPaymentsDesc": "Los cobros aparecerán cuando tengas inmuebles activos",
       "viewTable": "Tabla",
       "viewCards": "Tarjetas",
       "filters": {
@@ -2778,13 +2778,13 @@
         "monthLabel": "Mes",
         "selectMonth": "Seleccionar mes",
         "statusLabel": "Estado",
-        "propertyLabel": "Propiedad",
-        "allProperties": "Todas las propiedades",
+        "propertyLabel": "Inmueble",
+        "allProperties": "Todos los inmuebles",
         "ownerLabel": "Propietario",
         "allOwners": "Todos los propietarios"
       },
       "table": {
-        "property": "Propiedad",
+        "property": "Inmueble",
         "tenant": "Inquilino",
         "month": "Mes",
         "total": "Total",
@@ -2820,7 +2820,7 @@
         "sendReminder": "Enviar recordatorio",
         "sendingReminder": "Enviando...",
         "markDefaulted": "Marcar como incobrable",
-        "propertySection": "Propiedad",
+        "propertySection": "Inmueble",
         "tenantSection": "Inquilino",
         "ownerSection": "Propietario",
         "breakdownSection": "Desglose",
@@ -2965,7 +2965,7 @@
         "messageTemplates": "Plantillas de Mensajes",
         "preExpiryTemplate": "Recordatorio pre-vencimiento",
         "overdueTemplate": "Recordatorio de mora",
-        "templateNote": "Las variables entre llaves se reemplazan automaticamente con los datos del inquilino y la propiedad.",
+        "templateNote": "Las variables entre llaves se reemplazan automaticamente con los datos del inquilino y el inmueble.",
         "cancel": "Cancelar",
         "save": "Guardar Configuracion",
         "saving": "Guardando..."
@@ -3074,7 +3074,7 @@
       },
       "table": {
         "owner": "Propietario",
-        "property": "Propiedad",
+        "property": "Inmueble",
         "grossAmount": "Monto bruto",
         "commission": "Comisión",
         "netAmount": "Monto neto",
@@ -3159,7 +3159,7 @@
         "ivaComision": "IVA de la comisión",
         "retenidoComision": "Retenido sobre la comisión",
         "net": "Neto",
-        "propertyBreakdown": "Desglose por Propiedad",
+        "propertyBreakdown": "Desglose por Inmueble",
         "history": "Historial",
         "created": "Dispersión creada",
         "approved": "Aprobada",
@@ -3233,7 +3233,7 @@
       "tableView": {
         "propietario": "Propietario",
         "month": "Mes",
-        "properties": "Propiedades",
+        "properties": "Inmuebles",
         "canonCausado": "Canon causado",
         "canonRecaudado": "Canon recaudado",
         "canon": "Canon",
@@ -3332,7 +3332,7 @@
           "high": "Alta",
           "urgent": "Urgente"
         },
-        "property": "Propiedad",
+        "property": "Inmueble",
         "tenant": "Inquilino",
         "description": "Descripción",
         "assignedTo": "Asignado a",
@@ -3528,7 +3528,7 @@
       },
       "card": {
         "candidate": "Candidato",
-        "property": "Propiedad",
+        "property": "Inmueble",
         "agent": "Agente",
         "daysInStage": "días en etapa",
         "value": "Valor"
@@ -3536,7 +3536,7 @@
       "filters": {
         "all": "Todos",
         "agent": "Agente",
-        "property": "Propiedad",
+        "property": "Inmueble",
         "dateRange": "Rango de fechas"
       },
       "detail": {
@@ -3610,7 +3610,7 @@
     },
     "agente": {
       "workload": "Carga de trabajo",
-      "workloadDescription": "Distribución de propiedades por agente",
+      "workloadDescription": "Distribución de inmuebles por agente",
       "overloaded": "sobrecargado(s)",
       "balanced": "Balanceado",
       "workloadLow": "Baja",
@@ -3618,7 +3618,7 @@
       "workloadHigh": "Alta",
       "workloadOverloaded": "Sobrecargado",
       "agentsLabel": "Agentes",
-      "propertiesLabel": "Propiedades",
+      "propertiesLabel": "Inmuebles",
       "averageLabel": "Promedio",
       "recommendedMax": "Máx recomendado",
       "allZones": "Todas",
@@ -3627,7 +3627,7 @@
       "legendHigh": "Alta (9-10)",
       "legendOverloaded": "Sobrecargado (+10)",
       "performanceMetrics": "Métricas de desempeño",
-      "assignedProperties": "Propiedades asignadas",
+      "assignedProperties": "Inmuebles asignados",
       "activeLeases": "Arriendos activos",
       "closingsThisMonth": "Cierres este mes",
       "closingsThisYear": "Cierres este año",
@@ -3685,9 +3685,9 @@
       "rented": "Arrendado",
       "inProcess": "En proceso",
       "maintenance": "Mantenimiento",
-      "noAssignedProperties": "Sin propiedades asignadas",
-      "noPropertiesInPortfolio": "Este agente no tiene propiedades en su portafolio",
-      "assignProperty": "Asignar propiedad",
+      "noAssignedProperties": "Sin inmuebles asignados",
+      "noPropertiesInPortfolio": "Este agente no tiene inmuebles en su portafolio",
+      "assignProperty": "Asignar inmueble",
       "newAgent": "Nuevo Agente",
       "newAgentDescription": "Agrega un nuevo miembro al equipo",
       "fullName": "Nombre completo",
@@ -3710,11 +3710,11 @@
       "availableAgentSingular": "1 agente disponible",
       "availableAgentsPlural": "{{count}} agentes disponibles",
       "noAgentAssigned": "Sin agente asignado",
-      "noAgentAssignedDesc": "La propiedad no tendrá un agente responsable",
-      "assignLater": "Puedes asignar un agente más adelante desde el detalle de la propiedad.",
+      "noAgentAssignedDesc": "El inmueble no tendrá un agente responsable",
+      "assignLater": "Puedes asignar un agente más adelante desde el detalle del inmueble.",
       "recommended": "Recomendado",
-      "assignedPropertySingular": "1 propiedad asignada",
-      "assignedPropertiesPlural": "{{count}} propiedades asignadas",
+      "assignedPropertySingular": "1 inmueble asignado",
+      "assignedPropertiesPlural": "{{count}} inmuebles asignados",
       "closedPerMonth": "cerrados/mes",
       "noAgentsInZone": "No hay agentes disponibles en esta zona",
       "noActiveAgentsAvailable": "No hay agentes activos disponibles",
@@ -3728,18 +3728,18 @@
       "daySingular": "día",
       "daysPlural": "días",
       "viewLead": "Ver interesado: {{name}}",
-      "propertyLabel": "Propiedad: {{title}}",
+      "propertyLabel": "Inmueble: {{title}}",
       "noActiveLeads": "Sin interesados activos",
       "noProspectsInPipeline": "Este agente no tiene prospectos en pipeline",
-      "reassignProperty": "Reasignar Propiedad",
+      "reassignProperty": "Reasignar Inmueble",
       "currentAgent": "Agente Actual",
-      "propertyReassigned": "Propiedad reasignada",
+      "propertyReassigned": "Inmueble reasignado",
       "propertyReassignedDesc": "{{property}} ahora está asignada a {{agent}}",
       "changeReason": "Razón del cambio",
       "optional": "opcional",
       "changeReasonPlaceholder": "Ej: Redistribución de carga de trabajo, cambio de zona, etc.",
       "reassignmentSummary": "Resumen de la reasignación",
-      "summaryProperty": "Propiedad",
+      "summaryProperty": "Inmueble",
       "summaryFrom": "De",
       "summaryTo": "A",
       "sameAgentWarning": "El agente seleccionado es el mismo agente actual. Selecciona un agente diferente para reasignar.",
@@ -3792,7 +3792,7 @@
         "maintenance": "En mantenimiento"
       },
       "table": {
-        "property": "Propiedad",
+        "property": "Inmueble",
         "owner": "Propietario",
         "tenant": "Inquilino",
         "rent": "Arriendo",
@@ -3860,11 +3860,11 @@
       },
       "degradedNotice": {
         "title": "No pudimos cargar los inmuebles importados sin propietario",
-        "description": "Tu portafolio se sigue mostrando con lo que sí cargó. Puede faltar alguna propiedad reciente.",
+        "description": "Tu portafolio se sigue mostrando con lo que sí cargó. Puede faltar algún inmueble reciente.",
         "retry": "Reintentar"
       },
       "detail": {
-        "title": "Detalle de Propiedad",
+        "title": "Detalle de Inmueble",
         "info": "Información",
         "owner": "Propietario",
         "tenant": "Inquilino",
@@ -3903,13 +3903,13 @@
       "new": {
         "title": "Nueva consignación",
         "backToOwner": "Volver al propietario",
-        "subtitle": "Agregar una nueva propiedad al portafolio",
+        "subtitle": "Agregar un nuevo inmueble al portafolio",
         "step1": "Propietario",
-        "step2": "Propiedad",
+        "step2": "Inmueble",
         "step3": "Condiciones",
         "step4": "Revisión",
         "selectOwner": "Seleccionar propietario",
-        "propertyInfo": "Información de la propiedad",
+        "propertyInfo": "Información del inmueble",
         "conditions": "Condiciones comerciales",
         "review": "Revisar y confirmar",
         "submit": "Crear consignación",
@@ -3917,7 +3917,7 @@
       }
     },
     "import": {
-      "title": "Importar propiedades",
+      "title": "Importar inmuebles",
       "subtitle": "Migra tu portafolio completo en minutos",
       "steps": {
         "method": "Método",
@@ -3930,7 +3930,7 @@
       "methods": {
         "excel": {
           "title": "Excel / CSV",
-          "desc": "Sube un archivo Excel o CSV con tus propiedades",
+          "desc": "Sube un archivo Excel o CSV con tus inmuebles",
           "badge": "Recomendado"
         },
         "software": {
@@ -3997,8 +3997,8 @@
         }
       },
       "review": {
-        "analyzing": "Analizando {{count}} propiedades...",
-        "readyCount": "{{ready}} propiedades listas.",
+        "analyzing": "Analizando {{count}} inmuebles...",
+        "readyCount": "{{ready}} inmuebles listos.",
         "issueCount": "{{issues}} necesitan atención.",
         "complete": "Completo",
         "suggestions": "{{count}} sugerencias",
@@ -4016,22 +4016,22 @@
       },
       "confirm": {
         "title": "Resumen de importación",
-        "propertiesToImport": "Propiedades a importar",
-        "propertiesExcluded": "Propiedades excluidas",
+        "propertiesToImport": "Inmuebles a importar",
+        "propertiesExcluded": "Inmuebles excluidos",
         "suggestionsAccepted": "Sugerencias AI aceptadas",
         "remainingErrors": "Errores restantes",
         "assignAgent": "Asignar agente",
-        "assignAgentDesc": "Selecciona el agente que gestionará las propiedades importadas",
+        "assignAgentDesc": "Selecciona el agente que gestionará los inmuebles importados",
         "assignLater": "Podrás asignar agentes después",
-        "importButton": "Importar {{count}} propiedades",
-        "importing": "Importando propiedad {{current}} de {{total}}...",
+        "importButton": "Importar {{count}} inmuebles",
+        "importing": "Importando inmueble {{current}} de {{total}}...",
         "successTitle": "¡Importación completada!",
-        "successDesc": "Se importaron {{count}} propiedades a tu portafolio",
+        "successDesc": "Se importaron {{count}} inmuebles a tu portafolio",
         "viewPortfolio": "Ver portafolio",
         "importMore": "Importar más",
         "toast": {
           "successTitle": "Importación exitosa",
-          "successDesc": "{{count}} propiedades importadas correctamente"
+          "successDesc": "{{count}} inmuebles importados correctamente"
         },
         "mandateBatch": {
           "title": "¿De quién son estos inmuebles?",
@@ -4089,7 +4089,7 @@
         "subtitle": "Selecciona tu sistema actual y sigue las instrucciones para exportar",
         "popular": "Popular",
         "exportSteps": {
-          "step1": "Ir a la sección de Propiedades / Inmuebles",
+          "step1": "Ir a la sección de Inmuebles",
           "step2": "Seleccionar todas o filtrar las que desea importar",
           "step3": "Buscar botón 'Exportar' o 'Descargar' (usualmente en formato .xlsx o .csv)",
           "step4": "Descargar el archivo y cargarlo aquí"
@@ -4164,8 +4164,8 @@
           "agentAssigned": "Agente asignado",
           "agentAssignedWithName": "{{name}} asignado como agente responsable",
           "agentAssignedDefault": "Agente responsable asignado",
-          "propertyPublished": "Propiedad publicada",
-          "propertyPublishedDesc": "La propiedad fue publicada en el portal de arriendos",
+          "propertyPublished": "Inmueble publicado",
+          "propertyPublishedDesc": "El inmueble fue publicado en el portal de arriendos",
           "visitScheduled": "Visita programada",
           "firstVisit": "Primera visita con interesado",
           "secondVisit": "Segunda visita con nuevo interesado",
@@ -4177,7 +4177,7 @@
           "contractSigned": "Contrato firmado",
           "contractSignedDesc": "Se firmó el contrato de arrendamiento",
           "handoverCompleted": "Entrega realizada",
-          "handoverCompletedDesc": "Se entregó la propiedad al inquilino con acta de entrega"
+          "handoverCompletedDesc": "Se entregó el inmueble al inquilino con acta de entrega"
         },
         "actors": {
           "system": "Sistema",
@@ -4350,7 +4350,7 @@
       },
       "table": {
         "code": "Código",
-        "property": "Propiedad",
+        "property": "Inmueble",
         "zone": "Zona",
         "rent": "Canon",
         "saleTag": "(venta)",
@@ -4360,7 +4360,7 @@
         "status": "Estado",
         "viewDetail": "Ver detalle",
         "edit": "Editar",
-        "emptyTitle": "No se encontraron propiedades",
+        "emptyTitle": "No se encontraron inmuebles",
         "emptyDescription": "Ajusta los filtros o agrega una nueva consignación",
         "adminFee": "+ {{amount}} admin",
         "missingMandate": "Sin propietario"
@@ -4457,7 +4457,7 @@
         "monthlyRentLabel": "Canon mensual",
         "viewLeaseContract": "Ver contrato de arrendamiento",
         "noTenant": "Sin inquilino",
-        "propertyAvailable": "Esta propiedad está disponible para arriendo",
+        "propertyAvailable": "Este inmueble está disponible para arriendo",
         "documents": "Documentos",
         "consignmentContract": "El mandato en PDF",
         "consignmentContractDesc": "PDF - Documento legal",
@@ -4490,7 +4490,7 @@
       "wizard": {
         "steps": {
           "owner": "Propietario",
-          "property": "Propiedad",
+          "property": "Inmueble",
           "commission": "Comisión",
           "agent": "Agente",
           "inventory": "Fotos e inventario",
@@ -4604,7 +4604,7 @@
         },
         "step4": {
           "title": "Asignar Agente",
-          "subtitle": "Selecciona el agente responsable de esta propiedad (opcional)",
+          "subtitle": "Selecciona el agente responsable de este inmueble (opcional)",
           "selfAssignNotice": "Si no seleccionas un agente, la consignación queda a cargo del mismo perfil que la está creando."
         },
         "step5": {
@@ -4638,7 +4638,7 @@
           "title": "Confirmar la consignación",
           "subtitle": "Revisa la información antes de crear la consignación",
           "ownerSection": "Propietario",
-          "propertySection": "Propiedad",
+          "propertySection": "Inmueble",
           "termsSection": "Términos",
           "agentSection": "Agente asignado",
           "inventorySection": "Inventario",
@@ -4722,7 +4722,7 @@
       "filters": {
         "period": "Período",
         "owner": "Propietario",
-        "property": "Propiedad",
+        "property": "Inmueble",
         "type": "Tipo"
       },
       "ownerStatement": {
@@ -4838,14 +4838,14 @@
         "occupancyRate": "Tasa de Ocupación",
         "avgRent": "Arriendo promedio",
         "collectionRate": "Tasa de Recaudo",
-        "activeProperties": "Propiedades Activas",
+        "activeProperties": "Inmuebles Activos",
         "target": "meta"
       },
       "charts": {
         "revenueOverTime": "Ingresos en el tiempo",
         "occupancyTrend": "Tendencia de ocupación",
         "collectionByMonth": "Cobros por mes",
-        "propertyPerformance": "Rendimiento por propiedad"
+        "propertyPerformance": "Rendimiento por inmueble"
       },
       "dateRanges": {
         "7d": "Últimos 7 días",
@@ -4858,9 +4858,9 @@
       "insights": {
         "occupancyUp": "Ocupación en alza",
         "occupancyUpDesc": "La ocupación subió 2.1% respecto al mes anterior",
-        "unrentedProperties": "3 propiedades sin arrendar",
+        "unrentedProperties": "3 inmuebles sin arrendar",
         "unrentedPropertiesDesc": "Llevan más de 45 días disponibles",
-        "viewProperties": "Ver propiedades",
+        "viewProperties": "Ver inmuebles",
         "collectionGoalNear": "Meta de recaudo cerca",
         "collectionGoalNearDesc": "Estás al 94% de tu meta mensual de recaudo"
       },
@@ -5024,7 +5024,7 @@
         "name": "Nombre",
         "type": "Tipo",
         "owner": "Propietario",
-        "property": "Propiedad",
+        "property": "Inmueble",
         "date": "Fecha",
         "status": "Estado",
         "actions": "Acciones"
@@ -5105,7 +5105,7 @@
       "attachFile": "Adjuntar archivo",
       "sendImage": "Enviar imagen",
       "emoji": "Emoji",
-      "property": "Propiedad",
+      "property": "Inmueble",
       "email": "Correo",
       "memberSince": "Miembro desde",
       "quickActions": "Acciones rápidas"
@@ -5256,8 +5256,8 @@
       "actaType": "Tipo de acta",
       "typeEntregaDesc": "Registro del estado del inmueble al momento de la entrega al inquilino",
       "typeDevolucionDesc": "Registro del estado del inmueble al momento de la devolución por el inquilino",
-      "property": "Propiedad",
-      "selectProperty": "Seleccionar propiedad",
+      "property": "Inmueble",
+      "selectProperty": "Seleccionar inmueble",
       "deliveryDate": "Fecha de entrega",
       "returnDate": "Fecha de devolución",
       "time": "Hora",
@@ -5480,11 +5480,11 @@
       "paidByTenantDesc": "El inquilino asume el costo total de la reparación",
       "paidBySplitDesc": "El costo se divide entre propietario e inquilino",
       "paidByAgencyDesc": "La inmobiliaria asume el costo total de la reparación",
-      "property": "Propiedad",
+      "property": "Inmueble",
       "change": "Cambiar",
-      "searchProperty": "Buscar propiedad...",
+      "searchProperty": "Buscar inmueble...",
       "noRentedProperties": "Todavía no tienes inmuebles arrendados: el mantenimiento se reporta sobre un inmueble con contrato vigente.",
-      "noPropertiesFound": "No se encontraron propiedades",
+      "noPropertiesFound": "No se encontraron inmuebles",
       "maintenanceType": "Tipo de mantenimiento",
       "priorityLabel": "Prioridad",
       "photosOptional": "Fotos (opcional)",
@@ -5492,7 +5492,7 @@
       "addPhoto": "Agregar foto",
       "paymentResponsible": "Responsable del pago",
       "paymentInfo": "Se determinará según el tipo de problema y contrato",
-      "errSelectProperty": "Selecciona una propiedad",
+      "errSelectProperty": "Selecciona un inmueble",
       "errSelectType": "Selecciona un tipo de mantenimiento",
       "errSelectPriority": "Selecciona una prioridad",
       "errTitleRequired": "El título es requerido",
@@ -5520,7 +5520,7 @@
       "statusCompleted": "Completada",
       "statusCancelled": "Cancelada",
       "totalLabel": "Total",
-      "searchPropertyOrZone": "Buscar por propiedad o zona...",
+      "searchPropertyOrZone": "Buscar por inmueble o zona...",
       "allTypes": "Todos los tipos",
       "allPriorities": "Todas las prioridades",
       "allStatuses": "Todos los estados",
@@ -5577,7 +5577,7 @@
       "tlProviderExecuting": "Proveedor ejecutando los trabajos",
       "tlWorkCompleted": "Trabajo completado",
       "tlRequestCancelled": "Solicitud cancelada",
-      "propertyAndPeople": "Propiedad y personas",
+      "propertyAndPeople": "Inmueble y personas",
       "tenant": "Inquilino",
       "owner": "Propietario",
       "descriptionLabel": "Descripción",
@@ -5612,9 +5612,9 @@
         "bankAccount": "Cuenta Bancaria",
         "savings": "Ahorros",
         "checking": "Corriente",
-        "propertyDetail": "Detalle por Propiedad",
+        "propertyDetail": "Detalle por Inmueble",
         "delInmueble": "del inmueble",
-        "thProperty": "Propiedad",
+        "thProperty": "Inmueble",
         "thTenant": "Inquilino",
         "thRent": "Arriendo",
         "thAdmin": "Admin",
@@ -5638,7 +5638,7 @@
         "statusLate": "En mora",
         "statusDefaulted": "Incobrable",
         "total": "Total",
-        "properties": "propiedades",
+        "properties": "inmuebles",
         "netToReceive": "Neto a Recibir",
         "reference": "Referencia",
         "totalCollected": "Total recaudado",
@@ -5749,17 +5749,17 @@
         "emailSoloAdministrador": "Sólo un administrador cambia el correo de un propietario: es por donde confirma los cambios de su cuenta bancaria y con el que entra a su portal."
       },
       "stats": {
-        "properties": "Propiedades",
+        "properties": "Inmuebles",
         "rented": "Arrendadas",
         "monthlyRent": "Canon mensual",
         "pending": "Giro atrasado",
         "upToDate": "Al día",
-        "consignedProperties": "Propiedades consignadas",
+        "consignedProperties": "Inmuebles consignados",
         "totalMonthlyRent": "Canon mensual total",
         "commission": "comisión",
         "occupancyRate": "Tasa de ocupación",
         "available": "disponibles",
-        "noProperties": "Sin propiedades",
+        "noProperties": "Sin inmuebles",
         "vsPrevMonth": "vs mes ant.",
         "pendingBalance": "Giro atrasado",
         "netToOwner": "Neto al propietario",
@@ -5768,8 +5768,8 @@
         "copropiedades": "{{n}} como copropietario",
         "sinPropiedades": "sin inmuebles",
         "lastPayment": "Último giro",
-        "unaPropiedad": "1 propiedad",
-        "nPropiedades": "{{n}} propiedades",
+        "unaPropiedad": "1 inmueble",
+        "nPropiedades": "{{n}} inmuebles",
         "sinAccesoALaPlata": "Sin acceso a la plata"
       },
       "giros": {
@@ -5817,7 +5817,7 @@
         "clear": "Limpiar",
         "of": "de",
         "owner": "Propietario",
-        "properties": "Propiedades",
+        "properties": "Inmuebles",
         "monthlyRent": "Canon mensual",
         "pending": "Giro atrasado",
         "lastPayment": "Último pago",
@@ -5906,7 +5906,7 @@
         "selected": "seleccionados",
         "notify": "Notificar",
         "startRenewal": "Iniciar renovación",
-        "property": "Propiedad",
+        "property": "Inmueble",
         "tenant": "Inquilino",
         "owner": "Propietario",
         "expiration": "Vencimiento",
@@ -5935,7 +5935,7 @@
         "charges": "cobros",
         "all": "Todos",
         "exportExcel": "Exportar Excel",
-        "property": "Propiedad",
+        "property": "Inmueble",
         "tenant": "Inquilino",
         "owner": "Propietario",
         "agent": "Agente",
@@ -5970,9 +5970,9 @@
       "commBreakdown": {
         "commission": "Comisión",
         "net": "Neto",
-        "property": "propiedad",
-        "properties": "propiedades",
-        "propertyHeader": "Propiedad",
+        "property": "inmueble",
+        "properties": "inmuebles",
+        "propertyHeader": "Inmueble",
         "canonCausado": "Canon causado",
         "canonRecaudado": "Canon recaudado",
         "commAmount": "Comisión",
@@ -6005,7 +6005,7 @@
         "noChange": "sin cambio",
         "occupiedPlural": "ocupadas",
         "total": "total",
-        "totalProperties": "Total propiedades",
+        "totalProperties": "Total inmuebles",
         "inProcess": "En proceso",
         "available": "Disponibles",
         "occupied": "Ocupadas",
@@ -6081,7 +6081,7 @@
         "noExpirationsDesc": "No hay contratos próximos a vencer",
         "noExpirationsRange": "Sin contratos en el rango {{range}}",
         "owner": "Propietario",
-        "property": "Propiedad",
+        "property": "Inmueble",
         "selected": "seleccionados",
         "sendReminders": "Enviar recordatorios",
         "startRenewal": "Iniciar renovación",
@@ -6253,7 +6253,7 @@
         },
         "nueva": {
           "title": "Nueva cotización",
-          "subtitle": "Completa los datos del candidato y la propiedad",
+          "subtitle": "Completa los datos del candidato y el inmueble",
           "step1": {
             "heading": "Datos del candidato",
             "cedulaLabel": "Número de cédula",
@@ -6264,7 +6264,7 @@
             "ciudadPlaceholder": "Ej: Bogotá"
           },
           "step2": {
-            "heading": "Datos de la propiedad",
+            "heading": "Datos del inmueble",
             "canonLabel": "Canon mensual (COP)",
             "canonPlaceholder": "Ej: 1.500.000",
             "tipoLabel": "Tipo de inmueble",
@@ -9014,7 +9014,7 @@
             "colaDesc": "Revisa el resultado del estudio (nivel y puntaje) y su evidencia, y decide tú.",
             "colaEmptyHint": "Esta bandeja no recibe estudios: el estudio lo pide el candidato desde su portal y su resultado se ve en la ficha de su postulación.",
             "casoColaLabel": "Cola de estudio",
-            "crossPregunta": "¿Qué propiedad le calza?",
+            "crossPregunta": "¿Qué inmueble le calza?",
             "crossDestino": "Workspace de Matching",
             "analiticaDesc": "Desempeño del evaluación de candidatos en los últimos 30 días: evaluaciones procesadas, decisiones tomadas y tasa de escalamiento a revisión humana por día.",
             "colaTitle": "Estudios por revisar",
@@ -9513,7 +9513,7 @@
           "inmueble": {
             "title": "Inmueble",
             "desc": "Datos del inmueble que se va a arrendar.",
-            "propiedad": "Propiedad",
+            "propiedad": "Inmueble",
             "propiedadPlaceholder": "Apto 502, Torre Norte — Calle 100 #15-20",
             "ciudad": "Ciudad",
             "ciudadPlaceholder": "Bogotá",
@@ -9940,8 +9940,8 @@
               "desc": "Trae candidatos y contactos del CRM para iniciar la consulta sin volver a digitar datos."
             },
             "propiedades": {
-              "title": "Propiedades",
-              "desc": "Toma los datos del inmueble (ciudad, canon, tipo) directamente del inventario de propiedades."
+              "title": "Inmuebles",
+              "desc": "Toma los datos del inmueble (ciudad, canon, tipo) directamente del inventario de inmuebles."
             },
             "estudio": {
               "title": "Evaluación de candidatos",
@@ -9953,7 +9953,7 @@
             },
             "matching": {
               "title": "Matching",
-              "desc": "Comparte la asegurabilidad con matching para emparejar candidatos y propiedades con más certeza."
+              "desc": "Comparte la asegurabilidad con matching para emparejar candidatos y inmuebles con más certeza."
             },
             "reportes": {
               "title": "Reportes",
@@ -10719,12 +10719,12 @@
       "duracionCita": "Duración de cada visita",
       "horariosGuardados": "Horarios de visita guardados",
       "horarioAgenteTitle": "Horario de visitas",
-      "horarioAgenteDesc": "Un solo horario para todas las propiedades de este asesor.",
-      "horarioAgenteGuardado": "Horario aplicado a {count} propiedades",
+      "horarioAgenteDesc": "Un solo horario para todos los inmuebles de este asesor.",
+      "horarioAgenteGuardado": "Horario aplicado a {count} inmuebles",
       "horarioAgenteError": "No se pudo guardar el horario",
       "citaTitle": "Agendar una cita",
-      "citaProperty": "Propiedad",
-      "citaSelectProperty": "Elige una propiedad",
+      "citaProperty": "Inmueble",
+      "citaSelectProperty": "Elige un inmueble",
       "citaContact": "Nombre del prospecto",
       "citaEmail": "Correo (opcional)",
       "citaPhone": "Teléfono (opcional)",
@@ -10804,19 +10804,19 @@
       "errorMicDenied": "Permiso de micrófono denegado. Habilítalo en el navegador para grabar.",
       "errorMicNotFound": "No se encontró un micrófono.",
       "errorMicUnsupported": "Tu navegador no permite grabar audio aquí (requiere HTTPS).",
-      "assignWarning": "La propiedad se creó, pero no se pudo asignar el agente. Asígnalo desde la lista.",
-      "photosUploadPartial": "La propiedad se creó, pero {{failed}} de {{total}} fotos no se subieron. Puedes agregarlas después editando la propiedad.",
-      "createdPending": "La propiedad ya quedó guardada y no se creará otra. Vuelve a enviar para completar lo que falta. Detalle: {{reason}}",
-      "planLimitDraft": "Alcanzaste el límite de propiedades publicadas de tu plan — la propiedad se guardó como borrador.",
+      "assignWarning": "El inmueble se creó, pero no se pudo asignar el agente. Asígnalo desde la lista.",
+      "photosUploadPartial": "El inmueble se creó, pero {{failed}} de {{total}} fotos no se subieron. Puedes agregarlas después editando el inmueble.",
+      "createdPending": "El inmueble ya quedó guardado y no se creará otro. Vuelve a enviar para completar lo que falta. Detalle: {{reason}}",
+      "planLimitDraft": "Alcanzaste el límite de inmuebles publicados de tu plan — el inmueble se guardó como borrador.",
       "photoFormatUnsupported": "Algunas fotos tienen un formato no compatible (p. ej. HEIC) y se omitieron. Usa JPG o PNG.",
-      "pageTitle": "Capturar propiedad con IA",
+      "pageTitle": "Capturar inmueble con IA",
       "pageSubtitle": "Graba una descripción y agrega fotos; la IA arma la ficha para que la revises.",
-      "back": "Volver a propiedades",
-      "intro": "Describe la propiedad por voz (tipo, barrio, habitaciones, baños, canon, administración, restricciones). La IA transcribe y arma la ficha; las fotos la enriquecen.",
+      "back": "Volver a inmuebles",
+      "intro": "Describe el inmueble por voz (tipo, barrio, habitaciones, baños, canon, administración, restricciones). La IA transcribe y arma la ficha; las fotos la enriquecen.",
       "recordTitle": "Descripción por voz",
       "startRecording": "Toca para grabar",
       "stopRecording": "Grabando… toca para detener",
-      "recordHint": "Describe la propiedad en voz alta.",
+      "recordHint": "Describe el inmueble en voz alta.",
       "reRecord": "Grabar de nuevo",
       "photosTitle": "Fotos (opcional)",
       "photosHint": "Hasta 4 fotos para enriquecer la ficha.",
@@ -10827,7 +10827,7 @@
       "processing": "Transcribiendo y armando la ficha…",
       "errorMic": "No pudimos acceder al micrófono. Revisa los permisos.",
       "errorNoAudio": "Graba una descripción primero.",
-      "errorUnavailable": "El servicio de IA no está disponible ahora. Puedes crear la propiedad manualmente.",
+      "errorUnavailable": "El servicio de IA no está disponible ahora. Puedes crear el inmueble manualmente.",
       "errorGeneric": "Ocurrió un error al procesar la captura. Intenta de nuevo o usa el formulario manual.",
       "errorTitle": "No pudimos procesar la captura",
       "retry": "Reintentar",
@@ -10851,10 +10851,10 @@
       "typeHouse": "Casa",
       "typeStudio": "Estudio",
       "typeRoom": "Habitación",
-      "create": "Crear propiedad",
+      "create": "Crear inmueble",
       "creating": "Creando…",
-      "created": "Propiedad creada",
-      "createError": "Error al crear la propiedad"
+      "created": "Inmueble creado",
+      "createError": "Error al crear el inmueble"
     },
     "insights": {
       "label": "Insights & Alertas",
@@ -10866,12 +10866,12 @@
       "title_contratos_por_vencer": "{{total}} contratos por vencer · {{sinGestion}} sin gestión",
       "title_mora_prioritaria": "{{total}} inquilinos en mora · {{prioritarios}} prioritarios",
       "title_por_dispersar": "{{monto}} por dispersar · cubres {{cobertura}}%",
-      "title_propiedad_estancada": "{{total}} propiedades estancadas (7+ días sin candidatos)",
+      "title_propiedad_estancada": "{{total}} inmuebles estancados (7+ días sin candidatos)",
       "title_firma_pendiente": "{{total}} contratos esperando firma",
       "action_contratos": "Ver contratos",
       "action_cobranza": "Ir a cobranza",
       "action_tesoreria": "Ver tesorería",
-      "action_propiedades": "Ver propiedades",
+      "action_propiedades": "Ver inmuebles",
       "action_firma": "Ver firmas"
     },
     "commandPalette": {
@@ -10889,7 +10889,7 @@
         "debtors": "Deudores",
         "propietarios": "Propietarios",
         "agentes": "Agentes",
-        "propiedades": "Propiedades",
+        "propiedades": "Inmuebles",
         "contratos": "Contratos",
         "cotizaciones": "Cotizaciones",
         "apBills": "Facturas de proveedores",
@@ -10952,7 +10952,7 @@
         "titulo": "Postulaciones que te llegaron",
         "desc": "Entran acá apenas el inquilino se postula, con la evaluación ya hecha. Las más viejas van primero.",
         "vacioTitulo": "Todavía no te ha llegado ninguna postulación",
-        "vacioDesc": "Cuando alguien con asegurabilidad vigente se postule a una de tus propiedades, aparece acá con su nivel y su puntaje. Así es el recorrido completo:",
+        "vacioDesc": "Cuando alguien con asegurabilidad vigente se postule a uno de tus inmuebles, aparece acá con su nivel y su puntaje. Así es el recorrido completo:",
         "errorTitulo": "No pudimos cargar las postulaciones",
         "errorDesc": "Esto no quiere decir que no haya ninguna. Vuelve a intentar en un momento.",
         "reintentar": "Reintentar",
@@ -10972,11 +10972,11 @@
       "pasos": {
         "catalogo": {
           "label": "Explora el catálogo",
-          "desc": "Busca entre las propiedades publicadas, sin cuenta ni compromiso."
+          "desc": "Busca entre los inmuebles publicados, sin cuenta ni compromiso."
         },
         "asegurabilidad": {
           "label": "Pide su asegurabilidad",
-          "desc": "Se estudia una sola vez y sin propiedad: el resultado le sirve para todas."
+          "desc": "Se estudia una sola vez y sin inmueble: el resultado le sirve para todos."
         },
         "pago": {
           "label": "Paga el estudio",
@@ -10987,12 +10987,12 @@
           "desc": "Va a todas las habilitadas, no a una sola, y queda el mejor máximo afianzable."
         },
         "compatibles": {
-          "label": "Se habilitan las propiedades",
+          "label": "Se habilitan los inmuebles",
           "desc": "Solo ve las que caben bajo su máximo afianzable."
         },
         "postulacion": {
           "label": "Se postula",
-          "desc": "Puede postularse a varias propiedades a la vez."
+          "desc": "Puede postularse a varios inmuebles a la vez."
         },
         "alerta": {
           "label": "Te llega la postulación",
@@ -11004,7 +11004,7 @@
         },
         "comparacion": {
           "label": "Comparas los candidatos",
-          "desc": "Uno al lado del otro, dentro de la misma propiedad."
+          "desc": "Uno al lado del otro, dentro del mismo inmueble."
         },
         "decision": {
           "label": "Eliges a uno",

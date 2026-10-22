@@ -722,17 +722,9 @@ function ConsignacionDetailContent() {
                         className={clase}
                         // Sin coordenadas, la ubicación es un renglón de «Lo que falta» (arriba);
                         // con el mandato terminado se dice aquí, sin acción que ofrecer.
-                        ubicacion={
-                          !terminada || conMapa || (cargandoProperty && !property) ? undefined : (
-                            <UbicacionDelInmueble
-                              variante="fila"
-                              property={property}
-                              cargando={cargandoProperty}
-                              consignacion={consignacion}
-                              onActualizado={refetchProperty}
-                            />
-                          )
-                        }
+                        // 22-10 (revisión): con el mandato terminado no se pide ubicarlo para un aviso que
+                        // ya no se publica; sin mandato vivo, la ubicación es un paso de la lista.
+                        ubicacion={undefined}
                       />
                     );
                     const losDuenos = (

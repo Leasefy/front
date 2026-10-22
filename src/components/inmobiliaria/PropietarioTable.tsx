@@ -813,19 +813,20 @@ function TarjetasDePropietarios({
                   </span>
                 </span>
               </span>
-              <span className="mt-2.5 flex items-start justify-between gap-3">
+              {/* Revisora r22 (Propietarios #2): «1 inmueble · 1 arrendado» y «Canon $ …» en un renglón; lo atrasado y
+                  sus giros, a lo ancho debajo (antes la columna de la plata partía «1 / inmueble / (1 arrendado)»). */}
+              <span className="mt-2.5 flex items-baseline justify-between gap-3">
                 <span className="min-w-0 text-sm text-fg-muted">
-                  {/* Glow up 22-10: sin inmuebles, «Sin inmuebles» (no «0 propiedades (0 arrendadas)»). */}
                   {propietario.propertyCount === 0 ? (
                     <span className="text-fg-subtle">Sin inmuebles</span>
                   ) : (
-                    <>
+                    <span className="whitespace-nowrap">
                       <span className="font-mono tabular-nums text-fg">{propietario.propertyCount}</span>{' '}
                       {propietario.propertyCount === 1
                         ? t('inmobiliaria.propietarios.card.property')
                         : t('inmobiliaria.propietarios.card.properties')}{' '}
-                      <span className="whitespace-nowrap">({arrendadas(t, propietario.activeLeases)})</span>
-                    </>
+                      · {arrendadas(t, propietario.activeLeases)}
+                    </span>
                   )}
                   {copropiedades > 0 && (
                     <span className="block text-caption tabular-nums">
@@ -833,32 +834,37 @@ function TarjetasDePropietarios({
                     </span>
                   )}
                 </span>
-                <span className="flex shrink-0 flex-col items-end gap-1 text-right">
-                  {sinPlata ? (
-                    <SinAccesoALaPlata texto={sinAcceso} />
-                  ) : (
-                    <>
-                      <span className={cn('whitespace-nowrap font-mono text-sm tabular-nums', propietario.totalMonthlyRent ? 'text-fg' : 'text-fg-subtle')}>
-                        {propietario.totalMonthlyRent ? plata(propietario.totalMonthlyRent) : '—'}
+                {sinPlata ? null : (
+                  <span className="shrink-0 whitespace-nowrap text-right text-sm">
+                    <span className="text-caption text-fg-subtle">Canon </span>
+                    <span className={cn('font-mono tabular-nums', propietario.totalMonthlyRent ? 'text-fg' : 'text-fg-subtle')}>
+                      {propietario.totalMonthlyRent ? plata(propietario.totalMonthlyRent) : '—'}
+                    </span>
+                  </span>
+                )}
+              </span>
+              <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                {sinPlata ? (
+                  <SinAccesoALaPlata texto={sinAcceso} />
+                ) : (
+                  <>
+                    {hasPending ? (
+                      <Badge variant="warning" className="gap-1 font-mono tabular-nums">
+                        <Warning className="h-3.5 w-3.5" aria-hidden="true" />
+                        {plata(propietario.pendingBalance)}
+                      </Badge>
+                    ) : girosDelPropietario(propietario).sinDiaDeGiro ? (
+                      <span className="text-caption text-fg-muted" data-testid="sin-dia-de-giro">
+                        {t('inmobiliaria.propietario.giros.sinDiaDeGiro')}
                       </span>
-                      {hasPending ? (
-                        <Badge variant="warning" className="gap-1 font-mono tabular-nums">
-                          <Warning className="h-3.5 w-3.5" aria-hidden="true" />
-                          {plata(propietario.pendingBalance)}
-                        </Badge>
-                      ) : girosDelPropietario(propietario).sinDiaDeGiro ? (
-                        <span className="text-caption text-fg-muted" data-testid="sin-dia-de-giro">
-                          {t('inmobiliaria.propietario.giros.sinDiaDeGiro')}
-                        </span>
-                      ) : (
-                        <span className="text-caption text-fg-muted">
-                          {t('inmobiliaria.propietario.table.upToDate')}
-                        </span>
-                      )}
-                      <LineasDelGiro propietario={propietario} />
-                    </>
-                  )}
-                </span>
+                    ) : (
+                      <span className="text-caption text-fg-muted">
+                        {t('inmobiliaria.propietario.table.upToDate')}
+                      </span>
+                    )}
+                    <LineasDelGiro propietario={propietario} />
+                  </>
+                )}
               </span>
             </button>
             <DatosPorCompletar pendientes={datosPendientesDelPropietario(propietario)} className="mt-2 flex flex-wrap items-center gap-2" />

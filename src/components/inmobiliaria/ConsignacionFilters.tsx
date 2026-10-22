@@ -321,7 +321,11 @@ export function ConsignacionFilters({
           {t('inmobiliaria.consignaciones.filters.all')}
           {total === null ? '' : ` ${total.toLocaleString(localeDeLasCifras())}`}
         </Chip>
-        {CAJONES_DEL_INMUEBLE.map((cajon) => (
+        {/* Nico (22-10, decisión 23): un cajón en 0 no sale —«Reservado 0» era ruido—, salvo el que está elegido.
+            Sin conteo no se sabe qué está en 0: salen todos, sin número. */}
+        {CAJONES_DEL_INMUEBLE.filter(
+          (cajon) => conteo === null || conteo[cajon] > 0 || filters.cajon === cajon,
+        ).map((cajon) => (
           <Chip
             key={cajon}
             selected={filters.cajon === cajon}

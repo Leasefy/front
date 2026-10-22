@@ -82,10 +82,19 @@ afterEach(() => {
 
 describe('la franja de cajones de Inmuebles', () => {
   it('hay un chip por cajón, más «Todos»: ninguna fila se queda sin dónde mirarse', () => {
-    montar()
+    montar({ conteo: { disponible: 1, arrendado: 1, enProceso: 1, mantenimiento: 1, borrador: 1, sinMandato: 1 }, total: 6 })
     for (const cajon of ['all', 'disponible', 'arrendado', 'enProceso', 'mantenimiento', 'borrador', 'sinMandato']) {
       expect(chip(cajon)).not.toBeNull()
     }
+  })
+
+  it('🔴 Nico 22-10 (decisión 23): un cajón en 0 no sale, salvo el elegido; «Todos» siempre', () => {
+    montar()
+    for (const cajon of ['all', 'disponible', 'arrendado', 'sinMandato']) expect(chip(cajon)).not.toBeNull()
+    for (const cajon of ['enProceso', 'mantenimiento', 'borrador']) expect(chip(cajon)).toBeNull()
+    montar({ filters: { ...FILTROS, cajon: 'mantenimiento' } })
+    expect(chip('mantenimiento')).not.toBeNull()
+    expect(numero('mantenimiento')).toBe(0)
   })
 
   it('🔴 el número va EN el chip, y los cinco suman «Todos»', () => {
@@ -130,7 +139,7 @@ describe('la franja de cajones de Inmuebles', () => {
     expect(chip('borrador')?.textContent).toContain('inmobiliaria.consignaciones.filters.draft')
     expect(numero('borrador')).toBe(1)
     const onFiltersChange = vi.fn()
-    montar({ onFiltersChange })
+    montar({ onFiltersChange, conteo: { ...CONTEO, disponible: 2, borrador: 1 } })
     act(() => {
       chip('borrador')!.click()
     })
@@ -150,7 +159,8 @@ describe('la franja de cajones de Inmuebles', () => {
     expect(fila1.querySelector('input')).not.toBeNull()
     const desplegables = fila1.querySelectorAll('[data-testid="filtros-desplegables"] button[role="combobox"]')
     expect(desplegables.length).toBe(4)
-    expect(cajones.querySelectorAll('[data-testid^="cajon-"]').length).toBe(7)
+    // «Todos» + los cajones con inmuebles (los de 0 no salen: decisión 23 de Nico).
+    expect(cajones.querySelectorAll('[data-testid^="cajon-"]').length).toBe(4)
     expect(cajones.querySelector('button[role="combobox"]')).toBeNull()
   })
 

@@ -670,7 +670,8 @@ function InteresDeLaFila({
 
   if (interes.motivo && interes.sinReglas) {
     return (
-      <div className="whitespace-nowrap text-caption" title={interes.motivo}>
+      // Revisora r24 (Cartera): con la letra de 13 px estos renglones, sin partirse, ensanchaban la columna y la tabla ya no cabía a 1440.
+      <div className="max-w-[11rem] text-caption leading-snug" title={interes.motivo}>
         <div className="text-warning" data-testid="cartera-sin-reglas">
           {t(CLAVE_DE_MORA.sinReglas)}
         </div>
@@ -687,7 +688,7 @@ function InteresDeLaFila({
 
   if (interes.motivo) {
     return (
-      <span className="whitespace-nowrap text-caption text-fg-muted" title={interes.motivo}>
+      <span className="block max-w-[11rem] text-caption leading-snug text-fg-muted" title={interes.motivo}>
         {t(CLAVE_DE_MORA.sinInteres)}
       </span>
     )

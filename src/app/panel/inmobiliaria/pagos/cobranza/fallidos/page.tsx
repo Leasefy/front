@@ -73,7 +73,7 @@ function PagosFallidos() {
 
         {/* KPI: total de fallidos */}
         <div className="shrink-0 rounded-lg border border-border bg-card px-4 py-3 text-center">
-          <p className="text-2xl font-semibold text-fg tabular-nums">
+          <p className="text-2xl font-medium text-fg tabular-nums">
             {isLoading || deCobri.cargando ? '—' : total + deCobri.total}
           </p>
           <p className="text-caption text-fg-muted">Pagos fallidos</p>

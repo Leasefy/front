@@ -140,7 +140,7 @@ export function AccionesTab({
   return (
     <div className="space-y-5">
       <section>
-        <h2 className="text-sm font-semibold text-fg mb-3">
+        <h2 className="text-sm font-medium text-fg mb-3">
           {t('inmobiliaria.ai.cobranza.detail.acciones.title')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -189,7 +189,7 @@ export function AccionesTab({
 
       {/* Audit ribbon */}
       <section>
-        <h3 className="text-sm font-semibold text-fg mb-2">
+        <h3 className="text-sm font-medium text-fg mb-2">
           {t('inmobiliaria.ai.cobranza.detail.acciones.auditTitle')}
         </h3>
         {/* Fallo / cargando / vacío / bitácora: cada estado entra con su
@@ -213,7 +213,7 @@ export function AccionesTab({
             role="alert"
             className="rounded-md border border-warning/30 bg-warning-soft p-3 flex items-center justify-between gap-3"
           >
-            <p className="text-xs text-warning">
+            <p className="text-caption text-warning">
               No pudimos cargar el historial. <span className="opacity-80">{audit.error}</span>
             </p>
             <Button
@@ -221,7 +221,7 @@ export function AccionesTab({
               size="sm"
               hideArrow
               onClick={() => void audit.refetch()}
-              className="shrink-0 px-0 h-auto text-xs text-warning underline"
+              className="shrink-0 px-0 h-auto text-caption text-warning underline"
             >
               Reintentar
             </Button>
@@ -236,7 +236,7 @@ export function AccionesTab({
             ))}
           </div>
         ) : auditEntries.length === 0 ? (
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {t('inmobiliaria.ai.cobranza.detail.acciones.auditEmpty')}
           </p>
         ) : (
@@ -245,7 +245,7 @@ export function AccionesTab({
               <StaggerItem
                 as="li"
                 key={e.id}
-                className="flex items-center justify-between text-xs px-2 py-1 rounded bg-surface-muted border border-border"
+                className="flex items-center justify-between text-caption px-2 py-1 rounded bg-surface-muted border border-border"
               >
                 <span className={ACCION_LABEL[e.action] || e.action === 'pause' ? 'text-fg' : 'font-mono text-fg-muted'}>
                   {describirAccion(e)}

@@ -118,7 +118,7 @@ function metodoEnEspanol(metodo: string | null | undefined): string {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-medium text-fg-muted uppercase tracking-wide">{label}</p>
+      <p className="text-caption font-medium text-fg-muted uppercase tracking-wide">{label}</p>
       <div className="mt-1 text-sm text-fg">{children}</div>
     </div>
   )
@@ -129,7 +129,7 @@ function BackLink() {
     <Link
       href={BACK_HREF}
       data-testid="pagos-detail-back"
-      className="text-primary underline-offset-4 hover:underline font-medium text-xs"
+      className="text-primary underline-offset-4 hover:underline font-medium text-caption"
     >
       ← Volver a pagos
     </Link>
@@ -217,7 +217,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
 
       <div className="rounded-lg border border-border bg-card p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
         <Field label="Monto">
-          <span className="text-lg font-semibold text-fg">{formatCop(data.amount)}</span>
+          <span className="text-lg font-medium text-fg">{formatCop(data.amount)}</span>
         </Field>
 
         <Field label="Estado">
@@ -240,7 +240,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
         </Field>
 
         <Field label="Cédula">
-          <span className="font-mono text-xs">{data.debtor.cedulaMasked}</span>
+          <span className="font-mono text-caption">{data.debtor.cedulaMasked}</span>
         </Field>
 
         <Field label="Fecha de creación">{formatDate(data.createdAt)}</Field>

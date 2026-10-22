@@ -291,7 +291,7 @@ export default function CobranzaOverviewPage() {
             una franja casi vacía entre el título y las tarjetas, como si a la
             sección le faltara algo (screenshot de Nico, 2026-08-25). */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <h2 id="cobranza-agente" className="text-lg font-semibold text-fg">
+          <h2 id="cobranza-agente" className="text-lg font-medium text-fg">
             {tr("Lo que hizo el agente")}
           </h2>
           {/* Solo el reporte diario: la analítica se fusionó en esta misma
@@ -313,7 +313,7 @@ export default function CobranzaOverviewPage() {
           mueve entre etapas, y quiénes pesan más. Las tres respondían la misma
           pregunta desde tres lugares distintos de la página. */}
       <section className="space-y-4" aria-labelledby="cobranza-cartera">
-        <h2 id="cobranza-cartera" className="text-lg font-semibold text-fg">
+        <h2 id="cobranza-cartera" className="text-lg font-medium text-fg">
           {tr("Tu cartera")}
         </h2>
 
@@ -334,7 +334,7 @@ export default function CobranzaOverviewPage() {
 
       {/* ═══ 4. ACTIVIDAD ══════════════════════════════════════════════════ */}
       <section className="space-y-4" aria-labelledby="cobranza-actividad">
-        <h2 id="cobranza-actividad" className="text-lg font-semibold text-fg">
+        <h2 id="cobranza-actividad" className="text-lg font-medium text-fg">
           {tr("Actividad")}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">

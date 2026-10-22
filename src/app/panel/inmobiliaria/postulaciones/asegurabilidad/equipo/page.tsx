@@ -156,11 +156,11 @@ function FlowNode({ node, tf }: { node: NodeDef; tf: (k: string, fb: string) => 
       {/* Encabezado del nodo */}
       <header className="flex items-start gap-3">
         <span
-          className={`w-10 h-10 rounded-xl ${accent.chip} flex items-center justify-center shrink-0`}
+          className={`w-10 h-10 rounded-lg ${accent.chip} flex items-center justify-center shrink-0`}
         >
           <Ico className={`w-5 h-5 ${accent.fg}`} weight="duotone" aria-hidden="true" />
         </span>
-        <h3 className="text-base font-semibold text-foreground leading-tight pt-1">
+        <h3 className="text-base font-medium text-foreground leading-tight pt-1">
           {tf(`${NS}.nodes.${node.id}.title`, node.titleFb)}
         </h3>
       </header>
@@ -194,7 +194,7 @@ function FlowNode({ node, tf }: { node: NodeDef; tf: (k: string, fb: string) => 
               key={i}
               className="rounded-lg border border-border bg-card px-3 py-2"
             >
-              <p className="text-lg font-semibold text-fg-muted tabular-nums leading-none">
+              <p className="text-lg font-medium text-fg-muted tabular-nums leading-none">
                 —
               </p>
               <p className="mt-1 text-[11px] text-muted-foreground leading-tight">
@@ -286,7 +286,7 @@ function EquipoAsegurabilidad() {
       </section>
 
       {/* Nota de estado vacío — por qué las métricas están en '—' */}
-      <p className="text-xs text-muted-foreground max-w-2xl">
+      <p className="text-caption text-muted-foreground max-w-2xl">
         {tf(
           `${NS}.emptyNote`,
           'Los resultados aparecerán aquí a medida que el equipo procese casos. Por ahora se muestran en blanco (—).',

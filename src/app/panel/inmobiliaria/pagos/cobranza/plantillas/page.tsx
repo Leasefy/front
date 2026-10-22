@@ -153,7 +153,7 @@ function TemplateCard({
       </div>
 
       {/* Body preview */}
-      <p className="text-xs text-fg-muted line-clamp-3 bg-surface-muted rounded p-2">
+      <p className="text-caption text-fg-muted line-clamp-3 bg-surface-muted rounded p-2">
         {preview || '—'}
       </p>
 
@@ -167,7 +167,7 @@ function TemplateCard({
           >
             {tpl.tokenCount} tokens
           </Badge>
-          <span className="text-xs text-fg-subtle tabular-nums">
+          <span className="text-caption text-fg-subtle tabular-nums">
             {t('inmobiliaria.ai.templates.card.lastEdited')}:{' '}
             {new Date(tpl.updatedAt).toLocaleDateString()}
           </span>

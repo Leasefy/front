@@ -143,7 +143,7 @@ const ACTA_ESTADO_BADGE: Record<ActaEntrega['status'], string> = {
 const ACCIONES_FIJAS =
   'sticky right-0 z-10 border-l border-border bg-card group-hover:bg-surface-muted';
 const ACCIONES_FIJAS_CABECERA =
-  'sticky right-0 z-20 border-l border-border bg-bg dark:bg-surface-muted';
+  'sticky right-0 z-20 border-l border-border bg-bg';
 
 function fechaCorta(iso: string, locale: string): string {
   const d = new Date(iso);

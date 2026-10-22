@@ -177,15 +177,15 @@ function PendienteCard({ item }: { item: PendienteItem }) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span
-            className={`inline-flex items-center text-xs font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 shrink-0 ${token.bg} ${token.text} ${token.ring}`}
+            className={`inline-flex items-center text-caption font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 shrink-0 ${token.bg} ${token.text} ${token.ring}`}
           >
             {t(token.labelKey)}
           </span>
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground truncate">
+          <span className="text-caption font-medium uppercase tracking-wide text-muted-foreground truncate">
             {t(GRUPO_KEY[item.grupo])}
           </span>
         </div>
-        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums shrink-0">
+        <span className="inline-flex items-center gap-1 text-caption text-muted-foreground tabular-nums shrink-0">
           <Clock className="w-3 h-3" aria-hidden="true" />
           {relative(item.fecha, locale)}
         </span>
@@ -193,9 +193,9 @@ function PendienteCard({ item }: { item: PendienteItem }) {
 
       {/* Quién/qué + motivo */}
       <div className="space-y-0.5">
-        <p className="text-sm font-semibold text-foreground">{titulo}</p>
+        <p className="text-sm font-medium text-foreground">{titulo}</p>
         {motivo && (
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-caption text-muted-foreground leading-relaxed">
             <span className="font-medium">{t(`${NS}.motivo`)}:</span> {motivo}
           </p>
         )}
@@ -203,7 +203,7 @@ function PendienteCard({ item }: { item: PendienteItem }) {
 
       {/* Footer: acción sugerida + CTA */}
       <div className="flex items-center justify-between gap-3 border-t border-border pt-2.5">
-        <span className="text-xs text-muted-foreground">
+        <span className="text-caption text-muted-foreground">
           {t(`${NS}.accionSugerida`)}
         </span>
         <Button asChild size="sm">

@@ -167,8 +167,8 @@ function Tarjeta({
       data-testid={testId}
       className="flex h-full flex-col rounded-lg border border-border bg-surface p-4"
     >
-      <h2 className="text-base font-semibold text-fg">{nombre}</h2>
-      <p className="mt-0.5 text-xs text-fg-muted">{hace}</p>
+      <h2 className="text-base font-medium text-fg">{nombre}</h2>
+      <p className="mt-0.5 text-caption text-fg-muted">{hace}</p>
       <div className="mt-4 flex-1">{children}</div>
       {enlace ? (
         <Link
@@ -190,7 +190,7 @@ function Cifras({ cifras }: { cifras: { etiqueta: string; valor: string }[] }) {
       {cifras.map((c) => (
         <div key={c.etiqueta} className="flex items-baseline justify-between gap-3">
           <dt className="text-sm text-fg-muted">{c.etiqueta}</dt>
-          <dd className="font-mono text-sm font-semibold text-fg tabular-nums">{c.valor}</dd>
+          <dd className="font-mono text-sm text-fg tabular-nums">{c.valor}</dd>
         </div>
       ))}
     </dl>
@@ -210,7 +210,7 @@ function CuerpoDeLaTarjeta({ lectura }: { lectura: Lectura }) {
     return (
       <>
         <Cifras cifras={lectura.cifras} />
-        {lectura.pie ? <p className="mt-3 text-xs text-fg-subtle">{lectura.pie}</p> : null}
+        {lectura.pie ? <p className="mt-3 text-caption text-fg-subtle">{lectura.pie}</p> : null}
       </>
     );
   }
@@ -368,7 +368,7 @@ function DesempenoContent() {
       {abajo.length > 0 ? (
         <section aria-labelledby="desempeno-sin-actividad-titulo" className="space-y-2" data-testid="desempeno-sin-actividad">
           <div>
-            <h2 id="desempeno-sin-actividad-titulo" className="text-sm font-semibold text-fg">
+            <h2 id="desempeno-sin-actividad-titulo" className="text-sm font-medium text-fg">
               Sin actividad todavía
             </h2>
             <p className="text-caption text-fg-muted">Suben con sus cifras apenas hagan algo.</p>

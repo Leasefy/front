@@ -101,7 +101,7 @@ export default function CarrierSlaPage() {
           <div className="flex items-center gap-2">
             <Link
               href=".."
-              className="inline-flex items-center gap-1 text-xs font-medium text-fg-muted hover:text-fg transition-colors"
+              className="inline-flex items-center gap-1 text-caption font-medium text-fg-muted hover:text-fg transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               {carrier.toUpperCase()}

@@ -77,7 +77,7 @@ export function RecomendacionRail({
   const eyebrow = (
     <h2 className="flex items-center gap-2.5">
       <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0" />
-      <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+      <span className="text-caption font-medium uppercase tracking-wide text-fg-muted">
         {tf(`${NS}.recomendacion.eyebrow`, 'Recomendación')}
       </span>
     </h2>
@@ -109,13 +109,13 @@ export function RecomendacionRail({
         className="rounded-lg border border-border bg-card p-4"
         data-testid="recomendacion-rail-conclusion"
       >
-        <h3 className="text-sm font-semibold text-fg">
+        <h3 className="text-sm font-medium text-fg">
           {tf(`${NS}.recomendacion.conclusion`, 'Conclusión')}
         </h3>
         {mejor ? (
           <p className="mt-2 text-sm leading-snug text-fg">
             {tf(`${NS}.recomendacion.mejorOpcion`, 'Mejor opción')}:{' '}
-            <span className="font-semibold text-fg">
+            <span className="font-medium text-fg">
               {nombreDeLaAseguradora(mejor.carrier)}
             </span>
             {mejor.prima_mensual_cop != null && (
@@ -140,7 +140,7 @@ export function RecomendacionRail({
         {/* Por qué — razonamiento natural bajo una hairline */}
         {porQue && (
           <div className="mt-3 pt-3 border-t border-border">
-            <p className="text-xs font-medium text-fg-muted">
+            <p className="text-caption font-medium text-fg-muted">
               {tf(`${NS}.recomendacion.porQue`, 'Por qué')}
             </p>
             <p className="mt-0.5 text-sm leading-snug text-fg">
@@ -155,14 +155,14 @@ export function RecomendacionRail({
         className="rounded-lg border border-border bg-card p-4"
         data-testid="recomendacion-rail-next-action"
       >
-        <h3 className="text-sm font-semibold text-fg">
+        <h3 className="text-sm font-medium text-fg">
           {tf(`${NS}.recomendacion.siguienteAccion`, 'Siguiente mejor acción')}
         </h3>
         {/* COTIZ-17: lo que ya quedó elegido (quién lo eligió está en el seguimiento). */}
         {elegida && (
           <p className="mt-2 text-sm text-fg" data-testid="recomendacion-elegida">
             {tf(`${NS}.recomendacion.elegida`, 'Opción elegida')}:{' '}
-            <span className="font-semibold">{nombreDeLaAseguradora(elegida)}</span>
+            <span className="font-medium">{nombreDeLaAseguradora(elegida)}</span>
             {seguimiento?.polizaNumero && (
               <span className="text-fg-muted">{` · póliza N.º ${seguimiento.polizaNumero}`}</span>
             )}

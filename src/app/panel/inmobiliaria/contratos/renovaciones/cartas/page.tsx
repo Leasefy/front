@@ -169,7 +169,7 @@ function ColaDeCartas() {
       ) : (
         <section className="overflow-hidden rounded-lg border border-border bg-card">
           {datos && !datos.disponible && (
-            <p className="border-b border-border bg-warning-soft px-5 py-3 text-xs text-fg">
+            <p className="border-b border-border bg-warning-soft px-5 py-3 text-caption text-fg">
               Falta una actualización de la base: se ven las cartas, pero todavía no se
               pueden enviar.
             </p>
@@ -181,7 +181,7 @@ function ColaDeCartas() {
             <div className="flex flex-wrap items-center gap-2">
               <Chip selected={estado === 'todas'} onClick={() => setEstado('todas')}>
                 Todas
-                <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">
+                <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-caption tabular-nums">
                   {conteos.todas}
                 </span>
               </Chip>
@@ -194,7 +194,7 @@ function ColaDeCartas() {
                   {e.rotulo}
                   <span
                     className={cn(
-                      'ml-1.5 rounded px-1.5 py-0.5 text-xs tabular-nums',
+                      'ml-1.5 rounded px-1.5 py-0.5 text-caption tabular-nums',
                       e.clave === 'sin-constancia' && (conteos[e.clave] ?? 0) > 0
                         ? 'bg-danger-soft text-danger'
                         : 'bg-muted',
@@ -227,7 +227,7 @@ function ColaDeCartas() {
             initial={false}
             distance="xs"
             as="p"
-            className="border-b border-border px-5 py-2 text-xs text-fg-muted"
+            className="border-b border-border px-5 py-2 text-caption text-fg-muted"
             data-testid="alcance-de-cartas"
           >
             {visibles.length} de {todas.length}{' '}

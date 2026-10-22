@@ -67,7 +67,7 @@ function Buscar() {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={buscar} className="rounded-lg border border-border bg-surface p-6 dark:border-border-strong">
+      <form onSubmit={buscar} className="rounded-lg border border-border bg-surface p-6">
         <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
           <div className="space-y-1.5">
             <Label htmlFor="cal-documento">{tr('Documento de la persona')}</Label>
@@ -94,7 +94,7 @@ function Buscar() {
       <CrossFade swapKey={resultado ? `r-${resultado.resultados.length}-${resultado.resultados[0]?.persona.userId ?? ''}` : 'vacio'}>
         {resultado && (
           resultado.resultados.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-border p-6 text-sm text-fg-muted dark:border-border-strong">
+            <p className="rounded-lg border border-dashed border-border p-6 text-sm text-fg-muted">
               {tr(resultado.mensaje ?? 'No encontramos a nadie con ese documento.')}
             </p>
           ) : (
@@ -243,7 +243,7 @@ function Evaluar({
         {!puedeEvaluar && ` ${tr('Para evaluarlos hace falta poder editar contratos.')}`}
       </p>
       {contratos === null ? null : contratos.length === 0 ? (
-        <p className="flex items-center gap-2 rounded-lg border border-dashed border-border p-6 text-sm text-fg-muted dark:border-border-strong">
+        <p className="flex items-center gap-2 rounded-lg border border-dashed border-border p-6 text-sm text-fg-muted">
           <Handshake className="h-4 w-4" aria-hidden />
           {tr('No hay contratos terminados por evaluar.')}
         </p>
@@ -268,11 +268,11 @@ function Evaluar({
               {filtrados.length === 1 ? tr('1 contrato') : tr('{n} contratos', { n: filtrados.length })}
             </span>
           </div>
-          <div className="rounded-lg border border-border bg-surface dark:border-border-strong">
+          <div className="rounded-lg border border-border bg-surface">
             {filtrados.length === 0 ? (
               <p className="px-5 py-6 text-sm text-fg-muted">{tr('Ningún contrato coincide con la búsqueda.')}</p>
             ) : (
-              <div className="divide-y divide-border dark:divide-border-strong">
+              <div className="divide-y divide-border">
                 {pageItems.map((k) => (
                   <div key={k.contractId} className="flex flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
@@ -294,7 +294,7 @@ function Evaluar({
               </div>
             )}
             {shouldPaginate && (
-              <div className="border-t border-border px-4 py-3 dark:border-border-strong">
+              <div className="border-t border-border px-4 py-3">
                 <TablePagination
                   total={total}
                   page={page}
@@ -326,7 +326,7 @@ function Evaluar({
                         'rounded-full border px-3 py-1.5 text-sm transition-colors',
                         respuestas[p.clave] === o.valor
                           ? 'border-primary bg-primary-soft text-primary'
-                          : 'border-border text-fg hover:bg-surface-hover dark:border-border-strong',
+                          : 'border-border text-fg hover:bg-surface-hover',
                       )}
                       aria-pressed={respuestas[p.clave] === o.valor}
                     >

@@ -159,7 +159,7 @@ function Ley2300Content() {
             <TableBodyAnimado>
               {items.map((row) => (
                 <TableRowAnimada key={row.eventId}>
-                  <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-fg">
+                  <TableCell className="px-3 py-2 font-mono tabular-nums text-caption text-fg">
                     {new Date(row.timestamp).toLocaleString(locale)}
                   </TableCell>
                   {/* El nombre; la referencia sólo si el dato no lo trae.
@@ -167,7 +167,7 @@ function Ley2300Content() {
                       «Deudor»: un código sobre el que no se puede actuar. */}
                   <TableCell className="px-3 py-2 text-fg">
                     {row.debtorName ?? (
-                      <span className="font-mono text-xs text-fg-muted">
+                      <span className="font-mono text-caption text-fg-muted">
                         {row.debtorRef}
                       </span>
                     )}

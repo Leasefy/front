@@ -159,7 +159,7 @@ function IntroPanel({ terms }: { terms: ArcoSlaTerms }) {
                 </li>
               ))}
             </ul>
-            <p className="text-xs leading-snug text-fg-subtle">
+            <p className="text-caption leading-snug text-fg-subtle">
               {t(`${NS}.intro.deadlinesSource`)}
             </p>
           </div>
@@ -301,7 +301,7 @@ function RequestsTable({
             >
               <TableCell className="px-4 py-3">
                 <Badge variant={TYPE_VARIANT[row.type]}>{t(`${NS}.type.${row.type}`)}</Badge>
-                <p className="mt-1 text-xs leading-snug text-fg-subtle">
+                <p className="mt-1 text-caption leading-snug text-fg-subtle">
                   {t(`${NS}.typeMeaning.${row.type}`)}
                 </p>
               </TableCell>
@@ -336,7 +336,7 @@ function RequestsTable({
               </TableCell>
 
               <TableCell className="whitespace-nowrap px-4 py-3">
-                <span className="font-mono text-xs tabular-nums text-fg-muted">
+                <span className="font-mono text-caption tabular-nums text-fg-muted">
                   {new Date(row.submittedAt).toLocaleDateString('es-CO', {
                     day: '2-digit',
                     month: 'short',
@@ -525,7 +525,7 @@ function BandejaArco() {
           <Warning className="h-5 w-5 shrink-0 text-danger" weight="fill" aria-hidden="true" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-danger">{t(`${NS}.error.load`)}</p>
-            <p className="text-xs text-fg-muted">{t(`${NS}.error.loadHint`)}</p>
+            <p className="text-caption text-fg-muted">{t(`${NS}.error.loadHint`)}</p>
           </div>
           <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()}>
             {t(`${NS}.error.retry`)}

@@ -261,7 +261,7 @@ function InboxContent() {
             aria-label={tr("Filtrar conversaciones por grupo")}
           />
         </div>
-        <span className="text-xs text-fg-muted tabular-nums shrink-0">
+        <span className="text-caption text-fg-muted tabular-nums shrink-0">
           <AnimatedNumber value={visibles.length} format={enteroTalCual} /> {tr("de")} {total}
         </span>
       </div>
@@ -381,8 +381,8 @@ function InboxContent() {
             aria-hidden="true"
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-fg">{tr("Llamadas")}</p>
-            <p className="text-xs text-fg-muted leading-relaxed mt-0.5">
+            <p className="text-sm font-medium text-fg">{tr("Llamadas")}</p>
+            <p className="text-caption text-fg-muted leading-relaxed mt-0.5">
               {tr("Conversaciones de voz y su resultado, con transcripción y QA.")}
             </p>
           </div>
@@ -397,8 +397,8 @@ function InboxContent() {
             aria-hidden="true"
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-fg">{tr("Deudores")}</p>
-            <p className="text-xs text-fg-muted leading-relaxed mt-0.5">
+            <p className="text-sm font-medium text-fg">{tr("Deudores")}</p>
+            <p className="text-caption text-fg-muted leading-relaxed mt-0.5">
               {tr("El hilo completo de cada inquilino, con sus mensajes y seguimiento.")}
             </p>
           </div>
@@ -406,7 +406,7 @@ function InboxContent() {
       </section>
 
       {/* Nota honesta de alcance de la fuente */}
-      <p className="text-xs text-fg-muted leading-relaxed max-w-2xl">
+      <p className="text-caption text-fg-muted leading-relaxed max-w-2xl">
         {tr("Responder envía una plantilla aprobada por WhatsApp, y sale sólo porque tú la elegiste. Los mensajes sin entender, las disputas y los que requieren humano nunca se responden automáticamente. Un acuerdo siempre requiere tu aprobación explícita.")}
       </p>
 

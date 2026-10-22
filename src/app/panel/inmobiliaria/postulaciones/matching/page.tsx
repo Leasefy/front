@@ -103,8 +103,8 @@ function ResumenConDatos({ data }: { data: AgentOverviewResponse }) {
       <Stagger className="grid grid-cols-2 gap-4 md:grid-cols-4" data-testid="matching-kpis">
         {data.kpis.map((kpi) => (
           <StaggerItem key={kpi.id} className="rounded-lg border border-border bg-surface p-4">
-            <p className="text-xs leading-tight text-fg-muted">{kpi.label}</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums text-fg">
+            <p className="text-caption leading-tight text-fg-muted">{kpi.label}</p>
+            <p className="mt-1 text-xl font-medium tabular-nums text-fg">
               {kpi.id === 'calce_promedio' && sinCasos ? (
                 <span data-testid="calce-sin-casos" title="Sin candidatos con opciones en 30 días">—</span>
               ) : (
@@ -121,12 +121,12 @@ function ResumenConDatos({ data }: { data: AgentOverviewResponse }) {
 
       {segmentos.length > 0 && (
         <section className="space-y-3 rounded-lg border border-border bg-surface p-4">
-          <h2 className="text-sm font-semibold text-fg">{t(`${SALA_NS}.pipelineTitle`)}</h2>
+          <h2 className="text-sm font-medium text-fg">{t(`${SALA_NS}.pipelineTitle`)}</h2>
           <dl className="flex flex-wrap gap-x-4 gap-y-1.5">
             {segmentos.map((seg) => (
               <div key={seg.estado} className="flex items-center gap-1.5">
-                <dt className="text-xs text-fg-muted">{t(`${PAGES_NS}.estado.${seg.estado}`)}</dt>
-                <dd className="text-xs font-medium tabular-nums text-fg">
+                <dt className="text-caption text-fg-muted">{t(`${PAGES_NS}.estado.${seg.estado}`)}</dt>
+                <dd className="text-caption font-medium tabular-nums text-fg">
                   <AnimatedNumber value={seg.count} format={(n) => String(Math.round(n))} />
                 </dd>
               </div>
@@ -137,15 +137,15 @@ function ResumenConDatos({ data }: { data: AgentOverviewResponse }) {
 
       {data.feed.length > 0 && (
         <section className="space-y-3 rounded-lg border border-border bg-surface p-4">
-          <h2 className="text-sm font-semibold text-fg">{t(`${SALA_NS}.feedTitle`)}</h2>
+          <h2 className="text-sm font-medium text-fg">{t(`${SALA_NS}.feedTitle`)}</h2>
           <Stagger as="ul" direction="down" className="divide-y divide-border">
             {data.feed.map((entrada) => (
               <StaggerItem as="li" key={entrada.id} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-fg">{entrada.titulo}</p>
-                  <p className="truncate text-xs text-fg-muted">{entrada.detalle}</p>
+                  <p className="truncate text-caption text-fg-muted">{entrada.detalle}</p>
                 </div>
-                <span className="shrink-0 text-xs tabular-nums text-fg-muted">
+                <span className="shrink-0 text-caption tabular-nums text-fg-muted">
                   {relativeTime(entrada.occurredAt, locale)}
                 </span>
               </StaggerItem>

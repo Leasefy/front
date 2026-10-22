@@ -248,7 +248,7 @@ function RentabilidadContent() {
         aria-labelledby="rentabilidad-periodo"
       >
         <div className="space-y-2">
-          <p id="rentabilidad-periodo" className="text-xs font-medium text-fg-muted">
+          <p id="rentabilidad-periodo" className="text-caption font-medium text-fg-muted">
             {t('inmobiliaria.reportes.rentabilidad.period.label')}
           </p>
           {/* A 390 «3 meses» se partía en dos renglones dentro de un botón de
@@ -270,7 +270,7 @@ function RentabilidadContent() {
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-end gap-2">
             <div className="space-y-1">
-              <Label htmlFor="rentabilidad-desde" className="text-xs">
+              <Label htmlFor="rentabilidad-desde" className="text-caption">
                 {t('inmobiliaria.reportes.rentabilidad.period.from')}
               </Label>
               <CampoDeMes
@@ -283,7 +283,7 @@ function RentabilidadContent() {
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="rentabilidad-hasta" className="text-xs">
+              <Label htmlFor="rentabilidad-hasta" className="text-caption">
                 {t('inmobiliaria.reportes.rentabilidad.period.to')}
               </Label>
               <CampoDeMes
@@ -399,13 +399,13 @@ function RentabilidadContent() {
         {/* Gráfico */}
         <section className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="border-b border-border p-5">
-            <h2 className="text-base font-semibold text-fg">
+            <h2 className="text-base font-medium text-fg">
               {/* Cuenta sólo los que dejaron neto: los que quedan en $0 no tienen barra. */}
               {cuantosEnElGrafico(filas) > 0
                 ? t('inmobiliaria.reportes.rentabilidad.chart.title', { n: cuantosEnElGrafico(filas) })
                 : t('inmobiliaria.reportes.rentabilidad.chart.titleEmpty')}
             </h2>
-            <p className="mt-0.5 text-xs text-fg-muted">
+            <p className="mt-0.5 text-caption text-fg-muted">
               {t('inmobiliaria.reportes.rentabilidad.chart.subtitle')}
             </p>
           </div>
@@ -417,10 +417,10 @@ function RentabilidadContent() {
         {/* Tabla */}
         <section className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="border-b border-border p-5">
-            <h2 className="text-base font-semibold text-fg">
+            <h2 className="text-base font-medium text-fg">
               {t('inmobiliaria.reportes.rentabilidad.table.title')}
             </h2>
-            <p className="mt-0.5 text-xs text-fg-muted">
+            <p className="mt-0.5 text-caption text-fg-muted">
               {t('inmobiliaria.reportes.rentabilidad.table.subtitle')}
             </p>
           </div>
@@ -509,10 +509,10 @@ function RentabilidadContent() {
                         <span className="block truncate font-medium text-fg">
                           {f.propertyTitle}
                           {f.codigo != null && (
-                            <span className="ml-1.5 font-mono text-xs text-fg-muted">#{f.codigo}</span>
+                            <span className="ml-1.5 font-mono text-caption text-fg-muted">#{f.codigo}</span>
                           )}
                         </span>
-                        <span className="block truncate text-xs text-fg-muted">{f.propietarioNombre}</span>
+                        <span className="block truncate text-caption text-fg-muted">{f.propietarioNombre}</span>
                       </Link>
                     </TableCell>
                     <TableCell numeric className="whitespace-nowrap font-mono tabular-nums">
@@ -529,7 +529,7 @@ function RentabilidadContent() {
                     </TableCell>
                     <TableCell title={detalleOcupacion}>
                       <div className="flex items-center gap-2">
-                        <span className="w-14 shrink-0 font-mono text-xs tabular-nums text-fg">
+                        <span className="w-14 shrink-0 font-mono text-caption tabular-nums text-fg">
                           {formatearPct(f.ocupacionPct, locale)}
                         </span>
                         <Barra pct={f.ocupacionPct} />
@@ -578,14 +578,14 @@ function RentabilidadContent() {
             {totales && (
               <TableFooter>
                 <TableRow data-testid="fila-de-totales">
-                  <TableCell className="font-mono text-xs uppercase tracking-[0.04em] text-fg-subtle">
+                  <TableCell className="font-mono text-caption uppercase tracking-[0.04em] text-fg-subtle">
                     {t('inmobiliaria.reportes.rentabilidad.table.totals')}
                     <span className="ml-1.5 normal-case tracking-normal text-fg-muted">
                       · {t('inmobiliaria.reportes.rentabilidad.stats.properties', { count: totales.inmuebles })}
                     </span>
                   </TableCell>
                   <TableCell numeric />
-                  <TableCell className="font-mono text-xs tabular-nums text-fg">
+                  <TableCell className="font-mono text-caption tabular-nums text-fg">
                     {formatearPct(totales.ocupacionPromedioPct, locale)}
                   </TableCell>
                   <TableCell numeric className="whitespace-nowrap font-mono text-sm tabular-nums text-fg">
@@ -600,7 +600,7 @@ function RentabilidadContent() {
                   </TableCell>
                   <TableCell
                     numeric
-                    className={`whitespace-nowrap font-mono font-semibold tabular-nums ${netoDelPropietario(totales.netoPropietarioCop).clase}`}
+                    className={`whitespace-nowrap font-mono tabular-nums ${netoDelPropietario(totales.netoPropietarioCop).clase}`}
                     title={netoDelPropietario(totales.netoPropietarioCop).explicacion ?? undefined}
                   >
                     {netoDelPropietario(totales.netoPropietarioCop, formatCurrency).texto}
@@ -633,7 +633,7 @@ function RentabilidadContent() {
             <p className="font-mono text-label font-medium uppercase tracking-[0.08em] text-fg-subtle">
               {t('inmobiliaria.reportes.rentabilidad.notes')}
             </p>
-            <ul className="list-disc space-y-1 pl-5 text-xs text-fg-muted">
+            <ul className="list-disc space-y-1 pl-5 text-caption text-fg-muted">
               {report.notas.map((nota, i) => (
                 <li key={i}>{nota}</li>
               ))}

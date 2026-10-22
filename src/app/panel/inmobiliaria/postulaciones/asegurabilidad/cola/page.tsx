@@ -41,7 +41,7 @@ export default function CotizadorColaPage() {
 
         {/* Pending KPI */}
         <div className="shrink-0 rounded-lg border border-border bg-surface px-4 py-3 text-center">
-          <p className="text-2xl font-semibold text-fg tabular-nums">
+          <p className="text-2xl font-medium text-fg tabular-nums">
             {isLoading ? '—' : total}
           </p>
           <MonoLabel>

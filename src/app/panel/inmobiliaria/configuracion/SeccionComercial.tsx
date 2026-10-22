@@ -325,7 +325,7 @@ export function SeccionComercial() {
               <Users className="w-5 h-5 text-primary" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-base font-semibold">Para todos los asesores</h3>
+              <h3 className="text-base font-medium">Para todos los asesores</h3>
               <p className="text-sm text-fg-muted" data-testid="texto-regla-de-todos">
                 {deTodos
                   ? `${textoDeLaRegla(deTodos)} · desde ${nombreDelMes(deTodos.desdeMes).toLowerCase()}`
@@ -360,7 +360,7 @@ export function SeccionComercial() {
             <UserCircle className="w-5 h-5 text-primary" aria-hidden="true" />
           </div>
           <div>
-            <h3 className="text-base font-semibold">Regla propia de un asesor</h3>
+            <h3 className="text-base font-medium">Regla propia de un asesor</h3>
             <p className="text-sm text-fg-muted">Si un asesor tiene la suya, gana a la de todos.</p>
           </div>
         </div>
@@ -412,7 +412,7 @@ export function SeccionComercial() {
 
       {datos.reglas.length > 0 ? (
         <section className="space-y-2" data-testid="historial-de-reglas">
-          <h3 className="flex items-center gap-2 text-sm font-semibold">
+          <h3 className="flex items-center gap-2 text-sm font-medium">
             <Handshake className="w-4 h-4" aria-hidden="true" />
             Todas las reglas
           </h3>

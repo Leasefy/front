@@ -718,7 +718,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               className="mt-2"
               aria-label={t('inmobiliaria.ai.cobranza.planes.modificarForm.descuento')}
             />
-            <div className="mt-1 flex justify-between text-xs text-fg-muted">
+            <div className="mt-1 flex justify-between text-caption text-fg-muted">
               <span>0%</span>
               <span>{maxDiscount}%</span>
             </div>

@@ -185,7 +185,7 @@ function ComplianceOverviewContent() {
                   'text-4xl font-mono tabular-nums',
                   data.ley_2300.weekly_outside_hours_count === 0
                     ? 'text-success'
-                    : 'text-danger font-bold',
+                    : 'text-danger font-medium',
                 ].join(' ')}
               >
                 <AnimatedNumber
@@ -216,7 +216,7 @@ function ComplianceOverviewContent() {
               </MonoLabel>
               <Link
                 href="/panel/inmobiliaria/pagos/cobranza/compliance/opt-out"
-                className="text-xs text-primary hover:underline font-medium"
+                className="text-caption text-primary hover:underline font-medium"
               >
                 {locale.startsWith('es') ? 'Ver todos' : 'View all'}
               </Link>

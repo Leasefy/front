@@ -382,7 +382,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           data-testid="carta-download-card"
           className="space-y-3 rounded-md border-l-4 border-warning bg-warning-soft p-4"
         >
-          <h2 className="text-sm font-semibold text-warning">
+          <h2 className="text-sm font-medium text-warning">
             {t('inmobiliaria.ai.cobranza.cartas.aprobar.success.title')}
           </h2>
           <p
@@ -401,7 +401,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           >
             {t('inmobiliaria.ai.cobranza.cartas.aprobar.download.label')} →
           </a>
-          <div className="text-xs text-warning">
+          <div className="text-caption text-warning">
             {t('inmobiliaria.ai.cobranza.cartas.aprobar.download.ttl', {
               days: daysRemaining,
             })}

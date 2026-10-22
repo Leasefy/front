@@ -82,7 +82,7 @@ export function SeccionBitacora() {
 
       {!datos.disponible && (
         <p
-          className="rounded-md border border-border bg-warning-soft px-3 py-2 text-xs text-fg"
+          className="rounded-md border border-border bg-warning-soft px-3 py-2 text-caption text-fg"
           data-testid="bitacora-sin-migrar"
         >
           {datos.motivo}
@@ -107,9 +107,9 @@ export function SeccionBitacora() {
                 <p className="text-sm font-medium text-fg">
                   {EN_PALABRAS[f.accion] ?? f.accion}
                 </p>
-                <p className="mt-1 text-xs text-fg-muted">{f.resumen}</p>
+                <p className="mt-1 text-caption text-fg-muted">{f.resumen}</p>
                 {f.motivo && (
-                  <p className="mt-1 text-xs text-fg-muted">Motivo: {f.motivo}</p>
+                  <p className="mt-1 text-caption text-fg-muted">Motivo: {f.motivo}</p>
                 )}
               </div>
               {f.valorCop !== null && (
@@ -118,7 +118,7 @@ export function SeccionBitacora() {
                 </p>
               )}
             </div>
-            <p className="mt-2 text-xs text-fg-muted">
+            <p className="mt-2 text-caption text-fg-muted">
               {/*
                 El actor sale del NOMBRE COPIADO en la fila, no de un join: la
                 bitácora tiene que decir quién fue aunque después borren al

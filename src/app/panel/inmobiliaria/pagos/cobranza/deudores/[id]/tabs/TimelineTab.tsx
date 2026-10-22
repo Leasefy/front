@@ -155,7 +155,7 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
                 <span className="block text-sm text-fg-muted mt-0.5 break-words">{ev.detalle}</span>
               )}
               <span
-                className="block text-xs text-fg-muted mt-0.5"
+                className="block text-caption text-fg-muted mt-0.5"
                 title={new Date(ev.cuando).toLocaleString(locale)}
               >
                 {[ev.quien, relativeTime(ev.cuando, locale)].filter(Boolean).join(' · ')}

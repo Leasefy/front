@@ -155,10 +155,10 @@ export function SeccionMediosDeRecibo() {
           {grupos.map(({ familia, medios }) => (
             <section key={familia} className="space-y-2" data-testid={`familia-${familia}`}>
               <div className="space-y-0.5">
-                <h3 className="text-sm font-semibold text-fg">
+                <h3 className="text-sm font-medium text-fg">
                   {NOMBRE_DE_LA_FAMILIA[familia] ?? familia}
                 </h3>
-                <p className="text-xs text-fg-muted">{QUE_ES_LA_FAMILIA[familia] ?? ''}</p>
+                <p className="text-caption text-fg-muted">{QUE_ES_LA_FAMILIA[familia] ?? ''}</p>
               </div>
               <div className="overflow-hidden rounded-lg border border-border">
                 <div className="divide-y divide-border">
@@ -172,7 +172,7 @@ export function SeccionMediosDeRecibo() {
                       >
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-fg">{m.nombre}</p>
-                          <p className="text-xs text-fg-muted">
+                          <p className="text-caption text-fg-muted">
                             {prendido ? 'Se ofrece al registrar un pago.' : 'No se ofrece.'}
                           </p>
                           {/* 🔴 ARREGLOS-5 (Nico Q2 a): un solo interruptor de efectivo. */}

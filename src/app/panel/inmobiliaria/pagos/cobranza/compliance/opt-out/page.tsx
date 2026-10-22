@@ -214,7 +214,7 @@ function OptOutContent() {
                 const isAcking = acking.has(row.eventId)
                 return (
                   <TableRowAnimada key={row.eventId}>
-                    <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-fg">
+                    <TableCell className="px-3 py-2 font-mono tabular-nums text-caption text-fg">
                       {new Date(row.requestedAt).toLocaleString(locale)}
                     </TableCell>
                   {/* El nombre; la referencia sólo si el dato no lo trae.
@@ -222,13 +222,13 @@ function OptOutContent() {
                         «Deudor»: un código sobre el que no se puede actuar. */}
                     <TableCell className="px-3 py-2 text-fg">
                       {row.debtorName ?? (
-                        <span className="font-mono text-xs text-fg-muted">
+                        <span className="font-mono text-caption text-fg-muted">
                           {row.debtorRef}
                         </span>
                       )}
                     </TableCell>
                     <TableCell className="px-3 py-2 text-fg">{row.source ?? '—'}</TableCell>
-                    <TableCell className="px-3 py-2 font-mono tabular-nums text-xs">
+                    <TableCell className="px-3 py-2 font-mono tabular-nums text-caption">
                       {isAcked ? (
                         <span className="inline-flex items-center gap-1 text-success">
                           <Check className="w-3.5 h-3.5" aria-hidden="true" />

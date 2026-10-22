@@ -584,7 +584,7 @@ function CobranzaConfiguracionContent() {
           aria-labelledby="heading-comercial"
         >
           <div>
-            <h2 id="heading-comercial" className="text-xl font-semibold text-foreground">
+            <h2 id="heading-comercial" className="text-xl font-medium text-foreground">
               Facturación e integraciones
             </h2>
             <p className="text-sm text-fg-muted mt-1">
@@ -685,7 +685,7 @@ function CobranzaConfiguracionContent() {
         aria-labelledby="heading-autonomia"
       >
         <div>
-          <h2 id="heading-autonomia" className="text-xl font-semibold text-foreground">
+          <h2 id="heading-autonomia" className="text-xl font-medium text-foreground">
             Autonomía
           </h2>
           <p className="text-sm text-fg-muted mt-1">
@@ -776,7 +776,7 @@ function CobranzaConfiguracionContent() {
         aria-labelledby="heading-horario"
       >
         <div>
-          <h2 id="heading-horario" className="text-xl font-semibold text-foreground">
+          <h2 id="heading-horario" className="text-xl font-medium text-foreground">
             Horario y frecuencia
           </h2>
           <p className="text-sm text-fg-muted mt-1">
@@ -810,7 +810,7 @@ function CobranzaConfiguracionContent() {
         aria-labelledby="heading-reporte"
       >
         <div>
-          <h2 id="heading-reporte" className="text-xl font-semibold text-foreground">
+          <h2 id="heading-reporte" className="text-xl font-medium text-foreground">
             Reporte diario
           </h2>
           <p className="text-sm text-fg-muted mt-1">

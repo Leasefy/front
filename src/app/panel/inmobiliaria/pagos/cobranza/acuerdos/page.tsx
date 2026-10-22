@@ -139,10 +139,10 @@ function AcuerdoListaCard({ row }: { row: PaymentsFunnelItem }) {
     <li className="rounded-lg border border-border bg-card p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 space-y-0.5">
-          <p className="text-sm font-semibold text-fg truncate">
+          <p className="text-sm font-medium text-fg truncate">
             <Mask field="cedula" value={row.debtor.fullName} />
           </p>
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             Acuerdo de pago · {formatDate(new Date(row.createdAt), { day: 'numeric', month: 'short', year: 'numeric' })}
           </p>
         </div>
@@ -155,8 +155,8 @@ function AcuerdoListaCard({ row }: { row: PaymentsFunnelItem }) {
 
       <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
         <div>
-          <p className="text-xs text-fg-muted">Monto del acuerdo</p>
-          <p className="text-sm font-semibold tabular-nums text-fg">
+          <p className="text-caption text-fg-muted">Monto del acuerdo</p>
+          <p className="text-sm font-medium tabular-nums text-fg">
             {copFormat(row.amount, formatCurrency)}
           </p>
         </div>
@@ -202,8 +202,8 @@ function AcuerdoPropuestoCard({
             <Handshake className="w-4 h-4 text-primary" weight="duotone" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-fg">Acuerdo propuesto</p>
-            <p className="text-xs text-fg-muted">Lo que se va a guardar</p>
+            <p className="text-sm font-medium text-fg">Acuerdo propuesto</p>
+            <p className="text-caption text-fg-muted">Lo que se va a guardar</p>
           </div>
         </div>
         <Badge variant="warning" className="shrink-0">
@@ -217,28 +217,28 @@ function AcuerdoPropuestoCard({
           «$ 4.200.000» se cortaba («$ 4.200.00»). */}
       <dl className="grid grid-cols-2 gap-px bg-border">
         <div className="bg-card p-4 space-y-0.5">
-          <dt className="text-xs text-fg-muted">Deuda total</dt>
-          <dd className="text-sm font-semibold tabular-nums text-fg">
+          <dt className="text-caption text-fg-muted">Deuda total</dt>
+          <dd className="text-sm font-medium tabular-nums text-fg">
             {copFormat(totalAdeudado, formatCurrency)}
           </dd>
         </div>
         <div className="bg-card p-4 space-y-0.5">
-          <dt className="text-xs text-fg-muted">{numCuotas === 0 ? 'Pago único' : 'Pago inicial'}</dt>
-          <dd className="text-sm font-semibold tabular-nums text-success" data-testid="vista-inicial">
+          <dt className="text-caption text-fg-muted">{numCuotas === 0 ? 'Pago único' : 'Pago inicial'}</dt>
+          <dd className="text-sm font-medium tabular-nums text-success" data-testid="vista-inicial">
             {copFormat(inicial, formatCurrency)}
           </dd>
         </div>
         <div className="bg-card p-4 space-y-0.5">
-          <dt className="text-xs text-fg-muted">
+          <dt className="text-caption text-fg-muted">
             {numCuotas === 0 ? 'Sin cuotas' : `Saldo en ${numCuotas} ${numCuotas === 1 ? 'cuota' : 'cuotas'}`}
           </dt>
-          <dd className="text-sm font-semibold tabular-nums text-fg">
+          <dd className="text-sm font-medium tabular-nums text-fg">
             {copFormat(saldo, formatCurrency)}
           </dd>
         </div>
         <div className="bg-card p-4 space-y-0.5">
-          <dt className="text-xs text-fg-muted">Valor por cuota</dt>
-          <dd className="text-sm font-semibold tabular-nums text-fg">
+          <dt className="text-caption text-fg-muted">Valor por cuota</dt>
+          <dd className="text-sm font-medium tabular-nums text-fg">
             {numCuotas === 0 ? '—' : copFormat(valorCuota, formatCurrency)}
           </dd>
         </div>
@@ -268,7 +268,7 @@ function AcuerdoPropuestoCard({
             <span className="font-medium text-fg">Si incumple:</span> el acuerdo queda incumplido y la deuda vuelve a la cobranza.
           </span>
         </div>
-        <p className="text-xs text-fg-muted leading-relaxed">
+        <p className="text-caption text-fg-muted leading-relaxed">
           Si la etapa tiene un acuerdo general con descuento sobre intereses, al guardar ese descuento baja las cuotas (o el pago único).
         </p>
       </div>
@@ -288,7 +288,7 @@ function AcuerdoPropuestoCard({
         link de cobro, y es una decisión de producto, no de cableado.
       */}
       <div className="px-5 py-4 border-t border-border bg-surface-muted">
-        <p className="text-xs text-fg-muted leading-relaxed">
+        <p className="text-caption text-fg-muted leading-relaxed">
           Esto es un <span className="font-medium text-fg">borrador calculado</span>: sirve
           para ver las condiciones antes de comprometerlas. Todavía no existe como acuerdo,
           no se le envió nada al inquilino y no genera cobro. Los acuerdos vivos se aprueban
@@ -423,7 +423,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
         onSubmit={(e) => e.preventDefault()}
       >
         <div className="space-y-1">
-          <h3 className="text-base font-semibold text-fg">Condiciones del acuerdo</h3>
+          <h3 className="text-base font-medium text-fg">Condiciones del acuerdo</h3>
           <p className="text-sm text-fg-muted">
             Define la estructura del acuerdo. Nada se envía al inquilino hasta que un humano lo apruebe.
           </p>
@@ -464,7 +464,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
             </SelectContent>
           </Select>
           {selectedDebtor && (
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               Etapa actual: {STAGE_LABELS_ES[selectedDebtor.currentStage]}
             </p>
           )}
@@ -595,7 +595,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
         </div>
 
         {faltaLoDeLasCuotas && (
-          <p className="text-xs text-fg-muted" data-testid="acuerdo-falta">
+          <p className="text-caption text-fg-muted" data-testid="acuerdo-falta">
             Con cuotas, escribe la cuota inicial y la fecha de la primera cuota.
           </p>
         )}
@@ -614,7 +614,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-0.5 min-w-0">
               <p className="text-sm font-medium text-fg">Requiere aprobación humana</p>
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 Ningún acuerdo se activa sin la aprobación explícita de una persona.
               </p>
             </div>
@@ -629,7 +629,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
         {/* Aviso T-323 */}
         <div className="flex items-start gap-2 rounded-lg bg-primary-soft p-3">
           <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
-          <p className="text-xs text-primary leading-relaxed">
+          <p className="text-caption text-primary leading-relaxed">
             Al guardar, el acuerdo queda como propuesta en estado &quot;Pendiente aprobación&quot;.
             Un humano debe aprobarlo antes de enviarlo al inquilino.
           </p>
@@ -642,7 +642,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
             className="flex items-start gap-2 rounded-lg bg-surface-muted p-3 ring-1 ring-border"
           >
             <Info className="w-4 h-4 text-fg-muted shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
-            <p className="text-xs text-fg-muted leading-relaxed">
+            <p className="text-caption text-fg-muted leading-relaxed">
               La creación de propuestas estará disponible muy pronto. Por ahora puedes
               armar las condiciones; el envío quedó guardado para cuando se habilite.
             </p>
@@ -655,7 +655,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
             className="flex items-start gap-2 rounded-lg bg-danger-soft p-3 ring-1 ring-danger/30"
           >
             <Warning className="w-4 h-4 text-danger shrink-0 mt-0.5" weight="fill" aria-hidden="true" />
-            <p className="text-xs text-danger leading-relaxed">{errorGeneral}</p>
+            <p className="text-caption text-danger leading-relaxed">{errorGeneral}</p>
         </Presence>
 
         <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
@@ -674,7 +674,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
 
       {/* Columna derecha — vista previa local mientras se arma el acuerdo. */}
       <div className="space-y-3">
-        <h3 className="text-base font-semibold text-fg">Vista previa</h3>
+        <h3 className="text-base font-medium text-fg">Vista previa</h3>
         {/* «Completa las condiciones» ⇄ la vista previa: la una sale y la otra
             entra al llenar (o vaciar) lo que falta. */}
         <CrossFade swapKey={hasPreview ? 'vista-previa' : 'faltan-datos'}>
@@ -689,7 +689,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
           <div className="rounded-lg border border-dashed border-border bg-surface-muted p-8 text-center">
             <FileText className="w-8 h-8 mx-auto text-fg-muted mb-3" weight="duotone" aria-hidden="true" />
             <p className="text-sm font-medium text-fg">Completa las condiciones</p>
-            <p className="text-xs text-fg-muted mt-1 max-w-xs mx-auto">
+            <p className="text-caption text-fg-muted mt-1 max-w-xs mx-auto">
               Selecciona un deudor e ingresa el valor adeudado para crear la propuesta.
             </p>
           </div>
@@ -728,7 +728,7 @@ function AcuerdosLista() {
     <section className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-fg">Acuerdos activos y pendientes</h2>
+          <h2 className="text-base font-medium text-fg">Acuerdos activos y pendientes</h2>
           <p className="text-sm text-fg-muted">
             Planes de pago en curso o esperando aprobación.
           </p>
@@ -742,26 +742,26 @@ function AcuerdosLista() {
       {kpis && acuerdos.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="rounded-lg border border-border bg-card px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+            <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">
               Pendientes de aprobación
             </p>
-            <p className="mt-1 text-lg font-semibold tabular-nums text-fg">
+            <p className="mt-1 text-lg font-medium tabular-nums text-fg">
               {acuerdos.length}
             </p>
           </div>
           <div className="rounded-lg border border-border bg-card px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+            <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">
               Recaudado (período)
             </p>
-            <p className="mt-1 text-lg font-semibold tabular-nums text-fg">
+            <p className="mt-1 text-lg font-medium tabular-nums text-fg">
               {copFormat(kpis.totalRecaudadoCop, formatCurrency)}
             </p>
           </div>
           <div className="rounded-lg border border-border bg-card px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+            <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">
               Aprobados (período)
             </p>
-            <p className="mt-1 text-lg font-semibold tabular-nums text-fg">
+            <p className="mt-1 text-lg font-medium tabular-nums text-fg">
               {kpis.approvedCount}
             </p>
           </div>
@@ -872,7 +872,7 @@ function AcuerdosContent() {
       {!canApprove && (
         <div className="flex items-start gap-2 rounded-lg bg-surface-muted p-3 ring-1 ring-border">
           <Info className="w-4 h-4 text-fg-muted shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
-          <p className="text-xs text-fg-muted leading-relaxed">
+          <p className="text-caption text-fg-muted leading-relaxed">
             Puedes proponer acuerdos, pero la aprobación final requiere permiso de cobranza.
             Un compañero con permiso podrá aprobarlos desde el detalle del plan.
           </p>

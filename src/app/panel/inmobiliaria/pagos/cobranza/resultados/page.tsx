@@ -351,7 +351,7 @@ function ResultadosContent() {
     return (
       <section className="space-y-3" aria-labelledby={id}>
         <div className="space-y-0.5">
-          <h2 id={id} className="text-sm font-semibold text-fg">
+          <h2 id={id} className="text-sm font-medium text-fg">
             {titulo}
           </h2>
           <p className="text-caption text-fg-muted">{explicacion}</p>

@@ -329,16 +329,16 @@ export default function DeudoresListClient() {
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t('inmobiliaria.ai.cobranza.deudores.filters.search.placeholder')}
               />
-              {searchHint && <p className="text-xs text-warning mt-1">{searchHint}</p>}
+              {searchHint && <p className="text-caption text-warning mt-1">{searchHint}</p>}
             </div>
             <div className="flex items-center gap-3 shrink-0">
               <span
-                className="text-xs font-medium text-fg-muted whitespace-nowrap"
+                className="text-caption font-medium text-fg-muted whitespace-nowrap"
                 data-testid="sort-label"
               >
                 {t('inmobiliaria.ai.cobranza.deudores.sort.daysInStageDesc')}
               </span>
-              <span className="text-xs text-fg-muted tabular-nums">{contador}</span>
+              <span className="text-caption text-fg-muted tabular-nums">{contador}</span>
             </div>
           </div>
 
@@ -350,7 +350,7 @@ export default function DeudoresListClient() {
               <legend className="sr-only">
                 {t('inmobiliaria.ai.cobranza.deudores.filters.stage')}
               </legend>
-              <span className="text-xs font-medium text-fg-muted">
+              <span className="text-caption font-medium text-fg-muted">
                 {t('inmobiliaria.ai.cobranza.deudores.filters.stage')}
               </span>
               {CARTERA_STAGES.map((s) => (
@@ -374,7 +374,7 @@ export default function DeudoresListClient() {
               <legend className="sr-only">
                 {t('inmobiliaria.ai.cobranza.deudores.filters.channel')}
               </legend>
-              <span className="text-xs font-medium text-fg-muted">
+              <span className="text-caption font-medium text-fg-muted">
                 {t('inmobiliaria.ai.cobranza.deudores.filters.channel')}
               </span>
               {CHANNELS.map((c) => (
@@ -393,10 +393,10 @@ export default function DeudoresListClient() {
               <legend className="sr-only">
                 {t('inmobiliaria.ai.cobranza.deudores.filters.daysInStage')}
               </legend>
-              <span className="text-xs font-medium text-fg-muted whitespace-nowrap">
+              <span className="text-caption font-medium text-fg-muted whitespace-nowrap">
                 {t('inmobiliaria.ai.cobranza.deudores.filters.daysInStage')}
               </span>
-              <span className="text-xs text-fg-muted tabular-nums whitespace-nowrap">
+              <span className="text-caption text-fg-muted tabular-nums whitespace-nowrap">
                 {daysMin}–{daysMax}
               </span>
               <div className="w-32">
@@ -459,7 +459,7 @@ export default function DeudoresListClient() {
             <p className="text-sm font-medium text-fg">
               {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
             </p>
-            <p className="text-xs text-fg-muted max-w-sm">
+            <p className="text-caption text-fg-muted max-w-sm">
               Ningún caso cumple con los filtros puestos. Quita alguno para ver
               el resto de la cartera.
             </p>
@@ -523,7 +523,7 @@ export default function DeudoresListClient() {
                       <TableCell>
                         <Mask field="email" value={d.emailMasked} />
                       </TableCell>
-                      <TableCell className="text-xs text-fg-muted">
+                      <TableCell className="text-caption text-fg-muted">
                         {etiquetaDeCanal(d.channel, t)}
                       </TableCell>
                     </TableRowAnimada>
@@ -553,7 +553,7 @@ export default function DeudoresListClient() {
                       </Badge>
                       <Mask field="cedula" value={d.cedulaMasked} />
                     </div>
-                    <p className="text-xs text-fg-muted mt-1.5">
+                    <p className="text-caption text-fg-muted mt-1.5">
                       {etiquetaDeCanal(d.channel, t)}
                       {d.lastActivityAt
                         ? ` · ${new Date(d.lastActivityAt).toLocaleDateString(locale)}`
@@ -586,7 +586,7 @@ export default function DeudoresListClient() {
         <Presence
           show={isLoadingMore}
           direction="none"
-          className="border-t border-border px-4 py-2 text-center text-xs text-fg-muted"
+          className="border-t border-border px-4 py-2 text-center text-caption text-fg-muted"
         >
             {t('inmobiliaria.ai.cobranza.deudores.loadingMore')}
         </Presence>

@@ -124,7 +124,7 @@ function EscalationDetailContent() {
           size="sm"
           hideArrow
           onClick={() => router.back()}
-          className="h-auto p-0 gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+          className="h-auto p-0 gap-1 text-caption font-medium text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.kanbanColumns.open')}
@@ -149,7 +149,7 @@ function EscalationDetailContent() {
       {/* Breadcrumb */}
       <Link
         href="/panel/inmobiliaria/pagos/cobranza/escalaciones"
-        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition font-medium"
+        className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground transition font-medium"
       >
         <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
         {t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
@@ -175,7 +175,7 @@ function EscalationDetailContent() {
       {/* Card 1 — Linked call (sólo si hay una) */}
       {data.linked_call && (
       <section className="rounded-lg border border-border bg-card p-4 space-y-2">
-        <MonoLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
+        <MonoLabel className="text-caption text-muted-foreground flex items-center gap-1.5">
           <Phone className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.detail.linkedCall')}
         </MonoLabel>
@@ -186,7 +186,7 @@ function EscalationDetailContent() {
           >
             <div className="space-y-1">
               <p className="font-medium">{locale.startsWith('es') ? 'Ver la llamada' : 'View call'}</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 {locale.startsWith('es')
                   ? cuandoPaso(data.linked_call.initiatedAt)
                   : new Date(data.linked_call.initiatedAt).toLocaleString(locale)}
@@ -200,7 +200,7 @@ function EscalationDetailContent() {
 
       {/* Card 2 — Reason */}
       <section className="rounded-lg border border-border bg-card p-4 space-y-2">
-        <MonoLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
+        <MonoLabel className="text-caption text-muted-foreground flex items-center gap-1.5">
           <FileText className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.detail.reason')}
         </MonoLabel>
@@ -214,7 +214,7 @@ function EscalationDetailContent() {
       <section className="rounded-lg border border-border bg-card p-4 space-y-2">
         <details>
           <summary className="cursor-pointer list-none">
-            <MonoLabel className="text-xs text-muted-foreground hover:text-foreground transition">
+            <MonoLabel className="text-caption text-muted-foreground hover:text-foreground transition">
               {t('inmobiliaria.ai.cobranza.escalaciones.detail.stateTrace')}
             </MonoLabel>
           </summary>
@@ -232,19 +232,19 @@ function EscalationDetailContent() {
 
       {/* Card 4 — Assignee + timing */}
       <section className="rounded-lg border border-border bg-card p-4 space-y-2">
-        <MonoLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
+        <MonoLabel className="text-caption text-muted-foreground flex items-center gap-1.5">
           <User className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.detail.assignee')}
         </MonoLabel>
         <dl className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <dt className="text-xs text-muted-foreground">
+            <dt className="text-caption text-muted-foreground">
               {t('inmobiliaria.ai.cobranza.escalaciones.detail.assignee')}
             </dt>
             <dd className="text-foreground">{data.assignee_email ?? '—'}</dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">
+            <dt className="text-caption text-muted-foreground">
               {t('inmobiliaria.ai.cobranza.escalaciones.detail.timing')}
             </dt>
             <dd className="text-foreground">
@@ -258,7 +258,7 @@ function EscalationDetailContent() {
           {data.resolved_at && (
             <>
               <div>
-                <dt className="text-xs text-muted-foreground">
+                <dt className="text-caption text-muted-foreground">
                   {locale.startsWith('es') ? 'Resuelta el' : 'Resolved at'}
                 </dt>
                 <dd className="text-foreground">
@@ -266,7 +266,7 @@ function EscalationDetailContent() {
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground">
+                <dt className="text-caption text-muted-foreground">
                   {locale.startsWith('es') ? 'Cómo se resolvió' : 'Resolution'}
                 </dt>
                 <dd className="text-foreground">
@@ -278,7 +278,7 @@ function EscalationDetailContent() {
               </div>
               {data.resolution_text && (
                 <div className="col-span-2">
-                  <dt className="text-xs text-muted-foreground">{locale.startsWith('es') ? 'Nota' : 'Note'}</dt>
+                  <dt className="text-caption text-muted-foreground">{locale.startsWith('es') ? 'Nota' : 'Note'}</dt>
                   <dd className="text-foreground text-sm whitespace-pre-wrap">
                     {data.resolution_text}
                   </dd>

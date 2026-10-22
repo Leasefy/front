@@ -300,11 +300,11 @@ function EscalacionesContent() {
               <div className="px-3 py-2 border-b border-border bg-muted/30 flex items-center justify-between">
                 <h2
                   id={`column-${col.key}-heading`}
-                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                  className="text-caption font-medium uppercase tracking-wide text-muted-foreground"
                 >
                   {col.label}
                 </h2>
-                <span className="text-xs text-muted-foreground tabular-nums">
+                <span className="text-caption text-muted-foreground tabular-nums">
                   <AnimatedNumber value={col.items.length} format={(n) => String(Math.round(n))} />
                 </span>
               </div>
@@ -314,7 +314,7 @@ function EscalacionesContent() {
                   show={col.items.length === 0}
                   initial={false}
                   direction="none"
-                  className="text-xs text-muted-foreground text-center py-6"
+                  className="text-caption text-muted-foreground text-center py-6"
                 >
                   {locale.startsWith('es') ? 'Sin escalaciones' : 'No escalations'}
                 </Presence>

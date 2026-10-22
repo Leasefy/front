@@ -138,7 +138,7 @@ function StatusTimeline({ transitions, requestId, t }: StatusTimelineProps) {
 
   return (
     <Card className="p-5">
-      <h2 className="text-lg font-semibold text-fg">
+      <h2 className="text-h3 text-fg">
         {t('inmobiliaria.ai.arco.detail.timeline.title')}
       </h2>
 
@@ -151,7 +151,7 @@ function StatusTimeline({ transitions, requestId, t }: StatusTimelineProps) {
           <Timeline entries={entries} className="mt-4" />
           <Link
             href={`/panel/inmobiliaria/pagos/cobranza/compliance/audit?arco_request_id=${requestId}`}
-            className="mt-4 inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline"
+            className="mt-4 inline-flex items-center gap-1 text-caption text-primary underline-offset-4 hover:underline"
           >
             <ArrowSquareOut className="h-3 w-3" weight="regular" aria-hidden="true" />
             {t('inmobiliaria.ai.arco.detail.viewAudit')}
@@ -220,7 +220,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
     return (
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <label htmlFor="arco-url" className="text-xs font-medium text-fg-muted">
+          <label htmlFor="arco-url" className="text-caption font-medium text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.resolve.fields.acceso.url')}
           </label>
           <Input
@@ -233,7 +233,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
           />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="arco-expires" className="text-xs font-medium text-fg-muted">
+          <label htmlFor="arco-expires" className="text-caption font-medium text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.resolve.fields.acceso.expires_at')}
           </label>
           {/* Nico, 10-10-2026: con los campos de Cadence, no el
@@ -265,7 +265,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
     return (
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <label htmlFor="arco-rows" className="text-xs font-medium text-fg-muted">
+          <label htmlFor="arco-rows" className="text-caption font-medium text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.resolve.fields.rectificacion.affectedRows')}
           </label>
           <Input
@@ -278,7 +278,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
           />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="arco-fields" className="text-xs font-medium text-fg-muted">
+          <label htmlFor="arco-fields" className="text-caption font-medium text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.resolve.fields.rectificacion.fieldsModified')}
           </label>
           <Input
@@ -296,7 +296,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
   // cancelacion | oposicion
   return (
     <div className="space-y-1.5">
-      <label htmlFor="arco-reason" className="text-xs font-medium text-fg-muted">
+      <label htmlFor="arco-reason" className="text-caption font-medium text-fg-muted">
         {t(`inmobiliaria.ai.arco.detail.resolve.fields.${type}.reason`)}
       </label>
       <Textarea
@@ -389,7 +389,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
   return (
     <Card>
       <div className="space-y-4 p-5">
-        <h2 className="text-lg font-semibold text-fg">
+        <h2 className="text-h3 text-fg">
           {t('inmobiliaria.ai.arco.detail.resolve.title')}
         </h2>
 
@@ -433,7 +433,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
             {/* El motivo queda en el `resolutionPayload` de la solicitud: es el
                 sustento de por qué se rechazó. El back lo acepta opcional. */}
             <div className="space-y-1.5">
-              <label htmlFor="arco-reject-reason" className="text-xs font-medium text-fg-muted">
+              <label htmlFor="arco-reject-reason" className="text-caption font-medium text-fg-muted">
                 {t('inmobiliaria.ai.arco.rejectDialog.reasonLabel')}
               </label>
               <Textarea
@@ -647,7 +647,7 @@ function ExtendDialog({
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="arco-extend-days" className="text-xs font-medium text-fg-muted">
+            <label htmlFor="arco-extend-days" className="text-caption font-medium text-fg-muted">
               {t(`${NS}.daysLabel`).replace('{max}', String(maxDays))}
             </label>
             <Input
@@ -667,7 +667,7 @@ function ExtendDialog({
             <ErrorDelCampo id="arco-extend-days-error" mensaje={errorDeLosDias} />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="arco-extend-reason" className="text-xs font-medium text-fg-muted">
+            <label htmlFor="arco-extend-reason" className="text-caption font-medium text-fg-muted">
               {t(`${NS}.reasonLabel`)}
             </label>
             <Textarea
@@ -745,7 +745,7 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
 
   const fecha = (iso: string | null) =>
     iso ? (
-      <span className="font-mono text-xs tabular-nums">
+      <span className="font-mono text-caption tabular-nums">
         {shortDateTime.format(new Date(iso))}
       </span>
     ) : (
@@ -770,7 +770,7 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
       value: verifiedAt ? (
         fecha(verifiedAt)
       ) : (
-        <span className="text-xs text-fg-subtle">
+        <span className="text-caption text-fg-subtle">
           {t('inmobiliaria.ai.arco.detail.requester.pending')}
         </span>
       ),
@@ -790,7 +790,7 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
 
   return (
     <Card className="space-y-4 p-5">
-      <h2 className="text-lg font-semibold text-fg">
+      <h2 className="text-h3 text-fg">
         {t('inmobiliaria.ai.arco.detail.requester.title')}
       </h2>
 
@@ -829,7 +829,7 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
             {detail.slaExtendedAt && (
               <span className="text-fg-muted">
                 {' · '}
-                <span className="font-mono text-xs tabular-nums">
+                <span className="font-mono text-caption tabular-nums">
                   {shortDateTime.format(new Date(detail.slaExtendedAt))}
                 </span>
               </span>

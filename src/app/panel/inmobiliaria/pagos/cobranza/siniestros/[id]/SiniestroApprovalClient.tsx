@@ -357,7 +357,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           data-testid="siniestro-results"
           className="space-y-2 rounded-md border border-success/30 bg-success-soft p-4"
         >
-          <h2 className="text-sm font-semibold text-success">
+          <h2 className="text-sm font-medium text-success">
             {approveResult?.insurerResults.some((r) => !r.sent)
               ? t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.partial')
               : t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.title')}

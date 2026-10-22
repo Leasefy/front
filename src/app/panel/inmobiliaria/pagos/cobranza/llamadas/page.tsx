@@ -149,7 +149,7 @@ function PromesaCell({ call }: { call: CallSummary }) {
       ) : (
         <span className="text-fg-muted text-sm">Sin monto</span>
       )}
-      {fecha && <span className="text-xs text-fg-muted whitespace-nowrap">{fecha}</span>}
+      {fecha && <span className="text-caption text-fg-muted whitespace-nowrap">{fecha}</span>}
     </div>
   )
 }
@@ -170,7 +170,7 @@ function SenalesCell({ call }: { call: CallSummary }) {
     <div className="flex flex-wrap items-center gap-1.5">
       {fraude > 0 && (
         <span
-          className="inline-flex items-center gap-1 text-danger text-xs font-medium"
+          className="inline-flex items-center gap-1 text-danger text-caption font-medium"
           title="Señales de fraude detectadas en la llamada"
         >
           <ShieldWarning className="w-3.5 h-3.5" weight="fill" aria-hidden="true" />
@@ -179,7 +179,7 @@ function SenalesCell({ call }: { call: CallSummary }) {
       )}
       {flags > 0 && (
         <span
-          className="inline-flex items-center gap-1 text-warning text-xs font-medium"
+          className="inline-flex items-center gap-1 text-warning text-caption font-medium"
           title="Alertas de cumplimiento"
         >
           <Warning className="w-3.5 h-3.5" weight="fill" aria-hidden="true" />
@@ -192,7 +192,7 @@ function SenalesCell({ call }: { call: CallSummary }) {
         </Badge>
       )}
       {sentimiento && sentimiento !== 'neutral' && (
-        <span className="text-xs text-fg-muted">{sentimentLabel(sentimiento)}</span>
+        <span className="text-caption text-fg-muted">{sentimentLabel(sentimiento)}</span>
       )}
     </div>
   )
@@ -505,7 +505,7 @@ function LlamadasContent() {
                     <div className="font-medium text-fg whitespace-nowrap">
                       {call.debtorNameMasked}
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-fg-muted">
+                    <div className="flex items-center gap-1.5 text-caption text-fg-muted">
                       <span className="font-mono tabular-nums">{call.debtorCedulaMasked}</span>
                       <span aria-hidden="true">·</span>
                       <span>{channelLabel(call.channel)}</span>
@@ -529,12 +529,12 @@ function LlamadasContent() {
                         <span className="text-sm text-fg-muted">Todavía sin resultado</span>
                       )}
                       {call.summary?.digest && (
-                        <p className="text-xs leading-relaxed text-fg-muted">
+                        <p className="text-caption leading-relaxed text-fg-muted">
                           {call.summary.digest}
                         </p>
                       )}
                       {call.summary?.paymentPromised && !columnas.promesa && (
-                        <span className="inline-flex items-center gap-1 text-xs text-success">
+                        <span className="inline-flex items-center gap-1 text-caption text-success">
                           <Handshake className="w-3.5 h-3.5" aria-hidden="true" />
                           Prometió pagar
                         </span>

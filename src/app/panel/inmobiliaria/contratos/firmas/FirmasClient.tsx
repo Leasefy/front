@@ -210,7 +210,7 @@ export function FirmasClient() {
                       data-testid={`vencida-${v.contractId}`}
                     >
                       <p className="text-sm">{v.aviso}</p>
-                      <p className="text-muted-foreground text-xs">
+                      <p className="text-muted-foreground text-caption">
                         {v.contratoVolvioABorrador
                           ? 'El contrato volvió a borrador.'
                           : 'El contrato ya no estaba esperando firma: no se tocó.'}{' '}
@@ -304,7 +304,7 @@ export function FirmasClient() {
                       data-testid={`recordatorio-${r.contractId}`}
                     >
                       <p className="text-sm">{r.mensaje}</p>
-                      <p className="text-muted-foreground text-xs">
+                      <p className="text-muted-foreground text-caption">
                         Recordatorio {r.numero} de {r.de} ·{' '}
                         {r.correo ?? 'sin correo'}
                       </p>
@@ -371,7 +371,7 @@ export function FirmasClient() {
                           ? 'espera la firma del inquilino'
                           : 'el inquilino ya firmó: falta la firma de la inmobiliaria'}
                       </p>
-                      <p className="text-muted-foreground text-xs">
+                      <p className="text-muted-foreground text-caption">
                         {lineaDelPlazo(a)}
                       </p>
                     </StaggerItem>

@@ -148,7 +148,7 @@ export function DiferenciasConocidas() {
       data-testid="diferencias-conocidas"
     >
       <header className="space-y-1">
-        <h3 id="diferencias-conocidas-titulo" className="flex items-center gap-2 text-base font-semibold text-fg">
+        <h3 id="diferencias-conocidas-titulo" className="flex items-center gap-2 text-base font-medium text-fg">
           <Scales className="h-4 w-4" aria-hidden="true" />
           Diferencias conocidas al conciliar
         </h3>

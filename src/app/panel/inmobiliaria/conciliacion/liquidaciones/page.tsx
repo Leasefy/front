@@ -173,7 +173,7 @@ function SettlementRow({
       </TableCell>
 
       {/* El neto es la cifra de la fila: canon − comisión − otros. */}
-      <TableCell className="whitespace-nowrap font-semibold tabular-nums text-fg">
+      <TableCell className="whitespace-nowrap font-medium tabular-nums text-fg">
         {fmtCop(item.netCop)}
       </TableCell>
 
@@ -633,7 +633,7 @@ function ConciliacionLiquidaciones() {
             {/* Vista previa del neto (canon − comisión − otros) */}
             <div className="rounded-[14px] border border-border px-4 py-2.5 text-sm">
               <span className="text-fg-muted">Neto al propietario: </span>
-              <span className="font-mono font-semibold tabular-nums text-fg">{fmtCop(previewNet)}</span>
+              <span className="font-mono tabular-nums text-fg">{fmtCop(previewNet)}</span>
             </div>
           </div>
 

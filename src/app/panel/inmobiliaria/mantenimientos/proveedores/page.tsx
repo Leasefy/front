@@ -382,7 +382,7 @@ function FormularioDeProveedor({
           </div>
 
           <fieldset>
-            <legend className="mb-1 block text-xs font-medium text-foreground">
+            <legend className="mb-1 block text-caption font-medium text-foreground">
               Qué hace
             </legend>
             <div className="flex flex-wrap gap-2">
@@ -395,7 +395,7 @@ function FormularioDeProveedor({
                     onClick={() => alternar(e.valor)}
                     aria-pressed={puesta}
                     className={cn(
-                      'rounded-full border px-3 py-1 text-xs transition-colors',
+                      'rounded-full border px-3 py-1 text-caption transition-colors',
                       puesta
                         ? 'border-primary bg-primary-soft text-primary'
                         : 'border-border text-fg-muted hover:border-primary/40',
@@ -601,7 +601,7 @@ function Campo({
 }) {
   return (
     <div className="block">
-      <label htmlFor={`proveedor-${nombre}`} className="mb-1 block text-xs font-medium text-foreground">
+      <label htmlFor={`proveedor-${nombre}`} className="mb-1 block text-caption font-medium text-foreground">
         {label}
         {requerido && <span className="ml-0.5 text-danger">*</span>}
       </label>
@@ -669,7 +669,7 @@ function HistorialDeCalificaciones({
                   <Star className="h-4 w-4 text-warning" weight="fill" />
                   <span className="font-medium tabular-nums">{c.estrellas}</span>
                 </span>
-                <span className="text-xs text-fg-muted tabular-nums">
+                <span className="text-caption text-fg-muted tabular-nums">
                   {new Date(c.fecha).toLocaleDateString('es-CO')}
                 </span>
               </div>

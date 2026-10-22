@@ -170,10 +170,10 @@ export function SeccionSedes() {
                             {!s.activa ? <Badge variant="outline">Inactiva</Badge> : null}
                           </span>
                           {s.direccion ? (
-                            <span className="block text-xs text-fg-muted">{s.direccion}</span>
+                            <span className="block text-caption text-fg-muted">{s.direccion}</span>
                           ) : null}
                         </TableCell>
-                        <TableCell className="font-mono text-xs">{s.codigo}</TableCell>
+                        <TableCell className="font-mono text-caption">{s.codigo}</TableCell>
                         <TableCell className="text-fg-muted">{s.ciudad || '—'}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums">
                           {NUMERO.format(s.inmuebles)}
@@ -324,7 +324,7 @@ function EditorDeSede({
             <Checkbox className="mt-1" checked={porDefecto} data-testid="sede-por-defecto" onCheckedChange={(marcada: boolean) => setPorDefecto(marcada)} />
             <span>
               Que sea la sede por defecto
-              <span className="block text-xs text-fg-muted">
+              <span className="block text-caption text-fg-muted">
                 Lo que se cree sin sede explícita cae ahí. Sólo puede haber una.
               </span>
             </span>
@@ -334,7 +334,7 @@ function EditorDeSede({
               <Checkbox className="mt-1" checked={activa} data-testid="sede-activa" onCheckedChange={(marcada: boolean) => setActiva(marcada)} />
               <span>
                 Activa
-                <span className="block text-xs text-fg-muted">
+                <span className="block text-caption text-fg-muted">
                   Desactivarla la saca del selector; lo que ya está asignado no se mueve.
                 </span>
               </span>

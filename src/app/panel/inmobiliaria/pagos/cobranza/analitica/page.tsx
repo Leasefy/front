@@ -146,7 +146,7 @@ export default function CobranzaAnaliticaPage() {
 
         {/* Widget 1 — Recovery Rate (full-width row) */}
         <section className="rounded-lg border border-border bg-card p-6 space-y-4 md:col-span-2">
-          <h2 className="text-base font-semibold text-fg">
+          <h2 className="text-base font-medium text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.title')}
           </h2>
           <RecoveryRateChart
@@ -160,7 +160,7 @@ export default function CobranzaAnaliticaPage() {
 
         {/* Widget 2 — Top Objections (single col) */}
         <section className="rounded-lg border border-border bg-card p-6 space-y-4">
-          <h2 className="text-base font-semibold text-fg">
+          <h2 className="text-base font-medium text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.title')}
           </h2>
           <TopObjectionsTable
@@ -174,7 +174,7 @@ export default function CobranzaAnaliticaPage() {
 
         {/* Widget 3 — Cost Per Peso (single col) */}
         <section className="rounded-lg border border-border bg-card p-6 space-y-4">
-          <h2 className="text-base font-semibold text-fg">
+          <h2 className="text-base font-medium text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.costPerPeso.title')}
           </h2>
           <CostPerPesoKpi
@@ -185,7 +185,7 @@ export default function CobranzaAnaliticaPage() {
 
         {/* Widget 4 — Cadence: ChannelMix + Heatmap stacked (full-width row) */}
         <section className="rounded-lg border border-border bg-card p-6 space-y-4 md:col-span-2">
-          <h2 className="text-base font-semibold text-fg">
+          <h2 className="text-base font-medium text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.title')}
           </h2>
           <div className="space-y-6">
@@ -209,7 +209,7 @@ export default function CobranzaAnaliticaPage() {
 
         {/* Widget 5 — Top Scripts (Phase 38-04a: branches on data.topScripts.populated) */}
         <section className="rounded-lg border border-border bg-card p-6 space-y-4">
-          <h2 className="text-base font-semibold text-fg">
+          <h2 className="text-base font-medium text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
           </h2>
           <TopScriptsTable data={data?.topScripts} />

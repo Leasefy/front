@@ -59,7 +59,7 @@ export default function CarrierDeepDivePage() {
           <div className="flex items-center gap-2">
             <Link
               href="/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras"
-              className="inline-flex items-center gap-1 text-xs font-medium text-fg-muted hover:text-fg transition-colors"
+              className="inline-flex items-center gap-1 text-caption font-medium text-fg-muted hover:text-fg transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               {t('inmobiliaria.ai.cotizador.aseguradoras.backToList')}
@@ -112,7 +112,7 @@ export default function CarrierDeepDivePage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Latency sparkline */}
         <div className="rounded-lg border border-border bg-card p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
+          <p className="text-caption font-medium uppercase tracking-wide text-fg-muted mb-3">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.latency.title')}
           </p>
           <CarrierLatencySparkline data={detail?.latencySparkline ?? []} isLoading={isLoading} />
@@ -120,7 +120,7 @@ export default function CarrierDeepDivePage() {
 
         {/* Error rate chart */}
         <div className="rounded-lg border border-border bg-card p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
+          <p className="text-caption font-medium uppercase tracking-wide text-fg-muted mb-3">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.errorRate.title')}
           </p>
           <CarrierErrorRateChart data={detail?.errorRateSeries ?? []} isLoading={isLoading} />
@@ -129,7 +129,7 @@ export default function CarrierDeepDivePage() {
 
       {/* Approval by canon — full width */}
       <div className="rounded-lg border border-border bg-card p-5">
-        <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
+        <p className="text-caption font-medium uppercase tracking-wide text-fg-muted mb-3">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.approvalByCanon.title')}
         </p>
         <CarrierApprovalByCanonChart data={detail?.approvalByCanon ?? []} isLoading={isLoading} />
@@ -137,7 +137,7 @@ export default function CarrierDeepDivePage() {
 
       {/* Recent quotes table — full width */}
       <section>
-        <h2 className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
+        <h2 className="text-caption font-medium uppercase tracking-wide text-fg-muted mb-3">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.title')}
         </h2>
         <CarrierRecentQuotesTable quotes={recentQuotes ?? null} isLoading={quotesLoading} />

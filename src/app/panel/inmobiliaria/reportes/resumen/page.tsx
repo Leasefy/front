@@ -4,23 +4,7 @@ import Link from 'next/link';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 // AVISO-TIPO-DOC (05-10-2026): los propietarios cuyo documento frena la factura por mandato.
 import { AvisoTipoDeDocumento } from '@/components/inmobiliaria/AvisoTipoDeDocumento';
-import {
-  Buildings,
-  Users,
-  CurrencyDollar,
-  TrendUp,
-  TrendDown,
-  ArrowRight,
-  Kanban,
-  UserCircle,
-  Clock,
-  Warning,
-  CheckCircle,
-  CaretRight,
-  House,
-  Wallet,
-  FileText,
-} from '@phosphor-icons/react';
+import { Buildings, CurrencyDollar, TrendUp, TrendDown, ArrowRight, Kanban, UserCircle, Clock, Warning, CaretRight, House, Wallet, FileText } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { AnimatedNumber, CrossFade } from '@leasefy/cadence';
 import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece';
@@ -95,7 +79,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
             <Icon weight="duotone" className="h-4 w-4 text-ink-fg/90" />
           </div>
         </div>
-        <p className="font-heading text-[28px] font-semibold text-ink-fg tracking-tight tabular-nums leading-none mt-3">
+        <p className="font-heading text-[28px] font-medium text-ink-fg tracking-tight tabular-nums leading-none mt-3">
           <Cifra value={value} />
         </p>
         {subtitle && <p className="font-sans text-[12px] text-ink-fg/70 mt-1">{subtitle}</p>}
@@ -130,11 +114,11 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
           <Icon weight="duotone" className="h-4 w-4" />
         </div>
       </div>
-      <p className="mt-3 font-heading text-2xl font-semibold text-fg tracking-tight tabular-nums leading-none">
+      <p className="mt-3 font-heading text-2xl font-medium text-fg tracking-tight tabular-nums leading-none">
         <Cifra value={value} />
       </p>
       {subtitle && (
-        <p className="mt-1 text-xs text-fg-muted">{subtitle}</p>
+        <p className="mt-1 text-caption text-fg-muted">{subtitle}</p>
       )}
       <div className="flex-1 min-h-[8px]" />
       {trend ? (
@@ -144,10 +128,10 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
           ) : (
             <TrendDown weight="bold" className="h-3 w-3 text-danger" />
           )}
-          <span className={cn('text-xs font-medium tabular-nums', trend.isPositive ? 'text-fg-muted' : 'text-danger')}>
+          <span className={cn('text-caption font-medium tabular-nums', trend.isPositive ? 'text-fg-muted' : 'text-danger')}>
             {trend.isPositive ? '+' : ''}{tasaEnPantalla(trend.value, Number.isInteger(trend.value) ? 0 : 1)}
           </span>
-          <span className="text-xs text-fg-muted">{t('inmobiliaria.common.vsLastMonth')}</span>
+          <span className="text-caption text-fg-muted">{t('inmobiliaria.common.vsLastMonth')}</span>
         </div>
       ) : (
         <div className="h-5" />
@@ -189,9 +173,9 @@ function SecondaryStat({
           <Icon weight="duotone" className="h-4 w-4" />
         </div>
         <div className="min-w-0">
-          <p className="font-heading text-lg font-semibold text-fg tabular-nums leading-none"><Cifra value={value} /></p>
+          <p className="font-heading text-lg font-medium text-fg tabular-nums leading-none"><Cifra value={value} /></p>
           <MonoLabel className="mt-1 block">{label}</MonoLabel>
-          {detalle && <p className="mt-1 text-xs text-fg-muted">{detalle}</p>}
+          {detalle && <p className="mt-1 text-caption text-fg-muted">{detalle}</p>}
         </div>
       </div>
     </div>
@@ -223,11 +207,11 @@ function PipelineMiniCard({ item }: { item: PipelineItem }) {
         <p className="text-sm font-medium text-fg truncate">
           {item.candidateName}
         </p>
-        <p className="text-xs text-fg-muted truncate">
+        <p className="text-caption text-fg-muted truncate">
           {item.propertyTitle}
         </p>
       </div>
-      <span className={cn('px-2 py-1 rounded-full text-xs font-medium', stageInfo?.color)}>
+      <span className={cn('px-2 py-1 rounded-full text-caption font-medium', stageInfo?.color)}>
         {stageInfo?.labelEs}
       </span>
     </div>
@@ -246,14 +230,14 @@ function AgentMiniCard({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="h-9 w-9 rounded-full bg-surface-muted text-fg-muted flex items-center justify-center font-mono text-xs font-semibold">
+      <div className="h-9 w-9 rounded-full bg-surface-muted text-fg-muted flex items-center justify-center font-mono text-caption font-medium">
         {agent.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-fg truncate">
           {agent.name}
         </p>
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {t(agent.metrics.closedThisMonth === 1 ? 'inmobiliaria.dashboard.team.closedThisMonthUno' : 'inmobiliaria.dashboard.team.closedThisMonth', { count: agent.metrics.closedThisMonth })}
         </p>
       </div>
@@ -261,7 +245,7 @@ function AgentMiniCard({
           Leasefy y ningún inmueble tenía asesor asignado, así que era un «$0»
           que se leía como un mal mes. Ahora: los inmuebles que tiene a cargo. */}
       <span
-        className="font-heading text-sm font-semibold text-fg tabular-nums"
+        className="font-heading text-sm font-medium text-fg tabular-nums"
         data-testid="agente-inmuebles"
         title="Inmuebles a cargo"
       >
@@ -650,7 +634,7 @@ function ResumenDelNegocio() {
       <div className="rounded-lg border border-border bg-card p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.financial.title')}</h2>
+            <h2 className="flex items-center gap-2 text-base font-medium text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.financial.title')}</h2>
             <p className="text-sm text-fg-muted mt-0.5">{currentMonthLabel}</p>
           </div>
           <Link
@@ -665,31 +649,31 @@ function ResumenDelNegocio() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
           <div>
             <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.expected')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
+            <p className="font-heading text-lg font-medium text-fg tabular-nums tracking-tight leading-none">
               {formatCurrency(kpis.expectedRevenue)}
             </p>
           </div>
           <div>
             <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.collected')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
+            <p className="font-heading text-lg font-medium text-fg tabular-nums tracking-tight leading-none">
               {formatCurrency(kpis.collectedRevenue)}
             </p>
           </div>
           <div>
             <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.pendingLabel')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
+            <p className="font-heading text-lg font-medium text-fg tabular-nums tracking-tight leading-none">
               {formatCurrency(kpis.pendingCollections)}
             </p>
           </div>
           <div>
             <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.late')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-danger tabular-nums tracking-tight leading-none">
+            <p className="font-heading text-lg font-medium text-danger tabular-nums tracking-tight leading-none">
               {formatCurrency(kpis.lateCollections)}
             </p>
           </div>
           <div>
             <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.pendingDispersions')}</MonoLabel>
-            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
+            <p className="font-heading text-lg font-medium text-fg tabular-nums tracking-tight leading-none">
               {kpis.pendingDispersions}
             </p>
           </div>
@@ -701,7 +685,7 @@ function ResumenDelNegocio() {
             {/* Con qué fórmula se midió: «Recaudo sobre lo causado» y «Pagado de lo
                 emitido» son dos números distintos. */}
             <MonoLabel data-testid="resumen-rotulo-de-la-tasa">{rotuloDeLaTasa}</MonoLabel>
-            <span className="font-heading font-semibold text-fg tabular-nums" data-testid="resumen-tasa-de-recaudo">
+            <span className="font-heading font-medium text-fg tabular-nums" data-testid="resumen-tasa-de-recaudo">
               {tasaEnPantalla(tasaDeRecaudo)}
             </span>
           </div>
@@ -715,7 +699,7 @@ function ResumenDelNegocio() {
               style={{ width: anchoDeBarra(tasaDeRecaudo) }}
             />
           </div>
-          <p className="mt-2 text-xs text-fg-muted tabular-nums" data-testid="resumen-cifras-de-la-tasa">
+          <p className="mt-2 text-caption text-fg-muted tabular-nums" data-testid="resumen-cifras-de-la-tasa">
             {fraseDeLasCifras(tasa, t, formatCurrency)}
           </p>
         </div>
@@ -727,7 +711,7 @@ function ResumenDelNegocio() {
         <div className="lg:col-span-2 rounded-lg border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.pipeline.title')}</h2>
+              <h2 className="flex items-center gap-2 text-base font-medium text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.pipeline.title')}</h2>
               <p className="text-sm text-fg-muted mt-0.5">{t('inmobiliaria.dashboard.pipeline.subtitle')}</p>
             </div>
             <Link
@@ -760,7 +744,7 @@ function ResumenDelNegocio() {
         <div className="rounded-lg border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.team.title')}</h2>
+              <h2 className="flex items-center gap-2 text-base font-medium text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.team.title')}</h2>
               <p className="text-sm text-fg-muted mt-0.5">{t(activeAgents.length === 1 ? 'inmobiliaria.dashboard.team.activeAgentsUno' : 'inmobiliaria.dashboard.team.activeAgents', { count: activeAgents.length })}</p>
             </div>
             <Link
@@ -794,14 +778,14 @@ function ResumenDelNegocio() {
           <div className="mt-5 pt-4 border-t border-border">
             <div className="flex items-center justify-between text-sm">
               <span className="text-fg-muted">{t('inmobiliaria.dashboard.team.closedThisMonthLabel')}</span>
-              <span className="font-semibold text-fg">{kpis.closedThisMonth}</span>
+              <span className="font-medium text-fg">{kpis.closedThisMonth}</span>
             </div>
             <div className="flex items-center justify-between text-sm mt-2">
               <span className="text-fg-muted">{t('inmobiliaria.dashboard.team.avgDaysToClose')}</span>
               {/* Sin un solo cierre el promedio es 0 y se leía «0 días»: una
                   inmobiliaria que cierra en el acto. Mismo criterio que
                   AgenteMetrics, que ya escondía el dato sin cierres. */}
-              <span className="font-semibold text-fg" data-testid="resumen-dias-al-cierre">
+              <span className="font-medium text-fg" data-testid="resumen-dias-al-cierre">
                 {kpis.avgDaysToClose > 0
                   ? t('inmobiliaria.dashboard.team.days', { count: kpis.avgDaysToClose })
                   : SIN_MEDIR}

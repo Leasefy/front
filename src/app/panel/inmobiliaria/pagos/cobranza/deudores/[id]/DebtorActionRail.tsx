@@ -154,7 +154,7 @@ export function DebtorActionRail({
           aria-hidden="true"
           className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
         />
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="text-caption font-medium uppercase tracking-wide text-muted-foreground">
           {t(`${NS}.detalle.recomendacion`)}
         </span>
       </h2>
@@ -164,7 +164,7 @@ export function DebtorActionRail({
         className="rounded-lg border border-border bg-surface p-4"
         data-testid="rail-next-action"
       >
-        <h3 className="text-sm font-semibold text-fg">
+        <h3 className="text-sm font-medium text-fg">
           {t(`${NS}.detalle.proximaAccionTitulo`)}
         </h3>
         {/* La próxima acción la agenda el agente en vivo: la que había sale y
@@ -177,19 +177,19 @@ export function DebtorActionRail({
                 {/* «Voz», no «voice» con capitalize. */}
                 {channelLabel(nextAction.channel)}
               </p>
-              <p className="text-xs text-primary tabular-nums">
+              <p className="text-caption text-primary tabular-nums">
                 {formatPlannedTime(nextAction.plannedFor, locale)} ·{' '}
                 {formatRelative(nextAction.plannedFor, now, locale)}
               </p>
               {nextAction.templateName && (
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   {nextAction.templateName}
                 </p>
               )}
             </div>
             {/* Por qué — hairline-separated quiet block */}
             <div className="mt-3 pt-3 border-t border-border">
-              <p className="text-xs font-medium text-fg-muted">
+              <p className="text-caption font-medium text-fg-muted">
                 {t(`${NS}.detalle.porQue`)}
               </p>
               <p className="mt-0.5 text-sm leading-snug text-fg-muted">
@@ -210,7 +210,7 @@ export function DebtorActionRail({
         className="rounded-lg border border-border bg-surface p-4"
         data-testid="rail-quick-actions"
       >
-        <h3 className="text-sm font-semibold text-fg">
+        <h3 className="text-sm font-medium text-fg">
           {t(`${NS}.detalle.accionesRapidas`)}
         </h3>
         <div className="mt-3 space-y-2">
@@ -385,7 +385,7 @@ function RailAction({
         {label}
       </span>
       {badge && (
-        <Badge variant="warning" className="shrink-0 text-xs">
+        <Badge variant="warning" className="shrink-0 text-caption">
           {badge}
         </Badge>
       )}

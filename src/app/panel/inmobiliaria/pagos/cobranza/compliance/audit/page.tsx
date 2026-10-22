@@ -247,7 +247,7 @@ function AuditContent() {
         {/* Actor */}
         <div>
           <label htmlFor="audit-actor" className="block mb-1">
-            <MonoLabel className="text-xs text-muted-foreground">
+            <MonoLabel className="text-caption text-muted-foreground">
               {t('inmobiliaria.ai.cobranza.compliance.filters.actor')}
             </MonoLabel>
           </label>
@@ -283,7 +283,7 @@ function AuditContent() {
         {/* Action */}
         <div>
           <label htmlFor="audit-action" className="block mb-1">
-            <MonoLabel className="text-xs text-muted-foreground">
+            <MonoLabel className="text-caption text-muted-foreground">
               {t('inmobiliaria.ai.cobranza.compliance.filters.action')}
             </MonoLabel>
           </label>
@@ -342,7 +342,7 @@ function AuditContent() {
 
         {/* Date range */}
         <div className="sm:col-span-2 md:col-span-1">
-          <MonoLabel className="block text-xs text-muted-foreground mb-1">
+          <MonoLabel className="block text-caption text-muted-foreground mb-1">
             {t('inmobiliaria.ai.cobranza.compliance.filters.dateRange')}
           </MonoLabel>
           <div className="flex gap-1">
@@ -369,7 +369,7 @@ function AuditContent() {
         {/* Search q */}
         <div>
           <label htmlFor="audit-q" className="block mb-1">
-            <MonoLabel className="text-xs text-muted-foreground">
+            <MonoLabel className="text-caption text-muted-foreground">
               {t('inmobiliaria.ai.cobranza.compliance.filters.search')}
             </MonoLabel>
           </label>

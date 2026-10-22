@@ -36,12 +36,12 @@ export default function MantenimientoOverviewPage() {
           <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.mantenimiento.overview.title')}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
+          <p className="text-neutral-500 mt-0.5 text-sm">
             {t('inmobiliaria.ai.mantenimiento.overview.subtitle')}
           </p>
         </div>
         {generatedAtLabel && (
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap mt-1">
+          <p className="text-caption text-neutral-400 whitespace-nowrap mt-1">
             {t('inmobiliaria.ai.mantenimiento.overview.lastUpdated')} {generatedAtLabel}
           </p>
         )}

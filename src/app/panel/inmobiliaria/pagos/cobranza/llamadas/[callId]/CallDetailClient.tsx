@@ -233,7 +233,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
             <h1 className="text-h2 text-fg">
               {data.debtorNameMasked}
             </h1>
-            <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-fg-muted">
+            <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-caption text-fg-muted">
               <div className="flex gap-1">
                 <dt className="font-medium">
                   {t('inmobiliaria.ai.cobranza.call.header.startedAt')}:

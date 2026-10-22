@@ -202,7 +202,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
     <div className="space-y-5">
       {delEquipo.length > 0 && (
         <section data-testid="compromisos-del-equipo">
-          <h3 className="text-sm font-semibold text-fg mb-2">Promesas que registró tu equipo</h3>
+          <h3 className="text-sm font-medium text-fg mb-2">Promesas que registró tu equipo</h3>
           <Stagger as="ul" className="space-y-2">
             {delEquipo.map((g) => (
               <StaggerItem as="li" key={g.id} className="rounded-sm border border-border bg-surface p-3">
@@ -224,7 +224,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
       )}
       {promesas.length > 0 && (
         <section>
-          <h3 className="text-sm font-semibold text-fg mb-2">
+          <h3 className="text-sm font-medium text-fg mb-2">
             Promesas de pago
           </h3>
           <Stagger as="ul" className="space-y-2">
@@ -291,7 +291,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
 
       {paymentPlans.length > 0 && (
         <section>
-          <h3 className="text-sm font-semibold text-fg mb-2">
+          <h3 className="text-sm font-medium text-fg mb-2">
             {t('inmobiliaria.ai.cobranza.detail.compromisos.paymentPlans')}
           </h3>
           <Stagger as="ul" className="space-y-2">
@@ -322,7 +322,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
 
       {claims.length > 0 && (
         <section>
-          <h3 className="text-sm font-semibold text-fg mb-2">
+          <h3 className="text-sm font-medium text-fg mb-2">
             {t('inmobiliaria.ai.cobranza.detail.compromisos.insuranceClaims')}
           </h3>
           <Stagger as="ul" className="space-y-2">
@@ -355,7 +355,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
 
       {legals.length > 0 && (
         <section>
-          <h3 className="text-sm font-semibold text-fg mb-2">
+          <h3 className="text-sm font-medium text-fg mb-2">
             {t('inmobiliaria.ai.cobranza.detail.compromisos.legalArtifacts')}
           </h3>
           <Stagger as="ul" className="space-y-2">

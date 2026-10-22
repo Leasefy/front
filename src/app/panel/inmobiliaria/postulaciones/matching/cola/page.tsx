@@ -44,8 +44,8 @@ function MatchingCola() {
             sobre una cola que nadie alimenta insinúa una revisión que no hubo. */}
         {!isLoading && total > 0 && (
           <div className="shrink-0 rounded-lg border border-border bg-surface px-4 py-3 text-center">
-            <p className="text-2xl font-semibold tabular-nums text-fg">{total}</p>
-            <p className="text-xs text-fg-muted">{t('inmobiliaria.ai.workspace.pages.comun.enCola')}</p>
+            <p className="text-2xl font-medium tabular-nums text-fg">{total}</p>
+            <p className="text-caption text-fg-muted">{t('inmobiliaria.ai.workspace.pages.comun.enCola')}</p>
           </div>
         )}
       </header>

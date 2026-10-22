@@ -375,14 +375,14 @@ export default function PagosFunnelClient() {
             }))}
           />
           <div className="flex items-center gap-2">
-            <label htmlFor="pagos-sort" className="text-xs font-medium text-fg-muted">
+            <label htmlFor="pagos-sort" className="text-caption font-medium text-fg-muted">
               {t('inmobiliaria.ai.cobranza.pagos.sort.label')}:
             </label>
             <Select value={sort} onValueChange={(v) => setSort(v as PaymentsFunnelSort)}>
               <SelectTrigger
                 id="pagos-sort"
                 data-testid="pagos-sort-select"
-                className="h-8 w-auto gap-1 text-xs"
+                className="h-8 w-auto gap-1 text-caption"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -404,7 +404,7 @@ export default function PagosFunnelClient() {
         {/* Fila 2 — filtros acumulables · limpiar */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <fieldset>
-            <legend className="text-xs font-medium text-fg-muted mr-2 inline">
+            <legend className="text-caption font-medium text-fg-muted mr-2 inline">
               {t('inmobiliaria.ai.cobranza.pagos.filter.provider')}:
             </legend>
             <span className="inline-flex flex-wrap gap-1.5 align-middle">
@@ -423,7 +423,7 @@ export default function PagosFunnelClient() {
           </fieldset>
 
           <fieldset>
-            <legend className="text-xs font-medium text-fg-muted mr-2 inline">
+            <legend className="text-caption font-medium text-fg-muted mr-2 inline">
               {t('inmobiliaria.ai.cobranza.pagos.filter.status')}:
             </legend>
             <span className="inline-flex flex-wrap gap-1.5 align-middle">
@@ -549,11 +549,11 @@ export default function PagosFunnelClient() {
                 >
                   <TableCell className="px-3 py-2 whitespace-nowrap">
                     <span className="text-fg">{row.debtor.fullName}</span>
-                    <span className="block text-xs text-fg-subtle">
+                    <span className="block text-caption text-fg-subtle">
                       <Mask field="cedula" value={row.debtor.cedulaMasked} />
                     </span>
                   </TableCell>
-                  <TableCell className="px-3 py-2 tabular-nums text-xs text-fg">
+                  <TableCell className="px-3 py-2 tabular-nums text-caption text-fg">
                     {formatCop(row.amount)}
                   </TableCell>
                   <TableCell className="px-3 py-2">
@@ -567,7 +567,7 @@ export default function PagosFunnelClient() {
                       //
                       // Y para una obligación no es «todavía»: nadie intentó
                       // pagarla, así que no hay pasarela pendiente de asignar.
-                      <span className="text-xs text-fg-subtle">
+                      <span className="text-caption text-fg-subtle">
                         {t(
                           esObligacion
                             ? 'inmobiliaria.ai.cobranza.pagos.provider.noAplica'
@@ -600,7 +600,7 @@ export default function PagosFunnelClient() {
                       insinuaba un giro atrasado sobre una deuda sin pagar.
                     */}
                     {esObligacion ? (
-                      <span className="text-xs text-fg-subtle">
+                      <span className="text-caption text-fg-subtle">
                         {t('inmobiliaria.ai.cobranza.pagos.disbursement.noAplica')}
                       </span>
                     ) : row.disbursementState === 'settled' ? (
@@ -608,7 +608,7 @@ export default function PagosFunnelClient() {
                         {t('inmobiliaria.ai.cobranza.pagos.disbursement.settled')}
                       </Badge>
                     ) : (
-                      <span className="text-xs text-fg-muted">
+                      <span className="text-caption text-fg-muted">
                         {t('inmobiliaria.ai.cobranza.pagos.disbursement.pending')}
                         {row.disbursementPendingDays > 0 && (
                           <span className="text-fg-subtle">
@@ -621,7 +621,7 @@ export default function PagosFunnelClient() {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="px-3 py-2 text-xs text-fg-muted whitespace-nowrap">
+                  <TableCell className="px-3 py-2 text-caption text-fg-muted whitespace-nowrap">
                     {new Date(row.createdAt).toLocaleDateString('es-CO', {
                       day: '2-digit',
                       month: 'short',

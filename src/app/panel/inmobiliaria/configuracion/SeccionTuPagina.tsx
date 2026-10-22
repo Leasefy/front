@@ -294,7 +294,7 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
               className="relative z-10 -mt-8 ring-4 ring-surface"
             />
             <div className="min-w-0 pt-3">
-              <p className="truncate font-heading text-[18px] font-semibold text-fg">{agency.name}</p>
+              <p className="truncate font-heading text-[18px] font-medium text-fg">{agency.name}</p>
               <p className="truncate text-[13px] text-fg-muted">{lema.trim() || 'Tu lema sale aquí'}</p>
             </div>
           </div>

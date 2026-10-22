@@ -330,7 +330,7 @@ function CartasContent() {
                     {a.debtorName ?? (isEs ? 'Deudor no encontrado' : 'Debtor not found')}
                   </span>
                   {a.debtorDocument && (
-                    <span className="block text-xs text-fg-muted font-mono tabular-nums">
+                    <span className="block text-caption text-fg-muted font-mono tabular-nums">
                       {a.debtorDocument}
                     </span>
                   )}
@@ -347,14 +347,14 @@ function CartasContent() {
                       : (STATUS_LABELS[a.status as LegalArtifactStatus]?.en ?? a.status)}
                   </Badge>
                 </TableCell>
-                <TableCell className="px-3 py-2 text-xs text-fg-muted tabular-nums whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-caption text-fg-muted tabular-nums whitespace-nowrap">
                   {new Date(a.generatedAt).toLocaleDateString(locale, {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',
                   })}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-xs text-fg-muted tabular-nums whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-caption text-fg-muted tabular-nums whitespace-nowrap">
                   {a.sentAt
                     ? new Date(a.sentAt).toLocaleDateString(locale, {
                         year: 'numeric',
@@ -363,7 +363,7 @@ function CartasContent() {
                       })
                     : '—'}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-xs text-fg-muted">
+                <TableCell className="px-3 py-2 text-caption text-fg-muted">
                   {a.physicalSendMethod
                     ? (isEs
                         ? SEND_METHOD_LABELS[a.physicalSendMethod]?.es

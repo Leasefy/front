@@ -263,7 +263,7 @@ function VariablePill({
           onInsert(varName)
         }
       }}
-      className="cursor-pointer select-none rounded-md bg-primary-soft text-primary px-2 py-0.5 text-xs font-mono hover:opacity-80 min-h-[44px] flex items-center transition-colors"
+      className="cursor-pointer select-none rounded-md bg-primary-soft text-primary px-2 py-0.5 text-caption font-mono hover:opacity-80 min-h-[44px] flex items-center transition-colors"
     >
       {`{{${varName}}}`}
     </span>
@@ -580,7 +580,7 @@ function TemplateEditorContent({
 
         {/* Variable picker */}
         <section>
-          <p className="text-xs font-medium text-fg-muted mb-2">
+          <p className="text-caption font-medium text-fg-muted mb-2">
             {t('inmobiliaria.ai.templates.editor.variables')}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -639,7 +639,7 @@ function TemplateEditorContent({
             data-wa-status-section
             className="rounded-lg border border-border bg-card p-4 mt-4 space-y-3"
           >
-            <h2 className="text-sm font-semibold text-fg">
+            <h2 className="text-sm font-medium text-fg">
               {t('inmobiliaria.ai.templates.editor.waStatusTitle')}
             </h2>
 
@@ -648,7 +648,7 @@ function TemplateEditorContent({
                 <WaStatusPill status={localWaStatus} t={t} />
               )}
               {localWaLastChecked && (
-                <span className="text-xs font-mono text-fg-muted tabular-nums">
+                <span className="text-caption font-mono text-fg-muted tabular-nums">
                   {t('inmobiliaria.ai.templates.editor.waLastChecked')}:{' '}
                   {new Date(localWaLastChecked).toLocaleString()}
                 </span>

@@ -251,7 +251,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                 mode="popLayout"
                 direction="none"
                 className={
-                  'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ' +
+                  'inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium ' +
                   stageColors.bg +
                   ' ' +
                   stageColors.text +
@@ -267,7 +267,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
             {data && (
               <span
                 className={
-                  'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
+                  'inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium ' +
                   daysBadgeClasses(data.daysInStage)
                 }
               >
@@ -363,7 +363,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               className="gap-2"
             >
               <span>{t(`inmobiliaria.ai.cobranza.detail.tabs.${activeTab}`)}</span>
-              <span className="text-xs text-fg-subtle">▾</span>
+              <span className="text-caption text-fg-subtle">▾</span>
             </Button>
           </div>
 

@@ -285,7 +285,7 @@ export function ConciliacionCierreYEfectivo() {
       <div className="space-y-2 border-t border-border pt-4">
         <div className="flex items-center gap-2">
           <Bank className="h-5 w-5 text-fg-muted" aria-hidden="true" />
-          <h3 className="text-body font-semibold text-fg">Cuenta contable de cada cuenta bancaria</h3>
+          <h3 className="text-body font-medium text-fg">Cuenta contable de cada cuenta bancaria</h3>
         </div>
         <p className="text-caption text-fg-muted">
           De aquí sale el «saldo en libros» del cierre del mes, y aquí se asientan los recibos que se concilian desde

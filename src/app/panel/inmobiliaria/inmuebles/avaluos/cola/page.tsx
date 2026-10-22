@@ -178,7 +178,7 @@ function AvaluosCola() {
           <p className="max-w-2xl text-sm text-muted-foreground">{t(`${NS}.colaDesc`)}</p>
         </div>
         <div className="shrink-0 rounded-lg border border-border bg-card px-4 py-3 text-center" data-testid="avaluos-activas">
-          <p className="font-mono text-2xl font-semibold tabular-nums text-foreground">
+          <p className="font-mono text-2xl tabular-nums text-foreground">
             {activasSeSaben ? borradores.total + enRevision.total : '—'}
           </p>
           <p className="text-caption text-muted-foreground">{t(`${NS}.colaKpiLabel`)}</p>

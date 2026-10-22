@@ -354,7 +354,7 @@ function AvaluosSala() {
         className="rounded-lg border border-border bg-card p-5 space-y-4"
         data-testid="avaluos-solicitar"
       >
-        <h2 className="text-base font-semibold text-foreground">{t(`${NS}.solicitarTitle`)}</h2>
+        <h2 className="text-base font-medium text-foreground">{t(`${NS}.solicitarTitle`)}</h2>
 
         {servicioDesconectado && (
           <div
@@ -388,8 +388,8 @@ function AvaluosSala() {
           {/* Directo — lo hago yo */}
           <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4">
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">{t(`${NS}.solicitarCta`)}</p>
-              <p className="text-xs text-muted-foreground leading-snug">
+              <p className="text-sm font-medium text-foreground">{t(`${NS}.solicitarCta`)}</p>
+              <p className="text-caption text-muted-foreground leading-snug">
                 {t(`${NS}.directoDetalle`)}
               </p>
             </div>
@@ -408,8 +408,8 @@ function AvaluosSala() {
           {/* Link para compartir — se lo mando a un cliente */}
           <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4">
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">{t(`${NS}.linkCta`)}</p>
-              <p className="text-xs text-muted-foreground leading-snug">
+              <p className="text-sm font-medium text-foreground">{t(`${NS}.linkCta`)}</p>
+              <p className="text-caption text-muted-foreground leading-snug">
                 {t(`${NS}.linkDetalle`)}
               </p>
             </div>
@@ -480,7 +480,7 @@ function AvaluosSala() {
           pestaña es un lugar; esta sección es un lugar distinto. */}
       <section className="space-y-4" data-testid="avaluos-de-la-agencia">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-base font-semibold text-foreground">{t(`${NS}.listaTitulo`)}</h2>
+          <h2 className="text-base font-medium text-foreground">{t(`${NS}.listaTitulo`)}</h2>
         </div>
 
         {/* State filter */}
@@ -553,26 +553,26 @@ function AvaluosSala() {
                 el botón de descarga de las filas firmadas. A 390 px «Creado» y
                 «Certificado» no van en el encabezado (el botón baja de renglón). */}
             <div className={`${COLUMNAS_DE_LA_LISTA} gap-4 px-4 py-2.5 bg-muted/40 border-b border-border`}>
-              <span className="text-xs font-medium text-muted-foreground">
+              <span className="text-caption font-medium text-muted-foreground">
                 {t(`${NS}.col.estado`)}
               </span>
-              <span className="text-xs font-medium text-muted-foreground">
+              <span className="text-caption font-medium text-muted-foreground">
                 {t(`${NS}.col.propietario`)}
               </span>
-              <span className="text-xs font-medium text-muted-foreground text-right">
+              <span className="text-caption font-medium text-muted-foreground text-right">
                 {t(`${NS}.col.valor`)}
               </span>
-              <span className="text-xs font-medium text-muted-foreground hidden sm:block text-right">
+              <span className="text-caption font-medium text-muted-foreground hidden sm:block text-right">
                 {t(`${NS}.col.creado`)}
               </span>
-              <span className="text-xs font-medium text-muted-foreground hidden sm:block text-right">
+              <span className="text-caption font-medium text-muted-foreground hidden sm:block text-right">
                 {t(`${NS}.col.certificado`)}
               </span>
             </div>
 
             {/* Rows */}
             {/* Filtrar o paginar: las filas entran escalonadas (paginada: sin `layout`). */}
-            <Stagger as="ul" layout={false} role="list" className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            <Stagger as="ul" layout={false} role="list" className="divide-y divide-neutral-100">
               {avaluos.map((item) => {
                 const meta = stateMeta(item.state, t)
                 return (
@@ -595,7 +595,7 @@ function AvaluosSala() {
                       {item.valueCop == null ? '—' : formatCurrency(item.valueCop)}
                     </span>
 
-                    <span className="text-xs text-muted-foreground hidden sm:block text-right whitespace-nowrap tabular-nums">
+                    <span className="text-caption text-muted-foreground hidden sm:block text-right whitespace-nowrap tabular-nums">
                       {formatDate(item.createdAt)}
                     </span>
 

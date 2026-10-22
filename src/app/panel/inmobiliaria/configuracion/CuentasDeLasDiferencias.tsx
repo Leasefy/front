@@ -230,7 +230,7 @@ export function CuentasDeLasDiferencias() {
       data-testid="cuentas-de-las-diferencias"
     >
       <header className="space-y-1">
-        <h3 id="cuentas-de-las-diferencias-titulo" className="flex items-center gap-2 text-base font-semibold text-fg">
+        <h3 id="cuentas-de-las-diferencias-titulo" className="flex items-center gap-2 text-base font-medium text-fg">
           <Bank className="h-4 w-4" aria-hidden="true" />
           Cuentas de las diferencias
         </h3>

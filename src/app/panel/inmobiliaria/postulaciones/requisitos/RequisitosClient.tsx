@@ -374,7 +374,7 @@ function FilaDeRequisito({
             ) : null}
           </p>
           {r.detalle ? <p className="text-sm text-fg-muted">{r.detalle}</p> : null}
-          <p className="text-xs text-fg-subtle">{texto}</p>
+          <p className="text-caption text-fg-subtle">{texto}</p>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -384,7 +384,7 @@ function FilaDeRequisito({
         {r.esElEstudio ? (
           <>
             <Badge variant="secondary">Opcional</Badge>
-            <span className="text-xs text-fg-subtle" data-testid={`estudio-candado-${r.id}`}>
+            <span className="text-caption text-fg-subtle" data-testid={`estudio-candado-${r.id}`}>
               No frena la postulación: quien no lo tiene te llega marcado «Sin estudio»
             </span>
           </>
@@ -414,7 +414,7 @@ function FilaDeRequisito({
                     if (r.obligatorio !== o.valor) onAlternar()
                   }}
                   className={cn(
-                    'relative isolate px-3 py-1 text-xs transition-colors disabled:opacity-50',
+                    'relative isolate px-3 py-1 text-caption transition-colors disabled:opacity-50',
                     r.obligatorio === o.valor
                       ? 'font-medium text-background'
                       : 'text-fg-muted hover:text-fg',
@@ -722,7 +722,7 @@ export function RequisitosClient() {
                       <section key={g.perfil} data-testid={`grupo-${g.perfil}`}>
                         <h3 className="mb-1 flex items-baseline gap-2 text-sm font-medium text-fg">
                           {g.nombre}
-                          <span className="text-xs font-normal text-fg-subtle">
+                          <span className="text-caption font-normal text-fg-subtle">
                             {g.items.length}{' '}
                             {g.items.length === 1 ? 'requisito' : 'requisitos'}
                           </span>

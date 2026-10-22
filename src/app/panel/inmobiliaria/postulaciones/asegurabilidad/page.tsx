@@ -214,7 +214,7 @@ export default function CotizadorOverviewPage() {
 
           {/* Recent Quotes Feed */}
           <section aria-label={t('inmobiliaria.ai.cotizador.overview.recentQuotes.title')}>
-            <h2 className="text-base font-semibold text-fg mb-3">
+            <h2 className="text-base font-medium text-fg mb-3">
               {t('inmobiliaria.ai.cotizador.overview.recentQuotes.title')}
             </h2>
             <CotizadorRecentQuotesFeed quotes={mergedQuotes} isLoading={isLoading} />
@@ -222,7 +222,7 @@ export default function CotizadorOverviewPage() {
 
           {/* Carriers Status */}
           <section aria-label={t('inmobiliaria.ai.cotizador.overview.carriers.title')}>
-            <h2 className="text-base font-semibold text-fg mb-3">
+            <h2 className="text-base font-medium text-fg mb-3">
               {t('inmobiliaria.ai.cotizador.overview.carriers.title')}
             </h2>
             <CotizadorCarriersStatus carriers={data?.carriers ?? []} isLoading={isLoading} />

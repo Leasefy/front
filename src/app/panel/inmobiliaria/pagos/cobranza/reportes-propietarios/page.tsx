@@ -101,7 +101,7 @@ function EstadoBadge({ estado }: { estado: ReporteEstado }) {
   const token = ESTADO_TOKEN[estado]
   return (
     <span
-      className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ring-1 shrink-0 ${token.bg} ${token.text} ${token.ring}`}
+      className={`inline-flex items-center text-caption font-medium px-2 py-0.5 rounded-full ring-1 shrink-0 ${token.bg} ${token.text} ${token.ring}`}
     >
       {token.label}
     </span>
@@ -199,18 +199,18 @@ function ReporteRow({
                 weight="duotone"
                 aria-hidden="true"
               />
-              <span className="text-sm font-semibold text-fg truncate">
+              <span className="text-sm font-medium text-fg truncate">
                 {reporte.inmueble}
               </span>
             </div>
-            <p className="text-xs text-fg-muted truncate">
+            <p className="text-caption text-fg-muted truncate">
               Propietario: {reporte.propietario}
             </p>
           </div>
           <EstadoBadge estado={reporte.estado} />
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-muted tabular-nums">
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-fg-muted tabular-nums">
           <span>
             <span className="font-medium text-fg">{reporte.diasMora}</span> días de mora
           </span>
@@ -254,7 +254,7 @@ function NuevoReporte({
     <div className="w-full max-w-sm space-y-2">
       <label
         htmlFor="reporte-deudor"
-        className="block text-xs font-medium text-fg-muted"
+        className="block text-caption font-medium text-fg-muted"
       >
         Generar reporte de
       </label>
@@ -285,14 +285,14 @@ function conSuCorreo(p: { nombre: string; correo: string | null }): string {
 /** A quién le llega el reporte, leído del contrato del caso (MORI-33). */
 function ParaQuien({ reporte, lectura }: { reporte: ReportePreview; lectura: LecturaDelDestino | 'cargando' | null }) {
   if (lectura === 'cargando') {
-    return <p className="text-xs text-fg-muted">Buscando el propietario del contrato…</p>
+    return <p className="text-caption text-fg-muted">Buscando el propietario del contrato…</p>
   }
   if (lectura === null) {
-    return <p className="text-xs text-fg-muted truncate">Para: {reporte.propietario}</p>
+    return <p className="text-caption text-fg-muted truncate">Para: {reporte.propietario}</p>
   }
   if (!lectura.destino) {
     return (
-      <p className="text-xs text-warning" data-testid="reporte-sin-destino">
+      <p className="text-caption text-warning" data-testid="reporte-sin-destino">
         {lectura.porQueNo ?? 'No sabemos a qué propietario va este reporte.'}
       </p>
     )
@@ -301,12 +301,12 @@ function ParaQuien({ reporte, lectura }: { reporte: ReportePreview; lectura: Lec
   const sinCorreo = d.propietarios.length > 0 && d.propietarios.every((p) => !p.correo)
   return (
     <div className="space-y-0.5" data-testid="reporte-destino">
-      <p className="text-xs text-fg-muted">
+      <p className="text-caption text-fg-muted">
         Para: {d.propietarios.length > 0 ? d.propietarios.map(conSuCorreo).join(' · ') : 'el inmueble no tiene propietario registrado'}
       </p>
-      <p className="text-xs text-fg-subtle">Contrato {d.contrato}</p>
+      <p className="text-caption text-fg-subtle">Contrato {d.contrato}</p>
       {sinCorreo && (
-        <p className="text-xs text-warning">
+        <p className="text-caption text-warning">
           Ningún propietario tiene correo registrado: agrégalo en su ficha para poder enviárselo.
         </p>
       )}
@@ -328,7 +328,7 @@ function ReportePreviewCard({
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-0.5 min-w-0">
             <Eyebrow>Reporte de gestión</Eyebrow>
-            <h2 className="text-base font-semibold text-fg">
+            <h2 className="text-base font-medium text-fg">
               Estado de cobranza — {lectura && lectura !== 'cargando' && lectura.destino ? lectura.destino.inmueble.nombre : reporte.inmueble}
             </h2>
             <ParaQuien reporte={reporte} lectura={lectura} />
@@ -358,7 +358,7 @@ function ReportePreviewCard({
         </div>
 
         {/* Nota de aprobación humana (T-323) */}
-        <div className="flex items-start gap-2 rounded-lg bg-primary-soft p-3 text-xs text-fg">
+        <div className="flex items-start gap-2 rounded-lg bg-primary-soft p-3 text-caption text-fg">
           <ShieldCheck className="w-4 h-4 shrink-0 text-primary mt-0.5" weight="duotone" aria-hidden="true" />
           <p>
             Este reporte requiere tu revisión y aprobación antes de enviarse al propietario. Al
@@ -611,7 +611,7 @@ function ReportesPropietariosContent() {
               título («Por aprobar» partido) y arrastraban las tarjetas: en el
               celular van debajo, en su riel. */}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-            <h2 className="whitespace-nowrap text-base font-semibold text-fg">Reportes preparados</h2>
+            <h2 className="whitespace-nowrap text-base font-medium text-fg">Reportes preparados</h2>
             <div className="-mx-1 max-w-full overflow-x-auto whitespace-nowrap px-1">
               <SegmentedControl
                 options={estadoOptions}
@@ -663,7 +663,7 @@ function ReportesPropietariosContent() {
               La acción principal (Enviar) requiere aprobación humana — T-323. */}
           <Card>
             <CardContent className="p-5 space-y-3">
-              <h3 className="text-base font-semibold text-fg">Acciones</h3>
+              <h3 className="text-base font-medium text-fg">Acciones</h3>
 
               <div className="flex flex-wrap gap-2">
                 {/* Acción principal — Aprobar / Enviar (POST approve, T-323) */}
@@ -733,25 +733,25 @@ function ReportesPropietariosContent() {
               </div>
 
               {/* Feedback honesto de las acciones */}
-              <Presence as="p" show={Boolean(actionMsg)} className="text-xs text-success">{actionMsg}
+              <Presence as="p" show={Boolean(actionMsg)} className="text-caption text-success">{actionMsg}
               </Presence>
-              <Presence as="p" show={Boolean(pdfMsg)} className="text-xs text-danger" role="alert" data-testid="reporte-pdf-error">
+              <Presence as="p" show={Boolean(pdfMsg)} className="text-caption text-danger" role="alert" data-testid="reporte-pdf-error">
                 {pdfMsg}
               </Presence>
-              <Presence as="p" show={Boolean(approveError)} className="text-xs text-danger" role="alert" data-testid="reporte-aprobar-error">
+              <Presence as="p" show={Boolean(approveError)} className="text-caption text-danger" role="alert" data-testid="reporte-aprobar-error">
                   {mensajeDeLaAccion(
                     { error: approveError, fallo: approveFallo },
                     { porDefecto: 'No pudimos aprobar el reporte.', accion: 'aprobar el reporte' },
                   )}
               </Presence>
-              <Presence as="p" show={Boolean(generateError)} className="text-xs text-danger">
+              <Presence as="p" show={Boolean(generateError)} className="text-caption text-danger">
                   {mensajeDeLaAccion(
                     { error: generateError, fallo: generateFallo },
                     { porDefecto: 'No pudimos generar el borrador.', accion: 'generar el borrador' },
                   )}
               </Presence>
 
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 El envío al propietario siempre requiere tu aprobación explícita: sale por correo, con
                 el reporte en PDF adjunto.
               </p>

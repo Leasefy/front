@@ -133,7 +133,7 @@ function ModalidadPorDefecto({
     <section className="space-y-4 p-5 rounded-lg bg-card border border-border">
       <div className="flex items-center gap-2">
         <HandCoins className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-        <h3 className="text-base font-semibold text-foreground">Modalidad de los mandatos</h3>
+        <h3 className="text-base font-medium text-foreground">Modalidad de los mandatos</h3>
       </div>
       <p className="text-sm text-muted-foreground">
         Con qué base se le gira al propietario. Cada mandato la puede cambiar en la ficha del inmueble; los que
@@ -163,13 +163,13 @@ function ModalidadPorDefecto({
             />
             <span>
               <span className="block text-sm text-foreground">{nombre}</span>
-              <span className="block text-xs text-muted-foreground">{ayuda}</span>
+              <span className="block text-caption text-muted-foreground">{ayuda}</span>
             </span>
           </label>
         ))}
       </RadioGroup>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           {config.modalidadDeMandatoDesde
             ? `La actual rige desde el ${diaLegible(config.modalidadDeMandatoDesde)}.`
             : 'Intereses de mora: por defecto, garantizado → de la inmobiliaria; sobre recaudo → del propietario.'}
@@ -244,7 +244,7 @@ function CobrosAlArrendar({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Receipt className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-          <h3 className="text-base font-semibold text-foreground">Cobros al propietario al arrendar</h3>
+          <h3 className="text-base font-medium text-foreground">Cobros al propietario al arrendar</h3>
         </div>
         <Button
           variant="ghost"
@@ -309,7 +309,7 @@ function CobrosAlArrendar({
                 <Trash className="w-4 h-4" aria-hidden="true" />
               </Button>
               {f.tipo === 'VALOR_FIJO' && f.valor > 0 ? (
-                <p className="sm:col-span-5 text-xs text-muted-foreground -mt-1">{PESOS.format(f.valor)}</p>
+                <p className="sm:col-span-5 text-caption text-muted-foreground -mt-1">{PESOS.format(f.valor)}</p>
               ) : null}
             </div>
           ))}
@@ -373,7 +373,7 @@ function IvaDeLaComision({
     <section className="space-y-4 p-5 rounded-lg bg-card border border-border" data-testid="iva-de-la-comision">
       <div className="flex items-center gap-2">
         <Percent className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-        <h3 className="text-base font-semibold text-foreground">IVA de la comisión de administración</h3>
+        <h3 className="text-base font-medium text-foreground">IVA de la comisión de administración</h3>
       </div>
       <p className="text-sm text-foreground" data-testid="efecto-del-iva">
         {config.ivaDeLaComision.efecto}
@@ -401,7 +401,7 @@ function IvaDeLaComision({
           </Button>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         La tarifa ({config.ivaDeLaComision.ivaPorcentaje.toLocaleString(localeDeLasCifras())} %) se edita en Perfil, en
         «Impuestos y retenciones». Confírmalo con tu contador.
       </p>

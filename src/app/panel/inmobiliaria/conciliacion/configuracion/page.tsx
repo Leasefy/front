@@ -196,7 +196,7 @@ function PoliticaAutoMatch() {
     >
       {/* Header */}
       <div className="space-y-1">
-        <h2 id="seccion-automatch" className="text-base font-semibold text-fg">
+        <h2 id="seccion-automatch" className="text-base font-medium text-fg">
           Auto-match por dominio
         </h2>
         <p className="text-sm text-fg-muted max-w-2xl">
@@ -210,7 +210,7 @@ function PoliticaAutoMatch() {
       {isLoading ? (
         <div className="h-12 rounded-lg border border-border bg-surface-muted animate-pulse" />
       ) : (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-fg-muted">
+        <div className="flex flex-wrap items-center gap-2 text-caption text-fg-muted">
           {data.source === 'stored' && data.version_number > 0 ? (
             <>
               <Badge variant="secondary">Versión activa v{data.version_number}</Badge>
@@ -258,10 +258,10 @@ function PoliticaAutoMatch() {
                   >
                     {meta.title}
                   </Label>
-                  <p className="text-xs text-fg-muted">{meta.description}</p>
+                  <p className="text-caption text-fg-muted">{meta.description}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-fg-muted w-14 text-right">
+                  <span className="text-caption text-fg-muted w-14 text-right">
                     {on ? 'Automático' : 'Sugerencia'}
                   </span>
                   <Switch
@@ -278,7 +278,7 @@ function PoliticaAutoMatch() {
               <div className="flex items-center gap-2 pl-0">
                 <Label
                   htmlFor={`umbral-${domain}`}
-                  className="text-xs text-fg-muted"
+                  className="text-caption text-fg-muted"
                 >
                   Umbral de confianza mínimo (%)
                 </Label>
@@ -298,7 +298,7 @@ function PoliticaAutoMatch() {
                     ? { 'aria-invalid': true as const, 'aria-describedby': `umbral-${domain}-error` }
                     : {})}
                 />
-                <span className="text-xs text-fg-muted">opcional</span>
+                <span className="text-caption text-fg-muted">opcional</span>
               </div>
               <ErrorDelCampo id={`umbral-${domain}-error`} mensaje={erroresDelUmbral[domain]} className="mt-0" />
               </div>
@@ -309,7 +309,7 @@ function PoliticaAutoMatch() {
 
       {/* T-323 callout */}
       <div className="rounded-lg border border-warning/30 bg-warning-soft text-warning p-3">
-        <p className="text-xs">
+        <p className="text-caption">
           Activar el auto-match es una decisión humana explícita: autoriza al sistema a confirmar
           movimientos de dinero sin revisión. Los cambios no se aplican hasta que hagas clic en
           &quot;Guardar política&quot; y confirmes.
@@ -318,19 +318,19 @@ function PoliticaAutoMatch() {
 
       {/* Confirmación de guardado */}
       {savedOk && !isDirty && (
-        <p className="text-xs text-success" role="status" data-testid="conciliacion-automatch-saved">
+        <p className="text-caption text-success" role="status" data-testid="conciliacion-automatch-saved">
           Política guardada. Se creó una nueva versión activa.
         </p>
       )}
       {saveError && (
-        <p className="text-xs text-danger" role="alert">
+        <p className="text-caption text-danger" role="alert">
           {saveError}
         </p>
       )}
 
       {/* CTA principal — guardar (abre confirmación) */}
       <div className="flex items-center justify-between gap-3 pt-1">
-        <span className="text-xs text-warning">
+        <span className="text-caption text-warning">
           {isDirty ? 'Tienes cambios sin guardar.' : ''}
         </span>
         <Button
@@ -384,7 +384,7 @@ function PoliticaAutoMatch() {
               </ul>
             </AlertDialogSection>
           )}
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             Se creará una nueva versión de la política. Las versiones anteriores se conservan.
           </p>
           {saveError && <p className="text-sm text-danger">{saveError}</p>}

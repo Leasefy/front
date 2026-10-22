@@ -12,13 +12,7 @@
  * que las columnas se sigan viendo.
  */
 
-import {
-  FolderOpen,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Eye,
-} from '@phosphor-icons/react';
+import { FolderOpen, CheckCircle, XCircle, Eye } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { Badge, Button } from '@/components/ui';
@@ -165,7 +159,7 @@ export function DocumentReviewQueueView({
       >
         <p className="flex items-baseline gap-2">
           <span
-            className="text-2xl font-semibold tabular-nums text-fg"
+            className="text-2xl font-medium tabular-nums text-fg"
             data-testid="count-pending"
           >
             {/* Con la consulta caída, `counts` viene en ceros: afirmar «0
@@ -255,7 +249,7 @@ export function DocumentReviewQueueView({
 
                       <TableCell className="max-w-[320px] align-top">
                         <p className="text-fg truncate">{docTypeLabel(doc.type)}</p>
-                        <p className="text-xs text-fg-muted truncate">
+                        <p className="text-caption text-fg-muted truncate">
                           {doc.originalName} · {formatSize(doc.size)}
                         </p>
                       </TableCell>
@@ -265,7 +259,7 @@ export function DocumentReviewQueueView({
                           {getReviewStatusLabel(doc.reviewStatus)}
                         </Badge>
                         {doc.reviewStatus === 'REJECTED' && doc.rejectionReason && (
-                          <p className="mt-1 text-xs text-danger break-words max-w-[280px]">
+                          <p className="mt-1 text-caption text-danger break-words max-w-[280px]">
                             Motivo: {doc.rejectionReason}
                           </p>
                         )}

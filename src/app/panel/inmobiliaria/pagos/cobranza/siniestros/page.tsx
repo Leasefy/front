@@ -300,7 +300,7 @@ function SiniestrosContent() {
                     {c.debtorName ?? (isEs ? 'Deudor no encontrado' : 'Debtor not found')}
                   </span>
                   {c.debtorDocument && (
-                    <span className="block text-xs text-fg-muted font-mono tabular-nums">
+                    <span className="block text-caption text-fg-muted font-mono tabular-nums">
                       {c.debtorDocument}
                     </span>
                   )}
@@ -312,7 +312,7 @@ function SiniestrosContent() {
                   {/* Sólo con mora real: «0 días de mora» al lado de un saldo
                       se lee como un error de cálculo, no como información. */}
                   {c.delinquencyDays != null && c.delinquencyDays > 0 && (
-                    <span className="block text-xs text-fg-muted font-mono tabular-nums">
+                    <span className="block text-caption text-fg-muted font-mono tabular-nums">
                       {c.delinquencyDays}{' '}
                       {isEs
                         ? c.delinquencyDays === 1
@@ -334,14 +334,14 @@ function SiniestrosContent() {
                       : (STATUS_LABELS[c.status as InsuranceClaimStatus]?.en ?? c.status)}
                   </Badge>
                 </TableCell>
-                <TableCell className="px-3 py-2 text-xs text-fg-muted tabular-nums whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-caption text-fg-muted tabular-nums whitespace-nowrap">
                   {new Date(c.createdAt).toLocaleDateString(locale, {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',
                   })}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-xs text-fg-muted tabular-nums whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-caption text-fg-muted tabular-nums whitespace-nowrap">
                   {c.filedAt
                     ? new Date(c.filedAt).toLocaleDateString(locale, {
                         year: 'numeric',
@@ -353,7 +353,7 @@ function SiniestrosContent() {
                 {/* El correo, no el UUID: «4a0efc55…» no le dice nada a nadie.
                     Si el aprobador ya no está en el equipo cae al id recortado,
                     que al menos es rastreable en la auditoría. */}
-                <TableCell className="px-3 py-2 text-xs text-fg-muted">
+                <TableCell className="px-3 py-2 text-caption text-fg-muted">
                   {c.approvedByEmail ??
                     (c.approvedByHumanUserId
                       ? c.approvedByHumanUserId.slice(0, 8) + '…'

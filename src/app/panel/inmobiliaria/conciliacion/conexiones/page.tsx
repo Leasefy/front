@@ -277,7 +277,7 @@ function RegistrarConexion({
             id="conexion-provider-error"
             mensaje={errores.provider}
             pista="Identificador del banco o pasarela."
-            className="mt-0 text-xs"
+            className="mt-0 text-caption"
           />
         </div>
 
@@ -301,7 +301,7 @@ function RegistrarConexion({
             id="conexion-nombre-error"
             mensaje={errores.displayName}
             pista="Cómo se mostrará en la conciliación."
-            className="mt-0 text-xs"
+            className="mt-0 text-caption"
           />
         </div>
       </div>
@@ -326,7 +326,7 @@ function RegistrarConexion({
           id="conexion-configref-error"
           mensaje={errores.configRef}
           pista="Referencia segura (p. ej. ruta de bóveda o llave del gestor de secretos). Nunca escribas aquí la contraseña, el token ni la API key reales."
-          className="mt-0 text-xs"
+          className="mt-0 text-caption"
         />
       </div>
 
@@ -499,7 +499,7 @@ function ConciliacionConexiones() {
             pie de la tabla). */}
         <div className="shrink-0 rounded-lg border border-border bg-surface p-4">
           <p className="text-caption text-fg-muted">Conectadas</p>
-          <p className="mt-1.5 text-2xl font-semibold tabular-nums text-fg">
+          <p className="mt-1.5 text-2xl font-medium tabular-nums text-fg">
             {isLoading && items.length === 0 ? '—' : connectedCount}
           </p>
         </div>
@@ -535,7 +535,7 @@ function ConciliacionConexiones() {
       >
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-body font-semibold text-fg">Conexiones registradas</h2>
+            <h2 className="text-body font-medium text-fg">Conexiones registradas</h2>
             <p className="text-caption text-fg-muted">
               De aquí salen los movimientos que la conciliación atribuye a un origen.
             </p>

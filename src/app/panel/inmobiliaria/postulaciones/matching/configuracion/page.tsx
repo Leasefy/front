@@ -74,7 +74,7 @@ function MatchingConfiguracion() {
       />
 
       <section className="space-y-3" aria-label={t(`${COMUN_NS}.configDondeTitulo`)}>
-        <h2 className="text-sm font-semibold text-fg">{t(`${COMUN_NS}.configDondeTitulo`)}</h2>
+        <h2 className="text-sm font-medium text-fg">{t(`${COMUN_NS}.configDondeTitulo`)}</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {SALIDAS.map((s) => {
             const SalidaIcon = s.icon
@@ -89,7 +89,7 @@ function MatchingConfiguracion() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-medium text-fg">{t(s.claveLabel)}</span>
-                  <span className="block truncate text-xs text-fg-muted">{t(s.claveDetalle)}</span>
+                  <span className="block truncate text-caption text-fg-muted">{t(s.claveDetalle)}</span>
                 </span>
                 <CaretRight
                   className="h-3.5 w-3.5 shrink-0 text-fg-muted transition group-hover:translate-x-0.5 group-hover:text-fg"

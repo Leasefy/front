@@ -290,7 +290,7 @@ function ReportesContent() {
       >
         <div className="flex min-w-0 items-start gap-3">
           <span
-            className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-md bg-surface-muted text-fg-muted dark:bg-ink dark:text-fg-subtle"
+            className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-md bg-surface-muted text-fg-muted"
             aria-hidden="true"
           >
             {cerrado ? <Lock className="h-[18px] w-[18px]" /> : <Icono className="h-[18px] w-[18px]" />}
@@ -370,7 +370,7 @@ function ReportesContent() {
     );
   }
 
-  const cabeceraDelGrupo = 'flex flex-col gap-3 border-y border-border bg-surface-muted/50 px-4 py-3 sm:px-5 dark:bg-ink/40';
+  const cabeceraDelGrupo = 'flex flex-col gap-3 border-y border-border bg-surface-muted/50 px-4 py-3 sm:px-5';
   const tituloDelGrupo = 'font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-muted';
 
   return (

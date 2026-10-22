@@ -56,7 +56,7 @@ function EditarAcuerdoGeneral() {
     return (
       <CrossFade swapKey="fallo">
       <div className="p-6 lg:p-8 max-w-xl space-y-3">
-        <h1 className="text-xl font-semibold text-fg">No pudimos cargar el acuerdo</h1>
+        <h1 className="text-xl font-medium text-fg">No pudimos cargar el acuerdo</h1>
         <p className="text-sm text-fg-muted">{error}</p>
         <div className="flex gap-2">
           <Button hideArrow onClick={() => void refetch()}>
@@ -75,7 +75,7 @@ function EditarAcuerdoGeneral() {
     return (
       <CrossFade swapKey="no-existe">
       <div className="p-6 lg:p-8 max-w-xl space-y-3">
-        <h1 className="text-xl font-semibold text-fg">Ese acuerdo general ya no existe</h1>
+        <h1 className="text-xl font-medium text-fg">Ese acuerdo general ya no existe</h1>
         <p className="text-sm text-fg-muted">
           Puede que alguien lo haya borrado. Los demás siguen en Acuerdos de pago.
         </p>

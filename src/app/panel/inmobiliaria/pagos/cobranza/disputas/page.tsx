@@ -206,7 +206,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
           <div className="space-y-1.5">
             <label
               htmlFor="disputa-debtor"
-              className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
+              className="block text-caption font-medium uppercase tracking-wide text-fg-muted"
             >
               Deudor <span className="text-danger">*</span>
             </label>
@@ -225,7 +225,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
           <div className="space-y-1.5">
             <label
               htmlFor="disputa-reason"
-              className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
+              className="block text-caption font-medium uppercase tracking-wide text-fg-muted"
             >
               Motivo de la disputa <span className="text-danger">*</span>
             </label>
@@ -246,7 +246,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             />
             <div className="flex items-start justify-between gap-3">
               <ErrorDelCampo id="disputa-reason-error" mensaje={errorDelMotivo} className="mt-0" />
-              <span className="ml-auto shrink-0 text-xs text-fg-muted tabular-nums">
+              <span className="ml-auto shrink-0 text-caption text-fg-muted tabular-nums">
                 {reasonLen} / {REASON_MAX}
               </span>
             </div>
@@ -256,7 +256,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
           <div className="space-y-1.5">
             <label
               htmlFor="disputa-monto"
-              className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
+              className="block text-caption font-medium uppercase tracking-wide text-fg-muted"
             >
               Monto en disputa (opcional)
             </label>
@@ -276,7 +276,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             <ErrorDelCampo id="disputa-monto-error" mensaje={errorDelMonto} />
           </div>
 
-          <Presence as="p" show={Boolean(submitError)} role="alert" className="text-xs text-danger" data-testid="disputa-abrir-error">
+          <Presence as="p" show={Boolean(submitError)} role="alert" className="text-caption text-danger" data-testid="disputa-abrir-error">
               {submitError}
           </Presence>
         </div>
@@ -506,7 +506,7 @@ function DisputasContent() {
           aria-label="Filtrar disputas por estado"
         />
         {disputes.length > 0 && (
-          <span className="text-xs text-fg-muted tabular-nums">
+          <span className="text-caption text-fg-muted tabular-nums">
             {/* «1 abierta», no «1 abiertas» (QA-AGENTES 16-10). */}
             <AnimatedNumber value={counts.open} format={(n) => String(Math.round(n))} />{' '}
             {counts.open === 1 ? 'abierta' : 'abiertas'} ·{' '}

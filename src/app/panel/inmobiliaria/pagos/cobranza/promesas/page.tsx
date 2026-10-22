@@ -208,13 +208,13 @@ function PromesasContent() {
               {incumplidas.length === 1 ? (
                 <>
                   La promesa de{' '}
-                  <span className="font-semibold">{incumplidas[0].inquilino}</span> venció
+                  <span className="font-medium">{incumplidas[0].inquilino}</span> venció
                   y no se encontró pago conciliado. Recomiendo seguimiento formal o
                   proponer un acuerdo.
                 </>
               ) : (
                 <>
-                  <span className="font-semibold">{incumplidas.length} promesas</span>{' '}
+                  <span className="font-medium">{incumplidas.length} promesas</span>{' '}
                   vencieron y no se encontró pago conciliado. Recomiendo seguimiento
                   formal o proponer un acuerdo de pago.
                 </>
@@ -248,7 +248,7 @@ function PromesasContent() {
                 onChange={setFiltro}
                 aria-label="Filtrar promesas por estado"
               />
-              <span className="text-xs text-fg-muted tabular-nums">
+              <span className="text-caption text-fg-muted tabular-nums">
                 <AnimatedNumber value={visibles.length} format={(n) => String(Math.round(n))} /> de{' '}
                 {promesas.length}
               </span>
@@ -261,7 +261,7 @@ function PromesasContent() {
             {visibles.length > 0 ? (
               <div className="space-y-3 max-w-3xl">
                 {/* Encabezado tipo tabla (solo desktop, contexto de columnas) */}
-                <div className="hidden sm:grid grid-cols-[1fr_auto_auto_auto] gap-4 px-4 text-xs font-medium uppercase tracking-wide text-fg-muted">
+                <div className="hidden sm:grid grid-cols-[1fr_auto_auto_auto] gap-4 px-4 text-caption font-medium uppercase tracking-wide text-fg-muted">
                   <span>Inquilino</span>
                   <span className="text-right">Valor</span>
                   <span className="text-right">Fecha prometida</span>
@@ -274,7 +274,7 @@ function PromesasContent() {
                       <PromesaCard promesa={p} />
                       {/* Acción sugerida por estado — placeholder honesto T-323 */}
                       <div className="flex items-center justify-between gap-3 px-4">
-                        <span className="text-xs text-fg-muted">
+                        <span className="text-caption text-fg-muted">
                           Acción sugerida:{' '}
                           <span className={PROMESA_ESTADO_TOKEN[p.estado].text}>
                             {ACCION_POR_ESTADO[p.estado]}
@@ -319,7 +319,7 @@ function PromesasContent() {
             </CrossFade>
 
             {/* Nota honesta de alcance de la fuente */}
-            <p className="text-xs text-fg-muted max-w-2xl leading-relaxed">
+            <p className="text-caption text-fg-muted max-w-2xl leading-relaxed">
               Esta vista muestra el histórico de promesas de pago de toda la
               inmobiliaria. El detalle de cada promesa (mensaje original, canal y
               seguimiento) vive en el{' '}

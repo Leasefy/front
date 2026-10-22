@@ -127,7 +127,7 @@ export default function CostosPage() {
       {/* Main charts row: pie (left) + trend line (right) — side-by-side on md+ (D-35-09 / XR-03) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <section className="rounded-lg border border-border bg-surface p-5">
-          <h2 className="text-base font-semibold text-fg mb-4">
+          <h2 className="text-base font-medium text-fg mb-4">
             {t('inmobiliaria.ai.cotizador.costos.charts.costSourcePie.title')}
           </h2>
           <CostSourcePieChart
@@ -138,7 +138,7 @@ export default function CostosPage() {
         </section>
 
         <section className="rounded-lg border border-border bg-surface p-5">
-          <h2 className="text-base font-semibold text-fg mb-4">
+          <h2 className="text-base font-medium text-fg mb-4">
             {t('inmobiliaria.ai.cotizador.costos.charts.monthlyCostTrend.title')}
           </h2>
           <MonthlyCostTrendChart
@@ -157,7 +157,7 @@ export default function CostosPage() {
           vacío viven dentro del cuerpo, con la cabecera siempre a la vista. */}
       <section className="overflow-hidden rounded-lg border border-border bg-surface">
         <div className="px-5 py-4 border-b border-border">
-          <h2 className="text-base font-semibold text-fg">
+          <h2 className="text-base font-medium text-fg">
             {t('inmobiliaria.ai.cotizador.costos.sourceBreakdownTitle')}
           </h2>
         </div>

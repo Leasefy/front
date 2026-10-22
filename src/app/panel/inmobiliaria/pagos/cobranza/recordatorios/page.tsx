@@ -432,7 +432,7 @@ function PagosRecordatorios() {
         <CardContent className="space-y-6 p-5 lg:p-6">
           <div className="space-y-1">
             <Eyebrow>Condiciones de cobro</Eyebrow>
-            <h2 className="text-base font-semibold text-fg">El reglaje</h2>
+            <h2 className="text-base font-medium text-fg">El reglaje</h2>
             <p className="max-w-2xl text-sm text-fg-muted">
               Un recordatorio al inicio del mes y, si no pagan, avisos con el interés ya generado,
               separados por los días que definas.
@@ -442,7 +442,7 @@ function PagosRecordatorios() {
           <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-card px-4 py-3.5">
             <div className="min-w-0 space-y-0.5">
               <p className="text-sm font-medium text-fg">Secuencia activa</p>
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 Significa que las condiciones ya están definidas y finanzas puede disparar la
                 secuencia. <span className="font-medium text-fg">No envía nada por su cuenta.</span>
               </p>
@@ -558,7 +558,7 @@ function PagosRecordatorios() {
           </div>
 
           <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               El interés lo calcula el motor de mora con tus{' '}
               <Link
                 href="/panel/inmobiliaria/pagos/cartera/reglas-de-mora"
@@ -586,7 +586,7 @@ function PagosRecordatorios() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="space-y-1">
               <Eyebrow>Así queda tu secuencia</Eyebrow>
-              <h2 className="text-base font-semibold text-fg">Qué va a pasar y cuándo</h2>
+              <h2 className="text-base font-medium text-fg">Qué va a pasar y cuándo</h2>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="mes">Mes que se cobra</Label>
@@ -625,7 +625,7 @@ function PagosRecordatorios() {
                   )}
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-fg">{p.titulo}</p>
-                    <p className="text-xs text-fg-muted">
+                    <p className="text-caption text-fg-muted">
                       {fechaLegible(p.fecha)}
                       {p.conInteres
                         ? ' · con el interés ya generado'
@@ -648,7 +648,7 @@ function PagosRecordatorios() {
         <CardContent className="space-y-5 p-5 lg:p-6">
           <div className="space-y-1">
             <Eyebrow>Disparo desde la cartera</Eyebrow>
-            <h2 className="text-base font-semibold text-fg">
+            <h2 className="text-base font-medium text-fg">
               A quién le va a llegar el aviso de {nombreDelMes(mes)}
             </h2>
             <p className="max-w-2xl text-sm text-fg-muted">
@@ -728,13 +728,13 @@ function PagosRecordatorios() {
                   es CARTERA. Sin esta línea, quien ve pasar la lista de 40 a 6
                   concluye que el sistema está roto.
                 */}
-                <p className="mt-1 text-xs text-fg-muted" data-testid="exige-cartera">
+                <p className="mt-1 text-caption text-fg-muted" data-testid="exige-cartera">
                   {previa.exigeCartera
                     ? 'Este paso lleva el interés generado: sólo entra quien ya pasó los días de plazo de su contrato. Deber y estar en cartera no son lo mismo.'
                     : 'Este paso es el recordatorio: entra quien deba el mes, aunque todavía esté dentro de su plazo. Todavía no hay interés que cobrar.'}
                 </p>
                 {excluidos.length > 0 && (
-                  <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted">
+                  <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-caption text-fg-muted">
                     {excluidos.map((e) => (
                       <li key={e.motivo} data-testid={`excluidos-${e.motivo}`}>
                         {e.etiqueta}: <strong className="text-fg">{e.cuantos}</strong>
@@ -749,7 +749,7 @@ function PagosRecordatorios() {
                 */}
                 {(previa.excluidos.PLAZO_SIN_FIJAR ?? 0) > 0 && (
                   <div
-                    className="mt-3 flex items-start gap-2 rounded-lg bg-warning-soft p-3 text-xs text-warning ring-1 ring-warning/30"
+                    className="mt-3 flex items-start gap-2 rounded-lg bg-warning-soft p-3 text-caption text-warning ring-1 ring-warning/30"
                     data-testid="aviso-plazo-sin-fijar"
                   >
                     <Warning className="mt-0.5 h-4 w-4 shrink-0" weight="fill" aria-hidden="true" />
@@ -768,7 +768,7 @@ function PagosRecordatorios() {
                   eso es una lista en la que nadie confía. */}
               <div className="max-h-96 overflow-auto rounded-lg border border-border">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-surface-muted text-left text-xs uppercase tracking-wide text-fg-muted">
+                  <thead className="sticky top-0 bg-surface-muted text-left text-caption uppercase tracking-wide text-fg-muted">
                     <tr>
                       <th className="w-10 px-3 py-2 font-medium">
                         <span className="sr-only">Enviar</span>
@@ -804,7 +804,7 @@ function PagosRecordatorios() {
                           {d.nombre}
                           {/* Deuda y cartera se distinguen en la fila, no sólo
                               en el conteo de arriba. */}
-                          <span className="ml-2 text-xs text-fg-muted">
+                          <span className="ml-2 text-caption text-fg-muted">
                             {d.esCartera
                               ? `cartera · ${d.diasDeMora} ${d.diasDeMora === 1 ? 'día' : 'días'} de mora`
                               : d.motivo === 'PLAZO_SIN_FIJAR'
@@ -837,7 +837,7 @@ function PagosRecordatorios() {
               </div>
 
               <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   Se manda una sola vez por paso y canal. La Ley 2300 permite un contacto al día por
                   persona: quien tenga varios inmuebles recibe un aviso, no uno por contrato.
                 </p>

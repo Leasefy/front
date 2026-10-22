@@ -208,7 +208,7 @@ export function ReclamosClient() {
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-fg-subtle">
+          <p className="mt-2 text-caption text-fg-subtle">
             Si se te escapa, la respuesta no sale: te decimos qué palabra la
             frenó antes de que el candidato la reciba.
           </p>
@@ -305,7 +305,7 @@ export function ReclamosClient() {
                         </div>
                       </div>
 
-                      <p className="flex items-center gap-1.5 text-xs text-fg-subtle">
+                      <p className="flex items-center gap-1.5 text-caption text-fg-subtle">
                         <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                         Escribió el {fecha(r.createdAt)}
                       </p>
@@ -330,7 +330,7 @@ export function ReclamosClient() {
                       >
                       {r.respuesta ? (
                         <div className="border-l-2 border-border pl-3">
-                          <p className="text-xs text-fg-subtle">
+                          <p className="text-caption text-fg-subtle">
                             Le respondimos{r.respondidoEl ? ` el ${fecha(r.respondidoEl)}` : ''}
                           </p>
                           <p className="text-sm text-fg-muted">{r.respuesta}</p>
@@ -402,7 +402,7 @@ export function ReclamosClient() {
                           </div>
                         )
                       ) : pendiente ? (
-                        <p className="text-xs text-fg-subtle">
+                        <p className="text-caption text-fg-subtle">
                           Sin responder. Quien tenga permiso en Pipeline puede
                           contestarle.
                         </p>

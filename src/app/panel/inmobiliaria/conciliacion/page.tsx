@@ -426,7 +426,7 @@ function ConciliacionSala() {
               />
             </span>
             <div className="min-w-0 space-y-0.5">
-              <h2 className="text-base font-semibold text-fg">{t(`${PAGES_NS}.accionTitle`)}</h2>
+              <h2 className="text-base font-medium text-fg">{t(`${PAGES_NS}.accionTitle`)}</h2>
               {/* El aviso de «todavía no cargaste nada» ocupa esta línea cuando
                   aplica, en vez de flotar suelto debajo de la tarjeta. */}
               <p className="text-body-sm text-fg-muted" data-testid="conciliacion-hero-linea">
@@ -518,7 +518,7 @@ function ConciliacionSala() {
           className="rounded-lg border border-border bg-surface p-5"
           data-testid="conciliacion-actividad"
         >
-          <h2 className="text-base font-semibold text-fg">
+          <h2 className="text-base font-medium text-fg">
             {t(`${WORKSPACE_NS}.sala.feedTitle`)}
           </h2>
           {/* Lo nuevo que llega con el sondeo entra arriba y empuja lo demás. */}

@@ -153,7 +153,7 @@ toast.error(
 
         {!estado.disponible && (
           <p
-            className="rounded-md border border-border bg-warning-soft px-3 py-2 text-xs text-fg"
+            className="rounded-md border border-border bg-warning-soft px-3 py-2 text-caption text-fg"
             data-testid="avisos-sin-migrar"
           >
             {estado.motivo}
@@ -165,7 +165,7 @@ toast.error(
           if (delGrupo.length === 0) return null;
           return (
             <section key={grupo} className="space-y-3">
-              <h3 className="text-sm font-semibold text-fg">
+              <h3 className="text-sm font-medium text-fg">
                 {TITULO_DEL_GRUPO[grupo]}
               </h3>
               {delGrupo.map((aviso) => (
@@ -178,11 +178,11 @@ toast.error(
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-fg">{aviso.titulo}</p>
-                      <p className="mt-1 text-xs text-fg-muted">
+                      <p className="mt-1 text-caption text-fg-muted">
                         {A_QUIEN[aviso.destinatario]} · {aviso.cuando}
                       </p>
                       {!aviso.automatico && (
-                        <p className="mt-1 text-xs text-fg-muted">
+                        <p className="mt-1 text-caption text-fg-muted">
                           No sale solo: lo manda una persona.
                         </p>
                       )}
@@ -213,7 +213,7 @@ toast.error(
                   </div>
                   <p
                     className={cn(
-                      'mt-2 text-xs font-medium',
+                      'mt-2 text-caption font-medium',
                       aviso.prendido ? 'text-success' : 'text-fg-muted',
                     )}
                     data-testid={`aviso-estado-${aviso.codigo}`}
@@ -222,7 +222,7 @@ toast.error(
                   </p>
                   {!aviso.prendido && aviso.advertenciaAlApagar && (
                     <p
-                      className="mt-2 rounded-md border border-border bg-warning-soft px-3 py-2 text-xs text-fg"
+                      className="mt-2 rounded-md border border-border bg-warning-soft px-3 py-2 text-caption text-fg"
                       data-testid={`aviso-advertencia-${aviso.codigo}`}
                     >
                       {aviso.advertenciaAlApagar}
@@ -237,7 +237,7 @@ toast.error(
         {previa && (
           <section className="space-y-2" data-testid="aviso-vista-previa">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-fg">
+              <h3 className="text-sm font-medium text-fg">
                 {previa.aviso} — {previa.asunto}
               </h3>
               <Button variant="outline" hideArrow onClick={() => setPrevia(null)}>

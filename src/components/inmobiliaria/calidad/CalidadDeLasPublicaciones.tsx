@@ -32,6 +32,8 @@
  *   · Sin `portafolio:edit` no hay botones de escribir (como en «Publicar»).
  */
 
+import { useTr } from '@/lib/i18n/use-tr';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowSquareOut, Power, Sparkle } from '@phosphor-icons/react';
@@ -314,6 +316,7 @@ function Cifra({
 
 function Cifras({ resumen }: { resumen: ResumenDeCalidad }) {
   const { t, locale } = useI18n();
+  const tr = useTr();
   const loc = locale === 'en' ? 'en' : 'es';
   const usd = (n: number) =>
     new Intl.NumberFormat(loc === 'en' ? 'en-US' : 'es-CO', {
@@ -325,55 +328,63 @@ function Cifras({ resumen }: { resumen: ResumenDeCalidad }) {
   const conFotos = resumen.fotosIA.activo;
   const promedio = resumen.puntajePromedio === null ? null : Math.max(0, Math.min(100, resumen.puntajePromedio));
 
+  const sinProblemas = Math.max(0, resumen.inmueblesAuditados - resumen.conProblemas);
+  /*
+   * GLOW UP 22-10 (UX, al nivel de Deuda del mes): LA RESPUESTA en una cifra —cuántos inmuebles tienen
+   * algo por arreglar, de los auditados—, con su barra (por arreglar · bien), y debajo el puntaje
+   * promedio y las fotos revisadas con IA. Antes, tres cifras del mismo peso.
+   */
   return (
-    /*
-     * Dos columnas a 390 px (la tercera baja a su propia fila, entera) y tres
-     * desde `sm`. Los números en mono y tabulares: sólo ahí, nunca en la frase
-     * de abajo (la coma se ensancha).
-     */
-    <dl
-      className={cn(
-        'grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-surface',
-        conFotos && 'sm:grid-cols-3',
-      )}
-      data-testid="calidad-cifras"
-    >
-      <Cifra etiqueta={t(`${K}.puntajePromedio`)}>
-        {promedio === null ? (
-          <span className="font-mono text-2xl font-medium tabular-nums text-fg-subtle">—</span>
-        ) : (
-          <>
-            <span className="whitespace-nowrap">
-              <span className="font-mono text-2xl font-medium tabular-nums">{promedio}</span>
-              <span className="text-sm text-fg-muted">/100</span>
-            </span>
-            <span className="mt-2 block h-1.5 w-full max-w-[8rem] overflow-hidden rounded-full bg-surface-muted" aria-hidden="true">
-              <span className={cn('block h-full rounded-full', tonoDelPuntaje(promedio))} style={{ width: `${promedio}%` }} />
-            </span>
-          </>
-        )}
-      </Cifra>
-      <Cifra etiqueta={t(`${K}.porArreglar`)} className="border-l border-border">
-        <span className="font-mono text-2xl font-medium tabular-nums">{resumen.conProblemas}</span>{' '}
-        <span className="text-sm text-fg-muted">{t(`${K}.porArreglarDe`, { total: resumen.inmueblesAuditados })}</span>
-      </Cifra>
-      {conFotos ? (
-        <Cifra
-          etiqueta={t(`${K}.fotosIA`)}
-          className="col-span-2 border-t border-border sm:col-span-1 sm:border-l sm:border-t-0"
-          testid="calidad-fotos-ia"
-        >
-          <span className="font-mono text-2xl font-medium tabular-nums">{resumen.fotosIA.revisadasEsteMes}</span>{' '}
-          <span className="text-sm text-fg-muted">{t(`${K}.fotosIARevisadas`)}</span>
-          <span className="mt-0.5 block text-caption text-fg-muted">
-            {t(`${K}.fotosIAGasto`, {
-              gasto: usd(resumen.fotosIA.gastoEstimadoUsdEsteMes),
-              tope: usd(resumen.fotosIA.topeUsdMes),
-            })}
-          </span>
-        </Cifra>
-      ) : null}
-    </dl>
+    <section className="rounded-lg border border-border bg-surface p-5" data-testid="calidad-cifras">
+      <CifraHeroe
+        rotulo={t(`${K}.porArreglar`)}
+        cifra={resumen.conProblemas}
+        contexto={t(`${K}.porArreglarDe`, { total: resumen.inmueblesAuditados })}
+        total={resumen.inmueblesAuditados}
+        tamano="mediana"
+        tramos={[
+          { clave: 'por-arreglar', etiqueta: t(`${K}.porArreglar`), monto: resumen.conProblemas, tono: 'aviso' },
+          { clave: 'bien', etiqueta: tr('Sin nada por arreglar'), monto: sinProblemas, tono: 'exito' },
+        ]}
+        pie={
+          <dl className="flex flex-wrap gap-x-10 gap-y-3 border-t border-border-faint pt-3">
+            <div className="space-y-1">
+              <dt className="font-mono uppercase tracking-[0.06em] text-fg-subtle">{t(`${K}.puntajePromedio`)}</dt>
+              <dd className="text-fg">
+                {promedio === null ? (
+                  <span className="font-mono text-body-sm tabular-nums text-fg-subtle">—</span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <span className="whitespace-nowrap">
+                      <span className="font-mono text-body-sm tabular-nums">{promedio}</span>
+                      <span className="text-fg-muted">/100</span>
+                    </span>
+                    <span className="block h-1.5 w-24 overflow-hidden rounded-full bg-surface-muted" aria-hidden="true">
+                      <span className={cn('block h-full rounded-full', tonoDelPuntaje(promedio))} style={{ width: `${promedio}%` }} />
+                    </span>
+                  </span>
+                )}
+              </dd>
+            </div>
+            {conFotos ? (
+              <div className="space-y-1" data-testid="calidad-fotos-ia">
+                <dt className="font-mono uppercase tracking-[0.06em] text-fg-subtle">{t(`${K}.fotosIA`)}</dt>
+                <dd className="text-fg">
+                  <span className="font-mono text-body-sm tabular-nums">{resumen.fotosIA.revisadasEsteMes}</span>{' '}
+                  <span className="text-fg-muted">{t(`${K}.fotosIARevisadas`)}</span>
+                  <span className="block text-fg-muted">
+                    {t(`${K}.fotosIAGasto`, {
+                      gasto: usd(resumen.fotosIA.gastoEstimadoUsdEsteMes),
+                      tope: usd(resumen.fotosIA.topeUsdMes),
+                    })}
+                  </span>
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        }
+      />
+    </section>
   );
 }
 

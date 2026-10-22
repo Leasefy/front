@@ -301,4 +301,5 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Pendiente, sin mora": "Pending, not overdue",
   "En mora": "Overdue",
   "Antes de firmarle a alguien, comprobar que no esté en las listas de sanciones de la OFAC, la ONU y la UE.": "Before signing with someone, check they are not on the OFAC, UN or EU sanctions lists.",
+  "Sin nada por arreglar": "Nothing to fix",
 }

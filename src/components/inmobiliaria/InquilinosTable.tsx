@@ -431,7 +431,7 @@ function TablaDeInquilinos({ inquilinos, onAbrir, orden, onOrdenar, marcadas, on
 
   return (
     <div className="overflow-x-auto">
-      <Table className="min-w-[760px]" data-testid="inquilinos-tabla">
+      <Table className="min-w-[760px] [&_td]:px-3 [&_th]:px-3" data-testid="inquilinos-tabla">
         <TableHeader>
           <TableRow className="border-b border-border bg-muted/30">
             {marcadas && onMarcar && (

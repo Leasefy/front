@@ -1172,7 +1172,10 @@ function NuevoContratoContent() {
           izquierda —que con la plantilla es la larga— se recorre. */}
       <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 xl:grid-cols-2" data-testid="nuevo-contrato-columnas">
         {/* ── Izquierda: lo que se elige ── */}
-        <div className="min-w-0 space-y-6" data-testid="nuevo-contrato-elegir">
+        {/* Ronda 12: por debajo de xl las dos columnas se vuelven una sola lista (contents) y
+            `order` pone los Términos (obligatorios) justo después de quién y qué; el contrato
+            y el respaldo después, y el resumen al final. En escritorio nada cambia. */}
+        <div className="min-w-0 space-y-6 max-xl:contents" data-testid="nuevo-contrato-elegir">
         {/* COTIZ-17: de dónde viene lo que ya está puesto. */}
         <Presence show={Boolean(desdeLaCotizacion)}>
           <p className="rounded-lg border border-border bg-surface-muted p-3 text-body-sm text-fg-muted" data-testid="contrato-desde-la-cotizacion">
@@ -1282,7 +1285,7 @@ function NuevoContratoContent() {
         </Presence>
 
         {/* 1) Contract origin */}
-        <section className="rounded-lg border border-border bg-card p-5 space-y-4">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-4 max-xl:order-2">
           <h2 className="text-h3 text-fg">Tipo de contrato</h2>
           {/* C-14: «Generar con IA» sólo se ofrece cuando el backend dice que
               está configurada (`iaDisponible`). Apagada con «No disponible» era
@@ -1353,7 +1356,7 @@ function NuevoContratoContent() {
         <CrossFade
           swapKey={armadoPorElSistema ? 'armar' : form.mode === 'upload' ? 'subir' : 'ninguno'}
           mode="popLayout"
-          className="empty:hidden"
+          className="empty:hidden max-xl:order-2"
         >
           {armadoPorElSistema && (
             <ArmarContratoDesdePlantilla
@@ -1447,7 +1450,7 @@ function NuevoContratoContent() {
         {/* Paso 11 del recorrido: el respaldo (aseguradora y póliza). Vivía al
             pie de «Términos»; con dos columnas va con lo que se elige, y la
             derecha queda corta para que el resumen se vea entero. */}
-        <section className="rounded-lg border border-border bg-card p-5" data-testid="nuevo-contrato-respaldo">
+        <section className="rounded-lg border border-border bg-card p-5 max-xl:order-2" data-testid="nuevo-contrato-respaldo">
           <RespaldoDelArriendo
             valor={respaldo}
             onCambio={setRespaldo}
@@ -1459,9 +1462,9 @@ function NuevoContratoContent() {
         </div>
 
         {/* ── Derecha: los términos y el resumen fijo ── */}
-        <div className="min-w-0 space-y-6" data-testid="nuevo-contrato-terminos">
+        <div className="min-w-0 space-y-6 max-xl:contents" data-testid="nuevo-contrato-terminos">
         {/* 3) Dates + amounts */}
-        <section className="rounded-lg border border-border bg-card p-5 space-y-4">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-4 max-xl:order-1">
           <h2 className="text-h3 text-fg">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" onBlur={alDejarUnCampo}>
             <Field id={idDelCampoDelContrato('startDate')} label="Fecha de inicio" error={errorDe('startDate')}>
@@ -1667,7 +1670,7 @@ function NuevoContratoContent() {
             de la izquierda se recorre. Errors + submit van adentro: el botón
             queda al lado de lo que falta para poder apretarlo. */}
         <ResumenDelContratoNuevo
-          className="xl:sticky xl:top-20"
+          className="max-xl:order-3 xl:sticky xl:top-20"
           inmueble={esManual ? inmuebleElegido : property?.title ?? null}
           inquilino={inquilinoDelResumen}
           documento={documentoDelResumen}

@@ -18,7 +18,7 @@ import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/Casilla
 import { ContratosMarcados } from '@/components/contratos/ContratosMarcados';
 import { useEffect, useState, useMemo, type KeyboardEvent } from 'react';
 import Link from 'next/link';
-import { MagnifyingGlass, SortAscending, SortDescending } from '@phosphor-icons/react';
+import { MagnifyingGlass, ArrowUp, ArrowDown } from '@phosphor-icons/react';
 import {
   filtrarContratos,
   hayFiltros,
@@ -287,7 +287,8 @@ function ContratosContent() {
         ? { ...f, sentido: f.sentido === 'asc' ? 'desc' : 'asc' }
         : { ...f, campo, sentido: 'asc' },
     );
-  const SortIcon = filtros.sentido === 'asc' ? SortAscending : SortDescending;
+  // Ronda 18: una flecha de un solo sentido (el ícono de orden se leía «⇅»).
+  const SortIcon = filtros.sentido === 'asc' ? ArrowUp : ArrowDown;
 
   /*
    * Las columnas, con el campo por el que ordena cada una (las que ordenan).

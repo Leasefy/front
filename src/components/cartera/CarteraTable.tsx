@@ -565,7 +565,7 @@ function FilaDeCartera({
       </TableCell>
 
       {/* Total: capital + interés, lo que hay que pagar hoy por esta cuota. */}
-      <TableCell className="align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t(CLAVE_DE_MORA.columnaTotal)} data-testid="cartera-total">
+      <TableCell className="align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:pr-20 max-md:text-left" data-rotulo={t(CLAVE_DE_MORA.columnaTotal)} data-testid="cartera-total">
         <div className="whitespace-nowrap font-mono font-medium tabular-nums text-fg">
           {interesDe(item)
             ? formatCurrency(totalConInteres(item, item.pendingAmount))
@@ -573,7 +573,8 @@ function FilaDeCartera({
         </div>
       </TableCell>
 
-      <TableCell className="align-middle text-right max-md:flex max-md:justify-end max-md:p-0">
+      {/* Ronda 18 (390): los dos íconos en el renglón del Total, a la derecha (no en un renglón propio). */}
+      <TableCell className="align-middle text-right max-md:absolute max-md:bottom-2 max-md:right-2 max-md:p-0">
         <div className="flex items-center justify-end gap-1">
         {onGestiones ? (
           <Button

@@ -30,7 +30,7 @@ import { TerceroIACapture } from '@/components/inmobiliaria/TerceroIACapture';
 import { usePropietarios } from '@/lib/hooks/useInmobiliaria';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { plataPareja } from '@/lib/format';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
@@ -382,6 +382,8 @@ function PropietariosContent() {
       generadoSinGirar,
     };
   }, [propietarios]);
+  // Un solo formato de plata en las cifras de arriba (glow up 22-10: «$ 1.281.714.293,74» junto a «$ 2.466.800»).
+  const plataDeLasCifras = plataPareja([stats.totalMonthlyRent, stats.totalPending, stats.generadoSinGirar]);
 
   // Pagination calculations — sobre lo FILTRADO, que es lo que se ve.
   const paginationData = useMemo(() => {
@@ -708,7 +710,7 @@ function PropietariosContent() {
             />
             <KpiCard
               label={t('inmobiliaria.propietarios.monthlyRevenue')}
-              value={plataOculta ? tileSinPlata : valorDeTile(formatCurrency(stats.totalMonthlyRent))}
+              value={plataOculta ? tileSinPlata : valorDeTile(plataDeLasCifras(stats.totalMonthlyRent))}
               sublabel={plataOculta ? sinAccesoALaPlata : undefined}
               icon={<CurrencyDollar />}
             />
@@ -727,14 +729,14 @@ function PropietariosContent() {
                 plataOculta
                   ? tileSinPlata
                   : valorDeTile(
-                      stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate'),
+                      stats.pendingCount > 0 ? plataDeLasCifras(stats.totalPending) : t('inmobiliaria.propietarios.upToDate'),
                     )
               }
               detalle={
                 plataOculta
                   ? sinAccesoALaPlata
                   : !kpiSinDato && (stats.generadoSinGirar ?? 0) > 0
-                    ? t('inmobiliaria.propietarios.generadoSinGirar', { monto: formatCurrency(stats.generadoSinGirar ?? 0) })
+                    ? t('inmobiliaria.propietarios.generadoSinGirar', { monto: plataDeLasCifras(stats.generadoSinGirar ?? 0) })
                     : undefined
               }
               // El punto ámbar dice «hay giros atrasados» (antes, el ícono de alerta de la tarjeta).

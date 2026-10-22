@@ -61,6 +61,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { formatCurrency } from '@/lib/format'
 import { diaLegible } from '@/lib/mandato/textos'
 import { nombreDelMes } from '@/lib/utils/mes'
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa'
 import { cn } from '@/lib/utils'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 
@@ -239,13 +240,13 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                       </Badge>
                     )}
                     <p className="text-caption text-fg-muted">
-                      {diaLegible(r.fecha)}
+                      {fechaCorta(r.fecha)}
                       {r.mes ? ` · cuota de ${nombreDelMes(r.mes)}` : ''}
                     </p>
                   </TableCell>
                   <TableCell className="max-w-[22rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                     <span className={cn('font-medium', !r.inquilino && 'font-normal text-fg-muted')}>{r.inquilino ?? 'Sin nombre registrado'}</span>
-                    {r.documento ? <span className="ml-2 font-mono text-caption tabular-nums text-fg-subtle">{r.documento}</span> : null}
+                    {r.documento ? <p className="font-mono text-caption tabular-nums text-fg-subtle">{r.documento}</p> : null}
                     <p className="line-clamp-1 text-caption text-fg-muted" title={r.inmueble ?? undefined}>
                       {r.inmueble ?? '—'}
                       {r.contrato ? ` · Contrato #${r.contrato.numero}` : ''}

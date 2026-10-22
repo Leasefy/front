@@ -30,6 +30,7 @@
  */
 
 import { useState } from 'react'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { toast } from '@/components/ui/toast'
 import { errorEnCristiano, motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { FileText, Lock } from '@phosphor-icons/react'
@@ -59,6 +60,8 @@ interface Props {
   /** La dirección del inmueble, para decir qué documento se firma. */
   direccionDelInmueble?: string | null
   puedeEditar?: boolean
+  /** La firma electrónica reforzada (opcional), plegada dentro del bloque de la firma. */
+  firmaReforzada?: React.ReactNode
 }
 
 /**
@@ -203,6 +206,7 @@ export function MandatoDelInmueble({
   propietarioCorreo,
   direccionDelInmueble,
   puedeEditar = false,
+  firmaReforzada,
 }: Props) {
   const documentos = useCrm(
     () => captacionApi.documentos(consignacionId),
@@ -434,6 +438,11 @@ export function MandatoDelInmueble({
                   </a>
                 ) : null}
               </div>
+            ) : null}
+            {firmaReforzada ? (
+              <MasDetalles etiqueta="Firma electrónica reforzada (con el PDF del mandato)" montadoSiempre>
+                {firmaReforzada}
+              </MasDetalles>
             ) : null}
           </div>
         ) : null}

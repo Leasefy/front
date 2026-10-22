@@ -859,18 +859,13 @@ function ConsignacionDetailContent() {
                     propietarioCorreo={propietario?.email ?? null}
                     direccionDelInmueble={consignacion.propertyAddress ?? null}
                     puedeEditar={puedeEditarInventario}
+                    // T-0109 §3.1.C: la firma reforzada (opcional) va DENTRO del bloque de la
+                    // firma (22-10, revisión: estaba suelta entre tarjetas). Se oculta sola sin WU-3.
+                    firmaReforzada={
+                      <FirmaElectronicaDeConsignacionSection consignacionId={consignacion.id} puedeEditar={puedeEditarPortafolio} />
+                    }
                   />
                 </div>
-                {/* T-0109 contract.md §3.1.C — vía ADICIONAL a C9 (arriba): firma
-                    electrónica reforzada del contrato de consignación. Revisión 21-10: la
-                    firma del mandato vivía en tres bloques; ésta, que es la opcional, va
-                    plegada debajo de «Papeles y firma». Se oculta sola sin WU-3. */}
-                <MasDetalles etiqueta="Firma electrónica reforzada (con el PDF del contrato)" montadoSiempre>
-                  <FirmaElectronicaDeConsignacionSection
-                    consignacionId={consignacion.id}
-                    puedeEditar={puedeEditarPortafolio}
-                  />
-                </MasDetalles>
                 <TerminosDelMandatoSection consignacion={consignacion} onEditar={terminada ? undefined : handleEdit} />
                 <div id="propietarios" className="scroll-mt-20">
                   <PropietarioSection

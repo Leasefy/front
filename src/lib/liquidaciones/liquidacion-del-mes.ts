@@ -88,11 +88,11 @@ export type LiquidacionParaLaPantalla = Omit<VistaPreviaDeDispersiones, 'propiet
   mesCompleto?: boolean;
 };
 
-/** Cómo se lee cada estado. «Dispersión generada» sólo cuando TODO está generado. */
+/** Cómo se lee cada estado. «Generada» sólo cuando TODO está generado (antes «Dispersión generada»: la voz dice «giro»). */
 export const NOMBRE_DEL_ESTADO: Record<EstadoDeLaLiquidacion, string> = {
   POR_GENERAR: 'Sin generar',
   GENERADA_EN_PARTE: 'Generada en parte',
-  GENERADA: 'Dispersión generada',
+  GENERADA: 'Generada',
   GIRADA: 'Girada',
 };
 

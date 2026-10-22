@@ -3137,10 +3137,10 @@
         "processingFor": "Procesando el giro de {{name}}"
       },
       "statusLabels": {
-        "pending": "Pendiente",
-        "processing": "Procesando",
-        "completed": "Completada",
-        "failed": "Fallida"
+        "pending": "Por aprobar",
+        "processing": "Aprobado",
+        "completed": "Girado",
+        "failed": "No salió"
       },
       "detailView": {
         "propietario": "Propietario",

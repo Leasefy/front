@@ -42,6 +42,9 @@ import {
 import { tasaMedida, textoDeTasa } from '@/lib/tasas';
 import { useSearchParams } from 'next/navigation';
 import { AgendarVisitaDialog } from '@/components/inmobiliaria/AgendarVisitaDialog';
+import { ParaHoyDelEmbudo } from '@/components/inmobiliaria/ParaHoyDelEmbudo';
+import { paraHoy } from '@/lib/pipeline/para-hoy';
+import { hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa';
 import { useEquipo } from '@/lib/agenda/use-equipo';
 import { useTr } from '@/lib/i18n/use-tr';
 
@@ -196,6 +199,9 @@ function PipelineContent() {
   }, [items, filters]);
 
   // Handle card click - open detail modal
+  /* «Para hoy» (ronda 18): a quién hay que mover hoy, de la lista ENTERA (no de lo filtrado). */
+  const pendientesDeHoy = useMemo(() => paraHoy(items, hoyEnColombia()), [items]);
+
   const handleCardClick = useCallback((item: PipelineItem) => {
     setSelectedItem(item);
     setIsDetailOpen(true);
@@ -348,6 +354,11 @@ function PipelineContent() {
         }
       />
 
+      {/* Lo que toca hoy, ARRIBA (ronda 18: estaba en la 2.ª de 9 columnas). Sólo con la lista a la vista. */}
+      {yaSeMostro && !errorCrudo ? (
+        <ParaHoyDelEmbudo pendientes={pendientesDeHoy} onAbrir={handleCardClick} onAgendar={setAgendandoA} />
+      ) : null}
+
       {/* Las cifras juntas, en una franja — sin entrada propia: la página entra con su template. */}
       <FranjaDeCifras data-testid="cifras-del-embudo">
         <KpiCard
@@ -374,20 +385,16 @@ function PipelineContent() {
 
       {/* Unified Data Card - Filters + Content */}
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        {/* Header with count */}
-        <div className="px-4 py-3 border-b border-border-faint flex items-center justify-between gap-3">
-          <span className="text-sm font-medium text-foreground">
-            {t('inmobiliaria.pipeline.board.title')}
-          </span>
-          <div className="flex items-center gap-3">
-            {/* «0 de 0 leads» mientras no se sabe también es un cero inventado. */}
-            {yaSeMostro && (
-              <span className="text-sm text-muted-foreground tabular-nums">
-                {t('inmobiliaria.pipeline.board.count', { filtered: filteredItems.length, total: items.length })}
-              </span>
-            )}
+        {/* Ronda 18: sin el encabezado «Embudo de interesados» (tercer nombre para la misma
+            pantalla). El «n de N» sólo cuando un filtro achica la lista; sin filtro, el número ya
+            está arriba. «0 de 0» mientras no se sabe también es un cero inventado. */}
+        {yaSeMostro && filteredItems.length !== items.length && (
+          <div className="flex items-center justify-end border-b border-border-faint px-4 py-2">
+            <span className="text-sm text-muted-foreground tabular-nums" data-testid="pipeline-conteo-filtrado">
+              {t('inmobiliaria.pipeline.board.count', { filtered: filteredItems.length, total: items.length })}
+            </span>
           </div>
-        </div>
+        )}
 
         {/* Filters */}
         <PipelineFilters

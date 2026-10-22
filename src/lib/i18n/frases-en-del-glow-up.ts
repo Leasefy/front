@@ -209,4 +209,16 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Arma el lote del mes y descarga el archivo plano para subirlo al portal del banco.': "Build the month's batch and download the flat file to upload it to your bank's portal.",
   'Cuando el banco ya pagó, marca el lote pagado: así cada propietario queda al día.': 'Once the bank has paid, mark the batch as paid so every owner is up to date.',
   'tus elecciones de inquilino': 'your tenant selections',
+  // components/inmobiliaria/ParaHoyDelEmbudo.tsx (Prospección, ronda 18)
+  'Para hoy': 'For today',
+  'Nada vencido: todos tienen su próximo paso con fecha.': 'Nothing overdue: everyone has a dated next step.',
+  '{accion} vencida · {dia}': '{accion} overdue · {dia}',
+  'Acción': 'Action',
+  'Visita': 'Visit',
+  'Para hoy · {dia}': 'Due today · {dia}',
+  '{n} días sin moverse': '{n} days without moving',
+  'Agendar visita': 'Schedule visit',
+  'Reagendar': 'Reschedule',
+  'Ver menos': 'See less',
+  'Ver los {n}': 'See all {n}',
 }

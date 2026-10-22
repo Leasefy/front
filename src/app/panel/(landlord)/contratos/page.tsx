@@ -160,16 +160,14 @@ export default function ContratosPage() {
         {needsAction.length > 0 && (
           <div className="mb-6 p-4 bg-warning-soft border border-warning/30 rounded-lg">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center">
-                <WarningCircle className="w-5 h-5 text-warning" />
-              </div>
+              <WarningCircle className="w-5 h-5 text-warning shrink-0" aria-hidden="true" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-warning">
                   {needsAction.length > 1
                     ? t('landlord.contracts.urgentBannerPlural', { count: needsAction.length })
                     : t('landlord.contracts.urgentBannerSingular', { count: needsAction.length })}
                 </p>
-                <p className="text-xs text-warning/70">
+                <p className="text-caption text-warning/70">
                   {t('landlord.contracts.urgentBannerHint')}
                 </p>
               </div>
@@ -187,7 +185,7 @@ export default function ContratosPage() {
                 className="group inline-flex items-center gap-2"
               >
                 {tab.label}
-                <span className="px-1.5 py-0.5 rounded-sm text-xs font-medium tabular-nums bg-surface-muted text-fg-muted group-data-[state=active]:bg-primary-soft group-data-[state=active]:text-primary">
+                <span className="px-1.5 py-0.5 rounded-sm text-caption font-medium tabular-nums bg-surface-muted text-fg-muted group-data-[state=active]:bg-primary-soft group-data-[state=active]:text-primary">
                   {tab.count}
                 </span>
               </TabsTrigger>

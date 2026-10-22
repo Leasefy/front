@@ -61,7 +61,7 @@ export default function NovedadesPage() {
 
         {/* Resumen mensual */}
         <Card className="p-4 sm:p-6 mt-6">
-          <h2 className="text-base font-semibold mb-4">Resumen mensual</h2>
+          <h2 className="text-base font-medium mb-4">Resumen mensual</h2>
           {digests.length === 0 ? (
             <p className="text-sm text-fg-muted">
               Todavía no hay resúmenes. Cuando cierre el mes vas a recibir uno aquí con tu recaudo,
@@ -80,7 +80,7 @@ export default function NovedadesPage() {
                       <p className="font-medium first-letter:uppercase">
                         {nombreDelMes(d.periodo, locale === 'en' ? 'en' : 'es')}
                       </p>
-                      <p className="text-xs text-fg-muted">
+                      <p className="text-caption text-fg-muted">
                         {d.deliveredAt ? `Enviado ${formatDate(d.deliveredAt)}` : `Generado ${formatDate(d.generatedAt)}`}
                       </p>
                     </div>

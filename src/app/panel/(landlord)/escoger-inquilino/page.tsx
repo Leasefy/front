@@ -64,13 +64,13 @@ function Candidato({
   return (
     <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between" data-testid="candidato">
       <div className="min-w-0 space-y-0.5">
-        <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-fg">
+        <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-fg">
           <UserCircle className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
           {c.nombre}
           {/* MANOS-2 (04-10-2026): la lista corta de tu inmobiliaria va primero y se dice. */}
           {typeof c.enLaListaCorta === 'number' && (
             <span
-              className="inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary"
+              className="inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-caption font-medium text-primary"
               data-testid={`lista-corta-${c.applicationId}`}
             >
               Lista corta de tu inmobiliaria · {c.enLaListaCorta}.º
@@ -78,7 +78,7 @@ function Candidato({
           )}
         </p>
         {c.deQueVive && <p className="text-sm text-fg">{c.deQueVive}</p>}
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {c.ingresosCop !== null ? `Declara ganar ${formatCurrency(c.ingresosCop)} al mes` : 'No declaró sus ingresos'}
           {c.personasACargo === null
             ? ''
@@ -86,7 +86,7 @@ function Candidato({
               ? ' · Sin personas a cargo'
               : ` · ${c.personasACargo === 1 ? '1 persona a cargo' : `${c.personasACargo} personas a cargo`}`}
         </p>
-        <p className="text-xs text-fg-muted">{c.estudio}</p>
+        <p className="text-caption text-fg-muted">{c.estudio}</p>
       </div>
       <Button
         size="sm"
@@ -162,8 +162,8 @@ function Pendiente({ eleccion, onDecidida }: { eleccion: EleccionEnElPortal; onD
     <Card className="space-y-3 p-5" data-testid="eleccion-pendiente">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-xs text-fg-muted">{eleccion.inmobiliaria}</p>
-          <h3 className="text-base font-semibold text-fg">{eleccion.inmueble}</h3>
+          <p className="text-caption text-fg-muted">{eleccion.inmobiliaria}</p>
+          <h3 className="text-base font-medium text-fg">{eleccion.inmueble}</h3>
         </div>
         {eleccion.canonCop !== null && (
           <p className="shrink-0 font-mono text-sm tabular-nums text-fg">Canon {formatCurrency(eleccion.canonCop)}</p>
@@ -178,7 +178,7 @@ function Pendiente({ eleccion, onDecidida }: { eleccion: EleccionEnElPortal; onD
           ))}
         </ul>
       )}
-      <p className="text-xs text-fg-muted">
+      <p className="text-caption text-fg-muted">
         Al escoger, tu inmobiliaria adjudica el inmueble y les avisa a los demás. Te lo pidió el {fecha(eleccion.pedidaAt)}.
       </p>
       {!diciendoNinguno && (
@@ -219,7 +219,7 @@ function DelHistorial({ eleccion }: { eleccion: EleccionEnElPortal }) {
   return (
     <li className="space-y-0.5 py-3" data-testid={`eleccion-historial-${eleccion.estado}`}>
       <p className="text-sm font-medium text-fg">{eleccion.inmueble}</p>
-      <p className="flex items-center gap-1 text-xs text-fg-muted">
+      <p className="flex items-center gap-1 text-caption text-fg-muted">
         {eleccion.estado === 'NINGUNO' || eleccion.estado === 'ANULADA' ? (
           <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
         ) : eleccion.estado === 'PENDIENTE' ? (
@@ -231,7 +231,7 @@ function DelHistorial({ eleccion }: { eleccion: EleccionEnElPortal }) {
         {eleccion.escogido ? ` · ${eleccion.escogido}` : ''}
         {eleccion.decididaAt ? ` · ${fecha(eleccion.decididaAt)}` : ''}
       </p>
-      {eleccion.motivo && <p className="text-xs text-fg-muted">«{eleccion.motivo}»</p>}
+      {eleccion.motivo && <p className="text-caption text-fg-muted">«{eleccion.motivo}»</p>}
     </li>
   );
 }
@@ -284,7 +284,7 @@ export default function EscogerInquilinoPage() {
         >
           {datos && datos.pendientes.length > 0 && (
             <section className="space-y-3" aria-label="Por escoger">
-              <h2 className="text-sm font-semibold text-fg">Por escoger</h2>
+              <h2 className="text-sm font-medium text-fg">Por escoger</h2>
               {datos.pendientes.map((e) => (
                 <Pendiente key={e.id} eleccion={e} onDecidida={() => void cargar()} />
               ))}
@@ -292,7 +292,7 @@ export default function EscogerInquilinoPage() {
           )}
           {datos && datos.historial.length > 0 && (
             <section aria-label="Historial">
-              <h2 className="text-sm font-semibold text-fg">Historial</h2>
+              <h2 className="text-sm font-medium text-fg">Historial</h2>
               <ul className="divide-y divide-border">
                 {datos.historial.map((e) => (
                   <DelHistorial key={e.id} eleccion={e} />

@@ -4,33 +4,7 @@ import { useContratosAdministrados } from '@/components/landlord/ContratosConLaI
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
-import {
-  Bell,
-  Check,
-  TrashSimple,
-  Gear,
-  Users,
-  Buildings,
-  FileText,
-  FileArrowUp,
-  CurrencyDollar,
-  CaretRight,
-  Warning,
-  Star,
-  Wrench,
-  Calendar,
-  ChatCircle,
-  ShieldCheck,
-  House,
-  Eye,
-  Megaphone,
-  UserPlus,
-  PenNib,
-  Bank,
-  Clock,
-  Sparkle,
-  ArrowRight,
-} from '@phosphor-icons/react';
+import { Bell, Check, TrashSimple, Gear, FileText, FileArrowUp, CurrencyDollar, CaretRight, Warning, Calendar, UserPlus, PenNib, Clock } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
@@ -93,7 +67,7 @@ function NotificationSkeleton() {
   return (
     <div className="flex items-start gap-4 px-5 py-4 border-b border-border-faint animate-pulse">
       {/* Icon skeleton */}
-      <div className="w-10 h-10 rounded-xl bg-surface-muted flex-shrink-0" />
+      <div className="w-10 h-10 rounded-lg bg-surface-muted flex-shrink-0" />
 
       {/* Content skeleton */}
       <div className="flex-1 min-w-0 space-y-2">
@@ -274,7 +248,7 @@ export default function NotificacionesPage() {
                   {/* Icon */}
                   <div
                     className={cn(
-                      'w-10 h-10 flex items-center justify-center flex-shrink-0 rounded-xl',
+                      'w-10 h-10 flex items-center justify-center flex-shrink-0 rounded-lg',
                       categoryConfig.bgColor,
                       categoryConfig.darkBgColor
                     )}
@@ -301,7 +275,7 @@ export default function NotificacionesPage() {
                       {notification.message}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-fg-subtle">
+                      <span className="text-caption text-fg-subtle">
                         {formatRelativeDate(notification.createdAt)}
                       </span>
                       <span className="text-fg-subtle">
@@ -309,7 +283,7 @@ export default function NotificacionesPage() {
                       </span>
                       <span
                         className={cn(
-                          'text-xs font-medium',
+                          'text-caption font-medium',
                           categoryConfig.color
                         )}
                       >
@@ -335,7 +309,6 @@ export default function NotificacionesPage() {
                         }}
                       >
                         {notification.actionLabel}
-                        <ArrowRight className="w-3 h-3" />
                       </Button>
                     </div>
                   )}

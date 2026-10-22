@@ -142,7 +142,7 @@ export default function MisInformesPage() {
           <SectionLabel>Certificado anual de ingresos</SectionLabel>
 
           {disponibles?.motivo && (
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            <p className="text-sm text-fg-muted">
               {disponibles.motivo}
             </p>
           )}
@@ -164,7 +164,7 @@ export default function MisInformesPage() {
 
           {certificado && (
             <div
-              className="rounded-xl border border-border dark:border-border-strong p-5 space-y-4"
+              className="rounded-lg border border-border p-5 space-y-4"
               data-testid="certificado"
             >
               {/* Nico, 11-10-2026: «Certificados descargables». */}
@@ -219,7 +219,7 @@ export default function MisInformesPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-fg-muted dark:text-fg-subtle">
+                      <tr className="text-left text-fg-muted">
                         <th className="py-2 pr-4">Inmueble</th>
                         <th className="py-2 pr-4 text-right">Ingreso bruto</th>
                         <th className="py-2 pr-4 text-right">Comisión</th>
@@ -249,7 +249,7 @@ export default function MisInformesPage() {
               {/* 🔴 Lo que el certificado NO incluye se dice, no se calla. */}
               <ul className="space-y-1.5" data-testid="advertencias">
                 {certificado.advertencias.map((a) => (
-                  <li key={a} className="text-xs text-fg-muted dark:text-fg-subtle">
+                  <li key={a} className="text-caption text-fg-muted">
                     {a}
                   </li>
                 ))}
@@ -263,13 +263,13 @@ export default function MisInformesPage() {
           <SectionLabel>Historial de reparaciones</SectionLabel>
 
           {motivoDeReparaciones && (
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            <p className="text-sm text-fg-muted">
               {motivoDeReparaciones}
             </p>
           )}
 
           {reparaciones && reparaciones.length === 0 && !motivoDeReparaciones && (
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            <p className="text-sm text-fg-muted">
               Todavía no hay reparaciones registradas en tus inmuebles.
             </p>
           )}
@@ -278,24 +278,24 @@ export default function MisInformesPage() {
             {(reparaciones ?? []).map((r) => (
               <li
                 key={r.id}
-                className="rounded-lg border border-border dark:border-border-strong p-4 space-y-2"
+                className="rounded-lg border border-border p-4 space-y-2"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-medium text-fg dark:text-white">{r.titulo}</p>
-                    <p className="text-sm text-fg-muted dark:text-fg-subtle">
+                    <p className="font-medium text-fg">{r.titulo}</p>
+                    <p className="text-sm text-fg-muted">
                       {fechaCorta(r.fecha)} · {r.inmueble}
                       {r.proveedor ? ` · ${r.proveedor}` : ''}
                     </p>
                   </div>
                   {/* Un `null` es «no te tocó a ti», y se dice así — nunca «$0». */}
-                  <p className="text-sm tabular-nums text-fg dark:text-white">
+                  <p className="text-sm tabular-nums text-fg">
                     {r.aCargoDelPropietarioCop === null
                       ? 'No se te descontó'
                       : formatCurrency(r.aCargoDelPropietarioCop)}
                   </p>
                 </div>
-                <p className="text-sm text-fg-muted dark:text-fg-subtle">{r.descripcion}</p>
+                <p className="text-sm text-fg-muted">{r.descripcion}</p>
                 <div className="flex flex-wrap items-center gap-3">
                   {r.comprobante ? (
                     <Button
@@ -308,7 +308,7 @@ export default function MisInformesPage() {
                     </Button>
                   ) : (
                     r.aCargoDelPropietarioCop !== null && (
-                      <span className="text-xs text-fg-muted dark:text-fg-subtle">
+                      <span className="text-caption text-fg-muted">
                         Este descuento no tiene comprobante cargado. Pídelo a tu inmobiliaria.
                       </span>
                     )
@@ -319,7 +319,7 @@ export default function MisInformesPage() {
                       href={f.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-primary underline"
+                      className="text-caption text-primary underline"
                     >
                       {f.nombre}
                     </a>
@@ -337,8 +337,8 @@ export default function MisInformesPage() {
 function Renglon({ titulo, valor }: { titulo: string; valor: number }) {
   return (
     <div className="flex items-baseline justify-between gap-3 border-b border-border py-2">
-      <dt className="text-sm text-fg-muted dark:text-fg-subtle">{titulo}</dt>
-      <dd className="text-sm tabular-nums text-fg dark:text-white">
+      <dt className="text-sm text-fg-muted">{titulo}</dt>
+      <dd className="text-sm tabular-nums text-fg">
         {formatCurrency(valor)}
       </dd>
     </div>

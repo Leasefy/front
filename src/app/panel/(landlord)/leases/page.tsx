@@ -166,12 +166,10 @@ export default function LandlordLeasesPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center">
-                  <TrendUp className="w-5 h-5 text-primary" />
-                </div>
+                <TrendUp className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
                 <span className="text-primary text-sm font-medium">{t('landlord.leases.financialSummary')}</span>
               </div>
-              <p className="text-3xl font-bold text-fg tracking-tight">
+              <p className="text-3xl font-medium text-fg tracking-tight">
                 {formatCurrency(stats.totalMonthlyIncome)}
               </p>
               <p className="text-fg-muted text-sm mt-1">
@@ -181,7 +179,7 @@ export default function LandlordLeasesPage() {
             <div className="flex-1 max-w-xs">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-fg-muted text-sm">{t('landlord.leases.collectionRate')}</span>
-                <span className="text-fg font-semibold">{collectionRate}%</span>
+                <span className="text-fg font-medium">{collectionRate}%</span>
               </div>
               <ProgressBar
                 value={collectionRate}
@@ -195,16 +193,14 @@ export default function LandlordLeasesPage() {
         {stats.endingSoon > 0 && (
           <div className="mb-6 p-4 bg-warning-soft border border-warning/30 rounded-lg">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center">
-                <WarningCircle className="w-5 h-5 text-warning" />
-              </div>
+              <WarningCircle className="w-5 h-5 text-warning shrink-0" aria-hidden="true" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-warning">
                   {stats.endingSoon > 1
                     ? t('landlord.leases.endingSoonWarningPlural', { count: stats.endingSoon })
                     : t('landlord.leases.endingSoonWarning', { count: stats.endingSoon })}
                 </p>
-                <p className="text-xs text-warning/70">
+                <p className="text-caption text-warning/70">
                   {t('landlord.leases.endingSoonDescription')}
                 </p>
               </div>
@@ -222,7 +218,7 @@ export default function LandlordLeasesPage() {
                 className="group inline-flex items-center gap-2"
               >
                 {tab.label}
-                <span className="px-1.5 py-0.5 rounded-sm text-xs font-medium tabular-nums bg-surface-muted text-fg-muted group-data-[state=active]:bg-primary-soft group-data-[state=active]:text-primary">
+                <span className="px-1.5 py-0.5 rounded-sm text-caption font-medium tabular-nums bg-surface-muted text-fg-muted group-data-[state=active]:bg-primary-soft group-data-[state=active]:text-primary">
                   {tab.count}
                 </span>
               </TabsTrigger>
@@ -252,10 +248,8 @@ export default function LandlordLeasesPage() {
                   </div>
                 ) : (
                   <div className="rounded-lg bg-surface-muted py-14 px-6 text-center">
-                    <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center mx-auto mb-5">
-                      <House className="w-6 h-6 text-fg-subtle" />
-                    </div>
-                    <h3 className="text-base font-semibold text-foreground mb-1.5">
+                    <House className="w-6 h-6 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
+                    <h3 className="text-base font-medium text-foreground mb-1.5">
                       {t('landlord.leases.noFilteredLeases', { filter: tabs.find(tItem => tItem.id === activeTab)?.label.toLowerCase() || '' })}
                     </h3>
                     <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-6">

@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle, XCircle, Siren, Hourglass, Wrench } from '@phosphor-icons/react';
+import { CheckCircle, XCircle, Wrench } from '@phosphor-icons/react';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { EmptyState } from '@/components/ui/empty-state';
 
@@ -98,15 +98,15 @@ function Pendiente({
     <Card className="p-5 space-y-3" data-testid="aprobacion-pendiente">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {aprobacion.inmobiliaria} · {aprobacion.inmueble}
           </p>
-          <h3 className="text-base font-semibold text-fg">{aprobacion.reparacion.titulo}</h3>
+          <h3 className="text-base font-medium text-fg">{aprobacion.reparacion.titulo}</h3>
           {aprobacion.reparacion.descripcion && (
             <p className="text-sm text-fg-muted">{aprobacion.reparacion.descripcion}</p>
           )}
         </div>
-        <p className="shrink-0 font-mono tabular-nums text-lg font-semibold text-fg">
+        <p className="shrink-0 font-mono tabular-nums text-lg font-medium text-fg">
           {formatCurrency(aprobacion.valorCop)}
         </p>
       </div>
@@ -119,7 +119,7 @@ function Pendiente({
           {aprobacion.cotizacion.descripcion ? ` — ${aprobacion.cotizacion.descripcion}` : ''}
         </p>
       )}
-      <p className="text-xs text-fg-muted">
+      <p className="text-caption text-fg-muted">
         Si la apruebas, el valor se descuenta de tu próxima liquidación sin pagar. Pedida el {fecha(aprobacion.pedidaAt)}.
       </p>
       {rechazando && (
@@ -221,7 +221,7 @@ export default function AprobarReparacionesPage() {
           <SobrecostosPorAprobar alCambiar={() => void cargar()} />
           {datos && datos.pendientes.length > 0 && (
             <section className="space-y-3" aria-label="Por aprobar">
-              <h2 className="text-sm font-semibold text-fg">Por aprobar</h2>
+              <h2 className="text-sm font-medium text-fg">Por aprobar</h2>
               {datos.pendientes.map((a) => (
                 <Pendiente key={a.id} aprobacion={a} onDecidida={() => void cargar()} />
               ))}

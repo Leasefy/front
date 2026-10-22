@@ -248,7 +248,7 @@ export default function PropiedadesPage() {
                   <Link
                     key={property.id}
                     href={`/panel/${property.id}`}
-                    className="bg-surface rounded-lg border border-border overflow-hidden group hover: hover:shadow-neutral-200/50 dark:hover:shadow-neutral-900/50 transition-[box-shadow,border-color] duration-slow block"
+                    className="bg-surface rounded-lg border border-border overflow-hidden group hover: hover:shadow-neutral-200/50 transition-[box-shadow,border-color] duration-slow block"
                   >
                     {/* Image */}
                     <div className="relative h-48 bg-surface-muted overflow-hidden">
@@ -264,7 +264,7 @@ export default function PropiedadesPage() {
 
                     {/* Content */}
                     <div className="p-5">
-                      <h3 className="font-semibold text-fg mb-1 line-clamp-1">
+                      <h3 className="font-medium text-fg mb-1 line-clamp-1">
                         {property.title}
                       </h3>
                       <p className="text-sm text-fg-muted flex items-center gap-1.5 mb-4">
@@ -292,11 +292,11 @@ export default function PropiedadesPage() {
                       <div className="flex items-center justify-between pt-4 border-t border-border-faint">
                         <div>
                           {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
-                          <p className="text-lg font-bold text-fg tabular-nums">
+                          <p className="text-lg font-medium text-fg tabular-nums">
                             {property.monthlyRent != null ? i18nFormatCurrency(property.monthlyRent) : '—'}
                           </p>
                           {property.monthlyRent != null && (
-                            <p className="text-xs text-fg-subtle">/{t('landlord.properties.perMonth')}</p>
+                            <p className="text-caption text-fg-subtle">/{t('landlord.properties.perMonth')}</p>
                           )}
                         </div>
                         {candidateCount > 0 && (
@@ -341,7 +341,7 @@ export default function PropiedadesPage() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-fg truncate">
+                        <h3 className="font-medium text-fg truncate">
                           {property.title}
                         </h3>
                         {getStatusBadge(property.status)}
@@ -369,11 +369,11 @@ export default function PropiedadesPage() {
                     {/* Price */}
                     <div className="text-right">
                       {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
-                      <p className="text-lg font-bold text-fg tabular-nums">
+                      <p className="text-lg font-medium text-fg tabular-nums">
                         {property.monthlyRent != null ? i18nFormatCurrency(property.monthlyRent) : '—'}
                       </p>
                       {property.monthlyRent != null && (
-                        <p className="text-xs text-fg-subtle">/{t('landlord.properties.perMonth')}</p>
+                        <p className="text-caption text-fg-subtle">/{t('landlord.properties.perMonth')}</p>
                       )}
                     </div>
 

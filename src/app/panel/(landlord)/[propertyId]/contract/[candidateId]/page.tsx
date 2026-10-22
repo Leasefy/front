@@ -78,12 +78,10 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
       <div className="lg:col-span-2">
         <div className="rounded-lg border border-border bg-surface p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center">
-              <Shield className="w-5 h-5 text-primary" />
-            </div>
+            <Shield className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-fg">
+                <h3 className="font-medium text-fg">
                   Contratos Leasefy
                 </h3>
                 <StatusBadge tone="info" dot={false}>Recomendado</StatusBadge>
@@ -112,7 +110,7 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
                 >
                   <div className="flex items-start gap-4">
                     <div className={cn(
-                      'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors',
+                      'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
                       isSelected
                         ? 'bg-primary-soft'
                         : 'bg-surface-muted group-hover:bg-surface-hover'
@@ -150,14 +148,12 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
         <div className="lg:sticky lg:top-6">
           <div className="rounded-lg border border-border bg-surface p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
-                <Upload className="w-5 h-5 text-fg-muted" />
-              </div>
+              <Upload className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
               <div>
-                <h3 className="font-semibold text-fg">
+                <h3 className="font-medium text-fg">
                   ¿Ya tienes contrato?
                 </h3>
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   Sube tu PDF para firma digital
                 </p>
               </div>
@@ -172,14 +168,12 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
                     : 'border-border-strong hover:border-border-strong bg-surface-muted'
                 )}
               >
-                <div className="w-12 h-12 rounded-xl bg-surface-muted flex items-center justify-center">
-                  <Upload className="w-6 h-6 text-fg-subtle" />
-                </div>
+                <Upload className="w-6 h-6 text-fg-subtle shrink-0" aria-hidden="true" />
                 <div className="text-center">
                   <p className="text-sm font-medium text-fg-muted">
                     Haz clic para subir
                   </p>
-                  <p className="text-xs text-fg-muted mt-1">
+                  <p className="text-caption text-fg-muted mt-1">
                     PDF, máx. 10MB
                   </p>
                 </div>
@@ -195,14 +189,12 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
                 'flex items-center gap-3 w-full rounded-lg border p-4 transition-colors',
                 'border-primary bg-primary-soft'
               )}>
-                <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-5 h-5 text-danger" />
-                </div>
+                <FileText className="w-5 h-5 text-danger shrink-0" aria-hidden="true" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-fg truncate">
                     {uploadedFile.name}
                   </p>
-                  <p className="text-xs text-fg-muted">
+                  <p className="text-caption text-fg-muted">
                     {(uploadedFile.size / 1024 / 1024).toFixed(1)} MB
                   </p>
                 </div>
@@ -374,10 +366,8 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
         <div className="p-6 lg:p-8">
           <BackButton href={`/panel/${propertyId}`} label="Volver a candidatos" />
           <div className="mt-8 rounded-lg border border-border bg-surface p-8 text-center">
-            <div className="w-16 h-16 rounded-xl bg-surface-muted flex items-center justify-center mx-auto">
-              <WarningCircle className="h-8 w-8 text-fg-subtle" />
-            </div>
-            <h2 className="mt-4 text-lg font-semibold text-fg">
+            <WarningCircle className="h-8 w-8 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
+            <h2 className="mt-4 text-lg font-medium text-fg">
               Información no encontrada
             </h2>
             <p className="mt-2 text-fg-muted">
@@ -434,11 +424,9 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
             {/* Property */}
             <Card className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-5 h-5 text-primary" />
-                </div>
+                <MapPin className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
                 <div className="min-w-0">
-                  <p className="text-xs text-fg-muted">Propiedad</p>
+                  <p className="text-caption text-fg-muted">Propiedad</p>
                   <p className="text-sm font-medium text-fg truncate">
                     {property.address}
                   </p>
@@ -452,7 +440,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                 {/* Cadence 2: el Avatar de la persona. */}
                 <Avatar name={candidate.fullName || 'Inquilino'} size="md" />
                 <div className="min-w-0">
-                  <p className="text-xs text-fg-muted">Inquilino</p>
+                  <p className="text-caption text-fg-muted">Inquilino</p>
                   <p className="text-sm font-medium text-fg truncate">
                     {candidate.fullName}
                   </p>
@@ -463,11 +451,9 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
             {/* Monthly Rent */}
             <Card className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center flex-shrink-0">
-                  <CurrencyDollar className="w-5 h-5 text-warning" />
-                </div>
+                <CurrencyDollar className="w-5 h-5 text-warning shrink-0" aria-hidden="true" />
                 <div className="min-w-0">
-                  <p className="text-xs text-fg-muted">Arriendo mensual</p>
+                  <p className="text-caption text-fg-muted">Arriendo mensual</p>
                   <p className="text-sm font-medium text-fg font-mono tabular-nums">
                     {formatCurrency(property.monthlyRent)}
                   </p>
@@ -478,11 +464,9 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
             {/* Duration */}
             <Card className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-5 h-5 text-fg-muted" />
-                </div>
+                <Calendar className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
                 <div className="min-w-0">
-                  <p className="text-xs text-fg-muted">Duración</p>
+                  <p className="text-caption text-fg-muted">Duración</p>
                   {/* Antes decía «12 meses» siempre. Sin contrato son los 12 que pacta
                       «Generar» (de hoy a un año); con contrato, los de sus fechas. */}
                   <p className="text-sm font-medium text-fg" data-testid="duracion-del-contrato">
@@ -527,7 +511,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                     <div key={i} className="flex items-center flex-1 last:flex-none">
                       <div className="flex items-center gap-3">
                         <div className={cn(
-                          'flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition-colors',
+                          'flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition-colors',
                           isCompleted && 'bg-primary text-primary-fg font-mono tabular-nums',
                           isCurrent && 'bg-primary text-primary-fg font-mono tabular-nums',
                           !isCompleted && !isCurrent && 'bg-surface-muted text-fg-subtle',
@@ -542,7 +526,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                             {step.label}
                           </p>
                           {isCurrent && (
-                            <p className="text-xs text-primary mt-0.5">Paso actual</p>
+                            <p className="text-caption text-primary mt-0.5">Paso actual</p>
                           )}
                         </div>
                       </div>
@@ -598,7 +582,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
                   {/* Help hint */}
                   {!selectedType && (
-                    <p className="mt-3 text-center text-xs text-fg-muted">
+                    <p className="mt-3 text-center text-caption text-fg-muted">
                       Selecciona una plantilla de contrato para continuar
                     </p>
                   )}
@@ -615,7 +599,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                   isLandlordTurn && 'bg-primary-soft border border-primary text-primary',
                   isTenantTurn && 'bg-primary-soft border border-primary text-primary',
                 )}>
-                  <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-primary-soft flex items-center justify-center flex-shrink-0">
                     {isLandlordTurn && <FileText className="h-5 w-5 text-primary" />}
                     {isTenantTurn && <Clock className="h-5 w-5 text-primary" />}
                   </div>
@@ -664,12 +648,10 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                       {isTenantTurn && (
                         <div className="rounded-lg border border-primary bg-primary-soft p-5">
                           <div className="flex items-center gap-3 text-primary">
-                            <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
-                              <Clock className="h-5 w-5 text-primary" />
-                            </div>
+                            <Clock className="h-5 w-5 text-primary shrink-0" aria-hidden="true" />
                             <div>
-                              <h3 className="font-semibold text-sm text-primary">Esperando firma</h3>
-                              <p className="text-xs text-primary mt-0.5">
+                              <h3 className="font-medium text-sm text-primary">Esperando firma</h3>
+                              <p className="text-caption text-primary mt-0.5">
                                 El arrendatario debe firmar el contrato.
                               </p>
                             </div>
@@ -685,7 +667,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
                       {/* Contract Info Card */}
                       <Card className="p-4">
-                        <MonoLabel className="block text-xs font-medium tracking-wider text-fg-muted">
+                        <MonoLabel className="block text-caption font-medium tracking-wider text-fg-muted">
                           Tipo de contrato
                         </MonoLabel>
                         <p className="mt-1 font-medium text-fg">

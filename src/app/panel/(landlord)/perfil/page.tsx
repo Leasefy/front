@@ -4,7 +4,7 @@ import { useContratosAdministrados } from '@/components/landlord/ContratosConLaI
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, TrashSimple, Pencil, Upload, Buildings, FileText } from '@phosphor-icons/react';
+import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, Buildings, FileText } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -397,18 +397,16 @@ export default function PropietarioPerfilPage() {
         {/* Setup Progress Section — la barra, el anillo y el porcentaje se
             revelan desde 0 y, al completar un paso, avanzan desde donde estaban. */}
         <section className="mb-8">
-          <div className="rounded-lg bg-[#EEF1FF] dark:bg-[#1A40FF]/12 p-6">
+          <div className="rounded-lg bg-[#EEF1FF] p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/10 flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
-                  </div>
+                  <Shield className="w-6 h-6 text-[#1A40FF] shrink-0" aria-hidden="true" />
                   <div>
-                    <h2 className="text-lg font-semibold text-fg">
+                    <h2 className="text-h3 text-fg">
                       {locale === 'es' ? 'Completar perfil' : 'Complete profile'}
                     </h2>
-                    <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
+                    <p className="text-sm text-[#1A40FF]">
                       {locale === 'es'
                         ? `${completedSteps} de ${totalSteps} pasos completados`
                         : `${completedSteps} of ${totalSteps} steps completed`}
@@ -416,7 +414,7 @@ export default function PropietarioPerfilPage() {
                   </div>
                 </div>
                 {/* `transform` (translateX), no `width`: no recalcula el layout por cuadro. */}
-                <div className="h-2 bg-white/50 dark:bg-white/10 rounded-full overflow-hidden">
+                <div className="h-2 bg-white/50 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ x: '-100%' }}
                     animate={{ x: `${completionPercentage - 100}%` }}
@@ -424,7 +422,7 @@ export default function PropietarioPerfilPage() {
                     className="h-full w-full bg-[#1A40FF] rounded-full"
                   />
                 </div>
-                <p className="text-xs text-fg-muted mt-2">
+                <p className="text-caption text-fg-muted mt-2">
                   {completionPercentage === 100
                     ? (locale === 'es' ? 'Perfil completo! Tienes acceso a todas las funciones.' : 'Profile complete! You have access to all features.')
                     : (locale === 'es' ? 'Completa tu perfil para acceder a todas las funciones' : 'Complete your profile to access all features')}
@@ -434,7 +432,7 @@ export default function PropietarioPerfilPage() {
               <div className="flex items-center justify-center">
                 <div className="relative w-24 h-24">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="white" strokeWidth="8" opacity="0.5" className="dark:opacity-20" />
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="white" strokeWidth="8" opacity="0.5" className="" />
                     <motion.circle
                       cx="50" cy="50" r="40" fill="none" stroke="#1A40FF" strokeWidth="8" strokeLinecap="round"
                       initial={{ strokeDasharray: '0 251.2' }}
@@ -443,7 +441,7 @@ export default function PropietarioPerfilPage() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-fg">
+                    <span className="text-2xl font-medium text-fg">
                       <AnimatedNumber value={completionPercentage} from={0} format={(n) => String(Math.round(n))} />%
                     </span>
                   </div>
@@ -460,29 +458,29 @@ export default function PropietarioPerfilPage() {
                     className={cn(
                       'rounded-lg p-4 transition-colors',
                       step.completed
-                        ? 'bg-white/80 dark:bg-white/10'
-                        : 'bg-surface border-2 border-dashed border-[#1A40FF]/30 dark:border-[#B7791F]/30'
+                        ? 'bg-white/80'
+                        : 'bg-surface border-2 border-dashed border-[#1A40FF]/30'
                     )}
                   >
                     <div className="flex items-start gap-3">
                       <div className={cn(
-                        'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0',
-                        step.completed ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15' : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                        'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
+                        step.completed ? 'bg-[#E8F3EC]' : 'bg-[#EEF1FF]'
                       )}>
                         {step.completed ? (
-                          <CheckCircle className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
+                          <CheckCircle className="w-4 h-4 text-[#2C7A53]" />
                         ) : (
-                          <Icon className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
+                          <Icon className="w-4 h-4 text-[#1A40FF]" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={cn('text-sm font-medium truncate', step.completed ? 'text-fg' : 'text-[#1A40FF] dark:text-white')}>
+                        <p className={cn('text-sm font-medium truncate', step.completed ? 'text-fg' : 'text-[#1A40FF]')}>
                           {step.label}
                         </p>
                         {step.completed ? (
-                          <span className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">{locale === 'es' ? 'Completado' : 'Completed'}</span>
+                          <span className="text-caption text-[#2C7A53]">{locale === 'es' ? 'Completado' : 'Completed'}</span>
                         ) : (
-                          <span className="text-xs text-fg-muted">{locale === 'es' ? 'Pendiente' : 'Pending'}</span>
+                          <span className="text-caption text-fg-muted">{locale === 'es' ? 'Pendiente' : 'Pending'}</span>
                         )}
                       </div>
                     </div>
@@ -497,7 +495,7 @@ export default function PropietarioPerfilPage() {
           {/* Profile Card */}
           <div className="lg:col-span-1 space-y-6">
             <div className="rounded-lg border border-border bg-surface overflow-hidden">
-              <div className="relative bg-[#EEF1FF] dark:bg-[#1A40FF]/12 h-28">
+              <div className="relative bg-[#EEF1FF] h-28">
                 {editingSection !== 'avatar' && (
                   <IconButton
                     variant="ghost"
@@ -530,7 +528,7 @@ export default function PropietarioPerfilPage() {
                       size="sm"
                       onClick={handleAvatarClick}
                       aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
-                      className="absolute bottom-1 right-1 bg-primary text-primary-fg hover:bg-neutral-800 dark:hover:bg-neutral-100"
+                      className="absolute bottom-1 right-1 bg-primary text-primary-fg hover:bg-neutral-800"
                       icon={<Camera className="w-4 h-4" />}
                     />
                   )}
@@ -542,7 +540,7 @@ export default function PropietarioPerfilPage() {
                     onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleAvatarClick}
                     className={cn(
                       "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
-                      isDragging ? "border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15" : "border-border hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 hover:bg-surface-muted"
+                      isDragging ? "border-[#1A40FF]/30 bg-[#EEF1FF]" : "border-border hover:border-[#1A40FF]/30 hover:bg-surface-muted"
                     )}
                   >
                     {avatarPreview ? (
@@ -553,7 +551,7 @@ export default function PropietarioPerfilPage() {
                           </div>
                           <div className="text-left">
                             <p className="text-sm font-medium text-fg">{locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}</p>
-                            <p className="text-xs text-fg-muted">{locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}</p>
+                            <p className="text-caption text-fg-muted">{locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}</p>
                           </div>
                         </div>
                         <IconButton
@@ -567,22 +565,20 @@ export default function PropietarioPerfilPage() {
                       </div>
                     ) : (
                       <>
-                        <div className="w-12 h-12 rounded-xl bg-surface-muted flex items-center justify-center mx-auto mb-3">
-                          <Upload className="w-6 h-6 text-fg-subtle" />
-                        </div>
+                        <Upload className="w-6 h-6 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
                         <p className="text-sm font-medium text-fg-muted">
                           {isDragging ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here') : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
                         </p>
-                        <p className="text-xs text-fg-muted mt-1">{locale === 'es' ? 'Arrastra o haz clic - JPG, PNG (máx. 5MB)' : 'Drag or click - JPG, PNG (max 5MB)'}</p>
+                        <p className="text-caption text-fg-muted mt-1">{locale === 'es' ? 'Arrastra o haz clic - JPG, PNG (máx. 5MB)' : 'Drag or click - JPG, PNG (max 5MB)'}</p>
                       </>
                     )}
                   </div>
                 </Collapse>
 
                 {editingSection === 'avatar' ? (
-                  <Input type="text" value={fullName} onChange={(e) => handleNameChange(e.target.value)} className="text-lg font-semibold" />
+                  <Input type="text" value={fullName} onChange={(e) => handleNameChange(e.target.value)} className="text-lg font-medium" />
                 ) : (
-                  <h2 className="text-xl font-semibold text-fg">{fullName}</h2>
+                  <h2 className="text-h3 text-fg">{fullName}</h2>
                 )}
                 {/* «Propietario desde Enero 2024» era una fecha inventada, igual
                     para todos (Nico, 02-10-2026): no se muestra. */}
@@ -605,27 +601,23 @@ export default function PropietarioPerfilPage() {
                 {!deInmobiliaria && (
                 <div className="mt-6 pt-6 border-t border-border-faint space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-                      <Buildings className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
-                    </div>
+                    <Buildings className="w-5 h-5 text-[#2C7A53] shrink-0" aria-hidden="true" />
                     <div>
                       <p className="text-sm font-medium text-fg">
                         {locale === 'es' ? 'Propiedades publicadas' : 'Published properties'}
                       </p>
-                      <p className="text-xs text-fg-muted">
+                      <p className="text-caption text-fg-muted">
                         {locale === 'es' ? 'Gestiona tus propiedades' : 'Manage your properties'}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
-                    </div>
+                    <FileText className="w-5 h-5 text-[#1A40FF] shrink-0" aria-hidden="true" />
                     <div>
                       <p className="text-sm font-medium text-fg">
                         {locale === 'es' ? 'Contratos activos' : 'Active contracts'}
                       </p>
-                      <p className="text-xs text-fg-muted">
+                      <p className="text-caption text-fg-muted">
                         {locale === 'es' ? 'Arriendos vigentes' : 'Current leases'}
                       </p>
                     </div>
@@ -646,7 +638,7 @@ export default function PropietarioPerfilPage() {
                 cruzan (lo nuevo entra ya, lo viejo sale por encima). */}
             <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-fg">
+                <h3 className="font-medium text-fg">
                   {locale === 'es' ? 'Información personal' : 'Personal information'}
                 </h3>
                 <CrossFade swapKey={editingSection === 'personal' ? 'editar' : 'ver'} mode="popLayout">
@@ -766,7 +758,7 @@ export default function PropietarioPerfilPage() {
             {/* Emergency Contact — mismo cruce que los datos personales. */}
             <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-fg">{locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}</h3>
+                <h3 className="font-medium text-fg">{locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}</h3>
                 <CrossFade swapKey={editingSection === 'emergency' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'emergency' ? (
                   <Button variant="ghost" size="sm" hideArrow onClick={() => setEditingSection('emergency')} className="gap-1.5">
@@ -806,8 +798,8 @@ export default function PropietarioPerfilPage() {
             </div>
 
             {/* Danger Zone */}
-            <div className="rounded-lg border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7]/30 dark:bg-[#C4503B]/20 p-6">
-              <h3 className="font-semibold text-[#C4503B] dark:text-[#E0664D] mb-2 flex items-center gap-2">
+            <div className="rounded-lg border border-[#C4503B]/30 bg-[#F8EAE7]/30 p-6">
+              <h3 className="font-medium text-[#C4503B] mb-2 flex items-center gap-2">
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
@@ -852,7 +844,7 @@ export default function PropietarioPerfilPage() {
                   <DialogTitle>{locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}</DialogTitle>
                   <DialogDescription>
                     {deletionCopy.confirmInstructionPrefix}{' '}
-                    <span className="font-mono font-semibold text-danger">{deletionCopy.confirmWord}</span>{' '}
+                    <span className="font-mono font-medium text-danger">{deletionCopy.confirmWord}</span>{' '}
                     {deletionCopy.confirmInstructionSuffix}
                   </DialogDescription>
                 </>

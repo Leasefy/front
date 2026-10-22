@@ -172,7 +172,7 @@ function TarjetaDeLaCuenta({ ficha, onCambio }: { ficha: CuentaDeGiro; onCambio:
       )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-muted">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-muted">
             <Bank className="h-5 w-5 text-fg-muted" aria-hidden="true" />
           </span>
           <div className="min-w-0">

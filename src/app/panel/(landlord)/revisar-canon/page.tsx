@@ -119,8 +119,8 @@ function Pendiente({ r, onRespondida }: { r: RevisionDelCanonEnElPortal; onRespo
     <Card className="space-y-4 p-5" data-testid="revision-pendiente">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-xs text-fg-muted">{r.inmobiliaria}</p>
-          <h3 className="text-base font-semibold text-fg">{r.inmueble}</h3>
+          <p className="text-caption text-fg-muted">{r.inmobiliaria}</p>
+          <h3 className="text-base font-medium text-fg">{r.inmueble}</h3>
         </div>
         <p className="shrink-0 font-mono text-sm tabular-nums text-fg">Canon {formatCurrency(r.canonActualCop)}</p>
       </div>
@@ -133,14 +133,14 @@ function Pendiente({ r, onRespondida }: { r: RevisionDelCanonEnElPortal; onRespo
         </p>
         <ul className="mt-2 grid gap-1 sm:grid-cols-3" aria-label="Si sigue vacío">
           {r.siSigueVacio.map((s) => (
-            <li key={s.meses} className="text-xs text-fg-muted">
+            <li key={s.meses} className="text-caption text-fg-muted">
               Si sigue vacío {mesesEnPalabras(s.meses)} más:{' '}
               <span className="font-mono tabular-nums text-fg">{formatCurrency(s.cuestaCop)}</span>
             </li>
           ))}
         </ul>
       </div>
-      <p className="text-xs text-fg-muted">
+      <p className="text-caption text-fg-muted">
         Tú decides: tu inmobiliaria no te propone un precio. Si escribes otro canon, ves lo que dejarías de recibir en el año.
       </p>
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -199,7 +199,7 @@ function Pendiente({ r, onRespondida }: { r: RevisionDelCanonEnElPortal; onRespo
           </Button>
         </div>
       </Presence>
-      <p className="text-xs text-fg-muted">Te lo preguntaron el {fecha(r.preguntadaAt)}.</p>
+      <p className="text-caption text-fg-muted">Te lo preguntaron el {fecha(r.preguntadaAt)}.</p>
     </Card>
   );
 }
@@ -208,7 +208,7 @@ function DelHistorial({ r }: { r: RevisionDelCanonEnElPortal }) {
   return (
     <li className="space-y-0.5 py-3" data-testid={`revision-historial-${r.estado}`}>
       <p className="text-sm font-medium text-fg">{r.inmueble}</p>
-      <p className="flex items-center gap-1 text-xs text-fg-muted">
+      <p className="flex items-center gap-1 text-caption text-fg-muted">
         {r.estado === 'ANULADA' ? (
           <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
         ) : r.estado === 'BAJAR' || r.estado === 'AVALUO' ? (
@@ -220,7 +220,7 @@ function DelHistorial({ r }: { r: RevisionDelCanonEnElPortal }) {
         {r.canonPedidoCop !== null ? ` · ${formatCurrency(r.canonPedidoCop)}` : ''}
         {r.respondidaAt ? ` · ${fecha(r.respondidaAt)}` : ''}
       </p>
-      {r.comentario && <p className="text-xs text-fg-muted">«{r.comentario}»</p>}
+      {r.comentario && <p className="text-caption text-fg-muted">«{r.comentario}»</p>}
     </li>
   );
 }
@@ -290,7 +290,7 @@ export default function RevisarCanonPage() {
         >
           {datos && datos.pendientes.length > 0 && (
             <section className="space-y-3" aria-label="Por responder">
-              <h2 className="text-sm font-semibold text-fg">Por responder</h2>
+              <h2 className="text-sm font-medium text-fg">Por responder</h2>
               {datos.pendientes.map((r) => (
                 <Pendiente key={r.id} r={r} onRespondida={() => void cargar()} />
               ))}
@@ -298,7 +298,7 @@ export default function RevisarCanonPage() {
           )}
           {datos && datos.historial.length > 0 && (
             <section aria-label="Historial">
-              <h2 className="text-sm font-semibold text-fg">Historial</h2>
+              <h2 className="text-sm font-medium text-fg">Historial</h2>
               <ul className="divide-y divide-border">
                 {datos.historial.map((r) => (
                   <DelHistorial key={r.id} r={r} />

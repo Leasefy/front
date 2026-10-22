@@ -389,7 +389,7 @@ export default function VisitasPage() {
           </div>
           {visit.rescheduledFrom && (
             <div className="p-3 bg-primary-soft rounded-lg">
-              <p className="text-xs text-primary">{t('landlord.visits.rescheduledNote')}</p>
+              <p className="text-caption text-primary">{t('landlord.visits.rescheduledNote')}</p>
             </div>
           )}
         </div>

@@ -115,7 +115,7 @@ export default function MisCertificadosPage() {
                     ['ReteICA', c.reteIcaCop],
                   ].map(([etiqueta, valor]) => (
                     <div key={String(etiqueta)} className="rounded border border-border bg-bg p-3">
-                      <dt className="text-xs text-fg-muted">{etiqueta}</dt>
+                      <dt className="text-caption text-fg-muted">{etiqueta}</dt>
                       <dd className="font-mono tabular-nums text-fg">
                         {formatCurrency(Number(valor))}
                       </dd>

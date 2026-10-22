@@ -244,7 +244,7 @@ function CheckoutContent() {
                   <Buildings className="w-6 h-6 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-semibold text-foreground">
+                  <h2 className="text-h3 text-foreground">
                     {t('landlord.checkout.planLabel', { name: plan.name })}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-0.5">
@@ -286,7 +286,7 @@ function CheckoutContent() {
                   label={
                     <span className="block">
                       <span className="block">{t('landlord.checkout.monthly')}</span>
-                      <span className="block mt-1 text-lg font-bold text-foreground">
+                      <span className="block mt-1 text-lg font-medium text-foreground">
                         {precioLegible(plan.price.monthly)}
                         <span className="text-sm font-normal text-muted-foreground">{t('landlord.checkout.perMonth')}</span>
                       </span>
@@ -298,7 +298,7 @@ function CheckoutContent() {
                   className="flex-1"
                   badge={
                     ahorroAnual > 0 ? (
-                      <span className="px-2 py-0.5 text-xs font-medium bg-success text-white rounded-sm">
+                      <span className="px-2 py-0.5 text-caption font-medium bg-success text-white rounded-sm">
                         {t('landlord.checkout.yearlySaving', { percent: ahorroAnual })}
                       </span>
                     ) : undefined
@@ -306,7 +306,7 @@ function CheckoutContent() {
                   label={
                     <span className="block">
                       <span className="block">{t('landlord.checkout.yearly')}</span>
-                      <span className="block mt-1 text-lg font-bold text-foreground">
+                      <span className="block mt-1 text-lg font-medium text-foreground">
                         {precioLegible(plan.price.yearly)}
                         <span className="text-sm font-normal text-muted-foreground">{t('landlord.checkout.perYear')}</span>
                       </span>
@@ -536,7 +536,7 @@ function CheckoutContent() {
               </Button>
 
               {/* Security note */}
-              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center justify-center gap-2 text-caption text-muted-foreground">
                 <Lock className="w-3 h-3" />
                 <span>{t('landlord.checkout.securePayment')}</span>
               </div>

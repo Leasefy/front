@@ -16,7 +16,7 @@ import { motion } from 'framer-motion';
 import { AnimatedNumber, Collapse, CrossFade, Presence } from '@leasefy/cadence';
 import { useEntradaTrasCargar, useHuboEsqueleto } from '@/components/portales/use-entrada-tras-cargar';
 import { AparecerSi } from '@/components/portales/AparecerSi';
-import { Buildings, Users, Clock, WarningCircle, CurrencyDollar, House, TrendUp, Calendar, ArrowUpRight, CaretDown, CaretRight, PencilLine, CreditCard, UserCheck, CalendarCheck, CalendarBlank, MapPin, Phone, Chat, X, Plus, Eye, FileText, ChartBarHorizontal, ChartBar, Wallet, Bell, CheckCircle, Star, Check } from '@phosphor-icons/react';
+import { Buildings, Users, Clock, WarningCircle, CurrencyDollar, TrendUp, Calendar, ArrowUpRight, CaretDown, CaretRight, CreditCard, UserCheck, CalendarCheck, CalendarBlank, MapPin, Chat, Plus, FileText, ChartBar, Bell, CheckCircle, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { BrandDot, BrandContour, MonoLabel, StatusBadge, SEMANTIC, type SemanticTone } from '@/components/brand';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -61,10 +61,10 @@ function UrgentActionsBanner({ actions, entra }: { actions: DashboardUrgentActio
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded(!expanded)}
-        className="w-full p-4 flex items-center gap-3 hover:bg-[rgba(0,0,0,0.03)] dark:hover:bg-white/[0.04] transition-colors"
+        className="w-full p-4 flex items-center gap-3 hover:bg-[rgba(0,0,0,0.03)] transition-colors"
       >
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: SEMANTIC.warning.soft }}
         >
           <WarningCircle className="w-5 h-5" style={{ color: SEMANTIC.warning.fg }} />
@@ -73,7 +73,7 @@ function UrgentActionsBanner({ actions, entra }: { actions: DashboardUrgentActio
           <p className="text-sm font-medium text-fg">
             {t('landlord.dashboard.pendingActions', { count: actions.length })}
           </p>
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {actions[0]?.description}
           </p>
         </div>
@@ -93,17 +93,17 @@ function UrgentActionsBanner({ actions, entra }: { actions: DashboardUrgentActio
               <Link
                 key={action.id}
                 href={action.href}
-                className="flex items-center gap-3 p-3 rounded-lg border border-border-faint hover:bg-[rgba(0,0,0,0.03)] dark:hover:bg-white/[0.04] transition-colors"
+                className="flex items-center gap-3 p-3 rounded-lg border border-border-faint hover:bg-[rgba(0,0,0,0.03)] transition-colors"
               >
                 <span className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: c.soft }}>
                   <Icon className="w-4 h-4" style={{ color: c.fg }} />
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-fg">{action.title}</p>
-                  <p className="text-xs text-fg-muted">{action.description}</p>
+                  <p className="text-caption text-fg-muted">{action.description}</p>
                 </div>
                 <span
-                  className="font-mono text-[10.5px] font-semibold px-2 py-0.5 rounded-full tabular-nums"
+                  className="font-mono text-caption font-medium px-2 py-0.5 rounded-full tabular-nums"
                   style={{ backgroundColor: c.soft, color: c.fg }}
                 >
                   {action.count}
@@ -325,7 +325,7 @@ function PanelDelPropietarioIndependiente() {
               <BrandDot />
               <MonoLabel className="text-[11px] font-medium text-primary">{greeting}</MonoLabel>
             </span>
-            <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-fg tracking-tight">
+            <h1 className="text-h2 text-fg [text-wrap:balance]">
               {t('dashboard.hello', { name: firstName })}
             </h1>
           </header>
@@ -404,7 +404,7 @@ function PanelDelPropietarioIndependiente() {
                 {greeting}
               </MonoLabel>
             </span>
-            <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-fg tracking-tight">
+            <h1 className="text-h2 text-fg [text-wrap:balance]">
               {t('dashboard.hello', { name: firstName })}
             </h1>
           </div>
@@ -422,7 +422,7 @@ function PanelDelPropietarioIndependiente() {
               <BrandContour />
             </div>
             <div className="flex items-start justify-between mb-4">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
                 <CurrencyDollar className="w-5 h-5 text-white/90" />
               </div>
               <Presence
@@ -430,7 +430,7 @@ function PanelDelPropietarioIndependiente() {
                 show={!isLoading}
                 initial={false}
                 distance="xs"
-                className="px-2.5 py-1 text-white/90 text-xs font-medium rounded-full flex items-center gap-1"
+                className="px-2.5 py-1 text-white/90 text-caption font-medium rounded-full flex items-center gap-1"
                 style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}
               >
                   <TrendUp className="w-3 h-3" weight="bold" />
@@ -441,7 +441,7 @@ function PanelDelPropietarioIndependiente() {
             {isLoading ? (
               <Skeleton className="h-9 w-36 rounded-md bg-white/10" />
             ) : (
-              <p className="font-heading text-[28px] font-semibold text-white tracking-tight tabular-nums leading-none">
+              <p className="font-mono text-[28px] font-normal text-white tabular-nums leading-none">
                 <AnimatedNumber
                   value={dashboardData.financial.monthlyIncome}
                   from={huboCarga ? 0 : undefined}
@@ -460,14 +460,12 @@ function PanelDelPropietarioIndependiente() {
 
           {/* Properties */}
           <div className="rounded-lg bg-surface-muted p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <Buildings className="w-5 h-5 text-fg-muted" />
-            </div>
+            <Buildings className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
             <p className="text-sm text-fg-muted mb-1">{t('landlord.dashboard.properties')}</p>
             {isLoading ? (
               <Skeleton className="h-9 w-12 rounded-md" />
             ) : (
-              <p className="text-3xl font-bold text-fg tracking-tight">
+              <p className="font-mono text-h2 tabular-nums text-fg">
                 <AnimatedNumber value={properties.length} from={huboCarga ? 0 : undefined} />
               </p>
             )}
@@ -482,14 +480,12 @@ function PanelDelPropietarioIndependiente() {
 
           {/* Candidates */}
           <div className="rounded-lg bg-surface-muted p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <Users className="w-5 h-5 text-fg-muted" />
-            </div>
+            <Users className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
             <p className="text-sm text-fg-muted mb-1">{t('landlord.dashboard.candidates')}</p>
             {isLoading ? (
               <Skeleton className="h-9 w-12 rounded-md" />
             ) : (
-              <p className="text-3xl font-bold text-fg tracking-tight">
+              <p className="font-mono text-h2 tabular-nums text-fg">
                 <AnimatedNumber value={totalCandidates} from={huboCarga ? 0 : undefined} />
               </p>
             )}
@@ -507,9 +503,7 @@ function PanelDelPropietarioIndependiente() {
 
           {/* Collection Rate */}
           <div className="rounded-lg bg-surface-muted p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <ChartBar className="w-5 h-5 text-fg-muted" />
-            </div>
+            <ChartBar className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
             <p className="text-sm text-fg-muted mb-1">{t('landlord.dashboard.collectionRate')}</p>
             {isLoading ? (
               <>
@@ -519,7 +513,7 @@ function PanelDelPropietarioIndependiente() {
             ) : (
               <>
                 <div className="flex items-center gap-2">
-                  <p className="font-heading text-3xl font-semibold text-fg tracking-tight tabular-nums">
+                  <p className="font-mono text-h2 tabular-nums text-fg">
                     <AnimatedNumber
                       value={dashboardData.financial.collectionRate}
                       from={huboCarga ? 0 : undefined}
@@ -550,7 +544,7 @@ function PanelDelPropietarioIndependiente() {
             {/* Properties Section */}
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-fg">{t('landlord.dashboard.myProperties')}</h2>
+                <h2 className="text-h3 text-fg">{t('landlord.dashboard.myProperties')}</h2>
                 <Link
                   href="/panel/propiedades"
                   className="text-sm text-fg-muted hover:text-fg font-medium flex items-center gap-1 transition-colors"
@@ -631,7 +625,7 @@ function PanelDelPropietarioIndependiente() {
                               <div className="flex-1 p-5">
                                 <div className="flex items-start justify-between mb-2">
                                   <div>
-                                    <h3 className="text-lg font-semibold text-fg group-hover:text-primary transition-colors">
+                                    <h3 className="text-lg font-medium text-fg group-hover:text-primary transition-colors">
                                       {property.title}
                                     </h3>
                                     <p className="text-sm text-fg-muted mt-0.5 flex items-center gap-1.5">
@@ -641,11 +635,11 @@ function PanelDelPropietarioIndependiente() {
                                   </div>
                                   <div className="text-right">
                                     {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
-                                    <p className="text-lg font-bold text-fg">
+                                    <p className="font-mono text-body tabular-nums text-fg">
                                       {property.monthlyRent != null ? i18nFormatCurrency(property.monthlyRent) : '—'}
                                     </p>
                                     {property.monthlyRent != null && (
-                                      <p className="text-xs text-fg-muted">/{t('landlord.dashboard.perMonth')}</p>
+                                      <p className="text-caption text-fg-muted">/{t('landlord.dashboard.perMonth')}</p>
                                     )}
                                   </div>
                                 </div>
@@ -671,7 +665,7 @@ function PanelDelPropietarioIndependiente() {
                                           }}
                                         />
                                       </div>
-                                      <span className="text-xs text-fg-muted">
+                                      <span className="text-caption text-fg-muted">
                                         {goodCandidatePercent}% A-B
                                       </span>
                                     </div>
@@ -702,10 +696,8 @@ function PanelDelPropietarioIndependiente() {
                 <FalloDeCarga error={propertiesError} queEs="tus inmuebles" onReintentar={recargarPropiedades} />
               ) : (
                 <div className="rounded-lg bg-surface-muted py-14 px-6 text-center">
-                  <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center mx-auto mb-5">
-                    <Buildings className="w-6 h-6 text-fg-subtle" />
-                  </div>
-                  <h3 className="text-base font-semibold text-foreground mb-1.5">
+                  <Buildings className="w-6 h-6 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
+                  <h3 className="text-base font-medium text-foreground mb-1.5">
                     {t('landlord.dashboard.noPublishedProperties')}
                   </h3>
                   <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-6">
@@ -729,7 +721,7 @@ function PanelDelPropietarioIndependiente() {
                   className="flex items-center justify-center gap-2 mt-4 px-5 py-3 rounded-lg border border-border text-sm font-medium text-fg-muted hover:bg-surface-hover hover:text-fg transition-colors"
                 >
                   {t('landlord.dashboard.viewAllProperties')}
-                  <span className="px-2 py-0.5 bg-surface-muted rounded-full text-xs">
+                  <span className="px-2 py-0.5 bg-surface-muted rounded-full text-caption">
                     {t('landlord.dashboard.moreCount', { count: properties.length - 3 })}
                   </span>
                 </Link>
@@ -739,7 +731,7 @@ function PanelDelPropietarioIndependiente() {
             {/* Recent Activity */}
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-fg">{t('landlord.dashboard.recentActivity')}</h2>
+                <h2 className="text-h3 text-fg">{t('landlord.dashboard.recentActivity')}</h2>
               </div>
 
               {/* Cargando → actividad: la caja entera se cruza (es la misma lista con `divide-y`). */}
@@ -750,7 +742,7 @@ function PanelDelPropietarioIndependiente() {
                 {dashboardLoading ? (
                   [0, 1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center gap-4 p-4">
-                      <Skeleton className="w-10 h-10 rounded-xl flex-shrink-0" />
+                      <Skeleton className="w-10 h-10 rounded-lg flex-shrink-0" />
                       <div className="flex-1 space-y-2">
                         <Skeleton className="h-4 w-48 rounded" />
                         <Skeleton className="h-3 w-32 rounded" />
@@ -761,7 +753,7 @@ function PanelDelPropietarioIndependiente() {
                 ) : dashboardData.recentActivity.length > 0 ? (
                   dashboardData.recentActivity.slice(0, 5).map((activity) => (
                     <div key={activity.id} className="flex items-center gap-4 p-4 hover:bg-surface-hover transition-colors">
-                      <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-surface flex items-center justify-center flex-shrink-0">
                         {activity.type === 'application' && <FileText className="w-5 h-5 text-fg-muted" />}
                         {activity.type === 'status_change' && <CheckCircle className="w-5 h-5 text-fg-muted" />}
                         {activity.type === 'message' && <Chat className="w-5 h-5 text-fg-muted" />}
@@ -774,11 +766,11 @@ function PanelDelPropietarioIndependiente() {
                         <p className="text-sm font-medium text-fg truncate">
                           {activity.title}
                         </p>
-                        <p className="text-xs text-fg-muted truncate">
+                        <p className="text-caption text-fg-muted truncate">
                           {activity.description}
                         </p>
                       </div>
-                      <span className="text-xs text-fg-subtle whitespace-nowrap">
+                      <span className="text-caption text-fg-subtle whitespace-nowrap">
                         {activity.timestamp}
                       </span>
                     </div>
@@ -819,7 +811,7 @@ function PanelDelPropietarioIndependiente() {
                 </>
               ) : (
                 <>
-                  <p className="text-3xl font-bold tracking-tight text-fg">
+                  <p className="font-mono text-h2 tabular-nums text-fg">
                     <AnimatedNumber
                       value={dashboardData.financial.monthlyIncome}
                       from={huboCarga ? 0 : undefined}
@@ -854,7 +846,6 @@ function PanelDelPropietarioIndependiente() {
                     className="inline-flex items-center gap-1.5 mt-4 text-sm text-primary hover:opacity-80 font-medium transition-opacity"
                   >
                     {t('landlord.dashboard.viewDetails')}
-                    <ArrowUpRight className="w-4 h-4" />
                   </Link>
                 </>
               )}
@@ -863,7 +854,7 @@ function PanelDelPropietarioIndependiente() {
 
             {/* Quick Actions */}
             <div className="rounded-lg bg-surface-muted p-5">
-              <h3 className="font-semibold text-fg mb-4">{t('landlord.dashboard.quickActions')}</h3>
+              <h3 className="font-medium text-fg mb-4">{t('landlord.dashboard.quickActions')}</h3>
               <div className="space-y-2">
                 {[
                   { href: '/publicar?from=panel', icon: Plus, label: t('landlord.dashboard.newProperty'), desc: t('landlord.dashboard.publishAProperty') },
@@ -873,14 +864,12 @@ function PanelDelPropietarioIndependiente() {
                 ].map((action) => (
                   <Link key={action.href} href={action.href}>
                     <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-hover transition-colors group">
-                      <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center transition-shadow">
-                        <action.icon className="w-5 h-5 text-fg-muted" />
-                      </div>
+                      <action.icon className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-fg group-hover:text-primary transition-colors">
                           {action.label}
                         </p>
-                        <p className="text-xs text-fg-muted truncate">{action.desc}</p>
+                        <p className="text-caption text-fg-muted truncate">{action.desc}</p>
                       </div>
                       {action.badge && (
                         <span className="w-2 h-2 rounded-full bg-primary" />
@@ -979,7 +968,7 @@ function UpcomingVisitsCard({ visits, entra }: { visits: Visit[]; entra: boolean
   return (
     <>
       <AparecerSi si={entra} className="rounded-lg bg-surface-muted p-5">
-        <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
+        <h3 className="font-medium text-fg mb-4 flex items-center gap-2">
           <CalendarBlank className="w-4 h-4 text-fg-muted" />
           {t('landlord.dashboard.upcomingVisits')}
         </h3>
@@ -993,7 +982,7 @@ function UpcomingVisitsCard({ visits, entra }: { visits: Visit[]; entra: boolean
               <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', VISIT_STATUS_COLORS[visit.status] || 'bg-primary')} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-fg truncate">{visit.candidateName}</p>
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   {i18nFmtDate(visit.requestedDate + 'T12:00:00', {
                     day: 'numeric',
                     month: 'short',
@@ -1007,7 +996,7 @@ function UpcomingVisitsCard({ visits, entra }: { visits: Visit[]; entra: boolean
         {visits.length > 3 && (
           <Link
             href="/panel/visitas"
-            className="block mt-3 text-center text-xs text-fg-muted hover:text-fg transition-colors"
+            className="block mt-3 text-center text-caption text-fg-muted hover:text-fg transition-colors"
           >
             {t('landlord.dashboard.viewAllVisits')} →
           </Link>
@@ -1121,7 +1110,7 @@ function UpcomingEventsCard({ events, entra }: { events: DashboardUpcomingEvent[
   return (
     <>
       <AparecerSi si={entra} className="rounded-lg bg-surface-muted p-5">
-        <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
+        <h3 className="font-medium text-fg mb-4 flex items-center gap-2">
           <Calendar className="w-4 h-4 text-fg-muted" />
           {t('landlord.dashboard.upcomingEvents')}
         </h3>
@@ -1137,7 +1126,7 @@ function UpcomingEventsCard({ events, entra }: { events: DashboardUpcomingEvent[
                 <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', dotColor)} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-fg truncate">{event.title}</p>
-                  <p className="text-xs text-fg-muted">
+                  <p className="text-caption text-fg-muted">
                     {i18nFmtDate(event.date + 'T12:00:00', {
                       day: 'numeric',
                       month: 'short',

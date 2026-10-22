@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Users, MagnifyingGlass, Buildings, UserCheck, UserMinus, Eye, FileText, Chat, Warning, Question, CaretDown, Shield, Briefcase, CreditCard, House, Scales, UserPlus, Clock, CheckCircle, XCircle } from '@phosphor-icons/react';
+import { Users, MagnifyingGlass, Buildings, UserCheck, UserMinus, Chat, Warning, Question, CaretDown, Shield, Briefcase, CreditCard, House, Scales, UserPlus, CheckCircle, XCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
@@ -88,7 +88,7 @@ function ScoringGuide() {
         <div className="mt-4 bg-surface rounded-lg border border-border overflow-hidden">
           {/* Header */}
           <div className="px-6 py-5 border-b border-border-faint bg-surface-muted">
-            <h3 className="text-base font-semibold text-fg">{t('landlord.candidates.scoringGuideTitle')}</h3>
+            <h3 className="text-base font-medium text-fg">{t('landlord.candidates.scoringGuideTitle')}</h3>
             <p className="text-sm text-fg-muted mt-1">
               {t('landlord.candidates.scoringGuideDescription')}
             </p>
@@ -103,15 +103,13 @@ function ScoringGuide() {
                   const Icon = cat.icon;
                   return (
                     <div key={cat.labelKey} className="flex gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-4 h-4 text-primary" />
-                      </div>
+                      <Icon className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
                           <span className="text-sm font-medium text-fg">{t(cat.labelKey)}</span>
-                          <span className="text-xs text-fg-subtle">{t('landlord.candidates.weight', { weight: cat.weight })}</span>
+                          <span className="text-caption text-fg-subtle">{t('landlord.candidates.weight', { weight: cat.weight })}</span>
                         </div>
-                        <p className="text-xs text-fg-muted mt-0.5 leading-relaxed">{t(cat.descKey)}</p>
+                        <p className="text-caption text-fg-muted mt-0.5 leading-relaxed">{t(cat.descKey)}</p>
                       </div>
                     </div>
                   );
@@ -126,21 +124,21 @@ function ScoringGuide() {
                 {RISK_LEVEL_DETAILS.map((risk) => (
                   <div key={risk.level} className={cn('p-3 rounded-lg', risk.bgColor)}>
                     <div className="flex items-center gap-3 mb-1">
-                      <span className={cn('w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-white', risk.color)}>
+                      <span className={cn('w-7 h-7 rounded-md flex items-center justify-center text-caption font-medium text-white', risk.color)}>
                         {risk.level}
                       </span>
                       <div>
-                        <span className={cn('text-sm font-semibold', risk.textColor)}>{t(risk.labelKey)}</span>
-                        <span className="text-xs text-fg-subtle ml-2">{t('landlord.candidates.scoreRange', { range: risk.range })}</span>
+                        <span className={cn('text-sm font-medium', risk.textColor)}>{t(risk.labelKey)}</span>
+                        <span className="text-caption text-fg-subtle ml-2">{t('landlord.candidates.scoreRange', { range: risk.range })}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-fg-muted leading-relaxed ml-10">{t(risk.descKey)}</p>
+                    <p className="text-caption text-fg-muted leading-relaxed ml-10">{t(risk.descKey)}</p>
                   </div>
                 ))}
               </div>
 
               <div className="mt-4 p-3 bg-warning-soft rounded-lg">
-                <p className="text-xs text-warning leading-relaxed">
+                <p className="text-caption text-warning leading-relaxed">
                   <strong>{t('landlord.candidates.scoringNoteLabel')}</strong> {t('landlord.candidates.scoringNote')}
                 </p>
               </div>
@@ -306,7 +304,7 @@ export default function CandidatosPage() {
               variant={row.numericScore >= 70 ? 'success' : row.numericScore >= 50 ? 'warning' : 'danger'}
             />
           </div>
-          <span className="text-xs text-fg-muted">{row.numericScore}</span>
+          <span className="text-caption text-fg-muted">{row.numericScore}</span>
         </div>
       ),
     },
@@ -432,7 +430,7 @@ export default function CandidatosPage() {
           <div className="flex items-center justify-between">
             <PlanRiskBadge level={candidate.riskLevel} />
             <div className="text-right">
-              <span className="text-2xl font-bold font-mono tabular-nums text-fg">{candidate.numericScore}</span>
+              <span className="text-h3 font-normal font-mono tabular-nums text-fg">{candidate.numericScore}</span>
               <span className="text-sm text-fg-muted">/100</span>
             </div>
           </div>
@@ -445,7 +443,7 @@ export default function CandidatosPage() {
             <div className="space-y-2 pt-2">
               {candidate.riskScore.categories.map(cat => (
                 <div key={cat.name}>
-                  <div className="flex justify-between text-xs mb-1">
+                  <div className="flex justify-between text-caption mb-1">
                     <span className="text-fg-muted">{cat.label}</span>
                     <span className="font-medium text-fg">{cat.score}%</span>
                   </div>
@@ -479,7 +477,7 @@ export default function CandidatosPage() {
           </div>
           <div className="flex justify-between py-2 bg-success-soft px-3 -mx-3 rounded-md">
             <span className="text-sm text-success">{t('landlord.candidates.availableForRent')}</span>
-            <span className="text-sm font-semibold text-success">{formatCurrencyOrDash(candidate.availableForRent)}</span>
+            <span className="font-mono text-sm tabular-nums text-success">{formatCurrencyOrDash(candidate.availableForRent)}</span>
           </div>
         </div>
       ),
@@ -527,7 +525,7 @@ export default function CandidatosPage() {
               <div>
                 <p>{flag.message}</p>
                 {flag.suggestion && (
-                  <p className="text-xs opacity-75 mt-1">{flag.suggestion}</p>
+                  <p className="text-caption opacity-75 mt-1">{flag.suggestion}</p>
                 )}
               </div>
             </div>
@@ -616,7 +614,7 @@ export default function CandidatosPage() {
                 <span className="flex items-center gap-2">
                   {tab.label}
                   {tab.count !== undefined && tab.count > 0 && (
-                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-surface-muted text-fg-muted tabular-nums">
+                    <span className="text-caption px-1.5 py-0.5 rounded-full bg-surface-muted text-fg-muted tabular-nums">
                       {tab.count}
                     </span>
                   )}

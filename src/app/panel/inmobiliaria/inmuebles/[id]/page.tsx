@@ -652,7 +652,9 @@ function ConsignacionDetailContent() {
           ) : null
         }
         onAgendarVisita={!terminada && !contratoVigente && consignacion.propertyId ? () => setShowCitaModal(true) : undefined}
-        franja={
+        // 22-10 (revisión): con el mandato terminado no hay inquilino ni asesor que mostrar;
+        // la portada ya dice cuándo terminó.
+        franja={terminada ? undefined :
           <FranjaDelArriendo
             consignacion={consignacion}
             asesor={
@@ -715,7 +717,7 @@ function ConsignacionDetailContent() {
                         property={property}
                         cargando={cargandoProperty}
                         onEditar={terminada ? undefined : handleEdit}
-                        loQueFaltaEnLaLista={!terminada && !contratoVigente}
+                        loQueFaltaEnLaLista
                         className={clase}
                         // Sin coordenadas, la ubicación es un renglón de «Lo que falta» (arriba);
                         // con el mandato terminado se dice aquí, sin acción que ofrecer.

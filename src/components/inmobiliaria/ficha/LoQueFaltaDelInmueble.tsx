@@ -64,6 +64,8 @@ export function LoQueFaltaDelInmueble({
   const firmas = useCrm(() => captacionApi.firmas(consignacion.id), [consignacion.id], ['portafolio']);
 
   const requisitos: Requisito[] = [];
+  // 22-10 (revisión): en una venta los textos hablan de vender, no de arrendar.
+  const esVenta = consignacion.listingType === 'sale';
 
   // 1 · La firma del mandato.
   const lasFirmas = firmas.datos?.firmas ?? [];
@@ -72,7 +74,7 @@ export function LoQueFaltaDelInmueble({
   requisitos.push({
     id: 'firma',
     titulo: 'El mandato está firmado',
-    detalle: firmado ? undefined : pendiente ? `Se le mandó el enlace a ${pendiente.firmanteNombre}; falta que firme.` : 'Lo firma el propietario: es lo que te autoriza a administrar y arrendar.',
+    detalle: firmado ? undefined : pendiente ? `Se le mandó el enlace a ${pendiente.firmanteNombre}; falta que firme.` : esVenta ? 'Lo firma el propietario: es lo que te autoriza a venderlo.' : 'Lo firma el propietario: es lo que te autoriza a administrar y arrendar.',
     estado: firmas.cargando && !firmas.datos ? 'cargando' : firmas.noHabilitado || firmas.errorCrudo || firmas.datos?.disponible === false ? 'desconocido' : firmado ? 'listo' : 'falta',
     accion: (
       <Button size="sm" variant="secondary" hideArrow asChild>
@@ -141,7 +143,7 @@ export function LoQueFaltaDelInmueble({
     requisitos.push({
       id: 'caracteristicas',
       titulo: 'La ficha tiene área, habitaciones y baños',
-      detalle: faltanLasBasicas ? 'Es lo primero que busca quien arrienda.' : undefined,
+      detalle: faltanLasBasicas ? (esVenta ? 'Es lo primero que busca quien compra.' : 'Es lo primero que busca quien arrienda.') : undefined,
       estado: cargandoProperty && !property ? 'cargando' : !property ? 'desconocido' : faltanLasBasicas ? 'falta' : 'listo',
       accion:
         property && puedeEditar ? (

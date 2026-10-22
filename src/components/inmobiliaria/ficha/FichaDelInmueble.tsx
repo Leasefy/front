@@ -93,7 +93,7 @@ export function FichaDelInmueble({ property, cargando = false, ubicacion, onEdit
             {property
               ? caracteristicas.length > 0
                 ? tr('Faltan el área, las habitaciones y los baños: es lo primero que busca quien arrienda.')
-                : tr('Sin área, habitaciones ni baños cargados. Complétalos y el aviso público los muestra.')
+                : tr('Sin área, habitaciones ni baños cargados.')
               : tr('No pudimos traer los datos del inmueble.')}
           </p>
           {property && onEditar ? (

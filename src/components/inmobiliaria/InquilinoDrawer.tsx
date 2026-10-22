@@ -69,6 +69,7 @@
  *    busca a la persona en el banco y en la migración.
  */
 
+import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha';
 import { useMemo, useRef } from 'react';
 import Link from 'next/link';
 import {
@@ -283,10 +284,13 @@ function CajonDeInquilino({
 export function CuerpoDelCajon({
   detalle,
   onEditar,
+  enFicha = false,
 }: {
   detalle: NonNullable<ReturnType<typeof useInquilinoDetalle>>;
   /** E-16: «Editar datos». Sin él (o sin `contratos:edit`), no hay botón. */
   onEditar?: (persona: Inquilino) => void;
+  /** En la ficha propia (`/inquilinos/[id]`): los bloques van en pestañas (Nico, 21-10). */
+  enFicha?: boolean;
 }) {
   const { t, formatCurrency, formatDate, locale } = useI18n();
   /*
@@ -372,120 +376,17 @@ export function CuerpoDelCajon({
       )}`
     : null;
 
-  return (
+  // GLOW UP (21-10-2026): los bloques del cuerpo como piezas, para el cajón (como siempre)
+  // y para la ficha del inquilino en pestañas (Nico eligió «ficha propia con pestañas»).
+  const bloqueWhatsapp = (
     <>
-      {/* Sin `title`: el título accesible lo pone el envoltorio (este cuerpo se
-          monta en un test sin el contexto del Sheet). */}
-      <SheetHeader>
-        {/* Con «Editar datos» y «Enviar mensaje», a 390 px no caben al lado del
-            nombre: las acciones bajan a su propio renglón en vez de apretarlo
-            letra por letra (I-28). */}
-        <div className="flex flex-wrap items-start gap-3">
-          {/* GLOW UP (21-10): el Avatar de Cadence 2, el mismo que lo acompaña en la lista y en Contratos. */}
-          <span aria-hidden="true" className="shrink-0">
-            <Avatar name={persona.nombre} />
-          </span>
-          <div className="min-w-0 flex-1 basis-[12rem]">
-            {/* UN solo encabezado con el nombre: el accesible es el
-                `SheetTitle` del envoltorio (un `h2`). Éste era otro `h2` con
-                el mismo texto. Y se ajusta en dos renglones: a 390 px se
-                cortaba en «Ana So…». */}
-            <p className="break-words text-lg font-semibold leading-snug text-fg" data-testid="inquilino-cajon-nombre">
-              {persona.nombre}
-            </p>
-            <p className="mt-0.5 text-xs text-fg-subtle">
-              {sinArriendos
-                ? t('inquilinos.sinArriendo')
-                : persona.arriendos.length === 1
-                  ? t('inquilinos.conteoArriendoUno', { vigentes: textoDeVigentes(t, vigentes.length) })
-                  : t('inquilinos.conteoArriendos', {
-                      n: persona.arriendos.length,
-                      vigentes: textoDeVigentes(t, vigentes.length),
-                    })}
-            </p>
-          </div>
-          {/* Escribirle sin salir de la ficha, por su CUENTA del portal. Sin
-              cuenta no hay dónde escribirle, y se dice (I-22, Nico: la cuenta
-              se crea desde el contrato; acá no se invita). */}
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            {puedeEditar ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                hideArrow
-                onClick={() => onEditar?.(persona)}
-                data-testid="inquilino-editar"
-              >
-                <PencilSimple className="h-4 w-4" aria-hidden="true" />
-                {t(`${NS}.editarDatos`)}
-              </Button>
-            ) : null}
-            {idDeLaCuenta ? (
-              <BotonEnviarMensaje counterpartId={idDeLaCuenta} />
-            ) : (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-muted/40 px-2.5 py-1.5 text-sm text-fg-muted"
-                title={t(`${NS}.sinCuentaDelPortalPorQue`)}
-                data-testid="inquilino-sin-cuenta"
-              >
-                <UserCircleMinus className="h-4 w-4 shrink-0" aria-hidden="true" />
-                {t(`${NS}.sinCuentaDelPortal`)}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* El contacto se acciona: escribirle, llamarlo o copiar el dato para
-            pegarlo en el banco. Texto suelto obliga a transcribir a mano un
-            correo, que es como se le termina escribiendo a la persona
-            equivocada. */}
-        <div className="mt-3.5 flex flex-wrap items-center gap-2">
-          {persona.email ? (
-            <DatoDeContacto
-              icono={Envelope}
-              valor={persona.email}
-              href={`mailto:${persona.email}`}
-              accion={t(`${NS}.escribirCorreo`)}
-            />
-          ) : null}
-          {persona.telefono ? (
-            <DatoDeContacto
-              icono={Phone}
-              valor={persona.telefono}
-              href={`tel:${persona.telefono}`}
-              accion={t(`${NS}.llamar`)}
-              mono
-            />
-          ) : null}
-          {persona.documento ? (
-            <DatoDeContacto
-              icono={IdentificationCard}
-              // I-14: el NIT con su dígito de verificación (algoritmo DIAN).
-              valor={documentoParaMostrar(persona.documento, persona.tipoDocumento)}
-              accion={t(`${NS}.documento`)}
-              mono
-            />
-          ) : null}
-          {/* T-0128: el documento puede faltar si lo creó la migración. */}
-          <DatosPorCompletar pendientes={persona.datosPendientes} />
-          {/* Sin correo ni teléfono no es un detalle: es a quién no se le
-              puede cobrar ni avisar. Va en la cabecera, no escondido. */}
-          {!persona.email && !persona.telefono ? (
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning-soft/40 px-2.5 py-1.5 text-sm text-warning">
-              <Warning className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {t('inquilinos.sinContacto')}
-            </span>
-          ) : null}
-        </div>
-      </SheetHeader>
-
-      <SheetBody>
         {/* El permiso para escribirle por WhatsApp desde el chat (2026-09-12).
             Apagado por defecto: tener su teléfono no autoriza el canal. */}
         <InterruptorDeWhatsapp personaId={idDeLaCuenta} className="mb-4" />
-        {/* La ficha del archivo de su sistema anterior (Nico, 13-10-2026). */}
-        {detalle.persona.ficha ? (
+    </>
+  );
+  // La ficha del archivo de su sistema anterior (Nico, 13-10-2026).
+  const bloqueAnterior = detalle.persona.ficha ? (
           <dl className="mb-4 grid grid-cols-1 gap-x-4 gap-y-1.5 rounded-lg border border-border p-3 text-sm sm:grid-cols-2" data-testid="ficha-del-archivo">
             <dt className="text-caption text-fg-muted sm:col-span-2">Datos de su sistema anterior</dt>
             {detalle.persona.ficha.direccion ? (
@@ -513,8 +414,8 @@ export function CuerpoDelCajon({
               <dd className="whitespace-pre-line text-fg-muted sm:col-span-2">{detalle.persona.ficha.notas}</dd>
             ) : null}
           </dl>
-        ) : null}
-        {sinArriendos ? (
+        ) : null;
+  const bloqueSinArriendos = (
           <div className="space-y-3">
             {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}
             {/* Cargando → el vacío: se cruzan (fundido; el vacío trae su
@@ -546,8 +447,9 @@ export function CuerpoDelCajon({
               )}
             </CrossFade>
           </div>
-        ) : (
-          <div className="space-y-7">
+  );
+  const bloqueDeuda = (
+    <>
             {/* La franja. Sin cajas: la jerarquía la pone el dato, no el borde.
                 Los dos números de plata salen del ESTADO DE CUENTA, no de los
                 cobros: la deuda nace con el contrato. */}
@@ -678,7 +580,9 @@ export function CuerpoDelCajon({
                 </Button>
               ) : null}
             </div>
-
+    </>
+  );
+  const bloqueArriendos = (
             <Seccion
               titulo={t(`${NS}.arriendos`)}
               conteo={persona.arriendos.length}
@@ -711,7 +615,8 @@ export function CuerpoDelCajon({
                 ))}
               </Stagger>
             </Seccion>
-
+  );
+  const bloquePagos = (
             <div data-testid="inquilino-cajon-pagos">
               <Seccion
                 titulo={t(`${NS}.cobrosEmitidos`)}
@@ -810,7 +715,144 @@ export function CuerpoDelCajon({
                 </CrossFade>
               </Seccion>
             </div>
+  );
+
+  return (
+    <>
+      {/* Sin `title`: el título accesible lo pone el envoltorio (este cuerpo se
+          monta en un test sin el contexto del Sheet). */}
+      <SheetHeader>
+        {/* Con «Editar datos» y «Enviar mensaje», a 390 px no caben al lado del
+            nombre: las acciones bajan a su propio renglón en vez de apretarlo
+            letra por letra (I-28). */}
+        <div className="flex flex-wrap items-start gap-3">
+          {/* GLOW UP (21-10): el Avatar de Cadence 2, el mismo que lo acompaña en la lista y en Contratos. */}
+          <span aria-hidden="true" className="shrink-0">
+            <Avatar name={persona.nombre} />
+          </span>
+          <div className="min-w-0 flex-1 basis-[12rem]">
+            {/* UN solo encabezado con el nombre: el accesible es el
+                `SheetTitle` del envoltorio (un `h2`). Éste era otro `h2` con
+                el mismo texto. Y se ajusta en dos renglones: a 390 px se
+                cortaba en «Ana So…». */}
+            <p className="break-words text-lg font-semibold leading-snug text-fg" data-testid="inquilino-cajon-nombre">
+              {persona.nombre}
+            </p>
+            <p className="mt-0.5 text-xs text-fg-subtle">
+              {sinArriendos
+                ? t('inquilinos.sinArriendo')
+                : persona.arriendos.length === 1
+                  ? t('inquilinos.conteoArriendoUno', { vigentes: textoDeVigentes(t, vigentes.length) })
+                  : t('inquilinos.conteoArriendos', {
+                      n: persona.arriendos.length,
+                      vigentes: textoDeVigentes(t, vigentes.length),
+                    })}
+            </p>
           </div>
+          {/* Escribirle sin salir de la ficha, por su CUENTA del portal. Sin
+              cuenta no hay dónde escribirle, y se dice (I-22, Nico: la cuenta
+              se crea desde el contrato; acá no se invita). */}
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {puedeEditar ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                hideArrow
+                onClick={() => onEditar?.(persona)}
+                data-testid="inquilino-editar"
+              >
+                <PencilSimple className="h-4 w-4" aria-hidden="true" />
+                {t(`${NS}.editarDatos`)}
+              </Button>
+            ) : null}
+            {idDeLaCuenta ? (
+              <BotonEnviarMensaje counterpartId={idDeLaCuenta} />
+            ) : (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-muted/40 px-2.5 py-1.5 text-sm text-fg-muted"
+                title={t(`${NS}.sinCuentaDelPortalPorQue`)}
+                data-testid="inquilino-sin-cuenta"
+              >
+                <UserCircleMinus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                {t(`${NS}.sinCuentaDelPortal`)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* El contacto se acciona: escribirle, llamarlo o copiar el dato para
+            pegarlo en el banco. Texto suelto obliga a transcribir a mano un
+            correo, que es como se le termina escribiendo a la persona
+            equivocada. */}
+        <div className="mt-3.5 flex flex-wrap items-center gap-2">
+          {persona.email ? (
+            <DatoDeContacto
+              icono={Envelope}
+              valor={persona.email}
+              href={`mailto:${persona.email}`}
+              accion={t(`${NS}.escribirCorreo`)}
+            />
+          ) : null}
+          {persona.telefono ? (
+            <DatoDeContacto
+              icono={Phone}
+              valor={persona.telefono}
+              href={`tel:${persona.telefono}`}
+              accion={t(`${NS}.llamar`)}
+              mono
+            />
+          ) : null}
+          {persona.documento ? (
+            <DatoDeContacto
+              icono={IdentificationCard}
+              // I-14: el NIT con su dígito de verificación (algoritmo DIAN).
+              valor={documentoParaMostrar(persona.documento, persona.tipoDocumento)}
+              accion={t(`${NS}.documento`)}
+              mono
+            />
+          ) : null}
+          {/* T-0128: el documento puede faltar si lo creó la migración. */}
+          <DatosPorCompletar pendientes={persona.datosPendientes} />
+          {/* Sin correo ni teléfono no es un detalle: es a quién no se le
+              puede cobrar ni avisar. Va en la cabecera, no escondido. */}
+          {!persona.email && !persona.telefono ? (
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning-soft/40 px-2.5 py-1.5 text-sm text-warning">
+              <Warning className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {t('inquilinos.sinContacto')}
+            </span>
+          ) : null}
+        </div>
+      </SheetHeader>
+
+      <SheetBody>
+        {enFicha ? (
+          <PestanasDeLaFicha
+            etiqueta="Secciones del inquilino"
+            pestanas={[
+              { id: 'resumen', etiqueta: 'Resumen', contenido: sinArriendos ? bloqueSinArriendos : bloqueDeuda },
+              ...(sinArriendos
+                ? []
+                : [{ id: 'arriendos', etiqueta: 'Arriendos y cobros', contenido: <div className="space-y-7">{bloqueArriendos}{bloquePagos}</div> }]),
+              { id: 'datos', etiqueta: 'Datos y permisos', contenido: bloqueWhatsapp },
+              // Sólo con algo que mostrar: el back no lleva bitácora del inquilino.
+              ...(bloqueAnterior ? [{ id: 'historial', etiqueta: 'Historial', contenido: bloqueAnterior }] : []),
+            ]}
+          />
+        ) : (
+          <>
+            {bloqueWhatsapp}
+            {bloqueAnterior}
+            {sinArriendos ? (
+              bloqueSinArriendos
+            ) : (
+              <div className="space-y-7">
+                {bloqueDeuda}
+                {bloqueArriendos}
+                {bloquePagos}
+              </div>
+            )}
+          </>
         )}
       </SheetBody>
     </>

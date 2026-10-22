@@ -9973,7 +9973,7 @@
       },
       "pagos_home": {
         "title": "Pagos",
-        "subtitle": "La deuda que tienen los inquilinos este mes, cuota por cuota: existe desde que se firmó el contrato y es un pedazo del estado de cuenta de cada cliente.",
+        "subtitle": "Lo que deben los inquilinos este mes, cuota por cuota, y cómo registrar lo que pagan.",
         "resumen": {
           "nuevaFactura": "Nueva factura",
           "atencion": {

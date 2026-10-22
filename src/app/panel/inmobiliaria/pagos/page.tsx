@@ -88,7 +88,7 @@ import { CaretRight, Clock, Robot, User as UserIcon, Gear } from '@phosphor-icon
 import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { SectionLabel } from '@/components/ui/section-label'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { Card, Badge } from '@/components/ui'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
@@ -170,40 +170,18 @@ function PagosHome() {
   const hayAtencion = items.length > 0
 
   return (
-    <div className="space-y-8 p-6 lg:p-8">
-      {/* Header */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1.5">
-          {/* 🔴 La CARA, en el título. El selector de arriba dice de qué lado
-              del contrato estás; si la pantalla no lo repite, al bajar la vista
-              ya no se sabe. Y esta pantalla es de una sola cara: lo que deben
-              los inquilinos (ver `cara: 'inquilinos'` en
-              `arquitectura-del-panel.ts`). */}
-          <SectionLabel>Pagos · inquilinos</SectionLabel>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.pagos_home.title')}
-          </h1>
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-            {t('inmobiliaria.ai.pagos_home.subtitle')}
-          </p>
-        </div>
-        {/* 🔴 Acá vivían CINCO enlaces azules apretados a la derecha del
-            título —Tablero financiero · Cuadre del día · Recaudo del banco ·
-            Traslado de la comisión · Pendiente de aplicar—. Nico, 18-09 de
-            noche: «esos links que están al lado derecho menos [se entienden],
-            ¿eso es como tabs? porque está a nivel de UX muy mal logrado».
-
-            Las dos observaciones eran ciertas y la segunda explica la primera:
-            parecían pestañas (texto azul en fila, arriba, donde van las
-            pestañas) sin serlo, y eran cinco pantallas de pleno derecho
-            escondidas en una esquina del encabezado porque nadie las había
-            metido en la navegación. Hoy son secciones de su cara —tres de
-            ellas estrenaron la tercera, «Cuadrar la caja»— y el tablero,
-            que mira las tres, va primero en el riel con su línea.
-
-            La regla que deja: una pantalla que no cabe en la navegación no se
-            cuelga del título. O es una sección, o no existe. */}
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* GLOW UP (22-10-2026): el encabezado común. El título es el del riel
+          («Deuda del mes»), no el del módulo: h1 = riel = menú. Sigue siendo de
+          la cara INQUILINOS (ver `cara: 'inquilinos'` en `arquitectura-del-panel.ts`).
+          Los cinco enlaces que colgaban del título (18-09) siguen siendo
+          secciones del riel: una pantalla que no cabe en la navegación no se
+          cuelga del título. */}
+      <EncabezadoDePantalla
+        seccion="Pagos · inquilinos"
+        titulo={t('inmobiliaria.nav.deudaDelMes')}
+        descripcion={t('inmobiliaria.ai.pagos_home.subtitle')}
+      />
 
       {/* Qué necesita tu atención — SÓLO si hay algo. Es la bandeja del agente
           (tabla `payment` del micro, dominio de cobranza por voz), así que para
@@ -329,14 +307,12 @@ function PagosHome() {
 function PagosDelAuxiliar() {
   const { t } = useI18n()
   return (
-    <div className="space-y-8 p-6 lg:p-8" data-testid="pagos-del-auxiliar">
-      <header className="space-y-1.5">
-        <SectionLabel>Pagos · inquilinos</SectionLabel>
-        <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.pagos_home.title')}</h1>
-        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-          {t('inmobiliaria.ai.pagos_home.subtitle')}
-        </p>
-      </header>
+    <div className="space-y-6 p-6 lg:p-8" data-testid="pagos-del-auxiliar">
+      <EncabezadoDePantalla
+        seccion="Pagos · inquilinos"
+        titulo={t('inmobiliaria.nav.deudaDelMes')}
+        descripcion={t('inmobiliaria.ai.pagos_home.subtitle')}
+      />
       <DeudaDelMesPanel />
     </div>
   )

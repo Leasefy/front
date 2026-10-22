@@ -9938,7 +9938,7 @@
       },
       "pagos_home": {
         "title": "Payments",
-        "subtitle": "What tenants owe this month, instalment by instalment: it exists from the day the contract was signed and it is a slice of each client's account statement.",
+        "subtitle": "What tenants owe this month, installment by installment, and how to record what they pay.",
         "resumen": {
           "nuevaFactura": "New invoice",
           "atencion": {

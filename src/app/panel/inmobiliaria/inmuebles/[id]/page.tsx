@@ -756,7 +756,7 @@ function ConsignacionDetailContent() {
                     inmueble) no hay galería que mostrar. */}
                 {consignacion.propertyId && (
                   <div id="fotos" className="scroll-mt-20">
-                    <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} onVer={setFotoAbierta} />
+                    <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} onVer={setFotoAbierta} compacta={contratoVigente} />
                   </div>
                 )}
                 {/* Quién se postuló. Vive acá, antes del contrato vigente: es lo que

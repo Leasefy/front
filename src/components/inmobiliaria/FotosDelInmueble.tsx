@@ -61,6 +61,8 @@ interface EnCamino {
 }
 
 export interface FotosDelInmuebleProps {
+  /** Zona de subida más baja (inmueble arrendado). */
+  compacta?: boolean;
   propertyId: string;
   /** Se llama cuando cambia la galería (subir, quitar, portada): la ficha refresca la portada del encabezado. */
   onCambio?: () => void;
@@ -68,7 +70,7 @@ export interface FotosDelInmuebleProps {
   onVer?: (indice: number) => void;
 }
 
-export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmuebleProps) {
+export function FotosDelInmueble({ propertyId, onCambio, onVer, compacta = false }: FotosDelInmuebleProps) {
   const [imagenes, setImagenes] = useState<Imagen[]>([]);
   const [cargando, setCargando] = useState(true);
   // El error ENTERO, no su mensaje (F9): con el texto pelado la tarjeta
@@ -281,7 +283,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
               Este inmueble todavía no tiene fotos. Sin fotos, en el portal se ve un espacio vacío: sube las de la
               ficha o las que tomó el asesor.
             </p>
-            <SubidaDeFotos variante="grande" cupo={cupo} maximo={PROPERTY_PHOTO_MAX_COUNT} onArchivos={(a) => void subir(a)} aceptarPegado />
+            <SubidaDeFotos variante="grande" compacta={compacta} cupo={cupo} maximo={PROPERTY_PHOTO_MAX_COUNT} onArchivos={(a) => void subir(a)} aceptarPegado />
             {/* 🔴 La tercera forma de traerlas, y la que menos trabajo cuesta
                 cuando el inmueble YA está publicado (Nico, 2026-09-12). Va
                 debajo de la zona de arrastre, no en vez de ella: la mayoría

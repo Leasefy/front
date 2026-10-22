@@ -292,7 +292,8 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                           aria-label={`Anular el recibo ${r.numero}`}
                           onClick={() => setAAnular(r)}
                           data-testid={`anular-recibo-${r.numero}`}
-                          className="text-danger hover:text-danger"
+                          // 22-10 (revisión): gris en la fila (11 rojos seguidos gritaban); rojo al pasar y en la confirmación.
+                          className="text-fg-muted hover:text-danger"
                         >
                           <Prohibit className="h-4 w-4" aria-hidden="true" />
                           Anular

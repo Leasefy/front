@@ -116,25 +116,25 @@ type FilterType = 'all' | 'unread' | 'payment' | 'application' | 'message' | 'do
 // Loading skeleton component
 function NotificationSkeleton() {
   return (
-    <div className="rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-surface-muted overflow-hidden divide-y divide-border dark:divide-white/5">
+    <div className="rounded-lg border border-border bg-surface overflow-hidden divide-y divide-border">
       {[...Array(5)].map((_, i) => (
         <div key={i} className="flex items-start gap-4 p-5 animate-pulse">
           {/* Icon skeleton */}
-          <div className="w-11 h-11 rounded-xl bg-surface-muted flex-shrink-0" />
+          <div className="w-11 h-11 rounded-lg bg-surface-muted flex-shrink-0" />
 
           {/* Content skeleton */}
           <div className="flex-1 min-w-0 space-y-2">
             <div className="h-4 bg-surface-muted rounded-md w-3/4" />
-            <div className="h-3 bg-surface-muted dark:bg-ink rounded-md w-1/2" />
+            <div className="h-3 bg-surface-muted rounded-md w-1/2" />
             <div className="flex items-center gap-2 mt-2">
-              <div className="h-3 bg-surface-muted dark:bg-ink rounded-md w-16" />
+              <div className="h-3 bg-surface-muted rounded-md w-16" />
               <div className="w-1 h-1 rounded-full bg-surface-muted" />
-              <div className="h-3 bg-surface-muted dark:bg-ink rounded-md w-20" />
+              <div className="h-3 bg-surface-muted rounded-md w-20" />
             </div>
           </div>
 
           {/* Arrow skeleton */}
-          <div className="w-5 h-5 rounded bg-surface-muted dark:bg-ink flex-shrink-0" />
+          <div className="w-5 h-5 rounded bg-surface-muted flex-shrink-0" />
         </div>
       ))}
     </div>
@@ -235,7 +235,7 @@ export default function NotificacionesPage() {
               <IconButton
                 variant="ghost"
                 onClick={() => router.push('/inquilino/configuracion')}
-                className="p-2.5 rounded-xl text-fg-subtle dark:text-fg-muted hover:text-fg-muted dark:hover:text-fg-subtle hover:bg-surface-muted dark:hover:bg-surface/5"
+                className="p-2.5 rounded-lg text-fg-subtle hover:text-fg-muted hover:bg-surface-muted"
                 aria-label={locale === 'es' ? 'Configuración' : 'Settings'}
                 icon={<Gear className="w-5 h-5" />}
               />
@@ -255,25 +255,25 @@ export default function NotificacionesPage() {
                 className={cn(
                   'relative isolate flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
                   filter === f.id
-                    ? 'text-white dark:text-fg'
-                    : 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-surface-muted'
+                    ? 'text-white'
+                    : 'bg-surface-muted text-fg-muted hover:bg-surface-muted'
                 )}
               >
                 {/* El fondo oscuro del activo es un `MotionIndicator`: se desliza al filtro nuevo. */}
                 {filter === f.id && (
                   <MotionIndicator
                     layoutId={`${idDelFiltro}-filtro`}
-                    className="inset-0 -z-10 rounded-full bg-ink dark:bg-surface"
+                    className="inset-0 -z-10 rounded-full bg-ink"
                   />
                 )}
                 {f.label}
                 {f.count !== undefined && f.count > 0 && (
                   <span
                     className={cn(
-                      'text-xs px-1.5 py-0.5 rounded-full',
+                      'text-caption px-1.5 py-0.5 rounded-full',
                       filter === f.id
                         ? 'bg-surface'
-                        : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                        : 'bg-[#EEF1FF] text-[#1A40FF]'
                     )}
                   >
                     <AnimatedNumber value={f.count} />
@@ -321,11 +321,11 @@ export default function NotificacionesPage() {
                       ? 'Cuando haya actividad en tus postulaciones o arriendos, te notificaremos aquí.'
                       : 'When there is activity on your applications or leases, we will notify you here.'
                   }
-                  className="rounded-xl border-border dark:border-white/10 bg-surface dark:bg-surface-muted"
+                  className="rounded-lg border-border bg-surface"
                 />
               </div>
             ) : (
-              <div className="relative rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-surface-muted overflow-hidden divide-y divide-border dark:divide-white/5">
+              <div className="relative rounded-lg border border-border bg-surface overflow-hidden divide-y divide-border">
                 <AnimatePresence initial={false} mode="popLayout">
                 {filteredNotifications.map((notification) => {
                   const IconComponent = getNotificationIcon(notification.type);
@@ -338,16 +338,16 @@ export default function NotificacionesPage() {
                       className={cn(
                         'flex items-start gap-4 p-5 cursor-pointer group transition-colors',
                         !notification.read
-                          ? 'bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/30'
-                          : 'hover:bg-surface-muted dark:hover:bg-surface/5'
+                          ? 'bg-[#EEF1FF]/50 hover:bg-[#EEF1FF]'
+                          : 'hover:bg-surface-muted'
                       )}
                     >
                       {/* Icon */}
                       <div
                         className={cn(
-                          'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105',
+                          'w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105',
                           !notification.read
-                            ? 'bg-[#1A40FF] dark:bg-[#5570FF]'
+                            ? 'bg-[#1A40FF]'
                             : cn(categoryConfig.bgColor, categoryConfig.darkBgColor)
                         )}
                       >
@@ -366,29 +366,29 @@ export default function NotificacionesPage() {
                           className={cn(
                             'text-sm leading-relaxed',
                             !notification.read
-                              ? 'text-fg dark:text-white font-semibold'
-                              : 'text-fg dark:text-fg-subtle'
+                              ? 'text-fg font-medium'
+                              : 'text-fg'
                           )}
                         >
                           {notification.title}
                         </p>
-                        <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5 line-clamp-1">
+                        <p className="text-sm text-fg-muted mt-0.5 line-clamp-1">
                           {notification.message}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs text-fg-subtle dark:text-fg-muted">
+                          <span className="text-caption text-fg-subtle">
                             {formatRelativeTime(notification.createdAt, locale)}
                           </span>
                           <span className="w-1 h-1 rounded-full bg-surface-muted" />
                           <span
-                            className={cn('text-xs font-medium', categoryConfig.color)}
+                            className={cn('text-caption font-medium', categoryConfig.color)}
                           >
                             {categoryConfig.label}
                           </span>
                           {!notification.read && (
                             <>
                               <span className="w-1 h-1 rounded-full bg-surface-muted" />
-                              <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
+                              <span className="text-caption font-medium text-[#1A40FF]">
                                 {locale === 'es' ? 'Nueva' : 'New'}
                               </span>
                             </>
@@ -412,10 +412,9 @@ export default function NotificacionesPage() {
                                 router.push(notification.actionUrl);
                               }
                             }}
-                            className="px-3 py-1.5 text-xs text-[#1A40FF] dark:text-[#5570FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
+                            className="px-3 py-1.5 text-caption text-[#1A40FF] bg-[#EEF1FF]"
                           >
                             {notification.actionLabel}
-                            <ArrowRight className="w-3 h-3" />
                           </Button>
                         </div>
                       )}
@@ -429,7 +428,7 @@ export default function NotificacionesPage() {
                           <IconButton
                             variant="ghost"
                             onClick={() => handleMarkAsRead(notification.id)}
-                            className="p-2 rounded-md text-fg-subtle hover:text-[#2C7A53] dark:hover:text-[#2C7A53] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/30"
+                            className="p-2 rounded-md text-fg-subtle hover:text-[#2C7A53] hover:bg-[#E8F3EC]"
                             title={
                               locale === 'es' ? 'Marcar como leído' : 'Mark as read'
                             }
@@ -442,7 +441,7 @@ export default function NotificacionesPage() {
                         <IconButton
                           variant="ghost"
                           onClick={() => handleDeleteNotification(notification.id)}
-                          className="p-2 rounded-md text-fg-subtle hover:text-[#C4503B] dark:hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30"
+                          className="p-2 rounded-md text-fg-subtle hover:text-[#C4503B] hover:bg-[#F8EAE7]"
                           title={locale === 'es' ? 'Eliminar' : 'Delete'}
                           aria-label={locale === 'es' ? 'Eliminar' : 'Delete'}
                           icon={<TrashSimple className="w-4 h-4" />}
@@ -451,7 +450,7 @@ export default function NotificacionesPage() {
 
                       {/* Arrow */}
                       <div className="flex items-center flex-shrink-0">
-                        <CaretRight className="w-5 h-5 text-fg-subtle dark:text-fg-muted group-hover:text-fg-subtle dark:group-hover:text-fg-muted transition-colors" />
+                        <CaretRight className="w-5 h-5 text-fg-subtle group-hover:text-fg-subtle transition-colors" />
                       </div>
                     </StaggerItem>
                   );
@@ -463,9 +462,9 @@ export default function NotificacionesPage() {
 
         {/* Summary Card */}
         {notifications.length > 0 && (
-          <div className="mt-6 p-4 rounded-xl bg-surface-muted border border-border-faint dark:border-white/5">
+          <div className="mt-6 p-4 rounded-lg bg-surface-muted border border-border-faint">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-fg-muted dark:text-fg-subtle">
+              <span className="text-fg-muted">
                 {locale === 'es'
                   ? `Mostrando ${filteredNotifications.length} de ${notifications.length} notificaciones`
                   : `Showing ${filteredNotifications.length} of ${notifications.length} notifications`}
@@ -476,7 +475,7 @@ export default function NotificacionesPage() {
                   size="sm"
                   hideArrow
                   onClick={() => setHideRead(true)}
-                  className="text-fg-muted hover:text-fg dark:hover:text-fg-subtle"
+                  className="text-fg-muted hover:text-fg"
                 >
                   {locale === 'es' ? 'Limpiar leídas' : 'Clear read'}
                 </Button>

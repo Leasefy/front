@@ -221,15 +221,15 @@ function AcuerdoDetailView({
       {saldado ? (
         <section
           data-testid="acuerdo-saldado"
-          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+          className="rounded-lg border border-border bg-surface p-5 sm:p-6"
         >
           <div className="flex items-start gap-3">
             <SealCheck className="w-5 h-5 text-success flex-shrink-0 mt-0.5" aria-hidden="true" />
             <div>
-              <p className="font-semibold text-fg dark:text-white">
+              <p className="font-medium text-fg">
                 {es ? 'Hoy no debes nada vencido' : 'You owe nothing overdue today'}
               </p>
-              <p className="mt-1 text-sm text-fg-muted dark:text-fg-subtle">
+              <p className="mt-1 text-sm text-fg-muted">
                 {es
                   ? 'Lo que financiaba este acuerdo ya está pagado, así que sus cuotas pendientes no se cobran. Si crees que es un error, escríbele a tu inmobiliaria.'
                   : 'What this agreement financed is already paid, so its pending installments are not charged. If you think this is a mistake, write to your agency.'}
@@ -240,22 +240,22 @@ function AcuerdoDetailView({
       ) : firma === 'firmar' ? (
         <section
           data-testid="acuerdo-firmar"
-          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+          className="rounded-lg border border-border bg-surface p-5 sm:p-6"
         >
           <AcuerdoAcceptPanel planId={plan.planId} onAccepted={onAccepted} />
         </section>
       ) : firma === 'por-aprobar' ? (
         <section
           data-testid="acuerdo-por-aprobar"
-          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+          className="rounded-lg border border-border bg-surface p-5 sm:p-6"
         >
           <div className="flex items-start gap-3">
-            <Clock className="w-5 h-5 text-fg-muted dark:text-fg-subtle flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <Clock className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5" aria-hidden="true" />
             <div>
-              <p className="font-semibold text-fg dark:text-white">
+              <p className="font-medium text-fg">
                 {es ? 'Tu inmobiliaria lo está revisando' : 'Your agency is reviewing it'}
               </p>
-              <p className="mt-1 text-sm text-fg-muted dark:text-fg-subtle">
+              <p className="mt-1 text-sm text-fg-muted">
                 {es
                   ? 'Este acuerdo todavía no está aprobado. Cuando tu inmobiliaria lo apruebe, aquí mismo lo podrás firmar para aceptarlo.'
                   : 'This agreement is not approved yet. Once your agency approves it, you can sign it here to accept it.'}
@@ -266,9 +266,9 @@ function AcuerdoDetailView({
       ) : firma === 'no-aceptable' ? (
         <section
           data-testid="acuerdo-no-aceptable"
-          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+          className="rounded-lg border border-border bg-surface p-5 sm:p-6"
         >
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          <p className="text-sm text-fg-muted">
             {es
               ? 'Este acuerdo ya no se puede aceptar. Si quieres un acuerdo de pago, pídelo a tu inmobiliaria desde Acuerdos.'
               : 'This agreement can no longer be accepted. If you want a payment agreement, request one from your agency in Agreements.'}
@@ -291,9 +291,9 @@ function AcuerdoDetailView({
       {/* Cuota plan — verbatim installments (CuotaPlanTable) */}
       <section
         data-testid="acuerdo-plan"
-        className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+        className="rounded-lg border border-border bg-surface p-5 sm:p-6"
       >
-        <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
+        <h2 className="text-sm font-medium text-fg mb-4">
           {es ? 'Plan de cuotas' : 'Installment plan'}
         </h2>
         <CuotaPlanTable installments={plan.installments} locale={locale} acuerdoCerrado={cerrado} />
@@ -303,14 +303,14 @@ function AcuerdoDetailView({
       {aceptado ? (
         <section
           data-testid="acuerdo-aceptado"
-          className="rounded-xl border border-success/30 bg-success-soft p-5 sm:p-6"
+          className="rounded-lg border border-success/30 bg-success-soft p-5 sm:p-6"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-success flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-success flex items-center justify-center flex-shrink-0">
               <SealCheck className="w-5 h-5 text-white" aria-hidden="true" />
             </div>
             <div>
-              <p className="font-semibold text-success">
+              <p className="font-medium text-success">
                 {es ? 'Acuerdo aceptado' : 'Agreement accepted'}
               </p>
               <p className="text-sm text-success">
@@ -326,9 +326,9 @@ function AcuerdoDetailView({
       {/* State timeline — source-timestamp-only events */}
       <section
         data-testid="acuerdo-historial"
-        className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+        className="rounded-lg border border-border bg-surface p-5 sm:p-6"
       >
-        <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
+        <h2 className="text-sm font-medium text-fg mb-4">
           {es ? 'Historial' : 'Timeline'}
         </h2>
         <PlanActivityTimeline

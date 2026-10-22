@@ -94,7 +94,7 @@ function Contenido({ datos }: { datos: MiFirmaDelPagareResponse }) {
       {datos.esSandbox && (
         <div className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 flex items-start gap-2" data-testid="pagare-sandbox-banner">
           <WarningCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-warning">Sandbox — sin validez jurídica</p>
+          <p className="text-caption text-warning">Sandbox — sin validez jurídica</p>
         </div>
       )}
 

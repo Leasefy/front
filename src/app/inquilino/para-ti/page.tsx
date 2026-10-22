@@ -265,11 +265,9 @@ export default function ParaTiPage() {
             {locale === 'es' ? 'Volver a Inicio' : 'Back to Home'}
           </Link>
 
-          <div className="rounded-xl bg-surface border border-border p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-primary-soft flex items-center justify-center mx-auto mb-6">
-              <Target className="w-8 h-8 text-primary" />
-            </div>
-            <h1 className="text-xl font-semibold text-fg mb-3">
+          <div className="rounded-lg bg-surface border border-border p-12 text-center">
+            <Target className="w-8 h-8 text-primary shrink-0 mx-auto" aria-hidden="true" />
+            <h1 className="text-xl font-medium text-fg mb-3">
               {locale === 'es'
                 ? 'Todavía no tenemos tu aprobación'
                 : 'We don\u2019t have your approval yet'}
@@ -336,14 +334,14 @@ export default function ParaTiPage() {
           * «0 propiedades encontradas»: la pantalla se desmentía sola. Ahora
           * muestra el conteo real, que puede ser cero y entonces lo dice.
           */}
-        <section className="rounded-xl bg-brand p-8 sm:p-10 mb-6">
+        <section className="rounded-lg bg-brand p-8 sm:p-10 mb-6">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-xl">
               <p className="text-overline text-white/80">
                 {locale === 'es' ? 'Tu catálogo' : 'Your catalog'}
               </p>
 
-              <h1 className="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-white text-balance">
+              <h1 className="mt-3 text-2xl sm:text-3xl font-medium tracking-tight text-white text-balance">
                 {locale === 'es'
                   ? `Propiedades para ti, ${primerNombre}`
                   : `Properties for you, ${primerNombre}`}
@@ -359,7 +357,7 @@ export default function ParaTiPage() {
 
               <div className="mt-7 flex flex-wrap items-center gap-2">
                 <div className={chipDelHero}>
-                  <span className="grid h-5 w-5 place-items-center rounded-full bg-white font-mono text-[10px] font-bold text-brand">
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-white font-mono text-[10px] font-medium text-brand">
                     {riskLevel}
                   </span>
                   <span>Score {RISK_LEVEL_LABELS[riskLevel]}</span>
@@ -397,7 +395,7 @@ export default function ParaTiPage() {
             {/* El conteo real. Se ve en móvil también: antes era `hidden lg:flex`
                 y el único indicador del hero desaparecía en pantalla chica. */}
             <div className="flex items-center gap-4 border-t border-white/15 pt-6 lg:flex-col lg:items-end lg:gap-1 lg:border-t-0 lg:pt-0 lg:text-right">
-              <span className="font-mono tabular-nums text-5xl font-semibold leading-none text-white">
+              <span className="font-mono tabular-nums text-5xl font-normal leading-none text-white">
                 {cuantasCaben}
               </span>
               <span className="text-sm text-white/80 lg:max-w-[8.5rem]">
@@ -624,10 +622,8 @@ export default function ParaTiPage() {
           </>
         ) : (
           <div className="bg-surface border border-plan-border rounded-lg p-12 text-center">
-            <div className="w-14 h-14 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-4">
-              <Funnel className="w-7 h-7 text-plan-muted" />
-            </div>
-            <h3 className="text-base font-semibold text-plan-primary mb-2">
+            <Funnel className="w-7 h-7 text-plan-muted shrink-0 mx-auto" aria-hidden="true" />
+            <h3 className="text-base font-medium text-plan-primary mb-2">
               {/* Quedarse sin nada por el tope no es quedarse sin nada por un
                   filtro que uno mismo puso: se explica distinto. */}
               {ocultasPorTope > 0 && recomendacionesQueCaben.length === 0
@@ -659,7 +655,7 @@ export default function ParaTiPage() {
         {/* How it works section */}
         <div className="mt-8 bg-surface border border-plan-border rounded-lg overflow-hidden">
           <div className="px-5 py-4 border-b border-plan-border">
-            <h2 className="font-semibold text-plan-primary">
+            <h2 className="text-h3 text-plan-primary">
               {locale === 'es' ? 'Cómo calculamos tu compatibilidad' : 'How we calculate your compatibility'}
             </h2>
           </div>
@@ -667,48 +663,48 @@ export default function ParaTiPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-plan-border">
             <div className="p-5 text-center">
               <div className="w-10 h-10 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-bold font-mono tabular-nums text-success">40%</span>
+                <span className="text-sm font-medium font-mono tabular-nums text-success">40%</span>
               </div>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Asequibilidad' : 'Affordability'}
               </h3>
-              <p className="text-xs text-plan-muted">
+              <p className="text-caption text-plan-muted">
                 {locale === 'es' ? 'Comparamos el arriendo con tu ingreso disponible' : 'We compare rent with your available income'}
               </p>
             </div>
 
             <div className="p-5 text-center">
               <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-bold font-mono tabular-nums text-primary">30%</span>
+                <span className="text-sm font-medium font-mono tabular-nums text-primary">30%</span>
               </div>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Compatibilidad' : 'Compatibility'}
               </h3>
-              <p className="text-xs text-plan-muted">
+              <p className="text-caption text-plan-muted">
                 {locale === 'es' ? 'Tu score de riesgo vs requisitos del propietario' : 'Your risk score vs landlord requirements'}
               </p>
             </div>
 
             <div className="p-5 text-center">
               <div className="w-10 h-10 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-bold font-mono tabular-nums text-fg-muted">15%</span>
+                <span className="text-sm font-medium font-mono tabular-nums text-fg-muted">15%</span>
               </div>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Perfil' : 'Profile'}
               </h3>
-              <p className="text-xs text-plan-muted">
+              <p className="text-caption text-plan-muted">
                 {locale === 'es' ? 'Documentación completa y estabilidad laboral' : 'Complete documentation and job stability'}
               </p>
             </div>
 
             <div className="p-5 text-center">
               <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-bold font-mono tabular-nums text-warning">15%</span>
+                <span className="text-sm font-medium font-mono tabular-nums text-warning">15%</span>
               </div>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Preferencias' : 'Preferences'}
               </h3>
-              <p className="text-xs text-plan-muted">
+              <p className="text-caption text-plan-muted">
                 {locale === 'es' ? 'Ciudad, tipo de propiedad y habitaciones' : 'City, property type and bedrooms'}
               </p>
             </div>

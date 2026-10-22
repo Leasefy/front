@@ -117,19 +117,17 @@ function CaseRow({ c, locale }: { c: TenantCase; locale: string }) {
   return (
     <div>
       <Link href={c.detailLink} className="group block">
-        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-4 sm:p-5 flex items-center gap-4 hover:border-border dark:hover:border-border-strong transition-colors">
-          <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-            <TypeIcon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-          </div>
+        <div className="rounded-lg border border-border bg-surface p-4 sm:p-5 flex items-center gap-4 hover:border-border transition-colors">
+          <TypeIcon className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm sm:text-base font-semibold text-fg dark:text-white group-hover:text-primary transition-colors truncate">
+              <h3 className="text-sm sm:text-base font-medium text-fg group-hover:text-primary transition-colors truncate">
                 {c.titulo}
               </h3>
               {/* SO-20: el número de radicado también en la lista. */}
               {c.solicitud?.radicado && (
-                <span className="font-mono text-xs text-fg-muted" data-testid="caso-radicado-lista">
+                <span className="font-mono text-caption text-fg-muted" data-testid="caso-radicado-lista">
                   {c.solicitud.radicado}
                 </span>
               )}
@@ -138,7 +136,7 @@ function CaseRow({ c, locale }: { c: TenantCase; locale: string }) {
                 {c.estadoLabel}
               </Badge>
             </div>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle mt-1">
+            <p className="text-caption text-fg-muted mt-1">
               {locale === 'es' ? 'Responsable' : 'Owner'}: {c.responsable}
               {' · '}
               {locale === 'es' ? 'Actualizado' : 'Updated'} {formatRelative(c.updatedAt, locale)}
@@ -226,19 +224,17 @@ export default function CasosPage() {
 
         {/* CASO-03 — el aviso dentro del portal (real); sin promesas de push ni WhatsApp (QA-INQ-95). */}
         <div
-          className="mb-8 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+          className="mb-8 rounded-lg border border-border bg-surface p-5 flex flex-col sm:flex-row sm:items-center gap-4"
         >
-          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-            <Bell className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-          </div>
+          <Bell className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
           <div className="flex-1 min-w-0">
             {/* QA-INQ-95 (PI-30): sin «Próximamente»: se dice lo que hay hoy. */}
-            <p className="text-sm font-semibold text-fg dark:text-white">
+            <p className="text-sm font-medium text-fg">
               {locale === 'es'
                 ? 'Te avisamos en el portal cuando cambia el estado de un caso'
                 : 'We let you know in the portal when a case status changes'}
             </p>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
+            <p className="text-caption text-fg-muted mt-0.5">
               {locale === 'es'
                 ? 'Los avisos quedan en la campana de arriba y en Notificaciones.'
                 : 'Notices stay in the bell at the top and in Notifications.'}
@@ -256,7 +252,6 @@ export default function CasosPage() {
                   <AnimatedNumber value={unreadCount} />
                 </Badge>
               )}
-              <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
             </Link>
           </div>
         </div>
@@ -282,24 +277,22 @@ export default function CasosPage() {
 
         {/* More in the portal — one REAL entry point (Solicitudes) + honest Próximamente (Acuerdos) */}
         <section>
-          <h2 className="text-sm font-mono uppercase tracking-wide text-fg-subtle dark:text-fg-muted mb-4">
+          <h2 className="text-sm font-mono uppercase tracking-wide text-fg-subtle mb-4">
             {locale === 'es' ? 'Más en tu portal' : 'More in your portal'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Real entry point — PQRS + mantenimiento now flow through /inquilino/solicitudes */}
             <Link
               href="/inquilino/solicitudes"
-              className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6 space-y-4 block hover:border-primary/40 transition-colors"
+              className="group rounded-lg border border-border bg-surface p-6 space-y-4 block hover:border-primary/40 transition-colors"
             >
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
-                  <Lifebuoy className="w-5 h-5 text-primary" />
-                </div>
+                <Lifebuoy className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
                 <div>
-                  <h2 className="text-lg font-semibold text-fg dark:text-white group-hover:text-primary transition-colors">
+                  <h2 className="text-h3 text-fg group-hover:text-primary transition-colors">
                     {locale === 'es' ? 'Solicitudes' : 'Requests'}
                   </h2>
-                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
+                  <p className="text-sm text-fg-muted">
                     {locale === 'es'
                       ? 'Abre y sigue tus solicitudes de mantenimiento y PQRS.'
                       : 'Open and track your maintenance requests and PQRS.'}
@@ -308,24 +301,21 @@ export default function CasosPage() {
               </div>
               <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
                 {locale === 'es' ? 'Nueva solicitud' : 'New request'}
-                <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
               </span>
             </Link>
 
             {/* Real entry point — approved acuerdos now flow through /inquilino/acuerdos */}
             <Link
               href="/inquilino/acuerdos"
-              className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6 space-y-4 block hover:border-primary/40 transition-colors"
+              className="group rounded-lg border border-border bg-surface p-6 space-y-4 block hover:border-primary/40 transition-colors"
             >
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
-                  <Handshake className="w-5 h-5 text-primary" />
-                </div>
+                <Handshake className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
                 <div>
-                  <h2 className="text-lg font-semibold text-fg dark:text-white group-hover:text-primary transition-colors">
+                  <h2 className="text-h3 text-fg group-hover:text-primary transition-colors">
                     {locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
                   </h2>
-                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
+                  <p className="text-sm text-fg-muted">
                     {locale === 'es'
                       ? 'Consulta y gestiona tus acuerdos de pago.'
                       : 'Review and manage your payment agreements.'}
@@ -334,7 +324,6 @@ export default function CasosPage() {
               </div>
               <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
                 {locale === 'es' ? 'Ver acuerdos' : 'View agreements'}
-                <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
               </span>
             </Link>
           </div>

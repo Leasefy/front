@@ -141,7 +141,7 @@ function AprobadoView({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-5">
+      <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-5">
         <div className="flex items-center gap-2 text-success">
           <SealCheck className="w-5 h-5" weight="fill" aria-hidden="true" />
           <span className="text-sm font-medium">{tf(`${NS}.aprobado.badge`, 'Aprobado')}</span>
@@ -152,7 +152,7 @@ function AprobadoView({
             <p className="text-sm text-fg-muted">
               {tf(`${NS}.aprobado.label`, 'Estás aprobado hasta')}
             </p>
-            <p className="font-mono tabular-nums text-4xl sm:text-5xl font-semibold text-fg leading-none">
+            <p className="font-mono tabular-nums text-4xl sm:text-5xl font-normal text-fg leading-none">
               {formatCurrency(tope, locale)}
             </p>
             <p className="text-sm text-fg-muted leading-relaxed max-w-lg pt-1">
@@ -165,7 +165,7 @@ function AprobadoView({
         ) : (
           /* Aprobado pero sin el número: se dice que falta. Nunca se inventa. */
           <div className="space-y-2">
-            <p className="text-2xl font-semibold text-fg">
+            <p className="text-2xl font-medium text-fg">
               {tf(`${NS}.aprobado.sinTope.title`, 'Estás aprobado')}
             </p>
             <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
@@ -184,7 +184,7 @@ function AprobadoView({
                 <p className="font-mono text-caption uppercase tracking-[0.08em] text-fg-subtle">
                   {tf(`${NS}.aprobado.scoreBuro`, 'Score de buró')}
                 </p>
-                <p className="font-mono text-xl font-semibold tabular-nums text-fg">
+                <p className="font-mono text-xl font-normal tabular-nums text-fg">
                   {bureau!.minimumScore}
                 </p>
               </div>
@@ -194,7 +194,7 @@ function AprobadoView({
                 <p className="font-mono text-caption uppercase tracking-[0.08em] text-fg-subtle">
                   {tf(`${NS}.aprobado.capacidadMensual`, 'Capacidad de pago mensual')}
                 </p>
-                <p className="font-mono text-xl font-semibold tabular-nums text-fg">
+                <p className="font-mono text-xl font-normal tabular-nums text-fg">
                   {formatCurrency(bureau!.monthlyCapacity, locale)}
                 </p>
               </div>
@@ -253,7 +253,7 @@ function VigenciaPill({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
+        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-caption font-medium',
         tono[estado],
       )}
     >
@@ -305,7 +305,7 @@ function RechazadoView({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-3">
+      <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-3">
         {/* Informativo, no error (Nico, 02-10): es un «no», pero el texto dice
             que no es definitivo y que hay salidas; un medallón rojo con una ✕
             lo contradecía. El mismo tono que el modal de `PostularButton`. */}
@@ -316,7 +316,7 @@ function RechazadoView({
         >
           <Info className="w-6 h-6 text-info" weight="bold" aria-hidden="true" />
         </div>
-        <h1 className="text-2xl font-semibold text-fg">
+        <h1 className="text-h2 text-fg">
           {tf(`${NS}.rechazado.title`, 'Por ahora no podemos aprobarte')}
         </h1>
         <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
@@ -366,7 +366,7 @@ function EnProcesoView({
   // «Ya la validé» y el reenvío (Nico, 15-09): quien cerró la página y vuelve
   // desde un recordatorio sigue exactamente donde quedó.
   return (
-    <section className="rounded-xl border border-border bg-surface p-6 shadow-sm space-y-4 md:p-8">
+    <section className="rounded-lg border border-border bg-surface p-6 shadow-sm space-y-4 md:p-8">
       <ValidacionPorWhatsapp evaluationStatus={evaluation?.status ?? null} onActualizar={onActualizar} />
       {expiresAt && (
         <div className="pt-1">
@@ -411,9 +411,9 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-3">
+      <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-3">
         {/* h2 y no h1: el h1 de la página es "Mi tope de arriendo". */}
-        <h2 className="text-2xl font-semibold text-fg">
+        <h2 className="text-h3 text-fg">
           {tf(`${NS}.vacio.title`, 'Todavía no tienes una aprobación')}
         </h2>
         <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
@@ -460,11 +460,11 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
 
 function ExpiradoView({ tf }: { tf: (k: string, f: string) => string }) {
   return (
-    <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-3">
+    <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-3">
       <div className="w-12 h-12 rounded-full bg-warning-soft flex items-center justify-center">
         <Clock className="w-6 h-6 text-warning" aria-hidden="true" />
       </div>
-      <h2 className="text-2xl font-semibold text-fg">
+      <h2 className="text-h3 text-fg">
         {tf(`${NS}.expirado.title`, 'Tu tiempo para completar la aprobación venció')}
       </h2>
       <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
@@ -494,11 +494,11 @@ function ErrorEstudioView({
   onReintentar: () => void
 }) {
   return (
-    <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-3">
+    <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-3">
       <div className="w-12 h-12 rounded-full bg-danger-soft flex items-center justify-center">
         <WarningOctagon className="w-6 h-6 text-danger" aria-hidden="true" />
       </div>
-      <h2 className="text-2xl font-semibold text-fg">
+      <h2 className="text-h3 text-fg">
         {tf(`${NS}.error.title`, 'Algo falló al hacer tu estudio')}
       </h2>
       <p className="text-sm text-fg-muted leading-relaxed max-w-lg">

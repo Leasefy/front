@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Appear } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { WarningCircle, CheckCircle, Confetti, ArrowRight, Clock, XCircle, PencilSimple, ChatCircle } from '@phosphor-icons/react';
+import { WarningCircle, CheckCircle, Confetti, Clock, XCircle, PencilSimple, ChatCircle } from '@phosphor-icons/react';
 import { MonoLabel } from '@leasefy/cadence';
 import { toast } from 'sonner';
 
@@ -64,7 +64,7 @@ function SigningSuccess({ locale, estado }: { locale: string; estado: ContractSt
       <div className="w-20 h-20 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-6">
         <Confetti className="w-10 h-10 text-success" />
       </div>
-      <h2 className="text-2xl font-semibold text-fg mb-3" data-testid="firma-exitosa-titulo">
+      <h2 className="text-h3 text-fg mb-3" data-testid="firma-exitosa-titulo">
         {mensaje.titulo}
       </h2>
       <p className="text-fg-muted mb-8 max-w-sm mx-auto" data-testid="firma-exitosa-texto">
@@ -76,7 +76,6 @@ function SigningSuccess({ locale, estado }: { locale: string; estado: ContractSt
         onClick={() => router.push('/inquilino/contratos')}
       >
         {locale === 'es' ? 'Ver mis contratos' : 'View my contracts'}
-        <ArrowRight className="w-4 h-4" />
       </Button>
     </Appear>
   );
@@ -107,7 +106,7 @@ function ContractDocumentView({
   // Cuando el contrato ya tiene firma(s), priorizamos el PDF estampado via /pdf.
   if (signedPdfUrl) {
     return (
-      <div className="rounded-xl border border-border overflow-hidden bg-surface">
+      <div className="rounded-lg border border-border overflow-hidden bg-surface">
         <iframe
           src={signedPdfUrl}
           className="w-full h-[720px] bg-surface"
@@ -122,7 +121,7 @@ function ContractDocumentView({
   }
   if (preview?.origin === 'UPLOADED_PDF') {
     return (
-      <div className="rounded-xl border border-border overflow-hidden bg-surface">
+      <div className="rounded-lg border border-border overflow-hidden bg-surface">
         <iframe
           src={preview.pdfUrl}
           className="w-full h-[720px] bg-surface"
@@ -134,7 +133,7 @@ function ContractDocumentView({
   if (preview?.origin === 'GENERATED') {
     return (
       <div
-        className="rounded-xl border border-border bg-surface p-6 prose prose-sm max-w-none dark:prose-invert"
+        className="rounded-lg border border-border bg-surface p-6 prose prose-sm max-w-none"
         {...sanitizeContractHtml(preview.html)}
       />
     );
@@ -147,7 +146,7 @@ function ContractDocumentView({
     */
     return (
       <div
-        className="rounded-xl border border-border bg-surface p-6 text-sm text-muted-foreground"
+        className="rounded-lg border border-border bg-surface p-6 text-sm text-muted-foreground"
         data-testid="contrato-sin-documento"
       >
         Este contrato se firmó fuera de Leasefy y no tiene documento digital aquí. Si necesitas una copia, pídesela a tu inmobiliaria.
@@ -155,7 +154,7 @@ function ContractDocumentView({
     );
   }
   return (
-    <div className="rounded-xl border border-border bg-surface p-8 flex items-center justify-center">
+    <div className="rounded-lg border border-border bg-surface p-8 flex items-center justify-center">
       <Spinner size="md" variant="muted" />
     </div>
   );
@@ -255,9 +254,9 @@ function ReadOnlyView({
 
   return (
     <div>
-      <div className={cn('mb-6 rounded-xl px-5 py-4 border space-y-3', tone.container)}>
+      <div className={cn('mb-6 rounded-lg px-5 py-4 border space-y-3', tone.container)}>
         <div className="flex items-center gap-3">
-          <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', tone.iconBg)}>
+          <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0', tone.iconBg)}>
             <Icon className={cn('w-5 h-5', tone.iconColor)} />
           </div>
           <p className={cn('text-sm font-medium', tone.text)}>{banner.message}</p>
@@ -273,7 +272,7 @@ function ReadOnlyView({
           {chatHref && (
             <Link
               href={chatHref}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+              className="inline-flex items-center gap-1.5 text-caption font-medium text-primary hover:underline"
             >
               <ChatCircle className="w-3.5 h-3.5" />
               {locale === 'es' ? 'Abrir chat con el propietario' : 'Open chat with landlord'}
@@ -287,7 +286,7 @@ function ReadOnlyView({
               hideArrow
               onClick={onCancelRequest}
               disabled={isCancelling}
-              className="gap-1 px-0 text-xs text-danger hover:text-danger"
+              className="gap-1 px-0 text-caption text-danger hover:text-danger"
             >
               <XCircle className="w-3.5 h-3.5" />
               {locale === 'es' ? 'Cancelar contrato' : 'Cancel contract'}
@@ -455,10 +454,8 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
         <div className="max-w-3xl p-6 lg:p-8">
           <BackButton href="/inquilino/contratos" label={locale === 'es' ? 'Volver a Mis contratos' : 'Back to My contracts'} />
           <div className="mt-8 text-center py-16">
-            <div className="w-16 h-16 rounded-xl bg-surface-muted flex items-center justify-center mx-auto mb-4">
-              <WarningCircle className="w-8 h-8 text-fg-subtle" />
-            </div>
-            <h2 className="text-lg font-semibold text-fg mb-2">
+            <WarningCircle className="w-8 h-8 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
+            <h2 className="text-h3 text-fg mb-2">
               {locale === 'es' ? 'Contrato no encontrado' : 'Contract not found'}
             </h2>
             <p className="text-fg-muted">
@@ -570,12 +567,10 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
           <>
             {/* Status Banner */}
             <div
-              className="mb-6 rounded-xl px-5 py-4 bg-primary-soft border border-primary/30 flex items-center justify-between gap-3 flex-wrap"
+              className="mb-6 rounded-lg px-5 py-4 bg-primary-soft border border-primary/30 flex items-center justify-between gap-3 flex-wrap"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
-                  <WarningCircle className="w-5 h-5 text-primary" />
-                </div>
+                <WarningCircle className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
                 <p className="text-sm font-medium text-primary">
                   {locale === 'es'
                     ? 'Revisa el contrato y firma. El propietario firmará después para cerrar el proceso.'
@@ -639,13 +634,13 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
                     hideArrow
                     onClick={() => setIsCancelModalOpen(true)}
                     disabled={isSigning || isRejecting || isCancelling}
-                    className="w-full py-1 text-xs text-danger hover:text-danger"
+                    className="w-full py-1 text-caption text-danger hover:text-danger"
                   >
                     {locale === 'es' ? 'Cancelar contrato' : 'Cancel contract'}
                   </Button>
 
                   {/* Contract Info Card */}
-                  <div className="rounded-xl border border-border bg-surface p-4">
+                  <div className="rounded-lg border border-border bg-surface p-4">
                     <MonoLabel className="block tracking-wider text-fg-muted">
                       {locale === 'es' ? 'Tipo de contrato' : 'Contract type'}
                     </MonoLabel>
@@ -656,10 +651,10 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
 
                   {/* Landlord signed info */}
                   {activeContract.landlordSignature && (
-                    <div className="rounded-xl border border-success/30 bg-success-soft p-4">
+                    <div className="rounded-lg border border-success/30 bg-success-soft p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <CheckCircle className="w-4 h-4 text-success" />
-                        <span className="text-xs font-medium text-success">
+                        <span className="text-caption font-medium text-success">
                           {locale === 'es' ? 'Propietario ya firmó' : 'Landlord already signed'}
                         </span>
                       </div>

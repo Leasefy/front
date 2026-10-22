@@ -234,7 +234,6 @@ function CaseDetail({
                   {locale === 'es'
                     ? `Ver en ${sourceLabel(caso.type, locale)}`
                     : `View in ${sourceLabel(caso.type, locale)}`}
-                  <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
                 </Link>
               </Button>
             ) : null}
@@ -258,7 +257,7 @@ function CaseDetail({
 
       {/* En qué va — quién la atiende, cuándo se movió y cuándo se espera respuesta. */}
       <section
-        className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+        className="rounded-lg border border-border bg-surface p-5 sm:p-6"
         aria-label={locale === 'es' ? 'En qué va' : 'Status'}
         data-testid="caso-en-que-va"
       >
@@ -266,10 +265,10 @@ function CaseDetail({
           <div className="flex items-center gap-2.5">
             <User className="w-4 h-4 text-fg-subtle flex-shrink-0" aria-hidden="true" />
             <div className="min-w-0">
-              <dt className="text-xs text-fg-subtle dark:text-fg-muted">
+              <dt className="text-caption text-fg-subtle">
                 {locale === 'es' ? 'Responsable' : 'Owner'}
               </dt>
-              <dd className="text-sm font-medium text-fg dark:text-white truncate">
+              <dd className="text-sm font-medium text-fg truncate">
                 {caso.responsable}
               </dd>
             </div>
@@ -277,10 +276,10 @@ function CaseDetail({
           <div className="flex items-center gap-2.5">
             <Clock className="w-4 h-4 text-fg-subtle flex-shrink-0" aria-hidden="true" />
             <div className="min-w-0">
-              <dt className="text-xs text-fg-subtle dark:text-fg-muted">
+              <dt className="text-caption text-fg-subtle">
                 {locale === 'es' ? 'Actualizado' : 'Updated'}
               </dt>
-              <dd className="text-sm font-medium text-fg dark:text-white">
+              <dd className="text-sm font-medium text-fg">
                 {formatRelative(caso.updatedAt, locale)}
               </dd>
             </div>
@@ -291,10 +290,10 @@ function CaseDetail({
             <div className="flex items-center gap-2.5">
               <CalendarBlank className="w-4 h-4 text-fg-subtle flex-shrink-0" aria-hidden="true" />
               <div className="min-w-0">
-                <dt className="text-xs text-fg-subtle dark:text-fg-muted">
+                <dt className="text-caption text-fg-subtle">
                   {locale === 'es' ? 'Respuesta esperada' : 'Expected response'}
                 </dt>
-                <dd className="text-sm font-medium text-fg dark:text-white">
+                <dd className="text-sm font-medium text-fg">
                   {sla.estimated
                     ? locale === 'es'
                       ? `Respuesta estimada hacia el ${slaDate}`
@@ -304,7 +303,7 @@ function CaseDetail({
                       : `Response by ${slaDate}`}
                   {sla.estimated && (
                     <span
-                      className="ml-1.5 font-normal text-fg-subtle dark:text-fg-muted"
+                      className="ml-1.5 font-normal text-fg-subtle"
                       title={
                         locale === 'es'
                           ? 'Fecha estimada; tu inmobiliaria confirma la definitiva.'
@@ -331,10 +330,10 @@ function CaseDetail({
 
       {/* State timeline (CASO-02 core) — source-timestamp-only events */}
       <section
-        className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6"
+        className="rounded-lg border border-border bg-surface p-5 sm:p-6"
         data-testid="caso-historial"
       >
-        <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
+        <h2 className="text-sm font-medium text-fg mb-4">
           {locale === 'es' ? 'Historial' : 'Timeline'}
         </h2>
         <PlanActivityTimeline

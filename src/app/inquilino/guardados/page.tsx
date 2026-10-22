@@ -2,7 +2,7 @@
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useState } from 'react';
-import { Heart, MagnifyingGlass, TrashSimple, MapPin, CaretRight, House, Plus, Check } from '@phosphor-icons/react';
+import { Heart, MagnifyingGlass, TrashSimple, MapPin, Plus } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import { motion } from 'framer-motion';
@@ -184,7 +184,7 @@ export default function GuardadosPage() {
               {properties.map((property) => (
                 <StaggerItem
                   key={property.id}
-                  className="group relative overflow-hidden rounded-xl border border-border bg-surface hover:border-border-strong transition-colors duration-slow"
+                  className="group relative overflow-hidden rounded-lg border border-border bg-surface hover:border-border-strong transition-colors duration-slow"
                 >
                   {/* Image */}
                   <button
@@ -233,16 +233,16 @@ export default function GuardadosPage() {
                         onClick={() => handleViewProperty(property)}
                         className="text-left flex-1"
                       >
-                        <h3 className="font-semibold text-fg group-hover:text-primary transition-colors line-clamp-1">
+                        <h3 className="font-medium text-fg group-hover:text-primary transition-colors line-clamp-1">
                           {property.title}
                         </h3>
                       </button>
-                      <p className="text-lg font-bold text-fg whitespace-nowrap flex-shrink-0">
+                      <p className="font-mono text-body tabular-nums text-fg whitespace-nowrap flex-shrink-0">
                         {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
                         {property.monthlyRent != null ? (
                           <>
                             {formatCurrency(property.monthlyRent)}
-                            <span className="text-xs font-normal text-fg-muted">/{locale === 'es' ? 'mes' : 'mo'}</span>
+                            <span className="text-caption font-normal text-fg-muted">/{locale === 'es' ? 'mes' : 'mo'}</span>
                           </>
                         ) : (
                           '—'
@@ -256,10 +256,10 @@ export default function GuardadosPage() {
                     </p>
 
                     <div className="flex items-center gap-2 pt-3 border-t border-border-faint">
-                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-xs text-fg-muted font-medium">
+                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted font-medium">
                         {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
                       </span>
-                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-xs text-fg-muted font-medium">
+                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted font-medium">
                         {property.bathrooms}{' '}
                         {locale === 'es'
                           ? property.bathrooms === 1
@@ -267,7 +267,7 @@ export default function GuardadosPage() {
                             : 'baños'
                           : 'bath'}
                       </span>
-                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-xs text-fg-muted font-medium">
+                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted font-medium">
                         {property.area} m²
                       </span>
                     </div>
@@ -279,15 +279,13 @@ export default function GuardadosPage() {
               <StaggerItem key="agregar-mas">
                 <Link
                   href="/propiedades" target="_blank" rel="noopener noreferrer"
-                  className="flex flex-col items-center justify-center h-full min-h-[280px] rounded-xl border-2 border-dashed border-border bg-surface-muted/50 hover:border-primary/30 hover:bg-primary-soft/50 transition-colors group"
+                  className="flex flex-col items-center justify-center h-full min-h-[280px] rounded-lg border-2 border-dashed border-border bg-surface-muted/50 hover:border-primary/30 hover:bg-primary-soft/50 transition-colors group"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mb-3 group-hover:bg-primary-soft transition-colors">
-                    <Plus className="w-6 h-6 text-fg-subtle group-hover:text-primary transition-colors" />
-                  </div>
+                  <Plus className="w-6 h-6 text-fg-subtle group-hover:text-primary transition-colors shrink-0" aria-hidden="true" />
                   <p className="text-sm font-medium text-fg-muted group-hover:text-primary transition-colors">
                     {locale === 'es' ? 'Agregar más' : 'Add more'}
                   </p>
-                  <p className="text-xs text-fg-subtle mt-1">
+                  <p className="text-caption text-fg-subtle mt-1">
                     {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
                   </p>
                 </Link>
@@ -295,14 +293,12 @@ export default function GuardadosPage() {
             </Stagger>
 
             {/* Summary Card */}
-            <div className="mt-8 rounded-xl bg-primary-soft border border-primary/30 p-6">
+            <div className="mt-8 rounded-lg bg-primary-soft border border-primary/30 p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-surface border border-primary/30 flex items-center justify-center">
-                    <Heart className="w-6 h-6 text-primary" />
-                  </div>
+                  <Heart className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
                   <div>
-                    <p className="font-semibold text-fg">
+                    <p className="font-medium text-fg">
                       <AnimatedNumber value={displayCount} /> {displayCount === 1 ? (locale === 'es' ? 'propiedad guardada' : 'saved property') : (locale === 'es' ? 'propiedades guardadas' : 'saved properties')}
                     </p>
                     <p className="text-sm text-fg-muted">

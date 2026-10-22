@@ -19,7 +19,7 @@
  *
  * Shell + gates are copied from `casos/page.tsx` (Spinner loading → onboarding
  * `CompleteProfileFirst` → error `EmptyState`; `min-h-screen bg-[#f8f8f8]
- * dark:bg-bg` + `max-w-7xl`). Neutral tone only (no red, no countdown, no
+ *` + `max-w-7xl`). Neutral tone only (no red, no countdown, no
  * credit-bureau copy). Buttons/labels sentence case (DESIGN §4).
  */
 
@@ -78,15 +78,13 @@ function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
   return (
     <div>
       <Link href={`/inquilino/acuerdos/${encodeURIComponent(p.planId)}`} className="group block">
-        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-4 sm:p-5 hover:border-primary/40 transition-colors">
+        <div className="rounded-lg border border-border bg-surface p-4 sm:p-5 hover:border-primary/40 transition-colors">
           <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-              <Scroll className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-            </div>
+            <Scroll className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm sm:text-base font-semibold text-fg dark:text-white group-hover:text-primary transition-colors truncate">
+                <h3 className="text-sm sm:text-base font-medium text-fg group-hover:text-primary transition-colors truncate">
                   {locale === 'es' ? 'Acuerdo de pago' : 'Payment agreement'}
                 </h3>
                 <Badge variant={badge.variant} className="inline-flex items-center gap-1">
@@ -94,8 +92,8 @@ function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
                   {etiquetaDelAcuerdo(p)}
                 </Badge>
               </div>
-              <p className="text-xs text-fg-muted dark:text-fg-subtle mt-1">
-                <span className="font-mono tabular-nums text-fg dark:text-white">
+              <p className="text-caption text-fg-muted mt-1">
+                <span className="font-mono tabular-nums text-fg">
                   {formatCurrency(p.totalDueCop)}
                 </span>
                 {' · '}
@@ -115,7 +113,7 @@ function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
 
           {/* Cuota plan — rendered VERBATIM from the record (no saldo math) */}
           {p.installments.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-border dark:border-border-strong">
+            <div className="mt-4 pt-4 border-t border-border">
               <CuotaPlanTable installments={p.installments} locale={locale} acuerdoCerrado={acuerdoNoSeCobra(p)} />
             </div>
           )}

@@ -16,7 +16,7 @@
  *
  * Shell + gates are copied from `casos/page.tsx` (Spinner loading → onboarding
  * `CompleteProfileFirst` → error `EmptyState`; `min-h-screen bg-[#f8f8f8]
- * dark:bg-bg` + `max-w-7xl`). Buttons sentence case (DESIGN §4).
+ *` + `max-w-7xl`). Buttons sentence case (DESIGN §4).
  */
 
 import { useEffect, useState } from 'react';
@@ -136,19 +136,17 @@ function SolicitudRow({ s, locale }: { s: SolicitudPqrs; locale: string }) {
   return (
     <StaggerItem>
       <Link href={`/inquilino/casos/${encodeURIComponent(s.id)}`} className="group block">
-        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-4 sm:p-5 flex items-center gap-4 hover:border-border dark:hover:border-border-strong transition-colors">
-          <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-            <TypeIcon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-          </div>
+        <div className="rounded-lg border border-border bg-surface p-4 sm:p-5 flex items-center gap-4 hover:border-border transition-colors">
+          <TypeIcon className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm sm:text-base font-semibold text-fg dark:text-white group-hover:text-primary transition-colors truncate">
+              <h3 className="text-sm sm:text-base font-medium text-fg group-hover:text-primary transition-colors truncate">
                 {s.asunto}
               </h3>
               {/* SO-20: el número de radicado. */}
               {s.radicado && (
-                <span className="font-mono text-xs text-fg-muted" data-testid="solicitud-radicado">
+                <span className="font-mono text-caption text-fg-muted" data-testid="solicitud-radicado">
                   {s.radicado}
                 </span>
               )}
@@ -157,7 +155,7 @@ function SolicitudRow({ s, locale }: { s: SolicitudPqrs; locale: string }) {
                 {pqrsStatusToLabel(s.estado)}
               </Badge>
             </div>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle mt-1">
+            <p className="text-caption text-fg-muted mt-1">
               <ExpectedResponseLine s={s} locale={locale} />
             </p>
           </div>

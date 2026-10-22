@@ -53,7 +53,7 @@ const COMO_TERMINO: Record<ContratoDeLaPersona['termino'], string> = {
 function Seccion({ titulo, descripcion, children }: { titulo: string; descripcion?: string; children: React.ReactNode }) {
   const tr = useTr();
   return (
-    <section className="rounded-lg border border-border bg-surface p-6 dark:border-border-strong">
+    <section className="rounded-lg border border-border bg-surface p-6">
       <h2 className="text-base font-medium text-fg">{tr(titulo)}</h2>
       {descripcion && <p className="mt-1 max-w-2xl text-sm text-fg-muted">{tr(descripcion)}</p>}
       <div className="mt-4">{children}</div>
@@ -151,7 +151,7 @@ function Evaluacion({ e, alResponder }: { e: EvaluacionDeFin; alResponder: () =>
     }
   };
   return (
-    <div className="rounded-md border border-border p-4 dark:border-border-strong">
+    <div className="rounded-md border border-border p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm font-medium text-fg">
           {e.inmobiliaria ?? tr('Una inmobiliaria')}
@@ -325,7 +325,7 @@ export default function MiCalificacionPage({
         {contratos.length === 0 ? (
           <p className="text-sm text-fg-muted">{tr('Todavía no tienes arriendos con historial de pagos en Leasefy.')}</p>
         ) : (
-          <div className="divide-y divide-border dark:divide-border-strong">
+          <div className="divide-y divide-border">
             {contratos.map((k) => (
               <div key={k.contractId} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
@@ -366,7 +366,7 @@ export default function MiCalificacionPage({
             {tr('Nadie la ha consultado todavía.')}
           </p>
         ) : (
-          <ul className="divide-y divide-border text-sm dark:divide-border-strong">
+          <ul className="divide-y divide-border text-sm">
             {datos.consultas.lista.slice(0, 20).map((c, i) => (
               <li key={`${c.cuando}-${i}`} className="flex justify-between gap-3 py-2">
                 <span className="text-fg">{c.inmobiliaria}</span>

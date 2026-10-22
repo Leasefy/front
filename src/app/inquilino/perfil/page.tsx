@@ -383,16 +383,14 @@ export default function PerfilPage() {
         {/* Setup Progress Section — la barra, el anillo y el porcentaje se
             revelan desde 0 y, al completar un paso, avanzan desde donde estaban. */}
         <section className="mb-8">
-          <div className="rounded-xl bg-primary-soft p-6">
+          <div className="rounded-lg bg-primary-soft p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               {/* Progress Info */}
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-primary" />
-                  </div>
+                  <Shield className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
                   <div>
-                    <h2 className="text-lg font-semibold text-fg">
+                    <h2 className="text-h3 text-fg">
                       {t('profile.completion.title')}
                     </h2>
                     <p className="text-sm text-primary">
@@ -411,7 +409,7 @@ export default function PerfilPage() {
                     className="h-full w-full bg-primary rounded-full"
                   />
                 </div>
-                <p className="text-xs text-fg-muted mt-2">
+                <p className="text-caption text-fg-muted mt-2">
                   {completionPercentage === 100
                     ? (locale === 'es' ? '¡Perfil completo! Tienes acceso a todas las funciones.' : 'Profile complete! You have access to all features.')
                     : t('profile.completion.completeFor')}
@@ -430,7 +428,7 @@ export default function PerfilPage() {
                       stroke="white"
                       strokeWidth="8"
                       opacity="0.5"
-                      className="dark:opacity-20"
+                      className=""
                     />
                     <motion.circle
                       cx="50"
@@ -446,7 +444,7 @@ export default function PerfilPage() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-fg">
+                    <span className="font-mono text-h3 tabular-nums text-fg">
                       <AnimatedNumber value={completionPercentage} from={0} format={(n) => String(Math.round(n))} />%
                     </span>
                   </div>
@@ -462,7 +460,7 @@ export default function PerfilPage() {
                   <div
                     key={step.id}
                     className={cn(
-                      'rounded-xl p-4 transition-colors',
+                      'rounded-lg p-4 transition-colors',
                       step.completed
                         ? 'bg-surface/80'
                         : 'bg-surface border-2 border-dashed border-primary/30'
@@ -470,7 +468,7 @@ export default function PerfilPage() {
                   >
                     <div className="flex items-start gap-3">
                       <div className={cn(
-                        'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0',
+                        'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
                         step.completed
                           ? 'bg-success-soft'
                           : 'bg-primary-soft'
@@ -489,14 +487,14 @@ export default function PerfilPage() {
                           {step.label}
                         </p>
                         {step.completed ? (
-                          <span className="text-xs text-success">{locale === 'es' ? 'Completado' : 'Completed'}</span>
+                          <span className="text-caption text-success">{locale === 'es' ? 'Completado' : 'Completed'}</span>
                         ) : (
                           <Button
                             variant="link"
                             size="sm"
                             hideArrow
                             onClick={() => setEditingSection(step.section)}
-                            className="px-0 text-xs text-primary"
+                            className="px-0 text-caption text-primary"
                           >
                             {locale === 'es' ? 'Completar' : 'Complete'} →
                           </Button>
@@ -514,7 +512,7 @@ export default function PerfilPage() {
           {/* Profile Card */}
           <div className="lg:col-span-1 space-y-6">
             {/* Avatar Card */}
-            <div className="rounded-xl border border-border bg-surface overflow-hidden">
+            <div className="rounded-lg border border-border bg-surface overflow-hidden">
               <div className="relative bg-primary-soft h-28">
                 {/* Edit button for avatar section */}
                 {editingSection !== 'avatar' && (
@@ -578,7 +576,7 @@ export default function PerfilPage() {
                     onDrop={handleDrop}
                     onClick={handleAvatarClick}
                     className={cn(
-                      "mb-4 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors",
+                      "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
                       isDragging
                         ? "border-primary/30 bg-primary-soft"
                         : "border-border hover:border-primary/30 hover:bg-surface-muted"
@@ -600,7 +598,7 @@ export default function PerfilPage() {
                             <p className="text-sm font-medium text-fg">
                               {locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}
                             </p>
-                            <p className="text-xs text-fg-muted">
+                            <p className="text-caption text-fg-muted">
                               {locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}
                             </p>
                           </div>
@@ -618,15 +616,13 @@ export default function PerfilPage() {
                       </div>
                     ) : (
                       <>
-                        <div className="w-12 h-12 rounded-xl bg-surface-muted flex items-center justify-center mx-auto mb-3">
-                          <Upload className="w-6 h-6 text-fg-subtle" />
-                        </div>
+                        <Upload className="w-6 h-6 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
                         <p className="text-sm font-medium text-fg-muted">
                           {isDragging
                             ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here')
                             : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
                         </p>
-                        <p className="text-xs text-fg-muted mt-1">
+                        <p className="text-caption text-fg-muted mt-1">
                           {locale === 'es' ? 'Arrastra o haz clic • JPG, PNG (máx. 5MB)' : 'Drag or click • JPG, PNG (max 5MB)'}
                         </p>
                       </>
@@ -634,7 +630,7 @@ export default function PerfilPage() {
                   </div>
                 </Collapse>
 
-                <h2 className="text-xl font-semibold text-fg">{displayName}</h2>
+                <h2 className="text-h3 text-fg">{displayName}</h2>
                 <p className="text-sm text-fg-muted mt-1">{user.email}</p>
 
                 {/* FloppyDisk/Cancel buttons for avatar section */}
@@ -669,15 +665,15 @@ export default function PerfilPage() {
             {/* Verification Status Card — only real signals (Supabase email confirmation).
                 There is no phone/identity verification system in the backend. */}
             {emailVerified && (
-              <div className="rounded-xl border border-border bg-surface p-6">
-                <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
+              <div className="rounded-lg border border-border bg-surface p-6">
+                <h3 className="font-medium text-fg mb-4 flex items-center gap-2">
                   <Shield className="w-5 h-5 text-fg-subtle" />
                   {t('profile.verification.title')}
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-surface-muted border border-border-faint">
+                  <div className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-surface-muted border border-border-faint">
                     <span className="text-sm font-medium text-fg">Email</span>
-                    <span className="flex items-center gap-1.5 text-xs font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
+                    <span className="flex items-center gap-1.5 text-caption font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
                       <CheckCircle className="w-3.5 h-3.5" />
                       {t('profile.verification.verified')}
                     </span>
@@ -691,9 +687,9 @@ export default function PerfilPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Personal Information — Editar ↔ ver: las acciones y los campos se
                 cruzan (lo nuevo entra ya, lo viejo sale por encima). */}
-            <div className="rounded-xl border border-border bg-surface p-6">
+            <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-fg">{t('profile.personalInfo')}</h3>
+                <h3 className="font-medium text-fg">{t('profile.personalInfo')}</h3>
                 <CrossFade swapKey={editingSection === 'personal' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'personal' ? (
                   <Button
@@ -749,12 +745,12 @@ export default function PerfilPage() {
                         {...propsDelCampo('firstName')}
                         value={formData.firstName}
                         onChange={(e) => handleInputChange('firstName', e.target.value)}
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                       />
                       {errorDelCampo('firstName')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <UserIcon className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">{user.firstName || notSet}</span>
                     </div>
@@ -772,12 +768,12 @@ export default function PerfilPage() {
                         {...propsDelCampo('lastName')}
                         value={formData.lastName}
                         onChange={(e) => handleInputChange('lastName', e.target.value)}
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                       />
                       {errorDelCampo('lastName')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <UserIcon className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">{user.lastName || notSet}</span>
                     </div>
@@ -789,7 +785,7 @@ export default function PerfilPage() {
                     Email
                   </label>
                   {/* Email is managed by the auth provider and is not editable here */}
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                     <Envelope className="w-4 h-4 text-fg-subtle" />
                     <span className="text-sm text-fg">{user.email}</span>
                   </div>
@@ -807,12 +803,12 @@ export default function PerfilPage() {
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         placeholder="+573001234567"
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                       />
                       {errorDelCampo('phone')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <Phone className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">{user.phone || notSet}</span>
                     </div>
@@ -831,11 +827,11 @@ export default function PerfilPage() {
                         value={formData.rut}
                         onChange={(e) => handleInputChange('rut', e.target.value)}
                         disabled={isRutLocked(user)}
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                       />
                       {errorDelCampo('rut')}
                       {isRutLocked(user) && (
-                        <p className="mt-2 text-xs text-fg-subtle">
+                        <p className="mt-2 text-caption text-fg-subtle">
                           {locale === 'es'
                             ? 'Para modificar tu número de documento, contacta al soporte de Leasefy.'
                             : 'To change your document number, contact Leasefy support.'}
@@ -843,7 +839,7 @@ export default function PerfilPage() {
                       )}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <Shield className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">{user.rut || notSet}</span>
                     </div>
@@ -861,12 +857,12 @@ export default function PerfilPage() {
                         etiqueta={t('profile.dateOfBirth')}
                         value={formData.birthDate}
                         onChange={(v) => handleInputChange('birthDate', v)}
-                        className="rounded-xl bg-surface-muted"
+                        className="rounded-lg bg-surface-muted"
                       />
                       {errorDelCampo('birthDate')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <Calendar className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">
                         {user.birthDate
@@ -892,12 +888,12 @@ export default function PerfilPage() {
                         {...propsDelCampo('address')}
                         value={formData.address}
                         onChange={(e) => handleInputChange('address', e.target.value)}
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                       />
                       {errorDelCampo('address')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <MapPin className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">{user.address || notSet}</span>
                     </div>
@@ -907,9 +903,9 @@ export default function PerfilPage() {
             </div>
 
             {/* Emergency Contact — mismo cruce que los datos personales. */}
-            <div className="rounded-xl border border-border bg-surface p-6">
+            <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-fg">{t('profile.emergencyContact')}</h3>
+                <h3 className="font-medium text-fg">{t('profile.emergencyContact')}</h3>
                 <CrossFade swapKey={editingSection === 'emergency' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'emergency' ? (
                   <Button
@@ -965,13 +961,13 @@ export default function PerfilPage() {
                         {...propsDelCampo('emergencyContactName')}
                         value={formData.emergencyContactName}
                         onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                         placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'}
                       />
                       {errorDelCampo('emergencyContactName')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <UserPlus className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">{user.emergencyContactName || notSet}</span>
                     </div>
@@ -988,13 +984,13 @@ export default function PerfilPage() {
                         {...propsDelCampo('emergencyContactPhone')}
                         value={formData.emergencyContactPhone}
                         onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
-                        className="w-full rounded-xl bg-surface-muted"
+                        className="w-full rounded-lg bg-surface-muted"
                         placeholder="3001234567"
                       />
                       {errorDelCampo('emergencyContactPhone')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <Phone className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">{user.emergencyContactPhone || notSet}</span>
                     </div>
@@ -1007,8 +1003,8 @@ export default function PerfilPage() {
             <PreferencesSection />
 
             {/* Danger Zone */}
-            <div className="rounded-xl border border-danger/30 bg-danger-soft/30 p-6">
-              <h3 className="font-semibold text-danger mb-2 flex items-center gap-2">
+            <div className="rounded-lg border border-danger/30 bg-danger-soft/30 p-6">
+              <h3 className="font-medium text-danger mb-2 flex items-center gap-2">
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
@@ -1060,7 +1056,7 @@ export default function PerfilPage() {
                   <DialogTitle>{locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}</DialogTitle>
                   <DialogDescription>
                     {deletionCopy.confirmInstructionPrefix}{' '}
-                    <span className="font-mono font-semibold text-danger">{deletionCopy.confirmWord}</span>{' '}
+                    <span className="font-mono font-medium text-danger">{deletionCopy.confirmWord}</span>{' '}
                     {deletionCopy.confirmInstructionSuffix}
                   </DialogDescription>
                 </>
@@ -1127,14 +1123,14 @@ export default function PerfilPage() {
                   </div>
 
                   {/* Active lease warning */}
-                  <div className="p-4 rounded-xl bg-warning-soft border border-warning/30">
+                  <div className="p-4 rounded-lg bg-warning-soft border border-warning/30">
                     <div className="flex items-start gap-3">
                       <WarningCircle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-warning">
                           {locale === 'es' ? '¿Tienes un arriendo activo?' : 'Do you have an active rental?'}
                         </p>
-                        <p className="text-xs text-warning mt-0.5">
+                        <p className="text-caption text-warning mt-0.5">
                           {locale === 'es'
                             ? 'No vas a poder darte de baja mientras tengas un contrato de arriendo activo a tu nombre: eliminar tu cuenta no cancela el contrato. Para terminarlo, contacta a tu arrendador.'
                             : 'You cannot delete your account while you have an active lease in your name: deleting your account does not cancel the lease. To end it, contact your landlord.'}

@@ -2,9 +2,10 @@
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { Handshake, MapPin, Calendar, CurrencyDollar, PenNib, Clock, CheckCircle, XCircle, WarningCircle } from '@phosphor-icons/react';
+import { Handshake, MapPin, PenNib, Clock, CheckCircle, XCircle } from '@phosphor-icons/react';
 
 import { useContracts } from '@/lib/hooks/useContracts';
 import { useI18n } from '@/lib/i18n';
@@ -44,7 +45,7 @@ function ContractCard({ contract }: { contract: Contract }) {
   return (
     <div
       className={cn(
-        'rounded-xl border bg-surface p-6 transition-[border-color,box-shadow]',
+        'rounded-lg border bg-surface p-6 transition-[border-color,box-shadow]',
         isPendingTenant
           ? 'border-primary/30 ring-2 ring-primary/10'
           : 'border-border'
@@ -52,7 +53,7 @@ function ContractCard({ contract }: { contract: Contract }) {
     >
       {/* Action needed banner */}
       {isPendingTenant && (
-        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-primary-soft border border-primary/30">
+        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-primary-soft border border-primary/30">
           <PenNib className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium text-primary">
             {locale === 'es' ? 'Requiere tu firma' : 'Requires your signature'}
@@ -63,11 +64,9 @@ function ContractCard({ contract }: { contract: Contract }) {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
-            <MapPin className="w-5 h-5 text-fg-muted" />
-          </div>
+          <MapPin className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
           <div className="min-w-0">
-            <h3 className="font-semibold text-fg truncate">
+            <h3 className="font-medium text-fg truncate">
               {contract.propertyId === null ? 'Sin inmueble' : contract.propertyAddress}
             </h3>
             {contract.propertyCity && (
@@ -78,7 +77,7 @@ function ContractCard({ contract }: { contract: Contract }) {
           </div>
         </div>
         <span className={cn(
-          'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0',
+          'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-medium flex-shrink-0',
           statusCfg.color
         )}>
           <StatusIcon className="w-3.5 h-3.5" />
@@ -89,15 +88,15 @@ function ContractCard({ contract }: { contract: Contract }) {
       {/* Details grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-5">
         <div>
-          <p className="text-xs text-fg-muted mb-0.5">
+          <p className="text-caption text-fg-muted mb-0.5">
             {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
           </p>
-          <p className="text-sm font-semibold text-fg">
+          <p className="text-sm font-medium text-fg">
             {formatCanon(contract.monthlyRent) ?? '—'}
           </p>
         </div>
         <div>
-          <p className="text-xs text-fg-muted mb-0.5">
+          <p className="text-caption text-fg-muted mb-0.5">
             {locale === 'es' ? 'Inicio' : 'Start'}
           </p>
           <p className="text-sm font-medium text-fg">
@@ -105,7 +104,7 @@ function ContractCard({ contract }: { contract: Contract }) {
           </p>
         </div>
         <div>
-          <p className="text-xs text-fg-muted mb-0.5">
+          <p className="text-caption text-fg-muted mb-0.5">
             {locale === 'es' ? 'Fin' : 'End'}
           </p>
           <p className="text-sm font-medium text-fg">
@@ -115,21 +114,20 @@ function ContractCard({ contract }: { contract: Contract }) {
       </div>
 
       {/* Actions */}
+      {/* El Button de Cadence (no un enlace pintado a mano): firmar es la azul; ver, la de borde. */}
       {isPendingTenant ? (
-        <Link
-          href={`/inquilino/contratos/${contract.id}/firmar`}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary hover:opacity-90 text-white text-sm font-semibold transition-colors"
-        >
-          <PenNib className="w-4 h-4" />
-          {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}
-        </Link>
+        <Button asChild hideArrow className="w-full">
+          <Link href={`/inquilino/contratos/${contract.id}/firmar`}>
+            <PenNib className="w-4 h-4" />
+            {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}
+          </Link>
+        </Button>
       ) : (
-        <Link
-          href={`/inquilino/contratos/${contract.id}/firmar`}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-border text-sm font-medium text-fg hover:bg-surface-muted transition-colors"
-        >
-          {locale === 'es' ? 'Ver contrato' : 'View contract'}
-        </Link>
+        <Button asChild variant="outline" hideArrow className="w-full">
+          <Link href={`/inquilino/contratos/${contract.id}/firmar`}>
+            {locale === 'es' ? 'Ver contrato' : 'View contract'}
+          </Link>
+        </Button>
       )}
     </div>
   );

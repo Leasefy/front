@@ -596,7 +596,7 @@ export function CuerpoDelCajon({
             >
               {/* El subtítulo acompaña a una lista; nunca queda flotando sobre
                   la nada, porque sin arriendos esta sección no se pinta. */}
-              <p className="text-xs text-fg-muted">{t(`${NS}.arriendosIncluyeTerminados`)}</p>
+              <p className="text-caption text-fg-muted">{t(`${NS}.arriendosIncluyeTerminados`)}</p>
 
               {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}
 
@@ -606,7 +606,7 @@ export function CuerpoDelCajon({
                     <RenglonDeArriendo arriendo={a} />
                     <Link
                       href={`/panel/inmobiliaria/contratos/${a.contractId}`}
-                      className="inline-flex items-center gap-1 px-3 text-xs text-primary hover:underline"
+                      className="inline-flex items-center gap-1 px-3 text-caption text-primary hover:underline"
                     >
                       {t(`${NS}.verContrato`)}
                       <ArrowSquareOut className="h-3 w-3" aria-hidden="true" />
@@ -622,7 +622,7 @@ export function CuerpoDelCajon({
                 titulo={t(`${NS}.cobrosEmitidos`)}
                 conteo={cobrosLlegaron ? cobros.length : undefined}
                 meta={
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-muted">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-fg-muted">
                     {resumen.ultimoPago ? (
                       <span>{t(`${NS}.ultimoPago`, { fecha: formatDate(resumen.ultimoPago) })}</span>
                     ) : null}
@@ -685,7 +685,7 @@ export function CuerpoDelCajon({
                     />
                   ) : (
                     <>
-                      <p className="text-xs text-fg-muted">{t(`${NS}.pagosDeSusContratos`)}</p>
+                      <p className="text-caption text-fg-muted">{t(`${NS}.pagosDeSusContratos`)}</p>
                       {pagosIncompletos ? <Aviso texto={t(`${NS}.pagosIncompletos`)} /> : null}
                       <Stagger as="ul" className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
                         {visibles.map((c) => (
@@ -695,7 +695,7 @@ export function CuerpoDelCajon({
                         ))}
                       </Stagger>
                       {cobros.length > visibles.length ? (
-                        <p className="text-xs text-fg-muted">
+                        <p className="text-caption text-fg-muted">
                           {cobros.length - visibles.length === 1
                             ? t(`${NS}.yMasCobrosUno`)
                             : t(`${NS}.yMasCobros`, { n: cobros.length - visibles.length })}
@@ -704,7 +704,7 @@ export function CuerpoDelCajon({
                       {contratoPrincipal ? (
                         <Link
                           href={`/panel/inmobiliaria/contratos/${contratoPrincipal}`}
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          className="inline-flex items-center gap-1 text-caption text-primary hover:underline"
                         >
                           {t(`${NS}.verCobrosDelContrato`)}
                           <ArrowSquareOut className="h-3 w-3" aria-hidden="true" />
@@ -746,7 +746,7 @@ export function CuerpoDelCajon({
                 {persona.nombre}
               </p>
             )}
-            <p className="mt-0.5 text-xs text-fg-subtle">
+            <p className="mt-0.5 text-caption text-fg-subtle">
               {sinArriendos
                 ? t('inquilinos.sinArriendo')
                 : persona.arriendos.length === 1
@@ -901,7 +901,7 @@ function Seccion({
         <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
           {titulo}
           {conteo !== undefined ? (
-            <span className="rounded-full bg-surface-muted px-2 py-0.5 font-mono text-xs font-medium tabular-nums text-fg-muted">
+            <span className="rounded-full bg-surface-muted px-2 py-0.5 font-mono text-caption font-medium tabular-nums text-fg-muted">
               {conteo}
             </span>
           ) : null}
@@ -957,17 +957,17 @@ function FilaDePago({ cobro }: { cobro: CobroConDesglose }) {
             </Badge>
           )}
           {anterior ? (
-            <span className="text-xs text-fg-muted">
+            <span className="text-caption text-fg-muted">
               {locale === 'en'
                 ? 'Not charged here: it is older than the contract’s portfolio date.'
                 : 'No se cobra aquí: es anterior a la fecha de cartera del contrato.'}
             </span>
           ) : cobro.paidDate && !debe ? (
-            <span className="text-xs text-fg-muted">
+            <span className="text-caption text-fg-muted">
               {t(`${NS}.pagadoEl`, { fecha: formatDate(cobro.paidDate) })}
             </span>
           ) : (
-            <span className="text-xs text-fg-muted">
+            <span className="text-caption text-fg-muted">
               {t(`${NS}.vencimiento`, { fecha: formatDate(cobro.dueDate) })}
             </span>
           )}
@@ -981,7 +981,7 @@ function FilaDePago({ cobro }: { cobro: CobroConDesglose }) {
           {formatCurrency(cobro.totalWithFees ?? cobro.totalAmount)}
         </span>
         {debe ? (
-          <span className="whitespace-nowrap text-right font-mono text-xs tabular-nums text-fg-muted">
+          <span className="whitespace-nowrap text-right font-mono text-caption tabular-nums text-fg-muted">
             {t(`${NS}.saldoDelCobro`, { monto: formatCurrency(cobro.pendingAmount) })}
           </span>
         ) : (
@@ -1009,7 +1009,7 @@ function Numero({
 }) {
   return (
     <div className="min-w-0 py-2.5 first:pt-0 last:pb-0 sm:px-4 sm:py-0 sm:first:pl-0 sm:last:pr-0">
-      <dt className="text-xs text-fg-muted">{etiqueta}</dt>
+      <dt className="text-caption text-fg-muted">{etiqueta}</dt>
       <dd
         className={cn(
           // I-28: una cifra de plata NUNCA se corta con «…»: no se puede leer cuánto debe.
@@ -1022,7 +1022,7 @@ function Numero({
       {detalle ? (
         <dd
           className={cn(
-            'mt-0.5 text-xs',
+            'mt-0.5 text-caption',
             detalleTono === 'alerta'
               ? 'text-danger'
               : detalleTono === 'aviso'
@@ -1124,7 +1124,7 @@ function BotonCopiar({ texto }: { texto: string }) {
 /** Un dato que llegó incompleto. No es un error de pantalla: es una advertencia. */
 function Aviso({ texto }: { texto: string }) {
   return (
-    <p className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft/40 px-3 py-2 text-xs text-fg">
+    <p className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft/40 px-3 py-2 text-caption text-fg">
       <Warning className="mt-px h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
       {texto}
     </p>

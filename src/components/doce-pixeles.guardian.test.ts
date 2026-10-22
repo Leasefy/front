@@ -106,7 +106,7 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // esas pantallas enteras a 13: compromisos del deudor, reporte diario,
 // suscripción, umbrales, fallidos y auditoría (35 textos a `text-caption`; los
 // rótulos en mayúsculas se quedan en 12).
-const CUANTOS_HABIA = 881; // 22-10: bajó con el glow up (ratchet)
+const CUANTOS_HABIA = 747; // 22-10 tarde: 747 con el barrido de 11 componentes del panel (cartera, giros, extracto, recibos, ficha del propietario)
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

@@ -8,7 +8,6 @@ import {
   Printer,
   Envelope,
   Calendar,
-  Buildings,
   User,
   CurrencyCircleDollar,
   CheckCircle,
@@ -22,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Avatar } from '@/components/ui/avatar';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
@@ -372,11 +372,9 @@ export function ExtractoPropietario({
       <div className="p-6 border-b border-border bg-surface-muted print:bg-transparent">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center">
-              <Buildings className="w-7 h-7 text-white" weight="fill" />
-            </div>
+            <Avatar kind="marca" name={agencyConfig?.name ?? ''} size="lg" className="shrink-0" />
             <div>
-              <h1 className="text-xl font-bold text-foreground">
+              <h1 className="text-h3 text-foreground">
                 {agencyConfig?.name}
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -553,7 +551,7 @@ export function ExtractoPropietario({
                             {prop.propertyTitle}
                           </span>
                           {direccionSiEsOtra(prop.propertyTitle, prop.propertyAddress) && (
-                            <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                            <span className="text-caption text-muted-foreground truncate max-w-[180px]">
                               {prop.propertyAddress}
                             </span>
                           )}
@@ -598,7 +596,7 @@ export function ExtractoPropietario({
                       </TableCell>
                       <TableCell className="text-center">
                         <span className={cn(
-                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
+                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-medium',
                           getCobroStatusColor(estado)
                         )}>
                           <StatusIcon className="w-3 h-3" weight="fill" />
@@ -607,7 +605,7 @@ export function ExtractoPropietario({
                       </TableCell>
                       <TableCell className="text-right text-sm text-primary">
                         {formatCurrency(prop.commissionAmount)}
-                        <span className="block text-xs text-muted-foreground" data-testid="extracto-comision-pct">
+                        <span className="block text-caption text-muted-foreground" data-testid="extracto-comision-pct">
                           {prop.commissionPercent} %
                         </span>
                       </TableCell>
@@ -627,7 +625,7 @@ export function ExtractoPropietario({
                         {formatCurrency(prop.netAmount)}
                         {/* QA-PROP-95 C-10: en qué va el giro de esta línea. */}
                         {estadoDelGiroDeLaLinea(prop) && (
-                          <span className="block text-xs font-normal text-muted-foreground" data-testid="estado-del-giro">
+                          <span className="block text-caption font-normal text-muted-foreground" data-testid="estado-del-giro">
                             {estadoDelGiroDeLaLinea(prop)}
                           </span>
                         )}
@@ -725,7 +723,7 @@ export function ExtractoPropietario({
               {/* «Causado» no es una palabra que un propietario use todos los
                   días: se dice qué es. Con las dos bases, las dos. */}
               {base !== 'RECAUDADO' && (
-                <p className="-mt-1.5 text-xs text-muted-foreground" data-testid="extracto-que-es-el-canon">
+                <p className="-mt-1.5 text-caption text-muted-foreground" data-testid="extracto-que-es-el-canon">
                   {t('inmobiliaria.propietario.extracto.queEsCanonCausado')}
                   {base === 'MIXTA' && ` ${t('inmobiliaria.propietario.extracto.queEsCanonRecaudado')}`}
                 </p>
@@ -781,8 +779,8 @@ export function ExtractoPropietario({
                   <div className="mt-2 space-y-1" data-testid="extracto-estado-del-giro">
                     {partesDelGiro(extracto.totals).map((p) => (
                       <div key={p.etiqueta} className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">{p.etiqueta}</span>
-                        <span className="text-xs tabular-nums text-foreground">{formatCurrency(p.valor)}</span>
+                        <span className="text-caption text-muted-foreground">{p.etiqueta}</span>
+                        <span className="text-caption tabular-nums text-foreground">{formatCurrency(p.valor)}</span>
                       </div>
                     ))}
                   </div>
@@ -795,7 +793,7 @@ export function ExtractoPropietario({
                 /* Con base CAUSADO la administración tampoco se recaudó
                    necesariamente: es lo que el contrato cobra. «Se recaudaron»
                    sólo cuando la base es RECAUDADO. */
-                <p className="border-t border-border pt-3 text-xs text-muted-foreground" data-testid="extracto-de-terceros">
+                <p className="border-t border-border pt-3 text-caption text-muted-foreground" data-testid="extracto-de-terceros">
                   {base === 'RECAUDADO'
                     ? 'Además se recaudaron'
                     : base === 'CAUSADO'
@@ -832,7 +830,7 @@ export function ExtractoPropietario({
       )}
 
       {/* Print Footer */}
-      <div className="hidden print:block p-6 text-center text-xs text-muted-foreground border-t border-border">
+      <div className="hidden print:block p-6 text-center text-caption text-muted-foreground border-t border-border">
         <p>{agencyConfig?.name} {tr("- NIT")} {agencyConfig?.nit}</p>
         <p>{[agencyConfig?.address, agencyConfig?.city].filter(Boolean).join(', ')}</p>
         <p className="mt-2">{t('inmobiliaria.propietario.extracto.documentGenerated')} {formatDate(extracto.generatedAt, locale)}</p>

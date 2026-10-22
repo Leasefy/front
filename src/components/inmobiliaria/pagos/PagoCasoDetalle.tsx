@@ -79,7 +79,7 @@ export interface PagoCasoDetalleProps {
 /** Encabezado de columna (eyebrow mono + título) — mismo ritmo en las 3 columnas. */
 function ColumnaHeader({ children }: { children: string }) {
   return (
-    <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">{children}</p>
+    <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">{children}</p>
   )
 }
 
@@ -124,7 +124,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
                 )
               })}
             </div>
-            <div className="flex items-center gap-1 text-xs text-fg-muted tabular-nums">
+            <div className="flex items-center gap-1 text-caption text-fg-muted tabular-nums">
               <Clock className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Creado {relativeTime(item.createdAt, t)}</span>
             </div>
@@ -144,8 +144,8 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
                       key={`${row.label}-${j}`}
                       className="flex items-center justify-between gap-3 py-1.5 first:pt-0 last:pb-0"
                     >
-                      <dt className="text-xs text-fg-muted">{row.label}</dt>
-                      <dd className="text-right text-xs font-medium text-fg tabular-nums">
+                      <dt className="text-caption text-fg-muted">{row.label}</dt>
+                      <dd className="text-right text-caption font-medium text-fg tabular-nums">
                         {row.value}
                       </dd>
                     </div>
@@ -175,7 +175,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
           >
             <div className="min-w-0">
               <p className="text-sm font-medium text-fg">{crossLink.pregunta}</p>
-              <p className="mt-0.5 text-xs text-fg-muted">{crossLink.destino}</p>
+              <p className="mt-0.5 text-caption text-fg-muted">{crossLink.destino}</p>
             </div>
             <ArrowSquareOut
               className="h-4 w-4 shrink-0 text-fg-muted transition group-hover:translate-x-0.5 group-hover:text-fg"
@@ -213,7 +213,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
           // Caso ya decidido → acciones ocultas + bloque de decisión (T-323).
           <Card data-testid="pago-decision">
             <div className="space-y-2 p-5">
-              <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">Decisión</p>
+              <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">Decisión</p>
               <div className="flex items-center gap-2">
                 {item.estado === 'rechazado' || item.estado === 'fallo' ? (
                   <XCircle className="h-5 w-5 text-danger" weight="duotone" aria-hidden="true" />
@@ -230,7 +230,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
                   {estadoLabel(t, item.estado, item.agente)}
                 </p>
               </div>
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 {[
                   item.decidedBy ? `Por ${item.decidedBy}` : 'Decisión registrada',
                   item.decidedAt ? relativeTime(item.decidedAt, t) : '',
@@ -245,7 +245,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
         {/* Riesgo del caso */}
         <Card>
           <div className="space-y-2 p-5">
-            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">Riesgo</p>
+            <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">Riesgo</p>
             <div className="flex items-center justify-between gap-2">
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${sev.bg} ${sev.text} ${sev.ring}`}
@@ -263,7 +263,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
               )}
             </div>
             {item.flags.length > 0 && (
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 Este caso requiere revisión humana: {item.flags.map((f) => flagLabel(t, f)).join(' · ')}.
               </p>
             )}
@@ -274,7 +274,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
             configura en su superficie de configuración; aquí solo se rotula. */}
         <Card>
           <div className="space-y-2 p-5">
-            <p className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+            <p className="inline-flex items-center gap-1.5 text-caption font-medium uppercase tracking-wide text-fg-muted">
               <Sparkle className="h-3.5 w-3.5" weight="duotone" aria-hidden="true" />
               Automatización activa
             </p>
@@ -282,7 +282,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
               <ShieldCheck className="h-5 w-5 text-success" weight="duotone" aria-hidden="true" />
               <p className="text-sm font-medium text-fg">Copiloto con aprobación humana</p>
             </div>
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               El agente propone la siguiente acción; un humano del rol contador la aprueba antes de
               ejecutarse. La configuración de autonomía vive en la superficie del agente.
             </p>

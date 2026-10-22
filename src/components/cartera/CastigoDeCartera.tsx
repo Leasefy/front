@@ -105,13 +105,13 @@ const TONO_DEL_ESTADO: Record<
 function Firma({ firma, lado }: { firma: FirmaDelCastigo | null; lado: string }) {
   if (!firma) {
     return (
-      <span className="text-xs text-fg-muted">
+      <span className="text-caption text-fg-muted">
         {lado}: <span className="text-warning">sin firmar</span>
       </span>
     )
   }
   return (
-    <span className="text-xs text-fg-muted">
+    <span className="text-caption text-fg-muted">
       {lado}: <span className="text-fg">{firma.nombre ?? 'Alguien que ya no está'}</span>
       {fecha(firma.at) ? ` · ${fecha(firma.at)}` : ''}
     </span>
@@ -136,7 +136,7 @@ function Cifra({
 }) {
   return (
     <Card className="p-4">
-      <p className="text-xs text-fg-muted">{rotulo}</p>
+      <p className="text-caption text-fg-muted">{rotulo}</p>
       <p
         className={`mt-1 font-mono text-2xl font-semibold tabular-nums ${
           seSabe ? (tono ?? 'text-fg') : 'text-fg-subtle'
@@ -150,7 +150,7 @@ function Cifra({
         */}
         {seSabe ? formatCurrency(valor) : '—'}
       </p>
-      <p className="mt-1 text-xs text-fg-muted">
+      <p className="mt-1 text-caption text-fg-muted">
         {seSabe ? explicacion : 'Todavía no se puede saber.'}
       </p>
     </Card>
@@ -352,12 +352,12 @@ export function CastigoDeCartera() {
                             {NOMBRE_DEL_ESTADO[c.estado]}
                           </Badge>
                           {c.queFalta && (
-                            <p className="mt-1 text-xs text-warning" data-testid="que-falta">
+                            <p className="mt-1 text-caption text-warning" data-testid="que-falta">
                               {c.queFalta}
                             </p>
                           )}
                           {c.castigadaAt && (
-                            <p className="mt-1 text-xs text-fg-muted">
+                            <p className="mt-1 text-caption text-fg-muted">
                               Desde el {fecha(c.castigadaAt)}
                             </p>
                           )}
@@ -370,17 +370,17 @@ export function CastigoDeCartera() {
                         </TableCell>
                         <TableCell className="max-w-sm">
                           <p className="text-sm text-fg">{c.motivo}</p>
-                          <p className="mt-0.5 text-xs text-fg-muted">
+                          <p className="mt-0.5 text-caption text-fg-muted">
                             {c.cuotas === 1 ? '1 cuota' : `${c.cuotas} cuotas`} ·{' '}
                             {c.propuestoPor.nombre ?? 'Alguien que ya no está'} lo propuso
                           </p>
                           {c.rechazo && (
-                            <p className="mt-1 text-xs text-fg-muted">
+                            <p className="mt-1 text-caption text-fg-muted">
                               Rechazado: {c.rechazo.motivo}
                             </p>
                           )}
                           {c.reversa && (
-                            <p className="mt-1 text-xs text-fg-muted">
+                            <p className="mt-1 text-caption text-fg-muted">
                               Vuelta a cobrarse: {c.reversa.motivo}
                             </p>
                           )}
@@ -388,7 +388,7 @@ export function CastigoDeCartera() {
                         <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg">
                           {formatCurrency(c.capitalCop)}
                           {c.interesCop > 0 && (
-                            <div className="text-xs font-normal text-fg-muted">
+                            <div className="text-caption font-normal text-fg-muted">
                               + {formatCurrency(c.interesCop)} de intereses
                             </div>
                           )}
@@ -400,7 +400,7 @@ export function CastigoDeCartera() {
                                 {formatCurrency(c.recuperadoCop)}
                               </span>
                               {c.anuladoCop > 0 && (
-                                <div className="text-xs font-normal text-fg-muted">
+                                <div className="text-caption font-normal text-fg-muted">
                                   {formatCurrency(c.anuladoCop)} se anularon, no entraron
                                 </div>
                               )}
@@ -460,7 +460,7 @@ export function CastigoDeCartera() {
                             </Button>
                           )}
                           {c.estado === 'PROPUESTO' && !puedeFirmar && (
-                            <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
+                            <span className="inline-flex items-center gap-1 text-caption text-fg-muted">
                               <Prohibit className="h-3.5 w-3.5" />
                               Lo firman el administrador y el contador
                             </span>

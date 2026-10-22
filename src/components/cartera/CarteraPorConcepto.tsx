@@ -191,7 +191,7 @@ function Peso({ valor, className }: { valor: number; className?: string }) {
 function Abono({ valor }: { valor: number }) {
   if (valor <= 0) return null;
   return (
-    <span className="mt-0.5 block text-xs font-normal text-fg-muted">
+    <span className="mt-0.5 block text-caption font-normal text-fg-muted">
       abonó <span className="font-mono tabular-nums">{formatCurrency(valor)}</span>
     </span>
   )
@@ -209,7 +209,7 @@ function Interes({ valor, sinReglas, pagadaEnMora }: {
       <>
         <span className="font-mono tabular-nums text-danger">{formatCurrency(valor)}</span>
         {pagadaEnMora ? (
-          <span className="mt-0.5 block text-xs font-normal text-fg-muted">
+          <span className="mt-0.5 block text-caption font-normal text-fg-muted">
             {t(CLAVE_DE_MORA.pagadaEnMora)}
           </span>
         ) : null}
@@ -217,7 +217,7 @@ function Interes({ valor, sinReglas, pagadaEnMora }: {
     )
   }
   if (sinReglas) {
-    return <span className="whitespace-nowrap text-xs text-warning">{t(CLAVE_DE_MORA.sinReglas)}</span>
+    return <span className="whitespace-nowrap text-caption text-warning">{t(CLAVE_DE_MORA.sinReglas)}</span>
   }
   return (
     <span className="text-fg-subtle" aria-label="cero">
@@ -231,7 +231,7 @@ function ConIntereses({ capital, interes }: { capital: number; interes: number }
   const { t } = useI18n()
   if (interes <= 0) return null
   return (
-    <span className="mt-0.5 block text-xs font-normal text-fg-muted">
+    <span className="mt-0.5 block text-caption font-normal text-fg-muted">
       {t(CLAVE_DE_MORA.conIntereses, { monto: formatCurrency(capital + interes) })}
     </span>
   )
@@ -461,7 +461,7 @@ export function CarteraPorConcepto() {
           {/* Qué es el cajón elegido, en una línea, pegado a la tabla que se
               mira. Eran las cuatro frases debajo de cada tarjeta. */}
           <p
-            className="border-b border-border px-4 py-2 text-xs text-fg-muted"
+            className="border-b border-border px-4 py-2 text-caption text-fg-muted"
             data-testid="que-es-este-cajon"
           >
             {/* La frase del cajón nuevo entra con un fundido. */}
@@ -576,7 +576,7 @@ export function CarteraPorConcepto() {
         </section>
 
         {datos ? (
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             La deuda sale de las cuotas del contrato, no de los cobros emitidos: existe desde que
             se firma. Los conceptos salen de las líneas de cada cuota, y lo que se abona se imputa
             primero a los intereses y después al capital. Leído contra el {fechaLarga(datos.hoy)}.
@@ -659,7 +659,7 @@ function PestanaDeLaCartera({
         activa ? 'bg-surface' : 'hover:bg-surface-muted',
       )}
     >
-      <span className={cn('text-xs', activa ? 'font-medium text-fg' : 'text-fg-muted')}>
+      <span className={cn('text-caption', activa ? 'font-medium text-fg' : 'text-fg-muted')}>
         {label}
       </span>
       <span
@@ -764,7 +764,7 @@ function FilasDelInquilino({
               <span className="block font-medium text-fg">
                 {inquilino.nombre ?? 'Sin nombre en el contrato'}
               </span>
-              <span className="block text-xs text-fg-muted">
+              <span className="block text-caption text-fg-muted">
                 {/* N-01 (QA-PAGOS-95): el tipo real o «NIT/CC», nunca un «CC» inventado. */}
                 {inquilino.documento ? `${documentoDelCliente(inquilino)} · ` : ''}
                 {inquilino.filas.length} {inquilino.filas.length === 1 ? 'mes' : 'meses'}
@@ -778,7 +778,7 @@ function FilasDelInquilino({
                   lleva, para que nadie le escriba por otro lado. */}
               {inquilino.contratos.some((c) => c.enJuridico) && (
                 <span
-                  className="mt-1 inline-block rounded-md border border-border bg-surface-muted px-1.5 py-0.5 text-xs text-fg"
+                  className="mt-1 inline-block rounded-md border border-border bg-surface-muted px-1.5 py-0.5 text-caption text-fg"
                   data-testid="en-juridico"
                 >
                   En jurídico ·{' '}
@@ -887,7 +887,7 @@ function FilaDelMes({
     <TableRow className="bg-surface-muted" data-testid="fila-mes">
       <TableCell className="pl-10">
         <span className="block text-sm text-fg">{mesEnTitulo(fila.month)}</span>
-        <span className="block text-xs text-fg-muted">
+        <span className="block text-caption text-fg-muted">
           {fila.inmueble}
           {fila.contrato ? rotuloDelContrato(fila) : ''}
         </span>
@@ -897,7 +897,7 @@ function FilaDelMes({
           Pintar las dos igual es cómo se termina llamando a alguien que está
           usando el plazo que la inmobiliaria misma le dio.
         */}
-        <span className="mt-0.5 block text-xs">
+        <span className="mt-0.5 block text-caption">
           {interesDe(fila)?.pagadaEnMora ? (
             <span className="text-danger">
               {t(CLAVE_DE_MORA.pagadaEnMora)} · {fila.diasDeMora}{' '}

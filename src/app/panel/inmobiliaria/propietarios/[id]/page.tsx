@@ -34,6 +34,7 @@ import {
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Avatar } from '@/components/ui/avatar';
 import {
   Dialog,
   DialogContent,
@@ -232,7 +233,7 @@ function PropertyCard({
     >
       <div className="flex items-start gap-3 sm:gap-4">
         {/* Thumbnail */}
-        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl bg-surface-muted flex items-center justify-center shrink-0 overflow-hidden">
+        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-lg bg-surface-muted flex items-center justify-center shrink-0 overflow-hidden">
           {consignacion.propertyThumbnail ? (
             <img
               src={consignacion.propertyThumbnail}
@@ -248,7 +249,7 @@ function PropertyCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h4 className="text-base font-semibold text-foreground break-words">
+              <h4 className="text-base font-medium text-foreground break-words">
                 {consignacion.propertyTitle}
               </h4>
               {direccionDistinta && (
@@ -272,7 +273,7 @@ function PropertyCard({
                 </span>
               )}
             </div>
-            <span className={cn('px-2 py-1 rounded-full text-xs font-medium shrink-0', statusColors[consignacion.availability])}>
+            <span className={cn('px-2 py-1 rounded-full text-caption font-medium shrink-0', statusColors[consignacion.availability])}>
               {statusLabels[consignacion.availability]}
             </span>
           </div>
@@ -286,7 +287,7 @@ function PropertyCard({
                 <p className="text-sm font-medium text-foreground">
                   {consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—'}
                 </p>
-                <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.detail.saleCommission')}</p>
+                <p className="text-caption text-muted-foreground">{t('inmobiliaria.propietarios.detail.saleCommission')}</p>
               </div>
             ) : (
               <>
@@ -312,7 +313,7 @@ function PropertyCard({
                           ? TEXTO_CANON_POR_CONFIRMAR
                           : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
                     </p>
-                    <p className="text-xs text-muted-foreground">{t('inmobiliaria.common.perMonth')}</p>
+                    <p className="text-caption text-muted-foreground">{t('inmobiliaria.common.perMonth')}</p>
                   </div>
                 )}
                 <div className="hidden h-8 w-px bg-border sm:block" />
@@ -320,7 +321,7 @@ function PropertyCard({
                   <p className="text-sm font-medium text-foreground">
                     {textoDeLaComision(consignacion)}
                   </p>
-                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.agentes.commission')}</p>
+                  <p className="text-caption text-muted-foreground">{t('inmobiliaria.agentes.commission')}</p>
                 </div>
               </>
             )}
@@ -331,7 +332,7 @@ function PropertyCard({
                   <p className="text-sm font-medium text-foreground break-words">
                     {consignacion.currentTenantName}
                   </p>
-                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.detail.tenant')}</p>
+                  <p className="text-caption text-muted-foreground">{t('inmobiliaria.propietarios.detail.tenant')}</p>
                 </div>
               </>
             )}
@@ -375,18 +376,11 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
   return (
     <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
       <div className="flex items-center gap-4">
-        <div className={cn(
-          'w-10 h-10 rounded-xl flex items-center justify-center',
-          dispersion.status === 'completed'
-            ? 'bg-success-soft'
-            : 'bg-warning-soft'
-        )}>
-          {dispersion.status === 'completed' ? (
-            <CheckCircle className="w-5 h-5 text-success" />
-          ) : (
-            <Clock className="w-5 h-5 text-warning" />
-          )}
-        </div>
+        {dispersion.status === 'completed' ? (
+          <CheckCircle className="w-5 h-5 text-success shrink-0" aria-hidden="true" />
+        ) : (
+          <Clock className="w-5 h-5 text-warning shrink-0" aria-hidden="true" />
+        )}
         <div>
           <p className="text-sm font-medium text-foreground">
             {monthLabel}
@@ -407,7 +401,7 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
         <p className="text-sm font-semibold tabular-nums text-foreground">
           {formatCurrency(dispersion.netToPropietario)}
         </p>
-        <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', statusColors[dispersion.status])}>
+        <span className={cn('text-caption font-medium px-2 py-0.5 rounded-full', statusColors[dispersion.status])}>
           {statusLabels[dispersion.status]}
         </span>
       </div>
@@ -662,10 +656,8 @@ function PropietarioDetailContent() {
     return (
       <div className="p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center text-center py-16">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-            <User className="w-6 h-6 text-muted-foreground" weight="duotone" />
-          </div>
-          <h2 className="text-base font-semibold text-foreground mb-1.5">
+          <User className="w-8 h-8 mx-auto mb-4 text-muted-foreground" weight="duotone" aria-hidden="true" />
+          <h2 className="text-base font-medium text-foreground mb-1.5">
             {t('inmobiliaria.propietarios.notFound')}
           </h2>
           <p className="text-sm text-muted-foreground mb-4 max-w-sm">
@@ -823,26 +815,23 @@ function PropietarioDetailContent() {
           línea dice cuántos inmuebles, dónde y desde cuándo. */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div className="flex items-start gap-4 min-w-0">
-          <div className={cn(
-            'w-14 h-14 rounded-xl flex items-center justify-center shrink-0',
-            isCompany ? 'bg-muted text-muted-foreground' : 'bg-primary-soft text-primary'
-          )}>
-            {isCompany ? <Buildings className="w-7 h-7" /> : <User className="w-7 h-7" />}
-          </div>
+          <Avatar name={propietario.name} size="lg" className="shrink-0">
+            {isCompany ? <Buildings className="size-7" /> : undefined}
+          </Avatar>
           <div className="min-w-0 space-y-1.5">
             <h1 className="text-h2 text-fg">
               {propietario.name}
             </h1>
             <div className="flex flex-wrap items-center gap-1.5" data-testid="propietario-chips">
-              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs tabular-nums text-foreground">
+              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 font-mono text-caption tabular-nums text-foreground">
                 {/* P-06: un NIT con su dígito de verificación («NIT 900555006-0»). */}
                 {documentoConTipo(propietario.documentType, documentoDelPropietarioConDv(propietario), ' ')}
               </span>
-              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-caption text-muted-foreground">
                 {t(isCompany ? 'inmobiliaria.propietarios.detail.personaJuridica' : 'inmobiliaria.propietarios.detail.personaNatural')}
               </span>
               {(propietario.tags ?? []).map((tag) => (
-                <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+                <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-caption text-muted-foreground">
                   <Tag className="w-3 h-3" />
                   {tag}
                 </span>
@@ -1001,9 +990,7 @@ function PropietarioDetailContent() {
                       vacio={consignaciones.length === 0}
                       cuandoVacio={
                         <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
-                          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-                            <House className="w-6 h-6 text-muted-foreground" weight="duotone" />
-                          </div>
+                          <House className="w-8 h-8 mx-auto mb-4 text-muted-foreground" weight="duotone" aria-hidden="true" />
                           <p className="text-sm text-muted-foreground mb-4 max-w-sm">
                             {t('inmobiliaria.propietarios.detail.noProperties')}
                           </p>
@@ -1080,9 +1067,7 @@ function PropietarioDetailContent() {
                             vacio={dispersiones.length === 0}
                             cuandoVacio={
                               <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
-                                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-                                  <CurrencyDollar className="w-6 h-6 text-muted-foreground" weight="duotone" />
-                                </div>
+                                <CurrencyDollar className="w-8 h-8 mx-auto mb-4 text-muted-foreground" weight="duotone" aria-hidden="true" />
                                 <p className="text-sm text-muted-foreground max-w-sm">
                                   {t('inmobiliaria.propietarios.detail.noPayments')}
                                 </p>
@@ -1130,7 +1115,7 @@ function PropietarioDetailContent() {
                 <section className="rounded-lg border border-border bg-card p-5 space-y-3" data-testid="contacto">
                   <div className="flex items-center gap-2">
                     <Envelope className="w-4 h-4 text-muted-foreground" />
-                    <h3 className="text-base font-semibold text-foreground">
+                    <h3 className="text-base font-medium text-foreground">
                       {t('inmobiliaria.propietarios.detail.contactInfo')}
                     </h3>
                   </div>
@@ -1250,7 +1235,7 @@ function PropietarioDetailContent() {
                   <div className="p-5 rounded-lg border border-border bg-card">
                     <div className="flex items-center gap-2 mb-4">
                       <Note className="w-5 h-5 text-muted-foreground" />
-                      <h3 className="text-base font-semibold text-foreground">
+                      <h3 className="text-base font-medium text-foreground">
                         {t('inmobiliaria.propietarios.detail.internalNotes')}
                       </h3>
                     </div>
@@ -1421,7 +1406,7 @@ function PropietarioDetailContent() {
             rows={6}
             className="resize-none"
           />
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 text-caption text-muted-foreground">
             {t('inmobiliaria.propietarios.detail.notesPrivacy')}
           </p>
         </div>

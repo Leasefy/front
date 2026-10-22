@@ -16,6 +16,7 @@ import { PageGuard } from '@/components/auth/PageGuard'
 // La de `ui` es la que pinta la ilustración 3D (`ilustracion`); la de data-display la ignoraba.
 import { EmptyState } from '@/components/ui/empty-state'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { Input } from '@/components/ui'
@@ -252,6 +253,7 @@ function PostulacionesContenido() {
    * no lo trae dice «Sin puntaje».
    */
   const hayPuntaje = items.some((c) => Boolean(c.riskScore))
+  const esCelular = useIsMobile()
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -389,6 +391,35 @@ function PostulacionesContenido() {
                     : 'Cuando un inquilino se postule a uno de tus inmuebles, aparecerá aquí.'
                 }
               />
+            ) : esCelular ? (
+              /* Ronda 22 (390): una tarjeta por postulación —quién, a qué inmueble y en qué va—; la tabla se
+                 corría de lado. La tarjeta abre el mismo cajón que la fila. */
+              <ul className="divide-y divide-border" data-testid="postulaciones-en-tarjetas">
+                {pageItems.map((c) => {
+                  const statusCfg = STATUS_CONFIG[c.status] ?? FALLBACK_STATUS
+                  return (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        onClick={() => abrirCandidato(c)}
+                        className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-surface-muted/60"
+                      >
+                        <Avatar name={c.tenantName} size="sm" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium text-fg">{c.tenantName}</span>
+                          <span className="block truncate text-body-sm text-fg-muted">{c.propertyTitle}</span>
+                          <span className="mt-1.5 flex flex-wrap items-center gap-2">
+                            <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-caption font-medium', statusCfg.bg, statusCfg.text)}>
+                              {tr(statusCfg.label)}
+                            </span>
+                            <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} conEstudio />
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
             ) : (
               <>
               <Table>

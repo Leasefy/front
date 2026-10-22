@@ -161,8 +161,9 @@ export function OrigenesClient() {
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-base">Por portal</CardTitle>
           {/* Ronda 21: una barra, «Entró: [desde] – [hasta]» (antes dos campos con la etiqueta flotando encima). */}
-          <div className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:flex sm:w-auto" role="group" aria-label="Cuándo entraron los interesados">
-            <span className="text-body-sm text-fg-muted">Entró</span>
+          <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:flex sm:w-auto" role="group" aria-label="Cuándo entraron los interesados">
+            {/* Ronda 22 (390): «Entró» en su renglón; las dos fechas se reparten el ancho (salían «1 oct 2…»). */}
+            <span className="col-span-3 text-body-sm text-fg-muted sm:col-span-1">Entró</span>
             <Label htmlFor="desde" className="sr-only">Desde</Label>
             <CampoDeDia
               id="desde"

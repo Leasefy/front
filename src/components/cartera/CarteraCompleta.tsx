@@ -166,9 +166,11 @@ type Vista = 'deudas' | 'propietarios' | 'siniestros'
 const TONO: Record<Gravedad, string> = {
   POR_VENCER: 'text-fg-muted',
   VENCIDA_EN_PLAZO: 'text-warning',
+  // Ronda 13: la cartera ya pasó el plazo → escala de ROJOS por gravedad; el naranja
+  // queda sólo para «vencido, en plazo» (antes significaba las dos cosas).
   '0-30': 'text-fg',
-  '31-60': 'text-warning',
-  '61-90': 'text-warning',
+  '31-60': 'text-danger',
+  '61-90': 'text-danger',
   '90+': 'text-danger',
   SINIESTRO: 'text-danger',
 }
@@ -494,7 +496,7 @@ export function CarteraCompleta() {
                 astilla de 2 px al final. */}
             {montoDelCajon('CARTERA').monto > 0 ? (
               <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-surface-muted" role="img" aria-label="Cómo se reparte la cartera por edad" data-testid="barra-de-la-deuda">
-                {[...cartera.tramos.map((t, i) => ({ clave: t.edad, monto: t.monto, tono: ['bg-warning-500', 'bg-error-500/60', 'bg-error-500/80', 'bg-error-500'][i] ?? 'bg-error-500' })),
+                {[...cartera.tramos.map((t, i) => ({ clave: t.edad, monto: t.monto, tono: ['bg-error-500/40', 'bg-error-500/60', 'bg-error-500/80', 'bg-error-500'][i] ?? 'bg-error-500' })),
                   { clave: 'siniestro', monto: cartera.enSiniestro.monto, tono: 'bg-error-700' }]
                   .filter((t) => t.monto > 0)
                   .map((t) => (

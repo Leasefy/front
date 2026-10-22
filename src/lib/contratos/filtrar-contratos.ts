@@ -456,4 +456,5 @@ export function filtrosDeLaPestana(p: PestanaDeContratos): Pick<FiltrosDeContrat
 }
 
 /** Con qué abre la pantalla: los activos (los terminados no son trabajo de hoy). */
-export const FILTROS_AL_ENTRAR: FiltrosDeContratos = { ...FILTROS_INICIALES, estado: 'active' };
+// Ronda 13: los activos abren por lo que vence primero (lo que toca mirar va arriba).
+export const FILTROS_AL_ENTRAR: FiltrosDeContratos = { ...FILTROS_INICIALES, estado: 'active', campo: 'endDate', sentido: 'asc' };

@@ -1,10 +1,11 @@
 'use client';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { BackButton } from '@/components/ui/back-button';
 import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
 import { useState, useCallback, useMemo, useEffect, useRef, useId } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  CaretLeft,
   UploadSimple,
   FileText,
   X,
@@ -1132,35 +1133,34 @@ function NuevoContratoContent() {
    */
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-6 xl:max-w-[1600px] xl:px-8">
-      {/* Header */}
+      {/* Header común. «Volver» regresa a donde estaba (la postulación, el
+          inmueble o la lista): BackButton sin href usa router.back(). */}
       <div>
-        <Button
-          onClick={() => router.back()}
-          variant="link"
-          hideArrow
-          className="mb-3 h-auto gap-1 px-0 text-muted-foreground hover:text-foreground hover:no-underline"
-        >
-          <CaretLeft className="w-4 h-4" /> Volver
-        </Button>
-        <h1 className="text-h2 text-fg">Crear contrato</h1>
-        {esManual ? (
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-2 max-w-2xl" data-testid="nuevo-contrato-manual">
-            Sin postulación: eliges el inmueble y el inquilino, y el resto es igual que cualquier contrato.
-            {inmuebleElegido && (
-              <> · Inmueble: <span className="font-medium text-foreground">{inmuebleElegido}</span></>
-            )}
-          </p>
-        ) : (
-          <p className="text-sm text-muted-foreground mt-1">
-            Candidato:{' '}
-            <span className="font-medium text-foreground">
-              {nombreConocido ?? NOMBRE_DEL_CANDIDATO_SIN_REGISTRAR}
-            </span>
-            {property && (
-              <> · Propiedad: <span className="font-medium text-foreground">{property.title}</span></>
-            )}
-          </p>
-        )}
+        <BackButton className="mb-3" />
+        <EncabezadoDePantalla
+          seccion="Contratos"
+          titulo="Crear contrato"
+          descripcion={
+            esManual ? (
+              <span data-testid="nuevo-contrato-manual">
+                Sin postulación: eliges el inmueble y el inquilino, y el resto es igual que cualquier contrato.
+                {inmuebleElegido && (
+                  <> · Inmueble: <span className="font-medium text-fg">{inmuebleElegido}</span></>
+                )}
+              </span>
+            ) : (
+              <span>
+                Candidato:{' '}
+                <span className="font-medium text-fg">
+                  {nombreConocido ?? NOMBRE_DEL_CANDIDATO_SIN_REGISTRAR}
+                </span>
+                {property && (
+                  <> · Propiedad: <span className="font-medium text-fg">{property.title}</span></>
+                )}
+              </span>
+            )
+          }
+        />
       </div>
 
       {/* Último paso del recorrido del inquilino (11). Ver src/lib/recorrido/pasos.ts.

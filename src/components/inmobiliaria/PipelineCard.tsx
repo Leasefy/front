@@ -1,4 +1,5 @@
 'use client';
+import type React from 'react';
 
 import { motion } from 'framer-motion';
 import { Avatar, motionSpring } from '@leasefy/cadence';
@@ -54,6 +55,11 @@ interface PipelineCardProps {
   onClick?: (item: PipelineItem) => void;
   isDragging?: boolean;
   dragHandleProps?: Record<string, unknown>;
+  /**
+   * Revisora r22 (Prospección #3): la acción de mover va DENTRO del pie de la tarjeta, a la derecha (antes, una barra
+   * gris a lo ancho debajo de cada tarjeta, sin decir de cuál era). Sus clics no abren el cajón ni arrastran.
+   */
+  acciones?: React.ReactNode;
 }
 
 /**
@@ -65,6 +71,7 @@ export function PipelineCard({
   onClick,
   isDragging = false,
   dragHandleProps,
+  acciones,
 }: PipelineCardProps) {
   const { t } = useI18n();
   const tr = useTr();
@@ -116,7 +123,7 @@ export function PipelineCard({
               )}
             </div>
             {item.candidatePhone && (
-              <p className="mt-0.5 flex items-center gap-1 font-mono text-[11px] tabular-nums text-fg-muted">
+              <p className="mt-0.5 flex items-center gap-1 font-mono text-caption tabular-nums text-fg-muted">
                 <Phone className="size-3 shrink-0" />
                 <span className="truncate">{item.candidatePhone}</span>
               </p>
@@ -131,12 +138,12 @@ export function PipelineCard({
           </Avatar>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] text-fg">{item.propertyTitle}</p>
-            <p className="flex min-w-0 items-baseline gap-1.5 text-[11px] text-fg-subtle">
+            <p className="flex min-w-0 items-baseline gap-1.5 text-caption text-fg-subtle">
               {/* Un mandato de venta no tiene canon: «—», nunca «$ 0» (C6). */}
-              <span className="shrink-0 font-mono text-[12px] tabular-nums text-fg">
+              <span className="shrink-0 font-mono text-caption tabular-nums text-fg">
                 {item.monthlyRent != null ? formatCurrency(item.monthlyRent) : '—'}
                 {item.monthlyRent != null && (
-                  <span className="font-body text-[11px] text-fg-subtle">{t('inmobiliaria.pipeline.month')}</span>
+                  <span className="font-body text-caption text-fg-subtle">{t('inmobiliaria.pipeline.month')}</span>
                 )}
               </span>
               {item.propertyAddress && <span className="truncate">· {item.propertyAddress}</span>}
@@ -181,7 +188,7 @@ export function PipelineCard({
           {daysWarning ? (
             <span
               className={cn(
-                'inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] tabular-nums',
+                'inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-caption tabular-nums',
                 daysCritical ? 'text-danger' : 'text-warning-ink',
               )}
             >
@@ -192,12 +199,24 @@ export function PipelineCard({
             <span />
           )}
           {conAsesor ? (
-            <span className="inline-flex min-w-0 items-center gap-1.5 text-[11px] text-fg-muted">
+            <span className="inline-flex min-w-0 items-center gap-1.5 text-caption text-fg-muted">
               {nombreDelAgente ? <Avatar name={nombreDelAgente} size="xs" /> : <User className="size-3 shrink-0" />}
               <span className="min-w-0 truncate">{nombreDelAgente ?? 'Sin asignar'}</span>
             </span>
           ) : null}
         </div>
+        ) : null}
+
+        {acciones ? (
+          <div
+            className="flex justify-end"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            data-testid="pipeline-card-acciones"
+          >
+            {acciones}
+          </div>
         ) : null}
       </div>
     </motion.div>

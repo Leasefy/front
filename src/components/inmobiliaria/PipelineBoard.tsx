@@ -30,7 +30,6 @@ import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import { PipelineCard, NombresDeAgentesContext, VariosAsesoresContext } from './PipelineCard';
 import { DropdownList, DropdownListContent, DropdownListItem, DropdownListSeparator, DropdownListTrigger } from '@/components/ui/dropdown-menu';
-import { ArrowRight } from '@phosphor-icons/react';
 import { mensajeDelRechazoDelMotivo } from '@/components/inmobiliaria/agenda/MotivoDialog';
 import { MotivoDePerdidaDialog } from '@/components/inmobiliaria/MotivoDePerdidaDialog';
 import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
@@ -395,32 +394,51 @@ function MoverA({
   const aqui = principales.indexOf(item.stage);
   const siguiente = aqui >= 0 ? principales[aqui + 1] : undefined;
   const otras = etapas.filter((st) => st !== item.stage && st !== siguiente && st !== 'lost');
-  return (
-    <DropdownList>
-      <DropdownListTrigger asChild>
-        <Button variant="secondary" size="sm" hideArrow className="w-full justify-center" data-testid="mover-a">
-          {tr('Mover a…')}
-        </Button>
-      </DropdownListTrigger>
-      <DropdownListContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)]">
-        {siguiente ? (
-          <DropdownListItem onSelect={() => onMover(siguiente)} className="font-medium" data-testid="mover-a-siguiente">
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            {tr('Pasar a {etapa}', { etapa: nombre(siguiente) })}
-          </DropdownListItem>
-        ) : null}
-        {otras.length > 0 ? <DropdownListSeparator /> : null}
-        {otras.map((st) => (
-          <DropdownListItem key={st} onSelect={() => onMover(st)}>
-            {nombre(st)}
-          </DropdownListItem>
-        ))}
-        <DropdownListSeparator />
-        <DropdownListItem onSelect={() => onMover('lost')} className="text-danger">
-          {tr('Marcar como perdido')}
+  // Revisora r22 (Prospección #3): lo que más se hace —pasar a la siguiente etapa— es UN toque, con su nombre
+  // («Pasar a Visita hecha»); las demás y «Perdido» van en el ▾ de al lado. Dentro del pie de la tarjeta, sin w-full.
+  const menu = (
+    <DropdownListContent align="end">
+      {otras.map((st) => (
+        <DropdownListItem key={st} onSelect={() => onMover(st)}>
+          {nombre(st)}
         </DropdownListItem>
-      </DropdownListContent>
-    </DropdownList>
+      ))}
+      {otras.length > 0 ? <DropdownListSeparator /> : null}
+      <DropdownListItem onSelect={() => onMover('lost')} className="text-danger">
+        {tr('Marcar como perdido')}
+      </DropdownListItem>
+    </DropdownListContent>
+  );
+  if (!siguiente) {
+    return (
+      <DropdownList>
+        <DropdownListTrigger asChild>
+          <Button variant="secondary" size="sm" hideArrow data-testid="mover-a">
+            {tr('Mover a…')}
+          </Button>
+        </DropdownListTrigger>
+        {menu}
+      </DropdownList>
+    );
+  }
+  return (
+    <div className="inline-flex items-center gap-1" data-testid="mover-a">
+      <Button variant="secondary" size="sm" hideArrow onClick={() => onMover(siguiente)} data-testid="mover-a-siguiente">
+        {tr('Pasar a {etapa}', { etapa: nombre(siguiente) })}
+      </Button>
+      <DropdownList>
+        <DropdownListTrigger asChild>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            aria-label={tr('Mover a otra etapa')}
+            icon={<CaretDown className="h-4 w-4" aria-hidden="true" />}
+            data-testid="mover-a-otras"
+          />
+        </DropdownListTrigger>
+        {menu}
+      </DropdownList>
+    </div>
   );
 }
 
@@ -672,12 +690,17 @@ export function PipelineBoard({
               </h3>
               <div className="space-y-3">
                 {itemsByStage[st].map((item) => (
-                  <div key={item.id} className="space-y-1.5">
-                    <PipelineCard item={item} onClick={onItemClick} />
-                    {/* Ronda 20: mover desde el celular sin abrir el cajón; la siguiente etapa primero. */}
-                    {puedeMover && !esTerminal(item.stage) ? (
-                      <MoverA item={item} etapas={etapas} onMover={(etapa) => void moverA(item, etapa)} />
-                    ) : null}
+                  <div key={item.id}>
+                    {/* Ronda 20 → r22: mover desde el celular sin abrir el cajón, dentro del pie de la tarjeta. */}
+                    <PipelineCard
+                      item={item}
+                      onClick={onItemClick}
+                      acciones={
+                        puedeMover && !esTerminal(item.stage) ? (
+                          <MoverA item={item} etapas={etapas} onMover={(etapa) => void moverA(item, etapa)} />
+                        ) : undefined
+                      }
+                    />
                   </div>
                 ))}
               </div>

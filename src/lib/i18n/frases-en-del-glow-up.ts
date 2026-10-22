@@ -293,4 +293,5 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Buscar por candidato, correo o inmueble': 'Search by applicant, email or property',
   'Quién se postuló a tus inmuebles: ábrela para revisarla y decidir.': 'Who applied to your properties: open one to review it and decide.',
   'Inmueble sin título': 'Untitled property',
+  'Mover a otra etapa': 'Move to another stage',
 }

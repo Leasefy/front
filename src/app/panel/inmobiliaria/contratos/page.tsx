@@ -27,7 +27,10 @@ import {
   type EstadoDeFiltro,
   type FiltrosDeContratos,
   vencidoSinRenovar,
+  filtrosALaUrl,
+  filtrosDesdeLaUrl,
 } from '@/lib/contratos/filtrar-contratos';
+import { useEstadoEnLaUrl } from '@/lib/hooks/use-estado-en-la-url';
 import { numeroDelContrato } from '@/lib/contratos/numero-del-contrato';
 import { ContratoFilters } from '@/components/contratos/ContratoFilters';
 import { formatearVigencia } from '@/lib/contratos/fecha-de-vigencia';
@@ -245,7 +248,12 @@ function ContratosContent() {
    * lo que ya se paginó— el buscador miente: contesta «no se encontró» sobre
    * algo que está en la página 3. Ver `filtrar-contratos.ts`.
    */
-  const [filtros, setFiltros] = useState<FiltrosDeContratos>(FILTROS_INICIALES);
+  // 21-10 (DESIGN §25.1, 6b): los filtros viven también en la URL — abrir un
+  // contrato y volver ya no los pierde, y un enlace puede traer «los por firmar».
+  const [filtros, setFiltros] = useEstadoEnLaUrl<FiltrosDeContratos>(FILTROS_INICIALES, {
+    leer: filtrosDesdeLaUrl,
+    escribir: filtrosALaUrl,
+  });
   const contratosFiltrados = useMemo(
     () => filtrarContratos(contracts, filtros),
     [contracts, filtros],

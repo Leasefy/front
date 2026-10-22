@@ -322,6 +322,8 @@ let container: HTMLDivElement
 let root: Root
 
 beforeEach(() => {
+  // Los filtros viven en la URL (21-10): cada prueba empieza sin los de la anterior.
+  window.history.replaceState(null, '', '/panel/inmobiliaria/contratos')
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -831,6 +833,23 @@ describe('ContratosPage — las cifras filtran la tabla (glow up 21-10)', () => 
 
     await act(async () => cifra('Borradores').click())
     expect(filas()).toHaveLength(4)
+  })
+
+  it('los filtros viven en la URL: tocar una cifra la escribe, y entrar con ella la aplica (abrir y volver no los pierde)', async () => {
+    withContracts(LISTA, { stats: STATS })
+    await renderPage()
+    await act(async () => cifra('Borradores').click())
+    expect(window.location.search).toBe('?estado=draft')
+    await act(async () => cifra('Borradores').click())
+    expect(window.location.search).toBe('')
+
+    // Volver a la lista con el enlace que quedó: arranca filtrada.
+    await act(async () => root.unmount())
+    container.innerHTML = ''
+    root = createRoot(container)
+    window.history.replaceState(null, '', '/panel/inmobiliaria/contratos?estado=draft')
+    await renderPage()
+    expect(nombres()).toEqual(['Bruno Borrador'])
   })
 
   it('«Por firmar» son los dos que esperan una firma (propietario e inquilino), con su punto', async () => {

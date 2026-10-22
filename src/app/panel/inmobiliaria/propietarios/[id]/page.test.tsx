@@ -384,10 +384,11 @@ describe('Menú de acciones', () => {
 
   it('«Exportar datos» baja el Excel con lo que la ficha muestra', async () => {
     datos.consignaciones = [{ id: 'c1' }];
-    datos.dispersiones = [{ id: 'd1' }];
+    // Un giro completo: con las pestañas montadas (GLOW UP 21-10) la lista de giros se pinta de una.
+    datos.dispersiones = [{ id: 'd1', month: '2026-09', status: 'completed', netToPropietario: 1_000_000, items: [{}] }];
     await render();
     await click('accion-exportar');
-    expect(exportar).toHaveBeenCalledWith(PROPIETARIO, [{ id: 'c1' }], [{ id: 'd1' }]);
+    expect(exportar).toHaveBeenCalledWith(PROPIETARIO, [{ id: 'c1' }], datos.dispersiones);
     expect(toast.success).toHaveBeenCalledWith(
       'inmobiliaria.propietarios.detail.exportDone',
       expect.objectContaining({ description: 'inmobiliaria.propietarios.detail.exportDoneDesc(propietario-nicolas-2026-09-02.xlsx)' }),
@@ -546,14 +547,25 @@ describe('Un fallo de carga se dice, no se disfraza', () => {
     expect(container.textContent).not.toContain('inmobiliaria.propietarios.detail.noProperties');
   });
 
+  it('GLOW UP (Nico, 21-10): Resumen · Plata · Configuración · Historial, cada bloque en la suya', async () => {
+    await render();
+    const pestanas = Array.from(container.querySelectorAll('[data-testid^="pestana-"]')).map((p) => p.getAttribute('data-testid'));
+    expect(pestanas).toEqual(['pestana-resumen', 'pestana-plata', 'pestana-configuracion', 'pestana-historial']);
+    const panel = (id: string) => container.querySelector(`[data-testid="panel-${id}"]`)!;
+    expect(panel('resumen').getAttribute('data-state')).toBe('active');
+    expect(panel('configuracion').querySelector('[data-testid="contacto"]')).not.toBeNull();
+    expect(panel('plata').querySelector('[data-testid="tab-payments"]')).not.toBeNull();
+  });
+
   it('el contador de la pestaña no muestra 0 sobre una lectura que falló', async () => {
     datos.errorConsignaciones = new Error('timeout');
     datos.errorDispersiones = new Error('timeout');
     await render();
 
-    const inmuebles = container.querySelector('[data-testid="tab-properties"]')!;
+    // GLOW UP (21-10): los inmuebles viven en «Resumen» (sin contador en una pestaña);
+    // en «Plata», los giros no muestran «0» sobre una lectura que falló.
     const giros = container.querySelector('[data-testid="tab-payments"]')!;
-    expect(inmuebles.textContent).toBe('inmobiliaria.propietarios.detail.properties');
+    expect(container.querySelector('[data-testid="tab-properties"]')).toBeNull();
     expect(giros.textContent).toBe('inmobiliaria.propietarios.detail.payments');
   });
 

@@ -92,6 +92,7 @@ import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 import { SinPorcentajeDelPropietario } from '@/components/inmobiliaria/SinPorcentajeDelPropietario';
 import { FALTA_EL_PORCENTAJE } from '@/lib/inmuebles/participaciones-desconocidas';
 import { datosPendientesDelPropietario } from '@/lib/propietarios/giros-del-propietario';
+import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha';
 import { CajonDelFormularioDelPropietario } from '@/components/inmobiliaria/CajonDelFormularioDelPropietario';
 import { documentoDelPropietarioConDv } from '@/lib/propietarios/documento-con-dv';
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
@@ -364,7 +365,12 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
 
   // `new Date('2026-08-01')` es medianoche UTC: en Colombia cae al 31 de julio
   // y la fila decía «julio» sobre el giro de agosto. Ver lib/utils/mes.
-  const monthLabel = mesEnTitulo(dispersion.month, locale === 'en' ? 'en' : 'es');
+  // Un giro sin mes (dato incompleto) no tumba la ficha: dice «Sin mes».
+  const monthLabel = dispersion.month
+    ? mesEnTitulo(dispersion.month, locale === 'en' ? 'en' : 'es')
+    : locale === 'en'
+      ? 'No month'
+      : 'Sin mes';
 
   return (
     <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
@@ -494,7 +500,8 @@ function PropietarioDetailContent() {
   const [isExporting, setIsExporting] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
-  const [activeTab, setTab] = useState<'properties' | 'payments' | 'deducciones' | 'notes'>('properties');
+  // GLOW UP (21-10): las variantes de «Plata» (las demás pestañas son de la ficha).
+  const [activeTab, setTab] = useState<'payments' | 'deducciones'>('payments');
   const [notesValue, setNotesValue] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   // El motivo del back al editar, dentro del diálogo (duplicado → al lado del documento).
@@ -934,349 +941,352 @@ function PropietarioDetailContent() {
         </div>
       </div>
 
-      {/* El estado de cuenta, resumido (CEO, 2026-09-13): lo que la
-          inmobiliaria le ha girado y lo que le falta por girar. Se pinta solo
-          si hay contratos; si la llamada falla, no se pinta nada, porque un
-          «$0» sobre datos que no llegaron se lee «no le debemos nada». */}
-      {/* Sin `dispersiones:view` el back niega el resumen (403): no se pide. */}
-      {veLaPlata && (
-        <ResumenEnLaFicha
-          tipo="propietario"
-          id={propietario.id}
-          volverA={`/panel/inmobiliaria/propietarios/${propietario.id}`}
-          tieneArrendados={(propietario.activeLeases ?? 0) + (propietario.copropiedadesArrendadas ?? 0) > 0}
-          onSinDiaDeGiro={setSinDiaDeGiro}
-        />
-      )}
+      {/*
+        GLOW UP (21-10-2026, Nico eligió «Resumen · Plata · Configuración ·
+        Historial»): lo que se consulta aparte de lo que se configura. Los giros
+        y las deducciones son variantes de «Plata» (control segmentado adentro,
+        regla del §23). Todas las pestañas se montan: cada bloque carga como antes.
+      */}
+      <PestanasDeLaFicha
+        etiqueta="Secciones del propietario"
+        pestanas={[
+          {
+            id: 'resumen',
+            etiqueta: 'Resumen',
+            contenido: (
+              <>
+                {/* El estado de cuenta, resumido (CEO, 2026-09-13): lo que la
+                    inmobiliaria le ha girado y lo que le falta por girar. Se pinta solo
+                    si hay contratos; si la llamada falla, no se pinta nada, porque un
+                    «$0» sobre datos que no llegaron se lee «no le debemos nada». */}
+                {/* Sin `dispersiones:view` el back niega el resumen (403): no se pide. */}
+                {veLaPlata && (
+                  <ResumenEnLaFicha
+                    tipo="propietario"
+                    id={propietario.id}
+                    volverA={`/panel/inmobiliaria/propietarios/${propietario.id}`}
+                    tieneArrendados={(propietario.activeLeases ?? 0) + (propietario.copropiedadesArrendadas ?? 0) > 0}
+                    onSinDiaDeGiro={setSinDiaDeGiro}
+                  />
+                )}
 
-      {/* Stats */}
-      <PropietarioStats
-        propietario={propietario}
-        variant="full"
-        sinDiaDeGiro={sinDiaDeGiro}
-        consignaciones={consignaciones}
-        onCargarCuenta={puedeEditar ? () => setShowEditModal(true) : undefined}
-      />
+                {/* Stats */}
+                <PropietarioStats
+                  propietario={propietario}
+                  variant="full"
+                  sinDiaDeGiro={sinDiaDeGiro}
+                  consignaciones={consignaciones}
+                  onCargarCuenta={puedeEditar ? () => setShowEditModal(true) : undefined}
+                />
 
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Contact & Bank */}
-        <div className="space-y-4">
-          {/* El permiso para escribirle por WhatsApp desde el chat
-              (2026-09-12). Sólo si tiene cuenta de portal: el hilo del chat es
-              con un `User`, y sin cuenta no hay a quién prendérselo. */}
-          <InterruptorDeWhatsapp personaId={propietario.cuentaDePortalId} />
-          {/* Contacto en filas compactas, como la ficha del contrato: antes
-              cada dato tenía su ícono en un cuadro de 40 px y la tarjeta
-              ocupaba media pantalla para tres líneas. */}
-          <section className="rounded-lg border border-border bg-card p-5 space-y-3" data-testid="contacto">
-            <div className="flex items-center gap-2">
-              <Envelope className="w-4 h-4 text-muted-foreground" />
-              <h3 className="text-base font-semibold text-foreground">
-                {t('inmobiliaria.propietarios.detail.contactInfo')}
-              </h3>
-            </div>
-            <div className="space-y-2">
-              <FilaDeContacto
-                etiqueta={t('inmobiliaria.propietarios.email')}
-                valor={email}
-                href={email ? `mailto:${email}` : undefined}
-                onCopiar={email ? () => handleCopy(email, 'email') : undefined}
-                copiado={copiedEmail}
-                etiquetaCopiar={t('inmobiliaria.propietarios.detail.copiarCorreo')}
-                etiquetaCopiado={t('inmobiliaria.propietarios.detail.copied')}
-              />
-              <FilaDeContacto
-                etiqueta={t('inmobiliaria.propietarios.phone')}
-                valor={phone}
-                href={phone ? `tel:${phone}` : undefined}
-                onCopiar={phone ? () => handleCopy(phone, 'phone') : undefined}
-                copiado={copiedPhone}
-                etiquetaCopiar={t('inmobiliaria.propietarios.detail.copiarTelefono')}
-                etiquetaCopiado={t('inmobiliaria.propietarios.detail.copied')}
-              />
-              <FilaDeContacto
-                etiqueta={t('inmobiliaria.propietarios.detail.address')}
-                valor={[propietario.address, propietario.city, propietario.department].filter(Boolean).join(', ') || null}
-              />
-              {propietario.externalId ? (
-                <FilaDeContacto etiqueta={t('inmobiliaria.propietarios.detail.refExterna')} valor={propietario.externalId} mono />
-              ) : null}
-            </div>
-            {/*
-             * 🔴 Sin cuenta en Leasefy, se DICE y se ofrece resolverlo (O4).
-             *
-             * Arriba, «Enviar mensaje» sólo se dibuja con `cuentaDePortalId`, y
-             * en la cartera real de Nico 1.676 de 1.733 propietarios no tienen
-             * cuenta: el hueco se leía como «acá no se puede escribir», no como
-             * «esta persona no tiene cuenta». Es el mismo aviso que la ficha del
-             * inmueble (`ConsignacionDetailSections`). Al invitar, el back
-             * devuelve la cuenta y el mensaje aparece sin recargar.
-             *
-             * Detrás de `propietarios:edit`, que es con lo que el back protege
-             * `POST :id/invitar-al-portal`.
-             */}
-            {(!propietario.cuentaDePortalId || invitacionSinEntregar) && puedeEditar && (
-              <InvitarAlPortal
-                propietarioId={propietario.id}
-                correo={propietario.email}
-                sinEntregar={invitacionSinEntregar}
-                onSinEntregar={setInvitacionSinEntregar}
-                onInvitado={(cuenta) =>
-                  setPropietario((p) => (p ? { ...p, cuentaDePortalId: cuenta } : p))
-                }
-              />
-            )}
-          </section>
-
-          {/* P-20: el perfil dice él mismo qué cambió, con «Deshacer», en UN
-              aviso que se reemplaza (antes se apilaban «Propietario
-              actualizado»). */}
-          <PerfilTributarioDelPropietario
-            propietario={propietario}
-            puedeEditar={puedeEditarPerfil}
-            onActualizado={setPropietario}
-          />
-
-          {/* P-21: con la cuenta oculta por rol (`datosBancariosOcultos`) no se
-              dibuja «sin cuenta bancaria»: se dice que no la puede ver. */}
-          {veLaPlata && !propietario.datosBancariosOcultos ? (
-            <>
-              {/* Huellas del extracto mensual: qué mes salió, solo o a mano, y por qué no. */}
-              <ExtractosEnviadosDelPropietario propietarioId={propietario.id} version={extractosVersion} />
-
-              {/* Bank Info */}
-              {/* El lápiz: con cuenta, «Cambiar cuenta» (certificación,
-                  confirmación y aprobación: el back no deja cambiarla desde
-                  «Editar», P-14); sin cuenta, «Editar» para cargar la primera. */}
-              <PropietarioBankInfo
-                bankAccount={propietario.bankAccount}
-                propietario={{ nombre: propietario.name, documento: propietario.documentNumber ?? '' }}
-                onEdit={
-                  puedeEditar
-                    ? propietario.bankAccount?.accountNumber
-                      ? () => setPedirCambioDeCuenta((n) => n + 1)
-                      : () => setShowEditModal(true)
-                    : undefined
-                }
-              />
-
-              {/* 🔴 17-09: cambiar una cuenta que ya existe pide certificación,
-                  confirmación del propietario y aprobación de un administrador.
-                  Va dentro de `veLaPlata`: es la cuenta bancaria del propietario. */}
-              <CambioDeCuentaBancaria
-                propietarioId={propietario.id}
-                tieneCuenta={!!propietario.bankAccount?.accountNumber}
-                propietario={{ nombre: propietario.name, documento: propietario.documentNumber ?? '' }}
-                puedeEditar={puedeEditar}
-                onCuentaCambiada={() => void refetch()}
-                pedirCambio={pedirCambioDeCuenta}
-              />
-            </>
-          ) : (
-            <div
-              className="p-4 rounded-lg border border-dashed border-border bg-surface text-sm text-fg-muted"
-              data-testid="propietario-plata-oculta"
-            >
-              La cuenta bancaria, los giros, las deducciones y el extracto de este propietario no hacen parte de
-              tu rol. Si los necesitas, pídele a un administrador el permiso de ver dispersiones.
-            </div>
-          )}
-        </div>
-
-        {/* Right Column - Properties & Payments */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Tabs — P-22: a 390 px las cuatro no caben (la página medía 406);
-              se corren dentro de su riel en vez de correr la página. */}
-          <div className="max-w-full overflow-x-auto overscroll-x-contain" data-lenis-prevent data-testid="pestanas-del-propietario">
-          <SegmentedControl<typeof activeTab>
-            value={activeTab}
-            onChange={setTab}
-            aria-label={t('inmobiliaria.propietarios.detail.properties')}
-            options={[
-              {
-                value: 'properties',
-                ariaLabel: t('inmobiliaria.propietarios.detail.properties'),
-                /* El contador sale sólo cuando la lista se leyó: un «0» sobre
-                   una petición que falló es un número inventado. */
-                label: (
-                  <span className="flex items-center gap-2">
-                    {t('inmobiliaria.propietarios.detail.properties')}
-                    {vePortafolio && !cargandoConsignaciones && !errorConsignaciones && (
-                      <span className="tabular-nums text-fg-muted">{consignaciones.length}</span>
-                    )}
-                  </span>
-                ),
-              },
-              ...(veLaPlata
-                ? [
-                    {
-                      value: 'payments' as const,
-                      ariaLabel: t('inmobiliaria.propietarios.detail.payments'),
-                      label: (
-                        <span className="flex items-center gap-2">
-                          {t('inmobiliaria.propietarios.detail.payments')}
-                          {!cargandoDispersiones && !errorDispersiones && (
-                            <span className="tabular-nums text-fg-muted">{dispersiones.length}</span>
-                          )}
-                        </span>
-                      ),
-                    },
-                    {
-                      value: 'deducciones' as const,
-                      label: t('inmobiliaria.deducciones.tab'),
-                    },
-                  ]
-                : []),
-              {
-                value: 'notes',
-                label: t('inmobiliaria.propietarios.detail.notes'),
-              },
-            ]}
-          />
-          </div>
-
-          {/* Tab Content — el contenido de la pestaña se cruza con el de la
-              nueva (`CrossFade`: sale en 150 ms y el nuevo sube 4 px). */}
-          <CrossFade
-            swapKey={activeTab}
-            className={activeTab === 'properties' || activeTab === 'payments' ? 'space-y-4' : undefined}
-          >
-            {/* Carga → fallo → vacío → datos, en ese orden y en un solo
-                lugar. Antes el vacío se evaluaba primero y «este
-                propietario no tiene inmuebles consignados» salía tanto
-                mientras cargaba como cuando la petición se caía. */}
-            {activeTab === 'properties' && !vePortafolio && !cargandoPermisos && (
-              <div
-                className="p-4 rounded-lg border border-dashed border-border bg-surface text-sm text-fg-muted"
-                data-testid="propietario-portafolio-oculto"
-              >
-                {t('inmobiliaria.propietarios.detail.portafolioOculto')}
-              </div>
-            )}
-            {activeTab === 'properties' && (vePortafolio || cargandoPermisos) && (
-              <EstadoDeDatos
-                cargando={cargandoConsignaciones || cargandoPermisos}
-                error={errorConsignaciones}
-                queEs="los inmuebles de este propietario"
-                onReintentar={recargarConsignaciones}
-                vacio={consignaciones.length === 0}
-                cuandoVacio={
-                  <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
-                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-                      <House className="w-6 h-6 text-muted-foreground" weight="duotone" />
+                <div className="space-y-4">
+                  {/* Carga → fallo → vacío → datos, en ese orden y en un solo
+                      lugar. Antes el vacío se evaluaba primero y «este
+                      propietario no tiene inmuebles consignados» salía tanto
+                      mientras cargaba como cuando la petición se caía. */}
+                  {!vePortafolio && !cargandoPermisos && (
+                    <div
+                      className="p-4 rounded-lg border border-dashed border-border bg-surface text-sm text-fg-muted"
+                      data-testid="propietario-portafolio-oculto"
+                    >
+                      {t('inmobiliaria.propietarios.detail.portafolioOculto')}
                     </div>
-                    <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-                      {t('inmobiliaria.propietarios.detail.noProperties')}
-                    </p>
-                    <Button hideArrow onClick={nuevaConsignacion} data-testid="nueva-consignacion">
-                      <Plus className="w-4 h-4" />
-                      {t('inmobiliaria.propietarios.detail.newConsignment')}
-                    </Button>
-                  </div>
-                }
-              >
-                <Stagger className="space-y-4">
-                  {consignaciones.map((consignacion) => (
-                    <StaggerItem key={consignacion.id}>
-                      <PropertyCard
-                        consignacion={consignacion}
-                        propietarioId={propietario.id}
-                        inmueble={propietario.inmuebles?.find((i) => i.consignacionId === consignacion.id) ?? null}
-                        sinPorcentaje={
-                          propietario.inmueblesSinPorcentaje?.some(
-                            (i) => i.consignacionId === consignacion.id,
-                          ) ?? false
-                        }
-                      />
-                    </StaggerItem>
-                  ))}
-                </Stagger>
-              </EstadoDeDatos>
-            )}
-
-            {/* Lo mismo del otro lado, y acá pesa más: «no hay giros»
-                sobre una lectura caída se lee como «no le hemos pagado». */}
-            {veLaPlata && activeTab === 'payments' && (
-              <EstadoDeDatos
-                cargando={cargandoDispersiones}
-                error={errorDispersiones}
-                queEs="los giros a este propietario"
-                onReintentar={recargarDispersiones}
-                vacio={dispersiones.length === 0}
-                cuandoVacio={
-                  <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
-                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-                      <CurrencyDollar className="w-6 h-6 text-muted-foreground" weight="duotone" />
-                    </div>
-                    <p className="text-sm text-muted-foreground max-w-sm">
-                      {t('inmobiliaria.propietarios.detail.noPayments')}
-                    </p>
-                  </div>
-                }
-              >
-                <Stagger className="space-y-4">
-                  {dispersiones.map((dispersion) => (
-                    <StaggerItem key={dispersion.id}>
-                      <PaymentHistoryItem dispersion={dispersion} />
-                    </StaggerItem>
-                  ))}
-                </Stagger>
-              </EstadoDeDatos>
-            )}
-
-            {/* Los inmuebles salen de las consignaciones ya leídas: el
-                descuento puede quedar atado a uno o a ninguno. */}
-            {veLaPlata && activeTab === 'deducciones' && (
-              <DeduccionesDelPropietario
-                propietarioId={propietario.id}
-                inmuebles={consignaciones.map((c) => ({
-                  consignacionId: c.id,
-                  titulo: c.propertyTitle,
-                }))}
-              />
-            )}
-
-            {activeTab === 'notes' && (
-              <div className="p-5 rounded-lg border border-border bg-card">
-                <div className="flex items-center gap-2 mb-4">
-                  <Note className="w-5 h-5 text-muted-foreground" />
-                  <h3 className="text-base font-semibold text-foreground">
-                    {t('inmobiliaria.propietarios.detail.internalNotes')}
-                  </h3>
+                  )}
+                  {(vePortafolio || cargandoPermisos) && (
+                    <EstadoDeDatos
+                      cargando={cargandoConsignaciones || cargandoPermisos}
+                      error={errorConsignaciones}
+                      queEs="los inmuebles de este propietario"
+                      onReintentar={recargarConsignaciones}
+                      vacio={consignaciones.length === 0}
+                      cuandoVacio={
+                        <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
+                          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+                            <House className="w-6 h-6 text-muted-foreground" weight="duotone" />
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+                            {t('inmobiliaria.propietarios.detail.noProperties')}
+                          </p>
+                          <Button hideArrow onClick={nuevaConsignacion} data-testid="nueva-consignacion">
+                            <Plus className="w-4 h-4" />
+                            {t('inmobiliaria.propietarios.detail.newConsignment')}
+                          </Button>
+                        </div>
+                      }
+                    >
+                      <Stagger className="space-y-4">
+                        {consignaciones.map((consignacion) => (
+                          <StaggerItem key={consignacion.id}>
+                            <PropertyCard
+                              consignacion={consignacion}
+                              propietarioId={propietario.id}
+                              inmueble={propietario.inmuebles?.find((i) => i.consignacionId === consignacion.id) ?? null}
+                              sinPorcentaje={
+                                propietario.inmueblesSinPorcentaje?.some(
+                                  (i) => i.consignacionId === consignacion.id,
+                                ) ?? false
+                              }
+                            />
+                          </StaggerItem>
+                        ))}
+                      </Stagger>
+                    </EstadoDeDatos>
+                  )}
                 </div>
+              </>
+            ),
+          },
+          ...(veLaPlata
+            ? [
+                {
+                  id: 'plata',
+                  etiqueta: 'Plata',
+                  contenido: (
+                    <>
+                      <ExtractosEnviadosDelPropietario propietarioId={propietario.id} version={extractosVersion} />
+                      <div className="max-w-full overflow-x-auto overscroll-x-contain" data-lenis-prevent data-testid="pestanas-del-propietario">
+                        <SegmentedControl<typeof activeTab>
+                          value={activeTab}
+                          onChange={setTab}
+                          aria-label={t('inmobiliaria.propietarios.detail.payments')}
+                          options={[
+                            {
+                              value: 'payments',
+                              ariaLabel: t('inmobiliaria.propietarios.detail.payments'),
+                              /* El contador sale sólo cuando la lista se leyó: un «0» sobre
+                                 una petición que falló es un número inventado. */
+                              label: (
+                                <span className="flex items-center gap-2">
+                                  {t('inmobiliaria.propietarios.detail.payments')}
+                                  {!cargandoDispersiones && !errorDispersiones && (
+                                    <span className="tabular-nums text-fg-muted">{dispersiones.length}</span>
+                                  )}
+                                </span>
+                              ),
+                            },
+                            { value: 'deducciones', label: t('inmobiliaria.deducciones.tab') },
+                          ]}
+                        />
+                      </div>
+                      <CrossFade swapKey={activeTab} className={activeTab === 'payments' ? 'space-y-4' : undefined}>
+                        {/* Lo mismo del otro lado, y acá pesa más: «no hay giros»
+                            sobre una lectura caída se lee como «no le hemos pagado». */}
+                        {veLaPlata && activeTab === 'payments' && (
+                          <EstadoDeDatos
+                            cargando={cargandoDispersiones}
+                            error={errorDispersiones}
+                            queEs="los giros a este propietario"
+                            onReintentar={recargarDispersiones}
+                            vacio={dispersiones.length === 0}
+                            cuandoVacio={
+                              <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
+                                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+                                  <CurrencyDollar className="w-6 h-6 text-muted-foreground" weight="duotone" />
+                                </div>
+                                <p className="text-sm text-muted-foreground max-w-sm">
+                                  {t('inmobiliaria.propietarios.detail.noPayments')}
+                                </p>
+                              </div>
+                            }
+                          >
+                            <Stagger className="space-y-4">
+                              {dispersiones.map((dispersion) => (
+                                <StaggerItem key={dispersion.id}>
+                                  <PaymentHistoryItem dispersion={dispersion} />
+                                </StaggerItem>
+                              ))}
+                            </Stagger>
+                          </EstadoDeDatos>
+                        )}
+                        {/* Los inmuebles salen de las consignaciones ya leídas: el
+                            descuento puede quedar atado a uno o a ninguno. */}
+                        {veLaPlata && activeTab === 'deducciones' && (
+                          <DeduccionesDelPropietario
+                            propietarioId={propietario.id}
+                            inmuebles={consignaciones.map((c) => ({
+                              consignacionId: c.id,
+                              titulo: c.propertyTitle,
+                            }))}
+                          />
+                        )}
+                      </CrossFade>
+                    </>
+                  ),
+                },
+              ]
+            : []),
+          {
+            id: 'configuracion',
+            etiqueta: 'Configuración',
+            contenido: (
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {/* El permiso para escribirle por WhatsApp desde el chat
+                    (2026-09-12). Sólo si tiene cuenta de portal: el hilo del chat es
+                    con un `User`, y sin cuenta no hay a quién prendérselo. */}
+                <InterruptorDeWhatsapp personaId={propietario.cuentaDePortalId} />
+                {/* Contacto en filas compactas, como la ficha del contrato: antes
+                    cada dato tenía su ícono en un cuadro de 40 px y la tarjeta
+                    ocupaba media pantalla para tres líneas. */}
+                <section className="rounded-lg border border-border bg-card p-5 space-y-3" data-testid="contacto">
+                  <div className="flex items-center gap-2">
+                    <Envelope className="w-4 h-4 text-muted-foreground" />
+                    <h3 className="text-base font-semibold text-foreground">
+                      {t('inmobiliaria.propietarios.detail.contactInfo')}
+                    </h3>
+                  </div>
+                  <div className="space-y-2">
+                    <FilaDeContacto
+                      etiqueta={t('inmobiliaria.propietarios.email')}
+                      valor={email}
+                      href={email ? `mailto:${email}` : undefined}
+                      onCopiar={email ? () => handleCopy(email, 'email') : undefined}
+                      copiado={copiedEmail}
+                      etiquetaCopiar={t('inmobiliaria.propietarios.detail.copiarCorreo')}
+                      etiquetaCopiado={t('inmobiliaria.propietarios.detail.copied')}
+                    />
+                    <FilaDeContacto
+                      etiqueta={t('inmobiliaria.propietarios.phone')}
+                      valor={phone}
+                      href={phone ? `tel:${phone}` : undefined}
+                      onCopiar={phone ? () => handleCopy(phone, 'phone') : undefined}
+                      copiado={copiedPhone}
+                      etiquetaCopiar={t('inmobiliaria.propietarios.detail.copiarTelefono')}
+                      etiquetaCopiado={t('inmobiliaria.propietarios.detail.copied')}
+                    />
+                    <FilaDeContacto
+                      etiqueta={t('inmobiliaria.propietarios.detail.address')}
+                      valor={[propietario.address, propietario.city, propietario.department].filter(Boolean).join(', ') || null}
+                    />
+                    {propietario.externalId ? (
+                      <FilaDeContacto etiqueta={t('inmobiliaria.propietarios.detail.refExterna')} valor={propietario.externalId} mono />
+                    ) : null}
+                  </div>
+                  {/*
+                   * 🔴 Sin cuenta en Leasefy, se DICE y se ofrece resolverlo (O4).
+                   *
+                   * Arriba, «Enviar mensaje» sólo se dibuja con `cuentaDePortalId`, y
+                   * en la cartera real de Nico 1.676 de 1.733 propietarios no tienen
+                   * cuenta: el hueco se leía como «acá no se puede escribir», no como
+                   * «esta persona no tiene cuenta». Es el mismo aviso que la ficha del
+                   * inmueble (`ConsignacionDetailSections`). Al invitar, el back
+                   * devuelve la cuenta y el mensaje aparece sin recargar.
+                   *
+                   * Detrás de `propietarios:edit`, que es con lo que el back protege
+                   * `POST :id/invitar-al-portal`.
+                   */}
+                  {(!propietario.cuentaDePortalId || invitacionSinEntregar) && puedeEditar && (
+                    <InvitarAlPortal
+                      propietarioId={propietario.id}
+                      correo={propietario.email}
+                      sinEntregar={invitacionSinEntregar}
+                      onSinEntregar={setInvitacionSinEntregar}
+                      onInvitado={(cuenta) =>
+                        setPropietario((p) => (p ? { ...p, cuentaDePortalId: cuenta } : p))
+                      }
+                    />
+                  )}
+                </section>
 
-                {propietario.notes ? (
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {propietario.notes}
-                  </p>
+                {/* P-20: el perfil dice él mismo qué cambió, con «Deshacer», en UN
+                    aviso que se reemplaza (antes se apilaban «Propietario
+                    actualizado»). */}
+                <PerfilTributarioDelPropietario
+                  propietario={propietario}
+                  puedeEditar={puedeEditarPerfil}
+                  onActualizado={setPropietario}
+                />
+
+                {/* P-21: con la cuenta oculta por rol (`datosBancariosOcultos`) no se
+                    dibuja «sin cuenta bancaria»: se dice que no la puede ver. */}
+                {veLaPlata && !propietario.datosBancariosOcultos ? (
+                  <>
+
+                    {/* Bank Info */}
+                    {/* El lápiz: con cuenta, «Cambiar cuenta» (certificación,
+                        confirmación y aprobación: el back no deja cambiarla desde
+                        «Editar», P-14); sin cuenta, «Editar» para cargar la primera. */}
+                    <PropietarioBankInfo
+                      bankAccount={propietario.bankAccount}
+                      propietario={{ nombre: propietario.name, documento: propietario.documentNumber ?? '' }}
+                      onEdit={
+                        puedeEditar
+                          ? propietario.bankAccount?.accountNumber
+                            ? () => setPedirCambioDeCuenta((n) => n + 1)
+                            : () => setShowEditModal(true)
+                          : undefined
+                      }
+                    />
+
+                    {/* 🔴 17-09: cambiar una cuenta que ya existe pide certificación,
+                        confirmación del propietario y aprobación de un administrador.
+                        Va dentro de `veLaPlata`: es la cuenta bancaria del propietario. */}
+                    <CambioDeCuentaBancaria
+                      propietarioId={propietario.id}
+                      tieneCuenta={!!propietario.bankAccount?.accountNumber}
+                      propietario={{ nombre: propietario.name, documento: propietario.documentNumber ?? '' }}
+                      puedeEditar={puedeEditar}
+                      onCuentaCambiada={() => void refetch()}
+                      pedirCambio={pedirCambioDeCuenta}
+                    />
+                  </>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">{t('inmobiliaria.propietarios.detail.noNotes')}</p>
-                )}
-
-                {puedeEditar && (
-                  <Button
-                    variant="link"
-                    hideArrow
-                    className="mt-4 h-auto p-0"
-                    onClick={() => {
-                      setNotesValue(propietario.notes || '');
-                      setShowNotesModal(true);
-                    }}
+                  <div
+                    className="p-4 rounded-lg border border-dashed border-border bg-surface text-sm text-fg-muted"
+                    data-testid="propietario-plata-oculta"
                   >
-                    {propietario.notes ? t('inmobiliaria.propietarios.detail.editNotes') : t('inmobiliaria.propietarios.detail.addNotes')}
-                  </Button>
+                    La cuenta bancaria, los giros, las deducciones y el extracto de este propietario no hacen parte de
+                    tu rol. Si los necesitas, pídele a un administrador el permiso de ver dispersiones.
+                  </div>
                 )}
               </div>
-            )}
-          </CrossFade>
-        </div>
-      </div>
+            ),
+          },
+          {
+            id: 'historial',
+            etiqueta: 'Historial',
+            contenido: (
+              <>
+                {(
+                  <div className="p-5 rounded-lg border border-border bg-card">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Note className="w-5 h-5 text-muted-foreground" />
+                      <h3 className="text-base font-semibold text-foreground">
+                        {t('inmobiliaria.propietarios.detail.internalNotes')}
+                      </h3>
+                    </div>
 
-      {/* 🔴 22-09: quién tocó a este propietario, con su rol —crearlo,
-          editarlo, cambiarle la cuenta, bajar su extracto— y lo que se intentó
-          sin permiso. Debajo de las pestañas: vale para todas. */}
-      <BitacoraDelRecurso tipo="propietario" id={propietario.id} />
+                    {propietario.notes ? (
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {propietario.notes}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">{t('inmobiliaria.propietarios.detail.noNotes')}</p>
+                    )}
+
+                    {puedeEditar && (
+                      <Button
+                        variant="link"
+                        hideArrow
+                        className="mt-4 h-auto p-0"
+                        onClick={() => {
+                          setNotesValue(propietario.notes || '');
+                          setShowNotesModal(true);
+                        }}
+                      >
+                        {propietario.notes ? t('inmobiliaria.propietarios.detail.editNotes') : t('inmobiliaria.propietarios.detail.addNotes')}
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {/* 🔴 22-09: quién tocó a este propietario, con su rol —crearlo,
+                    editarlo, cambiarle la cuenta, bajar su extracto— y lo que se intentó
+                    sin permiso. Debajo de las pestañas: vale para todas. */}
+                <BitacoraDelRecurso tipo="propietario" id={propietario.id} />
+              </>
+            ),
+          },
+        ]}
+      />
 
       {/* Editar — el MISMO cajón de «Nuevo propietario» y de «Editar» en la
           lista (Nico, 03-10: el formulario del propietario va en un cajón, no

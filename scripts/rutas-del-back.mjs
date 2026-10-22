@@ -65,7 +65,7 @@ for (const f of controladores(raiz)) {
       i + 1 < marcas.length ? marcas[i + 1].index : texto.length,
     );
     for (const m of trozo.matchAll(
-      /@(Get|Post|Put|Patch|Delete)\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/g,
+      /@(Get|Post|Put|Patch|Delete)\(\s*(?:['"`]([^'"`]*)['"`])?\s*,?\s*\)/g,
     )) {
       const sub = m[2] ?? '';
       const camino = ('/' + prefijo + (sub ? '/' + sub : '')).replace(/\/+/g, '/');

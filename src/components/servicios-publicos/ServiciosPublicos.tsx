@@ -32,6 +32,7 @@ import { camposDelError } from '@/lib/errores/traductor-de-errores';
 import { fechaCorta } from '@/components/contratos/BandejaDeCartasDelIncremento';
 import { mesesParaElegir, nombreDelMes } from '@/lib/contratos/incrementos-del-periodo';
 import { FormularioDeFactura, type ErroresDeLaFactura } from '@/components/servicios-publicos/FormularioDeFactura';
+import { MoriRecuerdaLaFactura, fraseDeLosRecordatorios } from '@/components/servicios-publicos/MoriRecuerdaLaFactura';
 import {
   serviciosPublicosApi,
   type EstadoDelMes,
@@ -387,6 +388,13 @@ export function ServiciosPublicos() {
               Falta una actualización de la base: se ven los contratos, pero todavía no se pueden registrar facturas.
             </p>
           )}
+          {datos?.recordatorio && (
+            <MoriRecuerdaLaFactura
+              configuracion={datos.recordatorio}
+              puedeEditar={puedeEditar}
+              onCambio={(c) => setDatos((d) => (d ? { ...d, recordatorio: c } : d))}
+            />
+          )}
           <div className="space-y-3 border-b border-border px-4 py-3 md:px-5">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-2">
@@ -482,6 +490,11 @@ export function ServiciosPublicos() {
                                 {f.contrato} · {f.inquilino ?? 'Sin inquilino'}
                               </p>
                               <p className="truncate text-xs text-fg-muted">{f.inmueble}</p>
+                              {fraseDeLosRecordatorios(f.recordatorios) && (
+                                <p className="text-xs text-fg-muted" data-testid={`recordado-${f.contractId}`}>
+                                  {fraseDeLosRecordatorios(f.recordatorios)}
+                                </p>
+                              )}
                             </TableCell>
                             <TableCell className="py-4">
                               <StatusBadge tone={e.tono}>{e.rotulo}</StatusBadge>
@@ -523,6 +536,11 @@ export function ServiciosPublicos() {
                               {f.contrato} · {f.inquilino ?? 'Sin inquilino'}
                             </p>
                             <p className="truncate text-xs text-fg-muted">{f.inmueble}</p>
+                            {fraseDeLosRecordatorios(f.recordatorios) && (
+                              <p className="text-xs text-fg-muted" data-testid={`recordado-${f.contractId}`}>
+                                {fraseDeLosRecordatorios(f.recordatorios)}
+                              </p>
+                            )}
                           </div>
                           <StatusBadge tone={e.tono}>{e.rotulo}</StatusBadge>
                         </div>

@@ -53,6 +53,27 @@ export interface FilaDelTablero {
   ajustesPorRevisar: number;
   entradaRegistrada: boolean;
   ultimaFactura: FacturaDeServicio | null;
+  /** 22-10-2026: lo que Mori recordó de la factura de este mes (un back viejo no lo manda). */
+  recordatorios?: RecordatorioDeMori[];
+}
+
+/** Mori recuerda la factura (Portofino, Nico 22-10-2026). */
+export interface ConfiguracionDelRecordatorio {
+  disponible: boolean;
+  /** `null` = apagado. */
+  dia: number | null;
+  diaPorDefecto: number;
+  diaMaximo: number;
+}
+
+export type EstadoDelRecordatorio = 'EN_CURSO' | 'ENVIADO' | 'EN_LA_GESTION_DE_COBRO' | 'NO_SE_ENVIA';
+
+export interface RecordatorioDeMori {
+  intento: 1 | 2;
+  estado: EstadoDelRecordatorio;
+  /** `AAAA-MM-DD`. */
+  dia: string;
+  detalle: string | null;
 }
 
 export interface TableroDeServicios {
@@ -60,6 +81,8 @@ export interface TableroDeServicios {
   mes: string;
   resumen: { alDia: number; porRevisar: number; rechazadas: number; sinFactura: number; ajustesPorRevisar: number };
   contratos: FilaDelTablero[];
+  /** 22-10-2026: si Mori recuerda la factura (un back viejo no lo manda). */
+  recordatorio?: ConfiguracionDelRecordatorio | null;
 }
 
 export interface ServiciosDelContrato {
@@ -146,6 +169,9 @@ export const serviciosPublicosApi = {
       devolucion ? { devolucion } : {},
     ),
   soporte: (facturaId: string) => apiClient.get<{ url: string }>(`/inmobiliaria/servicios-publicos/facturas/${facturaId}/soporte`),
+  /** Mori recuerda la factura: el día del mes siguiente, o `null` para apagarlo. */
+  guardarRecordatorio: (dia: number | null) =>
+    apiClient.put<ConfiguracionDelRecordatorio>('/inmobiliaria/servicios-publicos/recordatorios', { dia }),
 
   // El portal del inquilino.
   delPortal: () => apiClient.get<ServiciosDelPortal>('/portal/servicios-publicos'),

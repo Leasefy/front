@@ -53,6 +53,7 @@
  * de hoy sino una función que todavía no existe en ese entorno.
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -379,77 +380,47 @@ function ConciliacionSala() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6" data-testid="sala-agente-conciliacion">
-      {/* Encabezado — sin CTA: la acción vive en la tarjeta que la explica. A la
-          derecha, sólo «¿Cómo funciona?» (05-10-2026): estaba al pie de la
-          pantalla, debajo de la actividad, y ahí no lo encontraba nadie. */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <h1 className="text-h2 text-fg">{t(`${PAGES_NS}.salaTitulo`)}</h1>
-          <p className="text-body text-fg-muted max-w-2xl">{t(`${PAGES_NS}.salaDesc`)}</p>
-        </div>
-        <ParaEntenderMas
-          etiqueta={t(`${PAGES_NS}.comoFunciona.title`)}
-          titulo={t(`${PAGES_NS}.comoFunciona.titulo`)}
-          descripcion={t(`${PAGES_NS}.comoFunciona.descripcion`)}
-          variante="secundario"
-          className="self-start sm:shrink-0"
-        >
-          <PasosExplicados
-            data-testid="conciliacion-como-funciona"
-            pasos={COMO_FUNCIONA_STEPS.map((step) => ({
-              id: step.clave,
-              icono: step.icon,
-              titulo: t(`${PAGES_NS}.comoFunciona.${step.clave}.title`),
-              explicacion: t(`${PAGES_NS}.comoFunciona.${step.clave}.desc`),
-              quien: step.quien,
-              tuParte: step.tuParte ? t(`${PAGES_NS}.comoFunciona.${step.clave}.tuParte`) : undefined,
-            }))}
-          />
-        </ParaEntenderMas>
-      </header>
-
-      {/* D-CONCILIACION (Nico, P10): el aviso de las partidas que pasan de los días de la alerta. */}
-      <AlertaDePartidas />
-
-      {/* 1. La acción que desbloquea todo lo demás: subir el extracto. */}
-      <section
-        className="rounded-lg border border-border bg-surface p-5"
-        data-testid="conciliacion-subir-extracto"
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted">
-              <UploadSimple
-                className="h-[18px] w-[18px] text-fg-muted"
-                weight="duotone"
-                aria-hidden="true"
-              />
-            </span>
-            <div className="min-w-0 space-y-0.5">
-              <h2 className="text-base font-medium text-fg">{t(`${PAGES_NS}.accionTitle`)}</h2>
-              {/* El aviso de «todavía no cargaste nada» ocupa esta línea cuando
-                  aplica, en vez de flotar suelto debajo de la tarjeta. */}
-              <p className="text-body-sm text-fg-muted" data-testid="conciliacion-hero-linea">
-                {sinExtracto
-                  ? 'Todavía no cargaste ningún extracto, así que no hay movimientos que cruzar.'
-                  : pendientesEnElBack > 0
-                    ? `Hay ${pendientesEnElBack} ${pendientesEnElBack === 1 ? 'movimiento del banco esperando' : 'movimientos del banco esperando'} en Movimientos.`
-                    : t(`${PAGES_NS}.accionDesc`)}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-            <Button asChild hideArrow variant="secondary" data-testid="conciliacion-subir-cta">
-              <Link href={SUBIR_EXTRACTO_HREF}>
-                {t(`${PAGES_NS}.accionTitle`)}
-                <UploadSimple className="h-4 w-4" aria-hidden="true" />
-              </Link>
-            </Button>
+      {/* GLOW UP 22-10 (UX, al nivel de Deuda del mes): el encabezado común —«Conciliar N movimientos»
+          es la principal y «Subir el extracto» la secundaria; «¿Cómo funciona?» en la ayuda—. Debajo,
+          una línea con el estado del extracto (antes, una tarjeta grande con caja de ícono). */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secAgentes')}
+        titulo={t(`${PAGES_NS}.salaTitulo`)}
+        descripcion={t(`${PAGES_NS}.salaDesc`)}
+        ayuda={
+          <ParaEntenderMas
+            etiqueta={t(`${PAGES_NS}.comoFunciona.title`)}
+            titulo={t(`${PAGES_NS}.comoFunciona.titulo`)}
+            descripcion={t(`${PAGES_NS}.comoFunciona.descripcion`)}
+          >
+            <PasosExplicados
+              data-testid="conciliacion-como-funciona"
+              pasos={COMO_FUNCIONA_STEPS.map((step) => ({
+                id: step.clave,
+                icono: step.icon,
+                titulo: t(`${PAGES_NS}.comoFunciona.${step.clave}.title`),
+                explicacion: t(`${PAGES_NS}.comoFunciona.${step.clave}.desc`),
+                quien: step.quien,
+                tuParte: step.tuParte ? t(`${PAGES_NS}.comoFunciona.${step.clave}.tuParte`) : undefined,
+              }))}
+            />
+          </ParaEntenderMas>
+        }
+        acciones={
+          <Button asChild size="sm" hideArrow variant="outline" data-testid="conciliacion-subir-cta">
+            <Link href={SUBIR_EXTRACTO_HREF}>
+              <UploadSimple className="h-4 w-4" aria-hidden="true" />
+              {t(`${PAGES_NS}.accionTitle`)}
+            </Link>
+          </Button>
+        }
+        accionPrincipal={
+          <>
             {/* Acción PRINCIPAL: conciliar ahora (T-323, confirmación humana).
                 Sin movimientos cargados, o sin saber cuántos hay, el botón no
                 promete nada: dice por qué no se puede. */}
             <Button
+              size="sm"
               hideArrow
               disabled={isRunning || sinMovimientos || leyendoResumen || resumenCaido}
               onClick={() => setConfirmOpen(true)}
@@ -463,9 +434,27 @@ function ConciliacionSala() {
                   ? `Conciliar ${movimientos - conciliados} movimientos`
                   : 'Conciliar ahora'}
             </Button>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
+
+      {/* D-CONCILIACION (Nico, P10): el aviso de las partidas que pasan de los días de la alerta. */}
+      <AlertaDePartidas />
+
+      {/* 1. El extracto del banco: en qué va, en una línea. */}
+      <div
+        className="flex items-start gap-2.5 rounded-lg border border-border bg-surface px-4 py-3"
+        data-testid="conciliacion-subir-extracto"
+      >
+        <UploadSimple className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+        <p className="text-body-sm text-fg-muted" data-testid="conciliacion-hero-linea">
+          {sinExtracto
+            ? 'Todavía no cargaste ningún extracto, así que no hay movimientos que cruzar.'
+            : pendientesEnElBack > 0
+              ? `Hay ${pendientesEnElBack} ${pendientesEnElBack === 1 ? 'movimiento del banco esperando' : 'movimientos del banco esperando'} en Movimientos.`
+              : t(`${PAGES_NS}.accionDesc`)}
+        </p>
+      </div>
 
       {/* K1: el resumen no llegó y no hay nada que mostrar. El hueco lo dice,
           con reintento — nunca queda como una cuenta sin pendientes. */}
@@ -501,12 +490,12 @@ function ConciliacionSala() {
           </Button>
       </Presence>
 
-      {/* 2. Lo que encontró el agente — la tarjeta protagonista. */}
-      <HallazgosDelAgente data={summary} colaHref={COLA_HREF} />
-
-      {/* 3. Una sola franja de KPIs. El esqueleto sólo en la PRIMERA lectura:
+      {/* 2. LA RESPUESTA: cuánto lleva conciliado el agente. El esqueleto sólo en la PRIMERA lectura:
              en cada vuelta del sondeo se borraban los números y volvían. */}
       <ConciliacionResumen data={summary} isLoading={leyendoResumen} showSkeleton />
+
+      {/* 3. Lo que encontró el agente, con su botón para revisarlo. */}
+      <HallazgosDelAgente data={summary} colaHref={COLA_HREF} />
 
       {/* 4. Qué pasó con la última corrida. */}
       <ResultadoDeLaCorrida corrida={corrida} />

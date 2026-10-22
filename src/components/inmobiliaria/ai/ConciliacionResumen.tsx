@@ -31,9 +31,9 @@
  */
 
 import Link from 'next/link'
-import { ArrowRight, MagnifyingGlass } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import {
   etiquetaDeRevision,
   fraseDeHallazgos,
@@ -84,51 +84,60 @@ export function ConciliacionResumen({ data, isLoading, showSkeleton }: Conciliac
   if (!data) return null
 
   const { totals, tasa_conciliacion } = data
+  const porCruzar = Math.max(0, totals.movimientos - totals.conciliados)
 
-  // Cada cifra con su formato: cuando el resumen se refresca, cuenta desde la
-  // anterior (`AnimatedNumber`); el texto final es el mismo de antes.
-  const kpis: { id: string; label: string; valor: number | null; formato: (n: number) => string }[] = [
-    { id: 'movimientos', label: 'Movimientos', valor: totals.movimientos, formato: (n) => numberFormatter.format(n) },
-    { id: 'conciliados', label: 'Conciliados', valor: totals.conciliados, formato: (n) => numberFormatter.format(n) },
-    { id: 'tasa', label: 'Tasa de conciliación', valor: tasa_conciliacion, formato: (n) => formatTasa(n) },
-    {
-      id: 'monto',
-      label: 'Monto conciliado',
-      valor: totals.monto_conciliado_cop,
-      formato: (n) => copFormatter.format(n),
-    },
-  ]
-
+  /*
+   * GLOW UP 22-10 (UX, al nivel de Deuda del mes): LA RESPUESTA en una cifra —cuántos movimientos
+   * lleva conciliados el agente de los que tiene—, con su barra (conciliados · por cruzar), y la
+   * tasa y el monto debajo. Antes, cuatro tarjetas del mismo peso. «En cola» sigue sin repetirse
+   * aquí: es el número de «Lo que encontró el agente».
+   *
+   * 🔴 21-09-2026: el rótulo le pone dueño a la cifra —«lo que lleva cruzado el agente»—: arriba la
+   * pantalla habla de lo que mandó el banco y nadie cruzó todavía; sin dueño, una de las dos miente.
+   */
   return (
-    <section aria-labelledby="lo-que-cruzo-el-agente" className="space-y-2">
-      {/*
-        🔴 21-09-2026, abriendo la pantalla: arriba decía «Hay 3 movimientos
-        del banco esperando en Movimientos» y aquí abajo «Movimientos 0», en
-        la misma pantalla. No es un error de ninguno de los dos: son cosas
-        distintas —lo que el banco mandó y todavía nadie cruzó, contra lo que
-        el AGENTE ya cruzó— contadas las dos como «movimientos». El encabezado
-        le pone dueño a estas cuatro cifras; sin él, una de las dos miente.
-      */}
-      <p id="lo-que-cruzo-el-agente" className="text-caption text-fg-muted">
-        Lo que lleva cruzado el agente
-      </p>
-      <div
-        className="grid grid-cols-2 gap-4 lg:grid-cols-4"
-        data-testid="conciliacion-resumen"
-      >
-      {kpis.map((kpi) => (
-        <div
-          key={kpi.id}
-          className="rounded-lg border border-border bg-surface p-4"
-          data-testid={`conciliacion-total-${kpi.id}`}
-        >
-          <p className="text-caption text-fg-muted">{kpi.label}</p>
-          <p className="mt-1.5 text-2xl font-medium tabular-nums text-fg">
-            {kpi.valor === null ? formatTasa(null) : <AnimatedNumber value={kpi.valor} format={kpi.formato} />}
-          </p>
-        </div>
-      ))}
-      </div>
+    <section
+      aria-labelledby="lo-que-cruzo-el-agente"
+      className="rounded-lg border border-border bg-surface p-5"
+      data-testid="conciliacion-resumen"
+    >
+      <CifraHeroe
+        rotulo={<span id="lo-que-cruzo-el-agente">Lo que lleva cruzado el agente</span>}
+        cifra={
+          <span data-testid="conciliacion-total-conciliados">
+            <span className="sr-only">Conciliados: </span>
+            <AnimatedNumber value={totals.conciliados} format={(n) => numberFormatter.format(n)} />
+          </span>
+        }
+        contexto={
+          <span data-testid="conciliacion-total-movimientos">
+            de <AnimatedNumber value={totals.movimientos} format={(n) => numberFormatter.format(n)} />{' '}
+            {totals.movimientos === 1 ? 'movimiento conciliado' : 'movimientos conciliados'}
+          </span>
+        }
+        total={totals.movimientos}
+        tramos={[
+          { clave: 'conciliados', etiqueta: 'Conciliados', monto: totals.conciliados, tono: 'exito' },
+          { clave: 'por-cruzar', etiqueta: 'Por cruzar', monto: porCruzar, tono: 'neutro' },
+        ]}
+        tamano="mediana"
+        pie={
+          <dl className="flex flex-wrap gap-x-8 gap-y-2 border-t border-border-faint pt-3">
+            <div className="space-y-0.5" data-testid="conciliacion-total-tasa">
+              <dt className="font-mono uppercase tracking-[0.06em] text-fg-subtle">Tasa de conciliación</dt>
+              <dd className="font-mono text-body-sm tabular-nums text-fg">
+                {tasa_conciliacion === null ? formatTasa(null) : <AnimatedNumber value={tasa_conciliacion} format={formatTasa} />}
+              </dd>
+            </div>
+            <div className="space-y-0.5" data-testid="conciliacion-total-monto">
+              <dt className="font-mono uppercase tracking-[0.06em] text-fg-subtle">Monto conciliado</dt>
+              <dd className="font-mono text-body-sm tabular-nums text-fg">
+                <AnimatedNumber value={totals.monto_conciliado_cop} format={(n) => copFormatter.format(n)} />
+              </dd>
+            </div>
+          </dl>
+        }
+      />
     </section>
   )
 }
@@ -157,16 +166,7 @@ export function HallazgosDelAgente({ data, colaHref }: HallazgosDelAgenteProps) 
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-2">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-muted">
-              <MagnifyingGlass
-                className="h-4 w-4 text-fg-muted"
-                weight="duotone"
-                aria-hidden="true"
-              />
-            </span>
-            <h2 className="text-base font-medium text-fg">Lo que encontró el agente</h2>
-          </div>
+          <h2 className="text-base font-medium text-fg">Lo que encontró el agente</h2>
 
           {enCola > 0 ? (
             <p className="text-body-sm text-fg-muted">{frase}</p>
@@ -202,7 +202,6 @@ export function HallazgosDelAgente({ data, colaHref }: HallazgosDelAgenteProps) 
           <Button asChild variant="secondary" hideArrow className="shrink-0">
             <Link href={colaHref} data-testid="conciliacion-hallazgos-cta">
               {etiquetaDeRevision(enCola)}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
         </Presence>

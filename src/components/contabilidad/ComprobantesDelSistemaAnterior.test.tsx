@@ -226,7 +226,8 @@ describe('<ComprobantesDelSistemaAnterior>', () => {
       container.querySelector('[data-testid="comprobantes-total"]')?.textContent,
     ).toBe('3')
     const t = texto()
-    expect(t).toContain('Comprobante de Ingreso')
+    // Revisión 21-10: dentro de «Ingresos» el tipo no se repite en cada fila (sólo va en «Otros»).
+    expect(t).not.toContain('Comprobante de Ingreso')
     expect(t).toContain('CI-26766')
     expect(t).toContain('CANON SEPTIEMBRE')
     expect(t).toContain('1.008.403')

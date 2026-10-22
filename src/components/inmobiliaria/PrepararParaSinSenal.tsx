@@ -64,7 +64,9 @@ export function PrepararParaSinSenal({
       className={
         sinMarco
           ? 'flex flex-col gap-2'
-          : 'rounded-md border border-border bg-surface p-3 flex flex-col gap-2'
+          : // 21-10 (revisión de la ficha): un renglón con su botón al lado, no una
+            // tarjeta con un botón gris a todo el ancho arriba del historial.
+            'flex flex-col gap-2 rounded-[16px] border border-border-faint bg-surface px-4 py-3 dark:border-border-strong dark:bg-bg sm:flex-row sm:flex-wrap sm:items-center sm:justify-between'
       }
       data-testid="preparar-sin-senal"
     >
@@ -93,7 +95,7 @@ export function PrepararParaSinSenal({
           variant="secondary"
           hideArrow
           size="sm"
-          className="w-full"
+          className="w-full sm:w-auto"
           disabled={preparando}
           onClick={onPreparar}
           data-testid="preparar-sin-senal-boton"
@@ -110,13 +112,13 @@ export function PrepararParaSinSenal({
       )}
 
       {ultimaPreparacion === true && !preparando && (
-        <p className="text-xs text-success flex items-center gap-1">
+        <p className="flex basis-full items-center gap-1 text-xs text-success">
           <CheckCircle className="w-4 h-4 flex-shrink-0" />
           {t('inmobiliaria.sinSenal.listo')}
         </p>
       )}
       {ultimaPreparacion === false && !preparando && (
-        <p className="text-xs text-warning flex items-start gap-1">
+        <p className="flex basis-full items-start gap-1 text-xs text-warning">
           <WarningCircle className="w-4 h-4 flex-shrink-0 mt-px" />
           {t('inmobiliaria.sinSenal.noSePudo')}
         </p>

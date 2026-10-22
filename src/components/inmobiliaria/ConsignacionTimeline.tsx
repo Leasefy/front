@@ -1,5 +1,6 @@
 'use client';
 
+import { TarjetaDeLaFicha } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useState, useMemo, useEffect } from 'react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
@@ -377,22 +378,18 @@ export function ConsignacionTimeline({
   const hasMoreEvents = events.length > maxVisibleItems;
 
   return (
-    <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-border-faint dark:border-border-strong">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
-            <Clock className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
-          </div>
-          <h3 className="font-semibold text-fg">{titulo ?? t('inmobiliaria.consignaciones.timeline.title')}</h3>
-          <span className="ml-auto text-sm text-fg-muted dark:text-fg-subtle">
-            {t('inmobiliaria.consignaciones.timeline.eventsCount', { count: events.length })}
-          </span>
-        </div>
-      </div>
-
-      {/* Timeline */}
-      <div className="p-5">
+    // 21-10 (revisión de la ficha): la misma tarjeta de las demás secciones; cada
+    // evento es un renglón sobre la línea de tiempo, no una caja gris.
+    <TarjetaDeLaFicha
+      title={titulo ?? t('inmobiliaria.consignaciones.timeline.title')}
+      icon={<Clock className="h-4 w-4" />}
+      acciones={
+        <span className="font-mono text-[11px] uppercase tracking-[0.1em] tabular-nums text-fg-subtle">
+          {t('inmobiliaria.consignaciones.timeline.eventsCount', { count: events.length })}
+        </span>
+      }
+    >
+      <div>
         {/* Cargando, falló y vacío son tres cosas distintas. Antes ninguna
             existía: siempre había eventos porque siempre se inventaban. */}
         {(cargandoAgenda || (historial === null && !falloHistorial)) && events.length === 0 ? (
@@ -411,7 +408,7 @@ export function ConsignacionTimeline({
         ) : (
         <div className="relative">
           {/* Vertical line */}
-          <div className="absolute left-4 top-0 bottom-0 w-px bg-surface-muted dark:bg-ink" />
+          <div className="absolute bottom-2 left-4 top-2 w-px bg-border-faint dark:bg-border-strong" />
 
           {/* Events: entran escalonados desde la línea (techo de 320 ms), y
               «Ver más» / «Ver menos» los hace entrar y salir. */}
@@ -428,20 +425,20 @@ export function ConsignacionTimeline({
                     {/* Icon */}
                     <div
                       className={cn(
-                        'absolute left-0 w-8 h-8 rounded-full flex items-center justify-center',
-                        style.bg
+                        // Un círculo neutro sobre la línea: el color va en el ícono, no en una caja.
+                        'absolute left-0 flex h-8 w-8 items-center justify-center rounded-full border border-border-faint bg-surface dark:border-border-strong dark:bg-bg',
                       )}
                     >
                       <Icon className={cn('w-4 h-4', style.text)} />
                     </div>
 
                     {/* Content */}
-                    <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
+                    <div className="pt-1">
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <h4 className="font-medium text-fg text-sm">
+                        <h4 className="text-[15px] font-medium text-fg">
                           {event.title}
                         </h4>
-                        <span className="text-xs text-fg-muted dark:text-fg-subtle shrink-0">
+                        <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.06em] text-fg-subtle">
                           {fmtRelDate(event.date)}
                         </span>
                       </div>
@@ -500,7 +497,7 @@ export function ConsignacionTimeline({
           </Button>
         )}
       </div>
-    </div>
+    </TarjetaDeLaFicha>
   );
 }
 

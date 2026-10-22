@@ -850,6 +850,13 @@ function ConsignacionDetailContent() {
             etiqueta: 'Historial',
             contenido: (
               <>
+                {/* Historial (revisión 21-10): primero lo que pasó; después el inventario y lo del sistema anterior. */}
+                <div>
+                  <ConsignacionTimeline
+                    consignacion={consignacion}
+                    agenteName={agente?.name}
+                  />
+                </div>
                 <div>
                   {/* 🔴 Nico y Juan Camilo, 2026-09-16: el inventario es del inmueble,
                       por versiones; sin la migración del back monta la tarjeta de siempre. */}
@@ -869,12 +876,6 @@ function ConsignacionDetailContent() {
                     arriba lo de hoy, abajo lo que quedó registrado antes. */}
                 <div>
                   <ComprobantesDelSistemaAnterior propertyId={consignacion.propertyId} />
-                </div>
-                <div>
-                  <ConsignacionTimeline
-                    consignacion={consignacion}
-                    agenteName={agente?.name}
-                  />
                 </div>
                 {/* 🔴 22-09: quién tocó este inmueble, con su rol. Son DOS recursos
                     en el back —el inmueble (`/properties/:id`: fotos, datos,

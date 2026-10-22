@@ -76,6 +76,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Receipt } from '@phosphor-icons/react'
 import { SegmentedControl } from '@leasefy/cadence'
+import { cn } from '@/lib/utils'
+import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha'
 
 import {
   Table,
@@ -231,14 +233,15 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
   const pagina = useTablePagination(documentos, { resetKey: clase })
 
   return (
+    // 21-10 (revisión de la ficha): la superficie y el título de las demás secciones.
     <section
-      className="rounded-lg border border-border bg-card p-5 space-y-3"
+      className={cn(SUPERFICIE_DE_LA_FICHA, 'space-y-4 px-6 pb-6 pt-5')}
       data-testid="comprobantes-del-sistema-anterior"
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Receipt className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-base font-semibold text-foreground">
+        <div className="flex items-center gap-2.5">
+          <Receipt className="h-[18px] w-[18px] text-fg-subtle" aria-hidden="true" />
+          <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">
             Comprobantes del sistema anterior
           </h3>
         </div>
@@ -247,7 +250,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
             diría 500 para siempre. */}
         {totalGeneral > 0 ? (
           <span
-            className="font-mono text-sm tabular-nums text-fg-muted"
+            className="font-mono text-[11px] uppercase tracking-[0.1em] tabular-nums text-fg-subtle"
             data-testid="comprobantes-total"
           >
             {totalGeneral.toLocaleString(localeDeLasCifras())}
@@ -345,6 +348,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
             >
               <TablaDeComprobantes
                 documentos={pagina.pageItems}
+                conTipo={clase === 'otro'}
                 pie={
                   pagina.shouldPaginate ? (
                     <div
@@ -380,6 +384,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
 }
 
 function TablaDeComprobantes({
+  conTipo = true,
   documentos,
   pie,
 }: {
@@ -387,15 +392,19 @@ function TablaDeComprobantes({
   documentos: DocumentoMigradoVista[]
   /** El pie de paginación, dentro del mismo marco que la tabla. */
   pie?: ReactNode
+  /**
+   * La columna «Tipo». En Ingresos, Egresos o Facturas dice lo mismo en cada
+   * fila («Comprobante de Ingreso» ×10, revisión 21-10): sólo va en «Otros»,
+   * donde es lo único que dice qué es cada fila (nota crédito, nómina…).
+   */
+  conTipo?: boolean
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-surface">
+    <div className="overflow-hidden rounded-[16px] border border-border-faint bg-surface dark:border-border-strong dark:bg-bg">
       <Table>
         <TableHeader>
           <TableRow>
-            {/* El tipo se repite dentro de una pestaña, pero en «Otros» es lo
-                único que dice qué es cada fila (nota crédito, nómina…). */}
-            <TableHead>Tipo</TableHead>
+            {conTipo ? <TableHead>Tipo</TableHead> : null}
             <TableHead>Número</TableHead>
             <TableHead>Fecha</TableHead>
             <TableHead>Concepto</TableHead>
@@ -409,15 +418,18 @@ function TablaDeComprobantes({
         <TableBody>
           {documentos.map((d) => (
             <TableRow key={d.id} data-testid="comprobante-migrado">
-              <TableCell className="whitespace-nowrap">
-                {d.tipo || '—'}
-                {d.anulado ? <span className="ml-2 text-caption text-danger">anulado</span> : null}
-              </TableCell>
+              {conTipo ? (
+                <TableCell className="whitespace-nowrap">
+                  {d.tipo || '—'}
+                  {d.anulado ? <span className="ml-2 text-caption text-danger">anulado</span> : null}
+                </TableCell>
+              ) : null}
               {/* El prefijo puede venir vacío («FV-26766» vs «26766»), y el
                   consecutivo 0 es un consecutivo: `filter(Boolean)` lo
                   borraría. */}
               <TableCell className="whitespace-nowrap font-mono text-caption tabular-nums">
                 {d.prefijo ? `${d.prefijo}-${d.consecutivo}` : String(d.consecutivo)}
+                {!conTipo && d.anulado ? <span className="ml-2 font-sans text-caption text-danger">anulado</span> : null}
               </TableCell>
               <TableCell className="whitespace-nowrap">{diaLegible(d.fecha)}</TableCell>
               <TableCell className="max-w-[28rem] text-fg-muted">

@@ -30,9 +30,8 @@
  *    arma el back (`finanzas/cuadre/cuadre-de-terceros.ts`). Acá se pinta.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { CheckCircle, WarningOctagon } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Avisos, Cifra, CifraDeTexto, TituloDeBloque } from '@/components/finanzas/piezas';
@@ -41,6 +40,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { finanzasApi } from '@/lib/api/finanzas.service';
 import type { CuadreDeTerceros as Respuesta } from '@/lib/api/finanzas.types';
+import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 // PG-13 (QA-PAGOS-95): «hasta el 4 de octubre de 2026», nunca «hasta el 2026-10-04».
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
@@ -183,8 +183,7 @@ function Cuadre({ datos }: { datos: Respuesta }) {
   const hayPartidas = datos.partidasPorIdentificar > 0;
   return (
     <div className="space-y-6">
-      <div className="space-y-3">
-        <Veredicto datos={datos} />
+      <Veredicto datos={datos}>
         {hayTraslado || hayPartidas ? (
           <div className="flex flex-wrap items-center gap-2" data-testid="cuadre-acciones">
             {hayTraslado ? (
@@ -209,7 +208,7 @@ function Cuadre({ datos }: { datos: Respuesta }) {
             ) : null}
           </div>
         ) : null}
-      </div>
+      </Veredicto>
 
       {/* CE-01 (QA-PAGOS-95): la plata de las frases del back, «$ X» con el espacio duro de la casa. */}
       <Avisos avisos={avisosQueElVeredictoNoDijo(datos).map((a) => conLaPlataPegada(a))} testId="cuadre-avisos" />
@@ -380,19 +379,26 @@ function LaCuentaEnPalabras({ datos }: { datos: Respuesta }) {
         titulo="La cuenta, renglón por renglón"
         explicacion="Qué es cada número, de dónde sale y qué significa la diferencia."
       />
-      <ol className="divide-y divide-border rounded-lg border border-border bg-surface">
+      {/* 22-10: como un recibo — el signo en su columna, la cifra a la derecha, el
+          total («=») con su raya encima. */}
+      <ol className="rounded-2xl border border-border bg-surface px-5 py-2 sm:px-6">
         {(datos.renglones ?? []).map((r) => (
-          <li key={r.clave} className="flex flex-col gap-1 p-4 sm:flex-row sm:items-start sm:justify-between" data-testid={`renglon-${r.clave}`}>
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium text-fg">
-                <span className="mr-2 inline-block w-3 text-fg-muted" aria-hidden="true">
-                  {r.signo}
-                </span>
-                {r.etiqueta}
-              </p>
+          <li
+            key={r.clave}
+            className={cn(
+              'grid grid-cols-[1rem_minmax(0,1fr)_auto] items-start gap-x-3 py-3',
+              r.signo === '=' ? 'border-t-2 border-fg/15' : 'border-t border-border-faint first:border-t-0 dark:border-border-strong',
+            )}
+            data-testid={`renglon-${r.clave}`}
+          >
+            <span className="font-mono text-body-sm text-fg-subtle" aria-hidden="true">
+              {r.signo}
+            </span>
+            <div className="min-w-0 space-y-0.5">
+              <p className={cn('text-body-sm', r.signo === '=' ? 'font-medium text-fg' : 'text-fg')}>{r.etiqueta}</p>
               <p className="text-caption leading-relaxed text-fg-muted">{conLaPlataPegada(r.explicacion)}</p>
             </div>
-            <p className="shrink-0 font-mono text-sm tabular-nums text-fg">
+            <p className={cn('shrink-0 font-mono text-body-sm tabular-nums', r.signo === '=' ? 'font-medium text-fg' : 'text-fg')}>
               {r.valorCop === null ? '—' : formatCurrency(r.valorCop)}
             </p>
           </li>
@@ -402,87 +408,72 @@ function LaCuentaEnPalabras({ datos }: { datos: Respuesta }) {
   );
 }
 
-/** El veredicto de arriba: lo primero que se lee. */
-function Veredicto({ datos }: { datos: Respuesta }) {
-  if (datos.faltaPlataDeTerceros) {
-    return (
-      <div
-        className="flex gap-3 rounded-lg border border-danger/40 bg-danger-soft p-5 text-sm text-fg"
-        data-testid="cuadre-veredicto"
-        data-estado="falta"
-        role="alert"
-      >
-        <WarningOctagon className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden="true" />
-        <div className="space-y-1">
-          <p className="font-medium">
-            Falta plata de terceros: {formatCurrency(Math.abs(datos.diferenciaCop ?? 0))}
-          </p>
-          <p className="text-fg-muted">
-            En la cuenta de recaudo hay menos de lo que se le debe a propietarios e inquilinos.
-            Revísalo hoy: esa plata no es de la inmobiliaria.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!datos.haySaldoDelBanco) {
-    return (
-      <div
-        className="flex gap-3 rounded-lg border border-warning/40 bg-warning-soft p-5 text-sm text-fg"
-        data-testid="cuadre-veredicto"
-        data-estado="sin-extracto"
-        role="status"
-      >
-        <WarningOctagon className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
-        <div className="space-y-1">
-          <p className="font-medium">No se pudo cuadrar</p>
-          <p className="text-fg-muted">
-            No hay extracto bancario cargado hasta el {fechaLarga(datos.fecha)}, así que el saldo de la cuenta
-            de recaudo es desconocido. Cárgalo en Conciliación.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (datos.cuadra) {
-    return (
-      <div
-        className="flex gap-3 rounded-lg border border-success/40 bg-success-soft p-5 text-sm text-fg"
-        data-testid="cuadre-veredicto"
-        data-estado="cuadra"
-        role="status"
-      >
-        <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-success" aria-hidden="true" />
-        <div className="space-y-1">
-          <p className="font-medium">Cuadra exacto</p>
-          <p className="text-fg-muted">
-            El saldo de la cuenta de recaudo es igual a la plata de terceros al {fechaLarga(datos.fecha)}.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
+/**
+ * El veredicto de arriba: lo primero que se lee.
+ *
+ * GLOW UP (revisión de Dinero, 22-10-2026: «la respuesta en texto chico, muro de
+ * párrafos»): la diferencia es LA cifra de la pantalla, grande y en mono, con
+ * una frase; el color va en el punto y en la cifra, no en una caja de color. La
+ * acción que la resuelve (proponer el traslado) vive en la misma tarjeta.
+ */
+function Veredicto({ datos, children }: { datos: Respuesta; children?: ReactNode }) {
+  const estado = datos.faltaPlataDeTerceros
+    ? 'falta'
+    : !datos.haySaldoDelBanco
+      ? 'sin-extracto'
+      : datos.cuadra
+        ? 'cuadra'
+        : 'a-favor';
+  const punto =
+    estado === 'falta' ? 'bg-error-500' : estado === 'sin-extracto' ? 'bg-warning-500' : 'bg-success-500';
+  const rotulo =
+    estado === 'sin-extracto' ? `Cuadre del ${fechaLarga(datos.fecha)}` : `Diferencia al ${fechaLarga(datos.fecha)}`;
+  const diferencia = Math.abs(datos.diferenciaCop ?? 0);
   return (
-    <div
-      className="flex gap-3 rounded-lg border border-border bg-surface p-5 text-sm text-fg"
+    <section
+      className="rounded-2xl border border-border bg-surface px-5 py-5 sm:px-6"
       data-testid="cuadre-veredicto"
-      data-estado="a-favor"
-      role="status"
+      data-estado={estado}
+      role={estado === 'falta' ? 'alert' : 'status'}
     >
-      <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
-      <div className="space-y-1">
-        <p className="font-medium">
-          En el banco hay {formatCurrency(datos.diferenciaCop ?? 0)} de más
+      <p className="flex items-center gap-2 font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle">
+        <span className={cn('h-2 w-2 shrink-0 rounded-full', punto)} aria-hidden="true" />
+        {rotulo}
+      </p>
+      {estado === 'sin-extracto' ? (
+        <p className="mt-2 text-[26px] font-[420] leading-tight tracking-[-0.01em] text-fg">No se pudo cuadrar</p>
+      ) : (
+        <p
+          className={cn(
+            'mt-2 font-mono text-[32px] font-medium leading-none tracking-[-0.02em] tabular-nums sm:text-[40px]',
+            estado === 'falta' ? 'text-danger' : 'text-fg',
+          )}
+        >
+          {estado === 'falta' ? '− ' : ''}
+          {formatCurrency(estado === 'cuadra' ? 0 : diferencia)}
         </p>
-        <p className="text-fg-muted">
-          {datos.laDiferenciaEsLaComision
-            ? 'No falta plata de nadie: es exactamente lo tuyo (comisión, su IVA, intereses y gastos de lo cobrado) que sigue en la cuenta de recaudo. Con el traslado a tu cuenta propia el cuadre da cero.'
-            : 'No falta plata de nadie. Lo normal es que sea lo tuyo, que sigue en la cuenta de recaudo hasta que lo traslades. Abajo están las otras explicaciones.'}
-        </p>
-      </div>
-    </div>
+      )}
+      <p className="mt-2 font-medium text-fg">
+        {estado === 'falta'
+          ? `Falta plata de terceros: ${formatCurrency(diferencia)}`
+          : estado === 'cuadra'
+            ? 'Cuadra exacto'
+            : estado === 'a-favor'
+              ? 'De más en el banco'
+              : 'Falta el extracto del banco'}
+      </p>
+      <p className="mt-0.5 max-w-2xl text-body-sm text-fg-muted">
+        {estado === 'falta'
+          ? 'En la cuenta de recaudo hay menos de lo que se le debe a propietarios e inquilinos. Revísalo hoy: esa plata no es de la inmobiliaria.'
+          : estado === 'sin-extracto'
+            ? `No hay extracto bancario cargado hasta el ${fechaLarga(datos.fecha)}, así que el saldo de la cuenta de recaudo es desconocido. Cárgalo en Conciliación.`
+            : estado === 'cuadra'
+              ? `El saldo de la cuenta de recaudo es igual a la plata de terceros al ${fechaLarga(datos.fecha)}.`
+              : datos.laDiferenciaEsLaComision
+                ? 'No falta plata de nadie: es exactamente lo tuyo (comisión, su IVA, intereses y gastos de lo cobrado) que sigue en la cuenta de recaudo. Con el traslado a tu cuenta propia el cuadre da cero.'
+                : 'No falta plata de nadie. Lo normal es que sea lo tuyo, que sigue en la cuenta de recaudo hasta que lo traslades. Abajo están las otras explicaciones.'}
+      </p>
+      {children ? <div className="mt-4">{children}</div> : null}
+    </section>
   );
 }

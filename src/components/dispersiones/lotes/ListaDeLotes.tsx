@@ -398,7 +398,7 @@ export function ListaDeLotes({
                           {lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, lote.aprobadoPorNombre) : '—'}
                         </TableCell>
                       ) : null}
-                      <TableCell className="font-mono text-xs text-fg-muted">
+                      <TableCell className="font-mono text-caption text-fg-muted">
                         {formatDateTime(lote.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">

@@ -367,7 +367,7 @@ function MesAMes({ datos }: { datos: FacturasPorGenerar }) {
       data-testid="rango-mes-a-mes"
     >
       <div className="border-b border-border px-4 py-3">
-        <h4 className="text-body font-semibold text-fg">Mes a mes</h4>
+        <h4 className="text-body font-medium text-fg">Mes a mes</h4>
         <p className="text-caption text-fg-muted">
           Abre un mes para ver sus facturas. Emitir sigue siendo del mes que
           elegiste arriba.

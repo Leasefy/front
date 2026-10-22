@@ -396,7 +396,7 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                           <TableRow key={f.clave} data-testid={`fila-${f.clave}`}>
                             <TableCell
                               className={cn(
-                                f.nivel === 'clase' && 'font-semibold text-fg',
+                                f.nivel === 'clase' && 'font-medium text-fg',
                                 f.nivel === 'grupo' && 'pl-6 font-medium text-fg',
                                 f.nivel === 'cuenta' && 'pl-12 text-fg-muted',
                               )}
@@ -625,7 +625,7 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                     data-testid={`lado-${lado.clave}`}
                   >
                     <div className="flex items-baseline justify-between gap-2 border-b border-border p-3">
-                      <h3 className="text-sm font-semibold text-fg">{lado.titulo}</h3>
+                      <h3 className="text-sm font-medium text-fg">{lado.titulo}</h3>
                       <Monto valor={lado.totalCop} className="text-sm font-medium" />
                     </div>
                     {lado.grupos.length === 0 ? (

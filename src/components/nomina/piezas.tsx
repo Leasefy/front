@@ -60,7 +60,7 @@ export function ModuloNoHabilitado({
       <div className="flex items-start gap-3">
         <Lock className="mt-0.5 h-6 w-6 shrink-0 text-fg-muted" aria-hidden="true" />
         <div className="space-y-2">
-          <h2 className="text-base font-semibold text-fg">
+          <h2 className="text-base font-medium text-fg">
             Nómina no está habilitada para tu inmobiliaria
           </h2>
           <p className="text-fg-muted">
@@ -336,7 +336,7 @@ export function TituloDeBloque({
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="space-y-1">
-        <h2 className="text-base font-semibold text-fg">{titulo}</h2>
+        <h2 className="text-base font-medium text-fg">{titulo}</h2>
         <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">
           {explicacion}
         </p>

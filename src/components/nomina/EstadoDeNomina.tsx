@@ -164,7 +164,7 @@ function Contenido({
       <section className="space-y-3" aria-labelledby="costo-de-la-nomina">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0 space-y-0.5">
-            <h2 id="costo-de-la-nomina" className="text-sm font-semibold text-fg">
+            <h2 id="costo-de-la-nomina" className="text-sm font-medium text-fg">
               Lo que cuesta la nómina de {nombreDelMes(mes)}
             </h2>
             <p className="text-caption text-fg-muted">
@@ -174,7 +174,7 @@ function Contenido({
           <SelectorDeMes mes={mes} onCambiar={onMes} />
         </div>
         {resumen.disponible && resumen.costoTotalCop === 0 && (resumen.netoCop ?? 0) === 0 ? (
-          <p className="rounded-2xl border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="costo-de-la-nomina">
+          <p className="rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="costo-de-la-nomina">
             Todavía no hay períodos aprobados en {nombreDelMes(mes)}: el costo aparece cuando apruebes el primero.
           </p>
         ) : resumen.disponible ? (
@@ -562,7 +562,7 @@ const GRUPOS: { titulo: string; pantallas: { href: string; titulo: string; que: 
 function PantallasDeNomina() {
   return (
     <section className="space-y-3" aria-labelledby="pantallas-de-nomina">
-      <h2 id="pantallas-de-nomina" className="text-sm font-semibold text-fg">
+      <h2 id="pantallas-de-nomina" className="text-sm font-medium text-fg">
         Todas las pantallas de nómina
       </h2>
       <nav aria-label="Secciones de nómina" className="grid gap-x-5 gap-y-5 lg:grid-cols-2">

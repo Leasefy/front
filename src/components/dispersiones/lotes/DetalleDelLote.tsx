@@ -192,7 +192,7 @@ function ResultadoDeLaFacturacion({ r }: { r: FacturacionDelLote }) {
           {r.candidatas > 0 && ` · de ${r.candidatas}`}
         </span>
         {r.numeros.length > 0 && (
-          <span className="block font-mono text-xs text-fg-muted">
+          <span className="block font-mono text-caption text-fg-muted">
             {r.numeros.slice(0, 8).join(' · ')}
             {r.numeros.length > 8 && ` +${r.numeros.length - 8}`}
           </span>
@@ -439,7 +439,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         <div className="space-y-1.5">
           <SectionLabel>Finanzas · Lote al banco</SectionLabel>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight text-fg">
+            <h1 className="text-h2 tracking-tight text-fg">
               Lote de {nombreDelMes(lote.month)}
             </h1>
             <Badge variant={TONO_DEL_ESTADO[lote.estado]} data-testid="estado-del-lote">
@@ -448,7 +448,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           </div>
           <p className="max-w-2xl text-sm text-fg-muted">{QUE_SIGUE[lote.estado]}</p>
         </div>
-        <p className="font-mono text-xs text-fg-muted">
+        <p className="font-mono text-caption text-fg-muted">
           Lote {lote.id.slice(0, 8)} · armado {formatDateTime(lote.createdAt)}
         </p>
       </header>
@@ -655,30 +655,30 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           )}
           {lote.formatoArchivo && (
             <div>
-              <p className="text-xs text-fg-muted">Formato del archivo</p>
+              <p className="text-caption text-fg-muted">Formato del archivo</p>
               <p className="font-mono text-fg">
                 {NOMBRE_DEL_FORMATO[lote.formatoArchivo] ?? lote.formatoArchivo}
               </p>
               {lote.archivoGeneradoAt && (
-                <p className="text-xs text-fg-muted">{formatDateTime(lote.archivoGeneradoAt)}</p>
+                <p className="text-caption text-fg-muted">{formatDateTime(lote.archivoGeneradoAt)}</p>
               )}
             </div>
           )}
           {lote.archivoHash && (
             <div className="min-w-0">
-              <p className="text-xs text-fg-muted">Hash del archivo</p>
-              <p className="truncate font-mono text-xs text-fg" title={lote.archivoHash}>
+              <p className="text-caption text-fg-muted">Hash del archivo</p>
+              <p className="truncate font-mono text-caption text-fg" title={lote.archivoHash}>
                 {lote.archivoHash}
               </p>
-              <p className="text-xs text-fg-muted">Para probar qué se subió al banco.</p>
+              <p className="text-caption text-fg-muted">Para probar qué se subió al banco.</p>
             </div>
           )}
           {lote.referenciaBanco && (
             <div>
-              <p className="text-xs text-fg-muted">Referencia del banco</p>
+              <p className="text-caption text-fg-muted">Referencia del banco</p>
               <p className="font-mono text-fg">{lote.referenciaBanco}</p>
               {lote.pagadoAt && (
-                <p className="text-xs text-fg-muted">Pagado {formatDateTime(lote.pagadoAt)}</p>
+                <p className="text-caption text-fg-muted">Pagado {formatDateTime(lote.pagadoAt)}</p>
               )}
             </div>
           )}
@@ -760,8 +760,8 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
       {/* ── Los pagos, con los datos congelados ─────────────────────────── */}
       <section className="space-y-3">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-base font-semibold text-fg">Pagos del lote</h2>
-          <p className="text-xs text-fg-muted">
+          <h2 className="text-base font-medium text-fg">Pagos del lote</h2>
+          <p className="text-caption text-fg-muted">
             Datos bancarios congelados al armar el lote: la plata va adonde se aprobó.
           </p>
         </div>
@@ -788,7 +788,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                         return (
                           <div data-testid={t.deOtraPersona ? 'pago-a-otra-persona' : undefined}>
                             <p className="font-medium text-fg">{t.titular}</p>
-                            {t.detalle ? <p className="text-xs text-fg-muted">{t.detalle}</p> : null}
+                            {t.detalle ? <p className="text-caption text-fg-muted">{t.detalle}</p> : null}
                             {(() => {
                               // GIRI (Nico 18-10): lo que hay que revisar antes de aprobar.
                               const giri = vista.revisarConGiri?.find((r) => r.dispersionId === item.dispersionId);
@@ -807,11 +807,11 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                         );
                       })()}
                     </TableCell>
-                    <TableCell className="font-mono text-xs">
+                    <TableCell className="font-mono text-caption">
                       {item.tipoDocumento} {item.documento || '—'}
                     </TableCell>
                     <TableCell>{item.banco || '—'}</TableCell>
-                    <TableCell className="font-mono text-xs">
+                    <TableCell className="font-mono text-caption">
                       {item.tipoDeCuenta ? `${item.tipoDeCuenta} ` : ''}
                       {ultimos4(item.numeroDeCuenta)}
                     </TableCell>
@@ -888,7 +888,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
             </div>
           )}
         </div>
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {/* QA-PAGOS-95: «Armado por ti», no «Armado por Tú». */}
           Armado por {soyElCreador ? 'ti' : nombreDe(lote.creadoPorUserId, vista.creadoPorNombre)} · {lote.items.length}{' '}
           {lote.items.length === 1 ? 'pago' : 'pagos'} en total.
@@ -982,10 +982,10 @@ function Cifra({
 }) {
   return (
     <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
-      <p className="text-xs text-fg-muted">{etiqueta}</p>
+      <p className="text-caption text-fg-muted">{etiqueta}</p>
       <p
         className={cn(
-          'mt-1 truncate font-semibold text-fg',
+          'mt-1 truncate font-medium text-fg',
           destacada ? 'text-2xl' : 'text-lg',
           mono && 'font-mono tabular-nums',
           tono === 'warning' && 'text-warning',
@@ -993,7 +993,7 @@ function Cifra({
       >
         {valor}
       </p>
-      {detalle && <p className="mt-0.5 text-xs text-fg-muted">{detalle}</p>}
+      {detalle && <p className="mt-0.5 text-caption text-fg-muted">{detalle}</p>}
     </div>
   );
 }
@@ -1036,7 +1036,7 @@ function LineaDeTiempo({ lote }: { lote: LoteDeDispersion }) {
           >
             <span
               className={cn(
-                'flex h-7 w-7 items-center justify-center rounded-full border text-xs font-mono',
+                'flex h-7 w-7 items-center justify-center rounded-full border text-caption font-mono',
                 hecho && 'border-primary bg-primary text-primary-fg',
                 actual && !hecho && !murioAca && 'border-primary text-primary',
                 murioAca && 'border-danger bg-danger-soft text-danger',
@@ -1048,7 +1048,7 @@ function LineaDeTiempo({ lote }: { lote: LoteDeDispersion }) {
             </span>
             <span
               className={cn(
-                'text-xs leading-tight',
+                'text-caption leading-tight',
                 actual || hecho ? 'font-medium text-fg' : 'text-fg-muted',
               )}
             >
@@ -1097,7 +1097,7 @@ function GiriAntesDeAprobar({
       </p>
       <ul className="space-y-1.5">
         {revisarConGiri.map((r) => (
-          <li key={r.dispersionId} className="text-xs text-fg-muted">
+          <li key={r.dispersionId} className="text-caption text-fg-muted">
             <span className="font-medium text-fg">{nombreDe(r.propietarioId)}:</span> {r.motivos.join(' ')}
           </li>
         ))}
@@ -1109,7 +1109,7 @@ function GiriAntesDeAprobar({
           checked={yaLoRevise}
           onCheckedChange={(v) => onCambio(v === true)}
         />
-        <span className="text-xs text-fg-muted">Ya lo revisé. En la bitácora del lote queda que fui yo.</span>
+        <span className="text-caption text-fg-muted">Ya lo revisé. En la bitácora del lote queda que fui yo.</span>
       </label>
     </div>
   );
@@ -1254,7 +1254,7 @@ function PedirAprobacionDialog({
                     <p className="text-fg-muted">{resultado.motivoDelCodigo}</p>
                   </DialogSection>
                   <div>
-                    <p className="text-xs text-fg-muted">Le llegó a</p>
+                    <p className="text-caption text-fg-muted">Le llegó a</p>
                     <ul className="mt-1 space-y-0.5 font-mono text-fg">
                       {resultado.enviadoA.map((correo) => (
                         <li key={correo}>{correo}</li>
@@ -1424,7 +1424,7 @@ function AprobarDialog({
                 autoFocus
               />
               <ErrorDelCampo id="codigo-de-aprobacion-error" mensaje={errorDelCodigo} />
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 Te llegó por correo.{' '}
                 <span className="font-mono">{intentosRestantes}</span>{' '}
                 {intentosRestantes === 1 ? 'intento' : 'intentos'} antes de que el lote se bloquee.
@@ -1657,8 +1657,8 @@ function ArchivoDialog({
                   </Banner>
                   {archivo.pendienteDeConfirmar.length > 0 && (
                     <div className="rounded-[14px] border border-border p-3">
-                      <p className="text-xs font-medium text-fg">Qué falta confirmar contra el banco</p>
-                      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-fg-muted">
+                      <p className="text-caption font-medium text-fg">Qué falta confirmar contra el banco</p>
+                      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-caption text-fg-muted">
                         {archivo.pendienteDeConfirmar.map((p) => (
                           <li key={p}>{p}</li>
                         ))}
@@ -1674,20 +1674,20 @@ function ArchivoDialog({
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <div>
-                  <p className="text-xs text-fg-muted">Archivo</p>
-                  <p className="break-all font-mono text-xs text-fg" data-testid="nombre-del-archivo">
+                  <p className="text-caption text-fg-muted">Archivo</p>
+                  <p className="break-all font-mono text-caption text-fg" data-testid="nombre-del-archivo">
                     {archivo.nombreArchivo}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-fg-muted">Pagos</p>
+                  <p className="text-caption text-fg-muted">Pagos</p>
                   <p className="font-mono text-fg">
                     {archivo.cantidad} · {formatCurrency(archivo.totalCop)}
                   </p>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-fg-muted">Hash</p>
-                  <p className="truncate font-mono text-xs text-fg" title={archivo.hash}>
+                  <p className="text-caption text-fg-muted">Hash</p>
+                  <p className="truncate font-mono text-caption text-fg" title={archivo.hash}>
                     {archivo.hash}
                   </p>
                 </div>
@@ -1701,7 +1701,7 @@ function ArchivoDialog({
                   >
                     Les falta un dato o no cuadra con el formato. Se pagan aparte o en el próximo lote.
                   </Banner>
-                  <ul className="space-y-0.5 rounded-lg border border-border p-3 text-xs text-fg-muted">
+                  <ul className="space-y-0.5 rounded-lg border border-border p-3 text-caption text-fg-muted">
                     {archivo.excluidos.map((e) => (
                       <li key={`${e.propietarioId}-${e.nombre}`}>
                         <span className="font-medium text-fg">{e.nombre}</span> — {e.motivo}
@@ -1713,8 +1713,8 @@ function ArchivoDialog({
 
               {archivo.advertencias.length > 0 && (
                 <div className="rounded-[14px] border border-border p-3">
-                  <p className="text-xs font-medium text-fg">Advertencias</p>
-                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-fg-muted">
+                  <p className="text-caption font-medium text-fg">Advertencias</p>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-caption text-fg-muted">
                     {archivo.advertencias.map((a, i) => (
                       <li key={`${i}-${a}`}>{a}</li>
                     ))}
@@ -1868,7 +1868,7 @@ function MarcarPagadoDialog({
             autoFocus
           />
           <ErrorDelCampo id="referencia-del-banco-error" mensaje={errorDeReferencia} />
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             Un lote pagado ya no se anula: si algo salió mal, se corrige con una contrapartida.
           </p>
 
@@ -1879,7 +1879,7 @@ function MarcarPagadoDialog({
               checked={facturarAhora}
               onCheckedChange={(v) => setFacturarAhora(v === true)}
             />
-            <span className="text-xs text-fg-muted">
+            <span className="text-caption text-fg-muted">
               Facturarle ahora a los propietarios: se emite la comisión de la
               inmobiliaria sobre lo que este lote cierra —también a los que
               quedan en $0—, con su IVA y sus retenciones.{' '}
@@ -1891,7 +1891,7 @@ function MarcarPagadoDialog({
             </span>
           </label>
 
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             Al marcarlo pagado, a cada propietario le sale un correo con el valor, la referencia y
             el aviso de que el banco puede tardar 2 días hábiles en reflejarlo. A los que quedan en $0
             les sale su extracto. Su estado de cuenta queda con la dispersión descontada.

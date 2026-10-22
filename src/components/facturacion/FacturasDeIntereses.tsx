@@ -107,7 +107,7 @@ export function FacturasDeIntereses({ onEmitidas }: FacturasDeInteresesProps) {
     <section className="border-t border-border p-4 space-y-3" data-testid="facturas-de-intereses">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="text-body font-semibold text-fg">Intereses pagados por facturar</h3>
+          <h3 className="text-body font-medium text-fg">Intereses pagados por facturar</h3>
           <p className="text-caption text-fg-muted">
             Un recibo pagó intereses de un mes cuya factura ya había salido: van en una factura
             aparte, con la resolución de «Otros».{' '}

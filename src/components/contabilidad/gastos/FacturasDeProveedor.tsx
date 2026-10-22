@@ -668,7 +668,7 @@ export function FacturasDeProveedor({
           data-testid="asiento-de-la-factura"
         >
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+            <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
               <FileText className="h-4 w-4" aria-hidden="true" />
               Asiento N.º {asiento.numero} · {diaLegible(asiento.fecha)}
             </h3>

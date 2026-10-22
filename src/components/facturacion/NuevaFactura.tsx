@@ -868,7 +868,7 @@ function TablaDeFacturas({
     >
       <div className="border-b border-border p-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-body font-semibold text-fg">{titulo}</h3>
+          <h3 className="text-body font-medium text-fg">{titulo}</h3>
           <p className="text-caption text-fg-muted">{descripcion}</p>
         </div>
         <div className="text-caption text-fg-muted sm:text-right">
@@ -1088,7 +1088,7 @@ function TablaDeFacturas({
                 <TableHead className="whitespace-nowrap text-right">Valor</TableHead>
                 {/* 🔴 19-09: la acción de la fila («Generar esta») tiene que estar
                     siempre donde se la busca: la columna se ancla a la derecha. */}
-                <TableHead className="sticky right-0 z-20 whitespace-nowrap border-l border-border bg-bg dark:bg-surface-muted">
+                <TableHead className="sticky right-0 z-20 whitespace-nowrap border-l border-border bg-bg">
                   Estado
                 </TableHead>
               </TableRow>

@@ -241,7 +241,7 @@ export function ElegirAQuienPagarle({
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
-          <Label htmlFor="orden-de-pago" className="text-xs">
+          <Label htmlFor="orden-de-pago" className="text-caption">
             Ordenar
           </Label>
           <select
@@ -259,7 +259,7 @@ export function ElegirAQuienPagarle({
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="tope-del-lote" className="text-xs">
+          <Label htmlFor="tope-del-lote" className="text-caption">
             Pagar hasta
           </Label>
           <Input
@@ -298,7 +298,7 @@ export function ElegirAQuienPagarle({
           Quitar la selección
         </Button>
       </div>
-      <p className="text-xs text-fg-muted" data-testid="sin-giro-parcial">
+      <p className="text-caption text-fg-muted" data-testid="sin-giro-parcial">
         Cada propietario se gira completo o no se gira: el monto de «Pagar hasta» sólo decide a quién
         tildar, nunca parte el neto de nadie.
       </p>
@@ -346,7 +346,7 @@ export function ElegirAQuienPagarle({
                 </TableCell>
                 <TableCell>
                   <span className="text-fg">{c.propietarioName}</span>
-                  <p className="text-xs text-fg-muted">
+                  <p className="text-caption text-fg-muted">
                     Sus deducciones cubren el mes: se cierra en $0
                     {c.saldoEnContraCop ? ` y ${formatCurrency(c.saldoEnContraCop)} pasan al mes siguiente` : ''}.
                   </p>
@@ -354,7 +354,7 @@ export function ElegirAQuienPagarle({
                 <TableCell className="text-fg-muted">{nombreDelMes(c.month)}</TableCell>
                 <TableCell className="text-right font-mono tabular-nums text-fg">{formatCurrency(0)}</TableCell>
                 {conColumnaDelGmf && <CeldaDelGmf candidato={c} />}
-                <TableCell className="text-right text-xs text-fg-muted">No suma</TableCell>
+                <TableCell className="text-right text-caption text-fg-muted">No suma</TableCell>
               </TableRow>
             ))}
             {excluidos.map((c) => (
@@ -362,14 +362,14 @@ export function ElegirAQuienPagarle({
                 <TableCell />
                 <TableCell>
                   <span className="text-fg">{c.propietarioName}</span>
-                  <p className="text-xs text-danger">{c.motivoDeExclusion}</p>
+                  <p className="text-caption text-danger">{c.motivoDeExclusion}</p>
                 </TableCell>
                 <TableCell className="text-fg-muted">{nombreDelMes(c.month)}</TableCell>
                 <TableCell className="text-right font-mono tabular-nums text-fg-muted">
                   {formatCurrency(c.netoCop)}
                 </TableCell>
                 {conColumnaDelGmf && <CeldaDelGmf candidato={c} />}
-                <TableCell className="text-right text-xs text-fg-muted">No se puede girar</TableCell>
+                <TableCell className="text-right text-caption text-fg-muted">No se puede girar</TableCell>
               </TableRow>
             ))}
             {girables.length === 0 && excluidos.length === 0 && compensables.length === 0 && (
@@ -468,10 +468,10 @@ function Dato({
 }) {
   return (
     <div className="rounded-lg border border-border bg-surface p-3">
-      <p className="text-xs text-fg-muted">{titulo}</p>
+      <p className="text-caption text-fg-muted">{titulo}</p>
       <p
         className={cn(
-          'font-mono text-lg font-semibold tabular-nums',
+          'font-mono text-lg tabular-nums',
           // Un disponible negativo significa que ya se adelantó plata: se
           // muestra en rojo, no escondido tras un cero.
           valorCop < 0 ? 'text-danger' : destacado ? 'text-success' : 'text-fg',
@@ -552,7 +552,7 @@ function FilaDelCandidato({
       {conColumnaDelGmf && <CeldaDelGmf candidato={candidato} />}
       <TableCell
         className={cn(
-          'text-right font-mono text-xs tabular-nums',
+          'text-right font-mono text-caption tabular-nums',
           // La línea de corte: hasta acá alcanza la plata que hay.
           candidato.entraEnElCupo ? 'text-fg-muted' : 'text-warning',
         )}

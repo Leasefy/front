@@ -417,11 +417,11 @@ function TablaDeComprobantes({
   const comoSeAsociaronTodos =
     documentos.length > 1 && formas.size === 1 && documentos[0]!.asociadoPor !== 'ninguno' ? documentos[0]!.asociadoPor : null;
   return (
-    <div className="overflow-hidden rounded-[16px] border border-border-faint bg-surface dark:border-border-strong dark:bg-bg">
+    <div className="overflow-hidden rounded-[16px] border border-border-faint bg-surface">
       {/* Cómo quedaron colgados de este contrato, UNA vez si es igual para todos (revisión 21-10:
           «Asociado por el nombre del tercero» ×10). */}
       {comoSeAsociaronTodos ? (
-        <p className="border-b border-border-faint px-4 py-2.5 text-caption text-fg-subtle dark:border-border-strong" data-testid="comprobantes-asociados-por">
+        <p className="border-b border-border-faint px-4 py-2.5 text-caption text-fg-subtle" data-testid="comprobantes-asociados-por">
           Todos asociados {COMO_SE_ASOCIO[comoSeAsociaronTodos] ?? comoSeAsociaronTodos}.
         </p>
       ) : null}

@@ -470,7 +470,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
           data-testid="filas-del-formato"
         >
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-sm font-semibold text-fg">
+            <h3 className="text-sm font-medium text-fg">
               Formato {abierto.formato} · {abierto.filas.length.toLocaleString(localeDeLasCifras())} filas
             </h3>
             <Button

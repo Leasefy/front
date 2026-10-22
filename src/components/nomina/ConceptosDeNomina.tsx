@@ -71,17 +71,17 @@ export function PorQueDosMarcas() {
         <StaggerItem>
           <dl className="grid gap-3">
             <div className="rounded-lg border border-border bg-surface-muted p-4">
-              <dt className="text-body-sm font-semibold text-fg">«Salarial»</dt>
+              <dt className="text-body-sm font-medium text-fg">«Salarial»</dt>
               <dd className="mt-1 text-body-sm text-fg-muted">Significa que entra al IBC de seguridad social.</dd>
             </div>
             <div className="rounded-lg border border-border bg-surface-muted p-4">
-              <dt className="text-body-sm font-semibold text-fg">«Prestacional»</dt>
+              <dt className="text-body-sm font-medium text-fg">«Prestacional»</dt>
               <dd className="mt-1 text-body-sm text-fg-muted">Significa que entra a la base de prima y cesantías.</dd>
             </div>
           </dl>
         </StaggerItem>
         <StaggerItem className="space-y-1.5">
-          <h3 className="text-body-sm font-semibold text-fg">El caso que las separa: el auxilio de transporte</h3>
+          <h3 className="text-body-sm font-medium text-fg">El caso que las separa: el auxilio de transporte</h3>
           <p className="text-body-sm text-fg-muted">
             <strong className="text-fg">No es salario</strong> (Ley 15 de 1959 art. 2) pero{' '}
             <strong className="text-fg">sí es base de prima y cesantías</strong> (CST art. 249) —

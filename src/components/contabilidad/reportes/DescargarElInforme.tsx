@@ -133,18 +133,18 @@ export function DescargarElInforme({ informe, periodo, tablas, disabled }: Props
           `}</style>
           <div data-informe-impreso className="hidden print:block" data-testid="informe-impreso">
             <header className="mb-4">
-              {inmobiliaria ? <p className="text-sm font-semibold">{inmobiliaria}</p> : null}
-              <h1 className="text-lg font-semibold">{informe}</h1>
+              {inmobiliaria ? <p className="text-sm font-medium">{inmobiliaria}</p> : null}
+              <h1 className="text-lg font-medium">{informe}</h1>
               <p className="text-sm">{periodoEnPalabras(periodo)}</p>
             </header>
             {imprimiendo.map((t, i) => (
               <section key={i} className="mb-4 break-inside-avoid-page">
-                {t.titulo ? <h2 className="mb-1 text-sm font-semibold">{t.titulo}</h2> : null}
-                <table className="w-full border-collapse text-xs">
+                {t.titulo ? <h2 className="mb-1 text-sm font-medium">{t.titulo}</h2> : null}
+                <table className="w-full border-collapse text-caption">
                   <thead>
                     <tr>
                       {t.columnas.map((c) => (
-                        <th key={c} className="border-b border-black py-1 pr-2 text-left font-semibold">
+                        <th key={c} className="border-b border-black py-1 pr-2 text-left font-medium">
                           {c}
                         </th>
                       ))}
@@ -164,7 +164,7 @@ export function DescargarElInforme({ informe, periodo, tablas, disabled }: Props
                   {t.pie?.length ? (
                     <tfoot>
                       {t.pie.map((f, j) => (
-                        <tr key={j} className="border-t border-black font-semibold">
+                        <tr key={j} className="border-t border-black font-medium">
                           {f.map((c, k) => (
                             <td key={k} className={`py-1 pr-2 ${typeof c === 'number' ? 'text-right font-mono' : ''}`}>
                               {celda(c)}

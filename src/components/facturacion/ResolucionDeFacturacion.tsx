@@ -273,7 +273,7 @@ export function ResolucionDeFacturacion({
                 entero puesto abajo, y desde aquí no se veía que existiera. */}
             <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h3 className="text-body font-semibold text-fg">
+                <h3 className="text-body font-medium text-fg">
                   Resoluciones cargadas
                 </h3>
                 <p className="text-caption text-fg-muted">

@@ -116,7 +116,7 @@ export function PagarFactura({
                 <Monto valor={retenciones > 0 ? -retenciones : 0} />
               </dd>
               <dt className="font-medium text-fg">Lo que se le gira</dt>
-              <dd className="text-right font-semibold" data-testid="pagar-neto">
+              <dd className="text-right font-medium" data-testid="pagar-neto">
                 <Monto valor={factura.netoCop} />
               </dd>
               {factura.fechaDeVencimiento ? (

@@ -540,7 +540,7 @@ function UltimosAsientos({
     >
       <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
         <div className="min-w-0 space-y-0.5">
-          <h2 id="ultimos-asientos-titulo" className="text-sm font-semibold text-fg">
+          <h2 id="ultimos-asientos-titulo" className="text-sm font-medium text-fg">
             Últimos asientos
           </h2>
           <p className="text-caption text-fg-muted">Lo último que entró al libro.</p>
@@ -712,7 +712,7 @@ function ParaElContador({ incrustado = false }: { incrustado?: boolean } = {}) {
       <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 border-b border-border px-5 py-4">
         {/* Incrustado en el paso «Entregarle al contador», el título ya lo dice el paso. */}
         <div className={cn('min-w-0 space-y-0.5', incrustado && 'sr-only')}>
-          <h2 id="para-el-contador-titulo" className="text-sm font-semibold text-fg">
+          <h2 id="para-el-contador-titulo" className="text-sm font-medium text-fg">
             Para el contador
           </h2>
           <p className="text-caption text-fg-muted">
@@ -1246,7 +1246,7 @@ export function HubDeContabilidad() {
               ) : (
                 <strong
                   key={i}
-                  className="font-mono font-semibold tabular-nums text-fg"
+                  className="font-mono tabular-nums text-fg"
                   title={trozo.rotulo}
                 >
                   {trozo.valor === null ? '—' : trozo.valor.toLocaleString(localeDeLasCifras())}
@@ -1449,7 +1449,7 @@ export function HubDeContabilidad() {
       {/* Las pantallas, agrupadas por CUÁNDO se usan (antes, doce tarjetas iguales con ícono en un
           círculo de color y flecha). */}
       <section className="space-y-3" aria-labelledby="pantallas-de-contabilidad">
-        <h2 id="pantallas-de-contabilidad" className="text-sm font-semibold text-fg">
+        <h2 id="pantallas-de-contabilidad" className="text-sm font-medium text-fg">
           Todas las pantallas de contabilidad
         </h2>
         <nav aria-label="Secciones de contabilidad" className="grid gap-x-5 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">

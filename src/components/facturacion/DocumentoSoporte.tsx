@@ -429,7 +429,7 @@ export function DocumentoSoporte() {
       >
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h3 className="text-body font-semibold text-fg">
+            <h3 className="text-body font-medium text-fg">
               Documentos soporte emitidos
             </h3>
             <p className="text-caption text-fg-muted">
@@ -564,7 +564,7 @@ export function DocumentoSoporte() {
               data-testid="ds-registrar-proveedor"
             >
               <div>
-                <h3 className="text-body font-semibold text-fg">
+                <h3 className="text-body font-medium text-fg">
                   {editando ? 'Editar el proveedor' : 'Registrar un proveedor'}
                 </h3>
                 <p className="text-caption text-fg-muted">

@@ -134,7 +134,7 @@ export function ArchivoDelLote({
   return (
     <section className="space-y-3 rounded-lg border border-border bg-surface shadow-sm" data-testid="archivo-del-lote">
       <header className="px-4 pt-4">
-        <h2 className="text-body-sm font-semibold text-fg">El archivo al banco</h2>
+        <h2 className="text-body-sm font-medium text-fg">El archivo al banco</h2>
         <p className="text-caption text-fg-muted">
           Queda en el centro de procesos: lo bajas desde aquí o desde el botón de procesos de arriba.
         </p>

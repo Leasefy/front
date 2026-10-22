@@ -214,7 +214,7 @@ function Contenido({
       <header className="space-y-2 rounded-lg border border-border bg-surface p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-fg">{datos.nombre}</h2>
+            <h2 className="text-base font-medium text-fg">{datos.nombre}</h2>
             <p className="text-caption text-fg-muted">
               {[
                 datos.documento ? `Documento ${datos.documento}` : null,

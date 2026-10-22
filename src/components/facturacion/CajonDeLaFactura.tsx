@@ -378,7 +378,7 @@ export function CajonDeLaFactura({
               <div className="flex items-baseline justify-between gap-4 border-t border-border pt-2">
                 <dt className="text-body font-medium text-fg">Total de la factura</dt>
                 <dd
-                  className="font-mono text-lg font-semibold tabular-nums text-fg"
+                  className="font-mono text-lg tabular-nums text-fg"
                   data-testid="cajon-total"
                 >
                   <CifraQueCuenta valor={factura.totalCop} />

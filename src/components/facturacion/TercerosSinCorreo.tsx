@@ -155,7 +155,7 @@ export function TercerosSinCorreo({ enCajon = false }: { enCajon?: boolean } = {
             </p>
           ) : (
             <div>
-              <h3 className="text-body font-semibold text-fg">A quién le falta el correo</h3>
+              <h3 className="text-body font-medium text-fg">A quién le falta el correo</h3>
               <p className="text-caption text-fg-muted">
                 Primero los que más cuestan: el que tiene más contratos. Se completa
                 desde su ficha (Inquilinos o Propietarios).

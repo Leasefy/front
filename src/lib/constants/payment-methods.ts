@@ -17,7 +17,7 @@ export const PAYMENT_METHODS: PaymentMethodOption[] = [
   },
   {
     id: 'credit_card',
-    name: 'Tarjeta de credito',
+    name: 'Tarjeta de crédito',
     description: 'Visa, Mastercard, Amex',
     icon: '\u{1F4B3}',
     enabled: true,
@@ -26,8 +26,8 @@ export const PAYMENT_METHODS: PaymentMethodOption[] = [
   },
   {
     id: 'debit_card',
-    name: 'Tarjeta debito',
-    description: 'Debito automatico mensual',
+    name: 'Tarjeta débito',
+    description: 'Débito automático mensual',
     icon: '\u{1F4B3}',
     enabled: true,
     processingTime: 'Inmediato',
@@ -54,7 +54,7 @@ export const PAYMENT_METHODS: PaymentMethodOption[] = [
   {
     id: 'cash',
     name: 'Efectivo',
-    description: 'Pago en punto fisico',
+    description: 'Pago en un punto físico',
     icon: '\u{1F4B5}',
     enabled: false,
     processingTime: '24-48 horas',

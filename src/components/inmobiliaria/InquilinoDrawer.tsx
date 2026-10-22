@@ -753,6 +753,17 @@ export function CuerpoDelCajon({
               cuenta no hay dónde escribirle, y se dice (I-22, Nico: la cuenta
               se crea desde el contrato; acá no se invita). */}
           <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {/* GLOW UP (Nico, 21-10): el cajón es la vista rápida; la ficha completa, en pestañas. */}
+            {!enFicha ? (
+              <Button asChild variant="outline" size="sm" hideArrow>
+                <Link
+                  href={`/panel/inmobiliaria/inquilinos/${encodeURIComponent(persona.tenantId)}`}
+                  data-testid="inquilino-abrir-ficha"
+                >
+                  Abrir la ficha
+                </Link>
+              </Button>
+            ) : null}
             {puedeEditar ? (
               <Button
                 type="button"

@@ -217,7 +217,7 @@ export function SeccionesDelModulo() {
       items={items}
       ariaLabel={ariaDelRiel}
       cssVar="--secciones-h"
-      topClass="top-16"
+      topClass="top-[var(--plan-header-h,4rem)]"
       nivel="secciones"
       pathname={pathname}
       caras={caras}

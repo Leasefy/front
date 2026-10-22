@@ -46,7 +46,7 @@ export function CabeceraDelAdmin({
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-bg">
+    <header className="sticky top-0 z-30 border-b border-border bg-bg pt-[var(--area-segura-arriba)]">
       <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-1.5">
           <button

@@ -3,6 +3,7 @@
 import { CuantoCuestaVivirAqui } from '@/components/property/CuantoCuestaVivirAqui'
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { fichaDelInmueble } from '@/lib/inmuebles/ficha-para-compartir';
+import { enlaceParaReportar } from '@/lib/marketplace/reportar-publicacion';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -442,6 +443,14 @@ export function PropertyDetailView({
               <p className="mt-12 border-t border-border pt-6 text-[13px] text-fg-subtle" data-testid="pie-de-la-ficha">
                 {property.agencyName ? `Publicado por ${property.agencyName}` : 'Publicado en Leasefy'}
                 {property.updatedAt && ` · Actualizado el ${new Date(property.updatedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+                {' · '}
+                <a
+                  href={enlaceParaReportar(property.id, process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co')}
+                  className="underline-offset-2 hover:text-fg hover:underline"
+                  data-testid="reportar-publicacion"
+                >
+                  Reportar esta publicación
+                </a>
               </p>
             </div>
 

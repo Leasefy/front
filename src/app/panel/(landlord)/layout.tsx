@@ -297,7 +297,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         <PropietarioDeInmobiliariaProvider value={deInmobiliaria}>
           <PlanHeader showMagnifyingGlass={!deInmobiliaria} />
         </PropietarioDeInmobiliariaProvider>
-        <main id="main-content" tabIndex={-1}>
+        <main id="main-content" tabIndex={-1} className="[--area-segura-arriba:0px]">
           {/* Una pantalla del propietario independiente no se monta para quien
               tiene inmobiliaria: ni pide datos (503) ni muestra ceros. */}
           {(deInmobiliaria && !esRutaDelPropietarioDeInmobiliaria(pathname)) ||

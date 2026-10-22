@@ -126,7 +126,7 @@ export function WizardShell({
   return (
     <div className={cn('min-h-screen bg-bg', className)}>
       {/* Mobile Header - only visible on mobile */}
-      <header className="lg:hidden sticky top-0 z-10 bg-surface border-b border-border">
+      <header className="lg:hidden sticky top-0 z-10 bg-surface border-b border-border pt-[var(--area-segura-arriba)]">
         <div className="px-4 py-3">
           <Button
             variant="link"

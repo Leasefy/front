@@ -2763,3 +2763,86 @@ button[role='radio'][data-state='checked'].group {
 [data-dialog-body].flex-1 {
   flex: 1 1 auto;
 }
+
+/*
+ * ── La app de iOS/Android (repo `app-movil`, 22-10-2026) ─────────────────────
+ * La app dibuja la plataforma de borde a borde: debajo de la hora, la isla y la
+ * barra de gestos. `html[data-app]` lo pone el layout raíz cuando la visita
+ * viene de la app (user-agent «LeasefyApp/1»); en el navegador estas variables
+ * valen 0 y NADA de lo de abajo aplica: la web queda exactamente igual.
+ *
+ * `--safe-area-inset-*` lo inyecta Capacitor en Android: en WebView < 140 el
+ * `env(safe-area-inset-*)` no trae las barras del sistema.
+ */
+:root {
+  --area-segura-arriba: 0px;
+  --area-segura-abajo: 0px;
+}
+html[data-app] {
+  --area-segura-arriba: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --area-segura-abajo: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  /* El alto de la cabecera de los paneles (PlanHeader: 4rem + la hora). Lo usan
+     las barras que se pegan debajo (`var(--plan-header-h,4rem)`). El <main> de los
+     paneles pone `--area-segura-arriba: 0` para lo de adentro: la cabecera ya cubrió
+     la hora (un asistente con su propia cabecera no vuelve a dejar el espacio). */
+  --plan-header-h: calc(4rem + var(--area-segura-arriba));
+  /* Sin el rebote que deja ver el fondo gris detrás de la página. */
+  overscroll-behavior-y: none;
+}
+html[data-app] body {
+  /* Sin el resaltado gris de iOS al tocar y sin el menú de «copiar» al dejar el dedo
+     sobre botones y enlaces (sí en textos y campos). */
+  -webkit-tap-highlight-color: transparent;
+}
+html[data-app] a,
+html[data-app] button,
+html[data-app] [role="button"] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Cajones laterales y flotantes (Cadence `Sheet`): empiezan debajo de la hora y
+   terminan encima de la barra de gestos. */
+html[data-app] [data-sheet-placement="left-side"],
+html[data-app] [data-sheet-placement="right-side"] {
+  top: calc(var(--area-segura-arriba) + 0.75rem);
+  bottom: calc(var(--area-segura-abajo) + 0.75rem);
+}
+html[data-app] [data-sheet-placement="top"] {
+  padding-top: var(--area-segura-arriba);
+}
+/* Hojas que suben desde abajo: nunca más altas que lo que deja la hora. */
+html[data-app] [data-sheet-placement$="-sheet"],
+html[data-app] [data-sheet-placement="bottom"] {
+  max-height: min(92dvh, calc(100dvh - var(--area-segura-arriba) - 0.75rem));
+}
+@media (min-width: 640px) {
+  html[data-app] [data-sheet-placement$="-sheet"] {
+    top: calc(var(--area-segura-arriba) + 0.75rem);
+    bottom: calc(var(--area-segura-abajo) + 0.75rem);
+    max-height: none;
+  }
+}
+/* Diálogos en el celular (hoja de abajo o centrados): sin meterse bajo la hora. */
+@media (max-width: 639.98px) {
+  html[data-app] [role="dialog"][data-variant],
+  html[data-app] [role="alertdialog"][data-variant] {
+    max-height: calc(100dvh - 2 * var(--area-segura-arriba) - 1rem);
+  }
+}
+
+/* Parte pública (marketplace, ayuda, avalúo) en la app: la cabecera es fija y la
+   franja del marketplace va encima. El bloque entero baja lo que mide la hora
+   (LandingChrome); cuando la franja se va al desplazar, la cabecera sube hasta
+   arriba y su relleno cubre la hora (--franja-y = dónde termina la franja). */
+html[data-app] .lv2 header {
+  padding-top: max(0px, calc(var(--area-segura-arriba) - var(--franja-y, 0px)));
+}
+html[data-app] .lv2 #hdr[data-franja] {
+  top: var(--franja-y, calc(var(--franja-alto) + var(--area-segura-arriba)));
+}
+html[data-app] .lv2 .mmenu {
+  padding-top: var(--area-segura-arriba);
+  padding-bottom: var(--area-segura-abajo);
+}

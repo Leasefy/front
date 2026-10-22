@@ -27,6 +27,8 @@ import { useHidratado } from '@/lib/hooks/use-hidratado';
 import { correoTieneCuentaApi } from '@/lib/api/correo-tiene-cuenta.service';
 import { codigoDeSupabase, leerErrorDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { esLaApp, plataformaDeLaApp } from '@/lib/app-nativa/puente';
+import { entrarConAppleEnLaApp } from '@/lib/app-nativa/entrar';
 import {
   SpinnerGap,
   ArrowLeft,
@@ -160,6 +162,34 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
         <GoogleIcon className="w-4 h-4" />
       )}
       <span className="text-[13.5px] font-medium text-fg">{children}</span>
+    </button>
+  );
+}
+
+function AppleIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 17 20" fill="currentColor" aria-hidden="true">
+      <path d="M14.06 10.62c-.02-2.2 1.8-3.26 1.88-3.31-1.03-1.5-2.62-1.7-3.18-1.73-1.35-.14-2.64.8-3.33.8-.69 0-1.74-.78-2.87-.76-1.47.02-2.83.86-3.59 2.18-1.54 2.66-.39 6.6 1.1 8.76.73 1.06 1.6 2.24 2.73 2.2 1.1-.04 1.51-.71 2.84-.71 1.32 0 1.7.71 2.86.69 1.18-.02 1.93-1.07 2.65-2.13.84-1.22 1.18-2.41 1.2-2.47-.03-.01-2.3-.88-2.33-3.52ZM11.88 4.16c.6-.73 1.01-1.75.9-2.76-.87.04-1.92.58-2.54 1.31-.56.64-1.05 1.68-.92 2.67.97.08 1.96-.49 2.56-1.22Z" />
+    </svg>
+  );
+}
+
+/**
+ * «Continuar con Apple» — sólo en la app de iPhone (Apple lo exige cuando hay
+ * Google). Negro en claro y blanco en oscuro, como piden las guías de Apple; mismo
+ * tamaño y forma que el de Google.
+ */
+function AppleButton({ onClick, disabled, isLoading, children }: { onClick: () => void; disabled: boolean; isLoading: boolean; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      data-testid="auth-apple"
+      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full bg-black text-white transition-[transform,opacity] duration-fast ease-standard active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black"
+    >
+      {isLoading ? <SpinnerGap className="h-4 w-4 animate-spin" /> : <AppleIcon className="h-[18px] w-[18px] -mt-0.5" />}
+      <span className="text-[13.5px] font-medium">{children}</span>
     </button>
   );
 }
@@ -479,9 +509,18 @@ export function AuthForm({
   // Qué botón carga: el de Google sólo dice «Conectando…» si se tocó él; mientras
   // entra con el correo, Google queda apagado sin girar (Nico, 07-10).
   const [conGoogle, setConGoogle] = React.useState(false);
+  const [conApple, setConApple] = React.useState(false);
   React.useEffect(() => {
-    if (!isLoading) setConGoogle(false);
+    if (!isLoading) {
+      setConGoogle(false);
+      setConApple(false);
+    }
   }, [isLoading]);
+  // «Continuar con Apple» sólo en la app de iPhone (se sabe después de hidratar).
+  const [enLaAppDeIphone, setEnLaAppDeIphone] = React.useState(false);
+  React.useEffect(() => {
+    setEnLaAppDeIphone(plataformaDeLaApp() === 'ios');
+  }, []);
   const [error, setError] = React.useState<string | null>(null);
   const [resetEmail, setResetEmail] = React.useState<string>('');
   /*
@@ -820,11 +859,40 @@ export function AuthForm({
       didAuthenticateInForm.current = true;
       // A dónde iba: sin esto Google volvía al inicio de su perfil (19-10-2026).
       await signInWithGoogle(returnUrl !== '/' ? returnUrl : undefined);
+      // En la app, si entró la página ya se fue a /auth/callback; si sigue acá,
+      // la persona cerró la hoja de Google y el formulario queda como estaba.
+      if (esLaApp()) {
+        didAuthenticateInForm.current = false;
+        return;
+      }
       onSuccess?.();
     } catch (err) {
       didAuthenticateInForm.current = false;
       setError(errorDeGoogle(err));
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // «Continuar con Apple» (app de iPhone): entra y se va a /auth/post-login.
+  const handleAppleLogin = async () => {
+    setIsLoading(true);
+    setConApple(true);
+    setError(null);
+    olvidarAviso();
+    try {
+      didAuthenticateInForm.current = true;
+      await entrarConAppleEnLaApp(returnUrl !== '/' ? returnUrl : undefined);
+    } catch (err) {
+      setError(
+        mensajeDeSupabase(err, {
+          porDefecto: 'No pudimos entrar con Apple. Intenta de nuevo.',
+          accion: 'conectarte con Apple',
+        }),
+      );
+    } finally {
+      // Si entró, la página ya se va; si cerró la hoja de Apple, queda como estaba.
+      didAuthenticateInForm.current = false;
       setIsLoading(false);
     }
   };
@@ -907,6 +975,11 @@ export function AuthForm({
       didAuthenticateInForm.current = true;
       // A dónde iba: sin esto Google volvía al inicio de su perfil (19-10-2026).
       await signInWithGoogle(returnUrl !== '/' ? returnUrl : undefined);
+      // En la app: si sigue acá, cerró la hoja de Google (ver handleGoogleLogin).
+      if (esLaApp()) {
+        didAuthenticateInForm.current = false;
+        return;
+      }
       onSuccess?.();
     } catch (err) {
       didAuthenticateInForm.current = false;
@@ -1235,6 +1308,13 @@ export function AuthForm({
         {/* ── Login ─────────────────────────────────────────────────────── */}
         {mode === 'login' && (
           <div>
+            {enLaAppDeIphone && (
+              <div className="mb-3">
+                <AppleButton onClick={handleAppleLogin} disabled={isLoading} isLoading={isLoading && conApple}>
+                  {isLoading && conApple ? 'Conectando...' : 'Continuar con Apple'}
+                </AppleButton>
+              </div>
+            )}
             <GoogleButton onClick={handleGoogleLogin} disabled={isLoading} isLoading={isLoading && conGoogle}>
               {isLoading && conGoogle ? 'Conectando...' : 'Continuar con Google'}
             </GoogleButton>
@@ -1340,6 +1420,13 @@ export function AuthForm({
         {/* ── Register: Credentials ──────────────────────────────────────── */}
         {mode === 'register' && registerStep === 'credentials' && (
           <div>
+            {enLaAppDeIphone && (
+              <div className="mb-3">
+                <AppleButton onClick={handleAppleLogin} disabled={isLoading} isLoading={isLoading && conApple}>
+                  {isLoading && conApple ? 'Conectando...' : 'Registrarse con Apple'}
+                </AppleButton>
+              </div>
+            )}
             <GoogleButton onClick={handleGoogleRegister} disabled={isLoading} isLoading={isLoading && conGoogle}>
               Registrarse con Google
             </GoogleButton>

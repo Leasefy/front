@@ -329,7 +329,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
             `z-10` y no `z-20`: empatado con las pestañas ganaba el reproductor
             por orden en el DOM, que es justo lo que se veía mal.
           */}
-          <div className="sticky top-[calc(4rem+var(--secciones-h,0px)+var(--workspace-nav-h,3rem))] z-10">
+          <div className="sticky top-[calc(var(--plan-header-h,4rem)+var(--secciones-h,0px)+var(--workspace-nav-h,3rem))] z-10">
             <CallAudioPlayer
               callId={callId}
               agencyId={agencyId}

@@ -79,7 +79,7 @@ export default function ArrendarPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-surface-muted">
-      <header className="sticky top-0 z-20 border-b border-border bg-surface">
+      <header className="sticky top-0 z-20 border-b border-border bg-surface pt-[var(--area-segura-arriba)]">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4">
           <BrandHomeLink aria-label="Leasefy — inicio" className="text-fg">
             <LeasefyLogotype size={24} />

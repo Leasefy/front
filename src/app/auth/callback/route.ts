@@ -8,6 +8,7 @@ import {
   esEnlaceDeRecuperacion,
 } from '@/lib/auth/sesion-de-recuperacion'
 import { leerRegresoDelCorreo, urlDeLaPantallaDeConfirmacion } from '@/lib/auth/regreso-del-correo'
+import { ESQUEMA_DE_LA_APP, MARCA_DE_LA_APP_EN_EL_REGRESO } from '@/lib/app-nativa/constantes'
 
 /*
  * El regreso de los enlaces de Supabase. Tres formas, ver
@@ -24,6 +25,19 @@ import { leerRegresoDelCorreo, urlDeLaPantallaDeConfirmacion } from '@/lib/auth/
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
+
+  /*
+   * «Continuar con Google» desde la app de iOS/Android (`lib/app-nativa/entrar.ts`):
+   * esto corre en la hoja segura del sistema, que NO tiene la sesión ni el
+   * verificador PKCE de la app. No se canjea acá: se le devuelve todo a la app,
+   * y la app vuelve a esta misma ruta (sin la marca) para canjear con sus cookies.
+   */
+  if (searchParams.get(MARCA_DE_LA_APP_EN_EL_REGRESO) === '1') {
+    const vuelta = new URLSearchParams(searchParams)
+    vuelta.delete(MARCA_DE_LA_APP_EN_EL_REGRESO)
+    return NextResponse.redirect(`${ESQUEMA_DE_LA_APP}://auth/callback?${vuelta.toString()}`)
+  }
+
   const regreso = leerRegresoDelCorreo(searchParams)
 
   if (regreso.accion === 'confirmar') {

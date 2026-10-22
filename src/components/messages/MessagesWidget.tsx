@@ -677,7 +677,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
       : [];
 
   return (
-    <div className="h-[calc(100vh-64px)] bg-bg overflow-hidden flex flex-col">
+    <div className="h-[calc(100vh-var(--plan-header-h,64px))] bg-bg overflow-hidden flex flex-col">
       <div
         className={cn(
           'flex-1 flex flex-col w-full overflow-hidden',

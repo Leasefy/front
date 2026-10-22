@@ -85,3 +85,26 @@ describe('middleware — el idioma de la parte pública (Nico, 16-10-2026)', () 
     expect(r.headers.get('x-middleware-request-x-idioma')).toBeNull()
   })
 })
+
+describe('middleware — la portada de la app de iOS/Android (22-10-2026)', () => {
+  const APP = 'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 LeasefyApp/1'
+
+  it('la app que abre leasefy.co va al inicio de la persona, no a la portada', () => {
+    for (const ruta of ['/', '/es', '/en']) {
+      const r = middleware(new NextRequest(`https://leasefy.co${ruta}`, { headers: { 'user-agent': APP } }))
+      expect(r.status).toBe(307)
+      expect(r.headers.get('location')).toBe('https://leasefy.co/auth/post-login')
+    }
+  })
+
+  it('en la app, el resto de la parte pública se ve igual que en la web', () => {
+    const r = middleware(new NextRequest('https://leasefy.co/es/propiedades', { headers: { 'user-agent': APP } }))
+    expect(r.headers.get('location')).toBeNull()
+    expect(r.headers.get('x-middleware-rewrite')).toBe('https://leasefy.co/propiedades')
+  })
+
+  it('en el navegador la portada sigue siendo la portada', () => {
+    const r = middleware(new NextRequest('https://leasefy.co/es', { headers: { 'user-agent': 'Mozilla/5.0 (iPhone) Safari/604.1' } }))
+    expect(r.headers.get('location')).toBeNull()
+  })
+})

@@ -334,7 +334,7 @@ function OnboardingPropietarioContent() {
   return (
     <div className="min-h-screen bg-bg">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-surface/95 backdrop-blur-sm border-b border-border-faint">
+      <header className="sticky top-0 z-20 bg-surface/95 backdrop-blur-sm border-b border-border-faint pt-[var(--area-segura-arriba)]">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <BrandHomeLink className="flex items-center gap-2">

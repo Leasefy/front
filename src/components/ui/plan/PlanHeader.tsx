@@ -484,7 +484,9 @@ export function PlanHeader({
   };
 
   return (
-    <header className={cn('sticky top-0 z-30 bg-bg border-b border-border', className)}>
+    // `pt-[var(--area-segura-arriba)]`: en la app de iOS/Android la cabecera se
+    // estira debajo de la hora y la isla (en el navegador vale 0; ver globals.css).
+    <header className={cn('sticky top-0 z-30 bg-bg border-b border-border pt-[var(--area-segura-arriba)]', className)}>
       <div className="flex items-center justify-between h-16 px-4 sm:px-6">
         {/* Left: mobile menu trigger + MagnifyingGlass */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -493,7 +495,12 @@ export function PlanHeader({
             type="button"
             onClick={openPlanMobileSidebar}
             aria-label={locale === 'es' ? 'Abrir menú de navegación' : 'Open navigation menu'}
-            className="lg:hidden flex h-11 w-11 flex-shrink-0 items-center justify-center -ml-1.5 rounded-xl text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            // En el panel de la inmobiliaria el menú vive en «Menú» de la barra de
+            // abajo (Nico, 22-10-2026): este ☰ sólo queda en los portales, que no la tienen.
+            className={cn(
+              'lg:hidden flex h-11 w-11 flex-shrink-0 items-center justify-center -ml-1.5 rounded-xl text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+              isInmobiliaria && 'hidden',
+            )}
           >
             <List className="w-5 h-5" />
           </button>

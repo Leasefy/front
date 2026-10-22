@@ -230,7 +230,7 @@ export function EleccionDePerfil({
       {/* Sin `MotionConfig` propio: el `MotionProvider` del layout raíz ya
           respeta el movimiento reducido en toda la app. */}
       <div className="flex min-h-screen flex-col bg-bg">
-        <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
+        <header className="flex items-center justify-between px-5 pt-[calc(1rem+var(--area-segura-arriba))] pb-4 sm:px-8 sm:pt-[calc(1.25rem+var(--area-segura-arriba))] sm:pb-5">
           {/* El mismo logotipo que la sidebar del panel y el header de los pasos — el cuadrado azul no es la marca (Nico, 2026-09-07). */}
           <LeasefyLogotype className="h-6 w-auto" />
           <SalirDelRegistro volver={volver} />

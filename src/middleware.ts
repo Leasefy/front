@@ -17,6 +17,7 @@ import {
   idiomaParaLaVisita,
   separarIdioma,
 } from '@/lib/idioma/idioma';
+import { plataformaPorElUserAgent } from '@/lib/app-nativa/puente';
 
 /**
  * Middleware
@@ -37,7 +38,23 @@ import {
  *   /, /auth, /invitacion/[token], /propiedades, /para/*, /productos/*,
  *   /pricing, /blog, /ayuda, /terminos, /privacidad
  */
+/**
+ * La app de iOS/Android abre leasefy.co (`/`). Quien abre la app viene a trabajar o a
+ * pagar, no a ver la portada: la portada de la app es `/auth/post-login`, que sin
+ * sesión lleva a entrar y con sesión al inicio de la persona (la última cuenta que
+ * usó). Sólo la portada; el resto de la parte pública (marketplace, ayuda) se ve igual.
+ */
+const PORTADAS = new Set(['/', '/es', '/en']);
+const INICIO_DE_LA_APP = '/auth/post-login';
+
 export function middleware(request: NextRequest) {
+  if (PORTADAS.has(request.nextUrl.pathname) && plataformaPorElUserAgent(request.headers.get('user-agent'))) {
+    const destino = request.nextUrl.clone();
+    destino.pathname = INICIO_DE_LA_APP;
+    destino.search = '';
+    return NextResponse.redirect(destino);
+  }
+
   /*
    * El idioma de la parte pública (Nico, 16-10-2026): `/es/...` y `/en/...`.
    *   - Lo público SIN prefijo se manda al idioma de la persona: el que eligió

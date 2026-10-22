@@ -184,7 +184,7 @@ export function CrearCuentaDesdeAprobacion({
             {tf(`${NS}.titulo`, 'Crea tu cuenta para entrar')}
           </h1>
           <p className="text-sm text-fg-muted mt-1 leading-relaxed">
-            {tf(`${NS}.bajada`, 'Tu aprobación queda guardada y adentro te mostramos solo las propiedades que puedes tomar. Te faltan tres datos.')}
+            {tf(`${NS}.bajada`, 'Tu aprobación queda guardada y adentro te mostramos solo los inmuebles que puedes tomar. Te faltan tres datos.')}
           </p>
         </div>
 

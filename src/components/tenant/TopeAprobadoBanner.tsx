@@ -134,7 +134,7 @@ export function TopeAprobadoBanner({
               : tf(`${NS}.sinTope`, 'Todavía no sabes hasta cuánto puedes arrendar')}
           </p>
           <p className="text-sm text-fg-muted mt-0.5">
-            {tf(`${NS}.invita`, 'Con tu aprobación te mostramos solo las propiedades que van contigo.')}
+            {tf(`${NS}.invita`, 'Con tu aprobación te mostramos solo los inmuebles que van contigo.')}
           </p>
         </div>
         <Button asChild className="shrink-0">
@@ -319,7 +319,7 @@ export function SobreTopeAlert({
           {tf(`${NS}.overlay.sobreTope`, 'Supera lo que podemos respaldarte')}
         </p>
         <p className="mt-1 text-sm text-fg-muted">
-          {tf(`${NS}.alerta.canon`, 'El canon de esta propiedad')}
+          {tf(`${NS}.alerta.canon`, 'El canon de este inmueble')}
           {' ('}
           <span className="font-mono tabular-nums">{formatCurrency(monthlyRent)}</span>
           {tf(`${NS}.porMes`, '/mes')}

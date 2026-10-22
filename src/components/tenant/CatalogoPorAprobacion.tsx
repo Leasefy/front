@@ -100,11 +100,11 @@ export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }
 
         <header className="mb-6">
           <h1 className="text-xl font-semibold text-fg">
-            {tf(`${NS}.titulo`, 'Propiedades para ti')}
+            {tf(`${NS}.titulo`, 'Inmuebles para ti')}
           </h1>
           <p className="text-sm text-fg-muted mt-1">
             {isLoading
-              ? tf(`${NS}.cargando`, 'Buscando propiedades…')
+              ? tf(`${NS}.cargando`, 'Buscando inmuebles…')
               : referencia
                 ? `${ordenadas.length} ${tf(`${NS}.puedesTomar`, 'que puedes tomar con tu aprobación')}`
                 : tf(`${NS}.sinTope`, 'Tu aprobación está lista. Cuando confirmemos tu tope te mostramos lo que va contigo.')}
@@ -116,8 +116,8 @@ export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }
             {tf(`${NS}.ocultasPrefijo`, 'No te mostramos')}{' '}
             <span className="font-mono tabular-nums">{ocultasPorTope}</span>{' '}
             {ocultasPorTope === 1
-              ? tf(`${NS}.ocultasSingular`, 'propiedad que se pasa de tu tope.')
-              : tf(`${NS}.ocultasPlural`, 'propiedades que se pasan de tu tope.')}
+              ? tf(`${NS}.ocultasSingular`, 'inmueble que se pasa de tu tope.')
+              : tf(`${NS}.ocultasPlural`, 'inmuebles que se pasan de tu tope.')}
           </p>
         )}
 
@@ -129,13 +129,13 @@ export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }
              tomar: se dice, y se ofrece la salida. */
           <div className="rounded-lg border border-border bg-surface p-8 text-center">
             <p className="text-sm font-medium text-fg">
-              {tf(`${NS}.vacio`, 'Ahora mismo no hay propiedades dentro de tu tope')}
+              {tf(`${NS}.vacio`, 'Ahora mismo no hay inmuebles dentro de tu tope')}
             </p>
             <p className="text-sm text-fg-muted mt-1">
               {tf(`${NS}.vacioTexto`, 'Aparecen nuevas seguido. Mientras tanto puedes ver el catálogo completo.')}
             </p>
             <Button asChild className="mt-4">
-              <Link href="/inquilino/explorar">{tf(`${NS}.verTodo`, 'Ver todas las propiedades')}</Link>
+              <Link href="/inquilino/explorar">{tf(`${NS}.verTodo`, 'Ver todos los inmuebles')}</Link>
             </Button>
           </div>
         ) : (

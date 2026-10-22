@@ -41,6 +41,8 @@ export interface PestanaDelRiel {
   href: string
   /** Clave i18n; se resuelve con `t()` al pintar. */
   labelKey: string
+  /** Rótulo corto para el celular (revisora r22: «Facturas de proveedores» no cabía a 390 junto a su vecina). */
+  labelCortoKey?: string
   icon: Icon
 }
 
@@ -122,7 +124,14 @@ export function RielDePestanas({ items, ariaLabel, visibles }: RielDePestanasPro
                 weight={activa ? 'fill' : 'regular'}
                 aria-hidden="true"
               />
-              {t(p.labelKey)}
+              {p.labelCortoKey ? (
+                <>
+                  <span className="sm:hidden">{t(p.labelCortoKey)}</span>
+                  <span className="max-sm:hidden">{t(p.labelKey)}</span>
+                </>
+              ) : (
+                t(p.labelKey)
+              )}
             </Link>
           )
         })}

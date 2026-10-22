@@ -62,7 +62,7 @@ describe('el inicio del inquilino con contrato migrado (CA-04)', () => {
     montar();
     expect(host.querySelector('[data-testid="tope-aprobado"]')).toBeNull();
     // Nada de «Propiedades para ti» ni de buscar: sus accesos son los de quien arrienda.
-    expect(host.textContent).not.toContain('Propiedades para ti');
+    expect(host.textContent).not.toContain('Inmuebles para ti');
     expect(host.querySelector('a[href="/inquilino/explorar"]')).toBeNull();
     expect(host.querySelector('a[href="/inquilino/pagos"]')?.textContent).toContain('Pagar mi arriendo');
     expect(host.querySelector('a[href="/inquilino/solicitudes?nueva=1"]')?.textContent).toContain('Reportar un daño');

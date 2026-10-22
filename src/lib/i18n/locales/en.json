@@ -1042,6 +1042,7 @@
       "nomina": "Payroll",
       "liquidaciones": "Settlements",
       "facturasDeProveedores": "Vendor bills",
+      "facturasDeProveedoresCorta": "Invoices",
       "retencion": "Retention",
       "resumenDelNegocio": "Business overview",
       "rentabilidad": "Profitability",

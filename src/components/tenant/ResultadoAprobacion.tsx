@@ -155,7 +155,7 @@ function Aprobado({
         <QueSigue
           tf={tf}
           items={[
-            tf(`${NS}.aprobado.sigue1`, 'Ya te puedes postular a las propiedades que te gusten.'),
+            tf(`${NS}.aprobado.sigue1`, 'Ya te puedes postular a los inmuebles que te gusten.'),
             tf(`${NS}.aprobado.sigue2`, 'Tu aprobación sirve para varias: no vuelves a consultar ni a pagar.'),
             // Con una demo el catálogo no marca nada, porque no hay nada
             // guardado que marcar. Prometerlo sería la misma mentira.
@@ -234,7 +234,7 @@ function ConCondiciones({
         <QueSigue
           tf={tf}
           items={[
-            tf(`${NS}.condiciones.sigue1`, 'Puedes seguir viendo propiedades y postularte.'),
+            tf(`${NS}.condiciones.sigue1`, 'Puedes seguir viendo inmuebles y postularte.'),
             tf(`${NS}.condiciones.sigue2`, 'Un asesor te contacta para cerrar la condición.'),
             conSesion
               ? tf(`${NS}.condiciones.sigue3ConSesion`, 'Tu aprobación queda guardada en tu cuenta.')
@@ -293,7 +293,7 @@ function NoAprobado({ tf, rutaCatalogo }: { tf: Tf; rutaCatalogo: string | null 
           />
           <Salida
             icono={<ArrowRight className="w-5 h-5 text-fg" aria-hidden="true" />}
-            titulo={tf(`${NS}.rechazo.seguir.titulo`, 'Seguir viendo propiedades')}
+            titulo={tf(`${NS}.rechazo.seguir.titulo`, 'Seguir viendo inmuebles')}
             texto={tf(`${NS}.rechazo.seguir.texto`, 'Puedes explorar el catálogo completo mientras resuelves lo anterior.')}
           />
         </div>
@@ -302,7 +302,7 @@ function NoAprobado({ tf, rutaCatalogo }: { tf: Tf; rutaCatalogo: string | null 
             público le sirve igual, y obligarlo a registrarse después de un no
             sería cobrarle un peaje por una mala noticia. */}
         <Button asChild variant="secondary" className="w-full" hideArrow>
-          <Link href={rutaCatalogo ?? '/propiedades'}>{tf(`${NS}.rechazo.cta`, 'Ver propiedades disponibles')}</Link>
+          <Link href={rutaCatalogo ?? '/propiedades'}>{tf(`${NS}.rechazo.cta`, 'Ver inmuebles disponibles')}</Link>
         </Button>
       </CardContent>
     </Card>
@@ -348,7 +348,7 @@ function EntrarAMiCatalogo({
     return (
       <Button asChild variant="secondary" className="w-full">
         <Link href={conSesion ? '/inquilino/explorar' : '/propiedades'}>
-          {tf(`${NS}.verPropiedades`, 'Ver propiedades')}
+          {tf(`${NS}.verPropiedades`, 'Ver inmuebles')}
         </Link>
       </Button>
     )
@@ -435,7 +435,7 @@ function Cifra({
                 `${NS}.cifra.hastaNotaDemo`,
                 'Con un tope real te mostraríamos las propiedades que van contigo.',
               )
-            : tf(`${NS}.cifra.hastaNota`, 'Con este tope te mostramos las propiedades que van contigo.')}
+            : tf(`${NS}.cifra.hastaNota`, 'Con este tope te mostramos los inmuebles que van contigo.')}
         </p>
       </div>
     )

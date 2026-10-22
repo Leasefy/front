@@ -423,6 +423,8 @@ export function CarteraCompleta() {
           <div className="space-y-4 px-5 py-5 sm:px-6">
             <p className="font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle">{nombreDelCajon('CARTERA')}</p>
             <div className="flex flex-col gap-x-4 gap-y-2 lg:flex-row lg:items-end lg:justify-between">
+              {/* Ronda 15: la cifra de la cartera y SU barra (por edad) en un mismo bloque. */}
+              <div className="min-w-0 space-y-3 lg:flex-1">
               {/* La cartera: la cifra grande. Tocarla deja la tabla en la cartera. */}
               <button
                 type="button"
@@ -462,6 +464,24 @@ export function CarteraCompleta() {
                   </span>
                 ) : null}
               </button>
+              {/* Ronda 12: la barra bajo la cifra de la CARTERA reparte la cartera por edad
+                  (color por gravedad). Antes medía la deuda total y la cartera era una
+                  astilla de 2 px al final. */}
+              {montoDelCajon('CARTERA').monto > 0 ? (
+                <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-surface-muted" role="img" aria-label="Cómo se reparte la cartera por edad" data-testid="barra-de-la-deuda">
+                  {[...cartera.tramos.map((t, i) => ({ clave: t.edad, monto: t.monto, tono: ['bg-error-500/40', 'bg-error-500/60', 'bg-error-500/80', 'bg-error-500'][i] ?? 'bg-error-500' })),
+                    { clave: 'siniestro', monto: cartera.enSiniestro.monto, tono: 'bg-error-700' }]
+                    .filter((t) => t.monto > 0)
+                    .map((t) => (
+                      <span
+                        key={t.clave}
+                        className={cn('h-full first:rounded-l-full last:rounded-r-full', t.tono)}
+                        style={{ width: `${(t.monto / montoDelCajon('CARTERA').monto) * 100}%` }}
+                      />
+                    ))}
+                </div>
+              ) : null}
+              </div>
 
               {/* La deuda entera, de la que la cartera es una parte. Tocarla quita los filtros. */}
               <button
@@ -491,23 +511,6 @@ export function CarteraCompleta() {
               </button>
             </div>
 
-            {/* Ronda 12: la barra bajo la cifra de la CARTERA reparte la cartera por edad
-                (color por gravedad). Antes medía la deuda total y la cartera era una
-                astilla de 2 px al final. */}
-            {montoDelCajon('CARTERA').monto > 0 ? (
-              <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-surface-muted" role="img" aria-label="Cómo se reparte la cartera por edad" data-testid="barra-de-la-deuda">
-                {[...cartera.tramos.map((t, i) => ({ clave: t.edad, monto: t.monto, tono: ['bg-error-500/40', 'bg-error-500/60', 'bg-error-500/80', 'bg-error-500'][i] ?? 'bg-error-500' })),
-                  { clave: 'siniestro', monto: cartera.enSiniestro.monto, tono: 'bg-error-700' }]
-                  .filter((t) => t.monto > 0)
-                  .map((t) => (
-                    <span
-                      key={t.clave}
-                      className={cn('h-full first:rounded-l-full last:rounded-r-full', t.tono)}
-                      style={{ width: `${(t.monto / montoDelCajon('CARTERA').monto) * 100}%` }}
-                    />
-                  ))}
-              </div>
-            ) : null}
           </div>
 
           {/* La leyenda: lo que NO es cartera (por vencer, vencido en plazo) y qué parte

@@ -134,6 +134,7 @@ import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service'
 import type { NuevoReciboPorCliente } from '@/lib/api/recibos-de-caja.types'
 import type { CajonDeLaCuota, FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
+import { plataPareja } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 import { CLAVE_DE_MORA, RUTA_DE_REGLAS_DE_MORA, sumarIntereses } from '@/components/cartera/interes-de-mora'
 import { mesEnTitulo, nombreDelMes } from '@/lib/utils/mes'
@@ -293,6 +294,7 @@ function CifraEnLaFrase({
   activa,
   onClick,
   queMuestra,
+  formato = formatCurrency,
 }: {
   /** La cifra: cuenta desde la anterior al cambiar de mes (`AnimatedNumber`). */
   monto: number
@@ -302,6 +304,8 @@ function CifraEnLaFrase({
   onClick: () => void
   /** Qué queda en la tabla al tocarla. Va al `title`: un clic no se adivina. */
   queMuestra: string
+  /** El formato de la franja (los mismos decimales en todas sus cifras). */
+  formato?: (n: number) => string
 }) {
   return (
     <button
@@ -318,7 +322,7 @@ function CifraEnLaFrase({
       )}
       data-activa={activa ? 'si' : 'no'}
     >
-      <AnimatedNumber data-testid={testId} value={monto} format={formatCurrency} />
+      <AnimatedNumber data-testid={testId} value={monto} format={formato} />
     </button>
   )
 }
@@ -466,6 +470,8 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
     return res
   }
 
+  // Los mismos decimales en toda la franja (revisión 22-10).
+  const plata = plataPareja([t?.totalCop, t?.pendienteCop, t?.pagadoCop, t?.porVencerCop, t?.vencidaEnPlazoCop, t?.carteraCop])
   const cuantasCuotas = (n: number) => `${numberFormatter.format(n)} ${n === 1 ? 'cuota' : 'cuotas'}`
   const cuantosInquilinos = (n: number) => `${numberFormatter.format(n)} ${n === 1 ? 'inquilino' : 'inquilinos'}`
 
@@ -534,6 +540,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             rotulo="Falta por pagar"
             cifra={
               <CifraEnLaFrase
+                formato={plata}
                 testId="mes-falta"
                 monto={t?.pendienteCop ?? 0}
                 activa={cajon === 'TODAS'}
@@ -545,6 +552,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
               <>
                 de los{' '}
                 <CifraEnLaFrase
+                  formato={plata}
                   testId="mes-se-debe"
                   monto={t?.totalCop ?? 0}
                   activa={cajon === 'MES'}
@@ -578,6 +586,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 'data-testid': 'tramo-pagado',
                 cifra: (
                   <CifraEnLaFrase
+                    formato={plata}
                     testId="mes-pagado"
                     monto={t?.pagadoCop ?? 0}
                     activa={cajon === 'PAGADO'}
@@ -593,6 +602,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 tono: 'neutro',
                 cifra: (
                   <CifraEnLaFrase
+                    formato={plata}
                     testId="mes-por-vencer"
                     monto={t?.porVencerCop ?? 0}
                     activa={cajon === 'POR_VENCER'}
@@ -608,6 +618,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 tono: 'aviso',
                 cifra: (
                   <CifraEnLaFrase
+                    formato={plata}
                     testId="mes-vencido-en-plazo"
                     monto={t?.vencidaEnPlazoCop ?? 0}
                     activa={cajon === 'VENCIDA_EN_PLAZO'}
@@ -623,6 +634,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 tono: 'critico',
                 cifra: (
                   <CifraEnLaFrase
+                    formato={plata}
                     testId="mes-cartera"
                     monto={t?.carteraCop ?? 0}
                     tono="danger"

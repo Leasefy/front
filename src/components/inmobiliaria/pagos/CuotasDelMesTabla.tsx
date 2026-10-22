@@ -87,6 +87,7 @@ import { refDelInquilino } from '@/lib/estado-de-cuenta/con-quien-se-abre'
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import { rotuloDelContrato } from '@/lib/cartera/conceptos'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
+import { plataPareja } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 import type { FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
 import { cn } from '@/lib/utils'
@@ -149,6 +150,9 @@ export function CuotasDelMesTabla({
 
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(filas, { initialPageSize: 10, resetKey: `${mes}|${hayFiltros}` })
+
+  // Los mismos decimales en cada columna de plata (revisión 22-10).
+  const plataDeLaColumna = plataPareja(pageItems.flatMap((f) => [f.totalCop, f.pendienteCop, f.pagadoCop]))
 
   return (
     <div
@@ -273,14 +277,14 @@ export function CuotasDelMesTabla({
                   </Badge>
                 </TableCell>
                 <TableCell className="whitespace-nowrap font-mono tabular-nums text-fg-muted max-md:hidden" numeric>
-                  {formatCurrency(f.totalCop)}
+                  {plataDeLaColumna(f.totalCop)}
                 </TableCell>
                 <TableCell className="whitespace-nowrap font-mono tabular-nums max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right" numeric>
                   {/* Lo que falta es la cifra de la fila; en cero, la raya
                       atenuada (manual de voz: un cero repetido no se lee). */}
                   {f.pendienteCop > 0 ? (
                     <span className={cn('font-medium', f.enMora ? 'text-danger' : 'text-fg')}>
-                      {formatCurrency(f.pendienteCop)}
+                      {plataDeLaColumna(f.pendienteCop)}
                     </span>
                   ) : (
                     <span className="text-fg-subtle" aria-label="Nada">—</span>
@@ -296,7 +300,7 @@ export function CuotasDelMesTabla({
                   )}
                   {f.pagadoCop > 0 && f.pendienteCop > 0 ? (
                     <p className="text-caption text-fg-muted">
-                      entró {formatCurrency(f.pagadoCop)}
+                      entró {plataDeLaColumna(f.pagadoCop)}
                     </p>
                   ) : null}
                 </TableCell>

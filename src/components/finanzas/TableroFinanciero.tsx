@@ -73,6 +73,7 @@ import {
 } from '@/lib/propietarios/por-girar';
 import { SIN_MEDIR, tasaEnPantalla } from '@/lib/tasas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { plataPareja } from '@/lib/format';
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 import { useTr } from '@/lib/i18n/use-tr';
@@ -289,6 +290,8 @@ function Renglones({ children }: { children: ReactNode }) {
 function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
   const tr = useTr();
   const { recaudo } = tablero;
+  // Los mismos decimales en todo el bloque (revisión 22-10).
+  const plata = plataPareja([recaudo.delMesCop, recaudo.delDiaCop, recaudo.causadoDelMesCop]);
   const base =
     recaudo.base === 'EMITIDO'
       ? 'lo que se emitió en cobros'
@@ -308,6 +311,7 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
     >
       <FilaDeCifras>
         <Cifra
+          formato={plata}
           id="recaudo-del-mes"
           etiqueta="Entró en el mes"
           valor={recaudo.delMesCop}
@@ -349,6 +353,7 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
           }
         />
         <RenglonDeCifra
+          formato={plata}
           id="causado-del-mes"
           etiqueta="Se debe del mes"
           valor={recaudo.causadoDelMesCop}
@@ -356,6 +361,7 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
         />
         {recaudo.delDiaCop === 0 ? null : (
         <RenglonDeCifra
+          formato={plata}
           id="recaudo-del-dia"
           etiqueta="Entró hoy"
           valor={recaudo.delDiaCop}
@@ -391,6 +397,8 @@ function MarcaDelTramo({ i, total }: { i: number; total: number }) {
 function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
   const tr = useTr();
   const { cartera } = tablero;
+  // Los mismos decimales en todo el bloque (revisión 22-10).
+  const plata = plataPareja([cartera.totalCop, ...cartera.tramos.map((t) => t.carteraCop)]);
   const sumaDeTramos = cartera.tramos.reduce((a, t) => a + Math.max(t.carteraCop, 0), 0);
   return (
     <TarjetaDeCifras
@@ -405,6 +413,7 @@ function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
     >
       <FilaDeCifras>
         <Cifra
+          formato={plata}
           id="cartera-total"
           etiqueta="Cartera"
           valor={cartera.totalCop}
@@ -556,6 +565,8 @@ function BloqueDeDeudores({ tablero }: { tablero: Tablero }) {
 function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
   const tr = useTr();
   const { propietarios } = tablero;
+  // Los mismos decimales en todo el bloque (revisión 22-10).
+  const plata = plataPareja([propietarios.porGirarCop, propietarios.retenidoCop, propietarios.enLotesPorAprobarCop, propietarios.giradoDelMesCop, propietarios.proximosGiros?.totalCop]);
   return (
     <TarjetaDeCifras
       testId="bloque-propietarios"
@@ -572,6 +583,7 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
             tablero mire otro mes (Nico, 04-10-2026). La manda el back con la
             misma función de las otras pantallas. */}
         <Cifra
+          formato={plata}
           id="por-girar"
           etiqueta={rotuloDePorGirar(propietarios.porGirarHastaMes ?? tablero.mes)}
           valor={propietarios.porGirarCop}
@@ -582,6 +594,7 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
       <Renglones>
         {propietarios.lotesPorAprobar > 0 || propietarios.enLotesPorAprobarCop > 0 ? (
           <RenglonDeCifra
+            formato={plata}
             id="en-lotes-por-aprobar"
             etiqueta="En lotes por aprobar"
             valor={propietarios.enLotesPorAprobarCop}
@@ -603,6 +616,7 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
         ) : null}
         {propietarios.retenidoCop > 0 ? (
           <RenglonDeCifra
+            formato={plata}
             id="retenido"
             etiqueta="Retenido"
             valor={propietarios.retenidoCop}
@@ -611,6 +625,7 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
           />
         ) : null}
         <RenglonDeCifra
+          formato={plata}
           id="girado-del-mes"
           etiqueta={`Girado en ${nombreDelMes(tablero.mes)}`}
           valor={propietarios.giradoDelMesCop}
@@ -618,6 +633,7 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
         />
         {propietarios.proximosGiros ? (
           <RenglonDeCifra
+            formato={plata}
             id="proximos-giros"
             etiqueta={rotuloDeProximosGiros(
               propietarios.proximosGiros.desdeMes,
@@ -635,6 +651,8 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
 function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
   const tr = useTr();
   const { margen } = tablero;
+  // Los mismos decimales en todo el bloque (revisión 22-10).
+  const plata = plataPareja([margen.margenCop, margen.comisionesCop, margen.interesesCop, margen.gastosDeCobranzaCop, margen.ingresosPropiosCop, margen.gmfCop, margen.pasarelaCop, margen.costosCop]);
   return (
     <TarjetaDeCifras
       testId="bloque-margen"
@@ -645,6 +663,7 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
     >
       <FilaDeCifras>
         <Cifra
+          formato={plata}
           id="margen"
           etiqueta="Margen"
           valor={margen.margenCop}
@@ -665,6 +684,7 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
       <Renglones>
         {margen.comisionesCop !== 0 ? (
           <RenglonDeCifra
+            formato={plata}
             id="comisiones"
             etiqueta="Comisiones"
             valor={margen.comisionesCop}
@@ -673,6 +693,7 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
         ) : null}
         {margen.interesesCop !== 0 ? (
           <RenglonDeCifra
+            formato={plata}
             id="intereses"
             etiqueta="Intereses de mora"
             valor={margen.interesesCop}
@@ -681,6 +702,7 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
         ) : null}
         {margen.gastosDeCobranzaCop !== 0 ? (
           <RenglonDeCifra
+            formato={plata}
             id="gastos-de-cobranza"
             etiqueta="Gastos de cobranza"
             valor={margen.gastosDeCobranzaCop}
@@ -690,6 +712,7 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
         {/* 22-10 (revisión): el subtotal sólo con dos o más componentes; con uno, repetía la cifra. */}
         {[margen.comisionesCop, margen.interesesCop, margen.gastosDeCobranzaCop].filter((v) => v !== 0).length >= 2 ? (
         <RenglonDeCifra
+          formato={plata}
           id="ingresos-propios"
           etiqueta="Ingresos propios"
           valor={margen.ingresosPropiosCop}
@@ -699,6 +722,7 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
         ) : null}
         {margen.gmfCop !== 0 ? (
           <RenglonDeCifra
+            formato={plata}
             id="gmf"
             etiqueta="4×1000"
             valor={margen.gmfCop}
@@ -708,6 +732,7 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
         ) : null}
         {margen.pasarelaCop !== 0 ? (
           <RenglonDeCifra
+            formato={plata}
             id="pasarela"
             etiqueta="Pasarela de pago"
             valor={margen.pasarelaCop}
@@ -717,6 +742,7 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
         ) : null}
         {[margen.gmfCop, margen.pasarelaCop].filter((v) => v !== 0).length >= 2 ? (
         <RenglonDeCifra
+          formato={plata}
           id="costos"
           etiqueta="Costos de la plata"
           valor={margen.costosCop}

@@ -63,6 +63,8 @@ export function RielDePestanas({ items, ariaLabel, visibles }: RielDePestanasPro
   const indicador = `${id}-activa`
   const [masAbierto, setMasAbierto] = useState(false)
   const masRef = useRef<HTMLDivElement>(null)
+  /** El menú vive fuera del riel: también cuenta como «adentro» (si no, el toque lo cerraba antes de navegar). */
+  const menuRef = useRef<HTMLDivElement>(null)
 
   // Las que van en el riel y las que van en «Más»: la elegida nunca se esconde.
   const cuantas = visibles && items.length > visibles + 1 ? visibles : items.length
@@ -75,7 +77,8 @@ export function RielDePestanas({ items, ariaLabel, visibles }: RielDePestanasPro
   useEffect(() => {
     if (!masAbierto) return
     const fuera = (e: MouseEvent) => {
-      if (masRef.current && !masRef.current.contains(e.target as Node)) setMasAbierto(false)
+      const dentro = masRef.current?.contains(e.target as Node) || menuRef.current?.contains(e.target as Node)
+      if (!dentro) setMasAbierto(false)
     }
     const escape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMasAbierto(false)
@@ -143,6 +146,7 @@ export function RielDePestanas({ items, ariaLabel, visibles }: RielDePestanasPro
           enlaces existen para el teclado, la búsqueda y las pruebas aunque esté cerrado. */}
       {menu.length > 0 ? (
         <div
+          ref={menuRef}
           id={`${id}-mas`}
           hidden={!masAbierto}
           className="relative z-20"

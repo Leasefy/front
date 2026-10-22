@@ -70,7 +70,7 @@ function StageCard({ bucket, total }: { bucket: StageBucket; total: number }) {
           <StatusBadge tone={TONO_DEL_SELLO[etapa.tono]}>{bucket.stage}</StatusBadge>
           <MonoLabel className="tabular-nums">{pct.toLocaleString('es-CO', { maximumFractionDigits: 1 })} %</MonoLabel>
         </div>
-        <div className="font-mono text-stat font-semibold tabular-nums text-fg">{bucket.n.toLocaleString('es-CO')}</div>
+        <div className="font-mono text-stat tabular-nums text-fg">{bucket.n.toLocaleString('es-CO')}</div>
         <div className="truncate text-body-sm font-medium text-fg" title={etapa.nombre}>
           {etapa.nombre}
         </div>

@@ -129,7 +129,7 @@ export default function AvaluosPage() {
         description="Avalúos con propuesta de valor lista, pendientes de revisión y firma del certificado."
         right={
           <Card className="px-4 py-3 text-center">
-            <div className="text-2xl font-semibold text-fg tabular-nums">
+            <div className="font-mono text-2xl text-fg tabular-nums">
               {isLoading ? '—' : items.length}
             </div>
             <MonoLabel className="block">

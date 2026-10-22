@@ -31,7 +31,7 @@ export function Tarjeta({
       {titulo || acciones ? (
         <CardHeader className="flex-row flex-wrap items-start justify-between gap-3 space-y-0">
           <div className="min-w-0 space-y-1">
-            {titulo ? <CardTitle className="text-subtitle font-semibold">{titulo}</CardTitle> : null}
+            {titulo ? <CardTitle className="text-subtitle font-medium">{titulo}</CardTitle> : null}
             {descripcion ? <CardDescription>{descripcion}</CardDescription> : null}
           </div>
           {acciones ? <div className="flex flex-wrap items-center gap-2">{acciones}</div> : null}

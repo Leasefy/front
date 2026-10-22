@@ -270,7 +270,7 @@ export default function OnboardingPage() {
                   >
                     <div className="text-caption text-fg-muted">{p.nombre}</div>
                     <div className="mt-1 flex items-baseline gap-2">
-                      <span className="text-h3 font-semibold tabular-nums text-fg">{fmtNumero(p.cuantas)}</span>
+                      <span className="font-mono text-h3 tabular-nums text-fg">{fmtNumero(p.cuantas)}</span>
                       <span className="text-caption tabular-nums text-fg-subtle">de {fmtNumero(registradas)}</span>
                     </div>
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover" aria-hidden>
@@ -321,7 +321,7 @@ export default function OnboardingPage() {
 
       <section className="space-y-3" aria-label="Registros sin terminar">
         <div>
-          <h2 className="text-subtitle font-semibold text-fg">Registros sin terminar</h2>
+          <h2 className="text-subtitle font-medium text-fg">Registros sin terminar</h2>
           <p className="text-body-sm text-fg-muted">
             Empezaron el asistente de registro y no lo terminaron. Si se vence, tienen que empezar de nuevo.
           </p>
@@ -351,7 +351,7 @@ export default function OnboardingPage() {
 
       <section className="space-y-3" aria-label="Arranque de la cobranza por voz">
         <div>
-          <h2 className="text-subtitle font-semibold text-fg">Cobranza por voz</h2>
+          <h2 className="text-subtitle font-medium text-fg">Cobranza por voz</h2>
           <p className="text-body-sm text-fg-muted">
             Las inmobiliarias conectadas a Mori: cuándo llamó y cuándo cobró por primera vez.
           </p>

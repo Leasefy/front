@@ -59,11 +59,11 @@ export function ErrorBlock({
   return (
     <Appear distance="xs" className={cn(suelto && TARJETA, className)}>
       <div role="alert" className="px-6 py-12 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg bg-surface-muted">
           <WarningOctagon weight="duotone" className="h-6 w-6 text-fg-subtle" aria-hidden="true" />
         </div>
         <div className="mt-4 space-y-1.5">
-          <p className="text-subtitle font-semibold text-fg">{titulo}</p>
+          <p className="text-subtitle font-medium text-fg">{titulo}</p>
           <p className="mx-auto max-w-md text-body-sm text-fg-muted">{msg}</p>
         </div>
         {onReintentar && sePuedeReintentar ? (

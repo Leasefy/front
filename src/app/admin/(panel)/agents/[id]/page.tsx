@@ -265,7 +265,7 @@ export default function AgentDetailPage() {
 
       <section className="space-y-3" aria-label="Instrucciones del agente">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-subtitle font-semibold text-fg">Instrucciones</h2>
+          <h2 className="text-subtitle font-medium text-fg">Instrucciones</h2>
           <MonoLabel className="tabular-nums">
             {systemPrompt.length.toLocaleString('es-CO')} caracteres · {sections.length} secciones
           </MonoLabel>

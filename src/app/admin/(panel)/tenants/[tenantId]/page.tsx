@@ -584,7 +584,7 @@ export default function TenantDetailPage() {
 
           <section className="space-y-3" aria-label="Equipo">
             <div className="flex items-baseline justify-between gap-3">
-              <h2 className="text-subtitle font-semibold text-fg">Equipo</h2>
+              <h2 className="text-subtitle font-medium text-fg">Equipo</h2>
               <MonoLabel>{fmtNumero(p.equipo.length)} personas</MonoLabel>
             </div>
             <DataTable
@@ -608,7 +608,7 @@ export default function TenantDetailPage() {
       {/* La cobranza por voz, si la tiene. */}
       <section className="space-y-4" aria-label="Cobranza por voz">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="text-subtitle font-semibold text-fg">Cobranza por voz</h2>
+          <h2 className="text-subtitle font-medium text-fg">Cobranza por voz</h2>
           {conVoz && data.agency.billing_model ? (
             <Pill tone="neutral">
               Cobro{' '}

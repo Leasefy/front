@@ -178,7 +178,7 @@ export default function InngestMonitorPage() {
       ) : null}
 
       <section className="space-y-3" aria-label="Tareas programadas">
-        <h2 className="text-subtitle font-semibold text-fg">Tareas programadas</h2>
+        <h2 className="text-subtitle font-medium text-fg">Tareas programadas</h2>
         <p className="text-body-sm text-fg-muted">
           Al día: dejó rastro hace menos de 26 h · Atrasada: entre 26 y 72 h · Detenida: más de 72 h. Horas de Colombia.
         </p>
@@ -202,7 +202,7 @@ export default function InngestMonitorPage() {
       </section>
 
       <section className="space-y-3" aria-label="Flujos por eventos">
-        <h2 className="text-subtitle font-semibold text-fg">Flujos por eventos</h2>
+        <h2 className="text-subtitle font-medium text-fg">Flujos por eventos</h2>
         <p className="text-body-sm text-fg-muted">Corren cuando pasa algo (un pago, una llamada, un mensaje), no a una hora fija.</p>
         <DataTable
           id="flujos"

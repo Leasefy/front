@@ -137,7 +137,7 @@ export function LaPlataforma({
                     <span className={`inline-block size-2 rounded-full ${p.tono}`} aria-hidden="true" />
                     {p.nombre}
                   </span>
-                  <span className="text-subtitle font-semibold tabular-nums text-fg">
+                  <span className="font-mono text-subtitle tabular-nums text-fg">
                     {fmtNumero(d.inmobiliarias.porEstadoDelPlan[p.clave])}
                   </span>
                 </button>
@@ -162,7 +162,7 @@ export function LaPlataforma({
             ].map((x) => (
               <li key={x.nombre} className="rounded-md bg-bg px-3 py-2">
                 <div className="text-caption text-fg-muted">{x.nombre}</div>
-                <div className="text-subtitle font-semibold tabular-nums text-fg">{fmtNumero(x.n)}</div>
+                <div className="font-mono text-subtitle tabular-nums text-fg">{fmtNumero(x.n)}</div>
               </li>
             ))}
           </ul>

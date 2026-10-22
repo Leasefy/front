@@ -293,7 +293,7 @@ export default function AdminDashboard() {
 
       <div className="flex flex-wrap items-end justify-between gap-3 border-t border-border-faint pt-6">
         <div className="space-y-1">
-          <h2 className="text-h3 font-semibold text-fg">Cobranza por voz</h2>
+          <h2 className="text-h3 font-medium text-fg">Cobranza por voz</h2>
           <p className="text-body-sm text-fg-muted">
             Mori, el asistente que llama a los inquilinos en mora: lo cobrado, lo que cuesta y lo que pasa hoy.
           </p>
@@ -347,7 +347,7 @@ export default function AdminDashboard() {
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Plan breakdown */}
         <Card className="p-6">
-          <h2 className="mb-4 text-subtitle font-semibold text-fg">Por modelo de cobro</h2>
+          <h2 className="mb-4 text-subtitle font-medium text-fg">Por modelo de cobro</h2>
           {plans.length === 0 ? (
             <p className="py-6 text-center text-body-sm text-fg-muted">Todavía no hay inmobiliarias.</p>
           ) : (
@@ -394,7 +394,7 @@ export default function AdminDashboard() {
                 ].map((m) => (
                   <div key={m.label}>
                     <MonoLabel className="block">{m.label}</MonoLabel>
-                    <div className="mt-1 font-mono text-body-sm font-semibold tabular-nums">{m.value}</div>
+                    <div className="mt-1 font-mono text-body-sm tabular-nums">{m.value}</div>
                   </div>
                 ))}
               </div>
@@ -414,7 +414,7 @@ export default function AdminDashboard() {
           {today ? (
             <>
               <div className="flex items-baseline gap-4 flex-wrap mb-1">
-                <span className="font-mono text-stat font-semibold tabular-nums text-success">
+                <span className="font-mono text-stat tabular-nums text-success">
                   {fmtCOP(num(today.payments_today_total))}
                 </span>
                 {paidDelta.value !== 0 && (
@@ -434,7 +434,7 @@ export default function AdminDashboard() {
 
               <div className="border-t border-border pt-3 mb-4">
                 <MonoLabel className="block">Lo invertido hoy</MonoLabel>
-                <div className="font-mono text-h2 font-semibold tabular-nums text-danger mt-0.5">
+                <div className="font-mono text-h2 tabular-nums text-danger mt-0.5">
                   {fmtCOP(num(today.vapi_cost_today) * USD_TO_COP)}
                 </div>
                 <MonoLabel className="block mt-0.5">
@@ -453,7 +453,7 @@ export default function AdminDashboard() {
                 ].map((m) => (
                   <div key={m.label}>
                     <MonoLabel className="block">{m.label}</MonoLabel>
-                    <div className={`mt-1 font-semibold tabular-nums text-xl ${m.tone}`}>{m.value}</div>
+                    <div className={`mt-1 font-mono tabular-nums text-xl ${m.tone}`}>{m.value}</div>
                     {m.hint && <div className="text-caption text-fg-subtle">{m.hint}</div>}
                   </div>
                 ))}
@@ -468,16 +468,16 @@ export default function AdminDashboard() {
       {/* ── 3. Chart + Experimento + Transacciones ──────────────────────── */}
       <section className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <Card className="p-6 lg:col-span-2">
-          <h2 className="mb-4 text-subtitle font-semibold text-fg">Lo cobrado frente al costo · últimos 14 días</h2>
+          <h2 className="mb-4 text-subtitle font-medium text-fg">Lo cobrado frente al costo · últimos 14 días</h2>
           <TrendBars trend={trend} />
         </Card>
 
         {/* Active experiment */}
         <Card className="p-6">
-          <h2 className="mb-4 text-subtitle font-semibold text-fg">Experimento en curso</h2>
+          <h2 className="mb-4 text-subtitle font-medium text-fg">Experimento en curso</h2>
           {experiment ? (
             <>
-              <div className="font-semibold text-base break-all mb-1">{experiment.name}</div>
+              <div className="font-medium text-base break-all mb-1">{experiment.name}</div>
               <Pill tone="info">{experiment.status}</Pill>
               <div className="border-t border-border mt-3 pt-3">
                 <div className="flex justify-between text-caption">
@@ -543,7 +543,7 @@ export default function AdminDashboard() {
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className="flex items-baseline justify-between mb-3">
-            <h2 className="text-subtitle font-semibold text-fg">Inmobiliarias · 30 días</h2>
+            <h2 className="text-subtitle font-medium text-fg">Inmobiliarias · 30 días</h2>
             <Button variant="link" size="sm" hideArrow onClick={() => router.push('/admin/tenants')}>
               Ver todas
               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -594,7 +594,7 @@ export default function AdminDashboard() {
 
         {/* Outcomes */}
         <Card className="p-6">
-          <h2 className="mb-4 text-subtitle font-semibold text-fg">Cómo terminan las llamadas · 30 días</h2>
+          <h2 className="mb-4 text-subtitle font-medium text-fg">Cómo terminan las llamadas · 30 días</h2>
           {outcomes.length === 0 ? (
             <p className="text-body-sm text-fg-muted">Todavía no hay datos.</p>
           ) : (
@@ -621,7 +621,7 @@ export default function AdminDashboard() {
       {/* ── 5. Escalations + Compliance ─────────────────────────────────── */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <h2 className="mb-4 text-subtitle font-semibold text-fg">Escalaciones abiertas</h2>
+          <h2 className="mb-4 text-subtitle font-medium text-fg">Escalaciones abiertas</h2>
           <Card className="overflow-hidden">
             <Table>
               <TableBody>
@@ -654,7 +654,7 @@ export default function AdminDashboard() {
         </div>
 
         <div>
-          <h2 className="mb-4 text-subtitle font-semibold text-fg">Cumplimiento · 30 días</h2>
+          <h2 className="mb-4 text-subtitle font-medium text-fg">Cumplimiento · 30 días</h2>
           <Card className="space-y-1.5 p-6">
             {compliance.map((c) => (
               <div
@@ -678,11 +678,11 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 items-start">
             <div>
               <MonoLabel className="block">Cobranza · ingreso mensual</MonoLabel>
-              <div className="mt-1 text-xl font-semibold tabular-nums text-success">{fmtCOP(num(footer.mrr))}</div>
+              <div className="mt-1 font-mono text-xl tabular-nums text-success">{fmtCOP(num(footer.mrr))}</div>
             </div>
             <div>
               <MonoLabel className="block">Cobranza · al año</MonoLabel>
-              <div className="mt-1 text-xl font-semibold tabular-nums">{fmtCOP(num(footer.arr))}</div>
+              <div className="mt-1 font-mono text-xl tabular-nums">{fmtCOP(num(footer.arr))}</div>
             </div>
             <div className="md:col-span-1">
               <MonoLabel className="block mb-2">Canales · este mes</MonoLabel>
@@ -701,7 +701,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <MonoLabel className="block">Llamadas · este mes</MonoLabel>
-              <div className="mt-1 text-xl font-semibold tabular-nums">{footer.calls_this_month}</div>
+              <div className="mt-1 font-mono text-xl tabular-nums">{footer.calls_this_month}</div>
             </div>
           </div>
         </Card>

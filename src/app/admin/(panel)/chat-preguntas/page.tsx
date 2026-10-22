@@ -430,7 +430,7 @@ export default function ChatPreguntasPage() {
           </FranjaDeCifras>
 
           {/* Sugerencias. */}
-          <h2 className="text-subtitle font-semibold text-fg">Qué mejorar del chat</h2>
+          <h2 className="text-subtitle font-medium text-fg">Qué mejorar del chat</h2>
           {data.sugerencias.length === 0 ? (
             <p className="text-body-sm text-fg-subtle">
               Nada que sugerir con estas preguntas: ningún tema pasa los umbrales (se necesitan al menos 5 preguntas de un tema).

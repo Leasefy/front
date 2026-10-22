@@ -78,7 +78,7 @@ function Seccion({
   return (
     <section className="mt-8">
       <Eyebrow className="mb-1">{label}</Eyebrow>
-      <h2 className="text-lg font-semibold text-fg mb-3">{title}</h2>
+      <h2 className="text-h3 text-fg mb-3">{title}</h2>
       {children}
     </section>
   )
@@ -202,7 +202,7 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <div>
             <MonoLabel className="block">riesgo</MonoLabel>
-            <div className={`text-3xl font-semibold mt-1 ${COLOR_DEL_NIVEL[riesgo.nivel]}`}>
+            <div className={`text-3xl font-medium mt-1 ${COLOR_DEL_NIVEL[riesgo.nivel]}`}>
               {NIVEL_DE_RIESGO[riesgo.nivel]}
               {riesgo.nivel !== 'sin_datos' && (
                 <span className="text-base font-normal text-fg-muted tabular-nums"> · {riesgo.puntaje} / 100</span>

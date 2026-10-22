@@ -141,7 +141,7 @@ export default function ChatFeedbackPage() {
             semanas.map((s) => (
               <Card className="min-w-[96px] px-4 py-3" key={s.semana}>
                 <MonoLabel className="block">{semanaCorta(s.semana)}</MonoLabel>
-                <div className="mt-1 font-mono text-subtitle font-semibold tabular-nums text-fg">
+                <div className="mt-1 font-mono text-subtitle tabular-nums text-fg">
                   {s.porcentajeArriba === null ? '—' : `${s.porcentajeArriba} %`}
                 </div>
                 <div className="font-mono text-caption tabular-nums text-fg-subtle">

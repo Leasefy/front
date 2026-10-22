@@ -12,6 +12,7 @@
  * Las rutas de siempre no cambian (hay enlaces a ellas en toda la plataforma):
  * el riel las ordena y dice dónde estás. Ninguna regla de negocio cambia.
  */
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useTr } from '@/lib/i18n/use-tr';
@@ -63,9 +64,20 @@ export const SECCION_DE_LOS_GIROS = 'Pagar a propietarios';
 export function PasosDeLosGiros({ paso, className }: { paso: PasoDeLosGiros; className?: string }) {
   const tr = useTr();
   const indiceActual = PASOS_DE_LOS_GIROS.findIndex((p) => p.id === paso);
+  /* A 390 el riel no cabe: se desliza solo hasta el paso actual, para que siempre se vea dónde estás. */
+  const riel = useRef<HTMLOListElement>(null);
+  useEffect(() => {
+    const ol = riel.current;
+    const actual = ol?.querySelector<HTMLElement>('[aria-current="step"]');
+    if (!ol || !actual || ol.scrollWidth <= ol.clientWidth) return;
+    ol.scrollLeft = Math.max(0, actual.offsetLeft - (ol.clientWidth - actual.offsetWidth) / 2);
+  }, [paso]);
   return (
     <nav aria-label={tr('Pasos del giro a propietarios')} className={cn('min-w-0', className)} data-testid="pasos-de-los-giros">
-      <ol className="-mx-1 flex min-w-0 items-stretch gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <ol
+        ref={riel}
+        className="relative -mx-1 flex min-w-0 items-stretch gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {PASOS_DE_LOS_GIROS.map((p, i) => {
           const actual = p.id === paso;
           const hecho = indiceActual > i;
@@ -77,7 +89,8 @@ export function PasosDeLosGiros({ paso, className }: { paso: PasoDeLosGiros; cla
                 aria-current={actual ? 'step' : undefined}
                 data-testid={`paso-de-los-giros-${p.id}`}
                 className={cn(
-                  'inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-3 text-body-sm transition-colors',
+                  // `relative`: el «(paso actual)» oculto no se escapa del riel (estiraba la página a 390).
+                  'relative inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-3 text-body-sm transition-colors',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--menu-activa-tinta)]',
                   actual
                     ? 'bg-[color:var(--menu-activa)] font-medium text-[color:var(--menu-activa-tinta)]'

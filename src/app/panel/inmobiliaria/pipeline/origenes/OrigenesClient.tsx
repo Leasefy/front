@@ -58,6 +58,7 @@ import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 /** El primer día del mes en curso, en `YYYY-MM-DD`. */
 function primeroDelMes(): string {
@@ -209,19 +210,26 @@ export function OrigenesClient() {
               {/* La lectura, dicha en palabras y ANTES de la tabla (glow up 21-10):
                   la conclusión es lo que se vino a buscar; la tabla la respalda. */}
               {mejor || peor ? (
-                <div className="mb-4 space-y-1 rounded-lg border border-border bg-surface p-4 text-sm text-fg-muted" data-testid="lectura">
+                // Revisora r22 (#3): la lectura en renglones con su punto, sin caja con borde dentro de la tarjeta.
+                <div className="mb-4 space-y-1 text-sm text-fg-muted" data-testid="lectura">
                   {mejor ? (
-                    <p>
+                    <p className="flex items-baseline gap-2">
+                      <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-success" aria-hidden="true" />
+                      <span>
                       Lo que más produjo: <strong>{mejor.nombre}</strong>, con{' '}
                       {mejor.cerrados} arriendo{mejor.cerrados === 1 ? '' : 's'}{' '}
                       de {mejor.leads} {mejor.leads === 1 ? 'interesado' : 'interesados'}.
+                      </span>
                     </p>
                   ) : null}
                   {peor ? (
-                    <p>
+                    <p className="flex items-baseline gap-2">
+                      <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-warning" aria-hidden="true" />
+                      <span>
                       <strong>{peor.nombre}</strong> trajo {peor.leads} {peor.leads === 1 ? 'interesado' : 'interesados'}{' '}
                       y no cerró ninguno en este
                       rango. Míralo antes de renovar esa cuenta.
+                      </span>
                     </p>
                   ) : null}
                 </div>
@@ -229,79 +237,61 @@ export function OrigenesClient() {
               {esCelular ? (
                 <PortalesEnTarjetas renglones={renglones} />
               ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm" data-testid="tabla-por-origen">
-                  <thead>
-                    <tr className="text-muted-foreground border-b text-left">
-                      <th className="py-2 pr-4 font-medium">Origen</th>
-                      {/* 🔴 «Cerrados» primero: es la columna que decide. */}
-                      <th className="py-2 pr-4 text-right font-medium">
-                        Arriendos cerrados
-                      </th>
-                      <th className="py-2 pr-4 text-right font-medium">Interesados</th>
-                      <th className="py-2 pr-4 text-right font-medium">
-                        Conversión
-                      </th>
-                      <th className="py-2 pr-4 text-right font-medium">Abiertos</th>
-                      <th className="py-2 text-right font-medium">Perdidos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {renglones.map((r) => (
-                      <tr
-                        key={r.origen}
-                        className="border-b last:border-0"
-                        data-testid={`fila-${r.origen}`}
-                      >
-                        {/* Ronda 21: un portal sin interesados sale en CERO (decisión), pero atenuado; y en
-                            vez de «0 %», la conversión dice «sin interesados» (un 0 % sin nadie no es un dato). */}
-                        <td className={cn('py-2 pr-4', r.leads === 0 && 'text-fg-muted')}>{r.nombre}</td>
-                        <td className={cn('py-2 pr-4 text-right font-mono tabular-nums', r.leads === 0 ? 'text-fg-subtle' : 'font-semibold')}>
-                          {r.cerrados}
-                        </td>
-                        <td className={cn('py-2 pr-4 text-right font-mono tabular-nums', r.leads === 0 && 'text-fg-subtle')}>
-                          {r.leads}
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {r.leads === 0 ? (
-                            <span className="text-caption text-fg-subtle">sin interesados</span>
-                          ) : (
-                            <span className="font-mono">{r.conversion} %</span>
-                          )}
-                        </td>
-                        <td className={cn('py-2 pr-4 text-right font-mono tabular-nums', r.leads === 0 && 'text-fg-subtle')}>
-                          {r.abiertos}
-                        </td>
-                        <td className={cn('py-2 text-right font-mono tabular-nums', r.leads === 0 && 'text-fg-subtle')}>
-                          {r.perdidos}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  {totales ? (
-                    <tfoot>
-                      <tr className="font-medium" data-testid="fila-totales">
-                        <td className="py-2 pr-4">Total</td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {totales.cerrados}
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {totales.leads}
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {totales.conversion} %
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {totales.abiertos}
-                        </td>
-                        <td className="py-2 text-right tabular-nums">
-                          {totales.perdidos}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  ) : null}
-                </table>
-              </div>
+              // Revisora r22 (Orígenes #2): el `Table` de Cadence (cabeceras en mono MAYÚSCULA, como todas) y el
+              // total también en mono, en vez de un <table> hecho a mano.
+              <Table data-testid="tabla-por-origen">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Origen</TableHead>
+                    {/* 🔴 «Cerrados» primero: es la columna que decide. */}
+                    <TableHead className="text-right">Arriendos cerrados</TableHead>
+                    <TableHead className="text-right">Interesados</TableHead>
+                    <TableHead className="text-right">Conversión</TableHead>
+                    <TableHead className="text-right">Abiertos</TableHead>
+                    <TableHead className="text-right">Perdidos</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {renglones.map((r) => (
+                    <TableRow key={r.origen} data-testid={`fila-${r.origen}`}>
+                      {/* Ronda 21: un portal sin interesados sale en CERO (decisión), pero atenuado; y en
+                          vez de «0 %», la conversión dice «sin interesados» (un 0 % sin nadie no es un dato). */}
+                      <TableCell className={cn(r.leads === 0 && 'text-fg-muted')}>{r.nombre}</TableCell>
+                      <TableCell className={cn('text-right font-mono tabular-nums', r.leads === 0 ? 'text-fg-subtle' : 'font-medium text-fg')}>
+                        {r.cerrados}
+                      </TableCell>
+                      <TableCell className={cn('text-right font-mono tabular-nums', r.leads === 0 && 'text-fg-subtle')}>
+                        {r.leads}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {r.leads === 0 ? (
+                          <span className="text-caption text-fg-subtle">sin interesados</span>
+                        ) : (
+                          <span className="font-mono">{r.conversion} %</span>
+                        )}
+                      </TableCell>
+                      <TableCell className={cn('text-right font-mono tabular-nums', r.leads === 0 && 'text-fg-subtle')}>
+                        {r.abiertos}
+                      </TableCell>
+                      <TableCell className={cn('text-right font-mono tabular-nums', r.leads === 0 && 'text-fg-subtle')}>
+                        {r.perdidos}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                {totales ? (
+                  <TableFooter>
+                    <TableRow data-testid="fila-totales">
+                      <TableCell className="font-medium">Total</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums font-medium">{totales.cerrados}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{totales.leads}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{totales.conversion} %</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{totales.abiertos}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{totales.perdidos}</TableCell>
+                    </TableRow>
+                  </TableFooter>
+                ) : null}
+              </Table>
               )}
 
             </EstadoDeDatos>
@@ -400,9 +390,10 @@ function PortalesEnTarjetas({ renglones }: { renglones: readonly RenglonDeOrigen
   const conGente = renglones.filter((r) => r.leads > 0)
   const enCero = renglones.filter((r) => r.leads === 0)
   return (
-    <div className="space-y-3" data-testid="portales-en-tarjetas">
+    // Revisora r22 (#3): sin cajas con borde dentro de la tarjeta: cada portal separado por una línea.
+    <div className="divide-y divide-border-faint" data-testid="portales-en-tarjetas">
       {conGente.map((r) => (
-        <div key={r.origen} className="rounded-lg border border-border p-3" data-testid={`tarjeta-${r.origen}`}>
+        <div key={r.origen} className="py-3 first:pt-0" data-testid={`tarjeta-${r.origen}`}>
           <p className="font-medium text-fg">{r.nombre}</p>
           <dl className="mt-2 grid grid-cols-3 gap-2 text-body-sm">
             <div>

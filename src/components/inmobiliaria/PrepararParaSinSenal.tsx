@@ -112,13 +112,13 @@ export function PrepararParaSinSenal({
       )}
 
       {ultimaPreparacion === true && !preparando && (
-        <p className="flex basis-full items-center gap-1 text-xs text-success">
+        <p className="flex basis-full items-center gap-1 text-caption text-success">
           <CheckCircle className="w-4 h-4 flex-shrink-0" />
           {t('inmobiliaria.sinSenal.listo')}
         </p>
       )}
       {ultimaPreparacion === false && !preparando && (
-        <p className="flex basis-full items-start gap-1 text-xs text-warning">
+        <p className="flex basis-full items-start gap-1 text-caption text-warning">
           <WarningCircle className="w-4 h-4 flex-shrink-0 mt-px" />
           {t('inmobiliaria.sinSenal.noSePudo')}
         </p>

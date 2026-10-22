@@ -565,7 +565,7 @@ export function RenovacionesTable({
                     <div className="flex flex-col items-end">
                       <span className="text-foreground">{formatCurrency(propuesto)}</span>
                       {incremento ? (
-                        <span className="inline-flex items-center gap-1 font-sans text-xs text-success">
+                        <span className="inline-flex items-center gap-1 font-sans text-caption text-success">
                           <TrendUp className="h-3 w-3" />
                           {Number(incremento) >= 0 ? '+' : ''}
                           {incremento}%
@@ -580,7 +580,7 @@ export function RenovacionesTable({
                 <TableCell className="whitespace-nowrap px-5 py-4 max-md:order-2 max-md:block max-md:p-0 max-md:text-right">
                   <span
                     className={cn(
-                      'inline-flex rounded-full px-2.5 py-1 text-xs font-medium',
+                      'inline-flex rounded-full px-2.5 py-1 text-caption font-medium',
                       getRenovacionStatusColor(item.status),
                     )}
                   >

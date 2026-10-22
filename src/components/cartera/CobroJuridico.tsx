@@ -617,7 +617,7 @@ export function CobroJuridico() {
           </p>
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <label className="text-sm">
-              <span className="block text-xs text-fg-muted">Por defecto, los paga el inquilino</span>
+              <span className="block text-caption text-fg-muted">Por defecto, los paga el inquilino</span>
               <select
                 className="mt-1 rounded-md border border-border bg-surface p-2 text-sm"
                 value={config?.pactaHonorarios === null || config?.pactaHonorarios === undefined ? '' : String(config.pactaHonorarios)}
@@ -632,7 +632,7 @@ export function CobroJuridico() {
             </label>
             <div>
               <label className="text-sm" htmlFor="honorarios-pct">
-                <span className="block text-xs text-fg-muted">% de la deuda al pasar</span>
+                <span className="block text-caption text-fg-muted">% de la deuda al pasar</span>
                 <input
                   id="honorarios-pct"
                   className="mt-1 w-28 rounded-md border border-border bg-surface p-2 text-sm"
@@ -660,7 +660,7 @@ export function CobroJuridico() {
             </div>
             <div>
               <label className="text-sm" htmlFor="honorarios-tope">
-                <span className="block text-xs text-fg-muted">Tope por caso (pesos)</span>
+                <span className="block text-caption text-fg-muted">Tope por caso (pesos)</span>
                 <input
                   id="honorarios-tope"
                   className="mt-1 w-40 rounded-md border border-border bg-surface p-2 text-sm"

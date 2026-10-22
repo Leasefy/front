@@ -150,6 +150,9 @@ function Modal({
  * Propietarios List Page
  * Main CRM view for managing property owners
  */
+/** Con separador de miles: «1.751», como en las pestañas (ronda 12). */
+const MILES = new Intl.NumberFormat('es-CO');
+
 function PropietariosContent() {
   const { t } = useI18n();
   const router = useRouter();
@@ -700,12 +703,12 @@ function PropietariosContent() {
           >
             <KpiCard
               label={t('inmobiliaria.propietarios.title')}
-              value={valorDeTile(String(stats.totalPropietarios))}
+              value={valorDeTile(MILES.format(stats.totalPropietarios))}
               icon={<Users />}
             />
             <KpiCard
               label={t('inmobiliaria.propietarios.properties')}
-              value={valorDeTile(String(stats.totalProperties))}
+              value={valorDeTile(MILES.format(stats.totalProperties))}
               icon={<Buildings />}
             />
             <KpiCard
@@ -788,7 +791,7 @@ function PropietariosContent() {
           {/* El mismo «0» que los tiles, un renglón más abajo: sin dato, no se dice. */}
           {!kpiSinDato && (
             <span className="text-sm text-muted-foreground tabular-nums">
-              <AnimatedNumber value={paginationData.totalItems} format={(n) => String(Math.round(n))} />{' '}
+              <AnimatedNumber value={paginationData.totalItems} format={(n) => MILES.format(Math.round(n))} />{' '}
               {paginationData.totalItems === 1
                 ? t('inmobiliaria.propietarios.propietarioUno')
                 : t('inmobiliaria.propietarios.title').toLowerCase()}

@@ -133,6 +133,9 @@ function falloQueSeCalla(error: unknown): boolean {
   return !(error instanceof TypeError);
 }
 
+/** Con separador de miles: «1.809» (ronda 12). */
+const MILES = new Intl.NumberFormat('es-CO');
+
 export function InvitacionesPendientes({ version = 0 }: {
   /**
    * I-23: sube cuando la pantalla sabe que cambió la lista (se creó un
@@ -370,10 +373,10 @@ export function InvitacionesPendientes({ version = 0 }: {
           {sinLlegar === 0
             ? vencidas === 1
               ? 'A 1 inquilino se le venció la invitación al portal'
-              : `A ${vencidas} inquilinos se les venció la invitación al portal`
+              : `A ${MILES.format(vencidas)} inquilinos se les venció la invitación al portal`
             : sinLlegar === 1
               ? 'A 1 inquilino no le ha llegado su invitación al portal'
-              : `A ${sinLlegar} inquilinos no les ha llegado su invitación al portal`}
+              : `A ${MILES.format(sinLlegar)} inquilinos no les ha llegado su invitación al portal`}
           .
         </span>
         {sinLlegar > 0 && vencidas > 0 ? (
@@ -533,7 +536,7 @@ export function InvitacionesPendientes({ version = 0 }: {
             data-testid="enviar-todas-las-invitaciones"
           >
             <PaperPlaneTilt className="h-4 w-4" weight="bold" aria-hidden="true" />
-            {mandando ? 'Enviando…' : `Enviar a todos (${sinLlegar})`}
+            {mandando ? 'Enviando…' : `Enviar a todos (${MILES.format(sinLlegar)})`}
           </Button>
         </CajonPie>
       </Cajon>

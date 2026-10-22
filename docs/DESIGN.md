@@ -1596,6 +1596,45 @@ toca primero? 2) ¿la acción principal está arriba a la derecha y es la única
 qué? 4) al terminar, ¿se confirma el resultado (aviso, resumen) y se ofrece lo siguiente? 5) ¿al volver mañana, la pantalla
 muestra lo pendiente primero? Si algún punto falla, la pantalla no está lista.
 
+### 25.1 La vara del 9,5 (Nico, 21-10-2026: «mínimo 9,5 en cada pantalla… y todos los casos de uso de cada sección»)
+
+El puntaje NO es a ojo: cada principio se mide con su lista de chequeo y cada punto lleva evidencia (captura a 390 y
+1440, una prueba o la línea de código). Puntaje del principio = 10 × cumplidos / aplicables; el de la pantalla, el
+promedio. **9,5 = a lo sumo un punto fallado en toda la pantalla, y ningún bloqueante.**
+
+**Bloqueantes** (con uno solo, la pantalla no pasa de 7): un botón que no hace nada · un estado sin salida (carga, vacío o
+fallo sin «Volver») · algo que se corre de lado a 390 · un código, id, slug o inglés a la vista · un dato inventado.
+
+| # | Principio | La pantalla cumple si… |
+|---|-----------|------------------------|
+| 1a | Estado | mientras carga hay un esqueleto con la forma de lo que llega (nunca la tabla vacía, ceros ni «0 de 0») |
+| 1b | Estado | toda acción que tarda dice que está en curso y no se puede disparar dos veces |
+| 1c | Estado | al terminar, un aviso dice QUÉ pasó (con «Deshacer» si se puede) y ofrece lo siguiente |
+| 1d | Estado | el estado de cada registro se lee en palabras, no sólo por color |
+| 2a | Mundo real | palabras de la inmobiliaria; plata en COP, cifras en mono, fechas legibles en español |
+| 3a | Control | toda sub-pantalla tiene la vuelta arriba (`BackButton`), también en carga, vacío y fallo |
+| 3b | Control | cajón y modal cierran con Esc y ✕; un formulario a medias no se pierde sin avisar |
+| 3c | Control | lo destructivo pide confirmar o se puede deshacer |
+| 4a | Consistencia | `EncabezadoDePantalla` + contenedor `p-6 lg:p-8`; UNA acción principal, arriba a la derecha |
+| 4b | Consistencia | tabla con su barra adentro, filtros a la vista y tarjetas bajo 768 px |
+| 4c | Consistencia | piezas de Cadence (Avatar, EmptyState, FalloDeCarga, Badge…), nada armado a mano |
+| 5a | Prevenir | se valida en el campo antes de enviar, con los topes del back |
+| 5b | Prevenir | un botón apagado dice qué falta; lo que no se puede (permiso, estado) no se ofrece |
+| 6a | Reconocer | lo pendiente primero: orden, pestaña o filtro por defecto |
+| 6b | Reconocer | el dato para decidir está en la misma pantalla; filtros y pestaña quedan en la URL |
+| 7a | Flexibilidad | acciones masivas donde se hace lo mismo a muchos; buscar y exportar donde hay listas |
+| 8a | Minimalismo | cada bloque se gana su lugar; lo de consulta, plegado o en su pestaña; nada se dice dos veces |
+| 8b | Minimalismo | a 390 lo importante cabe en la primera pantalla |
+| 9a | Errores | un fallo de lectura usa `FalloDeCarga` (qué pasó, reintentar, salida) |
+| 9b | Errores | un error de acción va bajo su campo, en palabras, con qué hacer |
+| 9c | Errores | un vacío dice por qué está vacío y qué hacer, con la acción |
+| 10a | Ayuda | una línea dice para qué es la pantalla; «¿Cómo funciona?» donde la tarea es nueva |
+
+**Casos de uso**: cada sección lista sus trabajos (p. ej. Contratos: crear, buscar, renovar, terminar, cambiar de
+inquilino, incremento, firmar, invitar al portal, documentos) y cada uno se recorre con los 5 puntos del flujo de arriba,
+en 390 y 1440. Un caso de uso pasa si los 5 puntos pasan. El resultado (antes/después, puntaje por principio y por caso
+de uso) va a la página de revisión del glow up.
+
 ## 22. When in Doubt
 
 1. Find a similar component already in the codebase — copy its pattern.

@@ -15,7 +15,8 @@ gestionando». Reglas: SÓLO front (nunca back ni reglas de negocio), «NO ME CR
 
 ## 1. Antes de tocar nada
 1. Escribe el trabajo en una línea: «Conciliar el extracto del banco de octubre».
-2. Captura «antes» (1440 y 390) y puntúa los 10 de Nielsen (0–10 c/u) con las preguntas de `docs/DESIGN.md` §25.
+2. Captura «antes» (1440 y 390) y puntúa los 10 de Nielsen con la LISTA DE CHEQUEO de `docs/DESIGN.md` §25.1 (cada punto
+   con evidencia; nada a ojo). La vara es **9,5 mínimo** por pantalla y por caso de uso (Nico, 21-10-2026).
 3. Haz la lista de lo que la pantalla muestra y clasifícalo: **para hacer** (acciones, lo pendiente), **para decidir**
    (cifras que cambian la decisión) y **para consultar** (historial, términos, fuentes).
 
@@ -38,6 +39,7 @@ más común y quita los que sobran (Tesler: la complejidad la absorbe el sistema
 ver/editar, modal sólo para decidir, aviso con «Deshacer», cifras en mono, títulos livianos. Ver skill `leasefy-diseno`.
 
 ## 5. Al terminar
+- Bajo 9,5 (o con un bloqueante de §25.1) la pantalla NO está terminada: se sigue.
 - Captura «después» (1440 y 390, claro y oscuro) y puntúa otra vez. Guarda antes/después y los dos puntajes en la página
   de revisión del glow up (https://claude.ai/artifact/GtyaVshi1GoSciCUw1DWzo).
 - Pruebas del módulo (`vitest run --testTimeout=60000 <carpetas>`), tsc acotado, `revisar-perdidas.sh`, commit local.

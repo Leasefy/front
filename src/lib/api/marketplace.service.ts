@@ -5,6 +5,9 @@
  */
 
 import { apiClient } from './client';
+import { mapBackendProperty } from './properties.mapper';
+import type { BackendProperty } from './properties.types';
+import type { Property } from '@/lib/types/property';
 
 export interface ResumenDeLaRecomendacion {
   votos: number;
@@ -83,6 +86,26 @@ export interface PreguntaPendiente {
 
 const BASE = '/marketplace';
 
+/** Un turno anterior del chat del perfil (lo guarda la pestaña, no el back). */
+export interface TurnoDelChat {
+  rol: 'persona' | 'asistente';
+  texto: string;
+  /** Los inmuebles que mostró el asistente en ese turno. */
+  inmuebles?: string[];
+}
+
+/** «Pregúntale a la inmobiliaria» con IA (21-10-2026). */
+export interface RespuestaDelChat {
+  respuesta: string;
+  inmuebles: Property[];
+  sugerencias: string[];
+  /** Lo que sigue es hablar con la inmobiliaria (falta un dato, visitar, negociar…). */
+  contactar: boolean;
+}
+
+/** El 503 del chat sin IA: el front vuelve al buscador de siempre. */
+export const CODIGO_CHAT_SIN_IA = 'CHAT_SIN_IA';
+
 /** La dirección de su página: por el nombre corto, o por el id si no tiene. */
 export function paginaDe(i: { slug: string | null; id: string }): string {
   return `/i/${i.slug ?? i.id}`;
@@ -119,5 +142,16 @@ export const marketplaceApi = {
   },
   votar(dto: { contractId: string; recomienda: boolean; comentario?: string | null }): Promise<{ ok: true }> {
     return apiClient.post(`${BASE}/recomendaciones`, dto);
+  },
+  /** Le pregunta al chat del perfil (IA con sus inmuebles publicados y su perfil). */
+  async preguntarAlChat(
+    nombre: string,
+    dto: { pregunta: string; historial?: TurnoDelChat[] },
+  ): Promise<RespuestaDelChat> {
+    const r = await apiClient.post<Omit<RespuestaDelChat, 'inmuebles'> & { inmuebles: BackendProperty[] }>(
+      `${BASE}/inmobiliarias/${encodeURIComponent(nombre)}/chat`,
+      dto,
+    );
+    return { ...r, inmuebles: (r.inmuebles ?? []).map(mapBackendProperty) };
   },
 };

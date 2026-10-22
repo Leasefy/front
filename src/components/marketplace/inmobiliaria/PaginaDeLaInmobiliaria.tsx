@@ -312,11 +312,15 @@ function Contenido({ pagina }: { pagina: Pagina }) {
                 <h2 className="font-heading text-[20px] font-semibold text-fg">Pregúntale a {pagina.nombre}</h2>
                 <p className="text-[13.5px] text-fg-muted">
                   Conoce sus <span className="font-mono tabular-nums">{numero(pagina.inmuebles)}</span>{' '}
-                  {pagina.inmuebles === 1 ? 'inmueble' : 'inmuebles'} y responde a cualquier hora. Nunca se inventa uno.
+                  {pagina.inmuebles === 1 ? 'inmueble' : 'inmuebles'} y responde lo que le preguntes, a cualquier hora. Nunca se inventa uno.
                 </p>
               </div>
             </div>
-            <ChatDeLaInmobiliaria inmobiliaria={{ id: pagina.id, nombre: pagina.nombre }} sugerencias={sugerencias} />
+            <ChatDeLaInmobiliaria
+              inmobiliaria={{ id: pagina.id, nombre: pagina.nombre }}
+              sugerencias={sugerencias}
+              whatsapp={pagina.whatsapp}
+            />
           </section>
           {ubicados.length > 0 && (
             <section

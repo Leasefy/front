@@ -22,7 +22,7 @@ import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { portadaDelInmueble } from '@/lib/inmuebles/titulo-de-la-ficha';
 import { CrossFade } from '@leasefy/cadence';
-import { CaretLeft, Buildings, CalendarPlus, WifiSlash, Prohibit } from '@phosphor-icons/react';
+import { CaretLeft, Buildings, CalendarPlus, WifiSlash, Prohibit, HandCoins } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { motivosDelError } from '@/lib/errores/descripcion-del-error';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -74,6 +74,8 @@ import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEdit
 // Va al lado del inventario porque es el mismo tipo de dato: lo que el mandato
 // necesita para poder operar.
 import { MandatoDelInmueble } from '@/components/inmobiliaria/captacion/MandatoDelInmueble';
+import { VentaDelInmueble } from '@/components/inmobiliaria/captacion/VentaDelInmueble';
+import { TarjetaDeLaFicha } from '@/components/pantalla/TarjetaDeLaFicha';
 import { ModalidadDelMandato } from '@/components/inmobiliaria/mandato/ModalidadDelMandato';
 import {
   RetiroDeLaAdministracionDialog,
@@ -901,6 +903,12 @@ function ConsignacionDetailContent() {
                 <div id="documentos" className="scroll-mt-20">
                   <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
                 </div>
+                {/* 🔴 C-10 (Nico, 02-10-2026): «Registrar la venta» y la comisión de venta del
+                    mandato. Ronda 12 de la revisión: al FINAL de la pestaña —es una acción de una
+                    vez en la vida del mandato—, no pegada a los papeles. */}
+                <TarjetaDeLaFicha title="La venta del inmueble" icon={<HandCoins className="h-4 w-4" />}>
+                  <VentaDelInmueble consignacionId={consignacion.id} sinTitulo />
+                </TarjetaDeLaFicha>
               </>
             ),
           },

@@ -33,7 +33,7 @@ import { useState } from 'react'
 import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { toast } from '@/components/ui/toast'
 import { errorEnCristiano, motivoEnCristiano } from '@/lib/errores/en-cristiano'
-import { FileText, HandCoins, Lock } from '@phosphor-icons/react'
+import { FileText, Lock } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { Badge, Button } from '@/components/ui'
@@ -44,7 +44,6 @@ import { SubirPapelDelMandato } from './SubirPapelDelMandato'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { useCrm } from '@/lib/hooks/use-crm'
 
-import { VentaDelInmueble } from './VentaDelInmueble'
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 import { diaLegible } from '@/lib/mandato/textos'
 
@@ -470,6 +469,8 @@ export function MandatoDelInmueble({
                 <Puerta
                   titulo="publicar"
                   cuando="Antes de publicar"
+                  // Ronda 12: con giros, las dos puertas cuentan igual («2 papeles»).
+                  soloElNumero={yaHuboGiros}
                   completo={documentos.datos.paraPublicar.completo}
                   falta={documentos.datos.paraPublicar.falta}
                   onSubir={puedeEditar ? setPapelASubir : undefined}
@@ -537,13 +538,6 @@ export function MandatoDelInmueble({
           }}
         />
       </div>
-      </SectionCard>
-
-      {/* 🔴 C-10 (Nico, 02-10-2026): «Registrar la venta» y la comisión de venta del
-          mandato, viva o anulada con su motivo. Ronda 11 de la revisión: en su propia
-          tarjeta —la venta no es un papel ni una firma—, no dentro de «Papeles y firma». */}
-      <SectionCard title="La venta del inmueble" icon={<HandCoins className="h-4 w-4" />}>
-        <VentaDelInmueble consignacionId={consignacionId} sinTitulo />
       </SectionCard>
     </div>
   )

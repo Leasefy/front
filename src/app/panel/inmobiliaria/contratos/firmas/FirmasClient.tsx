@@ -29,7 +29,7 @@ import Link from 'next/link'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Signature } from '@phosphor-icons/react'
-import { Cifra, CrossFade, FranjaDeCifras, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
@@ -107,7 +107,7 @@ export function FirmasClient() {
       <EncabezadoDePantalla
         seccion="Contratos"
         titulo="Invitaciones a firmar"
-        descripcion="Los contratos que se mandaron a firmar y nadie ha firmado: primero lo que te toca hacer, después lo que va a tiempo."
+        descripcion="Los contratos mandados a firmar que nadie ha firmado: primero lo que te toca."
         ayuda={
           <ParaEntenderMas
             etiqueta="¿Cómo funciona?"
@@ -163,40 +163,35 @@ export function FirmasClient() {
             <EmptyState
               icon={Signature}
               title="No hay nadie pendiente de firmar"
-              description="Ningún contrato está esperando firma en este momento, así que no hay nada que hacer acá. Cuando mandes uno a firmar desde su ficha, aparece en esta lista con los días que le quedan."
+              description="Cuando mandes un contrato a firmar desde su ficha, aparece aquí con los días que le quedan."
+              action={{ label: 'Ver contratos', href: '/panel/inmobiliaria/contratos' }}
             />
           }
         >
           <div className="space-y-6">
-            <FranjaDeCifras fila="md" aria-label="Cómo van las invitaciones" data-testid="franja-firmas">
-              <Cifra
-                etiqueta="Se vencieron"
-                valor={vencidas.length}
-                detalle={vencidas.length > 0 ? 'Te toca decidir' : 'Ninguna'}
-                tono={vencidas.length > 0 ? 'peligro' : undefined}
-                data-testid="cifra-vencidas"
-              />
-              <Cifra
-                etiqueta="Recordatorios"
-                valor={recordatorios.length}
-                detalle={recordatorios.length > 0 ? 'Por mandar' : 'Ninguno pendiente'}
-                tono={recordatorios.length > 0 ? 'aviso' : undefined}
-                data-testid="cifra-recordatorios"
-              />
-              <Cifra
-                etiqueta="Se pasó el plazo"
-                valor={porVencer.length}
-                detalle="Las vence el Piloto"
-                data-testid="cifra-por-vencer"
-              />
-              <Cifra
-                etiqueta="A tiempo"
-                valor={aTiempo.length}
-                detalle="No tienes que hacer nada"
-                tono={aTiempo.length > 0 ? 'exito' : undefined}
-                data-testid="cifra-a-tiempo"
-              />
-            </FranjaDeCifras>
+            {/*
+              Revisión de Operación (21-10): una línea con lo que importa —cuántas te tocan y
+              cuántas corren solas— en vez de cuatro cifras grandes que casi siempre están en
+              cero. Los grupos de abajo dicen cada estado con su «qué hacer».
+            */}
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm" data-testid="franja-firmas">
+              {(() => {
+                const teTocan = vencidas.length + recordatorios.length;
+                const corren = porVencer.length + aTiempo.length;
+                return (
+                  <>
+                    <span className={teTocan > 0 ? 'inline-flex items-center gap-2 font-medium text-fg' : 'text-fg-muted'} data-testid="cifra-vencidas">
+                      {teTocan > 0 ? <span className="h-1.5 w-1.5 rounded-full bg-danger" aria-hidden="true" /> : null}
+                      <span className="font-mono tabular-nums">{teTocan}</span> {teTocan === 1 ? 'te toca' : 'te tocan'}
+                    </span>
+                    <span className="text-fg-subtle" aria-hidden="true">·</span>
+                    <span className="text-fg-muted" data-testid="cifra-a-tiempo">
+                      <span className="font-mono tabular-nums">{corren}</span> {corren === 1 ? 'corre sola' : 'corren solas'} (el Piloto las vence a tiempo)
+                    </span>
+                  </>
+                );
+              })()}
+            </p>
 
             {vencidas.length > 0 ? (
               <Grupo

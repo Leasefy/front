@@ -119,6 +119,16 @@ function esDeOtraApp(url: URL): boolean {
   return ESQUEMAS_DEL_SISTEMA.includes(url.protocol) || HOSTS_DE_APPS.includes(url.hostname)
 }
 
+/**
+ * Cómo se presenta el navegador de la app. En el iPhone, «popover» sube como una
+ * hoja a pantalla completa; en el iPad sería un recuadro chico en el centro (el
+ * pago de Wompi no cabe), así que ahí va a pantalla completa. La app pide la
+ * versión móvil de la página, así que el iPad se reconoce por «iPad» en el user-agent.
+ */
+export function estiloDelNavegador(userAgent: string): 'popover' | 'fullscreen' {
+  return /\biPad\b/.test(userAgent) ? 'fullscreen' : 'popover'
+}
+
 /** Abre una dirección que no es de Leasefy: su app o el navegador seguro de la app. */
 export async function abrirFuera(direccion: string): Promise<void> {
   let url: URL
@@ -134,7 +144,11 @@ export async function abrirFuera(direccion: string): Promise<void> {
   }
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return
   try {
-    await llamarALaApp('Browser', 'open', { url: url.href, presentationStyle: 'popover', toolbarColor: '#ffffff' })
+    await llamarALaApp('Browser', 'open', {
+      url: url.href,
+      presentationStyle: estiloDelNavegador(navigator.userAgent),
+      toolbarColor: '#ffffff',
+    })
   } catch {
     window.location.href = url.href
   }

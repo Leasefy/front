@@ -37,7 +37,7 @@ export function EsqueletoDelPanel({ nombre }: EsqueletoDelPanelProps) {
   return (
     <div className="min-h-screen bg-plan-page" data-testid="esqueleto-del-panel">
       {/* Sidebar — la misma caja que `PlanSidebar` (oculto bajo `lg`). */}
-      <aside className="hidden border-r border-border bg-bg lg:fixed lg:inset-y-0 lg:flex lg:w-[240px] lg:flex-col">
+      <aside className="hidden border-r border-border bg-bg lg:fixed lg:inset-y-0 lg:flex lg:w-[240px] lg:flex-col lg:pt-[var(--area-segura-arriba)] lg:pb-[var(--area-segura-abajo)]">
         <div className="flex h-16 items-center gap-2.5 px-4">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary-soft font-heading text-body-sm font-medium text-primary">
             {inicial}

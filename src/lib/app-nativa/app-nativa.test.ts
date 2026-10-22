@@ -16,7 +16,7 @@ const supabase = vi.hoisted(() => ({
 vi.mock('@/lib/supabase/client', () => ({ getSupabase: () => ({ auth: supabase }) }))
 
 import { esLaApp, plataformaDeLaApp, plataformaPorElUserAgent } from './puente'
-import { instalarAbrirYDescargar, nombreDeArchivoSeguro } from './abrir-y-descargar'
+import { estiloDelNavegador, instalarAbrirYDescargar, nombreDeArchivoSeguro } from './abrir-y-descargar'
 import { entrarConAppleEnLaApp, entrarConGoogleEnLaApp, hayUnaEntradaConGoogleEnCurso, rutaDelRegresoDeLaApp } from './entrar'
 import { esTokenDeFcm, registrarAvisosEnLaApp } from './avisos'
 import { manejarBotonAtras, rutaInternaDeLeasefy } from './navegacion'
@@ -152,6 +152,16 @@ describe('descargas y enlaces', () => {
     await hasta(() => app.llamadas.some((l) => l.plugin === 'Browser'))
     expect(app.llamadas.find((l) => l.plugin === 'Browser')!.opciones.url).toBe('https://www.youtube.com/watch?v=1')
     quitar()
+  })
+
+  it('en el iPad el navegador de la app va a pantalla completa (no un recuadro chico); en el iPhone, como hoja', () => {
+    const ipad =
+      'Mozilla/5.0 (iPad; CPU OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 LeasefyApp/1'
+    const iphone =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 LeasefyApp/1'
+    expect(estiloDelNavegador(ipad)).toBe('fullscreen')
+    expect(estiloDelNavegador(iphone)).toBe('popover')
+    expect(estiloDelNavegador('Mozilla/5.0 (Linux; Android 16; Pixel 10) LeasefyApp/1')).toBe('popover')
   })
 
   it('un enlace interno sin target sigue su camino normal', () => {

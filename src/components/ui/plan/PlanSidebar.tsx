@@ -1425,6 +1425,9 @@ export function PlanSidebar({
         ref={asideRef}
         className={cn(
           'hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0',
+          // En la app de iPad (escritorio desde lg) la barra empieza debajo de la
+          // hora y termina encima de la barra de gestos; en el navegador valen 0.
+          'lg:pt-[var(--area-segura-arriba)] lg:pb-[var(--area-segura-abajo)]',
           'bg-bg border-r border-border',
           // Plegar la barra cambia su ancho (el contenido se reacomoda): se
           // nombra la propiedad en vez de `transition-all`.

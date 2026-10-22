@@ -2475,7 +2475,7 @@
     },
     "propietarios": {
       "title": "Propietarios",
-      "subtitle": "Gestiona los propietarios de tu portafolio",
+      "subtitle": "A quién le giras, cuánto y qué le falta.",
       "search": "Buscar propietario...",
       "addOwner": "Nuevo propietario",
       "addOwnerIA": "Crear con IA",

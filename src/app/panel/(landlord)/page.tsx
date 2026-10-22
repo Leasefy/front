@@ -703,13 +703,12 @@ function PanelDelPropietarioIndependiente() {
                   <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-6">
                     {t('landlord.dashboard.publishFirstProperty')}
                   </p>
-                  <Link
-                    href="/publicar?from=panel"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-fg text-sm font-medium rounded-full hover:opacity-90 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    {t('landlord.dashboard.publishProperty')}
-                  </Link>
+                  <Button asChild hideArrow>
+                    <Link href="/publicar?from=panel">
+                      <Plus className="w-4 h-4" />
+                      {t('landlord.dashboard.publishProperty')}
+                    </Link>
+                  </Button>
                 </div>
               )}
               </CrossFade>
@@ -1021,12 +1020,9 @@ function UpcomingVisitsCard({ visits, entra }: { visits: Visit[]; entra: boolean
             >
               {t('landlord.dashboard.viewProperty')}
             </Link>
-            <Link
-              href="/panel/visitas"
-              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-primary text-primary-fg rounded-lg hover:opacity-90 transition-colors"
-            >
-              {t('landlord.dashboard.manageVisit')}
-            </Link>
+            <Button asChild hideArrow className="flex-1">
+              <Link href="/panel/visitas">{t('landlord.dashboard.manageVisit')}</Link>
+            </Button>
           </div>
         ) : undefined}
         width="sm"
@@ -1151,12 +1147,9 @@ function UpcomingEventsCard({ events, entra }: { events: DashboardUpcomingEvent[
         } : undefined}
         sections={sections}
         footerActions={selected?.href ? (
-          <Link
-            href={selected.href}
-            className="block w-full text-center text-sm font-medium px-4 py-2.5 bg-primary text-primary-fg rounded-lg hover:opacity-90 transition-colors"
-          >
-            {actionLabel}
-          </Link>
+          <Button asChild hideArrow className="w-full">
+            <Link href={selected.href}>{actionLabel}</Link>
+          </Button>
         ) : undefined}
         width="sm"
       />

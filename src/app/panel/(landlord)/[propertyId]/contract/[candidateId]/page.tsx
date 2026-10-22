@@ -656,12 +656,9 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                               </p>
                             </div>
                           </div>
-                          <Link
-                            href={`/panel/${propertyId}`}
-                            className="mt-4 w-full flex items-center justify-center px-4 py-2.5 bg-primary hover:bg-primary-hover text-primary-fg rounded-lg text-sm font-medium transition-colors"
-                          >
-                            Entendido, volver a la propiedad
-                          </Link>
+                          <Button asChild hideArrow className="mt-4 w-full">
+                            <Link href={`/panel/${propertyId}`}>Entendido, volver al inmueble</Link>
+                          </Button>
                         </div>
                       )}
 

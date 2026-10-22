@@ -294,4 +294,11 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Quién se postuló a tus inmuebles: ábrela para revisarla y decidir.': 'Who applied to your properties: open one to review it and decide.',
   'Inmueble sin título': 'Untitled property',
   'Mover a otra etapa': 'Move to another stage',
+  // 22-10 tarde: Rentabilidad y Listas restrictivas (UX)
+  "Qué deja cada inmueble: lo esperado, lo recaudado y el neto que le queda al propietario.": "What each property leaves: what was expected, what was collected and the net that goes to the owner.",
+  "Qué mide este reporte": "What this report measures",
+  "de los {esperado} esperados en {inmuebles} · {tasa}": "of the {esperado} expected across {inmuebles} · {tasa}",
+  "Pendiente, sin mora": "Pending, not overdue",
+  "En mora": "Overdue",
+  "Antes de firmarle a alguien, comprobar que no esté en las listas de sanciones de la OFAC, la ONU y la UE.": "Before signing with someone, check they are not on the OFAC, UN or EU sanctions lists.",
 }

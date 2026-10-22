@@ -126,6 +126,10 @@ vi.mock('@/components/ui/section-label', () => ({
   SectionLabel: ({ children }: { children?: React.ReactNode }) => React.createElement('p', null, children),
 }))
 
+vi.mock('@/components/ui/para-entender-mas', () => ({
+  ParaEntenderMas: ({ etiqueta }: { etiqueta?: string }) => React.createElement('button', { type: 'button' }, etiqueta),
+}))
+
 vi.mock('@/components/ui/pagination', () => ({
   TablePagination: () => React.createElement('div', { 'data-testid': 'pagination' }),
 }))
@@ -136,6 +140,9 @@ vi.mock('@leasefy/cadence', async (importOriginal) => ({
   // Las cifras en plata cuentan (movimiento ola 2): el real, que con las
   // animaciones apagadas escribe la cifra final de una.
   AnimatedNumber: (await importOriginal<typeof import('@leasefy/cadence')>()).AnimatedNumber,
+  // La cifra de arriba (`CifraHeroe`) anima su barra con el movimiento de Cadence.
+  motionDuration: (await importOriginal<typeof import('@leasefy/cadence')>()).motionDuration,
+  motionEase: (await importOriginal<typeof import('@leasefy/cadence')>()).motionEase,
   SegmentedControl: ({ options, value, onChange }: { options: Array<{ value: string; label: React.ReactNode }>; value: string; onChange: (v: string) => void }) =>
     React.createElement(
       'div',
@@ -289,16 +296,18 @@ const DOS = [
 ]
 
 describe('RentabilidadPage — totales y filas', () => {
-  it('pinta los seis totales con la plata formateada', async () => {
+  // GLOW UP 22-10 (UX, al nivel de Deuda del mes): las seis cifras pasaron a UNA respuesta —lo
+  // recaudado de lo esperado, con su barra— y cuatro en una línea. Los mismos montos.
+  it('pinta lo recaudado de lo esperado arriba y las cuatro cifras del período, con la plata formateada', async () => {
     conReporte(reporte(DOS))
     await renderPage()
 
-    const stats = Array.from(container.querySelectorAll('[data-testid="stat"]'))
-    expect(stats).toHaveLength(6)
-    expect(stats[0].textContent).toContain(formatCurrency(30_000_000))
-    expect(stats[1].textContent).toContain(formatCurrency(27_000_000))
-    expect(stats[3].textContent).toContain(formatCurrency(23_800_000))
-    expect(stats[4].textContent).toContain('91,5')
+    const heroe = container.querySelector('[data-testid="cifra-recaudado"]')!
+    expect(heroe.textContent).toContain(formatCurrency(27_000_000))
+    expect(heroe.textContent).toContain(formatCurrency(30_000_000))
+    expect(container.querySelector('[data-testid="cifra-neto"]')?.textContent).toContain(formatCurrency(23_800_000))
+    expect(container.querySelector('[data-testid="cifra-ocupacion"]')?.textContent).toContain('91,5')
+    expect(container.querySelectorAll('[data-testid="cifras-del-periodo"] > div')).toHaveLength(4)
   })
 
   it('pinta una fila por inmueble, con propietario y enlace a la ficha', async () => {

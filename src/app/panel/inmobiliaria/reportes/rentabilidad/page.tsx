@@ -25,7 +25,7 @@ import {
   Buildings,
   DownloadSimple,
 } from '@phosphor-icons/react';
-import { AnimatedNumber, SegmentedControl, Stat, StatStrip } from '@leasefy/cadence';
+import { AnimatedNumber, SegmentedControl } from '@leasefy/cadence';
 
 /**
  * Una cifra en plata que CUENTA cuando cambia (otro período, otra búsqueda); el
@@ -42,7 +42,10 @@ import { BASE_POR_DEFECTO, claveDelRotulo } from '@/lib/tasa-de-recaudo';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
+import { useTr } from '@/lib/i18n/use-tr';
 import {
   Table,
   TableHeader,
@@ -113,6 +116,7 @@ function Barra({ pct, className }: { pct: number; className?: string }) {
 
 function RentabilidadContent() {
   const { t, locale } = useI18n();
+  const tr = useTr();
   const router = useRouter();
 
   // Periodo: lo que la persona escribió y lo que se le pidió al back. Se
@@ -207,44 +211,47 @@ function RentabilidadContent() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Encabezado: la vuelta arriba a la izquierda, como en Reglas de mora. */}
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-1.5">
-          <Link
-            href="/panel/inmobiliaria/reportes"
-            className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            {t('inmobiliaria.reportes.rentabilidad.back')}
-          </Link>
-          <SectionLabel>{t('inmobiliaria.reportes.rentabilidad.eyebrow')}</SectionLabel>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.reportes.rentabilidad.title')}
-          </h1>
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-            {t('inmobiliaria.reportes.rentabilidad.description')}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button
-            variant="outline"
-            hideArrow
-            onClick={() => void bajarCsv()}
-            disabled={bajando || Boolean(errorDeRango)}
-            className="gap-2"
-            data-testid="descargar-csv"
-          >
-            <DownloadSimple className="h-4 w-4" aria-hidden="true" />
-            {bajando
-              ? t('inmobiliaria.reportes.rentabilidad.downloading')
-              : t('inmobiliaria.reportes.rentabilidad.download')}
-          </Button>
-        </div>
-      </header>
+      {/* GLOW UP 22-10 (UX, al nivel de Deuda del mes): la vuelta arriba; el encabezado común con una
+          línea de para qué sirve, la explicación larga en la ayuda y el CSV como secundaria. */}
+      <div className="space-y-3">
+        <Link
+          href="/panel/inmobiliaria/reportes"
+          className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          {t('inmobiliaria.reportes.rentabilidad.back')}
+        </Link>
+        <EncabezadoDePantalla
+          seccion={t('inmobiliaria.reportes.rentabilidad.eyebrow')}
+          titulo={t('inmobiliaria.reportes.rentabilidad.title')}
+          descripcion={tr('Qué deja cada inmueble: lo esperado, lo recaudado y el neto que le queda al propietario.')}
+          ayuda={
+            <ParaEntenderMas etiqueta={tr('Qué mide este reporte')} titulo={t('inmobiliaria.reportes.rentabilidad.title')}>
+              <p className="text-sm leading-relaxed text-fg-muted">{t('inmobiliaria.reportes.rentabilidad.description')}</p>
+            </ParaEntenderMas>
+          }
+          acciones={
+            <Button
+              size="sm"
+              variant="outline"
+              hideArrow
+              onClick={() => void bajarCsv()}
+              disabled={bajando || Boolean(errorDeRango)}
+              className="gap-2"
+              data-testid="descargar-csv"
+            >
+              <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+              {bajando
+                ? t('inmobiliaria.reportes.rentabilidad.downloading')
+                : t('inmobiliaria.reportes.rentabilidad.download')}
+            </Button>
+          }
+        />
+      </div>
 
       {/* Periodo */}
       <section
-        className="rounded-lg border border-border bg-card p-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"
+        className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"
         aria-labelledby="rentabilidad-periodo"
       >
         <div className="space-y-2">
@@ -337,82 +344,49 @@ function RentabilidadContent() {
           </div>
         }
       >
+        {/* GLOW UP 22-10 (UX): LA RESPUESTA arriba, como Deuda del mes —cuánto se recaudó de lo esperado,
+            con la barra de lo que entró, lo pendiente y lo que está en mora—, y debajo, en una línea, lo
+            que se reparte: la comisión, el neto a propietarios, la ocupación y lo perdido por vacancia.
+            Antes eran seis cifras del mismo peso. */}
         {totales && (
-          <StatStrip
-            className="flex-wrap rounded-lg border border-border bg-card px-4 [&>*]:basis-1/2 sm:[&>*]:basis-1/3 xl:[&>*]:basis-auto"
-            data-testid="totales-de-rentabilidad"
-          >
-            <Stat
-              label={t('inmobiliaria.reportes.rentabilidad.stats.expected')}
-              value={plataQueCuenta(totales.esperadoCop)}
-              delta={t('inmobiliaria.reportes.rentabilidad.stats.properties', { count: totales.inmuebles })}
-              compact
-            />
-            <Stat
-              label={t('inmobiliaria.reportes.rentabilidad.stats.collected')}
-              value={plataQueCuenta(totales.recaudadoCop)}
-              delta={t('inmobiliaria.reportes.rentabilidad.stats.collectionRate', {
-                pct: totales.tasaDeRecaudoPct.toLocaleString(locale === 'en' ? 'en-US' : 'es-CO', {
-                  maximumFractionDigits: 1,
+          <section className="space-y-4 rounded-lg border border-border bg-card p-5" data-testid="totales-de-rentabilidad">
+            <CifraHeroe
+              rotulo={t('inmobiliaria.reportes.rentabilidad.stats.collected')}
+              cifra={plataQueCuenta(totales.recaudadoCop)}
+              contexto={tr('de los {esperado} esperados en {inmuebles} · {tasa}', {
+                esperado: formatCurrency(totales.esperadoCop),
+                inmuebles: t('inmobiliaria.reportes.rentabilidad.stats.properties', { count: totales.inmuebles }),
+                tasa: t('inmobiliaria.reportes.rentabilidad.stats.collectionRate', {
+                  pct: totales.tasaDeRecaudoPct.toLocaleString(locale === 'en' ? 'en-US' : 'es-CO', { maximumFractionDigits: 1 }),
+                  rotulo: rotuloDeLaTasa,
                 }),
-                rotulo: rotuloDeLaTasa,
               })}
-              deltaDirection={totales.tasaDeRecaudoPct >= 95 ? 'up' : totales.enMoraCop > 0 ? 'down' : 'neutral'}
-              compact
+              total={totales.esperadoCop}
+              tramos={[
+                { clave: 'recaudado', etiqueta: t('inmobiliaria.reportes.rentabilidad.stats.collected'), monto: totales.recaudadoCop, tono: 'exito', cifra: formatCurrency(totales.recaudadoCop), siempre: true },
+                { clave: 'pendiente', etiqueta: tr('Pendiente, sin mora'), monto: Math.max(0, totales.pendienteCop - totales.enMoraCop), tono: 'neutro', cifra: formatCurrency(Math.max(0, totales.pendienteCop - totales.enMoraCop)) },
+                { clave: 'mora', etiqueta: tr('En mora'), monto: totales.enMoraCop, tono: 'critico', cifra: formatCurrency(totales.enMoraCop) },
+              ]}
+              tamano="mediana"
+              data-testid="cifra-recaudado"
             />
-            <Stat
-              label={t('inmobiliaria.reportes.rentabilidad.stats.commission')}
-              value={plataQueCuenta(totales.comisionCop)}
-              compact
-            />
-            {/* 🔴 Decisión de negocio (Nico, 2026-09-15), CAMBIABLE: un neto
-                negativo NO es plata a favor del propietario. Se dice con la
-                palabra «queda debiendo» y en rojo — nunca en verde, y nunca un
-                «−$340.000» pelado entre columnas alineadas, que se lee como un
-                número más. La regla vive en `lib/dinero/neto-del-propietario`. */}
-            {/* 🔴 21-09 · El pie «N con valor comercial» colgaba de ACÁ, del
-                neto al propietario, y no habla del neto: cuenta cuántos
-                inmuebles tienen registrado su valor comercial, que es lo que
-                hace falta para la columna «Rentabilidad». Leído bajo el neto,
-                lo que dice es que el neto se calculó con 1 de 108 inmuebles,
-                que es falso y asusta. Se mudó al encabezado de la columna que
-                sí lo usa. */}
-            <Stat
-              label={t('inmobiliaria.reportes.rentabilidad.stats.netToOwners')}
-              value={netoDelPropietario(totales.netoPropietarioCop, formatCurrency).texto}
-              compact
-            />
-            <Stat
-              label={t('inmobiliaria.reportes.rentabilidad.stats.occupancy')}
-              value={formatearPct(totales.ocupacionPromedioPct, locale)}
-              compact
-            />
-            <Stat
-              label={t('inmobiliaria.reportes.rentabilidad.stats.vacancyLoss')}
-              value={plataQueCuenta(totales.ingresoPerdidoPorVacanciaCop)}
-              deltaDirection={totales.ingresoPerdidoPorVacanciaCop > 0 ? 'down' : 'neutral'}
-              compact
-            />
-          </StatStrip>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-border-faint pt-4 lg:grid-cols-4" data-testid="cifras-del-periodo">
+              {/* 🔴 Decisión de negocio (Nico, 2026-09-15), CAMBIABLE: un neto negativo NO es plata a
+                  favor del propietario: «queda debiendo», con la regla de `lib/dinero/neto-del-propietario`. */}
+              {[
+                { clave: 'comision', etiqueta: t('inmobiliaria.reportes.rentabilidad.stats.commission'), valor: formatCurrency(totales.comisionCop) },
+                { clave: 'neto', etiqueta: t('inmobiliaria.reportes.rentabilidad.stats.netToOwners'), valor: netoDelPropietario(totales.netoPropietarioCop, formatCurrency).texto },
+                { clave: 'ocupacion', etiqueta: t('inmobiliaria.reportes.rentabilidad.stats.occupancy'), valor: formatearPct(totales.ocupacionPromedioPct, locale) },
+                { clave: 'vacancia', etiqueta: t('inmobiliaria.reportes.rentabilidad.stats.vacancyLoss'), valor: formatCurrency(totales.ingresoPerdidoPorVacanciaCop) },
+              ].map((c) => (
+                <div key={c.clave} className="min-w-0 space-y-0.5" data-testid={`cifra-${c.clave}`}>
+                  <dt className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">{c.etiqueta}</dt>
+                  <dd className="font-mono text-body-sm tabular-nums text-fg">{c.valor}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
         )}
-
-        {/* Gráfico */}
-        <section className="rounded-lg border border-border bg-card overflow-hidden">
-          <div className="border-b border-border p-5">
-            <h2 className="text-base font-medium text-fg">
-              {/* Cuenta sólo los que dejaron neto: los que quedan en $0 no tienen barra. */}
-              {cuantosEnElGrafico(filas) > 0
-                ? t('inmobiliaria.reportes.rentabilidad.chart.title', { n: cuantosEnElGrafico(filas) })
-                : t('inmobiliaria.reportes.rentabilidad.chart.titleEmpty')}
-            </h2>
-            <p className="mt-0.5 text-caption text-fg-muted">
-              {t('inmobiliaria.reportes.rentabilidad.chart.subtitle')}
-            </p>
-          </div>
-          <div className="p-4">
-            <GraficoDeRentabilidad filas={filas} />
-          </div>
-        </section>
 
         {/* Tabla */}
         <section className="rounded-lg border border-border bg-card overflow-hidden">
@@ -628,6 +602,24 @@ function RentabilidadContent() {
         {/* Notas del back: explican el cálculo, no piden nada. Una alerta
             sin acción no se justifica (contrato de `AlertaAccionable`); van
             como lista sobria. */}
+        {/* Gráfico */}
+        <section className="rounded-lg border border-border bg-card overflow-hidden">
+          <div className="border-b border-border p-5">
+            <h2 className="text-base font-medium text-fg">
+              {/* Cuenta sólo los que dejaron neto: los que quedan en $0 no tienen barra. */}
+              {cuantosEnElGrafico(filas) > 0
+                ? t('inmobiliaria.reportes.rentabilidad.chart.title', { n: cuantosEnElGrafico(filas) })
+                : t('inmobiliaria.reportes.rentabilidad.chart.titleEmpty')}
+            </h2>
+            <p className="mt-0.5 text-caption text-fg-muted">
+              {t('inmobiliaria.reportes.rentabilidad.chart.subtitle')}
+            </p>
+          </div>
+          <div className="p-4">
+            <GraficoDeRentabilidad filas={filas} />
+          </div>
+        </section>
+
         {report && report.notas.length > 0 && (
           <section className="space-y-1.5 px-1" data-testid="notas-del-reporte">
             <p className="font-mono text-label font-medium uppercase tracking-[0.08em] text-fg-subtle">

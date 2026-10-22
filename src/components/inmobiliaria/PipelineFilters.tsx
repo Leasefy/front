@@ -255,8 +255,8 @@ export function PipelineFilters({
           ))}
         </div>
 
-        {/* Custom Date Range */}
-        <div className="flex items-center gap-2">
+        {/* Custom Date Range — ronda 18 (390): los dos campos se reparten el ancho (antes «Hasta» salía cortado). */}
+        <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:flex sm:w-auto">
           {/* PL-03: el calendario de la casa (días en español), no el
               `type="date"` del navegador («dd/mm/yyyy» en inglés). */}
           <DatePicker
@@ -264,7 +264,7 @@ export function PipelineFilters({
             value={fechaLocal(filters.dateFrom ?? null)}
             onChange={(d) => updateFilter('dateFrom', d ? aFechaIso(d) : undefined)}
             placeholder={tr("Desde")}
-            className="w-40"
+            className="w-full sm:w-40"
           />
           <span className="text-muted-foreground text-sm">{t('inmobiliaria.pipeline.to')}</span>
           <DatePicker
@@ -272,7 +272,7 @@ export function PipelineFilters({
             value={fechaLocal(filters.dateTo ?? null)}
             onChange={(d) => updateFilter('dateTo', d ? aFechaIso(d) : undefined)}
             placeholder={tr("Hasta")}
-            className="w-40"
+            className="w-full sm:w-40"
           />
         </div>
 

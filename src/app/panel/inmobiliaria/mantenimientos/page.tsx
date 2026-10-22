@@ -1,4 +1,5 @@
 'use client';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas';
 import { MantenimientosMarcados } from '@/components/inmobiliaria/MantenimientosMarcados';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -664,30 +665,24 @@ function MantenimientosContent() {
 
   return (
     // GLOW UP (21-10): el mismo margen del resto del panel (p-6 lg:p-8; 16 px en el celular).
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* Header — el nombre del menú y nada más. Antes decía la pestaña en la
-          que estabas, y antes de eso siempre «Operaciones», que no es como se
-          llama esto en ningún menú. */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">Mantenimientos</h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            Las solicitudes de arreglo de tus inmuebles, desde que entran hasta que se cierran.
-          </p>
-        </div>
-        {/* La acción principal va arriba a la derecha, como en el resto de las
-            páginas (Inmuebles, Contratos…). Antes estaba metida en la barra de
-            pestañas de la tabla: «raro» (Nico, 2026-09-03). */}
-        <div className="flex items-center gap-2 shrink-0">
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* El encabezado de todas las pantallas (revisión de Operación, 21-10). La acción
+          principal arriba a la derecha (Nico, 2026-09-03: dentro de la tabla era «raro»). */}
+      <EncabezadoDePantalla
+        seccion="Operación"
+        titulo="Mantenimientos"
+        descripcion="Las solicitudes de arreglo de tus inmuebles, desde que entran hasta que se cierran."
+        accionPrincipal={
           <div className="flex flex-col items-end gap-1">
             <Button
+              size="sm"
               hideArrow
               onClick={handleNewMantenimiento}
               disabled={!puedeCrear}
               title={motivoParaNoCrear ?? undefined}
               data-testid="nueva-solicitud"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="h-4 w-4" />
               {t('inmobiliaria.operaciones.maintenance.new')}
             </Button>
             {motivoParaNoCrear && (
@@ -696,8 +691,8 @@ function MantenimientosContent() {
               </p>
             )}
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* El cartel rojo que había acá decía lo mismo para cualquier fallo, no
           ofrecía nada que apretar y convivía con los KPI en cero: la pantalla

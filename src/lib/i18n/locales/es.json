@@ -3321,8 +3321,8 @@
         "description": "Descripción",
         "assignedTo": "Asignado a",
         "createdAt": "Creado el",
-        "kanbanView": "Vista Kanban",
-        "listView": "Vista Lista",
+        "kanbanView": "Tablero",
+        "listView": "Lista",
         "activeRequests": "solicitudes activas",
         "newRequestDesc": "Elige el inmueble y cuenta qué pasa; el resto lo completas después.",
         "newRequest": "Nueva solicitud de mantenimiento"

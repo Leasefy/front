@@ -30,9 +30,10 @@
  * `@/components/mantenimientos/TablaDeProveedores`, con el porqué escrito ahí.
  */
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Plus, Star } from '@phosphor-icons/react';
-import { CrossFade, Eyebrow, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -117,26 +118,21 @@ function ContenidoDeProveedores() {
       {/* 🔴 Sin «Volver a Mantenimientos» (Nico, 18-09-2026: «¿para qué el
           devolverse?»). Proveedores es una FILA del menú, no una sub-pantalla
           de Mantenimientos: el botón prometía subir un nivel que no existe. */}
-      <div className="space-y-6 p-4 md:p-6">
-        {/* El encabezado de la casa: eyebrow, título y qué es —el mismo de
-            Contratos y Renovaciones—. El icono se fue al encabezado de la
-            tarjeta, que es donde lo llevan las demás tablas. */}
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-1">
-            <Eyebrow>Operación</Eyebrow>
-            <h1 className="text-h2 text-fg">Proveedores</h1>
-            <p className="max-w-2xl text-sm text-fg-muted">
-              A quién llamas para cada oficio, con sus papeles al día y cómo le ha
-              ido. La calificación se pone al cerrar cada trabajo, no desde aquí.
-            </p>
-          </div>
-          {puedeEditar && (
-            <Button hideArrow onClick={() => setEditando('nuevo')}>
-              <Plus className="mr-1.5 h-4 w-4" />
-              Registrar proveedor
-            </Button>
-          )}
-        </header>
+      <div className="space-y-6 p-6 lg:p-8">
+        {/* El encabezado de todas las pantallas (revisión de Operación, 21-10). */}
+        <EncabezadoDePantalla
+          seccion="Operación"
+          titulo="Proveedores"
+          descripcion="A quién llamas para cada oficio, con sus papeles al día y cómo le ha ido."
+          accionPrincipal={
+            puedeEditar ? (
+              <Button size="sm" hideArrow onClick={() => setEditando('nuevo')}>
+                <Plus className="h-4 w-4" />
+                Registrar proveedor
+              </Button>
+            ) : undefined
+          }
+        />
 
         <TablaDeProveedores
           proveedores={proveedores ?? []}

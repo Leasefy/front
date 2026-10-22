@@ -361,8 +361,10 @@ export function TablaDeProveedores({
         </p>
       )}
 
-      <Table>
-        <TableHeader>
+      {/* Bajo 768 cada proveedor es una tarjeta (revisión de Operación, 21-10: la tabla
+          encogida dejaba los papeles fuera de la vista). */}
+      <Table className="max-md:block">
+        <TableHeader className="max-md:hidden">
           <TableRow>
             <EncabezadoOrdenable valor="nombre">Proveedor</EncabezadoOrdenable>
             <TableHead className="whitespace-nowrap">Contacto</TableHead>
@@ -374,7 +376,7 @@ export function TablaDeProveedores({
         </TableHeader>
         {/* Buscar, filtrar, paginar, registrar o apagar: las filas entran
             escalonadas y las que sobran salen; el esqueleto se va de una. */}
-        <TableBodyAnimado>
+        <TableBodyAnimado className="max-md:block">
           {cargando && proveedores.length === 0 && <FilasDeCarga key="cargando" />}
 
           {/* Falló → vacío, en ese orden: con la petición muerta la lista llega
@@ -414,9 +416,12 @@ export function TablaDeProveedores({
               data-testid="proveedor"
               // El apagado se atenúa en sus celdas: la opacidad de la fila la
               // maneja su entrada animada.
-              className={cn('border-b border-border last:border-0', !p.activo && '[&>td]:opacity-70')}
+              className={cn(
+                'border-b border-border last:border-0 max-md:grid max-md:grid-cols-1 max-md:gap-y-2.5 max-md:px-4 max-md:py-4',
+                !p.activo && '[&>td]:opacity-70',
+              )}
             >
-              <TableCell className="max-w-[280px] px-5 py-4 align-top">
+              <TableCell className="max-w-[280px] px-5 py-4 align-top max-md:block max-md:max-w-none max-md:p-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium text-foreground">{p.nombre}</span>
                   {/* `secondary` en oscuro es casi blanco: el proveedor APAGADO
@@ -426,7 +431,7 @@ export function TablaDeProveedores({
                 <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{p.documento}</p>
               </TableCell>
 
-              <TableCell className="max-w-[200px] px-5 py-4 align-top text-muted-foreground">
+              <TableCell className="max-w-[200px] px-5 py-4 align-top text-muted-foreground max-md:block max-md:max-w-none max-md:p-0">
                 {p.telefono || p.correo ? (
                   <>
                     {p.telefono ? (
@@ -448,13 +453,13 @@ export function TablaDeProveedores({
                 borde, fondo y radio para decir «objeto aparte»; un oficio no
                 es un objeto aparte, es un dato de la fila. Va como texto.
               */}
-              <TableCell className="max-w-[180px] px-5 py-4 align-top text-muted-foreground">
+              <TableCell className="max-w-[180px] px-5 py-4 align-top text-muted-foreground max-md:block max-md:max-w-none max-md:p-0">
                 {p.especialidades.length > 0
                   ? p.especialidades.map((e) => EN_PALABRAS.get(e) ?? e).join(' · ')
                   : '—'}
               </TableCell>
 
-              <TableCell className="px-5 py-4 align-top">
+              <TableCell className="px-5 py-4 align-top max-md:block max-md:p-0">
                 <Estrellas calificacion={p.calificacion} trabajos={p.trabajosCalificados} />
                 {p.reaperturasPorGarantia > 0 && (
                   <p className="mt-1 text-xs text-warning">
@@ -470,7 +475,7 @@ export function TablaDeProveedores({
                 Meterlos en un icono con globito ahorraría dos renglones y
                 escondería justo el dato por el que existe esta pantalla.
               */}
-              <TableCell className="max-w-[340px] px-5 py-4 align-top">
+              <TableCell className="max-w-[340px] px-5 py-4 align-top max-md:block max-md:max-w-none max-md:p-0">
                 {p.avisos.length > 0 ? (
                   <ul className="space-y-1" data-testid="avisos-del-proveedor">
                     {p.avisos.map((a) => (
@@ -498,7 +503,7 @@ export function TablaDeProveedores({
                 )}
               </TableCell>
 
-              <TableCell className="whitespace-nowrap px-3 py-4 align-top text-right">
+              <TableCell className="whitespace-nowrap px-3 py-4 align-top text-right max-md:block max-md:p-0 max-md:text-left">
                 <div className="flex justify-end gap-1">
                   {p.trabajosCalificados > 0 && (
                     <Button variant="ghost" size="sm" hideArrow onClick={() => onVerHistorial(p)}>

@@ -170,12 +170,11 @@ describe('tablero financiero', () => {
 
     expect(valor('tasa-de-recaudo')).toBe('—');
     expect(valor('tasa-de-recaudo')).not.toContain('0');
-    expect(container.querySelector('[data-testid="variacion-del-recaudo"]')?.textContent).toBe('—');
+    // 22-10 (revisión de diseño): con el mes anterior en cero no hay comparación que
+    // decir; la línea no se pinta (antes: «Variación: —» y una frase de por qué).
+    expect(container.querySelector('[data-testid="comparacion-mes-anterior"]')).toBeNull();
     expect(container.querySelector('[data-testid="margen-pct"]')?.textContent).toContain('—');
-    // Y dice por qué no se midió, en vez de dejar un guion mudo.
-    expect(container.textContent).toContain('no hay contra qué comparar');
-    // TB-04 (FALTANTES, 05-10-2026): un solo guion, no «— —».
-    expect(container.querySelector('[data-testid="comparacion-mes-anterior"]')?.textContent).not.toContain('— —');
+
   });
 
   it('muestra los avisos del back arriba y sin recortarlos', async () => {

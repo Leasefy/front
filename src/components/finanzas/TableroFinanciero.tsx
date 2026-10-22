@@ -348,7 +348,9 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
           valor={tasaMedida ? (recaudo.tasaPct as number) : null}
           formato={(n) => tasaEnPantalla(n)}
           definicion={definicionDeLaTasa(recaudo, tablero.mes, base)}
+          // 22-10 (revisión): sin recaudo el mes anterior no hay contra qué comparar; no se pinta la frase.
           pie={
+            (recaudo.mesAnterior.causadoCop ?? 0) === 0 && (recaudo.mesAnterior.recaudadoCop ?? 0) === 0 ? undefined : (
             <span data-testid="comparacion-mes-anterior">
               {conMayusculaInicial(nombreDelMes(recaudo.mesAnterior.mes))}:{' '}
               {/* N-06: con el numerador del back, el mismo con que se sacó su %. */}
@@ -361,6 +363,7 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
                 ? '. El mes anterior no recaudó nada, así que no hay contra qué comparar.'
                 : '.'}
             </span>
+            )
           }
         />
         <RenglonDeCifra
@@ -531,13 +534,12 @@ function BloqueDeDeudores({ tablero }: { tablero: Tablero }) {
             <TableHead className="text-right">Debe</TableHead>
             <TableHead className="text-right">Días de mora</TableHead>
             <TableHead>Etapa</TableHead>
-            <TableHead className="text-right">Contratos</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="max-md:block">
           {cartera.deudores.length === 0 ? (
             <TableRow className="max-md:block">
-              <TableCell colSpan={5} className="py-10 text-center text-sm text-fg-muted max-md:block">
+              <TableCell colSpan={4} className="py-10 text-center text-sm text-fg-muted max-md:block">
                 Nadie tiene cartera vencida en este corte. No es un error: es una cartera en cero.
               </TableCell>
             </TableRow>
@@ -562,9 +564,7 @@ function BloqueDeDeudores({ tablero }: { tablero: Tablero }) {
                 <TableCell className="text-fg-muted max-md:block max-md:p-0 max-md:text-right max-md:text-caption">
                   {NOMBRE_DE_LA_ETAPA[d.etapa] ?? d.etapa}
                 </TableCell>
-                <TableCell className="text-right font-mono tabular-nums text-fg-muted max-md:hidden">
-                  {d.contratos}
-                </TableCell>
+
               </TableRow>
             ))
           )}

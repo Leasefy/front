@@ -167,6 +167,13 @@ export default function AcuerdosPage() {
     return (
       <div className="min-h-screen bg-bg">
         <div className="p-6 lg:p-8">
+          {/* GLOW UP (21-10-2026, QA): el encabezado se queda también con el error,
+              para que se sepa dónde se está; sin la acción, que va al mismo servicio caído. */}
+          <EncabezadoDePantalla
+            className="mb-8"
+            seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
+            titulo={locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
+          />
           <EmptyState
             icon={XCircle}
             title={locale === 'es' ? 'Error al cargar tus acuerdos' : 'Error loading your agreements'}

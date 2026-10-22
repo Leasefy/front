@@ -28,6 +28,7 @@
  */
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { AvisoDeFuentesCaidas } from '@/components/portales/AvisoDeFuentesCaidas';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { AnimatedNumber } from '@leasefy/cadence';
@@ -158,7 +159,7 @@ function CaseRow({ c, locale }: { c: TenantCase; locale: string }) {
 export default function CasosPage() {
   const { locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const { cases, isLoading: isCasesLoading, error } = useTenantCases();
+  const { cases, isLoading: isCasesLoading, error, fuentesQueFallaron, todasFallaron, refetch } = useTenantCases();
   // CASO-03: in-app notifications are already real; surface the unread count as a
   // subtle badge. This hook owns its own existing poll — no new poller is added here.
   const { unreadCount } = useTenantNotifications();
@@ -187,9 +188,10 @@ export default function CasosPage() {
     );
   }
 
-  // Error gate — a single failed source has already degraded to [] upstream, so
-  // this only fires on a hard aggregate failure.
-  if (error) {
+  // Error gate — GLOW UP (21-10-2026): sólo si NO llegó ninguna fuente. Si
+  // falló una (el asistente caído deja sin acuerdos), se muestra lo que llegó
+  // y el aviso dice qué faltó (`AvisoDeFuentesCaidas`, abajo del encabezado).
+  if (error && todasFallaron) {
     return (
       <div className="min-h-screen bg-bg">
         <div className="p-6 lg:p-8">
@@ -219,6 +221,8 @@ export default function CasosPage() {
               : 'Your ongoing payments and applications, all in one place.'
           }
         />
+
+        <AvisoDeFuentesCaidas fuentes={fuentesQueFallaron} locale={locale} onReintentar={() => void refetch()} className="mb-6" />
 
         {/* CASO-03 — el aviso dentro del portal (real); sin promesas de push ni WhatsApp (QA-INQ-95). */}
         <div

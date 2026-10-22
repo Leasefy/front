@@ -52,6 +52,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { AvisoDeFuentesCaidas } from '@/components/portales/AvisoDeFuentesCaidas';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
 import type { BadgeProps } from '@/components/ui/badge';
@@ -352,7 +353,7 @@ function CaseDetail({
 export default function CaseDetailPage(props: { params: Promise<{ caseId: string }> }) {
   const params = use(props.params);
   const { locale } = useI18n();
-  const { cases, isLoading, error } = useTenantCases();
+  const { cases, isLoading, error, fuentesQueFallaron, refetch } = useTenantCases();
 
   // Own-cases-only resolution (CASO-02 / T-v7-03-07): filter the tenant's OWN
   // aggregated list — NO API call with the raw route id, NO fetch-by-id hook.
@@ -371,8 +372,9 @@ export default function CaseDetailPage(props: { params: Promise<{ caseId: string
     );
   }
 
-  // Hard aggregate failure (a single failed source already degraded to [] upstream).
-  if (error) {
+  // GLOW UP (21-10-2026): si el caso llegó, se muestra aunque otra fuente haya
+  // fallado; el error de pantalla completa es sólo cuando NO está y algo falló.
+  if (error && !caso) {
     return (
       <PageShell>
         <BackLink locale={locale} />
@@ -408,6 +410,7 @@ export default function CaseDetailPage(props: { params: Promise<{ caseId: string
   return (
     <PageShell>
       <BackLink locale={locale} caso={caso} />
+      <AvisoDeFuentesCaidas fuentes={fuentesQueFallaron} locale={locale} onReintentar={() => void refetch()} className="mb-6" />
       <CaseDetail caso={caso} locale={locale} entrada={entrada} />
     </PageShell>
   );

@@ -13,12 +13,24 @@ import { act, Suspense } from 'react';
 import type { TenantCase } from '@/lib/types/tenant-case';
 
 const { datos } = vi.hoisted(() => ({
-  datos: { cases: [] as TenantCase[], isLoading: false, error: null as string | null },
+  datos: {
+    cases: [] as TenantCase[],
+    isLoading: false,
+    error: null as string | null,
+    fuentesQueFallaron: [] as string[],
+  },
 }));
 
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
 vi.mock('@/lib/hooks/use-tenant-cases', () => ({
-  useTenantCases: () => ({ cases: datos.cases, isLoading: datos.isLoading, error: datos.error }),
+  useTenantCases: () => ({
+    cases: datos.cases,
+    isLoading: datos.isLoading,
+    error: datos.error,
+    fuentesQueFallaron: datos.fuentesQueFallaron,
+    todasFallaron: false,
+    refetch: vi.fn(),
+  }),
 }));
 vi.mock('@/components/tenant/RespuestaYArchivosDelCaso', () => ({
   RespuestaYArchivosDelCaso: () => <div data-testid="caso-respuesta" />,
@@ -86,6 +98,7 @@ beforeEach(() => {
   datos.cases = [caso()];
   datos.isLoading = false;
   datos.error = null;
+  datos.fuentesQueFallaron = [];
   document.body.innerHTML = '';
 });
 
@@ -149,6 +162,21 @@ describe('Detalle del caso — en el orden del trabajo', () => {
     await montar();
     expect($('caso-volver')?.querySelector('a')?.getAttribute('href')).toBe('/inquilino/casos');
     expect($('caso-ver-en-origen')?.getAttribute('href')).toBe('/inquilino/pagos');
+  });
+
+  it('si otra fuente falló pero el caso llegó, se muestra con el aviso de lo que faltó', async () => {
+    datos.error = 'El asistente de Leasefy no está disponible';
+    datos.fuentesQueFallaron = ['acuerdos'];
+    await montar();
+    expect(document.querySelector('header h1')?.textContent).toBe('Gotera en el baño');
+    expect($('fuentes-caidas')?.textContent).toContain('tus acuerdos de pago');
+  });
+
+  it('si el caso no llegó y algo falló, dice el error (no «no encontrado»)', async () => {
+    datos.error = 'El asistente de Leasefy no está disponible';
+    datos.fuentesQueFallaron = ['solicitudes'];
+    await montar('otro');
+    expect(document.body.textContent).toContain('Error al cargar el caso');
   });
 
   it('un caso que no es suyo dice «Caso no encontrado» y vuelve a Mis casos', async () => {

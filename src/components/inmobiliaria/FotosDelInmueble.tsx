@@ -21,6 +21,7 @@
  * tiro, con el avance a la vista; cada miniatura abre el visor.
  */
 
+import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Images, Star, Trash, UploadSimple } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
@@ -208,8 +209,9 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
   return (
     <section
       className={cn(
-        'relative rounded-lg border bg-surface dark:bg-bg overflow-hidden transition-colors',
-        arrastrandoEncima ? 'border-primary' : 'border-border dark:border-border-strong',
+        SUPERFICIE_DE_LA_FICHA,
+        'relative transition-colors',
+        arrastrandoEncima && 'border-primary dark:border-primary',
       )}
       data-testid="fotos-del-inmueble"
       onDragEnter={(e) => {
@@ -241,12 +243,10 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
             Suelta para subir {cupo === 1 ? 'la última foto' : `hasta ${cupo} fotos`}
           </div>
       </Presence>
-      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border-faint dark:border-border-strong">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle">
-            <Images className="w-4 h-4" />
-          </div>
-          <h3 className="font-semibold text-fg">Fotos</h3>
+      <div className="flex items-center justify-between gap-3 border-b border-border-faint px-6 pb-4 pt-5 dark:border-border-strong">
+        <div className="flex items-center gap-2.5">
+          <Images className="h-[18px] w-[18px] shrink-0 text-fg-subtle" aria-hidden="true" />
+          <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Fotos</h3>
         </div>
         <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle tabular-nums" data-testid="fotos-contador">
           {subiendo
@@ -255,7 +255,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
         </span>
       </div>
 
-      <div className="relative p-5 space-y-5">
+      <div className="relative space-y-5 px-6 py-5">
         {/* Cargando → vacío → galería (o → fallo), con un fundido. `popLayout`:
             lo nuevo entra YA (las fotos que se empiezan a subir se ven al
             instante) y lo viejo se funde encima. */}

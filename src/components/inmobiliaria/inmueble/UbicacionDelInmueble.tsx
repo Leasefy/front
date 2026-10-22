@@ -21,6 +21,7 @@ import { tieneCoordenadas } from '@/components/map/coordenadas';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { TarjetaDeLaFicha } from '@/components/pantalla/TarjetaDeLaFicha';
 import type { Property } from '@/lib/types/property';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
 import { UbicarEnElMapaDialog } from './UbicarEnElMapaDialog';
@@ -115,17 +116,12 @@ export function UbicacionDelInmueble({ property, cargando, consignacion, onActua
   }
 
   return (
-    <section
-      // 21-10: la misma superficie elevada y el mismo título de las demás secciones de la ficha.
-      className="overflow-hidden rounded-[24px] border border-border-faint bg-surface shadow-[0_1px_2px_rgba(20,19,15,0.04),0_10px_28px_-18px_rgba(20,19,15,0.16)] dark:border-border-strong dark:bg-bg"
+    // 21-10: la misma tarjeta de las demás secciones de la ficha.
+    <TarjetaDeLaFicha
+      title={t('inmobiliaria.inmuebles.ubicacion.titulo')}
+      icon={<MapTrifold className="h-4 w-4" />}
       data-testid="ubicacion-del-inmueble"
     >
-      <div className="flex items-center gap-2.5 px-6 pb-1 pt-5 text-fg-subtle">
-        <MapTrifold className="h-[18px] w-[18px]" aria-hidden="true" />
-        <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">{t('inmobiliaria.inmuebles.ubicacion.titulo')}</h3>
-      </div>
-
-      <div className="px-6 pb-6 pt-4">
         {cargando && !property ? (
           <EsqueletoDelMapa />
         ) : conMapa && property ? (
@@ -138,9 +134,7 @@ export function UbicacionDelInmueble({ property, cargando, consignacion, onActua
         ) : (
           vacio
         )}
-      </div>
-
       {dialogo}
-    </section>
+    </TarjetaDeLaFicha>
   );
 }

@@ -12,23 +12,21 @@ import {
   Phone,
   Envelope,
   ArrowRight,
-  CurrencyDollar,
   FileText,
   Images,
   UserCircle,
   Briefcase,
-  ArrowsClockwise,
-  Users,
   UploadSimple,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { TarjetaDeLaFicha } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import { ApiError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, IconButton, buttonVariants } from '@leasefy/cadence';
+import { Avatar, iconButtonVariants } from '@leasefy/cadence';
 import { ContratoPdfModal } from './ContratoPdfModal';
 import type { Consignacion, Copropietario, Propietario, Agente, AgenteRole } from '@/lib/types/inmobiliaria';
 import { formatParticipacion } from '@/lib/types/inmobiliaria';
@@ -60,35 +58,11 @@ const ROLE_LABEL_KEYS: Record<AgenteRole, string> = {
   director: 'inmobiliaria.consignaciones.roles.director',
 };
 
-interface SectionCardProps {
-  title: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  className?: string;
-}
-
-export function SectionCard({ title, icon, children, className }: SectionCardProps) {
-  return (
-    // Sin entrada propia: la ficha entera entra con su `CrossFade` al llegar
-    // de la carga (y con el `template.tsx` al navegar).
-    <div
-      // 21-10 (impacto visual): superficie elevada sin borde duro, el título liviano
-      // con su ícono suelto (sin la cajita gris), y aire de lectura adentro.
-      className={cn(
-        'overflow-hidden rounded-[24px] border border-border-faint bg-surface shadow-[0_1px_2px_rgba(20,19,15,0.04),0_10px_28px_-18px_rgba(20,19,15,0.16)] dark:border-border-strong dark:bg-bg',
-        className
-      )}
-    >
-      <div className="flex items-center gap-2.5 px-6 pb-1 pt-5 text-fg-subtle">
-        <span className="flex h-5 w-5 items-center justify-center [&>svg]:h-[18px] [&>svg]:w-[18px]" aria-hidden="true">
-          {icon}
-        </span>
-        <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">{title}</h3>
-      </div>
-      <div className="px-6 pb-6 pt-4">{children}</div>
-    </div>
-  );
-}
+/**
+ * La tarjeta de cada sección de la ficha. Vive en `pantalla/TarjetaDeLaFicha`
+ * (la usan todas las fichas); este nombre queda por compatibilidad.
+ */
+export const SectionCard = TarjetaDeLaFicha;
 
 // ============================================================================
 // Términos del mandato
@@ -276,56 +250,97 @@ export function PropietarioSection({
     ? `****${propietario.bankAccount.accountNumber.slice(-4)}`
     : null;
 
+  const ROTULO = 'font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle';
+  const perfil = rutaDeOrigen
+    ? conRegreso(`/panel/inmobiliaria/propietarios/${propietario.id}`, rutaDeOrigen)
+    : `/panel/inmobiliaria/propietarios/${propietario.id}`;
+
+  /*
+   * 21-10 (revisión de diseño de la ficha): el mismo lenguaje de la franja de la
+   * portada. Quién es y cómo hablarle en una fila (íconos + «Mensaje», no tres
+   * losas grises a todo el ancho); los dueños y la cuenta del giro como listas
+   * con su rótulo, separadas por una línea — sin cajas grises dentro de la tarjeta.
+   */
   return (
     <SectionCard title={t('inmobiliaria.consignaciones.detail.ownerTitle')} icon={<User className="w-4 h-4" />}>
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            {/* 21-10: el Avatar de Cadence (persona en superelipse con el tono de su
-                nombre), no un ícono en una caja de color. */}
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+          <div className="flex min-w-0 items-center gap-3">
             <Avatar name={propietario.name} size="lg" />
-            <div>
-              <h4 className="font-semibold text-fg">{propietario.name}</h4>
-              <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            <div className="min-w-0">
+              <h4 className="truncate text-[15px] font-medium text-fg" title={propietario.name}>{propietario.name}</h4>
+              <p className="text-caption text-fg-subtle">
                 {documentoConTipo(propietario.documentType, propietario.documentNumber)}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {onCambiar && (
-              <Button
-                variant="link"
-                size="sm"
-                hideArrow
+          <div className="flex items-center gap-4">
+            {onCambiar && !variosDuenos && (
+              <button
+                type="button"
                 onClick={onCambiar}
-                className="h-auto px-0 text-sm text-fg-muted hover:text-fg"
+                className="text-body-sm font-medium text-fg-muted underline-offset-2 hover:text-fg hover:underline"
                 data-testid="editar-propietarios"
               >
                 Editar propietarios
-              </Button>
+              </button>
             )}
-            <Link
-              href={
-                rutaDeOrigen
-                  ? conRegreso(`/panel/inmobiliaria/propietarios/${propietario.id}`, rutaDeOrigen)
-                  : `/panel/inmobiliaria/propietarios/${propietario.id}`
-              }
-              className="text-sm text-primary hover:text-primary dark:hover:text-primary flex items-center gap-1"
-            >
+            <Link href={perfil} className="inline-flex items-center gap-1 text-body-sm font-medium text-primary underline-offset-2 hover:underline">
               {t('inmobiliaria.consignaciones.detail.viewProfile')}
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>
         </div>
 
-        {/* Los dueños y su tajada. Sólo con más de uno — ver `variosDuenos`.
-            El principal (el de mayor participación) lleva el chip, como el
-            inquilino principal en la tarjeta «Partes» del contrato: es el que
-            figura como dueño en todo lo que sigue leyendo un solo id. */}
+        {/*
+         * Cómo hablarle. 🔴 Escribirle por Leasefy, no sólo por fuera (Nico,
+         * 2026-09-12): el correo y el teléfono se van del producto; el hilo
+         * directo queda y lo ve cualquiera de la inmobiliaria. Necesita cuenta
+         * de portal (`cuentaDePortalId`); sin ella va el aviso con su salida
+         * (`InvitarAlPortal`), nunca un hueco — en la cartera real de Nico es el
+         * 97 % de las fichas.
+         */}
+        {propietario.email || propietario.phone || cuenta ? (
+          <div className="flex flex-wrap items-center gap-1.5" data-testid="contacto-propietario">
+            {propietario.email && (
+              <a
+                href={`mailto:${propietario.email}`}
+                className={iconButtonVariants({ variant: 'outline', size: 'sm' })}
+                aria-label={`${t('inmobiliaria.consignaciones.detail.email')}: ${propietario.email}`}
+                title={propietario.email}
+              >
+                <Envelope className="h-4 w-4" aria-hidden="true" />
+              </a>
+            )}
+            {propietario.phone && (
+              <a
+                href={`tel:${propietario.phone}`}
+                className={iconButtonVariants({ variant: 'outline', size: 'sm' })}
+                aria-label={`${t('inmobiliaria.consignaciones.detail.call')}: ${propietario.phone}`}
+                title={propietario.phone}
+              >
+                <Phone className="h-4 w-4" aria-hidden="true" />
+              </a>
+            )}
+            {cuenta && <BotonEnviarMensaje counterpartId={cuenta} etiqueta="Mensaje" />}
+          </div>
+        ) : null}
+        {!cuenta && (
+          <InvitarAlPortal
+            variante="linea"
+            propietarioId={propietario.id}
+            correo={propietario.email}
+            onInvitado={(id) => {
+              setParaQuien(propietario.id);
+              setCuentaReciente(id);
+            }}
+          />
+        )}
+
+        {/* Copropiedad migrada sin porcentaje: frena el giro, así que se dice con su salida. */}
         {variosDuenos && participacionesDesconocidas && (
           <div
-            className="rounded-lg border border-border bg-warning-soft p-3 text-sm text-fg"
+            className="rounded-[16px] bg-warning-soft px-4 py-3 text-sm text-fg"
             data-testid="falta-el-porcentaje"
             role="status"
           >
@@ -349,145 +364,100 @@ export function PropietarioSection({
           </div>
         )}
 
+        {/* Los dueños y su tajada. Sólo con más de uno: con un dueño al 100 %,
+            «100 %» al lado del nombre no informa nada. El principal (el de mayor
+            participación) lleva su marca: es el que figura como dueño en todo lo
+            que sigue leyendo un solo id. */}
         {variosDuenos && (
-          <div
-            className="p-3 rounded-lg bg-surface-muted dark:bg-bg space-y-2"
-            data-testid="copropietarios-lista"
-          >
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-fg-subtle" />
-              <span className="text-xs text-fg-muted dark:text-fg-subtle">
-                Propietarios ({copropietarios!.length})
-              </span>
+          <div className="border-t border-border-faint pt-4 dark:border-border-strong" data-testid="copropietarios-lista">
+            <div className="flex items-center justify-between gap-3">
+              <p className={ROTULO}>Propietarios ({copropietarios!.length})</p>
+              {onCambiar && (
+                <button
+                  type="button"
+                  onClick={onCambiar}
+                  className="text-body-sm font-medium text-fg-muted underline-offset-2 hover:text-fg hover:underline"
+                  data-testid="editar-propietarios"
+                >
+                  Editar propietarios
+                </button>
+              )}
             </div>
-            {copropietarios!.map((c, i) => (
-              <div
-                key={c.propietarioId}
-                className="flex items-center justify-between gap-3"
-                data-testid="copropietario-item"
-              >
-                <span className="flex min-w-0 items-center gap-2 text-sm text-fg">
-                  <span className="truncate">{c.propietario?.name ?? c.propietarioId}</span>
-                  {/* El chip va en EL principal (`propietario`), no en el primero de
-                      la lista: en un empate 50/50 el orden no dice quién es
-                      (SEGUIMIENTO-FRONT, P-03). Si el principal no está en la
-                      lista (dato raro), el primero, como antes. */}
-                  {(principalEnLaLista ? c.propietarioId === propietario.id : i === 0) && (
-                    <span
-                      className="shrink-0 rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary"
-                      data-testid="copropietario-principal-chip"
-                    >
-                      Principal
-                    </span>
-                  )}
-                </span>
-                <span className="flex shrink-0 items-center gap-3">
-                  {onElegirPrincipal &&
-                    !participacionesDesconocidas &&
-                    empatados.length > 1 &&
-                    c.participacionBps === mayorParticipacion &&
-                    c.propietarioId !== propietario.id && (
-                      <Button
-                        variant="link"
-                        size="sm"
-                        hideArrow
-                        onClick={() => void elegirPrincipal(c)}
-                        disabled={eligiendo !== null}
-                        isLoading={eligiendo === c.propietarioId}
-                        className="h-auto px-0 text-caption"
-                        data-testid="hacer-principal"
+            <ul className="mt-1 divide-y divide-border-faint dark:divide-border-strong">
+              {copropietarios!.map((c, i) => (
+                <li
+                  key={c.propietarioId}
+                  className="flex items-center justify-between gap-3 py-2.5"
+                  data-testid="copropietario-item"
+                >
+                  <span className="flex min-w-0 items-center gap-2.5 text-sm text-fg">
+                    <Avatar name={c.propietario?.name ?? c.propietarioId} size="sm" />
+                    <span className="truncate">{c.propietario?.name ?? c.propietarioId}</span>
+                    {/* La marca va en EL principal (`propietario`), no en el primero de
+                        la lista: en un empate 50/50 el orden no dice quién es
+                        (SEGUIMIENTO-FRONT, P-03). Si el principal no está en la
+                        lista (dato raro), el primero, como antes. */}
+                    {(principalEnLaLista ? c.propietarioId === propietario.id : i === 0) && (
+                      <span
+                        className="shrink-0 rounded-[6px] border border-border-faint px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-fg-subtle dark:border-border-strong"
+                        data-testid="copropietario-principal-chip"
                       >
-                        Hacer principal
-                      </Button>
+                        Principal
+                      </span>
                     )}
-                  {participacionesDesconocidas ? (
-                    <span
-                      className="text-sm text-warning"
-                      data-testid="copropietario-sin-porcentaje"
-                    >
-                      Sin porcentaje
-                    </span>
-                  ) : (
-                    <span className="font-mono text-sm tabular-nums text-fg">
-                      {formatParticipacion(c.participacionBps)}
-                    </span>
-                  )}
-                </span>
-              </div>
-            ))}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-3">
+                    {onElegirPrincipal &&
+                      !participacionesDesconocidas &&
+                      empatados.length > 1 &&
+                      c.participacionBps === mayorParticipacion &&
+                      c.propietarioId !== propietario.id && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          hideArrow
+                          onClick={() => void elegirPrincipal(c)}
+                          disabled={eligiendo !== null}
+                          isLoading={eligiendo === c.propietarioId}
+                          className="h-auto px-0 text-caption"
+                          data-testid="hacer-principal"
+                        >
+                          Hacer principal
+                        </Button>
+                      )}
+                    {participacionesDesconocidas ? (
+                      <span className="text-sm text-warning" data-testid="copropietario-sin-porcentaje">
+                        Sin porcentaje
+                      </span>
+                    ) : (
+                      <span className="font-mono text-sm tabular-nums text-fg">
+                        {formatParticipacion(c.participacionBps)}
+                      </span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
-        {/* Bank Account — only when payout data exists */}
+        {/* La cuenta a la que se le gira — sólo cuando hay datos de pago */}
         {propietario.bankAccount ? (
-          <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
-            <div className="flex items-center gap-2 mb-2">
-              <Bank className="w-4 h-4 text-fg-subtle" />
-              <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.paymentAccount')}</span>
-            </div>
-            <p className="text-sm font-medium text-fg">
-              {BANK_NAMES[propietario.bankAccount.bank] || propietario.bankAccount.bank} - {propietario.bankAccount.accountType === 'savings' ? t('inmobiliaria.consignaciones.detail.accountTypeSavings') : t('inmobiliaria.consignaciones.detail.accountTypeChecking')}
-            </p>
-            {maskedAccount && <p className="text-sm text-fg-muted dark:text-fg-subtle">{maskedAccount}</p>}
-          </div>
+          <dl className="border-t border-border-faint pt-4 dark:border-border-strong" data-testid="cuenta-del-giro">
+            <dt className={ROTULO}>{t('inmobiliaria.consignaciones.detail.paymentAccount')}</dt>
+            <dd className="mt-1.5 flex flex-wrap items-baseline gap-x-2 text-[15px] text-fg">
+              <Bank className="h-4 w-4 shrink-0 self-center text-fg-subtle" aria-hidden="true" />
+              <span className="font-medium">{BANK_NAMES[propietario.bankAccount.bank] || propietario.bankAccount.bank}</span>
+              <span className="text-fg-muted">
+                ·{' '}
+                {propietario.bankAccount.accountType === 'savings'
+                  ? t('inmobiliaria.consignaciones.detail.accountTypeSavings')
+                  : t('inmobiliaria.consignaciones.detail.accountTypeChecking')}
+              </span>
+              {maskedAccount && <span className="font-mono tabular-nums text-fg-muted">{maskedAccount}</span>}
+            </dd>
+          </dl>
         ) : null}
-
-        {/* Contact Buttons */}
-        <div className="flex items-center gap-2">
-          {propietario.email && (
-            <a
-              href={`mailto:${propietario.email}`}
-              className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex-1 justify-center gap-2')}
-            >
-              <Envelope className="w-4 h-4" />
-              {t('inmobiliaria.consignaciones.detail.email')}
-            </a>
-          )}
-          {propietario.phone && (
-            <a
-              href={`tel:${propietario.phone}`}
-              className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex-1 justify-center gap-2')}
-            >
-              <Phone className="w-4 h-4" />
-              {t('inmobiliaria.consignaciones.detail.call')}
-            </a>
-          )}
-          {/*
-           * 🔴 Escribirle por Leasefy, no sólo por fuera (Nico, 2026-09-12).
-           *
-           * El correo y el teléfono se van del producto: lo que se habla ahí
-           * no queda en ningún lado y el siguiente agente que abra esta ficha
-           * no sabe qué se dijo. El hilo directo sí queda, y lo ve cualquier
-           * miembro de la inmobiliaria.
-           *
-           * Necesita que el propietario tenga cuenta de portal
-           * (`cuentaDePortalId`). Cuando no la tiene, lo que va acá NO es un
-           * hueco —eso se lee como «falta la función»— sino el aviso con la
-           * salida: ver `InvitarAlPortal`, abajo.
-           */}
-          {cuenta && (
-            <BotonEnviarMensaje
-              counterpartId={cuenta}
-              etiqueta="Mensaje"
-              className="flex-1 justify-center gap-2"
-            />
-          )}
-        </div>
-
-        {/*
-         * Sin cuenta: se dice y se ofrece resolverlo, en vez de esconder el
-         * botón. En la cartera real de Nico esto es el 97 % de las fichas.
-         */}
-        {!cuenta && (
-          <InvitarAlPortal
-            propietarioId={propietario.id}
-            correo={propietario.email}
-            onInvitado={(id) => {
-              setParaQuien(propietario.id);
-              setCuentaReciente(id);
-            }}
-          />
-        )}
       </div>
     </SectionCard>
   );
@@ -565,90 +535,99 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
   // Calculate agent's commission from property commission
   const agentCommissionPercent = (commissionPercent * agente.commissionSplit) / 100;
   const agencyCommissionPercent = commissionPercent - agentCommissionPercent;
+  const ROTULO = 'font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle';
 
+  /*
+   * 21-10 (revisión de la ficha): quién está a cargo ya se ve en la portada; aquí,
+   * en «Mandato y giro», va lo que se configura con él: cómo se reparte la
+   * comisión. Contacto en íconos y «Cambiar» como enlace — sin cajas grises ni
+   * losas a todo el ancho.
+   */
   return (
-    <SectionCard title={t('inmobiliaria.consignaciones.detail.agentTitle')} icon={<Briefcase className="w-4 h-4" />}>
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          {agente.avatar ? (
-            <Avatar name={agente.name} src={agente.avatar} size="lg" />
-          ) : (
-            <Avatar name={agente.name} size="lg" />
-          )}
-          <div className="flex-1">
-            <h4 className="font-semibold text-fg">{agente.name}</h4>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
-              {t(ROLE_LABEL_KEYS[agente.role])} {agente.zone && `· ${agente.zone}`}
-            </p>
-          </div>
-          <Badge
-            variant={agente.status === 'active' ? 'success' : agente.status === 'on_leave' ? 'warning' : 'secondary'}
+    <SectionCard
+      title={t('inmobiliaria.consignaciones.detail.agentTitle')}
+      icon={<Briefcase className="w-4 h-4" />}
+      acciones={
+        onReassign ? (
+          <button
+            type="button"
+            onClick={onReassign}
+            className="text-body-sm font-medium text-fg-muted underline-offset-2 hover:text-fg hover:underline"
+            aria-label={t('inmobiliaria.consignaciones.detail.reassignAgent')}
           >
-            {agente.status === 'active' ? t('inmobiliaria.consignaciones.agentStatus.active') : agente.status === 'on_leave' ? t('inmobiliaria.consignaciones.agentStatus.onLeave') : t('inmobiliaria.consignaciones.agentStatus.inactive')}
-          </Badge>
+            Cambiar
+          </button>
+        ) : null
+      }
+    >
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar name={agente.name} src={agente.avatar || undefined} size="lg" />
+            <div className="min-w-0">
+              <h4 className="truncate text-[15px] font-medium text-fg">{agente.name}</h4>
+              <p className="text-caption text-fg-subtle">
+                {t(ROLE_LABEL_KEYS[agente.role])} {agente.zone && `· ${agente.zone}`}
+              </p>
+            </div>
+            {agente.status !== 'active' ? (
+              <Badge variant={agente.status === 'on_leave' ? 'warning' : 'secondary'}>
+                {agente.status === 'on_leave'
+                  ? t('inmobiliaria.consignaciones.agentStatus.onLeave')
+                  : t('inmobiliaria.consignaciones.agentStatus.inactive')}
+              </Badge>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {agente.email ? (
+              <a
+                href={`mailto:${agente.email}`}
+                className={iconButtonVariants({ variant: 'outline', size: 'sm' })}
+                aria-label={`${t('inmobiliaria.consignaciones.detail.email')}: ${agente.email}`}
+                title={agente.email}
+              >
+                <Envelope className="h-4 w-4" aria-hidden="true" />
+              </a>
+            ) : null}
+            {agente.phone ? (
+              <a
+                href={`tel:${agente.phone}`}
+                className={iconButtonVariants({ variant: 'outline', size: 'sm' })}
+                aria-label={`${t('inmobiliaria.consignaciones.detail.call')}: ${agente.phone}`}
+                title={agente.phone}
+              >
+                <Phone className="h-4 w-4" aria-hidden="true" />
+              </a>
+            ) : null}
+          </div>
         </div>
 
         {/* Commission Split — not computed for a sale mandate (§8.6: no
             sale-commission money movement anywhere in T-0038). */}
-        {isSaleListing ? (
-          <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
-            <p className="text-xs text-fg-muted dark:text-fg-subtle">
+        <div className="border-t border-border-faint pt-4 dark:border-border-strong">
+          <p className={ROTULO}>{t('inmobiliaria.consignaciones.detail.commissionDistribution')}</p>
+          {isSaleListing ? (
+            <p className="mt-1.5 text-body-sm text-fg-muted">
               {t('inmobiliaria.consignaciones.detail.commissionSplitNotAvailableForSale')}
             </p>
-          </div>
-        ) : (
-          <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
-            <div className="flex items-center gap-2 mb-2">
-              <CurrencyDollar className="w-4 h-4 text-fg-subtle" />
-              <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.commissionDistribution')}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <div>
-                <span className="font-medium text-fg">{agentCommissionPercent.toFixed(1)}%</span>
-                <span className="text-fg-muted dark:text-fg-subtle ml-1">{t('inmobiliaria.consignaciones.detail.agentShare')}</span>
+          ) : (
+            <>
+              <div className="mt-2 flex items-baseline justify-between gap-4 text-body-sm">
+                <span>
+                  <span className="font-mono text-[15px] tabular-nums text-fg">{agentCommissionPercent.toFixed(1)} %</span>
+                  <span className="ml-1.5 text-fg-muted">{t('inmobiliaria.consignaciones.detail.agentShare')}</span>
+                </span>
+                <span>
+                  <span className="font-mono text-[15px] tabular-nums text-fg">{agencyCommissionPercent.toFixed(1)} %</span>
+                  <span className="ml-1.5 text-fg-muted">{t('inmobiliaria.consignaciones.detail.agencyShare')}</span>
+                </span>
               </div>
-              <div>
-                <span className="font-medium text-fg">{agencyCommissionPercent.toFixed(1)}%</span>
-                <span className="text-fg-muted dark:text-fg-subtle ml-1">{t('inmobiliaria.consignaciones.detail.agencyShare')}</span>
+              <div className="mt-2 flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-surface-muted dark:bg-ink" aria-hidden="true">
+                <div className="rounded-full bg-fg" style={{ width: `${agente.commissionSplit}%` }} />
+                <div className="rounded-full bg-fg-subtle/40" style={{ width: `${100 - agente.commissionSplit}%` }} />
               </div>
-            </div>
-            <div className="mt-2 h-2 rounded-full bg-surface-muted dark:bg-ink overflow-hidden flex">
-              <div
-                className="bg-primary dark:bg-primary"
-                style={{ width: `${agente.commissionSplit}%` }}
-              />
-              <div
-                className="bg-muted dark:bg-muted"
-                style={{ width: `${100 - agente.commissionSplit}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Contact and Actions */}
-        <div className="flex items-center gap-2">
-          <a
-            href={`mailto:${agente.email}`}
-            className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex-1 justify-center gap-2')}
-          >
-            <Envelope className="w-4 h-4" />
-            {t('inmobiliaria.consignaciones.detail.email')}
-          </a>
-          <a
-            href={`tel:${agente.phone}`}
-            className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex-1 justify-center gap-2')}
-          >
-            <Phone className="w-4 h-4" />
-            {t('inmobiliaria.consignaciones.detail.call')}
-          </a>
-          <IconButton
-            variant="outline"
-            onClick={onReassign}
-            aria-label={t('inmobiliaria.consignaciones.detail.reassignAgent')}
-            title={t('inmobiliaria.consignaciones.detail.reassignAgent')}
-            icon={<ArrowsClockwise className="w-4 h-4" />}
-          />
+            </>
+          )}
         </div>
       </div>
     </SectionCard>
@@ -688,7 +667,8 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
   const k = (s: string) => `inmobiliaria.consignaciones.detail.${s}`;
   const hasPhotos = consignacion.photosUrls && consignacion.photosUrls.length > 0;
   const filaClase =
-    'w-full flex items-center gap-3 p-3 rounded-lg bg-surface-muted dark:bg-bg hover:bg-surface-hover dark:hover:bg-ink transition-colors text-left';
+    // 21-10 (revisión de la ficha): filas sobre la tarjeta, no cajas grises dentro de ella.
+    '-mx-3 w-[calc(100%+1.5rem)] flex items-center gap-3 rounded-[14px] px-3 py-2.5 hover:bg-surface-muted dark:hover:bg-ink transition-colors text-left';
   const itemsDeInventario = consignacion.inventoryItems?.length || 0;
   // IA95-28: con el inventario de la captación vacío, el de sus actas (Vidi o Documentos).
   const actasDelMandato = useActasDelMandato(consignacion.id, itemsDeInventario === 0);
@@ -740,7 +720,7 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
 
   return (
     <SectionCard title={t(k('documents'))} icon={<FileText className="w-4 h-4" />}>
-      <div className="space-y-3">
+      <div className="space-y-1">
         {consignacion.consignmentContractUrl ? (
           <div className="flex items-center gap-2">
             {/* Abre el modal, no una pestaña: el contrato se lee sin salir del
@@ -751,8 +731,8 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
               className={filaClase}
               data-testid="documento-contrato"
             >
-              <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
-                <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-border-faint dark:border-border-strong">
+                <FileText className="h-[18px] w-[18px] text-fg-subtle" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-fg text-sm">{t(k('consignmentContract'))}</p>
@@ -780,8 +760,8 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
             className={cn(filaClase, 'disabled:opacity-60')}
             data-testid="documento-contrato-adjuntar"
           >
-            <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
-              <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-border-faint dark:border-border-strong">
+              <FileText className="h-[18px] w-[18px] text-fg-subtle" />
             </div>
             {/* 🔴 SIN texto de acción (Nico, 18-09-2026: «quita ese texto azul
                 de adjuntar el PDF firmado, porque la acción es la misma card»).
@@ -824,8 +804,8 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
           className={filaClase}
           data-testid="documento-acta"
         >
-          <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
-            <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-border-faint dark:border-border-strong">
+            <FileText className="h-[18px] w-[18px] text-fg-subtle" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-medium text-fg text-sm">{t(k('handoverReport'))}</p>

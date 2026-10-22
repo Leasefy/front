@@ -24,6 +24,7 @@
  * preguntándose por qué guardó una cosa y el portal muestra otra.
  */
 
+import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useCallback, useContext, useEffect, useId, useState } from 'react';
 import Link from 'next/link';
 import { AuthContext } from '@/lib/auth/auth-context';
@@ -271,15 +272,13 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
   if (!propertyId) {
     return (
       <section
-        className="rounded-lg border border-border bg-surface"
+        className={SUPERFICIE_DE_LA_FICHA}
         data-testid="visitas-del-inmueble"
       >
-        <header className="flex items-start gap-3 border-b border-border px-5 py-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft">
-            <CalendarCheck className="h-[18px] w-[18px] text-primary" aria-hidden />
-          </span>
+        <header className="flex items-start gap-3 border-b border-border-faint px-6 pb-4 pt-5 dark:border-border-strong">
+          <CalendarCheck className="mt-0.5 h-[18px] w-[18px] shrink-0 text-fg-subtle" aria-hidden />
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-fg">Visitas</h3>
+            <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Visitas</h3>
             <p className="mt-0.5 text-body-sm text-fg-muted">Sin inmueble asociado</p>
           </div>
         </header>
@@ -296,16 +295,14 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
 
   return (
     <section
-      className="rounded-lg border border-border bg-surface"
+      className={SUPERFICIE_DE_LA_FICHA}
       data-testid="visitas-del-inmueble"
     >
-      <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+      <header className="flex items-start justify-between gap-4 border-b border-border-faint px-6 pb-4 pt-5 dark:border-border-strong">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft">
-            <CalendarCheck className="h-[18px] w-[18px] text-primary" aria-hidden />
-          </span>
+          <CalendarCheck className="mt-0.5 h-[18px] w-[18px] shrink-0 text-fg-subtle" aria-hidden />
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-fg">Visitas</h3>
+            <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Visitas</h3>
             <p className="mt-0.5 text-body-sm text-fg-muted" data-testid="visitas-resumen">
               {delAsesor
                 ? `Se pueden agendar · horario de ${delAsesor.nombre}: ${resumenDeLaSemana(windowsToSchedule(delAsesor.ventanas))}`

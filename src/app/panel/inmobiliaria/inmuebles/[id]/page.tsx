@@ -785,15 +785,6 @@ function ConsignacionDetailContent() {
             contenido: (
               <>
                 <TerminosDelMandatoSection consignacion={consignacion} onEditar={terminada ? undefined : handleEdit} />
-                {/* Con un agente asignado, cómo se reparte la comisión (el nombre ya está en la portada). */}
-                {agente ? (
-                  <AgenteSection
-                    agente={agente}
-                    commissionPercent={consignacion.commissionPercent}
-                    isSaleListing={consignacion.listingType === 'sale'}
-                    onReassign={handleReassignAgent}
-                  />
-                ) : null}
                 <div id="propietarios" className="scroll-mt-20">
                   <PropietarioSection
                     propietario={propietario ?? undefined}
@@ -821,6 +812,15 @@ function ConsignacionDetailContent() {
                     terminada={terminada}
                   />
                 </div>
+                {/* Con un agente asignado, cómo se reparte la comisión (el nombre ya está en la portada). */}
+                {agente ? (
+                  <AgenteSection
+                    agente={agente}
+                    commissionPercent={consignacion.commissionPercent}
+                    isSaleListing={consignacion.listingType === 'sale'}
+                    onReassign={handleReassignAgent}
+                  />
+                ) : null}
                 <div>
                   <MandatoDelInmueble
                     consignacionId={consignacion.id}

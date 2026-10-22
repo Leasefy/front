@@ -21,7 +21,7 @@ import { useTr } from '@/lib/i18n/use-tr';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import { cn } from '@/lib/utils';
 import type { Property } from '@/lib/types/property';
-import { SectionCard } from '../ConsignacionDetailSections';
+import { TarjetaDeLaFicha as SectionCard } from '@/components/pantalla/TarjetaDeLaFicha';
 
 interface FichaDelInmuebleProps {
   property: Property | null | undefined;

@@ -9,6 +9,7 @@
  * inmueble no la enlazaba nadie.
  */
 
+import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Users, ArrowRight } from '@phosphor-icons/react';
@@ -111,14 +112,12 @@ export function CandidatosDelInmueble({
     : null;
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+    <div className={SUPERFICIE_DE_LA_FICHA}>
+      <div className="flex items-center justify-between gap-3 border-b border-border-faint px-6 pb-4 pt-5 dark:border-border-strong">
         <div className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-md bg-surface-muted">
-            <Users className="h-4 w-4 text-fg-muted" />
-          </span>
+          <Users className="h-[18px] w-[18px] shrink-0 text-fg-subtle" aria-hidden="true" />
           <div>
-            <h3 className="text-sm font-semibold text-fg">Candidatos</h3>
+            <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Candidatos</h3>
             <p className="text-xs text-fg-muted">
               {!propertyId
                 ? 'Sin inmueble asociado'

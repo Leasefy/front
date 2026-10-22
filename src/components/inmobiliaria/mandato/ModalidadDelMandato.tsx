@@ -14,6 +14,7 @@
  * mismo que ver la ficha.
  */
 
+import { TarjetaDeLaFicha } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RadioGroup, RadioGroupItem, Presence } from '@leasefy/cadence';
 import { enCristiano } from '@/lib/errores/en-cristiano';
@@ -87,21 +88,19 @@ export function ModalidadDelMandato({
   if (esVenta) return null;
 
   return (
-    <section
-      className="rounded-lg border border-border bg-card p-5 space-y-4"
+    // 21-10 (revisión de la ficha): la misma tarjeta de las demás secciones.
+    <TarjetaDeLaFicha
+      title="Giro al propietario"
+      icon={<HandCoins className="h-4 w-4" />}
       data-testid="modalidad-del-mandato"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <HandCoins className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-          <h3 className="text-base font-semibold text-foreground">Giro al propietario</h3>
-        </div>
-        {puedeEditar && mandato?.disponible ? (
-          <Button variant="ghost" size="sm" hideArrow onClick={() => setAbierto(true)}>
+      acciones={
+        puedeEditar && mandato?.disponible ? (
+          <Button variant="secondary" size="sm" hideArrow onClick={() => setAbierto(true)}>
             Cambiar
           </Button>
-        ) : null}
-      </div>
+        ) : null
+      }
+    >
 
       {error ? (
         <p className="text-sm text-danger" role="alert">
@@ -174,7 +173,7 @@ export function ModalidadDelMandato({
           }}
         />
       ) : null}
-    </section>
+    </TarjetaDeLaFicha>
   );
 }
 

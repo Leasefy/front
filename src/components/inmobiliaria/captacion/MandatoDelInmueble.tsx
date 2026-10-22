@@ -35,7 +35,9 @@ import { errorEnCristiano, motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { FileText, Lock } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
+import { Badge, Button } from '@/components/ui'
+import { cn } from '@/lib/utils'
+import { TarjetaDeLaFicha as SectionCard } from '@/components/pantalla/TarjetaDeLaFicha'
 import { captacionApi } from '@/lib/api/crm.service'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { useCrm } from '@/lib/hooks/use-crm'
@@ -58,6 +60,49 @@ interface Props {
   puedeEditar?: boolean
 }
 
+/**
+ * Lo que falta, sin repetir (revisión de diseño de la ficha, 21-10-2026). Con dos
+ * dueños el back manda «Cédula del propietario» dos veces —una por cada uno— y se
+ * leía como un error; van juntas con «×2». Y «Cédula del propietario: Sube cédula
+ * del propietario» decía lo mismo dos veces: el detalle sólo va si agrega algo
+ * («con su fecha de expedición, vale 30 días»).
+ */
+export function agruparLoQueFalta(
+  falta: { tipo: string; nombre: string; porQue: string; detalle: string }[],
+): { clave: string; nombre: string; detalle: string | null; vencido: boolean; veces: number }[] {
+  const grupos = new Map<string, { clave: string; nombre: string; detalle: string | null; vencido: boolean; veces: number }>();
+  for (const f of falta) {
+    const clave = `${f.tipo}-${f.nombre}-${f.porQue}`;
+    const yaEsta = grupos.get(clave);
+    if (yaEsta) {
+      yaEsta.veces += 1;
+      continue;
+    }
+    grupos.set(clave, { clave, nombre: f.nombre, detalle: loQueAgrega(f.nombre, f.detalle), vencido: f.porQue === 'VENCIDO', veces: 1 });
+  }
+  return [...grupos.values()];
+}
+
+/**
+ * «Sube el certificado de tradición y libertad con su fecha de expedición» →
+ * «con su fecha de expedición»; «Sube cédula del propietario» → nada (repite el nombre).
+ */
+function loQueAgrega(nombre: string, detalle: string): string | null {
+  const simple = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[.,:;]/g, '');
+  const original = (detalle ?? '').trim().replace(/\.$/, '').split(/\s+/).filter(Boolean);
+  if (original.length === 0) return null;
+  const palabras = original.map(simple);
+  const delNombre = nombre.trim().split(/\s+/).map(simple);
+  let i = 0;
+  if (palabras[0] !== 'sube') return original.join(' ');
+  i = 1;
+  if (['el', 'la', 'los', 'las'].includes(palabras[i] ?? '')) i += 1;
+  const repiteElNombre = delNombre.every((w, k) => palabras[i + k] === w);
+  if (!repiteElNombre) return original.join(' ');
+  const resto = original.slice(i + delNombre.length).join(' ');
+  return resto || null;
+}
+
 function Puerta({
   titulo,
   cuando,
@@ -75,12 +120,17 @@ function Puerta({
   return (
     <div className="space-y-1.5" data-testid={`puerta-${titulo}`}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium">{cuando}</p>
+        <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{cuando}</p>
         {/* 🔴 «Faltan 0» no es un estado (Nico, 18-09-2026). Pasa cuando el
             back dice «incompleto» pero devuelve la lista de faltantes vacía
             —por ejemplo sin la migración—, y en pantalla queda una cuenta que
             no significa nada. Si no sabemos qué falta, se dice. */}
-        <Badge variant={completo ? 'secondary' : 'outline'}>
+        <span
+          className={cn(
+            'font-mono text-[11px] uppercase tracking-[0.08em] tabular-nums',
+            completo ? 'text-success' : falta.length === 0 ? 'text-fg-subtle' : 'text-warning',
+          )}
+        >
           {completo
             ? 'Listo'
             : falta.length === 0
@@ -88,7 +138,7 @@ function Puerta({
               : soloElNumero
                 ? String(falta.length)
                 : `Faltan ${falta.length}`}
-        </Badge>
+        </span>
       </div>
       {!completo && falta.length === 0 ? (
         <p className="text-muted-foreground text-sm">
@@ -96,14 +146,26 @@ function Puerta({
         </p>
       ) : null}
       {falta.length > 0 ? (
-        <ul className="text-muted-foreground space-y-1 text-sm">
-          {falta.map((f) => (
-            <li key={`${f.tipo}-${f.nombre}`}>
-              <span className={f.porQue === 'VENCIDO' ? 'text-destructive' : ''}>
-                {f.nombre}
-                {f.porQue === 'VENCIDO' ? ' (vencido)' : ''}
+        <ul className="space-y-1.5 text-sm">
+          {agruparLoQueFalta(falta).map((f) => (
+            <li key={f.clave} className="flex items-start gap-2.5">
+              <span
+                className={cn(
+                  'mt-[5px] h-2.5 w-2.5 shrink-0 rounded-full border',
+                  f.vencido ? 'border-danger bg-danger-soft' : 'border-fg-subtle',
+                )}
+                aria-hidden="true"
+              />
+              <span className="min-w-0">
+                <span className={f.vencido ? 'text-danger' : 'text-fg'}>
+                  {f.nombre}
+                  {f.vencido ? ' (vencido)' : ''}
+                </span>
+                {f.veces > 1 ? (
+                  <span className="ml-1.5 font-mono text-caption tabular-nums text-fg-subtle">×{f.veces}</span>
+                ) : null}
+                {f.detalle ? <span className="text-fg-muted"> — {f.detalle}</span> : null}
               </span>
-              : {f.detalle}
             </li>
           ))}
         </ul>
@@ -195,11 +257,11 @@ export function MandatoDelInmueble({
   }
 
   return (
-    <Card data-testid="mandato-del-inmueble">
-      <CardHeader>
-        <CardTitle className="text-base">El mandato</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    // 21-10 (revisión de la ficha): la misma tarjeta de las demás secciones; el
+    // título dice qué hay (los términos del mandato tienen su propia tarjeta).
+    <div data-testid="mandato-del-inmueble">
+      <SectionCard title="Papeles y firma del mandato" icon={<FileText className="h-4 w-4" />}>
+      <div className="space-y-5">
         {documentos.noHabilitado ? (
           <p
             className="text-muted-foreground text-sm"
@@ -428,7 +490,8 @@ export function MandatoDelInmueble({
         {/* 🔴 C-10 (Nico, 02-10-2026): «Registrar la venta» y la comisión de
             venta del mandato, viva o anulada con su motivo. */}
         <VentaDelInmueble consignacionId={consignacionId} />
-      </CardContent>
-    </Card>
+      </div>
+      </SectionCard>
+    </div>
   )
 }

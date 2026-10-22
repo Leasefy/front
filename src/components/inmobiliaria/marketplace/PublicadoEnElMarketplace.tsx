@@ -11,7 +11,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Storefront } from '@phosphor-icons/react'
 
-import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
+import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
@@ -66,9 +67,11 @@ export function PublicadoEnElMarketplace({
       : `Publicado, pero todavía no sale: ${(inmueble.porQueNoSeVe ?? '').replace(/^./, (c) => c.toLowerCase())}`
 
   return (
-    <Card className="flex items-start justify-between gap-4 p-4" data-testid="publicado-en-el-marketplace">
+    // 21-10 (revisión de la ficha): la superficie de las demás secciones; el ícono en
+    // gris (el voltaje es para la acción, no para un ícono).
+    <div className={cn(SUPERFICIE_DE_LA_FICHA, 'flex items-start justify-between gap-4 px-6 py-5')} data-testid="publicado-en-el-marketplace">
       <div className="flex items-start gap-3">
-        <Storefront className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+        <Storefront className="mt-0.5 h-5 w-5 shrink-0 text-fg-subtle" />
         <div>
           <p className="text-sm font-medium text-fg">Publicado en el marketplace</p>
           <p className="text-body-sm text-fg-muted">{explicacion}</p>
@@ -80,6 +83,6 @@ export function PublicadoEnElMarketplace({
         disabled={guardando || !puedeCambiar}
         aria-label="Publicado en el marketplace"
       />
-    </Card>
+    </div>
   )
 }

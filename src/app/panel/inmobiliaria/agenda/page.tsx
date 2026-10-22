@@ -9,6 +9,7 @@ import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableHeader, TableBodyAnimado, TableRow, TableRowAnimada, TableHead, TableCell } from '@/components/ui/table';
@@ -57,7 +58,8 @@ const COLUMNS = ['colFecha', 'colEvento', 'colVinculo', 'colPersona', 'colEstado
 type Pestana = VistaDeAgenda | 'semana';
 const PESTANAS: { id: Pestana; label: string }[] = [
   { id: 'proximas', label: 'Próximas' },
-  { id: 'vencidas', label: 'Vencidas' },
+  // Ronda 22: «Atrasadas» (lo que se pasó de fecha); «Vencimientos» era otra cosa (fines de contrato).
+  { id: 'vencidas', label: 'Atrasadas' },
   { id: 'hechas', label: 'Hechas' },
   { id: 'semana', label: 'Semana' },
 ];
@@ -356,28 +358,46 @@ function AgendaContent() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
-          <SectionLabel>{t(k('label'))}</SectionLabel>
-          <h1 className="text-h2 text-foreground">{t(k('title'))}</h1>
-          <p className="text-body text-muted-foreground max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
-        </div>
-        {/* AG-11 (04-10-2026): la asesora también agenda (su `pipeline:edit`).
-            Antes el botón pedía `operaciones:edit` y a ella no le salía. */}
-        {puedeEditar && (
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" onClick={() => setCitaOpen(true)} hideArrow data-testid="pedir-cita">
+      {/* Ronda 22: el encabezado de todas las pantallas (sección · título · una línea | la secundaria y la única azul). */}
+      <EncabezadoDePantalla
+        seccion={t(k('label'))}
+        titulo={t(k('title'))}
+        descripcion={t(k('subtitle'))}
+        acciones={
+          puedeEditar ? (
+            <Button variant="outline" size="sm" onClick={() => setCitaOpen(true)} hideArrow data-testid="pedir-cita">
               <CalendarPlus className="w-4 h-4" weight="bold" />
               {t(k('pedirCita'))}
             </Button>
-            <Button onClick={() => setTareaOpen(true)} hideArrow data-testid="nueva-tarea">
+          ) : null
+        }
+        accionPrincipal={
+          puedeEditar ? (
+            <Button size="sm" onClick={() => setTareaOpen(true)} hideArrow data-testid="nueva-tarea">
               <Plus className="w-4 h-4" weight="bold" />
               {t(k('new'))}
             </Button>
-          </div>
-        )}
-      </header>
+          ) : null
+        }
+      />
+
+      {/* Ronda 22: lo que se pasó de fecha, primero (la pantalla abre en «Próximas»: lo fija su prueba). */}
+      {pestana !== 'vencidas' && (porVista?.vencidas ?? 0) > 0 ? (
+        <p className="flex flex-wrap items-center gap-2 text-body-sm text-fg" data-testid="agenda-atrasadas-aviso">
+          <span className="h-1.5 w-1.5 rounded-full bg-warning-500" aria-hidden="true" />
+          {porVista!.vencidas === 1 ? '1 cosa se pasó de fecha' : `${porVista!.vencidas.toLocaleString('es-CO')} cosas se pasaron de fecha`}
+          <button
+            type="button"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            onClick={() => {
+              setPestana('vencidas');
+              setPage(1);
+            }}
+          >
+            Verlas
+          </button>
+        </p>
+      ) : null}
 
       {/* AG-02/AG-04: las vistas. «Vencidas» aparte de «Próximas»; «Semana»
           para ver huecos y choques. */}

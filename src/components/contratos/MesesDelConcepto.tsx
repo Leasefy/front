@@ -11,7 +11,7 @@
  * elegir: su valor pasa a la próxima cuota sin pagar (lo dice al lado).
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { Presence } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
@@ -31,6 +31,8 @@ export interface MesElegido {
 
 export function MesesDelConcepto({
   contractId,
+  cargar,
+  sinMigracion = 'Todavía no se pueden elegir los meses: Leasefy tiene pendiente una actualización. Agrégalo como de todos los meses o de una sola vez.',
   paga,
   total,
   conCentavos,
@@ -38,7 +40,15 @@ export function MesesDelConcepto({
   onCambiar,
   error,
 }: {
-  contractId: string
+  /** El contrato de donde salen los meses. Sin él, `cargar` dice de dónde. */
+  contractId?: string
+  /**
+   * Portofino 22-10: otra fuente de los meses (la reparación diferida los pide
+   * por la solicitud: el contrato vigente lo resuelve el back).
+   */
+  cargar?: () => Promise<{ disponible: boolean; meses: MesParaUnConcepto[]; motivo?: string }>
+  /** Lo que se dice si el back todavía no tiene dónde guardar los meses. */
+  sinMigracion?: string
   paga: ConceptoDelContrato['paga']
   /** El valor total del concepto. */
   total: number
@@ -51,16 +61,24 @@ export function MesesDelConcepto({
   const [disponible, setDisponible] = useState(true)
   const [falla, setFalla] = useState<string | null>(null)
   const [cuantos, setCuantos] = useState('')
+  const [motivoSinMeses, setMotivoSinMeses] = useState<string | null>(null)
+  const idDelCampo = useId()
 
   useEffect(() => {
     let vigente = true
     setMeses(null)
-    contractsApi
-      .mesesParaUnConcepto(contractId, paga)
-      .then((r) => {
+    setMotivoSinMeses(null)
+    const pedir = cargar ?? (contractId ? () => contractsApi.mesesParaUnConcepto(contractId, paga) : null)
+    if (!pedir) {
+      setMeses([])
+      return
+    }
+    pedir()
+      .then((r: { disponible: boolean; meses: MesParaUnConcepto[]; motivo?: string }) => {
         if (!vigente) return
         setMeses(r.meses)
         setDisponible(r.disponible)
+        setMotivoSinMeses(r.motivo ?? null)
       })
       .catch((e: unknown) => {
         if (!vigente) return
@@ -70,6 +88,8 @@ export function MesesDelConcepto({
     return () => {
       vigente = false
     }
+    // `cargar` se pasa en línea: cambia en cada pintada y no debe volver a pedir.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contractId, paga])
 
   // Si cambia el total con meses ya elegidos, se vuelve a repartir en partes iguales.
@@ -102,13 +122,15 @@ export function MesesDelConcepto({
   if (!disponible) {
     return (
       <p role="alert" className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-caption text-warning">
-        Todavía no se pueden elegir los meses: Leasefy tiene pendiente una actualización. Agrégalo como de todos los meses o de una sola vez.
+        {sinMigracion}
       </p>
     )
   }
   if (falla) return <p className="text-caption text-destructive">{falla}</p>
   if (meses.length === 0) {
-    return <p className="text-caption text-muted-foreground">Este contrato todavía no tiene meses para elegir.</p>
+    return (
+      <p className="text-caption text-muted-foreground">{motivoSinMeses ?? 'Este contrato todavía no tiene meses para elegir.'}</p>
+    )
   }
 
   const suma = sumaDeLasPartes(valor)
@@ -118,12 +140,12 @@ export function MesesDelConcepto({
     <div className="space-y-3" data-testid="meses-del-concepto">
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
-          <label htmlFor="diferir-en" className="text-caption text-muted-foreground">
+          <label htmlFor={`${idDelCampo}-diferir-en`} className="text-caption text-muted-foreground">
             Diferir en
           </label>
           <div className="flex items-center gap-2">
             <Input
-              id="diferir-en"
+              id={`${idDelCampo}-diferir-en`}
               type="number"
               inputMode="numeric"
               min={1}
@@ -172,7 +194,7 @@ export function MesesDelConcepto({
         <div className="space-y-2 rounded-md border border-border p-3">
           {valor.map((p) => (
             <div key={p.mes} className="flex flex-wrap items-center justify-between gap-2">
-              <label htmlFor={`valor-${p.mes}`} className="min-w-0 text-sm text-foreground">
+              <label htmlFor={`${idDelCampo}-valor-${p.mes}`} className="min-w-0 text-sm text-foreground">
                 {mesEnPalabras(p.mes).replace(/^./, (l) => l.toUpperCase())}
                 {noSePueden.has(p.mes) ? (
                   <span className="block text-caption text-warning">
@@ -181,7 +203,7 @@ export function MesesDelConcepto({
                 ) : null}
               </label>
               <MoneyInput
-                id={`valor-${p.mes}`}
+                id={`${idDelCampo}-valor-${p.mes}`}
                 areas={AREAS_DE_LA_DEUDA}
                 className="w-36"
                 value={String(p.valorCop)}

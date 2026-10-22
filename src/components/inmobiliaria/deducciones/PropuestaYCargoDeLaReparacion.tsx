@@ -14,14 +14,38 @@
  *   · 🔴 D12 (17-09-2026): a cargo del propietario, dónde está SU aprobación
  *     —esperándolo, aprobada, RECHAZADA (y entonces la inmobiliaria decide qué
  *     sigue) o registrada por emergencia con el aviso que se le generó—.
+ *   · Portofino 22-10-2026: lo DIFERIDO en meses, de cada lado, con cuánto en
+ *     cada mes (lo del propietario que espera su aprobación, con los meses que
+ *     se le pidieron).
  */
 
-import { Robot, Receipt, Hourglass, CheckCircle, XCircle, Siren } from '@phosphor-icons/react';
+import { Robot, Receipt, Hourglass, CheckCircle, XCircle, Siren, CalendarDots } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import { formatCurrency, type SolicitudMantenimiento } from '@/lib/types/inmobiliaria';
 import { mesEnTitulo } from '@/lib/utils/mes';
+import { mesCorto } from '@/lib/contratos/meses-del-concepto';
+import { planEnFrase } from '@/lib/mantenimiento/reparacion-diferida';
+import type { MesDeLaReparacion } from '@/lib/types/deducciones';
+
+/** Los meses de lo diferido, con cuánto en cada uno. */
+function MesesDeLaReparacion({ plan, testId }: { plan: ReadonlyArray<MesDeLaReparacion>; testId: string }) {
+  return (
+    <ul className="flex flex-wrap gap-1.5" data-testid={testId}>
+      {[...plan]
+        .sort((a, b) => a.mes.localeCompare(b.mes))
+        .map((p) => (
+          <li
+            key={p.mes}
+            className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-caption tabular-nums text-fg"
+          >
+            {mesCorto(p.mes)} · {formatCurrency(p.valorCop)}
+          </li>
+        ))}
+    </ul>
+  );
+}
 
 export function PropuestaYCargoDeLaReparacion({
   solicitud,
@@ -39,6 +63,12 @@ export function PropuestaYCargoDeLaReparacion({
   const aprobacion = solicitud.aprobacionDelPropietario ?? null;
   // Una aprobación anulada es historia sin nada que hacer: no se pinta.
   const aprobacionVisible = aprobacion && aprobacion.estado !== 'ANULADA' ? aprobacion : null;
+  // Portofino 22-10: lo que ya se cobra en meses, por lado.
+  const diferidaProp = solicitud.diferida?.PROPIETARIO ?? null;
+  const diferidaInq = solicitud.diferida?.INQUILINO ?? null;
+  // Lo del propietario: el plan ubicado si ya nació; si espera, el que se le pidió.
+  const mesesDelPropietario =
+    diferidaProp?.plan ?? (aprobacionVisible?.estado === 'PENDIENTE' ? aprobacionVisible.diferidaEn ?? null : null);
 
   const pendiente =
     propuesta && !propuesta.atendidaAt && !solicitud.selectedQuoteId ? propuesta : null;
@@ -46,7 +76,7 @@ export function PropuestaYCargoDeLaReparacion({
     ? solicitud.quotes.find((q) => q.id === pendiente.quoteId)
     : undefined;
 
-  if (!pendiente && !cargo && !aprobacionVisible) return null;
+  if (!pendiente && !cargo && !aprobacionVisible && !diferidaInq && !diferidaProp) return null;
 
   return (
     <div className="space-y-3">
@@ -112,6 +142,17 @@ export function PropuestaYCargoDeLaReparacion({
           <p className="text-sm text-fg-muted">
             {t(k('aprobacionDelPropietario.valor'), { valor: formatCurrency(aprobacionVisible.valorCop) })}
           </p>
+          {mesesDelPropietario && mesesDelPropietario.length > 0 && (
+            <div className="space-y-1.5" data-testid="diferida-propietario">
+              <p className="flex items-center gap-1.5 text-xs text-fg">
+                <CalendarDots className="h-3.5 w-3.5 text-fg-muted" aria-hidden="true" />
+                {aprobacionVisible.estado === 'PENDIENTE'
+                  ? `Si la aprueba, se le descuenta ${planEnFrase(mesesDelPropietario)}.`
+                  : `Se le descuenta ${planEnFrase(mesesDelPropietario)}.`}
+              </p>
+              <MesesDeLaReparacion plan={mesesDelPropietario} testId="meses-del-propietario" />
+            </div>
+          )}
           {aprobacionVisible.estado === 'RECHAZADA' && (
             <>
               {aprobacionVisible.motivoDeRechazo && (
@@ -140,6 +181,35 @@ export function PropuestaYCargoDeLaReparacion({
               <pre className="mt-2 whitespace-pre-wrap font-sans">{aprobacionVisible.aviso.cuerpo}</pre>
             </details>
           )}
+        </div>
+      )}
+
+      {diferidaProp && !aprobacionVisible && (
+        <div
+          className="space-y-2 rounded-lg border border-border bg-surface-muted p-4"
+          data-testid="diferida-propietario-sola"
+        >
+          <p className="flex items-center gap-2 text-sm font-medium text-fg">
+            <CalendarDots className="h-4 w-4 text-fg-muted" aria-hidden="true" />
+            Al propietario se le descuenta {planEnFrase(diferidaProp.plan)}
+          </p>
+          <MesesDeLaReparacion plan={diferidaProp.plan} testId="meses-del-propietario" />
+        </div>
+      )}
+
+      {diferidaInq && (
+        <div
+          className="space-y-2 rounded-lg border border-border bg-surface-muted p-4"
+          data-testid="diferida-inquilino"
+        >
+          <p className="flex items-center gap-2 text-sm font-medium text-fg">
+            <CalendarDots className="h-4 w-4 text-fg-muted" aria-hidden="true" />
+            Al inquilino se le cobra {planEnFrase(diferidaInq.plan)}
+          </p>
+          <p className="text-xs text-fg-muted">
+            {formatCurrency(diferidaInq.valorCop)} repartidos en su cuota de cada mes, en lugar de una sola vez.
+          </p>
+          <MesesDeLaReparacion plan={diferidaInq.plan} testId="meses-del-inquilino" />
         </div>
       )}
 

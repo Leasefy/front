@@ -147,6 +147,33 @@ export interface LoQueSeAprueba {
   porcentajes?: PorcentajesDelReparto | null;
   motivoInmobiliaria?: string | null;
   proveedorId?: string | null;
+  /**
+   * Portofino 22-10-2026: diferir en meses, por lado (los valores de cada lado
+   * suman lo que le toca). Ausente = de una vez, como siempre.
+   */
+  diferir?: DiferirLaReparacion | null;
+}
+
+/** Un mes del plan y cuánto se cobra (o descuenta) en él. */
+export interface MesDeLaReparacion {
+  /** `AAAA-MM`. */
+  mes: string;
+  valorCop: number;
+  /** El mes que se eligió, cuando su cuota ya estaba pagada y el valor pasó a otra. */
+  mesPedido?: string;
+}
+
+export interface DiferirLaReparacion {
+  propietario?: MesDeLaReparacion[];
+  inquilino?: MesDeLaReparacion[];
+}
+
+/** Lo que ya se cobra en meses de un lado (el concepto del contrato con su plan). */
+export interface LadoDiferido {
+  conceptoId: string;
+  contractId: string;
+  valorCop: number;
+  plan: MesDeLaReparacion[];
 }
 
 /**
@@ -184,6 +211,8 @@ export interface CargoDeLaReparacion {
    * descuento y aviso). `null` a cargo del inquilino; ausente con un back viejo.
    */
   aprobacionDelPropietario?: AprobacionDeReparacion | null;
+  /** Portofino 22-10: lo que se difirió en meses (ausente con un back anterior). */
+  diferida?: { propietario: MesDeLaReparacion[] | null; inquilino: MesDeLaReparacion[] | null };
 }
 
 /**
@@ -217,6 +246,8 @@ export interface AprobacionDeReparacion {
   motivoDeRechazo: string | null;
   anuladaAt: string | null;
   motivoDeAnulacion: string | null;
+  /** Portofino 22-10: los meses en que se le descuenta (diferida). `null`/ausente = de una vez. */
+  diferidaEn?: MesDeLaReparacion[] | null;
 }
 
 /** Lo que el propietario ve en su portal. */

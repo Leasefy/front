@@ -81,6 +81,7 @@ import type { CuotasTardias, InventoryItem, VistaPreviaDeDispersiones } from '@/
 import type { LiquidacionDelMesCompleto } from '@/lib/liquidaciones/liquidacion-del-mes';
 import { COLOMBIAN_BANKS, type BankCode, type AccountType } from '@/lib/types/payment-accounts';
 import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
+import type { MesParaUnConcepto } from './contracts.service';
 
 const BASE = '/inmobiliaria';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
@@ -1979,9 +1980,34 @@ export const mantenimientoApi = {
           ? { motivoInmobiliaria: lo.motivoInmobiliaria }
           : {}),
         ...(lo.proveedorId ? { proveedorId: lo.proveedorId } : {}),
+        // Portofino 22-10: diferir en meses (sólo los lados que se difieren).
+        ...(lo.diferir && (lo.diferir.propietario?.length || lo.diferir.inquilino?.length)
+          ? {
+              diferir: {
+                ...(lo.diferir.propietario?.length
+                  ? { propietario: lo.diferir.propietario.map(({ mes, valorCop }) => ({ mes, valorCop })) }
+                  : {}),
+                ...(lo.diferir.inquilino?.length
+                  ? { inquilino: lo.diferir.inquilino.map(({ mes, valorCop }) => ({ mes, valorCop })) }
+                  : {}),
+              },
+            }
+          : {}),
       },
     );
     return { ...mantenimientoDelBack(respuesta), cargo: respuesta.cargo };
+  },
+
+  /**
+   * Portofino 22-10: los meses del contrato vigente del inmueble donde se puede
+   * diferir un lado de la reparación (los pagados o vencidos vienen marcados: lo
+   * de ese mes pasa a la próxima cuota sin pagar).
+   */
+  async mesesParaDiferir(
+    id: string,
+    lado: 'PROPIETARIO' | 'INQUILINO',
+  ): Promise<{ disponible: boolean; contractId: string | null; meses: MesParaUnConcepto[]; motivo?: string }> {
+    return apiClient.get(`${BASE}/mantenimiento/${id}/meses-para-diferir?lado=${lado}`);
   },
 
   /**

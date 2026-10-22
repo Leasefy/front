@@ -34,6 +34,8 @@ import { SobrecostosPorAprobar } from '@/components/landlord/portal/SobrecostosP
 import { HistorialDeReparaciones } from '@/components/landlord/portal/HistorialDeReparaciones';
 import { LasQueHagoYo } from '@/components/landlord/portal/LasQueHagoYo';
 import { TerminacionesPorDecidir } from '@/components/landlord/portal/TerminacionesPorDecidir';
+import { planEnFrase } from '@/lib/mantenimiento/reparacion-diferida';
+import { mesCorto } from '@/lib/contratos/meses-del-concepto';
 
 /** `RechazarAprobacionDto.motivo`: `@MaxLength(2000)` en el back. */
 const MAX_LARGO_DEL_MOTIVO = 2000;
@@ -73,7 +75,9 @@ function Pendiente({
       if (accion === 'aprobar') {
         await aprobacionesDeReparacionApi.aprobar(aprobacion.id);
         toast.success('Aprobaste la reparación', {
-          description: `Se descuenta ${formatCurrency(aprobacion.valorCop)} de tu próxima liquidación sin pagar.`,
+          description: aprobacion.diferidaEn?.length
+            ? `Se te descuentan ${formatCurrency(aprobacion.valorCop)} de tus giros ${planEnFrase(aprobacion.diferidaEn)}.`
+            : `Se descuenta ${formatCurrency(aprobacion.valorCop)} de tu próxima liquidación sin pagar.`,
         });
       } else {
         await aprobacionesDeReparacionApi.rechazar(aprobacion.id, motivo);
@@ -144,9 +148,30 @@ function Pendiente({
           {aprobacion.cotizacion.descripcion ? ` — ${aprobacion.cotizacion.descripcion}` : ''}
         </p>
       )}
-      <p className="text-xs text-fg-muted">
-        Si la apruebas, el valor se descuenta de tu próxima liquidación sin pagar. Pedida el {fecha(aprobacion.pedidaAt)}.
-      </p>
+      {aprobacion.diferidaEn?.length ? (
+        // Portofino 22-10: la inmobiliaria la difirió: se le descuenta por partes.
+        <div className="space-y-1.5" data-testid="aprobacion-diferida">
+          <p className="text-xs text-fg-muted">
+            Si la apruebas, no se te descuenta de una vez: se te descuenta de tus giros {planEnFrase(aprobacion.diferidaEn)}. Pedida el {fecha(aprobacion.pedidaAt)}.
+          </p>
+          <ul className="flex flex-wrap gap-1.5">
+            {[...aprobacion.diferidaEn]
+              .sort((a, b) => a.mes.localeCompare(b.mes))
+              .map((m) => (
+                <li
+                  key={m.mes}
+                  className="rounded-full border border-border bg-surface-muted px-2.5 py-0.5 text-caption tabular-nums text-fg"
+                >
+                  {mesCorto(m.mes)} · {formatCurrency(m.valorCop)}
+                </li>
+              ))}
+          </ul>
+        </div>
+      ) : (
+        <p className="text-xs text-fg-muted">
+          Si la apruebas, el valor se descuenta de tu próxima liquidación sin pagar. Pedida el {fecha(aprobacion.pedidaAt)}.
+        </p>
+      )}
       {rechazando && (
         <div>
           <textarea

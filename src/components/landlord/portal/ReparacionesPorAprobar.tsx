@@ -54,7 +54,9 @@ export function ReparacionesPorAprobar() {
             {n === 1 && pendientes[0]?.reparacion?.titulo
               ? `«${pendientes[0].reparacion.titulo}». `
               : ''}
-            Si la apruebas, se descuenta de tu próximo giro. Revísala y decide.
+            {pendientes.some((a) => a.diferidaEn?.length)
+              ? 'Si la apruebas, se descuenta de tus giros (por partes, en los meses que te propone tu inmobiliaria). Revísala y decide.'
+              : 'Si la apruebas, se descuenta de tu próximo giro. Revísala y decide.'}
           </span>
         </span>
       </Link>

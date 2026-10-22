@@ -10,6 +10,7 @@ import type {
   DeduccionesDeLaLiquidacion,
   PropuestaDelAgente,
   AprobacionDeReparacion,
+  LadoDiferido,
 } from './deducciones';
 import type { BankCode, AccountType } from './payment-accounts';
 import { formatCurrency as formatCurrencyDeLaPlata } from '@/lib/format';
@@ -1269,6 +1270,12 @@ export interface SolicitudMantenimiento {
   puedeHacerlaElPropietario?: boolean;
   /** Por qué no, cuando es por la prioridad («prioridad Alta: la hace la inmobiliaria»). */
   porQueNoLaPuedeHacerElPropietario?: string | null;
+  /**
+   * Portofino 22-10-2026: lo que ya se cobra en meses, por lado. `null` = nada
+   * diferido; ausente con un back anterior. Lo del propietario que espera su
+   * aprobación está en `aprobacionDelPropietario.diferidaEn`.
+   */
+  diferida?: { PROPIETARIO?: LadoDiferido; INQUILINO?: LadoDiferido } | null;
 
   createdAt: string;
   updatedAt: string;

@@ -26,10 +26,23 @@
  * No hay opción preseleccionada: la decisión se toma a propósito. Si el agente
  * de mantenimiento dejó una sugerencia, se dice —«el agente propone, una
  * persona aprueba»—, pero tampoco se preselecciona.
+ *
+ * Portofino 22-10-2026: «la reparación valió 2 millones y la vamos a diferir en
+ * 5 meses». Cada lado que paga (el propietario, el inquilino o los dos en una
+ * compartida) se cobra DE UNA VEZ, como siempre, o EN VARIOS MESES: el mismo
+ * selector de los conceptos del contrato (partes iguales editables; un mes ya
+ * pagado pasa a la próxima cuota sin pagar). Lo del propietario sigue
+ * esperando su aprobación; los meses van con lo que se le pide.
  */
 
 import { useEffect, useState } from 'react';
+import { Presence } from '@leasefy/cadence';
 import { Checkbox } from '@/components/ui/checkbox';
+import { MesesDelConcepto, type MesElegido } from '@/components/contratos/MesesDelConcepto';
+import { mantenimientoApi } from '@/lib/api/inmobiliaria.service';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
+import { AREAS_DE_LA_DEUDA } from '@/lib/plata/con-centavos';
+import { sumanElTotal } from '@/lib/contratos/meses-del-concepto';
 
 import {
   Dialog,
@@ -55,6 +68,29 @@ export interface CotizacionPorAprobar {
   valorCop: number;
 }
 
+type Lado = 'PROPIETARIO' | 'INQUILINO';
+
+/**
+ * Cuánto le toca a cada lado, con la MISMA regla del back
+ * (`repartoDeLaReparacion`): el inquilino hacia abajo en la unidad del monto
+ * (peso, o centavo si trae centavos) y el propietario se lleva el resto.
+ */
+export function partesDeLaReparacion(
+  eleccion: ACargoDeLaReparacion | null,
+  valorCop: number,
+  inquilinoPct: number,
+): { PROPIETARIO: number; INQUILINO: number } {
+  if (!eleccion || !(valorCop > 0)) return { PROPIETARIO: 0, INQUILINO: 0 };
+  if (eleccion === 'PROPIETARIO') return { PROPIETARIO: valorCop, INQUILINO: 0 };
+  if (eleccion === 'INQUILINO') return { PROPIETARIO: 0, INQUILINO: valorCop };
+  if (eleccion === 'INMOBILIARIA') return { PROPIETARIO: 0, INQUILINO: 0 };
+  const conCentavos = !Number.isInteger(valorCop);
+  const unidad = conCentavos ? 100 : 1;
+  const total = conCentavos ? Math.round(valorCop * 100) : valorCop; // redondeo: no es plata (centavos enteros)
+  const inquilino = Math.floor((total * inquilinoPct) / 100) / unidad; // redondeo: no es plata (la regla del back)
+  return { PROPIETARIO: (total - inquilino * unidad) / unidad, INQUILINO: inquilino };
+}
+
 export function ACargoDeDialog({
   abierto,
   onOpenChange,
@@ -62,6 +98,7 @@ export function ACargoDeDialog({
   sugerencia = null,
   preseleccion = null,
   prioridad = null,
+  solicitudId = null,
   onConfirmar,
 }: {
   abierto: boolean;
@@ -82,6 +119,11 @@ export function ACargoDeDialog({
    * inquilino tirado»). Se puede desmarcar; igual pide motivo y soporte.
    */
   prioridad?: MantenimientoPriority | null;
+  /**
+   * Portofino 22-10: la solicitud, para traer los meses donde se puede diferir
+   * (los del contrato vigente del inmueble). Sin ella no se ofrece diferir.
+   */
+  solicitudId?: string | null;
   /**
    * Se espera: si el back rechaza, el diálogo queda abierto. Con
    * `emergencia`, la reparación del propietario se aprueba SIN esperarlo (D12).
@@ -106,6 +148,10 @@ export function ACargoDeDialog({
    */
   const [inquilinoPct, setInquilinoPct] = useState(50);
   const [motivoInmobiliaria, setMotivoInmobiliaria] = useState('');
+  // Portofino 22-10: diferir en meses, por lado.
+  const conCentavos = usePlataConCentavos(AREAS_DE_LA_DEUDA);
+  const [enMeses, setEnMeses] = useState<Record<Lado, boolean>>({ PROPIETARIO: false, INQUILINO: false });
+  const [meses, setMeses] = useState<Record<Lado, MesElegido[]>>({ PROPIETARIO: [], INQUILINO: [] });
 
   useEffect(() => {
     if (abierto) {
@@ -116,8 +162,19 @@ export function ACargoDeDialog({
       setSoporte(null);
       setInquilinoPct(50);
       setMotivoInmobiliaria('');
+      setEnMeses({ PROPIETARIO: false, INQUILINO: false });
+      setMeses({ PROPIETARIO: [], INQUILINO: [] });
     }
   }, [abierto, preseleccion, prioridad]);
+
+  const partes = partesDeLaReparacion(eleccion, cotizacion?.valorCop ?? 0, inquilinoPct);
+  /** Los lados que pagan algo (los que se pueden diferir). */
+  const ladosQuePagan = (['PROPIETARIO', 'INQUILINO'] as const).filter((l) => partes[l] > 0);
+  const seDifiere = (lado: Lado) => Boolean(solicitudId) && enMeses[lado] && partes[lado] > 0;
+  // Un lado en meses tiene que tener meses y sumar lo suyo.
+  const mesesIncompletos = ladosQuePagan.some(
+    (l) => seDifiere(l) && (meses[l].length === 0 || !sumanElTotal(partes[l], meses[l])),
+  );
 
   const emergenciaIncompleta =
     eleccion === 'PROPIETARIO' && esEmergencia && (!motivoDeEmergencia.trim() || !soporte);
@@ -128,7 +185,7 @@ export function ACargoDeDialog({
   const faltaElMotivo =
     eleccion === 'INMOBILIARIA' && motivoInmobiliaria.trim().length === 0;
   const noSePuede =
-    !eleccion || aprobando || emergenciaIncompleta || repartoInvalido || faltaElMotivo;
+    !eleccion || aprobando || emergenciaIncompleta || repartoInvalido || faltaElMotivo || mesesIncompletos;
 
   const propietarioPct = Math.round((100 - inquilinoPct) * 100) / 100;
 
@@ -143,6 +200,14 @@ export function ACargoDeDialog({
           : {}),
         ...(eleccion === 'INMOBILIARIA'
           ? { motivoInmobiliaria: motivoInmobiliaria.trim() }
+          : {}),
+        ...(seDifiere('PROPIETARIO') || seDifiere('INQUILINO')
+          ? {
+              diferir: {
+                ...(seDifiere('PROPIETARIO') ? { propietario: meses.PROPIETARIO } : {}),
+                ...(seDifiere('INQUILINO') ? { inquilino: meses.INQUILINO } : {}),
+              },
+            }
           : {}),
       };
       if (eleccion === 'PROPIETARIO' && esEmergencia && soporte) {
@@ -304,6 +369,67 @@ export function ACargoDeDialog({
                   : '',
               })}
             </p>
+          </div>
+        )}
+
+        {solicitudId && ladosQuePagan.length > 0 && (
+          <div className="space-y-3" data-testid="cuando-se-cobra">
+            {ladosQuePagan.map((lado) => (
+              <div key={lado} className="space-y-3 rounded-lg border border-border bg-surface-hover p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-fg">
+                    {lado === 'PROPIETARIO'
+                      ? 'Lo del propietario'
+                      : 'Lo del inquilino'}{' '}
+                    <span className="font-normal text-fg-muted">· {formatCurrency(partes[lado])}</span>
+                  </p>
+                  <div
+                    role="radiogroup"
+                    aria-label={lado === 'PROPIETARIO' ? '¿Cuándo se le descuenta al propietario?' : '¿Cuándo se le cobra al inquilino?'}
+                    className="inline-flex rounded-md border border-border bg-surface p-0.5"
+                  >
+                    {([false, true] as const).map((v) => (
+                      <button
+                        key={String(v)}
+                        type="button"
+                        role="radio"
+                        aria-checked={enMeses[lado] === v}
+                        onClick={() => setEnMeses((x) => ({ ...x, [lado]: v }))}
+                        className={cn(
+                          'rounded px-2.5 py-1 text-xs transition-colors',
+                          enMeses[lado] === v ? 'bg-primary-soft font-medium text-fg' : 'text-fg-muted hover:text-fg',
+                        )}
+                        data-testid={`cuando-${lado}-${v ? 'meses' : 'una-vez'}`}
+                      >
+                        {v ? 'En varios meses' : 'De una vez'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <Presence show={enMeses[lado]} direction="down">
+                  <div className="space-y-2">
+                    <p className="text-xs text-fg-muted">
+                      {lado === 'PROPIETARIO'
+                        ? eleccion === 'PROPIETARIO' && esEmergencia
+                          ? 'Se le descuenta de su giro en los meses que elijas, en lugar de una sola vez.'
+                          : 'Se le descuenta de su giro en los meses que elijas, cuando apruebe la reparación.'
+                        : 'Entra a su cuota de cada mes que elijas, en lugar de una sola vez.'}
+                    </p>
+                    {enMeses[lado] ? (
+                      <MesesDelConcepto
+                        cargar={() => mantenimientoApi.mesesParaDiferir(solicitudId, lado)}
+                        sinMigracion="Todavía no se puede diferir una reparación en meses: Leasefy tiene pendiente una actualización. Cóbrala de una vez."
+                        paga={lado}
+                        total={partes[lado]}
+                        conCentavos={conCentavos}
+                        valor={meses[lado]}
+                        onCambiar={(m) => setMeses((x) => ({ ...x, [lado]: m }))}
+                      />
+                    ) : null}
+                  </div>
+                </Presence>
+              </div>
+            ))}
           </div>
         )}
 

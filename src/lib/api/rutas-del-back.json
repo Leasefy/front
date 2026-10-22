@@ -2,7 +2,7 @@
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
   "cuando": "2026-10-22",
-  "cuantas": 1580,
+  "cuantas": 1581,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -515,6 +515,7 @@
     "GET /inmobiliaria/mandato/configuracion",
     "GET /inmobiliaria/mantenimiento",
     "GET /inmobiliaria/mantenimiento/:id",
+    "GET /inmobiliaria/mantenimiento/:id/meses-para-diferir",
     "GET /inmobiliaria/mantenimiento/aprobaciones",
     "GET /inmobiliaria/mantenimiento/con-el-propietario",
     "GET /inmobiliaria/mantenimiento/configuracion",

@@ -42,11 +42,19 @@ export const aprobacionesDeReparacionApi = {
     quoteId: string,
     motivo: string,
     soporte: File,
+    /** Portofino 22-10: los meses en que se le descuenta (diferida). */
+    diferirPropietario?: ReadonlyArray<{ mes: string; valorCop: number }> | null,
   ): Promise<SolicitudMantenimiento & { cargo?: CargoDeLaReparacion }> {
     const formulario = new FormData();
     formulario.append('quoteId', quoteId);
     formulario.append('motivo', motivo);
     formulario.append('soporte', soporte);
+    if (diferirPropietario?.length) {
+      formulario.append(
+        'diferirPropietario',
+        JSON.stringify(diferirPropietario.map(({ mes, valorCop }) => ({ mes, valorCop }))),
+      );
+    }
     const token = getAccessToken();
     let respuesta: Response;
     try {

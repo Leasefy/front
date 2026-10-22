@@ -3,10 +3,10 @@
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Cifra, CrossFade, FranjaDeCifras } from '@leasefy/cadence';
+import { Cifra, CrossFade, FranjaDeCifras, MonoLabel, StatusBadge } from '@leasefy/cadence';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { MapPin, Calendar, House, ArrowUpRight, CheckCircle, Clock } from '@phosphor-icons/react';
+import { MapPin, Calendar, House, CheckCircle, ArrowsClockwise } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 
 import { toast } from 'sonner';
@@ -238,9 +238,9 @@ export default function ArriendoPage() {
               dos veces, y la segunda ya lo dice mejor. */}
           {cuantosContratos > 0 && (
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-fg">{locale === 'es' ? 'Contratos activos' : 'Active contracts'}</h2>
+              <h2 className="text-h3 text-fg">{locale === 'es' ? 'Contratos activos' : 'Active contracts'}</h2>
               <span className="text-sm text-fg-muted">
-                {cuantosContratos} {locale === 'es' ? (cuantosContratos !== 1 ? 'contratos' : 'contrato') : (cuantosContratos !== 1 ? 'contracts' : 'contract')}
+                <span className="font-mono tabular-nums">{cuantosContratos}</span> {locale === 'es' ? (cuantosContratos !== 1 ? 'contratos' : 'contrato') : (cuantosContratos !== 1 ? 'contracts' : 'contract')}
               </span>
             </div>
           )}
@@ -257,7 +257,7 @@ export default function ArriendoPage() {
                 return (
                   <div key={lease.id}>
                     <Link href={`/inquilino/arriendo/${lease.id}`}>
-                      <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden">
+                      <div className="group rounded-lg border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden">
                         <div className="flex flex-col lg:flex-row">
                           {/* Image */}
                           <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
@@ -272,15 +272,11 @@ export default function ArriendoPage() {
                               className="transition-transform duration-reveal group-hover:scale-105"
                             />
                             {/* Status Badge */}
+                            {/* El estado con su punto y su palabra (StatusBadge de Cadence), sobre la foto. */}
                             <div className="absolute top-4 left-4">
-                              <span className={cn(
-                                'px-3 py-1.5 text-xs font-medium rounded-full',
-                                lease.status === 'ending_soon'
-                                  ? 'bg-warning-soft text-warning'
-                                  : 'bg-success-soft text-success'
-                              )}>
+                              <StatusBadge tone={lease.status === 'ending_soon' ? 'warning' : 'success'} className="bg-surface/90 backdrop-blur-sm">
                                 {lease.status === 'ending_soon' ? (locale === 'es' ? 'Termina pronto' : 'Ending soon') : t('common.active')}
-                              </span>
+                              </StatusBadge>
                             </div>
                           </div>
 
@@ -291,25 +287,28 @@ export default function ArriendoPage() {
                             {lease.renovacion && !(lease.avisoNoRenovar ?? lease.renovacion.avisoNoRenovar) && (
                               <div className="mb-4 rounded-lg border border-primary/30 bg-primary-soft/40 p-3">
                                 <p className="text-sm font-medium text-primary flex items-center gap-1.5">
-                                  <ArrowUpRight className="w-4 h-4" />
+                                  <ArrowsClockwise className="w-4 h-4" aria-hidden="true" />
                                   {locale === 'es' ? 'Tu contrato está en proceso de renovación' : 'Your contract is up for renewal'}
                                 </p>
-                                <p className="text-xs text-fg-muted mt-1">
+                                <p className="text-caption text-fg-muted mt-1">
                                   {locale === 'es' ? 'Nuevo canon propuesto: ' : 'Proposed new rent: '}
-                                  <span className="font-semibold text-fg">
+                                  <span className="font-mono tabular-nums text-fg">
                                     {formatCurrency(lease.renovacion.proposedRent + (lease.renovacion.proposedAdminFee ?? 0))}
                                   </span>
                                 </p>
                                 {/* Aceptar → «Aceptaste»: el botón se cruza con la confirmación. */}
                                 <CrossFade swapKey={lease.renovacion.tenantAcceptedAt ? 'aceptada' : 'pendiente'}>
                                 {lease.renovacion.tenantAcceptedAt ? (
-                                  <p className="mt-2 text-xs font-medium text-success flex items-center gap-1.5">
+                                  <p className="mt-2 text-caption font-medium text-success flex items-center gap-1.5">
                                     <CheckCircle className="w-4 h-4" weight="fill" />
                                     {locale === 'es' ? 'Aceptaste la renovación' : 'You accepted the renewal'}
                                   </p>
                                 ) : (
-                                  <button
+                                  <Button
                                     type="button"
+                                    size="sm"
+                                    hideArrow
+                                    className="mt-2"
                                     onClick={async (e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
@@ -323,18 +322,17 @@ export default function ArriendoPage() {
                                         });
                                       }
                                     }}
-                                    className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90 transition-colors"
                                   >
                                     <CheckCircle className="w-4 h-4" />
                                     {locale === 'es' ? 'Aceptar renovación' : 'Accept renewal'}
-                                  </button>
+                                  </Button>
                                 )}
                                 </CrossFade>
                               </div>
                             )}
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                               <div>
-                                <h3 className="text-lg font-semibold text-fg group-hover:text-primary transition-colors">
+                                <h3 className="text-h3 text-fg group-hover:text-primary transition-colors [text-wrap:balance]">
                                   {lease.propertyTitle}
                                 </h3>
                                 {/* Los migrados llevan la dirección como título: no se repite. */}
@@ -346,35 +344,35 @@ export default function ArriendoPage() {
                                 )}
                               </div>
                               <div className="sm:text-right">
-                                <p className="text-2xl font-bold text-fg">
+                                <p className="font-mono text-h3 tabular-nums text-fg">
                                   {formatCurrency(lease.monthlyRent + (lease.adminFee ?? 0))}
                                 </p>
-                                <p className="text-xs text-fg-muted">/mes</p>
+                                <p className="text-caption text-fg-muted">{locale === 'es' ? 'al mes' : 'per month'}</p>
                               </div>
                             </div>
 
                             {/* Contract Info Grid */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-border-faint">
                               <div>
-                                <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Arriendo' : 'Rent'}</p>
-                                <p className="text-sm font-medium text-fg">
+                                <MonoLabel className="mb-1 block text-fg-subtle">{locale === 'es' ? 'Arriendo' : 'Rent'}</MonoLabel>
+                                <p className="font-mono text-sm tabular-nums text-fg">
                                   {formatCurrency(lease.monthlyRent)}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Administración' : 'Admin fee'}</p>
-                                <p className="text-sm font-medium text-fg">
-                                  {formatCurrency(lease.adminFee ?? 0)}
+                                <MonoLabel className="mb-1 block text-fg-subtle">{locale === 'es' ? 'Administración' : 'Admin fee'}</MonoLabel>
+                                <p className="font-mono text-sm tabular-nums text-fg">
+                                  {(lease.adminFee ?? 0) > 0 ? formatCurrency(lease.adminFee ?? 0) : '—'}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
+                                <MonoLabel className="mb-1 block text-fg-subtle">{locale === 'es' ? 'Día de pago' : 'Payment day'}</MonoLabel>
                                 <p className="text-sm font-medium text-fg">
                                   {diaDePagoLegible(lease.paymentDay) ?? (locale === 'es' ? 'Sin definir' : 'Not set')}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Vencimiento' : 'Expiration'}</p>
+                                <MonoLabel className="mb-1 block text-fg-subtle">{locale === 'es' ? 'Vencimiento' : 'Expiration'}</MonoLabel>
                                 <p className="text-sm font-medium text-fg">
                                   {formatShortDate(lease.endDate)}
                                 </p>
@@ -383,7 +381,7 @@ export default function ArriendoPage() {
 
                             {/* Contract Progress */}
                             <div className="mt-4">
-                              <div className="flex items-center justify-between text-xs text-fg-muted mb-2">
+                              <div className="flex items-center justify-between text-caption text-fg-muted mb-2">
                                 <span className="flex items-center gap-1">
                                   <Calendar className="w-3 h-3" />
                                   {formatDate(lease.startDate)}
@@ -400,28 +398,22 @@ export default function ArriendoPage() {
                                   style={{ transform: `translateX(${leaseProgress - 100}%)` }}
                                 />
                               </div>
-                              <p className="text-xs text-fg-muted mt-1.5 text-right">
+                              <p className="text-caption text-fg-muted mt-1.5 text-right">
                                 {t('dashboard.daysRemaining', { days: daysRemaining })}
                               </p>
                             </div>
 
                             {/* Next Payment */}
                             {nextPayment && (
-                              <div className="flex items-center justify-between mt-4 p-4 bg-surface-muted rounded-xl">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
-                                    <Clock className="w-5 h-5 text-fg-muted" />
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-fg-muted">{t('dashboard.nextPayment')}</p>
-                                    <p className="text-sm font-semibold text-fg">
-                                      {formatCurrency(nextPayment.valor)} · {formatShortDate(nextPayment.fecha)}
-                                    </p>
-                                  </div>
+                              <div className="flex items-center justify-between gap-3 mt-4 p-4 bg-surface-muted rounded-lg">
+                                <div className="min-w-0">
+                                  <MonoLabel className="block text-fg-subtle">{t('dashboard.nextPayment')}</MonoLabel>
+                                  <p className="text-sm text-fg">
+                                    <span className="font-mono tabular-nums">{formatCurrency(nextPayment.valor)}</span> · {formatShortDate(nextPayment.fecha)}
+                                  </p>
                                 </div>
-                                <span className="flex items-center gap-1 text-sm font-medium text-primary group-hover:text-primary transition-colors">
+                                <span className="shrink-0 text-sm font-medium text-primary underline-offset-4 group-hover:underline">
                                   {locale === 'es' ? 'Ver detalle' : 'View details'}
-                                  <ArrowUpRight className="w-4 h-4" />
                                 </span>
                               </div>
                             )}

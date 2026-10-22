@@ -152,13 +152,15 @@ describe('la franja de cajones de Inmuebles', () => {
    * UNA fila que no cabía. El buscador y los desplegables van juntos en la
    * primera fila; los cajones, en la suya.
    */
-  it('IN-03: los cuatro desplegables van en la fila del buscador, no detrás de los chips', () => {
+  it('IN-03 + decisión 25: Propietario y Ciudad en la fila del buscador, Asesor y Tipo en «Filtros (n)», no detrás de los chips', () => {
     montar()
     const fila1 = container.querySelector('[data-testid="filtros-fila-1"]')!
     const cajones = container.querySelector('[data-testid="filtros-cajones"]')!
     expect(fila1.querySelector('input')).not.toBeNull()
     const desplegables = fila1.querySelectorAll('[data-testid="filtros-desplegables"] button[role="combobox"]')
-    expect(desplegables.length).toBe(4)
+    // Decisión 25 de Nico (22-10): a la vista Propietario y Ciudad; Asesor y Tipo en «Filtros (n)».
+    expect(desplegables.length).toBe(2)
+    expect(fila1.querySelector('[data-testid="filtros-mas"]')).not.toBeNull()
     // «Todos» + los cajones con inmuebles (los de 0 no salen: decisión 23 de Nico).
     expect(cajones.querySelectorAll('[data-testid^="cajon-"]').length).toBe(4)
     expect(cajones.querySelector('button[role="combobox"]')).toBeNull()

@@ -11,6 +11,7 @@ import {
   Briefcase,
   Car,
   Mountains,
+  Faders,
 } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,8 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select';
-import { Chip, IconButton, Presence } from '@leasefy/cadence';
+import { Avatar, Chip, IconButton, Presence } from '@leasefy/cadence';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { Consignacion, Propietario, Agente } from '@/lib/types/inmobiliaria';
 import {
   CAJONES_DEL_INMUEBLE,
@@ -141,6 +143,9 @@ export function ConsignacionFilters({
     onFiltersChange({ ...filters, [key]: value });
   };
 
+  /** Cuántos de los filtros del botón «Filtros» están puestos (decisión 25). */
+  const filtrosEnElBoton = (filters.agenteId !== 'all' ? 1 : 0) + (filters.propertyType !== 'all' ? 1 : 0);
+
   const clearAllFilters = () => {
     onFiltersChange({
       search: '',
@@ -211,33 +216,6 @@ export function ConsignacionFilters({
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center lg:flex-nowrap" data-testid="filtros-desplegables">
-          {/* Agente Dropdown */}
-          <Select
-            value={filters.agenteId}
-            onValueChange={(v) => updateFilter('agenteId', v as ConsignacionFiltersState['agenteId'])}
-          >
-            <SelectTrigger className="w-full sm:w-auto sm:max-w-[160px] gap-2">
-              <span className="truncate">{getAgenteLabel()}</span>
-            </SelectTrigger>
-            <SelectContent className="max-h-60">
-              <SelectItem value="all">{t('inmobiliaria.consignaciones.filters.allAgents')}</SelectItem>
-              {agentes.map((agente) => (
-                <SelectItem key={agente.id} value={agente.id}>
-                  <span className="flex items-center gap-2">
-                    {agente.avatar ? (
-                      <img src={agente.avatar} alt={agente.name} className="w-6 h-6 rounded-full" />
-                    ) : (
-                      <span className="w-6 h-6 rounded-full bg-primary-soft text-primary flex items-center justify-center text-xs">
-                        {agente.name.charAt(0)}
-                      </span>
-                    )}
-                    <span className="truncate">{agente.name}</span>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           {/* Propietario Dropdown */}
           <Select
             value={filters.propietarioId}
@@ -270,28 +248,63 @@ export function ConsignacionFilters({
             </SelectContent>
           </Select>
 
-          {/* Tipo Dropdown */}
-          <Select
-            value={filters.propertyType}
-            onValueChange={(v) => updateFilter('propertyType', v as ConsignacionFiltersState['propertyType'])}
-          >
-            <SelectTrigger className="w-full sm:w-auto sm:min-w-[110px] sm:max-w-[160px] gap-2">
-              <span className="truncate">{getPropertyTypeLabel()}</span>
-            </SelectTrigger>
-            <SelectContent>
-              {PROPERTY_TYPE_OPTIONS.map((option) => {
-                const Icon = option.icon;
-                return (
-                  <SelectItem key={option.value} value={option.value}>
-                    <span className="flex items-center gap-2">
-                      <Icon className="w-4 h-4" />
-                      {t(option.labelKey)}
-                    </span>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+          {/* Decisión 25 de Nico (22-10): en la fila, el buscador, Propietario y Ciudad; Asesor y Tipo van en
+              «Filtros (n)», con cuántos de esos dos están puestos. */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" hideArrow className="w-full gap-2 sm:w-auto" data-testid="filtros-mas">
+                <Faders className="h-4 w-4" aria-hidden="true" />
+                {filtrosEnElBoton > 0 ? `Filtros (${filtrosEnElBoton})` : 'Filtros'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 space-y-3" data-testid="filtros-mas-contenido">
+              {/* Agente Dropdown */}
+              <Select
+                value={filters.agenteId}
+                onValueChange={(v) => updateFilter('agenteId', v as ConsignacionFiltersState['agenteId'])}
+              >
+                <SelectTrigger className="w-full gap-2" aria-label={t('inmobiliaria.consignaciones.filters.allAgents')}>
+                  <span className="truncate">{getAgenteLabel()}</span>
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  <SelectItem value="all">{t('inmobiliaria.consignaciones.filters.allAgents')}</SelectItem>
+                  {agentes.map((agente) => (
+                    <SelectItem key={agente.id} value={agente.id}>
+                      <span className="flex items-center gap-2">
+                        {/* Cadence 2: el Avatar del sistema, nunca iniciales a mano. */}
+                        <Avatar name={agente.name} src={agente.avatar || undefined} size="xs" />
+                        <span className="truncate">{agente.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Tipo Dropdown */}
+              <Select
+                value={filters.propertyType}
+                onValueChange={(v) => updateFilter('propertyType', v as ConsignacionFiltersState['propertyType'])}
+              >
+                <SelectTrigger className="w-full gap-2">
+                  <span className="truncate">{getPropertyTypeLabel()}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  {PROPERTY_TYPE_OPTIONS.map((option) => {
+                    const Icon = option.icon;
+                    return (
+                      <SelectItem key={option.value} value={option.value}>
+                        <span className="flex items-center gap-2">
+                          <Icon className="w-4 h-4" />
+                          {t(option.labelKey)}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+
+            </PopoverContent>
+          </Popover>
 
           {/* Clear Filters */}
           {/* «Limpiar» aparece con el primer filtro y se va al limpiarlos. */}

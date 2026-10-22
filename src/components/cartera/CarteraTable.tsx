@@ -125,7 +125,7 @@ export function siguienteOrden(
 }
 
 /** Cuántas columnas tiene la tabla: el vacío las abarca todas. */
-export const COLUMNAS_DE_CARTERA = 8
+export const COLUMNAS_DE_CARTERA = 7
 
 /**
  * Qué tan grave está una fila, como UN número comparable.
@@ -209,9 +209,14 @@ export interface CarteraTableProps {
    */
   marcadas?: ReadonlySet<string>
   onMarcar?: (ids: readonly string[], si: boolean) => void
+  /**
+   * El formato de la plata de la página (revisión, ronda 11: la franja decía
+   * «,00» y la tabla no). Sin él, el de siempre.
+   */
+  formato?: (n: number | null | undefined) => string
 }
 
-export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave, marcadas, onMarcar }: CarteraTableProps) {
+export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave, marcadas, onMarcar, formato }: CarteraTableProps) {
   const conCasillas = Boolean(marcadas && onMarcar)
   const { t } = useI18n()
   /*
@@ -268,7 +273,7 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
 
   return (
     <>
-    <Table className="max-md:block md:min-w-[1080px]" data-testid="cartera-tabla">
+    <Table className="max-md:block md:min-w-[960px] xl:min-w-0" data-testid="cartera-tabla">
       <TableHeader className="max-md:hidden">
         <TableRow>
           {conCasillas && marcadas && onMarcar && (
@@ -282,7 +287,6 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
             </TableHead>
           )}
           <Ordenable campo="inquilino">{t('cartera.tabla.inquilino')}</Ordenable>
-          <TableHead className="whitespace-nowrap">{t('cartera.tabla.inmueble')} · {t('cartera.tabla.propietario')}</TableHead>
           <Ordenable campo="mes">{t('cartera.tabla.mes')}</Ordenable>
           <Ordenable campo="estado">{t('cartera.tabla.mora')}</Ordenable>
           <Ordenable campo="debe" alineado="right">
@@ -320,6 +324,7 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
                 ) : undefined
               }
               item={item}
+              formato={formato}
               onVerCobro={onVerCobro ? () => onVerCobro(item) : undefined}
               onGestiones={() => setGestionesDe(item)}
             />
@@ -345,17 +350,20 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
 function FilaDeCartera({
   casilla,
   item,
+  formato,
   onVerCobro,
   onGestiones,
 }: {
   /** La casilla de las acciones masivas, si la tabla las tiene. */
   casilla?: React.ReactNode
   item: CarteraItem
+  formato?: (n: number | null | undefined) => string
   onVerCobro?: () => void
   /** Abrir las gestiones de cobro de la persona (COBRANZA-MANUAL). */
   onGestiones?: () => void
 }) {
-  const { t, locale, formatCurrency, formatDate } = useI18n()
+  const { t, locale, formatCurrency: formatoDeSiempre, formatDate } = useI18n()
+  const formatCurrency = formato ?? formatoDeSiempre
 
   const inmueble = item.propertyAddress ?? item.propertyTitle
   const whatsapp = item.tenantPhone
@@ -375,7 +383,7 @@ function FilaDeCartera({
       {casilla !== undefined && <TableCell className="w-10 pl-4 pr-0 align-middle">{casilla}</TableCell>}
       {/* Inquilino: quién debe y por dónde se le habla. */}
       <TableCell className="align-middle max-md:block max-md:p-0">
-        <div className="min-w-0 max-w-[12rem]">
+        <div className="min-w-0 max-w-[18rem]">
           {item.tenantName ? (
             refDelInquilino({ documento: item.tenantDocument }) ? (
               <Link
@@ -397,6 +405,25 @@ function FilaDeCartera({
               {t('cartera.tabla.sinInquilino')}
             </p>
           )}
+          {/* Ronda 11 de la revisión (22-10): el inmueble y su propietario —a quién le
+              estamos quedando mal— van en una línea bajo el nombre, sin columna
+              propia: así la tabla cabe a 1440 y el Total no sale cortado. */}
+          <p
+            className="mt-0.5 truncate text-caption text-fg-muted"
+            title={[inmueble, item.propietarioName].filter(Boolean).join(' · ') || undefined}
+          >
+            {inmueble ? (
+              <span className="text-fg">{inmueble}</span>
+            ) : (
+              <span className="text-warning">{t('cartera.tabla.sinDireccion')}</span>
+            )}
+            {' · '}
+            {item.propietarioName ? (
+              <span data-testid="propietario-de-la-deuda">{item.propietarioName}</span>
+            ) : (
+              <span className="text-warning">{t('cartera.tabla.sinPropietario')}</span>
+            )}
+          </p>
           {item.tenantPhone ? (
             <span className="mt-0.5 flex items-center gap-2 text-xs text-fg-muted">
               <a
@@ -429,23 +456,6 @@ function FilaDeCartera({
             </span>
           )}
         </div>
-      </TableCell>
-
-      {/* Inmueble, y debajo el propietario —a quién le estamos quedando mal—: una columna menos y la
-          tabla cabe a 1440 (GLOW UP 21-10; el mismo dibujo de Contratos, C-16). */}
-      <TableCell className="align-middle max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t('cartera.tabla.inmueble')}>
-        {inmueble ? (
-          <span className="block max-w-[14rem] truncate text-fg">{inmueble}</span>
-        ) : (
-          <span className="text-warning">{t('cartera.tabla.sinDireccion')}</span>
-        )}
-        {item.propietarioName ? (
-          <span className="mt-0.5 block max-w-[14rem] truncate text-xs text-fg-muted" data-testid="propietario-de-la-deuda">
-            {item.propietarioName}
-          </span>
-        ) : (
-          <span className="mt-0.5 block text-xs text-warning">{t('cartera.tabla.sinPropietario')}</span>
-        )}
       </TableCell>
 
       {/* Período + vencimiento apilado: la fecha exacta es lo que se discute
@@ -543,7 +553,7 @@ function FilaDeCartera({
 
       {/* Intereses: aparte del capital. Nunca un $0 mudo. */}
       <TableCell className="align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t(CLAVE_DE_MORA.columnaIntereses)} data-testid="cartera-intereses">
-        <InteresDeLaFila item={item} />
+        <InteresDeLaFila item={item} formato={formato} />
       </TableCell>
 
       {/* Total: capital + interés, lo que hay que pagar hoy por esta cuota. */}
@@ -608,8 +618,15 @@ function FilaDeCartera({
  *  · Sin mora: un guion. No hay nada que liquidar.
  *  · El back no lo mandó: un guion con el porqué en el `title`, nunca $0.
  */
-function InteresDeLaFila({ item }: { item: CarteraItem }) {
-  const { t, formatCurrency } = useI18n()
+function InteresDeLaFila({
+  item,
+  formato,
+}: {
+  item: CarteraItem
+  formato?: (n: number | null | undefined) => string
+}) {
+  const { t, formatCurrency: formatoDeSiempre } = useI18n()
+  const formatCurrency = formato ?? formatoDeSiempre
   const interes = interesDe(item)
 
   if (!interes) {

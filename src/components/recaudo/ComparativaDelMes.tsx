@@ -104,6 +104,7 @@ export function VsMesAnterior({
   sentido,
   fallo,
   valorMostrado,
+  formato = formatCurrency,
 }: {
   id: string;
   comparativa: Comparativa | null;
@@ -112,6 +113,8 @@ export function VsMesAnterior({
   fallo: boolean;
   /** La cifra grande de la tarjeta; si el corte da otra, se dice cuál. */
   valorMostrado: number;
+  /** El formato de la plata de la página (ronda 11: el mismo «,00» que las cifras de arriba). */
+  formato?: (n: number | null | undefined) => string;
 }) {
   const { t, locale } = useI18n();
   if (!comparativa) {
@@ -163,7 +166,7 @@ export function VsMesAnterior({
       )}
       {v.actualCop !== valorMostrado && (
         <span className="text-fg-muted">
-          · {t(`${C}.vs.aEsaFecha`, { dia: comparativa.dia, valor: formatCurrency(v.actualCop) })}
+          · {t(`${C}.vs.aEsaFecha`, { dia: comparativa.dia, valor: formato(v.actualCop) })}
         </span>
       )}
     </p>
@@ -174,13 +177,16 @@ export function VsMesAnterior({
 export function TarjetaDeProyeccion({
   proyeccion: p,
   month,
+  formato = formatCurrency,
 }: {
   proyeccion: ProyeccionDelCierre;
   month: string;
+  /** El formato de la plata de la página (ronda 11: el mismo «,00» que las cifras de arriba). */
+  formato?: (n: number | null | undefined) => string;
 }) {
   const { t, locale } = useI18n();
   const cerrado = p.estado === 'MES_CERRADO';
-  const cifra = p.cierreCop === null ? null : formatCurrency(p.cierreCop);
+  const cifra = p.cierreCop === null ? null : formato(p.cierreCop);
 
   return (
     <section
@@ -207,8 +213,8 @@ export function TarjetaDeProyeccion({
           {p.rango && (
             <p className="text-body-sm text-fg" data-testid="proyeccion-rango">
               {t(`${C}.proyeccion.rango`, {
-                min: formatCurrency(p.rango.minCop),
-                max: formatCurrency(p.rango.maxCop),
+                min: formato(p.rango.minCop),
+                max: formato(p.rango.maxCop),
                 peor: tasaEnPct(Math.min(...p.historia.map((h) => h.tasa))),
                 mejor: tasaEnPct(Math.max(...p.historia.map((h) => h.tasa))),
               })}
@@ -216,11 +222,11 @@ export function TarjetaDeProyeccion({
           )}
           <p className="text-caption leading-relaxed text-fg-muted" data-testid="proyeccion-formula">
             {t(`${C}.proyeccion.formula`, {
-              llego: formatCurrency(p.llegoCop),
-              porVencer: formatCurrency(p.porVencerCop),
+              llego: formato(p.llegoCop),
+              porVencer: formato(p.porVencerCop),
               tasa: tasaEnPct(p.tasa),
               meses: listaDeMeses(p.historia.map((h) => h.month), locale),
-              cierre: formatCurrency(p.cierreCop ?? 0),
+              cierre: formato(p.cierreCop ?? 0),
             })}
           </p>
           {p.historia.length < p.mesesPedidos && (
@@ -241,8 +247,8 @@ export function TarjetaDeProyeccion({
           </p>
           <p className="text-caption text-fg-muted">
             {t(`${C}.proyeccion.sinHistoriaCifras`, {
-              llego: formatCurrency(p.llegoCop),
-              porVencer: formatCurrency(p.porVencerCop),
+              llego: formato(p.llegoCop),
+              porVencer: formato(p.porVencerCop),
             })}
           </p>
         </>
@@ -267,12 +273,15 @@ export function ComparativaDelMes({
   cargando,
   error,
   onReintentar,
+  formato = formatCurrency,
 }: {
   month: string;
   comparativa: Comparativa | null;
   cargando: boolean;
   error: unknown;
   onReintentar: () => void | Promise<unknown>;
+  /** El formato de la plata de la página (ronda 11: el mismo «,00» que las cifras de arriba). */
+  formato?: (n: number | null | undefined) => string;
 }) {
   const { t, locale } = useI18n();
   const mes = soloElMes(month, locale);
@@ -291,15 +300,23 @@ export function ComparativaDelMes({
     >
       {comparativa && (
         <div className="grid gap-4 lg:grid-cols-3" data-testid="comparativa">
-          <CuerpoDelGrafico comparativa={comparativa} mes={mes} />
-          <TarjetaDeProyeccion proyeccion={comparativa.proyeccion} month={month} />
+          <CuerpoDelGrafico comparativa={comparativa} mes={mes} formato={formato} />
+          <TarjetaDeProyeccion proyeccion={comparativa.proyeccion} month={month} formato={formato} />
         </div>
       )}
     </EstadoDeDatos>
   );
 }
 
-function CuerpoDelGrafico({ comparativa: c, mes }: { comparativa: Comparativa; mes: string }) {
+function CuerpoDelGrafico({
+  comparativa: c,
+  mes,
+  formato = formatCurrency,
+}: {
+  comparativa: Comparativa;
+  mes: string;
+  formato?: (n: number | null | undefined) => string;
+}) {
   const { t, locale } = useI18n();
   const mesAnterior = soloElMes(c.mesAnterior, locale);
   const hayRecibos = c.dias.some((d) => (d.esteMesCop ?? 0) > 0 || (d.mesAnteriorCop ?? 0) > 0);
@@ -307,10 +324,10 @@ function CuerpoDelGrafico({ comparativa: c, mes }: { comparativa: Comparativa; m
   const resumen = t(`${C}.diaADia.resumen`, {
     dia: c.dia,
     mes,
-    actual: formatCurrency(llego.actualCop),
+    actual: formato(llego.actualCop),
     diaAnterior: c.diaDelMesAnterior,
     mesAnterior,
-    anterior: formatCurrency(llego.anteriorCop ?? 0),
+    anterior: formato(llego.anteriorCop ?? 0),
   });
 
   return (

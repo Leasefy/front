@@ -275,6 +275,7 @@ export function Recaudo() {
       sentido={sentido}
       fallo={falloLaComparativa}
       valorMostrado={valorMostrado}
+      formato={plata}
     />
   );
 
@@ -559,6 +560,7 @@ export function Recaudo() {
               cargando={comparativaDelMes.cargando}
               error={comparativaDelMes.error}
               onReintentar={() => comparativaDelMes.recargar()}
+              formato={plata}
             />
 
             {/* El gráfico sí lleva su nombre: es un gráfico, no una tabla. */}
@@ -715,7 +717,9 @@ export function Recaudo() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="whitespace-nowrap">{tr("Medio de pago")}</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">{tr("Recibos")}</TableHead>
+                    {/* Ronda 11 (390): bajo 768 son dos columnas —«Transferencia · 7 recibos» y
+                        el valor—; la tabla ya no se desplaza de lado ni corta el Valor. */}
+                    <TableHead className="whitespace-nowrap text-right max-md:hidden">{tr("Recibos")}</TableHead>
                     <TableHead className="whitespace-nowrap text-right">{tr("Valor")}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -740,8 +744,16 @@ export function Recaudo() {
                   ) : (
                     medios.map((m) => (
                       <TableRowAnimada key={m.medio} data-testid="medio-fila">
-                        <TableCell className="text-fg">{tr(m.nombre || nombreDelMedio(m.medio))}</TableCell>
-                        <TableCell className="text-right font-mono tabular-nums text-fg-muted">{m.cantidad}</TableCell>
+                        <TableCell className="text-fg">
+                          {tr(m.nombre || nombreDelMedio(m.medio))}
+                          <span className="text-caption text-fg-muted md:hidden">
+                            {' · '}
+                            {en
+                              ? `${m.cantidad} ${m.cantidad === 1 ? 'receipt' : 'receipts'}`
+                              : `${m.cantidad} ${m.cantidad === 1 ? 'recibo' : 'recibos'}`}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right font-mono tabular-nums text-fg-muted max-md:hidden">{m.cantidad}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums text-fg">
                           {plata(m.valorCop)}
                         </TableCell>
@@ -752,8 +764,16 @@ export function Recaudo() {
                 {medios.length > 0 && (
                   <TableFooter>
                     <TableRow data-testid="medio-total">
-                      <TableCell className="font-medium text-fg">{tr("Total")}</TableCell>
-                      <TableCell className="text-right font-mono tabular-nums text-fg-muted">
+                      <TableCell className="font-medium text-fg">
+                        {tr("Total")}
+                        <span className="text-caption font-normal text-fg-muted md:hidden">
+                          {' · '}
+                          {en
+                            ? `${totalDeRecibos.cantidad} ${totalDeRecibos.cantidad === 1 ? 'receipt' : 'receipts'}`
+                            : `${totalDeRecibos.cantidad} ${totalDeRecibos.cantidad === 1 ? 'recibo' : 'recibos'}`}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums text-fg-muted max-md:hidden">
                         {totalDeRecibos.cantidad}
                       </TableCell>
                       <TableCell className="text-right font-mono font-medium tabular-nums text-fg">

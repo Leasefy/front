@@ -46,7 +46,6 @@ import type {
   Traslado,
 } from '@/lib/api/tesoreria.types';
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { plataPareja } from '@/lib/format';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
@@ -86,6 +85,14 @@ export function TrasladoDeComisionPanel() {
   const [motivo, setMotivo] = useState('');
   /** El error del motivo del rechazo que mandó el back (`campos[].motivo`). */
   const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
+  // Ronda 11 de la revisión (22-10): UNA pareja de formato para toda la página
+  // (la propuesta decía «,00» y la tarjeta de aprobación no, con el mismo número).
+  const plata = plataPareja([
+    ...(propuesta
+      ? [propuesta.totalCop, propuesta.comisionCop, propuesta.yaTrasladadoCop, ...propuesta.renglones.map((r) => r.valorCop)]
+      : []),
+    ...[...(lista?.propuestos ?? []), ...(lista?.recientes ?? [])].flatMap(valoresDelTraslado),
+  ]);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -121,7 +128,7 @@ export function TrasladoDeComisionPanel() {
       const r = await tesoreriaApi.proponerTraslado(periodo);
       if (r.traslado) {
         toast.success(
-          `Traslado de ${formatCurrency(r.traslado.totalCop)} propuesto. Espera tu aprobación.`,
+          `Traslado de ${plata(r.traslado.totalCop)} propuesto. Espera tu aprobación.`,
         );
       } else {
         toast.info(r.propuesta.avisos[0] ?? 'No hay nada que trasladar en este período.');
@@ -218,7 +225,7 @@ export function TrasladoDeComisionPanel() {
                   className="space-y-3 rounded-lg border border-warning/40 bg-surface p-5"
                   data-testid={`traslado-${t.id}`}
                 >
-                  <FilaDelTraslado traslado={t} />
+                  <FilaDelTraslado traslado={t} plata={plata} />
                   <div className="flex flex-wrap gap-2">
                     {/* 22-10 (revisión): aprobarlo es LA acción de la pantalla → la azul. */}
                     <Button
@@ -227,7 +234,7 @@ export function TrasladoDeComisionPanel() {
                       data-testid={`aprobar-${t.id}`}
                     >
                       <CheckCircle className="h-4 w-4" aria-hidden="true" />
-                      Aprobar y trasladar {formatCurrency(t.totalCop)}
+                      Aprobar y trasladar {plata(t.totalCop)}
                     </Button>
                     <Button
                       variant="outline"
@@ -269,7 +276,7 @@ export function TrasladoDeComisionPanel() {
             />
           </div>
 
-          {propuesta ? <Propuesta propuesta={propuesta} /> : null}
+          {propuesta ? <Propuesta propuesta={propuesta} plata={plata} /> : null}
 
           {/* Revisión de Dinero (22-10): con un traslado ya propuesto, la tarea es aprobarlo (arriba);
               proponer otro competía como segunda acción principal. */}
@@ -280,7 +287,7 @@ export function TrasladoDeComisionPanel() {
               data-testid="proponer-traslado"
             >
               <ArrowsLeftRight className="h-4 w-4" aria-hidden="true" />
-              Proponer el traslado de {formatCurrency(propuesta.totalCop)}
+              Proponer el traslado de {plata(propuesta.totalCop)}
             </Button>
           ) : null}
         </section>
@@ -295,7 +302,7 @@ export function TrasladoDeComisionPanel() {
             <ul className="space-y-3" data-testid="traslados-recientes">
               {lista.recientes.map((t) => (
                 <li key={t.id} className="rounded-lg border border-border bg-surface p-4">
-                  <FilaDelTraslado traslado={t} />
+                  <FilaDelTraslado traslado={t} plata={plata} />
                 </li>
               ))}
             </ul>
@@ -315,7 +322,7 @@ export function TrasladoDeComisionPanel() {
               Rechazar el traslado
               {rechazando ? (
                 <>
-                  {' '}de <span className="tabular-nums">{formatCurrency(rechazando.totalCop)}</span>
+                  {' '}de <span className="tabular-nums">{plata(rechazando.totalCop)}</span>
                 </>
               ) : null}
             </DialogTitle>
@@ -369,9 +376,18 @@ export function TrasladoDeComisionPanel() {
   );
 }
 
-function Propuesta({ propuesta }: { propuesta: PropuestaDeTraslado }) {
+type FormatoDePlata = (n: number | null | undefined) => string;
+
+/** Las cifras de un traslado que se pintan (para la pareja de formato de la página). */
+function valoresDelTraslado(t: Traslado): number[] {
+  return [t.totalCop, t.comisionCop, t.ivaComisionCop, t.interesesCop + t.gastosDeCobranzaCop, t.retencionesComisionCop];
+}
+
+function Propuesta({ propuesta, plata: plataDeLaPagina }: { propuesta: PropuestaDeTraslado; plata?: FormatoDePlata }) {
   // Los mismos decimales en la franja y en los renglones (revisión 22-10).
-  const plata = plataPareja([propuesta.totalCop, propuesta.comisionCop, propuesta.yaTrasladadoCop, ...propuesta.renglones.map((r) => r.valorCop)]);
+  const plata =
+    plataDeLaPagina ??
+    plataPareja([propuesta.totalCop, propuesta.comisionCop, propuesta.yaTrasladadoCop, ...propuesta.renglones.map((r) => r.valorCop)]);
   return (
     <div className="space-y-4">
       <Avisos avisos={propuesta.avisos} testId="avisos-de-la-propuesta" />
@@ -428,9 +444,9 @@ function Propuesta({ propuesta }: { propuesta: PropuestaDeTraslado }) {
   );
 }
 
-function FilaDelTraslado({ traslado }: { traslado: Traslado }) {
+function FilaDelTraslado({ traslado, plata: plataDeLaPagina }: { traslado: Traslado; plata?: FormatoDePlata }) {
   // Los mismos decimales en toda la tarjeta (revisión 22-10).
-  const plata = plataPareja([traslado.totalCop, traslado.comisionCop, traslado.ivaComisionCop, traslado.interesesCop + traslado.gastosDeCobranzaCop, traslado.retencionesComisionCop]);
+  const plata = plataDeLaPagina ?? plataPareja(valoresDelTraslado(traslado));
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-3">

@@ -560,6 +560,23 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                   queMuestra={`Ver las ${numberFormatter.format(t?.cuotas ?? 0)} cuotas del mes en la tabla`}
                 />{' '}
                 que se deben en {enFrase}
+                {/* Ronda 11 de la revisión (22-10): el total con intereses es de
+                    TODO lo que falta, no de la cartera: va en la línea de la
+                    cifra grande, no bajo el tramo «Cartera». */}
+                {interesDelMes > 0 ? (
+                  <span className="whitespace-nowrap" data-testid="mes-falta-con-intereses">
+                    {' · '}
+                    <span className="font-mono tabular-nums">
+                      {traducir(CLAVE_DE_MORA.conIntereses, {
+                        monto: plata(
+                          hayVencidasSinPlazo
+                            ? (t?.pendienteCop ?? 0) + interesDelMes
+                            : t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
+                        ),
+                      })}
+                    </span>
+                  </span>
+                ) : null}
               </>
             }
             total={t?.totalCop ?? 0}
@@ -631,7 +648,6 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 ),
                 extra:
                   interesDelMes > 0 ? (
-                    <>
                     <span
                       className="block font-mono text-caption tabular-nums text-danger"
                       data-testid="mes-intereses"
@@ -641,19 +657,6 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                         monto: plata(interesDelMes),
                       })}
                     </span>
-                    {/* 22-10 (revisión): el total con intereses va con los intereses. */}
-                    <span className="block font-mono text-caption tabular-nums text-fg-muted" data-testid="mes-falta-con-intereses">
-                    
-                    {traducir(CLAVE_DE_MORA.conIntereses, {
-                      monto: plata(
-                        hayVencidasSinPlazo
-                          ? (t?.pendienteCop ?? 0) + interesDelMes
-                          : t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
-                      ),
-                    })}
-                    
-                  </span>
-                    </>
                   ) : null,
 
               },

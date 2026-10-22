@@ -134,11 +134,13 @@ export function definicionDeLaTasa(
   recaudo: Tablero['recaudo'],
   mes: string,
   base: string,
+  /** El formato de la plata de la página (ronda 11: un solo formato en todo el tablero). */
+  formato: (n: number) => string = formatCurrency,
 ): string {
   if (recaudo.abonadoDelMesCop == null) return `Qué parte de ${base} llegó. ${recaudo.rotulo}`;
   const deQue = recaudo.base === 'EMITIDO' ? 'de los cobros emitidos de' : 'de las cuotas de';
   return (
-    `${formatCurrency(recaudo.abonadoDelMesCop)} de ${formatCurrency(recaudo.causadoDelMesCop)} ` +
+    `${formato(recaudo.abonadoDelMesCop)} de ${formato(recaudo.causadoDelMesCop)} ` +
     `${deQue} ${nombreDelMes(mes)} ya entraron. No es lo de «Entró en el mes»: ése cuenta también lo que se pagó de otros meses.`
   );
 }
@@ -298,12 +300,14 @@ function EnlaceDelBloque({ href, children }: { href: string; children: string })
 
 function plataDelTablero(t: Tablero) {
   return plataPareja([
-    t.recaudo.delMesCop, t.recaudo.delDiaCop, t.recaudo.causadoDelMesCop,
+    t.recaudo.delMesCop, t.recaudo.delDiaCop, t.recaudo.causadoDelMesCop, t.recaudo.abonadoDelMesCop,
     t.cartera.totalCop, t.cartera.enSiniestroCop, ...t.cartera.tramos.map((x) => x.carteraCop),
     t.propietarios.porGirarCop, t.propietarios.retenidoCop, t.propietarios.enLotesPorAprobarCop,
     t.propietarios.giradoDelMesCop, t.propietarios.proximosGiros?.totalCop,
     t.margen.margenCop, t.margen.comisionesCop, t.margen.interesesCop, t.margen.gastosDeCobranzaCop,
     t.margen.ingresosPropiosCop, t.margen.gmfCop, t.margen.pasarelaCop, t.margen.costosCop,
+    // Ronda 11: «Los que más deben» también, para que no salga sin decimales al lado de «,00».
+    ...t.cartera.deudores.map((d) => d.saldoCop),
   ]);
 }
 
@@ -361,7 +365,7 @@ function BloqueDeRecaudo({ tablero, queMide }: { tablero: Tablero; queMide: bool
           etiqueta="Ya llegó de lo del mes"
           valor={tasaMedida ? (recaudo.tasaPct as number) : null}
           formato={(n) => tasaEnPantalla(n)}
-          definicion={definicionDeLaTasa(recaudo, tablero.mes, base)}
+          definicion={definicionDeLaTasa(recaudo, tablero.mes, base, plata)}
           // 22-10 (revisión): sin recaudo el mes anterior no hay contra qué comparar; no se pinta la frase.
           pie={
             (recaudo.mesAnterior.causadoCop ?? 0) === 0 && (recaudo.mesAnterior.recaudadoCop ?? 0) === 0 ? undefined : (
@@ -463,7 +467,7 @@ function BloqueDeCartera({ tablero, queMide }: { tablero: Tablero; queMide: bool
                 className="mt-2 flex h-2 gap-0.5 overflow-hidden rounded-full bg-surface-muted"
                 role="img"
                 aria-label={cartera.tramos
-                  .map((t) => `${t.nombre}: ${formatCurrency(t.carteraCop)}`)
+                  .map((t) => `${t.nombre}: ${plata(t.carteraCop)}`)
                   .join(' · ')}
                 data-testid="barra-por-edades"
               >
@@ -533,6 +537,7 @@ function BloqueDeCartera({ tablero, queMide }: { tablero: Tablero; queMide: bool
 function BloqueDeDeudores({ tablero }: { tablero: Tablero }) {
   const tr = useTr();
   const { cartera } = tablero;
+  const plata = plataDelTablero(tablero);
   return (
     <section
       className="overflow-hidden rounded-[20px] border border-border bg-surface"
@@ -570,7 +575,7 @@ function BloqueDeDeudores({ tablero }: { tablero: Tablero }) {
                   <p className="font-mono text-caption text-fg-subtle">{d.documento || '—'}</p>
                 </TableCell>
                 <TableCell className="text-right font-mono tabular-nums max-md:block max-md:p-0">
-                  {formatCurrency(d.saldoCop)}
+                  {plata(d.saldoCop)}
                 </TableCell>
                 <TableCell className="text-right font-mono tabular-nums text-fg-muted max-md:col-start-1 max-md:block max-md:p-0 max-md:text-left max-md:text-caption">
                   {NUMERO.format(d.diasDeMora)}

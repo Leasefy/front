@@ -152,7 +152,9 @@ import {
   CLAVE_DE_MORA,
   RUTA_DE_REGLAS_DE_MORA,
   faltanReglasDeMora,
+  interesDe,
   sumarIntereses,
+  totalConInteres,
 } from '@/components/cartera/interes-de-mora'
 
 type Vista = 'deudas' | 'propietarios' | 'siniestros'
@@ -228,6 +230,9 @@ export function CarteraCompleta() {
     castigada?.totalCop,
     ...cartera.tramos.map((t) => t.monto),
     cartera.enSiniestro.monto,
+    // Ronda 11: la tabla habla con el mismo formato que la franja (antes «,00»
+    // arriba y sin decimales abajo en la misma página).
+    ...todas.flatMap((i) => [i.pendingAmount, i.paidAmount, interesDe(i)?.pendienteCop, interesDe(i)?.abonadoCop, totalConInteres(i, i.pendingAmount)]),
   ])
   const tramosVaciosPorElSiniestro = tramosQueNoSeLlenan.filter(
     (e) => (cartera.tramos.find((t) => t.edad === e)?.monto ?? 0) === 0,
@@ -747,13 +752,18 @@ export function CarteraCompleta() {
             </Appear>
           ) : null}
           <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <SegmentedControl<Vista>
-              size="sm"
-              aria-label="Agrupar la cartera"
-              value={vista}
-              onChange={setVista}
-              options={segmentos}
-            />
+            {/* Ronda 11 (390): cada etiqueta en UN renglón; si no caben, el riel se
+                desplaza de lado en vez de partirlas en dos. */}
+            <div className="-mx-4 min-w-0 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
+              <SegmentedControl<Vista>
+                size="sm"
+                aria-label="Agrupar la cartera"
+                value={vista}
+                onChange={setVista}
+                options={segmentos}
+                className="w-max [&>button]:whitespace-nowrap"
+              />
+            </div>
             <div className="flex items-center gap-2">
               {propietario && vista === 'deudas' ? (
                 <Appear
@@ -794,6 +804,7 @@ export function CarteraCompleta() {
           {vista === 'deudas' ? (
             <>
             <CarteraTable
+              formato={plataDeLaFranja}
               marcadas={marcadas}
               onMarcar={marcar}
               items={pagDeudas.pageItems}
@@ -830,6 +841,7 @@ export function CarteraCompleta() {
             </>
           ) : vista === 'propietarios' ? (
             <TablaPorPropietario
+              formato={plataDeLaFranja}
               propietarios={pagPropietarios.pageItems}
               clave={claveDelCuerpo}
               onAbrir={abrirPropietario}
@@ -886,7 +898,10 @@ function TablaPorPropietario({
   onAbrir,
   vacio,
   clave,
+  formato = formatCurrency,
 }: {
+  /** El formato de la plata de la página. */
+  formato?: (n: number) => string
   propietarios: readonly DeudaDePropietario[]
   onAbrir: (p: DeudaDePropietario) => void
   vacio: React.ReactNode
@@ -938,19 +953,19 @@ function TablaPorPropietario({
                 <span className={cn('text-sm', TONO[p.peor])}>{NOMBRE_DE_GRAVEDAD[p.peor]}</span>
               </TableCell>
               <TableCell className="text-right font-mono tabular-nums text-fg">
-                {formatCurrency(p.monto)}
+                {formato(p.monto)}
               </TableCell>
               <TableCell
                 className="text-right font-mono tabular-nums text-danger"
                 data-testid="propietario-intereses"
               >
-                {p.interes > 0 ? formatCurrency(p.interes) : <span className="text-fg-subtle">—</span>}
+                {p.interes > 0 ? formato(p.interes) : <span className="text-fg-subtle">—</span>}
               </TableCell>
               <TableCell
                 className="text-right font-mono font-medium tabular-nums text-fg"
                 data-testid="propietario-total"
               >
-                {formatCurrency(p.totalConInteres)}
+                {formato(p.totalConInteres)}
               </TableCell>
             </TableRowAnimada>
           ))

@@ -1,17 +1,15 @@
 'use client';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import { User as UserIcon, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, FileText } from '@phosphor-icons/react';
 import {
-  AnimatedNumber,
   Collapse,
   CrossFade,
   IconButton,
   Avatar,
-  motionDuration,
-  motionEase,
 } from '@leasefy/cadence';
 import { useAuth } from '@/lib/auth';
 import {
@@ -144,7 +142,6 @@ export default function PerfilPage() {
 
   const completedSteps = setupSteps.filter(s => s.completed).length;
   const totalSteps = setupSteps.length;
-  const completionPercentage = Math.round((completedSteps / totalSteps) * 100);
 
   // Real verification signal: Supabase email confirmation (exposed by the auth
   // context). There is no phone/identity verification system in the backend,
@@ -368,145 +365,28 @@ export default function PerfilPage() {
     <div className="min-h-screen bg-bg">
       <div className="p-6 lg:p-8">
 
-        {/* Header */}
-        <header className="mb-8">
-          <div>
-            <h1 className="text-3xl font-medium text-fg tracking-tight">
-              {t('profile.title')}
-            </h1>
-            <p className="mt-1 text-fg-muted">
-              {t('profile.subtitle')}
-            </p>
-          </div>
-        </header>
+        {/* GLOW UP 22-10 (UX, como el panel): el encabezado común y lo que falta del perfil en la lista
+            de siempre —«Para completar tu perfil te faltan N pasos», cada uno con «Completar», y una línea
+            cuando ya está todo—. Antes, un bloque azul con anillo de porcentaje y cinco tarjetas con caja
+            de ícono. */}
+        <EncabezadoDePantalla titulo={t('profile.title')} descripcion={t('profile.subtitle')} className="mb-8" />
 
-        {/* Setup Progress Section — la barra, el anillo y el porcentaje se
-            revelan desde 0 y, al completar un paso, avanzan desde donde estaban. */}
-        <section className="mb-8">
-          <div className="rounded-lg bg-primary-soft p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              {/* Progress Info */}
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Shield className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
-                  <div>
-                    <h2 className="text-h3 text-fg">
-                      {t('profile.completion.title')}
-                    </h2>
-                    <p className="text-sm text-primary">
-                      {locale === 'es'
-                        ? `${completedSteps} de ${totalSteps} pasos completados`
-                        : `${completedSteps} of ${totalSteps} steps completed`}
-                    </p>
-                  </div>
-                </div>
-                {/* `transform` (translateX), no `width`: no recalcula el layout por cuadro. */}
-                <div className="h-2 bg-surface/50 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ x: '-100%' }}
-                    animate={{ x: `${completionPercentage - 100}%` }}
-                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                    className="h-full w-full bg-primary rounded-full"
-                  />
-                </div>
-                <p className="text-caption text-fg-muted mt-2">
-                  {completionPercentage === 100
-                    ? (locale === 'es' ? '¡Perfil completo! Tienes acceso a todas las funciones.' : 'Profile complete! You have access to all features.')
-                    : t('profile.completion.completeFor')}
-                </p>
-              </div>
-
-              {/* Percentage Badge */}
-              <div className="flex items-center justify-center">
-                <div className="relative w-24 h-24">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="none"
-                      stroke="white"
-                      strokeWidth="8"
-                      opacity="0.5"
-                      className=""
-                    />
-                    <motion.circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="none"
-                      stroke="#1A40FF"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      initial={{ strokeDasharray: '0 251.2' }}
-                      animate={{ strokeDasharray: `${completionPercentage * 2.512} 251.2` }}
-                      transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-mono text-h3 tabular-nums text-fg">
-                      <AnimatedNumber value={completionPercentage} from={0} format={(n) => String(Math.round(n))} />%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Steps List */}
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {setupSteps.map((step, index) => {
-                const Icon = step.icon;
-                return (
-                  <div
-                    key={step.id}
-                    className={cn(
-                      'rounded-lg p-4 transition-colors',
-                      step.completed
-                        ? 'bg-surface/80'
-                        : 'bg-surface border-2 border-dashed border-primary/30'
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={cn(
-                        'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
-                        step.completed
-                          ? 'bg-success-soft'
-                          : 'bg-primary-soft'
-                      )}>
-                        {step.completed ? (
-                          <CheckCircle className="w-4 h-4 text-success" />
-                        ) : (
-                          <Icon className="w-4 h-4 text-primary" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn(
-                          'text-sm font-medium truncate',
-                          step.completed ? 'text-fg' : 'text-primary'
-                        )}>
-                          {step.label}
-                        </p>
-                        {step.completed ? (
-                          <span className="text-caption text-success">{locale === 'es' ? 'Completado' : 'Completed'}</span>
-                        ) : (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            hideArrow
-                            onClick={() => setEditingSection(step.section)}
-                            className="px-0 text-caption text-primary"
-                          >
-                            {locale === 'es' ? 'Completar' : 'Complete'} →
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
+        <ListaParaEmpezar
+          className="mb-8"
+          paraQue={locale === 'es' ? 'completar tu perfil' : 'complete your profile'}
+          descripcion={completedSteps < totalSteps ? t('profile.completion.completeFor') : undefined}
+          requisitos={setupSteps.map((step) => ({
+            id: step.id,
+            titulo: step.label,
+            estado: step.completed ? ('listo' as const) : ('falta' as const),
+            accion: (
+              <Button size="sm" variant="outline" hideArrow onClick={() => setEditingSection(step.section)}>
+                {locale === 'es' ? 'Completar' : 'Complete'}
+              </Button>
+            ),
+          }))}
+          data-testid="perfil-lo-que-falta"
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}

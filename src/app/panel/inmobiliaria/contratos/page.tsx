@@ -756,7 +756,7 @@ function ContratosContent() {
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="px-4 py-4 max-w-[240px] max-md:order-3 max-md:col-span-2 max-md:block max-md:max-w-none max-md:p-0">
+                <TableCell className="px-4 py-4 max-w-[300px] xl:max-w-[340px] max-md:order-3 max-md:col-span-2 max-md:block max-md:max-w-none max-md:p-0">
                   <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
                     <House className="w-3.5 h-3.5 flex-shrink-0" />
                     {c.propertyId === null ? (

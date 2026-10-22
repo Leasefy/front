@@ -14,7 +14,7 @@
  */
 
 import { useMemo } from 'react'
-import { ShieldCheck, Info } from '@phosphor-icons/react'
+import { Info } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
@@ -70,15 +70,13 @@ export function RespaldoDelArriendo({
 
   return (
     <section className={cn('space-y-4', className)} data-testid="respaldo-del-arriendo">
-      <div className="flex items-start gap-2.5">
-        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-fg-subtle" weight="duotone" aria-hidden="true" />
-        <div>
-          <h3 className="text-h3 text-fg">Respaldo del arriendo</h3>
-          <p className="mt-0.5 text-sm text-fg-muted">
-            Queda en el contrato. Sin el número de la póliza no hay a quién
-            reclamarle si algo pasa.
-          </p>
-        </div>
+      {/* Revisora r22 (Crear contrato #3): como las otras secciones del formulario, sin ícono ni sangría. */}
+      <div>
+        <h3 className="text-h3 text-fg">Respaldo del arriendo</h3>
+        <p className="mt-0.5 text-sm text-fg-muted">
+          Queda en el contrato. Sin el número de la póliza no hay a quién
+          reclamarle si algo pasa.
+        </p>
       </div>
 
       {aprobadas.length > 0 ? (

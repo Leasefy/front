@@ -1186,12 +1186,10 @@ function NuevoContratoContent() {
       {/* Las columnas se estiran a la misma altura (sin `items-start`): así el
           resumen de la derecha tiene por dónde quedarse fijo mientras la
           izquierda —que con la plantilla es la larga— se recorre. */}
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 xl:grid-cols-2" data-testid="nuevo-contrato-columnas">
-        {/* ── Izquierda: lo que se elige ── */}
-        {/* Ronda 12: por debajo de xl las dos columnas se vuelven una sola lista (contents) y
-            `order` pone los Términos (obligatorios) justo después de quién y qué; el contrato
-            y el respaldo después, y el resumen al final. En escritorio nada cambia. */}
-        <div className="min-w-0 space-y-6 max-xl:contents" data-testid="nuevo-contrato-elegir">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_400px]" data-testid="nuevo-contrato-columnas">
+        {/* ── Izquierda: los pasos, en orden ── */}
+        {/* Ronda 12 → revisora r22: los pasos van en UNA columna, en el mismo orden en todos los anchos. */}
+        <div className="min-w-0 space-y-6" data-testid="nuevo-contrato-elegir">
         {/* COTIZ-17: de dónde viene lo que ya está puesto. */}
         <Presence show={Boolean(desdeLaCotizacion)}>
           <p className="rounded-lg border border-border bg-surface-muted p-3 text-body-sm text-fg-muted" data-testid="contrato-desde-la-cotizacion">
@@ -1300,207 +1298,10 @@ function NuevoContratoContent() {
           />
         </Presence>
 
-        {/* 1) Contract origin */}
-        <section className="rounded-lg border border-border bg-card p-5 space-y-4 max-xl:order-2">
-          <h2 className="text-h3 text-fg">Tipo de contrato</h2>
-          {/* C-14: «Generar con IA» sólo se ofrece cuando el backend dice que
-              está configurada (`iaDisponible`). Apagada con «No disponible» era
-              una promesa muerta en medio de las dos formas que sí sirven. */}
-          <div className={cn('grid grid-cols-1 gap-3', plantilla.iaDisponible === true ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
-            <ModeOption
-              marca={marcaDelModo}
-              active={form.mode === 'upload'}
-              onClick={() => updateForm('mode', 'upload')}
-              title="Subir PDF propio"
-              desc="Usa un contrato que tu inmobiliaria ya tenga preparado."
-              icon={UploadSimple}
-            />
-            <ModeOption
-              marca={marcaDelModo}
-              active={form.mode === 'template'}
-              onClick={() => updateForm('mode', 'template')}
-              title="Usar plantilla"
-              desc="El contrato de ley, con las cláusulas opcionales que elijas."
-              icon={Scales}
-            />
-            {plantilla.iaDisponible === true && (
-              <ModeOption
-                marca={marcaDelModo}
-                active={form.mode === 'generate'}
-                onClick={() => updateForm('mode', 'generate')}
-                title="Generar con IA"
-                desc="Cuentas qué quieres pactar y el asistente propone las cláusulas."
-                icon={Sparkle}
-              />
-            )}
-          </div>
-
-          {/* Vivienda o comercial. Sólo aparece cuando el backend dice que no lo
-              puede deducir del inmueble: de esa respuesta depende qué LEY rige
-              el contrato, así que no se elige por defecto. */}
-          {/* QA-CONT-95 C-12: después de elegir sigue a la vista, para poder
-              cambiar de ley si se eligió mal (antes desaparecía al responder
-              `preparar` y sólo se corregía recargando). */}
-          {(plantilla.usoIndeterminado || uso) && armadoPorElSistema && (
-            <div className="space-y-1.5" data-testid="nuevo-contrato-uso">
-              <label className="block text-xs font-medium text-fg" htmlFor="contrato-uso">
-                Uso del inmueble
-              </label>
-              <Select
-                value={uso || undefined}
-                onValueChange={(v) => setUso(v as UsoDelInmueble)}
-              >
-                <SelectTrigger id="contrato-uso" data-testid="contrato-uso">
-                  <SelectValue placeholder="Elige vivienda o comercial" />
-                </SelectTrigger>
-                <SelectContent className="z-[400]">
-                  <SelectItem value="VIVIENDA">Vivienda urbana (Ley 820 de 2003)</SelectItem>
-                  <SelectItem value="COMERCIAL">
-                    Local comercial (Código de Comercio, arts. 518 a 524)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {plantilla.usoIndeterminado ? (
-                <p className="text-caption text-fg-muted">{plantilla.usoIndeterminado}</p>
-              ) : null}
-            </div>
-          )}
-        </section>
-
-        {/* Cambiar de forma cruza lo de una con lo de la otra. `popLayout`:
-            lo nuevo entra YA en su lugar y lo viejo se va por encima. */}
-        <CrossFade
-          swapKey={armadoPorElSistema ? 'armar' : form.mode === 'upload' ? 'subir' : 'ninguno'}
-          mode="popLayout"
-          className="empty:hidden max-xl:order-2"
-        >
-          {armadoPorElSistema && (
-            <ArmarContratoDesdePlantilla
-              modo={form.mode === 'generate' ? 'generate' : 'template'}
-              estado={plantilla}
-              arrendatario={
-                mostrarIdentificacion
-                  ? {
-                      ...identificacion,
-                      onCambio: (cambio) =>
-                        setIdentificacionEditada((previa) => ({ ...previa, ...cambio })),
-                    }
-                  : undefined
-              }
-            />
-          )}
-
-          {/* 2) PDF upload */}
-          {form.mode === 'upload' && (
-            <section className="rounded-lg border border-border bg-card p-5 space-y-3">
-              <h2 className="text-h3 text-fg">PDF del contrato</h2>
-              {form.pdfFile ? (
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-success/30 bg-success-soft">
-                  <FileText className="w-5 h-5 text-primary flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(form.pdfFile.size / 1024).toFixed(0)} KB
-                    </p>
-                  </div>
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => updateForm('pdfFile', null)}
-                    aria-label="Quitar"
-                    title="Quitar"
-                    className="text-muted-foreground hover:text-danger"
-                    icon={<X className="w-4 h-4" />}
-                  />
-                </div>
-              ) : (
-                <label
-                  htmlFor="pdf-upload"
-                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={onDrop}
-                  className={cn(
-                    'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
-                    isDragging
-                      ? 'border-primary/40 bg-primary-soft/40'
-                      : 'border-border hover:border-primary/40 hover:bg-muted/50'
-                  )}
-                >
-                  <UploadSimple className="w-8 h-8 text-muted-foreground" />
-                  <p className="text-sm text-foreground">
-                    <span className="font-medium">Haz clic para subir</span> o arrastra un PDF aquí
-                  </p>
-                  <p className="text-xs text-muted-foreground">Máx 10 MB</p>
-                  <input
-                    id="pdf-upload"
-                    type="file"
-                    accept="application/pdf"
-                    aria-invalid={errorDelPdf ? true : undefined}
-                    aria-describedby={`${idDelCampoDelContrato('pdfFile')}-error`}
-                    onChange={(e) => {
-                      onPickFile(e.target.files?.[0] ?? null);
-                      // Volver a elegir el MISMO archivo (corregido afuera) dispara otra vez.
-                      e.target.value = '';
-                    }}
-                    className="sr-only"
-                  />
-                </label>
-              )}
-              <ErrorDelCampo
-                id={`${idDelCampoDelContrato('pdfFile')}-error`}
-                mensaje={errorDelPdf ?? errorDe('pdfFile')}
-                className="mt-0"
-              />
-
-              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted rounded-md p-3">
-                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <p>
-                  El propietario va a firmar digitalmente el contrato en Leasefy, independientemente
-                  de si el PDF ya trae firma manuscrita. Esto garantiza la trazabilidad legal.
-                </p>
-              </div>
-            </section>
-          )}
-        </CrossFade>
-
-        {/* Paso 11 del recorrido: el respaldo (aseguradora y póliza). Vivía al
-            pie de «Términos»; con dos columnas va con lo que se elige, y la
-            derecha queda corta para que el resumen se vea entero. */}
-        <section className="rounded-lg border border-border bg-card p-5 max-xl:order-2" data-testid="nuevo-contrato-respaldo">
-          {/* Nico (22-10): el seguro va en UN solo lugar, con el respaldo del arriendo
-              (antes también en Términos). El plan de Leasefy se sigue guardando igual. */}
-          <RespaldoDelArriendo
-            valor={respaldo}
-            onCambio={setRespaldo}
-            opciones={evaluacion?.protection_options}
-            errores={erroresRespaldo}
-            conAnalisis={!esManual}
-          />
-          {/* Ronda 19: el seguro va DEBAJO del título y las opciones del respaldo, no encima. */}
-          <div className="mt-5 max-w-xs">
-          <Field id="contrato-seguro" label="Seguro de Leasefy (opcional)">
-            <Select
-              value={form.insuranceTier}
-              onValueChange={(v) => updateForm('insuranceTier', v as InsuranceTier)}
-            >
-              <SelectTrigger id="contrato-seguro">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="NONE">Sin seguro</SelectItem>
-                <SelectItem value="BASIC">Básico</SelectItem>
-                <SelectItem value="PREMIUM">Premium</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-          </div>
-        </section>
-        </div>
-
-        {/* ── Derecha: los términos y el resumen fijo ── */}
-        <div className="min-w-0 space-y-6 max-xl:contents" data-testid="nuevo-contrato-terminos">
+        {/* Revisora r22 (Crear contrato #1): una sola columna de pasos, en el mismo orden en los dos anchos:
+            partes → términos → tipo → PDF → respaldo; a la derecha (xl) sólo el resumen, fijo, con el botón. */}
         {/* 3) Dates + amounts */}
-        <section className="rounded-lg border border-border bg-card p-5 space-y-4 max-xl:order-1">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-h3 text-fg">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" onBlur={alDejarUnCampo}>
             <Field id={idDelCampoDelContrato('startDate')} label="Fecha de inicio" error={errorDe('startDate')}>
@@ -1703,11 +1504,212 @@ function NuevoContratoContent() {
           </div>
         </section>
 
+        {/* 1) Contract origin */}
+        <section className="rounded-lg border border-border bg-card p-5 space-y-4">
+          <h2 className="text-h3 text-fg">Tipo de contrato</h2>
+          {/* C-14: «Generar con IA» sólo se ofrece cuando el backend dice que
+              está configurada (`iaDisponible`). Apagada con «No disponible» era
+              una promesa muerta en medio de las dos formas que sí sirven. */}
+          <div className={cn('grid grid-cols-1 gap-3', plantilla.iaDisponible === true ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
+            <ModeOption
+              marca={marcaDelModo}
+              active={form.mode === 'upload'}
+              onClick={() => updateForm('mode', 'upload')}
+              title="Subir PDF propio"
+              desc="Usa un contrato que tu inmobiliaria ya tenga preparado."
+              icon={UploadSimple}
+            />
+            <ModeOption
+              marca={marcaDelModo}
+              active={form.mode === 'template'}
+              onClick={() => updateForm('mode', 'template')}
+              title="Usar plantilla"
+              desc="El contrato de ley, con las cláusulas opcionales que elijas."
+              icon={Scales}
+            />
+            {plantilla.iaDisponible === true && (
+              <ModeOption
+                marca={marcaDelModo}
+                active={form.mode === 'generate'}
+                onClick={() => updateForm('mode', 'generate')}
+                title="Generar con IA"
+                desc="Cuentas qué quieres pactar y el asistente propone las cláusulas."
+                icon={Sparkle}
+              />
+            )}
+          </div>
+
+          {/* Vivienda o comercial. Sólo aparece cuando el backend dice que no lo
+              puede deducir del inmueble: de esa respuesta depende qué LEY rige
+              el contrato, así que no se elige por defecto. */}
+          {/* QA-CONT-95 C-12: después de elegir sigue a la vista, para poder
+              cambiar de ley si se eligió mal (antes desaparecía al responder
+              `preparar` y sólo se corregía recargando). */}
+          {(plantilla.usoIndeterminado || uso) && armadoPorElSistema && (
+            <div className="space-y-1.5" data-testid="nuevo-contrato-uso">
+              <label className="block text-xs font-medium text-fg" htmlFor="contrato-uso">
+                Uso del inmueble
+              </label>
+              <Select
+                value={uso || undefined}
+                onValueChange={(v) => setUso(v as UsoDelInmueble)}
+              >
+                <SelectTrigger id="contrato-uso" data-testid="contrato-uso">
+                  <SelectValue placeholder="Elige vivienda o comercial" />
+                </SelectTrigger>
+                <SelectContent className="z-[400]">
+                  <SelectItem value="VIVIENDA">Vivienda urbana (Ley 820 de 2003)</SelectItem>
+                  <SelectItem value="COMERCIAL">
+                    Local comercial (Código de Comercio, arts. 518 a 524)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {plantilla.usoIndeterminado ? (
+                <p className="text-caption text-fg-muted">{plantilla.usoIndeterminado}</p>
+              ) : null}
+            </div>
+          )}
+        </section>
+
+        {/* Cambiar de forma cruza lo de una con lo de la otra. `popLayout`:
+            lo nuevo entra YA en su lugar y lo viejo se va por encima. */}
+        <CrossFade
+          swapKey={armadoPorElSistema ? 'armar' : form.mode === 'upload' ? 'subir' : 'ninguno'}
+          mode="popLayout"
+          className="empty:hidden"
+        >
+          {armadoPorElSistema && (
+            <ArmarContratoDesdePlantilla
+              modo={form.mode === 'generate' ? 'generate' : 'template'}
+              estado={plantilla}
+              arrendatario={
+                mostrarIdentificacion
+                  ? {
+                      ...identificacion,
+                      onCambio: (cambio) =>
+                        setIdentificacionEditada((previa) => ({ ...previa, ...cambio })),
+                    }
+                  : undefined
+              }
+            />
+          )}
+
+          {/* 2) PDF upload */}
+          {form.mode === 'upload' && (
+            <section className="rounded-lg border border-border bg-card p-5 space-y-3">
+              <h2 className="text-h3 text-fg">PDF del contrato</h2>
+              {form.pdfFile ? (
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-success/30 bg-success-soft">
+                  <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(form.pdfFile.size / 1024).toFixed(0)} KB
+                    </p>
+                  </div>
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => updateForm('pdfFile', null)}
+                    aria-label="Quitar"
+                    title="Quitar"
+                    className="text-muted-foreground hover:text-danger"
+                    icon={<X className="w-4 h-4" />}
+                  />
+                </div>
+              ) : (
+                <label
+                  htmlFor="pdf-upload"
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={onDrop}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
+                    isDragging
+                      ? 'border-primary/40 bg-primary-soft/40'
+                      : 'border-border hover:border-primary/40 hover:bg-muted/50'
+                  )}
+                >
+                  <UploadSimple className="w-8 h-8 text-muted-foreground" />
+                  {/* Revisora r22 (#2): en el celular no hay clic ni arrastre. */}
+                  <p className="text-sm text-foreground">
+                    <span className="md:hidden"><span className="font-medium">Toca para subir el PDF</span></span>
+                    <span className="hidden md:inline"><span className="font-medium">Haz clic para subir</span> o arrastra un PDF aquí</span>
+                  </p>
+                  <p className="text-caption text-muted-foreground">Máx 10 MB</p>
+                  <input
+                    id="pdf-upload"
+                    type="file"
+                    accept="application/pdf"
+                    aria-invalid={errorDelPdf ? true : undefined}
+                    aria-describedby={`${idDelCampoDelContrato('pdfFile')}-error`}
+                    onChange={(e) => {
+                      onPickFile(e.target.files?.[0] ?? null);
+                      // Volver a elegir el MISMO archivo (corregido afuera) dispara otra vez.
+                      e.target.value = '';
+                    }}
+                    className="sr-only"
+                  />
+                </label>
+              )}
+              <ErrorDelCampo
+                id={`${idDelCampoDelContrato('pdfFile')}-error`}
+                mensaje={errorDelPdf ?? errorDe('pdfFile')}
+                className="mt-0"
+              />
+
+              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted rounded-md p-3">
+                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <p>
+                  El propietario va a firmar digitalmente el contrato en Leasefy, independientemente
+                  de si el PDF ya trae firma manuscrita. Esto garantiza la trazabilidad legal.
+                </p>
+              </div>
+            </section>
+          )}
+        </CrossFade>
+
+        {/* Paso 11 del recorrido: el respaldo (aseguradora y póliza). Vivía al
+            pie de «Términos»; con dos columnas va con lo que se elige, y la
+            derecha queda corta para que el resumen se vea entero. */}
+        <section className="rounded-lg border border-border bg-card p-5" data-testid="nuevo-contrato-respaldo">
+          {/* Nico (22-10): el seguro va en UN solo lugar, con el respaldo del arriendo
+              (antes también en Términos). El plan de Leasefy se sigue guardando igual. */}
+          <RespaldoDelArriendo
+            valor={respaldo}
+            onCambio={setRespaldo}
+            opciones={evaluacion?.protection_options}
+            errores={erroresRespaldo}
+            conAnalisis={!esManual}
+          />
+          {/* Ronda 19: el seguro va DEBAJO del título y las opciones del respaldo, no encima. */}
+          <div className="mt-5 max-w-xs">
+          <Field id="contrato-seguro" label="Seguro de Leasefy (opcional)">
+            <Select
+              value={form.insuranceTier}
+              onValueChange={(v) => updateForm('insuranceTier', v as InsuranceTier)}
+            >
+              <SelectTrigger id="contrato-seguro">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NONE">Sin seguro</SelectItem>
+                <SelectItem value="BASIC">Básico</SelectItem>
+                <SelectItem value="PREMIUM">Premium</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          </div>
+        </section>
+        </div>
+
+        {/* ── Derecha: el resumen fijo (con el botón de crear) ── */}
+        <div className="min-w-0" data-testid="nuevo-contrato-terminos">
         {/* El resumen: fijo bajo el encabezado del panel mientras la columna
             de la izquierda se recorre. Errors + submit van adentro: el botón
             queda al lado de lo que falta para poder apretarlo. */}
         <ResumenDelContratoNuevo
-          className="max-xl:order-3 xl:sticky xl:top-20"
+          className="xl:sticky xl:top-20"
           inmueble={esManual ? inmuebleElegido : property?.title ?? null}
           inquilino={inquilinoDelResumen}
           documento={documentoDelResumen}

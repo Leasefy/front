@@ -804,7 +804,12 @@ function ContratosContent() {
                           <span
                             className={cn(
                               'text-caption md:block',
-                              fin.tono === 'vencido' ? 'font-medium text-danger' : fin.tono === 'pronto' ? 'font-medium text-warning' : 'text-muted-foreground',
+                              // Ronda 16: el color es gravedad → rojo hoy, vencido o ≤ 7 días; naranja hasta 30; después neutro.
+                              fin.tono === 'vencido' || fin.dias <= 7
+                                ? 'font-medium text-danger'
+                                : fin.dias <= 30
+                                  ? 'font-medium text-warning'
+                                  : 'text-muted-foreground',
                             )}
                           >
                             {fin.texto}

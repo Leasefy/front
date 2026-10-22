@@ -43,7 +43,8 @@ export interface CifraProps {
   definicion: string;
   /** Qué decir cuando el valor es `null`. Reemplaza a `definicion`. */
   sinMedir?: string;
-  tono?: 'warning' | 'danger' | 'success';
+  /** `muted`: un valor vacío («—») que no debe pesar como los demás. */
+  tono?: 'warning' | 'danger' | 'success' | 'muted';
   /** Una línea extra debajo de la definición (comparaciones, detalles). */
   pie?: ReactNode;
   /** Algo debajo de la cifra, antes del pie (una barra de avance). */
@@ -69,6 +70,7 @@ const TONO: Record<NonNullable<CifraProps['tono']>, string> = {
   warning: 'text-warning',
   danger: 'text-danger',
   success: 'text-success',
+  muted: 'text-fg-subtle',
 };
 
 /** Una cifra en pesos, con su definición debajo. */

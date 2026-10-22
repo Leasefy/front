@@ -268,7 +268,7 @@ export function TableroFinancieroPanel() {
               <BloqueDePropietarios tablero={tablero} queMide={queMide} />
               <BloqueDeMargen tablero={tablero} queMide={queMide} />
             </div>
-            <BloqueDeDeudores tablero={tablero} />
+            <BloqueDeDeudores tablero={tablero} queMide={queMide} />
 
             <p className="text-caption text-fg-muted">
               {/* PG-13 (03-10-2026): la fecha de la casa, no «2026-10-03». */}
@@ -325,6 +325,27 @@ function BloqueDeRecaudo({ tablero, queMide }: { tablero: Tablero; queMide: bool
       ? 'lo que se emitió en cobros'
       : 'lo que el mes hizo deber (lo causado)';
   const tasaMedida = recaudo.tasaPct !== null && Number.isFinite(recaudo.tasaPct);
+  const anterior = recaudo.mesAnterior;
+  const nombreDelAnterior = conMayusculaInicial(nombreDelMes(anterior.mes));
+  const llegoElAnterior = anterior.abonadoCop ?? anterior.recaudadoCop ?? 0;
+  const comparacion =
+    (anterior.causadoCop ?? 0) === 0 && (anterior.recaudadoCop ?? 0) === 0 ? null : llegoElAnterior === 0 ? (
+      <span data-testid="comparacion-mes-anterior">
+        {nombreDelAnterior} no tuvo recaudo: no hay contra qué comparar.
+      </span>
+    ) : (
+      <span data-testid="comparacion-mes-anterior">
+        {nombreDelAnterior}:{' '}
+        {/* N-06: con el numerador del back, el mismo con que se sacó su %. */}
+        {plata(llegoElAnterior)} de {plata(anterior.causadoCop)} ({tasaEnPantalla(anterior.tasaPct)}).
+        {recaudo.variacionPct === null ? null : (
+          <>
+            {' '}Variación:{' '}
+            <span data-testid="variacion-del-recaudo">{textoDeLaVariacion(recaudo.variacionPct)}</span>.
+          </>
+        )}
+      </span>
+    );
 
   return (
     <TarjetaDeCifras
@@ -346,17 +367,6 @@ function BloqueDeRecaudo({ tablero, queMide }: { tablero: Tablero; queMide: bool
           valor={recaudo.delMesCop}
           destacada
           definicion="Todo lo que entró por caja en el mes seleccionado, sin importar de qué mes era la deuda."
-          extra={
-            tasaMedida ? (
-              <Progress
-                value={Math.min(Math.max(recaudo.tasaPct as number, 0), 100)}
-                size="xs"
-                color={(recaudo.tasaPct as number) >= 100 ? 'success' : 'primary'}
-                label={tr('Qué parte de lo del mes ya llegó')}
-                className="mt-2"
-              />
-            ) : null
-          }
         />
       </FilaDeCifras>
       <Renglones>
@@ -366,22 +376,24 @@ function BloqueDeRecaudo({ tablero, queMide }: { tablero: Tablero; queMide: bool
           valor={tasaMedida ? (recaudo.tasaPct as number) : null}
           formato={(n) => tasaEnPantalla(n)}
           definicion={definicionDeLaTasa(recaudo, tablero.mes, base, plata)}
-          // 22-10 (revisión): sin recaudo el mes anterior no hay contra qué comparar; no se pinta la frase.
+          // Ronda 11: la barra mide ESTE porcentaje, así que va con él (antes
+          // colgaba de «Entró en el mes» y parecía medir esa cifra). Con el mes
+          // anterior sin recaudo, UNA frase; con los dos en cero, nada.
           pie={
-            (recaudo.mesAnterior.causadoCop ?? 0) === 0 && (recaudo.mesAnterior.recaudadoCop ?? 0) === 0 ? undefined : (
-            <span data-testid="comparacion-mes-anterior">
-              {conMayusculaInicial(nombreDelMes(recaudo.mesAnterior.mes))}:{' '}
-              {/* N-06: con el numerador del back, el mismo con que se sacó su %. */}
-              {plata(recaudo.mesAnterior.abonadoCop ?? recaudo.mesAnterior.recaudadoCop)} de{' '}
-              {plata(recaudo.mesAnterior.causadoCop)} ({tasaEnPantalla(recaudo.mesAnterior.tasaPct)}).
-              Variación:{' '}
-              <span data-testid="variacion-del-recaudo">{textoDeLaVariacion(recaudo.variacionPct)}</span>
-              {/* TB-04: un solo guion (antes «— —»). */}
-              {recaudo.variacionPct === null
-                ? '. El mes anterior no recaudó nada, así que no hay contra qué comparar.'
-                : '.'}
-            </span>
-            )
+            tasaMedida || comparacion ? (
+              <>
+                {tasaMedida ? (
+                  <Progress
+                    value={Math.min(Math.max(recaudo.tasaPct as number, 0), 100)}
+                    size="xs"
+                    color={(recaudo.tasaPct as number) >= 100 ? 'success' : 'primary'}
+                    label={tr('Qué parte de lo del mes ya llegó')}
+                    className="mb-1.5 mt-1"
+                  />
+                ) : null}
+                {comparacion}
+              </>
+            ) : undefined
           }
         />
         <RenglonDeCifra
@@ -512,15 +524,17 @@ function BloqueDeCartera({ tablero, queMide }: { tablero: Tablero; queMide: bool
             key={tramo.tramo}
             id={`tramo-${tramo.tramo}`}
             etiqueta={
-              <>
+              <span className={tramo.carteraCop === 0 ? 'text-fg-subtle' : undefined}>
                 {tramo.nombre}
                 <span className="ml-2 font-mono text-caption tabular-nums text-fg-subtle">
-                  {NUMERO.format(tramo.cuotas)} {tramo.cuotas === 1 ? 'cuota' : 'cuotas'}
+                  {tramo.cuotas === 0 ? '—' : `${NUMERO.format(tramo.cuotas)} ${tramo.cuotas === 1 ? 'cuota' : 'cuotas'}`}
                 </span>
-              </>
+              </span>
             }
             marca={<MarcaDelTramo i={i} total={cartera.tramos.length} />}
-            formato={plata}
+            // Ronda 11: un tramo vacío no pesa lo mismo que uno con plata.
+            formato={(n) => (n === 0 ? '—' : plata(n))}
+            tono={tramo.carteraCop === 0 ? 'muted' : undefined}
             valor={tramo.carteraCop}
             definicion={definicionDelTramo(tramo)}
           />
@@ -534,7 +548,7 @@ function BloqueDeCartera({ tablero, queMide }: { tablero: Tablero; queMide: bool
  * Los que más deben, a lo ancho debajo de las cuatro preguntas: es una lista para
  * actuar (a quién llamar primero), no una cifra. Bajo 768 cada deudor es una tarjeta.
  */
-function BloqueDeDeudores({ tablero }: { tablero: Tablero }) {
+function BloqueDeDeudores({ tablero, queMide }: { tablero: Tablero; queMide: boolean }) {
   const tr = useTr();
   const { cartera } = tablero;
   const plata = plataDelTablero(tablero);
@@ -545,7 +559,10 @@ function BloqueDeDeudores({ tablero }: { tablero: Tablero }) {
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pb-3 pt-5">
         <h2 className="text-h3 text-fg">{tr('Los que más deben')}</h2>
-        <p className="max-w-xl text-caption text-fg-muted">{QUE_ES_LA_ETAPA}</p>
+        {/* Ronda 11: la leyenda de etapas es una definición: sale con «Qué mide cada cifra». */}
+        <p hidden={!queMide} className="max-w-xl text-caption text-fg-muted" data-testid="que-es-la-etapa">
+          {QUE_ES_LA_ETAPA}
+        </p>
       </div>
       <Table className="max-md:block">
         <TableHeader className="max-md:hidden">
@@ -553,7 +570,7 @@ function BloqueDeDeudores({ tablero }: { tablero: Tablero }) {
             <TableHead>Inquilino</TableHead>
             <TableHead className="text-right">Debe</TableHead>
             <TableHead className="text-right">Días de mora</TableHead>
-            <TableHead>Etapa</TableHead>
+            <TableHead title={QUE_ES_LA_ETAPA}>Etapa</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="max-md:block">

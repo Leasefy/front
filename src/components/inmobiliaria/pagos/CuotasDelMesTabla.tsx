@@ -133,7 +133,7 @@ export interface CuotasDelMesTablaProps {
 }
 
 /** Las cinco de datos más la del kebab. */
-const COLUMNAS = 6
+const COLUMNAS = 5
 
 export function CuotasDelMesTabla({
   filas,
@@ -162,8 +162,10 @@ export function CuotasDelMesTabla({
       )}
       data-testid="pagos-cuotas-tabla"
     >
-      {/* GLOW UP (revisión de Dinero, 22-10-2026): seis columnas —quién y dónde ·
-          cuándo vence · estado · se debe · falta · acciones—. «Período» se fue:
+      {/* GLOW UP (revisión de Dinero, 22-10-2026): cinco columnas —quién y dónde ·
+          cuándo vence · estado · falta · acciones—. «Se debe» se fue en la ronda 11:
+          repetía «Falta» en casi todas las filas; con abono, bajo «Falta» va
+          «entró $ X de $ Y», y pagada, «pagó $ Y». «Período» se fue:
           la tabla ya es de UN mes (lo dice el selector y el pie), y repetirlo en
           cada fila le quitaba a 1440 el ancho que necesitaban las cifras. Bajo
           768 cada cuota es una tarjeta (la tabla encogida cortaba la plata). */}
@@ -173,9 +175,6 @@ export function CuotasDelMesTabla({
             <TableHead className="whitespace-nowrap">Inquilino</TableHead>
             <TableHead className="whitespace-nowrap">Vence</TableHead>
             <TableHead className="whitespace-nowrap">Estado</TableHead>
-            <TableHead className="whitespace-nowrap" numeric>
-              Se debe
-            </TableHead>
             <TableHead className="whitespace-nowrap" numeric>
               Falta
             </TableHead>
@@ -233,7 +232,7 @@ export function CuotasDelMesTabla({
                     594 px y la tabla no cabía a 1440. El nombre va en hasta DOS
                     renglones dentro de un ancho fijo, con el nombre entero al
                     pasar el puntero; el inmueble y el documento, debajo. */}
-                <TableCell className="max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
+                <TableCell className="max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                   <p
                     className="line-clamp-2 max-w-[18rem] break-words font-medium text-fg max-md:max-w-none"
                     title={f.inquilino ?? undefined}
@@ -269,17 +268,14 @@ export function CuotasDelMesTabla({
                     </span>
                   )}
                 </TableCell>
-                <TableCell className="whitespace-nowrap max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
+                <TableCell className="whitespace-nowrap max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0">
                   {/* CR-31 y nota crédito: el rótulo con sus excepciones
                       («Vencida» sin plazo fijado, «Saldada por nota crédito»). */}
                   <Badge variant={varianteDeLaFila(f)} data-testid="rotulo-de-la-cuota">
                     {nombreDeLaFila(f)}
                   </Badge>
                 </TableCell>
-                <TableCell className="whitespace-nowrap font-mono tabular-nums text-fg-muted max-md:hidden" numeric>
-                  {plataDeLaColumna(f.totalCop)}
-                </TableCell>
-                <TableCell className="whitespace-nowrap font-mono tabular-nums max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right" numeric>
+                <TableCell className="whitespace-nowrap font-mono tabular-nums max-md:col-start-2 max-md:row-span-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right" numeric>
                   {/* Lo que falta es la cifra de la fila; en cero, la raya
                       atenuada (manual de voz: un cero repetido no se lee). */}
                   {f.pendienteCop > 0 ? (
@@ -299,8 +295,12 @@ export function CuotasDelMesTabla({
                     </p>
                   )}
                   {f.pagadoCop > 0 && f.pendienteCop > 0 ? (
-                    <p className="text-caption text-fg-muted">
-                      entró {plataDeLaColumna(f.pagadoCop)}
+                    <p className="text-caption text-fg-muted" data-testid="cuota-abono">
+                      entró {plataDeLaColumna(f.pagadoCop)} de {plataDeLaColumna(f.totalCop)}
+                    </p>
+                  ) : f.pendienteCop <= 0 && f.pagadoCop > 0 ? (
+                    <p className="text-caption text-fg-muted" data-testid="cuota-pagada">
+                      pagó {plataDeLaColumna(f.pagadoCop)}
                     </p>
                   ) : null}
                 </TableCell>

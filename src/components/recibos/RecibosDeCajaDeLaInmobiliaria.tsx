@@ -149,7 +149,7 @@ export function RecibosDeCajaDeLaInmobiliaria() {
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por número, inquilino, documento, inmueble o referencia"
+            placeholder="Buscar recibo, inquilino o referencia"
             aria-label="Buscar recibos"
             className="pl-9 pr-9"
             data-testid="buscar-recibos"
@@ -166,8 +166,12 @@ export function RecibosDeCajaDeLaInmobiliaria() {
           )}
         </div>
         <Select value={estado} onValueChange={(v) => setEstado(v as EstadoDeLosRecibos)}>
-          <SelectTrigger className="h-10 w-full sm:w-44" aria-label="Qué recibos ver" data-testid="estado-de-los-recibos">
-            <SelectValue />
+          <SelectTrigger className="h-10 w-full sm:w-52" aria-label="Qué recibos ver" data-testid="estado-de-los-recibos">
+            {/* Ronda 11: «Todos» a secas no decía de qué; ahora «Estado: Todos». */}
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="shrink-0 text-fg-muted">Estado:</span>
+              <SelectValue />
+            </span>
           </SelectTrigger>
           <SelectContent>
             {ESTADOS.map((e) => (
@@ -232,7 +236,7 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                   )}
                   data-testid={`recibo-${r.numero}`}
                 >
-                  <TableCell className="md:whitespace-nowrap max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0">
+                  <TableCell className="md:whitespace-nowrap max-md:col-span-2 max-md:row-start-2 max-md:flex max-md:flex-wrap max-md:items-baseline max-md:gap-x-2 max-md:p-0">
                     <span className="font-mono text-body-sm tabular-nums">N.º {r.numero}</span>
                     {r.anulado && (
                       <Badge variant="outline" className="ml-2 border-danger/40 text-danger">
@@ -246,19 +250,23 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                   </TableCell>
                   <TableCell className="max-w-[22rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                     <span className={cn('font-medium', !r.inquilino && 'font-normal text-fg-muted')}>{r.inquilino ?? 'Sin nombre registrado'}</span>
-                    {r.documento ? <p className="font-mono text-caption tabular-nums text-fg-subtle">{r.documento}</p> : null}
+                    {r.documento ? <p className="font-mono text-caption tabular-nums text-fg-subtle max-md:hidden">{r.documento}</p> : null}
                     <p className="line-clamp-1 text-caption text-fg-muted" title={r.inmueble ?? undefined}>
                       {r.inmueble ?? '—'}
-                      {r.contrato ? ` · Contrato #${r.contrato.numero}` : ''}
                     </p>
-                    {r.contrato?.externalId && r.contrato.externalId !== String(r.contrato.numero) ? (
-                      <p className="text-caption text-fg-subtle">{r.contrato.externalId} en su sistema</p>
+                    {r.contrato ? (
+                      <p className="text-caption text-fg-subtle">
+                        Contrato #{r.contrato.numero}
+                        {r.contrato.externalId && r.contrato.externalId !== String(r.contrato.numero) ? (
+                          <span className="max-md:hidden"> · {r.contrato.externalId} en su sistema</span>
+                        ) : null}
+                      </p>
                     ) : null}
                     {r.anulado && r.motivoDeLaAnulacion && (
                       <p className="text-caption text-danger">Anulado: {r.motivoDeLaAnulacion}</p>
                     )}
                   </TableCell>
-                  <TableCell className="max-w-[15rem] max-md:col-span-2 max-md:block max-md:max-w-none max-md:p-0 max-md:text-caption max-md:text-fg-muted">
+                  <TableCell className="max-w-[15rem] max-md:col-span-2 max-md:row-start-3 max-md:block max-md:max-w-none max-md:p-0 max-md:text-caption max-md:text-fg-muted">
                     {r.medioLegible}
                     {/* La referencia INTERNA («cobro-<uuid>», la del pago en línea) no se muestra;
                         la del banco sí, en un renglón y entera al pasar el cursor. */}
@@ -271,8 +279,8 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                   <TableCell className={cn('text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0', r.anulado ? 'line-through' : 'text-fg')}>
                     {formatCurrency(r.valorCop)}
                   </TableCell>
-                  <TableCell className="text-right max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0">
-                    <div className="flex justify-end gap-1">
+                  <TableCell className="text-right max-md:col-span-2 max-md:row-start-4 max-md:block max-md:p-0">
+                    <div className="flex justify-end gap-1 max-md:-ml-2 max-md:justify-start">
                       <IconButton
                         variant="ghost"
                         size="sm"

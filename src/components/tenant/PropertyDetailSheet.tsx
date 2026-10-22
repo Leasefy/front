@@ -396,7 +396,7 @@ export function PropertyDetailSheet({
               */}
               {property.listingType === 'sale' ? (
                 <Button asChild hideArrow>
-                  <Link href={`/propiedades/${property.id}`}>Contactar / agendar visita</Link>
+                  <Link href={`/propiedades/${property.id}`} target="_blank" rel="noopener noreferrer">Contactar / agendar visita</Link>
                 </Button>
               ) : (
                 /* Postulación — el gate enseña el camino si todavía no puede

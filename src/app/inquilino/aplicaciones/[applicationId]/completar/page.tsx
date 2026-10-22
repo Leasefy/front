@@ -21,6 +21,7 @@ import { StepDocuments } from '@/components/wizard/steps/StepDocuments';
 import { StepReview } from '@/components/wizard/steps/StepReview';
 
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/ui/back-button';
 import { IconButton } from '@leasefy/cadence';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -175,13 +176,11 @@ export default function CompletarPage({ params }: CompletarPageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface-muted px-4">
         <div className="text-center">
-          <p className="text-fg-muted mb-4">{error ?? 'No se pudo cargar la postulación.'}</p>
-          <a
-            href={`/inquilino/aplicaciones/${applicationId}`}
-            className="text-primary hover:underline text-sm"
-          >
-            ← Volver al detalle
-          </a>
+          <p className="text-fg-muted mb-4" role="alert">{error ?? 'No se pudo cargar la postulación.'}</p>
+          {/* GLOW UP (21-10-2026): la vuelta de siempre, no un enlace suelto con flecha de texto. */}
+          <div className="flex justify-center" data-testid="completar-volver">
+            <BackButton href={`/inquilino/aplicaciones/${applicationId}`} label="Volver a la postulación" />
+          </div>
         </div>
       </div>
     );
@@ -251,7 +250,7 @@ function UpdateWizardContent({
             onClick={() => router.push(`/inquilino/aplicaciones/${applicationId}`)}
             className="w-full"
           >
-            Ver mi aplicación
+            Ver mi postulación
           </Button>
         </Appear>
       </div>

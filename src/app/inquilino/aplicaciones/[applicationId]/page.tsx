@@ -239,14 +239,15 @@ export default function ApplicationDetailPage() {
       <motion.div {...entrada} className="p-6 lg:p-8">
         {/* Back Button */}
         <div className="mb-6">
-          <BackButton label={locale === 'es' ? 'Volver a aplicaciones' : 'Back to applications'} />
+          <BackButton href="/inquilino/aplicaciones" label={locale === 'es' ? 'Volver a Mis postulaciones' : 'Back to My applications'} />
         </div>
 
         {/* Hero Card - Property with Status */}
         <div className="relative rounded-xl overflow-hidden bg-surface-muted border border-transparent mb-8">
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
-            <div className="relative w-full lg:w-[400px] h-64 lg:h-auto flex-shrink-0">
+            {/* En el celular la foto más baja: el estado y lo que sigue se ven sin bajar tanto. */}
+            <div className="relative w-full lg:w-[400px] h-48 sm:h-64 lg:h-auto flex-shrink-0">
               <Image
                 src={property?.thumbnail || '/placeholder-property.svg'}
                 alt={property?.title || 'Propiedad'}
@@ -298,9 +299,16 @@ export default function ApplicationDetailPage() {
 
               {/* Property Info */}
               {property && (
-                <Link href={`/propiedades/${property.id}`} className="group">
+                <Link
+                  href={`/propiedades/${property.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group"
+                  data-testid="postulacion-ver-inmueble"
+                >
                   <h1 className="text-2xl lg:text-3xl font-semibold text-fg group-hover:text-primary transition-colors mb-2">
                     {property.title}
+                    <span className="sr-only">{locale === 'es' ? ' (se abre en otra pestaña)' : ' (opens in a new tab)'}</span>
                   </h1>
                   <p className="text-fg-muted flex items-center gap-1.5 mb-4">
                     <MapPin className="w-4 h-4" />
@@ -791,10 +799,14 @@ export default function ApplicationDetailPage() {
 
                 <Link
                   href={`/propiedades/${property.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="postulacion-ver-propiedad-completa"
                   className="flex items-center justify-center gap-2 w-full py-3 rounded-full border border-border text-sm font-medium text-fg hover:bg-surface-muted hover:border-border-strong transition-colors"
                 >
                   {locale === 'es' ? 'Ver propiedad completa' : 'View full property'}
-                  <ArrowUpRight className="w-4 h-4" />
+                  <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+                  <span className="sr-only">{locale === 'es' ? '(se abre en otra pestaña)' : '(opens in a new tab)'}</span>
                 </Link>
               </section>
             )}

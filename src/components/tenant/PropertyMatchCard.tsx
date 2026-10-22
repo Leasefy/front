@@ -104,7 +104,7 @@ export function PropertyMatchCard({
 
     return (
       <Link
-        href={`/propiedades/${property.id}`}
+        href={`/propiedades/${property.id}`} target="_blank" rel="noopener noreferrer"
         className={cn(
           'group flex items-center gap-4 p-4 bg-surface border border-plan-border',
           'hover:border-border-strong transition-colors',
@@ -193,7 +193,7 @@ export function PropertyMatchCard({
           {ImageOverlay}
         </button>
       ) : (
-        <Link href={`/propiedades/${property.id}`} className="block relative aspect-[4/3] flex-shrink-0">
+        <Link href={`/propiedades/${property.id}`} target="_blank" rel="noopener noreferrer" className="block relative aspect-[4/3] flex-shrink-0">
           {ImageOverlay}
         </Link>
       )}
@@ -207,7 +207,7 @@ export function PropertyMatchCard({
             </h3>
           </button>
         ) : (
-          <Link href={`/propiedades/${property.id}`}>
+          <Link href={`/propiedades/${property.id}`} target="_blank" rel="noopener noreferrer">
             <h3 className="font-medium text-plan-primary group-hover:text-plan-secondary transition-colors line-clamp-1">
               {property.title}
             </h3>
@@ -254,7 +254,7 @@ export function PropertyMatchCard({
           </button>
         ) : (
           <Link
-            href={`/propiedades/${property.id}`}
+            href={`/propiedades/${property.id}`} target="_blank" rel="noopener noreferrer"
             className={cn(
               'flex items-center justify-center gap-2 mt-4 py-2.5 px-4 w-full',
               'text-sm font-medium rounded-sm transition-colors',

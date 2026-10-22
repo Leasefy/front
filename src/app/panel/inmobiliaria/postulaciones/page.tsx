@@ -19,19 +19,17 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
 import { useIsMobile } from '@/hooks/use-mobile'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
-import { Input } from '@/components/ui'
+import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui'
 import { Table, TableBodyAnimado, TableCell, TableHead, TableHeader, TableRow, TableRowAnimada } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import {
   Avatar,
-  Cifra,
   CrossFade,
-  FranjaDeCifras,
   IconButton,
   Presence,
-  type TonoDeCifra,
 } from '@leasefy/cadence'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { RecorridoMapa } from '@/components/inmobiliaria/recorrido/RecorridoMapa'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer'
@@ -78,26 +76,30 @@ const SCORE_COLORS: Record<string, string> = {
   D: 'text-danger bg-danger-soft',
 };
 
-// ─── Los estados por los que se filtra (las cifras de la franja) ──────────────
+// ─── Los estados por los que se filtra (las pestañas de la tabla) ─────────────
 
 type FilterKey = 'ALL' | 'IN_REVIEW' | 'NEEDS_INFO' | 'APPROVED' | 'REJECTED' | 'NOT_AWARDED'
 
+/**
+ * Nico (22-10-2026, decisión 22): las seis cifras grandes pasan a PESTAÑAS con su conteo, como Propietarios e
+ * Inquilinos. Primero lo que espera tu decisión; «Todas» al final y siempre a la vista; una pestaña en 0 no sale.
+ */
 const FILTERS: {
   key: FilterKey;
   label: string;
-  /** El punto de la cifra cuando hay alguna: lo que espera tu decisión (voltaje) o tu seguimiento (aviso). */
-  tono?: TonoDeCifra;
+  /** El punto ámbar: lo que espera tu decisión. */
+  tono?: 'aviso';
   statuses: LandlordApplicationStatus[] | null;
 }[] = [
-  { key: 'ALL',         label: 'Total',          statuses: null },
-  { key: 'IN_REVIEW',   label: 'En revisión',    tono: 'voltaje', statuses: ['SUBMITTED', 'UNDER_REVIEW', 'PREAPPROVED'] },
-  { key: 'NEEDS_INFO',  label: 'Pide información', tono: 'aviso',   statuses: ['NEEDS_INFO'] },
+  { key: 'IN_REVIEW',   label: 'En revisión',    tono: 'aviso', statuses: ['SUBMITTED', 'UNDER_REVIEW', 'PREAPPROVED'] },
+  { key: 'NEEDS_INFO',  label: 'Pide información', statuses: ['NEEDS_INFO'] },
   { key: 'APPROVED',    label: 'Aprobadas',      statuses: ['APPROVED'] },
-  { key: 'REJECTED',    label: 'Rechazadas',     statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED'] },
   // QA-IA-A (04-10-2026): el no adjudicado NO es un rechazo —el inmueble quedó
   // para otro— y es a quien hay que ofrecerle otras opciones (F-06). Contarlo
   // entre las rechazadas lo escondía; el back ya lo devuelve en la lista.
   { key: 'NOT_AWARDED', label: 'No adjudicadas', statuses: ['NO_ADJUDICADO'] },
+  { key: 'REJECTED',    label: 'Rechazadas',     statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED'] },
+  { key: 'ALL',         label: 'Todas',          statuses: null },
 ];
 
 
@@ -119,8 +121,11 @@ function PostulacionesContenido() {
   const tr = useTr();
   const fechas = useLocaleDeFechas();
   const [items, setItems] = useState<AllCandidatesItem[]>([])
-  const [filter, setFilter] = useState<FilterKey>('ALL')
+  /** La pestaña que la persona eligió; mientras no elija, abre en «En revisión» si hay alguna (Nico, decisión 22). */
+  const [filtroElegido, setFilter] = useState<FilterKey | null>(null)
   const [search, setSearch] = useState('')
+  // Revisora r22 (Postulaciones #6): la decisión es por inmueble; se puede mirar uno solo.
+  const [inmueble, setInmueble] = useState<string>('TODOS')
   /** La persona cuyo cajón está abierto. El detalle vive en esta misma pantalla. */
   const [candidatoAbierto, setCandidatoAbierto] = useState<AllCandidatesItem | null>(null)
   const [accion, setAccion] = useState<{ type: ActionType; candidate: AllCandidatesItem } | null>(
@@ -181,6 +186,8 @@ function PostulacionesContenido() {
       statuses === null ? items.length : items.filter((c) => statuses.includes(c.status)).length,
     [items],
   )
+  const enRevision = countFor(FILTERS[0].statuses)
+  const filter: FilterKey = filtroElegido ?? (enRevision > 0 ? 'IN_REVIEW' : 'ALL')
 
   /**
    * Abre el detalle ACÁ, sin sacar a nadie de la lista.
@@ -232,8 +239,23 @@ function PostulacionesContenido() {
           c.propertyTitle.toLowerCase().includes(q),
       )
     }
-    return result
-  }, [items, filter, search])
+    if (inmueble !== 'TODOS') result = result.filter((c) => c.propertyId === inmueble)
+    // Revisora r22 (#6): las de un mismo inmueble, juntas y en el orden de su lista corta (orden estable).
+    const puesto = (c: AllCandidatesItem) => listaCorta.get(c.id)?.puesto ?? Number.POSITIVE_INFINITY
+    return [...result].sort(
+      (a, b) =>
+        (a.propertyTitle < b.propertyTitle ? -1 : a.propertyTitle > b.propertyTitle ? 1 : 0) ||
+        (a.propertyId < b.propertyId ? -1 : a.propertyId > b.propertyId ? 1 : 0) ||
+        puesto(a) - puesto(b),
+    )
+  }, [items, filter, search, inmueble, listaCorta])
+
+  /** Los inmuebles con postulaciones, con cuántas tiene cada uno (para el filtro). */
+  const inmueblesConPostulaciones = useMemo(() => {
+    const m = new Map<string, { titulo: string; n: number }>()
+    for (const c of items) m.set(c.propertyId, { titulo: c.propertyTitle, n: (m.get(c.propertyId)?.n ?? 0) + 1 })
+    return Array.from(m, ([id, v]) => ({ id, ...v })).sort((a, b) => a.titulo.localeCompare(b.titulo))
+  }, [items])
 
   /**
    * Paginado de presentación: `getAllCandidates()` trae todas las postulaciones
@@ -248,7 +270,7 @@ function PostulacionesContenido() {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(visibleItems, { resetKey: `${filter}|${search.trim()}` })
+  } = useTablePagination(visibleItems, { resetKey: `${filter}|${search.trim()}|${inmueble}` })
 
   /*
    * El puntaje NO está prendido (Nico, 04-10-2026: «aún ese no lo vamos a
@@ -341,29 +363,28 @@ function PostulacionesContenido() {
         </div>
       ) : (
         <>
-          {/* La tabla con sus filtros ADENTRO (Cadence 2): arriba, las cifras por estado —cada una
-              filtra la lista y se vuelve a tocar para quitar el filtro—; debajo, la búsqueda. Antes
-              eran seis tarjetas sueltas MÁS un selector con los mismos seis estados. */}
+          {/* La tabla con sus filtros ADENTRO (Cadence 2): arriba, las pestañas por estado con su conteo
+              (Nico, decisión 22); debajo, la búsqueda y el inmueble. */}
           <div className="rounded-lg border border-border bg-card overflow-hidden">
-            <FranjaDeCifras
-              data-testid="estados-de-las-postulaciones"
-              aria-label={tr("Filtrar por estado")}
-              className="rounded-none border-0 border-b border-border"
-            >
-              {FILTERS.map((f) => {
-                const cuantas = countFor(f.statuses);
-                return (
-                  <Cifra
-                    key={f.key}
-                    etiqueta={tr(f.label)}
-                    valor={cuantas}
-                    tono={cuantas > 0 ? f.tono : undefined}
-                    activa={filter === f.key}
-                    onClick={() => setFilter(filter === f.key ? 'ALL' : f.key)}
-                  />
-                );
-              })}
-            </FranjaDeCifras>
+            <div className="border-b border-border px-4 py-3">
+              <PestanasDeEstado<FilterKey>
+                etiqueta={tr('Filtrar por estado')}
+                data-testid="estados-de-las-postulaciones"
+                valor={filter}
+                onCambio={setFilter}
+                pestanas={FILTERS.map((f) => {
+                  const cuantas = countFor(f.statuses)
+                  return {
+                    valor: f.key,
+                    etiqueta: tr(f.label),
+                    cuantos: cuantas,
+                    fija: f.key === 'ALL',
+                    tono: cuantas > 0 ? f.tono : undefined,
+                    testid: `pestana-${f.key.toLowerCase()}`,
+                  }
+                })}
+              />
+            </div>
             <div className="px-4 py-3 border-b border-border flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="relative flex-1 max-w-sm">
                 <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-muted z-10 pointer-events-none" />
@@ -385,7 +406,21 @@ function PostulacionesContenido() {
                   />
                 )}
               </div>
-
+              {inmueblesConPostulaciones.length > 1 ? (
+                <Select value={inmueble} onValueChange={setInmueble}>
+                  <SelectTrigger className="w-full sm:w-72" aria-label={tr('Inmueble')} data-testid="filtro-inmueble">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TODOS">{tr('Todos los inmuebles')}</SelectItem>
+                    {inmueblesConPostulaciones.map((i) => (
+                      <SelectItem key={i.id} value={i.id}>
+                        {i.titulo} · {i.n === 1 ? tr('1 postulación') : tr('{n} postulaciones', { n: i.n })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
             </div>
 
             {visibleItems.length === 0 ? (
@@ -393,7 +428,7 @@ function PostulacionesContenido() {
                 icon={ClipboardText}
                 title={tr("Sin postulaciones")}
                 description={
-                  search || filter !== 'ALL'
+                  search || filter !== 'ALL' || inmueble !== 'TODOS'
                     ? 'Ninguna postulación coincide con los filtros'
                     : 'Cuando un inquilino se postule a uno de tus inmuebles, aparecerá aquí.'
                 }

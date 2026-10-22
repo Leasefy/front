@@ -108,6 +108,13 @@ vi.mock('@/components/ui', () => ({
     React.createElement('div', { 'data-testid': 'spinner' }, label ?? 'Loading'),
   Input: (props: React.InputHTMLAttributes<HTMLInputElement>) =>
     React.createElement('input', props),
+  // El filtro «Inmueble ▾» (revisora r22 #6): un contenedor simple; las pruebas no lo abren.
+  Select: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'select' }, children),
+  SelectTrigger: ({ children, ...props }: { children?: React.ReactNode }) => React.createElement('div', props, children),
+  SelectValue: () => null,
+  SelectContent: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
+  SelectItem: ({ children, value }: { children?: React.ReactNode; value: string }) =>
+    React.createElement('div', { 'data-value': value }, children),
 }))
 
 vi.mock('@/components/ui/empty-state', () => ({
@@ -297,10 +304,20 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-async function renderPage() {
+/**
+ * Nico (22-10, decisión 22): la pantalla abre en la pestaña «En revisión» si hay alguna. Las pruebas que miran la
+ * lista entera tocan antes «Todas» (como haría la persona); `{ todas: false }` deja la pestaña con la que abre.
+ */
+async function renderPage({ todas = true }: { todas?: boolean } = {}) {
   await act(async () => {
     root.render(React.createElement(PostulacionesPage))
   })
+  const pestanaTodas = container.querySelector<HTMLButtonElement>('[data-testid="pestana-all"]')
+  if (todas && pestanaTodas) {
+    await act(async () => {
+      pestanaTodas.click()
+    })
+  }
 }
 
 function tiles(): HTMLButtonElement[] {
@@ -325,22 +342,35 @@ describe('PostulacionesPage', () => {
     expect(container.textContent).toContain('Pide info')
   })
 
-  it('renders the six clickable stat tiles with their counts', async () => {
+  it('las pestañas por estado llevan su conteo y las de cero no salen; «Todas» siempre (Nico, decisión 22)', async () => {
     getAllCandidatesMock.mockResolvedValue(RESPONSE)
 
     await renderPage()
 
     const allTiles = tiles()
-    // QA-IA-A (04-10-2026): seis — «No adjudicadas» va aparte de «Rechazadas».
-    expect(allTiles.length).toBe(6)
-
-    const total = allTiles.find((b) => b.textContent?.includes('Total'))
-    expect(total?.textContent).toContain('2')
-    const review = allTiles.find((b) => b.textContent?.includes('En revisión'))
-    expect(review?.textContent).toContain('1')
+    // En revisión 1 · Pide información 1 · Todas 2: Aprobadas, No adjudicadas y Rechazadas están en 0.
+    expect(allTiles.map((b) => b.textContent)).toEqual(['En revisión1', 'Pide información1', 'Todas2'])
   })
 
-  it('filters rows when a stat tile is clicked, and resets on re-click', async () => {
+  it('abre en «En revisión» si hay alguna; sin ninguna, en «Todas»', async () => {
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
+    await renderPage({ todas: false })
+    expect(tiles().find((b) => b.getAttribute('aria-pressed') === 'true')?.textContent).toContain('En revisión')
+    expect(container.querySelectorAll('tbody tr').length).toBe(1)
+    expect(container.textContent).toContain('Juan Pérez')
+
+    act(() => root.unmount())
+    root = createRoot(container)
+    getAllCandidatesMock.mockResolvedValue({
+      ...RESPONSE,
+      candidates: RESPONSE.candidates.filter((c) => c.status !== 'UNDER_REVIEW'),
+    })
+    await renderPage({ todas: false })
+    expect(tiles().find((b) => b.getAttribute('aria-pressed') === 'true')?.textContent).toContain('Todas')
+    expect(container.querySelectorAll('tbody tr').length).toBe(1)
+  })
+
+  it('filters rows when a tab is clicked, and «Todas» shows them all again', async () => {
     getAllCandidatesMock.mockResolvedValue(RESPONSE)
 
     await renderPage()
@@ -355,9 +385,9 @@ describe('PostulacionesPage', () => {
     expect(container.textContent).toContain('Ana Gómez')
     expect(container.textContent).not.toContain('Juan Pérez')
 
-    // Re-click resets to all
+    // «Todas» vuelve a la lista entera (una pestaña no se apaga con otro clic).
     await act(async () => {
-      tiles().find((b) => b.textContent?.includes('Pide info'))!.click()
+      tiles().find((b) => b.textContent?.includes('Todas'))!.click()
     })
     expect(container.querySelectorAll('tbody tr').length).toBe(2)
   })
@@ -553,8 +583,8 @@ describe('PostulacionesPage', () => {
     expect(fila?.textContent).not.toContain('Desconocido')
     const noAdjudicadas = tiles().find((b) => b.textContent?.includes('No adjudicadas'))
     expect(noAdjudicadas?.textContent).toContain('1')
-    const rechazadas = tiles().find((b) => b.textContent?.includes('Rechazadas'))
-    expect(rechazadas?.textContent).not.toContain('1')
+    // «Rechazadas» está en 0: su pestaña no sale (decisión 22).
+    expect(tiles().find((b) => b.textContent?.includes('Rechazadas'))).toBeUndefined()
   })
 
   it('S2: si el refresco de fondo falla, la tabla se queda y se avisa', async () => {

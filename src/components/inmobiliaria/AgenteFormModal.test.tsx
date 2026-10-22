@@ -39,9 +39,23 @@ afterEach(() => {
 });
 
 describe('los roles del sistema', () => {
-  it('son los SIETE del back (AgencyMemberRole), cada uno con nombre', () => {
+  // 21-10-2026: con los roles auxiliares (comercial, administrativo, contable y de
+  // mantenimiento, commit 53ab76b57) el back tiene ONCE; esta prueba seguía con siete.
+  it('son los ONCE del back (AgencyMemberRole), cada uno con nombre', () => {
     expect(ROLES_DEL_SISTEMA.map((r) => r.toUpperCase()).sort()).toEqual(
-      ['ADMIN', 'AGENTE', 'CONTADOR', 'VIEWER', 'COORDINADOR', 'AUXILIAR_CARTERA', 'ABOGADO_EXTERNO'].sort(),
+      [
+        'ADMIN',
+        'AGENTE',
+        'CONTADOR',
+        'VIEWER',
+        'COORDINADOR',
+        'AUXILIAR_CARTERA',
+        'ABOGADO_EXTERNO',
+        'AUXILIAR_COMERCIAL',
+        'AUXILIAR_ADMINISTRATIVO',
+        'AUXILIAR_CONTABLE',
+        'AUXILIAR_MANTENIMIENTO',
+      ].sort(),
     );
     for (const rol of ROLES_DEL_SISTEMA) expect(getRoleLabel(rol)).not.toBe('—');
   });

@@ -408,7 +408,7 @@ export function CarteraCompleta() {
                 onClick={() => elegirCajon('CARTERA')}
                 aria-pressed={cajon === 'CARTERA'}
                 data-testid="resumen-cartera"
-                className="ficha-con-cifra min-w-0 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="ficha-con-cifra w-full min-w-0 rounded-lg lg:flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <span
                   className={cn(
@@ -447,7 +447,7 @@ export function CarteraCompleta() {
                 type="button"
                 onClick={limpiar}
                 aria-pressed={cajon === null && edad === null}
-                className="ficha-con-cifra min-w-0 rounded-lg text-left lg:text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="ficha-con-cifra w-full min-w-0 shrink-0 rounded-lg lg:w-[18rem] text-left lg:text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 data-testid="resumen-deuda-total"
               >
                 <span className="block text-caption text-fg-muted">Deuda total · nace con el contrato</span>

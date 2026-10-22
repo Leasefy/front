@@ -739,11 +739,18 @@ function TarjetasDePropietarios({
               </span>
               <span className="mt-2.5 flex items-start justify-between gap-3">
                 <span className="min-w-0 text-sm text-fg-muted">
-                  <span className="font-semibold tabular-nums text-fg">{propietario.propertyCount}</span>{' '}
-                  {propietario.propertyCount === 1
-                    ? t('inmobiliaria.propietarios.card.property')
-                    : t('inmobiliaria.propietarios.card.properties')}{' '}
-                  <span className="whitespace-nowrap">({arrendadas(t, propietario.activeLeases)})</span>
+                  {/* Glow up 22-10: sin inmuebles, «Sin inmuebles» (no «0 propiedades (0 arrendadas)»). */}
+                  {propietario.propertyCount === 0 ? (
+                    <span className="text-fg-subtle">Sin inmuebles</span>
+                  ) : (
+                    <>
+                      <span className="font-mono tabular-nums text-fg">{propietario.propertyCount}</span>{' '}
+                      {propietario.propertyCount === 1
+                        ? t('inmobiliaria.propietarios.card.property')
+                        : t('inmobiliaria.propietarios.card.properties')}{' '}
+                      <span className="whitespace-nowrap">({arrendadas(t, propietario.activeLeases)})</span>
+                    </>
+                  )}
                   {copropiedades > 0 && (
                     <span className="block text-caption tabular-nums">
                       {t('inmobiliaria.propietario.table.copropiedades', { n: copropiedades })}
@@ -755,8 +762,8 @@ function TarjetasDePropietarios({
                     <SinAccesoALaPlata texto={sinAcceso} />
                   ) : (
                     <>
-                      <span className="whitespace-nowrap font-mono text-sm font-semibold tabular-nums text-fg">
-                        {formatCurrency(propietario.totalMonthlyRent)}
+                      <span className={cn('whitespace-nowrap font-mono text-sm tabular-nums', propietario.totalMonthlyRent ? 'text-fg' : 'text-fg-subtle')}>
+                        {propietario.totalMonthlyRent ? formatCurrency(propietario.totalMonthlyRent) : '—'}
                       </span>
                       {hasPending ? (
                         <Badge variant="warning" className="gap-1 tabular-nums">

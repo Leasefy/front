@@ -87,7 +87,7 @@ import { CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@le
 import { useTr } from '@/lib/i18n/use-tr';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { SECCION_DE_LOS_GIROS, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
-import { PasosDeLosGirosDelMes, SiguientePasoDelMes } from '@/components/giros/PasosDeLosGirosDelMes';
+import { LoQueFaltaDelMes } from '@/components/giros/LoQueFaltaDelMes';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -814,7 +814,8 @@ function DispersionesContent() {
           </Button>
         }
       />
-      <PasosDeLosGirosDelMes
+      {/* Decisión 17 de Nico (22-10): «Lo que falta del mes» en vez del riel de chulos. */}
+      <LoQueFaltaDelMes
         paso="revisar"
         mes={filters.month}
         onCambiarMes={(mes) => setFilters((prev) => ({ ...prev, month: mes }))}
@@ -990,8 +991,6 @@ function DispersionesContent() {
           </div>
         )}
       </div>
-
-      <SiguientePasoDelMes paso="revisar" mes={filters.month} />
 
       {/* Dispersion Detail Modal */}
       <DispersionDetail

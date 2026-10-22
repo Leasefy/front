@@ -30,6 +30,18 @@ vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children?: React.ReactNode }) => children,
 }));
 
+// «Lo que falta del mes» (decisión 17) pide su propia liquidación del mes y tiene sus pruebas
+// (`components/giros/LoQueFaltaDelMes.test.tsx`): aquí no debe gastar las respuestas de la página.
+vi.mock('@/components/giros/LoQueFaltaDelMes', async () => {
+  const R = await import('react');
+  const { MesDeLosGiros } = await import('@/components/giros/MesDeLosGiros');
+  // Sólo el selector ÚNICO de mes (la pieza real): las pruebas L2 eligen el mes con él.
+  return {
+    LoQueFaltaDelMes: ({ mes, onCambiarMes }: { mes: string; onCambiarMes?: (m: string) => void }) =>
+      onCambiarMes ? R.createElement(MesDeLosGiros, { mes, onCambiar: onCambiarMes }) : null,
+  };
+});
+
 // El Select de Radix no abre en happy-dom: un par de botones con el mismo contrato.
 vi.mock('@/components/ui/select', async () => {
   const R = await import('react');

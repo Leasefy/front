@@ -14,7 +14,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ListaDeLotes } from '@/components/dispersiones/lotes/ListaDeLotes';
 import { ComoSaleUnLote } from '@/components/dispersiones/lotes/ComoSaleUnLote';
-import { PasosDeLosGirosDelMes, SiguientePasoDelMes } from '@/components/giros/PasosDeLosGirosDelMes';
+import { LoQueFaltaDelMes } from '@/components/giros/LoQueFaltaDelMes';
 import { esMesValido, mesActual } from '@/lib/recaudo/meses';
 import {
   SECCION_DE_LOS_GIROS,
@@ -53,7 +53,8 @@ function LotesDelPaso() {
         descripcion={tr(descripcionDelPaso(paso))}
         ayuda={<ComoSaleUnLote />}
       />
-      <PasosDeLosGirosDelMes paso={paso} mes={mes} onCambiarMes={setMes} />
+      {/* Decisión 17 de Nico (22-10): «Lo que falta del mes» en vez del riel de chulos. */}
+      <LoQueFaltaDelMes paso={paso} mes={mes} onCambiarMes={setMes} />
       {/* El mes lo manda el selector único de arriba (la lista ya no tiene el suyo). */}
       <ListaDeLotes
         key={paso}
@@ -61,7 +62,6 @@ function LotesDelPaso() {
         filtroInicial={paso === 'pagado' ? 'en_curso' : undefined}
         sinArmar={paso === 'pagado'}
       />
-      <SiguientePasoDelMes paso={paso} mes={mes} />
     </>
   );
 }

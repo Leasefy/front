@@ -1,4 +1,6 @@
 'use client';
+
+import { useEffect, useState } from 'react';
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useRouter } from 'next/navigation';
@@ -7,7 +9,10 @@ import { GenerarDispersion } from '@/components/inmobiliaria/dispersion/GenerarD
 import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
-import { PasosDeLosGiros, SECCION_DE_LOS_GIROS } from '@/components/giros/PasosDeLosGiros';
+import { SECCION_DE_LOS_GIROS } from '@/components/giros/PasosDeLosGiros';
+import { LoQueFaltaDelMes } from '@/components/giros/LoQueFaltaDelMes';
+import { esMesDeLosGiros } from '@/lib/giros/meses-de-los-giros';
+import { mesActual } from '@/lib/recaudo/meses';
 import { useTr } from '@/lib/i18n/use-tr';
 
 /**
@@ -21,6 +26,12 @@ function GenerarDispersionesContent() {
   const { t } = useI18n();
   const tr = useTr();
   const router = useRouter();
+  // El mes que trae el enlace de «Lo que falta del mes» (`?mes=`); se lee al montar, no en el servidor.
+  const [mes, setMes] = useState(mesActual);
+  useEffect(() => {
+    const pedido = new URLSearchParams(window.location.search).get('mes');
+    if (esMesDeLosGiros(pedido)) setMes(pedido);
+  }, []);
 
   /**
    * El asistente ya avisó, con el número que devolvió el back.
@@ -52,7 +63,8 @@ function GenerarDispersionesContent() {
         titulo={t('inmobiliaria.dispersiones.wizard.title')}
         descripcion={t('inmobiliaria.dispersiones.subtitle')}
       />
-      <PasosDeLosGiros paso="revisar" />
+      {/* Decisión 17 de Nico (22-10): lo que falta del mes también aquí (sin selector: el mes se elige abajo). */}
+      <LoQueFaltaDelMes paso="revisar" mes={mes} />
       <GenerarDispersion onComplete={handleComplete} onCancel={handleCancel} />
     </div>
   );

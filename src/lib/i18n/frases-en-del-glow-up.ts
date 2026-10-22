@@ -249,4 +249,18 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Giros atrasados': 'Overdue payouts',
   'Mes de los giros': 'Payout month',
   'Este mes ya está girado: los cuatro pasos están hechos.': 'This month is fully paid out: all four steps are done.',
+  // Decisión 17 (22-10): «Lo que falta del mes» en Giros a propietarios.
+  'Calculando lo que falta del mes…': 'Working out what is left this month…',
+  '{mes} no tiene giros': '{mes} has no payouts',
+  '{mes} está girado completo': '{mes} is fully paid out',
+  'No se pudo leer cuánto falta girar': 'We could not read how much is left to pay out',
+  'Ya no falta plata por girar: queda cerrar el paso {n}': 'No money left to pay out: step {n} is still open',
+  'Falta girar {plata} a {quien}': '{plata} left to pay out to {quien}',
+  '1 propietario': '1 owner',
+  '{n} propietarios': '{n} owners',
+  'Giros de {mes}': 'Payouts for {mes}',
+  'Lo que queda por girar ({plata}) es de otros meses: elige el mes arriba a la derecha.': 'What is still to pay out ({plata}) belongs to other months: pick the month at the top right.',
+  'Estás aquí': 'You are here',
+  '(hecho)': '(done)',
+  'Es lo de esta pantalla': 'It is on this screen',
 }

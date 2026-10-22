@@ -39,7 +39,7 @@
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { SECCION_DE_LOS_GIROS, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
-import { PasosDeLosGirosDelMes, SiguientePasoDelMes } from '@/components/giros/PasosDeLosGirosDelMes';
+import { LoQueFaltaDelMes } from '@/components/giros/LoQueFaltaDelMes';
 import { claveDelMes, esMesDeLosGiros } from '@/lib/giros/meses-de-los-giros';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -426,7 +426,8 @@ function TesoreriaContent() {
         titulo={tr(TITULO_DE_LOS_GIROS)}
         descripcion={tr(descripcionDelPaso('liquidar'))}
       />
-      <PasosDeLosGirosDelMes paso="liquidar" mes={month} onCambiarMes={setMonth} />
+      {/* Decisión 17 de Nico (22-10): «Lo que falta del mes» en vez del riel de chulos. */}
+      <LoQueFaltaDelMes paso="liquidar" mes={month} onCambiarMes={setMonth} />
 
       {/* 🔴 «Por girar» de la inmobiliaria: UNA sola cifra, hasta el mes en
           curso, la misma del Tablero y de «Cartera → Por pagar» (Nico,
@@ -914,7 +915,6 @@ function TesoreriaContent() {
           </EstadoDeDatos>
         </div>
       )}
-      <SiguientePasoDelMes paso="liquidar" mes={month} />
       <AlertDialog
         open={porCancelar !== null}
         onOpenChange={(abierto) => {

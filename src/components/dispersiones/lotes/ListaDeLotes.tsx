@@ -173,7 +173,8 @@ export function ListaDeLotes({
 } = {}) {
   const router = useRouter();
   const { canAccess } = usePermissions();
-  const { lotes, cargando, error, refetch } = useLotesDeDispersion({});
+  // Ronda 22: con el mes del selector único de Giros, la lista es la de ESE mes (salía noviembre con octubre arriba).
+  const { lotes, cargando, error, refetch } = useLotesDeDispersion(mesDeAfuera ? { month: mesDeAfuera } : {});
   const { nombreDe } = useNombresDelEquipo();
   const [filtro, setFiltro] = useState<Filtro>(filtroInicial ?? 'todos');
   // «Ir a Lotes» desde una dispersión trae su mes en `?mes=`.

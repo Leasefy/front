@@ -560,20 +560,6 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                   queMuestra={`Ver las ${numberFormatter.format(t?.cuotas ?? 0)} cuotas del mes en la tabla`}
                 />{' '}
                 que se deben en {enFrase}
-                {/* El interés va aparte del capital, en la misma línea. */}
-                {interesDelMes > 0 ? (
-                  <span className="text-fg-muted" data-testid="mes-falta-con-intereses">
-                    {' ('}
-                    {traducir(CLAVE_DE_MORA.conIntereses, {
-                      monto: plata(
-                        hayVencidasSinPlazo
-                          ? (t?.pendienteCop ?? 0) + interesDelMes
-                          : t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
-                      ),
-                    })}
-                    {')'}
-                  </span>
-                ) : null}
               </>
             }
             total={t?.totalCop ?? 0}
@@ -645,6 +631,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 ),
                 extra:
                   interesDelMes > 0 ? (
+                    <>
                     <span
                       className="block font-mono text-caption tabular-nums text-danger"
                       data-testid="mes-intereses"
@@ -654,7 +641,21 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                         monto: plata(interesDelMes),
                       })}
                     </span>
+                    {/* 22-10 (revisión): el total con intereses va con los intereses. */}
+                    <span className="block font-mono text-caption tabular-nums text-fg-muted" data-testid="mes-falta-con-intereses">
+                    
+                    {traducir(CLAVE_DE_MORA.conIntereses, {
+                      monto: plata(
+                        hayVencidasSinPlazo
+                          ? (t?.pendienteCop ?? 0) + interesDelMes
+                          : t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
+                      ),
+                    })}
+                    
+                  </span>
+                    </>
                   ) : null,
+
               },
             ]}
             pie={

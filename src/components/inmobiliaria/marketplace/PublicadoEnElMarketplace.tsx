@@ -25,9 +25,12 @@ import {
 export function PublicadoEnElMarketplace({
   propertyId,
   puedeCambiar,
+  onVerAviso,
 }: {
   propertyId: string
   puedeCambiar: boolean
+  /** «Ver el aviso público» vive aquí, junto a si sale o no (revisión 21-10). */
+  onVerAviso?: () => void
 }) {
   const [inmueble, setInmueble] = useState<InmuebleParaElegir | null>(null)
   const [guardando, setGuardando] = useState(false)
@@ -77,12 +80,24 @@ export function PublicadoEnElMarketplace({
           <p className="text-body-sm text-fg-muted">{explicacion}</p>
         </div>
       </div>
-      <Switch
-        checked={inmueble.publicado}
-        onCheckedChange={(v) => void cambiar(v)}
-        disabled={guardando || !puedeCambiar}
-        aria-label="Publicado en el marketplace"
-      />
+      <div className="flex shrink-0 items-center gap-3">
+        {onVerAviso && inmueble.seVe ? (
+          <button
+            type="button"
+            onClick={onVerAviso}
+            className="hidden text-body-sm font-medium text-primary underline-offset-4 hover:underline sm:inline"
+            data-testid="ver-el-aviso-publico"
+          >
+            Ver el aviso público
+          </button>
+        ) : null}
+        <Switch
+          checked={inmueble.publicado}
+          onCheckedChange={(v) => void cambiar(v)}
+          disabled={guardando || !puedeCambiar}
+          aria-label="Publicado en el marketplace"
+        />
+      </div>
     </div>
   )
 }

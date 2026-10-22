@@ -344,16 +344,17 @@ export function ConsignacionTimeline({
 
     // Hito 3 — vencimiento del arriendo vigente. El nombre del inquilino va
     // como CONTEXTO del hecho, no como si él hubiera hecho algo ese día.
+    const nombreDelInquilino = consignacion.inquilino?.nombre ?? consignacion.currentTenantName ?? '';
     if (consignacion.leaseEndDate) {
       reales.push({
         id: 'hito-fin-arriendo',
         type: 'lease_renewal',
         date: consignacion.leaseEndDate,
         title: t('inmobiliaria.consignaciones.timeline.events.leaseEnds'),
-        description: consignacion.currentTenantName
-          ? t('inmobiliaria.consignaciones.timeline.events.leaseEndsWithTenant', {
-              name: consignacion.currentTenantName,
-            })
+        // El nombre de la misma fuente que la portada (el inquilino del contrato vigente):
+        // la copia suelta venía en mayúsculas y la ficha decía dos nombres distintos.
+        description: nombreDelInquilino
+          ? t('inmobiliaria.consignaciones.timeline.events.leaseEndsWithTenant', { name: nombreDelInquilino })
           : '',
         actor: t('inmobiliaria.consignaciones.timeline.actors.system'),
       });

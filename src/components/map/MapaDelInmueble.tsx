@@ -123,7 +123,15 @@ export function MapaDelInmueble({ latitude, longitude, titulo, direccion, classN
           cooperativeGestures
           locale={LOCALE_MAPA}
           attributionControl={false}
-          onLoad={() => setEstado('listo')}
+          onLoad={(e) => {
+            setEstado('listo');
+            // Los créditos del mapa (en inglés, de OpenStreetMap) quedan plegados en su «i»:
+            // MapLibre los abre solos en pantallas anchas y tapaban el mapa (revisión 21-10).
+            e?.target
+              ?.getContainer?.()
+              ?.querySelectorAll('.maplibregl-compact-show')
+              .forEach((el) => el.classList.remove('maplibregl-compact-show'));
+          }}
           onError={(e) => {
             if (esFalloDelTrabajador(e.error)) setEstado('fallo');
           }}
@@ -147,11 +155,13 @@ export function MapaDelInmueble({ latitude, longitude, titulo, direccion, classN
         </Presence>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      {/* Siempre en columna: en la ficha el mapa vive en un tercio del ancho y la
+          dirección quedaba aplastada a un glifo al lado de los enlaces (revisión 21-10). */}
+      <div className="flex flex-col gap-2">
         {direccion && (
           <p className="flex items-start gap-1.5 text-sm text-fg min-w-0">
             <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-fg-subtle" aria-hidden="true" />
-            <span className="truncate">{direccion}</span>
+            <span className="line-clamp-2">{direccion}</span>
           </p>
         )}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 shrink-0">

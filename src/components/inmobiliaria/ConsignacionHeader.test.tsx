@@ -102,27 +102,19 @@ describe('<ConsignacionHeader> — property thumbnail', () => {
   });
 });
 
-describe('<ConsignacionHeader> — Ver en Portal', () => {
-  it('is enabled and fires onViewPortal when propertyId is present', () => {
-    const onViewPortal = vi.fn();
-    render({ onViewPortal });
-    const button = findViewPortalButton();
-    expect(button).toBeTruthy();
-    expect(button?.disabled).toBe(false);
-    act(() => { button?.click(); });
-    expect(onViewPortal).toHaveBeenCalledTimes(1);
+describe('<ConsignacionHeader> — Ver el aviso público (revisión 21-10)', () => {
+  // Ya no es un botón suelto arriba: vive en el menú ⋯ (Radix, que en happy-dom no se
+  // abre) y en «Arrendarlo», junto al interruptor del marketplace. Arriba sólo queda lo
+  // que se puede hacer.
+  it('no hay botón «Ver el aviso público» suelto en la fila de arriba', () => {
+    render({ onViewPortal: vi.fn() });
+    expect(findViewPortalButton()).toBeUndefined();
   });
 
-  it('is disabled when propertyId is missing, and does not fire onViewPortal', () => {
-    const onViewPortal = vi.fn();
-    render({
-      consignacion: { ...BASE_CONSIGNACION, propertyId: '' },
-      onViewPortal,
-    });
-    const button = findViewPortalButton();
-    expect(button?.disabled).toBe(true);
-    act(() => { button?.click(); });
-    expect(onViewPortal).not.toHaveBeenCalled();
+  it('el menú lo ofrece sólo con un inmueble asociado (fuente: sin inmueble no hay aviso)', () => {
+    const fuente = readFileSync(resolve(process.cwd(), 'src/components/inmobiliaria/ConsignacionHeader.tsx'), 'utf8');
+    expect(fuente).toContain('{canViewPortal ? (');
+    expect(fuente).toContain('data-testid="menu-ver-aviso"');
   });
 });
 
@@ -215,13 +207,13 @@ describe('<ConsignacionHeader> — un mandato TERMINADO se ve y se comporta dist
     expect(container.querySelector('[data-testid="terminada-con-contrato"]')).toBeNull();
   });
 
-  it('el kebab no ofrece «Terminar» otra vez, no hay «Cambiar estado», «Ver en Portal» explica por qué y hay «Nueva consignación»', () => {
+  it('el kebab no ofrece «Terminar» otra vez, no hay «Cambiar estado» ni botones apagados, y hay «Nueva consignación»', () => {
     render({ consignacion: terminada });
     expect(container.querySelector('[aria-label="inmobiliaria.consignaciones.header.moreActions"]')).toBeNull();
     expect(conTexto('inmobiliaria.consignaciones.header.changeStatus')).toBeUndefined();
-    const portal = findViewPortalButton()!;
-    expect(portal.disabled).toBe(true);
-    expect(portal.getAttribute('title')).toBe('inmobiliaria.consignaciones.header.terminada.viewOnPortal');
+    // Revisión 21-10: lo que no se puede, no se ofrece (antes era un «Ver en Portal» apagado).
+    expect(findViewPortalButton()).toBeUndefined();
+    expect(Array.from(container.querySelectorAll('button')).filter((b) => b.disabled)).toHaveLength(0);
     const nueva = container.querySelector<HTMLAnchorElement>('[data-testid="header-nueva-consignacion"]')!;
     expect(nueva).not.toBeNull();
     expect(nueva.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/nuevo?origen=existente');
@@ -294,11 +286,10 @@ describe('<ConsignacionHeader> — la portada de la revisión 21-10', () => {
     expect(disparador?.textContent).toContain('inmobiliaria.consignaciones.header.changeStatus');
   });
 
-  it('una sola acción azul: «Editar»; «Ver el aviso» va como secundaria', () => {
+  it('una sola acción azul: «Editar»', () => {
     render();
-    const editar = container.querySelector('[data-testid="header-editar"]');
-    expect(editar).not.toBeNull();
-    expect(findViewPortalButton()).toBeTruthy();
+    expect(container.querySelector('[data-testid="header-editar"]')).not.toBeNull();
+    expect(findViewPortalButton()).toBeUndefined();
   });
 });
 

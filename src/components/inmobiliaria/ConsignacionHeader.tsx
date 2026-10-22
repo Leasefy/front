@@ -14,7 +14,6 @@ import {
   Eye,
   DotsThree,
   CaretDown,
-  ArrowSquareOut,
   XCircle,
   Wrench,
   CheckCircle,
@@ -24,6 +23,7 @@ import {
   Mountains,
   Prohibit,
   Plus,
+  CalendarPlus,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
@@ -86,6 +86,8 @@ interface ConsignacionHeaderProps {
   franja?: ReactNode;
   /** Vacante hace más de 30 días: el estado «Disponible» pide atención (ámbar). */
   vacanciaLarga?: boolean;
+  /** «Agendar visita» en el menú ⋯ (sólo cuando se puede: inmueble disponible). */
+  onAgendarVisita?: () => void;
   /*
    * 🔴 `onRenew` se retiró junto con su renglón del menú: «Renovar
    * consignación» sólo mostraba «próximamente». No hay endpoint de renovación
@@ -158,7 +160,8 @@ function sinTildes(texto: string): string {
 export function direccionSinRepetir(c: Pick<Consignacion, 'propertyTitle' | 'propertyAddress' | 'propertyZone' | 'propertyCity'>): string {
   const titulo = sinTildes(c.propertyTitle ?? '');
   const queda = (v?: string | null) => (v && !titulo.includes(sinTildes(v)) ? v : null);
-  return [c.propertyAddress, barrioYCiudad(queda(c.propertyZone), queda(c.propertyCity))].filter(Boolean).join(', ');
+  // El título que ES la dirección (cartera migrada: «CR 53 CL 129 SUR - 58 INT 701…»): no se repite.
+  return [queda(c.propertyAddress), barrioYCiudad(queda(c.propertyZone), queda(c.propertyCity))].filter(Boolean).join(', ');
 }
 
 /**
@@ -187,6 +190,7 @@ export function ConsignacionHeader({
   accionPrevia,
   franja,
   vacanciaLarga = false,
+  onAgendarVisita,
 }: ConsignacionHeaderProps) {
   const { t, formatDate } = useI18n();
 
@@ -215,11 +219,6 @@ export function ConsignacionHeader({
   const canViewPortal = !!consignacion.propertyId;
   const cantidadDeFotos = fotos?.length ?? 0;
   const portadaAbre = cantidadDeFotos > 0 && !!onVerFotos;
-  const tituloDelPortal = terminada
-    ? t('inmobiliaria.consignaciones.header.terminada.viewOnPortal')
-    : canViewPortal
-      ? undefined
-      : t('inmobiliaria.consignaciones.header.viewOnPortalUnavailable');
 
   return (
     <div className="space-y-4">
@@ -229,28 +228,17 @@ export function ConsignacionHeader({
         <div className="flex shrink-0 items-center gap-2">
           {accionPrevia}
 
-          {/* Ver el aviso público — en el celular vive en el menú de los tres puntos. */}
-          <Button
-            variant="secondary"
-            size="sm"
-            hideArrow
-            onClick={onViewPortal}
-            disabled={!canViewPortal || terminada}
-            title={tituloDelPortal}
-            className="hidden sm:inline-flex"
-          >
-            <Eye className="h-4 w-4" />
-            {t('inmobiliaria.consignaciones.header.viewOnPortal')}
-            <ArrowSquareOut className="h-4 w-4" />
-          </Button>
-
+          {/*
+            Revisión 21-10: arriba sólo lo que se puede hacer. «Ver el aviso público» vive en el
+            menú ⋯ y en «Arrendarlo», junto al interruptor del marketplace. Con el mandato
+            terminado no hay botones apagados: lo que sigue es una consignación nueva.
+          */}
           {terminada ? (
             // La salida correcta. El wizard «existente» sólo lista inmuebles
             // SIN mandato y `agencyId + propertyId` es único: hoy no hay un
             // flujo que reabra ESTE inmueble; el enlace lleva a Nueva
             // consignación y el reporte lo deja dicho.
             <Button
-              variant="secondary"
               size="sm"
               hideArrow
               asChild
@@ -263,20 +251,22 @@ export function ConsignacionHeader({
             </Button>
           ) : null}
 
-          {/* La única acción azul de la ficha. Con el mandato terminado, sólo lo del inmueble. */}
-          <Button
-            size="sm"
-            hideArrow
-            onClick={onEdit}
-            disabled={terminada && !consignacion.propertyId}
-            title={terminada ? t('inmobiliaria.consignaciones.header.terminada.editarAyuda') : undefined}
-            data-testid="header-editar"
-          >
-            <PencilSimple className="h-4 w-4" />
-            {terminada
-              ? t('inmobiliaria.consignaciones.header.terminada.editar')
-              : t('inmobiliaria.consignaciones.header.edit')}
-          </Button>
+          {/* Editar: la única azul con el mandato vivo; con el mandato terminado, sólo lo del inmueble y en gris. */}
+          {!(terminada && !consignacion.propertyId) ? (
+            <Button
+              variant={terminada ? 'secondary' : 'default'}
+              size="sm"
+              hideArrow
+              onClick={onEdit}
+              title={terminada ? t('inmobiliaria.consignaciones.header.terminada.editarAyuda') : undefined}
+              data-testid="header-editar"
+            >
+              <PencilSimple className="h-4 w-4" />
+              {terminada
+                ? t('inmobiliaria.consignaciones.header.terminada.editar')
+                : t('inmobiliaria.consignaciones.header.edit')}
+            </Button>
+          ) : null}
 
           {!terminada ? (
             <DropdownList>
@@ -289,10 +279,18 @@ export function ConsignacionHeader({
                 />
               </DropdownListTrigger>
               <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
-                <DropdownListItem onSelect={() => onViewPortal?.()} disabled={!canViewPortal} className="sm:hidden">
-                  <Eye className="h-4 w-4" />
-                  {t('inmobiliaria.consignaciones.header.viewOnPortal')}
-                </DropdownListItem>
+                {onAgendarVisita ? (
+                  <DropdownListItem onSelect={() => onAgendarVisita()} data-testid="menu-agendar-visita">
+                    <CalendarPlus className="h-4 w-4" />
+                    Agendar visita
+                  </DropdownListItem>
+                ) : null}
+                {canViewPortal ? (
+                  <DropdownListItem onSelect={() => onViewPortal?.()} data-testid="menu-ver-aviso">
+                    <Eye className="h-4 w-4" />
+                    {t('inmobiliaria.consignaciones.header.viewOnPortal')}
+                  </DropdownListItem>
+                ) : null}
                 <DropdownListItem onSelect={() => onTerminate?.()} className="text-danger focus:text-danger">
                   <XCircle className="h-4 w-4" />
                   {t('inmobiliaria.consignaciones.header.terminateConsignment')}
@@ -441,42 +439,39 @@ export function ConsignacionHeader({
               </span>
             </div>
 
-            {terminada && (
-              <div
-                role="status"
-                className="mb-4 flex items-start gap-2 rounded-md border border-border bg-warning-soft p-3"
-                data-testid="banner-consignacion-terminada"
-              >
-                <Prohibit className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-warning">
-                    {fechaDeTerminacion
-                      ? t('inmobiliaria.consignaciones.header.terminada.titulo', { fecha: formatDate(fechaDeTerminacion) })
-                      : t('inmobiliaria.consignaciones.header.terminada.tituloSinFecha')}
-                  </p>
-                  <p className="mt-0.5 text-body-sm text-fg-muted">
-                    {t('inmobiliaria.consignaciones.header.terminada.detalle')}
-                    {contratoVigente && (
-                      <>
-                        {' '}
-                        <span className="font-medium text-fg" data-testid="terminada-con-contrato">
-                          {t('inmobiliaria.consignaciones.header.terminada.conContrato')}
-                        </span>
-                      </>
-                    )}
-                  </p>
-                </div>
-              </div>
-            )}
-
             <h1 className="mb-2 text-[28px] font-[420] leading-[1.1] tracking-[-0.02em] text-fg [text-wrap:balance] lg:text-[34px]">
               {consignacion.propertyTitle}
             </h1>
 
-            <p className="mb-5 flex items-start gap-2 text-[15px] text-fg-muted dark:text-fg-subtle">
-              <MapPin className="mt-[3px] h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="min-w-0">{direccionSinRepetir(consignacion)}</span>
-            </p>
+            {/* Terminada: una línea callada bajo el título (el chip ya dice «terminada»),
+                no otra caja ámbar dentro de la portada. */}
+            {terminada && (
+              <p role="status" className="mb-3 text-body-sm text-fg-muted" data-testid="banner-consignacion-terminada">
+                <Prohibit className="mr-1.5 inline h-4 w-4 -translate-y-px text-fg-subtle" aria-hidden="true" />
+                {fechaDeTerminacion
+                  ? t('inmobiliaria.consignaciones.header.terminada.titulo', { fecha: formatDate(fechaDeTerminacion) })
+                  : t('inmobiliaria.consignaciones.header.terminada.tituloSinFecha')}
+                {' · '}
+                {t('inmobiliaria.consignaciones.header.terminada.detalle')}
+                {contratoVigente && (
+                  <>
+                    {' '}
+                    <span className="font-medium text-fg" data-testid="terminada-con-contrato">
+                      {t('inmobiliaria.consignaciones.header.terminada.conContrato')}
+                    </span>
+                  </>
+                )}
+              </p>
+            )}
+
+            {direccionSinRepetir(consignacion) ? (
+              <p className="mb-5 flex items-start gap-2 text-[15px] text-fg-muted dark:text-fg-subtle">
+                <MapPin className="mt-[3px] h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="min-w-0">{direccionSinRepetir(consignacion)}</span>
+              </p>
+            ) : (
+              <div className="mb-5" />
+            )}
 
             {/* El canon (o, en una venta, la comisión de venta — §A.2: nunca «$0/mes»). */}
             {consignacion.listingType === 'sale' ? (
@@ -492,7 +487,14 @@ export function ConsignacionHeader({
               </div>
             ) : (
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span className="font-mono text-[32px] font-[420] tabular-nums tracking-[-0.03em] text-fg lg:text-[40px]">
+                {/* Terminada: el canon ya no rige; se dice como «Último canon», chico y en gris. */}
+                {terminada ? <span className="text-body-sm text-fg-muted">Último canon</span> : null}
+                <span
+                  className={cn(
+                    'font-mono font-[420] tabular-nums tracking-[-0.03em]',
+                    terminada ? 'text-[17px] text-fg-muted' : 'text-[32px] text-fg lg:text-[40px]',
+                  )}
+                >
                   {consignacion.canonPorConfirmar
                     ? TEXTO_CANON_POR_CONFIRMAR
                     : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}

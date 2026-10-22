@@ -388,7 +388,7 @@ describe('<ConsignacionDetailPage> — mandato TERMINADO (Nico, 2026-09-13: «es
     expect(document.body.querySelector('[data-testid="pedir-cita"]')).toBeNull();
   });
 
-  it('terminado: «Pedir cita» queda deshabilitado con el porqué, y la fecha sale del evento del historial', async () => {
+  it('terminado: no ofrece «Agendar visita» (revisión 21-10: nada apagado), y la fecha sale del evento del historial', async () => {
     getHistorialMock.mockResolvedValue([
       { id: 'e2', tipo: 'datos_editados', titulo: 'x', detalle: null, actor: 'Ana', esSistema: false, fecha: '2026-09-14T10:00:00.000Z', metadata: {} },
       { id: 'e1', tipo: 'consignacion_terminada', titulo: 'Consignación terminada', detalle: null, actor: 'Ana', esSistema: false, fecha: '2026-09-13T15:00:00.000Z', metadata: {} },
@@ -402,9 +402,7 @@ describe('<ConsignacionDetailPage> — mandato TERMINADO (Nico, 2026-09-13: «es
       await Promise.resolve();
     });
 
-    const cita = document.body.querySelector<HTMLButtonElement>('[data-testid="pedir-cita"]')!;
-    expect(cita.disabled).toBe(true);
-    expect(cita.getAttribute('title')).toBe('inmobiliaria.consignaciones.header.terminada.pedirCita');
+    expect(document.body.querySelector('[data-testid="pedir-cita"]')).toBeNull();
     expect(getHistorialMock).toHaveBeenCalledWith('consig-1');
     const header = document.body.querySelector('[data-testid="view-portal-stub"]')!;
     expect(header.getAttribute('data-fecha-terminacion')).toBe('2026-09-13T15:00:00.000Z');

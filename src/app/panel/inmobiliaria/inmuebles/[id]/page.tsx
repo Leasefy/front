@@ -613,10 +613,10 @@ function ConsignacionDetailContent() {
           <nav aria-label={t('inmobiliaria.portafolio.title')} className="flex min-w-0 items-center gap-2 text-sm">
             <Link
               href="/panel/inmobiliaria/inmuebles"
-              className="flex shrink-0 items-center gap-1.5 text-fg-muted transition-colors hover:text-fg"
+              className="flex min-w-0 items-center gap-1.5 text-fg-muted transition-colors hover:text-fg"
             >
-              <CaretLeft className="h-4 w-4" />
-              {t('inmobiliaria.portafolio.title')}
+              <CaretLeft className="h-4 w-4 shrink-0" />
+              <span className="truncate">{t('inmobiliaria.portafolio.title')}</span>
             </Link>
             <span className="hidden text-fg-subtle sm:inline" aria-hidden="true">/</span>
             <span className="hidden max-w-[min(60ch,40vw)] truncate font-medium text-fg sm:inline">
@@ -626,34 +626,25 @@ function ConsignacionDetailContent() {
         }
         accionPrevia={
           /*
-           * «Pedir cita» sólo donde se puede: un inmueble arrendado no recibe
-           * visitas (el back las rechaza con 409; revisión 21-10, «lo que no se
-           * puede, no se ofrece»). Terminado, se ve apagado con su porqué.
+           * «Agendar visita» sólo donde se puede (revisión 21-10, «lo que no se puede, no se
+           * ofrece»): un inmueble arrendado no recibe visitas —el back las rechaza con 409— y
+           * uno terminado ya no se administra. En el celular vive en el menú ⋯.
            */
-          terminada || !contratoVigente ? (
+          !terminada && !contratoVigente && consignacion.propertyId ? (
             <Button
               variant="secondary"
               size="sm"
               hideArrow
-              className="shrink-0"
+              className="hidden shrink-0 sm:inline-flex"
               onClick={() => setShowCitaModal(true)}
-              // F11: sin inmueble asociado no hay a dónde agendar la visita.
-              disabled={terminada || !consignacion.propertyId}
-              title={
-                terminada
-                  ? t('inmobiliaria.consignaciones.header.terminada.pedirCita')
-                  : !consignacion.propertyId
-                    ? 'Esta consignación no tiene un inmueble asociado: no hay a dónde agendar la visita.'
-                    : undefined
-              }
-              aria-label={t('inmobiliaria.agenda.pedirCita')}
               data-testid="pedir-cita"
             >
               <CalendarPlus className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('inmobiliaria.agenda.pedirCita')}</span>
+              Agendar visita
             </Button>
           ) : null
         }
+        onAgendarVisita={!terminada && !contratoVigente && consignacion.propertyId ? () => setShowCitaModal(true) : undefined}
         franja={
           <FranjaDelArriendo
             consignacion={consignacion}
@@ -740,6 +731,7 @@ function ConsignacionDetailContent() {
                   <PublicadoEnElMarketplace
                     propertyId={consignacion.propertyId}
                     puedeCambiar={puedeEditarPortafolio}
+                    onVerAviso={terminada ? undefined : handleViewPortal}
                   />
                 )}
                 {/* Las fotos viven en el Property; sin propertyId (mandato sin

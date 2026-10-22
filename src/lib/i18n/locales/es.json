@@ -4139,7 +4139,7 @@
         "loadFailed": "No pudimos traer la actividad de este inmueble.",
         "events": {
           "consignacionCreated": "Consignación creada",
-          "consignacionCreatedDesc": "Se firmó el contrato de consignación con el propietario",
+          "consignacionCreatedDesc": "Empezó el mandato con el propietario",
           "consignacionEnds": "Vence el contrato de consignación",
           "leaseEnds": "Vence el contrato de arriendo",
           "leaseEndsWithTenant": "Contrato vigente con {{name}}",

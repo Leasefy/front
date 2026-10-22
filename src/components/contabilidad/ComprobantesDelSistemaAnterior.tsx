@@ -399,10 +399,22 @@ function TablaDeComprobantes({
    */
   conTipo?: boolean
 }) {
+  const formas = new Set(documentos.map((d) => d.asociadoPor));
+  const comoSeAsociaronTodos =
+    documentos.length > 1 && formas.size === 1 && documentos[0]!.asociadoPor !== 'ninguno' ? documentos[0]!.asociadoPor : null;
   return (
     <div className="overflow-hidden rounded-[16px] border border-border-faint bg-surface dark:border-border-strong dark:bg-bg">
-      <Table>
-        <TableHeader>
+      {/* Cómo quedaron colgados de este contrato, UNA vez si es igual para todos (revisión 21-10:
+          «Asociado por el nombre del tercero» ×10). */}
+      {comoSeAsociaronTodos ? (
+        <p className="border-b border-border-faint px-4 py-2.5 text-caption text-fg-subtle dark:border-border-strong" data-testid="comprobantes-asociados-por">
+          Todos asociados {COMO_SE_ASOCIO[comoSeAsociaronTodos] ?? comoSeAsociaronTodos}.
+        </p>
+      ) : null}
+      {/* Bajo 768 cada comprobante es una tarjeta de dos renglones (número y monto; fecha y
+          concepto): la tabla encogida dejaba el concepto de tres letras por renglón. */}
+      <Table className="max-md:block">
+        <TableHeader className="max-md:hidden">
           <TableRow>
             {conTipo ? <TableHead>Tipo</TableHead> : null}
             <TableHead>Número</TableHead>
@@ -417,9 +429,13 @@ function TablaDeComprobantes({
         </TableHeader>
         <TableBody>
           {documentos.map((d) => (
-            <TableRow key={d.id} data-testid="comprobante-migrado">
+            <TableRow
+              key={d.id}
+              data-testid="comprobante-migrado"
+              className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-1 max-md:px-4 max-md:py-3"
+            >
               {conTipo ? (
-                <TableCell className="whitespace-nowrap">
+                <TableCell className="whitespace-nowrap max-md:order-3 max-md:col-span-2 max-md:block max-md:p-0 max-md:text-caption">
                   {d.tipo || '—'}
                   {d.anulado ? <span className="ml-2 text-caption text-danger">anulado</span> : null}
                 </TableCell>
@@ -427,12 +443,12 @@ function TablaDeComprobantes({
               {/* El prefijo puede venir vacío («FV-26766» vs «26766»), y el
                   consecutivo 0 es un consecutivo: `filter(Boolean)` lo
                   borraría. */}
-              <TableCell className="whitespace-nowrap font-mono text-caption tabular-nums">
+              <TableCell className="whitespace-nowrap font-mono text-caption tabular-nums max-md:order-1 max-md:block max-md:p-0">
                 {d.prefijo ? `${d.prefijo}-${d.consecutivo}` : String(d.consecutivo)}
                 {!conTipo && d.anulado ? <span className="ml-2 font-sans text-caption text-danger">anulado</span> : null}
               </TableCell>
-              <TableCell className="whitespace-nowrap">{diaLegible(d.fecha)}</TableCell>
-              <TableCell className="max-w-[28rem] text-fg-muted">
+              <TableCell className="whitespace-nowrap max-md:order-4 max-md:col-span-2 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-subtle">{diaLegible(d.fecha)}</TableCell>
+              <TableCell className="max-w-[28rem] text-fg-muted max-md:order-5 max-md:col-span-2 max-md:block max-md:max-w-none max-md:p-0 max-md:text-caption">
                 <span className="line-clamp-2">{d.concepto || '—'}</span>
                 {d.esAnticipo ? (
                   <span className="block text-caption text-fg-subtle">
@@ -444,7 +460,7 @@ function TablaDeComprobantes({
                 {/* Por dónde quedó colgado de este contrato. Importa sobre todo
                     con las dos reglas del 2026-09-16 («CONTRATO N», «COD. N»):
                     quien lee la ficha puede comprobar que el concepto lo dice. */}
-                {d.asociadoPor !== 'ninguno' ? (
+                {d.asociadoPor !== 'ninguno' && !comoSeAsociaronTodos ? (
                   <span
                     className="block text-caption text-fg-subtle"
                     data-testid="comprobante-asociado-por"
@@ -454,7 +470,7 @@ function TablaDeComprobantes({
                 ) : null}
                 {d.datos ? <FilaDelArchivo datos={d.datos} /> : null}
               </TableCell>
-              <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
+              <TableCell className="whitespace-nowrap text-right font-mono tabular-nums max-md:order-2 max-md:block max-md:p-0">
                 {/* `null` es «no se pudo leer el monto» y se muestra así.
                     `formatCurrency(null)` devuelve «$ 0», que es un hecho
                     falso mostrado con total confianza. */}

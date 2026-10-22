@@ -4104,7 +4104,7 @@
         "loadFailed": "We couldn't load this property's activity.",
         "events": {
           "consignacionCreated": "Consignment created",
-          "consignacionCreatedDesc": "The consignment contract was signed with the owner",
+          "consignacionCreatedDesc": "The mandate with the owner started",
           "consignacionEnds": "Consignment contract expires",
           "leaseEnds": "Lease expires",
           "leaseEndsWithTenant": "Active lease with {{name}}",

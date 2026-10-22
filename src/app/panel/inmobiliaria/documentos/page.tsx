@@ -44,7 +44,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
-import { Cifra, FranjaDeCifras, IconButton, Presence, SearchInput } from '@leasefy/cadence';
+import { IconButton, Presence, SearchInput } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -398,60 +400,62 @@ function DocumentosContent() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
-          <h1 className="text-h2 text-fg">{t('inmobiliaria.documentos.title')}</h1>
-          <p className="text-body text-fg-muted max-w-2xl">{t(k('subtitle'))}</p>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-        {/* 🔴 03-10 (pruebas en el navegador): «Nueva acta» vivía SÓLO en el vacío
-            de la pestaña: con un acta en la lista no había cómo levantar otra.
-            Es acción de SU pestaña (como «Nueva plantilla») y pide su permiso,
-            `portafolio:create`, no el de los documentos: va fuera de ese gate. */}
-        <Presence
-          show={pestana === 'actas' && puedeCrearActas && actas.length > 0}
-          initial={false}
-          direction="right"
-          distance="xs"
-        >
-          <Button variant="outline" hideArrow onClick={abrirNuevaActa} data-testid="acta-nueva">
-            <Plus className="w-4 h-4" weight="bold" />
-            {t('inmobiliaria.documentos.newActa')}
-          </Button>
-        </Presence>
-        {/* Un CONTADOR o un VIEWER sólo tienen `documentos:view`, y el back
-            responde 403 al preparar. El botón no se dibuja si no se puede. */}
-        <PermissionGate module="documentos" action="create" fallback={null}>
-          <div className="flex shrink-0 flex-wrap gap-2">
+      {/* GLOW UP 22-10 (UX): el encabezado común de las pantallas por tarea —sección, título, una línea,
+          las acciones de la pestaña en secundario y UNA principal, «Generar documento»—, como Inquilinos. */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secDirectorio')}
+        titulo={t('inmobiliaria.documentos.title')}
+        descripcion={t(k('subtitle'))}
+        acciones={
+          <>
+            {/* 🔴 03-10 (pruebas en el navegador): «Nueva acta» vivía SÓLO en el vacío
+                de la pestaña: con un acta en la lista no había cómo levantar otra.
+                Es acción de SU pestaña (como «Nueva plantilla») y pide su permiso,
+                `portafolio:create`, no el de los documentos: va fuera de ese gate. */}
+            <Presence
+              show={pestana === 'actas' && puedeCrearActas && actas.length > 0}
+              initial={false}
+              direction="right"
+              distance="xs"
+            >
+              <Button size="sm" variant="outline" hideArrow onClick={abrirNuevaActa} data-testid="acta-nueva">
+                <Plus className="w-4 h-4" weight="bold" />
+                {t('inmobiliaria.documentos.newActa')}
+              </Button>
+            </Presence>
             {/* Escribir una plantilla es una acción de SU pestaña: en la de
                 documentos sería un botón que no tiene nada que ver con lo que
                 se está mirando. */}
-            <Presence show={pestana === 'plantillas'} initial={false} direction="right" distance="xs">
-              <Button
-                variant="outline"
-                hideArrow
-                onClick={() => {
-                  setPlantillaEnEdicion(null);
-                  setEditorAbierto(true);
-                }}
-                data-testid="plantilla-nueva"
-              >
-                <Plus className="w-4 h-4" weight="bold" />
-                Nueva plantilla
-              </Button>
-            </Presence>
-            <Button
-              onClick={() => setGenerarAbierto(true)}
-              hideArrow
-              data-testid="documentos-generar"
-            >
+            <PermissionGate module="documentos" action="create" fallback={null}>
+              <Presence show={pestana === 'plantillas'} initial={false} direction="right" distance="xs">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  hideArrow
+                  onClick={() => {
+                    setPlantillaEnEdicion(null);
+                    setEditorAbierto(true);
+                  }}
+                  data-testid="plantilla-nueva"
+                >
+                  <Plus className="w-4 h-4" weight="bold" />
+                  Nueva plantilla
+                </Button>
+              </Presence>
+            </PermissionGate>
+          </>
+        }
+        accionPrincipal={
+          /* Un CONTADOR o un VIEWER sólo tienen `documentos:view`, y el back
+             responde 403 al preparar. El botón no se dibuja si no se puede. */
+          <PermissionGate module="documentos" action="create" fallback={null}>
+            <Button size="sm" onClick={() => setGenerarAbierto(true)} hideArrow data-testid="documentos-generar">
               <Plus className="w-4 h-4" weight="bold" />
               {t(k('generar'))}
             </Button>
-          </div>
-        </PermissionGate>
-        </div>
-      </header>
+          </PermissionGate>
+        }
+      />
 
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
         {/* Pestañas + buscador + filtros: la primera fila de la card. */}
@@ -526,32 +530,27 @@ function DocumentosContent() {
         {/* GLOW UP 21-10 · el trabajo es generar el documento, mandarlo a firmar y encontrarlo: los
             estados filtran a un toque —«Por firmar» es lo que espera a alguien—; antes era un
             desplegable. */}
+        {/* GLOW UP 22-10 (UX): los estados son pestañas con su conteo, como Solicitudes y Postulaciones
+            (antes una franja de seis cifras grandes debajo de la otra fila de pestañas). Las en cero
+            no salen, salvo «Todos» y la elegida; «Por firmar» y «Vencido» llevan el punto. */}
         {pestana === 'documentos' && documentos.length > 0 ? (
-          <FranjaDeCifras
-            aria-label="Filtrar por estado"
-            data-testid="documentos-por-estado"
-            className="rounded-none border-0 border-b border-border"
-          >
-            <Cifra
-              etiqueta="Todos"
-              valor={documentos.length}
-              activa={filtros.estado === 'todos'}
-              onClick={() => setFiltros((f) => ({ ...f, estado: 'todos' }))}
+          <div className="border-b border-border px-4 py-3" data-testid="documentos-por-estado">
+            <PestanasDeEstado
+              etiqueta="Filtrar por estado"
+              valor={filtros.estado}
+              onCambio={(v) => setFiltros((f) => ({ ...f, estado: v }))}
+              pestanas={[
+                { valor: 'todos' as FiltrosDeDocumentos['estado'], etiqueta: 'Todos', cuantos: documentos.length, fija: true, testid: 'documentos-estado-todos' },
+                ...ESTADOS.map((e) => ({
+                  valor: e as FiltrosDeDocumentos['estado'],
+                  etiqueta: ESTADO_LABEL[e],
+                  cuantos: documentos.filter((d) => d.status === e).length,
+                  tono: e === 'PENDING_SIGNATURE' || e === 'DOC_EXPIRED' ? ('aviso' as const) : undefined,
+                  testid: `documentos-estado-${e}`,
+                })),
+              ]}
             />
-            {ESTADOS.map((e) => {
-              const n = documentos.filter((d) => d.status === e).length;
-              return (
-                <Cifra
-                  key={e}
-                  etiqueta={ESTADO_LABEL[e]}
-                  valor={n}
-                  tono={n > 0 ? (e === 'PENDING_SIGNATURE' ? 'aviso' : e === 'DOC_EXPIRED' ? 'peligro' : undefined) : undefined}
-                  activa={filtros.estado === e}
-                  onClick={() => setFiltros((f) => ({ ...f, estado: f.estado === e ? 'todos' : e }))}
-                />
-              );
-            })}
-          </FranjaDeCifras>
+          </div>
         ) : null}
 
         <EstadoDeDatos
@@ -567,8 +566,10 @@ function DocumentosContent() {
             </div>
           }
         >
-          <Table>
-            <TableHeader>
+          {/* GLOW UP 22-10 (UX): en el celular, los documentos van en TARJETAS (como Deuda del mes):
+              nombre y estado arriba, inmueble y fecha debajo; la tarjeta abre el cajón con las acciones. */}
+          <Table className={cn(pestana === 'documentos' && 'max-md:block')}>
+            <TableHeader className={cn(pestana === 'documentos' && 'max-md:hidden')}>
               <TableRow>
                 {columnas.map((c) => (
                   <TableHead key={c} className={cn('whitespace-nowrap', c === 'colAcciones' && ACCIONES_FIJAS_CABECERA)}>
@@ -581,12 +582,12 @@ function DocumentosContent() {
                 o filtrar (`key` = el id). Al cambiar de pestaña el cuerpo se
                 monta de nuevo: las de la pestaña nueva entran, sin esperar a
                 que se vayan las de la vieja. */}
-            <TableBodyAnimado key={pestana}>
+            <TableBodyAnimado key={pestana} className={cn(pestana === 'documentos' && 'max-md:block')}>
               {/* ── Documentos ─────────────────────────────────────────── */}
               {pestana === 'documentos' &&
                 (visibles.length === 0 ? (
-                  <TableRowAnimada key="vacio-documentos">
-                    <TableCell colSpan={columnas.length} className="p-0">
+                  <TableRowAnimada key="vacio-documentos" className="max-md:block">
+                    <TableCell colSpan={columnas.length} className="p-0 max-md:block">
                       {/* 🔴 ARREGLOS-4: a 390 px la tabla es más ancha que la
                           pantalla; el vacío ocupa lo que SE VE, no la tabla. */}
                       <AlAnchoVisible>
@@ -616,7 +617,7 @@ function DocumentosContent() {
                       key={doc.id}
                       data-testid="documento-fila"
                       onClick={() => setDocumentoAbierto(doc)}
-                      className="group cursor-pointer"
+                      className="group cursor-pointer max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
                       tabIndex={0}
                       role="button"
                       aria-label={`Ver ${doc.name}`}
@@ -627,7 +628,7 @@ function DocumentosContent() {
                         }
                       }}
                     >
-                      <TableCell className="max-w-[280px]">
+                      <TableCell className="max-w-[280px] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="truncate font-medium text-fg" title={doc.name}>{doc.name}</p>
                         {/* La plantilla sólo si dice algo distinto del nombre (antes, «Contrato de
                             arrendamiento» dos veces seguidas). */}
@@ -635,23 +636,23 @@ function DocumentosContent() {
                           <p className="truncate text-caption text-fg-muted">{doc.template.name}</p>
                         )}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-fg-muted">
+                      <TableCell className="whitespace-nowrap text-fg-muted max-md:hidden">
                         {doc.template ? CATEGORIA_LABEL[doc.template.category] : '—'}
                       </TableCell>
-                      <TableCell className="max-w-[200px]">
-                        <span className="block truncate text-fg-muted">
+                      <TableCell className="max-w-[200px] max-md:col-start-1 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
+                        <span className="block truncate text-fg-muted max-md:text-caption">
                           {etiquetaDelInmueble(doc) ?? '—'}
                         </span>
                       </TableCell>
-                      <TableCell className="max-w-[150px]">
+                      <TableCell className="max-w-[150px] max-md:hidden">
                         <span className="block truncate text-fg-muted">
                           {etiquetaDePartes(doc) ?? '—'}
                         </span>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
+                      <TableCell className="whitespace-nowrap tabular-nums text-fg-muted max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-caption">
                         {fechaCorta(doc.createdAt, locale)}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
                         <span
                           className={cn(
                             'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
@@ -663,7 +664,7 @@ function DocumentosContent() {
                       </TableCell>
                       {/* Las acciones de la fila actúan; el clic no sube a la fila. */}
                       <TableCell
-                        className={cn('whitespace-nowrap', ACCIONES_FIJAS)}
+                        className={cn('whitespace-nowrap max-md:hidden', ACCIONES_FIJAS)}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
                       >

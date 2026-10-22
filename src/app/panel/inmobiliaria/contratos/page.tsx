@@ -373,8 +373,8 @@ function ContratosContent() {
         seccion={tx('Operación', 'Operations')}
         titulo={tx('Contratos', 'Contracts')}
         descripcion={tx(
-          'La firma, la vigencia y el estado de cada contrato. Toca uno para ver su detalle.',
-          'Signing, term and status of each contract. Tap one to see its details.',
+          'Tus contratos, empezando por los que vencen primero.',
+          'Your contracts, starting with the ones that end first.',
         )}
         acciones={
           <DropdownList>
@@ -388,7 +388,8 @@ function ContratosContent() {
                 data-testid="contratos-configuracion"
               >
                 <GearSix className="h-4 w-4" />
-                <span className="hidden sm:inline">{tx('Configurar', 'Settings')}</span>
+                {/* Ronda 15 (390): con su texto también en el celular (el engranaje solo no se entendía). */}
+                <span>{tx('Configurar', 'Settings')}</span>
               </Button>
             </DropdownListTrigger>
             <DropdownListContent align="end" className="w-56">
@@ -797,7 +798,8 @@ function ContratosContent() {
                         <span className="text-foreground md:block">{fmtDate(c.endDate, locale)}</span>
                         <span className="md:hidden"> · </span>
                         {estado.clave === 'TERMINA' ? (
-                          <span className="text-caption font-medium text-warning md:block">{estado.texto}</span>
+                          // Ronda 15: «termina hoy» es lo más urgente → rojo, no el mismo naranja de «en 17 días».
+                          <span className="text-caption font-medium text-danger md:block">{estado.texto}</span>
                         ) : fin ? (
                           <span
                             className={cn(

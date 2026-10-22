@@ -236,16 +236,21 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                   )}
                   data-testid={`recibo-${r.numero}`}
                 >
-                  <TableCell className="md:whitespace-nowrap max-md:col-span-2 max-md:row-start-2 max-md:flex max-md:flex-wrap max-md:items-baseline max-md:gap-x-2 max-md:p-0">
+                  <TableCell className="md:whitespace-nowrap max-md:col-span-2 max-md:row-start-2 max-md:block max-md:p-0">
+                    {/* Ronda 12 (390): «N.º 11 · 15 oct 2026» siempre en un renglón; la cuota debajo. */}
                     <span className="font-mono text-body-sm tabular-nums">N.º {r.numero}</span>
+                    <span className="text-caption text-fg-muted md:hidden"> · {fechaCorta(r.fecha)}</span>
                     {r.anulado && (
                       <Badge variant="outline" className="ml-2 border-danger/40 text-danger">
                         Anulado
                       </Badge>
                     )}
                     <p className="text-caption text-fg-muted">
-                      {fechaCorta(r.fecha)}
-                      {r.mes ? ` · cuota de ${nombreDelMes(r.mes)}` : ''}
+                      <span className="max-md:hidden">
+                        {fechaCorta(r.fecha)}
+                        {r.mes ? ' · ' : ''}
+                      </span>
+                      {r.mes ? `cuota de ${nombreDelMes(r.mes)}` : ''}
                     </p>
                   </TableCell>
                   <TableCell className="max-w-[22rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">

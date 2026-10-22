@@ -79,6 +79,7 @@ import {
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { tiempoHastaElFin } from '@/lib/inmuebles/tiempo-hasta-el-fin';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { NuevoContratoBoton } from '@/components/inmobiliaria/SelectorPostulacion';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
@@ -271,6 +272,8 @@ function ContratosContent() {
     setPageSize,
     shouldPaginate,
   } = useTablePagination(contratosFiltrados, {
+    // 25 filas: con 743 activos, 10 por página eran 75 páginas (revisión 21-10).
+    initialPageSize: 25,
     // Cualquier cambio de filtro u orden vuelve a la página 1: filtrar desde
     // la página 4 dejaría la tabla vacía sobre un resultado que sí tiene filas.
     resetKey: JSON.stringify(filtros),
@@ -289,7 +292,32 @@ function ContratosContent() {
    * El esqueleto y el `colSpan` del vacío leen `COLUMNS.length`: repetir el
    * conteo a mano es cómo se produjo la deriva de T-0040.
    */
-  const COLUMNS: { label: string; campo?: CampoDeOrden; casilla?: true }[] = [
+  /*
+   * Revisión de diseño (21-10): en una pestaña de un solo estado («Activos», «Por
+   * firmar»…) la columna Estado decía lo mismo en cada fila. Va sólo donde las
+   * filas mezclan estados (Terminados, Todos); la terminación programada de un
+   * activo se dice en «Vence».
+   */
+  const conEstado = !(['active', 'por_empezar', 'vencido_sin_renovar', 'por_firmar', 'draft'] as string[]).includes(pestanaActual);
+  const estadoDeLaFila = (c: Contract) => {
+    const v = vigenciaDelContrato({
+      status: c.status,
+      endDate: c.endDate,
+      terminadoEn: c.terminadoEn ?? null,
+      startDate: c.startDate ?? null,
+      fechaDeCartera: c.fechaDeCartera ?? null,
+    });
+    return {
+      v,
+      estado: estadoParaMostrar({
+        contrato: c,
+        vigencia: v,
+        etiquetaDelEstado: CONTRACT_STATUS_LABELS[c.status] ?? c.status,
+        locale,
+      }),
+    };
+  };
+  const COLUMNS: { label: string; campo?: CampoDeOrden; casilla?: true; derecha?: true }[] = [
     // Acciones masivas (Nico, 10-10-2026): la casilla de la página.
     { label: '', casilla: true },
     // El número que se LEE: el de la inmobiliaria si lo hay, si no el nuestro
@@ -297,10 +325,10 @@ function ContratosContent() {
     // de inmueble en `ConsignacionTable`.
     { label: tx('Código', 'Code'), campo: 'numero' },
     { label: tx('Inquilino', 'Tenant'), campo: 'tenantName' },
-    { label: tx('Propiedad', 'Property') },
-    { label: tx('Canon', 'Rent'), campo: 'monthlyRent' },
-    { label: tx('Vigencia', 'Term'), campo: 'endDate' },
-    { label: tx('Estado', 'Status') },
+    { label: tx('Inmueble', 'Property') },
+    { label: tx('Canon', 'Rent'), campo: 'monthlyRent', derecha: true },
+    { label: tx('Vence', 'Ends'), campo: 'endDate' },
+    ...(conEstado ? [{ label: tx('Estado', 'Status') }] : []),
     { label: '' },
   ];
 
@@ -350,14 +378,16 @@ function ContratosContent() {
         acciones={
           <DropdownList>
             <DropdownListTrigger asChild>
+              {/* Un engranaje solo no dice qué hay adentro (revisión 21-10): «Configurar» con su texto. */}
               <Button
-                variant="outline"
-                size="icon"
+                variant="secondary"
+                size="sm"
                 hideArrow
                 aria-label={tx('Configuración de contratos', 'Contract settings')}
                 data-testid="contratos-configuracion"
               >
-                <GearSix className="w-5 h-5" />
+                <GearSix className="h-4 w-4" />
+                <span className="hidden sm:inline">{tx('Configurar', 'Settings')}</span>
               </Button>
             </DropdownListTrigger>
             <DropdownListContent align="end" className="w-56">
@@ -550,7 +580,7 @@ function ContratosContent() {
               ) : (
                 <TableHead
                   key={i}
-                  className="whitespace-nowrap px-4"
+                  className={cn('whitespace-nowrap px-4', col.derecha && 'text-right')}
                   /*
                    * C-18: `aria-sort` va en el `th` (el encabezado de la
                    * columna), no en el botón: un lector de pantalla lo anuncia
@@ -576,7 +606,7 @@ function ContratosContent() {
                     <button
                       type="button"
                       onClick={() => ordenarPor(col.campo as CampoDeOrden)}
-                      className="flex items-center gap-1.5 uppercase hover:text-fg"
+                      className={cn('flex items-center gap-1.5 uppercase hover:text-fg', col.derecha && 'ml-auto flex-row-reverse')}
                       data-testid={`ordenar-${col.campo}`}
                     >
                       {col.label}
@@ -716,8 +746,8 @@ function ContratosContent() {
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="font-medium text-foreground truncate">{c.tenantName || '—'}</p>
-                      <p className="text-caption text-muted-foreground truncate max-md:hidden">{c.tenantEmail}</p>
+                      {/* El correo va en la ficha del contrato: en la fila era ruido (revisión 21-10). */}
+                      <p className="font-medium text-foreground truncate" title={c.tenantEmail || undefined}>{c.tenantName || '—'}</p>
                     </div>
                   </div>
                 </TableCell>
@@ -742,17 +772,42 @@ function ContratosContent() {
                     </p>
                   ) : null}
                 </TableCell>
-                <TableCell className="px-4 py-4 tabular-nums font-mono whitespace-nowrap text-foreground max-md:order-4 max-md:block max-md:p-0">
+                <TableCell className="px-4 py-4 text-right tabular-nums font-mono whitespace-nowrap text-foreground max-md:order-4 max-md:block max-md:p-0 max-md:text-left">
                   {fmtCop(c.monthlyRent)}
                 </TableCell>
-                <TableCell className="px-4 py-4 whitespace-nowrap text-muted-foreground tabular-nums max-md:order-6 max-md:col-span-2 max-md:block max-md:p-0 max-md:text-caption">
-                  {fmtDate(c.startDate, locale)}{' '}
-                  <span className="opacity-50">→</span>
-                  {/* Dos renglones en escritorio: así la columna no estira la tabla. */}
-                  <br className="max-md:hidden" />
-                  <span className="md:hidden"> </span>
-                  {fmtDate(c.endDate, locale)}
+                {/*
+                  «Vence»: la fecha de fin y cuánto falta (revisión 21-10), en vez de
+                  «inicio → fin» en dos renglones. El inicio queda en el `title`. Un
+                  activo con terminación programada lo dice aquí.
+                */}
+                <TableCell
+                  className="px-4 py-4 whitespace-nowrap tabular-nums max-md:order-6 max-md:col-span-2 max-md:block max-md:p-0 max-md:text-caption"
+                  title={c.startDate ? `${tx('Desde', 'Since')} ${fmtDate(c.startDate, locale)}` : undefined}
+                >
+                  {(() => {
+                    const { estado } = estadoDeLaFila(c);
+                    const fin = c.endDate ? tiempoHastaElFin(c.endDate, locale) : null;
+                    return (
+                      <>
+                        <span className="text-foreground md:block">{fmtDate(c.endDate, locale)}</span>
+                        <span className="md:hidden"> · </span>
+                        {estado.clave === 'TERMINA' ? (
+                          <span className="text-caption font-medium text-warning md:block">{estado.texto}</span>
+                        ) : fin ? (
+                          <span
+                            className={cn(
+                              'text-caption md:block',
+                              fin.tono === 'vencido' ? 'font-medium text-danger' : fin.tono === 'pronto' ? 'font-medium text-warning' : 'text-muted-foreground',
+                            )}
+                          >
+                            {fin.texto}
+                          </span>
+                        ) : null}
+                      </>
+                    );
+                  })()}
                 </TableCell>
+                {conEstado ? (
                 <TableCell className="px-4 py-4 max-md:order-2 max-md:block max-md:p-0 max-md:text-right">
                   {/*
                     🔴 El chip lo decide la VIGENCIA, no el estado crudo
@@ -803,6 +858,7 @@ function ContratosContent() {
                     );
                   })()}
                 </TableCell>
+                ) : null}
                 <TableCell className="px-3 py-4 text-right max-md:hidden">
                   <CaretRight className="w-4 h-4 text-muted-foreground inline-block" />
                 </TableCell>

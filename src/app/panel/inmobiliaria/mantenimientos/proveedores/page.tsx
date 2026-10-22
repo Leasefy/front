@@ -33,13 +33,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { TipoDeDocumentoDelProveedor } from '@/components/inmobiliaria/mantenimiento/TipoDeDocumentoDelProveedor';
 import { EJEMPLO_DEL_TIPO_DE_DOCUMENTO, revisarDocumentoDelProveedor } from '@/lib/mantenimiento/documento-del-proveedor';
-import { Plus, Star } from '@phosphor-icons/react';
+import { Plus, Star, UploadSimple } from '@phosphor-icons/react';
 import { CrossFade, Eyebrow, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button, Badge, Input } from '@/components/ui';
 import { TablaDeProveedores } from '@/components/mantenimientos/TablaDeProveedores';
+import { ImportarProveedores } from '@/components/mantenimientos/ImportarProveedores';
 import { ESPECIALIDADES } from '@/components/mantenimientos/especialidades';
 import {
   Dialog,
@@ -73,6 +74,7 @@ function ContenidoDeProveedores() {
   const [error, setError] = useState<unknown>(null);
   const [editando, setEditando] = useState<ProveedorDeMantenimiento | 'nuevo' | null>(null);
   const [historialDe, setHistorialDe] = useState<ProveedorDeMantenimiento | null>(null);
+  const [importando, setImportando] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -133,10 +135,17 @@ function ContenidoDeProveedores() {
             </p>
           </div>
           {puedeEditar && (
-            <Button hideArrow onClick={() => setEditando('nuevo')}>
-              <Plus className="mr-1.5 h-4 w-4" />
-              Registrar proveedor
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              {/* Portofino 22-10: «subir un Excel en Proveedores». */}
+              <Button variant="outline" hideArrow onClick={() => setImportando(true)} data-testid="importar-proveedores-boton">
+                <UploadSimple className="mr-1.5 h-4 w-4" />
+                Importar
+              </Button>
+              <Button hideArrow onClick={() => setEditando('nuevo')}>
+                <Plus className="mr-1.5 h-4 w-4" />
+                Registrar proveedor
+              </Button>
+            </div>
           )}
         </header>
 
@@ -162,6 +171,14 @@ function ContenidoDeProveedores() {
             setEditando(null);
             void cargar();
           }}
+        />
+      )}
+
+      {puedeEditar && (
+        <ImportarProveedores
+          abierto={importando}
+          onCerrar={() => setImportando(false)}
+          onImportado={() => void cargar()}
         />
       )}
 

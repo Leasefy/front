@@ -16,6 +16,7 @@ import {
   MapPin,
   MagnifyingGlass,
   Wallet,
+  Truck,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -31,6 +32,7 @@ import {
   fotosQueEntran,
 } from '@/lib/mantenimiento/limites-del-mantenimiento';
 import { SelectorDeFotosDelMantenimiento } from '@/components/inmobiliaria/mantenimiento/SelectorDeFotosDelMantenimiento';
+import { ProveedorDeLaSolicitud } from '@/components/inmobiliaria/mantenimiento/ProveedorDeLaSolicitud';
 import type {
   Consignacion,
   MantenimientoType,
@@ -57,6 +59,8 @@ export interface MantenimientoFormData {
    */
   fotos?: File[];
   paidBy: MantenimientoPaidBy;
+  /** Portofino 22-10: el proveedor con el que se va a trabajar. Opcional. */
+  proveedorId?: string;
 }
 
 /**
@@ -70,7 +74,8 @@ export type CampoDelMantenimiento =
   | 'title'
   | 'description'
   | 'photoUrls'
-  | 'paidBy';
+  | 'paidBy'
+  | 'proveedorId';
 
 /** En el orden en que se ven: el foco va al primero con error. */
 export const CAMPOS_DEL_MANTENIMIENTO: readonly CampoDelMantenimiento[] = [
@@ -81,6 +86,7 @@ export const CAMPOS_DEL_MANTENIMIENTO: readonly CampoDelMantenimiento[] = [
   'description',
   'photoUrls',
   'paidBy',
+  'proveedorId',
 ];
 
 interface MantenimientoFormProps {
@@ -501,6 +507,7 @@ export function MantenimientoForm({
     description: string;
     fotos: File[];
     paidBy: MantenimientoPaidBy;
+    proveedorId: string | undefined;
   }>({
     consignacionId: preselectedConsignacionId || '',
     type: '',
@@ -509,6 +516,7 @@ export function MantenimientoForm({
     description: '',
     fotos: [],
     paidBy: 'owner',
+    proveedorId: undefined,
   });
   // El aviso de prioridad alta se cierra con su altura: mientras se va, sigue
   // diciendo lo que decía (no salta al texto de la otra prioridad).
@@ -621,6 +629,7 @@ export function MantenimientoForm({
       description: formData.description,
       fotos: formData.fotos.length > 0 ? formData.fotos : undefined,
       paidBy: formData.paidBy,
+      ...(formData.proveedorId ? { proveedorId: formData.proveedorId } : {}),
     });
   };
 
@@ -797,6 +806,21 @@ export function MantenimientoForm({
           />
           <ErrorDelCampo id="mantenimiento-paidBy-error" mensaje={errors.paidBy} />
         </div>
+      </div>
+
+      {/* Section 4: Proveedor (opcional). Portofino 22-10: «al hacer la
+          solicitud, elegir con qué proveedor vamos a trabajar». */}
+      <div className="space-y-4 pt-6 border-t border-border-faint dark:border-border-strong" data-campo="proveedorId">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+          <Truck className="h-4 w-4 text-fg-muted" />
+          Proveedor <span className="font-normal text-fg-muted">(opcional)</span>
+        </h3>
+        <ProveedorDeLaSolicitud
+          tipo={formData.type}
+          valor={formData.proveedorId}
+          onCambiar={(id) => updateField('proveedorId', id)}
+          error={errors.proveedorId}
+        />
       </div>
 
       </div>

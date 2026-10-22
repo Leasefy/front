@@ -1235,6 +1235,11 @@ export interface SolicitudMantenimiento {
   selectedQuoteId?: string;
   /** H-04 / SO-08: el proveedor del registro que hace el trabajo (para calificarlo). */
   proveedorId?: string | null;
+  /**
+   * Portofino 22-10: el proveedor con el que se trabaja (elegido al crear o el
+   * de la cotización aprobada), con su nombre para la tarjeta. Lo arma el back.
+   */
+  proveedor?: { id: string; nombre: string; telefono: string | null; activo: boolean } | null;
   approvedAmount?: number;
   paidBy: MantenimientoPaidBy;
 

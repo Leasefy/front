@@ -334,6 +334,7 @@ function MantenimientosContent() {
         title: data.title,
         description: data.description,
         paidBy: data.paidBy,
+        ...(data.proveedorId ? { proveedorId: data.proveedorId } : {}),
       });
 
       // La solicitud ya existe: una foto que no sube NO la deshace. Se dice

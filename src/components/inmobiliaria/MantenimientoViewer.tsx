@@ -751,6 +751,21 @@ export function MantenimientoViewer({
                   <p className="text-muted-foreground">{t('inmobiliaria.mantenimiento.owner')}</p>
                   <p className="font-medium text-foreground">{solicitud.propietarioName}</p>
                 </div>
+                {/* Portofino 22-10: el proveedor elegido al crearla (o el de la cotización aprobada). */}
+                {solicitud.proveedor && (
+                  <div className="col-span-2" data-testid="detalle-proveedor">
+                    <p className="text-muted-foreground">Proveedor</p>
+                    <p className="font-medium text-foreground">
+                      {solicitud.proveedor.nombre}
+                      {solicitud.proveedor.telefono ? (
+                        <span className="font-normal text-muted-foreground"> · {solicitud.proveedor.telefono}</span>
+                      ) : null}
+                      {!solicitud.proveedor.activo ? (
+                        <span className="font-normal text-warning"> · inactivo en Proveedores</span>
+                      ) : null}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

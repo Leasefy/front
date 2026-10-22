@@ -22,6 +22,7 @@ import {
   Lightning,
   Snowflake,
   HouseLine,
+  Truck,
   PaintBrush,
   Key,
   DotsThreeCircle,
@@ -272,6 +273,14 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
         <HouseLine className="w-3 h-3 inline mr-1" />
         {solicitud.propertyTitle}
       </div>
+
+      {/* Portofino 22-10: con quién se trabaja. */}
+      {solicitud.proveedor && (
+        <div className="text-xs text-fg-muted dark:text-fg-subtle mb-2 line-clamp-1" data-testid="tarjeta-proveedor">
+          <Truck className="w-3 h-3 inline mr-1" aria-hidden="true" />
+          {solicitud.proveedor.nombre}
+        </div>
+      )}
 
       {/* Portofino 22-10: la arregla el propietario por su cuenta. */}
       {solicitud.laHaceElPropietario && !solicitud.laHaceElPropietario.terminadaAt && (

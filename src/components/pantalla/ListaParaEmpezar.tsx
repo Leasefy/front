@@ -298,7 +298,7 @@ function MarcaDelRequisito({
         className={cn(base, 'border border-dashed border-border-strong font-mono text-[11px] text-fg-muted')}
         aria-hidden="true"
       >
-        {numero}
+        {/* 22-10 (revisión): el opcional no cuenta en «1/5», así que no lleva número. */}
       </span>
     );
   }

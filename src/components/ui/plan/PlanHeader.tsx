@@ -495,7 +495,12 @@ export function PlanHeader({
             type="button"
             onClick={openPlanMobileSidebar}
             aria-label={locale === 'es' ? 'Abrir menú de navegación' : 'Open navigation menu'}
-            className="lg:hidden flex h-11 w-11 flex-shrink-0 items-center justify-center -ml-1.5 rounded-xl text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            // En el panel de la inmobiliaria el menú vive en «Menú» de la barra de
+            // abajo (Nico, 22-10-2026): este ☰ sólo queda en los portales, que no la tienen.
+            className={cn(
+              'lg:hidden flex h-11 w-11 flex-shrink-0 items-center justify-center -ml-1.5 rounded-xl text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+              isInmobiliaria && 'hidden',
+            )}
           >
             <List className="w-5 h-5" />
           </button>

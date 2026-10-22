@@ -1773,6 +1773,16 @@
       }
     },
     "mobileNav": {
+      "seccionAgentes": "Agentes",
+      "seccionAgentesLargo": "Agentes IA",
+      "seccionOperacion": "Operación",
+      "seccionOperacionLargo": "Operación",
+      "seccionDinero": "Dinero",
+      "seccionDineroLargo": "Dinero",
+      "seccionCaptacion": "Captación",
+      "seccionCaptacionLargo": "Captación y arriendo",
+      "seccionDirectorio": "Directorio",
+      "seccionDirectorioLargo": "Directorio",
       "menuButton": "Menú",
       "menuAriaLabel": "Abrir el menú",
       "moreButton": "Más",

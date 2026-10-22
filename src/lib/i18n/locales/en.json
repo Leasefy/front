@@ -1738,6 +1738,16 @@
       }
     },
     "mobileNav": {
+      "seccionAgentes": "Agents",
+      "seccionAgentesLargo": "AI agents",
+      "seccionOperacion": "Operations",
+      "seccionOperacionLargo": "Operations",
+      "seccionDinero": "Money",
+      "seccionDineroLargo": "Money",
+      "seccionCaptacion": "Leasing",
+      "seccionCaptacionLargo": "Listings and leasing",
+      "seccionDirectorio": "Directory",
+      "seccionDirectorioLargo": "Directory",
       "menuButton": "Menu",
       "menuAriaLabel": "Open the menu",
       "moreButton": "More",

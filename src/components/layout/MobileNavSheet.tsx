@@ -17,10 +17,12 @@ interface MobileNavSheetProps {
    * por prefijo, como antes.
    */
   hrefActivo?: string | null;
+  /** El título de la hoja (la sección que se abrió desde la barra). Por defecto «Más opciones». */
+  titulo?: string;
   onClose: () => void;
 }
 
-export function MobileNavSheet({ open, items, hrefActivo, onClose }: MobileNavSheetProps) {
+export function MobileNavSheet({ open, items, hrefActivo, titulo, onClose }: MobileNavSheetProps) {
   const pathname = usePathname();
   const { t } = useI18n();
 
@@ -35,7 +37,7 @@ export function MobileNavSheet({ open, items, hrefActivo, onClose }: MobileNavSh
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="bottom" aria-describedby={undefined}>
         {/* Visible: con la cabecera escondida, la ✕ caía encima de la primera fila. */}
-        <SheetHeader title={t('inmobiliaria.mobileNav.sheetTitle')} />
+        <SheetHeader title={titulo ?? t('inmobiliaria.mobileNav.sheetTitle')} />
 
         <SheetBody className="flex flex-col px-3 pt-3 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
           {items.filter((item) => item.kind !== 'section').map((item) => {

@@ -549,11 +549,10 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
         // poder deslizarse): la fila va transparente y POR ENCIMA de él (`z-[1]`),
         // también al pasar el mouse. tailwind-merge pisa con estas clases la
         // píldora del DS (`bg-primary-soft`, saturada en oscuro) y su tinta.
-        className="z-[1] hover:bg-surface-hover data-[active]:bg-transparent data-[active]:hover:bg-transparent data-[active]:font-medium data-[active]:text-[color:var(--menu-activa-tinta)]"
+        // C3 (plan de la barra, 22-10): filas de 32 px en tinta de 14 px con el ícono en ceniza; la activa, en voltaje.
+        className="py-[6px] text-[14px] text-fg [&_svg]:text-fg-subtle z-[1] hover:bg-surface-hover data-[active]:bg-transparent data-[active]:hover:bg-transparent data-[active]:font-medium data-[active]:text-[color:var(--menu-activa-tinta)] data-[active]:[&_svg]:text-[color:var(--menu-activa-tinta)]"
         // SidebarItem fija su padding con `style` y esparce los props DESPUÉS,
         // así que este `style` gana: dentro de una sección el aire es de 8/6 px.
-        style={enSeccion ? { paddingLeft: 8, paddingRight: 6 } : undefined}
-        title={enSeccion ? displayLabel(item) : undefined}
       />
   );
 
@@ -630,7 +629,8 @@ function NavSkeleton({ isCollapsed }: { isCollapsed: boolean }) {
  * de sangría «Solicitudes · PQRS» + la píldora IA se cortaba en «PQ…»
  * (captura del 22-09). Ningún nombre se corta al ancho normal de 240 px.
  */
-const GUIA_DE_SECCION = 'ml-[11px] border-l border-border pl-[3px]';
+// C4 (plan de la barra, 22-10): sin la guía vertical; las filas de una sección caen en el mismo borde que Inicio.
+const GUIA_DE_SECCION = 'mt-0.5 space-y-px';
 
 interface SeccionPlegableProps {
   bloque: Extract<BloqueDelMenu<NavItem>, { tipo: 'seccion' }>;
@@ -649,14 +649,14 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
   const marcada = contieneLaActiva && !abierta;
 
   return (
-    <div data-seccion={bloque.clave} className="pt-1">
+    <div data-seccion={bloque.clave} className="mt-4">
       <button
         type="button"
         onClick={onAlternar}
         aria-expanded={abierta}
         aria-controls={idFilas}
         className={cn(
-          'group/seccion flex w-full items-center gap-2 rounded-[12px] px-[10px] py-[7px] text-left',
+          'group/seccion flex h-7 w-full items-center gap-2 rounded-[10px] px-[10px] text-left',
           // El mismo tinte al pasar que las filas (`surface-hover`): en oscuro
           // `surface-muted` era más claro que la fila activa y la competía.
           'transition-colors duration-fast hover:bg-surface-hover',
@@ -669,7 +669,7 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
             // La cabecera de sección habla con la voz de las etiquetas de la
             // casa (mono, MAYÚSCULA, espaciada — la de `SectionLabel`): se
             // distingue de las filas sin competir con ellas (Nico, 23-09).
-            'min-w-0 flex-1 truncate font-mono text-[11px] font-medium uppercase tracking-[0.1em]',
+            'min-w-0 flex-1 truncate font-mono text-[10.5px] font-medium uppercase tracking-[0.08em]',
             // Plegada con la página actual adentro: en la tinta de la activa
             // (el azul del menú, ver `ResalteDeLaFilaActiva`), como antes del
             // 02-10.
@@ -1099,7 +1099,7 @@ export function SidebarContent({
                   // raya que las separa de la última sección.
                   <div
                     key={`sueltas-${i}`}
-                    className={cn('space-y-0.5', i > 0 && 'mt-2 border-t border-border pt-2', i === 0 && 'mb-2')}
+                    className={cn('space-y-px', i > 0 && 'mt-4')}
                   >
                     {bloque.filas.map((item) => (
                       <NavItemComponent

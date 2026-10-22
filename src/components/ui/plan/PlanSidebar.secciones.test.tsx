@@ -215,4 +215,32 @@ describe('secciones plegables del sidebar', () => {
     // Aunque «Dinero» arranque plegada, en el riel sus íconos están.
     expect(container.querySelector(`a[href="${P}/pagos"]`)).toBeTruthy()
   })
+
+  it('riel plegado (C8): cada ícono tiene su nombre accesible y los pendientes van como un punto', async () => {
+    await pintar({ isCollapsed: true })
+    const contratos = container.querySelector<HTMLAnchorElement>(`a[href="${P}/contratos"]`)!
+    expect(contratos.getAttribute('aria-label')).toBe('Contratos (16)')
+    expect(contratos.hasAttribute('title')).toBe(false)
+    expect(contratos.parentElement?.querySelector('[data-testid="punto-de-pendientes"]')).toBeTruthy()
+    const pagos = container.querySelector<HTMLAnchorElement>(`a[href="${P}/pagos"]`)!
+    expect(pagos.getAttribute('aria-label')).toBe('Pagos')
+    expect(pagos.parentElement?.querySelector('[data-testid="punto-de-pendientes"]')).toBeNull()
+    expect(container.querySelector<HTMLAnchorElement>(`a[href="${P}/pagos/cobranza"]`)!.getAttribute('aria-label')).toBe('Cobranza — IA')
+  })
+
+  it('riel plegado (C8): «Buscar» abre la paleta y el punto de partida plegado se pinta sólo plegada', async () => {
+    const onSearchClick = vi.fn()
+    const nuevo = <button type="button" data-testid="nuevo-plegado">+</button>
+    await pintar({ isCollapsed: true, onSearchClick, belowSearch: <span data-testid="nuevo-abierto" />, belowSearchPlegado: nuevo })
+    const buscar = container.querySelector<HTMLButtonElement>('[data-testid="buscar-del-riel"]')!
+    expect(buscar.getAttribute('aria-label')).toBe('Buscar')
+    await clic(buscar)
+    expect(onSearchClick).toHaveBeenCalledTimes(1)
+    expect(container.querySelector('[data-testid="nuevo-plegado"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="nuevo-abierto"]')).toBeNull()
+    await pintar({ isCollapsed: false, onSearchClick, belowSearch: <span data-testid="nuevo-abierto" />, belowSearchPlegado: nuevo })
+    expect(container.querySelector('[data-testid="buscar-del-riel"]')).toBeNull()
+    expect(container.querySelector('[data-testid="nuevo-plegado"]')).toBeNull()
+    expect(container.querySelector('[data-testid="nuevo-abierto"]')).toBeTruthy()
+  })
 })

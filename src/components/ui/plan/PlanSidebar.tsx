@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
-import { CaretDown, SignOut, Question, TrendUp, X, SidebarSimple } from '@phosphor-icons/react';
+import { CaretDown, SignOut, Question, TrendUp, X, SidebarSimple, MagnifyingGlass } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 import { motionDuration, motionEase } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
@@ -233,6 +233,9 @@ export interface PlanSidebarProps {
   /** Slot right under the search box — the panel's starting point (the agency
    *  passes its «Nuevo» launcher here). Hidden while collapsed, like search. */
   belowSearch?: React.ReactNode;
+  /** El mismo punto de partida en la barra PLEGADA (C8, 22-10): un botón cuadrado de 40 px
+   *  (la agencia pasa `<BotonNuevo compacto />`). Va debajo de «Buscar». */
+  belowSearchPlegado?: React.ReactNode;
   /** Placeholder for the cadence SidebarSearch field. */
   searchPlaceholder?: string;
   /** Workspace name shown in the static header brand row (defaults to `logo.title`). */
@@ -480,28 +483,56 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
   // Collapsed icon-rail row: SidebarItem has no icon-only/collapsed mode, so the
   // rail row stays composed (see ## Gaps). title + data-tour-target preserved.
   if (isCollapsed) {
+    // C8 (plan de la barra, 22-10): botón de 40 × 40 con su nombre en un tooltip de tinta a la derecha
+    // (antes un `title` del navegador, lento y gris); el nombre accesible va en `aria-label`.
+    // Los pendientes, como un punto: el número se lee en el tooltip.
+    const conPendientes = item.badge !== undefined && item.badge > 0;
+    const nombre = displayLabel(item);
     return (
-      <div className="relative">
+      <div className="relative mx-auto h-10 w-10">
         {/* La misma píldora azul de la barra abierta, deslizándose (`ResalteDelRiel`). */}
         {isActive && <ResalteDelRiel />}
-        <Link
-          href={item.href}
-          onClick={onClick}
-          aria-current={isActive ? 'page' : undefined}
-          data-tour-target={item.dataTourTarget}
-          title={`${displayLabel(item)}${item.ai ? ' — IA' : ''}${item.tag ? ` — ${item.tag}` : ''}`}
-          className={cn(
-            'relative z-[1] flex items-center justify-center px-2.5 py-2.5 rounded-[12px] transition-colors',
-            isActive
-              ? TINTA_DE_LA_ACTIVA
-              : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
-          )}
-        >
-          <Icon
-            weight={isActive ? 'fill' : 'regular'}
-            className={cn('w-[18px] h-[18px]', isActive ? TINTA_DE_LA_ACTIVA : 'text-fg-muted')}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              href={item.href}
+              onClick={onClick}
+              aria-current={isActive ? 'page' : undefined}
+              aria-label={`${nombre}${conPendientes ? ` (${item.badge})` : ''}${item.ai ? ' — IA' : ''}${item.tag ? ` — ${item.tag}` : ''}`}
+              data-tour-target={item.dataTourTarget}
+              className={cn(
+                'relative z-[1] grid h-10 w-10 place-items-center rounded-[12px] transition-colors',
+                'outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                isActive
+                  ? TINTA_DE_LA_ACTIVA
+                  : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
+              )}
+            >
+              <Icon
+                weight={isActive ? 'fill' : 'regular'}
+                className={cn('w-[18px] h-[18px]', isActive ? TINTA_DE_LA_ACTIVA : 'text-fg-muted')}
+              />
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent
+            side="right"
+            sideOffset={8}
+            className="flex items-center gap-2 bg-fg text-bg"
+            data-testid="tooltip-del-riel"
+          >
+            <span>{nombre}</span>
+            {conPendientes ? <span className="font-mono tabular-nums opacity-70">{item.badge}</span> : null}
+            {item.ai ? <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] opacity-70">IA</span> : null}
+            {item.tag ? <span className="opacity-70">{item.tag}</span> : null}
+          </TooltipContent>
+        </Tooltip>
+        {conPendientes ? (
+          <span
+            aria-hidden="true"
+            data-testid="punto-de-pendientes"
+            className="pointer-events-none absolute right-2 top-2 z-[2] h-1.5 w-1.5 rounded-full bg-fg"
           />
-        </Link>
+        ) : null}
       </div>
     );
   }
@@ -759,7 +790,7 @@ function GrupoDelRiel({
   const etiqueta = bloque.tipo === 'seccion' ? bloque.cabecera.label : undefined;
   return (
     <div role={etiqueta ? 'group' : undefined} aria-label={etiqueta} className="space-y-0.5">
-      {!primero && <div className="mx-2 my-2 border-t border-border" aria-hidden="true" />}
+      {!primero && <div className="mx-auto my-2 h-px w-5 bg-border" aria-hidden="true" />}
       {bloque.filas.map((item) => (
         <NavItemComponent key={item.href} item={item} isActive={isActive(item)} isCollapsed onClick={onItemClick} />
       ))}
@@ -825,6 +856,7 @@ interface SidebarContentProps {
   profileCompletion?: ProfileCompletionConfig;
   aboveNav?: React.ReactNode;
   belowSearch?: React.ReactNode;
+  belowSearchPlegado?: React.ReactNode;
   loading?: boolean;
   onSearchClick?: () => void;
   searchPlaceholder?: string;
@@ -861,6 +893,7 @@ export function SidebarContent({
   profileCompletion,
   aboveNav,
   belowSearch,
+  belowSearchPlegado,
   loading = false,
   onSearchClick,
   searchPlaceholder,
@@ -985,6 +1018,16 @@ export function SidebarContent({
             )}
           </Link>
           {showCollapseButton && <BotonDeLaBarra plegada onAlternar={onCollapse} />}
+          {/* C8 (plan de la barra, 22-10): plegada también se busca y se empieza algo nuevo,
+              en botones de 40 px con su nombre en el tooltip (como cada fila del riel). */}
+          {(onSearchClick || belowSearchPlegado) && (
+            <TooltipProvider delayDuration={150}>
+              <div className="mt-1 flex flex-col items-center gap-1.5">
+                {onSearchClick ? <BuscarDelRiel onBuscar={onSearchClick} placeholder={tr(searchPlaceholder ?? 'Buscar')} /> : null}
+                {belowSearchPlegado}
+              </div>
+            </TooltipProvider>
+          )}
         </motion.div>
       ) : (
         // Firma del PRODUCTO, no del cliente: el lockup de Leasefy solo, sin
@@ -1063,6 +1106,7 @@ export function SidebarContent({
           <NavSkeleton isCollapsed={isCollapsed} />
         ) : (
           isCollapsed ? (
+            <TooltipProvider delayDuration={150}>
             <motion.div key="riel" initial={entraAlCambiar} animate={{ opacity: 1 }} transition={FUNDIDO_DE_LA_BARRA}>
               {bloques.map((bloque, i) => (
                 <GrupoDelRiel
@@ -1074,6 +1118,7 @@ export function SidebarContent({
                 />
               ))}
             </motion.div>
+            </TooltipProvider>
           ) : (
             <motion.div
               key="abierta"
@@ -1256,6 +1301,34 @@ function BotonDeLaBarra({ plegada, onAlternar }: { plegada: boolean; onAlternar:
   );
 }
 
+/** «Buscar» del riel plegado: abre la misma paleta que el buscador de la barra abierta (⌘K). */
+function BuscarDelRiel({ onBuscar, placeholder }: { onBuscar: () => void; placeholder: string }) {
+  const mac = useEsMac();
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onBuscar}
+          aria-label={placeholder}
+          aria-keyshortcuts={mac ? 'Meta+K' : 'Control+K'}
+          data-testid="buscar-del-riel"
+          className={cn(
+            'grid h-10 w-10 place-items-center rounded-[12px] text-fg-muted transition-colors',
+            'hover:bg-surface-hover hover:text-fg outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          )}
+        >
+          <MagnifyingGlass className="h-[18px] w-[18px]" aria-hidden="true" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right" sideOffset={8} className="flex items-center gap-2 bg-fg text-bg">
+        <span>{placeholder}</span>
+        <Kbd size="sm">{mac ? '⌘K' : 'Ctrl K'}</Kbd>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 type OrigenDelCambio = 'boton' | 'atajo';
 
 /** ¿El elemento se enfocó con el teclado? Sin soporte de `:focus-visible`, no. */
@@ -1341,6 +1414,7 @@ export function PlanSidebar({
   profileCompletion,
   aboveNav,
   belowSearch,
+  belowSearchPlegado,
   loading = false,
   onSearchClick,
   searchPlaceholder,
@@ -1435,6 +1509,7 @@ export function PlanSidebar({
           profileCompletion={profileCompletion}
           aboveNav={aboveNav}
           belowSearch={belowSearch}
+          belowSearchPlegado={belowSearchPlegado}
           loading={loading}
           onSearchClick={onSearchClick}
           searchPlaceholder={searchPlaceholder}
@@ -1477,6 +1552,7 @@ export function PlanSidebar({
             profileCompletion={profileCompletion}
             aboveNav={aboveNav}
             belowSearch={belowSearch}
+            belowSearchPlegado={belowSearchPlegado}
             loading={loading}
             onSearchClick={
               onSearchClick

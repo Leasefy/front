@@ -316,6 +316,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           // Punto de partida del panel: con 156 rutas agrupadas por módulo de
           // negocio, quien entra por primera vez no tiene dónde empezar.
           belowSearch={<BotonNuevo />}
+          // C8: en la barra plegada, el mismo menú detrás de un «＋» de 40 px.
+          belowSearchPlegado={<BotonNuevo compacto />}
           // La tarjeta de invitar sólo a quien puede invitar: el destino
           // (`/configuracion/equipo`) está detrás de `module: 'agentes'`, y a
           // quien no lo tiene lo expulsaba el `PageGuard` sin explicación.

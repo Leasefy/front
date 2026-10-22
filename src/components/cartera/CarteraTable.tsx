@@ -95,6 +95,7 @@ import {
   totalConInteres,
 } from './interes-de-mora'
 import { cn } from '@/lib/utils'
+import { sinMayusculasSostenidas } from '@/lib/inmuebles/titulo-de-la-ficha'
 
 /** A dónde vuelve el estado de cuenta que se abra desde esta tabla. */
 const VOLVER_A = '/panel/inmobiliaria/pagos/cartera'
@@ -414,7 +415,7 @@ function FilaDeCartera({
             title={[inmueble, item.propietarioName].filter(Boolean).join(' · ') || undefined}
           >
             {inmueble ? (
-              <span className="text-fg">{inmueble}</span>
+              <span className="text-fg">{sinMayusculasSostenidas(inmueble)}</span>
             ) : (
               <span className="text-warning">{t('cartera.tabla.sinDireccion')}</span>
             )}

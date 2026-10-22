@@ -58,6 +58,7 @@
  * Sólo pinta. Cargando y fallo los resuelve `EstadoDeDatos` en el panel.
  */
 
+import { sinMayusculasSostenidas } from '@/lib/inmuebles/titulo-de-la-ficha'
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useState } from 'react'
 import Link from 'next/link'
@@ -240,7 +241,7 @@ export function CuotasDelMesTabla({
                     {f.inquilino ?? 'Sin nombre en el contrato'}
                   </p>
                   <p className="max-w-[18rem] truncate text-caption text-fg-muted max-md:max-w-none" title={f.inmueble}>
-                    {f.inmueble}
+                    {sinMayusculasSostenidas(f.inmueble ?? '')}
                   </p>
                   <p className="max-w-[18rem] truncate text-caption text-fg-subtle max-md:hidden">
                     {/* N-01 (QA-PAGOS-95): el tipo real o «NIT/CC», como el estado de cuenta; nunca un «CC» inventado. */}

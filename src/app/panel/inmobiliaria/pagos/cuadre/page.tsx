@@ -9,7 +9,7 @@
  */
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { CuadreDeTercerosPanel } from '@/components/finanzas/CuadreDeTerceros';
 
@@ -17,13 +17,14 @@ export default function CuadreDeTercerosPage() {
   return (
     <PageGuard module="dispersiones" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        {/* La explicación va detrás de un botón, no puesta sobre la pantalla:
-            aquí arriba lo que hace falta saber es qué se está mirando. */}
-        <header className="space-y-1.5">
-          {/* GLOW UP: la misma sección que Traslados y Pendientes (la cara «Cuadrar la caja»). */}
-          <SectionLabel>Tesorería</SectionLabel>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h1 className="text-h2 text-fg">Cuadre de la plata de terceros</h1>
+        {/* Glow up (revisora r7 + patrón de la ronda 22): el encabezado común; el título es el del menú
+            («Cuadre del día») y la sección, la cara del riel («Cuadrar la caja»), como Pendientes. La
+            explicación va detrás del botón; ahí también queda en qué se diferencia de Traslados. */}
+        <EncabezadoDePantalla
+          seccion="Cuadrar la caja"
+          titulo="Cuadre del día"
+          descripcion="Lo que el banco tiene contra la plata que no es tuya. Tiene que dar cero."
+          ayuda={
             <ParaEntenderMas
               etiqueta="Qué se está cuadrando, y contra qué"
               descripcion="La identidad que tiene que dar cero todos los días, término por término."
@@ -45,16 +46,19 @@ export default function CuadreDeTercerosPage() {
                   salió y no debía. Cualquiera de las dos, con nombre.
                 </p>
                 <p>
+                  <strong className="text-fg">El cuadre y los traslados no son lo mismo</strong>: el
+                  cuadre MIDE si la plata de terceros está completa; en Traslados de comisión se
+                  MUEVE lo tuyo a tu cuenta propia. Cuando aquí sobra justo tu comisión, el paso
+                  siguiente es proponer ese traslado, y con él el cuadre vuelve a cero.
+                </p>
+                <p>
                   Se mira <strong className="text-fg">todos los días</strong>: un descuadre que
                   nadie ve se vuelve imposible de explicar en un mes.
                 </p>
               </div>
             </ParaEntenderMas>
-          </div>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Lo que el banco tiene, contra la plata que no es tuya. Tiene que dar cero.
-          </p>
-        </header>
+          }
+        />
         <CuadreDeTercerosPanel />
       </div>
     </PageGuard>

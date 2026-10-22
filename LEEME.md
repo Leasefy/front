@@ -14,7 +14,15 @@ vive aquí:
 | Ícono y pantalla de inicio | `scripts/generar-iconos.mjs` (desde `recursos/simbolo.svg`) |
 
 Del lado del front, todo lo que habla con la app está en `src/lib/app-nativa/` y
-`src/components/app-nativa/PuenteDeLaApp.tsx` (repo `front`). En el navegador nada de eso corre.
+`src/components/app-nativa/PuenteDeLaApp.tsx`. En el navegador nada de eso corre.
+
+**Dónde vive:** repo `front`, rama `aplicacion`, carpeta `app-movil/` (este proyecto) junto al front.
+Los comandos de abajo se corren dentro de `app-movil/`; el front no lo compila (está en el `exclude` del
+`tsconfig.json`).
+
+**Para qué aparatos:** iPhone y teléfonos Android, en vertical. En iOS es sólo iPhone
+(`TARGETED_DEVICE_FAMILY = 1`): en un iPad se puede instalar igual, en modo iPhone, y Apple no pide
+capturas de iPad.
 
 ## Compilar
 

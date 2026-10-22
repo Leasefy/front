@@ -77,8 +77,8 @@ No se recolecta ubicación, contactos, historial de navegación ni datos de uso 
 
 Con una inmobiliaria de demostración (datos inventados; nunca datos de clientes):
 
-- iPhone 6,9" (1320 × 2868) y 6,5" (1284 × 2778): 4 a 6 capturas.
-- iPad 13" (2064 × 2752): 4 capturas, porque la app también corre en iPad.
+- iPhone 6,9" (1320 × 2868) y 6,5" (1284 × 2778): 4 a 6 capturas. No hacen falta de iPad: la app es sólo
+  para iPhone.
 - Android teléfono (1080 × 1920 o más): 4 a 8 capturas.
 
 Pantallas sugeridas: inicio del inquilino con su próximo pago · pagar el arriendo · estado de cuenta ·
@@ -86,8 +86,9 @@ solicitudes con fotos · inicio de la inmobiliaria · cobranza · ficha del cont
 
 ## Antes de mandar a revisión (lo que puede hacer que la rechacen)
 
-1. **Reportar contenido**: el marketplace deja publicar inmuebles y escribir mensajes. Apple (1.2) y
-   Google piden que se pueda reportar una publicación o a una persona, y bloquearla. Hoy no existe.
+1. **Reportar y bloquear**: el marketplace deja publicar inmuebles y escribir mensajes. Apple (1.2) y
+   Google piden que se pueda reportar una publicación o a una persona, y bloquearla. Ya existe «Reportar
+   esta publicación» al pie de la ficha (correo a hola@leasefy.co); bloquear a una persona todavía no.
 2. **Cuenta de demostración** que entre sin segundo factor (o con instrucciones claras), con datos inventados.
 3. **Avalúo pagado**: si alguien compra un avalúo desde la app de iPhone, Apple puede decir que es un
    contenido digital y exigir su cobro (15–30 %). Si lo objetan, se esconde la compra del avalúo en iPhone.

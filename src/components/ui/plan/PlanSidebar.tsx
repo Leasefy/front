@@ -167,7 +167,7 @@ function displayLabel(item: NavItem): string {
  * ("Próximamente"). Returns undefined when the row carries neither, so
  * SidebarItem keeps rendering its numeric `count` untouched.
  */
-function TrailingPills({ item, enLaActiva = false }: { item: NavItem; enLaActiva?: boolean }) {
+function TrailingPills({ item }: { item: NavItem }) {
   const tr = useTr();
   if (!item.ai && !item.tag) return null;
   return (
@@ -175,10 +175,8 @@ function TrailingPills({ item, enLaActiva = false }: { item: NavItem; enLaActiva
       {item.ai && (
         <span
           className={cn(
-            'text-[9px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full',
-            // Sobre la píldora azul de la activa, la «IA» azul se perdía (mismo
-            // fondo): ahí va en la superficie, con la tinta de la activa.
-            enLaActiva ? 'bg-surface text-[color:var(--menu-activa-tinta)]' : 'bg-primary-soft text-primary',
+            // C2 (plan de la barra, 22-10): el azul sólo en la fila activa; la «IA» en gris mono con filete.
+            'rounded-[6px] border border-border px-1 py-px font-mono text-[9.5px] font-medium uppercase leading-none tracking-[0.06em] text-fg-subtle',
           )}
         >
           {tr('IA')}
@@ -350,7 +348,8 @@ function useDespuesDelPrimerPintado(): boolean {
 const ResalteConFundido = createContext(false);
 
 /** La píldora de la activa: el azul del menú (`--menu-activa`, globals.css), radio del DS. */
-const PILDORA_DE_LA_ACTIVA = 'pointer-events-none absolute inset-0 rounded-[12px] bg-[color:var(--menu-activa)]';
+// Decisión 19 de Nico (22-10): en la barra la activa es una tarjeta blanca con filete; el azul va en el texto y el ícono.
+const PILDORA_DE_LA_ACTIVA = 'pointer-events-none absolute inset-0 rounded-[12px] bg-[color:var(--menu-activa)] ring-1 ring-inset ring-border dark:ring-0';
 
 /** Texto e ícono de la activa (`--menu-activa-tinta`). */
 const TINTA_DE_LA_ACTIVA = 'text-[color:var(--menu-activa-tinta)]';
@@ -541,7 +540,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
         count={item.badge !== undefined && item.badge > 0 ? item.badge : undefined}
         // `badge` takes a node and renders it as-is (see SidebarItemProps), so
         // the IA / Próximamente pills ride here without forking the DS row.
-        badge={item.ai || item.tag ? <TrailingPills item={item} enLaActiva={isActive} /> : undefined}
+        badge={item.ai || item.tag ? <TrailingPills item={item} /> : undefined}
         depth={depth}
         onClick={navegar}
         onMouseEnter={precargar}
@@ -689,7 +688,8 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
         {mostrarResumen && pendientes > 0 && (
           <span
             data-testid="resumen-de-seccion"
-            className="rounded-full bg-surface-muted px-1.5 py-px font-mono text-[11px] font-medium tabular-nums text-fg-muted group-hover/seccion:bg-surface"
+            // C2: el contador en mono gris, sin píldora (la barra ya es arena).
+            className="font-mono text-[11px] font-medium tabular-nums text-fg-subtle"
           >
             {pendientes}
             <span className="sr-only"> pendientes</span>
@@ -950,7 +950,9 @@ export function SidebarContent({
     // `reducedMotion="user"`: con «reducir movimiento» el resaltado de la fila
     // activa salta en vez de deslizarse.
     <ResalteConFundido.Provider value={resalteConFundido}>
-    <div className="flex flex-col h-full bg-bg relative">
+    // Decisión 18 de Nico (22-10): la barra es una hoja de arena; la página sigue en papel. `--menu-activa` se pisa SÓLO
+    // aquí (blanca en claro): la barra del celular y las pestañas siguen con el celeste de globals.css.
+    <div className="relative flex h-full flex-col bg-surface-muted [--menu-activa:var(--surface)] dark:[--menu-activa:rgba(110,135,255,0.2)]">
       {/* Header — cadence §Navigation workspace switcher (expanded) or the
           brand mark on the collapsed rail. El botón de plegar vive aquí (Nico,
           02-10-2026): abierta, a la derecha del logo; plegada, debajo del
@@ -1413,7 +1415,7 @@ export function PlanSidebar({
         ref={asideRef}
         className={cn(
           'hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0',
-          'bg-bg border-r border-border',
+          'bg-surface-muted border-r border-border',
           // Plegar la barra cambia su ancho (el contenido se reacomoda): se
           // nombra la propiedad en vez de `transition-all`.
           'transition-[width] duration-base ease-emphasis',
@@ -1451,7 +1453,7 @@ export function PlanSidebar({
         <SheetContent
           side="left"
           // Flotante como todo cajón; la barra arma su propio layout.
-          className="w-[280px] bg-bg"
+          className="w-[280px] bg-surface-muted"
           layout="manual"
           aria-describedby={undefined}
           onOpenAutoFocus={alAbrirElCajon}

@@ -198,7 +198,7 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
     return (
       <div data-tour-target="nuevo">
         <Button
-          variant="primary"
+          variant="secondary"
           size="sm"
           className={cn('w-full', className)}
           data-testid="boton-principal-del-rol"
@@ -229,7 +229,7 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
           que el recorrido nunca señala un hueco. */}
       <div data-tour-target="nuevo">
       <SplitButton
-        variant="primary"
+        variant="secondary"
         size="sm"
         className={cn('w-full', className)}
         label={

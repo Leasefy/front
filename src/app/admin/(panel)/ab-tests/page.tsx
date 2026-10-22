@@ -129,7 +129,7 @@ export default function AbTestsPage() {
         error={error}
         onReintentar={refetch}
         emptyTitle="Todavía no hay experimentos"
-        emptyHint="Cuando un agente pruebe dos formas de hacer algo, aparece acá."
+        emptyHint="Cuando un agente pruebe dos formas de hacer algo, aparece aquí."
         aria-label="Experimentos"
         queSon={['experimento', 'experimentos']}
         buscar="Nombre del experimento"

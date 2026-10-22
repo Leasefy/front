@@ -31,7 +31,7 @@ export default function DigestDetallePage() {
         title="Resumen mensual"
         subtitle="Tu recaudo, ocupación y novedades del mes."
         icon={Bell}
-        emptyDescription="Acá vas a ver el resumen de fin de mes de tus inmuebles. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
+        emptyDescription="Aquí vas a ver el resumen de fin de mes de tus inmuebles. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
       />
     );
   }

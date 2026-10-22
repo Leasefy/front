@@ -356,7 +356,7 @@ function ReenvioDeConfirmacion({
     <div className="space-y-1.5 text-[13px] text-fg-subtle" data-testid="reenvio-de-confirmacion">
       {/* «¿No te llegó?» → «Listo, te lo reenviamos» (o el tope): se cruzan,
           no se reemplazan de golpe. La cuenta regresiva del botón NO entra
-          acá: cambia cada segundo y no es un cambio de estado. */}
+          aquí: cambia cada segundo y no es un cambio de estado. */}
       <CrossFade
         swapKey={reenvio.agotado ? 'agotado' : reenvio.estado === 'enviado' ? 'enviado' : 'ofrecer'}
       >
@@ -1506,7 +1506,7 @@ export function AuthForm({
         {mode === 'register' && registerStep === 'confirm-email' && !conCodigo && (
           <div className="space-y-5">
             {/*
-              Acá había «Vuelve aquí e inicia sesión» y un botón «Ir a iniciar
+              Aquí había «Vuelve aquí e inicia sesión» y un botón «Ir a iniciar
               sesión» (Nico, 2026-09-07: «¿para qué, si debe ir al correo?»).
               Estaba mal: el enlace del correo vuelve por /auth/callback ya
               con la sesión abierta, así que el paso 3 no existe, y el botón
@@ -1522,7 +1522,7 @@ export function AuthForm({
               </span>
               <ol className="text-[12.5px] text-fg-muted space-y-1.5 list-decimal list-inside">
                 <li>Abre el correo que te enviamos (revisa también spam)</li>
-                <li>Toca el enlace de confirmación: te trae de vuelta acá con la sesión ya abierta</li>
+                <li>Toca el enlace de confirmación: te trae de vuelta aquí con la sesión ya abierta</li>
               </ol>
             </div>
             {webmail && (

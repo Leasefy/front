@@ -93,7 +93,7 @@ describe('enviar — lo único que le escribe a un inquilino', () => {
     expect(postMock).toHaveBeenCalledWith(`${BASE}/enviar`, { mes: '2026-10' });
   });
 
-  it('el paso 0 viaja también acá', async () => {
+  it('el paso 0 viaja también aquí', async () => {
     await cobranzaSecuenciaApi.enviar({ mes: '2026-10', paso: 0 });
     expect(postMock).toHaveBeenCalledWith(`${BASE}/enviar`, { mes: '2026-10', paso: 0 });
   });

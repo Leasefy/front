@@ -167,7 +167,7 @@ function EstudioNuevo() {
         className="max-w-3xl"
         data-testid="estudio-nuevo-aviso"
       >
-        Es el diseño del formulario, no el circuito: nada de lo que escribas acá se guarda.
+        Es el diseño del formulario, no el circuito: nada de lo que escribas aquí se guarda.
         Hoy un estudio se abre sobre una postulación existente, desde su ficha.
       </AlertaAccionable>
 
@@ -433,7 +433,7 @@ function EstudioNuevo() {
             hideArrow
             disabled
             data-testid="estudio-nuevo-cta"
-            title="Todavía no se puede crear un estudio desde acá"
+            title="Todavía no se puede crear un estudio desde aquí"
           >
             <PaperPlaneTilt className="w-4 h-4" weight="bold" aria-hidden="true" />
             {tf(`${NS}.nuevo.cta`, 'Crear estudio y enviar solicitud')}

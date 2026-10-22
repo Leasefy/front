@@ -31,7 +31,7 @@ export default function ComparacionPage() {
         title="Compara y elige"
         subtitle="Los postulados asegurables de tu inmueble, lado a lado."
         icon={UsersThree}
-        emptyDescription="Acá vas a comparar los postulados asegurables y elegir con un clic. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
+        emptyDescription="Aquí vas a comparar los postulados asegurables y elegir con un clic. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
       />
     );
   }

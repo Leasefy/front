@@ -132,7 +132,7 @@ export function AcuerdosGeneralesTabla() {
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-fg">Acuerdos generales</h2>
           <p className="text-xs text-fg-muted max-w-xl leading-relaxed">
-            Las reglas que el agente cierra solo: «si el deudor cabe acá, tómalo
+            Las reglas que el agente cierra solo: «si el deudor cabe aquí, tómalo
             y no me preguntes». Sin ninguno sólo se acepta el pago total: sin
             descuento y sin cuotas, ni del agente ni en un acuerdo armado a mano.
           </p>

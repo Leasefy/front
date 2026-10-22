@@ -490,7 +490,7 @@ export function RenovacionesTable({
                   hayFiltros={hayFiltros}
                   onLimpiarFiltros={limpiarFiltros}
                   titulo="Sin renovaciones en curso"
-                  descripcion="Cuando un contrato entre en sus últimos 90 días, aparece acá solo, con su inquilino y su canon."
+                  descripcion="Cuando un contrato entre en sus últimos 90 días, aparece aquí solo, con su inquilino y su canon."
                 />
               </TableCell>
             </TableRow>

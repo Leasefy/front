@@ -478,7 +478,7 @@ export function ColaDeTransmision() {
                       descripcion={
                         datos && !datos.disponible
                           ? faltaEnLaBase('La cola de transmisión a la DIAN')
-                          : 'Cada documento que emitas entra acá y se transmite a la DIAN cuando el proveedor tecnológico esté conectado. El recaudo no espera a esto.'
+                          : 'Cada documento que emitas entra aquí y se transmite a la DIAN cuando el proveedor tecnológico esté conectado. El recaudo no espera a esto.'
                       }
                     />
                   </TableCell>

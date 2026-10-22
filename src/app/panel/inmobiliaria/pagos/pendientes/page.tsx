@@ -35,7 +35,7 @@ export default function PendientesDeAplicarPage() {
           ayuda={
               <ParaEntenderMas
                 etiqueta="Por qué esta plata no se puede aplicar"
-                descripcion="De dónde sale, de quién es mientras está acá, y qué la libera."
+                descripcion="De dónde sale, de quién es mientras está aquí, y qué la libera."
               >
                 <div className="space-y-3 text-sm text-fg-muted">
                   <p>
@@ -45,15 +45,15 @@ export default function PendientesDeAplicarPage() {
                   </p>
                   <p>
                     Ese excedente entra igual —antes se rechazaba, y la aseguradora ya había
-                    consignado— y se queda acá con nombre: de quién es la deuda que iba a pagar,
+                    consignado— y se queda aquí con nombre: de quién es la deuda que iba a pagar,
                     quién puso la plata, y cuánto se puede aplicar hoy.
                   </p>
                   <p>
-                    Mientras está acá es un <strong className="text-fg">pasivo</strong>: se le debe
+                    Mientras está aquí es un <strong className="text-fg">pasivo</strong>: se le debe
                     a quien la puso. No es un saldo a favor de la inmobiliaria.
                   </p>
                   <p>
-                    Sale de acá de dos maneras: se <strong className="text-fg">aplica</strong>{' '}
+                    Sale de aquí de dos maneras: se <strong className="text-fg">aplica</strong>{' '}
                     cuando vencen más cuotas de ese inquilino —lo decide una persona, y emite un
                     recibo de caja— o se <strong className="text-fg">devuelve</strong> a quien la
                     puso.

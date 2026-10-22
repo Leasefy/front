@@ -381,7 +381,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer, compacta = false
         {!cargando && !error && imagenes.length > 0 && (
           <p className="text-xs text-fg-muted">
             {cupo > 0
-              ? `Caben ${cupo} ${cupo === 1 ? 'foto más' : 'fotos más'}. Arrástralas acá, elígelas o pégalas con Ctrl+V. La primera es la portada.`
+              ? `Caben ${cupo} ${cupo === 1 ? 'foto más' : 'fotos más'}. Arrástralas aquí, elígelas o pégalas con Ctrl+V. La primera es la portada.`
               : `Llegaste al máximo de ${PROPERTY_PHOTO_MAX_COUNT} fotos. Quita una para subir otra.`}
           </p>
         )}

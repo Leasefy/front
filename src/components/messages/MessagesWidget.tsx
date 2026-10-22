@@ -57,7 +57,7 @@ import {
 /* `BotonNuevoMensaje` ya NO se importa: era la pastilla primary «Nuevo
    mensaje» que ocupaba una fila entera arriba del buscador. Nico: «podrías
    mejor hacer el buscador un poco más pequeño y colocar el primary un + y se
-   va a entender que es un nuevo mensaje». El botón vive ahora acá abajo
+   va a entender que es un nuevo mensaje». El botón vive ahora aquí abajo
    (`BotonDeNuevoMensaje`), en la misma fila que el buscador. */
 import { NuevoMensajeDrawer } from '@/components/messages/NuevoMensajeDrawer';
 import { SelectorDeEmojis } from '@/components/messages/SelectorDeEmojis';
@@ -836,7 +836,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       {searchQuery
                         ? (locale === 'es' ? 'No se encontraron conversaciones' : 'No conversations found')
                         : (locale === 'es'
-                            ? `Escríbele a ${otherParty} desde acá; las conversaciones te van a quedar en esta lista.`
+                            ? `Escríbele a ${otherParty} desde aquí; las conversaciones te van a quedar en esta lista.`
                             : `Message ${otherParty} from here; your conversations will stay in this list.`)}
                     </p>
                     {/* Acá SÍ va con texto: en un vacío el `+` de arriba es lo
@@ -1058,7 +1058,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                             >
                               {/*
                                 «Ver ficha» va PRIMERO: es lo que Nico pidió
-                                («que desde acá se pueda ir a ver el detalle del
+                                («que desde aquí se pueda ir a ver el detalle del
                                 inquilino») y es lo único del menú que lleva a
                                 otro lado — archivar, silenciar y reportar
                                 actúan sobre el hilo. Sólo aparece cuando hay a
@@ -1147,7 +1147,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       )}
                       {/*
                         El puente con WhatsApp (2026-09-12). Lo que la
-                        inmobiliaria escriba acá también le llega al WhatsApp
+                        inmobiliaria escriba aquí también le llega al WhatsApp
                         del tercero — o no, y entonces dice por qué. Sólo del
                         lado de la inmobiliaria: el inquilino no decide esto.
                       */}

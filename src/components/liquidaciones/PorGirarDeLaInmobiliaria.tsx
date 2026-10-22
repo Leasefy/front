@@ -22,6 +22,7 @@ import {
   rotuloDeProximosGiros,
   type PorGirarDelBack,
 } from '@/lib/propietarios/por-girar';
+import { plataPareja } from '@/lib/format';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 export function PorGirarDeLaInmobiliaria() {
@@ -44,6 +45,8 @@ export function PorGirarDeLaInmobiliaria() {
     };
   }, []);
 
+  // Ronda 19: los mismos decimales en las cifras de la franja.
+  const plataDeLaFranja = plataPareja(cifra ? [cifra.porGirarCop, cifra.proximosGiros.totalCop] : []);
   return (
     <Presence show={cifra !== null} initial={false}>
       {cifra ? (
@@ -57,7 +60,7 @@ export function PorGirarDeLaInmobiliaria() {
               className="mt-1 whitespace-nowrap font-mono text-2xl font-semibold tabular-nums text-fg"
               data-testid="por-girar-cifra"
             >
-              <AnimatedNumber value={cifra.porGirarCop} format={formatCurrency} />
+              <AnimatedNumber value={cifra.porGirarCop} format={plataDeLaFranja} />
             </p>
             {/* GLOW UP (21-10): la cifra primero; lo que cuenta, plegado (la misma frase del Tablero y de Cartera). */}
             <MasDetalles etiqueta="Qué cuenta esta cifra" montadoSiempre className="mt-1">
@@ -72,7 +75,7 @@ export function PorGirarDeLaInmobiliaria() {
               className="mt-1 whitespace-nowrap font-mono text-2xl font-semibold tabular-nums text-fg-muted"
               data-testid="proximos-giros"
             >
-              <AnimatedNumber value={cifra.proximosGiros.totalCop} format={formatCurrency} />
+              <AnimatedNumber value={cifra.proximosGiros.totalCop} format={plataDeLaFranja} />
             </p>
             <p className="mt-1 text-caption text-fg-muted">
               Todavía no se debe girar: va aparte y no se suma a «Por girar».

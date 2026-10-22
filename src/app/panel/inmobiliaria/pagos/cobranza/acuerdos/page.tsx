@@ -274,7 +274,7 @@ function AcuerdoPropuestoCard({
       </div>
 
       {/*
-        Acá vivían cinco botones deshabilitados —Aprobar, Editar condiciones,
+        Aquí vivían cinco botones deshabilitados —Aprobar, Editar condiciones,
         Enviar al inquilino, Escalar, Rechazar— con la etiqueta «Próximamente».
         Se quitaron porque no eran una función pendiente: **esto todavía no es
         un acuerdo**. `agreements/propose` calcula un borrador y no persiste
@@ -284,7 +284,7 @@ function AcuerdoPropuestoCard({
 
         El siguiente paso real es ofrecerlo (POST /cartera/payment-plans/offer,
         que sí crea el plan y su link de pago) y aprobarlo en el detalle del
-        plan. Ese botón no se agregó acá todavía: crea un plan vivo y genera un
+        plan. Ese botón no se agregó aquí todavía: crea un plan vivo y genera un
         link de cobro, y es una decisión de producto, no de cableado.
       */}
       <div className="px-5 py-4 border-t border-border bg-surface-muted">
@@ -856,7 +856,7 @@ function AcuerdosContent() {
         <EncabezadoDePantalla
           seccion="Cobranza"
           titulo="Acuerdos de pago"
-          descripcion="Lo que cada deudor se comprometió a pagar: los compromisos que el agente toma en una llamada y los planes de cuotas que armes acá. Ningún plan se activa sin que una persona lo apruebe."
+          descripcion="Lo que cada deudor se comprometió a pagar: los compromisos que el agente toma en una llamada y los planes de cuotas que armes aquí. Ningún plan se activa sin que una persona lo apruebe."
         />
         <Button
           hideArrow

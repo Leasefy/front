@@ -36,7 +36,7 @@ export const PASOS_DE_LOS_GIROS: readonly {
   {
     id: 'revisar',
     titulo: 'Revisar y aprobar',
-    descripcion: 'La dispersión del mes, giro por giro: revísala y apruébala antes de armar el lote.',
+    descripcion: 'Los giros del mes, uno por uno: revísalos y apruébalos antes de armar el lote.',
     href: `${RAIZ}/dispersiones`,
   },
   {

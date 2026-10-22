@@ -83,6 +83,6 @@ export function avisoDeMesesQueFaltan(meses: readonly string[]): string | null {
     `${meses.length} ${meses.length === 1 ? 'mes' : 'meses'} sin tasa de usura cargada ` +
     `(${nombrados}${resto}). El interés de mora de esos meses se liquida SIN topear: ` +
     'puede quedar por encima de lo que permite el art. 884 del Código de Comercio. ' +
-    'Cárgalas acá con la certificación de la Superfinanciera.'
+    'Cárgalas aquí con la certificación de la Superfinanciera.'
   );
 }

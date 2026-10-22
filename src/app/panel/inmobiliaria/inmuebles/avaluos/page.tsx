@@ -313,7 +313,7 @@ function AvaluosSala() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* ── Header ─────────────────────────────────────────────────────
-          «¿Cómo funciona?» va acá, donde iría el botón de acción (Nico,
+          «¿Cómo funciona?» va aquí, donde iría el botón de acción (Nico,
           05-10-2026): abre el cajón con los cuatro pasos y la nota del
           revisor. Antes era una tarjeta de cuatro columnas siempre a la vista. */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -627,7 +627,7 @@ function AvaluosSala() {
                 de página: sin `pageSizeOptions` el selector no se monta y no
                 queda un control que no hace nada.
 
-                `page` acá es 0-indexado y el del design system 1-indexado. */}
+                `page` aquí es 0-indexado y el del design system 1-indexado. */}
             {total > 0 && (
               <div className="border-t border-border px-4 py-3">
                 <TablePagination

@@ -297,7 +297,7 @@ function PostulacionesContenido() {
         />
       ) : items.length === 0 ? (
         /* Sin nada que atender, lo útil no son seis tiles en cero ni una tabla
-           vacía con filtros: es explicar qué va a llegar acá y de dónde viene.
+           vacía con filtros: es explicar qué va a llegar aquí y de dónde viene.
            El mapa vivía en una pantalla aparte llamada «Recorrido» y ese era el
            error — el recorrido no es un destino, es el contexto de ESTA lista.
 
@@ -403,7 +403,7 @@ function PostulacionesContenido() {
                     <TableHead>{tr("Estado")}</TableHead>
                     {/* 🔴 El estudio es opcional (Nico, 04-10-2026): quien se
                         postuló sin él (o con el canon por encima de su
-                        respaldo) se ve marcado acá. */}
+                        respaldo) se ve marcado aquí. */}
                     <TableHead>{tr("Estudio")}</TableHead>
                     {hayPuntaje && <TableHead>{tr("Puntaje")}</TableHead>}
                     <TableHead>{tr("Fecha")}</TableHead>

@@ -151,8 +151,8 @@ export function ArchivoDelLote({
       )}
 
       {/* 🔴 23-09 (Nico: «todas las cargas déjalas que sucedan allí»): el
-          archivo EN PREPARACIÓN no se pinta acá con su barra —eso lo muestra
-          el centro—; acá sólo el archivo ya hecho, con «Descargar». */}
+          archivo EN PREPARACIÓN no se pinta aquí con su barra —eso lo muestra
+          el centro—; aquí sólo el archivo ya hecho, con «Descargar». */}
       {proceso && estaActivo(proceso) ? (
         <p className="border-t border-border-faint px-4 py-3 text-caption text-fg-muted" data-testid="archivo-en-el-centro">
           Se está preparando: lo sigues en el centro de procesos, arriba a la derecha, y aparece aquí cuando esté.

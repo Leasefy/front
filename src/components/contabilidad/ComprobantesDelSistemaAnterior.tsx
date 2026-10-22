@@ -301,7 +301,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
           {/* Cuatro segmentos no entran en 400 px de ancho. El `TabsList` que
               había antes traía este scroll de fábrica en su shim; el
               `SegmentedControl` del DS es `inline-flex` a secas, así que el
-              contenedor lo pone acá. Sin esto, en un teléfono «Otros» queda
+              contenedor lo pone aquí. Sin esto, en un teléfono «Otros» queda
               fuera de la pantalla y no hay forma de llegar a él. */}
           <div className="max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <SegmentedControl<ClaseDeComprobante>
@@ -387,7 +387,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
               <p className="text-caption text-fg-muted" data-testid="comprobantes-recortados">
                 Se muestran los {historia!.mostrados.toLocaleString(localeDeLasCifras())} más recientes
                 de {historia!.total.toLocaleString(localeDeLasCifras())} en esta pestaña. Los demás están
-                guardados —no se perdió ninguno—, pero acá sólo caben estos.
+                guardados —no se perdió ninguno—, pero aquí sólo caben estos.
               </p>
             ) : null}
           </div>

@@ -439,7 +439,7 @@ function RentabilidadContent() {
                       aria-sort={activa ? (orden.direccion === 'asc' ? 'ascending' : 'descending') : 'none'}
                       /* La rentabilidad sólo se puede calcular donde hay valor
                          comercial registrado; el resto de la columna va en
-                         raya. Decir cuántos son, acá, explica la columna antes
+                         raya. Decir cuántos son, aquí, explica la columna antes
                          de que alguien la lea como un error. */
                       {...(col.id === 'rentabilidad' && totales
                         ? {

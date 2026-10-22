@@ -331,7 +331,7 @@ function ConciliacionSala() {
     }
     const res = await requestRun()
     if (res.ok && res.enqueued) {
-      toast.success('Corrida pedida. Acá abajo te digo qué encontró.')
+      toast.success('Corrida pedida. Aquí abajo te digo qué encontró.')
       setCorrida({ estado: 'corriendo' })
       vigilarLaCorrida(antes)
     } else if (res.ok && !res.enqueued) {

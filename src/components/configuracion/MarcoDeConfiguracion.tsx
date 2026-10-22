@@ -154,7 +154,7 @@ function Marco({
 
         {/* Cambiar de sección no remonta el `template.tsx` del panel (el
             segmento de arriba sigue siendo `configuracion`): la sección nueva
-            entra acá, con la misma transición de página. Al llegar a
+            entra aquí, con la misma transición de página. Al llegar a
             Configuración desde otro módulo anima el template y ésta no (nunca
             dos a la vez); la primera pantalla de la sesión no se anima. */}
         <PageTransition

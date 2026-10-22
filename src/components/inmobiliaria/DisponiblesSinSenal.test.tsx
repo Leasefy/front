@@ -121,7 +121,7 @@ describe('<DisponiblesSinSenal>', () => {
     expect(filas[1].textContent).toContain('Apto viejo');
   });
 
-  it('preparar un inmueble desde otra pantalla se ve acá sin recargar', async () => {
+  it('preparar un inmueble desde otra pantalla se ve aquí sin recargar', async () => {
     await render();
     expect(container.querySelector('[data-testid="disponibles-sin-senal"]')).toBeNull();
 

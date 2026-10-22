@@ -106,7 +106,7 @@ export function PilotoPreparacion() {
       </SheetTrigger>
 
       {/* La anatomía del cajón de la casa (cabecera fija, cuerpo con scroll),
-          con `SheetContent` propio porque el disparador vive acá adentro. */}
+          con `SheetContent` propio porque el disparador vive aquí adentro. */}
       <SheetContent side="right" size="md" layout="manual">
         <CajonCabecera
           titulo={

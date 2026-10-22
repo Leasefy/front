@@ -269,7 +269,7 @@ describe('el vacío de cláusulas propias', () => {
     ).toBe(true)
   })
 
-  it('enseña con ejemplos: es lo que explica qué se escribe acá', async () => {
+  it('enseña con ejemplos: es lo que explica qué se escribe aquí', async () => {
     h.api.listar.mockResolvedValue([])
     await montar()
     const vacio = contenedor.querySelector('[data-testid="empty-state"]')!

@@ -336,8 +336,8 @@ function ContratosQueTerminan({
       <p className="text-caption font-medium text-fg">
         {contratos.length}{' '}
         {contratos.length === 1
-          ? 'contrato termina acá'
-          : 'contratos terminan acá'}
+          ? 'contrato termina aquí'
+          : 'contratos terminan aquí'}
         : de este mes en adelante dejan de prefacturarse.
       </p>
       <ul className="mt-1 space-y-0.5">
@@ -417,7 +417,7 @@ function MesAMes({ datos }: { datos: FacturasPorGenerar }) {
                         className="ml-2 rounded-full bg-surface-muted px-2 py-0.5 text-fg-subtle"
                         data-testid={`rango-terminan-pildora-${m.mes}`}
                       >
-                        {m.terminan?.length} terminan acá
+                        {m.terminan?.length} terminan aquí
                       </span>
                     )}
                   </span>
@@ -503,7 +503,7 @@ function PorContrato({ datos }: { datos: FacturasPorGenerar }) {
                   {mesLegible(c.primerMes)}
                   {c.ultimoMes !== c.primerMes && ` → ${mesLegible(c.ultimoMes)}`}
                   {/* 🔴 «Los contratos que finalicen antes se van eliminando de
-                      la prefactura»: acá se ve POR QUÉ este contrato tiene menos
+                      la prefactura»: aquí se ve POR QUÉ este contrato tiene menos
                       meses que los demás. */}
                   {c.terminaEnElRango && c.terminaEl && (
                     <span

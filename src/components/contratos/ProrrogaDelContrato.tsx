@@ -283,7 +283,7 @@ export function ProrrogaDelContrato({
           <span className="font-medium text-fg">
             Este contrato {plan.noSeProrroga ? 'NO se prorroga' : 'se prorroga'} al vencer.
           </span>{' '}
-          Por ahora no se puede cambiar desde acá.
+          Por ahora no se puede cambiar desde aquí.
         </p>
       ) : (
       <label className="flex items-start gap-2.5 text-sm" data-testid="no-se-prorroga">
@@ -357,7 +357,7 @@ export function ProrrogaDelContrato({
       {!plan.disponible && (
         <AunNoDisponible
           testId="prorroga-sin-migracion"
-          queNoSePuede="prorrogar ni registrar el aviso de no renovación desde acá"
+          queNoSePuede="prorrogar ni registrar el aviso de no renovación desde aquí"
           mientrasTanto="El plan que ves arriba sí está calculado y el contrato se prorroga como diga su regla."
         />
       )}

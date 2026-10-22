@@ -58,7 +58,7 @@ export const FRASES_EN: Record<string, string> = {
   "Se liberó un inmueble": "A property freed up",
   "¿A quién le vas a ofrecer?": "Who are you offering to?",
   "Todavía no hay a quién ofrecerle": "No one to offer to yet",
-  "Cuando entre un interesado al tablero, acá te digo qué inmuebles le sirven.": "When a lead enters the board, I'll tell you here which properties fit them.",
+  "Cuando entre un interesado al tablero, aquí te digo qué inmuebles le sirven.": "When a lead enters the board, I'll tell you here which properties fit them.",
   "Elige un interesado y te muestro qué inmuebles le calzan, y por qué.": "Pick a lead and I'll show you which properties fit them, and why.",
   "· presupuesto": "· budget",
   "lo dijo él": "they said so",
@@ -80,7 +80,7 @@ export const FRASES_EN: Record<string, string> = {
   "Dos cosas distintas: lo que un inmueble tiene que cumplir para aparecer, y cuánto pesa cada coincidencia en el orden.": "Two different things: what a property has to meet to show up, and how much each match weighs in the ranking.",
   "Requisitos (no se configuran)": "Requirements (not configurable)",
   "Pesos": "Weights",
-  "Los pesos se cambian en la configuración de la inmobiliaria, no acá: moverlos desde la pantalla de trabajo invita a ajustarlos hasta que salga el inmueble que uno quería vender.": "Weights are changed in the agency settings, not here: tweaking them from the work screen invites adjusting until the property you wanted to sell comes out on top.",
+  "Los pesos se cambian en la configuración de la inmobiliaria, no aquí: moverlos desde la pantalla de trabajo invita a ajustarlos hasta que salga el inmueble que uno quería vender.": "Weights are changed in the agency settings, not here: tweaking them from the work screen invites adjusting until the property you wanted to sell comes out on top.",
   "Ir a configuración": "Go to settings",
   // app/panel/inmobiliaria/postulaciones/page.tsx
   "Postulaciones": "Applications",
@@ -288,7 +288,7 @@ export const FRASES_EN: Record<string, string> = {
   "Enviar una plantilla aprobada por WhatsApp": "Send an approved WhatsApp template",
   "Responder": "Reply",
   // components/inmobiliaria/cobranza/CobranzaNextActionsPanel.tsx
-  "El agente programa los contactos solo; acá aparecen a medida que los agenda.": "The agent schedules contacts on its own; they show up here as it books them.",
+  "El agente programa los contactos solo; aquí aparecen a medida que los agenda.": "The agent schedules contacts on its own; they show up here as it books them.",
   // components/inmobiliaria/cobranza/CobranzaResultadosKpis.tsx
   "Cómo va el agente": "How the agent is doing",
   // components/inmobiliaria/cobranza/CobranzaTeTocaATi.tsx
@@ -312,7 +312,7 @@ export const FRASES_EN: Record<string, string> = {
   ", el": ", on",
   "). Le sirve hasta el": "). It's valid until",
   "para cualquier inmueble de la inmobiliaria: no se le vuelve a cobrar.": "for any of the agency's properties: they won't be charged again.",
-  "No tiene un estudio pagado y vigente acá. El estudio lo paga el solicitante, no se devuelve y le sirve": "They don't have a paid, valid screening here. The applicant pays for the screening, it's non-refundable and valid for",
+  "No tiene un estudio pagado y vigente aquí. El estudio lo paga el solicitante, no se devuelve y le sirve": "They don't have a paid, valid screening here. The applicant pays for the screening, it's non-refundable and valid for",
   "días para cualquier inmueble de la inmobiliaria.": "days for any of the agency's properties.",
   "Registrar el pago del estudio": "Record the screening payment",
   "Valor pagado": "Amount paid",
@@ -380,7 +380,7 @@ export const FRASES_EN: Record<string, string> = {
   "Recaudado en el mes": "Collected in the month",
   "recibos con fecha del mes": "receipts dated in the month",
   "Todavía no hay serie": "No series yet",
-  "Cuando haya cobros, recibos o giros en algún mes, aparece acá.": "Once any month has charges, receipts or payouts, it shows up here.",
+  "Cuando haya cobros, recibos o giros en algún mes, aparece aquí.": "Once any month has charges, receipts or payouts, it shows up here.",
   "Cómo entró la plata de": "How the money came in for",
   "Los recibos de caja del mes, por medio de pago. El total es la misma cifra que «Llegó» arriba.": "The month's cash receipts, by payment method. The total is the same figure as “Came in” above.",
   "Medio de pago": "Payment method",
@@ -419,7 +419,7 @@ export const FRASES_EN: Record<string, string> = {
   // components/inmobiliaria/DispersionTable.tsx
   "Acciones": "Actions",
   // components/inmobiliaria/DispersionDetail.tsx
-  "Tu inmobiliaria aprueba y gira las dispersiones por lote, con código: esta se aprueba en Lotes, no desde acá.": "Your agency approves and pays out disbursements by batch, with a code: this one is approved in Batches, not from here.",
+  "Tu inmobiliaria aprueba y gira las dispersiones por lote, con código: esta se aprueba en Lotes, no desde aquí.": "Your agency approves and pays out disbursements by batch, with a code: this one is approved in Batches, not from here.",
   "Tú aprobaste esta dispersión: la referencia del giro la carga otra persona del equipo. Es el segundo par de ojos sobre la plata del propietario.": "You approved this disbursement: someone else on the team records the transfer reference. It's the second pair of eyes on the owner's money.",
   "WhatsApp": "WhatsApp",
   "Sin cuenta bancaria: no se le puede girar": "No bank account: the payout can't be sent",
@@ -603,8 +603,8 @@ export const FRASES_EN: Record<string, string> = {
   "Todavía no hay interesados en el tablero": "No leads on the board yet",
   "Elige un interesado…": "Pick a lead…",
   "Elige un inmueble…": "Pick a property…",
-  "Con su presupuesto, nada del portafolio le entra hoy. Cuando se libere uno que sí, aparece acá.": "With their budget, nothing in the portfolio fits today. When one that does frees up, it shows up here.",
-  "Con su presupuesto y su tope, nada del portafolio pasa los requisitos. Cuando se libere uno que sí, aparece acá.": "With their budget and limit, nothing in the portfolio meets the requirements. When one that does frees up, it shows up here.",
+  "Con su presupuesto, nada del portafolio le entra hoy. Cuando se libere uno que sí, aparece aquí.": "With their budget, nothing in the portfolio fits today. When one that does frees up, it shows up here.",
+  "Con su presupuesto y su tope, nada del portafolio pasa los requisitos. Cuando se libere uno que sí, aparece aquí.": "With their budget and limit, nothing in the portfolio meets the requirements. When one that does frees up, it shows up here.",
   " + {plata} de administración": " + {plata} HOA fee",
   "Mensaje copiado": "Message copied",
   "Pégalo en tu WhatsApp o en el correo.": "Paste it into WhatsApp or an email.",

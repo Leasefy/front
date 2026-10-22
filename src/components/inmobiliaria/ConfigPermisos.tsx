@@ -708,7 +708,7 @@ export function ConfigPermisos({
               🔴 Lo que un módulo no alcanza a decir (17-09-2026): el portafolio
               es uno solo y lo que parte un inmueble del otro es si tiene un
               contrato vigente. El back lo deriva de estos dos permisos
-              (`alcance-del-miembro.ts`); decirlo acá es lo que hace que la
+              (`alcance-del-miembro.ts`); decirlo aquí es lo que hace que la
               matriz sea honesta sobre lo que abre cada casilla.
             */}
             <div

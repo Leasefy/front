@@ -84,7 +84,7 @@ function Contenido({ datos }: { datos: MiFirmaDelPagareResponse }) {
       <EmptyState
         icon={Receipt}
         title="No tienes un pagaré pendiente"
-        description="Cuando tu inmobiliaria emita el pagaré, lo verás acá."
+        description="Cuando tu inmobiliaria emita el pagaré, lo verás aquí."
       />
     );
   }

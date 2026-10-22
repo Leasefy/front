@@ -253,7 +253,7 @@ function DialogoDeRequisito({
               id="req-detalle-error"
               mensaje={errores.detalle}
               className="mt-0"
-              pista="Lo que escribas acá es lo que el candidato lee. Mientras más preciso, menos papeles mal mandados."
+              pista="Lo que escribas aquí es lo que el candidato lee. Mientras más preciso, menos papeles mal mandados."
             />
           </div>
 

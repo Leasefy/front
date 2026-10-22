@@ -272,7 +272,7 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
                 {busqueda
                   ? 'Prueba con otro nombre o con el correo.'
                   : esLadoAgencia
-                    ? 'Acá van a aparecer los propietarios y los inquilinos con un inmueble o un contrato en la inmobiliaria.'
+                    ? 'Aquí van a aparecer los propietarios y los inquilinos con un inmueble o un contrato en la inmobiliaria.'
                     : 'Vas a poder escribirle a tu inmobiliaria cuando tengas un inmueble o un contrato con ella.'}
               </p>
             </div>

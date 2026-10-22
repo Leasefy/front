@@ -547,7 +547,7 @@ export function PipelineBoard({
           mensajeDelRechazoDelMotivo(error, {
             campo: 'lostReason',
             porDefecto: 'No se pudo marcar como perdido. Prueba de nuevo en un momento.',
-            accion: 'marcar el lead como perdido',
+            accion: 'marcar al interesado como perdido',
           }),
         );
         setEnviandoMotivo(false);

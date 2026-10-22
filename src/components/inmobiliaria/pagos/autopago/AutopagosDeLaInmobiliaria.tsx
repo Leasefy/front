@@ -213,7 +213,7 @@ export function AutopagosDeLaInmobiliaria() {
                 queSon="autopagos"
                 icono={Repeat}
                 titulo="Ningún inquilino tiene autopago"
-                descripcion="El inquilino lo inscribe desde su portal, con un tope que él mismo pone. Cuando alguno lo haga, aparece acá."
+                descripcion="El inquilino lo inscribe desde su portal, con un tope que él mismo pone. Cuando alguno lo haga, aparece aquí."
               />
             ) : esMovil ? (
               <Lista items={data.items} />

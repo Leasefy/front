@@ -67,7 +67,7 @@ describe('atajos del período', () => {
     });
   });
 
-  it('un atajo es un rango que se manda al back, no un recorte de acá', () => {
+  it('un atajo es un rango que se manda al back, no un recorte de aquí', () => {
     // El atajo sólo produce `desde`/`hasta`; quien corta filas es el back.
     const rango = rangoPreestablecido('esteAnio', '2024-06-01');
     expect(hayFiltros({ ...SIN_FILTROS, ...rango })).toBe(true);

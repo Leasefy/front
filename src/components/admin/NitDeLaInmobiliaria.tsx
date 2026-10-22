@@ -114,7 +114,7 @@ export function NitDeLaInmobiliaria({ tenantId }: { tenantId: string }) {
   return (
     <Tarjeta
       titulo={<span id="nit-titulo">NIT</span>}
-      descripcion="La inmobiliaria no puede cambiarlo en Configuración. Si lo escribió mal, se corrige acá y queda registrado quién lo cambió, cuándo y de qué a qué."
+      descripcion="La inmobiliaria no puede cambiarlo en Configuración. Si lo escribió mal, se corrige aquí y queda registrado quién lo cambió, cuándo y de qué a qué."
       aria-labelledby="nit-titulo"
     >
       <div className="space-y-5">

@@ -133,7 +133,7 @@ export function DeudaDelPropietario({ propietarioId }: { propietarioId: string }
                       {r.origen !== 'SALDO_ANTERIOR' && `: ${r.motivo}`}
                       {/* 🔴 Lo viejo que es cada renglón, con el MISMO reloj con
                           que la cartera lo mete en su tramo: el back manda
-                          `dias`, acá no se resta nada. */}
+                          `dias`, aquí no se resta nada. */}
                       <span className="ml-2 text-xs text-fg-muted" data-testid="edad-del-renglon">
                         {r.dias === 1 ? t(k('diaUno')) : t(k('dias'), { dias: r.dias })}
                       </span>

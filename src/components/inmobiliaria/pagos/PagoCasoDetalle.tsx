@@ -271,7 +271,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
         </Card>
 
         {/* Automatización activa — informativo. El nivel de autonomía del agente se
-            configura en su superficie de configuración; acá solo se rotula. */}
+            configura en su superficie de configuración; aquí solo se rotula. */}
         <Card>
           <div className="space-y-2 p-5">
             <p className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted">

@@ -755,7 +755,7 @@ export function MigrarAsientos({
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               {/* 🔴 Qué ES la columna y qué pasa si falta, en el idioma de
                   quien migra. Antes decía «sin eso el back rechaza todas las
-                  filas»: «el back» no es nada para nadie fuera de acá, y
+                  filas»: «el back» no es nada para nadie fuera de aquí, y
                   «rechaza» no explica por qué. */}
               <div className="space-y-1 text-sm">
                 <p className="text-fg">
@@ -1020,7 +1020,7 @@ function Revision({
               <p className="mt-0.5 text-sm text-fg-muted">
                 No se crean solas: un código suelto no dice ni la naturaleza ni
                 de qué cuelga. Créalas en el plan de cuentas con tu contador y vuelve a
-                revisar: el archivo sigue acá.
+                revisar: el archivo sigue aquí.
               </p>
             </div>
           </div>

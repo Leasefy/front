@@ -90,7 +90,7 @@ const GRUPOS: {
   {
     titulo: 'Seguridad social y parafiscales',
     explicacion:
-      'En puntos básicos del IBC: 4 % = 400. El fondo de solidaridad pensional no se configura acá — son tramos de ley que dependen de cuántos salarios mínimos gana la persona.',
+      'En puntos básicos del IBC: 4 % = 400. El fondo de solidaridad pensional no se configura aquí — son tramos de ley que dependen de cuántos salarios mínimos gana la persona.',
     campos: [
       { campo: 'saludEmpleadoBps', etiqueta: 'Salud (empleado)', unidad: 'bps' },
       { campo: 'saludEmpleadorBps', etiqueta: 'Salud (empleador)', unidad: 'bps' },

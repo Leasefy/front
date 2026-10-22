@@ -506,7 +506,7 @@ function ConciliacionLiquidaciones() {
                       queSon="registros"
                       icono={Receipt}
                       titulo="Sin liquidaciones"
-                      descripcion="El agente todavía no tiene ninguna registrada acá. Las del mes están en Pagos · Liquidaciones."
+                      descripcion="El agente todavía no tiene ninguna registrada aquí. Las del mes están en Pagos · Liquidaciones."
                       crear={{
                         label: 'Generar liquidación',
                         onClick: () => {

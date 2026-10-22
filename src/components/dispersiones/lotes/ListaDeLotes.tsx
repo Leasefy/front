@@ -59,7 +59,7 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useLotesDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
 import { lotesDeDispersionApi, type LoteResumen } from '@/lib/api/lotes-de-dispersion.service';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, plataPareja } from '@/lib/format';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { esMesValido, mesActual } from '@/lib/recaudo/meses';
 import { cn } from '@/lib/utils';
@@ -314,6 +314,7 @@ export function ListaDeLotes({
               {/* Filas escalonadas con techo; cada filtro o página monta un
                   cuerpo nuevo. */}
               <TableBodyAnimado key={`${filtro}|${page}|${pageSize}`}>
+                {/* Ronda 19: los mismos decimales en toda la columna Total. */}
                 {pageItems.map((lote) => {
                   const enTotal = lote._count?.items ?? lote.cantidad;
                   return (
@@ -334,7 +335,7 @@ export function ListaDeLotes({
                         )}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums text-fg">
-                        {formatCurrency(lote.totalCop)}
+                        {plataPareja(pageItems.map((l) => l.totalCop))(lote.totalCop)}
                       </TableCell>
                       <TableCell className="text-fg-muted">{nombreDe(lote.creadoPorUserId, lote.creadoPorNombre)}</TableCell>
                       <TableCell className="text-fg-muted">
@@ -422,9 +423,9 @@ function FraseDelMes({
   if (pendientes.esperan === 0) {
     return (
       <p className="text-sm text-fg-muted" data-testid="frase-del-mes">
-        Ninguna dispersión de {delMes} espera lote. Si todavía no las generaste, se generan en{' '}
+        Ningún giro de {delMes} espera lote. Si todavía no los generaste, se generan en el paso{' '}
         <Link href="/panel/inmobiliaria/pagos/dispersiones" className="text-primary underline-offset-4 hover:underline">
-          Dispersiones
+          2, Revisar y aprobar
         </Link>
         .
       </p>
@@ -434,7 +435,7 @@ function FraseDelMes({
   return (
     <p className="text-body text-fg" data-testid="frase-del-mes">
       <span className="font-mono tabular-nums">{esperan}</span>{' '}
-      {esperan === 1 ? 'dispersión' : 'dispersiones'} de {delMes} {esperan === 1 ? 'espera' : 'esperan'} lote
+      {esperan === 1 ? 'giro' : 'giros'} de {delMes} {esperan === 1 ? 'espera' : 'esperan'} lote
       {girables > 0 && (
         <>
           : {girables === esperan ? (girables === 1 ? 'se gira' : 'se giran') : (

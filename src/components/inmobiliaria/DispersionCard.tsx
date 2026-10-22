@@ -216,7 +216,7 @@ export function DispersionCard({
         {/* Net Amount - Prominent */}
         <div className="flex items-center justify-between">
           <span className="text-sm text-fg-muted dark:text-fg-subtle">
-            {tr("Neto a dispersar")}
+            {tr("Neto a girar")}
           </span>
           <span className="text-xl font-mono font-bold tabular-nums text-success">
             {formatCurrency(dispersion.netToPropietario)}
@@ -232,14 +232,14 @@ export function DispersionCard({
             <span className="font-mono tabular-nums">{formatCurrency(dispersion.totalCollected)}</span>
           </div>
           <div className="flex items-center justify-between text-warning">
-            <span>{tr("Comision agencia")}</span>
-            <span className="font-mono tabular-nums">- {formatCurrency(dispersion.totalCommission)}</span>
+            <span>{tr("Comisión de administración")}</span>
+            <span className="font-mono tabular-nums">− {formatCurrency(dispersion.totalCommission)}</span>
           </div>
           {/* 🔴 22-09: el IVA de la comisión, en su línea (antes no se nombraba). */}
           {(dispersion.totalIvaComision ?? 0) > 0 && (
             <div className="flex items-center justify-between text-warning" data-testid="tarjeta-iva-comision">
               <span>{tr("IVA de la comisión")}</span>
-              <span className="font-mono tabular-nums">- {formatCurrency(dispersion.totalIvaComision ?? 0)}</span>
+              <span className="font-mono tabular-nums">− {formatCurrency(dispersion.totalIvaComision ?? 0)}</span>
             </div>
           )}
         </div>
@@ -262,8 +262,7 @@ export function DispersionCard({
             <Buildings className="w-4 h-4 text-fg-subtle" />
             <span>
               {dispersion.items.length}{' '}
-              {dispersion.items.length === 1 ? 'propiedad' : 'propiedades'}{' '}
-              {tr("incluidas")}
+              {dispersion.items.length === 1 ? tr('inmueble incluido') : tr('inmuebles incluidos')}
             </span>
           </div>
           <CaretDown
@@ -382,7 +381,7 @@ export function DispersionCard({
         {dispersion.status === 'completed' && (
           <div className="flex items-center gap-2 text-sm text-success">
             <CheckCircle className="w-4 h-4" weight="fill" />
-            <span>{tr("Dispersado")}</span>
+            <span>{tr("Girado")}</span>
           </div>
         )}
         {dispersion.status === 'processing' && (

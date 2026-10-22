@@ -454,7 +454,7 @@ export default function VisitasPage() {
       <div className="p-6 lg:p-8">
         {/* Header. «Agendar visita» no está (Nico, 02-10-2026): `POST /visits`
             es sólo para inquilinos y al propietario SIEMPRE le respondía 403.
-            Las visitas las pide el inquilino desde el inmueble; acá se
+            Las visitas las pide el inquilino desde el inmueble; aquí se
             confirman, se reprograman o se cancelan. `ScheduleModal` sigue en
             `ModalesDeVisita` para cuando el back lo permita. */}
         <EncabezadoDePantalla

@@ -227,7 +227,7 @@ export function InquilinoEnCarteraCajon({
         </section>
 
         {/* 3 · Mes por mes, por concepto. Es lo que pidió el 12-09, con espacio:
-               acá cada mes tiene su bloque en vez de un renglón de 8 columnas. */}
+               aquí cada mes tiene su bloque en vez de un renglón de 8 columnas. */}
         <section className="space-y-3 border-t border-border pt-5">
           <h3 className="text-sm font-semibold text-fg">
             {inquilino.filas.length} {inquilino.filas.length === 1 ? 'mes' : 'meses'} que

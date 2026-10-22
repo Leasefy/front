@@ -276,7 +276,7 @@ export default function ParaTiPage() {
             </h1>
             <p className="text-sm text-fg-muted max-w-md mx-auto mb-6 leading-relaxed">
               {locale === 'es'
-                ? 'Con ella sabemos hasta cuánto te respaldan las aseguradoras, y acá te mostramos solo las propiedades que puedes tomar.'
+                ? 'Con ella sabemos hasta cuánto te respaldan las aseguradoras, y aquí te mostramos solo las propiedades que puedes tomar.'
                 : 'With it we know how much the insurers back you, and here we show you only the properties you can take.'}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">

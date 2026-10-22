@@ -101,7 +101,7 @@ function tablero(extra: Partial<TableroFinanciero> = {}): TableroFinanciero {
       margenCop: 12_100_000,
       margenPct: 91.7,
     },
-    avisos: ['3 contratos vigentes no tienen tabla de amortización: su deuda no entra acá.'],
+    avisos: ['3 contratos vigentes no tienen tabla de amortización: su deuda no entra aquí.'],
     ...extra,
   };
 }

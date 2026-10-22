@@ -280,7 +280,7 @@ describe('/panel/inmobiliaria/inquilinos — el camino de cargar UNO solo', () =
      * diccionario porque la pantalla, en el test, rinde claves.
      */
     expect(es.inquilinos.subtitulo).not.toContain('nace de su contrato');
-    expect(es.inquilinos.subtitulo).toContain('Carga uno acá');
+    expect(es.inquilinos.subtitulo).toContain('Carga uno aquí');
     expect(en.inquilinos.subtitulo).not.toContain('comes from their lease');
   });
 });

@@ -319,7 +319,7 @@ export function BalanceDePrueba() {
   return (
     /* 🔴 20-09 · Antes eran DOS tarjetas: el rango de fechas y la casilla en
        una, la tabla en otra, separadas por 20 px. Nico lo dijo de Facturación
-       —«porque esto no está pegado a la tabla»— y valía igual acá: un filtro
+       —«porque esto no está pegado a la tabla»— y valía igual aquí: un filtro
        es el encabezado de su tabla, no otra cosa. Ahora es UNA tarjeta. */
     <TarjetaDeInforme
       testId="informe-balance-de-prueba"

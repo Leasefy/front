@@ -473,7 +473,7 @@ function ContenidoDeInquilinos() {
 
       {/* El clic que llegó de otra pantalla y no encontró a nadie. Se cuenta,
           no se traga: es la diferencia entre «la app no anda» y «esa persona no
-          está acá». */}
+          está aquí». */}
       <Presence
         show={Boolean(personaNoEncontrada)}
         data-testid="persona-no-encontrada"

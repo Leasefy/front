@@ -371,7 +371,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
             />
             {!cargandoInquilinos && inquilinos.length === 0 && (
               <p className="text-caption text-fg-muted" data-testid="sin-inquilinos">
-                Todavía no hay inquilinos con arriendos acá. Cárgalo como nuevo.
+                Todavía no hay inquilinos con arriendos aquí. Cárgalo como nuevo.
               </p>
             )}
             <ErrorDelCampo id="inquilino-del-contrato-error" mensaje={errores.tenantId} className="mt-0" />

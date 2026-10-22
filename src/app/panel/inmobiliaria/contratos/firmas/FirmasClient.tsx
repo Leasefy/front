@@ -317,7 +317,7 @@ export function FirmasClient() {
             {/* 🔴 24-09-2026: abrir esta pantalla ya NO vence nada — antes la
                 lectura devolvía contratos a borrador sin preguntarle al modo
                 del Piloto. Lo que se quedó sin firma al cumplirse el plazo lo
-                vence el Piloto según su modo; acá se ve mientras tanto. */}
+                vence el Piloto según su modo; aquí se ve mientras tanto. */}
             {porVencer.length > 0 ? (
               <Grupo
                 titulo={`Se les pasó el plazo (${porVencer.length})`}
@@ -393,7 +393,7 @@ const ESTADOS = [
   },
   {
     que: 'Le toca recordatorio',
-    como: 'Pasaron los días del primer o segundo aviso. Sale de acá con un clic, o puedes llamar tú.',
+    como: 'Pasaron los días del primer o segundo aviso. Sale de aquí con un clic, o puedes llamar tú.',
   },
   {
     que: 'Se venció',

@@ -218,7 +218,7 @@ export function ArmarContratoDesdePlantilla({ modo, estado, arrendatario }: Prop
             />
             <p className="text-caption text-fg-muted">
               Lo acordado que ninguna cláusula del catálogo cubre. Pasa por el mismo
-              control legal que el resto: un depósito en dinero escrito acá tampoco se
+              control legal que el resto: un depósito en dinero escrito aquí tampoco se
               emite.
             </p>
           </div>

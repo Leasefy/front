@@ -143,7 +143,7 @@ describe('<TicketCTAs>', () => {
     }
     render({
       estado: 'proveedor_sugerido',
-      motivoDeshabilitado: 'Desde acá el ticket sólo se mira.',
+      motivoDeshabilitado: 'Desde aquí el ticket sólo se mira.',
       ...spies,
     })
 

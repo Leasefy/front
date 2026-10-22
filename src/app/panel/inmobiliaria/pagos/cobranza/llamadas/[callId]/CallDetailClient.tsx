@@ -308,13 +308,13 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
           {/*
             Reproductor sticky. El envoltorio NO lleva fondo ni padding propio:
             el reproductor ya es una tarjeta con `bg-surface` y esquinas
-            redondeadas, así que un `bg-surface` acá dibujaba un rectángulo
+            redondeadas, así que un `bg-surface` aquí dibujaba un rectángulo
             recto por detrás — se veía como un marco cuadrado alrededor de la
             tarjeta redondeada.
           */}
           {/*
             El reproductor decide solo si hay audio: le pregunta al proxy, que
-            a su vez le pregunta a Vapi. NO se usa `data.hasRecording` acá — esa
+            a su vez le pregunta a Vapi. NO se usa `data.hasRecording` aquí — esa
             bandera sale de una columna que sólo se llena si llegó el
             `end-of-call-report`, y se desincroniza (ver `use-call-recording.ts`).
           */}
@@ -325,7 +325,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
             pestañas —que arrancan a los 64px— así que el reproductor se montaba
             sobre ellas. La altura de la barra no era un número disponible en
             ningún lado; ahora `WorkspaceNav` la publica en `--workspace-nav-h`
-            y las secciones de Cobros (que van encima) en `--secciones-h`; acá
+            y las secciones de Cobros (que van encima) en `--secciones-h`; aquí
             se suman las dos a los 64px del header.
 
             `z-10` y no `z-20`: empatado con las pestañas ganaba el reproductor

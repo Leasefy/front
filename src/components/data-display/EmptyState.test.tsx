@@ -103,7 +103,7 @@ describe('EmptyState', () => {
         React.createElement(EmptyState, {
           icon: FakeIcon,
           title: 'No hay pagos',
-          description: 'Los pagos aparecerán acá.',
+          description: 'Los pagos aparecerán aquí.',
           primaryCta: { label: 'Ver deudores', href: '/panel/inmobiliaria/pagos/cobranza/deudores' },
         }),
       )
@@ -117,7 +117,7 @@ describe('EmptyState', () => {
         React.createElement(EmptyState, {
           icon: FakeIcon,
           title: 'No hay pagos',
-          description: 'Los pagos aparecerán acá.',
+          description: 'Los pagos aparecerán aquí.',
           primaryCta: { label: 'Ver deudores', href: '/panel/inmobiliaria/pagos/cobranza/deudores' },
           secondaryCta: { label: 'Ver historial', href: '/panel/inmobiliaria/pagos/cobranza/pagos?view=history' },
         }),

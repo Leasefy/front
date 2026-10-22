@@ -301,7 +301,7 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
             ) : null}
 
             {/* PI-28 (Nico, 05-10): la reparación del portal llega también a
-                Mantenimiento; desde acá se va a su solicitud, o se crea si una
+                Mantenimiento; desde aquí se va a su solicitud, o se crea si una
                 reparación vieja no la tiene (una sola por PQRS). */}
             {detalle?.mantenimiento ? (
               <section className="space-y-1.5 rounded-lg border border-border p-4" data-testid="pqrs-mantenimiento">

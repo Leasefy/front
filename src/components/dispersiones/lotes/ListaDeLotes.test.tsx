@@ -256,7 +256,7 @@ describe('<ListaDeLotes> — el mes no se ve vacío', () => {
     await montar('2026-07');
 
     expect(candidatos).toHaveBeenCalledWith({ month: '2026-07' });
-    expect(frase()).toContain('Ninguna dispersión de julio de 2026 espera lote');
+    expect(frase()).toContain('Ningún giro de julio de 2026 espera lote');
     expect(botonQueDice('Armar el lote de')).toBeUndefined();
   });
 

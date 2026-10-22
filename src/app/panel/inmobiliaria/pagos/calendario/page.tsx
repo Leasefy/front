@@ -21,7 +21,7 @@ export default function CalendarioPage() {
           <h1 className="text-h2 text-fg">Días hábiles y festivos</h1>
           <p className="max-w-2xl text-sm text-fg-muted">
             La aceptación tácita de una factura corre a los 3 días hábiles y el SLA de una PQRS son
-            15. Los 18 festivos de Colombia se calculan solos (Ley 51 de 1983 y la Pascua); acá se
+            15. Los 18 festivos de Colombia se calculan solos (Ley 51 de 1983 y la Pascua); aquí se
             revisan y se corrigen si hace falta.
           </p>
         </header>

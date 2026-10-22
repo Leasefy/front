@@ -385,8 +385,13 @@ function TesoreriaContent() {
     ...(retenidoDelMes > 0
       ? [{ labelKey: 'fRetencionesComision', value: retenidoDelMes, sign: '+', tone: 'text-fg' }]
       : []),
-    { labelKey: 'fAFavor', value: suma('totalConceptosAFavor'), sign: '+', tone: 'text-fg' },
-    { labelKey: 'fACargo', value: suma('totalConceptosACargo'), sign: '−', tone: 'text-danger' },
+    // Ronda 19: a favor y a cargo sólo cuando no son 0 (antes «+$ 0» y «−$ 0»).
+    ...(suma('totalConceptosAFavor') !== 0
+      ? [{ labelKey: 'fAFavor', value: suma('totalConceptosAFavor'), sign: '+', tone: 'text-fg' }]
+      : []),
+    ...(suma('totalConceptosACargo') !== 0
+      ? [{ labelKey: 'fACargo', value: suma('totalConceptosACargo'), sign: '−', tone: 'text-danger' }]
+      : []),
   ];
   /*
    * 🔴 QA 22-09: con deducciones, `netToPropietario` ya viene RESTADO y la
@@ -436,7 +441,7 @@ function TesoreriaContent() {
             registrar factura si tenemos una sección dedicada a facturación?».
             Registrar la factura de un proveedor —incluida la lectura desde
             foto— vive ahora en Facturación → Compras, que es esa sección.
-            Acá se lee el neto de cada propietario, no se crean documentos. */}
+            Aquí se lee el neto de cada propietario, no se crean documentos. */}
       {/* Giros a propietarios (Nico, 22-10-2026): Liquidaciones es el PASO 1 de la misma tarea que
           Dispersiones y los lotes al banco. Un encabezado para los cuatro pasos y el riel que los ordena. */}
       <EncabezadoDePantalla
@@ -540,7 +545,8 @@ function TesoreriaContent() {
                         {/* Al cambiar de mes, las cifras cuentan desde las del
                             mes anterior (`AnimatedNumber`). */}
                         <span className={cn('shrink-0 whitespace-nowrap font-mono tabular-nums', row.tone)} data-testid="tesoreria-cifra-del-paso">
-                          {row.sign}
+                          {/* «− $ 770.000», con espacio (VOZ-Y-TONO §4). */}
+                          {row.sign ? `${row.sign} ` : ''}
                           <AnimatedNumber value={row.value} format={formatCurrency} />
                         </span>
                       </div>
@@ -728,12 +734,12 @@ function TesoreriaContent() {
                           <TableCell className="font-medium text-fg">{p.propietarioName}</TableCell>
                           <TableCell className="whitespace-nowrap font-mono tabular-nums">{formatCurrency(p.totalCollected)}</TableCell>
                           <TableCell className="whitespace-nowrap font-mono tabular-nums text-danger">
-                            −{formatCurrency(p.totalCommission)}
+                            − {formatCurrency(p.totalCommission)}
                             {/* El IVA de la comisión debajo, no en una columna
                                 más: la tabla ya no cabía a lo ancho (21-09). */}
                             {(p.totalIvaComision ?? 0) > 0 && (
                               <span className="block text-caption" data-testid="tesoreria-iva-fila">
-                                {t(k('colIva'))} −{formatCurrency(p.totalIvaComision ?? 0)}
+                                {t(k('colIva'))} − {formatCurrency(p.totalIvaComision ?? 0)}
                               </span>
                             )}
                             {(p.totalRetencionesComision ?? 0) > 0 && (

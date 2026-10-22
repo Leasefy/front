@@ -224,6 +224,6 @@ describe('<ProrrogaDelContrato> (D5)', () => {
     await montar();
     expect($('no-se-prorroga-casilla')).toBeNull();
     expect($('no-se-prorroga')!.querySelector('input')).toBeNull();
-    expect($('no-se-prorroga')!.textContent).toContain('no se puede cambiar desde acá');
+    expect($('no-se-prorroga')!.textContent).toContain('no se puede cambiar desde aquí');
   });
 });

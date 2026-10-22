@@ -39,7 +39,7 @@ export default function RecaudoBancarioPage() {
                       lo que recaudó.
                     </p>
                     <p>
-                      Ese archivo se importa acá y cada línea se cruza de la regla más estricta a la más
+                      Ese archivo se importa aquí y cada línea se cruza de la regla más estricta a la más
                       laxa: primero la referencia del contrato, después la cédula de un inquilino con un
                       solo contrato con deuda. Nunca por el nombre.
                     </p>

@@ -167,7 +167,7 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
             <EmptyState
               icon={User}
               title="No hay postulaciones aprobadas esperando contrato"
-              description="Cuando apruebes a un candidato, aparece acá para armarle el contrato."
+              description="Cuando apruebes a un candidato, aparece aquí para armarle el contrato."
               action={{ label: 'Ver postulaciones', href: '/panel/inmobiliaria/postulaciones' }}
             />
           ) : (

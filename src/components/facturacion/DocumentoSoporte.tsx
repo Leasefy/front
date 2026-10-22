@@ -422,7 +422,7 @@ export function DocumentoSoporte() {
           Emitir un documento soporte se hace cuando le pagas a un técnico que
           no factura: es un evento, no un filtro. Cuatro campos debajo de la
           tabla se leen como los filtros de la tabla — pasó con la resolución,
-          y acá tenía la misma forma. */}
+          y aquí tenía la misma forma. */}
       <section
         className="overflow-x-clip rounded-lg border border-border bg-surface"
         data-testid="documento-soporte-tarjeta"

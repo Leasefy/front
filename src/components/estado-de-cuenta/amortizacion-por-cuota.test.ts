@@ -15,7 +15,7 @@ const anterior = (mes: string) =>
 const abono = (cuotaId: string, valorNeto: number) => fila({ estado: 'CANCELADA', valorNeto, parcial: true, cuotaId });
 
 describe('la amortización cuenta cuotas, no filas', () => {
-  it('el contrato de Iván: 12 cuotas, 3 pagadas acá con varios recibos y 9 del sistema anterior', () => {
+  it('el contrato de Iván: 12 cuotas, 3 pagadas aquí con varios recibos y 9 del sistema anterior', () => {
     const c = contrato({
       secciones: {
         arriendos: [

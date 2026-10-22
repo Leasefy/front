@@ -371,7 +371,7 @@ export function PlanDeCuentas({
           sus tres botones seguía pintado ARRIBA de «Así va a quedar»: dos
           estados contradictorios en la misma pantalla (auditoría 2026-09-05).
           La siembra es la excepción y por eso NO está en la condición: su
-          botón muestra el «Cargando…» acá mismo. */}
+          botón muestra el «Cargando…» aquí mismo. */}
       {!hayCuentas && !falloDeCarga && !importando && !formulario ? (
         <SinPlan
           sembrando={sembrando}

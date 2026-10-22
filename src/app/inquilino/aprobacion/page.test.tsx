@@ -280,7 +280,7 @@ describe('sin estudio — enseña el camino antes de pedir datos', () => {
     expect(t).toContain('El propietario decide')
   })
 
-  it('sin order (nunca se consultó) también cae acá', () => {
+  it('sin order (nunca se consultó) también cae aquí', () => {
     montar(null)
     render()
     expect(texto()).toContain('Todavía no tienes una aprobación')

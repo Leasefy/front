@@ -46,7 +46,7 @@ function InquilinoSinFirmar() {
         icon={<HourglassMedium className="h-5 w-5" weight="duotone" />}
       >
         Primero firma el inquilino y después tú, como arrendador: tu firma es la que cierra el
-        contrato. Cuando él firme, podrás firmar desde acá.
+        contrato. Cuando él firme, podrás firmar desde aquí.
       </AlertaAccionable>
       <Button
         disabled
@@ -213,7 +213,7 @@ function FirmarContratoContent() {
           <div>
             <h2 className="text-xl font-semibold tracking-tight text-success">Contrato firmado</h2>
             {/*
-              🔴 Acá decía «El inquilino ya fue notificado para que firme
+              🔴 Aquí decía «El inquilino ya fue notificado para que firme
               digitalmente». Es imposible: en este flujo la inmobiliaria firma
               ÚLTIMA. `signAsLandlord` (contracts.service.ts) rechaza con
               400 `INQUILINO_NO_HA_FIRMADO` si el inquilino no firmó antes, y al

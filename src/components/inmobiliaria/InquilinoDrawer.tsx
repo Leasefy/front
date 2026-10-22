@@ -759,7 +759,7 @@ export function CuerpoDelCajon({
           </div>
           {/* Escribirle sin salir de la ficha, por su CUENTA del portal. Sin
               cuenta no hay dónde escribirle, y se dice (I-22, Nico: la cuenta
-              se crea desde el contrato; acá no se invita). */}
+              se crea desde el contrato; aquí no se invita). */}
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             {/* GLOW UP (Nico, 21-10): el cajón es la vista rápida; la ficha completa, en pestañas. */}
             {!enFicha ? (
@@ -1107,7 +1107,7 @@ function BotonCopiar({ texto }: { texto: string }) {
 
   return (
     /* IconButton del DS: mismo tamaño (24 px) e ícono (14 px) que el <button>
-       a mano que había acá, pero con el anillo de foco y el `active:scale`
+       a mano que había aquí, pero con el anillo de foco y el `active:scale`
        de Cadence — el hecho a mano no tenía NINGÚN estilo de :focus-visible. */
     <IconButton
       variant="ghost"

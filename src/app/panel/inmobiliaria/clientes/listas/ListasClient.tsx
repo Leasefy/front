@@ -180,7 +180,7 @@ export function ListasClient() {
                 </p>
                 <p>
                   Los archivos los publican los organismos y cambian: se
-                  descargan de su sitio y se cargan acá. Sin ninguna lista
+                  descargan de su sitio y se cargan aquí. Sin ninguna lista
                   cargada no se bloquea a nadie —crear un tercero sigue
                   funcionando— pero todos quedan «sin verificar».
                 </p>

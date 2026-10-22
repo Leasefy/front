@@ -343,11 +343,11 @@ function DialogoDeCuenta({
               · la explicación estaba a DOS clics —abrir el diálogo de la
                 cuenta y después desplegarla— cuando sirve justo antes de
                 decidir si conectar ese portal, o sea en la tarjeta;
-              · y un modal encima de un modal no funciona, así que acá dentro
+              · y un modal encima de un modal no funciona, así que aquí dentro
                 no se podía aplicar la regla nueva (la explicación va detrás de
                 un botón que abre un modal, no plegada dentro de la pantalla).
 
-            Lo que sí quedó acá es `conexion.cuidado`, arriba, junto al campo
+            Lo que sí quedó aquí es `conexion.cuidado`, arriba, junto al campo
             que lo necesita: eso no es explicación, es una advertencia sobre el
             dato que la persona está escribiendo en este instante. */}
         <div className="space-y-1.5">
@@ -643,7 +643,7 @@ function DialogoDePublicar({
                     ) : null}
                   </ul>
                   <p className="text-xs text-fg-subtle">
-                    Complétalo en la ficha del inmueble y vuelve acá.
+                    Complétalo en la ficha del inmueble y vuelve aquí.
                   </p>
                 </div>
               )
@@ -827,7 +827,7 @@ function TarjetaDePortal({
           'Los avisos se publican y se bajan automático.'
         ) : (
           <>
-            Se publica con archivo: lo descargas de acá y lo subes en la página
+            Se publica con archivo: lo descargas de aquí y lo subes en la página
             del portal
             {p.cuenta.identificadorEnElPortal
               ? `, con el usuario ${p.cuenta.identificadorEnElPortal}`
@@ -950,7 +950,7 @@ const PASOS: PasoExplicado[] = [
     icono: DownloadSimple,
     titulo: 'Descarga el archivo y súbelo al portal',
     explicacion:
-      'Lo descargas de acá y lo cargas en la página del portal, con tu usuario. Este paso lo hace una persona.',
+      'Lo descargas de aquí y lo cargas en la página del portal, con tu usuario. Este paso lo hace una persona.',
     quien: 'tu',
     tuParte: 'usa «Descargar archivo» en la tarjeta del portal y súbelo en su página.',
   },
@@ -1129,7 +1129,7 @@ export function PortalesClient() {
         <ParaEntenderMas
           etiqueta="Cómo se publica un inmueble"
           titulo="Cómo se publica un inmueble"
-          descripcion="Cuatro pasos. Los dos últimos los hace una persona, y acá está por qué."
+          descripcion="Cuatro pasos. Los dos últimos los hace una persona, y aquí está por qué."
           variante="secundario"
           className="self-start shrink-0"
         >
@@ -1143,7 +1143,7 @@ export function PortalesClient() {
           <CardTitle className="text-base">Tus cuentas de portal</CardTitle>
           <p className="text-sm text-fg-muted">
             Nosotros no vendemos estas cuentas. Publicamos con las que tu inmobiliaria
-            ya tiene contratadas: acá sólo nos dices cuáles son.
+            ya tiene contratadas: aquí sólo nos dices cuáles son.
           </p>
         </CardHeader>
         <CardContent>
@@ -1219,7 +1219,7 @@ export function PortalesClient() {
                 <EmptyState
                   icon={CloudArrowUp}
                   title="Todavía no has publicado ningún inmueble"
-                  description="Usa «Publicar un inmueble» para elegir cuál y en qué portales. Acá vas a ver el estado de cada publicación y qué te falta hacer."
+                  description="Usa «Publicar un inmueble» para elegir cuál y en qué portales. Aquí vas a ver el estado de cada publicación y qué te falta hacer."
                 />
               }
             >

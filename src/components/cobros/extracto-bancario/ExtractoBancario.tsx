@@ -108,15 +108,15 @@ const VACIO_POR_PESTANA: Record<EstadoDelMovimientoBancario, { titulo: string; d
   PENDIENTE: {
     titulo: 'Nada pendiente de conciliar',
     descripcion:
-      'Carga el extracto del banco y acá aparecen las líneas con los cobros que se les parecen.',
+      'Carga el extracto del banco y aquí aparecen las líneas con los cobros que se les parecen.',
   },
   CONCILIADO: {
     titulo: 'Todavía no hay movimientos conciliados',
-    descripcion: 'Cuando concilies una línea del extracto, queda acá con su recibo.',
+    descripcion: 'Cuando concilies una línea del extracto, queda aquí con su recibo.',
   },
   IGNORADO: {
     titulo: 'No hay movimientos ignorados',
-    descripcion: 'Cuando ignores una línea del extracto, queda acá con su motivo.',
+    descripcion: 'Cuando ignores una línea del extracto, queda aquí con su motivo.',
   },
 };
 

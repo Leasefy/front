@@ -175,7 +175,7 @@ export function DocumentosDelContrato({
         >
           <p className="text-sm text-muted-foreground">
             {migrado
-              ? 'Sube el contrato firmado en papel y sus anexos (otrosíes, inventario, pagaré…) para tenerlos acá.'
+              ? 'Sube el contrato firmado en papel y sus anexos (otrosíes, inventario, pagaré…) para tenerlos aquí.'
               : 'Otrosíes, inventario, pagaré, póliza… súbelos y quedan guardados con el contrato.'}
           </p>
           {sePuedeSubir && (

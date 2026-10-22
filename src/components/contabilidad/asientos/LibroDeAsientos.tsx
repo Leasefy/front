@@ -205,7 +205,7 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
       {/* ── Filtros y tabla: UNA tarjeta ──────────────────────────────────
           🔴 20-09 · Eran dos, separadas por 24 px. Nico lo dijo de
           Facturación —«porque esto no está pegado a la tabla»— y valía igual
-          acá: al bajar por 1.094 asientos el filtro se va de pantalla y la
+          aquí: al bajar por 1.094 asientos el filtro se va de pantalla y la
           tabla queda sin decir de qué rango habla. */}
       <section
         className="overflow-x-clip rounded-lg border border-border bg-surface"

@@ -553,7 +553,7 @@ describe('CarteraCompleta', () => {
       reporte({
         contratosSinCuotas: 195,
         avisos: [
-          '195 contrato(s) vigente(s) todavía no tienen tabla de amortización: su deuda NO está sumada acá.',
+          '195 contrato(s) vigente(s) todavía no tienen tabla de amortización: su deuda NO está sumada aquí.',
           '5 cuota(s) no tienen agente responsable.',
         ],
       }),

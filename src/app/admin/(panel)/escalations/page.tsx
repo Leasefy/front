@@ -194,7 +194,7 @@ export default function EscalationsPage() {
           error={error}
           onReintentar={refetch}
           emptyTitle="No hay escalaciones"
-          emptyHint="Cuando un agente le pase un caso a una persona, aparece acá."
+          emptyHint="Cuando un agente le pase un caso a una persona, aparece aquí."
           aria-label="Escalaciones"
           onRowClick={(r) => router.push(`/admin/escalations/${r.id}`)}
           queSon={['escalación', 'escalaciones']}

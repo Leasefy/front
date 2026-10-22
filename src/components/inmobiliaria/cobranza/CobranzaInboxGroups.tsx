@@ -290,7 +290,7 @@ export function InboxItemCard({
         </Button>
 
         {/*
-          Acá vivía «Aprobar respuesta sugerida», deshabilitado. Se quitó: el
+          Aquí vivía «Aprobar respuesta sugerida», deshabilitado. Se quitó: el
           hilo NO trae ninguna respuesta sugerida —el contrato del inbox no
           tiene ese campo— así que el botón prometía revisar algo que no
           existe. Cuando el agente empiece a proponer respuestas, vuelve.

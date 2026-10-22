@@ -162,7 +162,7 @@ export default async function RootLayout({
             </WishlistProvider>
           </AuthProvider>
           {/* Toaster ÚNICO de toda la app (DESIGN.md §Toaster: position="top-right").
-              Vive acá, fuera de AuthProvider y de todo guard, por dos razones:
+              Vive aquí, fuera de AuthProvider y de todo guard, por dos razones:
               1. Antes se montaba sólo en 4 layouts (panel/inmobiliaria, panel/(landlord),
                  inquilino, onboarding), así que cada toast disparado desde el resto del
                  árbol — /auth/mfa-verify, /avaluo, /propiedades, la landing y el propio
@@ -174,7 +174,7 @@ export default async function RootLayout({
               Si agregas otro en un layout, los toasts se duplican. */}
           <Toaster position="top-right" />
           {/* La franja de «Leasefy no está respondiendo» / «Estás sin internet»
-              (01-10-2026). Va acá, junto al Toaster y fuera de todo guard, por
+              (01-10-2026). Va aquí, junto al Toaster y fuera de todo guard, por
               la misma razón: tiene que verse aunque un guard esté resolviendo
               o no deje pasar. Una sola en toda la app; no la montes en un
               layout. Ver src/lib/conexion/estado-de-conexion.ts. */}

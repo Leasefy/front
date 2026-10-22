@@ -530,7 +530,7 @@ export function DispersionDetail({
    */
   const ayudaDelPie = ofreceLote ? (
     <p className="text-caption text-muted-foreground" data-testid="dispersion-por-lote">
-      {tr("Tu inmobiliaria aprueba y gira las dispersiones por lote, con código: esta se aprueba en Lotes, no desde acá.")}
+      {tr("Tu inmobiliaria aprueba y gira las dispersiones por lote, con código: esta se aprueba en Lotes, no desde aquí.")}
     </p>
   ) : conReferencia && esQuienAprobo ? (
     <p
@@ -1012,7 +1012,7 @@ export function DispersionDetail({
         )}
 
         {/* Por lote: el único camino que el back acepta. Reemplaza a Aprobar,
-            Marcar girada y Reintentar, que acá darían 409. */}
+            Marcar girada y Reintentar, que aquí darían 409. */}
         {ofreceLote && (
           <Button asChild hideArrow className="gap-2">
             <Link href={rutaDeLotesDelMes(dispersion.month)} data-testid="dispersion-ir-a-lotes">

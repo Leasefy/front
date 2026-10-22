@@ -174,7 +174,7 @@ export function PendientesDeAplicarPanel() {
              del encabezado, y sin pendientes ESO era la pantalla entera: el
              mismo texto dos veces.
              Un vacío tiene que decir tres cosas que el intro no dice: que está
-             bien que esté vacío, qué haría aparecer algo acá, y que no hay nada
+             bien que esté vacío, qué haría aparecer algo aquí, y que no hay nada
              que hacer. */
           <div
             className="rounded-lg border border-border bg-surface p-5"
@@ -185,7 +185,7 @@ export function PendientesDeAplicarPanel() {
               icono={Hourglass}
               ilustracion="escudo"
               titulo="No hay nada pendiente, y está bien"
-              descripcion="Toda la plata que entró ya se aplicó o se devolvió. Acá va a aparecer una fila el día que una aseguradora pague más de lo que un inquilino tiene vencido."
+              descripcion="Toda la plata que entró ya se aplicó o se devolvió. Aquí va a aparecer una fila el día que una aseguradora pague más de lo que un inquilino tiene vencido."
             />
           </div>
         }
@@ -203,7 +203,7 @@ export function PendientesDeAplicarPanel() {
           <>
             {/* 🔴 El título era «Pendiente de aplicar», el MISMO de la página
                 dos renglones arriba. Un bloque no se llama igual que la
-                pantalla que lo contiene: acá lo que hace falta decir es
+                pantalla que lo contiene: aquí lo que hace falta decir es
                 cuántos son y cuánto se puede mover hoy. */}
             <p className="text-sm text-fg-muted" data-testid="cuanto-se-puede-aplicar">
               {datos.aplicables.length}{' '}

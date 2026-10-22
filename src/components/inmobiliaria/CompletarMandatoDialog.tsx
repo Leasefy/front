@@ -330,11 +330,11 @@ export function CompletarMandatoDialog({ inmueble, ...resto }: CompletarMandatoD
           respire: en `max-w-lg` elegir un dueño era «súper dificultoso»
           (Nico, 2026-09-03). */}
   {/* 🔴 `DialogContent` reparte a sus hijos DIRECTOS en cabecera / cuerpo / pie
-      (`repartirHijos` en `ui/dialog.tsx`). Si acá se interpone un componente,
+      (`repartirHijos` en `ui/dialog.tsx`). Si aquí se interpone un componente,
       el `DialogHeader` deja de verse como cabecera: cae al cuerpo —título
       chico, con el padding del cuerpo— y encima el Content pinta SU aspa
       creyendo que la cabecera no trae ninguna, así que salen DOS. Por eso el
-      `DialogContent` vive adentro del cuerpo y no acá. */}
+      `DialogContent` vive adentro del cuerpo y no aquí. */}
       {ultimo && <CuerpoDelMandato inmueble={ultimo} {...resto} />}
     </Dialog>
   );

@@ -285,7 +285,7 @@ function PqrsContent() {
         </div>
 
         {/* El vacío vive dentro del <TableBody> para que se sigan viendo los
-            encabezados. Acá sólo carga y fallo. */}
+            encabezados. Aquí sólo carga y fallo. */}
         <EstadoDeDatos
           cargando={isLoading}
           error={error}

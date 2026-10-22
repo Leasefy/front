@@ -1537,7 +1537,7 @@ export function ConfigPerfilAgencia({
 
       {/* Cobros y mora — Agency.motorDeCobrosV2 / Agency.diasDePlazo.
           Prender el motor cambia lo que se le cobra a un inquilino real: por
-          eso es un switch explícito acá y no un default. */}
+          eso es un switch explícito aquí y no un default. */}
       <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader icon={Receipt} title="Cobros y mora" />
 
@@ -1669,7 +1669,7 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label="Techo legal del interés de mora (% efectivo anual)"
                 error={errors.topeInteresMoraEaPorcentaje}
-                hint="La usura vigente, que certifica la Superfinanciera cada mes. Ninguna regla de interés va a poder pasarse de acá. Vacío = sin validar."
+                hint="La usura vigente, que certifica la Superfinanciera cada mes. Ninguna regla de interés va a poder pasarse de aquí. Vacío = sin validar."
                 campo="topeInteresMoraEaPorcentaje"
               >
                 <Input
@@ -1742,7 +1742,7 @@ export function ConfigPerfilAgencia({
 
       {/* Dispersiones — Agency.dispersionExigePin / dispersionMontoDobleAprobacion.
           El código lo recibe por correo OTRA persona con permiso sobre
-          dispersiones (lotes.service.ts): acá sólo se decide cuándo se pide. */}
+          dispersiones (lotes.service.ts): aquí sólo se decide cuándo se pide. */}
       <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader icon={Bank} title="Dispersiones" />
 
@@ -2000,9 +2000,9 @@ export function ConfigPerfilAgencia({
             cobra — `null` = sin declarar, NO es «no»).
             `responsableIva` YA tiene un control dedicado en Configuración →
             Mandato (`SeccionMandato.tsx`, `IvaDeLaComision`), con el mismo patrón
-            de tres botones explícitos: acá se muestra de sólo lectura para no
+            de tres botones explícitos: aquí se muestra de sólo lectura para no
             abrir un segundo camino de escritura sobre el mismo campo. Los tres
-            `agenteRetenedor*` SÍ son nuevos acá — hoy no tienen ningún control en
+            `agenteRetenedor*` SÍ son nuevos aquí — hoy no tienen ningún control en
             el resto del panel, aunque el DTO y el schema del back ya los aceptan. */}
         <div className="space-y-4 pt-4 border-t border-border">
           <div className="space-y-1.5">

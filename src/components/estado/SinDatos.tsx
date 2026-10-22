@@ -103,7 +103,7 @@ export function SinDatos({
    */
   const descripcionFinal = hayFiltros
     ? `No hay ${queSon} que coincidan con lo que buscaste. Prueba con otra búsqueda o quita los filtros.`
-    : (descripcion ?? `Lo que agregues aparece acá.`)
+    : (descripcion ?? `Lo que agregues aparece aquí.`)
 
   return (
     // Entra con `Appear` de Cadence salvo dentro de un `EstadoDeDatos` que ya lo anima.

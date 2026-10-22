@@ -541,7 +541,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
             descripcion={
               vista === 'ventas'
                 ? 'Las que corresponde emitir están en «Por facturar»: ahí se calculan y se emiten.'
-                : 'Una nota crédito aparece acá cuando anulas o acreditas una factura ya emitida; una nota débito, cuando le cobras de más. La factura no se borra: quedan los dos documentos.'
+                : 'Una nota crédito aparece aquí cuando anulas o acreditas una factura ya emitida; una nota débito, cuando le cobras de más. La factura no se borra: quedan los dos documentos.'
             }
           />
         }
@@ -813,7 +813,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                       </span>
                     )}
                     {/* 🔴 Una nota GENERADA (al anular un cobro con factura) se
-                        emite desde acá (Q6, 03-10): antes quedaba sin número
+                        emite desde aquí (Q6, 03-10): antes quedaba sin número
                         para siempre. */}
                     {(nota.estado === 'GENERADA' || nota.numero === null) && (
                       <Button

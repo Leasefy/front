@@ -93,7 +93,7 @@ export function InsightsAssumptionTable({
                   queSon="supuestos"
                   icono={ListChecks}
                   titulo={t('inmobiliaria.ai.cotizador.insights.assumptions.empty')}
-                  descripcion="Cuando el modelo registre un supuesto sobre una aseguradora, aparece acá con su estado."
+                  descripcion="Cuando el modelo registre un supuesto sobre una aseguradora, aparece aquí con su estado."
                 />
               </TableCell>
             </TableRow>

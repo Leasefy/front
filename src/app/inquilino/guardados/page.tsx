@@ -115,7 +115,7 @@ export default function GuardadosPage() {
 
         {/* Content
 
-            Acá el vacío son TRES cosas distintas, y hay cómo saber cuál es
+            Aquí el vacío son TRES cosas distintas, y hay cómo saber cuál es
             porque la lista de guardados es local (localStorage) y los inmuebles
             vienen del backend:
 
@@ -167,7 +167,7 @@ export default function GuardadosPage() {
                     ? 'Se arrendaron o las quitaron del catálogo. Busca otras y vuelve a guardar las que te sirvan.'
                     : 'They were rented or removed from the catalog. Browse others and save the ones you like.'
                   : locale === 'es'
-                    ? 'Toca el corazón en las propiedades que te interesen y las encuentras acá para compararlas.'
+                    ? 'Toca el corazón en las propiedades que te interesen y las encuentras aquí para compararlas.'
                     : 'Tap the heart on the properties you like and find them here to compare them.'
               }
               action={{

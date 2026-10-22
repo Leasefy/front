@@ -329,7 +329,7 @@ function Cuadre({ datos }: { datos: Respuesta }) {
                 definicion={
                   datos.propioRetenidoCop !== undefined
                     ? 'Comisión + su IVA − retenciones de los meses ya cobrados, más los intereses y gastos de cobranza que se trasladan: la misma cuenta del traslado. Se resta de la plata de terceros.'
-                    : 'NO entra en la identidad: es plata tuya. Está acá porque es la explicación más común de una diferencia a favor.'
+                    : 'NO entra en la identidad: es plata tuya. Está aquí porque es la explicación más común de una diferencia a favor.'
                 }
                 pie={
                   datos.comisionTrasladadaCop > 0 ? (

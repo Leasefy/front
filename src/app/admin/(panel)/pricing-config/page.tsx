@@ -283,7 +283,7 @@ export default function PricingConfigPage() {
         error={error}
         onReintentar={refetch}
         emptyTitle="Ninguna inmobiliaria en la cobranza por voz"
-        emptyHint="Cuando una se conecte a Mori, su tarifa aparece acá."
+        emptyHint="Cuando una se conecte a Mori, su tarifa aparece aquí."
         aria-label="Precios de la cobranza por voz"
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar inmobiliaria"

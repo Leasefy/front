@@ -336,7 +336,7 @@ export function DeterioroDeCarteraPanel() {
             <section className="space-y-3">
               <TituloDeBloque
                 titulo="Provisión por edades"
-                explicacion="El porcentaje de cada tramo es una SUGERENCIA del sistema; el que manda es el que dejes acá. La provisión se recalcula mientras escribes: lo que se guarda son los porcentajes, no los pesos."
+                explicacion="El porcentaje de cada tramo es una SUGERENCIA del sistema; el que manda es el que dejes aquí. La provisión se recalcula mientras escribes: lo que se guarda son los porcentajes, no los pesos."
               />
               <div className="overflow-hidden rounded-lg border border-border">
                 <div className="overflow-x-auto">
@@ -465,7 +465,7 @@ export function DeterioroDeCarteraPanel() {
               </Button>
               {cambiado ? (
                 <span className="text-caption text-warning" data-testid="hay-cambios-sin-guardar">
-                  Cambiaste porcentajes y todavía no los propusiste: lo que se ve acá no es lo que
+                  Cambiaste porcentajes y todavía no los propusiste: lo que se ve aquí no es lo que
                   está guardado.
                 </span>
               ) : null}

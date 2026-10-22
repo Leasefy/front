@@ -152,7 +152,7 @@ export default function RegistrationProfilesPage() {
 
       {/* Endpoint-pending notice (backend not shipped yet) */}
       {notReady && (
-        <Alert variant="warning" title="Todavía no se puede cambiar desde acá">
+        <Alert variant="warning" title="Todavía no se puede cambiar desde aquí">
           El servidor no tiene esta función (falta <code className="font-mono">GET /registration-profiles</code>). Se
           muestran los tres perfiles encendidos, como están por defecto, y los interruptores quedan apagados.
         </Alert>

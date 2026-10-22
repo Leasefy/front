@@ -220,7 +220,7 @@ export function DocumentReviewQueueView({
             <TableBodyAnimado>
               {filas.length === 0 ? (
                 /* Sin filtros en esta pantalla: acá el vacío es siempre «todavía no
-                   llegó nada», nunca «filtraste mal». Y no se crea desde acá — los
+                   llegó nada», nunca «filtraste mal». Y no se crea desde aquí — los
                    soportes los sube quien se postula—, así que la salida útil es ir a
                    ver las postulaciones. */
                 <TableRowAnimada key="vacio">
@@ -229,7 +229,7 @@ export function DocumentReviewQueueView({
                       queSon="soportes por revisar"
                       icono={FolderOpen}
                       titulo="No hay soportes por revisar"
-                      descripcion="No hay nada que revisar hasta que alguien se postule y adjunte sus papeles. Lo que se le pide a cada perfil lo defines en la pestaña «Requisitos»; apenas alguien mande los suyos, la cola aparece acá."
+                      descripcion="No hay nada que revisar hasta que alguien se postule y adjunte sus papeles. Lo que se le pide a cada perfil lo defines en la pestaña «Requisitos»; apenas alguien mande los suyos, la cola aparece aquí."
                       accion={
                         <Button asChild variant="outline">
                           <Link href="/panel/inmobiliaria/postulaciones">Ver postulaciones</Link>

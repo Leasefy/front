@@ -64,7 +64,7 @@ export default function NovedadesPage() {
           <h2 className="text-base font-semibold mb-4">Resumen mensual</h2>
           {digests.length === 0 ? (
             <p className="text-sm text-fg-muted">
-              Todavía no hay resúmenes. Cuando cierre el mes vas a recibir uno acá con tu recaudo,
+              Todavía no hay resúmenes. Cuando cierre el mes vas a recibir uno aquí con tu recaudo,
               ocupación y novedades.
             </p>
           ) : (

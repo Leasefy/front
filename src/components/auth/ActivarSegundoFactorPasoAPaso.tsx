@@ -521,7 +521,7 @@ export function ActivarSegundoFactorPasoAPaso({
         {paso === 'codigo' ? (
           <div className="space-y-5" aria-busy={verificando} data-testid="paso-codigo">
             <p className="text-pretty text-body-sm text-fg-muted">
-              En la app ya aparece tu cuenta nueva con un código de seis dígitos. Escríbelo acá: al
+              En la app ya aparece tu cuenta nueva con un código de seis dígitos. Escríbelo aquí: al
               completar el sexto dígito se revisa solo.
             </p>
             <CasillasDeCodigo

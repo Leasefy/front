@@ -46,7 +46,7 @@ const ROOT = 'inmobiliaria.ai.mantenimiento'
 // —`ignoreBuildErrors` está en true— ni lo veía el CI; sólo aparece al correr
 // `tsc` después de compilar en local.
 const MOTIVO_SOLO_LECTURA =
-  'Desde acá el ticket sólo se mira: el agente todavía no expone una ruta para asignar, ' +
+  'Desde aquí el ticket sólo se mira: el agente todavía no expone una ruta para asignar, ' +
   'pedir información, escalar ni cerrar. Para operar de verdad usa la pestaña Mantenimiento.'
 
 /**
@@ -122,7 +122,7 @@ export default function MantenimientoTicketDetailPage() {
     <div className="p-6 lg:p-8">
       {/* La ficha necesita una salida propia: el breadcrumb inline del layout
           viejo («Agentes AI › Mantenimiento») ya no existe y la pestaña
-          «Tickets» es exacta, así que desde acá nada más volvía a la lista. */}
+          «Tickets» es exacta, así que desde aquí nada más volvía a la lista. */}
       {volver}
       <TicketDetail
         detail={data}

@@ -183,7 +183,7 @@ export default function SolicitudesPage() {
   const sinRadicar = disponible === false;
   const motivoSinRadicar =
     locale === 'es'
-      ? 'Para radicar desde acá necesitas un contrato vigente con tu inmobiliaria: escríbele a tu inmobiliaria.'
+      ? 'Para radicar desde aquí necesitas un contrato vigente con tu inmobiliaria: escríbele a tu inmobiliaria.'
       : 'To submit a request here you need an active lease with your property manager: write to them.';
   const [modalOpen, setModalOpen] = useState(false);
   /*

@@ -146,7 +146,7 @@ export default function ApprovalsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Aprobaciones"
-        description="Toda decisión de un agente con efecto legal pasa por acá antes de ejecutarse (sentencia T-323 de 2024). Toca una para revisarla y decidir."
+        description="Toda decisión de un agente con efecto legal pasa por aquí antes de ejecutarse (sentencia T-323 de 2024). Toca una para revisarla y decidir."
       />
 
       <FranjaDeCifras fila="lg" aria-label="Cifras de la cola">
@@ -162,7 +162,7 @@ export default function ApprovalsPage() {
         error={error}
         onReintentar={refetch}
         emptyTitle="No hay decisiones esperando"
-        emptyHint="Cuando un agente proponga algo con efecto legal, aparece acá para que alguien lo apruebe."
+        emptyHint="Cuando un agente proponga algo con efecto legal, aparece aquí para que alguien lo apruebe."
         emptyIcon={<SealCheck weight="bold" />}
         aria-label="Cola de aprobaciones"
         onRowClick={(r) => router.push(`/admin/approvals/${r.id}`)}

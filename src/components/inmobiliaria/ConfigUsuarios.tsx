@@ -370,7 +370,7 @@ export function ConfigUsuarios({
   return (
     <div className="space-y-6">
       {/* Cuántos son, y la única puerta para sumar a alguien. El título de la
-          sección lo pone el marco de Configuración: acá repetirlo sobraba. */}
+          sección lo pone el marco de Configuración: aquí repetirlo sobraba. */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <p className="text-sm text-fg-muted">
           {t('inmobiliaria.config.users.userCount', { total: userCounts.total, active: userCounts.active, invited: userCounts.invited })}

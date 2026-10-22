@@ -86,7 +86,7 @@ export function TerminosContenido() {
                   Cuando alguien actúa como consumidor, se aplica el Estatuto del
                   Consumidor (Ley 1480 de 2011) y{" "}
                   <strong className="text-foreground/90">ninguna cláusula de estos términos limita los derechos que esa ley le reconoce</strong>.
-                  Si algo de acá dijera lo contrario, no produce efecto.
+                  Si algo de aquí dijera lo contrario, no produce efecto.
                 </p>
               </section>
 
@@ -592,7 +592,7 @@ export function TerminosContenido() {
                   25. Cambios a estos términos
                 </h2>
                 <p>
-                  Un cambio sustancial se publica acá con{" "}
+                  Un cambio sustancial se publica aquí con{" "}
                   <strong className="text-foreground/90">treinta (30) días</strong> de
                   anticipación y se avisa por correo. Si no estás de acuerdo, puedes
                   terminar sin penalidad antes de que entre a regir. Conservamos las

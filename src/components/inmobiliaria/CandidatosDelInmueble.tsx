@@ -143,7 +143,7 @@ export function CandidatosDelInmueble({
           queSon="candidatos"
           icono={Users}
           titulo="Esta consignación no tiene un inmueble asociado"
-          descripcion="Los candidatos se postulan a un inmueble: cuando le asocies uno, aparecen acá."
+          descripcion="Los candidatos se postulan a un inmueble: cuando le asocies uno, aparecen aquí."
           className="py-8"
         />
       )}
@@ -164,7 +164,7 @@ export function CandidatosDelInmueble({
       {ordenados !== null && ordenados.length > 0 && (
         <Stagger as="ul" className="divide-y divide-border">
           {/* Tres y el enlace: la lista completa vive en su pantalla, con
-              comparador y acciones. Repetirla acá sería tener dos. */}
+              comparador y acciones. Repetirla aquí sería tener dos. */}
           {ordenados.slice(0, CUANTOS_SE_MUESTRAN).map((c) => {
             const est = ESTADO[c.status] ?? ESTADO.SUBMITTED;
             return (

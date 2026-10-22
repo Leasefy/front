@@ -196,7 +196,7 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
       {/* 🔴 UNA SOLA COSA (Nico, 21-09): «eso del mes, switch tab y la tabla
           deberían ser una sola cosa… y así hay muchas tablas que tienen mes
           afuera, switch tab afuera».
-          Acá eran DOS bloques flotando: una tarjeta con el mes, la sede y las
+          Aquí eran DOS bloques flotando: una tarjeta con el mes, la sede y las
           casillas de comparación, y debajo las pestañas sueltas en el aire. Y
           las casillas estaban en el peor lugar posible: agregan COLUMNAS al
           árbol de cuentas, que vive 600 px más abajo, y se leían como un filtro
@@ -439,7 +439,7 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                 <section className="space-y-3" data-testid="comparacion-por-rubro">
                   <TituloDeBloque
                     titulo="Contra el presupuesto, por rubro"
-                    explicacion="El presupuesto se carga por rubro («nómina»), no por subcuenta. Repartirlo entre las cuentas de cada rubro daría un número inventado, así que la comparación va acá y no como una columna del árbol de arriba."
+                    explicacion="El presupuesto se carga por rubro («nómina»), no por subcuenta. Repartirlo entre las cuentas de cada rubro daría un número inventado, así que la comparación va aquí y no como una columna del árbol de arriba."
                   />
                   {motivoSinComparacionPorRubro(pyg) ? (
                     <Nota testId="sin-comparacion-por-rubro">

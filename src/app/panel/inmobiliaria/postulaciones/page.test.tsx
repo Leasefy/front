@@ -160,7 +160,7 @@ vi.mock('@/components/ui/responsive-dialog', () => {
 
 /* El explicador vive detrás de un botón y abre un modal del design system; su
    cadena de importes llega al `Dialog` real, que esta prueba dobla a medias.
-   Acá sólo interesa que el mapa NO esté puesto sobre la pantalla, así que el
+   Aquí sólo interesa que el mapa NO esté puesto sobre la pantalla, así que el
    doble pinta el botón y nada más. */
 vi.mock('@/components/ui/para-entender-mas', () => ({
   ParaEntenderMas: ({ etiqueta }: { etiqueta: string }) => (

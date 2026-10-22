@@ -516,7 +516,7 @@ export function RegistrosContables({
               onDejarDeContinuar={() => setContinuar(null)}
               onIrAlPuc={onIrAlPuc}
               /* El archivo de comprobantes metido en el libro diario tiene su
-                 puerta acá al lado: el aviso la abre en vez de nombrarla. */
+                 puerta aquí al lado: el aviso la abre en vez de nombrarla. */
               onIrAComprobantes={() => setCamino("documentos")}
               onIrASaldosIniciales={(archivo) => llevarA(archivo, "apertura")}
               archivoInicial={archivoPara("historico")}

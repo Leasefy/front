@@ -821,7 +821,7 @@ export function ConvenioDeRecaudoCajon({
               {error('codigo', 'El número que el banco le asignó. Está en el contrato del convenio.')}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="convenio-nombre">Cómo lo vas a llamar acá</Label>
+              <Label htmlFor="convenio-nombre">Cómo lo vas a llamar aquí</Label>
               <Input
                 id="convenio-nombre"
                 placeholder="Recaudo de arriendos"

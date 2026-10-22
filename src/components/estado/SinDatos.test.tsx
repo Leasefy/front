@@ -108,7 +108,7 @@ describe('<SinDatos>', () => {
     expect(container.textContent).not.toContain('Ningún solicitud')
 
     pintar({ queSon: 'solicitudes' })
-    expect(container.textContent).toContain('Lo que agregues aparece acá')
+    expect(container.textContent).toContain('Lo que agregues aparece aquí')
     expect(container.textContent).not.toContain('el primero')
   })
 

@@ -46,7 +46,7 @@ export default function PorDecidirPage() {
               icon={ClipboardText}
               ilustracion="escudo"
               title="No tienes nada por decidir"
-              description="Cuando tu inmobiliaria te pregunte algo —escoger un inquilino, revisar el canon, aprobar una reparación—, va a aparecer acá."
+              description="Cuando tu inmobiliaria te pregunte algo —escoger un inquilino, revisar el canon, aprobar una reparación—, va a aparecer aquí."
             />
           </section>
         )}

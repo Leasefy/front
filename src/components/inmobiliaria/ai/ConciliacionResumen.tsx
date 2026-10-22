@@ -172,7 +172,7 @@ export function HallazgosDelAgente({ data, colaHref }: HallazgosDelAgenteProps) 
             <p className="text-body-sm text-fg-muted">{frase}</p>
           ) : (
             <p className="text-body-sm text-fg-muted">
-              Nada pendiente de tu ojo. Cuando un movimiento no cierre contra un cobro, aparece acá.
+              Nada pendiente de tu ojo. Cuando un movimiento no cierre contra un cobro, aparece aquí.
             </p>
           )}
 

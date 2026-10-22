@@ -832,7 +832,7 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     ]);
   });
 
-  it('TODA sala de agente vive acá, y cada workspace registrado tiene acá su puerta', () => {
+  it('TODA sala de agente vive aquí, y cada workspace registrado tiene aquí su puerta', () => {
     const deAgentes = new Set(agentes.modulos.map((m) => m.href));
     const salas = pantallas.filter((p) => p.agente);
     for (const sala of salas) expect(deAgentes.has(sala.href), sala.href).toBe(true);

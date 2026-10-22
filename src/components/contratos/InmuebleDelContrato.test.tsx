@@ -166,7 +166,7 @@ describe('InmuebleDelContrato', () => {
     expect(timelineProps.ultimo?.titulo).toBe('Historial del inmueble')
   })
 
-  it('se edita desde acá: el inventario recibe el permiso y el contrato desde el que se abrió', async () => {
+  it('se edita desde aquí: el inventario recibe el permiso y el contrato desde el que se abrió', async () => {
     useConsignacionMock.mockReturnValue({ consignacion: CONSIGNACION, isLoading: false, error: null })
 
     await render({ contratoId: 'lease-9' })
@@ -182,7 +182,7 @@ describe('InmuebleDelContrato', () => {
     expect(container.querySelector('[data-testid="ver-el-inmueble"]')).toBeNull()
   })
 
-  it('quien no puede editar en el inmueble tampoco edita acá', async () => {
+  it('quien no puede editar en el inmueble tampoco edita aquí', async () => {
     useConsignacionMock.mockReturnValue({ consignacion: CONSIGNACION, isLoading: false, error: null })
     puedeEditarMock.mockReturnValue(false)
 

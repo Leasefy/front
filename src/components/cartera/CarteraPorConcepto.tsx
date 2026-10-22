@@ -607,7 +607,7 @@ const QUE_ES_ESTE_CAJON: Record<CajonDeLaCartera, string> = {
   POR_VENCER:
     'Deuda que todavía no vence. Es deuda, no cartera: no le corre interés y la cobranza no la toca.',
   VENCIDA_EN_PLAZO:
-    'Venció, pero los días de plazo del contrato siguen corriendo. Tampoco es cartera, y llamar a alguien acá es llamarlo por usar el plazo que la inmobiliaria misma le dio.',
+    'Venció, pero los días de plazo del contrato siguen corriendo. Tampoco es cartera, y llamar a alguien aquí es llamarlo por usar el plazo que la inmobiliaria misma le dio.',
   CARTERA:
     'Pasó el vencimiento MÁS el plazo del contrato. Es lo único que la cobranza puede perseguir, y lo único que genera interés de mora.',
 }
@@ -839,7 +839,7 @@ function FilasDelInquilino({
                 Ver todo lo que debe
               </DropdownListItem>
               <DropdownListItem onClick={onAlternar}>
-                {abierto ? 'Cerrar sus meses' : 'Ver sus meses acá'}
+                {abierto ? 'Cerrar sus meses' : 'Ver sus meses aquí'}
               </DropdownListItem>
               {href ? (
                 <DropdownListItem asChild>

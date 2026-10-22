@@ -241,7 +241,7 @@ describe('<CobranzaConfiguracionPage> — layout', () => {
     expect(byTestId('save-cadencia')).toBeFalsy()
   })
 
-  it('el acuerdo general no aparece acá, ni siquiera como puntero', () => {
+  it('el acuerdo general no aparece aquí, ni siquiera como puntero', () => {
     render()
     expect(byTestId('field-maxDiscountPct')).toBeFalsy()
     expect(byTestId('save-negociacion')).toBeFalsy()

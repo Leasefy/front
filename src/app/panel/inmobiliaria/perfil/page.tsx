@@ -881,7 +881,7 @@ export default function InmobiliariaPerfilPage() {
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
               {/* Lo que dice la copia canónica: hay 30 días para volver. Decir
-                  «irreversible» acá y «se recupera si inicias sesión» dos
+                  «irreversible» aquí y «se recupera si inicias sesión» dos
                   clics después es contarle dos cosas distintas a la misma
                   persona. */}
               <p className="text-sm text-fg-muted mb-4">{deletionCopy.recovery}</p>

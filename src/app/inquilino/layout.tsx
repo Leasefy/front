@@ -183,7 +183,7 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
-          <ProtectedRoute>: acá adentro se perdía todo toast emitido mientras el guard
+          <ProtectedRoute>: aquí adentro se perdía todo toast emitido mientras el guard
           resuelve. No montes otro: sonner duplica el toast por cada Toaster montado. */}
     </div>
   );

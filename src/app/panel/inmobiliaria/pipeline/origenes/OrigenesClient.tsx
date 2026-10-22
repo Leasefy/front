@@ -214,8 +214,8 @@ export function OrigenesClient() {
                   ) : null}
                   {peor ? (
                     <p>
-                      <strong>{peor.nombre}</strong> trajo {peor.leads} lead
-                      {peor.leads === 1 ? '' : 's'} y no cerró ninguno en este
+                      <strong>{peor.nombre}</strong> trajo {peor.leads} {peor.leads === 1 ? 'interesado' : 'interesados'}{' '}
+                      y no cerró ninguno en este
                       rango. Míralo antes de renovar esa cuenta.
                     </p>
                   ) : null}
@@ -328,7 +328,7 @@ export function OrigenesClient() {
                     {configuracion.datos?.horasParaResponderLead} horas
                   </KpiValor>
                 </strong>
-                . Pasado el plazo, el lead pasa al siguiente asesor del turno y
+                . Pasado el plazo, el interesado pasa al siguiente asesor del turno y
                 queda el registro de quién lo tenía.
               </p>
               <div className="flex flex-wrap items-end gap-3">

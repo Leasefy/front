@@ -343,9 +343,9 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
           <p className="text-sm text-fg-muted">
             Este archivo parece el de <span className="font-medium text-fg">contratos</span>: trae{' '}
             {senasDeContratos.slice(0, 3).map((s) => `«${s}»`).join(', ')}
-            {senasDeContratos.length > 3 ? '…' : ''}. Esas columnas no tienen campo acá porque un
+            {senasDeContratos.length > 3 ? '…' : ''}. Esas columnas no tienen campo aquí porque un
             inmueble no tiene inquilino ni fechas de contrato — las tiene el contrato, y se cargan en
-            el paso <span className="font-medium text-fg">Contratos</span>. Acá se usan sólo las del
+            el paso <span className="font-medium text-fg">Contratos</span>. Aquí se usan sólo las del
             inmueble: código, dirección, propietario, estrato, precio.
           </p>
         </div>

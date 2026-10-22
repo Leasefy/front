@@ -150,7 +150,7 @@ function ContractDocumentView({
         className="rounded-xl border border-border bg-surface p-6 text-sm text-muted-foreground"
         data-testid="contrato-sin-documento"
       >
-        Este contrato se firmó fuera de Leasefy y no tiene documento digital acá. Si necesitas una copia, pídesela a tu inmobiliaria.
+        Este contrato se firmó fuera de Leasefy y no tiene documento digital aquí. Si necesitas una copia, pídesela a tu inmobiliaria.
       </div>
     );
   }

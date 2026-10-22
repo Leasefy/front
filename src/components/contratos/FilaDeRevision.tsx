@@ -365,7 +365,7 @@ export function FilaDeRevision({
       <RepartoEntreDuenos reparto={fila.asociacion?.propietario?.reparto} />
 
       {/* T-0163: varios inquilinos = la factura se divide entre ellos. Lo deriva
-          el back; acá sólo se ve ANTES de activar. */}
+          el back; aquí sólo se ve ANTES de activar. */}
       <RepartoEntreInquilinos reparto={fila.asociacion?.inquilino?.repartoDeInquilinos} />
 
       {!consignada && !sinInmueble && editable ? (
@@ -380,7 +380,7 @@ export function FilaDeRevision({
           data-testid="activada-sin-propietario"
         >
           Este contrato ya está activo y no tiene propietario: no genera cobros
-          hasta que el inmueble quede consignado. Elígelo acá, o selecciona
+          hasta que el inmueble quede consignado. Elígelo aquí, o selecciona
           varias filas y usa «Mismo propietario».
         </p>
       ) : null}

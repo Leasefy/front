@@ -127,7 +127,7 @@ function AgenteDetailContent() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Miga de pan: la ficha cuelga de Configuración → Equipo (el marco de
-          Configuración se aparta acá, así que la ubicación la dice esta línea). */}
+          Configuración se aparta aquí, así que la ubicación la dice esta línea). */}
       <nav className="flex items-center gap-2 text-sm">
         <Link
           href="/panel/inmobiliaria/configuracion"

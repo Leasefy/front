@@ -362,7 +362,7 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
       )}
 
       {/* Varios dueños con su % (Nico, 2026-09-13): lo que va a quedar en el
-          mandato al activar, para verlo acá y no en la ficha después. */}
+          mandato al activar, para verlo aquí y no en la ficha después. */}
       {fila.datos.propietarios && fila.datos.propietarios.length >= 2 && (
         <ul className="space-y-0.5" data-testid="duenos-de-la-fila">
           <li className="text-xs text-fg-muted">{fila.datos.propietarios.length} propietarios</li>

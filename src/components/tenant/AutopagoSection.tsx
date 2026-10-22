@@ -469,7 +469,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
               <Lock className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
                 Los datos de tu tarjeta viajan directo a la pasarela de pagos. No pasan por
-                Leasefy ni quedan guardados acá: sólo guardamos los cuatro últimos dígitos para
+                Leasefy ni quedan guardados aquí: sólo guardamos los cuatro últimos dígitos para
                 que reconozcas tu medio.
               </span>
             </p>

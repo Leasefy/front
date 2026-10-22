@@ -349,7 +349,7 @@ describe('Volver — a donde se entró', () => {
 });
 
 describe('Nueva consignación', () => {
-  it('abre el asistente con este propietario ya elegido y vuelve acá al terminar', async () => {
+  it('abre el asistente con este propietario ya elegido y vuelve aquí al terminar', async () => {
     await render();
     await click('nueva-consignacion');
     expect(push).toHaveBeenCalledWith(

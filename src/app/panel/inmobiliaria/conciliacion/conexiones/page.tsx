@@ -335,7 +335,7 @@ function RegistrarConexion({
         ayuda={
           disabled
             ? 'El servicio de conexiones todavía no está activo en tu cuenta.'
-            : 'Nunca escribas acá la contraseña, el token ni la API key reales.'
+            : 'Nunca escribas aquí la contraseña, el token ni la API key reales.'
         }
       >
         <Button
@@ -537,7 +537,7 @@ function ConciliacionConexiones() {
           <div>
             <h2 className="text-body font-semibold text-fg">Conexiones registradas</h2>
             <p className="text-caption text-fg-muted">
-              De acá salen los movimientos que la conciliación atribuye a un origen.
+              De aquí salen los movimientos que la conciliación atribuye a un origen.
             </p>
           </div>
           <Button

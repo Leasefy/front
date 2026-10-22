@@ -105,7 +105,7 @@ export default function BanderasPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Banderas"
-        description="Qué agentes corren para cada inmobiliaria. Cada cambio pide un motivo y queda registrado. Además, cada agente tiene un interruptor general en el servidor: si está apagado allá, no corre para nadie aunque acá esté encendido."
+        description="Qué agentes corren para cada inmobiliaria. Cada cambio pide un motivo y queda registrado. Además, cada agente tiene un interruptor general en el servidor: si está apagado allá, no corre para nadie aunque aquí esté encendido."
       />
       <DataTable
         columns={columnas}

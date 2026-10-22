@@ -236,7 +236,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
           {/* Lo leído, uno por uno, con lo que le falta a cada uno. */}
           <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
             {/* Se dibuja desde el ESTADO, no desde lo que devolvió la lectura:
-                si no, escribir la dirección no se vería reflejado acá. */}
+                si no, escribir la dirección no se vería reflejado aquí. */}
             {state.properties.map((p) => {
               const falta = faltaDe(p);
               const leFaltaDireccion = falta.includes('dirección');
@@ -306,7 +306,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
 
                     {/* Los portales reservan la dirección. Es el único dato que
                         casi nunca viene, y sin él el inmueble no se importa —
-                        así que se escribe acá y no en un callejón sin salida.
+                        así que se escribe aquí y no en un callejón sin salida.
                         Sigue apareciendo cuando la dirección es aproximada: si
                         se escondiera al rellenarla con una referencia o el
                         municipio, quedaría incorregible. */}

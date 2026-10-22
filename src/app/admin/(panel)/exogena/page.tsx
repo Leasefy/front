@@ -183,7 +183,7 @@ export default function ExogenaAdminPage() {
             La base todavía no tiene las tablas de exógena de plataforma (migración{' '}
             <code className="font-mono">20260919001000_exogena_de_plataforma</code>). La aplica
             Víctor. Mientras tanto cada inmobiliaria usa el preset del código, marcado «pendiente de
-            confirmar», que es lo de hoy — y cargar un año acá responde 503.
+            confirmar», que es lo de hoy — y cargar un año aquí responde 503.
           </p>
         </Card>
       )}
@@ -357,7 +357,7 @@ export default function ExogenaAdminPage() {
       <Card className="p-5" data-testid="formulario-de-anio">
         <Eyebrow>Cargar / corregir el año</Eyebrow>
         <p className="text-caption text-fg-muted mt-2">
-          Esto <strong>no publica</strong>. Un año existente se sobrescribe con lo que haya acá.
+          Esto <strong>no publica</strong>. Un año existente se sobrescribe con lo que haya aquí.
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2 mt-4">

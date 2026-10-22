@@ -813,17 +813,17 @@ function ParaElContador({ incrustado = false }: { incrustado?: boolean } = {}) {
           🔴 20-09, segunda pasada (con la portada ABIERTA en el navegador):
           agrupar no alcanzaba, porque la portada tenía DOS navegaciones que se
           pisaban. «Deterioro de cartera», «Certificados de retención» y
-          «Exógena» estaban acá Y como tarjeta abajo, con el mismo nombre y el
-          mismo destino; «Presupuesto» estaba sólo acá y no tenía tarjeta. Dos
+          «Exógena» estaban aquí Y como tarjeta abajo, con el mismo nombre y el
+          mismo destino; «Presupuesto» estaba sólo aquí y no tenía tarjeta. Dos
           listas con solape parcial es peor que una lista larga: no hay forma
           de saber cuál manda, y quien no encuentra algo en una no sabe si
           buscarlo en la otra.
 
           La regla que las separa, y que el guardián de abajo sostiene:
           **acá van INFORMES —pestañas de una pantalla—, y en la grilla van
-          PANTALLAS.** Por eso cada grupo de acá es exactamente una pantalla
+          PANTALLAS.** Por eso cada grupo de aquí es exactamente una pantalla
           con sus pestañas: «El libro» son las cinco de `/reportes`, «Lo que se
-          firma» son las dos de `/estados-financieros`. Nada de acá vuelve a
+          firma» son las dos de `/estados-financieros`. Nada de aquí vuelve a
           aparecer abajo. */}
       {/* 🔴 22-09 · Una LISTA navegable, no una fila de enlaces sueltos: cada
           informe es un renglón entero que se puede tocar, con qué es en una
@@ -1480,7 +1480,7 @@ export function HubDeContabilidad() {
       </section>
 
       {/* El asiento de «Últimos asientos», en el mismo cajón del libro. Si se
-          reversa desde acá, la portada se vuelve a leer: cambió el libro. */}
+          reversa desde aquí, la portada se vuelve a leer: cambió el libro. */}
       <DetalleDeAsiento
         asiento={asientoAbierto}
         abierto={asientoAbierto !== null}

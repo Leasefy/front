@@ -189,7 +189,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
           {t('inmobiliaria.ai.cobranza.detail.compromisos.empty')}
         </p>
         <p className="text-caption text-fg-muted">
-          Acá aparecen las promesas de pago, los planes, los siniestros y las
+          Aquí aparecen las promesas de pago, los planes, los siniestros y las
           cartas del caso. Este todavía no tiene ninguno.
         </p>
       </div>

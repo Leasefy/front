@@ -218,7 +218,7 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, conFiltros,
           options={[
             { value: 'all', label: tx('Todos', 'All') },
             { value: 'migrado', label: tx('Migrados', 'Migrated') },
-            { value: 'nativo', label: tx('Creados acá', 'Created here') },
+            { value: 'nativo', label: tx('Creados aquí', 'Created here') },
           ]}
         />
         <Select value={filtros.estado} onValueChange={(v) => poner('estado', v as EstadoDeFiltro)}>

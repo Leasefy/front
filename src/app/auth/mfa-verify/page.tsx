@@ -544,7 +544,7 @@ export default function MfaVerifyPage() {
                     : sinLaApp
                       ? 'Si perdiste la app de autenticación o el celular donde la tenías, lo restableces con un código que te mandamos al correo.'
                       : inscribiendo
-                        ? 'Tu rol maneja la plata de propietarios e inquilinos, así que entrar con contraseña no alcanza. Actívalo acá una vez: son dos minutos.'
+                        ? 'Tu rol maneja la plata de propietarios e inquilinos, así que entrar con contraseña no alcanza. Actívalo aquí una vez: son dos minutos.'
                         : 'Abre tu app de autenticación y escribe el código de seis dígitos.'}
                 </p>
                 </CrossFade>
@@ -577,7 +577,7 @@ export default function MfaVerifyPage() {
 
               {/*
                 🔴 Sin factor inscrito NO se pide un código: no existe. Se
-                ofrece inscribirlo, acá mismo, porque Configuración → Seguridad
+                ofrece inscribirlo, aquí mismo, porque Configuración → Seguridad
                 está del otro lado del muro que esta pantalla levanta.
               */}
               <CrossFade swapKey={cuerpoDeLaTarjeta}>

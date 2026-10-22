@@ -117,7 +117,7 @@ export function AsignarAgente({
               </span>
               <p className="text-sm font-medium text-fg">No tienes asesores activos</p>
               <p className="mt-1 text-xs text-fg-muted">
-                Invita a alguien a tu equipo y después vuelve a asignarlo acá.
+                Invita a alguien a tu equipo y después vuelve a asignarlo aquí.
               </p>
               <Button asChild size="sm" className="mt-4" data-testid="asignar-agente-invitar">
                 <Link href="/panel/inmobiliaria/configuracion/equipo?invitar=1">Invitar a alguien</Link>

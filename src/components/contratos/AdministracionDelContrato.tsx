@@ -341,7 +341,7 @@ export function AdministracionDelContrato({
         />
         {/*
           QA-CONT C-07: UNA regla. La ficha decía «Se genera el 1… sin días de
-          plazo» arriba y «Día de pago · Día 5» acá. Manda el modo de cobro
+          plazo» arriba y «Día de pago · Día 5» aquí. Manda el modo de cobro
           (`regla-del-arriendo.ts` del back, 16-09): prorrateado vence el 1;
           fecha a fecha, el día de la cartera. El día del contrato, si es otro,
           se dice como lo que es: una referencia que no decide el vencimiento.
@@ -455,7 +455,7 @@ export function AdministracionDelContrato({
             <p className="text-caption text-foreground">
               El contrato dice <strong>{delContrato}%</strong> y la consignación{' '}
               <strong>{deConsignacion}%</strong>. Al propietario se le descuenta la
-              de la consignación. Corrige acá para dejar las dos iguales.
+              de la consignación. Corrige aquí para dejar las dos iguales.
             </p>
           </div>
         ) : null}
@@ -493,7 +493,7 @@ export function AdministracionDelContrato({
 
         {/*
           El propietario. Sus datos tributarios viven en SU ficha, no en el
-          contrato, así que acá sólo se muestran; se corrigen en la ficha del
+          contrato, así que aquí sólo se muestran; se corrigen en la ficha del
           propietario, donde cada chip es un control. Con varios dueños va una
           fila por dueño: dos copropietarios pueden ser uno responsable de IVA
           y el otro no.
@@ -529,7 +529,7 @@ export function AdministracionDelContrato({
           regimen.inquilinoRetenedorIva.valor == null ||
           regimen.inquilinoRetenedorIca.valor == null) ? (
           <p className="text-caption text-muted-foreground">
-            Lo que no aparece no se descuenta en el cobro. Se corrige acá y sale en el
+            Lo que no aparece no se descuenta en el cobro. Se corrige aquí y sale en el
             próximo.
           </p>
         ) : null}
@@ -1010,11 +1010,11 @@ function ayudaDelArrendador(contract: Contract): string {
     return `${base} Hoy lo decide este contrato.`
   }
   if (r.origen === 'PROPIETARIO') {
-    return `${base} Sin definir acá se hereda de la ficha del propietario, que hoy dice ${
+    return `${base} Sin definir aquí se hereda de la ficha del propietario, que hoy dice ${
       r.valor ? 'que SÍ es responsable de IVA' : 'que NO es responsable de IVA'
     }.`
   }
-  return `${base} Sin definir acá y sin el dato en la ficha del propietario, el cobro NO lleva IVA y lo deja dicho.`
+  return `${base} Sin definir aquí y sin el dato en la ficha del propietario, el cobro NO lleva IVA y lo deja dicho.`
 }
 
 /** Un sí / no / no se sabe. El vacío NO es «no»: es que nadie lo afirmó. */

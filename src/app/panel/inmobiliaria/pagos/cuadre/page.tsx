@@ -18,7 +18,7 @@ export default function CuadreDeTercerosPage() {
     <PageGuard module="dispersiones" action="view">
       <div className="space-y-6 p-6 lg:p-8">
         {/* La explicación va detrás de un botón, no puesta sobre la pantalla:
-            acá arriba lo que hace falta saber es qué se está mirando. */}
+            aquí arriba lo que hace falta saber es qué se está mirando. */}
         <header className="space-y-1.5">
           {/* GLOW UP: la misma sección que Traslados y Pendientes (la cara «Cuadrar la caja»). */}
           <SectionLabel>Tesorería</SectionLabel>

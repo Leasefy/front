@@ -632,7 +632,7 @@ describe('ContratosPage — los filtros', () => {
     expect(container.querySelector('[data-testid="conteo-filtrado"]')).toBeNull()
   })
 
-  it('migrados / creados acá', async () => {
+  it('migrados / creados aquí', async () => {
     withContracts(LISTA)
     await renderPage()
 

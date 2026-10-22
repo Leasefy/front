@@ -101,7 +101,7 @@ export function numeroDelCertificado(numero: string | number): string {
 /** Qué mide cada criterio, escrito. Va al lado del selector, no en un tooltip. */
 export const QUE_MIDE_EL_CRITERIO: Record<CriterioDeRetencion, string> = {
   CAUSADO:
-    'Entran las cuotas del año, se hayan pagado o no. Es lo que se alinea con cómo se factura acá: la factura del canon nace el día 1, así que hay abono en cuenta desde ese día (art. 392 del E.T.).',
+    'Entran las cuotas del año, se hayan pagado o no. Es lo que se alinea con cómo se factura aquí: la factura del canon nace el día 1, así que hay abono en cuenta desde ese día (art. 392 del E.T.).',
   PAGADO:
     'Entran sólo las cuotas SALDADAS, y el año es el del pago, no el del período. Es la lectura por caja.',
 };
@@ -360,7 +360,7 @@ export function CertificadoDeRetencionesPanel() {
       </div>
       <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">
         Al cerrar el año esto se hace SOLO para todos tus propietarios y queda disponible en su
-        portal. El botón está acá para el año que el cierre automático no alcanzó, o para la
+        portal. El botón está aquí para el año que el cierre automático no alcanzó, o para la
         historia que acabas de migrar: se salta a quien ya lo tiene, así que apretarlo dos veces no
         duplica ningún documento.
       </p>

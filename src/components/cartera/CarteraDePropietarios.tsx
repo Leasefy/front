@@ -348,7 +348,7 @@ export function CarteraDePropietarios() {
           generada, el back liquida con base CAUSADO (`liquidacionDelMes`): lo
           que el contrato causa en el mes, lo haya pagado el inquilino o no. Decía
           «sólo se le debe lo que el inquilino efectivamente pagó», que es la base
-          RECAUDADO. La base no se cambia acá —la decide Nico—; se dice la verdad.
+          RECAUDADO. La base no se cambia aquí —la decide Nico—; se dice la verdad.
           Convención compartida: «Canon causado» con CAUSADO, «Canon recaudado»
           sólo con RECAUDADO.
         */}

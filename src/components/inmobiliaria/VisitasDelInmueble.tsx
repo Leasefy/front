@@ -531,7 +531,7 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
               <div className="rounded-lg border border-dashed border-border p-5 text-center">
                 <p className="text-body-sm text-fg-muted">
                   Esta modalidad todavía no tiene horarios, así que no se puede
-                  reservar por acá.
+                  reservar por aquí.
                 </p>
                 <Button
                   variant="outline"

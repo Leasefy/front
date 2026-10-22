@@ -683,7 +683,7 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
 
         {/* Sin marca de «IA» en el resumen, a propósito (22-09, medido en la
             vitrina): un punto azul se confundía con la cabecera azul de «estás
-            acá», y la píldora «IA» + el contador cortaban «Captación y
+            aquí», y la píldora «IA» + el contador cortaban «Captación y
             arriendo» en «Captación y arrie…». El contador es lo que no se
             puede perder al plegar; la IA se ve al abrir. */}
         {mostrarResumen && pendientes > 0 && (
@@ -952,7 +952,7 @@ export function SidebarContent({
     <ResalteConFundido.Provider value={resalteConFundido}>
     <div className="flex flex-col h-full bg-bg relative">
       {/* Header — cadence §Navigation workspace switcher (expanded) or the
-          brand mark on the collapsed rail. El botón de plegar vive acá (Nico,
+          brand mark on the collapsed rail. El botón de plegar vive aquí (Nico,
           02-10-2026): abierta, a la derecha del logo; plegada, debajo del
           símbolo, a la vista para volver a abrirla. Antes era una media luna
           de 24 px pegada al borde entre la barra y el contenido. */}
@@ -1007,7 +1007,7 @@ export function SidebarContent({
           transition={FUNDIDO_DE_LA_BARRA}
         >
           {/* Del ancho del logo y no de la fila (`mr-auto`, no `flex-1`): en
-              el cajón del celular el foco cae acá al abrir, y con la fila
+              el cajón del celular el foco cae aquí al abrir, y con la fila
               entera el anillo pasaba por debajo de la ✕. */}
           <Link
             ref={refDelInicio}

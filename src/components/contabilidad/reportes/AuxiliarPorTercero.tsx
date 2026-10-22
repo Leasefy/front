@@ -198,7 +198,7 @@ export function AuxiliarPorTercero() {
         <>
           {/* Que este informe no cuadre contra el libro invalida los saldos.
               🔴 CB-18: con `libro` del back se dice contra qué cuadra o, si se
-              puede saber desde acá (todos los terceros a la vista), cuánto falta. */}
+              puede saber desde aquí (todos los terceros a la vista), cuánto falta. */}
           {auxiliar.cuadraConElLibro ? (
             auxiliar.libro ? (
               <p

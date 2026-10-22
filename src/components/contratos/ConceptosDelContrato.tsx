@@ -256,7 +256,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
       ) : conceptos.length === 0 && !agregando ? (
         <p className="text-sm text-muted-foreground">
           Sólo el canon. Si este contrato cobra administración, parqueadero o
-          alguna cuota, agrégala acá: los recurrentes entran en el cobro de
+          alguna cuota, agrégala aquí: los recurrentes entran en el cobro de
           cada mes con su IVA y sus retenciones, y salen en la cuenta de cobro.
         </p>
       ) : null}

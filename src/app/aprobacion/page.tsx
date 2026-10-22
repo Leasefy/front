@@ -370,7 +370,7 @@ export default function AprobacionPage() {
 
       {/* Preguntar antes de salir: no es un formulario cualquiera, es lo único
           que hay entre esta persona y poder arrendar ese inmueble, y quien
-          cierra acá casi nunca vuelve (Nico, 2026-09-15). */}
+          cierra aquí casi nunca vuelve (Nico, 2026-09-15). */}
       <ConfirmarSalidaDelArriendo
         abierto={confirmandoSalida}
         onAbiertoChange={setConfirmandoSalida}

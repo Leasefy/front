@@ -94,7 +94,7 @@ export function FacturadorFeelDeLaInmobiliaria({ tenantId }: { tenantId: string 
   return (
     <Tarjeta
       titulo={<span id="facturador-titulo">{titulo}</span>}
-      descripcion="Cada inmobiliaria transmite como un facturador dentro de la cuenta de FEEL de Leasefy. Dalo de alta en FEEL con su NIT y su resolución, pega acá el token que FEEL le dio y pruébalo. La inmobiliaria no ve el token."
+      descripcion="Cada inmobiliaria transmite como un facturador dentro de la cuenta de FEEL de Leasefy. Dalo de alta en FEEL con su NIT y su resolución, pega aquí el token que FEEL le dio y pruébalo. La inmobiliaria no ve el token."
       aria-labelledby="facturador-titulo"
       data-testid="facturador-feel"
     >
@@ -148,7 +148,7 @@ export function FacturadorFeelDeLaInmobiliaria({ tenantId }: { tenantId: string 
               <h3 className="text-body font-medium text-fg">Facturadores por tipo de documento</h3>
               <p className="text-body-sm text-fg-muted">
                 En FEEL cada resolución, con su prefijo, es un facturador aparte con su propio token. Si la inmobiliaria
-                numera la comisión (u otro tipo) con otra resolución, regístrala acá: esas facturas salen con su token y
+                numera la comisión (u otro tipo) con otra resolución, regístrala aquí: esas facturas salen con su token y
                 las demás con el de arriba.
               </p>
             </div>

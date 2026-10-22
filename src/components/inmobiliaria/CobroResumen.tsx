@@ -237,7 +237,7 @@ export function CobroResumen({
           {/* Pendiente. El back manda en `totalPending` todo lo que falta cobrar, mora
               incluida (así lo suman el pie de la tabla y los reportes). Al lado de
               «En mora» eso contaba la mora dos veces: «Pendiente $10,6 M · 0 cobros»
-              y «En mora $10,6 M · 5 cobros» (QA 2026-09-14). Acá va lo que falta y
+              y «En mora $10,6 M · 5 cobros» (QA 2026-09-14). Aquí va lo que falta y
               todavía NO está en mora, igual que su conteo. */}
           <div className="p-3 rounded-md bg-muted/30">
             <div className="flex items-center gap-2 mb-1">

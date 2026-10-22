@@ -959,6 +959,7 @@ function PropietariosContent() {
                 plataOculta={plataOculta}
                 filtroDeSaldoAfuera
                 tipoEnFiltros
+                formato={plataDeLasCifras}
                 vacio={vacioDeLaPestana}
                 marcadas={marcadas}
                 onMarcar={marcar}
@@ -993,10 +994,11 @@ function PropietariosContent() {
                 plataOculta={plataOculta}
                 filtroDeSaldoAfuera
                 tipoEnFiltros
+                formato={plataDeLasCifras}
               />
               {paginationData.totalItems === 0 ? (
               /* En tarjetas no hay barra de filtros —vive dentro de la tabla—,
-                 así que acá el vacío filtrado tiene que traer su propia salida:
+                 así que aquí el vacío filtrado tiene que traer su propia salida:
                  si no, la única forma de volver es adivinar que hay que cambiar
                  de vista. */
               <SinDatos

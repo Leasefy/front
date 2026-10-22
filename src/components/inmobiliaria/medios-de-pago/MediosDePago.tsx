@@ -349,7 +349,7 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
               <Badge variant="secondary">Integración de Leasefy</Badge>
             </div>
             <p className="text-sm text-fg-muted">
-              El pago en línea del portal del inquilino. Viene con la plataforma; no se edita acá.
+              El pago en línea del portal del inquilino. Viene con la plataforma; no se edita aquí.
             </p>
           </div>
         </div>

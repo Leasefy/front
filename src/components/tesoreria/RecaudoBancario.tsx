@@ -638,7 +638,7 @@ function ImportarArchivo({
       if (aceptados[0]) void elegir(aceptados[0]);
     },
     onDropRejected: () =>
-      toast.error('Ese archivo no se puede leer acá: sube el de texto del banco (.txt, .dat, .asc), un Excel o un CSV.'),
+      toast.error('Ese archivo no se puede leer aquí: sube el de texto del banco (.txt, .dat, .asc), un Excel o un CSV.'),
     multiple: false,
     maxFiles: 1,
     disabled: leyendo || importando,
@@ -846,7 +846,7 @@ function Previa({ previa }: { previa: PreviaDelRecaudo }) {
           <table className="w-full text-sm" data-testid="muestra-del-recaudo">
             <caption className="p-2 text-left text-xs text-fg-muted">
               Las primeras líneas, leídas con este formato. Compáralas contra el archivo abierto
-              al lado: si una columna está corrida, se ve acá y no después de importar.
+              al lado: si una columna está corrida, se ve aquí y no después de importar.
             </caption>
             <thead className="bg-bg text-xs text-fg-muted">
               <tr>

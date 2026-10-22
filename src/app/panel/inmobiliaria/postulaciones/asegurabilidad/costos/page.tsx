@@ -185,7 +185,7 @@ export default function CostosPage() {
                     queSon="fuentes de costo"
                     icono={Coins}
                     titulo={t('inmobiliaria.ai.cotizador.costos.noCostSources')}
-                    descripcion="Cuando una consulta consuma modelo, API de aseguradora o comisión, el gasto aparece acá por fuente."
+                    descripcion="Cuando una consulta consuma modelo, API de aseguradora o comisión, el gasto aparece aquí por fuente."
                   />
                 </TableCell>
               </TableRow>

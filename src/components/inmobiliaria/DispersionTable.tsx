@@ -450,7 +450,7 @@ export function DispersionTable({
           <TableFooter>
             {/*
               Una sola línea, no tres. El `TFoot` del DS ya trae su fondo y su
-              separador, y la última fila del cuerpo trae el suyo: sumarle acá
+              separador, y la última fila del cuerpo trae el suyo: sumarle aquí
               un `border-t-2` y otro tinte apilaba tres rayas al pie de la
               tabla. El pie se distingue por el peso de la tipografía.
             */}

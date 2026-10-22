@@ -270,7 +270,7 @@ export function ReclamosClient() {
                 <EmptyState
                   icon={ChatCircleDots}
                   title="Ningún reclamo todavía"
-                  description="No hay nada que hacer acá hasta que alguien reclame. Al candidato que no pasa se le manda el motivo junto con este canal; cuando lo use, su mensaje aparece en esta lista."
+                  description="No hay nada que hacer aquí hasta que alguien reclame. Al candidato que no pasa se le manda el motivo junto con este canal; cuando lo use, su mensaje aparece en esta lista."
                 />
               }
             >

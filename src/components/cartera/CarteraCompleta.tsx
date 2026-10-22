@@ -530,7 +530,7 @@ export function CarteraCompleta() {
                   onClick={() => elegirCajon(cual)}
                   aria-pressed={activo}
                   data-testid={`resumen-${cual.toLowerCase()}`}
-                  className="ficha-con-cifra relative isolate bg-surface px-5 py-3.5 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-6"
+                  className="ficha-con-cifra flex flex-col justify-start relative isolate bg-surface px-5 py-3.5 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-6"
                 >
                   {activo ? (
                     <MotionIndicator layoutId={`${marca}-cajon`} className="inset-0 -z-10 bg-surface-muted" />
@@ -552,7 +552,7 @@ export function CarteraCompleta() {
               <button
                 type="button"
                 onClick={() => setVista('siniestros')}
-                className="ficha-con-cifra bg-surface px-5 py-3.5 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-6"
+                className="ficha-con-cifra flex flex-col justify-start bg-surface px-5 py-3.5 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-6"
                 data-testid="resumen-en-siniestro"
               >
                 <span className="flex items-center gap-1.5 text-caption text-fg-muted">

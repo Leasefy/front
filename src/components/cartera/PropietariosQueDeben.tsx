@@ -199,7 +199,7 @@ export function PropietariosQueDeben() {
               <TableFooter>
                 {/* 🔴 El pie repite los cuatro tramos para que se VEA que suman
                     el total: un total que no cuadra con sus partes esconde una
-                    categoría sin nombre, y acá la plata es de un tercero. */}
+                    categoría sin nombre, y aquí la plata es de un tercero. */}
                 <TableRow data-testid="total-que-deben">
                   <TableCell className="font-medium text-fg">{t(k('total'))}</TableCell>
                   <TableCell className="text-right font-mono font-semibold tabular-nums text-fg">

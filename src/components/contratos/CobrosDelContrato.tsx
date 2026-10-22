@@ -198,7 +198,7 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
             <EmptyState
               icon={Receipt}
               title="Todavía no se emitió ningún cobro para este contrato"
-              description="El cobro es el documento con que finanzas le reclama al inquilino la deuda del contrato, y se emite desde Pagos → Cartera, en «Cobros emitidos». Cuando salga el primero, aparece acá con su desglose."
+              description="El cobro es el documento con que finanzas le reclama al inquilino la deuda del contrato, y se emite desde Pagos → Cartera, en «Cobros emitidos». Cuando salga el primero, aparece aquí con su desglose."
               action={{ label: 'Ir a Cartera', href: CARTERA_COBROS_EMITIDOS }}
             />
           )}

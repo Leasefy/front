@@ -291,7 +291,7 @@ export function AutonomiaPanel({
       )}
 
       {/* La frase del modo activo, visible (los tooltips no existen al tocar).
-          Con las tarjetas ya está dicha en la que está elegida: acá sólo hace
+          Con las tarjetas ya está dicha en la que está elegida: aquí sólo hace
           falta cuando el modo es un chip de lectura. */}
       {!editable && activeHint !== activeHintKey && (
         <p className="text-xs text-fg-muted" data-testid="autonomia-modo-hint">
@@ -332,7 +332,7 @@ export function AutonomiaPanel({
           Dos columnas, no `justify-between`: el micro publica tanto «Monto
           máximo: $0» como frases enteras («toda acción queda registrada, con
           quién la hizo y cuándo»), y empujando el valor al borde derecho la
-          frase quedaba a media pantalla de su etiqueta. Acá el valor arranca
+          frase quedaba a media pantalla de su etiqueta. Aquí el valor arranca
           en su columna y baja de renglón cuando no cabe. */}
       <section className="rounded-lg border border-border bg-surface p-4" data-testid="autonomia-valla">
         <h2 className="text-sm font-semibold text-fg">{t(`${NS}.vallaTitle`)}</h2>

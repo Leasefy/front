@@ -133,7 +133,7 @@ function RenovacionesContent() {
       {/* La carga, el fallo y el vacío viven DENTRO de la tarjeta de la tabla,
           como en Contratos: nada suelto por fuera.
 
-          🔴 UNA sola prop de apertura (19-09). Acá había cinco
+          🔴 UNA sola prop de apertura (19-09). Aquí había cinco
           —`onStartRenewal`, `onNotifyTenant`, `onViewDetails`,
           `onCalculateIPC`, `onViewHistory`— y las cinco apuntaban a este
           mismo `openWorkflow`. Del otro lado eso era un menú con cinco items

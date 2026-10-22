@@ -172,7 +172,7 @@ describe('AgenteDePagos — con las llaves', () => {
     expect(['leasefy', 'inmobiliaria'].map(estadoDe)).toEqual(['hecho', 'hecho'])
   })
 
-  it('encendido en el servidor pero no para la inmobiliaria: dice que falta encenderlo acá', () => {
+  it('encendido en el servidor pero no para la inmobiliaria: dice que falta encenderlo aquí', () => {
     render(lectura({ gobierno: { estado: 'listo', item: item(true, false) } }))
     expect(q('[data-testid="estado-del-equipo"]')?.getAttribute('data-estado')).toBe('apagado-para-tu-inmobiliaria')
     expect(estadoDe('leasefy')).toBe('hecho')

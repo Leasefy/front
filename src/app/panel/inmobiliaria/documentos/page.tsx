@@ -756,7 +756,7 @@ function DocumentosContent() {
                           </Button>
                           {/* 🔴 Las del SISTEMA no se editan: el documento se
                               genera del texto que vive en el código, así que
-                              guardar un cambio acá cambiaría sólo la vista
+                              guardar un cambio aquí cambiaría sólo la vista
                               previa. El back responde 400. Se DUPLICAN, y la
                               copia ya es de la inmobiliaria. */}
                           {p.codigo === null && puedeEditarPlantillas && (

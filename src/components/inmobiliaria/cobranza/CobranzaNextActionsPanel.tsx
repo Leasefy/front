@@ -67,7 +67,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
         {t('inmobiliaria.ai.cobranza.overview.nextActions.empty')}
       </p>
       <p className="text-xs text-fg-muted max-w-xs">
-        {tr("El agente programa los contactos solo; acá aparecen a medida que los agenda.")}
+        {tr("El agente programa los contactos solo; aquí aparecen a medida que los agenda.")}
       </p>
     </div>
   )

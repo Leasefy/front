@@ -244,7 +244,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
       {/* 🔴 UNA SOLA COSA (Nico, 21-09): el año gravable estaba en su propia
           tarjeta y las pestañas flotaban debajo, sueltas. Las dos responden lo
           mismo —«qué estoy mirando»—, así que van en la misma fila: pestañas a
-          la izquierda, año y total a la derecha. El total del año se queda acá
+          la izquierda, año y total a la derecha. El total del año se queda aquí
           porque es el resumen, y el resumen va con el alcance que lo produce. */}
       <Tabs value={parte} onValueChange={(v) => setParte(v as ParteDeLaExogena)}>
         <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 lg:flex-row lg:items-center lg:justify-between">
@@ -497,7 +497,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
               <TableHeader>
                 <TableRow>
                   {/* El orden de columnas es el del CSV, tal como lo manda el
-                      back: si acá fuera otro, el archivo y la pantalla dirían
+                      back: si aquí fuera otro, el archivo y la pantalla dirían
                       cosas distintas de la misma fila. */}
                   {abierto.columnas.map((c) => (
                     <TableHead key={c} className="whitespace-nowrap">

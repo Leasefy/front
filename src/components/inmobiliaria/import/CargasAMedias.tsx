@@ -219,7 +219,7 @@ export function CargasAMedias({
               <p className="text-sm text-fg-muted">
                 {d.etapa === 'subiendo' ? (
                   sinClave ? (
-                    'Se cortó en otro navegador y no se puede seguir subiendo desde acá. Descártala y sube el archivo otra vez.'
+                    'Se cortó en otro navegador y no se puede seguir subiendo desde aquí. Descártala y sube el archivo otra vez.'
                   ) : (
                     'Selecciona el mismo archivo y seguimos desde la fila donde quedó.'
                   )

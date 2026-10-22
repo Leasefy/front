@@ -97,7 +97,7 @@ export function CodeudoresTab({ decision, result }: CodeudoresTabProps) {
         title={tf(`${NS}.detalle.codeudores.empty.title`, 'Todavía no se pueden registrar codeudores')}
         description={tf(
           `${NS}.detalle.codeudores.empty.description`,
-          'Hoy el sistema sólo guarda si la postulación declaró un codeudor, sin sus datos: no hay identidad, ingresos ni documentos que mostrar. Cuando el codeudor exista como ficha propia, su validación aparece acá.',
+          'Hoy el sistema sólo guarda si la postulación declaró un codeudor, sin sus datos: no hay identidad, ingresos ni documentos que mostrar. Cuando el codeudor exista como ficha propia, su validación aparece aquí.',
         )}
       />
     </div>

@@ -94,7 +94,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
         queSon="gastos"
         icono={Coins}
         titulo="Todavía no hay gasto"
-        descripcion="Cuando una consulta consuma modelo, API de aseguradora o comisión, el reparto por fuente se grafica acá."
+        descripcion="Cuando una consulta consuma modelo, API de aseguradora o comisión, el reparto por fuente se grafica aquí."
       />
     )
   }

@@ -224,7 +224,7 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
     <>
       {/* El `div` es el ANCLAJE del recorrido guiado (`data-tour-target`): el
           SplitButton del DS no reenvía atributos `data-*`, y sin una caja
-          propia el paso «por acá entra un inmueble» no tendría a qué apuntar.
+          propia el paso «por aquí entra un inmueble» no tendría a qué apuntar.
           Sólo existe cuando el botón existe (arriba: sin flujos, `null`), así
           que el recorrido nunca señala un hueco. */}
       <div data-tour-target="nuevo">

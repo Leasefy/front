@@ -276,7 +276,7 @@ export function CalceClient() {
               <EmptyState
                 icon={Users}
                 title={tr("Todavía no hay a quién ofrecerle")}
-                description={tr("Cuando entre un interesado al tablero, acá te digo qué inmuebles le sirven.")}
+                description={tr("Cuando entre un interesado al tablero, aquí te digo qué inmuebles le sirven.")}
                 action={{
                   label: 'Ir al pipeline',
                   href: '/panel/inmobiliaria/pipeline',
@@ -348,8 +348,8 @@ export function CalceClient() {
                         title={tr("Ningún inmueble le calza hoy")}
                         description={tr(
                           sinTope(delLead.datos.busca.topeAsegurableCop)
-                            ? 'Con su presupuesto, nada del portafolio le entra hoy. Cuando se libere uno que sí, aparece acá.'
-                            : 'Con su presupuesto y su tope, nada del portafolio pasa los requisitos. Cuando se libere uno que sí, aparece acá.',
+                            ? 'Con su presupuesto, nada del portafolio le entra hoy. Cuando se libere uno que sí, aparece aquí.'
+                            : 'Con su presupuesto y su tope, nada del portafolio pasa los requisitos. Cuando se libere uno que sí, aparece aquí.',
                         )}
                       />
                     ) : (
@@ -561,7 +561,7 @@ export function CalceClient() {
             </div>
           ) : null}
           <p className="text-fg-muted text-xs">
-            {tr("Los pesos se cambian en la configuración de la inmobiliaria, no acá: moverlos desde la pantalla de trabajo invita a ajustarlos hasta que salga el inmueble que uno quería vender.")}{' '}
+            {tr("Los pesos se cambian en la configuración de la inmobiliaria, no aquí: moverlos desde la pantalla de trabajo invita a ajustarlos hasta que salga el inmueble que uno quería vender.")}{' '}
             <Link href="/panel/inmobiliaria/configuracion" className="text-primary underline">
               {tr("Ir a configuración")}
             </Link>

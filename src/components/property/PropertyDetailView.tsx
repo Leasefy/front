@@ -377,7 +377,7 @@ export function PropertyDetailView({
               )}
 
               {/*
-                Acá iba `SocialProofBanner`: "7 viendo ahora" con un punto que
+                Aquí iba `SocialProofBanner`: "7 viendo ahora" con un punto que
                 latía, "38 visitas hoy" y una insignia de "demanda muy alta".
                 Nada de eso se medía — salía de `generateMockStats(propertyId)`,
                 un número derivado de las letras del id, y el contador de
@@ -443,7 +443,7 @@ export function PropertyDetailView({
             </div>
 
             {/* Right Column - Sticky CTA. En el celular también se ve (debajo de la
-                ficha): ahí se agenda la visita; «Visita» de la barra lleva hasta acá. */}
+                ficha): ahí se agenda la visita; «Visita» de la barra lleva hasta aquí. */}
             <div className="lg:col-span-5">
               <StickyCTA
                 propertyId={property.id}

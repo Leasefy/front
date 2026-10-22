@@ -721,7 +721,7 @@ export function MantenimientoList({
           queSon="arreglos"
           icono={Wrench}
           titulo="Todavía no hay solicitudes de mantenimiento"
-          descripcion="Cuando un inquilino reporte un arreglo o registres uno, aparece acá."
+          descripcion="Cuando un inquilino reporte un arreglo o registres uno, aparece aquí."
           hayFiltros={hasFilters}
           onLimpiarFiltros={limpiarFiltros}
           crear={onCrear ? { label: 'Nueva solicitud', onClick: onCrear } : undefined}

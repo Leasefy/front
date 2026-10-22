@@ -64,7 +64,7 @@ toast.error(
           <VacioDeSeccion
             icono={Plugs}
             titulo="Todavía no hay más integraciones para prender"
-            ayuda="Cuando conectemos un portal o un contable con tu cuenta, aparece acá para prenderlo o apagarlo."
+            ayuda="Cuando conectemos un portal o un contable con tu cuenta, aparece aquí para prenderlo o apagarlo."
           />
         }
       >

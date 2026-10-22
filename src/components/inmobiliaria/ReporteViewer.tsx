@@ -110,7 +110,7 @@ function SinDatosDelReporte() {
         <p className="text-body font-semibold text-fg">Todavía no hay nada que mostrar</p>
         <p className="mx-auto max-w-sm text-body-sm text-fg-muted">
           Este reporte se arma con la actividad del portafolio. Cuando haya inmuebles con contrato y
-          cobros del período, aparece acá.
+          cobros del período, aparece aquí.
         </p>
       </div>
     </div>
@@ -639,7 +639,7 @@ export function CarteraEdadesPreview({ t }: { t: Traductor }) {
 
           🔴 La cifra grande es la CARTERA (lo que pasó el plazo del contrato),
           no toda la deuda: la deuda total de la inmobiliaria migrada es 12,9
-          veces mayor, y ponerla acá bajo el rótulo «cartera vencida» mandaría
+          veces mayor, y ponerla aquí bajo el rótulo «cartera vencida» mandaría
           a la cobranza a perseguir plata que nadie debe todavía. */}
       <div className="p-4 rounded-lg bg-danger-soft text-fg">
         <p className="text-sm font-medium text-danger">{t('inmobiliaria.reporte.totalOverduePortfolio')}</p>

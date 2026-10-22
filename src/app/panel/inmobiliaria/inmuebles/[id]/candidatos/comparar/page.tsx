@@ -171,7 +171,7 @@ function CompararContent() {
               title="Todavía no hay evaluaciones de estos candidatos"
             >
               Por ahora sólo podemos comparar cuándo se postularon. La evaluación
-              arranca sola cuando entra la postulación; cuando termine, acá
+              arranca sola cuando entra la postulación; cuando termine, aquí
               aparecen nivel, ingresos y señales de riesgo.
             </Callout>
           )}

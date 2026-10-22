@@ -56,7 +56,7 @@ describe('<TePodemosArrendar>', () => {
     expect(hay('estimado-vacio')).toBeTruthy();
   });
 
-  it('al verificar sin alcanzar lo dice acá, con lo que falta, y no sigue al estudio', () => {
+  it('al verificar sin alcanzar lo dice aquí, con lo que falta, y no sigue al estudio', () => {
     montar();
     escribir('tpa-ingreso', '2000000');
     verificar();

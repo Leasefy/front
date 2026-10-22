@@ -606,7 +606,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                 )}
 
                 {/* La misma advertencia va también al pie, junto a los botones.
-                    Acá se dice corto: el detalle está en las alertas de abajo. */}
+                    Aquí se dice corto: el detalle está en las alertas de abajo. */}
                 {requiresManualReview && (
                   <p className="flex items-start gap-2 rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger">
                     <WarningCircle className="mt-px h-4 w-4 flex-shrink-0" />

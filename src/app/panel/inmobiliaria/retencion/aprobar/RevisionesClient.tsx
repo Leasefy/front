@@ -274,7 +274,7 @@ export default function RevisionesClient() {
               queSon="decisiones por aprobar"
               icono={CheckCircle}
               titulo="Nada esperando tu clic"
-              descripcion="Cuando Vinci deje un mensaje listo, una propuesta o una oferta que cueste plata, aparece acá."
+              descripcion="Cuando Vinci deje un mensaje listo, una propuesta o una oferta que cueste plata, aparece aquí."
             />
           </div>
         }

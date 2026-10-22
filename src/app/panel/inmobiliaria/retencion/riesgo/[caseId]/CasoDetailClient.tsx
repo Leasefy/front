@@ -404,7 +404,7 @@ function Historial({ caseId }: { caseId: string }) {
             queSon="acciones"
             icono={ClockCounterClockwise}
             titulo="Todavía nada con este caso"
-            descripcion="Lo que Vinci proponga, prepare o mande por este caso queda acá, con la hora."
+            descripcion="Lo que Vinci proponga, prepare o mande por este caso queda aquí, con la hora."
             className="py-10"
           />
         )}

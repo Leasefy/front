@@ -108,6 +108,15 @@ function ConChip({ etiqueta, cuantos }: { etiqueta: string; cuantos: number }) {
   );
 }
 
+/**
+ * El formato de la plata de la página (ronda 19: la franja decía «$ 2.466.800,00» y la fila
+ * «$ 2.466.800»). Sin él, el de siempre. Igual que `FormatoDeLaPlata` de Inquilinos.
+ */
+const FormatoDeLaPlata = React.createContext<((n: number) => string) | null>(null);
+function usePlata(): (n: number) => string {
+  return React.useContext(FormatoDeLaPlata) ?? ((n: number) => formatCurrency(n));
+}
+
 interface PropietarioTableProps {
   /**
    * Las filas que se pintan: **ya filtradas, ordenadas y paginadas** por quien
@@ -157,6 +166,8 @@ interface PropietarioTableProps {
    * de la barra. El panel queda montado (escondido) para el lector de pantalla y las pruebas.
    */
   tipoEnFiltros?: boolean;
+  /** El formato de la plata de la página (el mismo de la franja de cifras). */
+  formato?: (n: number) => string;
   /** Lo que se dice cuando la pestaña o la búsqueda no deja a nadie (lo arma la página). */
   vacio?: React.ReactNode;
   /**
@@ -187,10 +198,13 @@ export function PropietarioTable({
   filtroDeSaldoAfuera = false,
   tipoEnFiltros = false,
   vacio,
+  formato,
   marcadas,
   onMarcar,
 }: PropietarioTableProps) {
   const { t, locale } = useI18n();
+  const plataDelContexto = usePlata();
+  const plata = formato ?? plataDelContexto;
   /*
    * P-22 (QA de Propietarios, 03-10): a 390 px la tabla se corría de lado y
    * sólo se veía el nombre. En el celular cada propietario es una TARJETA con
@@ -287,6 +301,7 @@ export function PropietarioTable({
   );
 
   return (
+    <FormatoDeLaPlata.Provider value={formato ?? null}>
     <div>
       {/* Search and Filters Bar */}
       <div className="p-4 space-y-4 border-b border-border">
@@ -550,7 +565,7 @@ export function PropietarioTable({
                       <SinAccesoALaPlata texto={sinAcceso} />
                     ) : (
                       <span className={cn('font-mono tabular-nums', propietario.totalMonthlyRent ? 'text-foreground' : 'text-fg-subtle')}>
-                        {propietario.totalMonthlyRent ? formatCurrency(propietario.totalMonthlyRent) : '—'}
+                        {propietario.totalMonthlyRent ? plata(propietario.totalMonthlyRent) : '—'}
                       </span>
                     )}
                   </TableCell>
@@ -563,7 +578,7 @@ export function PropietarioTable({
                       <>
                         <Badge variant="warning" className="gap-1 tabular-nums">
                           <Warning className="w-3.5 h-3.5" />
-                          {formatCurrency(propietario.pendingBalance)}
+                          {plata(propietario.pendingBalance)}
                         </Badge>
                         <LineasDelGiro propietario={propietario} />
                       </>
@@ -630,6 +645,7 @@ export function PropietarioTable({
         </Presence>
       </div>
     </div>
+    </FormatoDeLaPlata.Provider>
   );
 }
 
@@ -721,6 +737,7 @@ function MenuDeLaFila({
  * decir (o sin la plata), no pinta nada.
  */
 function LineasDelGiro({ propietario }: { propietario: Propietario }) {
+  const plata = usePlata();
   const { t } = useI18n();
   const giros = girosDelPropietario(propietario);
   if (giros.oculto) return null;
@@ -732,7 +749,7 @@ function LineasDelGiro({ propietario }: { propietario: Propietario }) {
       {detalle ? <span className="block tabular-nums">{detalle}</span> : null}
       {generado > 0 ? (
         <span className="block tabular-nums" data-testid="generado-sin-girar">
-          {t('inmobiliaria.propietario.giros.generado', { monto: formatCurrency(generado) })}
+          {t('inmobiliaria.propietario.giros.generado', { monto: plata(generado) })}
         </span>
       ) : null}
     </span>
@@ -756,6 +773,7 @@ function TarjetasDePropietarios({
   onView: (propietario: Propietario) => void;
   menu: (propietario: Propietario) => React.ReactNode;
 }) {
+  const plata = usePlata();
   const { t } = useI18n();
   const sinAcceso = t('inmobiliaria.propietario.table.sinAccesoALaPlata');
   return (
@@ -817,12 +835,12 @@ function TarjetasDePropietarios({
                   ) : (
                     <>
                       <span className={cn('whitespace-nowrap font-mono text-sm tabular-nums', propietario.totalMonthlyRent ? 'text-fg' : 'text-fg-subtle')}>
-                        {propietario.totalMonthlyRent ? formatCurrency(propietario.totalMonthlyRent) : '—'}
+                        {propietario.totalMonthlyRent ? plata(propietario.totalMonthlyRent) : '—'}
                       </span>
                       {hasPending ? (
                         <Badge variant="warning" className="gap-1 tabular-nums">
                           <Warning className="h-3.5 w-3.5" aria-hidden="true" />
-                          {formatCurrency(propietario.pendingBalance)}
+                          {plata(propietario.pendingBalance)}
                         </Badge>
                       ) : girosDelPropietario(propietario).sinDiaDeGiro ? (
                         <span className="text-caption text-fg-muted" data-testid="sin-dia-de-giro">

@@ -511,7 +511,7 @@ function ContratosContent() {
           y flota fuera de la lista obliga a mirar dos bloques y adivinar que
           se refieren a lo mismo — y cuando el filtro achica la tabla, quedan
           arriba unos números que ya no coinciden con nada de lo que se ve, sin
-          nada que diga de qué hablan. Acá dentro se lee como lo que es: el
+          nada que diga de qué hablan. Aquí dentro se lee como lo que es: el
           encabezado de esta tabla.
 
           Un cero que en realidad es «no lo pudimos traer» afirma algo falso
@@ -691,7 +691,7 @@ function ContratosContent() {
                     icono={FileText}
                     titulo={tx('Sin contratos aún', 'No contracts yet')}
                     descripcion={tx(
-                      'Cuando cierres un arriendo, su contrato aparece acá con su estado y sus fechas.',
+                      'Cuando cierres un arriendo, su contrato aparece aquí con su estado y sus fechas.',
                       "When you close a lease, its contract shows up here with its status and dates.",
                     )}
                     /* ⚠️ Acá había un enlace a `/contratos/nuevo` a secas, y esa

@@ -117,7 +117,7 @@ async function guardar() {
 }
 
 describe('/auth/update-password', () => {
-  it('con segundo factor pendiente lleva al código y vuelve acá, sin mostrar el formulario activo', async () => {
+  it('con segundo factor pendiente lleva al código y vuelve aquí, sin mostrar el formulario activo', async () => {
     authState.mfaRequired = true
     await pintar()
     expect(replaceMock).toHaveBeenCalledWith(`/auth/mfa-verify?returnUrl=${encodeURIComponent('/auth/update-password')}`)

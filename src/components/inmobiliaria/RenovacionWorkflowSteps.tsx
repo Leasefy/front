@@ -162,7 +162,7 @@ function AvisoDeCanal({
   return (
     <p className="flex items-start gap-1.5 text-xs text-warning" data-testid="renovacion-canal">
       <Warning className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-      Sin cuenta ni correo en el contrato: al enviar, la propuesta queda registrada acá. Hazla
+      Sin cuenta ni correo en el contrato: al enviar, la propuesta queda registrada aquí. Hazla
       llegar por WhatsApp o copia el mensaje.
     </p>
   );
@@ -504,7 +504,7 @@ export function PasoAceptacion({
         >
           {renovacion.tenantAcceptedAt
             ? `Desde su panel, el ${formatDate(renovacion.tenantAcceptedAt)}.`
-            : 'Quedó registrado desde acá.'}{' '}
+            : 'Quedó registrado desde aquí.'}{' '}
           Sigue la firma del contrato.
         </Callout>
       ) : canal === 'panel_y_correo' ? (
@@ -513,7 +513,7 @@ export function PasoAceptacion({
           title="Esperando al inquilino"
           data-testid="aceptacion-estado"
         >
-          Puede aceptar desde su panel de Leasefy. Si te contestó por otro medio, regístralo acá.
+          Puede aceptar desde su panel de Leasefy. Si te contestó por otro medio, regístralo aquí.
         </Callout>
       ) : (
         <Callout
@@ -522,7 +522,7 @@ export function PasoAceptacion({
           data-testid="aceptacion-estado"
         >
           No tiene cuenta en Leasefy, así que no acepta desde ningún panel: cuando te conteste,
-          registra acá su respuesta.
+          registra aquí su respuesta.
         </Callout>
       )}
 

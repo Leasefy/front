@@ -151,7 +151,7 @@ export default function CostsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Costos"
-        description={`Lo que cuesta operar la plataforma este mes: voz (Vapi) y modelo (Claude). Los dos cobran en dólares; acá van en pesos a ${fmtCOP(USD_TO_COP)} por dólar. WhatsApp todavía no se mide.`}
+        description={`Lo que cuesta operar la plataforma este mes: voz (Vapi) y modelo (Claude). Los dos cobran en dólares; aquí van en pesos a ${fmtCOP(USD_TO_COP)} por dólar. WhatsApp todavía no se mide.`}
       />
 
       <FranjaDeCifras fila="lg" aria-label="Resumen del mes">

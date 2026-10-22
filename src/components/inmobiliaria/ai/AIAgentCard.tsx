@@ -214,7 +214,7 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
             )}
             {/* 02-10-2026: el motivo se lee ENTERO (antes `truncate` lo cortaba
                 a una línea) y, si es el tope del plan (402 `LIMITE_DEL_PLAN`, p.
-                ej. las evaluaciones del mes), se dice acá con «Ver planes» a la
+                ej. las evaluaciones del mes), se dice aquí con «Ver planes» a la
                 mano. Nunca se navega solo: sólo si la persona lo toca. */}
             {!isRunning && error && (
               <Appear

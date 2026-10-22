@@ -549,7 +549,7 @@ export function ConciliacionDelAgente() {
           <h2 className="text-base font-semibold text-fg">Lo que vio el agente</h2>
           <p className="mt-0.5 text-caption text-fg-muted">
             {tieneDatos
-              ? `${total} ${total === 1 ? 'movimiento' : 'movimientos'} propios del agente, con su clasificación por caso. Confirmar acá no emite recibo de caja.`
+              ? `${total} ${total === 1 ? 'movimiento' : 'movimientos'} propios del agente, con su clasificación por caso. Confirmar aquí no emite recibo de caja.`
               : 'El agente todavía no tiene movimientos propios. Puedes cargarle un CSV de Bancolombia o Davivienda para que los clasifique.'}
           </p>
         </div>
@@ -687,7 +687,7 @@ export function ConciliacionDelAgente() {
         {/*
           El banner «modo sombra» venía del encabezado de esta pantalla, donde
           quedaba arriba de todo y parecía hablar del extracto que emite
-          recibos. Habla del MICRO: acá adentro dice la verdad.
+          recibos. Habla del MICRO: aquí adentro dice la verdad.
         */}
         <div className="flex items-start gap-2.5 rounded-lg border border-border bg-surface-muted p-3">
           <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" weight="duotone" aria-hidden="true" />
@@ -702,7 +702,7 @@ export function ConciliacionDelAgente() {
           Segundo lugar donde se sube un archivo, y a propósito: éste NO emite
           recibos, sólo le da de comer al clasificador del micro (CSV, y sólo
           Bancolombia o Davivienda). El de arriba —el del ERP— es el que mueve
-          plata. Por eso vive acá adentro, plegado, y dice para qué es.
+          plata. Por eso vive aquí adentro, plegado, y dice para qué es.
         */}
         <section className="space-y-3">
           <SectionLabel>Cargarle un extracto al agente</SectionLabel>
@@ -758,7 +758,7 @@ export function ConciliacionDelAgente() {
         {!tieneDatos && (
           <p className="flex items-start gap-2 text-xs text-fg-muted">
             <Bank className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            Cuando el agente tenga movimientos propios, acá aparecen su resumen por caso y la cola
+            Cuando el agente tenga movimientos propios, aquí aparecen su resumen por caso y la cola
             con confirmar, rechazar y revertir.
           </p>
         )}

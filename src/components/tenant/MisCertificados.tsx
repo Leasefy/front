@@ -128,7 +128,7 @@ export function MisCertificados() {
           <EmptyState
             icon={Certificate}
             title="Todavía no tienes contratos"
-            description="Cuando tengas un contrato con una inmobiliaria en Leasefy, acá vas a poder pedir tu paz y salvo."
+            description="Cuando tengas un contrato con una inmobiliaria en Leasefy, aquí vas a poder pedir tu paz y salvo."
           />
         }
       >

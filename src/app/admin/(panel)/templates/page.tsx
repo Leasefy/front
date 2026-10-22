@@ -122,7 +122,7 @@ export default function PlantillasPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Plantillas"
-        description="Los avisos que manda Leasefy. El push (lo que muestra la campana) se edita acá; el correo vive en el código y se ve su asunto. Apagar un aviso detiene su push. Cada cambio pide motivo y queda registrado."
+        description="Los avisos que manda Leasefy. El push (lo que muestra la campana) se edita aquí; el correo vive en el código y se ve su asunto. Apagar un aviso detiene su push. Cada cambio pide motivo y queda registrado."
       />
       <DataTable
         columns={columnas}

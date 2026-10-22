@@ -808,7 +808,7 @@ function DispersionesContent() {
           <Button asChild size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/dispersiones/generar">
               <Lightning className="w-4 h-4" weight="fill" />
-              {tr('Generar la dispersión')}
+              {tr('Generar los giros del mes')}
             </Link>
           </Button>
         }
@@ -886,7 +886,7 @@ function DispersionesContent() {
             direction="none"
             className="text-xs text-fg-muted tabular-nums"
           >
-              {filteredDispersiones.length} {t('inmobiliaria.nav.dispersiones').toLowerCase()}
+              {filteredDispersiones.length} {filteredDispersiones.length === 1 ? tr('giro') : tr('giros')}
           </Presence>
         </div>
 
@@ -1073,7 +1073,7 @@ function DispersionesContent() {
         {/*
           `xl` (880) porque el extracto tiene nueve columnas. El scroll vertical
           (con `data-lenis-prevent`) lo pone el cuerpo del Dialog: NO se agrega
-          otro acá, dos scrollers anidados se pelean el gesto. «Descargar PDF»
+          otro aquí, dos scrollers anidados se pelean el gesto. «Descargar PDF»
           va en el pie, no metido en el título (DESIGN.md §17).
         */}
         <DialogContent size="xl">

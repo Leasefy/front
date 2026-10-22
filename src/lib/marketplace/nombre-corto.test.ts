@@ -70,7 +70,7 @@ describe('nombreCortoLibre', () => {
 });
 
 describe('los mismos casos de la prueba del back', () => {
-  it('dan lo mismo acá', async () => {
+  it('dan lo mismo aquí', async () => {
     expect(raizDelNombreCorto('Inmobiliaria Nogal S.A.S.')).toBe('inmobiliaria-nogal-s-a-s');
     expect(raizDelNombreCorto('  Ñuñoa & Cía  ')).toBe('nunoa-cia');
     expect(raizDelNombreCorto('Árbol Bienes Raíces')).toBe('arbol-bienes-raices');

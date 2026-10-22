@@ -31,7 +31,7 @@ export default function InmuebleDetallePage() {
         title="Detalle del inmueble"
         subtitle="El historial de pagos, novedades y contrato de tu inmueble."
         icon={Buildings}
-        emptyDescription="Acá vas a ver el contrato, las novedades y el historial de pagos de este inmueble. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
+        emptyDescription="Aquí vas a ver el contrato, las novedades y el historial de pagos de este inmueble. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
       />
     );
   }

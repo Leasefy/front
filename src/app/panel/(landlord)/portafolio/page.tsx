@@ -61,7 +61,7 @@ export default function PortafolioPage() {
         title="Mi plata"
         subtitle="Tus pagos, la proyección de tu contrato y tu portafolio, en un solo lugar."
         icon={Wallet}
-        emptyDescription="Acá vas a ver cuánto te pagaron, cuándo y por qué concepto, la proyección de tus ingresos y el consolidado de todos tus inmuebles —con informe descargable. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
+        emptyDescription="Aquí vas a ver cuánto te pagaron, cuándo y por qué concepto, la proyección de tus ingresos y el consolidado de todos tus inmuebles —con informe descargable. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
       />
     );
   }

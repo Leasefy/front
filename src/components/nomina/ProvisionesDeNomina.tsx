@@ -130,7 +130,7 @@ export function ProvisionesDeNominaPanel() {
             <section className="space-y-3">
               <TituloDeBloque
                 titulo="Con qué base se provisiona cada una"
-                explicacion="Las cuatro bases NO son la misma, y es acá donde una liquidación hecha a mano se equivoca."
+                explicacion="Las cuatro bases NO son la misma, y es aquí donde una liquidación hecha a mano se equivoca."
               />
               <div className="overflow-x-auto">
                 <Table data-testid="bases-de-prestaciones">

@@ -566,7 +566,7 @@ function PagosRecordatorios() {
               >
                 reglas de mora
               </Link>
-              . Acá se define cuándo se avisa, no cuánto se cobra.
+              . Aquí se define cuándo se avisa, no cuánto se cobra.
             </p>
             <Button
               hideArrow
@@ -607,7 +607,7 @@ function PagosRecordatorios() {
           <Presence show={hayCambios} initial={false}>
             <Aviso tono="info">
               Estás viendo el calendario de las condiciones <strong>guardadas</strong>. Guarda los
-              cambios para verlos reflejados acá.
+              cambios para verlos reflejados aquí.
             </Aviso>
           </Presence>
 

@@ -173,7 +173,7 @@ export function EditarPerfilDelAsesor({
           <DialogTitle>Editar perfil</DialogTitle>
           <DialogDescription>
             El nombre, el correo y el teléfono son de la cuenta de {agente.name} y se
-            cambian desde su perfil, no desde acá.
+            cambian desde su perfil, no desde aquí.
           </DialogDescription>
         </DialogHeader>
 

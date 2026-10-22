@@ -248,7 +248,7 @@ export function StepSelectPropietario({
       </div>
 
       {/* Selección MÚLTIPLE: un inmueble puede tener más de un dueño. Antes
-          acá vivía `PropietarioSelector`, que era de uno solo —tocar otro
+          aquí vivía `PropietarioSelector`, que era de uno solo —tocar otro
           reemplazaba— aunque el resto del circuito (tipos, payload y back) ya
           soportaba copropietarios desde el 2026-09-03. */}
       <SelectorDePropietarios

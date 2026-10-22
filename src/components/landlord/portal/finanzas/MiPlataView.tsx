@@ -79,7 +79,7 @@ export function MiPlataView({
               queSon="inmuebles"
               icono={Buildings}
               titulo="Todavía no vemos inmuebles tuyos"
-              descripcion="Acá aparecen los inmuebles que tu inmobiliaria administra a tu nombre, con su canon y su inquilino. Si crees que falta alguno, escríbele a tu inmobiliaria: el portafolio lo arma ella."
+              descripcion="Aquí aparecen los inmuebles que tu inmobiliaria administra a tu nombre, con su canon y su inquilino. Si crees que falta alguno, escríbele a tu inmobiliaria: el portafolio lo arma ella."
             />
           ) : (
             <ul className="divide-y divide-border">

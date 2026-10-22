@@ -591,7 +591,7 @@ function PortafolioContent() {
 
       {/* Unified Data Card - View Toggle + Filters + Content + Pagination.
           Sin entrada propia: la página ya entra con el `template.tsx`. Lo que
-          se anima acá adentro son los CAMBIOS (vista, filtros, páginas). */}
+          se anima aquí adentro son los CAMBIOS (vista, filtros, páginas). */}
       <div className="rounded-lg border border-border bg-card overflow-hidden">
         {/* View Toggle Header - First */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
@@ -771,7 +771,7 @@ function PortafolioContent() {
 
         {/* Pie de tabla — el paginador del design system.
 
-            🔴 `sePudoContar` también manda acá (21-09, visto en el navegador):
+            🔴 `sePudoContar` también manda aquí (21-09, visto en el navegador):
             con la lista caída, el pie seguía diciendo «Mostrando 1–10 de 25» y
             ofreciendo las páginas 2 y 3 encima del cartel de que no se pudo
             cargar. Es el mismo defecto que el contador del encabezado —un

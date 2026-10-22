@@ -267,6 +267,7 @@ export function BarraDeInquilinos({
       <PestanasDeEstado<PestanaDeInquilinos>
         etiqueta={t('inquilinos.filtroEstado')}
         data-testid="pestanas-de-inquilinos"
+        className="lg:shrink-0"
         valor={estado}
         onCambio={onEstado}
         pestanas={[
@@ -284,7 +285,8 @@ export function BarraDeInquilinos({
         onClear={() => onBuscar('')}
         placeholder={t('inquilinos.buscarPlaceholder')}
         inputSize="md"
-        className="w-full lg:max-w-sm"
+        // Ronda 19: con `w-full` el buscador encogía el riel y «Todos» quedaba fuera a 1440.
+        className="w-full lg:w-96 lg:flex-none"
         data-testid="inquilinos-buscar"
       />
     </div>

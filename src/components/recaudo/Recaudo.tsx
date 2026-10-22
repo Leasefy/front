@@ -623,7 +623,7 @@ export function Recaudo() {
                   está como suelto, nada realmente se sabe que es de qué»).
                   «No nombramos las tablas» vale cuando la tarjeta que las
                   contiene ya lo dice —en «Deuda del mes» lo dicen el mes, las
-                  pestañas y el buscador—; acá la tabla ERA la tarjeta entera y
+                  pestañas y el buscador—; aquí la tabla ERA la tarjeta entera y
                   no había nada que la nombrara. El gráfico de arriba ya llevaba
                   su nombre, y era el único de los cuatro bloques. */}
               <div className="space-y-1 border-b border-border px-6 py-4">
@@ -672,7 +672,7 @@ export function Recaudo() {
                           queSon={tr("meses con movimiento")}
                           icono={Coins}
                           titulo={tr("Todavía no hay serie")}
-                          descripcion={tr("Cuando haya cobros, recibos o giros en algún mes, aparece acá.")}
+                          descripcion={tr("Cuando haya cobros, recibos o giros en algún mes, aparece aquí.")}
                         />
                       </TableCell>
                     </TableRow>
@@ -761,7 +761,7 @@ export function Recaudo() {
                           descripcion={
                             en
                               ? `Receipts dated in ${nombreDelMes(month, 'en')} show up here, grouped by how the money came in.`
-                              : `Los recibos con fecha en ${nombreDelMes(month)} aparecen acá, agrupados por cómo entró la plata.`
+                              : `Los recibos con fecha en ${nombreDelMes(month)} aparecen aquí, agrupados por cómo entró la plata.`
                           }
                         />
                       </TableCell>

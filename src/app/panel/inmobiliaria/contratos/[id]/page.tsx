@@ -1337,7 +1337,7 @@ function decisionesDelContrato({
           titulo={`Vencido desde el ${fechaLegible(vigencia.vencidoDesde)}`}
           // QA-CONT CR-19: «sigue activo» a secas hacía creer que la prórroga
           // corría sola. No: espera a que alguien la confirme (o lo renueve).
-          detalle={`Pasaron ${vigencia.diasVencido} ${vigencia.diasVencido === 1 ? 'día' : 'días'} de la fecha de fin y nadie lo renovó ni lo terminó. Sigue activo, pero la prórroga no se aplica sola: espera un clic en «Prórroga», acá abajo (o en la Bandeja del Piloto, si el proceso diario ya te la dejó ahí). También puedes renovarlo o terminar el arriendo.`}
+          detalle={`Pasaron ${vigencia.diasVencido} ${vigencia.diasVencido === 1 ? 'día' : 'días'} de la fecha de fin y nadie lo renovó ni lo terminó. Sigue activo, pero la prórroga no se aplica sola: espera un clic en «Prórroga», aquí abajo (o en la Bandeja del Piloto, si el proceso diario ya te la dejó ahí). También puedes renovarlo o terminar el arriendo.`}
           principal={{
             label: 'Renovar contrato',
             icon: ArrowsClockwise,

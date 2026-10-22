@@ -1254,7 +1254,7 @@ function StepConfirmImportCuerpo({
         {(resumenLote?.pendientes ?? 0) > 0 && (
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
             Quedan {resumenLote?.pendientes} filas con datos por corregir. No
-            frenan nada: puedes arreglarlas acá o dejarlas fuera y seguir.
+            frenan nada: puedes arreglarlas aquí o dejarlas fuera y seguir.
           </p>
         )}
         {!sabemosDeOtrasCargas ? (
@@ -1835,7 +1835,7 @@ function StepConfirmImportCuerpo({
                   <p className="text-sm text-fg-muted" data-testid="subida-pide-el-archivo">
                     Para seguir, vuelve con «Anterior» al paso de subir el archivo, selecciona el
                     MISMO archivo (tiene que tener {totalDelLote.toLocaleString(localeDeLasCifras())} filas) y
-                    avanza hasta acá: retomamos desde donde quedó.
+                    avanza hasta aquí: retomamos desde donde quedó.
                   </p>
                 )}
                 <Button
@@ -2025,7 +2025,7 @@ function StepConfirmImportCuerpo({
         </div>
         {!estadoLote.puedeReintentar && totalAEnviar > 0 ? (
           <p className="text-xs text-fg-subtle">
-            Tus datos siguen acá — no hace falta volver a subir el archivo.
+            Tus datos siguen aquí — no hace falta volver a subir el archivo.
           </p>
         ) : null}
       </div>
@@ -2371,7 +2371,7 @@ function StepConfirmImportCuerpo({
           ? createPortal(salidaDelPaso, ranuraDelPie)
           : null}
         {/* Sin pie montado (primer render, o la página suelta) la salida no se
-            puede perder: se dibuja acá. */}
+            puede perder: se dibuja aquí. */}
         {!ranuraDelPie && salidaDelPaso ? (
           <div className="flex justify-end">{salidaDelPaso}</div>
         ) : null}
@@ -2466,9 +2466,9 @@ function StepConfirmImportCuerpo({
 
       {/*
         La barra de la subida: con muro sale por la ranura viva (fuera del
-        `inert`, con su «Detener» vivo) y sin muro, acá mismo.
+        `inert`, con su «Detener» vivo) y sin muro, aquí mismo.
 
-        🔴 Acá NO va la barra de la re-revisión, aunque vivió acá hasta el
+        🔴 Aquí NO va la barra de la re-revisión, aunque vivió aquí hasta el
         2026-09-11. Este `return` es el resumen PREVIO a subir: sólo se llega
         con `lote === null`, y revisar exige un lote. Vive con la de activación,
         dentro del `if (lote)`.

@@ -435,7 +435,7 @@ describe('FacturasEmitidas · Notas con `notas/lista`', () => {
     expect(document.querySelectorAll('thead th').length).toBe(celdas.length);
   });
 
-  it('🔴 Q6: la GENERADA de un cobro anulado se emite desde acá', async () => {
+  it('🔴 Q6: la GENERADA de un cobro anulado se emite desde aquí', async () => {
     notasDelMes.mockResolvedValue({
       mes: '2026-10',
       disponible: true,

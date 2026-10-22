@@ -110,7 +110,7 @@ export function SignaturePad({ onChange, signerName, disabled = false, className
         {isEmpty && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <p className="text-xs text-fg-muted select-none">
-              Firma acá con el mouse, dedo o stylus
+              Firma aquí con el mouse, dedo o stylus
             </p>
           </div>
         )}

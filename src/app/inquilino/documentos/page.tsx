@@ -467,7 +467,7 @@ export default function DocumentosPage() {
             ya existe, del otro lado, en `GET /portal/certificados-de-retencion`
             y en el portal del propietario. Lo que sí falta —que un inquilino
             agente de retención pueda EMITIR el suyo— es una pieza aparte y no
-            se disfraza de «próximamente» acá. */}
+            se disfraza de «próximamente» aquí. */}
         <section className="mb-8">
           <MisCertificados />
         </section>

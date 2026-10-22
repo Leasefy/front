@@ -81,7 +81,7 @@ const FILAS: FilaDelArchivo[] = [
     movimientoId: null,
     movimiento: null,
     estadoConciliado: 'OMITIDO',
-    razon: 'Es de antes de que facturaras en Leasefy (corte del 01/10/2026): ese pago se lleva en el sistema anterior y no se aplica acá.',
+    razon: 'Es de antes de que facturaras en Leasefy (corte del 01/10/2026): ese pago se lleva en el sistema anterior y no se aplica aquí.',
     sePuedeConciliar: false,
   }),
   fila({

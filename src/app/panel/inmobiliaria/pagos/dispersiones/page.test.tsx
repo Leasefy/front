@@ -450,7 +450,7 @@ describe('D3 — la agencia aprueba por lote', () => {
 describe('23-09 — la liquidación que ya está en un lote', () => {
   it('🔴 un 409 DISPERSION_EN_UN_LOTE dice el mensaje del back y abre ESE lote, no «No se pudo aprobar»', async () => {
     const msg =
-      'Esta liquidación está en un lote (APROBADO): se gira con ese lote. Girarla también por acá le pagaría dos veces al propietario.';
+      'Esta liquidación está en un lote (APROBADO): se gira con ese lote. Girarla también por aquí le pagaría dos veces al propietario.';
     m.approve.mockRejectedValue(
       new ApiError(409, msg, 'DISPERSION_EN_UN_LOTE', {
         code: 'DISPERSION_EN_UN_LOTE',

@@ -105,7 +105,7 @@ export function SinLaMigracion({
         <p className="font-medium">Todavía no se puede {queSeEspera}.</p>
         {/* 🔴 20-09 · Igual que en `contabilidad/piezas`: el motivo del back
             está escrito para quien despliega —trae el identificador de la
-            migración y el nombre de quien la aplica— y acá lo lee una
+            migración y el nombre de quien la aplica— y aquí lo lee una
             inmobiliaria. `enCristiano` lo traduce; el original queda en el
             `title` para quien tenga que diagnosticar. */}
         <p className="text-fg-muted" title={motivo ?? undefined}>

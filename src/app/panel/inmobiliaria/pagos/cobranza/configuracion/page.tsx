@@ -569,7 +569,7 @@ function CobranzaConfiguracionContent() {
 
       {/* El acuerdo general NO vive acá — ni siquiera como puntero. Se arma en
           /cobranza/acuerdos, junto a los acuerdos puntuales. Dejar una tarjeta
-          con el título «Acuerdo general» acá seguía diciendo que esto era su
+          con el título «Acuerdo general» aquí seguía diciendo que esto era su
           lugar. Ver la nota al pie del archivo. */}
 
       {/* ① Facturación e integraciones ──────────────────────────────────────
@@ -594,7 +594,7 @@ function CobranzaConfiguracionContent() {
           <div className="border-t border-border-faint" />
 
           {/* 🔴 Cómo te cobra Leasefy: SÓLO LECTURA (Nico, 04-10-2026: «sólo
-              Leasefy lo cambia desde /admin»). Antes se cambiaba acá el modelo
+              Leasefy lo cambia desde /admin»). Antes se cambiaba aquí el modelo
               de facturación y la comisión de éxito del 8 %. */}
           <ModeloDeCobroDeLeasefy draft={negDraft} />
 
@@ -801,7 +801,7 @@ function CobranzaConfiguracionContent() {
         Reporte diario — su pantalla salió del menú porque lo que había que
         mirar (alertas y deudores que más pesan) subió al Resumen. Pero los
         umbrales y la suscripción son configuración de la inmobiliaria, de la
-        misma familia que los acuerdos de arriba, así que su puerta vive acá.
+        misma familia que los acuerdos de arriba, así que su puerta vive aquí.
         Sin esto quedaban sólo alcanzables escribiendo la URL.
       */}
       <section
@@ -821,7 +821,7 @@ function CobranzaConfiguracionContent() {
         <div className="border-t border-border-faint" />
 
         {/* Este switch vivía dentro de «Negociación», entre el CRM y el ERP.
-            Es del reporte diario: vive acá. Guarda en el mismo PATCH de policy,
+            Es del reporte diario: vive aquí. Guarda en el mismo PATCH de policy,
             por eso tiene su propio botón en vez de compartir el del acuerdo. */}
         {!policy.notProvisioned && negDraft && (
           <div className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">

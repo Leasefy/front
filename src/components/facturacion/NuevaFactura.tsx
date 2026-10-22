@@ -408,7 +408,7 @@ function PlataDeLaFila({ factura }: { factura: FacturaDelMes }) {
           </p>
         )}
       {/* GLOW UP (20-10-2026): cuando la columna del estado ya dice «Sin
-          confirmar · Confirmar en el contrato», no se repite acá (salía dos
+          confirmar · Confirmar en el contrato», no se repite aquí (salía dos
           veces en la misma fila, con el mismo `data-testid`). */}
       {factura.impuestosSinConfirmar && estadoDeLaFila(factura) !== 'sin-escenario' && (
         <p>
@@ -459,7 +459,7 @@ function ConceptoDeLaFila({ factura }: { factura: FacturaDelMes }) {
       <InteresDeMora factura={factura} />
       <EnMora factura={factura} />
       {/* 🔴 Lo que esta factura tiene que decir y no cabe en un número. El
-          aviso de «mora sin intereses» ya no va acá: es el mismo en todas las
+          aviso de «mora sin intereses» ya no va aquí: es el mismo en todas las
           filas y se dice UNA vez arriba (FA-03). */}
       {avisos.length > 0 && (
         <p
@@ -1874,7 +1874,7 @@ export function NuevaFactura({
             data-testid="facturacion-motivo-apagado"
           >
             {/* GLOW UP: con la lista de la página arriba (que ya explica qué
-                falta), acá basta la razón corta y el botón. */}
+                falta), aquí basta la razón corta y el botón. */}
             {sinAvisoDeResolucionArriba ? 'Falta la resolución con qué numerar.' : motivoParaNoEmitir}{' '}
             {onIrAResolucion && (
               <button
@@ -1987,8 +1987,8 @@ export function NuevaFactura({
           que la tabla. */}
       {/* 🔴 23-09 (Nico: «tarjeta dentro de tarjeta dentro de tarjeta»): esto
           YA vive dentro de la tarjeta de pestañas de Facturación; un segundo
-          borde acá era la tarjeta de adentro. Pestañas + filtros + tabla son UNA
-          tarjeta: acá sólo hay separadores. */}
+          borde aquí era la tarjeta de adentro. Pestañas + filtros + tabla son UNA
+          tarjeta: aquí sólo hay separadores. */}
       <section className="overflow-x-clip" data-testid="facturacion-por-facturar">
       <div className="border-b border-border px-4 py-4 space-y-3">
         {/* GLOW UP (20-10-2026): primero EL mes que se factura —es el trabajo de

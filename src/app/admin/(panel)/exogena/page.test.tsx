@@ -188,7 +188,7 @@ describe('ExogenaAdminPage', () => {
     expect(publicarAnio).not.toHaveBeenCalled()
   })
 
-  it('🔴 un tope mal escrito frena el guardado acá, con el porqué', async () => {
+  it('🔴 un tope mal escrito frena el guardado aquí, con el porqué', async () => {
     listarAnios.mockResolvedValue({ disponible: true, anios: [] })
     await pintar()
 

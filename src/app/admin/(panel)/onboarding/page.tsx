@@ -292,7 +292,7 @@ export default function OnboardingPage() {
         error={error}
         onReintentar={refetch}
         emptyTitle="Todavía no hay inmobiliarias"
-        emptyHint="Cuando una se registre, aparece acá."
+        emptyHint="Cuando una se registre, aparece aquí."
         id="recorrido"
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar inmobiliaria"

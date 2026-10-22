@@ -263,7 +263,7 @@ describe('🔴 ninguna ruta del cliente se queda sin puerta', () => {
       nuevos,
       `Estos métodos del cliente HTTP no los llama nadie en el producto.\n` +
         `Si la pantalla que los usa todavía no existe, esa pantalla es la tarea;\n` +
-        `si el método sobró, bórralo. Declararlo acá es el último recurso, y va\n` +
+        `si el método sobró, bórralo. Declararlo aquí es el último recurso, y va\n` +
         `con el motivo escrito.\n\n  ${nuevos.join('\n  ')}\n`,
     ).toEqual([]);
   });

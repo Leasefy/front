@@ -197,7 +197,7 @@ function Contenido({
           los nueve del catálogo, ése es el que se factura, y la pantalla lo
           tiene que decir — si no, «confirmado» parece salido de la nada. Y
           cuando NO se pudo usar (un escenario con IVA en una vivienda), el
-          motivo va acá, con la salida. */}
+          motivo va aquí, con la salida. */}
       {/* 🔴 QA-CONT-95 B-32: el archivo dice un escenario y la ficha del
           propietario otro (Constructora Ñandú: «Escenario 1 · entre personas
           naturales» siendo una empresa que retiene). No se elige solo: la
@@ -355,7 +355,7 @@ function Contenido({
                 <span className="font-medium text-foreground">
                   Administración del contrato
                 </span>
-                , acá mismo en la ficha. Si es del propietario, va en su ficha.
+                , aquí mismo en la ficha. Si es del propietario, va en su ficha.
               </p>
               {llevaAConfirmar}
             </div>

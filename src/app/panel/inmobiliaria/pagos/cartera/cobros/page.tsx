@@ -530,7 +530,7 @@ function CobrosContent() {
               Conciliación, que es otra sección (Nico, 2026-09-03).
               B-09/N-28 (QA-PAGOS-95 r2): el engranaje de «Configurar
               recordatorios» salió; los recordatorios viven en Cobranza ›
-              Recordatorios (J-12) y de acá sólo se va allá. */}
+              Recordatorios (J-12) y de aquí sólo se va allá. */}
           <Button asChild variant="outline" hideArrow>
             <Link href={RUTA_DE_LOS_RECORDATORIOS} data-testid="ir-a-recordatorios">
               <BellRinging className="w-4 h-4" />
@@ -596,7 +596,7 @@ function CobrosContent() {
       />
 
       {/* PPF-02b (QA-PAGOS-95 r2): los recargos escritos sin plazo fijado que
-          quedan (pagados o facturados) se revisan acá. */}
+          quedan (pagados o facturados) se revisan aquí. */}
       <RecargosSinPlazo />
 
       {/* Summary Section — la página ya no anima su propia entrada (la pone el

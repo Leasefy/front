@@ -212,7 +212,7 @@ export default function AprobarReparacionesPage() {
                 icon={Wrench}
                 ilustracion="escudo"
                 title="No tienes reparaciones por aprobar"
-                description="Cuando tu inmobiliaria necesite tu aprobación para descontarte una reparación, va a aparecer acá."
+                description="Cuando tu inmobiliaria necesite tu aprobación para descontarte una reparación, va a aparecer aquí."
               />
             </section>
           }

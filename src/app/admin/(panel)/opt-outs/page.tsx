@@ -142,7 +142,7 @@ export default function OptOutsPage() {
       <Alert variant="danger" role="note" title="Base legal">
         Ley 1581 de 2012 y Ley 2300 de 2023 (art. 7). La baja <strong>no se revoca</strong> sin un consentimiento
         explícito y posterior del titular: para revertirla hace falta su autorización por escrito y el visto bueno del
-        equipo legal de Leasefy. No se borra nada de acá sin dejar rastro.
+        equipo legal de Leasefy. No se borra nada de aquí sin dejar rastro.
       </Alert>
     </div>
   )

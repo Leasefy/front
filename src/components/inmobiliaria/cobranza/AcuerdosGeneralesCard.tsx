@@ -173,7 +173,7 @@ export function AcuerdosGeneralesCard() {
             <h2 className="text-sm font-semibold text-fg">Límites del agente</h2>
             <p className="text-xs text-fg-muted max-w-xl leading-relaxed">
               El máximo que el agente puede ofrecer, pase lo que pase. Ningún
-              acuerdo general se sale de acá: si uno dice 50% y este límite dice
+              acuerdo general se sale de aquí: si uno dice 50% y este límite dice
               20%, el deudor recibe 20%.
             </p>
           </div>

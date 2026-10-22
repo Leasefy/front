@@ -634,7 +634,7 @@ export default function TenantDetailPage() {
           <EmptyBlock
             icono={<PhoneCall weight="bold" />}
             title="Conectada, todavía sin deudores"
-            hint="La inmobiliaria está en la cobranza por voz (Mori), pero no tiene deudores cargados ni llamadas. Cuando empiece, acá salen sus cifras."
+            hint="La inmobiliaria está en la cobranza por voz (Mori), pero no tiene deudores cargados ni llamadas. Cuando empiece, aquí salen sus cifras."
           />
         ) : (
           <>

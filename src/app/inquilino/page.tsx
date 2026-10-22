@@ -548,7 +548,7 @@ export default function InquilinoPage() {
                       />
 
                       {/*
-                        Acá iba una insignia "92% match". El número salía de
+                        Aquí iba una insignia "92% match". El número salía de
                         `92 - index * 5`: la posición en el arreglo, no un
                         cálculo. La primera tarjeta siempre decía 92%.
 
@@ -668,7 +668,7 @@ export default function InquilinoPage() {
                     title={locale === 'es' ? 'Todavía no te has postulado' : 'You have not applied yet'}
                     description={
                       locale === 'es'
-                        ? 'Cuando te postules a una propiedad, podrás seguir acá cómo va tu postulación.'
+                        ? 'Cuando te postules a una propiedad, podrás seguir aquí cómo va tu postulación.'
                         : 'When you apply to a property, you\'ll be able to follow your application here.'
                     }
                     action={{

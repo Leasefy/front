@@ -158,7 +158,7 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
         <div className="space-y-2">
           <p className="text-caption text-muted-foreground">
             Las reglas son de la inmobiliaria y rigen para todos los contratos.
-            Acá se ajustan sólo para este.
+            Aquí se ajustan sólo para este.
           </p>
           {reglas.map((r) => (
             <FilaDeRegla

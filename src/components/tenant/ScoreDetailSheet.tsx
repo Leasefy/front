@@ -116,7 +116,7 @@ export function ScoreDetailSheet({
         <SheetFooter className="[&>div]:w-full">
           {!isPaid ? (
             /*
-              Acá había un botón primario "Evaluar mi perfil" cableado a
+              Aquí había un botón primario "Evaluar mi perfil" cableado a
               `purchaseEvaluation()`, que solo escribe una advertencia en
               consola: la evaluación de autoservicio del inquilino no existe
               todavía. Se tocaba y no pasaba absolutamente nada — ni aviso, ni
@@ -191,7 +191,7 @@ function LockedContent({ locale }: { locale: string }) {
             (docs/VOCABULARIO.md). */}
         <p className="text-sm text-fg-muted leading-relaxed">
           {locale === 'es'
-            ? 'Un score verificable que muestra tu confiabilidad como inquilino. La inmobiliaria lo genera al estudiar tu postulación, y queda acá para que lo compartas.'
+            ? 'Un score verificable que muestra tu confiabilidad como inquilino. La inmobiliaria lo genera al estudiar tu postulación, y queda aquí para que lo compartas.'
             : 'A verifiable score that shows your reliability as a tenant. The agency generates it when reviewing your application, and it stays here for you to share.'}
         </p>
       </div>

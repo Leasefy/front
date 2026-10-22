@@ -234,7 +234,7 @@ Esto es información general sobre la Ley 820 de 2003, no asesoría legal para t
     href: "/blog/colombia-mejor-opcion",
     author: "Equipo Leasefy",
     tags: ["vivir en Colombia", "nómadas digitales", "expatriados", "arrendar sin historial", "Medellín", "Bogotá", "costo de vida"],
-    content: `Colombia lleva años apareciendo en las listas de destinos para trabajar en remoto, jubilarse o empezar de nuevo. Detrás del titular hay razones concretas, y también un par de fricciones que casi nadie menciona hasta que ya estás acá buscando dónde vivir.
+    content: `Colombia lleva años apareciendo en las listas de destinos para trabajar en remoto, jubilarse o empezar de nuevo. Detrás del titular hay razones concretas, y también un par de fricciones que casi nadie menciona hasta que ya estás aquí buscando dónde vivir.
 
 Esto es lo que conviene saber antes de mudarte, contado desde el lado práctico: dónde, cuánto, y qué te van a pedir para arrendar.
 
@@ -250,7 +250,7 @@ No hay una respuesta correcta. Hay una pregunta previa: tu ingreso depende de la
 
 ## Lo que cuesta vivir aquí
 
-El costo de vida varía muchísimo entre ciudades, y entre barrios de la misma ciudad. En lugar de darte un número que envejece mal, acá está la forma de armarlo tú:
+El costo de vida varía muchísimo entre ciudades, y entre barrios de la misma ciudad. En lugar de darte un número que envejece mal, aquí está la forma de armarlo tú:
 
 1. **El canon**: mira avisos reales del barrio que te interesa, no promedios de ciudad. La diferencia entre dos barrios vecinos puede ser del doble.
 
@@ -264,9 +264,9 @@ Una regla práctica: al canon que veas en el aviso súmale la administración, y
 
 ## La parte que nadie te cuenta: arrendar sin historial en Colombia
 
-Acá está la fricción de verdad, y conviene saberla antes de aterrizar.
+Aquí está la fricción de verdad, y conviene saberla antes de aterrizar.
 
-Para arrendar vivienda en Colombia casi siempre te van a pedir una garantía. Las tres formas habituales son un codeudor con finca raíz en la ciudad, una póliza de arrendamiento con una aseguradora, o una afianzadora. Y las tres se apoyan en algo que un recién llegado no tiene: historial crediticio en el país, contrato laboral colombiano o un familiar con propiedad acá.
+Para arrendar vivienda en Colombia casi siempre te van a pedir una garantía. Las tres formas habituales son un codeudor con finca raíz en la ciudad, una póliza de arrendamiento con una aseguradora, o una afianzadora. Y las tres se apoyan en algo que un recién llegado no tiene: historial crediticio en el país, contrato laboral colombiano o un familiar con propiedad aquí.
 
 Es el motivo por el que muchos extranjeros terminan pagando alojamiento temporal a precio de turista durante meses. No porque no puedan pagar un arriendo, sino porque no pueden demostrarlo del modo en que el mercado local espera.
 

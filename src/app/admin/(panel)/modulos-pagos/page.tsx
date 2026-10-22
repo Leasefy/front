@@ -168,7 +168,7 @@ export default function ModulosPagosPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Módulos"
-        description="Qué módulo de pago tiene comprado cada inmobiliaria, quién se lo prendió y cuándo. Prender o apagar desde acá es lo único que lo cambia: ninguna inmobiliaria puede activárselo sola."
+        description="Qué módulo de pago tiene comprado cada inmobiliaria, quién se lo prendió y cuándo. Prender o apagar desde aquí es lo único que lo cambia: ninguna inmobiliaria puede activárselo sola."
       />
 
       {data && !data.disponible ? <Alert variant="warning">{data.motivo}</Alert> : null}

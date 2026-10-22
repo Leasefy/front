@@ -3201,8 +3201,8 @@
       },
       "resumen": {
         "summaryMonth": "Resumen {{month}}",
-        "ownerDisbursements": "Dispersiones a propietarios",
-        "toDisburse": "A dispersar",
+        "ownerDisbursements": "Giros a propietarios",
+        "toDisburse": "A girar",
         "commissions": "Comisiones",
         "progress": "Progreso",
         "pendingLabel": "Pendientes:",
@@ -10941,7 +10941,7 @@
       "verPaso": "Ver",
       "verElRecorrido": "El recorrido completo",
       "sinPantalla": "Todavía sin pantalla",
-      "cambioDeManos": "Acá cambia de manos",
+      "cambioDeManos": "Aquí cambia de manos",
       "actorInquilino": "Inquilino",
       "actorInmobiliaria": "Tú",
       "verdict": {
@@ -13359,7 +13359,7 @@
   "inquilinos": {
     "eyebrow": "Terceros",
     "titulo": "Inquilinos",
-    "subtitulo": "Las personas que viven en los inmuebles que administras, con todos sus arriendos juntos. Carga uno acá, o trae los que ya tienes en otro sistema con la migración.",
+    "subtitulo": "Las personas que viven en los inmuebles que administras, con todos sus arriendos juntos. Carga uno aquí, o trae los que ya tienes en otro sistema con la migración.",
     "queEs": "los inquilinos",
     "queSon": "inquilinos",
     "buscarPlaceholder": "Busca por nombre, correo o teléfono",

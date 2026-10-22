@@ -781,7 +781,7 @@ function ResumenDelNegocio() {
             <EmptyState
               icon={UserCircle}
               title="Todavía no hay agentes activos"
-              description="Invita a alguien del equipo desde Configuración › Equipo y acá vas a ver su carga y sus cierres."
+              description="Invita a alguien del equipo desde Configuración › Equipo y aquí vas a ver su carga y sus cierres."
             />
           ) : (
             <div className="space-y-4">

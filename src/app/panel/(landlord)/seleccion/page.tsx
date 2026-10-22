@@ -68,7 +68,7 @@ export default function SeleccionPage() {
             ilustracion="casa"
             icon={UsersThree}
             title="No tienes elecciones abiertas"
-            description="Cuando tu inmobiliaria reúna postulados asegurables para uno de tus inmuebles, aparece acá para que elijas."
+            description="Cuando tu inmobiliaria reúna postulados asegurables para uno de tus inmuebles, aparece aquí para que elijas."
           />
         ) : (
           <ul className="mt-6 space-y-3" data-testid="procesos-de-eleccion">

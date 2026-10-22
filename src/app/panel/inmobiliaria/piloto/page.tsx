@@ -251,7 +251,7 @@ function PilotoContent() {
         </div>
         {/* Configuración, no operación: las dos viven en el encabezado.
             «Procesos» es la ventana por la que se ve trabajar al Piloto
-            (process view, 2026-09-02): también va acá, no en el flujo diario.
+            (process view, 2026-09-02): también va aquí, no en el flujo diario.
             «Preparación» (T-0051) se sacó del render — hidden temporarily
             as a product decision, not deleted; ver PilotoPreparacion.tsx.
             «¿Opera sola?» (24-09-2026) mide TODA la inmobiliaria (no sólo a

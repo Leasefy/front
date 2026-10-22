@@ -278,7 +278,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-plan-page">
       {/*
-        El muro de la puesta en marcha. Va acá adentro, envolviendo TODO el
+        El muro de la puesta en marcha. Va aquí adentro, envolviendo TODO el
         panel —sidebar, header, contenido y nav móvil—, para que cubra las
         156 rutas de una sola vez y ninguna quede por fuera por olvido.
 
@@ -429,7 +429,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       </Muro>
 
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
-          <ProtectedRoute>/<AgencySubscriptionGuard>: acá adentro se perdía todo toast
+          <ProtectedRoute>/<AgencySubscriptionGuard>: aquí adentro se perdía todo toast
           emitido mientras los guards resuelven. No montes otro: sonner duplica el toast
           por cada Toaster montado. */}
     </div>

@@ -332,7 +332,7 @@ export function ConsignacionTable({
            formulario, y eso PISA el `uppercase` que el `TH` hereda. Por eso
            «Propiedad» salía capitalizada mientras «PROPIETARIO» —que es un
            `span`, no un `button`— sí salía en mayúscula. El `uppercase`
-           explícito de acá es lo que devuelve la consistencia.
+           explícito de aquí es lo que devuelve la consistencia.
       */}
       <button
         type="button"
@@ -560,7 +560,7 @@ export function ConsignacionTable({
                 {/*
                   `whitespace-nowrap`: la columna es angosta y el importe se
                   partía en dos renglones. Un monto cortado a mitad se lee como
-                  otra cifra, así que acá el número manda sobre el ancho — para
+                  otra cifra, así que aquí el número manda sobre el ancho — para
                   eso la tabla tiene su propio scroll horizontal.
                 */}
                 <TableCell className="px-3 py-3 whitespace-nowrap">

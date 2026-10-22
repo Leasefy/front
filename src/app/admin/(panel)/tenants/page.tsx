@@ -220,7 +220,7 @@ export default function TenantsPage() {
         error={tenants.error}
         onReintentar={tenants.refetch}
         emptyTitle="Todavía no hay inmobiliarias"
-        emptyHint="Cuando una se registre, aparece acá."
+        emptyHint="Cuando una se registre, aparece aquí."
         emptyIcon={<Buildings weight="bold" />}
         aria-label="Inmobiliarias"
         onRowClick={(r) => router.push(`/admin/tenants/${r.tenant_id}`)}

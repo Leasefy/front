@@ -713,7 +713,7 @@ function BloqueDeMargen({ tablero, queMide }: { tablero: Tablero; queMide: boole
       className="flex h-full flex-col"
       titulo={tr('Lo que gana la inmobiliaria')}
       pregunta={tr('¿Cuánto le quedó, después de lo que cuesta mover la plata?')}
-      explicacion="Ingresos propios del mes menos los costos de mover la plata que la inmobiliaria asume. Lo que se le traslada al propietario o al inquilino NO entra acá: no es costo suyo."
+      explicacion="Ingresos propios del mes menos los costos de mover la plata que la inmobiliaria asume. Lo que se le traslada al propietario o al inquilino NO entra aquí: no es costo suyo."
     >
       <FilaDeCifras>
         <Cifra

@@ -311,7 +311,7 @@ export function BarraDeAmortizacion({
         Arriba se leía «$ 0 de $ 142.350.000» y abajo «Resta por pagar
         $ 98.550.000»: faltaban $ 43.800.000 que no estaban ni pagados ni
         pendientes —las cuotas del sistema anterior—, y ninguna cifra del
-        documento los nombraba. Con los tres montos acá, los tres suman lo
+        documento los nombraba. Con los tres montos aquí, los tres suman lo
         pactado y cualquiera lo puede cuadrar a ojo. Es un documento que se le
         manda al cliente: no puede tener plata sin explicar.
       */}

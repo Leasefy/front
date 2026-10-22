@@ -255,7 +255,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
       )}
 
       {/* QA-MIGRACION-95 (MP-06): la hoja se elige arriba; la fila de los
-          encabezados, acá, por si se adivinó mal. */}
+          encabezados, aquí, por si se adivinó mal. */}
       {state.file && filaDeEncabezado && !isParsing ? (
         <ElegirDondeEstaLaTabla
           soloLaFila

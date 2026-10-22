@@ -226,7 +226,7 @@ export function LoteEnWompi({ loteId, estado, vista, puedeEditar, onCambio }: Lo
           </p>
           {/* 🔴 Sin barra propia (Nico, 23-09: «todas las cargas déjalas que
               sucedan allí»): el avance del envío lo pinta el centro de
-              procesos. Acá queda el dato del lote, en una frase. */}
+              procesos. Aquí queda el dato del lote, en una frase. */}
           {envio.mensaje && (
             <Banner
               variant={

@@ -469,7 +469,7 @@ describe('<HistorialDeProcesos>', () => {
     expect(q('filtro-persona')).not.toBeNull()
   })
 
-  it('vacío, dice qué aparece acá', async () => {
+  it('vacío, dice qué aparece aquí', async () => {
     vi.mocked(procesosApi.listar).mockResolvedValue(lista([]))
     await montar(<HistorialDeProcesos />)
     expect(q('historial-vacio')?.textContent).toContain('Todavía no hay procesos')

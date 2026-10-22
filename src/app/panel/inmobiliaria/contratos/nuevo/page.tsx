@@ -1232,7 +1232,7 @@ function NuevoContratoContent() {
           🔴 C-12: lo que no deja crear por culpa del INMUEBLE sale apenas se
           elige, justo debajo del selector, y no al final del formulario
           después de llenarlo todo. El inventario se pregunta al elegir el
-          inmueble (`para-iniciar`); el 409 del back al crear cae acá mismo.
+          inmueble (`para-iniciar`); el 409 del back al crear cae aquí mismo.
           Entran y salen (no saltan).
         */}
         <Presence show={bloqueoDeInventario !== null} initial={false} distance="xs">
@@ -1453,7 +1453,15 @@ function NuevoContratoContent() {
         <section className="rounded-lg border border-border bg-card p-5 max-xl:order-2" data-testid="nuevo-contrato-respaldo">
           {/* Nico (22-10): el seguro va en UN solo lugar, con el respaldo del arriendo
               (antes también en Términos). El plan de Leasefy se sigue guardando igual. */}
-          <div className="mb-5 max-w-xs">
+          <RespaldoDelArriendo
+            valor={respaldo}
+            onCambio={setRespaldo}
+            opciones={evaluacion?.protection_options}
+            errores={erroresRespaldo}
+            conAnalisis={!esManual}
+          />
+          {/* Ronda 19: el seguro va DEBAJO del título y las opciones del respaldo, no encima. */}
+          <div className="mt-5 max-w-xs">
           <Field id="contrato-seguro" label="Seguro de Leasefy" hint="Opcional">
             <Select
               value={form.insuranceTier}
@@ -1470,13 +1478,6 @@ function NuevoContratoContent() {
             </Select>
           </Field>
           </div>
-          <RespaldoDelArriendo
-            valor={respaldo}
-            onCambio={setRespaldo}
-            opciones={evaluacion?.protection_options}
-            errores={erroresRespaldo}
-            conAnalisis={!esManual}
-          />
         </section>
         </div>
 

@@ -238,6 +238,9 @@ export function ConsignacionTable({
 
   // Sort consignaciones
   const hayAsesor = consignaciones.some((row) => row.kind === 'consignacion' && Boolean(agentesMap[row.agenteId]));
+  // Revisora r22 (Inmuebles #3): sin ninguna foto, diez cuadros grises con el mismo edificio no dicen nada: la miniatura
+  // sólo sale si algún inmueble de la lista tiene foto.
+  const hayFotos = consignaciones.some((c) => Boolean(c.propertyThumbnail));
 
   const sortedConsignaciones = useMemo(() => {
     const result = [...consignaciones];
@@ -504,9 +507,11 @@ export function ConsignacionTable({
                     ESTADO —lo que se viene a mirar— queda al lado del inmueble, no cortado en el borde. */}
                 <TableCell className="px-3 py-3">
                   <div className="flex items-center gap-3">
-                    <Avatar kind="inmueble" name={row.propertyTitle} src={row.propertyThumbnail || undefined} size="md">
-                      <PropertyIcon className="size-5" />
-                    </Avatar>
+                    {hayFotos ? (
+                      <Avatar kind="inmueble" name={row.propertyTitle} src={row.propertyThumbnail || undefined} size="md">
+                        <PropertyIcon className="size-5" />
+                      </Avatar>
+                    ) : null}
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate max-w-[260px]" title={row.propertyTitle}>
                         {row.propertyTitle}

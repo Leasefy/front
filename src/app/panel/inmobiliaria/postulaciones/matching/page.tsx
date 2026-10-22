@@ -27,10 +27,11 @@ import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { formatKpiValue } from '@/components/inmobiliaria/ai/SalaAgente'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { SectionLabel } from '@/components/ui/section-label'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
 import type { AgentOverviewResponse } from '@/lib/api/agent-workspace'
@@ -68,7 +69,6 @@ function ComoFunciona() {
       etiqueta={t(`${PAGES_NS}.comoFunciona.title`)}
       titulo={t(`${PAGES_NS}.comoFunciona.titulo`)}
       descripcion={t(`${PAGES_NS}.comoFunciona.descripcion`)}
-      variante="secundario"
     >
       <PasosExplicados
         data-testid="matching-como-funciona"
@@ -96,28 +96,35 @@ function ResumenConDatos({ data }: { data: AgentOverviewResponse }) {
   // IA-A-05 (QA-IA-95, 05-10-2026): sin candidatos con opciones en 30 días no
   // hubo calce que promediar: «0,0 %» era una medición que no ocurrió.
   const sinCasos = data.kpis.find((k) => k.id === 'candidatos_30d')?.value === 0
+  // La cifra de arriba: la cola (lo que te toca); si el micro no la manda, la primera.
+  const heroe = data.kpis.find((k) => k.id === 'en_cola') ?? data.kpis[0]
+  const resto = data.kpis.filter((k) => k !== heroe)
 
   return (
     <div className="space-y-6" data-testid="matching-resumen-datos">
-      {/* Las tarjetas entran escalonadas y cada cifra cuenta desde 0. */}
-      <Stagger className="grid grid-cols-2 gap-4 md:grid-cols-4" data-testid="matching-kpis">
-        {data.kpis.map((kpi) => (
-          <StaggerItem key={kpi.id} className="rounded-lg border border-border bg-surface p-4">
-            <p className="text-caption leading-tight text-fg-muted">{kpi.label}</p>
-            <p className="mt-1 text-xl font-medium tabular-nums text-fg">
-              {kpi.id === 'calce_promedio' && sinCasos ? (
+      {/* GLOW UP 22-10 (UX, al nivel de Deuda del mes): LA RESPUESTA en una cifra —los candidatos que
+          esperan tu visto bueno (la cola)— y las demás cifras del agente debajo, como leyenda. Antes, cuatro
+          tarjetas iguales. Cada cifra cuenta desde 0. */}
+      <section className="rounded-lg border border-border bg-surface p-5" data-testid="matching-kpis">
+        <CifraHeroe
+          rotulo={heroe.label}
+          cifra={<AnimatedNumber value={heroe.value} from={0} format={(n) => formatKpiValue(n, heroe.format)} />}
+          tamano="mediana"
+          tramos={resto.map((kpi) => ({
+            clave: kpi.id,
+            etiqueta: kpi.label,
+            monto: 0,
+            tono: 'neutro' as const,
+            siempre: true,
+            cifra:
+              kpi.id === 'calce_promedio' && sinCasos ? (
                 <span data-testid="calce-sin-casos" title="Sin candidatos con opciones en 30 días">—</span>
               ) : (
-                <AnimatedNumber
-                  value={kpi.value}
-                  from={0}
-                  format={(n) => formatKpiValue(n, kpi.format)}
-                />
-              )}
-            </p>
-          </StaggerItem>
-        ))}
-      </Stagger>
+                <AnimatedNumber value={kpi.value} from={0} format={(n) => formatKpiValue(n, kpi.format)} />
+              ),
+          }))}
+        />
+      </section>
 
       {segmentos.length > 0 && (
         <section className="space-y-3 rounded-lg border border-border bg-surface p-4">
@@ -172,25 +179,22 @@ function MatchingResumen() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1.5">
-          <SectionLabel>{t(`${PAGES_NS}.salaTitulo`)}</SectionLabel>
-          <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.nav.resumen')}</h1>
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">{t(`${PAGES_NS}.salaDesc`)}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-          {/* ¿Cómo funciona? — el cajón con los tres pasos (05-10-2026). */}
-          <ComoFunciona />
-          {/* El conteo sólo cuando el micro lo reporta: un «(0)» inventado
-              diría que ya revisó y no encontró nada. */}
-          <Button asChild hideArrow className="shrink-0">
+      {/* GLOW UP 22-10 (UX): el encabezado común —«¿Cómo funciona?» en la ayuda, la cola como la única
+          principal, con su conteo sólo cuando el micro lo reporta (un «(0)» inventado diría que ya revisó)—. */}
+      <EncabezadoDePantalla
+        seccion={t(`${PAGES_NS}.salaTitulo`)}
+        titulo={t('inmobiliaria.ai.nav.resumen')}
+        descripcion={t(`${PAGES_NS}.salaDesc`)}
+        ayuda={<ComoFunciona />}
+        accionPrincipal={
+          <Button asChild size="sm" hideArrow className="shrink-0">
             <Link href={COLA_HREF}>
               {t(`${PAGES_NS}.colaLabel`)}
               {typeof enCola === 'number' ? ` (${enCola})` : ''}
             </Link>
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       {/* Cargando → fallo / resumen / «aún no trabaja»: cada estado entra con
           su fundido. */}

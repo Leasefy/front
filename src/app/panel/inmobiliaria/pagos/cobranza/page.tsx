@@ -1,7 +1,6 @@
 'use client'
 
-import * as React from 'react'
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -23,8 +22,7 @@ import { CobranzaResultadosKpis } from '@/components/inmobiliaria/cobranza/Cobra
 import { CobranzaAnaliticaResumen } from '@/components/inmobiliaria/cobranza/CobranzaAnaliticaResumen'
 import { CobranzaTeTocaATi } from '@/components/inmobiliaria/cobranza/CobranzaTeTocaATi'
 import { CobranzaDeudoresQuePesan } from '@/components/inmobiliaria/cobranza/CobranzaDeudoresQuePesan'
-import { CobranzaStageCard } from '@/components/inmobiliaria/cobranza/CobranzaStageCard'
-import { CobranzaFunnelChart } from '@/components/inmobiliaria/cobranza/CobranzaFunnelChart'
+import { CarteraPorEtapa } from '@/components/inmobiliaria/cobranza/CarteraPorEtapa'
 import { CobranzaTransitionsFeed } from '@/components/inmobiliaria/cobranza/CobranzaTransitionsFeed'
 import { CobranzaNextActionsPanel } from '@/components/inmobiliaria/cobranza/CobranzaNextActionsPanel'
 import { CobranzaOverviewSkeleton } from '@/components/skeleton/panel/CobranzaOverviewSkeleton'
@@ -35,7 +33,6 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { Button } from '@/components/ui'
 import { CrossFade, Presence } from '@leasefy/cadence'
-import { CARTERA_STAGES } from '@/lib/cartera'
 import type { CarteraStage } from '@/lib/cartera'
 import { useTr } from '@/lib/i18n/use-tr'
 
@@ -161,49 +158,6 @@ export default function CobranzaOverviewPage() {
     [router]
   )
 
-  // ── Roving-tabindex composite-widget pattern (Phase 38 plan 38-04c / D-38-13) ─
-  // The 7 stage cards act as a tablist; Tab enters once, ArrowLeft/Right moves
-  // focus within. Enter/Space activates the same handler as a mouse click.
-  const [focusedStage, setFocusedStage] = useState<CarteraStage>('S0')
-
-  // One ref per stage — stable across renders (createRef runs once on mount).
-  const stageRefs = useRef<Record<CarteraStage, React.RefObject<HTMLButtonElement>>>(
-    Object.fromEntries(
-      CARTERA_STAGES.map((s) => [s, React.createRef<HTMLButtonElement>()]),
-    ) as Record<CarteraStage, React.RefObject<HTMLButtonElement>>,
-  )
-
-  const handleStageKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLButtonElement>, stage: CarteraStage) => {
-      const idx = CARTERA_STAGES.indexOf(stage)
-      if (e.key === 'ArrowRight' && idx < CARTERA_STAGES.length - 1) {
-        e.preventDefault()
-        const next = CARTERA_STAGES[idx + 1]
-        setFocusedStage(next)
-        stageRefs.current[next].current?.focus()
-      } else if (e.key === 'ArrowLeft' && idx > 0) {
-        e.preventDefault()
-        const prev = CARTERA_STAGES[idx - 1]
-        setFocusedStage(prev)
-        stageRefs.current[prev].current?.focus()
-      } else if (e.key === 'Home') {
-        e.preventDefault()
-        const first = CARTERA_STAGES[0]
-        setFocusedStage(first)
-        stageRefs.current[first].current?.focus()
-      } else if (e.key === 'End') {
-        e.preventDefault()
-        const last = CARTERA_STAGES[CARTERA_STAGES.length - 1]
-        setFocusedStage(last)
-        stageRefs.current[last].current?.focus()
-      } else if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        handleStageClick(stage)
-      }
-    },
-    [handleStageClick],
-  )
-
   // GLOW UP 21-10: el encabezado común, el mismo en el fallo y en el panorama.
   // Sin acción principal a propósito: lo que te toca hacer vive en «Te toca a
   // ti», con su botón en cada fila; «¿Cómo funciona?» va donde iría la acción.
@@ -216,12 +170,6 @@ export default function CobranzaOverviewPage() {
       data-testid="cobranza-encabezado"
     />
   )
-
-  // ¿Se vio la carga? Entonces las cifras de las etapas que llegan cuentan
-  // desde 0; si el panorama ya estaba (volver a la pantalla), sólo cuentan
-  // cuando cambian.
-  const huboCarga = useRef(false)
-  if (isLoading && !data) huboCarga.current = true
 
   // ── Skeleton + EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─────────
   // Movimiento: cada salida va en un `CrossFade` con su clave (esqueleto →
@@ -369,55 +317,19 @@ export default function CobranzaOverviewPage() {
           {tr("Tu cartera")}
         </h2>
 
-        {/* Etapas — tablist con roving tabindex (D-38-13) */}
-        <div
-          role="tablist"
-          aria-label={t('inmobiliaria.ai.cobranza.overview.stages.title')}
-          aria-orientation="horizontal"
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3"
-        >
-          {CARTERA_STAGES.map((stage) => {
-            const stageData = data?.stages.find((s) => s.stage === stage)
-            return (
-              <CobranzaStageCard
-                key={stage}
-                ref={stageRefs.current[stage]}
-                stage={stage}
-                count={stageData?.count ?? 0}
-                avgDaysInStage={stageData?.avgDaysInStage ?? 0}
-                weeklyDelta={stageData?.weeklyDelta ?? 0}
-                onStageClick={handleStageClick}
-                isLoading={isLoading}
-                role="tab"
-                aria-selected={focusedStage === stage}
-                tabIndex={focusedStage === stage ? 0 : -1}
-                id={`stage-tab-${stage}`}
-                aria-controls="stage-panel"
-                onKeyDown={(e) => handleStageKeyDown(e, stage)}
-                contarDesdeCero={huboCarga.current}
-              />
-            )
-          })}
-        </div>
+        {/* 🔴 21-10 (Nico: «cosas que no escalan en lectura, mira todos esos números»):
+            las siete tarjetas de colores —cuatro números cada una— y el embudo que
+            repetía los mismos conteos pasan a UNA barra por gravedad + UNA lista con
+            sólo las etapas que tienen casos. Ver `CarteraPorEtapa`. */}
+        <CarteraPorEtapa
+          etapas={data?.stages ?? []}
+          isLoading={isLoading}
+          onEtapa={handleStageClick}
+        />
 
-        {/* Tabpanel — lo exige ARIA cuando hay role=tab + aria-controls */}
-        {/* Dos columnas sólo cuando hay dos cosas. `CobranzaDeudoresQuePesan`
-            no se monta sin datos, y una grilla de 2 con una celda vacía dejaba
-            el embudo a media pantalla, como si le faltara algo al lado. */}
-        <div
-          role="tabpanel"
-          id="stage-panel"
-          aria-labelledby={`stage-tab-${focusedStage}`}
-          className="grid grid-cols-1 lg:grid-cols-2 items-start gap-4 [&>*:only-child]:lg:col-span-2"
-        >
-          <CobranzaFunnelChart
-            stages={data?.stages.map((s) => ({ stage: s.stage, count: s.count })) ?? []}
-            isLoading={isLoading}
-          />
-          {/* «Los que más pesan» estaba entre siniestros y alertas de umbral,
-              como si fuera algo que atender hoy. Es composición de cartera. */}
-          <CobranzaDeudoresQuePesan />
-        </div>
+        {/* «Los que más pesan» estaba entre siniestros y alertas de umbral,
+            como si fuera algo que atender hoy. Es composición de cartera. */}
+        <CobranzaDeudoresQuePesan />
       </section>
 
       {/* ═══ 4. ACTIVIDAD ══════════════════════════════════════════════════ */}

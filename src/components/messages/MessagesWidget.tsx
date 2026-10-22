@@ -350,7 +350,11 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
       if (!match && !selectedConversationId) return;
     }
     if (!selectedConversationId && conversations.length > 0) {
-      setSelectedConversationId(conversations[0].id);
+      // La más reciente CON mensajes; si ninguna tiene, la primera (revisión 21-10).
+      const conMensajes = conversations
+        .filter((c) => c.lastMessageAt)
+        .sort((a, b) => (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''));
+      setSelectedConversationId((conMensajes[0] ?? conversations[0]).id);
     }
   }, [conversations, selectedConversationId, urlConversationId, urlApplicationId]);
 
@@ -382,7 +386,22 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
 
   // GLOW UP 21-10 · el trabajo de la bandeja es RESPONDER a quien espera: «Sin leer» a un toque.
   const sinLeer = conversations.filter((c) => c.unreadCount > 0).length;
-  const filteredConversations = conversations.filter(
+  /*
+   * Revisión de Operación (21-10): la bandeja se ordena por el último mensaje —lo más
+   * reciente arriba— y las conversaciones sin mensajes van al final. Antes salían en el
+   * orden del servidor y se abría una conversación vacía.
+   */
+  const porActividad = useMemo(
+    () =>
+      [...conversations].sort((a, b) => {
+        if (!a.lastMessageAt && !b.lastMessageAt) return 0;
+        if (!a.lastMessageAt) return 1;
+        if (!b.lastMessageAt) return -1;
+        return b.lastMessageAt.localeCompare(a.lastMessageAt);
+      }),
+    [conversations],
+  );
+  const filteredConversations = porActividad.filter(
     (c) =>
       (!soloSinLeer || c.unreadCount > 0) &&
       (c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

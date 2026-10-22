@@ -8,10 +8,11 @@ import { MapPin, Users, Clock, CheckCircle, XCircle, WarningCircle, Eye, FileTex
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button, Spinner, Card } from '@/components/ui';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
-import { MonoLabel } from '@leasefy/cadence';
+import { Avatar, MonoLabel } from '@leasefy/cadence';
 import {
   Dialog,
   DialogContent,
@@ -831,7 +832,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
   if (!property) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="p-6 lg:p-8">
           <FalloDeCarga
             error={errorPropiedad ?? new ApiError(404, 'property not found')}
             queEs="esta propiedad"
@@ -845,71 +846,44 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="p-6 lg:p-8">
 
         {/* Back Link */}
         <div className="mb-6">
           <BackButton href="/panel/propiedades" label="Volver a mis propiedades" />
         </div>
 
-        {/* Property Header - Premium Glass Style */}
-        <header className="relative rounded-lg overflow-hidden mb-8">
-          {/* Background Image with Overlay */}
-          <div className="absolute inset-0">
-            <PortadaDelInmueble
-              property={property}
-              alt={property.title}
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
+        {/* GLOW UP (21-10-2026): el encabezado común, con la foto al lado. Antes era
+            una portada con vidrio esmerilado (fuera del sistema) y repetía las cifras
+            de candidatos que ya dicen las tarjetas y las pestañas de abajo. */}
+        <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start" data-testid="cabecera-del-inmueble">
+          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl lg:h-28 lg:w-28">
+            <PortadaDelInmueble property={property} alt={property.title} compacta />
           </div>
-
-          {/* Content */}
-          <div className="relative px-6 py-8 lg:px-8 lg:py-10">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-              {/* Property Image Thumbnail */}
-              <div className="relative w-32 h-32 lg:w-36 lg:h-36 rounded-xl overflow-hidden flex-shrink-0 ring-2 ring-white/20">
-                <PortadaDelInmueble
-                  property={property}
-                  alt={property.title}
-                  compacta
-                />
-              </div>
-
-              {/* Property Info */}
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl lg:text-3xl font-semibold text-white">
-                  {property.title}
-                </h1>
-                <p className="text-white/70 mt-2 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4" />
+          <EncabezadoDePantalla
+            className="min-w-0 flex-1"
+            seccion="Mis inmuebles"
+            titulo={property.title}
+            junto={
+              activeContract ? (
+                <span className="rounded-full bg-success-soft px-3 py-1 text-body-sm text-success" data-testid="inmueble-arrendado">
+                  Arrendado
+                </span>
+              ) : undefined
+            }
+            descripcion={
+              <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4" aria-hidden="true" />
                   {barrioYCiudad(property.neighborhood, property.city)}
-                </p>
-                <div className="mt-4 inline-flex items-baseline gap-1.5 bg-white/10 backdrop-blur-sm px-5 py-2.5 rounded-lg border border-white/10">
-                  <span className="text-3xl font-bold text-white">
-                    {formatCanon(property.monthlyRent)}
-                  </span>
-                  <span className="text-lg font-normal text-white/70">/mes</span>
-                </div>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="flex gap-3 lg:gap-4">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/10 text-center min-w-[80px]">
-                  <p className="text-2xl font-bold text-white">{counts.all}</p>
-                  <p className="text-xs text-white/60">Candidatos</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/10 text-center min-w-[80px]">
-                  <p className="text-2xl font-bold text-warning">{counts.pending}</p>
-                  <p className="text-xs text-white/60">Pendientes</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/10 text-center min-w-[80px]">
-                  <p className="text-2xl font-bold text-success">{counts.approved}</p>
-                  <p className="text-xs text-white/60">Aprobados</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+                </span>
+                <span className="font-mono tabular-nums text-fg" data-testid="canon-del-inmueble">
+                  {formatCanon(property.monthlyRent)}/mes
+                </span>
+              </span>
+            }
+          />
+        </div>
 
         {/* Rented Property View */}
         {activeContract ? (
@@ -1053,11 +1027,11 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                 <div className="rounded-lg border border-border bg-surface p-5">
                   <MonoLabel className="block text-xs tracking-wider text-fg-muted mb-3">Arrendatario</MonoLabel>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary-soft dark:bg-[#1A40FF]/15 flex items-center justify-center text-sm font-semibold text-primary dark:text-[#5570FF]">
-                      {activeContract.tenantName.charAt(0)}
-                    </div>
+                    {/* Cadence 2: el Avatar del sistema, nunca iniciales a mano (y un contrato
+                        migrado sin nombre ya no tumba la pantalla). */}
+                    <Avatar name={activeContract.tenantName || 'Arrendatario'} size="md" />
                     <div>
-                      <p className="font-medium text-fg text-sm">{activeContract.tenantName}</p>
+                      <p className="font-medium text-fg text-sm">{activeContract.tenantName || 'Sin nombre registrado'}</p>
                       <p className="text-xs text-fg-muted">{activeContract.tenantEmail}</p>
                     </div>
                   </div>

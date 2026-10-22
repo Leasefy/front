@@ -337,6 +337,22 @@ describe('D1 — un fallo de carga no es «no hay dispersiones»', () => {
   });
 });
 
+describe('revisora r22, Giros #1 — «Generar» con el mes ya generado', () => {
+  it('con giros del mes, «Generar» deja de ser la acción azul y dice que suma a quien falte', async () => {
+    await montar();
+    const b = q('generar-los-giros') as HTMLAnchorElement;
+    expect(b.textContent).toContain('Generar los que falten');
+    expect(b.getAttribute('href')).toContain('/pagos/dispersiones/generar?mes=');
+  });
+
+  it('sin giros del mes, sigue siendo «Generar los giros del mes»', async () => {
+    lista = { ...lista, dispersiones: [] };
+    m.getSummary.mockResolvedValue(resumenDelBack({ dispersionsPending: 0 }));
+    await montar();
+    expect((q('generar-los-giros') as HTMLAnchorElement).textContent).toContain('Generar los giros del mes');
+  });
+});
+
 describe('D2 — «Aprobar todas»', () => {
   it('pregunta antes, y no aprueba nada hasta confirmar', async () => {
     await montar();

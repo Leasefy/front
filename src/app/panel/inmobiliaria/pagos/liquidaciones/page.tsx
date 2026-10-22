@@ -493,10 +493,8 @@ function TesoreriaContent() {
               <AvisoSinPorcentaje inmuebles={vista?.sinPorcentaje} />
               {/* El mes en plata — sumas reales, no una fórmula de ejemplo */}
               <section className="rounded-lg border border-border bg-card p-5 space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
-                  <Badge variant="secondary">{mesEnTitulo(month)}</Badge>
-                </div>
+                {/* Revisora r22 (Giros #5): sin el chip del mes; el mes ya lo dice el selector de arriba. */}
+                <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
                 {/* En una fila cuando hay ancho: son los pasos de UNA cuenta
                     (canon − comisión + a favor − a cargo = neto), y en columna
                     ocupaban media pantalla de alto. */}
@@ -623,12 +621,12 @@ function TesoreriaContent() {
                       data-testid="buscar-liquidacion"
                     />
                   </div>
-                  <p className="text-xs text-fg-muted" data-testid="alcance-de-liquidaciones">
-                    {/* Cuenta entero y sin separador de miles: el mismo `{n}` de antes. */}
+                  <p className="text-caption text-fg-muted" data-testid="alcance-de-liquidaciones">
+                    {/* Cuenta entero y sin separador de miles: el mismo `{n}` de antes. Sin el mes (r22, VOZ §4: ya está
+                        arriba, y salía «de Octubre» con mayúscula a media frase). */}
                     <AnimatedNumber value={visibles.length} format={(n) => String(Math.round(n))} />{' '}
                     de {propietarios.length}{' '}
-                    {propietarios.length === 1 ? 'propietario' : 'propietarios'} de{' '}
-                    {mesEnTitulo(month)}. Las cifras de arriba son las del mes completo.
+                    {propietarios.length === 1 ? 'propietario' : 'propietarios'}. Las cifras de arriba son las del mes completo.
                   </p>
                 </div>
                 {(() => {

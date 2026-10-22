@@ -30,6 +30,11 @@ import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 export interface MotivoDelMesVacio {
   titulo: string;
   detalle: string;
+  /**
+   * La salida del vacío (revisora r22, Giros #1): si lo del mes YA está en giros, el vacío no se queda
+   * sin acción: lleva a «Ver los giros de {mes}» (el paso 2 con ese mes).
+   */
+  verLosGiros?: true;
 }
 
 const numero = cifrasDeLaPantalla();
@@ -60,6 +65,7 @@ export function motivoDelMesVacio({
         yaGenerados === 1
           ? `El giro de ${enElMes} ya existe. Búscalo en la lista.`
           : `Los ${numero.format(yaGenerados)} giros de ${enElMes} ya existen. Búscalos en la lista.`,
+      verLosGiros: true,
     };
   }
 
@@ -107,6 +113,7 @@ export function motivoDelMesVacio({
           ? `La cuota de propietario de ${enElMes} ya quedó`
           : `Las ${cuotas(vacio.enUnaDispersion)} de ${enElMes} ya quedaron`
       } en un giro. Búscalo en la lista.`,
+      verLosGiros: true,
     };
   }
 

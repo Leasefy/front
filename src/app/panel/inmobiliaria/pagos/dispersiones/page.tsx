@@ -62,6 +62,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { Button } from '@/components/ui/button';
+import { conElMes } from '@/lib/giros/meses-de-los-giros';
 import { TablePagination } from '@/components/ui/pagination';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -395,6 +396,14 @@ function DispersionesContent() {
   }, [dispersiones, filters.month]);
 
   const summary: DispersionSummary = resumenDelBack ?? resumenEstimado;
+  /**
+   * Revisora r22 (Giros #1): con los giros del mes ya generados, «Generar» deja de ser LA acción azul de la
+   * pantalla (al lado decía «Este mes ya está girado»): pasa a secundaria y dice lo que hace ahora, sumar
+   * a quien falte. Lo que toca hacer lo dice «Lo que falta del mes», con su botón.
+   */
+  const mesYaGenerado =
+    summary.dispersionsPending + summary.dispersionsCompleted + summary.dispersionsFailed > 0 ||
+    dispersiones.some((d) => d.month === filters.month);
 
   // Count dispersiones by status for tabs (hybrid: summary + calculated processing)
   const statusCounts = useMemo(() => {
@@ -806,10 +815,10 @@ function DispersionesContent() {
         titulo={tr(TITULO_DE_LOS_GIROS)}
         descripcion={tr(descripcionDelPaso('revisar'))}
         accionPrincipal={
-          <Button asChild size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/dispersiones/generar">
-              <Lightning className="w-4 h-4" weight="fill" />
-              {tr('Generar los giros del mes')}
+          <Button asChild size="sm" hideArrow variant={mesYaGenerado ? 'secondary' : 'default'} data-testid="generar-los-giros">
+            <Link href={conElMes('/panel/inmobiliaria/pagos/dispersiones/generar', filters.month)}>
+              <Lightning className="w-4 h-4" weight={mesYaGenerado ? 'regular' : 'fill'} />
+              {tr(mesYaGenerado ? 'Generar los que falten' : 'Generar los giros del mes')}
             </Link>
           </Button>
         }

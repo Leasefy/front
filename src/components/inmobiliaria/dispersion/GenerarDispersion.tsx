@@ -39,7 +39,7 @@
  * `lo-que-se-va-a-girar.ts`.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CaretDown,
   CaretRight,
@@ -65,7 +65,7 @@ import type {
   VistaPreviaDeDispersiones,
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import { mesEnTitulo } from '@/lib/utils/mes';
+import { mesEnTitulo, nombreDelMes } from '@/lib/utils/mes';
 import { leerLiquidacionFrenada, motivoDeUnaAccion } from '@/lib/api/dispersiones-errores';
 import {
   ROTULO_DEL_CANON,
@@ -103,6 +103,13 @@ function mesDeHoy(): string {
 
 export interface GenerarDispersionProps {
   initialMonth?: string;
+  /**
+   * El mes, controlado desde afuera (revisora r22, Giros #8): la pantalla de Generar lo elige con el MISMO
+   * selector de los otros pasos («Lo que falta del mes») y aquí no se pinta otro. Sin él, el asistente
+   * trae su propio selector, como antes.
+   */
+  mes?: string;
+  onCambiarMes?: (mes: string) => void;
   /** `month` es el que se acaba de generar: la lista tiene que abrir ahí. */
   onComplete?: (month: string) => void;
   onCancel?: () => void;
@@ -110,10 +117,14 @@ export interface GenerarDispersionProps {
 
 export function GenerarDispersion({
   initialMonth,
+  mes: mesDeAfuera,
+  onCambiarMes,
   onComplete,
   onCancel,
 }: GenerarDispersionProps) {
-  const [mes, setMes] = useState(initialMonth ?? mesDeHoy());
+  const [mesPropio, setMes] = useState(initialMonth ?? mesDeHoy());
+  const controlado = mesDeAfuera !== undefined;
+  const mes = mesDeAfuera ?? mesPropio;
   const [busqueda, setBusqueda] = useState('');
   const [abiertos, setAbiertos] = useState<ReadonlySet<string>>(new Set());
   const [enviando, setEnviando] = useState(false);
@@ -335,13 +346,21 @@ export function GenerarDispersion({
   }, []);
 
   const cambiarMes = useCallback((nuevo: string) => {
-    setMes(nuevo);
-    // La selección, el detalle abierto y el motivo de un fallo eran de OTRO mes.
+    if (onCambiarMes) onCambiarMes(nuevo);
+    else setMes(nuevo);
+  }, [onCambiarMes]);
+
+  // La selección, el detalle abierto y el motivo de un fallo eran de OTRO mes: se limpian al cambiar de mes,
+  // venga el cambio de aquí o del selector de arriba.
+  const mesDeLaSeleccion = useRef(mes);
+  useEffect(() => {
+    if (mesDeLaSeleccion.current === mes) return;
+    mesDeLaSeleccion.current = mes;
     setSeleccion(NADA_FUERA);
     setAbiertos(new Set());
     setErrorAlGenerar(null);
     setBusqueda('');
-  }, []);
+  }, [mes]);
 
   // ── Confirmar ───────────────────────────────────────────────────────────
   const sePuedeConfirmar =
@@ -444,6 +463,7 @@ export function GenerarDispersion({
   }, [previa, seleccion, mes, tardiasQueSeSuman, tardiasComplementarias, onComplete]);
 
   const hayQueElegir = !cargando && !error && (candidatos.length > 0 || haySumables);
+  const motivoDelVacio = motivoDelMesVacio({ mes, yaGenerados: previa?.yaGenerados ?? 0, vacio });
 
   return (
     <div className="space-y-4" data-testid="generar-dispersion">
@@ -451,7 +471,9 @@ export function GenerarDispersion({
           primera pantalla entera para elegir un dato que casi nunca cambia. */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface px-4 py-3">
         <div>
-          <p className="text-sm font-medium text-fg">El mes que vas a girar</p>
+          <p className="text-sm font-medium text-fg">
+            {controlado ? `Giras ${nombreDelMes(mes)}` : 'El mes que vas a girar'}
+          </p>
           <p className="text-caption text-fg-muted" data-testid="rotulo-de-la-base">
             {ROTULO_DEL_CANON[base]}
             {base === 'RECAUDADO'
@@ -459,7 +481,7 @@ export function GenerarDispersion({
               : ' · no depende de que el inquilino haya pagado'}
           </p>
         </div>
-        <SelectorDeMes mes={mes} onCambiar={cambiarMes} testId="mes-de-la-liquidacion" />
+        {controlado ? null : <SelectorDeMes mes={mes} onCambiar={cambiarMes} testId="mes-de-la-liquidacion" />}
       </div>
 
       {/* 🔴 Los inmuebles que no se giran porque les falta el porcentaje de
@@ -493,11 +515,15 @@ export function GenerarDispersion({
         />
       ) : candidatos.length === 0 && !haySumables ? (
         <MesSinGiros
-          motivo={motivoDelMesVacio({
-            mes,
-            yaGenerados: previa?.yaGenerados ?? 0,
-            vacio,
-          })}
+          motivo={motivoDelVacio}
+          accion={
+            motivoDelVacio.verLosGiros
+              ? {
+                  label: `Ver los giros de ${nombreDelMes(mes)}`,
+                  href: `/panel/inmobiliaria/pagos/dispersiones?mes=${mes}`,
+                }
+              : undefined
+          }
         />
       ) : null}
 

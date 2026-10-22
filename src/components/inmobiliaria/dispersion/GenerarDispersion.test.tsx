@@ -714,6 +714,20 @@ describe('un mes sin nada que girar dice la razón que contó el back', () => {
     // Sin nada que elegir, tampoco hay lista ni botón de confirmar.
     expect(q('a-quien')).toBeNull();
     expect(q('confirmar')).toBeNull();
+    // Lo del sistema anterior no está en ningún giro: no se ofrece «Ver los giros».
+    expect(vacio?.querySelector('a')).toBeNull();
+  });
+
+  it('revisora r22 (Giros #1): si lo del mes ya está en giros, el vacío lleva a verlos en el paso 2', async () => {
+    preview.mockResolvedValue(
+      previaCon([], {
+        vacio: { cuotasDelMes: 2, enUnaDispersion: 2, porGirar: 0, delSistemaAnterior: 0, contratosVigentes: 2 },
+      }),
+    );
+    await montar();
+    const enlace = q('asistente-mes-vacio')?.querySelector('a');
+    expect(enlace?.textContent).toMatch(/^Ver los giros de /);
+    expect(enlace?.getAttribute('href')).toMatch(/^\/panel\/inmobiliaria\/pagos\/dispersiones\?mes=\d{4}-\d{2}$/);
   });
 
   it('los que ya tienen liquidación del mes se dicen, no se esconden', async () => {
@@ -927,5 +941,21 @@ describe('sin nadie por liquidar: ni «0 de 0», ni «Destildar todos», ni «Ge
     expect(boton.textContent).toContain('Sumar a 1 liquidación');
     // Sigue pudiendo sumar las tardías, como antes.
     expect(boton.disabled).toBe(false);
+  });
+});
+
+describe('revisora r22 (Giros #8): el mes, con el selector de los otros pasos', () => {
+  it('con el mes controlado desde afuera no pinta su propio selector y calcula ESE mes', async () => {
+    preview.mockResolvedValue(previaCon([]));
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root.render(<GenerarDispersion mes="2026-07" onCambiarMes={() => {}} onComplete={onComplete} />);
+    });
+    await asentar();
+    expect(q('mes-de-la-liquidacion')).toBeNull();
+    expect(host.textContent).toContain('Giras julio de 2026');
+    expect(preview).toHaveBeenCalledWith('2026-07');
   });
 });

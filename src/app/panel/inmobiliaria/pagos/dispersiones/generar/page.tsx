@@ -45,6 +45,16 @@ function GenerarDispersionesContent() {
    * así que generar las de julio y caer en agosto vacío se lee como que no
    * pasó nada.
    */
+  /** El mes elegido arriba; queda en la dirección para que recargar no lo pierda. */
+  const cambiarMes = (nuevo: string) => {
+    setMes(nuevo);
+    try {
+      window.history.replaceState(window.history.state, '', `?mes=${nuevo}`);
+    } catch {
+      /* la dirección es una cortesía */
+    }
+  };
+
   const handleComplete = (month: string) => {
     router.push(`/panel/inmobiliaria/pagos/dispersiones?mes=${month}`);
   };
@@ -63,9 +73,10 @@ function GenerarDispersionesContent() {
         titulo={t('inmobiliaria.dispersiones.wizard.title')}
         descripcion={t('inmobiliaria.dispersiones.subtitle')}
       />
-      {/* Decisión 17 de Nico (22-10): lo que falta del mes también aquí (sin selector: el mes se elige abajo). */}
-      <LoQueFaltaDelMes paso="revisar" mes={mes} />
-      <GenerarDispersion onComplete={handleComplete} onCancel={handleCancel} />
+      {/* Decisión 17 de Nico (22-10): lo que falta del mes también aquí. Revisora r22 (Giros #8): con el MISMO
+          selector de mes de los otros pasos, y el asistente sin el suyo; generar es la acción del paso 1. */}
+      <LoQueFaltaDelMes paso="liquidar" mes={mes} onCambiarMes={cambiarMes} />
+      <GenerarDispersion mes={mes} onCambiarMes={cambiarMes} onComplete={handleComplete} onCancel={handleCancel} />
     </div>
   );
 }

@@ -73,6 +73,13 @@ describe('motivoDelMesVacio', () => {
     });
     expect(m.titulo).toBe('Ya están en un giro');
     expect(m.detalle).toContain('730 cuotas de propietario');
+    // revisora r22 (Giros #1): el vacío lleva a ver los giros del mes, no se queda sin salida.
+    expect(m.verLosGiros).toBe(true);
+  });
+
+  it('sólo lo que ya está en giros lleva a «Ver los giros»; un mes sin cuotas no', () => {
+    expect(motivoDelMesVacio({ mes: '2026-09', yaGenerados: 2, vacio: vacio() }).verLosGiros).toBe(true);
+    expect(motivoDelMesVacio({ mes: '2026-09', yaGenerados: 0, vacio: vacio({ cuotasDelMes: 1 }) }).verLosGiros).toBeUndefined();
   });
 
   it('sin saldo por otra razón: canceladas o anuladas, en singular cuando es una', () => {

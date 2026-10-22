@@ -45,7 +45,7 @@ const COLOR = {
 const NOMBRE: Record<'deudaDelMesCop' | 'recaudadoCop' | 'dispersadoCop', string> = {
   deudaDelMesCop: 'Se debe',
   recaudadoCop: 'Llegó',
-  dispersadoCop: 'Dispersado',
+  dispersadoCop: 'Girado', // 22-10: la voz dice «girado» (como el Tablero)
 };
 
 /** «$ 1,2 M» / «$ 850 k» para el eje, donde no cabe la cifra entera. */

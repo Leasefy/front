@@ -146,6 +146,7 @@ import {
   type Gravedad,
 } from '@/lib/cartera/edades'
 import { cn } from '@/lib/utils'
+import { plataPareja } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 import {
   CLAVE_DE_MORA,
@@ -219,6 +220,13 @@ export function CarteraCompleta() {
   // se achicaran con el filtro, dejarían de servir para elegir el filtro.
   const cartera = useMemo(() => discriminar(items, casosEnSiniestro), [items, casosEnSiniestro])
   // 22-10 (revisión): «no se llena» sólo si de verdad está vacío; con plata adentro sería falso.
+  // Los mismos decimales en toda la franja (revisión 22-10).
+  const plataDeLaFranja = plataPareja([
+    cartera.deudaTotal,
+    ...(['POR_VENCER', 'VENCIDA_EN_PLAZO', 'CARTERA'] as const).map((c) => cartera.cajones.find((x) => x.cajon === c)?.monto ?? 0),
+    siniestros?.totalCop,
+    castigada?.totalCop,
+  ])
   const tramosVaciosPorElSiniestro = tramosQueNoSeLlenan.filter(
     (e) => (cartera.tramos.find((t) => t.edad === e)?.monto ?? 0) === 0,
   )
@@ -397,10 +405,10 @@ export function CarteraCompleta() {
           data-testid="resumen-de-cartera"
           // 15-10: con centavos la cifra no cabía; cada ficha la achica a su ancho (`cifra-que-cabe`).
           style={estiloDeLaFranja([
-            formatCurrency(cartera.deudaTotal),
-            ...(['POR_VENCER', 'VENCIDA_EN_PLAZO', 'CARTERA'] as const).map((c) => formatCurrency(montoDelCajon(c).monto)),
-            ...(siniestros ? [formatCurrency(siniestros.totalCop)] : []),
-            ...(castigada ? [formatCurrency(castigada.totalCop)] : []),
+            plataDeLaFranja(cartera.deudaTotal),
+            ...(['POR_VENCER', 'VENCIDA_EN_PLAZO', 'CARTERA'] as const).map((c) => plataDeLaFranja(montoDelCajon(c).monto)),
+            ...(siniestros ? [plataDeLaFranja(siniestros.totalCop)] : []),
+            ...(castigada ? [plataDeLaFranja(castigada.totalCop)] : []),
           ])}
         >
           <div className="space-y-4 px-5 py-5 sm:px-6">
@@ -420,7 +428,7 @@ export function CarteraCompleta() {
                     cajon === 'CARTERA' && 'underline decoration-dotted decoration-1 underline-offset-[0.2em]',
                   )}
                 >
-                  {formatCurrency(montoDelCajon('CARTERA').monto)}
+                  {plataDeLaFranja(montoDelCajon('CARTERA').monto)}
                 </span>
                 <span className="mt-2 block text-body-sm text-fg-muted">{queSignificaElCajon('CARTERA')}</span>
                 {/* El interés corre SÓLO sobre la cartera. */}
@@ -430,7 +438,7 @@ export function CarteraCompleta() {
                     data-testid="resumen-intereses-cartera"
                     title={t(CLAVE_DE_MORA.explicacion)}
                   >
-                    {t(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesDeLaCartera) })}
+                    {t(CLAVE_DE_MORA.masIntereses, { monto: plataDeLaFranja(interesDeLaCartera) })}
                   </span>
                 ) : null}
                 {/* 🔴 La cartera INCLUYE el siniestro, y lo dice. */}
@@ -440,7 +448,7 @@ export function CarteraCompleta() {
                     data-testid="resumen-cartera-en-siniestro"
                   >
                     {t('cartera.porEdad.deLaCualEnSiniestro', {
-                      monto: formatCurrency(cartera.enSiniestro.monto),
+                      monto: plataDeLaFranja(cartera.enSiniestro.monto),
                     })}
                   </span>
                 ) : null}
@@ -456,10 +464,10 @@ export function CarteraCompleta() {
               >
                 <span className="block text-caption text-fg-muted">Deuda total · nace con el contrato</span>
                 <span className="cifra-que-cabe block font-mono text-[17px] tabular-nums text-fg" data-testid="cifra-deuda-total">
-                  {formatCurrency(cartera.deudaTotal)}
+                  {plataDeLaFranja(cartera.deudaTotal)}
                 </span>
                 <span className="block text-caption text-fg-muted">
-                  {todas.length} {todas.length === 1 ? 'cuota' : 'cuotas'}
+                  {todas.length.toLocaleString('es-CO')} {todas.length === 1 ? 'cuota' : 'cuotas'}
                 </span>
                 {interesTotal > 0 ? (
                   <span
@@ -467,7 +475,7 @@ export function CarteraCompleta() {
                     data-testid="resumen-deuda-con-intereses"
                   >
                     {t(CLAVE_DE_MORA.conIntereses, {
-                      monto: formatCurrency(cartera.deudaTotal + interesTotal),
+                      monto: plataDeLaFranja(cartera.deudaTotal + interesTotal),
                     })}
                   </span>
                 ) : null}
@@ -521,7 +529,7 @@ export function CarteraCompleta() {
                     {nombreDelCajon(cual)}
                   </span>
                   <span className={cn('cifra-que-cabe mt-1 block font-mono text-[17px] tabular-nums', TONO[cual])}>
-                    {formatCurrency(suyo.monto)}
+                    {plataDeLaFranja(suyo.monto)}
                   </span>
                   <span className="mt-0.5 block text-caption text-fg-muted">{queSignificaElCajon(cual)}</span>
                 </button>
@@ -541,7 +549,7 @@ export function CarteraCompleta() {
                   En siniestro
                 </span>
                 <span className="cifra-que-cabe mt-1 block font-mono text-[17px] tabular-nums text-fg">
-                  {formatCurrency(siniestros.totalCop)}
+                  {plataDeLaFranja(siniestros.totalCop)}
                 </span>
                 <span className="mt-0.5 block text-caption text-fg-muted">
                   {siniestros.cantidad === 0
@@ -551,7 +559,7 @@ export function CarteraCompleta() {
                 </span>
                 {interesEnSiniestro > 0 ? (
                   <span className="mt-0.5 block font-mono text-caption tabular-nums text-danger">
-                    {t(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesEnSiniestro) })}
+                    {t(CLAVE_DE_MORA.masIntereses, { monto: plataDeLaFranja(interesEnSiniestro) })}
                   </span>
                 ) : null}
               </button>
@@ -572,7 +580,7 @@ export function CarteraCompleta() {
                   Castigada
                 </span>
                 <span className="cifra-que-cabe mt-1 block font-mono text-[17px] tabular-nums text-fg-muted">
-                  {formatCurrency(castigada.totalCop)}
+                  {plataDeLaFranja(castigada.totalCop)}
                 </span>
                 <span className="mt-0.5 block text-caption text-fg-muted">
                   {castigada.cantidad === 0

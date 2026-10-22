@@ -2,7 +2,7 @@
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
   "cuando": "2026-10-22",
-  "cuantas": 1561,
+  "cuantas": 1562,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -178,6 +178,7 @@
     "GET /contracts/:id/cobros",
     "GET /contracts/:id/codeudores",
     "GET /contracts/:id/conceptos",
+    "GET /contracts/:id/conceptos/meses",
     "GET /contracts/:id/condiciones",
     "GET /contracts/:id/documentos",
     "GET /contracts/:id/documentos/:documentoId/url",

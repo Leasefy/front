@@ -36,7 +36,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
+import { RadioCardGroup, RadioCard } from '@leasefy/cadence'
+import { toast } from '@/components/ui/toast'
+import { MesesDelConcepto, type MesElegido } from './MesesDelConcepto'
+import { mesCorto, sumanElTotal } from '@/lib/contratos/meses-del-concepto'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -93,6 +96,13 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
   const [elegido, setElegido] = useState('')
   const [valor, setValor] = useState('')
   const [recurrente, setRecurrente] = useState(true)
+  /*
+   * Portofino 22-10: «¿cuándo se cobra?» — todos los meses, una sola vez (la
+   * próxima cuota) o en los meses que se eligen (diferir o meses sueltos).
+   */
+  const [cuando, setCuando] = useState<'CADA_MES' | 'UNA_VEZ' | 'MESES'>('CADA_MES')
+  const [meses, setMeses] = useState<MesElegido[]>([])
+  const [errorDeLosMeses, setErrorDeLosMeses] = useState<string | null>(null)
   // «Centavos en todo» (C3-FRONT): el valor del concepto es plata de la deuda;
   // con sus dos áreas prendidas viaja con centavos, tal cual se escribió.
   const conCentavos = usePlataConCentavos(AREAS_DE_LA_DEUDA)
@@ -146,7 +156,15 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
   const deUnaSolaVez = useMemo(
     () =>
       (conceptos ?? [])
-        .filter((c) => !c.recurrente)
+        .filter((c) => !c.recurrente && !(c.planDeMeses && c.planDeMeses.length > 0))
+        .reduce((s, c) => s + c.valorCop, 0),
+    [conceptos],
+  )
+  // Portofino 22-10: los que van en meses elegidos.
+  const enMesesElegidos = useMemo(
+    () =>
+      (conceptos ?? [])
+        .filter((c) => c.planDeMeses && c.planDeMeses.length > 0)
         .reduce((s, c) => s + c.valorCop, 0),
     [conceptos],
   )
@@ -177,6 +195,21 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
       campoDelValor.current?.focus()
       return
     }
+    if (cuando === 'MESES') {
+      const delPlan =
+        meses.length === 0
+          ? 'Elige al menos un mes, o difiere en cuántos meses.'
+          : !sumanElTotal(valorCop, meses)
+            ? 'Los valores de los meses tienen que sumar el total.'
+            : meses.some((m) => !(m.valorCop > 0))
+              ? 'Cada mes tiene que llevar un valor mayor que cero.'
+              : null
+      if (delPlan) {
+        setErrorDeLosMeses(delPlan)
+        return
+      }
+    }
+    setErrorDeLosMeses(null)
     setOcupado(true)
     setError(null)
     setErrorDelValor(null)
@@ -188,18 +221,26 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
         paga: catalogo.paga,
         recibe: catalogo.recibe,
         valorCop,
-        recurrente,
+        recurrente: cuando === 'CADA_MES',
+        ...(cuando === 'MESES' ? { meses } : {}),
       })
-      setConceptos((prev) => [...(prev ?? []), creado])
+      const { avisos, ...concepto } = creado
+      setConceptos((prev) => [...(prev ?? []), concepto])
+      // Un mes ya pagado o después del fin se movió: se dice a dónde.
+      if (avisos && avisos.length > 0) {
+        toast.info('Algunos meses se movieron', { description: avisos.join(' ') })
+      }
       setElegido('')
       setValor('')
+      setCuando('CADA_MES')
+      setMeses([])
       setAgregando(false)
     } catch (e) {
       // Un 400 con `campos` va a su campo; lo demás (un 409, un 5xx con su
       // referencia, la red) al pie, por el traductor.
       const { porCampo, sueltos } = repartirErroresDelServidor(e, {
-        mapa: { valorCop: 'valor' },
-        campos: ['valor'] as const,
+        mapa: { valorCop: 'valor', meses: 'meses' },
+        campos: ['valor', 'meses'] as const,
         porDefecto: 'No pudimos agregar el concepto.',
         accion: 'agregar el concepto',
       })
@@ -207,6 +248,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
         setErrorDelValor(porCampo.valor)
         campoDelValor.current?.focus()
       }
+      if (porCampo.meses) setErrorDeLosMeses(porCampo.meses)
       setError(sueltos.length ? sueltos.join(' · ') : null)
     } finally {
       setOcupado(false)
@@ -293,6 +335,12 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
             </p>
           ) : null}
 
+          {enMesesElegidos > 0 ? (
+            <p className="text-caption text-muted-foreground">
+              Hay {formatCurrency(enMesesElegidos)} repartidos en los meses elegidos: entran sólo en esas cuotas.
+            </p>
+          ) : null}
+
           {deUnaSolaVez > 0 ? (
             // Los de una sola vez no se repiten: decir sólo el total mensual
             // haría creer que se cobran todos los meses.
@@ -326,7 +374,11 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
 
           <div className="space-y-1">
             <label htmlFor="valor-del-concepto" className="text-caption text-muted-foreground">
-              Valor mensual (antes de impuestos)
+              {cuando === 'CADA_MES'
+                ? 'Valor mensual (antes de impuestos)'
+                : cuando === 'MESES'
+                  ? 'Valor total (antes de impuestos)'
+                  : 'Valor (antes de impuestos)'}
             </label>
             {/* Agrupa de a miles mientras se escribe: «5.678.888» se lee;
                 «5678888» se cuenta con el dedo. */}
@@ -347,19 +399,42 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
             <ErrorDelCampo id="valor-del-concepto-error" mensaje={errorDelValor} />
           </div>
 
-          <label className="flex cursor-pointer items-start gap-2 text-sm text-foreground">
-            <Checkbox
-              checked={recurrente}
-              onCheckedChange={(v) => setRecurrente(v === true)}
-              className="mt-0.5"
-            />
-            <span>
-              Se cobra todos los meses
-              <span className="block text-caption text-muted-foreground">
-                Desmarca si es por una sola vez, como una reparación.
-              </span>
-            </span>
-          </label>
+          {/* Portofino 22-10: «¿cuándo se cobra?». */}
+          <div className="space-y-1">
+            <span className="text-caption text-muted-foreground">¿Cuándo se cobra?</span>
+            <RadioCardGroup
+              className="grid grid-cols-1 gap-2 sm:grid-cols-3"
+              value={cuando}
+              onValueChange={(v) => {
+                setCuando(v as typeof cuando)
+                setRecurrente(v === 'CADA_MES')
+                setErrorDeLosMeses(null)
+              }}
+            >
+              <RadioCard value="CADA_MES" label="Todos los meses" description="Entra en cada cuota." />
+              <RadioCard value="UNA_VEZ" label="Una sola vez" description="En la próxima cuota sin pagar." />
+              <RadioCard value="MESES" label="En los meses que elijo" description="Diferir, o meses sueltos." />
+            </RadioCardGroup>
+          </div>
+
+          <Presence show={cuando === 'MESES'} direction="down">
+            {elegido ? (
+              <MesesDelConcepto
+                contractId={contract.id}
+                paga={catalogoActivo.find((c) => c.clave === elegido)?.paga ?? 'INQUILINO'}
+                total={Number(valor) || 0}
+                conCentavos={conCentavos}
+                valor={meses}
+                onCambiar={(m) => {
+                  setMeses(m)
+                  setErrorDeLosMeses(null)
+                }}
+                error={errorDeLosMeses}
+              />
+            ) : (
+              <p className="text-caption text-muted-foreground">Elige primero el concepto: de quién lo paga depende qué cuotas se miran.</p>
+            )}
+          </Presence>
 
           <div className="flex gap-2">
             <Button
@@ -501,7 +576,11 @@ function ConceptoEnLista({
             {/* Quién lo paga decide si entra en el cobro del inquilino.
                 Deducirlo del nombre es justo lo que hace que se cuele. */}
             · lo paga {QUIEN_PAGA[concepto.paga]}
-            {!concepto.recurrente ? ' · una sola vez' : ''}
+            {concepto.planDeMeses && concepto.planDeMeses.length > 0
+              ? ` · en ${concepto.planDeMeses.length === 1 ? mesCorto(concepto.planDeMeses[0].mes) : `${concepto.planDeMeses.length} meses`}`
+              : !concepto.recurrente
+                ? ' · una sola vez'
+                : ''}
           </span>
         </button>
         <div className="flex items-center gap-2">
@@ -521,6 +600,12 @@ function ConceptoEnLista({
           ) : null}
         </div>
       </div>
+
+      {concepto.planDeMeses && concepto.planDeMeses.length > 1 ? (
+        <p className="mt-1 text-caption text-muted-foreground" data-testid={`plan-${concepto.id}`}>
+          {concepto.planDeMeses.map((p) => `${mesCorto(p.mes)} ${formatCurrency(p.valorCop)}`).join(' · ')}
+        </p>
+      ) : null}
 
       {abierto ? (
         <div className="mt-2 space-y-1.5 border-t border-border pt-2">

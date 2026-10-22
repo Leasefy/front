@@ -74,6 +74,7 @@ import { formatCurrency, getMantenimientoTypeInfo } from '@/lib/types/inmobiliar
 import { CotizacionComparator } from './CotizacionComparator';
 import { CompletarSolicitudDialog } from './mantenimiento/CompletarSolicitudDialog';
 import { CalificarProveedorDialog } from './mantenimiento/CalificarProveedorDialog';
+import { esUrlDeVideo } from '@/lib/mantenimiento/limites-del-mantenimiento';
 
 // ============================================================================
 // Types
@@ -325,19 +326,39 @@ function PhotoGallery({
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`Abrir la foto ${idx + 1}`}
+            aria-label={esUrlDeVideo(url) ? `Abrir el video ${idx + 1}` : `Abrir la foto ${idx + 1}`}
             className="aspect-square rounded-md bg-muted overflow-hidden relative group block"
             data-testid="mantenimiento-foto-guardada"
           >
             <div className="absolute inset-0 flex items-center justify-center bg-surface-muted dark:bg-surface-muted">
               <ImageIcon className="w-6 h-6 text-muted-foreground" />
             </div>
-            <img
-              src={url}
-              alt={`Foto ${idx + 1}`}
-              loading="lazy"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
+            {esUrlDeVideo(url) ? (
+              // 21-10-2026: un video se ve con su primer cuadro y un ▶; el clic
+              // lo abre entero (con sus controles) en otra pestaña.
+              <>
+                <video
+                  src={url}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  aria-label={`Video ${idx + 1}`}
+                  className="absolute inset-0 h-full w-full object-cover bg-ink"
+                />
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <span className="flex size-8 items-center justify-center rounded-full bg-black/55 text-white">
+                    <Play className="size-4" weight="fill" aria-hidden="true" />
+                  </span>
+                </span>
+              </>
+            ) : (
+              <img
+                src={url}
+                alt={`Foto ${idx + 1}`}
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
               <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>

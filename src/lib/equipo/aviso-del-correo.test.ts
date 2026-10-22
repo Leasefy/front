@@ -17,6 +17,7 @@ describe('aviso-del-correo', () => {
       nombreDeLaCuenta: 'X',
       relacion: 'inquilino',
       sePuedeInvitarIgual: true,
+      sePuedeDarAlInvitado: false,
     });
     expect(
       leerAvisoDelCorreo({ code: 'ACTIVO_EN_OTRA_INMOBILIARIA', message: 'Ya está activo.', creoSuPropiaInmobiliaria: true }),

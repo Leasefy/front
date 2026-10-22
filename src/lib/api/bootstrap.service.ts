@@ -106,6 +106,11 @@ export interface BootstrapResponse {
    * no pre-emptive gate). See `getBootstrap` below.
    */
   segundoFactor: BootstrapSegundoFactor
+  /**
+   * «Cambiar de cuenta» (21-10-2026): los papeles de la persona. Se lee con
+   * `leerCuentasDeLaPersona` (un back anterior no lo manda: una sola cuenta).
+   */
+  cuentas?: unknown
 }
 
 /** Raw shape before normalization — everything else is required by the

@@ -1,5 +1,6 @@
 import type { AgencyMemberRole, UserRole } from './types'
 import type { ActiveContext } from './active-context'
+import { inicioDeLaCuenta, type CuentaElegida } from './cuenta-activa'
 
 /** El Piloto automático es la entrada al panel para TODO miembro. */
 export const AGENCY_HOME_ROUTE = '/panel/inmobiliaria/piloto'
@@ -88,4 +89,21 @@ export function isPanelRoleAllowed(
   if (!allowedRoles || allowedRoles.length === 0) return true
   if (role && allowedRoles.includes(role)) return true
   return !!(opts?.allowAgencyMembers && opts.hasActiveAgencyMembership)
+}
+
+/**
+ * A dónde entra la persona («Cambiar de cuenta», Nico 21-10-2026: «al último
+ * que usó»): con una última cuenta que todavía tiene, al inicio de ésa; si
+ * no, el del rol con que se registró, como siempre.
+ */
+export function inicioDeLaPersona(
+  user: { role?: UserRole | string } | null | undefined,
+  agencyRole?: AgencyMemberRole | null,
+  ultimaCuenta?: CuentaElegida | null,
+  activeContext?: ActiveContext | null,
+): string {
+  if (ultimaCuenta) {
+    return ultimaCuenta.tipo === 'inmobiliaria' ? getAgencyHomeRoute(agencyRole) : inicioDeLaCuenta(ultimaCuenta)
+  }
+  return getUserHomeRoute(user, activeContext, agencyRole)
 }

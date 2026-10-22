@@ -13,7 +13,7 @@ import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
 import { esDestinoQueRegistraSolo, rutaDeOnboarding, rutaDeOnboardingConRegreso } from '@/lib/auth/perfil-de-onboarding';
 import { tomarAvisoDeCierre, PARAM_MOTIVO, type MotivoDeCierre } from '@/lib/auth/session-terminal';
-import { getRoleHomeRoute } from '@/lib/auth/role-routes';
+import { getRoleHomeRoute, inicioDeLaPersona } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
 import { SesionYaAbierta, type MotivoDelCambioDeCuenta } from './SesionYaAbierta';
@@ -451,7 +451,7 @@ export function AuthForm({
   const pideConfirmarContrasena = variante !== 'ventana';
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, confirmarCorreoConCodigo, sendPasswordReset, signOut, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, mfaCheckStatus, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, confirmacionDeLaSesion } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, confirmarCorreoConCodigo, sendPasswordReset, signOut, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, mfaCheckStatus, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, confirmacionDeLaSesion, ultimaCuenta } = useAuth();
 
   /*
    * 🔴 Sin esto el correo y la contraseña terminaban en la URL (prueba en vivo,
@@ -680,8 +680,9 @@ export function AuthForm({
     // Non-agency users (tenant/landlord) redirect immediately as before.
     const isAgencyUser = user.role === 'agency' || hasActiveAgencyMembership;
     if (isAgencyUser && !agencyMembershipChecked && !probeWaitElapsed) return;
-    window.location.href = getRoleHomeRoute(user.role, agencyRole);
-  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, mfaCheckStatus, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
+    // «Al entrar, a la última cuenta que usó» (Nico, 21-10-2026).
+    window.location.href = inicioDeLaPersona(user, agencyRole, ultimaCuenta);
+  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, mfaCheckStatus, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed, ultimaCuenta]);
   // A caller may deep-link with the role already chosen — via the `defaultRole`
   // prop (e.g. the publish wizard) or a `?role=` query. When present, the
   // post-signup destination skips the picker and goes straight to that role's

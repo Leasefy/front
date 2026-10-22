@@ -15,11 +15,12 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, X } from '@phosphor-icons/react';
+import { Camera, Play, X } from '@phosphor-icons/react';
 import { IconButton, motionScale, motionTransition } from '@leasefy/cadence';
 import {
+  ACEPTA_EL_MANTENIMIENTO,
   MAX_FOTOS_DEL_MANTENIMIENTO,
-  TIPOS_DE_FOTO_DEL_MANTENIMIENTO,
+  esArchivoDeVideo,
 } from '@/lib/mantenimiento/limites-del-mantenimiento';
 
 export interface SelectorDeFotosDelMantenimientoProps {
@@ -119,7 +120,26 @@ export function SelectorDeFotosDelMantenimiento({
               data-testid={testIdFoto}
             >
               {vistas[index] ? (
-                <img src={vistas[index]} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
+                esArchivoDeVideo(foto) ? (
+                  // 21-10-2026: un video se ve con su primer cuadro y un ▶.
+                  <>
+                    <video
+                      src={vistas[index]}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      aria-label={`Video ${index + 1}`}
+                      className="w-full h-full object-cover bg-ink"
+                    />
+                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                      <span className="flex size-8 items-center justify-center rounded-full bg-black/55 text-white">
+                        <Play className="size-4" weight="fill" aria-hidden="true" />
+                      </span>
+                    </span>
+                  </>
+                ) : (
+                  <img src={vistas[index]} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
+                )
               ) : null}
               {!deshabilitado && (
                 <IconButton
@@ -128,7 +148,7 @@ export function SelectorDeFotosDelMantenimiento({
                   size="sm"
                   icon={<X className="w-4 h-4" />}
                   onClick={() => onQuitar(index)}
-                  aria-label={`Quitar la foto ${index + 1}`}
+                  aria-label={esArchivoDeVideo(foto) ? `Quitar el video ${index + 1}` : `Quitar la foto ${index + 1}`}
                   className="absolute top-1 right-1 bg-danger text-white hover:bg-danger/90 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                 />
               )}
@@ -146,7 +166,7 @@ export function SelectorDeFotosDelMantenimiento({
               id={id}
               type="file"
               multiple
-              accept={TIPOS_DE_FOTO_DEL_MANTENIMIENTO.join(',')}
+              accept={ACEPTA_EL_MANTENIMIENTO}
               onChange={handleFileChange}
               className="hidden"
               aria-invalid={conError || undefined}

@@ -31,6 +31,9 @@ export const MENSAJES_DEL_MANTENIMIENTO = {
     'Esa foto sólo existe en tu navegador y nadie más la puede abrir. Súbela como archivo con «Agregar foto».',
   fotoTipo: 'La foto tiene que ser JPG, PNG o WebP.',
   fotoPesada: 'La foto no puede pesar más de 5 MB.',
+  archivoTipo: 'El archivo tiene que ser una foto (JPG, PNG o WebP) o un video (MP4, MOV o WebM).',
+  videoPesado: 'El video no puede pesar más de 20 MB (unos 20 segundos de video).',
+  videosMaximos: 'Puedes adjuntar hasta 5 videos por solicitud.',
   tituloLargo: 'El título puede tener hasta 200 caracteres.',
   proveedorLargo: 'El nombre del proveedor puede tener hasta 200 caracteres.',
   telefonoDelProveedorLargo: 'El teléfono del proveedor puede tener hasta 20 caracteres.',
@@ -47,10 +50,39 @@ export const MENSAJES_DEL_MANTENIMIENTO = {
 export const TIPOS_DE_FOTO_DEL_MANTENIMIENTO = ['image/jpeg', 'image/png', 'image/webp'] as const
 export const MAX_BYTES_DE_UNA_FOTO_DEL_MANTENIMIENTO = 5 * 1024 * 1024
 
-/** `null` si la foto se puede subir; si no, la frase del back. */
+/**
+ * 🔴 21-10-2026 (Nico: «fotos y videos, con límites de peso»). Mismo bucket,
+ * misma lista: el video se reconoce por la extensión. 20 MB = el techo de toda
+ * subida al back; a lo sumo 5 por lista. Espejo de
+ * `back/src/inmobiliaria/mantenimiento/fotos/fotos-del-mantenimiento.ts`.
+ */
+export const TIPOS_DE_VIDEO_DEL_MANTENIMIENTO = ['video/mp4', 'video/quicktime', 'video/webm'] as const
+export const MAX_BYTES_DE_UN_VIDEO_DEL_MANTENIMIENTO = 20 * 1024 * 1024
+export const MAX_VIDEOS_DEL_MANTENIMIENTO = 5
+const EXTENSIONES_DE_VIDEO = ['mp4', 'mov', 'webm']
+
+/** Lo que acepta el `<input type="file">`: fotos y videos. */
+export const ACEPTA_EL_MANTENIMIENTO = [...TIPOS_DE_FOTO_DEL_MANTENIMIENTO, ...TIPOS_DE_VIDEO_DEL_MANTENIMIENTO].join(',')
+
+/** ¿El archivo elegido es un video? */
+export function esArchivoDeVideo(archivo: { type: string }): boolean {
+  return (TIPOS_DE_VIDEO_DEL_MANTENIMIENTO as readonly string[]).includes(archivo.type)
+}
+
+/** ¿La URL (firmada) o la ruta guardada es un video? Por la extensión. */
+export function esUrlDeVideo(url: string | null | undefined): boolean {
+  if (!url) return false
+  const sinConsulta = url.split('?')[0].toLowerCase()
+  return EXTENSIONES_DE_VIDEO.some((ext) => sinConsulta.endsWith(`.${ext}`))
+}
+
+/** `null` si la foto (o el video) se puede subir; si no, la frase del back. */
 export function errorDeLaFoto(foto: { type: string; size: number }): string | null {
+  if (esArchivoDeVideo(foto)) {
+    return foto.size > MAX_BYTES_DE_UN_VIDEO_DEL_MANTENIMIENTO ? MENSAJES_DEL_MANTENIMIENTO.videoPesado : null
+  }
   if (!(TIPOS_DE_FOTO_DEL_MANTENIMIENTO as readonly string[]).includes(foto.type)) {
-    return MENSAJES_DEL_MANTENIMIENTO.fotoTipo
+    return MENSAJES_DEL_MANTENIMIENTO.archivoTipo
   }
   if (foto.size > MAX_BYTES_DE_UNA_FOTO_DEL_MANTENIMIENTO) return MENSAJES_DEL_MANTENIMIENTO.fotoPesada
   return null
@@ -67,14 +99,28 @@ export function errorDeLaFoto(foto: { type: string; size: number }): string | nu
 export function fotosQueEntran(
   yaElegidas: number,
   elegidas: readonly File[],
+  videosYaElegidos = 0,
 ): { entran: File[]; problemas: string[] } {
   const problemas: string[] = []
   const sirven: File[] = []
+  let videos = videosYaElegidos
+  let sobranVideos = false
   for (const foto of elegidas) {
     const error = errorDeLaFoto(foto)
-    if (error) problemas.push(`«${foto.name}»: ${error}`)
-    else sirven.push(foto)
+    if (error) {
+      problemas.push(`«${foto.name}»: ${error}`)
+      continue
+    }
+    if (esArchivoDeVideo(foto)) {
+      if (videos >= MAX_VIDEOS_DEL_MANTENIMIENTO) {
+        sobranVideos = true
+        continue
+      }
+      videos += 1
+    }
+    sirven.push(foto)
   }
+  if (sobranVideos) problemas.push(MENSAJES_DEL_MANTENIMIENTO.videosMaximos)
   const cupo = Math.max(0, MAX_FOTOS_DEL_MANTENIMIENTO - yaElegidas)
   if (sirven.length > cupo) problemas.push(MENSAJES_DEL_MANTENIMIENTO.fotosMaximas)
   return { entran: sirven.slice(0, cupo), problemas }

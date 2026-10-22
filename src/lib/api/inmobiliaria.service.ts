@@ -80,6 +80,7 @@ import {
 import type { CuotasTardias, InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import type { LiquidacionDelMesCompleto } from '@/lib/liquidaciones/liquidacion-del-mes';
 import { COLOMBIAN_BANKS, type BankCode, type AccountType } from '@/lib/types/payment-accounts';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BASE = '/inmobiliaria';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
@@ -759,7 +760,7 @@ export const consignacionesApi = {
     try {
       res = await fetch(`${BACKEND_URL}${BASE}/consignaciones/${id}/contrato`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasDeLaCuenta() },
         body: formData,
       });
     } catch (err) {
@@ -890,7 +891,7 @@ export const consignacionesApi = {
     try {
       res = await fetch(`${BACKEND_URL}${BASE}/consignaciones/${id}/inventario/foto`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasDeLaCuenta() },
         body: formData,
       });
     } catch (err) {
@@ -1886,7 +1887,7 @@ export const mantenimientoApi = {
     try {
       res = await fetch(`${BACKEND_URL}${BASE}/mantenimiento/${encodeURIComponent(id)}/fotos`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasDeLaCuenta() },
         body: formData,
       });
     } catch (err) {
@@ -2116,7 +2117,7 @@ export const renovacionesApi = {
       `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'}${BASE}/renovaciones/${id}/document`,
       {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasDeLaCuenta() },
         body: formData,
       },
     );
@@ -2572,6 +2573,21 @@ export const agencyApi = {
   },
 
   /**
+   * PATCH /inmobiliaria/agency/members/:memberId/invitacion (Portofino 21-10):
+   * cambia el correo de una invitación PENDIENTE. El back cierra la vieja e
+   * invita al correo nuevo; un 409 trae el mismo aviso de invitar.
+   */
+  async cambiarCorreoDeLaInvitacion(
+    memberId: string,
+    datos: { email: string; mismaPersona?: true; elCorreoEsDelInvitado?: true },
+  ): Promise<AgencyInviteResult> {
+    return apiClient.patch<AgencyInviteResult>(
+      `${BASE}/agency/members/${encodeURIComponent(memberId)}/invitacion`,
+      datos,
+    );
+  },
+
+  /**
    * PATCH /inmobiliaria/agency/members/:memberId/profile
    * Updates a member's profile fields (position, agent business fields). Admin only.
    */
@@ -2618,6 +2634,7 @@ export const agencyApi = {
     formData.append('file', file);
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
+    Object.assign(headers, cabecerasDeLaCuenta());
     let res: Response;
     try {
       res = await fetch(`${BACKEND_URL}${BASE}/agency/portada`, { method: 'POST', headers, body: formData });
@@ -2650,6 +2667,7 @@ export const agencyApi = {
 
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
+    Object.assign(headers, cabecerasDeLaCuenta());
 
     let res: Response;
     try {

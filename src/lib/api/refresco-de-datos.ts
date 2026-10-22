@@ -90,8 +90,9 @@ export function compartirGet<T>(clave: string, hacer: () => Promise<T>): Promise
   const yaVa = enVuelo.get(clave);
   if (yaVa) return yaVa as Promise<T>;
 
-  const promesa = hacer().finally(() => {
-    enVuelo.delete(clave);
+  const promesa: Promise<T> = hacer().finally(() => {
+    // Sólo la suya: tras un cambio (`invalidar`) la clave puede ser ya de otra.
+    if (enVuelo.get(clave) === promesa) enVuelo.delete(clave);
   });
   enVuelo.set(clave, promesa);
   return promesa;
@@ -135,6 +136,15 @@ const oyentes = new Map<string, Set<Oyente>>();
  * refrescando la tabla.
  */
 export function invalidar(recurso: string): void {
+  /*
+   * 🔴 21-10-2026 (Portofino, Mantenimientos): un GET que salió ANTES de este
+   * cambio trae lo de antes. Si seguía en vuelo, el refresco que pide la
+   * pantalla después de guardar se le pegaba (`compartirGet`) y la tarjeta se
+   * quedaba en «Reportadas» con la solicitud ya «Cotizada» en el back
+   * (registrar el proveedor avisaba primero; la cotización llegaba con la
+   * lista vieja todavía viajando). Desde aquí, lo que se pida sale nuevo.
+   */
+  enVuelo.clear();
   const tocados = new Set<string>([recurso, ...(TAMBIEN_TOCA[recurso] ?? [])]);
   for (const r of tocados) {
     for (const cb of oyentes.get(r) ?? []) {

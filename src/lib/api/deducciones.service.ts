@@ -16,6 +16,7 @@ import type {
   ListadoDeDeducciones,
   NuevoDescuento,
 } from '@/lib/types/deducciones';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BASE = '/inmobiliaria/propietarios';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
@@ -47,7 +48,7 @@ export const deduccionesApi = {
     try {
       respuesta = await fetch(`${BACKEND_URL}${BASE}/${propietarioId}/deducciones`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasDeLaCuenta() },
         body: formulario,
       });
     } catch (error) {

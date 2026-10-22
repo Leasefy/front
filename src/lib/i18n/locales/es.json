@@ -4192,7 +4192,9 @@
           "viewOnPortal": "La consignación terminó: el inmueble ya no se muestra en el portal desde este mandato.",
           "pedirCita": "La consignación terminó: no se agendan visitas.",
           "nuevaConsignacion": "Nueva consignación",
-          "nuevaConsignacionAyuda": "Para volver a administrar este inmueble."
+          "nuevaConsignacionAyuda": "Para volver a administrar este inmueble.",
+          "reactivar": "Reactivar consignación",
+          "reactivarAyuda": "Vuelve a administrar este inmueble con los mismos términos: propietario, canon y comisión."
         }
       },
       "filters": {
@@ -4509,6 +4511,8 @@
         },
         "step2": {
           "dondeVanLasFotos": "Las fotos y el video del inmueble se suben en el paso «Fotos e inventario»; puedes elegir varias fotos a la vez.",
+          "amenitiesLabel": "Características",
+          "amenitiesHint": "Lo que más miran quienes buscan: las que marques salen en la ficha y en los filtros del marketplace.",
           "title": "Datos del inmueble",
           "subtitle": "Ingresa la información básica del inmueble. Los campos con * son obligatorios.",
           "propertyTypeLabel": "Tipo de inmueble",
@@ -5439,6 +5443,7 @@
       "colApproved": "Aprobadas",
       "colInProgress": "En Progreso",
       "colCompleted": "Completadas",
+      "colCancelled": "No aprobadas",
       "noRequests": "No hay solicitudes",
       "cancelledNotice": "{{count}} solicitudes canceladas no mostradas",
       "paidByOwner": "Propietario",
@@ -5456,9 +5461,9 @@
       "noPropertiesFound": "No se encontraron propiedades",
       "maintenanceType": "Tipo de mantenimiento",
       "priorityLabel": "Prioridad",
-      "photosOptional": "Fotos (opcional)",
-      "photosHint": "Agrega fotos del problema para facilitar el diagnóstico",
-      "addPhoto": "Agregar foto",
+      "photosOptional": "Fotos o videos (opcional)",
+      "photosHint": "Agrega fotos o videos del problema para facilitar el diagnóstico. Fotos de hasta 5 MB; videos de hasta 20 MB (unos 20 segundos), máximo 5.",
+      "addPhoto": "Agregar foto o video",
       "paymentResponsible": "Responsable del pago",
       "paymentInfo": "Se determinará según el tipo de problema y contrato",
       "errSelectProperty": "Selecciona una propiedad",

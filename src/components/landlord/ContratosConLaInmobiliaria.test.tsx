@@ -13,6 +13,8 @@ void React;
 
 const mio = vi.fn();
 vi.mock('@/lib/api/estado-de-cuenta.service', () => ({ estadoDeCuentaApi: { mio: () => mio() } }));
+// Sin ficha de propietario por su correo (la mira cuando no hay contratos del lado PROPIETARIO).
+vi.mock('@/lib/api/informes-del-propietario.service', () => ({ informesDelPropietarioApi: { disponibles: async () => ({ fichas: [] }) } }));
 
 import { ContratosConLaInmobiliaria, useContratosAdministrados } from './ContratosConLaInmobiliaria';
 import { contrato, estadoDeCuenta } from '@/components/estado-de-cuenta/ejemplo-de-prueba';

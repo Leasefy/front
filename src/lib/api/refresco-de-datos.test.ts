@@ -107,6 +107,23 @@ describe('compartirGet', () => {
   });
 });
 
+describe('🔴 un cambio no deja que lo de después se pegue a un GET viejo (21-10-2026)', () => {
+  it('el GET que salió ANTES del cambio no lo hereda el que se pide DESPUÉS', async () => {
+    let soltarViejo: (v: string) => void = () => {}
+    const viejo = new Promise<string>((r) => (soltarViejo = r))
+    const hacer = vi.fn().mockReturnValueOnce(viejo).mockResolvedValueOnce('nuevo')
+
+    const antes = compartirGet('/inmobiliaria/mantenimiento', hacer)
+    invalidar('mantenimiento') // la cotización se guardó mientras el viejo viajaba
+    const despues = compartirGet('/inmobiliaria/mantenimiento', hacer)
+
+    soltarViejo('viejo')
+    await expect(antes).resolves.toBe('viejo')
+    await expect(despues).resolves.toBe('nuevo')
+    expect(hacer).toHaveBeenCalledTimes(2)
+  })
+})
+
 describe('invalidar / alCambiar', () => {
   it('avisa a quien lee ese recurso', () => {
     const oyente = vi.fn();

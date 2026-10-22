@@ -13,7 +13,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts'
+import { Cell, Pie, PieChart } from 'recharts'
 import { Sparkle } from '@phosphor-icons/react'
 import { enterTransition, Stagger, StaggerItem, usePrefersReducedMotion } from '@leasefy/cadence'
 
@@ -89,8 +89,9 @@ export function CuantoCuestaVivirAqui({ propertyId }: { propertyId: string }) {
       <h2 className="text-h3 text-fg">Cuánto cuesta vivir aquí</h2>
       <div className="mt-6 grid items-center gap-8 rounded-2xl border border-border bg-surface p-6 md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] md:p-8">
         <div className="relative mx-auto h-60 w-60">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+          {/* El aro mide siempre 240 × 240 (h-60 w-60): con tamaño fijo no hay que
+              medirlo y recharts no avisa «width(-1) and height(-1)» antes de pintarlo. */}
+          <PieChart width={240} height={240}>
               <Pie
                 data={porciones}
                 dataKey="valor"
@@ -107,8 +108,7 @@ export function CuantoCuestaVivirAqui({ propertyId }: { propertyId: string }) {
                   <Cell key={p.clave} fill={p.color} />
                 ))}
               </Pie>
-            </PieChart>
-          </ResponsiveContainer>
+          </PieChart>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
             <span className="text-caption text-fg-muted">valor aprox. al mes</span>
             <span className="font-mono text-xl font-semibold tabular-nums text-fg" data-testid="costo-total">

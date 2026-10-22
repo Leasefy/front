@@ -63,8 +63,11 @@ export const messagesApi = {
    * inmobiliarias. Sale del MISMO predicado que autoriza el POST, así que
    * nada de lo que aparece en la lista puede terminar en un 403.
    */
-  getDestinatariosDirectos(q?: string) {
-    const query = q?.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
+  getDestinatariosDirectos(q?: string, relacion?: 'inquilinos' | 'propietarios') {
+    const params = new URLSearchParams();
+    if (q?.trim()) params.set('q', q.trim());
+    if (relacion) params.set('relacion', relacion);
+    const query = params.toString() ? `?${params.toString()}` : '';
     return apiClient.get<DestinatariosDirectos>(
       `/conversations/directos/destinatarios${query}`,
     );

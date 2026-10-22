@@ -29,6 +29,7 @@ import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ConfigUsuarios } from '@/components/inmobiliaria';
 import { PermisosDeLaPersona } from '@/components/inmobiliaria/PermisosDeLaPersona';
+import { CambiarCorreoDeLaInvitacion } from '@/components/inmobiliaria/invitar-al-equipo/CambiarCorreoDeLaInvitacion';
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
 import { MetasEnElRanking } from '@/components/comercial/MetasEnElRanking';
 import { CaptacionesYArriendos } from '@/components/inmobiliaria/CaptacionesYArriendos';
@@ -208,6 +209,30 @@ export function SeccionEquipo() {
     [users, refetch, t],
   );
 
+  const [personaDelCorreo, setPersonaDelCorreo] = useState<AgencyUser | null>(null);
+
+  /** Portofino 21-10: la invitación ya salió al correo nuevo. */
+  const correoCambiado = useCallback(
+    async (result: AgencyInviteResult, correo: string) => {
+      await refetch();
+      if (result.emailDelivered === false) {
+        toast.warning('Correo cambiado, la invitación no salió', {
+          description:
+            result.emailStatus === 'suppressed'
+              ? `${COPIA_DE_PRUEBAS_SIN_CORREOS}. El enlace de ${correo} sirve: pásaselo tú.`
+              : `El enlace de ${correo} sirve. Pásaselo tú.`,
+          action: accionDelCorreoCaido(result, correo),
+          duration: 12000,
+        });
+      } else {
+        toast.success('Listo: le mandamos la invitación al correo nuevo', {
+          description: `${correo}. El enlace anterior ya no sirve.`,
+        });
+      }
+    },
+    [refetch, accionDelCorreoCaido],
+  );
+
   const reenviarInvitacion = useCallback(
     async (userId: string) => {
       const user = users.find((u) => u.id === userId);
@@ -324,6 +349,7 @@ export function SeccionEquipo() {
             onUpdateRole={puedeAdministrarEquipo ? cambiarRol : undefined}
             onToggleStatus={puedeAdministrarEquipo ? alternarEstado : undefined}
             onResendInvite={puedeAdministrarEquipo ? reenviarInvitacion : undefined}
+            onCambiarCorreo={puedeAdministrarEquipo ? setPersonaDelCorreo : undefined}
             onDelete={puedeAdministrarEquipo ? eliminar : undefined}
             onVerFicha={verFicha}
             onPermisos={setPersonaDePermisos}
@@ -335,6 +361,11 @@ export function SeccionEquipo() {
           <PermisosDeLaPersona
             persona={personaDePermisos}
             onCerrar={() => setPersonaDePermisos(null)}
+          />
+          <CambiarCorreoDeLaInvitacion
+            persona={personaDelCorreo}
+            onCerrar={() => setPersonaDelCorreo(null)}
+            onCambiado={correoCambiado}
           />
         </EstadoDeDatos>
       ) : (

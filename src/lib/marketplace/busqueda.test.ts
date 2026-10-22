@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   absorber,
+  COMODIDADES,
   costoMensual,
   escribirBusqueda,
   filtrosDeLaApi,
@@ -77,8 +78,15 @@ describe('la URL de una búsqueda', () => {
     expect(leer(url)).toEqual(b);
   });
 
+  it('las características nuevas también viajan en la URL, y las 15 de antes conservan su palabra', () => {
+    expect(leer('comodidades=jacuzzi,chimenea,vigilancia')).toEqual({ comodidades: ['jacuzzi', 'fireplace', 'security'] });
+    expect(escribirBusqueda({ comodidades: ['walk_in_closet', 'storage'] })).toContain('comodidades=vestier%2Cdeposito');
+    const palabras = COMODIDADES.map((c) => c.url);
+    expect(new Set(palabras).size).toBe(palabras.length);
+  });
+
   it('lo que no se entiende se ignora, nunca rompe la página', () => {
-    expect(leer('operacion=alquiler&tipo=castillo&habitaciones=dos&comodidades=jacuzzi,mascotas')).toEqual({
+    expect(leer('operacion=alquiler&tipo=castillo&habitaciones=dos&comodidades=castillo-encantado,mascotas')).toEqual({
       comodidades: ['pets'],
     });
   });

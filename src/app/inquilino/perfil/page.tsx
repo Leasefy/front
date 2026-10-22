@@ -1,9 +1,10 @@
 'use client';
+import { CambiarCorreoDeEntrada } from '@/components/cuenta/CambiarCorreoDeEntrada';
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User as UserIcon, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, FileText } from '@phosphor-icons/react';
+import { User as UserIcon, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, FileText } from '@phosphor-icons/react';
 import {
   AnimatedNumber,
   Collapse,
@@ -788,11 +789,8 @@ export default function PerfilPage() {
                   <label className="block text-sm font-medium text-fg-muted mb-2">
                     Email
                   </label>
-                  {/* Email is managed by the auth provider and is not editable here */}
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-                    <Envelope className="w-4 h-4 text-fg-subtle" />
-                    <span className="text-sm text-fg">{user.email}</span>
-                  </div>
+                  {/* El correo de entrada, con su «Cambiar» (21-10-2026). */}
+                  <CambiarCorreoDeEntrada correo={user.email} className="px-4 py-3 bg-surface-muted rounded-xl" />
                 </div>
 
                 <div>

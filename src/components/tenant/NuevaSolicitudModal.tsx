@@ -35,7 +35,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from '@/components/ui/toast';
-import { X, Lifebuoy, Paperclip, ImageSquare, FileText } from '@phosphor-icons/react';
+import { X, Lifebuoy, Paperclip, ImageSquare, FileText, VideoCamera } from '@phosphor-icons/react';
 import { AnimatePresence } from 'framer-motion';
 import { StaggerItem } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
@@ -59,7 +59,7 @@ import {
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
-import { ACCEPT_DE_ADJUNTOS, problemaDelAdjunto } from '@/lib/api/pqrs-adjuntos';
+import { ACCEPT_DE_ADJUNTOS_DE_PQRS, esVideoDePqrs, problemaDelAdjuntoDePqrs } from '@/lib/api/pqrs-adjuntos';
 import type { PqrsTipo } from '@/lib/api/pqrs.types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -81,9 +81,6 @@ interface NuevaSolicitudModalProps {
    */
   contratos?: ContratoParaRadicar[];
 }
-
-/** 10 MB per-file cap (mirrors the MessagesWidget photo picker). */
-const MAX_BYTES = 10 * 1024 * 1024;
 
 type CampoDeLaSolicitud = 'contratoId' | 'tipo' | 'asunto' | 'descripcion';
 const CAMPOS_DE_LA_SOLICITUD: readonly CampoDeLaSolicitud[] = ['contratoId', 'tipo', 'asunto', 'descripcion'];
@@ -164,16 +161,15 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
       e.target.value = '';
       const accepted: File[] = [];
       for (const f of picked) {
-        // SO-18: el mismo aviso que el back (tipo y 10 MB) ANTES de subir; un
+        // SO-18: el mismo aviso que el back (tipo y peso) ANTES de subir; un
         // `.exe` ya no entra a la lista. La regla la pone el back por los bytes.
-        const problema = f.size > MAX_BYTES || problemaDelAdjunto(f);
+        // 21-10-2026: también videos (20 MB), para mostrar la fuga como es.
+        const problema = problemaDelAdjuntoDePqrs(f);
         if (problema) {
           toast.error(
             locale === 'es'
-              ? typeof problema === 'string'
-                ? problema
-                : `"${f.name}" supera el límite de 10 MB.`
-              : `"${f.name}" is not a photo or PDF under 10 MB.`,
+              ? problema
+              : `"${f.name}" is not a photo, video or PDF within the size limit.`,
           );
           continue;
         }
@@ -443,13 +439,13 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
         {/* Fotos / evidencia */}
         <div>
           <span className="block text-sm font-medium text-fg mb-1.5">
-            {locale === 'es' ? 'Fotos o documentos (opcional)' : 'Photos or documents (optional)'}
+            {locale === 'es' ? 'Fotos, videos o documentos (opcional)' : 'Photos, videos or documents (optional)'}
           </span>
           <input
             ref={fileInputRef}
             type="file"
             multiple
-            accept={ACCEPT_DE_ADJUNTOS}
+            accept={ACCEPT_DE_ADJUNTOS_DE_PQRS}
             className="hidden"
             onChange={handleFilesSelected}
           />
@@ -463,12 +459,12 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
             className="inline-flex items-center gap-2"
           >
             <Paperclip className="w-4 h-4" />
-            {locale === 'es' ? 'Agregar fotos' : 'Add photos'}
+            {locale === 'es' ? 'Agregar fotos o videos' : 'Add photos or videos'}
           </Button>
           <p className="text-xs text-fg-muted mt-1.5">
             {locale === 'es'
-              ? 'Imágenes o PDF, hasta 10 MB cada uno.'
-              : 'Images or PDF, up to 10 MB each.'}
+              ? 'Fotos o PDF hasta 10 MB; videos hasta 20 MB (unos 20 segundos).'
+              : 'Photos or PDF up to 10 MB; videos up to 20 MB (about 20 seconds).'}
           </p>
 
           {/* Cada adjunto entra (8 px) y, al quitarlo, sale y los demás se corren. */}
@@ -477,7 +473,7 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
               <AnimatePresence initial={false} mode="popLayout">
               {files.map((file, index) => {
                 const isImage = file.type.startsWith('image/');
-                const ChipIcon = isImage ? ImageSquare : FileText;
+                const ChipIcon = esVideoDePqrs(file) ? VideoCamera : isImage ? ImageSquare : FileText;
                 return (
                   <StaggerItem
                     as="li"

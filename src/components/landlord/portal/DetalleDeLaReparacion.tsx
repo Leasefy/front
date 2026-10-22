@@ -25,6 +25,21 @@ import { TIPO_AL_BACK } from '@/lib/api/mantenimiento-enums';
 import { MANTENIMIENTO_TYPES } from '@/lib/types/inmobiliaria';
 import { aprobacionesDeReparacionApi } from '@/lib/api/aprobaciones-de-reparacion.service';
 import type { DetalleDeLaReparacionEnElPortal, EstadoDeLaAprobacion } from '@/lib/types/deducciones';
+import { AvanceDeLaSolicitud } from '@/components/estado/AvanceDeLaSolicitud';
+import { avanceDelMantenimiento } from '@/lib/estado/avance-de-la-solicitud';
+
+/** El estado del back de la solicitud → el paso de la barra. */
+const ESTADO_DEL_BACK_AL_AVANCE: Record<
+  string,
+  'reported' | 'quoted' | 'approved' | 'in_progress' | 'completed' | 'cancelled'
+> = {
+  REPORTED: 'reported',
+  QUOTED: 'quoted',
+  MAINT_APPROVED: 'approved',
+  IN_PROGRESS: 'in_progress',
+  MAINT_COMPLETED: 'completed',
+  MAINT_CANCELLED: 'cancelled',
+};
 
 export const ESTADO_CORTO: Record<EstadoDeLaAprobacion, { texto: string; tono: string }> = {
   PENDIENTE: { texto: 'Por aprobar', tono: 'bg-surface-muted text-fg-muted' },
@@ -206,6 +221,17 @@ export function DetalleDeLaReparacion({ id, onCerrar }: { id: string | null; onC
           >
             {d && (
               <div className="space-y-5">
+                {/* 21-10-2026 (Portofino): dónde va el arreglo, como una barra. */}
+                {d.reparacion.estado && (
+                  <Seccion titulo="Dónde va el arreglo" testid="detalle-avance">
+                    <AvanceDeLaSolicitud
+                      {...avanceDelMantenimiento(
+                        ESTADO_DEL_BACK_AL_AVANCE[d.reparacion.estado] ?? 'reported',
+                        d.cotizacion ? 'quoted' : 'reported',
+                      )}
+                    />
+                  </Seccion>
+                )}
                 <Seccion titulo="Tu decisión" testid="detalle-decision">
                   <p className="text-sm text-fg">{QUE_PASO[d.estado]}</p>
                   <dl className="grid grid-cols-2 gap-3">

@@ -114,8 +114,8 @@ export function PublicarDesdeElMarketplace() {
             </>
           ) : (
             <p className="mt-1 text-[14px] text-fg-muted">
-              Publícalo gratis, paso a paso: fotos, video, canon y requisitos. Te sugerimos el canon con el avalúo de
-              Leasefy y el contrato se firma en línea.
+              Publícalo gratis, para arriendo o para venta: fotos, video y precio. Si es arriendo, te sugerimos el canon
+              con el avalúo de Leasefy y el contrato se firma en línea.
               {!conSesion && ' Se publica con tu cuenta: si no tienes, la creas en el camino.'}
             </p>
           )}

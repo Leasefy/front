@@ -168,7 +168,7 @@ describe('Marcar como completada — «Subir fotos del trabajo»', () => {
     montar();
     await elegir(foto('plano.pdf', 'application/pdf'), foto('bien.jpg'));
     expect(todos('[data-testid="foto-del-trabajo"]')).toHaveLength(1);
-    expect(errorBajoLasFotos()).toContain(`«plano.pdf»: ${MENSAJES_DEL_MANTENIMIENTO.fotoTipo}`);
+    expect(errorBajoLasFotos()).toContain(`«plano.pdf»: ${MENSAJES_DEL_MANTENIMIENTO.archivoTipo}`);
   });
 
   it('🔴 una foto que no sube NO cierra: dice cuál y por qué, y al reintentar sólo sube la que faltaba', async () => {

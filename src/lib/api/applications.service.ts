@@ -22,6 +22,7 @@ import type {
 } from './applications.types';
 import type { Application } from '@/lib/types/application';
 import type { TenantApplicationStatus } from '@/lib/types/tenant-application';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
@@ -336,6 +337,7 @@ export const applicationsApi = {
 
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
+    Object.assign(headers, cabecerasDeLaCuenta());
 
     const res = await fetch(`${BACKEND_URL}/applications/${applicationId}/documents`, {
       method: 'POST',

@@ -8,6 +8,7 @@ import { mapBackendProperty, mapBackendAgencyProperty, TYPE_TO_BACKEND, LISTING_
 import type { BackendProperty, PaginatedResponse, PropertyFiltersParams } from './properties.types';
 import type { Property, AgencyProperty } from '@/lib/types/property';
 import type { PaginationMeta } from './properties.types';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
@@ -35,6 +36,7 @@ function buildQueryString(filters: PropertyFiltersParams): string {
   if (filters.searchQuery) params.set('searchQuery', filters.searchQuery);
   if (filters.naturalQuery) params.set('naturalQuery', filters.naturalQuery);
   if (filters.agencyId) params.set('agencyId', filters.agencyId);
+  if (filters.vitrinaDe) params.set('vitrinaDe', filters.vitrinaDe);
   if (filters.page != null) params.set('page', String(filters.page));
   if (filters.limit != null) params.set('limit', String(filters.limit));
 
@@ -195,6 +197,7 @@ export const propertiesApi = {
 
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
+    Object.assign(headers, cabecerasDeLaCuenta());
 
     let res: Response;
     try {

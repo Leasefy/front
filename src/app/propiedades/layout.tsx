@@ -1,21 +1,29 @@
 import { Metadata } from "next";
 
+/**
+ * El catálogo es de arriendo Y de venta («Arrendar / Comprar»; Nico,
+ * 21-10-2026: «no solo enfocado en arriendo»). Cada ficha tiene su propia
+ * metadata en `[id]/layout.tsx`.
+ */
 export const metadata: Metadata = {
-  title: "Propiedades en Arriendo",
+  title: "Inmuebles en arriendo y venta",
   description:
-    "Encuentra apartamentos y casas en arriendo en Bogotá, Medellín, Cali y toda Colombia. Filtros inteligentes, búsqueda con IA y propietarios verificados.",
+    "Encuentra apartamentos y casas para arrendar o comprar en Bogotá, Medellín, Cali y toda Colombia. Filtros inteligentes, búsqueda con IA y propietarios verificados.",
   keywords: [
     "propiedades en arriendo",
+    "inmuebles en venta",
     "apartamentos arriendo Bogota",
     "casas arriendo Medellin",
+    "apartamentos en venta Medellin",
+    "casas en venta",
     "alquiler apartamentos Colombia",
     "arriendos baratos",
     "apartaestudios arriendo",
   ],
   openGraph: {
-    title: "Propiedades en Arriendo | Leasefy",
+    title: "Inmuebles en arriendo y venta | Leasefy",
     description:
-      "Encuentra tu próximo hogar. Apartamentos y casas en arriendo con búsqueda inteligente y propietarios verificados.",
+      "Encuentra tu próximo hogar para arrendar o comprar. Apartamentos y casas con búsqueda inteligente y propietarios verificados.",
     type: "website",
   },
   alternates: {

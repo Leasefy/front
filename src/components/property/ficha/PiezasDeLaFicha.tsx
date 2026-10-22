@@ -21,6 +21,7 @@ import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
 import type { PropertyFiltersParams } from '@/lib/api/properties.types';
 import { useProperties } from '@/lib/hooks/useProperties';
 import { costoMensual, sinDeposito } from '@/lib/marketplace/busqueda';
+import { caracteristicasPorGrupo } from '@/lib/inmuebles/caracteristicas';
 import type { RedDelVideo } from '@/lib/marketplace/video';
 import type { Property } from '@/lib/types/property';
 import { cn } from '@/lib/utils';
@@ -266,11 +267,17 @@ export function OfrecidoPor({
       data-testid="ofrecido-por"
     >
       <LogoDeLaInmobiliaria i={i} tamano={36} />
-      <div className="min-w-0 flex-1">
+      {/*
+        El nombre entero, nunca «Portofino…» (Juan, 21-10-2026: en el celular
+        «las palabras se nos quedan» cortadas). `min-w-[12rem]`: si no cabe con
+        «% la recomienda» al lado, eso baja a la línea siguiente y el nombre se
+        queda con el ancho; si aun así no cabe, parte en dos líneas.
+      */}
+      <div className="min-w-[12rem] flex-1">
         <p className="text-[12.5px] text-fg-muted">Ofrecido por</p>
-        <p className="flex items-center gap-1 text-[15px] font-semibold text-fg">
-          <span className="truncate">{p.agencyName}</span>
-          {t?.verificada && <SelloVerificada />}
+        <p className="flex items-start gap-1 text-[15px] font-semibold leading-snug text-fg">
+          <span className="min-w-0 break-words">{p.agencyName}</span>
+          {t?.verificada && <SelloVerificada className="mt-0.5 shrink-0" />}
         </p>
       </div>
       {t && <Recomienda r={t.recomendacion} conVotos />}
@@ -310,15 +317,28 @@ export function SobreLaInmobiliaria({ t }: { t: TarjetaDeInmobiliaria }) {
 
 /* ── Lo especial, la descripción y los costos ─────────────────────────────── */
 
+/** Cuántas cosas caben en «Lo especial». */
+const MAXIMO_DE_LO_ESPECIAL = 6;
+
+/**
+ * Lo que va en «Lo especial»: las características primero y, al final, el
+ * parqueadero, el piso y «Sin depósito». Esos tres tienen su lugar guardado
+ * (21-10-2026): con la lista ampliada a 41, seis características empujaban
+ * «Sin depósito» fuera de la ficha.
+ */
+export function frasesDeLoEspecial(p: Property): { frases: string[]; caracteristicasMostradas: number } {
+  const nombres = [...new Set((p.amenities ?? []).map((a) => a?.name).filter((n): n is string => !!n))];
+  const extras: string[] = [];
+  if (p.parkingSpaces && !nombres.some((x) => /parqueadero/i.test(x))) extras.push('Con parqueadero');
+  if (p.floor) extras.push(`Piso ${p.floor}`);
+  if (sinDeposito(p)) extras.push('Sin depósito');
+  const caben = Math.max(0, MAXIMO_DE_LO_ESPECIAL - extras.length);
+  const mostradas = nombres.slice(0, caben);
+  return { frases: [...mostradas, ...extras], caracteristicasMostradas: mostradas.length };
+}
+
 export function LoEspecial({ p }: { p: Property }) {
-  const frases = useMemo(() => {
-    const r: string[] = [];
-    for (const a of p.amenities ?? []) if (a?.name) r.push(a.name);
-    if (p.parkingSpaces && !r.some((x) => /parqueadero/i.test(x))) r.push('Con parqueadero');
-    if (p.floor) r.push(`Piso ${p.floor}`);
-    if (sinDeposito(p)) r.push('Sin depósito');
-    return [...new Set(r)].slice(0, 6);
-  }, [p]);
+  const frases = useMemo(() => frasesDeLoEspecial(p).frases, [p]);
   if (frases.length === 0) return null;
   return (
     <section className="mt-10" aria-labelledby="lo-especial">
@@ -340,6 +360,45 @@ export function LoEspecial({ p }: { p: Property }) {
           </motion.li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+/**
+ * Todas las características, en sus tres grupos (Juan, 21-10-2026: la
+ * competencia muestra «Características & comodidades» completas). Sólo sale
+ * cuando hay más de las que caben en «Lo especial»: con pocas, repetirlas
+ * sería ruido.
+ */
+export function CaracteristicasDelInmueble({ p }: { p: Property }) {
+  const grupos = useMemo(() => {
+    const ids = new Set((p.amenities ?? []).map((a) => a?.id).filter(Boolean));
+    return caracteristicasPorGrupo()
+      .map((g) => ({ ...g, items: g.items.filter((c) => ids.has(c.id)) }))
+      .filter((g) => g.items.length > 0);
+  }, [p]);
+  const total = grupos.reduce((n, g) => n + g.items.length, 0);
+  if (total === 0 || total <= frasesDeLoEspecial(p).caracteristicasMostradas) return null;
+  return (
+    <section className="mt-10" aria-labelledby="caracteristicas-del-inmueble" data-testid="caracteristicas-del-inmueble">
+      <h2 id="caracteristicas-del-inmueble" className="font-heading text-[20px] font-semibold tracking-[-0.02em] text-fg">
+        Características <span className="font-mono text-[15px] font-normal tabular-nums text-fg-muted">{total}</span>
+      </h2>
+      <div className="mt-4 space-y-5">
+        {grupos.map((g) => (
+          <div key={g.grupo}>
+            <h3 className="text-[12px] font-medium uppercase tracking-[0.08em] text-fg-subtle">{g.nombre}</h3>
+            <ul className="mt-2 grid grid-cols-1 gap-x-6 gap-y-2 min-[400px]:grid-cols-2 lg:grid-cols-3">
+              {g.items.map((c) => (
+                <li key={c.id} className="flex items-start gap-2 text-[14.5px] leading-snug text-fg">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" weight="bold" aria-hidden />
+                  <span className="min-w-0 break-words">{c.nombre}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }

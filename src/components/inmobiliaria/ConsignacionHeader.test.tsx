@@ -213,16 +213,20 @@ describe('<ConsignacionHeader> — un mandato TERMINADO se ve y se comporta dist
     expect(container.querySelector('[data-testid="terminada-con-contrato"]')).toBeNull();
   });
 
-  it('el kebab no ofrece «Terminar» otra vez, no hay «Cambiar estado», «Ver en Portal» explica por qué y hay «Nueva consignación»', () => {
-    render({ consignacion: terminada });
+  it('el kebab no ofrece «Terminar» otra vez, no hay «Cambiar estado», «Ver en Portal» explica por qué y hay «Reactivar consignación» (21-10-2026)', () => {
+    const onReactivar = vi.fn();
+    render({ consignacion: terminada, onReactivar });
     expect(container.querySelector('[aria-label="inmobiliaria.consignaciones.header.moreActions"]')).toBeNull();
     expect(conTexto('inmobiliaria.consignaciones.header.changeStatus')).toBeUndefined();
     const portal = findViewPortalButton()!;
     expect(portal.disabled).toBe(true);
     expect(portal.getAttribute('title')).toBe('inmobiliaria.consignaciones.header.terminada.viewOnPortal');
-    const nueva = container.querySelector<HTMLAnchorElement>('[data-testid="header-nueva-consignacion"]')!;
-    expect(nueva).not.toBeNull();
-    expect(nueva.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/nuevo?origen=existente');
+    // «Nueva consignación» llevaba a un asistente que no puede reabrir ESTE inmueble.
+    expect(container.querySelector('[data-testid="header-nueva-consignacion"]')).toBeNull();
+    const reactivar = container.querySelector<HTMLButtonElement>('[data-testid="header-reactivar-consignacion"]')!;
+    expect(reactivar.textContent).toContain('inmobiliaria.consignaciones.header.terminada.reactivar');
+    act(() => { reactivar.click(); });
+    expect(onReactivar).toHaveBeenCalled();
   });
 
   it('«Editar» queda sólo para el inmueble: cambia de nombre, explica y sigue disparando onEdit', () => {

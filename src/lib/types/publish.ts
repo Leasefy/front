@@ -2,6 +2,7 @@
  * Property Publishing Types
  */
 
+import { CARACTERISTICAS } from '@/lib/inmuebles/caracteristicas';
 import type { PlanId } from './subscription';
 
 // ============================================================================
@@ -219,23 +220,8 @@ export const PROPERTY_TYPES = [
   { value: 'room', label: 'Habitación', description: 'Cuarto individual en vivienda compartida' },
 ];
 
-export const AMENITIES_OPTIONS = [
-  { value: 'pool', label: 'Piscina' },
-  { value: 'gym', label: 'Gimnasio' },
-  { value: 'security', label: 'Vigilancia 24/7' },
-  { value: 'parking', label: 'Parqueadero' },
-  { value: 'elevator', label: 'Ascensor' },
-  { value: 'terrace', label: 'Terraza' },
-  { value: 'bbq', label: 'Zona BBQ' },
-  { value: 'playground', label: 'Zona infantil' },
-  { value: 'laundry', label: 'Lavandería' },
-  { value: 'pets', label: 'Acepta mascotas' },
-  { value: 'furnished', label: 'Amoblado' },
-  { value: 'balcony', label: 'Balcón' },
-  { value: 'storage', label: 'Depósito' },
-  { value: 'ac', label: 'Aire acondicionado' },
-  { value: 'heating', label: 'Calefacción' },
-];
+/** Las características para los formularios (valor → etiqueta), de la única lista (21-10-2026). */
+export const AMENITIES_OPTIONS = CARACTERISTICAS.map((c) => ({ value: c.id, label: c.nombre }));
 
 export const CITIES = [
   'Bogotá',

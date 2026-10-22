@@ -16,6 +16,7 @@
  * exactamente lo que se ve.
  */
 import { formatCurrency } from '@/lib/format';
+import { CARACTERISTICAS } from '@/lib/inmuebles/caracteristicas';
 import type { PropertyFiltersParams } from '@/lib/api/properties.types';
 import type { Property, PropertyType } from '@/lib/types/property';
 
@@ -79,24 +80,53 @@ const TIPOS: readonly { api: TipoDeLaApi; url: string; nombre: string; plural: s
   { api: 'WAREHOUSE', url: 'bodega', nombre: 'Bodega', plural: 'Bodegas' },
 ];
 
-/** Las comodidades que entiende la API, con su palabra en la URL y su nombre. */
-export const COMODIDADES: readonly { api: string; url: string; nombre: string }[] = [
-  { api: 'pets', url: 'mascotas', nombre: 'Acepta mascotas' },
-  { api: 'parking', url: 'parqueadero', nombre: 'Parqueadero' },
-  { api: 'furnished', url: 'amoblado', nombre: 'Amoblado' },
-  { api: 'balcony', url: 'balcon', nombre: 'Balcón' },
-  { api: 'pool', url: 'piscina', nombre: 'Piscina' },
-  { api: 'gym', url: 'gimnasio', nombre: 'Gimnasio' },
-  { api: 'elevator', url: 'ascensor', nombre: 'Ascensor' },
-  { api: 'security', url: 'vigilancia', nombre: 'Vigilancia' },
-  { api: 'terrace', url: 'terraza', nombre: 'Terraza' },
-  { api: 'bbq', url: 'bbq', nombre: 'Zona BBQ' },
-  { api: 'laundry', url: 'lavanderia', nombre: 'Zona de lavado' },
-  { api: 'storage', url: 'deposito', nombre: 'Cuarto útil' },
-  { api: 'playground', url: 'zona-infantil', nombre: 'Zona infantil' },
-  { api: 'ac', url: 'aire', nombre: 'Aire acondicionado' },
-  { api: 'heating', url: 'calefaccion', nombre: 'Calefacción' },
-];
+/** «Apartamento», «Casa»… del tipo que manda la API (`APARTMENT`); `null` si no lo conoce. */
+export function nombreDelTipo(api: string | null | undefined): string | null {
+  return TIPOS.find((t) => t.api === api)?.nombre ?? null;
+}
+
+/**
+ * La palabra de cada característica en la URL (`?comodidades=mascotas,balcon`).
+ * Estas 15 son las de antes y no cambian: hay enlaces guardados y compartidos
+ * con ellas. Las demás salen de su nombre (`slugDeLaUrl`).
+ */
+const PALABRA_VIEJA_EN_LA_URL: Readonly<Record<string, string>> = {
+  pets: 'mascotas',
+  parking: 'parqueadero',
+  furnished: 'amoblado',
+  balcony: 'balcon',
+  pool: 'piscina',
+  gym: 'gimnasio',
+  elevator: 'ascensor',
+  security: 'vigilancia',
+  terrace: 'terraza',
+  bbq: 'bbq',
+  laundry: 'lavanderia',
+  storage: 'deposito',
+  playground: 'zona-infantil',
+  ac: 'aire',
+  heating: 'calefaccion',
+};
+
+function slugDeLaUrl(nombre: string): string {
+  return nombre
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Las comodidades que entiende la API, con su palabra en la URL y su nombre:
+ * la única lista de características (`lib/inmuebles/caracteristicas.ts`,
+ * 21-10-2026), no una copia de 15.
+ */
+export const COMODIDADES: readonly { api: string; url: string; nombre: string }[] = CARACTERISTICAS.map((c) => ({
+  api: c.id,
+  url: PALABRA_VIEJA_EN_LA_URL[c.id] ?? slugDeLaUrl(c.nombre),
+  nombre: c.nombre,
+}));
 
 /** Los tipos que son vivienda (Ley 820 de 2003: sin depósito en dinero). */
 const VIVIENDA: ReadonlySet<PropertyType> = new Set(['apartment', 'house', 'studio', 'room']);

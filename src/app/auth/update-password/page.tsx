@@ -19,6 +19,7 @@ import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
 import { borrarMarcaDeRecuperacion, rutaParaEntrarConLaNueva } from '@/lib/auth/sesion-de-recuperacion';
 import { anunciarCierre } from '@/lib/auth/session-terminal';
 import { codigoDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
+import { getSupabase } from '@/lib/supabase/client';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { motion } from 'framer-motion';
 import { CrossFade, Presence, motionScale, motionSpring } from '@leasefy/cadence';
@@ -129,6 +130,8 @@ function UpdatePasswordContent() {
 
   const esPrimeraVez = searchParams.get('nuevo') === '1';
   const destino = sanitizeReturnUrl(searchParams.get('next'), '/');
+  /** Viene de una invitación al EQUIPO (21-10-2026): vuelve a aceptarla. */
+  const vaALaInvitacion = destino.startsWith('/invitacion/');
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -181,7 +184,7 @@ function UpdatePasswordContent() {
     e.preventDefault();
     if (!canSubmit) return;
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !getAccessToken()) {
       setError(
         esPrimeraVez
           ? 'El enlace de la invitación expiró. Pídele a tu inmobiliaria que te la reenvíe.'
@@ -248,6 +251,14 @@ function UpdatePasswordContent() {
     }
   };
 
+  /*
+   * 🔴 21-10-2026 (Portofino, Laura): llegaba aquí SIN sesión (enlace ya usado,
+   * vencido o abierto en otro navegador), escribía la contraseña dos veces y
+   * «Guardar» sólo decía que el enlace expiró: no había cómo seguir. Ahora se
+   * dice al abrir, y ahí mismo se pide uno nuevo.
+   */
+  const sinSesion = hidratado && !authLoading && !isAuthenticated && !getAccessToken() && !success;
+
   return (
     <ForceLightMode>
       <div className="min-h-screen bg-bg flex items-center justify-center px-4">
@@ -261,8 +272,10 @@ function UpdatePasswordContent() {
 
           {/* Formulario → «Contraseña actualizada»: se cruzan (`CrossFade`) y
               el visto llega con el resorte de rebote leve. */}
-          <CrossFade swapKey={success ? 'lista' : 'formulario'}>
-          {success ? (
+          <CrossFade swapKey={success ? 'lista' : sinSesion ? 'sin-sesion' : 'formulario'}>
+          {sinSesion ? (
+            <EnlaceQueYaNoSirve esPrimeraVez={esPrimeraVez} vuelta={searchParams.toString()} />
+          ) : success ? (
             <div className="text-center">
               <motion.div
                 initial={{ scale: motionScale.pop, opacity: 0 }}
@@ -276,15 +289,17 @@ function UpdatePasswordContent() {
                 {esPrimeraVez ? 'Tu cuenta quedó lista' : 'Contraseña actualizada'}
               </h1>
               <p className="text-sm text-fg-muted mb-6">
-                {esPrimeraVez
-                  ? 'Ya puedes entrar con tu correo y esta contraseña. Te llevamos a tu arriendo…'
-                  : 'Ahora entra con la contraseña nueva. Te llevamos a iniciar sesión…'}
+                {vaALaInvitacion
+                  ? 'Ya tienes contraseña. Te llevamos a aceptar la invitación…'
+                  : esPrimeraVez
+                    ? 'Ya puedes entrar con tu correo y esta contraseña. Te llevamos a tu arriendo…'
+                    : 'Ahora entra con la contraseña nueva. Te llevamos a iniciar sesión…'}
               </p>
               {/* En la recuperación no hay botón: navegar antes de que termine
                   el cierre dejaría viva la sesión del enlace. */}
               {esPrimeraVez ? (
                 <Link href={destino}>
-                  <Button className="w-full">Ver mi arriendo</Button>
+                  <Button className="w-full">{vaALaInvitacion ? 'Ver la invitación' : 'Ver mi arriendo'}</Button>
                 </Link>
               ) : (
                 <p className="text-xs text-fg-subtle" role="status" data-testid="cerrando-sesion-del-enlace">
@@ -302,9 +317,11 @@ function UpdatePasswordContent() {
                   {esPrimeraVez ? 'Crea tu contraseña' : 'Nueva contraseña'}
                 </h1>
                 <p className="text-sm text-fg-muted">
-                  {esPrimeraVez
-                    ? 'Es lo único que falta para entrar a tu portal de inquilino.'
-                    : 'Elige una contraseña segura para tu cuenta'}
+                  {vaALaInvitacion
+                    ? 'Es lo único que falta para aceptar la invitación.'
+                    : esPrimeraVez
+                      ? 'Es lo único que falta para entrar a tu portal de inquilino.'
+                      : 'Elige una contraseña segura para tu cuenta'}
                 </p>
               </div>
 
@@ -412,6 +429,101 @@ function UpdatePasswordContent() {
         </div>
       </div>
     </ForceLightMode>
+  );
+}
+
+/**
+ * El enlace ya no abre sesión: se dice de una vez y se pide uno nuevo aquí
+ * mismo (con el correo), que vuelve a esta misma pantalla con lo que traía
+ * (`nuevo`, `next`). Nunca dice si el correo tiene cuenta.
+ */
+function EnlaceQueYaNoSirve({ esPrimeraVez, vuelta }: { esPrimeraVez: boolean; vuelta: string }) {
+  const [correo, setCorreo] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [enviado, setEnviado] = useState(false);
+  const [fallo, setFallo] = useState<string | null>(null);
+
+  const pedir = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const limpio = correo.trim();
+    if (!limpio || enviando) return;
+    const sb = getSupabase();
+    if (!sb) {
+      setFallo('No pudimos mandarte el enlace: falta configuración.');
+      return;
+    }
+    setEnviando(true);
+    setFallo(null);
+    try {
+      const destino = `/auth/update-password${vuelta ? `?${vuelta}` : ''}`;
+      const { error } = await sb.auth.resetPasswordForEmail(limpio, {
+        redirectTo: `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(destino)}`,
+      });
+      if (error) throw error;
+      setEnviado(true);
+    } catch (err) {
+      setFallo(
+        mensajeDeSupabase(err, {
+          porDefecto: 'No pudimos mandarte el enlace. Prueba de nuevo en un momento.',
+          accion: 'mandarte el enlace',
+        }),
+      );
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <div data-testid="enlace-que-ya-no-sirve">
+      <div className="text-center mb-8">
+        <div className="mx-auto w-12 h-12 bg-warning-soft rounded-full flex items-center justify-center mb-4">
+          <Lock className="h-5 w-5 text-warning" />
+        </div>
+        <h1 className="text-2xl font-semibold text-fg mb-1">Este enlace ya no sirve</h1>
+        <p className="text-sm text-fg-muted">
+          {esPrimeraVez
+            ? 'Ya se usó o venció. Escribe tu correo y te mandamos uno nuevo para crear tu contraseña.'
+            : 'Ya se usó o venció. Escribe tu correo y te mandamos uno nuevo para cambiar tu contraseña.'}
+        </p>
+      </div>
+      {enviado ? (
+        <p role="status" className="rounded-[12px] bg-surface-muted px-4 py-3 text-sm text-fg">
+          Si {correo.trim()} tiene cuenta en Leasefy, te llegará un enlace en unos minutos. Ábrelo en este mismo
+          navegador.
+        </p>
+      ) : (
+        <form method="post" onSubmit={pedir} className="space-y-4">
+          <div>
+            <label htmlFor="correo-del-enlace" className="block text-sm font-medium text-fg mb-1.5">
+              Correo
+            </label>
+            <Input
+              id="correo-del-enlace"
+              type="email"
+              required
+              autoComplete="email"
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
+              placeholder="tu@correo.com"
+              className="h-12"
+            />
+          </div>
+          <Presence show={Boolean(fallo)}>
+            <p role="alert" className="text-sm text-danger bg-danger-soft px-4 py-3 rounded-[12px]">
+              {fallo}
+            </p>
+          </Presence>
+          <Button type="submit" className="w-full h-12 text-[14px]" disabled={!correo.trim() || enviando} isLoading={enviando}>
+            {enviando ? 'Enviando…' : 'Mandarme un enlace nuevo'}
+          </Button>
+        </form>
+      )}
+      <p className="text-center text-caption text-fg-muted mt-6">
+        <Link href="/auth" className="text-fg hover:underline">
+          Ir a iniciar sesión
+        </Link>
+      </p>
+    </div>
   );
 }
 

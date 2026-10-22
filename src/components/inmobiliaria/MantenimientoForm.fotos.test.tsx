@@ -182,7 +182,7 @@ describe('MantenimientoForm — las fotos', () => {
     // Sólo entra la que sirve.
     expect($$('[data-testid="mantenimiento-foto"]')).toHaveLength(1)
     const error = $('#mantenimiento-photoUrls-error')?.textContent ?? ''
-    expect(error).toContain(`«plano.pdf»: ${MENSAJES_DEL_MANTENIMIENTO.fotoTipo}`)
+    expect(error).toContain(`«plano.pdf»: ${MENSAJES_DEL_MANTENIMIENTO.archivoTipo}`)
     expect(error).toContain(`«enorme.jpg»: ${MENSAJES_DEL_MANTENIMIENTO.fotoPesada}`)
     expect($('[data-testid="mantenimiento-foto-input"]').getAttribute('aria-invalid')).toBe('true')
 

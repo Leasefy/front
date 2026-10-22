@@ -65,6 +65,9 @@ const MODULOS_DEL_BACK = [
   'subscription',
   'avaluos',
   'clientes',
+  // 21-10-2026: sólo del back, como la bitácora (el agente no lo ve).
+  'bitacora',
+  'mensajes',
 ] as const;
 
 /**
@@ -223,15 +226,12 @@ describe('gates del panel — lo que se muestra a todos se abre para todos', () 
     },
   );
 
-  it('Mensajes declara los roles que efectivamente lo abren', () => {
+  it('Mensajes se abre por su permiso (21-10-2026: se da desde «Permisos»)', () => {
     const mensajes = pantallas.find((p) => p.href === `${PANEL}/mensajes`);
-    // ROLES (Nico, 14-10-2026): administrador, asesor y coordinador; y desde el
-    // 20-10-2026 el auxiliar comercial (responde a los interesados).
-    expect(mensajes?.roles).toEqual([
-      AGENCY_ROLES.ADMIN,
-      AGENCY_ROLES.AGENTE,
-      AGENCY_ROLES.COORDINADOR,
-      AGENCY_ROLES.AUXILIAR_COMERCIAL,
-    ]);
+    // De fábrica lo tienen administrador, asesor, coordinador y auxiliar
+    // comercial (lo dice el back); un back anterior sin la llave cae al rol
+    // dentro de `canAccess('mensajes')`.
+    expect(mensajes?.module).toBe('mensajes');
+    expect(mensajes?.roles ?? []).toEqual([]);
   });
 });

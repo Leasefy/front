@@ -2256,3 +2256,27 @@ html.product-open .lv2 .pp-hero>*:nth-child(5){animation-delay:.22s}
 .lv2 .oc-ori--quieto .oc-ori-anillo,.lv2 .oc-ori--quieto .oc-ori-cuenta{opacity:1}
 .lv2 .oc-ori--quieto .oc-ori-anillo,.lv2 .oc-ori--quieto .oc-ori-erguido{animation:none}
 @media(max-width:1023px){.lv2 .oc-ori-orbitas,.lv2 .oc-ori-anillo,.lv2 .oc-ori-cuenta{display:none}}
+
+/* 21-10-2026 (Nico: «una carga bien chimba» al entrar al marketplace): la hoja
+   de `EntradaAlMarketplace` se funde con la página nueva. Transición entre
+   documentos del navegador (Chrome 126+, Safari 18.2+); donde no existe, la
+   página cambia como siempre. Vive en esta hoja porque la cargan la landing y
+   el marketplace (LandingChrome): las dos puntas tienen que aceptarla. */
+@view-transition{navigation:auto}
+::view-transition-old(root){animation:lv2-vt-sale .22s cubic-bezier(.4,0,1,1) both}
+::view-transition-new(root){animation:lv2-vt-entra .42s cubic-bezier(.16,1,.3,1) both}
+@keyframes lv2-vt-sale{to{opacity:0}}
+@keyframes lv2-vt-entra{from{opacity:0;transform:translateY(10px) scale(.995)}}
+@media (prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none}}
+
+/* 21-10-2026 (QA del marketplace): entre 1024 y 1279 px el menú no cabía:
+   «Publicar gratis» se partía en dos líneas y «Empezar ahora» quedaba fuera de
+   la pantalla. En ese rango se compacta y Blog y Contacto se van al pie (siguen
+   en el menú del celular y en el footer). */
+.lv2 #hdr nav.main a{white-space:nowrap}
+@media(min-width:1024px) and (max-width:1279px){
+  .lv2 .hcta{gap:6px}
+  /* `#hdr` porque `marketplace.css` le da a cada enlace su padding y display con esa especificidad. */
+  .lv2 #hdr nav.main a{padding:10px 6px}
+  .lv2 #hdr nav.main a[data-nav="blog"],.lv2 #hdr nav.main a[data-nav="contacto"]{display:none}
+}

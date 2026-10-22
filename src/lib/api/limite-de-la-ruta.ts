@@ -55,6 +55,13 @@ export const POLITICAS_DE_LAS_RUTAS = {
    * pocos por carga; 60 por minuto por IP sobra para verlo.
    */
   reporteCsp: { nombre: 'reporte-csp', maximo: 60, ventanaSegundos: 60 },
+  /**
+   * La imagen de la vista previa de un inmueble (`/api/og/inmueble/[id]`). Es
+   * pública (WhatsApp y Facebook la piden sin sesión) y cada una baja una foto:
+   * el techo frena a quien la use para recorrer el catálogo. La CDN la guarda
+   * un día, así que a un mismo enlace casi nunca le llega.
+   */
+  vistaPrevia: { nombre: 'vista-previa', maximo: 120, ventanaSegundos: 60 },
 } as const satisfies Record<string, PoliticaDeLaRuta>;
 
 const MAX_CLAVES = 10_000;

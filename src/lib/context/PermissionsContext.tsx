@@ -13,6 +13,7 @@ import { apiClient, getAccessToken } from '@/lib/api/client';
 import type { MemberPermissionsResponse } from '@/lib/api/inmobiliaria.service';
 import { useAuth } from '@/lib/auth';
 import { consumePermissionsSeed } from '@/lib/auth/bootstrap-seed';
+import { usaLosMensajes as usaLosMensajesPorElRol } from '@/lib/auth/agency-roles';
 import {
   isAgentModule,
   resolveAgentModuleAccess,
@@ -282,6 +283,21 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         (agentPerms as Record<string, string[] | undefined> | null)?.[module] == null
       ) {
         return false;
+      }
+      /*
+       * 🔴 «Mensajes» (21-10-2026, Portofino: Aleja) se da desde «Permisos».
+       * Un back anterior no manda la llave: entonces manda el rol, como antes
+       * (`ROLES_QUE_USAN_LOS_MENSAJES`).
+       */
+      if (module === 'mensajes' && permissions && !permissions.isAdmin) {
+        const delBack = permissions.effectivePermissions;
+        const llave =
+          delBack && typeof delBack === 'object'
+            ? (delBack as Record<string, string[] | undefined>).mensajes
+            : undefined;
+        if (!Array.isArray(llave)) {
+          return usaLosMensajesPorElRol({ isAdmin: false, agencyRole: permissions.role ?? null });
+        }
       }
       if (isAgentModule(module)) {
         // Posture per module lives in agent-module-access.ts:

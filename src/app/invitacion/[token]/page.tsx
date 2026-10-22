@@ -17,6 +17,8 @@ import { apiClient } from '@/lib/api/client';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { getSupabase } from '@/lib/supabase/client';
+import { mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
 
 // ============================================================================
 // Helpers
@@ -125,6 +127,9 @@ export default function InvitacionPage() {
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  /** «Crear mi contraseña»: la cuenta existe y nunca entró (21-10-2026). */
+  const [pidiendoEnlace, setPidiendoEnlace] = useState(false);
+  const [enlaceEnviado, setEnlaceEnviado] = useState(false);
 
   // After the user logs in and returns to this page, accept the invite
   // if they were redirected here post-login.
@@ -137,6 +142,38 @@ export default function InvitacionPage() {
   // New users go through /registro which creates backend profile (AGENCY type) + accepts invitation.
   // The generic /auth flow only creates a Supabase account and leaves needsOnboarding: true.
   const registerUrl = `/registro?invitationToken=${token}`;
+
+  /*
+   * 🔴 21-10-2026 (Portofino, Laura): la invitación iba a una cuenta que la
+   * migración creó y que nunca tuvo contraseña. «Iniciar sesión» no tenía con
+   * qué, «Crear cuenta nueva» chocaba con el correo y «¿Olvidaste tu
+   * contraseña?» la dejaba en «Nueva contraseña» con el enlace vencido. Ahora
+   * se le manda un enlace para CREARLA que vuelve aquí a aceptar.
+   */
+  async function pedirEnlaceParaCrearContrasena() {
+    const correo = invitation?.invitedEmail?.trim();
+    const sb = getSupabase();
+    if (!correo || !sb) return;
+    setPidiendoEnlace(true);
+    setActionError(null);
+    try {
+      const vuelta = `/auth/update-password?nuevo=1&next=${encodeURIComponent(`/invitacion/${token}`)}`;
+      const { error } = await sb.auth.resetPasswordForEmail(correo, {
+        redirectTo: `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(vuelta)}`,
+      });
+      if (error) throw error;
+      setEnlaceEnviado(true);
+    } catch (err) {
+      setActionError(
+        mensajeDeSupabase(err, {
+          porDefecto: 'No pudimos mandarte el enlace. Prueba de nuevo en un momento.',
+          accion: 'mandarte el enlace',
+        }),
+      );
+    } finally {
+      setPidiendoEnlace(false);
+    }
+  }
 
   // ---- Accept ----
   async function handleAccept() {
@@ -362,6 +399,47 @@ export default function InvitacionPage() {
                 {declining ? 'Rechazando…' : 'Rechazar invitación'}
               </button>
             </>
+          ) : invitation?.cuentaSinEstrenar ? (
+            // La cuenta existe pero nunca entró: primero su contraseña.
+            enlaceEnviado ? (
+              <div
+                role="status"
+                data-testid="enlace-para-crear-contrasena"
+                className="rounded-xl border border-border bg-surface-muted px-4 py-3 text-sm text-fg"
+              >
+                <p className="font-medium">Revisa tu correo</p>
+                <p className="mt-1 text-fg-muted">
+                  Te mandamos a {invitation?.invitedEmail} un enlace para crear tu contraseña. Ábrelo en este
+                  mismo navegador; después vuelves aquí a aceptar la invitación.
+                </p>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void pedirEnlaceParaCrearContrasena()}
+                  disabled={pidiendoEnlace}
+                  data-testid="crear-mi-contrasena"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1A40FF] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed px-6 py-3 text-sm font-medium text-white transition-colors"
+                >
+                  {pidiendoEnlace && <SpinnerGap className="h-4 w-4 animate-spin" />}
+                  {pidiendoEnlace ? 'Enviando el enlace…' : 'Crear mi contraseña'}
+                </button>
+                <Link
+                  href={loginUrl}
+                  className="block w-full text-center rounded-xl border border-border px-6 py-3 text-sm font-medium text-fg-muted hover:bg-surface-muted transition-colors"
+                >
+                  Ya tengo contraseña: iniciar sesión
+                </Link>
+                <button
+                  onClick={handleDecline}
+                  disabled={declining}
+                  className="w-full text-center text-sm text-danger hover:text-danger disabled:opacity-60 py-1 transition-colors"
+                >
+                  {declining ? 'Rechazando…' : 'Rechazar invitación'}
+                </button>
+              </>
+            )
           ) : (
             // Not logged in: login / register / decline
             <>

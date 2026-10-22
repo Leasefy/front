@@ -63,7 +63,7 @@ describe('subirFotosDelMantenimiento', () => {
     )
     expect(subir).not.toHaveBeenCalled()
     expect(r.fallidas).toEqual([
-      { nombre: 'plano.pdf', motivo: MENSAJES_DEL_MANTENIMIENTO.fotoTipo },
+      { nombre: 'plano.pdf', motivo: MENSAJES_DEL_MANTENIMIENTO.archivoTipo },
       { nombre: 'enorme.jpg', motivo: MENSAJES_DEL_MANTENIMIENTO.fotoPesada },
     ])
   })

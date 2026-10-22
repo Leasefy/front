@@ -80,7 +80,6 @@ import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
 import {
   Button,
-  Checkbox,
   Input,
   Select,
   SelectContent,
@@ -97,7 +96,7 @@ import { ApiError } from '@/lib/api/client';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { consignacionesApi, type ConsignacionUpdateInput } from '@/lib/api/inmobiliaria.service';
 import { useAgentes } from '@/lib/hooks/useInmobiliaria';
-import { AMENITIES_OPTIONS } from '@/lib/types/publish';
+import { SelectorDeCaracteristicas } from '@/components/property/SelectorDeCaracteristicas';
 import { COLOMBIAN_DEPARTMENTS, type Consignacion } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_CITIES, type Property, type PropertyType } from '@/lib/types/property';
 import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
@@ -342,56 +341,6 @@ function Aviso({
         <p className={cn('text-sm font-medium', clases.texto)}>{titulo}</p>
         {detalle && <p className="text-body-sm text-fg-muted mt-0.5">{detalle}</p>}
       </div>
-    </div>
-  );
-}
-
-/**
- * Las 15 amenidades del catálogo (las mismas que valida el back), como fichas.
- *
- * Cada una es un `<label>` con el `Checkbox` de la casa adentro, no un
- * `<button aria-pressed>`: elegir varias de una lista ES una casilla, y así el
- * lector de pantalla lo anuncia como grupo de casillas y la ficha entera es el
- * área clickeable. El chip es sólo el envoltorio.
- */
-function SelectorDeAmenidades({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: string[];
-  onChange: (v: string[]) => void;
-  disabled?: boolean;
-}) {
-  const alternar = (id: string) =>
-    onChange(value.includes(id) ? value.filter((a) => a !== id) : [...value, id]);
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2" data-testid="editar-amenidades">
-      {AMENITIES_OPTIONS.map((a) => {
-        const activa = value.includes(a.value);
-        return (
-          <label
-            key={a.value}
-            data-testid={`amenidad-${a.value}`}
-            data-activa={activa ? 'si' : 'no'}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm cursor-pointer transition-colors duration-fast',
-              disabled && 'opacity-50 cursor-not-allowed',
-              activa
-                ? 'border border-primary bg-primary-soft text-fg font-medium'
-                : 'border border-border bg-surface text-fg-muted hover:border-border-strong',
-            )}
-          >
-            <Checkbox
-              checked={activa}
-              disabled={disabled}
-              onCheckedChange={() => alternar(a.value)}
-              aria-label={a.label}
-            />
-            {a.label}
-          </label>
-        );
-      })}
     </div>
   );
 }
@@ -1042,7 +991,11 @@ export function ConsignacionEditForm({
                 </InputWrapper>
 
                 <InputWrapper label={tf('amenities')} error={errores.amenities} campo="amenities">
-                  <SelectorDeAmenidades value={valores.amenities} onChange={(v) => poner('amenities', v)} />
+                  <SelectorDeCaracteristicas
+                    value={valores.amenities}
+                    onChange={(v) => poner('amenities', v)}
+                    testId="editar-amenidades"
+                  />
                 </InputWrapper>
               </>
             )}

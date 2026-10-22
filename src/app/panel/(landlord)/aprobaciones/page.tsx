@@ -160,7 +160,7 @@ function Pendiente({
               .map((m) => (
                 <li
                   key={m.mes}
-                  className="rounded-full border border-border bg-surface-muted px-2.5 py-0.5 text-caption tabular-nums text-fg"
+                  className="rounded-full border border-border bg-surface-muted px-2.5 py-0.5 text-caption text-fg"
                 >
                   {mesCorto(m.mes)} · {formatCurrency(m.valorCop)}
                 </li>

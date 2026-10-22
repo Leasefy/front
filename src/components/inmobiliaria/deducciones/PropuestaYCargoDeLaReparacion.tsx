@@ -38,7 +38,7 @@ function MesesDeLaReparacion({ plan, testId }: { plan: ReadonlyArray<MesDeLaRepa
         .map((p) => (
           <li
             key={p.mes}
-            className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-caption tabular-nums text-fg"
+            className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-caption text-fg"
           >
             {mesCorto(p.mes)} · {formatCurrency(p.valorCop)}
           </li>

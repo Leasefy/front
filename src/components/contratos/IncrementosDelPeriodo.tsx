@@ -64,7 +64,8 @@ const RUTA_DEL_CONTRATO = '/panel/inmobiliaria/contratos';
 function textoDelPorcentaje(c: CartaEnLaBandeja): string | null {
   const pct = porcentajeDelIncremento(c);
   if (pct === null) return null;
-  return `+${pct.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 2 })} %`;
+  // Espacio que no se parte: «+5,1» y «%» nunca quedan en renglones distintos.
+  return `+${pct.toLocaleString(localeDeLasCifras(), { maximumFractionDigits: 2 })}\u00a0%`;
 }
 
 function dias(n: number): string {
@@ -140,7 +141,7 @@ function CanonCelda({ carta }: { carta: CartaEnLaBandeja }) {
       </span>
       <span className="font-mono tabular-nums font-medium text-fg">
         {PESOS.format(carta.canonNuevoCop)}
-        {pct && <span className="ml-1.5 font-sans text-xs font-normal text-success">{pct}</span>}
+        {pct && <span className="ml-1.5 whitespace-nowrap font-sans text-xs font-normal text-success">{pct}</span>}
       </span>
     </div>
   );

@@ -552,6 +552,16 @@ function ContratoDetalleContent() {
           (la tarjeta del escenario queda abajo, junto a Administración). */}
       <EscenarioDelArchivoPorRevisar contract={contract} />
 
+      {/* Portofino 22-10: la terminación que espera el sí del propietario va
+          arriba: mientras espera, es lo primero que hay que saber del contrato. */}
+      {(contract.status === 'active' || contract.status === 'signed') && (
+        <TerminacionConElPropietarioAviso
+          contractId={contract.id}
+          puedeEditar={canEditContracts}
+          version={versionDeLaTerminacion}
+        />
+      )}
+
       <ArriendoDelContrato
         contract={contract}
         vigencia={vigencia}
@@ -589,14 +599,6 @@ function ContratoDetalleContent() {
         <IncrementosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
       )}
 
-      {/* Portofino 22-10: la terminación que espera el sí del propietario. */}
-      {(contract.status === 'active' || contract.status === 'signed') && (
-        <TerminacionConElPropietarioAviso
-          contractId={contract.id}
-          puedeEditar={canEditContracts}
-          version={versionDeLaTerminacion}
-        />
-      )}
 
       {canEditContracts && (
         <>

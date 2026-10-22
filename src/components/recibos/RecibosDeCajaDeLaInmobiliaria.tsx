@@ -279,15 +279,20 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                         icon={<DownloadSimple className="h-4 w-4" />}
                       />
                       {puedeAnular && !r.anulado && (
-                        <IconButton
+                        // Revisión de Dinero (22-10): anular no se esconde en un ícono suelto; dice lo que hace
+                        // (y abre la confirmación de siempre).
+                        <Button
                           variant="ghost"
                           size="sm"
+                          hideArrow
                           aria-label={`Anular el recibo ${r.numero}`}
-                          title="Anular"
                           onClick={() => setAAnular(r)}
                           data-testid={`anular-recibo-${r.numero}`}
-                          icon={<Prohibit className="h-4 w-4" />}
-                        />
+                          className="text-danger hover:text-danger"
+                        >
+                          <Prohibit className="h-4 w-4" aria-hidden="true" />
+                          Anular
+                        </Button>
                       )}
                     </div>
                   </TableCell>

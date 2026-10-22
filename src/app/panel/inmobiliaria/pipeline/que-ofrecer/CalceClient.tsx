@@ -53,7 +53,9 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { Stagger, StaggerItem } from '@leasefy/cadence'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
-import { usePipelineItems } from '@/lib/hooks/useInmobiliaria'
+import { useConsignaciones, usePipelineItems } from '@/lib/hooks/useInmobiliaria'
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
+import { PIPELINE_STAGES, type PipelineItem } from '@/lib/types/inmobiliaria'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import {
   Badge,
@@ -162,6 +164,78 @@ async function copiar(texto: string, tr: Tr = (es) => es) {
   }
 }
 
+/**
+ * Revisora r22 (Qué ofrecer #3): el orden del buscador de interesados. Primero los que ya avanzaron (visita,
+ * postulación, evaluación…), después los recién llegados y al final los cerrados o perdidos: a quien ya vio un
+ * inmueble es a quien más sirve ofrecerle otro.
+ */
+const ORDEN_DE_LA_ETAPA: Record<string, number> = {
+  visit_scheduled: 0, visit_done: 0, application: 0, evaluation: 0, approved: 0, contract: 1, handover: 1,
+  lead: 2, completed: 3, lost: 3,
+}
+
+export function opcionesDeInteresados(items: readonly PipelineItem[], en = false): ComboboxOption[] {
+  const etapa = (st: string) => PIPELINE_STAGES.find((x) => x.stage === st)
+  return [...items]
+    .sort(
+      (a, b) =>
+        (ORDEN_DE_LA_ETAPA[a.stage] ?? 2) - (ORDEN_DE_LA_ETAPA[b.stage] ?? 2) ||
+        (a.candidateName ?? '').localeCompare(b.candidateName ?? ''),
+    )
+    .map((l) => {
+      const e = etapa(l.stage)
+      return {
+        value: l.id,
+        // El teléfono va en la etiqueta para que también se busque por él.
+        label: [l.candidateName, l.candidatePhone, l.propertyTitle, e ? (en ? e.labelEn : e.labelEs) : null]
+          .filter(Boolean)
+          .join(' · '),
+      }
+    })
+}
+
+/**
+ * Revisora r22 (Qué ofrecer #5): «Se liberó un inmueble» ofrece los DISPONIBLES del portafolio (en arriendo,
+ * vigentes y sin arrendar), aunque nadie los esté mirando todavía —justo ese es el que se libera sin nadie
+ * detrás—, y además los que miran los interesados del tablero. Primero los disponibles.
+ */
+export function opcionesDeInmuebles(
+  disponibles: readonly { propertyId: string; propertyTitle?: string | null; propertyAddress?: string | null; propertyCode?: number | null }[],
+  delTablero: readonly { id: string; titulo: string }[],
+  interesadosPorInmueble: ReadonlyMap<string, number>,
+  textos: { disponible: string; interesados: (n: number) => string; sinTitulo: string },
+): ComboboxOption[] {
+  const vistos = new Set<string>()
+  const opciones: ComboboxOption[] = []
+  const conInteresados = (id: string) => {
+    const n = interesadosPorInmueble.get(id) ?? 0
+    return n > 0 ? textos.interesados(n) : null
+  }
+  // Por título; los que no tienen ni título ni dirección, al final.
+  const clave = (c: (typeof disponibles)[number]) => c.propertyTitle || c.propertyAddress || '\uffff'
+  for (const c of [...disponibles].sort((a, b) => clave(a).localeCompare(clave(b)))) {
+    if (!c.propertyId || vistos.has(c.propertyId)) continue
+    vistos.add(c.propertyId)
+    opciones.push({
+      value: c.propertyId,
+      label: [
+        c.propertyCode != null ? `#${c.propertyCode}` : null,
+        c.propertyTitle || c.propertyAddress || textos.sinTitulo,
+        textos.disponible,
+        conInteresados(c.propertyId),
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    })
+  }
+  for (const i of delTablero) {
+    if (!i.id || vistos.has(i.id)) continue
+    vistos.add(i.id)
+    opciones.push({ value: i.id, label: [i.titulo || textos.sinTitulo, conInteresados(i.id)].filter(Boolean).join(' · ') })
+  }
+  return opciones
+}
+
 export function CalceClient() {
   const tr = useTr();
   const en = useLocaleDelPanel() === 'en';
@@ -202,6 +276,31 @@ export function CalceClient() {
         ).values(),
       ),
     [leadsDelTablero],
+  )
+
+  // Los disponibles del portafolio (quien no tiene `portafolio:view` recibe un 403: queda la lista del tablero).
+  const { consignaciones } = useConsignaciones()
+  const disponibles = useMemo(
+    () =>
+      consignaciones.filter(
+        (c) => c.status === 'active' && c.availability !== 'rented' && c.listingType !== 'sale' && Boolean(c.propertyId),
+      ),
+    [consignaciones],
+  )
+  const interesadosPorInmueble = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const l of leadsDelTablero) if (l.propertyId && l.stage !== 'lost') m.set(l.propertyId, (m.get(l.propertyId) ?? 0) + 1)
+    return m
+  }, [leadsDelTablero])
+  const opcionesDelInteresado = useMemo(() => opcionesDeInteresados(leadsDelTablero, en), [leadsDelTablero, en])
+  const opcionesDelInmueble = useMemo(
+    () =>
+      opcionesDeInmuebles(disponibles, inmuebles, interesadosPorInmueble, {
+        disponible: tr('Disponible'),
+        interesados: (n) => (n === 1 ? tr('1 interesado') : tr('{n} interesados', { n })),
+        sinTitulo: tr('Inmueble sin título'),
+      }),
+    [disponibles, inmuebles, interesadosPorInmueble, tr],
   )
 
   const config = useCrm(() => matchingApi.pesos(), [], [])
@@ -266,27 +365,20 @@ export function CalceClient() {
         <Card>
           <CardContent className="space-y-4 pt-6">
             <div className="space-y-1.5">
-              <Label htmlFor="lead-id">{tr("¿A quién le vas a ofrecer?")}</Label>
-              <select
-                id="lead-id"
-                value={leadId}
-                onChange={(e) => setLeadId(e.target.value)}
-                data-testid="input-lead"
+              <Label>{tr("¿A quién le vas a ofrecer?")}</Label>
+              {/* Revisora r22 (#3): el buscador de Crear contrato en vez del `<select>` nativo (con 300 interesados
+                  era una lista del navegador sin buscar). */}
+              <Combobox
+                value={leadId || undefined}
+                onChange={(id) => setLeadId(id ?? '')}
+                options={opcionesDelInteresado}
+                placeholder={tr(leadsDelTablero.length === 0
+                  ? 'Todavía no hay interesados en el tablero'
+                  : 'Buscar por nombre, teléfono o inmueble')}
+                searchPlaceholder={tr('Nombre, teléfono o inmueble')}
                 disabled={leadsDelTablero.length === 0}
-                className="border-border bg-background h-10 w-full rounded-md border px-3 text-sm"
-              >
-                <option value="">
-                  {tr(leadsDelTablero.length === 0
-                    ? 'Todavía no hay interesados en el tablero'
-                    : 'Elige un interesado…')}
-                </option>
-                {leadsDelTablero.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.candidateName}
-                    {l.propertyTitle ? ` · ${l.propertyTitle}` : ''}
-                  </option>
-                ))}
-              </select>
+                data-testid="input-lead"
+              />
             </div>
 
             {leadsDelTablero.length === 0 ? (
@@ -439,35 +531,27 @@ export function CalceClient() {
         <Card>
           <CardContent className="space-y-4 pt-6">
             <div className="space-y-1.5">
-              <Label htmlFor="property-id">{tr("¿Cuál inmueble se liberó?")}</Label>
-              <select
-                id="property-id"
-                value={propertyId}
-                onChange={(e) => setPropertyId(e.target.value)}
+              <Label>{tr("¿Cuál inmueble se liberó?")}</Label>
+              <Combobox
+                value={propertyId || undefined}
+                onChange={(id) => setPropertyId(id ?? '')}
+                options={opcionesDelInmueble}
+                placeholder={tr(opcionesDelInmueble.length === 0
+                  ? 'Todavía no hay inmuebles disponibles'
+                  : 'Buscar por código, título o dirección')}
+                searchPlaceholder={tr('Código, título o dirección')}
+                disabled={opcionesDelInmueble.length === 0}
                 data-testid="input-inmueble"
-                disabled={inmuebles.length === 0}
-                className="border-border bg-background h-10 w-full rounded-md border px-3 text-sm"
-              >
-                <option value="">
-                  {tr(inmuebles.length === 0
-                    ? 'Todavía no hay inmuebles en el tablero'
-                    : 'Elige un inmueble…')}
-                </option>
-                {inmuebles.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.titulo}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
-            {inmuebles.length === 0 ? (
+            {opcionesDelInmueble.length === 0 ? (
               <EmptyState
                 icon={House}
                 ilustracion="casa"
-                title={tr("Todavía no hay inmuebles en el tablero")}
-                description={tr("Los inmuebles de esta lista salen de los interesados de Prospección: son los que alguien está mirando.")}
-                action={{ label: 'Ir a Prospección', href: '/panel/inmobiliaria/pipeline' }}
+                title={tr("Todavía no hay inmuebles disponibles")}
+                description={tr("Aquí salen los inmuebles disponibles de tu portafolio y los que miran los interesados de Prospección.")}
+                action={{ label: tr('Ir a Inmuebles'), href: '/panel/inmobiliaria/inmuebles' }}
               />
             ) : !propertyId.trim() ? (
               <p className="text-fg-muted text-sm">

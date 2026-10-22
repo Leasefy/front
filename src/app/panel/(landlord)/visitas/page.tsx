@@ -9,7 +9,7 @@ import { PlanTable, PlanTableColumn } from '@/components/ui/plan/PlanTable';
 import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
 import { PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Button, Textarea, Card, Badge } from '@/components/ui';
+import { Button, Textarea } from '@/components/ui';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
-import { PageHeader, KpiCard, SegmentedControl, RadioCard, RadioCardGroup } from '@leasefy/cadence';
+import { FranjaDeCifras, KpiCard, SegmentedControl, RadioCard, RadioCardGroup } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { useI18n } from '@/lib/i18n';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { RescheduleModal, formatTime } from '@/components/landlord/visitas/ModalesDeVisita';
@@ -136,7 +138,7 @@ function CancelModal({
 // ============================================================================
 
 export default function VisitasPage() {
-  const [tabFunnel, setTabFunnel] = useState<TabFunnel>('all');
+  const [tabElegida, setTabElegida] = useState<TabFunnel | null>(null);
   const { visits, stats, isLoading, error, refetch } = useVisits();
   const actions = useVisitActions();
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
@@ -162,6 +164,13 @@ export default function VisitasPage() {
 
   // Counts per status
   const countByStatus = (s: VisitStatus) => visits.filter(v => v.status === s).length;
+  /*
+   * Lo pendiente primero (glow up, 21-10-2026): el trabajo de esta pantalla es
+   * confirmar o mover las visitas que pidieron. Si hay alguna por confirmar, se
+   * entra ahí; cuando la persona elige otra pestaña, manda la suya.
+   */
+  const tabFunnel: TabFunnel = tabElegida ?? (countByStatus('requested') > 0 ? 'requested' : 'all');
+  const setTabFunnel = (valor: TabFunnel) => setTabElegida(valor);
 
   // Funnel
   const getFunneledVisits = () => {
@@ -425,60 +434,49 @@ export default function VisitasPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="p-6 lg:p-8">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
-        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
+        <EsqueletoDePagina variante="list" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-danger mb-2">{error}</p>
-          <Button variant="link" size="sm" onClick={refetch}>Reintentar</Button>
-        </div>
+      <div className="p-6 lg:p-8">
+        <FalloDeCarga error={error} queEs="tus visitas" onReintentar={() => void refetch()} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div>
+      <div className="p-6 lg:p-8">
         {/* Header. «Agendar visita» no está (Nico, 02-10-2026): `POST /visits`
             es sólo para inquilinos y al propietario SIEMPRE le respondía 403.
             Las visitas las pide el inquilino desde el inmueble; acá se
             confirman, se reprograman o se cancelan. `ScheduleModal` sigue en
             `ModalesDeVisita` para cuando el back lo permita. */}
-        <PageHeader
-          className="mb-8"
-          title={t('landlord.visits.title')}
-          subtitle={t('landlord.visits.subtitle')}
+        <EncabezadoDePantalla
+          className="mb-6"
+          seccion="Mis inmuebles"
+          titulo={t('landlord.visits.title')}
+          descripcion={t('landlord.visits.subtitle')}
         />
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Las cifras en la franja común; la de «por confirmar» dice que toca. */}
+        <FranjaDeCifras className="mb-6" data-testid="cifras-de-las-visitas">
           <KpiCard
             label={t('landlord.visits.totalVisits')}
             value={String(stats.total)}
             icon={<CalendarBlank />}
           />
-
-          <Card className="p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center">
-                <Clock className="w-5 h-5 text-warning" />
-              </div>
-            </div>
-            <p className="text-2xl font-bold tabular-nums font-mono text-fg">{stats.requested}</p>
-            <p className="text-sm text-fg-muted">{t('landlord.visits.pendingVisits')}</p>
-            {stats.requested > 0 && (
-              <Badge variant="warning" className="mt-2">
-                {t('landlord.visits.toConfirm')}
-              </Badge>
-            )}
-          </Card>
+          <KpiCard
+            label={t('landlord.visits.pendingVisits')}
+            value={String(stats.requested)}
+            sublabel={stats.requested > 0 ? t('landlord.visits.toConfirm') : undefined}
+            icon={<Clock />}
+          />
 
           <KpiCard
             label={t('landlord.visits.confirmedToday')}
@@ -491,7 +489,7 @@ export default function VisitasPage() {
             value={String(stats.completed)}
             icon={<CheckCircle />}
           />
-        </div>
+        </FranjaDeCifras>
 
         {/* Tabs */}
         <SegmentedControl

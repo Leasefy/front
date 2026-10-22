@@ -16,7 +16,10 @@ void React // jsx-preserve
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { createVisit } = vi.hoisted(() => ({ createVisit: vi.fn() }))
+const { createVisit, datos } = vi.hoisted(() => ({
+  createVisit: vi.fn(),
+  datos: { visits: [] as unknown[] },
+}))
 
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ locale: 'es', t: (k: string) => k, formatDate: (d: string) => d }),
@@ -26,8 +29,8 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 vi.mock('@/lib/hooks/useVisits', () => ({
   useVisits: () => ({
-    visits: [],
-    stats: { total: 0, requested: 0, confirmed: 0, completed: 0, cancelled: 0, confirmedToday: 0 },
+    visits: datos.visits,
+    stats: { total: datos.visits.length, requested: 0, confirmed: 0, completed: 0, cancelled: 0, confirmedToday: 0 },
     isLoading: false,
     error: null,
     refetch: vi.fn(),
@@ -56,6 +59,20 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   createVisit.mockReset()
+  datos.visits = []
+})
+
+const visita = (id: string, nombre: string, status: string) => ({
+  id,
+  candidateId: `t-${id}`,
+  candidateName: nombre,
+  propertyId: 'p-1',
+  propertyTitle: 'Apto 101',
+  requestedDate: '2026-10-25',
+  requestedTime: '10:00',
+  status,
+  visitType: 'in_person',
+  createdAt: '2026-10-20T10:00:00Z',
 })
 
 afterEach(() => {
@@ -75,5 +92,22 @@ describe('Visitas del propietario', () => {
     expect(botones.some((t) => t.includes('landlord.visits.scheduleButton'))).toBe(false)
     expect(document.body.textContent).not.toContain('landlord.visits.scheduleButton')
     expect(createVisit).not.toHaveBeenCalled()
+  })
+
+  it('lo pendiente primero: con visitas por confirmar entra en esa pestaña', async () => {
+    datos.visits = [visita('1', 'Ana Pide', 'requested'), visita('2', 'Beto Ya Fue', 'completed')]
+    await act(async () => {
+      root.render(React.createElement(VisitasPage))
+    })
+    expect(container.textContent).toContain('Ana Pide')
+    expect(container.textContent).not.toContain('Beto Ya Fue')
+  })
+
+  it('sin nada por confirmar entra en «Todas»', async () => {
+    datos.visits = [visita('2', 'Beto Ya Fue', 'completed')]
+    await act(async () => {
+      root.render(React.createElement(VisitasPage))
+    })
+    expect(container.textContent).toContain('Beto Ya Fue')
   })
 })

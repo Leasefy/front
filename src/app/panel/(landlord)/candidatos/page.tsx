@@ -17,8 +17,11 @@ import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/pla
 import { PlanRiskBadge, PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
 import { useI18n } from '@/lib/i18n';
-import { Button, Spinner, Card, Badge } from '@/components/ui';
-import { PageHeader, KpiCard, SearchInput, SegmentedControl, MonoLabel } from '@leasefy/cadence';
+import { Button, Card } from '@/components/ui';
+import { FranjaDeCifras, KpiCard, SearchInput, SegmentedControl, MonoLabel } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import type { Candidate } from '@/lib/types/candidate';
 import { formatoDeCifras, localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
@@ -152,7 +155,7 @@ function ScoringGuide() {
 export default function CandidatosPage() {
   const router = useRouter();
   const { t } = useI18n();
-  const [statusFunnel, setStatusFunnel] = useState<StatusFunnel>('all');
+  const [statusElegido, setStatusElegido] = useState<StatusFunnel | null>(null);
   const [riskFunnel, setRiskFunnel] = useState<RiskFunnel>('all');
   const [searchQuery, setMagnifyingGlassQuery] = useState('');
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
@@ -200,6 +203,15 @@ export default function CandidatosPage() {
     hasBankStatements: false,
     _status: STATUS_TO_FUNNEL[lc.status] || 'new',
   }));
+
+  /*
+   * Lo pendiente primero (glow up, 21-10-2026): el trabajo de esta pantalla es
+   * revisar a los que se postularon. Si hay nuevos, se entra en «Nuevos»;
+   * cuando la persona elige otro estado, manda el suyo.
+   */
+  const hayNuevos = allCandidates.some((c) => c._status === 'new');
+  const statusFunnel: StatusFunnel = statusElegido ?? (hayNuevos ? 'new' : 'all');
+  const setStatusFunnel = (valor: StatusFunnel) => setStatusElegido(valor);
 
   // Apply filters
   const filteredCandidates = allCandidates.filter(c => {
@@ -534,41 +546,49 @@ export default function CandidatosPage() {
     { id: 'rejected', label: t('landlord.candidates.tabRejected'), count: statusCounts.rejected },
   ];
 
+  // Cargando o con error, la pantalla lo dice sola: antes se veían a la vez la
+  // ruedita (o el error) y la tabla vacía diciendo que no había candidatos.
+  if (isLoading) {
+    return (
+      <div className="p-6 lg:p-8">
+        <EsqueletoDePagina variante="list" />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="p-6 lg:p-8">
+        <FalloDeCarga error={error} queEs="tus candidatos" onReintentar={() => void refetch()} />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
-        <PageHeader
-          title={t('landlord.candidates.title')}
-          subtitle={t('landlord.candidates.subtitle')}
+    <div>
+      <div className="p-6 lg:p-8">
+        <EncabezadoDePantalla
           className="mb-6"
+          seccion="Mis inmuebles"
+          titulo={t('landlord.candidates.title')}
+          descripcion={t('landlord.candidates.subtitle')}
         />
 
         {/* Scoring Guide — prominent placement */}
         <ScoringGuide />
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Las cifras en la franja común; la de «nuevos» dice que toca revisarlos. */}
+        <FranjaDeCifras className="mb-6" data-testid="cifras-de-los-candidatos">
           <KpiCard
             label={t('landlord.candidates.totalCandidates')}
             value={String(statusCounts.all)}
             icon={<Users className="w-5 h-5" />}
           />
-
-          <Card className="p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center">
-                <UserPlus className="w-5 h-5 text-primary" />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-fg">{statusCounts.new}</p>
-            <p className="text-sm text-fg-muted">{t('landlord.candidates.newCandidates')}</p>
-            {statusCounts.new > 0 && (
-              <Badge variant="default" className="mt-2">
-                {t('landlord.candidates.toReview')}
-              </Badge>
-            )}
-          </Card>
+          <KpiCard
+            label={t('landlord.candidates.newCandidates')}
+            value={String(statusCounts.new)}
+            sublabel={statusCounts.new > 0 ? t('landlord.candidates.toReview') : undefined}
+            icon={<UserPlus className="w-5 h-5" />}
+          />
 
           <KpiCard
             label={t('landlord.candidates.approvedCandidates')}
@@ -581,7 +601,7 @@ export default function CandidatosPage() {
             value={String(statusCounts.rejected)}
             icon={<XCircle className="w-5 h-5" />}
           />
-        </div>
+        </FranjaDeCifras>
 
         {/* Status funnel — exclusive selector → SegmentedControl */}
         <div className="mb-6">
@@ -638,26 +658,10 @@ export default function CandidatosPage() {
           </div>
         </Card>
 
-        {/* Loading state */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-16">
-            <Spinner size="lg" />
-          </div>
-        )}
-
-        {/* Error state */}
-        {error && !isLoading && (
-          <div className="rounded-lg border border-danger/30 bg-danger-soft p-6 text-center">
-            <p className="text-sm text-danger">{error}</p>
-            <Button variant="link" hideArrow onClick={refetch} className="mt-3 h-auto p-0 text-danger hover:text-danger">
-              Reintentar
-            </Button>
-          </div>
-        )}
-
         {/* Table with Pagination */}
-        {!isLoading && !error && allCandidates.length === 0 ? (
+        {allCandidates.length === 0 ? (
           <EmptyState
+            ilustracion="casa"
             icon={Users}
             title={t('landlord.candidates.emptyTitle')}
             description={t('landlord.candidates.emptyDescription')}

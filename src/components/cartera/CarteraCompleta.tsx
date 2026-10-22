@@ -226,6 +226,8 @@ export function CarteraCompleta() {
     ...(['POR_VENCER', 'VENCIDA_EN_PLAZO', 'CARTERA'] as const).map((c) => cartera.cajones.find((x) => x.cajon === c)?.monto ?? 0),
     siniestros?.totalCop,
     castigada?.totalCop,
+    ...cartera.tramos.map((t) => t.monto),
+    cartera.enSiniestro.monto,
   ])
   const tramosVaciosPorElSiniestro = tramosQueNoSeLlenan.filter(
     (e) => (cartera.tramos.find((t) => t.edad === e)?.monto ?? 0) === 0,
@@ -685,7 +687,7 @@ export function CarteraCompleta() {
                     <p className="text-xs text-fg-muted">{NOMBRE_DE_EDAD[tramo.edad]}</p>
                     {/* COLA-01: a 390 px la ficha deja ≈149 px; text-base cabe una cifra de diez dígitos. */}
                     <p className={cn('mt-1 font-mono text-base font-semibold tabular-nums sm:text-lg', TONO[tramo.edad])}>
-                      {formatCurrency(tramo.monto)}
+                      {plataDeLaFranja(tramo.monto)}
                     </p>
                     <p className="mt-0.5 text-xs text-fg-muted">
                       {tramo.items.length} {tramo.items.length === 1 ? 'deuda' : 'deudas'}
@@ -712,7 +714,7 @@ export function CarteraCompleta() {
                   ) : null}
                   <p className="text-xs text-fg-muted">{t('cartera.porEdad.tramoEnSiniestro')}</p>
                   <p className="mt-1 font-mono text-base font-semibold tabular-nums text-danger sm:text-lg">
-                    {formatCurrency(cartera.enSiniestro.monto)}
+                    {plataDeLaFranja(cartera.enSiniestro.monto)}
                   </p>
                   <p className="mt-0.5 text-xs text-fg-muted">
                     {t('cartera.porEdad.desdeLosDias', { dias: siniestros.diasParaSiniestro })}

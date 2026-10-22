@@ -439,9 +439,13 @@ export function Recaudo() {
                           style={{ width: `${Math.min(100, Math.max(0, ((resumen.deudaDelMesCop - resumen.pendienteCop) / resumen.deudaDelMesCop) * 100))}%` }}
                         />
                       </div>
-                      <p className="text-body-sm text-fg-muted">
-                        {tr('de')} <span className="font-mono tabular-nums text-fg">{plata(resumen.deudaDelMesCop)}</span>{' '}
-                        {tr('que se deben en')} {nombreDelMes(month, locale)}
+                      {/* Ronda 14: la barra dice lo que mide (qué parte de lo del mes ya entró). */}
+                      <p className="text-body-sm text-fg-muted" data-testid="rotulo-de-la-barra-de-llego">
+                        <span className="font-mono tabular-nums text-fg">
+                          {(((resumen.deudaDelMesCop - resumen.pendienteCop) / resumen.deudaDelMesCop) * 100).toLocaleString(en ? 'en-US' : 'es-CO', { maximumFractionDigits: 1 })} %
+                        </span>{' '}
+                        {tr('de los')} <span className="font-mono tabular-nums text-fg">{plata(resumen.deudaDelMesCop)}</span>{' '}
+                        {tr('que se deben en')} {nombreDelMes(month, locale)} {tr('ya entró')}
                       </p>
                       {/* 22-10 (revisión: «la cuenta no cierra»): lo que llegó incluye pagos de
                           otros meses; se dice qué parte es de las cuotas del mes. */}

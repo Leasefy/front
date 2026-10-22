@@ -204,12 +204,15 @@ function PagosHome() {
               2026-09-04: «¿por qué dice que no puede cargar y no da opción de
               reintentar?»). `FalloDeCarga` distingue los cuatro tipos de fallo
               y sólo ofrece reintentar cuando reintentar puede cambiar algo. */}
-          <p className="flex flex-wrap items-center gap-x-2 text-body-sm text-fg-muted" data-testid="atencion-sin-asistente">
-            <span className="h-1.5 w-1.5 rounded-full bg-warning-500" aria-hidden="true" />
-            El asistente de pagos no responde ahora: lo que necesita tu atención no se pudo leer.
+          {/* Ronda 14: el punto alineado con el primer renglón aunque la frase se parta. */}
+          <p className="grid grid-cols-[auto_1fr] items-start gap-x-2 text-body-sm text-fg-muted" data-testid="atencion-sin-asistente">
+            <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-warning-500" aria-hidden="true" />
+            <span className="min-w-0">
+            El asistente de pagos no responde ahora: lo que necesita tu atención no se pudo leer.{' '}
             <button type="button" onClick={() => reintentarAtencion()} className="font-medium text-primary underline-offset-4 hover:underline">
               Reintentar
             </button>
+            </span>
           </p>
         </section>
       ) : hayAtencion || wiLoading ? (

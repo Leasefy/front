@@ -56,24 +56,27 @@ export function AvisoTipoDeDocumento({
     return (
       <Presence
         show={Boolean(vigente)}
-        className={cn('flex flex-wrap items-baseline gap-x-2 gap-y-1 text-body-sm text-fg', className)}
+        className={cn('grid grid-cols-[auto_1fr] items-start gap-x-2 text-body-sm text-fg', className)}
         data-testid="aviso-tipo-de-documento"
         data-severidad="warning"
         data-total={vigente?.total ?? 0}
         role="status"
       >
-        <span className="h-1.5 w-1.5 shrink-0 translate-y-[-2px] rounded-full bg-warning-500" aria-hidden="true" />
-        <span className="min-w-0" title={typeof aviso?.detalle === 'string' ? aviso.detalle : undefined}>
-          {aviso?.titulo ?? ''}
+        <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-warning-500" aria-hidden="true" />
+        <span className="min-w-0">
+          <span title={typeof aviso?.detalle === 'string' ? aviso.detalle : undefined}>{aviso?.titulo ?? ''}</span>
+          {accion ? (
+            <>
+              {' '}
+              <Link
+                href={accion.href}
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                {accion.label}
+              </Link>
+            </>
+          ) : null}
         </span>
-        {accion ? (
-          <Link
-            href={accion.href}
-            className="font-medium text-primary underline-offset-4 hover:underline"
-          >
-            {accion.label}
-          </Link>
-        ) : null}
       </Presence>
     )
   }

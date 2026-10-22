@@ -363,9 +363,10 @@ export function InvitacionesPendientes({ version = 0 }: {
       <div
         data-testid="invitaciones-pendientes"
         role="status"
-        className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-body-sm text-fg"
+        className="grid grid-cols-[auto_1fr] items-start gap-x-2 text-body-sm text-fg"
       >
-        <span className="h-1.5 w-1.5 shrink-0 translate-y-[-2px] rounded-full bg-warning-500" aria-hidden="true" />
+        <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-warning-500" aria-hidden="true" />
+        <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
         <span
           className="min-w-0"
           title="Su cuenta está creada, pero sin ese correo no pueden poner su contraseña ni entrar a ver su contrato."
@@ -403,6 +404,7 @@ export function InvitacionesPendientes({ version = 0 }: {
             Mandarlas lo puede hacer un administrador de tu inmobiliaria: pídeselo.
           </span>
         )}
+        </span>
       </div>
 
       <Cajon

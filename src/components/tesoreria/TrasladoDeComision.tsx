@@ -47,6 +47,7 @@ import type {
 } from '@/lib/api/tesoreria.types';
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { plataPareja } from '@/lib/format';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
@@ -369,6 +370,8 @@ export function TrasladoDeComisionPanel() {
 }
 
 function Propuesta({ propuesta }: { propuesta: PropuestaDeTraslado }) {
+  // Los mismos decimales en la franja y en los renglones (revisión 22-10).
+  const plata = plataPareja([propuesta.totalCop, propuesta.comisionCop, propuesta.yaTrasladadoCop, ...propuesta.renglones.map((r) => r.valorCop)]);
   return (
     <div className="space-y-4">
       <Avisos avisos={propuesta.avisos} testId="avisos-de-la-propuesta" />
@@ -376,6 +379,7 @@ function Propuesta({ propuesta }: { propuesta: PropuestaDeTraslado }) {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Cifra
           id="total-del-traslado"
+          formato={plata}
           etiqueta="Total a trasladar"
           valor={propuesta.totalCop}
           definicion="De la cuenta de recaudo a tu cuenta propia. Cuando salga del banco, el cuadre de plata de terceros da cero."
@@ -383,12 +387,14 @@ function Propuesta({ propuesta }: { propuesta: PropuestaDeTraslado }) {
         />
         <Cifra
           id="comision-causada"
+          formato={plata}
           etiqueta="Comisión causada"
           valor={propuesta.comisionCop}
           definicion="La comisión de administración del mes, según las cuotas del lado propietario. Se causa al liquidar, haya pagado o no el inquilino."
         />
         <Cifra
           id="ya-trasladado"
+          formato={plata}
           etiqueta="Ya propuesto o trasladado"
           valor={propuesta.yaTrasladadoCop}
           definicion="Lo que ya está en un traslado propuesto o aprobado de este mes. Se resta para no sacar dos veces la misma plata."
@@ -411,7 +417,7 @@ function Propuesta({ propuesta }: { propuesta: PropuestaDeTraslado }) {
                   <p className="text-caption leading-relaxed text-fg-muted">{r.porQue}</p>
                 </div>
                 <p className={`shrink-0 font-mono text-body-sm tabular-nums ${r.valorCop < 0 ? 'text-warning-ink' : 'text-fg'}`}>
-                  {r.valorCop < 0 ? `− ${formatCurrency(Math.abs(r.valorCop))}` : formatCurrency(r.valorCop)}
+                  {r.valorCop === 0 ? '—' : r.valorCop < 0 ? `− ${plata(Math.abs(r.valorCop))}` : plata(r.valorCop)}
                 </p>
               </li>
             ))}

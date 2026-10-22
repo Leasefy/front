@@ -18,8 +18,8 @@
  * Si los giros no responden, esa cifra dice «—» y las demás siguen.
  */
 
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { useEffect, useState } from 'react';
-import { Cifra, FranjaDeCifras } from '@leasefy/cadence';
 
 import { estadoDe } from '@/lib/estado-de-cuenta/sello-del-contrato';
 import { formatCurrency } from '@/lib/format';
@@ -78,57 +78,85 @@ export function TusGiros({ doc }: { doc: EstadoDeCuenta }) {
   return (
     // QA 21-10 (390 px): de a dos por fila «$ 1.803.830,09» se cortaba y las etiquetas
     // quedaban en «Te han girado en…». Con plata larga, una por fila en el celular.
-    <FranjaDeCifras fila="xl" data-testid="tus-giros">
-      <Cifra
-        etiqueta={`Te han girado en ${hoy.slice(0, 4)}`}
-        valor={
-          giros.estado === 'cargando' ? '…' : giros.estado === 'listo' ? formatCurrency(giradoEnElAnio(giros.todos, hoy)) : '—'
+    // GLOW UP 22-10 (UX, al nivel de Deuda del mes): LA RESPUESTA —cuánto te han girado este año— en una
+    // cifra grande, y debajo, cada una con su punto, el último giro, el próximo, lo que está por girar y los
+    // contratos vigentes. Antes, cinco cifras del mismo peso.
+    <div className="rounded-lg border border-border bg-surface p-5" data-testid="tus-giros">
+      <CifraHeroe
+        rotulo={`Te han girado en ${hoy.slice(0, 4)}`}
+        cifra={
+          <span data-testid="cifra-girado-en-el-anio">
+            {giros.estado === 'cargando' ? '…' : giros.estado === 'listo' ? formatCurrency(giradoEnElAnio(giros.todos, hoy)) : '—'}
+          </span>
         }
-        detalle={giros.estado === 'fallo' ? 'No se pudo consultar ahora' : 'Lo que ya llegó a tu cuenta'}
-        data-testid="cifra-girado-en-el-anio"
+        contexto={giros.estado === 'fallo' ? 'No se pudo consultar ahora' : 'Lo que ya llegó a tu cuenta'}
+        tramos={[
+          {
+            clave: 'ultimo',
+            etiqueta: 'Último giro',
+            monto: 0,
+            tono: sello?.tono === 'exito' ? 'exito' : sello?.tono === 'aviso' ? 'aviso' : sello?.tono === 'peligro' ? 'critico' : 'neutro',
+            siempre: true,
+            cifra: giros.estado === 'cargando' ? '…' : ultimo ? formatCurrency(ultimo.valorCop) : '—',
+            extra: (
+              <p className="text-caption text-fg-muted">
+                {ultimo && sello
+                  ? `${nombreDelMes(ultimo.mes)} · ${sello.texto}`
+                  : giros.estado === 'listo'
+                    ? 'Todavía no te han girado'
+                    : giros.estado === 'fallo'
+                      ? 'No se pudo consultar ahora'
+                      : null}
+              </p>
+            ),
+            'data-testid': 'cifra-ultimo-giro',
+          },
+          ...(doc.proximaCuota !== undefined
+            ? [
+                {
+                  clave: 'proximo',
+                  etiqueta: 'Próximo giro',
+                  monto: 0,
+                  tono: 'neutro' as const,
+                  siempre: true,
+                  cifra: doc.proximaCuota ? formatCurrency(doc.proximaCuota.monto) : '—',
+                  extra: <p className="text-caption text-fg-muted">{doc.proximaCuota ? `El ${fechaCorta(doc.proximaCuota.fecha)}` : 'Nada por vencer'}</p>,
+                  'data-testid': 'cifra-proximo-giro',
+                },
+              ]
+            : []),
+          ...(doc.porGirar
+            ? [
+                {
+                  clave: 'por-girar',
+                  etiqueta: 'Por girar',
+                  monto: 0,
+                  tono: doc.porGirar.porGirarCop > 0 ? ('aviso' as const) : ('neutro' as const),
+                  siempre: true,
+                  cifra: formatCurrency(doc.porGirar.porGirarCop),
+                  extra: (
+                    <p className="text-caption text-fg-muted">
+                      {doc.porGirar.deduccionesCop > 0
+                        ? `Con ${formatCurrency(doc.porGirar.deduccionesCop)} descontados`
+                        : `Hasta ${nombreDelMes(doc.porGirar.hastaMes)}`}
+                    </p>
+                  ),
+                  'data-testid': 'cifra-por-girar',
+                },
+              ]
+            : []),
+          {
+            clave: 'contratos',
+            etiqueta: 'Contratos vigentes',
+            monto: 0,
+            tono: 'neutro',
+            siempre: true,
+            cifra: vigentes,
+            extra: <p className="text-caption text-fg-muted">{doc.contratos.length === 1 ? 'De 1 contrato' : `De ${doc.contratos.length} contratos`}</p>,
+            'data-testid': 'cifra-contratos-vigentes',
+          },
+        ]}
       />
-      <Cifra
-        etiqueta="Último giro"
-        valor={giros.estado === 'cargando' ? '…' : ultimo ? formatCurrency(ultimo.valorCop) : '—'}
-        tono={sello?.tono}
-        detalle={
-          ultimo && sello
-            ? `${nombreDelMes(ultimo.mes)} · ${sello.texto}`
-            : giros.estado === 'listo'
-              ? 'Todavía no te han girado'
-              : giros.estado === 'fallo'
-                ? 'No se pudo consultar ahora'
-                : undefined
-        }
-        data-testid="cifra-ultimo-giro"
-      />
-      {doc.proximaCuota !== undefined ? (
-        <Cifra
-          etiqueta="Próximo giro"
-          valor={doc.proximaCuota ? formatCurrency(doc.proximaCuota.monto) : '—'}
-          detalle={doc.proximaCuota ? `El ${fechaCorta(doc.proximaCuota.fecha)}` : 'Nada por vencer'}
-          data-testid="cifra-proximo-giro"
-        />
-      ) : null}
-      {doc.porGirar ? (
-        <Cifra
-          etiqueta="Por girar"
-          valor={formatCurrency(doc.porGirar.porGirarCop)}
-          tono={doc.porGirar.porGirarCop > 0 ? 'aviso' : undefined}
-          detalle={
-            doc.porGirar.deduccionesCop > 0
-              ? `Con ${formatCurrency(doc.porGirar.deduccionesCop)} descontados`
-              : `Hasta ${nombreDelMes(doc.porGirar.hastaMes)}`
-          }
-          data-testid="cifra-por-girar"
-        />
-      ) : null}
-      <Cifra
-        etiqueta="Contratos vigentes"
-        valor={vigentes}
-        detalle={doc.contratos.length === 1 ? 'De 1 contrato' : `De ${doc.contratos.length} contratos`}
-        data-testid="cifra-contratos-vigentes"
-      />
-    </FranjaDeCifras>
+    </div>
   );
 }

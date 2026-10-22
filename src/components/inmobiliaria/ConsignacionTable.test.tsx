@@ -599,3 +599,45 @@ describe('<ConsignacionTable> — publicar o quitar del marketplace (Nico, 10-10
     expect(onView).not.toHaveBeenCalled();
   });
 });
+
+describe('<ConsignacionTable> — «Copiar ficha» (Nico, 22-10-2026)', () => {
+  afterEach(() => {
+    document.body.querySelectorAll('[role="menu"]').forEach((m) => m.remove());
+  });
+
+  function abrirMenu(i = 0) {
+    const trigger = container.querySelectorAll('[aria-label="Acciones"]')[i];
+    expect(trigger).toBeTruthy();
+    act(() => {
+      (trigger as HTMLElement).dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, pointerId: 1 }),
+      );
+    });
+  }
+  const opcion = (testid: string) => document.querySelector(`[data-testid="${testid}"]`);
+
+  it('la fila ofrece «Copiar ficha» y manda el propertyId', () => {
+    const onCopiarFicha = vi.fn();
+    render([{ kind: 'consignacion', ...makeConsignacion() }], { onCopiarFicha });
+    abrirMenu();
+    const copiar = opcion('copiar-ficha') as HTMLElement;
+    expect(copiar.textContent).toContain('inmobiliaria.inmuebles.acciones.copiarFicha');
+    act(() => copiar.click());
+    expect(onCopiarFicha).toHaveBeenCalledWith('prop-consig-1');
+  });
+
+  it('una fila sin mandato también la ofrece: la ficha es del inmueble', () => {
+    const onCopiarFicha = vi.fn();
+    render([makeSinMandatoRow()], { onCopiarFicha });
+    abrirMenu();
+    act(() => (opcion('copiar-ficha') as HTMLElement).click());
+    expect(onCopiarFicha).toHaveBeenCalledWith('prop-sin-mandato-1');
+  });
+
+  it('sin inmueble no hay ficha que copiar', () => {
+    render([{ kind: 'consignacion', ...makeConsignacion({ propertyId: undefined }) }], { onCopiarFicha: vi.fn() });
+    abrirMenu();
+    expect(opcion('copiar-ficha')).toBeNull();
+  });
+});
+

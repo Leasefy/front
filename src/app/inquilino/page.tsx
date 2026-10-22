@@ -7,9 +7,9 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PortadaDelInmueble, primeraFoto } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Stagger, StaggerItem } from '@leasefy/cadence';
+import { MonoLabel, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, Check, ArrowRight, Lightbulb, ClipboardText, Wrench, ChatCircle } from '@phosphor-icons/react';
+import { MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, Lightbulb, ClipboardText, Wrench, ChatCircle } from '@phosphor-icons/react';
 
 import { useFeaturedProperties } from '@/lib/hooks/useProperties';
 import { useAuth } from '@/lib/auth';
@@ -318,7 +318,6 @@ export default function InquilinoPage() {
                     {' '}
                     <Link href={teToca.href} className="font-medium text-primary underline-offset-4 hover:underline">
                       {locale === 'es' ? 'Ir' : 'Go'}
-                      <ArrowRight className="ml-1 inline h-3.5 w-3.5 align-[-2px]" aria-hidden="true" />
                     </Link>
                   </>
                 ) : null}
@@ -388,13 +387,10 @@ export default function InquilinoPage() {
           <>
           {/* Active Leases */}
           <Link href="/inquilino/arriendo" className="group">
-            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
-                <House className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-              </div>
-              <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Arriendos' : 'Rentals'}</p>
-              <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">{cuantosArriendos}</p>
-              <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
+            <div className="h-full rounded-lg border border-border bg-surface p-5 hover:bg-surface-muted transition-colors">
+              <p className="mb-1 flex items-center gap-1.5 text-fg-subtle"><House className="w-4 h-4 shrink-0" aria-hidden="true" /><MonoLabel>{locale === 'es' ? 'Arriendos' : 'Rentals'}</MonoLabel></p>
+              <p className="font-mono text-h2 tabular-nums text-fg group-hover:text-primary transition-colors">{cuantosArriendos}</p>
+              <p className="text-caption text-fg-muted mt-1">
                 {cuantosArriendos === 0
                   ? (locale === 'es' ? 'Sin arriendos activos' : 'No active rentals')
                   : (locale === 'es' ? 'Contratos vigentes' : 'Active contracts')}
@@ -404,13 +400,10 @@ export default function InquilinoPage() {
 
           {/* Applications */}
           <Link href="/inquilino/aplicaciones" className="group">
-            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
-                <FileText className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-              </div>
-              <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('nav.applications')}</p>
-              <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">{activeApplications.length}</p>
-              <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
+            <div className="h-full rounded-lg border border-border bg-surface p-5 hover:bg-surface-muted transition-colors">
+              <p className="mb-1 flex items-center gap-1.5 text-fg-subtle"><FileText className="w-4 h-4 shrink-0" aria-hidden="true" /><MonoLabel>{t('nav.applications')}</MonoLabel></p>
+              <p className="font-mono text-h2 tabular-nums text-fg group-hover:text-primary transition-colors">{activeApplications.length}</p>
+              <p className="text-caption text-fg-muted mt-1">
                 {locale === 'es' ? 'En proceso' : 'In progress'}
               </p>
             </div>
@@ -420,13 +413,10 @@ export default function InquilinoPage() {
               Sólo cuando hay casos: "Casos 0" no resume nada (misma regla del grid). */}
           {hayCasos && (
             <Link href="/inquilino/casos" className="group">
-              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
-                  <ClipboardText className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-                </div>
-                <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Casos' : 'Cases'}</p>
-                <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">{openCasesCount}</p>
-                <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
+              <div className="h-full rounded-lg border border-border bg-surface p-5 hover:bg-surface-muted transition-colors">
+                <p className="mb-1 flex items-center gap-1.5 text-fg-subtle"><ClipboardText className="w-4 h-4 shrink-0" aria-hidden="true" /><MonoLabel>{locale === 'es' ? 'Casos' : 'Cases'}</MonoLabel></p>
+                <p className="font-mono text-h2 tabular-nums text-fg group-hover:text-primary transition-colors">{openCasesCount}</p>
+                <p className="text-caption text-fg-muted mt-1">
                   {locale === 'es' ? 'Abiertos' : 'Open'}
                 </p>
               </div>
@@ -437,15 +427,13 @@ export default function InquilinoPage() {
 
           {/* Sin arriendo: por dónde empezar (con arriendo, el próximo pago está en «Tu arriendo»). */}
           <Link href="/propiedades" target="_blank" rel="noopener noreferrer" className="group">
-            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
-                <MagnifyingGlass className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-              </div>
-              <p className="text-xs text-primary font-medium mb-1">
+            <div className="h-full rounded-lg border border-border bg-surface p-5 hover:bg-surface-muted transition-colors">
+              <MagnifyingGlass className="w-5 h-5 text-fg-muted mb-2" aria-hidden="true" />
+              <p className="text-caption text-primary font-medium mb-1">
                 {locale === 'es' ? 'Comienza ahora' : 'Get started'}
               </p>
-              <p className="text-sm font-semibold text-fg dark:text-white group-hover:text-primary transition-colors">
-                {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
+              <p className="text-sm font-medium text-fg group-hover:text-primary transition-colors">
+                {locale === 'es' ? 'Buscar inmuebles' : 'Search properties'}
               </p>
             </div>
           </Link>
@@ -466,9 +454,9 @@ export default function InquilinoPage() {
                   >
                     {hayCasos && (
                       <Link href="/inquilino/casos" className="group">
-                        <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors flex items-center gap-3">
-                          <ClipboardText className="w-5 h-5 text-fg-muted dark:text-fg-subtle flex-shrink-0" aria-hidden="true" />
-                          <p className="text-sm text-fg dark:text-white group-hover:text-primary transition-colors">
+                        <div className="h-full rounded-lg border border-border bg-surface p-5 hover:bg-surface-muted transition-colors flex items-center gap-3">
+                          <ClipboardText className="w-5 h-5 text-fg-muted flex-shrink-0" aria-hidden="true" />
+                          <p className="text-sm text-fg group-hover:text-primary transition-colors">
                             {locale === 'es'
                               ? `${openCasesCount === 1 ? '1 caso abierto' : `${openCasesCount} casos abiertos`} con tu inmobiliaria`
                               : `${openCasesCount} open cases`}
@@ -478,9 +466,9 @@ export default function InquilinoPage() {
                     )}
                     {activeApplications.length > 0 && (
                       <Link href="/inquilino/aplicaciones" className="group">
-                        <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-fg-muted dark:text-fg-subtle flex-shrink-0" aria-hidden="true" />
-                          <p className="text-sm text-fg dark:text-white group-hover:text-primary transition-colors">
+                        <div className="h-full rounded-lg border border-border bg-surface p-5 hover:bg-surface-muted transition-colors flex items-center gap-3">
+                          <FileText className="w-5 h-5 text-fg-muted flex-shrink-0" aria-hidden="true" />
+                          <p className="text-sm text-fg group-hover:text-primary transition-colors">
                             {locale === 'es'
                               ? activeApplications.length === 1
                                 ? '1 postulación en curso'
@@ -503,14 +491,14 @@ export default function InquilinoPage() {
             <section>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-xl font-semibold text-fg dark:text-white">
+                  <h2 className="text-h3 text-fg">
                     {locale === 'es' ? 'Propiedades para ti' : 'Properties for you'}
                   </h2>
                   {/* Decía "Basado en tu perfil y preferencias", que no es lo
                       que hace: no hay motor de perfil detrás de esta sección.
                       Ahora dice lo que sí es cierto, y cambia según tenga o no
                       un tope aprobado. */}
-                  <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
+                  <p className="text-sm text-fg-muted mt-0.5">
                     {referenciaHome
                       ? locale === 'es'
                         ? 'Dentro de tu tope aprobado'
@@ -524,10 +512,9 @@ export default function InquilinoPage() {
                     llama "Propiedades para ti" y mandaba al listado general. */}
                 <Link
                   href="/inquilino/para-ti"
-                  className="text-sm text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white font-medium flex items-center gap-1 transition-colors"
+                  className="text-sm text-fg-muted hover:text-fg font-medium flex items-center gap-1 transition-colors"
                 >
                   {t('common.showMore')}
-                  <ArrowUpRight className="w-4 h-4" />
                 </Link>
               </div>
 
@@ -538,7 +525,7 @@ export default function InquilinoPage() {
                   <StaggerItem key={property.id} className="flex">
                   <button
                     onClick={() => handleViewProperty(property)}
-                    className="group relative overflow-hidden rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted hover:border-border dark:hover:border-border-strong transition-colors duration-slow text-left w-full"
+                    className="group relative overflow-hidden rounded-lg border border-border bg-surface hover:border-border transition-colors duration-slow text-left w-full"
                   >
                     <div className="relative aspect-[16/10] overflow-hidden">
                       <PortadaDelInmueble
@@ -571,15 +558,15 @@ export default function InquilinoPage() {
 
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-3 mb-2">
-                        <h3 className="font-semibold text-fg dark:text-white group-hover:text-primary transition-colors line-clamp-1">
+                        <h3 className="font-medium text-fg group-hover:text-primary transition-colors line-clamp-1">
                           {property.title}
                         </h3>
-                        <p className="text-lg font-bold text-fg dark:text-white whitespace-nowrap flex-shrink-0">
+                        <p className="font-mono text-body tabular-nums text-fg whitespace-nowrap flex-shrink-0">
                           {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
                           {property.monthlyRent != null ? (
                             <>
                               {i18nFormatCurrency(property.monthlyRent)}
-                              <span className="text-xs font-normal text-fg-muted dark:text-fg-subtle">/{locale === 'es' ? 'mes' : 'mo'}</span>
+                              <span className="font-sans text-caption text-fg-muted"> {locale === 'es' ? 'al mes' : 'per month'}</span>
                             </>
                           ) : (
                             '—'
@@ -587,7 +574,7 @@ export default function InquilinoPage() {
                         </p>
                       </div>
 
-                      <p className="text-sm text-fg-muted dark:text-fg-subtle flex items-center gap-1.5 mb-3">
+                      <p className="text-sm text-fg-muted flex items-center gap-1.5 mb-3">
                         <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                         {[property.neighborhood, property.city].filter(Boolean).join(', ')}
                       </p>
@@ -596,14 +583,14 @@ export default function InquilinoPage() {
                           sin habitaciones, baños ni área, y las pastillas salían
                           «hab», «baños», «m²» sin número. */}
                       {(property.bedrooms != null || property.bathrooms != null || areaConocida(property.area)) && (
-                        <div data-testid="datos-del-inmueble" className="flex items-center gap-2 pt-3 border-t border-border-faint dark:border-border-strong">
+                        <div data-testid="datos-del-inmueble" className="flex items-center gap-2 pt-3 border-t border-border-faint">
                           {property.bedrooms != null && (
-                            <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
+                            <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted font-medium">
                               {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
                             </span>
                           )}
                           {property.bathrooms != null && (
-                            <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
+                            <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted font-medium">
                               {property.bathrooms}{' '}
                               {locale === 'es'
                                 ? property.bathrooms === 1
@@ -613,7 +600,7 @@ export default function InquilinoPage() {
                             </span>
                           )}
                           {areaConocida(property.area) && (
-                            <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
+                            <span className="px-2.5 py-1 bg-surface-muted rounded-md text-caption text-fg-muted font-medium">
                               {formatArea(property.area)}
                             </span>
                           )}
@@ -642,10 +629,10 @@ export default function InquilinoPage() {
               <section>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-xl font-semibold text-fg dark:text-white">
+                    <h2 className="text-h3 text-fg">
                       {t('nav.applications')}
                     </h2>
-                    <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
+                    <p className="text-sm text-fg-muted mt-0.5">
                       {locale === 'es'
                         ? 'El estado de cada propiedad a la que te postules'
                         : 'The status of every property you apply to'}
@@ -653,14 +640,13 @@ export default function InquilinoPage() {
                   </div>
                   <Link
                     href="/inquilino/aplicaciones"
-                    className="text-sm text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white font-medium flex items-center gap-1 transition-colors"
+                    className="text-sm text-fg-muted hover:text-fg font-medium flex items-center gap-1 transition-colors"
                   >
                     {t('common.showMore')}
-                    <ArrowUpRight className="w-4 h-4" />
                   </Link>
                 </div>
 
-                <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted">
+                <div className="rounded-lg border border-border bg-surface">
                   {/* "aplicación / aplicar" está muerto: docs/VOCABULARIO.md.
                       Y el CTA va a su catálogo, que es lo siguiente que haría. */}
                   <EmptyState
@@ -686,9 +672,9 @@ export default function InquilinoPage() {
 
             {/* Quick Actions */}
             <div
-              className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5"
+              className="rounded-lg border border-border bg-surface p-5"
             >
-              <h3 className="font-semibold text-fg dark:text-white mb-4">
+              <h3 className="font-medium text-fg mb-4">
                 {t('dashboard.quickActions')}
               </h3>
               <div className="space-y-2">
@@ -750,15 +736,13 @@ export default function InquilinoPage() {
                     href={action.href}
                     {...(action.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                   >
-                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface dark:hover:bg-border transition-colors group">
-                      <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center transition-shadow">
-                        <action.icon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-                      </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface transition-colors group">
+                      <action.icon className="w-5 h-5 shrink-0 text-fg-muted" aria-hidden="true" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-fg dark:text-white group-hover:text-primary transition-colors">
+                        <p className="text-sm font-medium text-fg group-hover:text-primary transition-colors">
                           {action.label}
                         </p>
-                        <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">{action.desc}</p>
+                        <p className="text-caption text-fg-muted truncate">{action.desc}</p>
                       </div>
                       <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-primary transition-colors" />
                     </div>
@@ -770,19 +754,17 @@ export default function InquilinoPage() {
             {/* Tips Card for New Users */}
             {isNewUser && (
               <div
-                className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5"
+                className="rounded-lg border border-border bg-surface p-5"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center flex-shrink-0">
-                    <Lightbulb className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-                  </div>
+                  <Lightbulb className="w-5 h-5 shrink-0 text-fg-muted" aria-hidden="true" />
                   <div>
-                    <h4 className="font-semibold text-fg dark:text-white text-sm mb-1">
+                    <h4 className="font-medium text-fg text-sm mb-1">
                       {locale === 'es' ? 'Consejo' : 'Tip'}
                     </h4>
-                    <p className="text-sm text-fg-muted dark:text-fg-subtle leading-relaxed">
+                    <p className="text-sm text-fg-muted leading-relaxed">
                       {locale === 'es'
-                        ? 'Guarda propiedades que te interesen tocando el corazón. Así podrás compararlas fácilmente.'
+                        ? 'Guarda los inmuebles que te interesen tocando el corazón. Así puedes compararlos fácilmente.'
                         : 'Save properties you like by tapping the heart. This way you can easily compare them.'}
                     </p>
                   </div>
@@ -792,12 +774,12 @@ export default function InquilinoPage() {
 
             {/* Help Card */}
             <div
-              className="rounded-xl bg-surface dark:bg-surface-muted border border-border dark:border-border-strong p-5"
+              className="rounded-lg bg-surface border border-border p-5"
             >
-              <h4 className="font-semibold text-fg dark:text-white text-sm mb-2">
+              <h4 className="font-medium text-fg text-sm mb-2">
                 {locale === 'es' ? '¿Necesitas ayuda?' : 'Need help?'}
               </h4>
-              <p className="text-sm text-fg-muted dark:text-fg-subtle mb-4">
+              <p className="text-sm text-fg-muted mb-4">
                 {locale === 'es'
                   ? 'Nuestro equipo está listo para asistirte.'
                   : 'Our team is ready to assist you.'}
@@ -807,7 +789,6 @@ export default function InquilinoPage() {
                 className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:opacity-80 transition-opacity"
               >
                 {locale === 'es' ? 'Ir al centro de ayuda' : 'Go to help center'}
-                <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>

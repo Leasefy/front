@@ -767,8 +767,8 @@ export function Recaudo() {
                       <TableRowAnimada key={m.medio} data-testid="medio-fila">
                         <TableCell className="text-fg">
                           {tr(m.nombre || nombreDelMedio(m.medio))}
-                          <span className="whitespace-nowrap text-caption text-fg-muted md:hidden">
-                            {' · '}
+                          {/* Ronda 14 (390): el conteo en su propio renglón (con nowrap desbordaba la tabla). */}
+                          <span className="block whitespace-nowrap text-caption text-fg-muted md:hidden">
                             {en
                               ? `${m.cantidad} ${m.cantidad === 1 ? 'receipt' : 'receipts'}`
                               : `${m.cantidad} ${m.cantidad === 1 ? 'recibo' : 'recibos'}`}
@@ -787,8 +787,7 @@ export function Recaudo() {
                     <TableRow data-testid="medio-total">
                       <TableCell className="font-medium text-fg">
                         {tr("Total")}
-                        <span className="text-caption font-normal text-fg-muted md:hidden">
-                          {' · '}
+                        <span className="block text-caption font-normal text-fg-muted md:hidden">
                           {en
                             ? `${totalDeRecibos.cantidad} ${totalDeRecibos.cantidad === 1 ? 'receipt' : 'receipts'}`
                             : `${totalDeRecibos.cantidad} ${totalDeRecibos.cantidad === 1 ? 'recibo' : 'recibos'}`}

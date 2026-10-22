@@ -267,4 +267,5 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Un interesado': 'A prospect',
   'Un inmueble libre': 'A free property',
   'Buscar por candidato, correo o inmueble': 'Search by applicant, email or property',
+  'Quién se postuló a tus inmuebles: ábrela para revisarla y decidir.': 'Who applied to your properties: open one to review it and decide.',
 }

@@ -15,6 +15,7 @@ import { usePermissions } from '@/lib/hooks/usePermissions'
 import { PageGuard } from '@/components/auth/PageGuard'
 // La de `ui` es la que pinta la ilustración 3D (`ilustracion`); la de data-display la ignoraba.
 import { EmptyState } from '@/components/ui/empty-state'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { Input } from '@/components/ui'
@@ -253,14 +254,13 @@ function PostulacionesContenido() {
   const hayPuntaje = items.some((c) => Boolean(c.riskScore))
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-h2 text-fg">{tr("Postulaciones")}</h1>
-        <p className="text-sm text-fg-muted mt-0.5 line-clamp-2 max-w-2xl">
-          {tr("Postulaciones de inquilinos a tus propiedades. Haz clic en una para revisarla y decidir.")}
-        </p>
-      </div>
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* Ronda 22: el encabezado de todas las pantallas. */}
+      <EncabezadoDePantalla
+        seccion={tr('Captación y arriendo')}
+        titulo={tr("Postulaciones")}
+        descripcion={tr("Quién se postuló a tus inmuebles: ábrela para revisarla y decidir.")}
+      />
 
       {/* El refresco de fondo falló con la lista ya en pantalla: se conserva y se
           dice, en vez de borrarla o de dejarla envejecer en silencio. */}

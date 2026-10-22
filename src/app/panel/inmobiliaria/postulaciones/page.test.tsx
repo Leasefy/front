@@ -171,7 +171,9 @@ vi.mock('@/components/ui/para-entender-mas', () => ({
 vi.mock('@leasefy/cadence', async (importOriginal) => ({
   // El movimiento (ola 2): las primitivas reales. Con las animaciones apagadas
   // (`vitest.setup.ts`) muestran el estado final de una.
-  ...(({ AnimatedNumber, Avatar, Cifra, CrossFade, FranjaDeCifras, MotionIndicator, Presence, FormError }) => ({
+  ...(({ AnimatedNumber, Avatar, Cifra, CrossFade, FranjaDeCifras, MotionIndicator, Presence, FormError, MonoLabel }) => ({
+    // El sobretítulo del encabezado común (ronda 22).
+    MonoLabel,
     AnimatedNumber,
     Avatar,
     // La franja de cifras por estado (glow up 21-10): las reales, son las que filtran.

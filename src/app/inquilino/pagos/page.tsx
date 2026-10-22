@@ -5,7 +5,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AnimatedNumber, Banner, Cifra, CrossFade, FranjaDeCifras, Presence, StaggerItem } from '@leasefy/cadence';
+import { AnimatedNumber, Banner, Cifra, CrossFade, FranjaDeCifras, Presence, StaggerItem, StatusBadge } from '@leasefy/cadence';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 // I1 (auditoría 13-09): el toast sale del design system, no de `sonner` pelado.
@@ -13,7 +13,7 @@ import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-car
 // (posición, duración, estilos) y produce un aviso que no se parece a los demás
 // del producto — o que no se ve, si el proveedor montado es el del DS.
 import { toast } from '@/components/ui/toast';
-import { Check, Clock, CreditCard, CurrencyCircleDollar, Buildings, ArrowUpRight, CaretRight, Receipt, Prohibit, XCircle, Download } from '@phosphor-icons/react';
+import { Check, Clock, CreditCard, CurrencyCircleDollar, Buildings, CaretRight, Receipt, Prohibit, XCircle, Download } from '@phosphor-icons/react';
 
 import { useLeases, useMyPaymentRequests, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
@@ -66,6 +66,14 @@ const MONTH_NAMES_EN = [
  * Wrapped in <Suspense> because it reads Wompi return params via useSearchParams
  * (Next requires a suspense boundary for search params on a static route).
  */
+/** El tono del StatusBadge de un pago, desde el color que ya decide `getStatusConfig`. */
+function tonoDelEstadoDelPago(color: string): 'success' | 'warning' | 'critical' | 'neutral' {
+  if (color.includes('success')) return 'success';
+  if (color.includes('warning')) return 'warning';
+  if (color.includes('danger')) return 'critical';
+  return 'neutral';
+}
+
 export default function PagosPage() {
   return (
     <Suspense
@@ -478,7 +486,7 @@ function PagosPageContent() {
           {errorResumen ? (
             <FalloDeCarga error={errorResumen} queEs="lo que debes" onReintentar={cargarResumen} />
           ) : cargandoResumen || !resumen ? (
-            <div className="flex h-40 items-center justify-center rounded-xl bg-surface-muted">
+            <div className="flex h-40 items-center justify-center rounded-lg bg-surface-muted">
               <Spinner size="md" />
             </div>
           ) : (
@@ -543,8 +551,8 @@ function PagosPageContent() {
           {/* Main Content - Payment History */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-fg">{t('payments.history')}</h2>
-              <span className="text-sm text-fg-muted"><AnimatedNumber value={allRequests.length} /> {t('nav.payments').toLowerCase()}</span>
+              <h2 className="text-h3 text-fg">{t('payments.history')}</h2>
+              <span className="text-sm text-fg-muted"><span className="font-mono tabular-nums"><AnimatedNumber value={allRequests.length} /></span> {t('nav.payments').toLowerCase()}</span>
             </div>
 
             {/* Vacío → primer pago y cambiar de página se cruzan; un pago nuevo
@@ -556,7 +564,6 @@ function PagosPageContent() {
                   <AnimatePresence initial={false} mode="popLayout">
                   {paginatedRequests.map((request) => {
                     const statusConfig = getStatusConfig(request.status);
-                    const StatusIcon = statusConfig.icon;
 
                     // QA-INQ-95: un rechazado dice cuándo lo rechazaron (antes, «Vence …»).
                     const dateLabel = fechaDeLaSolicitud(request, locale, formatShortDate);
@@ -564,20 +571,16 @@ function PagosPageContent() {
                     return (
                       <StaggerItem
                         key={request.id}
-                        className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden"
+                        className="group rounded-lg border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden"
                       >
+                        {/* Glow up de los portales (22-10): sin el ícono en su caja de color; el estado con su punto
+                            y su palabra (StatusBadge) y la plata en mono sin negrilla. */}
                         <div className="flex items-center gap-4 p-4">
-                          <div className={cn(
-                            'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0',
-                            statusConfig.iconBg
-                          )}>
-                            <StatusIcon className={cn('w-6 h-6', statusConfig.iconColor)} />
-                          </div>
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-4">
                               <div>
-                                <h3 className="font-semibold text-fg">
+                                <h3 className="font-medium text-fg">
                                   {request.referenceNumber?.startsWith('vencido-')
                                     ? (locale === 'es' ? 'Pago de lo vencido' : 'Overdue payment')
                                     : <>{locale === 'es' ? 'Arriendo' : 'Rent'} · <span className="capitalize">{formatPeriod(request.periodMonth, request.periodYear)}</span></>}
@@ -587,15 +590,12 @@ function PagosPageContent() {
                                 </p>
                               </div>
                               <div className="text-right flex-shrink-0">
-                                <p className="text-lg font-bold text-fg">
+                                <p className="font-mono text-body tabular-nums text-fg">
                                   {formatCurrencyI18n(request.amount)}
                                 </p>
-                                <span className={cn(
-                                  'inline-flex px-2 py-0.5 text-xs font-medium rounded-full',
-                                  statusConfig.color
-                                )}>
+                                <StatusBadge tone={tonoDelEstadoDelPago(statusConfig.color)} className="mt-1">
                                   {statusConfig.label}
-                                </span>
+                                </StatusBadge>
                               </div>
                             </div>
 
@@ -637,14 +637,13 @@ function PagosPageContent() {
                                     className="h-auto gap-1 p-0"
                                   >
                                     {locale === 'es' ? 'Reintentar' : 'Retry'}
-                                    <ArrowUpRight className="w-4 h-4" />
                                   </Button>
                                 )}
                               </div>
                             </div>
 
                             {request.rejectionReason && (
-                              <p className="text-xs text-danger mt-2 italic">
+                              <p className="text-caption text-danger mt-2">
                                 {request.rejectionReason}
                               </p>
                             )}
@@ -668,7 +667,7 @@ function PagosPageContent() {
                 )}
 
                 {/* Comprobante interno vs. factura electrónica (DIAN) — disclosure honesto, una vez. */}
-                <p className="mt-4 text-xs text-fg-muted">
+                <p className="mt-4 text-caption text-fg-muted">
                   {locale === 'es'
                     ? 'El recibo de caja es el soporte de tu pago. Si tu inmobiliaria te emite factura electrónica, te llega a tu correo.'
                     : 'The cash receipt is the proof of your payment. If your agency issues you an electronic invoice, it arrives by email.'}
@@ -713,23 +712,21 @@ function PagosPageContent() {
             </Presence>
 
             {/* Quick Links */}
-            <div className="rounded-xl bg-surface-muted p-5">
-              <h3 className="font-semibold text-fg mb-4">{t('dashboard.quickActions')}</h3>
+            <div className="rounded-lg bg-surface-muted p-5">
+              <h3 className="text-h3 text-fg mb-3">{t('dashboard.quickActions')}</h3>
               <div className="space-y-2">
                 {[
                   { href: '/inquilino/documentos', icon: Receipt, label: locale === 'es' ? 'Ver recibos' : 'View receipts', desc: locale === 'es' ? 'Historial de comprobantes' : 'Receipt history' },
                   { href: '/inquilino/arriendo', icon: Buildings, label: t('nav.myRental'), desc: locale === 'es' ? 'Ver contrato actual' : 'View current contract' },
                 ].map((action) => (
                   <Link key={action.href} href={action.href}>
-                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface transition-colors group">
-                      <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center transition-shadow">
-                        <action.icon className="w-5 h-5 text-fg-muted" />
-                      </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface transition-colors group">
+                      <action.icon className="w-5 h-5 shrink-0 text-fg-muted" aria-hidden="true" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-fg group-hover:text-primary transition-colors">
                           {action.label}
                         </p>
-                        <p className="text-xs text-fg-muted truncate">{action.desc}</p>
+                        <p className="text-caption text-fg-muted truncate">{action.desc}</p>
                       </div>
                       <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-primary transition-colors" />
                     </div>
@@ -801,16 +798,14 @@ function PeriodStatusCard({
   // PENDING_VALIDATION — viene del caso PSE PENDING (verificación bancaria)
   if (status === 'PENDING_VALIDATION') {
     return (
-      <div className="rounded-xl bg-warning-soft border border-warning/30 p-6">
+      <div className="rounded-lg bg-warning-soft border border-warning/30 p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
-            <Clock className="w-5 h-5 text-warning" />
-          </div>
+          <Clock className="w-5 h-5 text-warning" aria-hidden="true" />
           <span className="text-sm text-warning font-medium">
             {locale === 'es' ? 'Pago en verificación' : 'Payment in verification'}
           </span>
         </div>
-        <p className="text-3xl font-bold tracking-tight mb-1 text-fg">
+        <p className="font-mono text-h2 tabular-nums mb-1 text-fg">
           {formatCurrency(amount)}
         </p>
         <p className="text-fg-muted text-sm capitalize mb-4">{periodLabel}</p>
@@ -826,16 +821,14 @@ function PeriodStatusCard({
   // APPROVED — pago confirmado por el landlord
   if (status === 'APPROVED') {
     return (
-      <div className="rounded-xl bg-success-soft border border-success/30 p-6">
+      <div className="rounded-lg bg-success-soft border border-success/30 p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
-            <Check className="w-5 h-5 text-success" />
-          </div>
+          <Check className="w-5 h-5 text-success" aria-hidden="true" />
           <span className="text-sm text-success font-medium">
             {locale === 'es' ? 'Pago confirmado' : 'Payment confirmed'}
           </span>
         </div>
-        <p className="text-3xl font-bold tracking-tight mb-1 text-fg">
+        <p className="font-mono text-h2 tabular-nums mb-1 text-fg">
           {formatCurrency(amount)}
         </p>
         <p className="text-fg-muted text-sm capitalize mb-4">{periodLabel}</p>
@@ -854,11 +847,9 @@ function PeriodStatusCard({
 
   // NONE | REJECTED — mostrar CTA "Pagar arriendo"
   return (
-    <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
+    <div className="rounded-lg bg-primary-soft border border-primary/30 p-6">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
-          <CreditCard className="w-5 h-5 text-primary" />
-        </div>
+        <CreditCard className="w-5 h-5 text-primary" aria-hidden="true" />
         <span className="text-sm text-primary font-medium">
           {status === 'REJECTED'
             ? (locale === 'es' ? 'Pago rechazado' : 'Payment rejected')
@@ -870,12 +861,12 @@ function PeriodStatusCard({
       </div>
 
       {status === 'REJECTED' && rejectionReason && (
-        <div className="mb-4 rounded-xl border border-danger/30 bg-danger-soft p-3">
-          <p className="text-xs text-danger">{rejectionReason}</p>
+        <div className="mb-4 rounded-lg border border-danger/30 bg-danger-soft p-3">
+          <p className="text-caption text-danger">{rejectionReason}</p>
         </div>
       )}
 
-      <p className="text-4xl font-bold tracking-tight mb-1 text-fg">
+      <p className="font-mono text-h2 tabular-nums mb-1 text-fg">
         {formatCurrency(amount)}
       </p>
       <p className="text-fg-muted text-sm mb-6 truncate">
@@ -889,7 +880,7 @@ function PeriodStatusCard({
               <span className="text-fg-muted">
                 {locale === 'es' ? 'Progreso del mes' : 'Monthly progress'}
               </span>
-              <span className="text-fg font-medium">{progress}%</span>
+              <span className="font-mono tabular-nums text-fg">{progress} %</span>
             </div>
             <Progress value={progress} size="sm" />
           </div>
@@ -919,7 +910,6 @@ function PeriodStatusCard({
         {status === 'REJECTED'
           ? (locale === 'es' ? 'Reintentar pago' : 'Retry payment')
           : t('dashboard.payNow')}
-        <ArrowUpRight className="w-4 h-4" />
       </Button>
     </div>
   );

@@ -534,6 +534,35 @@ export interface ResultadoDelCambioDeInquilino {
   parteId: string;
 }
 
+/** Portofino 22-10: la terminación que decide el propietario. */
+export interface TerminacionConElPropietario {
+  id: string;
+  contractId: string;
+  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'RETIRADA';
+  terminadoEn: string;
+  motivo: string;
+  nombreDelMotivo: string;
+  nota: string | null;
+  penalidadCop: number | null;
+  penalidadDicha: boolean;
+  pedidaAt: string;
+  respondidaAt: string | null;
+  motivoDeLaRespuesta: string | null;
+}
+
+export interface TerminacionEnElPortal extends TerminacionConElPropietario {
+  inmobiliaria: string;
+  inmueble: string;
+  contrato: string | null;
+  inquilino: string | null;
+}
+
+export interface ConfiguracionDeTerminaciones {
+  disponible: boolean;
+  motivos: Array<{ codigo: string; nombre: string }>;
+  vanAlPropietario: string[];
+}
+
 export const cicloDeVidaApi = {
   motivosDeTerminacion: () =>
     apiClient.get<{ motivos: MotivoDeTerminacion[] }>(
@@ -566,6 +595,39 @@ export const cicloDeVidaApi = {
       `/contracts/${contractId}/terminar`,
       body,
     ),
+
+  /**
+   * Portofino 22-10: pedirle el sí al propietario en vez de terminar ya. Queda
+   * PENDIENTE hasta que él responda en su portal.
+   */
+  pedirAlPropietario: (
+    contractId: string,
+    body: { terminadoEn: string; motivo: string; nota?: string; penalidadCop?: number | null; penalidadParaLaInmobiliariaCop?: number },
+  ) =>
+    apiClient.post<TerminacionConElPropietario>(`/contracts/${contractId}/terminar/pedir-al-propietario`, body),
+
+  /** La terminación que espera (o respondió) el propietario; `null` = ninguna. */
+  terminacionConElPropietario: (contractId: string) =>
+    apiClient.get<TerminacionConElPropietario | null>(`/contracts/${contractId}/terminar/con-el-propietario`),
+
+  retirarTerminacionConElPropietario: (contractId: string) =>
+    apiClient.post<{ retirada: boolean }>(`/contracts/${contractId}/terminar/con-el-propietario/retirar`, {}),
+
+  /** Qué motivos van SIEMPRE al propietario en esta inmobiliaria. */
+  configuracionDeTerminaciones: () =>
+    apiClient.get<ConfiguracionDeTerminaciones>('/contracts/motivos-de-terminacion/con-el-propietario'),
+
+  guardarConfiguracionDeTerminaciones: (motivos: string[]) =>
+    apiClient.post<ConfiguracionDeTerminaciones>('/contracts/motivos-de-terminacion/con-el-propietario', { motivos }),
+
+  /** Portal del propietario: las terminaciones que tiene por decidir. */
+  terminacionesDelPortal: () => apiClient.get<TerminacionEnElPortal[]>('/portal/terminaciones'),
+
+  responderTerminacion: (id: string, acepta: boolean, motivo?: string) =>
+    apiClient.post<{ estado: string }>(`/portal/terminaciones/${encodeURIComponent(id)}/responder`, {
+      acepta,
+      ...(motivo ? { motivo } : {}),
+    }),
 
   vencidos: () => apiClient.get<ResumenDeVencidos>('/contracts/vencidos'),
 

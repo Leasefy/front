@@ -8,6 +8,7 @@
  * `/configuracion/ia` y el legado `?tab=`) no puedan divergir.
  */
 
+import { SeccionTerminacionesConElPropietario } from './SeccionTerminacionesConElPropietario';
 import { SeccionAvisos } from './SeccionAvisos';
 import { SeccionSlaDePqrs } from './SeccionSlaDePqrs';
 import { SeccionReparaciones } from './SeccionReparaciones';
@@ -82,7 +83,13 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
     case 'sedes':
       return <SeccionSedes />;
     case 'mandato':
-      return <SeccionMandato />;
+      return (
+        <div className="space-y-10">
+          <SeccionMandato />
+          {/* Portofino 22-10: qué terminaciones decide el propietario. */}
+          <SeccionTerminacionesConElPropietario />
+        </div>
+      );
     case 'conceptos':
       return <SeccionConceptos />;
     case 'migracion':

@@ -33,6 +33,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { SobrecostosPorAprobar } from '@/components/landlord/portal/SobrecostosPorAprobar';
 import { HistorialDeReparaciones } from '@/components/landlord/portal/HistorialDeReparaciones';
 import { LasQueHagoYo } from '@/components/landlord/portal/LasQueHagoYo';
+import { TerminacionesPorDecidir } from '@/components/landlord/portal/TerminacionesPorDecidir';
 
 /** `RechazarAprobacionDto.motivo`: `@MaxLength(2000)` en el back. */
 const MAX_LARGO_DEL_MOTIVO = 2000;
@@ -305,6 +306,8 @@ export default function AprobarReparacionesPage() {
               ))}
             </section>
           )}
+          {/* Portofino 22-10: las terminaciones que la inmobiliaria le pide decidir. */}
+          <TerminacionesPorDecidir />
           {/* Portofino 22-10: las que hace él por su cuenta, con «Ya quedó». */}
           <LasQueHagoYo reparaciones={queHagoYo} onCambio={() => void cargar()} />
           {/* Nico, 12-10: el historial en una tabla con paginación y el detalle completo en un cajón. */}

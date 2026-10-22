@@ -9,6 +9,9 @@ export type ReglaDeLaPenalidad = NonNullable<MotivoDeTerminacion['penalidad']>;
 export const PENALIDAD_SEGUN_EL_MOTIVO: Record<string, ReglaDeLaPenalidad> = {
   INCUMPLIMIENTO_DEL_INQUILINO: 'POR_DEFECTO',
   ENTREGA_ANTICIPADA_DEL_INQUILINO: 'POR_DEFECTO',
+  // Portofino 22-10: convivencia con penalidad; la falta de pago, sin (jurídico cobra después).
+  PROBLEMAS_DE_CONVIVENCIA: 'POR_DEFECTO',
+  INCUMPLIMIENTO_DE_PAGO: 'NO_APLICA',
   OTRO: 'POR_DEFECTO',
   MUTUO_ACUERDO: 'SOLO_SI_SE_ESCRIBE',
   FUERZA_MAYOR: 'SOLO_SI_SE_ESCRIBE',

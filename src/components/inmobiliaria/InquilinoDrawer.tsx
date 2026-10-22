@@ -847,6 +847,7 @@ export function CuerpoDelCajon({
       <SheetBody>
         {enFicha ? (
           <PestanasDeLaFicha
+            fondo="surface"
             etiqueta="Secciones del inquilino"
             pestanas={[
               { id: 'resumen', etiqueta: 'Resumen', contenido: sinArriendos ? bloqueSinArriendos : bloqueDeuda },

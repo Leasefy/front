@@ -104,4 +104,10 @@ describe('PestanasDeLaFicha', () => {
     expect(cobro.className).toContain('whitespace-nowrap');
     expect(cobro.className).toContain('shrink-0');
   });
+
+  it('sin pestañas fuera de la vista no pinta el degradado de «hay más»', async () => {
+    await montar();
+    // En el entorno de pruebas todo cabe (anchos en 0): nada que avisar.
+    expect($('hay-mas-pestanas')).toBeNull();
+  });
 });

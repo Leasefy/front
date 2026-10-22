@@ -14,7 +14,7 @@
  *    avisar) y cambiar de pestaña es inmediato.
  *  · La barra es la `Tabs` subrayada del sistema; en el celular se desliza.
  */
-import { useCallback, useEffect, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -40,16 +40,38 @@ export function PestanasDeLaFicha<Id extends string>({
   pestanas,
   etiqueta,
   className,
+  fondo = 'bg',
   'data-testid': testId = 'pestanas-de-la-ficha',
 }: {
   pestanas: readonly PestanaDeLaFicha<Id>[];
   /** El nombre accesible de la barra («Secciones del contrato»). */
   etiqueta: string;
   className?: string;
+  /** El fondo detrás de la barra, para que el degradado de «hay más» se funda (la ficha del inquilino va en una tarjeta). */
+  fondo?: 'bg' | 'surface';
   'data-testid'?: string;
 }) {
   const router = useRouter();
   const params = useSearchParams();
+  /*
+   * En el celular la barra se desliza; si quedan pestañas fuera de la vista a la
+   * derecha, un degradado lo dice (si no, «Historial» parecía no existir). Sólo
+   * aparece cuando de verdad hay más: con todo a la vista, nada tapa nada.
+   */
+  const barra = useRef<HTMLDivElement>(null);
+  const [hayMas, setHayMas] = useState(false);
+  useEffect(() => {
+    const el = barra.current;
+    if (!el) return;
+    const medir = () => setHayMas(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    medir();
+    el.addEventListener('scroll', medir, { passive: true });
+    window.addEventListener('resize', medir);
+    return () => {
+      el.removeEventListener('scroll', medir);
+      window.removeEventListener('resize', medir);
+    };
+  }, []);
   const ids = pestanas.map((p) => p.id);
   const activa = pestanaDeLaUrl(params?.get('pestana'), ids);
 
@@ -82,7 +104,8 @@ export function PestanasDeLaFicha<Id extends string>({
 
   return (
     <Tabs value={activa} onValueChange={elegir} className={cn('space-y-6', className)}>
-      <TabsList className="justify-start" aria-label={etiqueta} data-testid={testId}>
+      <div className="relative">
+      <TabsList ref={barra} className="justify-start" aria-label={etiqueta} data-testid={testId}>
         {pestanas.map((p) => (
           // En una línea siempre: a 390 px «Cobro y reglas» se partía en dos y la
           // segunda quedaba cortada. La barra se desliza (TabsList), no se parte.
@@ -96,6 +119,17 @@ export function PestanasDeLaFicha<Id extends string>({
           </TabsTrigger>
         ))}
       </TabsList>
+      {hayMas ? (
+        <span
+          aria-hidden="true"
+          data-testid="hay-mas-pestanas"
+          className={cn(
+            'pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l to-transparent',
+            fondo === 'surface' ? 'from-surface' : 'from-bg',
+          )}
+        />
+      ) : null}
+      </div>
       {pestanas.map((p) => (
         // forceMount: montada siempre; la inactiva se esconde por su data-state.
         <TabsContent

@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Buildings, User, CheckCircle, WarningCircle, SpinnerGap, Envelope, Key, ArrowRight, Phone } from '@phosphor-icons/react';
+import { Buildings, User, CheckCircle, WarningCircle, SpinnerGap, Envelope, Key, Phone } from '@phosphor-icons/react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/lib/auth/use-auth';
 import { getSupabase } from '@/lib/supabase/client';
@@ -374,16 +374,14 @@ function RegistroContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted px-4">
         {/* Llega después de la carga (nunca en el HTML del servidor): sube 8 px. */}
-        <Appear className="max-w-sm w-full bg-white dark:bg-card rounded-xl border border-border p-8 text-center">
-          <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
-            <WarningCircle className="w-7 h-7 text-destructive" />
-          </div>
-          <h1 className="text-lg font-semibold text-foreground mb-2">
+        <Appear className="max-w-sm w-full bg-white rounded-lg border border-border p-8 text-center">
+          <WarningCircle className="w-7 h-7 text-destructive shrink-0 mx-auto" aria-hidden="true" />
+          <h1 className="text-lg font-medium text-foreground mb-2">
             {invitacionNoCargo ? 'No pudimos validar la invitación' : 'Invitación inválida'}
           </h1>
           <p className="text-sm text-muted-foreground">{invitationError}</p>
           {invitationDead && (
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-caption text-muted-foreground mt-2">
               Si ya eres miembro, entra a tu panel. Si no, pídele al administrador que te reenvíe la invitación.
             </p>
           )}
@@ -391,13 +389,13 @@ function RegistroContent() {
             <div className="mt-6 flex flex-col gap-2">
               <button
                 onClick={() => window.location.replace('/panel/inmobiliaria')}
-                className="w-full h-11 flex items-center justify-center rounded-xl bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-opacity"
+                className="w-full h-11 flex items-center justify-center rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
               >
                 Ir a mi panel
               </button>
               <Link
                 href="/"
-                className="w-full h-11 flex items-center justify-center rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                className="w-full h-11 flex items-center justify-center rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
                 Volver al inicio
               </Link>
@@ -421,14 +419,12 @@ function RegistroContent() {
       <Stagger className="max-w-md w-full" layout={false}>
 
         {/* Invitation card */}
-        <StaggerItem key="invitacion" className="bg-white dark:bg-card rounded-xl border border-border p-6 mb-6">
+        <StaggerItem key="invitacion" className="bg-white rounded-lg border border-border p-6 mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-              <Buildings className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
-            </div>
+            <Buildings className="w-6 h-6 text-[#1A40FF] shrink-0" aria-hidden="true" />
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide font-mono">Invitación de</p>
-              <p className="text-[17px] font-semibold text-foreground">{invitation.agencyName ?? 'una inmobiliaria'}</p>
+              <p className="text-caption text-muted-foreground uppercase tracking-wide font-mono">Invitación de</p>
+              <p className="text-[17px] font-medium text-foreground">{invitation.agencyName ?? 'una inmobiliaria'}</p>
             </div>
           </div>
 
@@ -438,25 +434,25 @@ function RegistroContent() {
             </div>
             <div>
               <p className="text-sm text-foreground">
-                Fuiste invitado como <span className="font-semibold">{ROLE_LABELS[invitation.role] ?? invitation.role}</span>
+                Fuiste invitado como <span className="font-medium">{ROLE_LABELS[invitation.role] ?? invitation.role}</span>
               </p>
               {invitation.invitedBy && (
-                <p className="text-xs text-muted-foreground">por {invitation.invitedBy}</p>
+                <p className="text-caption text-muted-foreground">por {invitation.invitedBy}</p>
               )}
             </div>
             {!isExpired && <CheckCircle className="w-5 h-5 text-success ml-auto shrink-0" />}
           </div>
 
           {isExpired && (
-            <div className="mt-3 p-3 rounded-xl bg-warning-soft border border-warning/30 flex items-center gap-2">
+            <div className="mt-3 p-3 rounded-lg bg-warning-soft border border-warning/30 flex items-center gap-2">
               <WarningCircle className="w-4 h-4 text-warning shrink-0" />
-              <p className="text-xs text-warning">Esta invitación expiró. Pídele al administrador que la reenvíe.</p>
+              <p className="text-caption text-warning">Esta invitación expiró. Pídele al administrador que la reenvíe.</p>
             </div>
           )}
         </StaggerItem>
 
         {!isExpired && (
-          <StaggerItem key="formulario" className="bg-white dark:bg-card rounded-xl border border-border p-6">
+          <StaggerItem key="formulario" className="bg-white rounded-lg border border-border p-6">
             {/* Perfil ↔ crear cuenta ↔ «Revisa tu email»: se cruzan (`CrossFade`). */}
             <CrossFade swapKey={needsOnboarding ? 'perfil' : confirmed ? 'revisa-tu-correo' : 'crear-cuenta'}>
 
@@ -464,7 +460,7 @@ function RegistroContent() {
             {needsOnboarding ? (
               <>
                 <div className="mb-4">
-                  <h2 className="text-[16px] font-semibold text-foreground">Completa tu perfil</h2>
+                  <h2 className="text-[16px] font-medium text-foreground">Completa tu perfil</h2>
                   <p className="text-[13px] text-muted-foreground mt-1">
                     Tu cuenta fue creada. Solo necesitamos tus datos.
                   </p>
@@ -474,9 +470,9 @@ function RegistroContent() {
                     to (the agent does NOT choose the role). Reuses ROLE_LABELS. */}
                 <div
                   data-testid="invite-confirmation"
-                  className="mb-5 flex items-start gap-2 p-3 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
+                  className="mb-5 flex items-start gap-2 p-3 rounded-lg bg-[#EEF1FF]"
                 >
-                  <CheckCircle className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF] mt-0.5 shrink-0" weight="fill" />
+                  <CheckCircle className="w-4 h-4 text-[#1A40FF] mt-0.5 shrink-0" weight="fill" />
                   <p className="text-[13px] text-foreground">
                     Te uniste al equipo de{' '}
                     <strong>{invitation.agencyName ?? 'una inmobiliaria'}</strong> como{' '}
@@ -526,7 +522,7 @@ function RegistroContent() {
                   </div>
 
                   <Presence show={Boolean(formError)}>
-                    <div role="alert" className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
+                    <div role="alert" className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-2">
                       <WarningCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                       <p className="text-[13px] text-destructive">{errorVisible}</p>
                     </div>
@@ -535,14 +531,13 @@ function RegistroContent() {
                   <button
                     type="submit"
                     disabled={isSubmitting || !hidratado}
-                    className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-foreground text-background text-[14px] font-semibold disabled:opacity-60 transition-opacity"
+                    className="w-full h-12 flex items-center justify-center gap-2 rounded-lg bg-foreground text-background text-[14px] font-medium disabled:opacity-60 transition-opacity"
                   >
                     {isSubmitting ? (
                       <SpinnerGap className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
                         Unirme a {invitation.agencyName}
-                        <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>
@@ -554,11 +549,9 @@ function RegistroContent() {
                 {confirmed ? (
                   /* Email confirmation pending — user just needs to click the link */
                   <div className="py-4 text-center space-y-4">
-                    <div className="w-14 h-14 rounded-full bg-success-soft flex items-center justify-center mx-auto">
-                      <Envelope className="w-7 h-7 text-success" />
-                    </div>
+                    <Envelope className="w-7 h-7 text-success shrink-0 mx-auto" aria-hidden="true" />
                     <div>
-                      <p className="text-[15px] font-semibold text-foreground">Revisa tu email</p>
+                      <p className="text-[15px] font-medium text-foreground">Revisa tu email</p>
                       <p className="text-[13px] text-muted-foreground mt-1">
                         Te enviamos un link de confirmación. Haz clic en él y te vamos a redirigir automáticamente al panel.
                       </p>
@@ -568,7 +561,7 @@ function RegistroContent() {
                 ) : (
                   <form method="post" onSubmit={authForm.handleSubmit(handleRegister)} className="space-y-4">
                     <div className="mb-5">
-                      <h2 className="text-[16px] font-semibold text-foreground">Crear cuenta</h2>
+                      <h2 className="text-[16px] font-medium text-foreground">Crear cuenta</h2>
                       <p className="text-[13px] text-muted-foreground mt-1">Completa tus datos para unirte a <strong>{invitation?.agencyName}</strong>.</p>
                     </div>
 
@@ -650,7 +643,7 @@ function RegistroContent() {
                     </div>
 
                     <Presence show={Boolean(formError)}>
-                      <div role="alert" className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
+                      <div role="alert" className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-2">
                         <WarningCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                         <p className="text-[13px] text-destructive">{errorVisible}</p>
                       </div>
@@ -659,14 +652,13 @@ function RegistroContent() {
                     <button
                       type="submit"
                       disabled={isSubmitting || !hidratado}
-                      className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-foreground text-background text-[14px] font-semibold disabled:opacity-60 transition-opacity"
+                      className="w-full h-12 flex items-center justify-center gap-2 rounded-lg bg-foreground text-background text-[14px] font-medium disabled:opacity-60 transition-opacity"
                     >
                       {isSubmitting ? (
                         <SpinnerGap className="w-4 h-4 animate-spin" />
                       ) : (
                         <>
                           Crear cuenta y unirme
-                          <ArrowRight className="w-4 h-4" />
                         </>
                       )}
                     </button>

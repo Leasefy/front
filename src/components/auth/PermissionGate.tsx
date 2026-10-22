@@ -49,10 +49,10 @@ export function PermissionGate({ module, action, children, fallback }: Permissio
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-surface-hover">
         <Lock weight="duotone" className="h-5 w-5 text-fg-subtle" />
       </div>
-      <h3 className="text-sm font-semibold text-fg">
+      <h3 className="text-sm font-medium text-fg">
         {tr("Acceso restringido")}
       </h3>
-      <p className="mt-1.5 max-w-sm text-xs text-fg-subtle">
+      <p className="mt-1.5 max-w-sm text-caption text-fg-subtle">
         {tr("No tienes permiso para acceder a esta seccion. Contacta al administrador de tu agencia.")}
       </p>
     </div>

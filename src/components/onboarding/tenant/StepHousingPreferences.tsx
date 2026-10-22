@@ -72,7 +72,7 @@ const OPCION_LIBRE = 'border-border bg-surface text-fg-muted hover:border-border
 /** El rótulo de un grupo de opciones (`<legend>`): el mismo trazo que `FormLabel`. */
 function Rotulo({ children, requerido }: { children: ReactNode; requerido?: boolean }) {
   return (
-    <legend className="mb-2.5 flex items-center gap-0.5 text-caption font-semibold text-fg">
+    <legend className="mb-2.5 flex items-center gap-0.5 text-caption font-medium text-fg">
       {children}
       {requerido ? (
         <span className="ml-0.5 text-danger" aria-hidden="true">
@@ -349,7 +349,7 @@ export function StepHousingPreferences() {
 
       {/* Move-in Date */}
       <Seccion orden={2}>
-        <label htmlFor="moveInDate" className="mb-2.5 inline-flex text-caption font-semibold text-fg">
+        <label htmlFor="moveInDate" className="mb-2.5 inline-flex text-caption font-medium text-fg">
           ¿Cuándo planeas mudarte?
         </label>
         {/* El calendario de cadence y no el nativo del navegador (que salía en

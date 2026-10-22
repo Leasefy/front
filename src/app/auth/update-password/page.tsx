@@ -272,7 +272,7 @@ function UpdatePasswordContent() {
               >
                 <CheckCircle className="h-9 w-9 text-success" weight="fill" />
               </motion.div>
-              <h1 className="text-xl font-semibold text-fg mb-2">
+              <h1 className="text-xl font-medium text-fg mb-2">
                 {esPrimeraVez ? 'Tu cuenta quedó lista' : 'Contraseña actualizada'}
               </h1>
               <p className="text-sm text-fg-muted mb-6">
@@ -287,7 +287,7 @@ function UpdatePasswordContent() {
                   <Button className="w-full">Ver mi arriendo</Button>
                 </Link>
               ) : (
-                <p className="text-xs text-fg-subtle" role="status" data-testid="cerrando-sesion-del-enlace">
+                <p className="text-caption text-fg-subtle" role="status" data-testid="cerrando-sesion-del-enlace">
                   {cerrandoSesion ? 'Cerrando la sesión del enlace…' : 'Un momento…'}
                 </p>
               )}
@@ -298,7 +298,7 @@ function UpdatePasswordContent() {
                 <div className="mx-auto w-12 h-12 bg-surface-muted rounded-full flex items-center justify-center mb-4">
                   <Lock className="h-5 w-5 text-fg" />
                 </div>
-                <h1 className="text-2xl font-semibold text-fg mb-1">
+                <h1 className="text-h2 text-fg mb-1">
                   {esPrimeraVez ? 'Crea tu contraseña' : 'Nueva contraseña'}
                 </h1>
                 <p className="text-sm text-fg-muted">
@@ -399,7 +399,7 @@ function UpdatePasswordContent() {
               {/* A quien nunca tuvo contraseña no se le pregunta si la
                   recordó. */}
               {esPrimeraVez ? null : (
-                <p className="text-center text-xs text-fg-muted mt-6">
+                <p className="text-center text-caption text-fg-muted mt-6">
                   ¿Recordaste tu contraseña?{' '}
                   <Link href="/auth" className="text-fg hover:underline">
                     Iniciar sesión

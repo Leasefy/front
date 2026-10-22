@@ -60,7 +60,7 @@ export function AgentModuleGate({
           weight="duotone"
           aria-hidden="true"
         />
-        <p className="text-lg font-semibold text-fg">
+        <p className="text-lg font-medium text-fg">
           No pudimos verificar tu acceso
         </p>
         <p className="text-sm text-fg-muted max-w-sm">
@@ -83,7 +83,7 @@ export function AgentModuleGate({
   if (!canAccess(module, 'view')) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3 px-6 text-center">
-        <p className="text-lg font-semibold text-fg">{deniedTitle}</p>
+        <p className="text-lg font-medium text-fg">{deniedTitle}</p>
         <p className="text-sm text-fg-muted max-w-sm">
           {t('inmobiliaria.ai.access.contactAdmin')}
         </p>

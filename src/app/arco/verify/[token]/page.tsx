@@ -39,7 +39,7 @@ function ArcoVerifyInner() {
           weight="duotone"
           className="h-12 w-12 text-success mx-auto mb-4"
         />
-        <h1 className="text-xl font-semibold font-heading text-fg">
+        <h1 className="text-xl font-medium font-heading text-fg">
           {t('inmobiliaria.ai.arco.verify.confirmed')}
         </h1>
         <p className="text-sm text-fg-subtle mt-2">
@@ -47,11 +47,11 @@ function ArcoVerifyInner() {
         </p>
         <Link
           href="/"
-          className="text-xs text-[#1A40FF] hover:text-[#1A40FF] transition-colors mt-6 block"
+          className="text-caption text-[#1A40FF] hover:text-[#1A40FF] transition-colors mt-6 block"
         >
           Volver al inicio
         </Link>
-        <p className="text-xs text-fg-subtle mt-4">
+        <p className="text-caption text-fg-subtle mt-4">
           ¿Tienes dudas? Consulta nuestra{' '}
           <Link
             href="/privacidad"

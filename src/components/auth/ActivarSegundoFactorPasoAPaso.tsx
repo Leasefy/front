@@ -374,7 +374,7 @@ export function ActivarSegundoFactorPasoAPaso({
             id="paso-titulo"
             ref={tituloRef}
             tabIndex={-1}
-            className="min-w-0 text-balance text-[20px] font-semibold leading-tight tracking-[-0.015em] text-fg outline-none"
+            className="min-w-0 text-balance text-[20px] font-medium leading-tight tracking-[-0.015em] text-fg outline-none"
           >
             {paso === 'app'
               ? 'Descarga una app de autenticación en tu celular'
@@ -640,7 +640,7 @@ function AnilloDePasos({ actual }: { actual: number }) {
       </svg>
       <span
         aria-hidden="true"
-        className="absolute inset-0 flex items-center justify-center font-mono text-caption font-semibold tabular-nums text-fg"
+        className="absolute inset-0 flex items-center justify-center font-mono text-caption tabular-nums text-fg"
       >
         {actual + 1}/{total}
       </span>

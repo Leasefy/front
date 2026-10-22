@@ -293,7 +293,7 @@ function OnboardingPropietarioContent() {
           >
             <Check className="w-10 h-10 text-success" weight="bold" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-fg mb-3">
+          <h1 className="text-h2 text-fg mb-3">
             ¡Listo, {data.displayName.split(' ')[0]}!
           </h1>
           <p className="text-fg-muted mb-8">
@@ -303,19 +303,17 @@ function OnboardingPropietarioContent() {
             {returnUrl ? (
               <Link
                 href={returnUrl}
-                className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-ink text-ink-fg font-semibold rounded-full hover:opacity-90 transition-colors"
+                className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-ink text-ink-fg font-medium rounded-full hover:opacity-90 transition-colors"
               >
                 Ir al panel de propiedades
-                <ArrowRight className="w-4 h-4" />
               </Link>
             ) : (
               <>
                 <Link
                   href="/publicar"
-                  className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-ink text-ink-fg font-semibold rounded-full hover:opacity-90 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-ink text-ink-fg font-medium rounded-full hover:opacity-90 transition-colors"
                 >
                   Publicar mi propiedad
-                  <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
                   href="/panel"
@@ -346,7 +344,7 @@ function OnboardingPropietarioContent() {
               <div className="flex items-center gap-2">
                 <div
                   className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold font-mono tabular-nums transition-colors",
+                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium font-mono tabular-nums transition-colors",
                     step > 1 ? "bg-primary border-2 border-primary text-primary-fg" : "bg-surface border-2 border-primary text-primary"
                   )}
                   style={step === 1 ? { boxShadow: '0 0 0 4px rgba(26,64,255,0.14)' } : undefined}
@@ -361,7 +359,7 @@ function OnboardingPropietarioContent() {
                     )} />
                     <div
                       className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold font-mono tabular-nums transition-colors",
+                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium font-mono tabular-nums transition-colors",
                         step >= 2 ? "bg-surface border-2 border-primary text-primary" : "bg-surface border border-border text-fg-subtle"
                       )}
                       style={step === 2 ? { boxShadow: '0 0 0 4px rgba(26,64,255,0.14)' } : undefined}
@@ -403,7 +401,7 @@ function OnboardingPropietarioContent() {
                   <Shield className="w-4 h-4" />
                   Tu información está protegida
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-fg mb-2">
+                <h1 className="text-2xl sm:text-3xl font-medium text-fg mb-2">
                   Bienvenido a Leasefy
                 </h1>
                 <p className="text-fg-muted">
@@ -513,14 +511,13 @@ function OnboardingPropietarioContent() {
                 ) : (
                   <>
                     Continuar
-                    <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </Button>
               </span>
               {/* La pista del botón apagado aparece y se va con `Presence`. */}
               <Presence show={Boolean(disabledHint) && !isStep1Valid} distance="xs">
-                <p role="status" className="mt-3 text-xs text-warning text-center">
+                <p role="status" className="mt-3 text-caption text-warning text-center">
                   {disabledHint || pistaVisible}
                 </p>
               </Presence>
@@ -534,7 +531,7 @@ function OnboardingPropietarioContent() {
                   <House className="w-4 h-4" />
                   Cuéntanos de tu propiedad
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-fg mb-2">
+                <h1 className="text-2xl sm:text-3xl font-medium text-fg mb-2">
                   Vamos a cuidar tu inversión
                 </h1>
                 <p className="text-fg-muted">
@@ -562,7 +559,7 @@ function OnboardingPropietarioContent() {
                         type="button"
                         onClick={() => updateData({ propertyTextT: type.value })}
                         className={cn(
-                          "flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-colors duration-fast ease-standard text-left",
+                          "flex items-center gap-3 px-4 py-3.5 rounded-lg border transition-colors duration-fast ease-standard text-left",
                           data.propertyTextT === type.value
                             ? "border-fg bg-surface-muted"
                             : "border-border bg-surface hover:border-border-strong"
@@ -630,7 +627,7 @@ function OnboardingPropietarioContent() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-fg">Tu propiedad está protegida</p>
-                    <p className="text-xs text-fg-muted mt-0.5">
+                    <p className="text-caption text-fg-muted mt-0.5">
                       Verificamos todos los inquilinos y ofrecemos seguro contra impagos hasta 24 meses
                     </p>
                   </div>
@@ -678,7 +675,7 @@ function OnboardingPropietarioContent() {
               </div>
               {/* La pista del botón apagado aparece y se va con `Presence`. */}
               <Presence show={Boolean(disabledHint) && !isStep2Valid} distance="xs">
-                <p role="status" className="mt-3 text-xs text-warning text-center">
+                <p role="status" className="mt-3 text-caption text-warning text-center">
                   {disabledHint || pistaVisible}
                 </p>
               </Presence>

@@ -1192,7 +1192,7 @@ export function AuthForm({
             initial={{ scale: motionScale.pop, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={motionSpring.bouncy}
-            className="w-10 h-10 mb-5 rounded-xl bg-success-soft flex items-center justify-center"
+            className="w-10 h-10 mb-5 rounded-lg bg-success-soft flex items-center justify-center"
           >
             <CheckCircle className="w-5 h-5 text-success" weight="fill" />
           </motion.div>

@@ -18,9 +18,9 @@ function AuthFormFallback() {
       <div className="mb-2 h-8 w-60 rounded bg-muted" />
       <div className="mb-9 h-4 w-64 rounded bg-muted" />
       <div className="space-y-4">
-        <div className="h-11 rounded-xl bg-muted" />
-        <div className="h-11 rounded-xl bg-muted" />
-        <div className="h-11 rounded-xl bg-muted" />
+        <div className="h-11 rounded-lg bg-muted" />
+        <div className="h-11 rounded-lg bg-muted" />
+        <div className="h-11 rounded-lg bg-muted" />
       </div>
     </div>
   );

@@ -314,7 +314,7 @@ export function EleccionDePerfil({
                   {[0, 1].map((i) => (
                     <div
                       key={i}
-                      className="aspect-[4/5] animate-pulse rounded-xl bg-surface-muted sm:aspect-[3/4]"
+                      className="aspect-[4/5] animate-pulse rounded-lg bg-surface-muted sm:aspect-[3/4]"
                     />
                   ))}
                 </div>
@@ -448,7 +448,7 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
         'transition-[box-shadow,opacity] duration-slow ease-standard',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
         'disabled:cursor-default',
-        compacta ? 'aspect-square rounded-lg' : 'aspect-[4/5] rounded-xl sm:aspect-[3/4]',
+        compacta ? 'aspect-square rounded-lg' : 'aspect-[4/5] rounded-lg sm:aspect-[3/4]',
         elegida || yendo
           ? 'ring-2 ring-primary ring-offset-2 ring-offset-bg'
           : 'shadow-[0_14px_36px_-22px_rgba(20,19,15,0.4)]',

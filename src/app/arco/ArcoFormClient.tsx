@@ -189,14 +189,14 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
               // eslint-disable-next-line @next/next/no-img-element -- el logo viene de la inmobiliaria, de cualquier dominio
               <img src={inmobiliaria.logoUrl} alt="" className="h-8 w-8 rounded-md object-contain" />
             ) : null}
-            <p className="text-lg font-semibold font-heading text-fg">{inmobiliaria.nombre}</p>
+            <p className="text-lg font-medium font-heading text-fg">{inmobiliaria.nombre}</p>
           </div>
         ) : (
-          <p className="text-xl font-semibold font-heading text-fg mb-2">
+          <p className="text-xl font-medium font-heading text-fg mb-2">
             Leasefy
           </p>
         )}
-        <h1 className="text-3xl font-semibold font-heading text-fg mb-3">
+        <h1 className="text-h2 font-heading text-fg mb-3">
           {t('inmobiliaria.ai.arco.public.title')}
         </h1>
         <p className="text-sm text-fg-subtle max-w-sm mx-auto">
@@ -213,19 +213,19 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
             weight="duotone"
             className="h-12 w-12 text-[#1A40FF] mx-auto"
           />
-          <h2 className="text-xl font-semibold text-fg">
+          <h2 className="text-h3 text-fg">
             {t('inmobiliaria.ai.arco.public.successTitle')}
           </h2>
           <p className="text-sm text-fg-subtle">
             {t('inmobiliaria.ai.arco.public.successBody', { email: submittedEmail })}
           </p>
-          <p className="text-xs text-fg-subtle">
+          <p className="text-caption text-fg-subtle">
             {t('inmobiliaria.ai.arco.public.successNote')}
           </p>
           <button
             type="button"
             onClick={resetForm}
-            className="text-xs text-[#1A40FF] cursor-pointer hover:text-[#1A40FF] transition-colors mt-2 block mx-auto"
+            className="text-caption text-[#1A40FF] cursor-pointer hover:text-[#1A40FF] transition-colors mt-2 block mx-auto"
           >
             {t('inmobiliaria.ai.arco.public.submitAnother')}
           </button>
@@ -251,7 +251,7 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
           <div className="space-y-1.5">
             <label
               htmlFor="arco-name"
-              className="text-xs font-normal text-fg-muted"
+              className="text-caption font-normal text-fg-muted"
             >
               {t('inmobiliaria.ai.arco.public.nombreLabel')}
             </label>
@@ -275,7 +275,7 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
           <div className="space-y-1.5">
             <label
               htmlFor="arco-cedula"
-              className="text-xs font-normal text-fg-muted"
+              className="text-caption font-normal text-fg-muted"
             >
               {t('inmobiliaria.ai.arco.public.cedulaLabel')}
             </label>
@@ -306,7 +306,7 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
           <div className="space-y-1.5">
             <label
               htmlFor="arco-email"
-              className="text-xs font-normal text-fg-muted"
+              className="text-caption font-normal text-fg-muted"
             >
               {t('inmobiliaria.ai.arco.public.emailLabel')}
             </label>
@@ -329,7 +329,7 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
           <div className="space-y-1.5">
             <label
               htmlFor="arco-type"
-              className="text-xs font-normal text-fg-muted"
+              className="text-caption font-normal text-fg-muted"
             >
               {t('inmobiliaria.ai.arco.public.tipoLabel')}
             </label>
@@ -366,7 +366,7 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
           <div className="space-y-1.5">
             <label
               htmlFor="arco-description"
-              className="text-xs font-normal text-fg-muted"
+              className="text-caption font-normal text-fg-muted"
             >
               {t('inmobiliaria.ai.arco.public.descripcionLabel')}
             </label>
@@ -386,7 +386,7 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
               {...describir('description')}
             />
             <ErrorDelCampo id="arco-description-error" mensaje={errores.description} />
-            <p className={`text-xs text-right ${descriptionColorClass}`}>
+            <p className={`text-caption text-right ${descriptionColorClass}`}>
               {description.length}/1000
             </p>
           </div>
@@ -408,7 +408,7 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
           </Button>
 
           {/* Legal footer */}
-          <p className="text-xs text-fg-subtle text-center mt-6">
+          <p className="text-caption text-fg-subtle text-center mt-6">
             {t('inmobiliaria.ai.arco.public.legalFooter')}{' '}
             <Link
               href="/privacidad"
@@ -423,7 +423,7 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
 
       {/* Legal footer always shown in success state too */}
       {submitted && (
-        <p className="text-xs text-fg-subtle text-center mt-6">
+        <p className="text-caption text-fg-subtle text-center mt-6">
           {t('inmobiliaria.ai.arco.public.legalFooter')}{' '}
           <Link
             href="/privacidad"

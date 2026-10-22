@@ -36,12 +36,12 @@ export function ElegirInmobiliaria({ inmobiliarias }: { inmobiliarias: Inmobilia
   return (
     <div className="w-full max-w-xl rounded-[22px] border border-border bg-surface p-6 sm:p-8" data-testid="arco-elegir">
       <div className="mb-6 text-center">
-        <p className="mb-2 text-xl font-semibold font-heading text-fg">Leasefy</p>
-        <h1 className="mb-3 text-3xl font-semibold font-heading text-fg">{t('inmobiliaria.ai.arco.public.title')}</h1>
+        <p className="mb-2 text-xl font-medium font-heading text-fg">Leasefy</p>
+        <h1 className="mb-3 text-3xl font-medium font-heading text-fg">{t('inmobiliaria.ai.arco.public.title')}</h1>
         <p className="mx-auto max-w-sm text-sm text-fg-subtle">{t('inmobiliaria.ai.arco.public.elegir.texto')}</p>
       </div>
 
-      <h2 className="mb-3 text-base font-semibold text-fg">{t('inmobiliaria.ai.arco.public.elegir.titulo')}</h2>
+      <h2 className="mb-3 text-base font-medium text-fg">{t('inmobiliaria.ai.arco.public.elegir.titulo')}</h2>
 
       {inmobiliarias === null ? (
         <p className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-fg-muted" role="alert">
@@ -72,7 +72,7 @@ export function ElegirInmobiliaria({ inmobiliarias }: { inmobiliarias: Inmobilia
               {t('inmobiliaria.ai.arco.public.elegir.sinResultados')}
             </p>
           ) : (
-            <Stagger className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+            <Stagger className="divide-y divide-border overflow-hidden rounded-lg border border-border">
               {visibles.map((i) => (
                 <StaggerItem key={i.id}>
                   <Link
@@ -84,7 +84,7 @@ export function ElegirInmobiliaria({ inmobiliarias }: { inmobiliarias: Inmobilia
                       <img src={i.logoUrl} alt="" className="h-8 w-8 shrink-0 rounded-md object-contain" />
                     ) : (
                       <span
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-sm font-semibold text-fg-muted"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-sm font-medium text-fg-muted"
                         aria-hidden
                       >
                         {i.nombre.trim().charAt(0).toUpperCase()}
@@ -92,7 +92,7 @@ export function ElegirInmobiliaria({ inmobiliarias }: { inmobiliarias: Inmobilia
                     )}
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-fg">{i.nombre}</span>
-                      {i.ciudad && <span className="block truncate text-xs text-fg-subtle">{i.ciudad}</span>}
+                      {i.ciudad && <span className="block truncate text-caption text-fg-subtle">{i.ciudad}</span>}
                     </span>
                     <CaretRight className="h-4 w-4 shrink-0 text-fg-subtle" aria-hidden />
                   </Link>

@@ -56,11 +56,11 @@ function LoadingView() {
 function InvalidView() {
   return (
     <div className="flex flex-col items-center gap-4 text-center">
-      <div className="rounded-xl bg-danger-soft p-4">
+      <div className="rounded-lg bg-danger-soft p-4">
         <XCircle weight="duotone" className="h-10 w-10 text-danger" />
       </div>
       <div>
-        <h2 className="text-lg font-semibold text-fg">
+        <h2 className="text-h3 text-fg">
           Invitación no encontrada
         </h2>
         <p className="mt-1 text-sm text-fg-muted">
@@ -69,7 +69,7 @@ function InvalidView() {
       </div>
       <Link
         href="/"
-        className="mt-2 rounded-xl bg-fg px-6 py-2.5 text-sm font-medium text-bg hover:opacity-90 transition-opacity"
+        className="mt-2 rounded-lg bg-fg px-6 py-2.5 text-sm font-medium text-bg hover:opacity-90 transition-opacity"
       >
         Ir al inicio
       </Link>
@@ -81,11 +81,11 @@ function InvalidView() {
 function ExpiredView() {
   return (
     <div className="flex flex-col items-center gap-4 text-center">
-      <div className="rounded-xl bg-warning-soft p-4">
+      <div className="rounded-lg bg-warning-soft p-4">
         <Warning weight="duotone" className="h-10 w-10 text-warning" />
       </div>
       <div>
-        <h2 className="text-lg font-semibold text-fg">
+        <h2 className="text-h3 text-fg">
           Invitación expirada
         </h2>
         <p className="mt-1 text-sm text-fg-muted">
@@ -251,11 +251,11 @@ export default function InvitacionPage() {
 
         {/* Header */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 p-4">
-            <Buildings weight="duotone" className="h-10 w-10 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="inline-flex items-center justify-center rounded-lg bg-[#EEF1FF] p-4">
+            <Buildings weight="duotone" className="h-10 w-10 text-[#1A40FF]" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-fg">
+            <h1 className="text-xl font-medium text-fg">
               {invitation?.agencyName}
             </h1>
             {invitation?.agencyCity && (
@@ -267,7 +267,7 @@ export default function InvitacionPage() {
         </div>
 
         {/* Invitation Info Card */}
-        <div className="rounded-xl border border-border bg-surface p-6 space-y-4">
+        <div className="rounded-lg border border-border bg-surface p-6 space-y-4">
           {user ? (
             // Logged in state
             <>
@@ -278,11 +278,11 @@ export default function InvitacionPage() {
                   invitado a unirte como
                 </p>
               </div>
-              <div className="rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 px-4 py-3 text-center">
-                <p className="text-lg font-semibold text-[#1A40FF] dark:text-[#5570FF]">
+              <div className="rounded-md bg-[#EEF1FF] px-4 py-3 text-center">
+                <p className="text-lg font-medium text-[#1A40FF]">
                   {ROLE_LABELS[invitation?.role ?? ''] ?? invitation?.role}
                 </p>
-                <p className="text-xs text-fg-muted mt-0.5">
+                <p className="text-caption text-fg-muted mt-0.5">
                   en {invitation?.agencyName}
                 </p>
               </div>
@@ -291,15 +291,15 @@ export default function InvitacionPage() {
             // Not logged in state
             <>
               <div>
-                <p className="text-sm text-fg-muted font-medium uppercase tracking-wide text-xs mb-1">
+                <p className="text-sm text-fg-muted font-medium uppercase tracking-wide text-caption mb-1">
                   Rol asignado
                 </p>
-                <p className="text-base font-semibold text-fg">
+                <p className="text-base font-medium text-fg">
                   {ROLE_LABELS[invitation?.role ?? ''] ?? invitation?.role}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-fg-muted font-medium uppercase tracking-wide text-xs mb-1">
+                <p className="text-sm text-fg-muted font-medium uppercase tracking-wide text-caption mb-1">
                   Invitado como
                 </p>
                 <p className="text-sm text-fg-muted">
@@ -311,7 +311,7 @@ export default function InvitacionPage() {
 
           {/* Expiry date */}
           {invitation?.expiresAt && (
-            <p className="text-xs text-fg-subtle border-t border-border-faint pt-3">
+            <p className="text-caption text-fg-subtle border-t border-border-faint pt-3">
               Válida hasta el {formatExpiry(invitation.expiresAt)}
             </p>
           )}
@@ -332,7 +332,7 @@ export default function InvitacionPage() {
               <button
                 onClick={handleAccept}
                 disabled={accepting || declining}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1A40FF] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed px-6 py-3 text-sm font-medium text-white transition-colors"
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#1A40FF] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed px-6 py-3 text-sm font-medium text-white transition-colors"
               >
                 {accepting && <SpinnerGap className="h-4 w-4 animate-spin" />}
                 {accepting ? 'Aceptando…' : 'Aceptar invitación'}
@@ -340,7 +340,7 @@ export default function InvitacionPage() {
               <button
                 onClick={handleDecline}
                 disabled={accepting || declining}
-                className="w-full rounded-xl border border-danger/30 px-6 py-3 text-sm font-medium text-danger hover:bg-danger-soft disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                className="w-full rounded-lg border border-danger/30 px-6 py-3 text-sm font-medium text-danger hover:bg-danger-soft disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {declining ? 'Rechazando…' : 'Rechazar invitación'}
               </button>
@@ -350,7 +350,7 @@ export default function InvitacionPage() {
             <>
               <Link
                 href={registerUrl}
-                className="block w-full text-center rounded-xl bg-[#1A40FF] hover:opacity-90 px-6 py-3 text-sm font-medium text-white transition-colors"
+                className="block w-full text-center rounded-lg bg-[#1A40FF] hover:opacity-90 px-6 py-3 text-sm font-medium text-white transition-colors"
               >
                 Completar registro para unirme
               </Link>
@@ -367,13 +367,13 @@ export default function InvitacionPage() {
             <>
               <Link
                 href={loginUrl}
-                className="block w-full text-center rounded-xl bg-[#1A40FF] hover:opacity-90 px-6 py-3 text-sm font-medium text-white transition-colors"
+                className="block w-full text-center rounded-lg bg-[#1A40FF] hover:opacity-90 px-6 py-3 text-sm font-medium text-white transition-colors"
               >
                 Iniciar sesión para aceptar
               </Link>
               <Link
                 href={registerUrl}
-                className="block w-full text-center rounded-xl border border-border px-6 py-3 text-sm font-medium text-fg-muted hover:bg-surface-muted transition-colors"
+                className="block w-full text-center rounded-lg border border-border px-6 py-3 text-sm font-medium text-fg-muted hover:bg-surface-muted transition-colors"
               >
                 Crear cuenta nueva
               </Link>
@@ -389,7 +389,7 @@ export default function InvitacionPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-fg-subtle">
+        <p className="text-center text-caption text-fg-subtle">
           ¿Necesitas ayuda?{' '}
           <Link href="/ayuda" className="underline hover:text-fg-muted">
             Visita el centro de ayuda

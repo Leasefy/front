@@ -129,7 +129,6 @@ export function PolicyStepForm({ isSubmitting, onSubmit, submitError }: PolicySt
         ) : (
           <>
             Continuar
-            <ArrowRight className="w-4 h-4" />
           </>
         )}
       </Button>

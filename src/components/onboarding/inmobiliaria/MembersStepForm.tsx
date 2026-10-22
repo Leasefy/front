@@ -426,7 +426,7 @@ export function MembersStepForm({
             {/* 12rem: «Asesor comercial», el rol más largo, cabe en UNA línea. */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
               <div>
-                <label htmlFor={`members.${index}.email`} className="mb-1.5 block text-caption font-semibold text-fg">
+                <label htmlFor={`members.${index}.email`} className="mb-1.5 block text-caption font-medium text-fg">
                   Correo
                 </label>
                 <Input
@@ -449,7 +449,7 @@ export function MembersStepForm({
               </div>
 
               <div>
-                <label htmlFor={`members.${index}.role`} className="mb-1.5 block text-caption font-semibold text-fg">
+                <label htmlFor={`members.${index}.role`} className="mb-1.5 block text-caption font-medium text-fg">
                   Rol
                 </label>
                 <Controller
@@ -488,7 +488,7 @@ export function MembersStepForm({
             <div>
               {/* Opcional: sin nombre, el equipo muestra el correo hasta que
                   la persona se registre. No se deriva del correo. */}
-              <label htmlFor={`members.${index}.nombre`} className="mb-1.5 block text-caption font-semibold text-fg">
+              <label htmlFor={`members.${index}.nombre`} className="mb-1.5 block text-caption font-medium text-fg">
                 Nombre y apellido <span className="font-normal text-fg-subtle">(opcional)</span>
               </label>
               <Input

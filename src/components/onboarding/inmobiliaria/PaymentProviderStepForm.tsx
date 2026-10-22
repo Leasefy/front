@@ -171,7 +171,6 @@ export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }:
         ) : (
           <>
             Continuar
-            <ArrowRight className="w-4 h-4" />
           </>
         )}
       </Button>

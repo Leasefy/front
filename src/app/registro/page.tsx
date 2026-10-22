@@ -299,7 +299,7 @@ function RegistroContent() {
       } else {
         setFormError(
           mensajeDeSupabase(err, {
-            porDefecto: 'Error al crear la cuenta. Intenta de nuevo.',
+            porDefecto: 'No se pudo crear la cuenta. Vuelve a intentarlo.',
             accion: 'crear tu cuenta',
           }),
         );

@@ -407,7 +407,7 @@ function ReenvioDeConfirmacion({
 }
 
 /** Lo que dice el login cuando el error no se reconoce (nunca el inglés de Supabase). */
-const POR_DEFECTO_AL_ENTRAR = 'Error al iniciar sesión. Intenta de nuevo.';
+const POR_DEFECTO_AL_ENTRAR = 'No pudimos iniciar tu sesión. Vuelve a intentarlo.';
 
 /**
  * Los errores de Supabase al crear la cuenta que son de UN campo: van debajo

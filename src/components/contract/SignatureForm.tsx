@@ -200,7 +200,7 @@ export function SignatureForm({
             <div>
               <p className="font-semibold text-success">{textos?.firmado ?? 'Contrato firmado'}</p>
               <p className="text-sm text-success">
-                {signerName ? `Por ${signerName}` : 'Firma completada exitosamente'}
+                {signerName ? `Por ${signerName}` : 'Listo: la firma quedó registrada'}
               </p>
             </div>
           </div>

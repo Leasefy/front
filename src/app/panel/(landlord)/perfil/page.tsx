@@ -305,7 +305,7 @@ export default function PropietarioPerfilPage() {
 
   const processFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      toast.error(locale === 'es' ? 'Por favor selecciona una imagen' : 'Please select an image');
+      toast.error(locale === 'es' ? 'Elige una imagen (JPG o PNG)' : 'Please select an image');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {

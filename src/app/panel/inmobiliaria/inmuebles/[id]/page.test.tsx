@@ -117,32 +117,48 @@ vi.mock('@/lib/hooks/useProperties', () => ({
 }));
 
 vi.mock('@/components/inmobiliaria/ConsignacionHeader', () => ({
+  // La cabecera de verdad se prueba en su archivo; acá sólo el cableado. Desde el
+  // 21-10 las migas (con el título) y «Pedir cita» viajan como `migas` y
+  // `accionPrevia`, y la cabecera las pinta en su fila.
   ConsignacionHeader: ({
     propertyThumbnailUrl,
     onViewPortal,
     fechaDeTerminacion,
     contratoVigente,
+    migas,
+    accionPrevia,
   }: {
     propertyThumbnailUrl?: string;
     onViewPortal?: () => void;
     fechaDeTerminacion?: string | null;
     contratoVigente?: boolean;
+    migas?: React.ReactNode;
+    accionPrevia?: React.ReactNode;
   }) =>
-    React.createElement('button', {
-      'data-testid': 'view-portal-stub',
-      'data-thumbnail': propertyThumbnailUrl ?? '',
-      'data-fecha-terminacion': fechaDeTerminacion ?? '',
-      'data-contrato-vigente': contratoVigente ? '1' : '0',
-      onClick: onViewPortal,
-    }),
+    React.createElement(
+      React.Fragment,
+      null,
+      migas ?? null,
+      accionPrevia ?? null,
+      React.createElement('button', {
+        'data-testid': 'view-portal-stub',
+        'data-thumbnail': propertyThumbnailUrl ?? '',
+        'data-fecha-terminacion': fechaDeTerminacion ?? '',
+        'data-contrato-vigente': contratoVigente ? '1' : '0',
+        onClick: onViewPortal,
+      }),
+    ),
 }));
 
 vi.mock('@/components/inmobiliaria/ConsignacionDetailSections', () => ({
-  PropertyInfoSection: () => null,
+  TerminosDelMandatoSection: () => null,
   PropietarioSection: () => null,
   AgenteSection: () => null,
-  CurrentLeaseSection: () => null,
   DocumentsSection: () => null,
+}));
+
+vi.mock('@/components/inmobiliaria/ficha/FichaDelInmueble', () => ({
+  FichaDelInmueble: () => null,
 }));
 
 vi.mock('@/components/inmobiliaria/ActaEntregaView', () => ({
@@ -364,6 +380,12 @@ describe('<ConsignacionDetailPage> — mandato TERMINADO (Nico, 2026-09-13: «es
     expect(getHistorialMock).not.toHaveBeenCalled();
     const cita = document.body.querySelector<HTMLButtonElement>('[data-testid="pedir-cita"]')!;
     expect(cita.disabled).toBe(false);
+  });
+
+  it('🔴 revisión 21-10: arrendado (contrato vigente) no ofrece «Pedir cita»: el back rechaza la visita con 409', () => {
+    useConsignacionMock.mockReturnValue({ consignacion: { ...BASE_CONSIGNACION, arrendado: true, availability: 'rented' } });
+    renderPage();
+    expect(document.body.querySelector('[data-testid="pedir-cita"]')).toBeNull();
   });
 
   it('terminado: «Pedir cita» queda deshabilitado con el porqué, y la fecha sale del evento del historial', async () => {

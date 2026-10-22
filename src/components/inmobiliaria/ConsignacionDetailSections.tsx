@@ -1,7 +1,6 @@
 'use client';
 
 import { FALTA_EL_PORCENTAJE } from '@/lib/inmuebles/participaciones-desconocidas';
-import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { useRef, useState } from 'react';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InvitarAlPortal } from './InvitarAlPortal';
@@ -9,12 +8,9 @@ import Link from 'next/link';
 import { conRegreso } from '@/lib/nav/ruta-de-regreso';
 import {
   User,
-  Buildings,
   Bank,
   Phone,
   Envelope,
-  MapPin,
-  CalendarBlank,
   ArrowRight,
   CurrencyDollar,
   FileText,
@@ -22,7 +18,6 @@ import {
   UserCircle,
   Briefcase,
   ArrowsClockwise,
-  HouseLine,
   Users,
   UploadSimple,
 } from '@phosphor-icons/react';
@@ -37,10 +32,10 @@ import { Avatar, IconButton, buttonVariants } from '@leasefy/cadence';
 import { ContratoPdfModal } from './ContratoPdfModal';
 import type { Consignacion, Copropietario, Propietario, Agente, AgenteRole } from '@/lib/types/inmobiliaria';
 import { formatParticipacion } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
-import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
+import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { useTr } from '@/lib/i18n/use-tr';
 import { inventarioDeLaFicha, useActasDelMandato } from '@/lib/actas/actas-del-mandato';
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 
@@ -72,7 +67,7 @@ interface SectionCardProps {
   className?: string;
 }
 
-function SectionCard({ title, icon, children, className }: SectionCardProps) {
+export function SectionCard({ title, icon, children, className }: SectionCardProps) {
   return (
     // Sin entrada propia: la ficha entera entra con su `CrossFade` al llegar
     // de la carga (y con el `template.tsx` al navegar).
@@ -96,63 +91,84 @@ function SectionCard({ title, icon, children, className }: SectionCardProps) {
 }
 
 // ============================================================================
-// Property Info Section
+// Términos del mandato
 // ============================================================================
 
-interface PropertyInfoSectionProps {
+interface TerminosDelMandatoSectionProps {
   consignacion: Consignacion;
+  /** Abre «Editar» (para poner la fecha de vencimiento que falta). */
+  onEditar?: () => void;
 }
 
-export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) {
+/**
+ * Lo pactado con el propietario: desde cuándo, hasta cuándo, la comisión y el
+ * mínimo de arriendo (revisión de diseño de la ficha, 21-10-2026).
+ *
+ * Antes vivía en la portada («Desde · Comisión») y en «Información del
+ * inmueble», que además repetía la dirección y llamaba «Fecha inicio contrato»
+ * al inicio del MANDATO —al lado del fin del ARRIENDO se leía como un solo
+ * contrato de 2024 a 2027—. Ahora va en «Mandato y giro», con su nombre, y el
+ * mandato sin fecha de vencimiento lo dice aquí con su salida.
+ */
+export function TerminosDelMandatoSection({ consignacion, onEditar }: TerminosDelMandatoSectionProps) {
   const { t, formatDate } = useI18n();
+  const tr = useTr();
+  const terminada = consignacion.status === 'terminated';
+  const sinVencimiento = !consignacion.contractEndDate;
+  const ROTULO = 'font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle';
+  const VALOR = 'mt-1.5 whitespace-nowrap text-[15px] font-medium tabular-nums text-fg';
 
   return (
-    <SectionCard title={t('inmobiliaria.consignaciones.detail.propertyInfo')} icon={<Buildings className="w-4 h-4" />}>
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.fullAddress')}</p>
-            <p className="text-sm font-medium text-fg flex items-start gap-1.5">
-              <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-fg-subtle" />
-              {consignacion.propertyAddress}
-            </p>
-          </div>
-          <div>
-            <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.zoneCity')}</p>
-            <p className="text-sm font-medium text-fg">
-              {barrioYCiudad(consignacion.propertyZone, consignacion.propertyCity) || '—'}
-            </p>
-          </div>
+    <SectionCard title={tr('Términos del mandato')} icon={<FileText className="w-4 h-4" />}>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4" data-testid="terminos-del-mandato">
+        <div className="min-w-0">
+          <dt className={ROTULO}>{tr('Mandato desde')}</dt>
+          <dd className={VALOR}>{formatDate(consignacion.contractDate)}</dd>
         </div>
+        <div className="min-w-0">
+          <dt className={ROTULO}>{tr('Vence')}</dt>
+          <dd className={cn(VALOR, sinVencimiento && 'font-normal text-fg-muted')}>
+            {consignacion.contractEndDate ? formatDate(consignacion.contractEndDate) : tr('Sin fecha')}
+          </dd>
+        </div>
+        <div className="min-w-0">
+          <dt className={ROTULO}>
+            {consignacion.listingType === 'sale'
+              ? t('inmobiliaria.consignaciones.header.saleCommission')
+              : t('inmobiliaria.consignaciones.header.commission')}
+          </dt>
+          <dd className={cn(VALOR, 'font-mono')} data-testid="comision-del-mandato">{textoDeLaComision(consignacion)}</dd>
+        </div>
+        {/* `> 0` y no `&&` a secas: con `0` React pinta el «0» suelto. */}
+        {!!consignacion.minimumTerm && consignacion.minimumTerm > 0 ? (
+          <div className="min-w-0">
+            <dt className={ROTULO}>{tr('Arriendo mínimo')}</dt>
+            <dd className={VALOR}>
+              <span className="font-mono">{consignacion.minimumTerm}</span> {t('inmobiliaria.consignaciones.detail.months')}
+            </dd>
+          </div>
+        ) : null}
+      </dl>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-3 border-t border-border-faint dark:border-border-strong">
-          <div>
-            <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.contractStartDate')}</p>
-            <p className="text-sm font-medium text-fg flex items-center gap-1.5">
-              <CalendarBlank className="w-4 h-4 text-fg-subtle" />
-              {formatDate(consignacion.contractDate)}
-            </p>
-          </div>
-          {consignacion.contractEndDate && (
-            <div>
-              <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.contractEndDate')}</p>
-              <p className="text-sm font-medium text-fg flex items-center gap-1.5">
-                <CalendarBlank className="w-4 h-4 text-fg-subtle" />
-                {formatDate(consignacion.contractEndDate)}
-              </p>
-            </div>
-          )}
-          {/* `> 0` y no `&&` a secas: con `0` React pinta el «0» suelto. */}
-          {!!consignacion.minimumTerm && consignacion.minimumTerm > 0 && (
-            <div>
-              <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.minimumTerm')}</p>
-              <p className="text-sm font-medium text-fg">
-                {consignacion.minimumTerm} {t('inmobiliaria.consignaciones.detail.months')}
-              </p>
-            </div>
-          )}
+      {sinVencimiento && !terminada ? (
+        <div
+          className="mt-5 flex flex-col gap-3 border-t border-border-faint pt-5 dark:border-border-strong sm:flex-row sm:items-center sm:justify-between"
+          data-testid="mandato-sin-vencimiento"
+        >
+          <p className="flex min-w-0 items-start gap-2.5 text-body-sm text-fg-muted">
+            <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-warning-500" aria-hidden="true" />
+            <span>
+              <span className="font-medium text-fg">{tr('El mandato no tiene fecha de vencimiento.')}</span>{' '}
+              {tr('Con la fecha, Leasefy le avisa al asesor y al gerente 30 días antes.')}
+            </span>
+          </p>
+          {onEditar ? (
+            <Button variant="secondary" size="sm" hideArrow className="shrink-0 self-start sm:self-auto" onClick={onEditar}>
+              {tr('Poner la fecha')}
+            </Button>
+          ) : null}
         </div>
-      </div>
+      ) : null}
     </SectionCard>
   );
 }
@@ -635,191 +651,6 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
           />
         </div>
       </div>
-    </SectionCard>
-  );
-}
-
-// ============================================================================
-// Current Lease Section
-// ============================================================================
-
-interface CurrentLeaseSectionProps {
-  consignacion: Consignacion;
-}
-
-/**
- * 🔴 Nico, 2026-09-12: «no veo como información en el inmueble al inquilino,
- * que también se debería de poder hablarle por mensajes de Leasefy».
- *
- * Hasta acá esta tarjeta mostraba un nombre y nada más —
- * `currentTenantName`, un texto suelto que la activación copia — y el botón
- * «Ver contrato» estaba apagado con un «próximamente». Ahora el back manda el
- * inquilino del contrato vigente (`consignacion.inquilino`): quién es, cómo
- * contactarlo, a qué cuenta escribirle y con qué contrato. De los 1.836
- * contratos migrados de Nico, 1.799 tienen usuario asociado.
- *
- * El nombre suelto sigue siendo la caída: contra un back viejo, o contra una
- * consignación marcada como arrendada sin contrato vigente detrás, la tarjeta
- * muestra lo que siempre mostró en vez de desaparecer.
- */
-export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) {
-  const { t, formatDate } = useI18n();
-  const inquilino = consignacion.inquilino ?? null;
-  const nombre = inquilino?.nombre ?? consignacion.currentTenantName;
-  // Con contrato vigente hay inquilino aunque la disponibilidad diga otra
-  // cosa: el contrato es el hecho, `availability` es una columna que alguien
-  // pudo dejar desactualizada.
-  const hasLease = inquilino !== null || (consignacion.availability === 'rented' && nombre);
-
-  return (
-    <SectionCard title={t('inmobiliaria.consignaciones.detail.currentLease')} icon={<HouseLine className="w-4 h-4" />}>
-      {hasLease ? (
-        <div className="space-y-4">
-          {/* Tenant Info */}
-          <div className="flex items-center gap-3">
-            <Avatar name={nombre ?? ''} size="lg" />
-            <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-fg" data-testid="inquilino-nombre">{nombre}</h4>
-              <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                {/* «Documento» y no «CC»: ni `User.rut` ni
-                    `Contract.tenantDocument` guardan de qué tipo es, y en un
-                    inmueble arrendado a una empresa sería un NIT. Poner la
-                    sigla acá sería inventarla. */}
-                {inquilino?.documento
-                  ? `${t('inmobiliaria.consignaciones.detail.currentTenant')} · Documento ${inquilino.documento}`
-                  : t('inmobiliaria.consignaciones.detail.currentTenant')}
-              </p>
-            </div>
-          </div>
-
-          {/*
-           * Cómo hablarle. Los mismos tres caminos que el propietario, y por
-           * la misma razón: el correo y el teléfono se van del producto —lo
-           * que se habla ahí no queda en ningún lado— y el hilo de Leasefy
-           * queda y lo ve cualquier miembro de la inmobiliaria.
-           */}
-          {inquilino && (inquilino.correo || inquilino.telefono || inquilino.cuentaDePortalId) ? (
-            <div className="flex items-center gap-2" data-testid="contacto-inquilino">
-              {inquilino.correo && (
-                <a
-                  href={`mailto:${inquilino.correo}`}
-                  className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex-1 justify-center gap-2')}
-                >
-                  <Envelope className="w-4 h-4" />
-                  {t('inmobiliaria.consignaciones.detail.email')}
-                </a>
-              )}
-              {inquilino.telefono && (
-                <a
-                  href={`tel:${inquilino.telefono}`}
-                  className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex-1 justify-center gap-2')}
-                >
-                  <Phone className="w-4 h-4" />
-                  {t('inmobiliaria.consignaciones.detail.call')}
-                </a>
-              )}
-              {inquilino.cuentaDePortalId && (
-                <BotonEnviarMensaje
-                  counterpartId={inquilino.cuentaDePortalId}
-                  etiqueta="Mensaje"
-                  className="flex-1 justify-center gap-2"
-                />
-              )}
-            </div>
-          ) : null}
-
-          {/*
-           * Sin cuenta no hay a quién escribirle, y eso se DICE. Esconder el
-           * botón se lee como «falta la función» (Nico, 2026-09-12). Acá no va
-           * un «Invitar» como en el propietario: al inquilino la cuenta se la
-           * crea la migración y las que faltan se reenvían por lote desde
-           * Inquilinos, que es donde están todas juntas. Son 16 de 730 en la
-           * cartera real.
-           */}
-          {inquilino && !inquilino.cuentaDePortalId ? (
-            <p
-              className="rounded-lg bg-surface-muted px-4 py-3 text-xs text-fg-muted dark:bg-ink dark:text-fg-subtle"
-              data-testid="inquilino-sin-cuenta"
-            >
-              Todavía no tiene cuenta en Leasefy, así que no se le puede
-              escribir por aquí. Su invitación se reenvía desde{' '}
-              <Link href="/panel/inmobiliaria/inquilinos" className="underline">
-                Inquilinos
-              </Link>
-              .
-            </p>
-          ) : null}
-
-          {/* Lease Details */}
-          <div className="grid grid-cols-2 gap-3">
-            {consignacion.leaseEndDate && (
-              <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
-                <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.leaseEnd')}</p>
-                <p className="text-sm font-medium text-fg">
-                  {formatDate(consignacion.leaseEndDate)}
-                </p>
-              </div>
-            )}
-            <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
-              <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.monthlyRentLabel')}</p>
-              <p className="text-sm font-medium text-fg">
-                {/* A SALE mandate can never have `availability: 'RENTED'`
-                    (contract-addendum-2.md §A.7 rule R4), so `monthlyRent`
-                    is unreachable-null here — narrow the type, never coalesce. */}
-                {consignacion.canonPorConfirmar
-                  ? TEXTO_CANON_POR_CONFIRMAR
-                  : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
-              </p>
-            </div>
-          </div>
-
-          {/*
-           * Ver el contrato. Estuvo apagado con un «próximamente» desde que
-           * existe la tarjeta, no porque la pantalla faltara —
-           * `/panel/inmobiliaria/contratos/[id]` existe — sino porque acá no
-           * se sabía CUÁL contrato. Ahora el inquilino lo trae.
-           */}
-          {inquilino ? (
-            <Button asChild variant="secondary" hideArrow className="w-full">
-              <Link
-                href={conRegreso(
-                  `/panel/inmobiliaria/contratos/${inquilino.contractId}`,
-                  `/panel/inmobiliaria/inmuebles/${consignacion.id}`,
-                )}
-                data-testid="ver-contrato-del-inquilino"
-              >
-                <FileText className="w-4 h-4" />
-                {t('inmobiliaria.consignaciones.detail.viewLeaseContract')}
-              </Link>
-            </Button>
-          ) : (
-            <Button
-              variant="secondary"
-              hideArrow
-              disabled
-              /* No es «próximamente»: la pantalla del contrato existe y el
-                 botón de al lado lleva a ella. Lo que falta es el CONTRATO, y
-                 el aviso tiene que decir eso — culpar al producto de un estado
-                 del dato manda a la gente a esperar una función que ya está. */
-              title={t('inmobiliaria.consignaciones.detail.sinContratoTodavia')}
-              className="w-full"
-            >
-              <FileText className="w-4 h-4" />
-              {t('inmobiliaria.consignaciones.detail.viewLeaseContract')}
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="text-center py-6">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center">
-            <HouseLine className="w-6 h-6 text-fg-subtle" />
-          </div>
-          <p className="text-fg-muted dark:text-fg-subtle font-medium mb-1">{t('inmobiliaria.consignaciones.detail.noTenant')}</p>
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
-            {t('inmobiliaria.consignaciones.detail.propertyAvailable')}
-          </p>
-        </div>
-      )}
     </SectionCard>
   );
 }

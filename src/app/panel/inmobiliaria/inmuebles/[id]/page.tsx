@@ -1,5 +1,10 @@
 'use client';
-import { SituacionComercialDelInmueble } from '@/components/comercial/SituacionComercial';
+import { AvisoDelMandatoQueVence } from '@/components/comercial/SituacionComercial';
+import { useVacanciaYMandatos } from '@/lib/comercial/use-vacancia-y-mandatos';
+import { esVacanciaLarga } from '@/lib/comercial/comercial';
+import { FranjaDelArriendo } from '@/components/inmobiliaria/ficha/FranjaDelArriendo';
+import { FichaDelInmueble } from '@/components/inmobiliaria/ficha/FichaDelInmueble';
+import { tieneCoordenadas } from '@/components/map/coordenadas';
 import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
 import { useAsesores, rolDelAsesor } from '@/lib/hooks/use-asesores';
 import { CandidatosDelInmueble } from '@/components/inmobiliaria/CandidatosDelInmueble';
@@ -48,10 +53,9 @@ import type { PropertyAvailability, Consignacion } from '@/lib/types/inmobiliari
 // Components
 import { ConsignacionHeader } from '@/components/inmobiliaria/ConsignacionHeader';
 import {
-  PropertyInfoSection,
+  TerminosDelMandatoSection,
   PropietarioSection,
   AgenteSection,
-  CurrentLeaseSection,
   DocumentsSection,
 } from '@/components/inmobiliaria/ConsignacionDetailSections';
 import { FirmaElectronicaDeConsignacionSection } from '@/components/inmobiliaria/consignacion/FirmaElectronicaDeConsignacionSection';
@@ -79,42 +83,55 @@ import { registrarServiceWorker } from '@/lib/inventario/sw-inventario';
 import { cuando as cuandoSeGuardo } from '@/components/inmobiliaria/PrepararParaSinSenal';
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
-/** La forma de la ficha, sin datos: cabecera con foto y dos columnas. */
+/**
+ * La forma de la ficha, sin datos (revisión 21-10: el esqueleto tiene la forma de
+ * lo que llega): la fila de las migas con las acciones, la portada con su franja
+ * de tres datos, las pestañas y el Resumen en 2/3 + 1/3.
+ */
 function EsqueletoDeLaFicha() {
   return (
-    <div className="p-4 md:p-6 space-y-6" data-testid="ficha-cargando" aria-busy="true">
+    <div className="space-y-6 p-6 lg:p-8" data-testid="ficha-cargando" aria-busy="true">
       <div className="flex items-center justify-between gap-4">
-        <Skeleton className="h-5 w-56" />
-        <Skeleton className="h-10 w-32 rounded-full" />
+        <Skeleton className="h-5 w-40 sm:w-64" />
+        <div className="flex gap-2">
+          <Skeleton className="hidden h-9 w-40 rounded-full sm:block" />
+          <Skeleton className="h-9 w-24 rounded-full" />
+          <Skeleton className="h-9 w-9 rounded-full" />
+        </div>
       </div>
-      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
+      <div className="overflow-hidden rounded-[28px] border border-border-faint bg-surface dark:border-border-strong dark:bg-bg">
         <div className="flex flex-col lg:flex-row">
-          <Skeleton className="w-full lg:w-80 xl:w-96 h-48 lg:h-72 rounded-none" />
-          <div className="flex-1 p-5 lg:p-6 space-y-4">
+          <Skeleton className="h-44 w-full rounded-none sm:h-56 lg:h-[320px] lg:w-[340px] xl:w-[380px]" />
+          <div className="flex-1 space-y-4 p-6 lg:p-8">
             <div className="flex gap-2">
-              <Skeleton className="h-7 w-28 rounded-full" />
-              <Skeleton className="h-7 w-40 rounded-full" />
+              <Skeleton className="h-[22px] w-24 rounded-[6px]" />
+              <Skeleton className="h-[22px] w-28 rounded-[6px]" />
             </div>
             <Skeleton className="h-9 w-3/4" />
             <Skeleton className="h-5 w-1/2" />
-            <Skeleton className="h-10 w-48" />
-            <div className="flex gap-3 pt-2">
-              <Skeleton className="h-11 w-28 rounded-full" />
-              <Skeleton className="h-11 w-36 rounded-full" />
-              <Skeleton className="h-11 w-40 rounded-full" />
+            <Skeleton className="h-10 w-56" />
+            <div className="grid grid-cols-1 gap-5 border-t border-border-faint pt-6 sm:grid-cols-3 dark:border-border-strong">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-9 w-9 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Skeleton className="h-56 rounded-lg" />
-          <Skeleton className="h-72 rounded-lg" />
-        </div>
-        <div className="space-y-6">
-          <Skeleton className="h-64 rounded-lg" />
-          <Skeleton className="h-40 rounded-lg" />
-        </div>
+      <div className="flex gap-6 border-b border-border-faint pb-3 dark:border-border-strong">
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-4 w-20" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Skeleton className="h-44 rounded-[24px] lg:col-span-2" />
+        <Skeleton className="h-44 rounded-[24px]" />
       </div>
     </div>
   );
@@ -263,7 +280,7 @@ function ConsignacionDetailContent() {
   const { agente, isLoading: cargandoAgentes } = useAgenteDeConsignacion(consignacion?.agenteId);
   // QA 17-10 (IMANA-1): a cargo puede quedar una administradora, que no está
   // en la lista de agentes: su nombre sale de la de asesores (la de los leads).
-  const { asesores } = useAsesores(Boolean(consignacion?.agenteId) && !cargandoAgentes && !agente);
+  const { asesores, isLoading: cargandoAsesores } = useAsesores(Boolean(consignacion?.agenteId) && !cargandoAgentes && !agente);
   const encargado = useMemo(() => {
     if (agente || !consignacion?.agenteId) return null;
     const a = asesores.find((x) => x.userId === consignacion.agenteId);
@@ -317,6 +334,13 @@ function ConsignacionDetailContent() {
    * banner lo dice sin inventarla.
    */
   const terminada = consignacion?.status === 'terminated';
+  /*
+   * Días vacante y mandato que se vence (COMERCIAL, 04-10): UNA lectura para
+   * la ficha. La vacancia va en la franja de la portada; el mandato por vencer,
+   * en un renglón sobre las pestañas. Fuente aparte: si falla, la ficha sigue.
+   */
+  const { porConsignacion: situaciones } = useVacanciaYMandatos(Boolean(consignacion) && !terminada);
+  const situacion = idDelMandato ? situaciones[idDelMandato] : undefined;
   const [fechaDeTerminacion, setFechaDeTerminacion] = useState<string | null>(null);
   useEffect(() => {
     if (!terminada || !idDelMandato) {
@@ -547,9 +571,12 @@ function ConsignacionDetailContent() {
     );
   }
 
+  const conMapa = !!property && tieneCoordenadas(property.latitude, property.longitude);
+  const sinVencimiento = !terminada && !consignacion.contractEndDate;
+
   return (
     <CrossFade swapKey="ficha">
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="space-y-6 p-6 lg:p-8">
       {/* Sin señal la ficha se arma con lo guardado. Decirlo con la FECHA es
           lo único honesto: las tarjetas que piden otras llamadas —fotos,
           propietario, candidatos— van a salir vacías, y sin este cartel eso
@@ -566,60 +593,84 @@ function ConsignacionDetailContent() {
         </div>
       )}
 
-      {/* Breadcrumb + agendar cita */}
-      <div className="flex items-center justify-between gap-4">
-        <nav className="flex items-center gap-2 text-sm min-w-0">
-          <Link
-            href="/panel/inmobiliaria/inmuebles"
-            className="flex items-center gap-1.5 text-fg-muted hover:text-primary transition-colors"
-          >
-            <CaretLeft className="w-4 h-4" />
-            {t('inmobiliaria.portafolio.title')}
-          </Link>
-          <span className="text-border">/</span>
-          <span className="text-fg font-medium truncate max-w-[200px]">
-            {consignacion.propertyTitle}
-          </span>
-        </nav>
-        <Button
-          hideArrow
-          className="shrink-0"
-          onClick={() => setShowCitaModal(true)}
-          // F11: sin inmueble asociado no hay a dónde agendar la visita.
-          disabled={terminada || !consignacion.propertyId}
-          title={
-            terminada
-              ? t('inmobiliaria.consignaciones.header.terminada.pedirCita')
-              : !consignacion.propertyId
-                ? 'Esta consignación no tiene un inmueble asociado: no hay a dónde agendar la visita.'
-                : undefined
-          }
-          data-testid="pedir-cita"
-        >
-          <CalendarPlus className="w-4 h-4" />
-          {t('inmobiliaria.agenda.pedirCita')}
-        </Button>
-      </div>
+      {/*
+        La portada (revisión de diseño 21-10): migas y acciones en una fila —UNA
+        azul, «Editar»—, y la franja con quién vive, hasta cuándo y quién lo lleva.
+      */}
+      <ConsignacionHeader
+        consignacion={consignacion}
+        propertyThumbnailUrl={property?.thumbnailUrl}
+        fotos={property?.images}
+        onVerFotos={() => setFotoAbierta(0)}
+        onEdit={handleEdit}
+        onViewPortal={handleViewPortal}
+        onChangeStatus={handleChangeStatus}
+        onTerminate={handleTerminate}
+        fechaDeTerminacion={fechaDeTerminacion}
+        contratoVigente={contratoVigente}
+        vacanciaLarga={esVacanciaLarga(situacion?.vacancia)}
+        migas={
+          <nav aria-label={t('inmobiliaria.portafolio.title')} className="flex min-w-0 items-center gap-2 text-sm">
+            <Link
+              href="/panel/inmobiliaria/inmuebles"
+              className="flex shrink-0 items-center gap-1.5 text-fg-muted transition-colors hover:text-fg"
+            >
+              <CaretLeft className="h-4 w-4" />
+              {t('inmobiliaria.portafolio.title')}
+            </Link>
+            <span className="hidden text-fg-subtle sm:inline" aria-hidden="true">/</span>
+            <span className="hidden max-w-[min(60ch,40vw)] truncate font-medium text-fg sm:inline">
+              {consignacion.propertyTitle}
+            </span>
+          </nav>
+        }
+        accionPrevia={
+          /*
+           * «Pedir cita» sólo donde se puede: un inmueble arrendado no recibe
+           * visitas (el back las rechaza con 409; revisión 21-10, «lo que no se
+           * puede, no se ofrece»). Terminado, se ve apagado con su porqué.
+           */
+          terminada || !contratoVigente ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              hideArrow
+              className="shrink-0"
+              onClick={() => setShowCitaModal(true)}
+              // F11: sin inmueble asociado no hay a dónde agendar la visita.
+              disabled={terminada || !consignacion.propertyId}
+              title={
+                terminada
+                  ? t('inmobiliaria.consignaciones.header.terminada.pedirCita')
+                  : !consignacion.propertyId
+                    ? 'Esta consignación no tiene un inmueble asociado: no hay a dónde agendar la visita.'
+                    : undefined
+              }
+              aria-label={t('inmobiliaria.agenda.pedirCita')}
+              data-testid="pedir-cita"
+            >
+              <CalendarPlus className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('inmobiliaria.agenda.pedirCita')}</span>
+            </Button>
+          ) : null
+        }
+        franja={
+          <FranjaDelArriendo
+            consignacion={consignacion}
+            asesor={
+              agente
+                ? { nombre: agente.name, rol: t(`inmobiliaria.consignaciones.roles.${agente.role}`) }
+                : encargado
+            }
+            cargandoAsesor={Boolean(consignacion.agenteId) && !agente && !encargado && (cargandoAgentes || cargandoAsesores)}
+            onAsignarAsesor={terminada ? undefined : handleReassignAgent}
+            vacancia={situacion?.vacancia}
+          />
+        }
+      />
 
-      {/* Header */}
-      <div>
-        <ConsignacionHeader
-          consignacion={consignacion}
-          propertyThumbnailUrl={property?.thumbnailUrl}
-          fotos={property?.images}
-          onVerFotos={() => setFotoAbierta(0)}
-          onEdit={handleEdit}
-          onViewPortal={handleViewPortal}
-          onChangeStatus={handleChangeStatus}
-          onTerminate={handleTerminate}
-          fechaDeTerminacion={fechaDeTerminacion}
-          contratoVigente={contratoVigente}
-        />
-      </div>
-
-      {/* COMERCIAL (Nico, 04-10-2026): «Vacante hace 42 días» y el mandato
-          que se vence. Fuente aparte: si falla, la ficha sigue igual. */}
-      {!terminada && idDelMandato && <SituacionComercialDelInmueble consignacionId={idDelMandato} />}
+      {/* El mandato que se vence (faltan 30 días o ya venció): un renglón con su salida. */}
+      {!terminada ? <AvisoDelMandatoQueVence datos={situacion} onPonerFecha={handleEdit} /> : null}
 
       {/*
         GLOW UP (21-10-2026, Nico eligió «Pestañas por tarea»): Resumen · Arrendarlo ·
@@ -635,33 +686,45 @@ function ConsignacionDetailContent() {
             etiqueta: 'Resumen',
             contenido: (
               <>
-                <div>
-                  <PropertyInfoSection consignacion={consignacion} />
-                </div>
-                {/* Las coordenadas viven en el Property (la consignación no las
-                    tiene). Sin propertyId no hay mapa que mostrar. */}
-                {consignacion.propertyId && (
-                  <div>
-                    <UbicacionDelInmueble
+                {/*
+                  Resumen (revisión 21-10): lo que la portada no dice —cómo es el
+                  inmueble y dónde queda—, en 2/3 + 1/3. Quién vive, hasta cuándo y
+                  quién lo lleva ya están arriba, en la franja.
+                */}
+                {consignacion.propertyId ? (
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <FichaDelInmueble
                       property={property}
                       cargando={cargandoProperty}
-                      consignacion={consignacion}
-                      onActualizado={refetchProperty}
+                      onEditar={terminada ? undefined : handleEdit}
+                      className={conMapa ? 'lg:col-span-2' : 'lg:col-span-3'}
+                      ubicacion={
+                        conMapa || (cargandoProperty && !property) ? undefined : (
+                          <UbicacionDelInmueble
+                            variante="fila"
+                            property={property}
+                            cargando={cargandoProperty}
+                            consignacion={consignacion}
+                            onActualizado={refetchProperty}
+                          />
+                        )
+                      }
                     />
+                    {conMapa ? (
+                      <UbicacionDelInmueble
+                        property={property}
+                        cargando={cargandoProperty}
+                        consignacion={consignacion}
+                        onActualizado={refetchProperty}
+                      />
+                    ) : null}
                   </div>
+                ) : (
+                  // Cartera migrada sin inmueble detrás: no hay ficha ni mapa que mostrar, y se dice.
+                  <p className="rounded-[16px] border border-border-faint px-5 py-4 text-body-sm text-fg-muted dark:border-border-strong" data-testid="resumen-sin-inmueble">
+                    Este mandato no tiene un inmueble asociado: no hay características ni ubicación que mostrar.
+                  </p>
                 )}
-                <div>
-                  <CurrentLeaseSection consignacion={consignacion} />
-                </div>
-                <div>
-                  <AgenteSection
-                    agente={agente ?? undefined}
-                    encargado={encargado}
-                    commissionPercent={consignacion.commissionPercent}
-                    isSaleListing={consignacion.listingType === 'sale'}
-                    onReassign={handleReassignAgent}
-                  />
-                </div>
                 {terminada ? <RetiroRegistrado consignacionId={consignacion.id} /> : null}
               </>
             ),
@@ -709,9 +772,28 @@ function ConsignacionDetailContent() {
           },
           {
             id: 'mandato',
-            etiqueta: 'Mandato y giro',
+            // El punto: el mandato sin fecha de vencimiento pide algo aquí.
+            etiqueta: sinVencimiento ? (
+              <span className="inline-flex items-center gap-1.5">
+                Mandato y giro
+                <span className="h-1.5 w-1.5 rounded-full bg-warning-500" aria-hidden="true" />
+                <span className="sr-only">(falta la fecha de vencimiento)</span>
+              </span>
+            ) : (
+              'Mandato y giro'
+            ),
             contenido: (
               <>
+                <TerminosDelMandatoSection consignacion={consignacion} onEditar={terminada ? undefined : handleEdit} />
+                {/* Con un agente asignado, cómo se reparte la comisión (el nombre ya está en la portada). */}
+                {agente ? (
+                  <AgenteSection
+                    agente={agente}
+                    commissionPercent={consignacion.commissionPercent}
+                    isSaleListing={consignacion.listingType === 'sale'}
+                    onReassign={handleReassignAgent}
+                  />
+                ) : null}
                 <div id="propietarios" className="scroll-mt-20">
                   <PropietarioSection
                     propietario={propietario ?? undefined}

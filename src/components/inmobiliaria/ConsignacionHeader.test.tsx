@@ -28,7 +28,7 @@ vi.mock('@/lib/i18n', () => ({
   }),
 }));
 
-import { ConsignacionHeader } from './ConsignacionHeader';
+import { ConsignacionHeader, direccionSinRepetir } from './ConsignacionHeader';
 
 const BASE_CONSIGNACION: Consignacion = {
   id: 'c1',
@@ -259,5 +259,56 @@ describe('<ConsignacionHeader> — el menú no ofrece lo que no existe', () => {
     // …y la acción que sí funciona sigue ahí.
     expect(fuente).toContain('terminateConsignment');
     expect(fuente).toContain('onTerminate?.()');
+  });
+});
+
+describe('<ConsignacionHeader> — la portada de la revisión 21-10', () => {
+  it('pinta las migas, la acción de la página y la franja que le pasan', () => {
+    render({
+      migas: <nav data-testid="migas-stub">Inmuebles</nav>,
+      accionPrevia: <button data-testid="accion-previa-stub">Pedir cita</button>,
+      franja: <dl data-testid="franja-stub" />,
+    });
+    expect(container.querySelector('[data-testid="migas-stub"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="accion-previa-stub"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="franja-stub"]')).not.toBeNull();
+  });
+
+  it('el mandato activo no anuncia «Consignación activa» (es lo normal); otro estado sí', () => {
+    render();
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.status.active');
+    act(() => { root.render(<ConsignacionHeader consignacion={{ ...BASE_CONSIGNACION, status: 'pending' }} />); });
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.status.pending');
+  });
+
+  it('los hechos del mandato (desde, comisión) ya no van en la portada', () => {
+    render();
+    expect(container.querySelector('[data-testid="hechos-del-mandato"]')).toBeNull();
+    expect(container.querySelector('[data-testid="comision-del-mandato"]')).toBeNull();
+  });
+
+  it('el estado se cambia tocándolo: el disparador dice «Cambiar estado» para el lector de pantalla', () => {
+    render();
+    const disparador = container.querySelector('[data-testid="cambiar-estado"]');
+    expect(disparador?.textContent).toContain('inmobiliaria.consignaciones.availability.available');
+    expect(disparador?.textContent).toContain('inmobiliaria.consignaciones.header.changeStatus');
+  });
+
+  it('una sola acción azul: «Editar»; «Ver el aviso» va como secundaria', () => {
+    render();
+    const editar = container.querySelector('[data-testid="header-editar"]');
+    expect(editar).not.toBeNull();
+    expect(findViewPortalButton()).toBeTruthy();
+  });
+});
+
+describe('direccionSinRepetir', () => {
+  const base = { propertyTitle: 'Apartamento en Acuarela del Rio, Caldas', propertyAddress: 'CL 140 SUR CR 47 -108', propertyZone: 'ACUARELA DEL RIO', propertyCity: 'Caldas' };
+  it('no repite barrio ni ciudad que ya dice el título (sin importar mayúsculas ni tildes)', () => {
+    expect(direccionSinRepetir(base)).toBe('CL 140 SUR CR 47 -108');
+    expect(direccionSinRepetir({ ...base, propertyTitle: 'Apartamento en Acuarela del Río' })).toBe('CL 140 SUR CR 47 -108, Caldas');
+  });
+  it('con un título que no los nombra, van los dos', () => {
+    expect(direccionSinRepetir({ ...base, propertyTitle: 'Apto 302' })).toBe('CL 140 SUR CR 47 -108, ACUARELA DEL RIO, Caldas');
   });
 });

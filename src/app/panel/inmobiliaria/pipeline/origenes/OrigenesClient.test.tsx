@@ -128,21 +128,22 @@ afterEach(async () => {
 })
 
 describe('OrigenesClient', () => {
-  it('🔴 «Arriendos cerrados» va antes que «Leads»: es la columna que decide', async () => {
+  it('🔴 «Arriendos cerrados» va antes que «Interesados»: es la columna que decide', async () => {
     await pintar()
     const encabezados = Array.from(
       contenedor.querySelectorAll('[data-testid="tabla-por-origen"] thead th'),
     ).map((th) => th.textContent?.trim())
     expect(encabezados[0]).toBe('Origen')
     expect(encabezados[1]).toBe('Arriendos cerrados')
-    expect(encabezados[2]).toBe('Leads')
+    // Manual de voz (Nico, 22-10): «interesados», sin anglicismos.
+    expect(encabezados[2]).toBe('Interesados')
   })
 
   it('🔴 un portal que no trajo nada sale en CERO, con su etiqueta', async () => {
     await pintar()
     const fila = $('[data-testid="fila-MERCADO_LIBRE"]')
     expect(fila?.textContent).toContain('Mercado Libre')
-    expect(fila?.textContent).toContain('sin leads')
+    expect(fila?.textContent).toContain('sin interesados')
   })
 
   it('la lectura señala el portal que no cerró nada', async () => {

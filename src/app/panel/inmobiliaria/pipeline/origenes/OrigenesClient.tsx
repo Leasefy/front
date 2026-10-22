@@ -130,13 +130,13 @@ export function OrigenesClient() {
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
         seccion="Captación y arriendo"
-        titulo="Origen de los leads"
-        descripcion="Cuántos leads trajo cada portal y cuántos terminaron en arriendo: con eso se decide qué cuenta seguir pagando."
+        titulo="Origen de los interesados"
+        descripcion="Cuántos interesados trajo cada portal y cuántos terminaron en arriendo: con eso se decide qué cuenta seguir pagando."
         ayuda={
-          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: origen de los leads" variante="secundario">
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: origen de los interesados" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">
               <p>
-                La columna que decide es «Arriendos cerrados», no «Leads»: un portal que trae 400 leads y no cierra
+                La columna que decide es «Arriendos cerrados», no «Interesados»: un portal que trae 400 interesados y no cierra
                 ninguno vale menos que uno que trae 12 y cierra 3.
               </p>
               <p>
@@ -196,8 +196,8 @@ export function OrigenesClient() {
               cuandoVacio={
                 <EmptyState
                   icon={TrendUp}
-                  title="Todavía no hay leads en este rango"
-                  description="Cuando entren leads con su origen, acá se ve cuántos trajo cada portal y cuántos cerraron."
+                  title="Todavía no hay interesados en este rango"
+                  description="Cuando entren interesados con su origen, aquí se ve cuántos trajo cada portal y cuántos cerraron."
                 />
               }
             >
@@ -230,7 +230,7 @@ export function OrigenesClient() {
                       <th className="py-2 pr-4 text-right font-medium">
                         Arriendos cerrados
                       </th>
-                      <th className="py-2 pr-4 text-right font-medium">Leads</th>
+                      <th className="py-2 pr-4 text-right font-medium">Interesados</th>
                       <th className="py-2 pr-4 text-right font-medium">
                         Conversión
                       </th>
@@ -249,7 +249,7 @@ export function OrigenesClient() {
                           {r.nombre}
                           {r.leads === 0 ? (
                             <Badge variant="outline" className="ml-2">
-                              sin leads
+                              sin interesados
                             </Badge>
                           ) : null}
                         </td>

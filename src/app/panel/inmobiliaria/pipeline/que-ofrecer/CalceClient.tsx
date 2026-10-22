@@ -259,7 +259,7 @@ export function CalceClient() {
               >
                 <option value="">
                   {tr(leadsDelTablero.length === 0
-                    ? 'Todavía no hay leads en el tablero'
+                    ? 'Todavía no hay interesados en el tablero'
                     : 'Elige un interesado…')}
                 </option>
                 {leadsDelTablero.map((l) => (
@@ -295,7 +295,7 @@ export function CalceClient() {
                 principal
                 cargando={delLead.cargando}
                 error={delLead.errorCrudo}
-                queEs="el calce del lead"
+                queEs="lo que calza con el interesado"
                 onReintentar={delLead.refetch}
                 conservarContenido
                 esqueleto={<EsqueletoTabla filas={3} columnas={2} />}
@@ -447,7 +447,7 @@ export function CalceClient() {
                 icon={House}
                 ilustracion="casa"
                 title={tr("Todavía no hay inmuebles en el tablero")}
-                description={tr("Los inmuebles de esta lista salen de los leads del pipeline: son los que alguien está mirando.")}
+                description={tr("Los inmuebles de esta lista salen de los interesados de Prospección: son los que alguien está mirando.")}
                 action={{ label: 'Ir al pipeline', href: '/panel/inmobiliaria/pipeline' }}
               />
             ) : !propertyId.trim() ? (
@@ -458,7 +458,7 @@ export function CalceClient() {
               <EstadoDeDatos
                 cargando={delInmueble.cargando}
                 error={delInmueble.errorCrudo}
-                queEs="los leads que calzan"
+                queEs="los interesados que calzan"
                 onReintentar={delInmueble.refetch}
                 conservarContenido
                 esqueleto={<EsqueletoTabla filas={3} columnas={2} />}
@@ -474,7 +474,7 @@ export function CalceClient() {
                   ) : leads.length === 0 ? (
                     <EmptyState
                       icon={MagicWand}
-                      title={tr("A ningún lead abierto le calza")}
+                      title={tr("A ningún interesado abierto le calza")}
                       description={tr("Ninguno de los interesados abiertos pasa los requisitos para este inmueble.")}
                     />
                   ) : (

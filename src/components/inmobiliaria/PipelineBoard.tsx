@@ -281,9 +281,9 @@ function DroppableColumn({
                     onClick={onCardClick}
                     motivoBloqueo={
                       esTerminal(item.stage)
-                        ? 'Este prospecto ya terminó: no se mueve de etapa.'
+                        ? 'Este interesado ya terminó: no se mueve de etapa.'
                         : !puedeMover
-                          ? 'No tienes permiso para mover prospectos.'
+                          ? 'No tienes permiso para mover interesados.'
                           : undefined
                     }
                   />

@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AnimatedNumber,
+  Avatar,
   CrossFade,
   Presence,
   StaggerItem,
@@ -851,9 +852,8 @@ export default function LeaseDetailPage() {
               </div>
               <div className="p-6">
                 <div className="flex items-center gap-4 mb-5">
-                  <div className="w-14 h-14 rounded-full bg-primary-soft flex items-center justify-center text-primary text-xl font-semibold">
-                    {lease.landlordName.charAt(0)}
-                  </div>
+                  {/* Cadence 2: el Avatar del sistema, nunca iniciales a mano. */}
+                  <Avatar name={lease.landlordName || 'Propietario'} size="lg" />
                   <div>
                     <p className="font-semibold text-fg">{lease.landlordName}</p>
                     <p className="text-sm text-fg-muted">{locale === 'es' ? 'Propietario verificado' : 'Verified landlord'}</p>

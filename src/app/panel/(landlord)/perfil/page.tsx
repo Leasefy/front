@@ -14,6 +14,7 @@ import {
   Collapse,
   CrossFade,
   IconButton,
+  Avatar,
   motionDuration,
   motionEase,
 } from '@leasefy/cadence';
@@ -519,9 +520,8 @@ export default function PropietarioPerfilPage() {
                     {(editingSection === 'avatar' ? avatarPreview : savedAvatar) ? (
                       <Image src={(editingSection === 'avatar' ? avatarPreview : savedAvatar)!} alt="Avatar" width={112} height={112} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-white dark:bg-[#1A40FF] flex items-center justify-center text-fg uppercase tracking-wide font-mono font-bold text-4xl">
-                        {fullName.charAt(0).toUpperCase()}
-                      </div>
+                      // Cadence 2: el Avatar del sistema (iniciales y tono del nombre), nunca a mano.
+                      <Avatar name={fullName || 'Tú'} size="xl" className="size-full text-4xl" />
                     )}
                   </div>
                   {editingSection === 'avatar' && (

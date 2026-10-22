@@ -9,6 +9,7 @@ import {
   Collapse,
   CrossFade,
   IconButton,
+  Avatar,
   motionDuration,
   motionEase,
 } from '@leasefy/cadence';
@@ -554,9 +555,8 @@ export default function PerfilPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-surface-muted flex items-center justify-center text-fg uppercase tracking-wide font-mono font-bold text-4xl">
-                        {(displayName || user.email).charAt(0).toUpperCase()}
-                      </div>
+                      // Cadence 2: el Avatar del sistema (iniciales y tono del nombre), nunca a mano.
+                      <Avatar name={displayName || user.email || 'Tú'} size="xl" className="size-full text-4xl" />
                     )}
                   </div>
                   {editingSection === 'avatar' && (

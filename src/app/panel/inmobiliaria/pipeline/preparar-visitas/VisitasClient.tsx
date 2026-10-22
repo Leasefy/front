@@ -415,7 +415,8 @@ export function VisitasClient() {
                       </div>
                     ) : null}
 
-                    {puedeEditar ? (
+                    {/* Ronda 22: «No llegó» sólo cuando la visita ya pasó (o para quitarlo si se marcó). */}
+                    {puedeEditar && (v.noShow || new Date(v.visitaEn).getTime() < Date.now()) ? (
                       <Button
                         size="sm"
                         variant="ghost"

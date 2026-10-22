@@ -140,12 +140,10 @@ export function DispersionResumen({
       {/* Header */}
       <div className="px-6 pt-6 pb-4">
         {/* N-14 (QA-PAGOS-95): sin `capitalize` («Resumen Octubre De 2026»). */}
+        {/* Ronda 21: sin el subtítulo «Giros a propietarios», que repetía el título de la pantalla. */}
         <h3 className="text-lg font-semibold text-foreground">
           {t('inmobiliaria.dispersiones.resumen.summaryMonth', { month: monthDisplay })}
         </h3>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {t('inmobiliaria.dispersiones.resumen.ownerDisbursements')}
-        </p>
       </div>
 
       {/* El aviso de «estimado» entra y, al cargar el resumen con el

@@ -234,6 +234,10 @@ export function ListaDeLotes({
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(visibles, { resetKey: filtro });
 
+  // Una columna que dice lo mismo en todas las filas de la página no ayuda a decidir.
+  const conArmadoPor = new Set(pageItems.map((l) => l.creadoPorUserId)).size > 1;
+  const conAprobadoPor = new Set(pageItems.map((l) => l.aprobadoPorUserId ?? '')).size > 1;
+
   const irAlLote = useCallback(
     (id: string) => router.push(`/panel/inmobiliaria/pagos/dispersiones/lotes/${id}`),
     [router],
@@ -314,8 +318,9 @@ export function ListaDeLotes({
                   <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Pagos</TableHead>
                   <TableHead className="text-right">Total</TableHead>
-                  <TableHead>Armado por</TableHead>
-                  <TableHead>Aprobado por</TableHead>
+                  {/* Ronda 21: «Armado por» y «Aprobado por» sólo cuando no dicen lo mismo en todas las filas. */}
+                  {conArmadoPor ? <TableHead>Armado por</TableHead> : null}
+                  {conAprobadoPor ? <TableHead>Aprobado por</TableHead> : null}
                   <TableHead>Armado</TableHead>
                   <TableHead className="sr-only">Abrir</TableHead>
                 </TableRow>
@@ -346,17 +351,32 @@ export function ListaDeLotes({
                       <TableCell className="text-right font-mono tabular-nums text-fg">
                         {plataPareja(pageItems.map((l) => l.totalCop))(lote.totalCop)}
                       </TableCell>
-                      <TableCell className="text-fg-muted">{nombreDe(lote.creadoPorUserId, lote.creadoPorNombre)}</TableCell>
-                      <TableCell className="text-fg-muted">
-                        {lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, lote.aprobadoPorNombre) : '—'}
-                      </TableCell>
+                      {conArmadoPor ? (
+                        <TableCell className="text-fg-muted">{nombreDe(lote.creadoPorUserId, lote.creadoPorNombre)}</TableCell>
+                      ) : null}
+                      {conAprobadoPor ? (
+                        <TableCell className="text-fg-muted">
+                          {lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, lote.aprobadoPorNombre) : '—'}
+                        </TableCell>
+                      ) : null}
                       <TableCell className="font-mono text-xs text-fg-muted">
                         {formatDateTime(lote.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button asChild variant="ghost" size="sm" hideArrow onClick={(e) => e.stopPropagation()}>
-                          <Link href={`/panel/inmobiliaria/pagos/dispersiones/lotes/${lote.id}`}>
-                            Abrir
+                        {/* Ronda 19-21: en el paso 4 la fila dice lo que se viene a hacer con un lote que ya salió
+                            del banco («Marcar pagado»); el detalle es donde se marca, con la referencia. */}
+                        <Button
+                          asChild
+                          variant={sinArmar && lote.estado === 'ARCHIVO_GENERADO' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          hideArrow
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Link
+                            href={`/panel/inmobiliaria/pagos/dispersiones/lotes/${lote.id}`}
+                            data-testid={sinArmar && lote.estado === 'ARCHIVO_GENERADO' ? 'marcar-pagado-en-la-fila' : undefined}
+                          >
+                            {sinArmar && lote.estado === 'ARCHIVO_GENERADO' ? 'Marcar pagado' : 'Abrir'}
                             <ArrowRight className="h-3.5 w-3.5" />
                           </Link>
                         </Button>

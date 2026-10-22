@@ -22,6 +22,7 @@
  * Descargar · Ver resultado · Reintentar · Detener.
  */
 
+import { Button } from '@/components/ui/button';
 import { useState } from 'react'
 import Link from 'next/link'
 import {
@@ -333,18 +334,19 @@ export function FilaDeProceso({
 
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           {p.archivo && !p.archivo.vencido && p.estado === 'TERMINADO' && (
-            <button
+            <Button
               type="button"
+              size="sm"
+              hideArrow
               onClick={() => void descargar()}
               disabled={bajando}
-              className="inline-flex h-7 items-center gap-1.5 rounded-full bg-primary px-3 text-caption font-medium text-primary-fg transition-opacity hover:opacity-90 disabled:opacity-60"
               data-testid="descargar-proceso"
               title={p.archivo.nombre}
             >
               <DownloadSimple weight="bold" className="h-3.5 w-3.5" aria-hidden="true" />
               {bajando ? 'Descargando…' : 'Descargar'}
               {tamano && <span className="font-mono tabular-nums opacity-80">{tamano}</span>}
-            </button>
+            </Button>
           )}
           {p.estado === 'FALLO' &&
             (reintentar ? (

@@ -12,6 +12,7 @@
  * valida con la MISMA regla del back (`lib/marketplace/nombre-corto.ts`).
  */
 
+import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -414,14 +415,9 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
       </div>
 
       <div className={conBarra ? 'hidden' : 'flex justify-end'}>
-        <button
-          type="button"
-          onClick={() => void guardar()}
-          disabled={guardando}
-          className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-[14px] font-medium text-primary-fg hover:bg-primary-600 disabled:opacity-60 active:scale-[0.97]"
-        >
+        <Button type="button" hideArrow onClick={() => void guardar()} disabled={guardando}>
           {guardando ? 'Guardando…' : 'Guardar mi página'}
-        </button>
+        </Button>
       </div>
 
       <div className="rounded-lg border border-border p-4">
@@ -431,12 +427,10 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
           video de Instagram o TikTok de cada uno.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Link
-            href="/panel/inmobiliaria/inmuebles/nuevo"
-            className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-[13.5px] font-medium text-primary-fg hover:bg-primary-600"
-          >
-            Publicar un inmueble
-          </Link>
+          {/* Una sola azul en la sección (Guardar mi página): publicar va en secundaria. */}
+          <Button asChild size="sm" variant="secondary" hideArrow>
+            <Link href="/panel/inmobiliaria/inmuebles/nuevo">Publicar un inmueble</Link>
+          </Button>
           <Link
             href="/panel/inmobiliaria/inmuebles/importar"
             className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface px-4 text-[13.5px] font-medium text-fg hover:border-border-strong"

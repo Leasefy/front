@@ -17,6 +17,7 @@ import { useMemo } from 'react'
 import { ShieldCheck, Info } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
+import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
 import type { Respaldo, ErroresDeRespaldo } from '@/lib/inmobiliaria/respaldo'
 import type { ProtectionOption } from '@/lib/api/applications.types'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
@@ -224,16 +225,22 @@ function Campo({
             pantalla y el texto copiado decían «Vigencia desde(opcional)». */}
         {opcional && <span className="font-normal text-fg-subtle">{' '}(opcional)</span>}
       </label>
-      <Input
-        id={id}
-        type={tipo}
-        value={valor}
-        onChange={(e) => onCambio(e.target.value)}
-        placeholder={placeholder}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${id}-error` : ayuda ? `${id}-ayuda` : undefined}
-        className={cn(error && 'border-danger')}
-      />
+      {tipo === 'date' ? (
+        // Glow up 22-10: el calendario de Cadence, como las demás fechas de la pantalla
+        // (antes el campo nativo del navegador, «dd/mm/yyyy»).
+        <CampoDeFecha id={id} value={valor} onChange={onCambio} invalido={Boolean(error)} testid={`${id}-campo`} />
+      ) : (
+        <Input
+          id={id}
+          type={tipo}
+          value={valor}
+          onChange={(e) => onCambio(e.target.value)}
+          placeholder={placeholder}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : ayuda ? `${id}-ayuda` : undefined}
+          className={cn(error && 'border-danger')}
+        />
+      )}
       {error ? (
         <p id={`${id}-error`} className="text-xs text-danger">
           {error}

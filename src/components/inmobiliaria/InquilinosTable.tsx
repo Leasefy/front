@@ -858,7 +858,7 @@ function TarjetasDeInquilinos({
                   <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">
                     {varios || !principal
                       ? t('inquilinos.tabla.variosInmuebles', { n: persona.arriendos.length })
-                      : `${fechaOGuion(principal.desde, formatDate)} → ${fechaOGuion(principal.hasta, formatDate)}`}
+                      : `${sinDe(fechaOGuion(principal.desde, formatDate))} → ${sinDe(fechaOGuion(principal.hasta, formatDate))}`}
                   </span>
                 </span>
               ) : null}

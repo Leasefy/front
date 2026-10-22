@@ -471,7 +471,7 @@ describe('<DetalleDelLote> — aprobación', () => {
     expect(resultado).toContain('ger***@portofino.co');
     expect(resultado).toContain('PIN para todos los lotes');
     expect(resultado).toContain('Vale hasta');
-    expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Esperando aprobación');
+    expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Por aprobar');
   });
 });
 

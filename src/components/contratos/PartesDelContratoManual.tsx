@@ -307,7 +307,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
             value={valor.propertyId || undefined}
             onChange={elegirInmueble}
             options={opcionesInmueble}
-            placeholder={consignaciones === null ? 'Cargando inmuebles…' : 'Busca por código, título o dirección'}
+            placeholder={consignaciones === null ? 'Cargando inmuebles…' : 'Buscar por código, título o dirección'}
             searchPlaceholder="Escribe #código, título o dirección"
             disabled={consignaciones === null}
             invalid={Boolean(errores.propertyId)}
@@ -363,7 +363,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
                 })
               }}
               options={opcionesInquilino}
-              placeholder={cargandoInquilinos ? 'Cargando inquilinos…' : 'Busca por nombre, correo o teléfono'}
+              placeholder={cargandoInquilinos ? 'Cargando inquilinos…' : 'Buscar por nombre, correo o teléfono'}
               searchPlaceholder="Nombre, correo o teléfono"
               disabled={cargandoInquilinos}
               invalid={Boolean(errores.tenantId)}

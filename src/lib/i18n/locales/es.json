@@ -5808,7 +5808,7 @@
         }
       },
       "table": {
-        "searchPlaceholder": "Buscar por nombre, correo, documento o teléfono...",
+        "searchPlaceholder": "Nombre, documento o teléfono",
         "export": "Exportar",
         "all": "Todos",
         "person": "Persona",
@@ -13362,7 +13362,7 @@
     "subtitulo": "Las personas que viven en los inmuebles que administras, con todos sus arriendos juntos. Carga uno aquí, o trae los que ya tienes en otro sistema con la migración.",
     "queEs": "los inquilinos",
     "queSon": "inquilinos",
-    "buscarPlaceholder": "Buscar por nombre, correo o teléfono",
+    "buscarPlaceholder": "Nombre, correo o teléfono",
     "filtroEstado": "Filtrar por estado del arriendo",
     "filtros": {
       "activos": "Activos",
@@ -13392,7 +13392,7 @@
       "inmueble": "Inmueble",
       "estado": "Estado",
       "canon": "Canon",
-      "vigencia": "Vigencia",
+      "vigencia": "Vence",
       "arriendos": "Arriendos",
       "sinCorreo": "Sin correo",
       "variosInmuebles": "{{n}} inmuebles",

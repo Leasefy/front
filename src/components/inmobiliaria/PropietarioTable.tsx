@@ -334,7 +334,8 @@ export function PropietarioTable({
               <Button
                 variant="secondary"
                 hideArrow
-                className="gap-2"
+                // Ronda 21: a la altura del buscador (44 px).
+                className="h-11 gap-2"
                 aria-expanded={filtrosAbiertos}
                 aria-controls={idDelPanel}
                 onClick={() => setFiltrosAbiertos((v) => !v)}
@@ -354,7 +355,7 @@ export function PropietarioTable({
                 variant="secondary"
                 hideArrow
                 onClick={onExport}
-                className="gap-2"
+                className="h-11 gap-2"
               >
                 <Export className="w-4 h-4" />
                 <span className="text-sm">{t('inmobiliaria.propietario.table.export')}</span>
@@ -576,7 +577,7 @@ export function PropietarioTable({
                       <SinAccesoALaPlata texto={sinAcceso} />
                     ) : hasPending ? (
                       <>
-                        <Badge variant="warning" className="gap-1 tabular-nums">
+                        <Badge variant="warning" className="gap-1 font-mono tabular-nums">
                           <Warning className="w-3.5 h-3.5" />
                           {plata(propietario.pendingBalance)}
                         </Badge>
@@ -841,7 +842,7 @@ function TarjetasDePropietarios({
                         {propietario.totalMonthlyRent ? plata(propietario.totalMonthlyRent) : '—'}
                       </span>
                       {hasPending ? (
-                        <Badge variant="warning" className="gap-1 tabular-nums">
+                        <Badge variant="warning" className="gap-1 font-mono tabular-nums">
                           <Warning className="h-3.5 w-3.5" aria-hidden="true" />
                           {plata(propietario.pendingBalance)}
                         </Badge>

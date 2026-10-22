@@ -475,6 +475,22 @@ function NuevoContratoContent() {
    * prorratea. Si la ruta falla (un back anterior), queda lo de la agencia.
    */
   const [valoresDelBack, setValoresDelBack] = useState<ValoresPorDefectoDelContrato | null>(null);
+  /*
+   * Ronda 21: «No: va fecha a fecha, como tus N contratos vigentes.» — sólo cuando lo que se propone sale
+   * de los contratos vigentes; si no, el texto de siempre con su origen aparte.
+   */
+  const lineaDeFechaAFecha = (() => {
+    const v = valoresDelBack;
+    if (!v || v.prorratear || v.origenDelProrrateo === 'REGLA_DE_LA_CASA') return null;
+    const total = v.contratosVigentes.prorrateados + v.contratosVigentes.fechaAFecha;
+    const iguales = v.contratosVigentes.fechaAFecha;
+    if (total === 0 || iguales === 0) return null;
+    const miles = (n: number) => n.toLocaleString('es-CO');
+    if (total === 1) return 'No: va fecha a fecha, como tu contrato vigente.';
+    return iguales === total
+      ? `No: va fecha a fecha, como tus ${miles(total)} contratos vigentes.`
+      : `No: va fecha a fecha, como ${miles(iguales)} de tus ${miles(total)} contratos vigentes.`;
+  })();
   const inicioDeLosValores = useRef(form.startDate);
   useEffect(() => {
     let vivo = true;
@@ -1629,10 +1645,10 @@ function NuevoContratoContent() {
               error={errorDe('diasDePlazo')}
               hint={
                 valoresDelBack?.reglaDeCobro?.plazoSinFijar === true
-                  ? 'Si no lo pones, los de tu inmobiliaria, que todavía no los fijó: hasta que los fije no corre mora. Días después del vencimiento en los que todavía no corre mora.'
+                  ? 'Días después del vencimiento sin mora. Si no lo pones, los de tu inmobiliaria, que todavía no los fijó: hasta que los fije no corre mora.'
                   : porDefecto?.diasDePlazo != null
-                  ? `Si no lo pones, los de tu inmobiliaria (${porDefecto.diasDePlazo === 1 ? '1 día' : `${porDefecto.diasDePlazo} días`}). Días después del vencimiento en los que todavía no corre mora.`
-                  : 'Si no lo pones, los de tu inmobiliaria. Días después del vencimiento en los que todavía no corre mora.'
+                  ? `Días después del vencimiento sin mora. Si no lo pones, ${porDefecto.diasDePlazo === 1 ? '1 día' : `${porDefecto.diasDePlazo} días`} (los de tu inmobiliaria).`
+                  : 'Días después del vencimiento sin mora. Si no lo pones, los de tu inmobiliaria.'
               }
             >
               <Input
@@ -1657,15 +1673,26 @@ function NuevoContratoContent() {
               <label htmlFor="prorratear-primer-mes" className="block text-sm font-medium text-foreground">
                 {PREGUNTA_DEL_PRORRATEO}
               </label>
-              <p className="text-xs text-muted-foreground" data-testid="explicacion-del-prorrateo">
-                {form.prorratearPrimerMes ? SI_SE_PRORRATEA : NO_SE_PRORRATEA}
-              </p>
-              {/* C-13: de dónde sale lo que se propone (mientras nadie lo cambie). */}
-              {valoresDelBack && form.prorratearPrimerMes === valoresDelBack.prorratear ? (
-                <p className="text-caption text-fg-subtle" data-testid="origen-del-prorrateo">
-                  {porQueSeProponeElProrrateo(valoresDelBack)}
+              {/* Ronda 21: sin prorrateo, UNA línea con su origen adentro («No: va fecha a fecha, como tus 747
+                  contratos vigentes.»); la mecánica de los períodos, en el `title` (el ejemplo fijo «del 20 al
+                  19» se leía como el período real y chocaba con el Resumen). */}
+              {!form.prorratearPrimerMes && lineaDeFechaAFecha ? (
+                <p className="text-caption text-muted-foreground" data-testid="explicacion-del-prorrateo" title={NO_SE_PRORRATEA}>
+                  {lineaDeFechaAFecha}
                 </p>
-              ) : null}
+              ) : (
+                <>
+                  <p className="text-caption text-muted-foreground" data-testid="explicacion-del-prorrateo">
+                    {form.prorratearPrimerMes ? SI_SE_PRORRATEA : NO_SE_PRORRATEA}
+                  </p>
+                  {/* C-13: de dónde sale lo que se propone (mientras nadie lo cambie). */}
+                  {valoresDelBack && form.prorratearPrimerMes === valoresDelBack.prorratear ? (
+                    <p className="text-caption text-fg-subtle" data-testid="origen-del-prorrateo">
+                      {porQueSeProponeElProrrateo(valoresDelBack)}
+                    </p>
+                  ) : null}
+                </>
+              )}
             </div>
             <Switch
               id="prorratear-primer-mes"

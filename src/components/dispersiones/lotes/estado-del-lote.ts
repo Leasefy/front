@@ -32,7 +32,7 @@ export const CAMINO_DEL_LOTE: readonly EstadoDelLote[] = [
 
 export const NOMBRE_DEL_ESTADO: Record<EstadoDelLote, string> = {
   BORRADOR: 'Borrador',
-  ESPERANDO_APROBACION: 'Esperando aprobación',
+  ESPERANDO_APROBACION: 'Por aprobar',
   APROBADO: 'Aprobado',
   ARCHIVO_GENERADO: 'Archivo generado',
   PAGADO: 'Pagado',

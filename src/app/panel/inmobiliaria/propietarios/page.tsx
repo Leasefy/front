@@ -772,16 +772,29 @@ function PropietariosContent() {
             data-testid="cifras-de-propietarios"
             className="rounded-none border-0 border-b border-border"
           >
+            {/* Ronda 21 (390): «Giros atrasados» primero y a lo ancho —es la respuesta de la pantalla—;
+                debajo el canon ENTERO a lo ancho (la plata no se abrevia), con los inmuebles en su línea. */}
             <KpiCard
               label={t('inmobiliaria.propietarios.properties')}
               value={valorDeTile(MILES.format(stats.totalProperties))}
               icon={<Buildings />}
+              className="max-md:hidden"
             />
             <KpiCard
               label={t('inmobiliaria.propietarios.monthlyRevenue')}
               value={plataOculta ? tileSinPlata : valorDeTile(plataDeLasCifras(stats.totalMonthlyRent))}
-              sublabel={plataOculta ? sinAccesoALaPlata : undefined}
+              sublabel={
+                plataOculta ? (
+                  sinAccesoALaPlata
+                ) : kpiSinDato ? undefined : (
+                  // `KpiCard` tipa `sublabel` como texto pero lo pinta como hijo (igual que `value`).
+                  (<span className="md:hidden">
+                    {MILES.format(stats.totalProperties)} {stats.totalProperties === 1 ? 'inmueble' : 'inmuebles'}
+                  </span>) as unknown as string
+                )
+              }
               icon={<CurrencyDollar />}
+              className="max-md:col-span-2"
             />
             {/* Sin dato, la etiqueta tampoco puede decir «Sin pendientes» ni
                 pintarse en verde: es la misma afirmación que el «$0». Sin acceso
@@ -819,6 +832,7 @@ function PropietariosContent() {
                   : undefined
               }
               activa={vistaActual === 'porGirar'}
+              className="max-md:order-first max-md:col-span-2"
               data-testid="cifra-giros-atrasados"
             />
           </FranjaDeCifras>

@@ -19,6 +19,7 @@
  */
 
 import Link from 'next/link';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { Envelope, Phone } from '@phosphor-icons/react';
 import { Avatar, iconButtonVariants } from '@leasefy/cadence';
 
@@ -185,7 +186,7 @@ export function FranjaDelArriendo({
             {consignacion.leaseEndDate ? (
               <>
                 <p className="whitespace-nowrap text-[15px] font-medium tabular-nums text-fg" data-testid="fin-del-arriendo">
-                  {formatDate(consignacion.leaseEndDate)}
+                  {fechaCorta(consignacion.leaseEndDate)}
                 </p>
                 {fin ? (
                   <p

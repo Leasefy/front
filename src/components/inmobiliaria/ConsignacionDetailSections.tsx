@@ -100,7 +100,7 @@ export function TerminosDelMandatoSection({ consignacion, onEditar }: TerminosDe
       <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4" data-testid="terminos-del-mandato">
         <div className="min-w-0">
           <dt className={ROTULO}>{tr('Mandato desde')}</dt>
-          <dd className={VALOR}>{formatDate(consignacion.contractDate)}</dd>
+          <dd className={VALOR}>{fechaCorta(consignacion.contractDate)}</dd>
         </div>
         <div className="min-w-0">
           <dt className={ROTULO}>{tr('Vence')}</dt>

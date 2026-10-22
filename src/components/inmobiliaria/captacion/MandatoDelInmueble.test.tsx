@@ -169,7 +169,8 @@ describe('MandatoDelInmueble', () => {
     const publicar = $('[data-testid="puerta-publicar"]')?.textContent ?? ''
     const giro = $('[data-testid="puerta-giro"]')?.textContent ?? ''
     expect(publicar).toContain('Antes de publicar')
-    expect(publicar).toContain('Mandato firmado')
+    // 22-10: el mandato firmado es el bloque de la firma; la puerta dice «Falta la firma», no lo cuenta como papel.
+    expect(publicar).toContain('Falta la firma')
     // 🔴 El RUT es de la OTRA puerta: no puede aparecer en la de publicar.
     expect(publicar).not.toContain('RUT')
     expect(giro).toContain('Antes del primer giro')
@@ -185,7 +186,8 @@ describe('MandatoDelInmueble', () => {
     api.documentos = vi.fn(() => Promise.resolve({ ...DOCUMENTOS, yaHuboGiros: true }))
     await pintar()
     const giro = $('[data-testid="puerta-giro"]')?.textContent ?? ''
-    expect(giro).toContain('Documentos que faltan')
+    // 22-10 (revisión de diseño): el rótulo pasó a «Para girarle»; lo que se cuida es que no diga «Antes del primer giro».
+    expect(giro).toContain('Para girarle')
     expect(giro).toContain('RUT')
     expect(giro).not.toContain('Faltan 1')
     expect(contenedor.textContent).not.toMatch(/primer giro/i)
@@ -394,7 +396,8 @@ describe('subir un papel del mandato', () => {
   it('cada papel que falta ofrece «Subir»; sin permiso de editar, no', async () => {
     await pintar(true)
     expect($('[data-testid="subir-papel-RUT"]')).not.toBeNull()
-    expect($('[data-testid="subir-papel-MANDATO_FIRMADO"]')).not.toBeNull()
+    // El mandato firmado no se sube como papel: se firma (o se carga el PDF) en su bloque.
+    expect($('[data-testid="subir-papel-MANDATO_FIRMADO"]')).toBeNull()
     act(() => root?.unmount())
     root = createRoot(contenedor)
     await pintar(false)

@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
 import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha'
 import Link from 'next/link'
 import { Switch } from '@/components/ui/switch'
-import { captacionApi } from '@/lib/api/crm.service'
+import { captacionApi, papelesEnPalabras } from '@/lib/api/crm.service'
 import { toast } from '@/components/ui/toast'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
@@ -39,8 +39,8 @@ export function PublicadoEnElMarketplace({
 }) {
   const [inmueble, setInmueble] = useState<InmuebleParaElegir | null>(null)
   const [guardando, setGuardando] = useState(false)
-  /** Cuántos papeles faltan «antes de publicar»; `null` = no se sabe o no falta nada. */
-  const [papelesQueFaltan, setPapelesQueFaltan] = useState<number | null>(null)
+  /** Qué papeles faltan «antes de publicar», nombrados; `null` = no se sabe o no falta nada. */
+  const [papelesQueFaltan, setPapelesQueFaltan] = useState<string | null>(null)
 
   const leer = useCallback(async () => {
     try {
@@ -62,7 +62,7 @@ export function PublicadoEnElMarketplace({
       .sePuedePublicar(consignacionId)
       .then((r) => {
         if (!vivo) return
-        setPapelesQueFaltan(!r.puede && !r.sinMigracion ? (r.falta?.length ?? null) : null)
+        setPapelesQueFaltan(!r.puede && !r.sinMigracion && r.falta?.length ? papelesEnPalabras(r.falta) : null)
       })
       .catch(() => {
         /* Sin el dato, la tarjeta dice lo de siempre. */
@@ -89,10 +89,10 @@ export function PublicadoEnElMarketplace({
 
   // 22-10 (revisión): si faltan papeles «antes de publicar», se dice AQUÍ, junto al
   // interruptor (antes sólo lo decía la pestaña del mandato).
-  const faltanPapeles = !inmueble.publicado && papelesQueFaltan !== null && papelesQueFaltan > 0
+  const faltanPapeles = !inmueble.publicado && !!papelesQueFaltan
   const explicacion = !inmueble.publicado
     ? faltanPapeles
-      ? `No sale en el marketplace: ${papelesQueFaltan === 1 ? 'falta 1 papel' : `faltan ${papelesQueFaltan} papeles`} antes de publicarlo.`
+      ? `Para publicarlo falta: ${papelesQueFaltan}.`
       : 'No sale en el marketplace. Actívalo para publicarlo.'
     : inmueble.seVe
       ? 'Sale en el marketplace de Leasefy.'

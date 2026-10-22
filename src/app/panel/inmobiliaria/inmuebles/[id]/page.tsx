@@ -371,6 +371,8 @@ function ConsignacionDetailContent() {
   // mirando los contratos ACTIVE; `propertyStatus` lo pone el ciclo de vida
   // del contrato; `currentLeaseId` es el arriendo vigente del mandato.
   // `availability` NO cuenta: es lo que alguien marcó a mano.
+  /** Cuántos candidatos esperan decisión (lo dice CandidatosQueEsperan); decide la acción azul. */
+  const [candidatosEsperando, setCandidatosEsperando] = useState(0);
   const contratoVigente =
     consignacion?.arrendado === true ||
     consignacion?.propertyStatus === 'RENTED' ||
@@ -691,7 +693,7 @@ function ConsignacionDetailContent() {
                     cada uno con su botón. Con el mandato terminado no hay nada que poner en regla. */}
                 {/* 22-10 (revisión): disponible, lo primero es quién espera una decisión. */}
                 {!terminada && !contratoVigente ? (
-                  <CandidatosQueEsperan propertyId={consignacion.propertyId} consignacionId={consignacion.id} />
+                  <CandidatosQueEsperan propertyId={consignacion.propertyId} consignacionId={consignacion.id} onCuantos={setCandidatosEsperando} />
                 ) : null}
                 {!terminada ? (
                   <LoQueFaltaDelInmueble
@@ -702,6 +704,8 @@ function ConsignacionDetailContent() {
                     onEditar={handleEdit}
                     onActualizado={refetchProperty}
                     puedeEditar={puedeEditarPortafolio}
+                    // UNA azul: «Revisar las postulaciones» si alguien espera; si no, el paso que sigue.
+                    siguienteEnAzul={candidatosEsperando === 0}
                   />
                 ) : null}
                 {consignacion.propertyId ? (

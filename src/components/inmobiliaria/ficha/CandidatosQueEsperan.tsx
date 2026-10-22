@@ -22,9 +22,12 @@ import { cn } from '@/lib/utils';
 export function CandidatosQueEsperan({
   propertyId,
   consignacionId,
+  onCuantos,
 }: {
   propertyId?: string;
   consignacionId: string;
+  /** Cuántos esperan: la ficha decide con esto cuál es la acción azul. */
+  onCuantos?: (n: number) => void;
 }) {
   const [esperan, setEsperan] = useState<LandlordCandidate[]>([]);
 
@@ -34,7 +37,10 @@ export function CandidatosQueEsperan({
     landlordApplicationsApi
       .getCandidates(propertyId)
       .then((lista) => {
-        if (vivo) setEsperan(lista.filter((c) => ESPERANDO.includes(c.status)));
+        if (!vivo) return;
+        const suyos = lista.filter((c) => ESPERANDO.includes(c.status));
+        setEsperan(suyos);
+        onCuantos?.(suyos.length);
       })
       .catch(() => {
         /* Sin candidatos que mostrar: la pestaña Arrendarlo dice el fallo. */
@@ -42,6 +48,7 @@ export function CandidatosQueEsperan({
     return () => {
       vivo = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `onCuantos` es un aviso, no una dependencia
   }, [propertyId]);
 
   if (esperan.length === 0) return null;
@@ -61,7 +68,8 @@ export function CandidatosQueEsperan({
           {n === 1 ? '1 candidato espera tu decisión' : `${n} candidatos esperan tu decisión`}
         </p>
       </div>
-      <Button asChild size="sm" variant="secondary" hideArrow className="self-start sm:self-auto">
+      {/* Con candidatos esperando, ésta es la acción principal de la ficha. */}
+      <Button asChild size="sm" hideArrow className="self-start sm:self-auto">
         <Link href={`/panel/inmobiliaria/inmuebles/${consignacionId}/candidatos`}>
           {n === 1 ? 'Revisar la postulación' : 'Revisar las postulaciones'}
         </Link>

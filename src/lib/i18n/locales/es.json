@@ -4201,6 +4201,12 @@
           "pedirCita": "La consignación terminó: no se agendan visitas.",
           "nuevaConsignacion": "Nuevo mandato",
           "nuevaConsignacionAyuda": "Para volver a administrar este inmueble."
+        },
+        "estadoDelMandato": {
+          "active": "Mandato vigente",
+          "pending": "Mandato pendiente",
+          "expired": "Mandato vencido",
+          "terminated": "Mandato terminado"
         }
       },
       "filters": {
@@ -4436,7 +4442,7 @@
         "noTenant": "Sin inquilino",
         "propertyAvailable": "Esta propiedad está disponible para arriendo",
         "documents": "Documentos",
-        "consignmentContract": "Contrato de consignación",
+        "consignmentContract": "El mandato en PDF",
         "consignmentContractDesc": "PDF - Documento legal",
         "handoverReport": "Acta de entrega",
         "inventoryItemsCount": "{{count}} ítems en el inventario",
@@ -4450,11 +4456,11 @@
         "consignmentContractGenerate": "Generar desde una plantilla",
         "consignmentContractAttach": "Adjuntar el PDF firmado",
         "consignmentContractReplace": "Reemplazar",
-        "consignmentContractUploading": "Subiendo el contrato…",
-        "consignmentContractUploaded": "Contrato adjuntado",
-        "consignmentContractUploadError": "No se pudo adjuntar el contrato",
+        "consignmentContractUploading": "Subiendo el mandato…",
+        "consignmentContractUploaded": "Listo: se adjuntó el mandato",
+        "consignmentContractUploadError": "No pudimos adjuntar el mandato",
         "consignmentContractOnlyPdf": "Tiene que ser un PDF de hasta 10 MB.",
-        "consignmentContractPreview": "Vista previa del contrato de consignación",
+        "consignmentContractPreview": "Vista previa del mandato",
         "consignmentContractNoPreview": "¿No ves el PDF? Tu navegador puede estar bloqueando el visor.",
         "consignmentContractOpenTab": "Abrir en pestaña nueva",
         "consignmentContractDownload": "Descargar",

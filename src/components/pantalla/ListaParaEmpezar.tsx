@@ -28,7 +28,7 @@
  * cuenta como hecho ni como pendiente, y no se inventa su estado.
  */
 
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useState, type ReactNode, isValidElement, cloneElement, type ReactElement } from 'react';
 import { CaretDown, Check, CircleDashed, WarningCircle } from '@phosphor-icons/react';
 import { Collapse, ProgressRing, Stagger, StaggerItem } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
@@ -64,6 +64,11 @@ export interface ListaParaEmpezarProps {
    * Para pantallas donde la lista se deja lista una vez y el trabajo es otro.
    */
   plegadaAlInicio?: boolean;
+  /**
+   * La acción del paso que SIGUE va en azul (22-10, ficha del inmueble: la única
+   * acción principal de la pantalla es lo que toca hacer ahora).
+   */
+  siguienteEnAzul?: boolean;
   className?: string;
   'data-testid'?: string;
 }
@@ -95,6 +100,7 @@ export function ListaParaEmpezar({
   descripcion,
   recordarComo,
   plegadaAlInicio = false,
+  siguienteEnAzul = false,
   className,
   'data-testid': testId,
 }: ListaParaEmpezarProps) {
@@ -238,7 +244,13 @@ export function ListaParaEmpezar({
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2 pl-9 sm:pl-0">
-                {r.estado === 'listo' ? r.accionListo : r.estado === 'cargando' ? null : r.accion}
+                {r.estado === 'listo'
+                  ? r.accionListo
+                  : r.estado === 'cargando'
+                    ? null
+                    : siguienteEnAzul && r.id === siguiente && isValidElement(r.accion)
+                      ? cloneElement(r.accion as ReactElement<{ variant?: string }>, { variant: 'default' })
+                      : r.accion}
               </div>
             </StaggerItem>
           ))}

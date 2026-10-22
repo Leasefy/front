@@ -25,7 +25,7 @@ import { ListaParaEmpezar, type Requisito } from '@/components/pantalla/ListaPar
 import { Button } from '@/components/ui/button';
 import { tieneCoordenadas } from '@/components/map/coordenadas';
 import { UbicarEnElMapaDialog } from '@/components/inmobiliaria/inmueble/UbicarEnElMapaDialog';
-import { captacionApi } from '@/lib/api/crm.service';
+import { captacionApi, papelesSinLaFirma } from '@/lib/api/crm.service';
 import { useCrm } from '@/lib/hooks/use-crm';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
 import type { Property } from '@/lib/types/property';
@@ -41,6 +41,8 @@ interface LoQueFaltaDelInmuebleProps {
   /** Vuelve a pedir el inmueble después de ubicarlo en el mapa. */
   onActualizado: () => void;
   puedeEditar: boolean;
+  /** La acción del paso que sigue va en azul (si no hay otra acción principal en la ficha). */
+  siguienteEnAzul?: boolean;
 }
 
 function irA(consignacionId: string, pestana: string, ancla?: string) {
@@ -55,6 +57,7 @@ export function LoQueFaltaDelInmueble({
   onEditar,
   onActualizado,
   puedeEditar,
+  siguienteEnAzul = false,
 }: LoQueFaltaDelInmuebleProps) {
   const [ubicando, setUbicando] = useState(false);
   const documentos = useCrm(() => captacionApi.documentos(consignacion.id), [consignacion.id], ['portafolio']);
@@ -80,7 +83,11 @@ export function LoQueFaltaDelInmueble({
 
   // 2 · Los papeles del propietario.
   const d = documentos.datos;
-  const faltan = d ? d.paraPublicar.falta.length + d.paraElPrimerGiro.falta.length : 0;
+  // 22-10: sin el mandato firmado (es el renglón de la firma) y sin repetir un papel
+  // que falte para publicar y para el primer giro.
+  const faltan = d
+    ? new Set([...papelesSinLaFirma(d.paraPublicar.falta), ...papelesSinLaFirma(d.paraElPrimerGiro.falta)].map((f) => `${f.tipo}-${f.propietarioId ?? ''}`)).size
+    : 0;
   const papelesListos = !!d && d.paraPublicar.completo && d.paraElPrimerGiro.completo;
   requisitos.push({
     id: 'papeles',
@@ -164,6 +171,7 @@ export function LoQueFaltaDelInmueble({
       <ListaParaEmpezar
         paraQue="tener este inmueble en regla"
         recordarComo="ficha-del-inmueble"
+        siguienteEnAzul={siguienteEnAzul}
         requisitos={requisitos}
         data-testid="lo-que-falta-del-inmueble"
       />

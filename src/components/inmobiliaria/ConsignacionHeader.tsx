@@ -231,8 +231,10 @@ export function ConsignacionHeader({
   return (
     <div className="space-y-4">
       {/* ── Fila de arriba: dónde estoy y qué hago ───────────────────── */}
-      <div className="flex min-h-9 items-center justify-between gap-3">
-        <div className="min-w-0 flex-1">{migas}</div>
+      {/* 22-10 (revisión, 390): las migas en su renglón y los botones debajo, para que
+          ninguno tape el camino de vuelta. */}
+      <div className="flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">{migas}</div>
         <div className="flex shrink-0 items-center gap-2">
           {accionPrevia}
 
@@ -263,7 +265,7 @@ export function ConsignacionHeader({
           {/* Editar: la única azul con el mandato vivo; con el mandato terminado, sólo lo del inmueble y en gris. */}
           {!(terminada && !consignacion.propertyId) ? (
             <Button
-              variant={terminada ? 'secondary' : 'default'}
+              variant="secondary"
               size="sm"
               hideArrow
               onClick={onEdit}
@@ -443,7 +445,9 @@ export function ConsignacionHeader({
               )}
               {consignacion.status !== 'active' ? (
                 <StatusBadge tone={status.tono}>
-                  {t('inmobiliaria.consignaciones.header.consignacion')} {t(status.labelKey)}
+                  {/* 22-10 (revisión): una frase entera por estado; pegar «Mandato» con
+                      «Terminada» daba «MANDATO TERMINADA». */}
+                  {t(`inmobiliaria.consignaciones.header.estadoDelMandato.${consignacion.status}`)}
                 </StatusBadge>
               ) : null}
               <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">

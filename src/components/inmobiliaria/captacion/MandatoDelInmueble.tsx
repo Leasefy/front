@@ -38,7 +38,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { Badge, Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { TarjetaDeLaFicha as SectionCard } from '@/components/pantalla/TarjetaDeLaFicha'
-import { captacionApi, type PapelQueFalta } from '@/lib/api/crm.service'
+import { captacionApi, papelesSinLaFirma, PAPEL_DE_LA_FIRMA, type PapelQueFalta } from '@/lib/api/crm.service'
 import { SubirPapelDelMandato } from './SubirPapelDelMandato'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { useCrm } from '@/lib/hooks/use-crm'
@@ -122,6 +122,10 @@ function Puerta({
   /** Abre la subida de ESE papel (22-10). Sin permiso de editar no se ofrece. */
   onSubir?: (papel: PapelQueFalta) => void
 }) {
+  // 22-10 (revisión): el mandato firmado tiene su bloque (la firma, arriba); aquí no se cuenta.
+  const faltaLaFirma = falta.some((f) => f.tipo === PAPEL_DE_LA_FIRMA)
+  falta = papelesSinLaFirma(falta)
+  const soloLaFirma = !completo && falta.length === 0 && faltaLaFirma
   return (
     <div className="space-y-1.5" data-testid={`puerta-${titulo}`}>
       <div className="flex items-center justify-between gap-2">
@@ -138,6 +142,8 @@ function Puerta({
         >
           {completo
             ? 'Listo'
+            : soloLaFirma
+              ? 'Falta la firma'
             : falta.length === 0
               ? 'Sin revisar'
               : soloElNumero
@@ -145,7 +151,7 @@ function Puerta({
                 : `Faltan ${falta.length}`}
         </span>
       </div>
-      {!completo && falta.length === 0 ? (
+      {!completo && falta.length === 0 && !soloLaFirma ? (
         <p className="text-muted-foreground text-sm">
           Todavía no pudimos revisar qué papeles faltan para este paso.
         </p>
@@ -462,7 +468,7 @@ export function MandatoDelInmueble({
                     hubo giros, son «Documentos que faltan» y punto. */}
                 <Puerta
                   titulo="giro"
-                  cuando={yaHuboGiros ? 'Documentos que faltan' : 'Antes del primer giro'}
+                  cuando={yaHuboGiros ? 'Para girarle' : 'Antes del primer giro'}
                   soloElNumero={yaHuboGiros}
                   completo={documentos.datos.paraElPrimerGiro.completo}
                   falta={documentos.datos.paraElPrimerGiro.falta}

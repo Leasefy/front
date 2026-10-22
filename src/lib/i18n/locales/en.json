@@ -4166,6 +4166,12 @@
           "pedirCita": "The consignment ended: no visits are scheduled.",
           "nuevaConsignacion": "New consignment",
           "nuevaConsignacionAyuda": "To manage this property again."
+        },
+        "estadoDelMandato": {
+          "active": "Active mandate",
+          "pending": "Pending mandate",
+          "expired": "Expired mandate",
+          "terminated": "Ended mandate"
         }
       },
       "filters": {

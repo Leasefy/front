@@ -202,7 +202,7 @@ describe('<ConsignacionHeader> — un mandato TERMINADO se ve y se comporta dist
     expect(container.querySelector('[data-testid="terminada-con-contrato"]')).not.toBeNull();
     // El chip «Arrendado» (que sale de `availability`, no del contrato) ya no describe nada.
     expect(container.textContent).not.toContain('inmobiliaria.consignaciones.availability.rented');
-    expect(container.textContent).toContain('inmobiliaria.consignaciones.status.terminated');
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.header.estadoDelMandato.terminated');
   });
 
   it('sin fecha conocida lo dice sin inventarla, y sin contrato no avisa de contrato', () => {
@@ -273,9 +273,9 @@ describe('<ConsignacionHeader> — la portada de la revisión 21-10', () => {
 
   it('el mandato activo no anuncia «Consignación activa» (es lo normal); otro estado sí', () => {
     render();
-    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.status.active');
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.header.estadoDelMandato.active');
     act(() => { root.render(<ConsignacionHeader consignacion={{ ...BASE_CONSIGNACION, status: 'pending' }} />); });
-    expect(container.textContent).toContain('inmobiliaria.consignaciones.status.pending');
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.header.estadoDelMandato.pending');
   });
 
   it('los hechos del mandato (desde, comisión) ya no van en la portada', () => {

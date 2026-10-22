@@ -650,6 +650,19 @@ export interface PapelQueFalta {
   propietarioId?: string | null
 }
 
+/** El mandato firmado tiene su propio bloque (la firma): no se cuenta también como papel (22-10). */
+export const PAPEL_DE_LA_FIRMA = 'MANDATO_FIRMADO'
+export function papelesSinLaFirma<T extends { tipo: string }>(falta: readonly T[]): T[] {
+  return falta.filter((f) => f.tipo !== PAPEL_DE_LA_FIRMA)
+}
+
+/** «la cédula del propietario, el RUT y el certificado de tradición» — los papeles nombrados, sin repetir. */
+export function papelesEnPalabras(falta: readonly { nombre: string }[]): string {
+  const nombres = [...new Set(falta.map((f) => f.nombre.trim()))].map((n) => n.charAt(0).toLowerCase() + n.slice(1))
+  if (nombres.length <= 1) return nombres[0] ?? ''
+  return `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`
+}
+
 export interface DocumentosDelMandato {
   disponible: boolean
   motivo: string | null

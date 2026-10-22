@@ -25,7 +25,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ArrowsClockwise, HeartStraight, SlidersHorizontal, Warning } from '@phosphor-icons/react'
-import { Stat } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { toast } from '@/components/ui/toast'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -45,7 +45,7 @@ import {
   useUmbralDeVinci,
 } from '@/lib/hooks/retencion/use-vinci'
 import { NOMBRE_DEL_MODO, QUE_HACE_EN_CADA_MODO, fechaYHora } from '@/components/retencion/vinci'
-import { CabeceraDeVinci, FranjaDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
+import { CabeceraDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
 import { TablaDeCasos } from '@/components/retencion/TablaDeCasos'
 import type { MetricasDeVinci, RiesgoDeVinci } from '@/lib/types/retencion'
 import { RETENCION_APROBAR, RETENCION_RIESGO } from '@/lib/nav/rutas-de-retencion'
@@ -347,33 +347,28 @@ export default function RetencionDashboardPage() {
         ) : null}
         {r?.disponible ? (
           <section aria-label={tr("Resumen de retención")} className="overflow-hidden rounded-lg border border-border bg-card">
-            <FranjaDeVinci columnas={conCobranza ? 4 : 3} data-testid="vinci-resumen">
-              <Stat
-                compact
-                label={tr("En riesgo")}
-                value={String(r.enRiesgo.inquilinos + r.enRiesgo.propietarios)}
-                delta={
+            {/* GLOW UP 22-10 (UX, al nivel de Deuda del mes): LA RESPUESTA —cuántos se pueden ir, y
+                quiénes— en una cifra; debajo, lo que ya está en manos de alguien (cobranza, gestión) y lo
+                retenido. Antes eran cuatro cifras del mismo peso. */}
+            <div className="px-5 py-4" data-testid="vinci-resumen">
+              <CifraHeroe
+                rotulo={tr("En riesgo")}
+                cifra={String(r.enRiesgo.inquilinos + r.enRiesgo.propietarios)}
+                contexto={
                   en
                     ? `${r.enRiesgo.inquilinos} ${r.enRiesgo.inquilinos === 1 ? 'tenant' : 'tenants'} · ${r.enRiesgo.propietarios} ${r.enRiesgo.propietarios === 1 ? 'owner' : 'owners'}`
                     : `${plural(r.enRiesgo.inquilinos, 'inquilino', 'inquilinos')} · ${plural(r.enRiesgo.propietarios, 'propietario', 'propietarios')}`
                 }
+                tamano="mediana"
+                tramos={[
+                  ...(conCobranza
+                    ? [{ clave: 'cobranza', etiqueta: tr("En cobranza"), monto: 0, tono: 'aviso' as const, siempre: true, cifra: String(r.enCobranza), extra: <p className="text-caption text-fg-subtle">{tr("Más de 60 días de mora: no se retienen")}</p> }]
+                    : []),
+                  { clave: 'gestion', etiqueta: tr("En gestión"), monto: 0, tono: 'neutro' as const, siempre: true, cifra: sinMetricas ? '—' : String(m!.enGestion.inquilinos + m!.enGestion.propietarios), extra: <p className="text-caption text-fg-subtle">{tr(metricas.error ? 'No se pudo traer' : 'Planes de retención abiertos')}</p> },
+                  { clave: 'retenidos', etiqueta: tr("Retenidos"), monto: 0, tono: 'exito' as const, siempre: true, cifra: sinMetricas || !lr ? '—' : lr.valor, extra: (metricas.error ? tr('No se pudo traer') : lr?.delta) ? <p className="text-caption text-fg-subtle">{metricas.error ? tr('No se pudo traer') : lr?.delta}</p> : undefined },
+                ]}
               />
-              {conCobranza ? (
-                <Stat compact label={tr("En cobranza")} value={String(r.enCobranza)} delta={tr("Más de 60 días de mora: no se retienen")} />
-              ) : null}
-              <Stat
-                compact
-                label={tr("En gestión")}
-                value={sinMetricas ? '—' : String(m!.enGestion.inquilinos + m!.enGestion.propietarios)}
-                delta={tr(metricas.error ? 'No se pudo traer' : 'Planes de retención abiertos')}
-              />
-              <Stat
-                compact
-                label={tr("Retenidos")}
-                value={sinMetricas || !lr ? '—' : lr.valor}
-                delta={metricas.error ? tr('No se pudo traer') : (lr?.delta ?? undefined)}
-              />
-            </FranjaDeVinci>
+            </div>
             <PieDelResumen r={r} />
           </section>
         ) : null}

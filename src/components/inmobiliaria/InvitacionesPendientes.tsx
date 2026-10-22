@@ -23,7 +23,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { EnvelopeSimple, PaperPlaneTilt, Warning } from '@phosphor-icons/react';
+import { EnvelopeSimple, PaperPlaneTilt } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -355,58 +355,51 @@ export function InvitacionesPendientes({ version = 0 }: {
 
   return (
     <>
+      {/* Glow up 22-10: UN renglón (punto, la frase y «Ver y enviar»), no un bloque gris encima
+          de las cifras. Lo que pasa sin la invitación va al pasar el cursor por la frase. */}
       <div
         data-testid="invitaciones-pendientes"
-        className="flex flex-wrap items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4"
+        role="status"
+        className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-body-sm text-fg"
       >
-        <div className="flex min-w-0 items-start gap-3">
-          <Warning
-            className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted"
-            weight="duotone"
-            aria-hidden="true"
-          />
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-fg">
-              {sinLlegar === 0
-                ? vencidas === 1
-                  ? 'A 1 inquilino se le venció la invitación al portal'
-                  : `A ${vencidas} inquilinos se les venció la invitación al portal`
-                : sinLlegar === 1
-                  ? 'A 1 inquilino no le ha llegado su invitación al portal'
-                  : `A ${sinLlegar} inquilinos no les ha llegado su invitación al portal`}
-            </p>
-            {sinLlegar > 0 && vencidas > 0 ? (
-              <p className="mt-0.5 text-sm text-fg-muted" data-testid="invitaciones-vencidas">
-                {vencidas === 1
-                  ? 'Y a 1 se le venció la que le mandamos: reenvíasela.'
-                  : `Y a ${vencidas} se les venció la que les mandamos: reenvíaselas.`}
-              </p>
-            ) : null}
-            <p className="mt-0.5 text-sm text-fg-muted">
-              Su cuenta está creada, pero sin ese correo no pueden poner su
-              contraseña ni entrar a ver su contrato.
-            </p>
-            {/* I-26: sin `clientes:edit` el aviso se queda —la deuda existe—,
-                pero no se ofrece mandar: se dice quién puede. */}
-            {!puedeEnviar ? (
-              <p className="mt-1.5 text-sm text-fg-muted" data-testid="invitaciones-sin-permiso">
-                Mandarlas lo puede hacer un administrador de tu inmobiliaria: pídeselo.
-              </p>
-            ) : null}
-          </div>
-        </div>
+        <span className="h-1.5 w-1.5 shrink-0 translate-y-[-2px] rounded-full bg-warning-500" aria-hidden="true" />
+        <span
+          className="min-w-0"
+          title="Su cuenta está creada, pero sin ese correo no pueden poner su contraseña ni entrar a ver su contrato."
+        >
+          {sinLlegar === 0
+            ? vencidas === 1
+              ? 'A 1 inquilino se le venció la invitación al portal'
+              : `A ${vencidas} inquilinos se les venció la invitación al portal`
+            : sinLlegar === 1
+              ? 'A 1 inquilino no le ha llegado su invitación al portal'
+              : `A ${sinLlegar} inquilinos no les ha llegado su invitación al portal`}
+          .
+        </span>
+        {sinLlegar > 0 && vencidas > 0 ? (
+          <span className="text-fg-muted" data-testid="invitaciones-vencidas">
+            {vencidas === 1
+              ? 'Y a 1 se le venció la que le mandamos: reenvíasela.'
+              : `Y a ${vencidas} se les venció la que les mandamos: reenvíaselas.`}
+          </span>
+        ) : null}
+        {/* I-26: sin `clientes:edit` el aviso se queda —la deuda existe—,
+            pero no se ofrece mandar: se dice quién puede. */}
         {puedeEnviar ? (
-          <Button
-            hideArrow
-            variant="outline"
-            className="shrink-0 gap-2"
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             onClick={() => setAbierto(true)}
             data-testid="ver-invitaciones-pendientes"
           >
             <EnvelopeSimple className="h-4 w-4" weight="bold" aria-hidden="true" />
             Ver y enviar
-          </Button>
-        ) : null}
+          </button>
+        ) : (
+          <span className="text-fg-muted" data-testid="invitaciones-sin-permiso">
+            Mandarlas lo puede hacer un administrador de tu inmobiliaria: pídeselo.
+          </span>
+        )}
       </div>
 
       <Cajon

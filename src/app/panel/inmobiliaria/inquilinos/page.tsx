@@ -111,6 +111,8 @@ import { vacioPorMigracion } from '@/components/migracion/muro-reglas';
 import { useI18n } from '@/lib/i18n';
 import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
 import { useInquilinos } from '@/lib/hooks/use-inquilinos';
+import { plataPareja } from '@/lib/format';
+import { seMuestranLosCentavos } from '@/lib/plata/escribir-plata';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import {
   type FiltroDeEstado,
@@ -191,7 +193,7 @@ export default function InquilinosPage() {
 }
 
 function ContenidoDeInquilinos() {
-  const { t, formatCurrency } = useI18n();
+  const { t, formatCurrency, locale } = useI18n();
 
   /**
    * `?persona=<User.id>` — llegar acá desde otro lado con alguien ya elegido.
@@ -403,6 +405,11 @@ function ContenidoDeInquilinos() {
    */
   const deLaLista = esElPortafolio({ buscar, estado });
   const totales = deLaLista ? totalesDelPortafolio(inquilinos) : portafolio;
+  // Un solo formato de plata en la cifra de arriba y en la tabla (glow up 22-10).
+  const valoresDeLaLista = [totales?.canon, ...inquilinos.flatMap((p) => p.arriendos.map((a) => a.canonCop))];
+  const plataDeLaLista = valoresDeLaLista.some((v) => typeof v === 'number' && seMuestranLosCentavos(v))
+    ? plataPareja(valoresDeLaLista, locale === 'en' ? 'en' : 'es')
+    : formatCurrency;
   const valorDeTile = (valor: string) =>
     (
       <KpiValor
@@ -469,7 +476,7 @@ function ContenidoDeInquilinos() {
         />
         <KpiCard
           label={t('inquilinos.kpi.canonVigente')}
-          value={valorDeTile(totales ? formatCurrency(totales.canon) : '')}
+          value={valorDeTile(totales ? plataDeLaLista(totales.canon) : '')}
           icon={<CurrencyDollar />}
         />
       </FranjaDeCifras>
@@ -564,6 +571,7 @@ function ContenidoDeInquilinos() {
           ) : (
             <>
               <InquilinosTable
+                formato={plataDeLaLista}
                 inquilinos={pageItems}
                 onAbrir={setAbierto}
                 orden={orden}

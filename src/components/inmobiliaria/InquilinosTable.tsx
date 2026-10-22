@@ -42,7 +42,7 @@
  */
 
 import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla';
-import { useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   CaretDown,
@@ -66,6 +66,7 @@ import {
   TableRowAnimada,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { sinMayusculasSostenidas } from '@/lib/inmuebles/titulo-de-la-ficha';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 import { useI18n } from '@/lib/i18n';
@@ -324,7 +325,15 @@ export function BarraDeInquilinos({
   );
 }
 
+/**
+ * El formato de la plata de la página (glow up 22-10: la cifra de arriba decía
+ * «,74» y la tabla no). Sin él, el de siempre.
+ */
+const FormatoDeLaPlata = createContext<((n: number) => string) | null>(null);
+
 export interface InquilinosTableProps {
+  /** El formato de la plata de la página; sin él, el de siempre. */
+  formato?: (n: number) => string;
   inquilinos: readonly Inquilino[];
   /** Abre el cajón de detalle. La fila entera, y el nombre por teclado. */
   onAbrir: (persona: Inquilino) => void;
@@ -353,7 +362,15 @@ function usePuedeCrearContrato(): boolean {
   return permisos ? permisos.canAccess('contratos', 'create') : true;
 }
 
-export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar, marcadas, onMarcar }: InquilinosTableProps) {
+export function InquilinosTable({ formato, ...props }: InquilinosTableProps) {
+  return (
+    <FormatoDeLaPlata.Provider value={formato ?? null}>
+      <TablaDeInquilinos {...props} />
+    </FormatoDeLaPlata.Provider>
+  );
+}
+
+function TablaDeInquilinos({ inquilinos, onAbrir, orden, onOrdenar, marcadas, onMarcar }: Omit<InquilinosTableProps, 'formato'>) {
   const { t } = useI18n();
   const [ordenPropio, setOrdenPropio] = useState<OrdenDeInquilinos>({ campo: 'nombre', sentido: 'asc' });
   const { campo, sentido } = orden ?? ordenPropio;
@@ -429,7 +446,6 @@ export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar, marcada
             )}
             <TableHead className="w-10 p-4" />
             <Ordenable campo="nombre">{t('inquilinos.tabla.inquilino')}</Ordenable>
-            <TableHead className="p-4 text-left">{t('inquilinos.tabla.telefono')}</TableHead>
             <TableHead className="p-4 text-left">{t('inquilinos.tabla.inmueble')}</TableHead>
             <TableHead className="p-4 text-left">{t('inquilinos.tabla.estado')}</TableHead>
             <Ordenable campo="canon">{t('inquilinos.tabla.canon')}</Ordenable>
@@ -478,7 +494,8 @@ function FilaDeInquilino({
   onAlternar: () => void;
   onAbrir: () => void;
 }) {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency: formatoDeSiempre, formatDate } = useI18n();
+  const formatCurrency = useContext(FormatoDeLaPlata) ?? formatoDeSiempre;
   const puedeCrearContrato = usePuedeCrearContrato();
   const vigentes = arriendosVigentes(persona);
   const varios = persona.arriendos.length > 1;
@@ -552,23 +569,25 @@ function FilaDeInquilino({
               </span>
             </span>
           </button>
-          {/* T-0128: creado por la migración sin documento. */}
-          <DatosPorCompletar pendientes={persona.datosPendientes} className="mt-1 flex" />
-        </TableCell>
-
-        <TableCell className="p-4 align-middle">
+          {/* Glow up 22-10: el teléfono va bajo el correo (su columna empujaba la vigencia fuera
+              de la tabla a 1440, y un teléfono escrito a mano ocupaba tres renglones). */}
           {persona.telefono ? (
-            <span className="font-mono text-sm tabular-nums text-fg">{persona.telefono}</span>
+            <span
+              className="ml-11 mt-0.5 block max-w-[18rem] truncate font-mono text-caption tabular-nums text-fg-muted"
+              title={persona.telefono}
+            >
+              {persona.telefono}
+            </span>
           ) : sinContacto ? (
             /* Sin correo NI teléfono no es un detalle estético: es a quién no
                se le puede cobrar ni avisar. */
-            <span className="inline-flex items-center gap-1.5 text-sm text-warning">
-              <Warning className="h-4 w-4 shrink-0" />
+            <span className="ml-11 mt-0.5 inline-flex items-center gap-1.5 text-caption text-warning">
+              <Warning className="h-3.5 w-3.5 shrink-0" />
               {t('inquilinos.sinContacto')}
             </span>
-          ) : (
-            <span className="text-sm text-fg-subtle">—</span>
-          )}
+          ) : null}
+          {/* T-0128: creado por la migración sin documento. */}
+          <DatosPorCompletar pendientes={persona.datosPendientes} className="mt-1 flex" />
         </TableCell>
 
         {/* Inmueble, estado, canon y vigencia describen el arriendo principal
@@ -595,9 +614,10 @@ function FilaDeInquilino({
             <Link
               href={`/panel/inmobiliaria/inmuebles/${principal.inmueble.id}?por=inmueble`}
               onClick={(e) => e.stopPropagation()}
-              className="block max-w-[14rem] truncate text-sm text-fg hover:text-primary"
+              className="block max-w-[16rem] truncate text-sm text-fg hover:text-primary"
+              title={principal.inmueble.address ?? undefined}
             >
-              {principal.inmueble.address}
+              {sinMayusculasSostenidas(principal.inmueble.address ?? '')}
               <span className="text-fg-muted"> · {principal.inmueble.city}</span>
             </Link>
           ) : (
@@ -669,7 +689,7 @@ function FilaDeInquilino({
           entrada de las filas); al contraer se va de una. */}
       {varios && desplegada && (
         <TableRowAnimada data-testid="inquilino-arriendos">
-          <TableCell colSpan={casilla !== undefined ? 8 : 7} className="bg-surface-muted/50 p-4">
+          <TableCell colSpan={casilla !== undefined ? 7 : 6} className="bg-surface-muted/50 p-4">
             <ul className="space-y-2">
               {persona.arriendos.map((a) => (
                 /* 🔴 La llave es el CONTRATO, no el `Lease`: desde el 20-09
@@ -689,7 +709,8 @@ function FilaDeInquilino({
 
 /** Un arriendo en una línea. Se usa en el despliegue y en la ficha. */
 export function RenglonDeArriendo({ arriendo }: { arriendo: ArriendoDeInquilino }) {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency: formatoDeSiempre, formatDate } = useI18n();
+  const formatCurrency = useContext(FormatoDeLaPlata) ?? formatoDeSiempre;
 
   return (
     <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-surface px-3 py-2')}>
@@ -699,8 +720,9 @@ export function RenglonDeArriendo({ arriendo }: { arriendo: ArriendoDeInquilino 
         <Link
           href={`/panel/inmobiliaria/inmuebles/${arriendo.inmueble.id}?por=inmueble`}
           className="min-w-0 flex-1 truncate text-sm text-fg hover:text-primary"
+          title={arriendo.inmueble.address ?? undefined}
         >
-          {arriendo.inmueble.address}
+          {sinMayusculasSostenidas(arriendo.inmueble.address ?? '')}
           <span className="text-fg-muted"> · {arriendo.inmueble.city}</span>
         </Link>
       ) : (
@@ -732,7 +754,8 @@ function TarjetasDeInquilinos({
   inquilinos: readonly Inquilino[];
   onAbrir: (persona: Inquilino) => void;
 }) {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency: formatoDeSiempre, formatDate } = useI18n();
+  const formatCurrency = useContext(FormatoDeLaPlata) ?? formatoDeSiempre;
   const puedeCrearContrato = usePuedeCrearContrato();
   return (
     <Stagger as="ul" className="divide-y divide-border" data-testid="inquilinos-tarjetas">

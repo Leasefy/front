@@ -66,11 +66,11 @@ export function SituacionComercialDelInmueble({ consignacionId }: { consignacion
   if (!vacancia && !mandato) return null;
   return (
     <Appear>
-      <section className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="situacion-comercial-ficha">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*:only-child]:sm:col-span-2" data-testid="situacion-comercial-ficha">
         {vacancia ? (
           <div
             className={cn(
-              'rounded-lg border border-border p-4 flex items-start gap-3',
+              'flex items-start gap-3 rounded-[16px] border border-border-faint px-5 py-4',
               esVacanciaLarga(datos.vacancia) ? 'bg-warning-soft' : 'bg-surface',
             )}
           >
@@ -84,7 +84,7 @@ export function SituacionComercialDelInmueble({ consignacionId }: { consignacion
         {mandato ? (
           <div
             className={cn(
-              'rounded-lg border border-border p-4 flex items-start gap-3',
+              'flex items-start gap-3 rounded-[16px] border border-border-faint px-5 py-4',
               datos.mandato.estado === 'VENCIDO' ? 'bg-danger-soft' : avisoDelMandato ? 'bg-warning-soft' : 'bg-surface',
             )}
             data-testid="ficha-mandato"

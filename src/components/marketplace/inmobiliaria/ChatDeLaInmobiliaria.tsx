@@ -12,6 +12,7 @@ import { PropertyCard } from '@/components/property/PropertyCard';
 import { ApiError } from '@/lib/api/client';
 import {
   CODIGO_CHAT_SIN_IA,
+  CODIGO_CHAT_SIN_PREGUNTAS,
   marketplaceApi,
   type RespuestaDelChat,
   type TurnoDelChat,
@@ -61,6 +62,8 @@ interface Turno {
   ia?: RespuestaDelChat & { ms: number };
   /** El buscador (cuando la IA no respondió). */
   busqueda?: Busqueda;
+  /** Se acabó el cupo con IA en este turno: la frase del back, una vez. */
+  sinPreguntas?: string;
   respuesta?: Respuesta;
 }
 
@@ -210,7 +213,11 @@ export function ChatDeLaInmobiliaria({
             poner({ ia: { ...ia, ms: Date.now() - turno.inicio } });
             return;
           } catch (e) {
-            if (esFallaDeLaIa(e)) fallasDeLaIa.current += 1;
+            if (e instanceof ApiError && e.code === CODIGO_CHAT_SIN_PREGUNTAS) {
+              // Se acabó el cupo con IA: desde aquí, buscador (Nico, 21-10-2026).
+              fallasDeLaIa.current = FALLAS_PARA_APAGAR_LA_IA;
+              poner({ sinPreguntas: e.message });
+            } else if (esFallaDeLaIa(e)) fallasDeLaIa.current += 1;
           }
         }
         // El buscador de siempre: afina la última búsqueda, o empieza una.
@@ -306,6 +313,11 @@ export function ChatDeLaInmobiliaria({
                         transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
                         className="space-y-4"
                       >
+                        {t.sinPreguntas && (
+                          <p className="text-[13.5px] text-fg-muted" data-testid="chat-sin-preguntas">
+                            {t.sinPreguntas}
+                          </p>
+                        )}
                         <RespuestaDelBuscador turno={t} nombre={inmobiliaria.nombre} />
                       </motion.div>
                     )}

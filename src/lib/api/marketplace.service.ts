@@ -101,10 +101,32 @@ export interface RespuestaDelChat {
   sugerencias: string[];
   /** Lo que sigue es hablar con la inmobiliaria (falta un dato, visitar, negociar…). */
   contactar: boolean;
+  /** Cuántas preguntas con IA le quedan hoy (un back anterior no lo manda). */
+  quedan?: number;
 }
 
 /** El 503 del chat sin IA: el front vuelve al buscador de siempre. */
 export const CODIGO_CHAT_SIN_IA = 'CHAT_SIN_IA';
+/** El 429 del cupo con IA agotado (Nico, 21-10-2026): el chat sigue como buscador. */
+export const CODIGO_CHAT_SIN_PREGUNTAS = 'CHAT_SIN_PREGUNTAS';
+
+const CLAVE_DEL_NAVEGADOR = 'leasefy-marketplace-navegador';
+
+/**
+ * El id de este navegador para el cupo del chat con IA (con la IP, es la
+ * «persona»). Sin almacenamiento disponible, `undefined`: cuenta sólo la IP.
+ */
+export function idDelNavegador(): string | undefined {
+  try {
+    const guardado = window.localStorage.getItem(CLAVE_DEL_NAVEGADOR);
+    if (guardado) return guardado;
+    const nuevo = window.crypto.randomUUID();
+    window.localStorage.setItem(CLAVE_DEL_NAVEGADOR, nuevo);
+    return nuevo;
+  } catch {
+    return undefined;
+  }
+}
 
 /** La dirección de su página: por el nombre corto, o por el id si no tiene. */
 export function paginaDe(i: { slug: string | null; id: string }): string {
@@ -150,7 +172,21 @@ export const marketplaceApi = {
   ): Promise<RespuestaDelChat> {
     const r = await apiClient.post<Omit<RespuestaDelChat, 'inmuebles'> & { inmuebles: BackendProperty[] }>(
       `${BASE}/inmobiliarias/${encodeURIComponent(nombre)}/chat`,
-      dto,
+      { ...dto, navegador: idDelNavegador() },
+    );
+    return { ...r, inmuebles: (r.inmuebles ?? []).map(mapBackendProperty) };
+  },
+  /** Le pregunta al chat de la portada sobre lo que el buscador ya le muestra. */
+  async preguntarALaPortada(dto: {
+    pregunta: string;
+    historial?: TurnoDelChat[];
+    inmuebles: string[];
+    encontrados: number;
+    entendido: string[];
+  }): Promise<RespuestaDelChat> {
+    const r = await apiClient.post<Omit<RespuestaDelChat, 'inmuebles'> & { inmuebles: BackendProperty[] }>(
+      `${BASE}/chat`,
+      { ...dto, navegador: idDelNavegador() },
     );
     return { ...r, inmuebles: (r.inmuebles ?? []).map(mapBackendProperty) };
   },

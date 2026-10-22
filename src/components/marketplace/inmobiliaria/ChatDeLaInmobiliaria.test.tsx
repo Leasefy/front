@@ -15,6 +15,7 @@ const { preguntarAlChat, listar } = vi.hoisted(() => ({ preguntarAlChat: vi.fn()
 
 vi.mock('@/lib/api/marketplace.service', () => ({
   CODIGO_CHAT_SIN_IA: 'CHAT_SIN_IA',
+  CODIGO_CHAT_SIN_PREGUNTAS: 'CHAT_SIN_PREGUNTAS',
   marketplaceApi: { preguntarAlChat },
 }));
 vi.mock('@/lib/api/properties.service', () => ({ propertiesApi: { list: listar } }));
@@ -152,5 +153,18 @@ describe('ChatDeLaInmobiliaria', () => {
     await preguntar('tres');
     expect(preguntarAlChat).toHaveBeenCalledTimes(2);
     expect(listar.mock.calls.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('con el cupo con IA agotado lo dice una vez y sigue como buscador sin volver a preguntarle', async () => {
+    preguntarAlChat.mockRejectedValueOnce(
+      new ApiError(429, 'Ya usaste tus preguntas con IA de hoy. Sigo buscando por ti en los inmuebles publicados.', 'CHAT_SIN_PREGUNTAS'),
+    );
+    listar.mockResolvedValue({ data: [LAURELES], meta: { total: 1 } });
+    await montar();
+    await preguntar('¿y con balcón?');
+    expect(container.querySelector('[data-testid="chat-sin-preguntas"]')!.textContent).toContain('Ya usaste tus preguntas con IA');
+    expect(listar).toHaveBeenCalled();
+    await preguntar('otra más');
+    expect(preguntarAlChat).toHaveBeenCalledTimes(1);
   });
 });

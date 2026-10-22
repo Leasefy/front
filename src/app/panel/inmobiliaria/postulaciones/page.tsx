@@ -291,6 +291,17 @@ function PostulacionesContenido() {
         seccion={tr('Captación y arriendo')}
         titulo={tr("Postulaciones")}
         descripcion={tr("Revisa a quienes se postularon y decide a quién le arriendas.")}
+        // Revisora r23 (Postulaciones #2): el recorrido completo, en la ayuda del encabezado (antes al pie, tras una raya).
+        ayuda={
+          <ParaEntenderMas
+            etiqueta={tr("Cómo funciona el recorrido")}
+            titulo={tr("El recorrido completo de una postulación")}
+            descripcion={tr("Los primeros seis pasos los hace el inquilino; del séptimo en adelante, tú.")}
+            ancho="ancho"
+          >
+            <RecorridoMapa />
+          </ParaEntenderMas>
+        }
       />
 
       {/* El refresco de fondo falló con la lista ya en pantalla: se conserva y se
@@ -392,7 +403,7 @@ function PostulacionesContenido() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder={tr("Buscar por candidato, correo o inmueble")}
+                  placeholder={tr("Interesado, correo o inmueble")}
                   className="pl-9 pr-9"
                 />
                 {search && (
@@ -454,7 +465,10 @@ function PostulacionesContenido() {
                             <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-caption font-medium', statusCfg.bg, statusCfg.text)}>
                               {tr(statusCfg.label)}
                             </span>
-                            <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} conEstudio />
+                            {/* Revisora r23 (Postulaciones #1 y #3): el puesto en la lista corta también a 390; la marca del
+                                estudio, con la misma condición que la columna de 1440. */}
+                            <MarcaDeListaCorta puesto={listaCorta.get(c.id)} />
+                            {hayEstudio ? <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} conEstudio /> : null}
                           </span>
                         </span>
                       </button>
@@ -587,22 +601,6 @@ function PostulacionesContenido() {
             )}
           </div>
 
-          {/* Con trabajo encima, el recorrido se pliega: sigue disponible para
-              quien no sepa de dónde salió esta lista, sin robarle espacio a
-              quien vino a atenderla. */}
-          {/* Era un `<details>`: abierto crecía DENTRO de la pantalla y
-              empujaba la lista hacia abajo, así que leerlo costaba perder el
-              lugar. El modal lo muestra encima y lo devuelve intacto. */}
-          <div className="border-t border-border pt-6">
-            <ParaEntenderMas
-              etiqueta={tr("Cómo funciona el recorrido")}
-              titulo={tr("El recorrido completo de una postulación")}
-              descripcion={tr("Los primeros seis pasos los hace el inquilino; del séptimo en adelante, tú.")}
-              ancho="ancho"
-            >
-              <RecorridoMapa />
-            </ParaEntenderMas>
-          </div>
         </>
       )}
       </CrossFade>

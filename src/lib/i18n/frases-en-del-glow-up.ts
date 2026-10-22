@@ -312,4 +312,5 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Holgura en el presupuesto": "Budget headroom",
   "Quedan {plata} de meses anteriores.": "{plata} left from earlier months.",
   "Ver a quién": "See who",
+  "Interesado, correo o inmueble": "Prospect, email or property",
 }

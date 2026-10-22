@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CreditCard, Lock, Check, Buildings, WarningCircle } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Button } from '@/components/ui/button';
 import { Input, Spinner } from '@/components/ui';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
@@ -49,7 +50,7 @@ const DOCUMENTO_VALIDO = /^\d{6,15}$/;
  * Inner checkout component that uses search params
  */
 function CheckoutContent() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { user } = useAuth();
   const searchParams = useSearchParams();
 
@@ -213,23 +214,25 @@ function CheckoutContent() {
     .slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-bg">
+      {/* GLOW UP (21-10-2026): el contenedor y el encabezado común del portal. */}
+      <div className="max-w-5xl p-6 lg:p-8">
         {/* Back link */}
         <div className="mb-6">
           <BackButton href="/panel/upgrade" label={t('landlord.checkout.backToPlans')} />
         </div>
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground mb-2">
-            {t('landlord.checkout.title')}
-          </h1>
-          <p className="text-muted-foreground">
-            {t('landlord.checkout.subscribingTo')}{' '}
-            <span className="font-medium text-foreground">{plan.name}</span>
-          </p>
-        </div>
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Tu plan' : 'Your plan'}
+          titulo={t('landlord.checkout.title')}
+          descripcion={
+            <>
+              {t('landlord.checkout.subscribingTo')}{' '}
+              <span className="font-medium text-fg" data-testid="checkout-plan">{plan.name}</span>
+            </>
+          }
+        />
 
         <div className="grid gap-6 lg:grid-cols-5">
           {/* Main form column */}

@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CreditCard, CheckCircle, WarningCircle, Shield, Sparkle, Lightning, Lock, ArrowRight, Crown, Buildings, ChartBarHorizontal, ChartBar } from '@phosphor-icons/react';
+import { CreditCard, CheckCircle, WarningCircle, Shield, Lightning, Lock, ArrowRight, Crown, Buildings, ChartBar } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { PricingTable } from '@/components/pricing';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -48,9 +49,8 @@ export default function UpgradePage() {
 
     setIsProcessing(true);
 
-    // Small delay for visual feedback
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
+    // GLOW UP (21-10-2026): sin la espera inventada de medio segundo «para dar
+    // sensación de avance»: se va al pago de una.
     // Redirect to checkout with selected plan and billing cycle
     router.push(`/panel/checkout?plan=${selectedPlan}&billing=${billingCycle}`);
   };
@@ -64,60 +64,33 @@ export default function UpgradePage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-5xl p-6 lg:p-8">
         {/* Back link */}
         <div className="mb-6">
           <BackButton href="/panel" label={t('landlord.upgrade.backToPanel')} />
         </div>
 
-        {/* Premium Header */}
-        <div className="relative rounded-lg overflow-hidden mb-8">
-          {/* Gradient Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#1A40FF] via-[#1A40FF] to-[#6B6B6B]" />
-          <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
-
-          {/* Decorative Elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-neutral-100 dark:bg-neutral-800/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-
-          {/* Content */}
-          <div className="relative px-8 py-12 text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
-              <Sparkle className="w-4 h-4 text-[#B7791F]" />
-              <span className="text-sm font-medium text-white">
-                {t('landlord.upgrade.unlockPotential')}
+        {/* GLOW UP (21-10-2026): el encabezado común del portal. Antes, una portada con
+            degradado, manchas difusas, vidrio esmerilado y una chispita: todo fuera del
+            sistema. El plan actual va al lado del título; si no se pudo leer, la tarjeta
+            de abajo lo dice con «Reintentar» (antes salía dos veces). */}
+        <EncabezadoDePantalla
+          className="mb-8"
+          seccion={locale === 'es' ? 'Tu plan' : 'Your plan'}
+          titulo={t('landlord.upgrade.title')}
+          descripcion={t('landlord.upgrade.subtitle')}
+          junto={
+            !subscriptionError && currentPlan ? (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-3 py-1 text-body-sm text-fg"
+                data-testid="plan-actual"
+              >
+                <Crown className="h-4 w-4 text-warning" aria-hidden="true" />
+                {t('landlord.upgrade.currentPlan')} <span className="font-semibold">{currentPlan.name}</span>
               </span>
-            </div>
-
-            <h1 className="text-3xl lg:text-4xl font-bold text-white mb-3">
-              {t('landlord.upgrade.title')}
-            </h1>
-            <p className="text-white/70 max-w-md mx-auto">
-              {t('landlord.upgrade.subtitle')}
-            </p>
-
-            {/* Current Plan Badge */}
-            {subscriptionError ? (
-              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                <WarningCircle className="w-4 h-4 text-white/70" />
-                <span className="text-sm text-white/70">{t('landlord.upgrade.subscriptionLoadError')}</span>
-                <button
-                  type="button"
-                  onClick={subscriptionRefetch}
-                  className="text-sm font-medium text-white underline underline-offset-2"
-                >
-                  {t('landlord.upgrade.subscriptionRetry')}
-                </button>
-              </div>
-            ) : (
-              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                <Crown className="w-4 h-4 text-[#B7791F]" />
-                <span className="text-sm text-white/90">{t('landlord.upgrade.currentPlan')}</span>
-                <span className="text-sm font-semibold text-white">{currentPlan?.name}</span>
-              </div>
-            )}
-          </div>
-        </div>
+            ) : undefined
+          }
+        />
 
         {/* Current plan summary card */}
         <Card className="p-6 mb-8">

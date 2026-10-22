@@ -377,13 +377,16 @@ function FilaDeCartera({
     <TableRowAnimada
       // 22-10 (revisión, 390): bajo 768 cada deuda es una tarjeta —cada dato con su
       // rótulo a la izquierda (data-rotulo) y la cifra a la derecha—.
-      className="cursor-pointer max-md:flex max-md:flex-col max-md:gap-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3"
+      className={cn('cursor-pointer max-md:relative max-md:flex max-md:flex-col max-md:gap-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3', casilla !== undefined && 'max-md:pl-12')}
       onClick={onVerCobro}
       data-testid="cartera-fila"
       data-cuota-id={item.cuotaId}
       data-cajon={item.cajon}
     >
-      {casilla !== undefined && <TableCell className="w-10 pl-4 pr-0 align-middle">{casilla}</TableCell>}
+      {/* Ronda 17 (390): la casilla en el renglón del nombre (antes sola en su renglón). */}
+      {casilla !== undefined && (
+        <TableCell className="w-10 pl-4 pr-0 align-middle max-md:absolute max-md:left-4 max-md:top-3.5 max-md:w-auto max-md:p-0">{casilla}</TableCell>
+      )}
       {/* Inquilino: quién debe y por dónde se le habla. */}
       <TableCell className="align-middle max-md:block max-md:p-0">
         <div className="min-w-0 max-w-[15rem]">

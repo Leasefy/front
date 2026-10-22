@@ -177,6 +177,11 @@ function MantenimientosContent() {
   } = useConsignaciones();
 
   const [mantenimientoView, setMantenimientoView] = useState<MantenimientoViewMode>('kanban');
+  // Revisión de Operación (21-10): el tablero sólo desde 1024 px; en el celular y la tableta
+  // abre en lista (las columnas del tablero se corrían de lado). Se puede cambiar igual.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) setMantenimientoView('cards');
+  }, []);
 
   // Los KPI de arriba y la lista salen de la misma consulta: un solo
   // «Reintentar» arregla las dos cosas.

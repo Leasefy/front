@@ -15,12 +15,14 @@
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { DownloadSimple, Flag, Handshake, Target, Wallet, WarningCircle } from '@phosphor-icons/react';
+import { DownloadSimple, WarningCircle } from '@phosphor-icons/react';
 import { AnimatedNumber, Appear, Collapse, CrossFade, Presence } from '@leasefy/cadence';
 
 import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
+import { Avatar } from '@/components/ui/avatar';
+import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import { toast } from '@/components/ui/toast';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -99,6 +101,24 @@ function Avance({ etiqueta, hecho, meta }: { etiqueta: string; hecho: number; me
   );
 }
 
+/**
+ * Revisora r22 (Comisiones #4): el asesor por su nombre y su avatar, nunca por su correo. Si el back sólo trae el
+ * correo (la persona no puso su nombre), «Sin nombre» y el correo en gris debajo.
+ */
+function NombreDelAsesor({ nombre, fuerte = false }: { nombre: string; fuerte?: boolean }) {
+  const esCorreo = nombre.includes('@');
+  const visible = esCorreo ? 'Sin nombre' : nombre;
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <Avatar name={esCorreo ? nombre : visible} size="sm" />
+      <div className="min-w-0">
+        <p className={cn('truncate', fuerte ? 'font-medium text-fg' : 'text-fg')}>{visible}</p>
+        {esCorreo ? <p className="truncate text-caption text-fg-muted">{nombre}</p> : null}
+      </div>
+    </div>
+  );
+}
+
 // ── Metas ────────────────────────────────────────────────────────────────────
 
 function FilaDeMeta({
@@ -106,13 +126,26 @@ function FilaDeMeta({
   mes,
   puedeEditar,
   alGuardar,
+  editandoAlInicio = false,
+  alCerrar,
+  sinCabecera = false,
 }: {
   asesor: MetaDelAsesor;
   mes: string;
   puedeEditar: boolean;
   alGuardar: (m: MetaDelAsesor) => void;
+  /** En la tabla del equipo la fila se abre ya editando. */
+  editandoAlInicio?: boolean;
+  /** Al guardar o cancelar (la tabla cierra la fila). */
+  alCerrar?: () => void;
+  /** Sin el nombre ni el avance (la tabla ya los muestra). */
+  sinCabecera?: boolean;
 }) {
-  const [editando, setEditando] = useState(false);
+  const [editando, setEditandoPropio] = useState(editandoAlInicio);
+  const setEditando = (v: boolean) => {
+    setEditandoPropio(v);
+    if (!v) alCerrar?.();
+  };
   const [cierres, setCierres] = useState(String(asesor.meta?.cierres ?? ''));
   const [captaciones, setCaptaciones] = useState(String(asesor.meta?.captaciones ?? ''));
   const [error, setError] = useState<string | null>(null);
@@ -140,19 +173,36 @@ function FilaDeMeta({
   };
 
   return (
-    <li className="rounded-lg border border-border bg-surface p-4 space-y-3" data-testid={`meta-${asesor.userId}`}>
+    <li className={cn(!sinCabecera && 'rounded-lg border border-border bg-surface p-4', 'space-y-3')} data-testid={`meta-${asesor.userId}`}>
+      {sinCabecera ? null : (
+      <>
       <div className="flex items-center justify-between gap-3">
-        <p className="font-medium truncate">{asesor.nombre}</p>
+        <NombreDelAsesor nombre={asesor.nombre} fuerte />
         {puedeEditar && !editando ? (
           <Button size="sm" variant="secondary" hideArrow onClick={() => setEditando(true)} data-testid="poner-meta">
             {asesor.meta ? 'Cambiar meta' : 'Poner meta'}
           </Button>
         ) : null}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Avance etiqueta="Cierres" hecho={asesor.avance.cierres} meta={asesor.meta?.cierres ?? null} />
-        <Avance etiqueta="Captaciones" hecho={asesor.avance.captaciones} meta={asesor.meta?.captaciones ?? null} />
-      </div>
+      {asesor.meta ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Avance etiqueta="Cierres" hecho={asesor.avance.cierres} meta={asesor.meta.cierres} />
+          <Avance etiqueta="Captaciones" hecho={asesor.avance.captaciones} meta={asesor.meta.captaciones} />
+        </div>
+      ) : (
+        // Revisora r22 (#7): sin meta, UN renglón (antes «Sin meta este mes» dos veces), con los ceros en «—».
+        <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-body-sm text-fg-muted" data-testid="sin-meta">
+          <span>
+            Cierres <span className="font-mono tabular-nums text-fg">{asesor.avance.cierres || '—'}</span>
+          </span>
+          <span>
+            Captaciones <span className="font-mono tabular-nums text-fg">{asesor.avance.captaciones || '—'}</span>
+          </span>
+          <span>Sin meta este mes</span>
+        </p>
+      )}
+      </>
+      )}
       <Collapse open={editando}>
         <div className="flex flex-wrap items-end gap-3 pt-1">
           <label className="space-y-1">
@@ -203,12 +253,10 @@ function FilaDeMeta({
 function SeccionDeMetas({ datos, puedeEditar, alCambiar }: { datos: MetasDelMes; puedeEditar: boolean; alCambiar: (m: MetaDelAsesor) => void }) {
   return (
     <section className="space-y-3" aria-labelledby="titulo-metas">
-      <div className="flex items-center gap-2">
-        <div className="w-9 h-9 rounded-md bg-primary-soft flex items-center justify-center shrink-0">
-          <Target className="w-5 h-5 text-primary" aria-hidden="true" />
-        </div>
+      {/* Revisora r22 (#5): el título sin el ícono en un cuadro de voltaje (el azul es para la acción). */}
+      <div>
         <div>
-          <h2 id="titulo-metas" className="text-base font-semibold">
+          <h2 id="titulo-metas" className="text-lg font-normal text-fg">
             {datos.soloLaMia ? 'Mi meta del mes' : 'Metas del mes'}
           </h2>
           <p className="text-caption text-fg-muted">
@@ -305,18 +353,18 @@ function TarjetaDelAsesor({ asesor, abiertaAlInicio }: { asesor: ComisionDelAses
   const [abierta, setAbierta] = useState(abiertaAlInicio);
   const esCelular = useIsMobile();
   return (
-    <li className="rounded-lg border border-border bg-surface p-4 md:p-5 space-y-3 shadow-sm" data-testid={`comision-${asesor.userId}`}>
+    <li className="rounded-lg border border-border bg-surface p-4 md:p-5 space-y-3" data-testid={`comision-${asesor.userId}`}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="font-semibold truncate">{asesor.nombre}</p>
-          <p className="text-caption text-fg-muted">
+          <NombreDelAsesor nombre={asesor.nombre} fuerte />
+          <p className="mt-1 text-caption text-fg-muted">
             {asesor.regla ? textoDeLaRegla(asesor.regla) : 'Sin regla de comisión'}
           </p>
         </div>
         <div className="flex gap-6 sm:text-right">
           <div>
             <p className="font-mono text-caption uppercase tracking-wider text-fg-muted">Ganado</p>
-            <AnimatedNumber value={asesor.ganadoCop} format={formatCurrency} className="font-mono tabular-nums text-lg font-semibold" />
+            <AnimatedNumber value={asesor.ganadoCop} format={formatCurrency} className="font-mono tabular-nums text-lg text-fg" />
           </div>
           <div>
             <p className="font-mono text-caption uppercase tracking-wider text-fg-muted">Por causar</p>
@@ -340,7 +388,16 @@ function TarjetaDelAsesor({ asesor, abiertaAlInicio }: { asesor: ComisionDelAses
   );
 }
 
-function SeccionDeComision({ datos, esGerente }: { datos: ComisionesDelMes; esGerente: boolean }) {
+function SeccionDeComision({
+  datos,
+  esGerente,
+  tablaDelEquipo,
+}: {
+  datos: ComisionesDelMes;
+  esGerente: boolean;
+  /** La tabla del equipo (gerente, escritorio): reemplaza las tarjetas de cada asesor. */
+  tablaDelEquipo?: ReactNode;
+}) {
   const exportar = () => {
     descargarCsv(`comisiones-asesores-${datos.mes}.csv`, csvDeLasComisiones(datos));
     toast.success('Listo: el archivo para nómina quedó en tus descargas.');
@@ -348,12 +405,9 @@ function SeccionDeComision({ datos, esGerente }: { datos: ComisionesDelMes; esGe
   return (
     <section className="space-y-3" aria-labelledby="titulo-comision">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-md bg-primary-soft flex items-center justify-center shrink-0">
-            <Wallet className="w-5 h-5 text-primary" aria-hidden="true" />
-          </div>
+        <div>
           <div>
-            <h2 id="titulo-comision" className="text-base font-semibold">
+            <h2 id="titulo-comision" className="text-lg font-normal text-fg">
               {datos.soloLaMia ? 'Mi comisión del mes' : 'Comisión de los asesores'}
             </h2>
             <p className="text-caption text-fg-muted">
@@ -392,7 +446,7 @@ function SeccionDeComision({ datos, esGerente }: { datos: ComisionesDelMes; esGe
         <div className="grid grid-cols-2 gap-3 sm:max-w-md">
           <div className="rounded-md border border-border p-3">
             <p className="font-mono text-caption uppercase tracking-wider text-fg-muted">Ganado del equipo</p>
-            <AnimatedNumber value={datos.totales.ganadoCop} format={formatCurrency} className="font-mono tabular-nums font-semibold" />
+            <AnimatedNumber value={datos.totales.ganadoCop} format={formatCurrency} className="font-mono tabular-nums text-fg" />
           </div>
           <div className="rounded-md border border-border p-3">
             <p className="font-mono text-caption uppercase tracking-wider text-fg-muted">Por causar</p>
@@ -401,7 +455,9 @@ function SeccionDeComision({ datos, esGerente }: { datos: ComisionesDelMes; esGe
         </div>
       ) : null}
 
-      {datos.hayReglas ? (
+      {datos.hayReglas && tablaDelEquipo ? tablaDelEquipo : null}
+
+      {datos.hayReglas && !tablaDelEquipo ? (
         <ul className="space-y-3">
           {datos.asesores.map((a, i) => (
             <TarjetaDelAsesor key={`${a.userId}-${datos.mes}`} asesor={a} abiertaAlInicio={datos.soloLaMia || i === 0} />
@@ -414,15 +470,148 @@ function SeccionDeComision({ datos, esGerente }: { datos: ComisionesDelMes; esGe
           {datos.sinAsesor === 1
             ? '1 contrato con comisión este mes no tiene asesor que lo captó ni lo cerró.'
             : `${datos.sinAsesor} contratos con comisión este mes no tienen asesor que los captó ni los cerró.`}{' '}
-          Asígnale el agente al inmueble desde su ficha.
+          Asígnale el asesor al inmueble desde su ficha.
         </p>
       ) : null}
     </section>
   );
 }
 
+// ── El equipo en una tabla (revisora r22, Comisiones #6) ─────────────────────
+
+/** «1 de 4» con su meta; sin meta, el número solo (o «—» si es 0). */
+function AvanceCorto({ hecho, meta }: { hecho: number; meta: number | null }) {
+  if (meta === null) {
+    return <span className="font-mono tabular-nums text-fg-muted">{hecho || '—'}</span>;
+  }
+  return (
+    <span className="font-mono tabular-nums text-fg">
+      {hecho}
+      <span className="text-fg-muted"> de {meta}</span>
+    </span>
+  );
+}
+
+/**
+ * Con 20 asesores eran 20 tarjetas con sombra, cada una con su tabla de 760 px y, aparte, 20 tarjetas de metas.
+ * Ahora: un asesor por fila (Ganado · Por causar · Cierres · Captaciones) y el detalle y su meta en el cajón.
+ */
+function TablaDelEquipo({
+  comision,
+  metas,
+  puedeEditar,
+  alCambiarMeta,
+}: {
+  comision: ComisionesDelMes;
+  metas: MetasDelMes;
+  puedeEditar: boolean;
+  alCambiarMeta: (m: MetaDelAsesor) => void;
+}) {
+  const [abierto, setAbierto] = useState<string | null>(null);
+  const [editando, setEditando] = useState<string | null>(null);
+  const ids = Array.from(new Set([...comision.asesores.map((a) => a.userId), ...metas.asesores.map((a) => a.userId)]));
+  const filas = ids.map((id) => ({
+    id,
+    c: comision.asesores.find((a) => a.userId === id) ?? null,
+    m: metas.asesores.find((a) => a.userId === id) ?? null,
+  }));
+  const delCajon = filas.find((f) => f.id === abierto) ?? null;
+  const nombre = (f: (typeof filas)[number]) => f.c?.nombre ?? f.m?.nombre ?? '';
+  const TH = 'py-2.5 px-4 font-mono text-caption uppercase tracking-wider text-fg-muted whitespace-nowrap font-normal';
+  return (
+    <>
+      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+        <table className="w-full text-sm" data-testid="tabla-del-equipo">
+          <thead>
+            <tr className="border-b border-border-faint text-left">
+              <th className={TH}>Asesor</th>
+              <th className={cn(TH, 'text-right')}>Ganado</th>
+              <th className={cn(TH, 'text-right')}>Por causar</th>
+              <th className={TH}>Cierres</th>
+              <th className={TH}>Captaciones</th>
+              <th className={TH}><span className="sr-only">Detalle</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filas.map((f) => (
+              <Fragment key={f.id}>
+              <tr className="border-b border-border-faint last:border-0" data-testid={`fila-del-asesor-${f.id}`}>
+                <td className="py-3 px-4">
+                  <NombreDelAsesor nombre={nombre(f)} />
+                </td>
+                <td className="py-3 px-4 text-right font-mono tabular-nums text-fg whitespace-nowrap">
+                  {f.c ? formatCurrency(f.c.ganadoCop) : '—'}
+                </td>
+                <td className="py-3 px-4 text-right font-mono tabular-nums text-fg-muted whitespace-nowrap">
+                  {f.c ? formatCurrency(f.c.porCausarCop) : '—'}
+                </td>
+                <td className="py-3 px-4">
+                  <AvanceCorto hecho={f.m?.avance.cierres ?? 0} meta={f.m?.meta?.cierres ?? null} />
+                </td>
+                <td className="py-3 px-4">
+                  <AvanceCorto hecho={f.m?.avance.captaciones ?? 0} meta={f.m?.meta?.captaciones ?? null} />
+                </td>
+                <td className="py-3 px-4">
+                  <div className="flex items-center justify-end gap-1">
+                    {f.m && puedeEditar && editando !== f.id ? (
+                      <Button size="sm" variant="ghost" hideArrow onClick={() => setEditando(f.id)} data-testid="poner-meta">
+                        {f.m.meta ? 'Cambiar meta' : 'Poner meta'}
+                      </Button>
+                    ) : null}
+                    {f.c && f.c.detalle.length > 0 ? (
+                      <Button size="sm" variant="ghost" hideArrow onClick={() => setAbierto(f.id)} data-testid={`abrir-asesor-${f.id}`}>
+                        Ver detalle
+                      </Button>
+                    ) : null}
+                  </div>
+                </td>
+              </tr>
+              {f.m && editando === f.id ? (
+                <tr className="border-b border-border-faint bg-surface-muted/40">
+                  <td colSpan={6} className="px-4 py-3">
+                    <ul>
+                      <FilaDeMeta
+                        asesor={f.m}
+                        mes={metas.mes}
+                        puedeEditar={puedeEditar}
+                        alGuardar={alCambiarMeta}
+                        editandoAlInicio
+                        sinCabecera
+                        alCerrar={() => setEditando(null)}
+                      />
+                    </ul>
+                  </td>
+                </tr>
+              ) : null}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Cajon abierto={delCajon !== null} onOpenChange={(a) => !a && setAbierto(null)}>
+        {delCajon ? (
+          <>
+            <CajonCabecera
+              titulo={nombre(delCajon).includes('@') ? 'Sin nombre' : nombre(delCajon)}
+              descripcion={delCajon.c?.regla ? textoDeLaRegla(delCajon.c.regla) : 'Sin regla de comisión'}
+            />
+            <CajonCuerpo className="space-y-5">
+              {delCajon.c && delCajon.c.detalle.length > 0 ? (
+                <DetalleEnTarjetas lineas={delCajon.c.detalle} />
+              ) : (
+                <p className="text-sm text-fg-muted">Sin comisión este mes: ningún contrato que captó o cerró generó comisión para la inmobiliaria.</p>
+              )}
+            </CajonCuerpo>
+          </>
+        ) : null}
+      </Cajon>
+    </>
+  );
+}
+
 export function ComisionesYMetas() {
   const { isAdmin } = usePermissions();
+  const esCelular = useIsMobile();
   const hoy = useMemo(() => mesDeHoy(), []);
   const meses = useMemo(() => ultimosMeses(hoy), [hoy]);
   const [mes, setMes] = useState(hoy);
@@ -479,7 +668,7 @@ export function ComisionesYMetas() {
           <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cómo funciona: comisiones y metas" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">
               <p>Captó es el asesor asignado al inmueble. Cerró es el asesor del proceso del embudo que terminó en el contrato.</p>
-              <p>La comisión sale de los contratos del mes; un contrato sin asesor no le suma a nadie hasta que le asignes el agente al inmueble desde su ficha.</p>
+              <p>La comisión sale de los contratos del mes; un contrato sin asesor no le suma a nadie hasta que le asignes el asesor al inmueble desde su ficha.</p>
               {isAdmin ? <p>Las metas se ponen por asesor y por mes: cierres y captaciones.</p> : null}
             </div>
           </ParaEntenderMas>
@@ -491,8 +680,27 @@ export function ComisionesYMetas() {
           {comision && metas ? (
             <div className="space-y-8">
               <Appear>
-                <SeccionDeComision datos={comision} esGerente={isAdmin} />
+                <SeccionDeComision
+                  datos={comision}
+                  esGerente={isAdmin}
+                  tablaDelEquipo={
+                    isAdmin && !comision.soloLaMia && comision.hayReglas && !esCelular ? (
+                      <TablaDelEquipo
+                        comision={comision}
+                        metas={metas}
+                        puedeEditar={isAdmin}
+                        alCambiarMeta={(nueva) =>
+                          setMetas((prev) =>
+                            prev ? { ...prev, asesores: prev.asesores.map((a) => (a.userId === nueva.userId ? nueva : a)) } : prev,
+                          )
+                        }
+                      />
+                    ) : null
+                  }
+                />
               </Appear>
+              {/* Con la tabla del equipo, las metas viven en ella (columna y cajón); sin ella, su sección. */}
+              {isAdmin && !comision.soloLaMia && comision.hayReglas && !esCelular ? null : (
               <Appear delay={0.05}>
                 <SeccionDeMetas
                   datos={metas}
@@ -504,12 +712,8 @@ export function ComisionesYMetas() {
                   }
                 />
               </Appear>
-              <p className="flex items-center gap-1.5 text-caption text-fg-muted">
-                <Handshake className="w-4 h-4" aria-hidden="true" />
-                Captó = el asesor asignado al inmueble. Cerró = el asesor del proceso del embudo que terminó en el contrato.
-                <Flag className="w-4 h-4 ml-2" aria-hidden="true" />
-                {nombreDelMes(mes)}
-              </p>
+              )}
+              {/* Revisora r22 (#1): sin el pie de definiciones (repetía el mes y lo que dice «¿Cómo funciona?»). */}
             </div>
           ) : (
             <div />

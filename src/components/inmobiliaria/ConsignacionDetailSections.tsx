@@ -33,7 +33,7 @@ import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import { ApiError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { IconButton } from '@leasefy/cadence';
+import { Avatar, IconButton } from '@leasefy/cadence';
 import { ContratoPdfModal } from './ContratoPdfModal';
 import type { Consignacion, Copropietario, Propietario, Agente, AgenteRole } from '@/lib/types/inmobiliaria';
 import { formatParticipacion } from '@/lib/types/inmobiliaria';
@@ -266,16 +266,9 @@ export function PropietarioSection({
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                'w-12 h-12 rounded-xl flex items-center justify-center',
-                isCompany
-                  ? 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle'
-                  : 'bg-primary-soft text-primary'
-              )}
-            >
-              {isCompany ? <Buildings className="w-6 h-6" /> : <User className="w-6 h-6" />}
-            </div>
+            {/* 21-10: el Avatar de Cadence (persona en superelipse con el tono de su
+                nombre), no un ícono en una caja de color. */}
+            <Avatar name={propietario.name} size="lg" />
             <div>
               <h4 className="font-semibold text-fg">{propietario.name}</h4>
               <p className="text-sm text-fg-muted dark:text-fg-subtle">
@@ -514,9 +507,7 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
     return (
       <SectionCard title={t('inmobiliaria.consignaciones.detail.agentTitle')} icon={<Briefcase className="w-4 h-4" />}>
         <div className="flex items-center gap-3" data-testid="encargado-del-inmueble">
-          <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center">
-            <span className="text-lg font-semibold text-primary">{encargado.nombre.charAt(0).toUpperCase()}</span>
-          </div>
+          <Avatar name={encargado.nombre} size="lg" />
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold text-fg truncate">{encargado.nombre}</h4>
             <p className="text-sm text-fg-muted dark:text-fg-subtle">{encargado.rol}</p>
@@ -565,17 +556,9 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
         {/* Header */}
         <div className="flex items-center gap-3">
           {agente.avatar ? (
-            <img
-              src={agente.avatar}
-              alt={agente.name}
-              className="w-12 h-12 rounded-xl object-cover"
-            />
+            <Avatar name={agente.name} src={agente.avatar} size="lg" />
           ) : (
-            <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center">
-              <span className="text-lg font-semibold text-primary">
-                {agente.name.charAt(0)}
-              </span>
-            </div>
+            <Avatar name={agente.name} size="lg" />
           )}
           <div className="flex-1">
             <h4 className="font-semibold text-fg">{agente.name}</h4>
@@ -694,9 +677,7 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
         <div className="space-y-4">
           {/* Tenant Info */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-success-soft flex items-center justify-center">
-              <UserCircle className="w-6 h-6 text-success" />
-            </div>
+            <Avatar name={nombre ?? ''} size="lg" />
             <div className="flex-1 min-w-0">
               <h4 className="font-semibold text-fg" data-testid="inquilino-nombre">{nombre}</h4>
               <p className="text-sm text-fg-muted dark:text-fg-subtle">

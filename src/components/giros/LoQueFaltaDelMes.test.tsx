@@ -74,7 +74,9 @@ describe('Giros — la tarjeta «Lo que falta del mes» (decisión 17 de Nico)',
     m.listar.mockResolvedValue([{ id: 'l', month: '2026-10', estado: 'PAGADO' }]);
     await montar();
     expect(host.querySelector('[data-testid="respuesta-del-mes"]')?.textContent).toContain('está girado completo');
-    expect(host.querySelector('[data-testid="por-girar-de-otros-meses"]')?.textContent).toContain('es de otros meses');
+    // Revisora r23 (Giros #2): dice cuánto es de meses anteriores y lleva a Propietarios a ver a quién.
+    expect(host.querySelector('[data-testid="por-girar-de-otros-meses"]')?.textContent).toContain('de meses anteriores');
+    expect(host.querySelector('[data-testid="ver-a-quien-de-otros-meses"]')?.getAttribute('href')).toBe('/panel/inmobiliaria/propietarios');
     expect(host.querySelector('[data-testid^="accion-del-paso-"]')).toBeNull();
   });
 

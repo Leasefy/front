@@ -154,10 +154,17 @@ export function LoQueFaltaDelMes({
             {respuesta}
           </p>
           {deOtrosMeses ? (
+            /* Revisora r23 (Giros #2): «elige el mes arriba a la derecha» no decía cuál mes, no llevaba a él y a 390
+               el selector ni está a la derecha. Propietarios sí sabe a quién: abre en «Por girar». */
             <p className="mt-1 text-body-sm text-fg-muted" data-testid="por-girar-de-otros-meses">
-              {tr('Lo que queda por girar ({plata}) es de otros meses: elige el mes arriba a la derecha.', {
-                plata: formatCurrency(deOtrosMeses),
-              })}
+              {tr('Quedan {plata} de meses anteriores.', { plata: formatCurrency(deOtrosMeses) })}{' '}
+              <Link
+                href="/panel/inmobiliaria/propietarios"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+                data-testid="ver-a-quien-de-otros-meses"
+              >
+                {tr('Ver a quién')}
+              </Link>
             </p>
           ) : null}
         </div>

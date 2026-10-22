@@ -68,12 +68,8 @@ export function PorGirarDeLaInmobiliaria({ mesGirado, nombreDelMes }: { mesGirad
             >
               <AnimatedNumber value={cifra.porGirarCop} format={plataDeLaFranja} />
             </p>
-            {mesGirado && cifra.porGirarCop > 0 ? (
-              <p className="mt-1 text-caption text-fg-muted" data-testid="por-girar-de-meses-anteriores">
-                {nombreDelMes ? `${nombreDelMes.charAt(0).toUpperCase()}${nombreDelMes.slice(1)} ya está girado` : 'El mes elegido ya está girado'}: esta
-                plata es de meses anteriores.
-              </p>
-            ) : null}
+            {/* Revisora r23 (Giros #3): el subtexto «{Mes} ya está girado: esta plata es de meses anteriores»
+                repetía la tarjeta «Lo que falta del mes» y el rótulo de la cifra. Fuera. */}
             {/* GLOW UP (21-10): la cifra primero; lo que cuenta, plegado (la misma frase del Tablero y de Cartera). */}
             <MasDetalles etiqueta="Qué cuenta esta cifra" montadoSiempre className="mt-1">
               <p className="text-caption text-fg-muted">{definicionDePorGirar(cifra.hastaMes)}</p>

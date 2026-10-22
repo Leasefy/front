@@ -22,7 +22,7 @@
  * confirmación con el número y el total que va a tomar.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
@@ -231,6 +231,20 @@ export function ListaDeLotes({
   }, [mes, firmaDeLotes]);
 
   const puedeArmar = canAccess('dispersiones', 'create');
+  /*
+   * Revisora r23 (Giros #4): el paso 4 abría en «En curso 0» con «Ningún lote con ese filtro»: la persona no
+   * eligió ese filtro, lo eligió la pantalla. Si al llegar los lotes no hay ninguno en curso, abre en «Todos».
+   * Sólo la primera vez: lo que la persona elija después, se respeta.
+   */
+  const yaSeAjustoElFiltro = useRef(false);
+  // Sólo después de una lectura de verdad: con la lista todavía vacía por estar cargando, no se decide nada.
+  const huboLectura = useRef(false);
+  if (cargando) huboLectura.current = true;
+  useEffect(() => {
+    if (yaSeAjustoElFiltro.current || cargando || error || !huboLectura.current) return;
+    yaSeAjustoElFiltro.current = true;
+    if (filtro !== 'todos' && !lotes.some((l) => pasaElFiltro(l, filtro))) setFiltro('todos');
+  }, [cargando, error, lotes, filtro]);
   const visibles = useMemo(() => lotes.filter((l) => pasaElFiltro(l, filtro)), [lotes, filtro]);
   // Un lote por mes y por corrida: la lista crece sola y no tiene techo.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
@@ -260,7 +274,9 @@ export function ListaDeLotes({
 
   return (
     <div className="space-y-6" data-testid="lista-de-lotes">
-      {!sinArmar && (
+      {/* Revisora r23 (Giros #3): dentro de Giros la tarjeta «Lo que falta del mes» ya dice si hay algo por
+          armar; sin giros esperando lote, esta caja repetía lo mismo. Sola (sin el mes de afuera), sigue. */}
+      {!sinArmar && !(mesDeAfuera && pendientes?.esperan === 0 && !errorDePendientes) && (
       <section
         className="space-y-4 rounded-lg border border-border bg-surface p-4 shadow-sm"
         data-testid="mes-de-los-lotes"

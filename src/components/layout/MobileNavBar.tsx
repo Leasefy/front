@@ -64,7 +64,8 @@ const CASILLA =
 // El azul de la fila activa del menú (globals.css): en oscuro, apagado, no el
 // índigo saturado de `primary-soft`.
 const CASILLA_ACTIVA = 'bg-[color:var(--menu-activa)] text-[color:var(--menu-activa-tinta)]';
-const ROTULO = 'mt-1 max-w-full truncate text-[9px] font-mono uppercase tracking-wider';
+// Sin el `tracking-wider` de antes: con seis casillas a 390 px, «DIRECTORIO» se cortaba.
+const ROTULO = 'mt-1 max-w-full truncate text-[9px] font-mono uppercase tracking-[0.02em]';
 
 function Contador({ n }: { n: number }) {
   if (n <= 0) return null;

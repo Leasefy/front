@@ -97,4 +97,11 @@ describe('PestanasDeLaFicha', () => {
     });
     expect(nav.replace).toHaveBeenCalledWith('/panel/inmobiliaria/contratos/k1?por=inmueble&pestana=cobro', { scroll: false });
   });
+
+  it('cada pestaña va en una sola línea (a 390 px «Cobro y reglas» se partía)', async () => {
+    await montar();
+    const cobro = $('pestana-cobro') as HTMLElement;
+    expect(cobro.className).toContain('whitespace-nowrap');
+    expect(cobro.className).toContain('shrink-0');
+  });
 });

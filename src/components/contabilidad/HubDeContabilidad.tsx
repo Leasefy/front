@@ -1220,10 +1220,9 @@ export function HubDeContabilidad() {
           La frase la arma `elLibroEnUnaFrase`, que está probada aparte: los
           casos raros son varios (libro vacío, mes en cero con libro lleno, y
           cualquiera de los tres números sin poder leerse). */}
-      <section
-        className="rounded-lg border border-border bg-surface p-5"
-        aria-label="Resumen del libro"
-      >
+      {/* Revisión de Dinero (22-10): la frase del libro como un renglón, sin tarjeta: informa,
+          no decide nada, y no compite con el cierre del mes. */}
+      <section className="px-1 text-body-sm" aria-label="Resumen del libro">
         {/* Esqueleto → la frase del libro con fundido cruzado. */}
         <CrossFade swapKey={cargando ? 'cargando' : 'frase'}>
         {cargando ? (

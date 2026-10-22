@@ -80,11 +80,11 @@ vi.mock('@/lib/api/inmobiliaria.service', () => ({
 // La tabla de verdad tiene sus propias pruebas: acá sólo importa qué filas y qué filtros le llegan.
 vi.mock('@/components/inmobiliaria', () => ({
   PropietarioCard: () => null,
-  PropietarioTable: (p: { propietarios: unknown[]; filtros: { soloConSaldo: boolean }; filtroDeSaldoAfuera?: boolean }) => (
+  PropietarioTable: (p: { propietarios: unknown[]; filtros: { soloConSaldo: boolean; vista?: string }; filtroDeSaldoAfuera?: boolean }) => (
     <div
       data-testid="tabla"
       data-filas={p.propietarios.length}
-      data-solo={String(p.filtros.soloConSaldo)}
+      data-vista={p.filtros.vista}
       data-afuera={String(Boolean(p.filtroDeSaldoAfuera))}
     />
   ),
@@ -159,22 +159,43 @@ describe('Propietarios — la cifra de giros atrasados filtra la lista (glow up 
   const tabla = () => host.querySelector<HTMLElement>('[data-testid="tabla"]')!;
   const cifra = () => host.querySelector<HTMLElement>('[data-testid="cifra-giros-atrasados"]');
 
-  it('un toque muestra sólo a quien hay que girarle; otro, la lista entera', () => {
+  it('abre en «Por girar» (Nico, 22-10); la cifra lleva a la lista entera y vuelve', () => {
     listaMock.mockReturnValue(lista());
     montar();
-    expect(tabla().dataset.filas).toBe('3');
+    // Decisión de Nico (22-10-2026): la lista abre en el trabajo del mes, a quién girarle.
+    expect(tabla().dataset.vista).toBe('porGirar');
+    expect(tabla().dataset.filas).toBe('1');
     expect(tabla().dataset.afuera).toBe('true');
 
     const boton = cifra()?.closest('button') ?? cifra();
     expect(boton?.tagName).toBe('BUTTON');
-    act(() => boton!.click());
-    expect(tabla().dataset.solo).toBe('true');
-    expect(tabla().dataset.filas).toBe('1');
     expect(boton!.getAttribute('aria-pressed')).toBe('true');
+    act(() => boton!.click());
+    expect(tabla().dataset.vista).toBe('todos');
+    expect(tabla().dataset.filas).toBe('3');
+    expect(boton!.getAttribute('aria-pressed')).toBe('false');
 
     act(() => boton!.click());
-    expect(tabla().dataset.solo).toBe('false');
+    expect(tabla().dataset.vista).toBe('porGirar');
+    expect(tabla().dataset.filas).toBe('1');
+  });
+
+  it('las pestañas dicen cuántos hay en cada trabajo y cambian la lista', () => {
+    listaMock.mockReturnValue(lista());
+    montar();
+    const pestana = (id: string) => host.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`);
+    expect(pestana('vista-por-girar')?.textContent).toContain('1');
+    expect(pestana('vista-todos')?.textContent).toContain('3');
+    act(() => pestana('vista-todos')!.click());
     expect(tabla().dataset.filas).toBe('3');
+    expect(pestana('vista-todos')!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('sin nadie atrasado abre en «Todos»', () => {
+    listaMock.mockReturnValue([unPropietario({ id: 'a', pendingBalance: 0 }), unPropietario({ id: 'c', pendingBalance: 0 })]);
+    montar();
+    expect(tabla().dataset.vista).toBe('todos');
+    expect(tabla().dataset.filas).toBe('2');
   });
 
   it('las cifras viven dentro de la tarjeta de la tabla, arriba de ella', () => {

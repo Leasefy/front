@@ -2666,6 +2666,21 @@
         "suParteDe": "su parte de {{canon}} al mes",
         "copiarCorreo": "Copiar el correo",
         "copiarTelefono": "Copiar el teléfono"
+      },
+      "vistas": {
+        "porGirar": "Por girar",
+        "porCompletar": "Por completar",
+        "conInmuebles": "Con inmuebles",
+        "todos": "Todos",
+        "etiqueta": "Qué propietarios ver",
+        "vacioPorGirar": "Nadie tiene giros atrasados.",
+        "vacioPorGirarDetalle": "Todos los propietarios están al día con lo que se les debía girar.",
+        "vacioPorCompletar": "Todas las fichas están completas.",
+        "vacioPorCompletarDetalle": "Ningún propietario tiene un dato que frene su giro o su factura.",
+        "vacioConInmuebles": "Ningún propietario tiene inmuebles consignados.",
+        "vacioConInmueblesDetalle": "Cuando consignes un inmueble, su dueño aparece aquí.",
+        "vacioConBusqueda": "Nadie en esta pestaña coincide con «{{busqueda}}».",
+        "verEnTodos": "Buscar en Todos ({{count}})"
       }
     },
     "agentes": {
@@ -5817,7 +5832,9 @@
         "delete": "Eliminar",
         "noResults": "No se encontraron propietarios",
         "tryOtherTerms": "Intenta con otros términos de búsqueda",
-        "addFirstOwner": "Agrega tu primer propietario para comenzar"
+        "addFirstOwner": "Agrega tu primer propietario para comenzar",
+        "filtros": "Filtros",
+        "tipoDePersona": "Tipo de persona"
       },
       "bankInfo": {
         "bankAccount": "Cuenta bancaria",

@@ -2631,6 +2631,21 @@
         "suParteDe": "their share of {{canon}} per month",
         "copiarCorreo": "Copy the email",
         "copiarTelefono": "Copy the phone"
+      },
+      "vistas": {
+        "porGirar": "To pay out",
+        "porCompletar": "To complete",
+        "conInmuebles": "With properties",
+        "todos": "All",
+        "etiqueta": "Which owners to show",
+        "vacioPorGirar": "No one has overdue payouts.",
+        "vacioPorGirarDetalle": "Every owner is up to date with what they were owed.",
+        "vacioPorCompletar": "Every profile is complete.",
+        "vacioPorCompletarDetalle": "No owner is missing data that holds back a payout or an invoice.",
+        "vacioConInmuebles": "No owner has listed properties.",
+        "vacioConInmueblesDetalle": "When you list a property, its owner shows up here.",
+        "vacioConBusqueda": "No one in this tab matches “{{busqueda}}”.",
+        "verEnTodos": "Search in All ({{count}})"
       }
     },
     "agentes": {
@@ -5782,7 +5797,9 @@
         "delete": "Delete",
         "noResults": "No owners found",
         "tryOtherTerms": "Try different search terms",
-        "addFirstOwner": "Add your first owner to get started"
+        "addFirstOwner": "Add your first owner to get started",
+        "filtros": "Filters",
+        "tipoDePersona": "Type of person"
       },
       "bankInfo": {
         "bankAccount": "Bank account",

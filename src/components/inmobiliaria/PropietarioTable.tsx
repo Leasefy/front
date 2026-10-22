@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla';
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import {
@@ -151,6 +152,14 @@ interface PropietarioTableProps {
    */
   filtroDeSaldoAfuera?: boolean;
   /**
+   * Pestañas por tarea (Nico, 22-10-2026): la página trae «Por girar · Por completar · Con
+   * inmuebles · Todos» arriba y «Persona / Empresa» pasa al panel de «Filtros», que abre el botón
+   * de la barra. El panel queda montado (escondido) para el lector de pantalla y las pruebas.
+   */
+  tipoEnFiltros?: boolean;
+  /** Lo que se dice cuando la pestaña o la búsqueda no deja a nadie (lo arma la página). */
+  vacio?: React.ReactNode;
+  /**
    * Acciones masivas (Nico, 10-10-2026): con esto la tabla pinta las casillas.
    * Lo marcado y lo que se hace con ello lo lleva la página.
    */
@@ -176,6 +185,8 @@ export function PropietarioTable({
   plataOculta = false,
   soloBarra = false,
   filtroDeSaldoAfuera = false,
+  tipoEnFiltros = false,
+  vacio,
   marcadas,
   onMarcar,
 }: PropietarioTableProps) {
@@ -245,6 +256,35 @@ export function PropietarioTable({
   };
 
   const activeFiltersCount = [filterPending, filterType !== 'all'].filter(Boolean).length;
+  const [filtrosAbiertos, setFiltrosAbiertos] = React.useState(false);
+  const idDelPanel = `filtros-de-propietarios-${React.useId().replace(/:/g, '')}`;
+
+  /* «Persona · Empresa» con su número: en la barra (como siempre) o en el panel de «Filtros». */
+  const selectorDeTipo = (
+    <div className="min-w-0 max-w-full overflow-x-auto">
+      <SegmentedControl<FiltrosDePropietarios['tipo']>
+        value={filterType}
+        onChange={setFilterType}
+        options={[
+          {
+            value: 'all',
+            label: <ConChip etiqueta={t('inmobiliaria.propietario.table.all')} cuantos={conteos.todos} />,
+            ariaLabel: `${t('inmobiliaria.propietario.table.all')}: ${conteos.todos}`,
+          },
+          {
+            value: 'person',
+            label: <ConChip etiqueta={t('inmobiliaria.propietario.table.person')} cuantos={conteos.persona} />,
+            ariaLabel: `${t('inmobiliaria.propietario.table.person')}: ${conteos.persona}`,
+          },
+          {
+            value: 'company',
+            label: <ConChip etiqueta={t('inmobiliaria.propietario.table.company')} cuantos={conteos.empresa} />,
+            ariaLabel: `${t('inmobiliaria.propietario.table.company')}: ${conteos.empresa}`,
+          },
+        ]}
+      />
+    </div>
+  );
 
   return (
     <div>
@@ -274,19 +314,51 @@ export function PropietarioTable({
             )}
           </div>
 
-          {/* Export */}
-          {onExport && (
-            <Button
-              variant="secondary"
-              hideArrow
-              onClick={onExport}
-              className="gap-2"
-            >
-              <Export className="w-4 h-4" />
-              <span className="text-sm">{t('inmobiliaria.propietario.table.export')}</span>
-            </Button>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {tipoEnFiltros && (
+              <Button
+                variant="secondary"
+                hideArrow
+                className="gap-2"
+                aria-expanded={filtrosAbiertos}
+                aria-controls={idDelPanel}
+                onClick={() => setFiltrosAbiertos((v) => !v)}
+                data-testid="propietarios-filtros"
+              >
+                <Funnel className="h-4 w-4" aria-hidden />
+                {t('inmobiliaria.propietario.table.filtros')}
+                {activeFiltersCount > 0 ? (
+                  <span className="font-mono text-caption tabular-nums">({activeFiltersCount})</span>
+                ) : null}
+              </Button>
+            )}
+
+            {/* Export */}
+            {onExport && (
+              <Button
+                variant="secondary"
+                hideArrow
+                onClick={onExport}
+                className="gap-2"
+              >
+                <Export className="w-4 h-4" />
+                <span className="text-sm">{t('inmobiliaria.propietario.table.export')}</span>
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* El panel de «Filtros»: montado siempre, visible sólo al abrirlo. */}
+        {tipoEnFiltros && (
+          <div
+            id={idDelPanel}
+            className={cn('flex-wrap items-center gap-2 rounded-lg bg-surface-muted/60 p-3', filtrosAbiertos ? 'flex' : 'hidden')}
+            data-testid="propietarios-panel-de-filtros"
+          >
+            <span className="text-body-sm text-fg-muted">{t('inmobiliaria.propietario.table.tipoDePersona')}</span>
+            {selectorDeTipo}
+          </div>
+        )}
 
         {/* Row 2: Inline Filters */}
         <div className="flex flex-wrap items-center gap-3">
@@ -298,29 +370,7 @@ export function PropietarioTable({
               clickear, no el total de la inmobiliaria. */}
           {/* P-22: a 390 px los tres chips con su número miden más que la
               tarjeta: se desplazan dentro de su riel, nunca fuera del borde. */}
-          <div className="min-w-0 max-w-full overflow-x-auto">
-          <SegmentedControl<FiltrosDePropietarios['tipo']>
-            value={filterType}
-            onChange={setFilterType}
-            options={[
-              {
-                value: 'all',
-                label: <ConChip etiqueta={t('inmobiliaria.propietario.table.all')} cuantos={conteos.todos} />,
-                ariaLabel: `${t('inmobiliaria.propietario.table.all')}: ${conteos.todos}`,
-              },
-              {
-                value: 'person',
-                label: <ConChip etiqueta={t('inmobiliaria.propietario.table.person')} cuantos={conteos.persona} />,
-                ariaLabel: `${t('inmobiliaria.propietario.table.person')}: ${conteos.persona}`,
-              },
-              {
-                value: 'company',
-                label: <ConChip etiqueta={t('inmobiliaria.propietario.table.company')} cuantos={conteos.empresa} />,
-                ariaLabel: `${t('inmobiliaria.propietario.table.company')}: ${conteos.empresa}`,
-              },
-            ]}
-          />
-          </div>
+          {!tipoEnFiltros && selectorDeTipo}
 
           {/* P-21: sin la plata, «Con saldo pendiente 0» sería otra afirmación
               falsa (el saldo llega en null y se lee 0). No se ofrece. */}
@@ -365,8 +415,8 @@ export function PropietarioTable({
             </Button>
           )}
 
-          {/* Results Count */}
-          <span className="ml-auto text-sm text-muted-foreground tabular-nums">
+          {/* Results Count — con las pestañas, sólo cuando algo achica la pestaña (su número ya lo dice). */}
+          <span className={cn('ml-auto text-sm text-muted-foreground tabular-nums', tipoEnFiltros && activeFiltersCount === 0 && !searchQuery && 'hidden')}>
             {/* Ronda 13: con separador de miles («1.751 de 1.751»). */}
             <AnimatedNumber value={totalFiltrado} format={(n) => Math.round(n).toLocaleString('es-CO')} /> {t('inmobiliaria.propietario.table.of')} {total.toLocaleString('es-CO')}
           </span>
@@ -562,7 +612,10 @@ export function PropietarioTable({
 
         {/* Empty State — se mira el total con filtros, no las filas de ESTA
             página: son cosas distintas en cuanto hay paginación. */}
-        <Presence show={totalFiltrado === 0} initial={false} className="p-12 text-center">
+        <Presence show={totalFiltrado === 0 && Boolean(vacio)} initial={false} className="px-6 py-10">
+          {vacio}
+        </Presence>
+        <Presence show={totalFiltrado === 0 && !vacio} initial={false} className="p-12 text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
             <User className="w-8 h-8 text-muted-foreground" />
           </div>

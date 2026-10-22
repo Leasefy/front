@@ -34,6 +34,7 @@ import { plataPareja } from '@/lib/format';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import {
   Dialog,
   DialogContent,
@@ -71,7 +72,10 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   FILTROS_INICIALES,
   conteosDePropietarios,
+  conteosDeLasVistas,
+  estaPorGirar,
   filtrarPropietarios,
+  type VistaDePropietarios,
   type FiltrosDePropietarios,
 } from '@/lib/propietarios/filtrar-propietarios';
 import { descargarListaDePropietarios } from '@/lib/propietarios/exportar-datos';
@@ -205,18 +209,37 @@ function PropietariosContent() {
    */
   // AVISO-TIPO-DOC: `?falta=tipo-de-documento` (el enlace del aviso) entra ya filtrado.
   const faltaEnLaUrl = searchParams.get(PARAMETRO_FALTA) === FALTA_TIPO_DE_DOCUMENTO;
+  /*
+   * Pestañas por tarea (Nico, 22-10-2026): la lista ABRE en «Por girar», que es el trabajo de
+   * todos los meses. `vista` arranca sin elegir y se resuelve con la lista: con nadie atrasado,
+   * sin la plata a la vista, o si se entró a buscar algo (`?falta`, `?persona`), abre en «Todos».
+   * En cuanto la persona toca una pestaña (o busca), queda la que ve.
+   */
   const [filtros, setFiltros] = useState<FiltrosDePropietarios>(() => ({
     ...FILTROS_INICIALES,
+    vista: undefined,
     falta: faltaEnLaUrl ? 'tipoDocumento' : null,
   }));
-  const propietariosFiltrados = useMemo(
-    () => filtrarPropietarios(propietarios, filtros),
-    [propietarios, filtros],
+  const entroABuscarAlguien = faltaEnLaUrl || Boolean(searchParams.get('persona'));
+  const hayAQuienGirarle = useMemo(
+    () => propietarios.some((p) => p.plataOculta !== true && estaPorGirar(p)),
+    [propietarios],
   );
-  /* Los números de los chips salen de la lista COMPLETA, no de la página. */
+  const vistaActual: VistaDePropietarios =
+    filtros.vista ?? (!entroABuscarAlguien && hayAQuienGirarle ? 'porGirar' : 'todos');
+  const filtrosEnPantalla = useMemo(() => ({ ...filtros, vista: vistaActual }), [filtros, vistaActual]);
+  const propietariosFiltrados = useMemo(
+    () => filtrarPropietarios(propietarios, filtrosEnPantalla),
+    [propietarios, filtrosEnPantalla],
+  );
+  /* Los números de los chips y de las pestañas salen de la lista COMPLETA, no de la página. */
   const conteos = useMemo(
-    () => conteosDePropietarios(propietarios, filtros),
-    [propietarios, filtros],
+    () => conteosDePropietarios(propietarios, filtrosEnPantalla),
+    [propietarios, filtrosEnPantalla],
+  );
+  const conteosDeVistas = useMemo(
+    () => conteosDeLasVistas(propietarios, filtrosEnPantalla),
+    [propietarios, filtrosEnPantalla],
   );
 
   const [viewMode, setViewMode] = useState<ViewMode>('table');
@@ -610,6 +633,54 @@ function PropietariosContent() {
   const copropiedadesDelBorrado = propietarioQueSeBorra?.copropiedadesCount ?? 0;
   const borradoBloqueado = inmueblesDelBorrado > 0 || copropiedadesDelBorrado > 0;
 
+  /** Cambiar de pestaña: vuelve a la página 1 (desde la 3 la lista quedaba en blanco). */
+  const verVista = (vista: VistaDePropietarios) => {
+    setFiltros((f) => ({ ...f, vista }));
+    setCurrentPage(1);
+  };
+
+  /*
+   * Lo que dice una pestaña sin nadie. Con una búsqueda o un filtro puesto, a quién buscar en
+   * «Todos»; sin nada puesto, que ese trabajo está hecho (con su ilustración).
+   */
+  const busquedaPuesta = filtros.busqueda.trim();
+  const vacioDeLaPestana =
+    busquedaPuesta || filtros.tipo !== 'all' || filtros.falta ? (
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between" data-testid="vacio-de-la-pestana">
+        <p className="text-body-sm text-fg">
+          {busquedaPuesta
+            ? t('inmobiliaria.propietarios.vistas.vacioConBusqueda', { busqueda: busquedaPuesta })
+            : t('inmobiliaria.propietario.table.noResults')}
+        </p>
+        {vistaActual !== 'todos' && conteosDeVistas.todos > 0 ? (
+          <Button variant="outline" size="sm" hideArrow onClick={() => verVista('todos')}>
+            {t('inmobiliaria.propietarios.vistas.verEnTodos', { count: MILES.format(conteosDeVistas.todos) })}
+          </Button>
+        ) : null}
+      </div>
+    ) : vistaActual === 'porGirar' ? (
+      <SinDatos
+        queSon="propietarios"
+        ilustracion="alcancia"
+        titulo={t('inmobiliaria.propietarios.vistas.vacioPorGirar')}
+        descripcion={t('inmobiliaria.propietarios.vistas.vacioPorGirarDetalle')}
+      />
+    ) : vistaActual === 'porCompletar' ? (
+      <SinDatos
+        queSon="propietarios"
+        ilustracion="carpeta"
+        titulo={t('inmobiliaria.propietarios.vistas.vacioPorCompletar')}
+        descripcion={t('inmobiliaria.propietarios.vistas.vacioPorCompletarDetalle')}
+      />
+    ) : vistaActual === 'conInmuebles' ? (
+      <SinDatos
+        queSon="propietarios"
+        ilustracion="casa"
+        titulo={t('inmobiliaria.propietarios.vistas.vacioConInmuebles')}
+        descripcion={t('inmobiliaria.propietarios.vistas.vacioConInmueblesDetalle')}
+      />
+    ) : undefined;
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* GLOW UP 21-10: el encabezado de todas las pantallas. «Crear con IA» es secundaria y su
@@ -747,48 +818,37 @@ function PropietariosContent() {
               // GLOW UP 21-10: la cifra ES el filtro «con giros atrasados» (antes un chip aparte en la
               // barra): un toque y la lista muestra a quién hay que girarle; otro toque la vuelve entera.
               onClick={
-                !kpiSinDato && !plataOculta && (stats.pendingCount > 0 || filtros.soloConSaldo)
-                  ? () => {
-                      setFiltros((f) => ({ ...f, soloConSaldo: !f.soloConSaldo }));
-                      setCurrentPage(1);
-                    }
+                !kpiSinDato && !plataOculta && (stats.pendingCount > 0 || vistaActual === 'porGirar')
+                  ? () => verVista(vistaActual === 'porGirar' ? 'todos' : 'porGirar')
                   : undefined
               }
-              activa={filtros.soloConSaldo}
+              activa={vistaActual === 'porGirar'}
               data-testid="cifra-giros-atrasados"
             />
           </FranjaDeCifras>
 
-        {/* View Toggle Header */}
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
-          <SegmentedControl<ViewMode>
-            value={viewMode}
-            onChange={setViewMode}
-            aria-label={t('inmobiliaria.propietarios.viewTable')}
-            options={[
-              {
-                value: 'table',
-                label: (
-                  <span className="flex items-center gap-2">
-                    <List className="w-4 h-4" />
-                    {t('inmobiliaria.propietarios.viewTable')}
-                  </span>
-                ),
-                ariaLabel: t('inmobiliaria.propietarios.viewTable'),
-              },
-              {
-                value: 'grid',
-                label: (
-                  <span className="flex items-center gap-2">
-                    <GridFour className="w-4 h-4" />
-                    {t('inmobiliaria.propietarios.viewCards')}
-                  </span>
-                ),
-                ariaLabel: t('inmobiliaria.propietarios.viewCards'),
-              },
-            ]}
-          />
-          {/* El mismo «0» que los tiles, un renglón más abajo: sin dato, no se dice. */}
+        {/* Pestañas por tarea (Nico, 22-10-2026) a la izquierda; tabla o tarjetas a la derecha. */}
+        <div className="flex flex-col gap-2 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between md:gap-4">
+          {propietarios.length > 0 && !kpiSinDato ? (
+            <PestanasDeEstado<VistaDePropietarios>
+              etiqueta={t('inmobiliaria.propietarios.vistas.etiqueta')}
+              data-testid="pestanas-de-propietarios"
+              valor={vistaActual}
+              onCambio={verVista}
+              pestanas={[
+                ...(plataOculta
+                  ? []
+                  : [{ valor: 'porGirar' as const, etiqueta: t('inmobiliaria.propietarios.vistas.porGirar'), cuantos: conteosDeVistas.porGirar, tono: 'aviso' as const, testid: 'vista-por-girar' }]),
+                { valor: 'porCompletar', etiqueta: t('inmobiliaria.propietarios.vistas.porCompletar'), cuantos: conteosDeVistas.porCompletar, tono: 'aviso', testid: 'vista-por-completar' },
+                { valor: 'conInmuebles', etiqueta: t('inmobiliaria.propietarios.vistas.conInmuebles'), cuantos: conteosDeVistas.conInmuebles, testid: 'vista-con-inmuebles' },
+                { valor: 'todos', etiqueta: t('inmobiliaria.propietarios.vistas.todos'), cuantos: conteosDeVistas.todos, fija: true, testid: 'vista-todos' },
+              ]}
+            />
+          ) : (
+            <span />
+          )}
+          <div className="flex items-center justify-between gap-3 md:justify-end">
+            {/* El mismo «0» que los tiles, un renglón más abajo: sin dato, no se dice. */}
           {!kpiSinDato && (
             <span className="text-sm text-muted-foreground tabular-nums">
               <AnimatedNumber value={paginationData.totalItems} format={(n) => MILES.format(Math.round(n))} />{' '}
@@ -797,6 +857,36 @@ function PropietariosContent() {
                 : t('inmobiliaria.propietarios.title').toLowerCase()}
             </span>
           )}
+            <div className="max-md:hidden">
+            <SegmentedControl<ViewMode>
+              value={viewMode}
+              onChange={setViewMode}
+              aria-label={t('inmobiliaria.propietarios.viewTable')}
+              options={[
+                {
+                  value: 'table',
+                  label: (
+                    <span className="flex items-center gap-2">
+                      <List className="w-4 h-4" />
+                      {t('inmobiliaria.propietarios.viewTable')}
+                    </span>
+                  ),
+                  ariaLabel: t('inmobiliaria.propietarios.viewTable'),
+                },
+                {
+                  value: 'grid',
+                  label: (
+                    <span className="flex items-center gap-2">
+                      <GridFour className="w-4 h-4" />
+                      {t('inmobiliaria.propietarios.viewCards')}
+                    </span>
+                  ),
+                  ariaLabel: t('inmobiliaria.propietarios.viewCards'),
+                },
+              ]}
+            />
+            </div>
+          </div>
         </div>
 
         {/* Content */}
@@ -855,7 +945,7 @@ function PropietariosContent() {
                 propietarios={paginationData.paginatedItems}
                 totalFiltrado={paginationData.totalItems}
                 total={propietarios.length}
-                filtros={filtros}
+                filtros={filtrosEnPantalla}
                 conteos={conteos}
                 onFiltros={(nuevos) => {
                   setFiltros(nuevos);
@@ -868,6 +958,8 @@ function PropietariosContent() {
                 onExport={handleExport}
                 plataOculta={plataOculta}
                 filtroDeSaldoAfuera
+                tipoEnFiltros
+                vacio={vacioDeLaPestana}
                 marcadas={marcadas}
                 onMarcar={marcar}
               />
@@ -888,7 +980,7 @@ function PropietariosContent() {
                 propietarios={paginationData.paginatedItems}
                 totalFiltrado={paginationData.totalItems}
                 total={propietarios.length}
-                filtros={filtros}
+                filtros={filtrosEnPantalla}
                 conteos={conteos}
                 onFiltros={(nuevos) => {
                   setFiltros(nuevos);
@@ -900,6 +992,7 @@ function PropietariosContent() {
                 onExport={handleExport}
                 plataOculta={plataOculta}
                 filtroDeSaldoAfuera
+                tipoEnFiltros
               />
               {paginationData.totalItems === 0 ? (
               /* En tarjetas no hay barra de filtros —vive dentro de la tabla—,
@@ -911,7 +1004,7 @@ function PropietariosContent() {
                 queSon="propietarios"
                 icono={UserCircle}
                 onLimpiarFiltros={() => {
-                  setFiltros(FILTROS_INICIALES);
+                  setFiltros({ ...FILTROS_INICIALES, vista: 'todos' });
                   setCurrentPage(1);
                 }}
               />

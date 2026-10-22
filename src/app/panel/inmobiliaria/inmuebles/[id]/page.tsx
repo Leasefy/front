@@ -804,6 +804,7 @@ function ConsignacionDetailContent() {
                 {consignacion.propertyId && (
                   <PublicadoEnElMarketplace
                     propertyId={consignacion.propertyId}
+                    consignacionId={consignacion.id}
                     puedeCambiar={puedeEditarPortafolio}
                     onVerAviso={terminada ? undefined : handleViewPortal}
                   />
@@ -845,7 +846,7 @@ function ConsignacionDetailContent() {
                 {/* 22-10 (revisión): primero lo que falta hacer —papeles y firma—,
                     con la firma reforzada (opcional) en el mismo lugar; después los
                     términos y lo configurable. */}
-                <div>
+                <div id="papeles" className="scroll-mt-20">
                   <MandatoDelInmueble
                     consignacionId={consignacion.id}
                     propietarioNombre={propietario?.name ?? null}

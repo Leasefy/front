@@ -73,7 +73,7 @@ export function LoQueFaltaDelInmueble({
     estado: firmas.cargando && !firmas.datos ? 'cargando' : firmas.noHabilitado || firmas.errorCrudo || firmas.datos?.disponible === false ? 'desconocido' : firmado ? 'listo' : 'falta',
     accion: (
       <Button size="sm" variant="secondary" hideArrow asChild>
-        <Link href={irA(consignacion.id, 'mandato')}>{pendiente ? 'Ver la firma' : 'Mandar a firmar'}</Link>
+        <Link href={irA(consignacion.id, 'mandato', 'papeles')}>{pendiente ? 'Ver la firma' : 'Mandar a firmar'}</Link>
       </Button>
     ),
   });
@@ -89,7 +89,7 @@ export function LoQueFaltaDelInmueble({
     estado: documentos.cargando && !d ? 'cargando' : documentos.noHabilitado || documentos.errorCrudo || (!papelesListos && faltan === 0) ? 'desconocido' : papelesListos ? 'listo' : 'falta',
     accion: (
       <Button size="sm" variant="secondary" hideArrow asChild>
-        <Link href={irA(consignacion.id, 'mandato')}>Ver los papeles</Link>
+        <Link href={irA(consignacion.id, 'mandato', 'papeles')}>Subir los papeles</Link>
       </Button>
     ),
   });

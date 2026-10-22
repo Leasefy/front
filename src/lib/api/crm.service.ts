@@ -749,7 +749,7 @@ export const captacionApi = {
     apiClient.get<{ url: string }>(`${BASE}/captacion/documentos/${id}/url`),
 
   sePuedePublicar: (consignacionId: string) =>
-    apiClient.get<{ puede: boolean; sinMigracion: boolean; motivo: string | null }>(
+    apiClient.get<{ puede: boolean; sinMigracion: boolean; motivo: string | null; falta?: PapelQueFalta[] }>(
       `${BASE}/captacion/mandatos/${consignacionId}/se-puede-publicar`,
     ),
 

@@ -1,4 +1,5 @@
 'use client';
+import { EmptyState } from '@/components/ui/empty-state';
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState } from 'react';
@@ -6,7 +7,6 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
-import { Button } from '@/components/ui';
 import {
   CaretLeft,
   Users,
@@ -36,7 +36,7 @@ const RUTA_DEL_EQUIPO = '/panel/inmobiliaria/configuracion/equipo';
 /** La forma de la ficha del asesor, sin datos: la miga y las dos columnas. */
 function EsqueletoDelAsesor() {
   return (
-    <div className="p-4 md:p-6 space-y-6" data-testid="agente-cargando" aria-busy="true">
+    <div className="p-6 lg:p-8 space-y-6" data-testid="agente-cargando" aria-busy="true">
       <Skeleton className="h-5 w-64" />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -92,7 +92,7 @@ function AgenteDetailContent() {
   // ofrece reintentar. Un 404 sigue con su «no encontrado» de abajo.
   if (!agente && errorDelAgente && !esNoExiste(errorDelAgente)) {
     return (
-      <div className="p-4 md:p-6 space-y-6" data-testid="agente-fallo">
+      <div className="p-6 lg:p-8 space-y-6" data-testid="agente-fallo">
         <Link
           href={RUTA_DEL_EQUIPO}
           className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-primary transition-colors"
@@ -113,32 +113,19 @@ function AgenteDetailContent() {
   // 404 if not found
   if (!agente) {
     return (
-      <div className="p-4 md:p-6">
-        <div className="max-w-lg mx-auto flex flex-col items-center text-center py-16 gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-surface-muted flex items-center justify-center">
-            <Users weight="duotone" className="w-6 h-6 text-fg-muted" />
-          </div>
-          <div className="space-y-1.5">
-            <h1 className="text-h2 text-fg">
-              {t('inmobiliaria.agentes.notFound')}
-            </h1>
-            <p className="text-sm text-fg-muted line-clamp-2 max-w-2xl">
-              {t('inmobiliaria.agentes.notFoundDesc')}
-            </p>
-          </div>
-          <Button asChild hideArrow className="mt-1">
-            <Link href="/panel/inmobiliaria/configuracion/equipo">
-              <CaretLeft className="w-4 h-4" />
-              {t('inmobiliaria.agentes.backToList')}
-            </Link>
-          </Button>
-        </div>
+      <div className="p-6 lg:p-8">
+        <EmptyState
+          icon={Users}
+          title={t('inmobiliaria.agentes.notFound')}
+          description={t('inmobiliaria.agentes.notFoundDesc')}
+          action={{ label: t('inmobiliaria.agentes.backToList'), href: RUTA_DEL_EQUIPO }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Miga de pan: la ficha cuelga de Configuración → Equipo (el marco de
           Configuración se aparta acá, así que la ubicación la dice esta línea). */}
       <nav className="flex items-center gap-2 text-sm">

@@ -277,16 +277,6 @@ function InventarioPorVersiones({
         </AlertaAccionable>
       )}
 
-      {copiaLocal && (
-        <PrepararParaSinSenal
-          guardadoEn={copiaLocal.guardadoEn}
-          preparando={copiaLocal.preparando}
-          ultimaPreparacion={copiaLocal.ultimaPreparacion}
-          sinSenal={sinSenal}
-          onPreparar={() => void copiaLocal.preparar()}
-        />
-      )}
-
       {puedeEditar && (
         <BarraDeBorradorDeInventario
           hayPendientes={borradorLocal.hayPendientes}
@@ -318,6 +308,21 @@ function InventarioPorVersiones({
           </p>
 
           <ActaEntregaView
+            /* 🔴 «Trabajar sin señal» va DENTRO de la tarjeta del inventario (decisión de Nico,
+               como en InventarioDeLaConsignacion): es la copia de ESE inventario para llevarla a
+               la visita. 22-10: aquí iba suelto encima, y antes de que existiera el inventario. */
+            franja={
+              copiaLocal ? (
+                <PrepararParaSinSenal
+                  guardadoEn={copiaLocal.guardadoEn}
+                  preparando={copiaLocal.preparando}
+                  ultimaPreparacion={copiaLocal.ultimaPreparacion}
+                  sinSenal={sinSenal}
+                  onPreparar={() => void copiaLocal.preparar()}
+                  sinMarco
+                />
+              ) : undefined
+            }
             inventoryItems={items}
             contractDate={borrador?.updatedAt ?? datos.ultimoCompleto?.completadoEn ?? consignacion.contractDate}
             onPrint={() => router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}/acta`)}

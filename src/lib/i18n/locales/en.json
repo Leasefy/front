@@ -1738,6 +1738,8 @@
       }
     },
     "mobileNav": {
+      "menuButton": "Menu",
+      "menuAriaLabel": "Open the menu",
       "moreButton": "More",
       "moreAriaLabel": "View more navigation options",
       "sheetTitle": "More options",

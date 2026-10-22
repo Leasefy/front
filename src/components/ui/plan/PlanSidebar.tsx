@@ -65,7 +65,7 @@ import { useTr } from '@/lib/i18n/use-tr';
 // pub-sub avoids threading open-state through each layout. No-op when no
 // PlanSidebar is mounted.
 // ─────────────────────────────────────────────────────────────────────────────
-type MobileSidebarListener = (abridor: HTMLElement | null) => void;
+type MobileSidebarListener = (abridor: HTMLElement | null, comoSeccion: boolean) => void;
 const mobileSidebarListeners = new Set<MobileSidebarListener>();
 
 const INVITE_DISMISSED_KEY = 'leasefy-sidebar-invite-dismissed';
@@ -87,10 +87,19 @@ function quienAbreElCajon(origen: unknown): HTMLElement | null {
   return activo instanceof HTMLElement && activo !== document.body ? activo : null;
 }
 
-/** Opens the PlanSidebar mobile navigation Sheet (called from PlanHeader). */
-export function openPlanMobileSidebar(origen?: HTMLElement | { currentTarget?: EventTarget | null } | null) {
+/**
+ * Opens the PlanSidebar mobile navigation Sheet (called from PlanHeader).
+ *
+ * `comoSeccion` (Nico, 22-10-2026): el botón «Menú» de la barra de abajo abre el
+ * MISMO menú, pero a pantalla completa, como la pestaña de menú de una app.
+ */
+export function openPlanMobileSidebar(
+  origen?: HTMLElement | { currentTarget?: EventTarget | null } | null,
+  opciones?: { comoSeccion?: boolean },
+) {
   const abridor = quienAbreElCajon(origen);
-  mobileSidebarListeners.forEach((listener) => listener(abridor));
+  const comoSeccion = opciones?.comoSeccion === true;
+  mobileSidebarListeners.forEach((listener) => listener(abridor, comoSeccion));
 }
 
 /**
@@ -1350,6 +1359,8 @@ export function PlanSidebar({
 }: PlanSidebarProps) {
   const { isCollapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
+  // A pantalla completa cuando lo abre «Menú» de la barra de abajo (ver openPlanMobileSidebar).
+  const [comoSeccion, setComoSeccion] = useState(false);
   const textos = useTextosDeLaBarra();
   const asideRef = useRef<HTMLElement>(null);
   const inicioDelCajonRef = useRef<HTMLAnchorElement>(null);
@@ -1362,8 +1373,9 @@ export function PlanSidebar({
   // Register with the module-level opener so PlanHeader's menu button
   // (rendered in a sibling tree) can open this Sheet.
   useEffect(() => {
-    const listener: MobileSidebarListener = (abridor) => {
+    const listener: MobileSidebarListener = (abridor, seccion) => {
       abridorDelCajonRef.current = abridor;
+      setComoSeccion(seccion);
       setMobileOpen(true);
     };
     mobileSidebarListeners.add(listener);
@@ -1450,8 +1462,14 @@ export function PlanSidebar({
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent
           side="left"
-          // Flotante como todo cajón; la barra arma su propio layout.
-          className="w-[280px] bg-bg"
+          // Flotante como todo cajón; la barra arma su propio layout. Desde «Menú»
+          // de la barra de abajo: la sección entera, de borde a borde (con la hora
+          // y la barra de gestos de la app respetadas).
+          className={cn(
+            'w-[280px] bg-bg',
+            comoSeccion &&
+              '!inset-0 !w-full !max-w-none !rounded-none !border-0 pt-[var(--area-segura-arriba)] pb-[var(--area-segura-abajo)] [&_[data-testid=dialog-close]]:!top-[calc(var(--area-segura-arriba)+18px)]',
+          )}
           layout="manual"
           aria-describedby={undefined}
           onOpenAutoFocus={alAbrirElCajon}

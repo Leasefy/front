@@ -1773,6 +1773,8 @@
       }
     },
     "mobileNav": {
+      "menuButton": "Menú",
+      "menuAriaLabel": "Abrir el menú",
       "moreButton": "Más",
       "moreAriaLabel": "Ver más opciones de navegación",
       "sheetTitle": "Más opciones",

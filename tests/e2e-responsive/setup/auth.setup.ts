@@ -2,20 +2,39 @@ import fs from 'node:fs';
 
 import { test as setup } from '@playwright/test';
 
-import { loginThroughUi } from '../support/login';
-import { AUTH_DIR, PERSONAS, authFile, personaSkipReason, statusFile } from '../support/personas';
+import { loginThroughUi, saveValidatedState } from '../support/login';
+import {
+  AUTH_DIR,
+  PERSONAS,
+  authFile,
+  hasSupabaseSession,
+  personaSkipReason,
+  statusFile,
+} from '../support/personas';
 
 /**
  * One login per persona through the real UI; storageState is saved to
  * tests/e2e-responsive/.auth/<persona>.json (git-ignored: it contains tokens).
  *
+ * The state file is written only after the login produced a Supabase session (validated, via a
+ * temp file + rename): a failed or interrupted login never leaves an empty file and never
+ * destroys a session that was still valid.
+ *
  * A persona that cannot log in does NOT fail the setup project (that would block every
- * dependent device project, including the other personas). The outcome is written to
- * <persona>.status.json; the spec skips that persona with the recorded reason and the report
- * lists it.
+ * dependent device project, including the other personas). It is reported LOUDLY instead: a
+ * banner on the console, an annotation in the report, `<persona>.status.json` with the reason
+ * (the spec skips that persona with it) and a non-zero exit code from `pnpm e2e:responsive`.
  */
 setup.describe.configure({ mode: 'parallel' });
-setup.setTimeout(300_000);
+setup.setTimeout(600_000);
+
+function validSavedState(personaId: Parameters<typeof authFile>[0]): boolean {
+  try {
+    return hasSupabaseSession(JSON.parse(fs.readFileSync(authFile(personaId), 'utf8')));
+  } catch {
+    return false;
+  }
+}
 
 for (const persona of PERSONAS) {
   if (!persona.envPrefix) continue;
@@ -24,29 +43,25 @@ for (const persona of PERSONAS) {
     // Iterating on the suite: keep a session that already logged in (tokens last ~1h).
     if (process.env.RESPONSIVE_REUSE_AUTH === '1' && fs.existsSync(statusFile(persona.id))) {
       const previous = JSON.parse(fs.readFileSync(statusFile(persona.id), 'utf8')) as { ok: boolean };
-      if (previous.ok && fs.existsSync(authFile(persona.id))) return;
+      if (previous.ok && validSavedState(persona.id)) return;
     }
-    // An empty (but valid) state keeps the dependent projects' context creation working
-    // for a persona that cannot log in; the spec then skips it using the status file.
-    const emptyState = JSON.stringify({ cookies: [], origins: [] });
-    fs.writeFileSync(authFile(persona.id), emptyState);
 
     const skip = personaSkipReason(persona);
     if (skip) {
       fs.writeFileSync(statusFile(persona.id), JSON.stringify({ ok: false, reason: skip }));
+      console.error(`\n[auth] !!! ${persona.id} UNAVAILABLE: ${skip}\n`);
       setup.skip(true, skip);
       return;
     }
     try {
       await loginThroughUi(page, persona, (m) => console.log(`[auth] ${m}`));
-      await page.context().storageState({ path: authFile(persona.id) });
+      await saveValidatedState(page.context(), authFile(persona.id), persona.id);
       fs.writeFileSync(statusFile(persona.id), JSON.stringify({ ok: true }));
     } catch (error) {
       const reason = String(error instanceof Error ? error.message : error).slice(0, 300);
       fs.writeFileSync(statusFile(persona.id), JSON.stringify({ ok: false, reason }));
-      fs.writeFileSync(authFile(persona.id), emptyState);
       setup.info().annotations.push({ type: 'auth-failed', description: `${persona.id}: ${reason}` });
-      console.warn(`[auth] ${persona.id} could not log in: ${reason}`);
+      console.error(`\n[auth] !!! ${persona.id} COULD NOT LOG IN: ${reason}\n[auth] its routes will be skipped; any previous valid session file was left untouched\n`);
     }
   });
 }

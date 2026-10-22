@@ -2,7 +2,7 @@ import fs from 'node:fs';
 
 import type { Browser, BrowserContext, Page } from '@playwright/test';
 
-import { loginThroughUi } from './login';
+import { loginThroughUi, saveValidatedState } from './login';
 import { authFile, type Persona } from './personas';
 
 /**
@@ -40,7 +40,7 @@ export async function refreshSharedSession(browser: Browser, persona: Persona, b
     const context = await browser.newContext({ baseURL, colorScheme: 'light', viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
     await loginThroughUi(page, persona);
-    await context.storageState({ path: file });
+    await saveValidatedState(context, file, persona.id);
     await context.close();
   } finally {
     fs.rmSync(lock, { recursive: true, force: true });

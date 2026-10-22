@@ -546,7 +546,7 @@ function PostulacionesContenido() {
       {accion && (
         <AccionDePostulacion
           type={accion.type}
-          candidateName={accion.candidate.tenantName || accion.candidate.id.slice(0, 8)}
+          candidateName={accion.candidate.tenantName || 'Sin nombre registrado'}
           onConfirm={confirmarAccion}
           onClose={() => setAccion(null)}
           aviso={avisoAlAprobar(accion.candidate.marcaDelEstudio)}

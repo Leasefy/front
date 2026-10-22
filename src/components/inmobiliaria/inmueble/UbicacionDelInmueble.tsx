@@ -58,17 +58,16 @@ export function UbicacionDelInmueble({ property, cargando, consignacion, onActua
 
   return (
     <section
-      className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden"
+      // 21-10: la misma superficie elevada y el mismo título de las demás secciones de la ficha.
+      className="overflow-hidden rounded-[24px] border border-border-faint bg-surface shadow-[0_1px_2px_rgba(20,19,15,0.04),0_10px_28px_-18px_rgba(20,19,15,0.16)] dark:border-border-strong dark:bg-bg"
       data-testid="ubicacion-del-inmueble"
     >
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-border-faint dark:border-border-strong">
-        <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle">
-          <MapTrifold className="w-4 h-4" />
-        </div>
-        <h3 className="font-semibold text-fg dark:text-white">{t('inmobiliaria.inmuebles.ubicacion.titulo')}</h3>
+      <div className="flex items-center gap-2.5 px-6 pb-1 pt-5 text-fg-subtle">
+        <MapTrifold className="h-[18px] w-[18px]" aria-hidden="true" />
+        <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">{t('inmobiliaria.inmuebles.ubicacion.titulo')}</h3>
       </div>
 
-      <div className="p-5">
+      <div className="px-6 pb-6 pt-4">
         {cargando && !property ? (
           <EsqueletoDelMapa />
         ) : conMapa && property ? (
@@ -79,23 +78,25 @@ export function UbicacionDelInmueble({ property, cargando, consignacion, onActua
             direccion={direccion}
           />
         ) : (
+          // Sin coordenadas: un renglón con su acción, no una caja gris de 260 px que
+          // parecía un mapa roto (21-10, impacto visual).
           <div
-            className="h-56 sm:h-64 rounded-lg border border-dashed border-border bg-surface-muted flex flex-col items-center justify-center gap-3 px-6 text-center"
+            className="flex flex-col gap-3 rounded-[16px] bg-surface-muted px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
             data-testid="ubicacion-vacia"
           >
-            <div className="w-10 h-10 rounded-md bg-surface dark:bg-ink flex items-center justify-center text-fg-subtle">
-              <MapPin className="w-5 h-5" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-fg">{t('inmobiliaria.inmuebles.ubicacion.sinUbicacion')}</p>
-              <p className="text-xs text-fg-muted mt-1">
+            <div className="flex min-w-0 items-start gap-3">
+              <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-fg-subtle" aria-hidden="true" />
+              <div className="min-w-0">
+              <p className="text-body-sm font-medium text-fg">{t('inmobiliaria.inmuebles.ubicacion.sinUbicacion')}</p>
+              <p className="mt-0.5 text-caption text-fg-muted">
                 {property
                   ? t('inmobiliaria.inmuebles.ubicacion.sinUbicacionDesc')
                   : t('inmobiliaria.inmuebles.ubicacion.inmuebleNoCargo')}
               </p>
+              </div>
             </div>
             {property && puedeEditar && (
-              <Button variant="secondary" size="sm" hideArrow onClick={() => setDialogoAbierto(true)}>
+              <Button variant="secondary" size="sm" hideArrow className="shrink-0" onClick={() => setDialogoAbierto(true)}>
                 <MapPin className="w-4 h-4" aria-hidden="true" />
                 {t('inmobiliaria.inmuebles.ubicacion.ubicarEnElMapa')}
               </Button>

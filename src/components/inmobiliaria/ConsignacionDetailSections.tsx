@@ -33,7 +33,7 @@ import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import { ApiError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, IconButton } from '@leasefy/cadence';
+import { Avatar, IconButton, buttonVariants } from '@leasefy/cadence';
 import { ContratoPdfModal } from './ContratoPdfModal';
 import type { Consignacion, Copropietario, Propietario, Agente, AgenteRole } from '@/lib/types/inmobiliaria';
 import { formatParticipacion } from '@/lib/types/inmobiliaria';
@@ -421,7 +421,7 @@ export function PropietarioSection({
           {propietario.email && (
             <a
               href={`mailto:${propietario.email}`}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+              className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex-1 justify-center gap-2')}
             >
               <Envelope className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.detail.email')}
@@ -430,7 +430,7 @@ export function PropietarioSection({
           {propietario.phone && (
             <a
               href={`tel:${propietario.phone}`}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+              className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex-1 justify-center gap-2')}
             >
               <Phone className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.detail.call')}
@@ -453,7 +453,7 @@ export function PropietarioSection({
             <BotonEnviarMensaje
               counterpartId={cuenta}
               etiqueta="Mensaje"
-              className="flex-1 h-auto justify-center gap-2 rounded-lg border-0 bg-surface-muted px-4 py-2.5 text-sm font-medium text-fg dark:bg-ink dark:text-fg-subtle"
+              className="flex-1 justify-center gap-2"
             />
           )}
         </div>
@@ -614,14 +614,14 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
         <div className="flex items-center gap-2">
           <a
             href={`mailto:${agente.email}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+            className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex-1 justify-center gap-2')}
           >
             <Envelope className="w-4 h-4" />
             {t('inmobiliaria.consignaciones.detail.email')}
           </a>
           <a
             href={`tel:${agente.phone}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+            className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex-1 justify-center gap-2')}
           >
             <Phone className="w-4 h-4" />
             {t('inmobiliaria.consignaciones.detail.call')}
@@ -703,7 +703,7 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
               {inquilino.correo && (
                 <a
                   href={`mailto:${inquilino.correo}`}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+                  className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex-1 justify-center gap-2')}
                 >
                   <Envelope className="w-4 h-4" />
                   {t('inmobiliaria.consignaciones.detail.email')}
@@ -712,7 +712,7 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
               {inquilino.telefono && (
                 <a
                   href={`tel:${inquilino.telefono}`}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+                  className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'flex-1 justify-center gap-2')}
                 >
                   <Phone className="w-4 h-4" />
                   {t('inmobiliaria.consignaciones.detail.call')}
@@ -722,7 +722,7 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
                 <BotonEnviarMensaje
                   counterpartId={inquilino.cuentaDePortalId}
                   etiqueta="Mensaje"
-                  className="flex-1 h-auto justify-center gap-2 rounded-lg border-0 bg-surface-muted px-4 py-2.5 text-sm font-medium text-fg dark:bg-ink dark:text-fg-subtle"
+                  className="flex-1 justify-center gap-2"
                 />
               )}
             </div>

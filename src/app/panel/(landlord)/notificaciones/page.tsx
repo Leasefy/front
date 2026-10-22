@@ -36,6 +36,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { IconButton, Chip, CrossFade, StaggerItem } from '@leasefy/cadence';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useLandlordNotifications } from '@/lib/hooks/useNotifications';
@@ -161,33 +162,33 @@ export default function NotificacionesPage() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    // GLOW UP (21-10-2026): el contenedor y el encabezado común del portal (el mismo de las del inquilino).
+    <div className="max-w-4xl p-6 lg:p-8">
       {/* Header — QA-PROP-95 (PO-24): a 390 px «Marcar todo como leído» baja de
-          renglón; antes la página se corría 45 px de lado. */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-fg">
-            {t('landlord.notifications.title')}
-          </h1>
-          <p className="text-sm text-fg-muted mt-1">
-            {unreadCount > 0 ? t('landlord.notifications.unreadCount', { count: unreadCount }) : t('landlord.notifications.allRead')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead}>
-              <Check className="w-4 h-4" />
-              {t('landlord.notifications.markAllRead')}
-            </Button>
-          )}
-          <IconButton
-            variant="ghost"
-            icon={<Gear className="w-5 h-5" />}
-            aria-label="Configuración"
-            onClick={() => router.push('/panel/configuracion/notificaciones')}
-          />
-        </div>
-      </div>
+          renglón (el encabezado común envuelve sus acciones). */}
+      <EncabezadoDePantalla
+        className="mb-6"
+        titulo={t('landlord.notifications.title')}
+        descripcion={
+          unreadCount > 0 ? t('landlord.notifications.unreadCount', { count: unreadCount }) : t('landlord.notifications.allRead')
+        }
+        acciones={
+          <>
+            {unreadCount > 0 && (
+              <Button variant="outline" size="sm" hideArrow onClick={handleMarkAllAsRead}>
+                <Check className="w-4 h-4" />
+                {t('landlord.notifications.markAllRead')}
+              </Button>
+            )}
+            <IconButton
+              variant="ghost"
+              icon={<Gear className="w-5 h-5" />}
+              aria-label="Configuración"
+              onClick={() => router.push('/panel/configuracion/notificaciones')}
+            />
+          </>
+        }
+      />
 
       {/* Filters */}
       <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border overflow-x-auto">

@@ -2810,3 +2810,14 @@ button[role='radio'][data-state='checked'].group {
 [data-dialog-body].flex-1 {
   flex: 1 1 auto;
 }
+
+/* 22-10 (revisión de Dinero, 390): una tabla que bajo 768 pasa a tarjetas dice el
+   rótulo de cada dato a la izquierda (`data-rotulo` en la celda). */
+@media (max-width: 767px) {
+  td[data-rotulo]::before {
+    content: attr(data-rotulo);
+    flex-shrink: 0;
+    font-size: 13px;
+    color: hsl(var(--muted-foreground));
+  }
+}

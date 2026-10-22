@@ -268,8 +268,8 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
 
   return (
     <>
-    <Table className="min-w-[1220px]" data-testid="cartera-tabla">
-      <TableHeader>
+    <Table className="max-md:block md:min-w-[1080px]" data-testid="cartera-tabla">
+      <TableHeader className="max-md:hidden">
         <TableRow>
           {conCasillas && marcadas && onMarcar && (
             <TableHead className="w-10 pl-4 pr-0">
@@ -298,7 +298,7 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
         </TableRow>
       </TableHeader>
       {/* Movimiento (ola 2, 03-10-2026): filas escalonadas con techo. */}
-      <TableBodyAnimado key={clave}>
+      <TableBodyAnimado key={clave} className="max-md:block">
         {ordenados.length === 0 && vacio ? (
           <TableRowAnimada key="vacio">
             <TableCell colSpan={COLUMNAS_DE_CARTERA + (conCasillas ? 1 : 0)} className="p-0">
@@ -364,7 +364,9 @@ function FilaDeCartera({
 
   return (
     <TableRowAnimada
-      className="cursor-pointer"
+      // 22-10 (revisión, 390): bajo 768 cada deuda es una tarjeta —cada dato con su
+      // rótulo a la izquierda (data-rotulo) y la cifra a la derecha—.
+      className="cursor-pointer max-md:flex max-md:flex-col max-md:gap-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3"
       onClick={onVerCobro}
       data-testid="cartera-fila"
       data-cuota-id={item.cuotaId}
@@ -372,7 +374,7 @@ function FilaDeCartera({
     >
       {casilla !== undefined && <TableCell className="w-10 pl-4 pr-0 align-middle">{casilla}</TableCell>}
       {/* Inquilino: quién debe y por dónde se le habla. */}
-      <TableCell className="align-middle">
+      <TableCell className="align-middle max-md:block max-md:p-0">
         <div className="min-w-0 max-w-[12rem]">
           {item.tenantName ? (
             refDelInquilino({ documento: item.tenantDocument }) ? (
@@ -431,7 +433,7 @@ function FilaDeCartera({
 
       {/* Inmueble, y debajo el propietario —a quién le estamos quedando mal—: una columna menos y la
           tabla cabe a 1440 (GLOW UP 21-10; el mismo dibujo de Contratos, C-16). */}
-      <TableCell className="align-middle">
+      <TableCell className="align-middle max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t('cartera.tabla.inmueble')}>
         {inmueble ? (
           <span className="block max-w-[14rem] truncate text-fg">{inmueble}</span>
         ) : (
@@ -448,7 +450,7 @@ function FilaDeCartera({
 
       {/* Período + vencimiento apilado: la fecha exacta es lo que se discute
           con el inquilino, y no cabía como columna aparte. */}
-      <TableCell className="align-middle">
+      <TableCell className="align-middle max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t('cartera.tabla.mes')}>
         <div className="whitespace-nowrap">
           {/* «2026-09» es el identificador del mes, no cómo se lee: la casa
               lo escribe con letras (`nombreDelMes`, ver DispersionCard). */}
@@ -464,7 +466,7 @@ function FilaDeCartera({
           🔴 El badge NO dice «al día» cuando no hay mora: una cuota que venció
           hace dos días con tres de plazo no está al día, está dentro del plazo
           —y la diferencia es justo la que decide si la cobranza la toca—. */}
-      <TableCell className="align-middle">
+      <TableCell className="align-middle max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t('cartera.tabla.mora')}>
         <div className="space-y-1">
           <Badge
             variant={
@@ -526,7 +528,7 @@ function FilaDeCartera({
       </TableCell>
 
       {/* Saldo: el pendiente manda; el abono va debajo sólo si lo hubo. */}
-      <TableCell className="align-middle text-right">
+      <TableCell className="align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t('cartera.tabla.debe')}>
         <div className="whitespace-nowrap">
           <div className="font-mono font-medium tabular-nums text-fg">
             {formatCurrency(item.pendingAmount)}
@@ -540,12 +542,12 @@ function FilaDeCartera({
       </TableCell>
 
       {/* Intereses: aparte del capital. Nunca un $0 mudo. */}
-      <TableCell className="align-middle text-right" data-testid="cartera-intereses">
+      <TableCell className="align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t(CLAVE_DE_MORA.columnaIntereses)} data-testid="cartera-intereses">
         <InteresDeLaFila item={item} />
       </TableCell>
 
       {/* Total: capital + interés, lo que hay que pagar hoy por esta cuota. */}
-      <TableCell className="align-middle text-right" data-testid="cartera-total">
+      <TableCell className="align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t(CLAVE_DE_MORA.columnaTotal)} data-testid="cartera-total">
         <div className="whitespace-nowrap font-mono font-medium tabular-nums text-fg">
           {interesDe(item)
             ? formatCurrency(totalConInteres(item, item.pendingAmount))
@@ -553,7 +555,7 @@ function FilaDeCartera({
         </div>
       </TableCell>
 
-      <TableCell className="align-middle text-right">
+      <TableCell className="align-middle text-right max-md:flex max-md:justify-end max-md:p-0">
         <div className="flex items-center justify-end gap-1">
         {onGestiones ? (
           <Button

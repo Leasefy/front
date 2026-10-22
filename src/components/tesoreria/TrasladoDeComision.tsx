@@ -423,7 +423,7 @@ function Propuesta({
       <Avisos avisos={propuesta.avisos} testId="avisos-de-la-propuesta" />
 
       {/* Ronda 11 de la revisión (22-10): eran tres tarjetas de cifras (total, comisión
-          causada, ya propuesto) que el desglose de abajo vuelve a decir; el mismo
+          de lo recaudado —antes causada—, ya propuesto) que el desglose vuelve a decir; el mismo
           número salía cuatro veces. Ahora el total va grande ENCIMA del desglose, que
           suma y explica renglón por renglón. */}
       <section
@@ -441,7 +441,7 @@ function Propuesta({
             propuesta.renglones.length === 0 && (propuesta.comisionCop > 0 || propuesta.yaTrasladadoCop > 0) ? (
               // Sin desglose del back, las dos cifras de las que sale el total, en una línea.
               <>
-                Comisión causada <span className="font-mono tabular-nums text-fg">{plata(propuesta.comisionCop)}</span>
+                Comisión de lo recaudado <span className="font-mono tabular-nums text-fg">{plata(propuesta.comisionCop)}</span>
                 {propuesta.yaTrasladadoCop > 0 ? (
                   <>
                     {' · '}ya propuesto o trasladado{' '}

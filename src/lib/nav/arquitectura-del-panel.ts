@@ -22,6 +22,7 @@ import {
   ListChecks,
   Umbrella,
   ArrowsClockwise,
+  Lightning,
   Coins,
   CurrencyCircleDollar,
   ChatCircleText,
@@ -585,6 +586,10 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // una card sola: quedaría inalcanzable desde el menú. Mismo criterio
       // que «Portales» con Inmuebles.
       { key: 'proveedores', labelKey: 'inmobiliaria.nav.proveedores', href: r('/mantenimientos/proveedores'), icon: Toolbox, module: 'operaciones', scope: 'administracion' },
+      // 🔴 Portofino 22-10-2026: «necesito que creemos también dentro de
+      // operación la parte de servicios públicos»: quién está al día, las
+      // facturas que suben los inquilinos, la entrada por días y la salida.
+      { key: 'servicios-publicos', labelKey: 'inmobiliaria.nav.serviciosPublicos', href: r('/servicios-publicos'), icon: Lightning, module: 'operaciones', scope: 'administracion' },
       { key: 'solicitudes', labelKey: 'inmobiliaria.nav.solicitudes', href: r('/solicitudes'), icon: Lifebuoy, module: 'operaciones', scope: 'administracion', ia: true, hintKey: 'inmobiliaria.nav.pqrs' },
       // 21-10-2026: «Mensajes» es un permiso (se da desde «Permisos de esta
       // persona»); `canAccess('mensajes')` cae al rol con un back anterior.

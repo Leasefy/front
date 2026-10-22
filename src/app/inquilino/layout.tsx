@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Target, ClipboardText, Scroll, Receipt, ArrowsLeftRight, Gauge } from '@phosphor-icons/react';
+import { Lightning, SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Target, ClipboardText, Scroll, Receipt, ArrowsLeftRight, Gauge } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
@@ -53,6 +53,8 @@ function useTenantNavItems() {
     // pregunta que la gente hace de verdad.
     { label: locale === 'es' ? 'Estado de cuenta' : 'Account statement', href: '/inquilino/estado-de-cuenta', icon: Receipt },
     { label: locale === 'es' ? 'Acuerdos' : 'Agreements', href: '/inquilino/acuerdos', icon: Scroll },
+    // Portofino 22-10-2026: subir la factura de servicios pagada y los ajustes de EPM.
+    { label: locale === 'es' ? 'Servicios públicos' : 'Utilities', href: '/inquilino/servicios-publicos', icon: Lightning },
     { label: locale === 'es' ? 'Mis casos' : 'My cases', href: '/inquilino/casos', icon: ClipboardText },
     // SO-07 (PQRS-FIX, 04-10-2026): «Solicitudes» y «Mis casos» eran dos
     // entradas para lo mismo (el clic en Solicitudes abría el caso y el menú

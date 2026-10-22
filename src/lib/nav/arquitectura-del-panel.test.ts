@@ -208,7 +208,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 28 módulos en 5 grupos con nombre (+ Inicio y Chat = 30 filas)', () => {
+  it('el sidebar tiene 29 módulos en 5 grupos con nombre (+ Inicio y Chat = 31 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
     // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
     // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). Eran 16 en 4
@@ -244,7 +244,8 @@ describe('arquitectura del panel — sidebar', () => {
     // cambios-nico-10 (29-09, Nico: «no los veo en la sección de agentes para
     // poder probarlos»).
     // 14-10-2026 (ROLES): 28 con «Jurídico», que sólo ve el abogado externo.
-    expect(modulos).toHaveLength(28);
+    // 22-10-2026 (Portofino): 29 con «Servicios públicos» en Operación.
+    expect(modulos).toHaveLength(29);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {

@@ -121,7 +121,7 @@ export function ConceptosDeNominaPanel() {
       );
       await estado.recargar();
     } catch (error) {
-      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudieron sembrar los conceptos.', accion: 'sembrar los conceptos' }));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudieron cargar los conceptos sugeridos.', accion: 'cargar los conceptos sugeridos' }));
     } finally {
       setSembrando(false);
     }
@@ -153,7 +153,7 @@ export function ConceptosDeNominaPanel() {
             {datos.sembrados === 0 ? (
               <Avisos
                 avisos={[
-                  'El catálogo está vacío. Siémbralo: trae los conceptos que el motor calcula, con las cuentas del Decreto 2650 como SUGERENCIA. Es idempotente — sembrar dos veces no duplica y no pisa lo que edites.',
+                  'Todavía no hay conceptos. Carga los que Leasefy sugiere, con sus cuentas del Decreto 2650 como sugerencia. Cargarlos dos veces no duplica nada ni pisa lo que hayas editado.',
                 ]}
                 testId="catalogo-vacio"
               />
@@ -181,7 +181,7 @@ export function ConceptosDeNominaPanel() {
                     data-testid="sembrar-conceptos"
                   >
                     {datos.sembrados === 0
-                      ? 'Sembrar el catálogo'
+                      ? 'Cargar los conceptos sugeridos'
                       : 'Volver a sembrar (no pisa lo editado)'}
                   </Button>
                 }

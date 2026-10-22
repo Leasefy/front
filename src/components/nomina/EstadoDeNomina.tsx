@@ -320,9 +320,9 @@ export function requisitosParaLiquidar(e: Estado): Requisito[] {
     lista.push({
       id: 'conceptos',
       titulo: 'Los conceptos con su cuenta del PUC',
-      detalle: 'El catálogo está vacío. Se siembra con los conceptos que calcula el motor y las cuentas del Decreto 2650 como sugerencia.',
+      detalle: 'Todavía no hay conceptos. Carga los que Leasefy sugiere (salario, prestaciones, aportes) con sus cuentas del Decreto 2650; después los ajustas.',
       estado: 'falta',
-      accion: <Ir href={`${PANEL}/conceptos`} testId="requisito-sembrar-conceptos">Sembrar los conceptos</Ir>,
+      accion: <Ir href={`${PANEL}/conceptos`} testId="requisito-sembrar-conceptos">Cargar los conceptos sugeridos</Ir>,
     });
   } else if (C.sinCuenta.length > 0) {
     const n = C.sinCuenta.length;

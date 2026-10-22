@@ -37,6 +37,7 @@
  */
 
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Wallet, CalendarBlank, DotsThreeVertical, MagnifyingGlass, Trash } from '@phosphor-icons/react';
@@ -424,13 +425,7 @@ function TesoreriaContent() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div className="space-y-1.5">
-          <SectionLabel>{t(k('label'))}</SectionLabel>
-          <h1 className="text-h2 text-fg">{t(k('title'))}</h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
-        </div>
-        {/* Sin «Procesar en Dispersiones» acá ni en el vacío: «la gente ya sabe
+      {/* Sin «Procesar en Dispersiones» acá ni en el vacío: «la gente ya sabe
             que dispersiones es para dispersar» (Nico, 2026-09-08). La bajada
             sigue diciendo que el giro vive en Dispersiones.
 
@@ -439,7 +434,7 @@ function TesoreriaContent() {
             Registrar la factura de un proveedor —incluida la lectura desde
             foto— vive ahora en Facturación → Compras, que es esa sección.
             Acá se lee el neto de cada propietario, no se crean documentos. */}
-      </header>
+      <EncabezadoDePantalla seccion={t(k('label'))} titulo={t(k('title'))} descripcion={t(k('subtitle'))} />
 
       {/* 🔴 «Por girar» de la inmobiliaria: UNA sola cifra, hasta el mes en
           curso, la misma del Tablero y de «Cartera → Por pagar» (Nico,

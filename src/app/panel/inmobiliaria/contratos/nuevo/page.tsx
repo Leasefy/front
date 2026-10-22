@@ -1451,6 +1451,25 @@ function NuevoContratoContent() {
             pie de «Términos»; con dos columnas va con lo que se elige, y la
             derecha queda corta para que el resumen se vea entero. */}
         <section className="rounded-lg border border-border bg-card p-5 max-xl:order-2" data-testid="nuevo-contrato-respaldo">
+          {/* Nico (22-10): el seguro va en UN solo lugar, con el respaldo del arriendo
+              (antes también en Términos). El plan de Leasefy se sigue guardando igual. */}
+          <div className="mb-5 max-w-xs">
+          <Field id="contrato-seguro" label="Seguro de Leasefy" hint="Opcional">
+            <Select
+              value={form.insuranceTier}
+              onValueChange={(v) => updateForm('insuranceTier', v as InsuranceTier)}
+            >
+              <SelectTrigger id="contrato-seguro">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NONE">Sin seguro</SelectItem>
+                <SelectItem value="BASIC">Básico</SelectItem>
+                <SelectItem value="PREMIUM">Premium</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          </div>
           <RespaldoDelArriendo
             valor={respaldo}
             onCambio={setRespaldo}
@@ -1586,18 +1605,27 @@ function NuevoContratoContent() {
                 />
               </Field>
             )}
-            <Field id={idDelCampoDelContrato('paymentDay')} label="Día de pago" error={errorDe('paymentDay')} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
-              <Input
-                {...ariaDelCampoDelContrato('paymentDay', errorDe('paymentDay'))}
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={28}
-                value={form.paymentDay}
-                onChange={(e) => updateForm('paymentDay', e.target.value)}
-                className="tabular-nums"
-              />
-            </Field>
+            {/* Nico (22-10): fecha a fecha el día de pago no se usa (vence el día en que empieza
+                cada período), así que el campo sólo sale si se prorratea. El valor se manda igual. */}
+            {form.prorratearPrimerMes ? (
+              <Field id={idDelCampoDelContrato('paymentDay')} label="Día de pago" error={errorDe('paymentDay')} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
+                <Input
+                  {...ariaDelCampoDelContrato('paymentDay', errorDe('paymentDay'))}
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={28}
+                  value={form.paymentDay}
+                  onChange={(e) => updateForm('paymentDay', e.target.value)}
+                  className="tabular-nums"
+                />
+              </Field>
+            ) : (
+              <div className="space-y-1.5" data-testid="dia-de-pago-fecha-a-fecha">
+                <p className="text-xs font-medium text-fg">Día de pago</p>
+                <p className="text-body-sm text-fg-muted">Fecha a fecha: cada cuota vence el día en que empieza su período.</p>
+              </div>
+            )}
             <Field
               id={idDelCampoDelContrato('diasDePlazo')}
               label="Días de plazo antes de la mora"
@@ -1623,21 +1651,6 @@ function NuevoContratoContent() {
                 className="tabular-nums"
                 data-testid="dias-de-plazo"
               />
-            </Field>
-            <Field id="contrato-seguro" label="Seguro" hint="Opcional">
-              <Select
-                value={form.insuranceTier}
-                onValueChange={(v) => updateForm('insuranceTier', v as InsuranceTier)}
-              >
-                <SelectTrigger id="contrato-seguro">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="NONE">Sin seguro</SelectItem>
-                  <SelectItem value="BASIC">Básico</SelectItem>
-                  <SelectItem value="PREMIUM">Premium</SelectItem>
-                </SelectContent>
-              </Select>
             </Field>
           </div>
 

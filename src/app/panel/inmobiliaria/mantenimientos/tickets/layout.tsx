@@ -1,13 +1,37 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Spinner } from '@/components/ui';
+import { getApiConfig } from '@/lib/api/config';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
 import { useI18n } from '@/lib/i18n';
 
+/**
+ * 🔴 Pantalla fantasma (revisión de Operación, 21-10: 0,5 con 3 bloqueantes). El micro
+ * todavía no sirve la bandeja del agente de mantenimiento (`/mantenimiento/inbox`): sin el
+ * simulado, las rutas `tickets/*` eran una pantalla vacía o en error, en inglés (score,
+ * triage, SLA). Nico, 03-09: «¿qué es eso de tickets? no veo que funcione». Mientras el micro
+ * no la sirva, quien llegue por un enlace viejo va a Mantenimientos; con el simulado pedido
+ * a mano (`NEXT_PUBLIC_USE_MOCK_API=true`, nunca en producción) se sigue viendo para
+ * desarrollarla.
+ */
 export default function MantenimientoLayout({ children }: { children: React.ReactNode }) {
   const { canAccess, isLoading } = usePermissionsContext();
   const { t } = useI18n();
+  const router = useRouter();
+  const sinElMicro = !getApiConfig().useMockApi;
+  useEffect(() => {
+    if (sinElMicro) router.replace('/panel/inmobiliaria/mantenimientos');
+  }, [sinElMicro, router]);
+
+  if (sinElMicro) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Spinner size="md" variant="muted" />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

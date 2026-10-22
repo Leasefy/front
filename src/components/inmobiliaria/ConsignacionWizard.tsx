@@ -585,6 +585,8 @@ export function ConsignacionWizard({
             ...datosOpcionalesParaCrear(formData),
             adminFee:     formData.adminFee,
             ...(formData.videoUrl?.trim() ? { videoUrl: formData.videoUrl.trim() } : {}),
+            // Las características sólo si marcaron alguna (21-10-2026).
+            ...(formData.amenities?.length ? { amenities: formData.amenities } : {}),
             // 🔴 Sólo si lo apagaron: encendido es lo de siempre (Nico, 10-10-2026).
             ...(formData.publicarEnElMarketplace === false ? { publicadoEnMarketplace: false } : {}),
           }, { idempotencyKey });

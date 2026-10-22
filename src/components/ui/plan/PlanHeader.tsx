@@ -9,7 +9,17 @@ import { SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { botonDelEncabezadoActivo } from '@/lib/nav/boton-del-encabezado';
 import { useAuth } from '@/lib/auth';
-import { getUserHomeRoute } from '@/lib/auth/role-routes';
+import { getUserHomeRoute, inicioDeLaPersona } from '@/lib/auth/role-routes';
+import {
+  claveDeLaCuenta,
+  cuentaEnPantalla,
+  guardarCuenta,
+  leerCuentaGuardada,
+  opcionesDeCuenta,
+  tieneVariasCuentas,
+  type CuentaElegida,
+} from '@/lib/auth/cuenta-activa';
+import { CambiarDeCuenta } from './CambiarDeCuenta';
 import {
   estaEnLaInmobiliaria,
   etiquetaDeLaPlataforma,
@@ -110,7 +120,7 @@ export function PlanHeader({
   tenantSubscription,
   leftSlot,
 }: PlanHeaderProps) {
-  const { user, logout, agency, agencyRole, hasActiveAgencyMembership, activeContext, setActiveContext } = useAuth();
+  const { user, logout, agency, agencyRole, hasActiveAgencyMembership, activeContext, setActiveContext, cuentas } = useAuth();
 
   const router = useRouter();
   const pathname = usePathname();
@@ -122,6 +132,18 @@ export function PlanHeader({
     setActiveContext(ctx);
     router.push(ctx === 'agency' ? '/panel/inmobiliaria' : getUserHomeRoute(user, 'personal'));
   };
+  /*
+   * «Cambiar de cuenta» (21-10-2026): se guarda la elegida y se abre su inicio
+   * con una carga completa — así el arranque de sesión vuelve a traer la
+   * inmobiliaria elegida y ninguna pantalla queda con datos de la otra cuenta.
+   */
+  const handleElegirCuenta = (cuenta: CuentaElegida) => {
+    if (!user?.id) return;
+    guardarCuenta(user.id, cuenta);
+    setActiveContext(cuenta.tipo === 'inmobiliaria' ? 'agency' : 'personal');
+    window.location.assign(inicioDeLaPersona(user, agencyRole, cuenta));
+  };
+  const variasCuentas = tieneVariasCuentas(cuentas);
   const [searchQuery, setMagnifyingGlassQuery] = useState('');
   const [searchFocused, setMagnifyingGlassFocused] = useState(false);
   // Mobile (<sm) search pattern: the inline input is hidden and replaced by an
@@ -156,6 +178,11 @@ export function PlanHeader({
       : pathname?.startsWith('/inquilino') || (isLandlord && !isInmobiliaria)
         ? 'personal'
         : activeContext;
+  // La cuenta con la que está en ESTA pantalla («Cambiar de cuenta»).
+  const cuentaDeLaPantalla = cuentaEnPantalla(pathname, cuentas, leerCuentaGuardada(user?.id));
+  const opcionEnPantalla = cuentaDeLaPantalla
+    ? opcionesDeCuenta(cuentas, locale).find((o) => o.clave === claveDeLaCuenta(cuentaDeLaPantalla)) ?? null
+    : null;
   // Perfil y Configuración del menú abren los de esa plataforma.
   const menuDeLaInmobiliaria = estaEnLaInmobiliaria({
     role: user?.role,
@@ -1202,7 +1229,8 @@ export function PlanHeader({
             </DropdownListTrigger>
             <DropdownListContent
               // 16 rem: los dos lados del interruptor de la plataforma se leen enteros (20-10-2026).
-              className="w-64 bg-surface border border-border shadow-lg rounded-lg p-1.5"
+              // 18 rem con «Cambiar de cuenta»: el nombre de la inmobiliaria y el cargo en un renglón.
+              className={cn('bg-surface border border-border shadow-lg rounded-lg p-1.5', variasCuentas ? 'w-72' : 'w-64')}
               align="end"
               sideOffset={8}
             >
@@ -1216,24 +1244,40 @@ export function PlanHeader({
                   className="inline-block mt-1.5 px-2 py-0.5 text-[11px] font-medium rounded-full bg-surface-muted text-fg-muted"
                   data-testid="tipo-de-cuenta"
                 >
-                  {etiquetaDeLaPlataforma({
-                    role: user?.role,
-                    activeContext: contextoEnPantalla,
-                    hasActiveAgencyMembership,
-                    agencyRole,
-                  })}
+                  {variasCuentas && opcionEnPantalla
+                    ? opcionEnPantalla.tipo === 'inmobiliaria'
+                      ? opcionEnPantalla.detalle
+                      : opcionEnPantalla.titulo
+                    : etiquetaDeLaPlataforma({
+                        role: user?.role,
+                        activeContext: contextoEnPantalla,
+                        hasActiveAgencyMembership,
+                        agencyRole,
+                      })}
                 </span>
               </DropdownListLabel>
               <DropdownListSeparator className="bg-surface-muted my-1" />
-              <ContextSwitcher
-                user={user}
-                agencyName={agency?.name}
-                agencyRole={agencyRole}
-                activeContext={contextoEnPantalla}
-                hasActiveAgencyMembership={hasActiveAgencyMembership}
-                locale={locale}
-                onSwitch={handleSwitchContext}
-              />
+              {cuentas ? (
+                variasCuentas && (
+                  <CambiarDeCuenta
+                    cuentas={cuentas}
+                    enPantalla={cuentaDeLaPantalla}
+                    locale={locale}
+                    onElegir={handleElegirCuenta}
+                  />
+                )
+              ) : (
+                // Un back anterior (sin `cuentas`): el interruptor del 20-10.
+                <ContextSwitcher
+                  user={user}
+                  agencyName={agency?.name}
+                  agencyRole={agencyRole}
+                  activeContext={contextoEnPantalla}
+                  hasActiveAgencyMembership={hasActiveAgencyMembership}
+                  locale={locale}
+                  onSwitch={handleSwitchContext}
+                />
+              )}
               <DropdownListItem asChild>
                 <Link
                   href={menuDeLaInmobiliaria ? "/panel/inmobiliaria/perfil" : isLandlord ? "/panel/perfil" : "/inquilino/perfil"}

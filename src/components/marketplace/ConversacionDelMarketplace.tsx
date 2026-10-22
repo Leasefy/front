@@ -33,7 +33,15 @@ import { guardarReciente, leerRecientes, type BusquedaReciente } from '@/lib/mar
 import { IDEAS_PARA_AFINAR } from '@/lib/marketplace/ideas-para-afinar';
 import { useTarjetasDeInmobiliarias } from '@/lib/marketplace/use-inmobiliarias';
 import { videoDelInmueble } from '@/lib/marketplace/video';
-import { paginaDe, type TarjetaDeInmobiliaria } from '@/lib/api/marketplace.service';
+import {
+  CODIGO_CHAT_SIN_PREGUNTAS,
+  marketplaceApi,
+  paginaDe,
+  type RespuestaDelChat,
+  type TarjetaDeInmobiliaria,
+  type TurnoDelChat,
+} from '@/lib/api/marketplace.service';
+import { ApiError } from '@/lib/api/client';
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { primeraFoto } from '@/components/property/PortadaDelInmueble';
 import type { Property } from '@/lib/types/property';
@@ -88,6 +96,32 @@ interface Turno {
   inicio: number;
   /** Lo que contestó, guardado al terminar (los turnos viejos no vuelven a pedir). */
   foto?: FotoDelTurno;
+  /** Es una PREGUNTA (no sólo un filtro): la contesta la IA sobre lo encontrado (21-10-2026). */
+  preguntaParaLaIa?: boolean;
+  ia?: { estado: 'pidiendo' } | { estado: 'lista'; r: RespuestaDelChat } | { estado: 'sin-ia'; nota?: string };
+}
+
+/**
+ * ¿Es una pregunta para la IA o un filtro para el buscador? Lo que sólo afina
+ * («con balcón», «en Belén») sigue siendo búsqueda y no gasta el cupo con IA;
+ * lo que pregunta («¿cuál me recomiendas?», «cómo funciona el estudio») va a la IA.
+ */
+export function esPreguntaParaLaIa(texto: string, entendioAlgo: boolean): boolean {
+  const t = texto.trim().toLowerCase();
+  if (/[¿?]/.test(t)) return true;
+  if (/^(qu[eé]|cu[aá]l|cu[aá]les|c[oó]mo|cu[aá]nto|cu[aá]nta|d[oó]nde|por qu[eé]|se puede|puedo|aceptan|tienen|hay|me recomiendas|recomi[eé]ndame|expl[ií]came|ay[uú]dame)\b/.test(t)) return true;
+  return !entendioAlgo;
+}
+
+/** La conversación con la IA hasta ahora (sólo los turnos que contestó). */
+function historialDeLaIa(turnos: Turno[]): TurnoDelChat[] {
+  const h: TurnoDelChat[] = [];
+  for (const t of turnos) {
+    if (t.ia?.estado !== 'lista') continue;
+    h.push({ rol: 'persona', texto: t.pregunta });
+    h.push({ rol: 'asistente', texto: t.ia.r.respuesta, inmuebles: t.ia.r.inmuebles.map((p) => p.id) });
+  }
+  return h;
 }
 
 
@@ -168,6 +202,15 @@ function pasosDelTurno(turno: Turno, cargando: boolean, foto: FotoDelTurno | und
         },
       });
     }
+  }
+  if (turno.ia && turno.ia.estado !== 'sin-ia') {
+    const lista = turno.ia.estado === 'lista';
+    pasos.push({
+      id: 'responder',
+      fase: 'verificacion',
+      texto: lista ? 'Respondí tu pregunta con lo que encontré' : 'Pensando la respuesta a tu pregunta',
+      estado: lista ? 'listo' : 'en_curso',
+    });
   }
   return pasos;
 }
@@ -349,12 +392,17 @@ function RespuestaDeOri({
   onQuitar: (clave: ClaveDePastilla, etiqueta: string) => void;
 }) {
   const pasos = pasosDelTurno(turno, cargando, foto);
+  const ia = turno.ia?.estado === 'lista' ? turno.ia.r : null;
+  const notaSinIa = turno.ia?.estado === 'sin-ia' ? turno.ia.nota : undefined;
   // Lo que se muestra: lo que cumple todo o, si no hay, los más cercanos.
   const sonCercanos = !!foto && foto.total === 0 && !!foto.cercanos && foto.cercanos.total > 0;
-  const mostrados = useMemo(
-    () => (!foto ? [] : sonCercanos ? foto.cercanos!.propiedades : foto.propiedades),
-    [foto, sonCercanos],
-  );
+  const mostrados = useMemo(() => {
+    const base = !foto ? [] : sonCercanos ? foto.cercanos!.propiedades : foto.propiedades;
+    if (!ia || ia.inmuebles.length === 0) return base;
+    // Lo que eligió la IA va primero; después, lo demás que encontró el buscador.
+    const elegidos = new Set(ia.inmuebles.map((p) => p.id));
+    return [...ia.inmuebles, ...base.filter((p) => !elegidos.has(p.id))];
+  }, [foto, sonCercanos, ia]);
   const totalMostrado = !foto ? 0 : sonCercanos ? foto.cercanos!.total : foto.total;
   const pastillas = foto ? conNombres(pastillasDe(turno.busqueda, foto.entendidos), mostrados) : [];
   const nombres = [...new Set(mostrados.map((p) => p.agencyName).filter((n): n is string => !!n))];
@@ -379,6 +427,16 @@ function RespuestaDeOri({
               transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
               className="space-y-4"
             >
+              {notaSinIa && (
+                <p className="text-[13.5px] text-fg-muted" data-testid="chat-sin-preguntas">
+                  {notaSinIa}
+                </p>
+              )}
+              {ia ? (
+                <p className="whitespace-pre-wrap break-words text-[16px] leading-relaxed text-fg" data-testid="lo-que-dijo-ori">
+                  {ia.respuesta}
+                </p>
+              ) : (
               <p className="text-[16px] leading-relaxed text-fg" data-testid="lo-que-dijo-ori">
                 {sonCercanos ? (
                   <>
@@ -397,6 +455,7 @@ function RespuestaDeOri({
                   </>
                 )}
               </p>
+              )}
 
               {pastillas.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2" data-testid="pastillas-de-la-busqueda">
@@ -596,12 +655,12 @@ export function ConversacionDelMarketplace() {
   }, [isLoading, meta, properties, ultimo.id]);
 
   const seguir = useCallback(
-    (pregunta: string, busqueda: Busqueda, escrita = false) => {
+    (pregunta: string, busqueda: Busqueda, escrita = false, preguntaParaLaIa = false) => {
       const qs = escribirBusqueda(busqueda);
       // La misma búsqueda no vuelve a pedir nada (el hook no recargaría): la
       // respuesta es la misma.
       const igual = qs === escribirBusqueda(ultimo.busqueda) && ultimo.foto;
-      const nuevo = { ...turnoDe(pregunta, busqueda), escrita };
+      const nuevo = { ...turnoDe(pregunta, busqueda), escrita, preguntaParaLaIa };
       setTurnos((ts) => [...ts, igual ? { ...nuevo, foto: { ...ultimo.foto!, ms: 0 } } : nuevo]);
       escritaPorMi.current = qs;
       router.replace(`/propiedades?${qs}`, { scroll: false });
@@ -618,7 +677,16 @@ export function ConversacionDelMarketplace() {
       if (!t || cargando || afinando) return;
       setAfinando(true);
       try {
-        seguir(t, await afinarCon(ultimo.busqueda, ultimo.foto?.entendidos, t), true);
+        const nueva = await afinarCon(ultimo.busqueda, ultimo.foto?.entendidos, t);
+        const entendioAlgo = nueva.q !== t;
+        const pregunta = !iaAgotada.current && esPreguntaParaLaIa(t, entendioAlgo);
+        // Una pregunta que no trae filtros nuevos no toca la búsqueda: la IA
+        // contesta sobre lo que la persona ya tiene a la vista.
+        // En una pregunta, el texto suelto no se vuelve filtro (dejaba pastillas
+        // como «¿cuál más cómo visito?»): sólo cuenta lo que el buscador entendió.
+        const sinTextoSuelto: Busqueda = { ...nueva, q: ultimo.busqueda.q };
+        if (!sinTextoSuelto.q) delete sinTextoSuelto.q;
+        seguir(t, pregunta ? (entendioAlgo ? sinTextoSuelto : ultimo.busqueda) : nueva, true, pregunta);
       } finally {
         setAfinando(false);
       }
@@ -633,6 +701,39 @@ export function ConversacionDelMarketplace() {
     },
     [cargando, seguir, ultimo],
   );
+
+  // La IA contesta la PREGUNTA del último turno con lo que el buscador encontró.
+  const iaAgotada = useRef(false);
+  const [preguntandoALaIa, setPreguntandoALaIa] = useState(false);
+  useEffect(() => {
+    const t = ultimo;
+    if (!t.preguntaParaLaIa || !t.foto || t.ia) return;
+    const foto = t.foto;
+    const cercanos = foto.total === 0 && foto.cercanos && foto.cercanos.total > 0 ? foto.cercanos : null;
+    const aLaVista = cercanos ? cercanos.propiedades : foto.propiedades;
+    const entendido = conNombres(pastillasDe(t.busqueda, foto.entendidos), aLaVista).map((p) => p.etiqueta);
+    const poner = (ia: Turno['ia']) => setTurnos((ts) => ts.map((x) => (x.id === t.id ? { ...x, ia } : x)));
+    poner({ estado: 'pidiendo' });
+    setPreguntandoALaIa(true);
+    marketplaceApi
+      .preguntarALaPortada({
+        pregunta: t.pregunta,
+        historial: historialDeLaIa(turnos.filter((x) => x.id !== t.id)),
+        inmuebles: aLaVista.slice(0, 12).map((p) => p.id),
+        encontrados: cercanos ? cercanos.total : foto.total,
+        entendido,
+      })
+      .then((r) => poner({ estado: 'lista', r }))
+      .catch((e: unknown) => {
+        if (e instanceof ApiError && e.code === CODIGO_CHAT_SIN_PREGUNTAS) {
+          iaAgotada.current = true;
+          poner({ estado: 'sin-ia', nota: e.message });
+        } else poner({ estado: 'sin-ia' });
+      })
+      .finally(() => setPreguntandoALaIa(false));
+    // Sólo cuando el último turno tiene su búsqueda lista.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ultimo.id, ultimo.foto]);
 
   // La respuesta nueva entra a la vista.
   const finRef = useRef<HTMLDivElement>(null);
@@ -676,7 +777,7 @@ export function ConversacionDelMarketplace() {
             <div className="mx-auto max-w-3xl px-3 pb-[max(0.875rem,env(safe-area-inset-bottom))] sm:px-4">
               <CajaDelMarketplace
                 compacta
-                ocupado={cargando || afinando}
+                ocupado={cargando || afinando || preguntandoALaIa}
                 placeholder="Afina: «que tenga balcón», «hasta 3 millones», «en Belén»…"
                 onEnviar={afinar}
                 opciones={IDEAS_PARA_AFINAR}

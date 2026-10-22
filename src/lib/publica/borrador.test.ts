@@ -114,6 +114,29 @@ describe('escala: muchos inmuebles (20-10-2026)', () => {
     expect(venta).toMatchObject({ operacion: 'sale', precio: 450_000_000, tipo: null, direccion: '' });
   });
 
+  it('con «venta» respondida, la fila que no dice nada entra en venta y su «Precio» es el de venta (21-10-2026)', () => {
+    const base = { suggestions: [], selected: true, hasErrors: false, errorMessages: [] };
+    // «Precio» suelto: el lector lo pone en el canon.
+    const sinDecir = desdeImportProperty({ _rowIndex: 1, monthlyRent: 480_000_000, ...base }, 'k1', undefined, 'sale').inmueble;
+    expect(sinDecir).toMatchObject({ operacion: 'sale', precio: 480_000_000 });
+
+    // La fila que SÍ lo dice manda sobre la respuesta.
+    const dice = desdeImportProperty({ _rowIndex: 2, listingType: 'Arriendo', monthlyRent: 2_800_000, ...base }, 'k2', undefined, 'sale').inmueble;
+    expect(dice).toMatchObject({ operacion: 'rent', precio: 2_800_000 });
+
+    // Con «arriendo» (o sin respuesta), lo de siempre.
+    expect(desdeImportProperty({ _rowIndex: 3, monthlyRent: 2_800_000, ...base }, 'k3', undefined, 'rent').inmueble).toMatchObject({
+      operacion: 'rent',
+      precio: 2_800_000,
+    });
+    expect(desdeImportProperty({ _rowIndex: 4, monthlyRent: 2_800_000, ...base }, 'k4').inmueble.operacion).toBe('rent');
+
+    // Una fila con precio de venta propio sigue siendo venta aunque la respuesta sea «arriendo».
+    expect(
+      desdeImportProperty({ _rowIndex: 5, salePrice: 300_000_000, ...base }, 'k5', undefined, 'rent').inmueble,
+    ).toMatchObject({ operacion: 'sale', precio: 300_000_000 });
+  });
+
   it('las fotos de una celda: sólo URLs, sin repetidas', () => {
     expect(fotosDeLaCelda('https://a.co/1.jpg;https://a.co/2.png\nnada https://a.co/1.jpg')).toEqual([
       'https://a.co/1.jpg',

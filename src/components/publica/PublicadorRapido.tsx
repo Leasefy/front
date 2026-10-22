@@ -29,6 +29,7 @@ import {
   nuevaLlave,
   paraCrear,
   type InmuebleRapido,
+  type Operacion,
   type TipoRapido,
 } from '@/lib/publica/borrador';
 import { acomodarCarpetas, agruparPorCarpeta, type ArchivoConRuta } from '@/lib/publica/carpetas';
@@ -39,6 +40,7 @@ import { limitador, publicarEnTandas } from '@/lib/publica/publicar-en-tandas';
 import { cn } from '@/lib/utils';
 
 import { FilaDeInmueble } from './FilaDeInmueble';
+import { ParaQuePublica } from './ParaQuePublica';
 import { Pastilla, TarjetaDeInmueble, type EstadoDeLaTarjeta, type LlegandoALaTarjeta } from './TarjetaDeInmueble';
 import { TodoPublicado } from './TodoPublicado';
 import { TraerMuchos, type CaminoParaMuchos, type ResultadoDeCarpetas, type ResultadoDeEnlaces, type ResultadoDelExcel } from './TraerMuchos';
@@ -93,6 +95,7 @@ export function PublicadorRapido({
   alTerminar,
   paginaPublica = null,
   caminoInicial = null,
+  operacionInicial = null,
 }: {
   usuario: string;
   /** Dónde sigue después de publicar (su cuenta). */
@@ -101,10 +104,26 @@ export function PublicadorRapido({
   paginaPublica?: string | null;
   /** Con qué camino abre «¿Son muchos?» (p. ej. «Cargar muchos desde un archivo» → el Excel). */
   caminoInicial?: CaminoParaMuchos | null;
+  /**
+   * Arriendo o venta, si ya se sabe (`/publica?operacion=venta`). Sin ella y
+   * sin borrador guardado, lo primero es la pregunta (`ParaQuePublica`).
+   */
+  operacionInicial?: Operacion | null;
 }) {
   const contador = useRef(0);
   const nuevaClave = () => `i${Date.now().toString(36)}${(contador.current += 1)}`;
-  const [inmuebles, setInmuebles] = useState<InmuebleRapido[]>(() => [inmuebleVacio('i0')]);
+  const [inmuebles, setInmuebles] = useState<InmuebleRapido[]>(() => [
+    inmuebleVacio('i0', operacionInicial ? { operacion: operacionInicial } : undefined),
+  ]);
+  /**
+   * «¿Lo publicas para arriendo o para venta?» (Nico, 21-10-2026). Sólo al
+   * empezar de cero: con un borrador guardado, cada tarjeta ya dice la suya.
+   */
+  const [preguntarOperacion, setPreguntarOperacion] = useState(
+    () => !operacionInicial && (typeof window === 'undefined' || leerBorrador(usuario) === null),
+  );
+  /** Lo que respondió: lo toman las filas del Excel o los enlaces que no dicen si son arriendo o venta. */
+  const operacionElegida = useRef<Operacion | null>(operacionInicial);
   const [fotos, setFotos] = useState<Record<string, FotoGuardada[]>>({});
   const [llegando, setLlegando] = useState<Record<string, LlegandoALaTarjeta>>({});
   const [estados, setEstados] = useState<Record<string, Estado>>({});
@@ -409,7 +428,14 @@ export function PublicadorRapido({
     const nuevas: Array<{ inmueble: InmuebleRapido; fotos: string[] }> = [];
     resultados.forEach((r, k) => {
       if (!r.ok) return;
-      nuevas.push(desdeImportProperty(aImportProperty(r.inmueble, k), nuevaClave(), { tipo: 'enlace', etiqueta: hostDe(r.url), url: r.url }));
+      nuevas.push(
+        desdeImportProperty(
+          aImportProperty(r.inmueble, k),
+          nuevaClave(),
+          { tipo: 'enlace', etiqueta: hostDe(r.url), url: r.url },
+          operacionElegida.current,
+        ),
+      );
     });
     const entraron = new Set(sumarTarjetas(nuevas.map((n) => n.inmueble)).map((i) => i.clave));
     for (const n of nuevas) if (entraron.has(n.inmueble.clave)) traerFotos(n.inmueble.clave, n.fotos);
@@ -427,7 +453,7 @@ export function PublicadorRapido({
     ];
     const nuevas = mapRowsToProperties(rows, mapeos)
       .filter((p) => p.propertyAddress || p.monthlyRent || p.salePrice || p.propertyType || p.externalId)
-      .map((p) => desdeImportProperty(p, nuevaClave(), { tipo: 'excel', etiqueta: `Fila ${p._rowIndex + 1}` }));
+      .map((p) => desdeImportProperty(p, nuevaClave(), { tipo: 'excel', etiqueta: `Fila ${p._rowIndex + 1}` }, operacionElegida.current));
     const entraron = new Set(sumarTarjetas(nuevas.map((n) => n.inmueble)).map((i) => i.clave));
     let conFotosEnLaCelda = 0;
     for (const n of nuevas) {
@@ -580,6 +606,21 @@ export function PublicadorRapido({
     setAbierta(null);
     window.scrollTo({ top: 0 });
   };
+
+  if (preguntarOperacion) {
+    return (
+      <ParaQuePublica
+        alElegir={(op) => {
+          operacionElegida.current = op;
+          // La tarjeta en blanco con que se abre toma la respuesta; las que se
+          // agreguen la heredan de la última (`agregar`).
+          setInmuebles((lista) => lista.map((i) => (esVirgen(i) ? { ...i, operacion: op } : i)));
+          setPreguntarOperacion(false);
+          window.scrollTo({ top: 0 });
+        }}
+      />
+    );
+  }
 
   if (todosPublicados) {
     return (

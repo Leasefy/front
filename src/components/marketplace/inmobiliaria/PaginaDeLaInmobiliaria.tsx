@@ -77,10 +77,12 @@ function CopiarEnlace({ texto }: { texto: string }) {
           })
           .catch(() => undefined);
       }}
-      className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-0.5 font-mono text-[12.5px] text-fg transition-colors duration-fast hover:bg-surface-muted/70"
+      className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-0.5 font-mono text-[12.5px] text-fg transition-colors duration-fast hover:bg-surface-muted/70"
       aria-label={`Copiar ${texto}`}
+      title={texto}
     >
-      {texto}
+      {/* 21-10-2026 (QA): a 390 px la dirección larga dejaba una letra sola en otra línea; se corta con «…» y se copia entera. */}
+      <span className="min-w-0 truncate">{texto}</span>
       {copiado ? <Check className="h-3.5 w-3.5 text-primary" aria-hidden /> : <Copy className="h-3.5 w-3.5 text-fg-subtle" aria-hidden />}
     </button>
   );
@@ -119,7 +121,7 @@ function Cabecera({ p }: { p: Pagina }) {
     <div className="mx-auto max-w-[1280px] px-4 pt-6 md:px-6">
       <motion.div {...entrada(0)} className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <Volver />
-        <p className="flex flex-wrap items-center gap-2 text-[13px] text-fg-muted">
+        <p className="flex min-w-0 max-w-full flex-wrap items-center gap-2 text-[13px] text-fg-muted">
           <Globe className="h-4 w-4" aria-hidden />
           Esta es la página de {p.nombre} en Leasefy:
           <CopiarEnlace texto={direccion} />
@@ -310,11 +312,15 @@ function Contenido({ pagina }: { pagina: Pagina }) {
                 <h2 className="font-heading text-[20px] font-semibold text-fg">Pregúntale a {pagina.nombre}</h2>
                 <p className="text-[13.5px] text-fg-muted">
                   Conoce sus <span className="font-mono tabular-nums">{numero(pagina.inmuebles)}</span>{' '}
-                  {pagina.inmuebles === 1 ? 'inmueble' : 'inmuebles'} y responde a cualquier hora. Nunca se inventa uno.
+                  {pagina.inmuebles === 1 ? 'inmueble' : 'inmuebles'} y responde lo que le preguntes, a cualquier hora. Nunca se inventa uno.
                 </p>
               </div>
             </div>
-            <ChatDeLaInmobiliaria inmobiliaria={{ id: pagina.id, nombre: pagina.nombre }} sugerencias={sugerencias} />
+            <ChatDeLaInmobiliaria
+              inmobiliaria={{ id: pagina.id, nombre: pagina.nombre }}
+              sugerencias={sugerencias}
+              whatsapp={pagina.whatsapp}
+            />
           </section>
           {ubicados.length > 0 && (
             <section
@@ -427,6 +433,8 @@ function Contenido({ pagina }: { pagina: Pagina }) {
         </p>
       </section>
 
+      {pagina.muestraVitrina && <VitrinaDeOtras paginaId={pagina.id} />}
+
       {/* ARCO-1 (Nico 19-10-2026): su formulario de Habeas Data. Cada
           inmobiliaria responde por los datos que tiene de cada persona. */}
       <p className="mx-auto mt-10 max-w-[1280px] px-4 text-[13px] text-fg-muted md:px-6">
@@ -454,5 +462,35 @@ function Contenido({ pagina }: { pagina: Pagina }) {
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+/**
+ * 21-10-2026 (Nico): en el perfil de una inmobiliaria que no ha pagado ningún
+ * plan en Leasefy, al final, una zona de «Publicidad» con inmuebles de las que
+ * sí pagan. Marcada como publicidad (no se confunde con los suyos) y sin nada
+ * si no hay qué mostrar.
+ */
+function VitrinaDeOtras({ paginaId }: { paginaId: string }) {
+  const { properties } = useProperties(useMemo(() => ({ vitrinaDe: paginaId, limit: 6 }), [paginaId]));
+  if (properties.length === 0) return null;
+  return (
+    <section className="mx-auto mt-12 max-w-[1280px] px-4 md:px-6" data-testid="vitrina-de-otras" aria-labelledby="vitrina-de-otras-titulo">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="rounded-full border border-border px-2 py-0.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-fg-muted">
+          Publicidad
+        </span>
+        <h2 id="vitrina-de-otras-titulo" className="text-[17px] font-semibold text-fg">
+          Otros inmuebles en Leasefy
+        </h2>
+      </div>
+      <Stagger className="mt-4 grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr))]">
+        {properties.slice(0, 6).map((p) => (
+          <StaggerItem key={p.id}>
+            <PropertyCard property={p} />
+          </StaggerItem>
+        ))}
+      </Stagger>
+    </section>
   );
 }

@@ -37,6 +37,15 @@ export type PqrsSolicitanteTipo = 'inquilino' | 'propietario' | 'tercero';
 export type CostoResponsable = 'dueno' | 'inquilino' | 'compartido';
 
 /** Una solicitud/PQRS con su ciclo de vida completo. */
+/** El estado de la tarjeta de Mantenimiento de una reparación (lo manda el back). */
+export type EstadoDelTablero = 'reported' | 'quoted' | 'approved' | 'in_progress' | 'completed' | 'cancelled'
+
+export interface EstadoDeLaReparacion {
+  estado: EstadoDelTablero
+  /** Dónde iba cuando se canceló. */
+  iba: Exclude<EstadoDelTablero, 'completed' | 'cancelled'>
+}
+
 export interface SolicitudPqrs {
   id: string;
   radicado: string;            // consecutivo legible, p.ej. 'PQRS-2026-0001'
@@ -76,6 +85,11 @@ export interface SolicitudPqrs {
   respuestaDetalle?: { texto: string; medio: 'PORTAL' | 'CORREO' | 'TELEFONO' | 'PRESENCIAL'; at: string } | null;
   adjuntos?: Array<{ id: string; nombre: string; tipo: string; tamano: number; subidoAt: string }>;
   subtipo?: 'REPARACION' | 'SUGERENCIA' | null;
+  /**
+   * Portofino 21-10-2026: una reparación se sigue por su tarjeta del tablero de
+   * Mantenimiento (la PQRS casi nunca se mueve). `null`/ausente: manda la PQRS.
+   */
+  mantenimiento?: EstadoDeLaReparacion | null;
   /** SO-27: el mandato (inmueble) del propietario. */
   consignacionId?: string;
 }

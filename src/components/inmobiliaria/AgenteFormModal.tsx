@@ -42,7 +42,7 @@ import {
 } from '@/lib/configuracion/limites-de-la-inmobiliaria';
 import type { AgenteRole, AgencyRole, UserInvite } from '@/lib/types/inmobiliaria';
 import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service';
-import { avisoDelError } from '@/lib/equipo/aviso-del-correo';
+import { avisoDelError, camposDeLaDecision, type DecisionDelCorreo } from '@/lib/equipo/aviso-del-correo';
 import { AvisoDelCorreo } from './invitar-al-equipo/AvisoDelCorreo';
 import { useAvisoDelCorreo, type RevisarCorreo } from './invitar-al-equipo/use-aviso-del-correo';
 import { getRoleLabel, ROLES_DEL_SISTEMA } from '@/lib/types/inmobiliaria';
@@ -216,7 +216,7 @@ export function AgenteFormModal({
     return Object.keys(newErrors).length === 0;
   }, [name, email, commissionSplit, showAgentFields, t, idDelFormulario, agentRole]);
 
-  const handleSubmit = async (e?: React.FormEvent, mismaPersona = false) => {
+  const handleSubmit = async (e?: React.FormEvent, decision: DecisionDelCorreo | null = null) => {
     e?.preventDefault();
     if (!validateForm()) return;
 
@@ -232,7 +232,7 @@ export function AgenteFormModal({
       if (variant === 'member') {
         invite.message = message || undefined;
       }
-      if (mismaPersona) invite.mismaPersona = true;
+      Object.assign(invite, camposDeLaDecision(decision));
 
       if (showAgentFields) {
         invite.zone = zone || undefined;
@@ -360,7 +360,9 @@ export function AgenteFormModal({
             <AvisoDelCorreo
               aviso={avisoDelCorreo.aviso}
               enviando={isSubmitting}
-              onInvitarIgual={() => void handleSubmit(undefined, true)}
+              nombreEscrito={name}
+              onInvitarIgual={() => void handleSubmit(undefined, 'misma-persona')}
+              onDarElCorreo={() => void handleSubmit(undefined, 'es-del-invitado')}
             />
           </div>
 

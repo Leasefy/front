@@ -49,7 +49,14 @@ export const embudoApi = {
   /** PL-21: público, sin cuenta. */
   async teLlamamos(
     propertyId: string,
-    datos: { nombre: string; telefono: string; correo?: string; mensaje?: string },
+    datos: {
+      nombre: string;
+      telefono?: string;
+      correo?: string;
+      mensaje?: string;
+      /** 21-10-2026: cómo quiere que la contacten. El back viejo no lo conoce (400): back primero. */
+      canal?: 'whatsapp' | 'llamada' | 'correo';
+    },
   ): Promise<{ recibido: true }> {
     return apiClient.post(`/visits/properties/${propertyId}/te-llamamos`, datos);
   },

@@ -7,6 +7,7 @@
  */
 
 import { apiClient, ApiError, getAccessToken } from './client';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
@@ -17,7 +18,7 @@ export async function enviarFormulario<T>(ruta: string, formulario: FormData): P
   try {
     respuesta = await fetch(`${BACKEND_URL}${ruta}`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasDeLaCuenta() },
       body: formulario,
     });
   } catch (error) {

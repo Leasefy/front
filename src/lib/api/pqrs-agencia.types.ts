@@ -134,6 +134,8 @@ export interface ResponsableDePqrs {
   userId: string;
   nombre: string;
   rol: string;
+  /** 21-10-2026: el cargo del miembro (si lo tiene); si no, se muestra su rol. */
+  cargo?: string | null;
 }
 
 export interface ResumenPqrs {

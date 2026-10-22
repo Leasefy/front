@@ -64,4 +64,12 @@ describe('AdministradoPor', () => {
     expect(c!.querySelector('[data-testid="logo-del-administrador"] svg')).not.toBeNull();
     expect(c!.textContent).toContain('Administrado por Leasefy');
   });
+
+  it('🔴 el nombre no se corta en una línea con «…»: hasta dos líneas (21-10-2026)', () => {
+    montar({ agencyId: 'a-1', nombre: 'Portofino Propiedad Raiz S.A.S.', logoUrl: null });
+    const p = c!.querySelector('[data-testid="administrado-por"] p')!;
+    expect(p.textContent).toBe('Administrado por Portofino Propiedad Raiz S.A.S.');
+    expect(p.className).not.toMatch(/\btruncate\b/);
+    expect(p.className).toContain('line-clamp-2');
+  });
 });

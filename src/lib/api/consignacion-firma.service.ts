@@ -23,6 +23,7 @@ import type {
   ReenvioDeInvitacionResponse,
 } from './consignacion-firma.types';
 import type { SendOtpResponse, VerifyOtpResponse } from './contracts.types';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
@@ -34,7 +35,7 @@ async function enviarFormulario<T>(ruta: string, formulario: FormData, porDefect
   try {
     respuesta = await fetch(`${BACKEND_URL}${ruta}`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasDeLaCuenta() },
       body: formulario,
     });
   } catch (error) {

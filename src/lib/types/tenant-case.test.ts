@@ -206,7 +206,16 @@ describe('pqrsToCase — solicitud metadata pass-through (no SLA math)', () => {
       radicado: 'PQRS-2026-0001',
       respuesta: null,
       adjuntos: undefined,
+      // Portofino 21-10: sin tarjeta de Mantenimiento, `null` (manda la PQRS).
+      mantenimiento: null,
     });
+  });
+
+  it('pasa el estado de la tarjeta de Mantenimiento de una reparación', () => {
+    const c = pqrsToCase(
+      makeSolicitud({ estado: 'recibida', mantenimiento: { estado: 'in_progress', iba: 'approved' } }),
+    );
+    expect(c.solicitud!.mantenimiento).toEqual({ estado: 'in_progress', iba: 'approved' });
   });
 
   it('omits the optional cost/quote fields when absent (no invented SLA)', () => {

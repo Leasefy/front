@@ -31,6 +31,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { TipoDeDocumentoDelProveedor } from '@/components/inmobiliaria/mantenimiento/TipoDeDocumentoDelProveedor';
+import { EJEMPLO_DEL_TIPO_DE_DOCUMENTO, revisarDocumentoDelProveedor } from '@/lib/mantenimiento/documento-del-proveedor';
 import { Plus, Star } from '@phosphor-icons/react';
 import { CrossFade, Eyebrow, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
@@ -187,6 +189,7 @@ function FormularioDeProveedor({
   const [form, setForm] = useState<GuardarProveedor>({
     nombre: proveedor?.nombre ?? '',
     documento: proveedor?.documento ?? '',
+    ...(proveedor?.tipoDocumento ? { tipoDocumento: proveedor.tipoDocumento } : {}),
     telefono: proveedor?.telefono ?? '',
     correo: proveedor?.correo ?? '',
     especialidades: proveedor?.especialidades ?? [],
@@ -238,11 +241,22 @@ function FormularioDeProveedor({
 
   // El espejo del back: una vigencia que no es un día (o en el año 99999) se
   // dice acá, con la misma frase, antes de enviar.
+  /*
+   * 🔴 21-10-2026 (Nico: «datos reales», el tipo aparte): el número se revisa
+   * según su tipo en cuanto hay uno elegido; sin tipo (un proveedor de antes)
+   * se pide al guardar.
+   */
+  const revisionDelDocumento =
+    form.tipoDocumento && form.documento.trim()
+      ? revisarDocumentoDelProveedor(form.tipoDocumento, form.documento)
+      : null;
   const errorDe = (campo: CampoDelProveedor): string | undefined =>
     delServidor[campo] ??
     (campo === 'rutVigenteHasta' || campo === 'seguridadSocialVigenteHasta'
       ? (errorDeLaVigencia(form[campo]) ?? undefined)
-      : undefined);
+      : campo === 'documento' && revisionDelDocumento && !revisionDelDocumento.ok
+        ? revisionDelDocumento.mensaje
+        : undefined);
 
   const alternar = (valor: string) => {
     const actuales = form.especialidades ?? [];
@@ -268,6 +282,7 @@ function FormularioDeProveedor({
           (Array.isArray(v) ? true : v !== '' && v !== undefined),
       ),
     ) as GuardarProveedor;
+    if (revisionDelDocumento?.ok) limpio.documento = revisionDelDocumento.numero;
     try {
       const guardado = proveedor
         ? await proveedoresDeMantenimientoApi.actualizar(proveedor.id, limpio)
@@ -304,6 +319,8 @@ function FormularioDeProveedor({
   const puedeEnviar =
     form.nombre.trim().length > 0 &&
     form.documento.trim().length > 0 &&
+    Boolean(form.tipoDocumento) &&
+    revisionDelDocumento?.ok === true &&
     !hayVigenciaMala &&
     !guardando;
 
@@ -342,23 +359,34 @@ function FormularioDeProveedor({
             />
           </Campo>
 
-          <Campo
-            nombre="documento"
-            error={errorDe('documento')}
-            label="NIT o cédula"
-            requerido
-            ayuda="Con eso se le paga y se le retiene."
-          >
-            <Input
-              id="proveedor-documento"
-              {...ariaDe('documento', errorDe('documento'))}
-              value={form.documento}
-              onChange={(e) => poner('documento', e.target.value)}
-              maxLength={20}
-              placeholder="900123456-7 o 71234567"
-              required
-            />
-          </Campo>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
+            <Campo nombre="tipoDocumento" error={errorDe('tipoDocumento')} label="Tipo de documento" requerido>
+              <TipoDeDocumentoDelProveedor
+                id="proveedor-tipoDocumento"
+                valor={form.tipoDocumento ?? ''}
+                onCambiar={(tipo) => poner('tipoDocumento', tipo)}
+                conError={Boolean(errorDe('tipoDocumento'))}
+              />
+            </Campo>
+            <Campo
+              nombre="documento"
+              error={errorDe('documento')}
+              label="Número"
+              requerido
+              ayuda="Con eso se le paga y se le retiene."
+            >
+              <Input
+                id="proveedor-documento"
+                {...ariaDe('documento', errorDe('documento'))}
+                value={form.documento}
+                onChange={(e) => poner('documento', e.target.value)}
+                maxLength={20}
+                inputMode={form.tipoDocumento === 'PASSPORT' ? 'text' : 'numeric'}
+                placeholder={form.tipoDocumento ? EJEMPLO_DEL_TIPO_DE_DOCUMENTO[form.tipoDocumento] : 'Elige primero el tipo'}
+                required
+              />
+            </Campo>
+          </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Campo nombre="telefono" error={errorDe('telefono')} label="Teléfono">
@@ -568,6 +596,7 @@ type CampoDelProveedor = Exclude<keyof GuardarProveedor, 'rutRuta' | 'seguridadS
 /** En el orden en que se ven: el foco va al primero con error. */
 const CAMPOS_DEL_PROVEEDOR: readonly CampoDelProveedor[] = [
   'nombre',
+  'tipoDocumento',
   'documento',
   'telefono',
   'correo',

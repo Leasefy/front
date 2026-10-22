@@ -34,6 +34,7 @@ import {
   buildRentReference,
   isPeriodPayable,
 } from '@/lib/payments/wompi-rent-session'
+import { cabecerasDeLaCuentaQueLlegan } from '@/lib/payments/cabeceras-de-la-cuenta'
 
 export const runtime = 'nodejs'
 
@@ -169,7 +170,7 @@ export async function POST(req: Request) {
 
   // --- Resolve the authoritative amount + period status server-side ---
   const infoRes = await fetch(`${BACKEND_URL}/leases/${leaseId}/payment-info`, {
-    headers: { Authorization: authorization, 'Content-Type': 'application/json' },
+    headers: { Authorization: authorization, 'Content-Type': 'application/json', ...cabecerasDeLaCuentaQueLlegan(req) },
   })
 
   if (!infoRes.ok) {

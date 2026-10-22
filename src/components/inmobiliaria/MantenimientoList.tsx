@@ -68,6 +68,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { diasDeCalendarioDesde } from '@/lib/fechas/dias-de-calendario';
 
 // ============================================================================
 // Types
@@ -135,11 +136,9 @@ const STATUS_ORDER: MantenimientoStatus[] = ['reported', 'quoted', 'approved', '
 // Helper Functions
 // ============================================================================
 
+/** Días de calendario (hoy = 0): con `Math.ceil`, lo de hace minutos decía «Hace 1 día». */
 function getDaysSinceCreated(createdAt: string): number {
-  const created = new Date(createdAt);
-  const now = new Date();
-  const diffTime = now.getTime() - created.getTime();
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diasDeCalendarioDesde(createdAt);
 }
 
 function formatDateFn(dateString: string, fmtDate: (d: string) => string): string {

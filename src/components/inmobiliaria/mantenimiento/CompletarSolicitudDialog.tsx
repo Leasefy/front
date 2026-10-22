@@ -51,7 +51,7 @@ import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formular
 import { mantenimientoApi } from '@/lib/api/inmobiliaria.service';
 import { borrarLasDelIntento, completarConFotos } from '@/lib/mantenimiento/completar-con-fotos';
 import { lasQueNoSubieron } from '@/lib/mantenimiento/subir-fotos-del-mantenimiento';
-import { fotosQueEntran, MAX_FOTOS_DEL_MANTENIMIENTO } from '@/lib/mantenimiento/limites-del-mantenimiento';
+import { esArchivoDeVideo, fotosQueEntran, MAX_FOTOS_DEL_MANTENIMIENTO } from '@/lib/mantenimiento/limites-del-mantenimiento';
 import type { SolicitudMantenimiento } from '@/lib/types/inmobiliaria';
 import { SelectorDeFotosDelMantenimiento } from './SelectorDeFotosDelMantenimiento';
 import { MoneyInput } from '@/components/ui/money-input';
@@ -128,7 +128,7 @@ export function CompletarSolicitudDialog({
   };
 
   const agregar = (elegidas: File[]) => {
-    const { entran, problemas } = fotosQueEntran(fotos.length, elegidas);
+    const { entran, problemas } = fotosQueEntran(fotos.length, elegidas, fotos.filter(esArchivoDeVideo).length);
     if (entran.length > 0) setFotos((prev) => [...prev, ...entran]);
     setError(problemas.length > 0 ? problemas.join(' · ') : null);
   };

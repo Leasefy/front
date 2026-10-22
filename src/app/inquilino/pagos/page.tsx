@@ -1,7 +1,7 @@
 'use client';
 
 import { plataQueLlega } from '@/lib/plata/plata-que-llega';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -41,7 +41,11 @@ import type {
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { avisarDelPagoAlVolver, transaccionDelRetorno } from '@/lib/payments/verificar-pago-al-volver';
 import { PagarLoVencido } from '@/components/tenant/PagarLoVencido';
-import { pagoEnLineaApi, type LoQueSePuedePagar } from '@/lib/api/pago-en-linea.service';
+import { PagarTusArriendos } from '@/components/tenant/PagarTusArriendos';
+import { InmueblesDelInquilino } from '@/components/tenant/InmueblesDelInquilino';
+import { pagoEnLineaApi, type ArriendoQueSePuedePagar, type LoQueSePuedePagar } from '@/lib/api/pago-en-linea.service';
+import { arriendosConAlgoQueDecir, deQueSonLasTarjetas, estadoDeLosContratos } from '@/lib/inquilino/pagar-varios';
+import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
 import { fechaDeLaSolicitud } from '@/lib/pagos/fecha-de-la-solicitud';
 
 interface RequestRow extends BackendTenantPaymentRequest {
@@ -117,7 +121,7 @@ function PagosPageContent() {
    * misma fuente de «Mi estado de cuenta», así que las dos pantallas dicen lo
    * mismo. Si no llega, se dice —no se pinta un cero—.
    */
-  const [resumen, setResumen] = useState<ResumenDePagos | null>(null);
+  const [docDeCuenta, setDocDeCuenta] = useState<EstadoDeCuenta | null>(null);
   const [errorResumen, setErrorResumen] = useState<unknown>(null);
   const [cargandoResumen, setCargandoResumen] = useState(true);
   const cargarResumen = () => {
@@ -125,7 +129,7 @@ function PagosPageContent() {
     setErrorResumen(null);
     estadoDeCuentaApi
       .mio()
-      .then((doc) => setResumen(resumenDePagos(doc, hoyLocal())))
+      .then((doc) => setDocDeCuenta(doc))
       .catch((e: unknown) => setErrorResumen(e))
       .finally(() => setCargandoResumen(false));
   };
@@ -137,6 +141,29 @@ function PagosPageContent() {
    * del mes: la plata va siempre a la cuota más vieja. Sin él, lo de siempre.
    */
   const [pagoEnLinea, setPagoEnLinea] = useState<LoQueSePuedePagar | null>(null);
+  /*
+   * 🔴 Varios inmuebles (Nico, 21-10-2026: «selecciona qué vas a pagar… de qué
+   * inmueble»): todos los arriendos con lo que se puede pagar de cada uno.
+   * `null` = un back anterior sin la ruta: queda «Pagar lo vencido» del primero.
+   */
+  const [arriendosEnLinea, setArriendosEnLinea] = useState<ArriendoQueSePuedePagar[] | null>(null);
+  /** Los inmuebles escogidos arriba (`leaseId`); `null` = todos. */
+  const [escogidos, setEscogidos] = useState<string[] | null>(null);
+  const escogidosVistos = escogidos ?? arriendosEnLinea?.map((a) => a.leaseId) ?? [];
+  const contratosEscogidos =
+    arriendosEnLinea && arriendosEnLinea.length > 1
+      ? arriendosEnLinea
+          .filter((a) => escogidosVistos.includes(a.leaseId))
+          .map((a) => a.contractId)
+          .filter((x): x is string => Boolean(x))
+      : null;
+  const llaveDeLosContratos = contratosEscogidos?.join('|') ?? '';
+  // Las tarjetas salen del estado de cuenta de los inmuebles escogidos (Nico: «las del inmueble escogido»).
+  const resumen = useMemo<ResumenDePagos | null>(
+    () => (docDeCuenta ? resumenDePagos(estadoDeLosContratos(docDeCuenta, contratosEscogidos), hoyLocal()) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [docDeCuenta, llaveDeLosContratos],
+  );
   const leaseIdPrincipal = primaryLease?.id ?? null;
   const cargarPagoEnLinea = () => {
     if (!leaseIdPrincipal) return;
@@ -145,6 +172,11 @@ function PagosPageContent() {
       .then(setPagoEnLinea)
       // Sin respuesta (o un back anterior sin la ruta): lo de siempre, el canon del mes.
       .catch(() => setPagoEnLinea({ aplica: false, cuotas: [], totalVencidoCop: 0, enVerificacion: null, ultimoRechazo: null }));
+    Promise.resolve()
+      .then(() => pagoEnLineaApi.misArriendos())
+      .then((r) => setArriendosEnLinea(Array.isArray(r?.arriendos) ? r.arriendos : null))
+      // Un back anterior (sin la ruta) o un fallo: lo de siempre, el primer arriendo.
+      .catch(() => setArriendosEnLinea(null));
   };
   useEffect(() => {
     /*
@@ -459,6 +491,16 @@ function PagosPageContent() {
           </div>
         )}
 
+        {/* Varios inmuebles: de cuál(es) son las tarjetas y lo que se paga abajo. */}
+        {arriendosEnLinea && arriendosEnLinea.length > 1 && (
+          <InmueblesDelInquilino arriendos={arriendosEnLinea} escogidos={escogidosVistos} onCambiar={setEscogidos} />
+        )}
+        {arriendosEnLinea && deQueSonLasTarjetas(arriendosEnLinea, escogidosVistos) && (
+          <p data-testid="de-que-son-las-tarjetas" className="-mt-3 mb-3 text-sm text-fg-muted">
+            {deQueSonLasTarjetas(arriendosEnLinea, escogidosVistos)}
+          </p>
+        )}
+
         {/* Resumen — del estado de cuenta, el mismo documento de «Mi estado de cuenta».
             Llega en su propia consulta: el cargando se cruza con las cifras, que
             cuentan desde 0 al llegar (como `KpiValor`) y desde la anterior si cambian. */}
@@ -546,10 +588,26 @@ function PagosPageContent() {
 
         {/* «Pagar lo vencido» (PAGO-ONLINE): justo debajo de lo que debe, antes de
             «Cómo pagar» (a 390 px quedaba al final, después del historial). */}
-        {primaryLease && pagoEnLinea?.aplica && pagoEnLinea.cuotas.length > 0 && (
-          <div className="mb-8 lg:max-w-2xl">
-            <PagarLoVencido key={pagoEnLinea.cuotas.map((c) => c.id).join()} leaseId={primaryLease.id} datos={pagoEnLinea} />
-          </div>
+        {arriendosEnLinea !== null ? (
+          (() => {
+            const pagables = arriendosConAlgoQueDecir(arriendosEnLinea.filter((a) => escogidosVistos.includes(a.leaseId)));
+            return pagables.length > 0 ? (
+              <div className="mb-8 lg:max-w-2xl">
+                <PagarTusArriendos
+                  key={pagables.map((a) => `${a.leaseId}:${a.cuotas.map((c) => c.id).join()}`).join('|')}
+                  arriendos={pagables}
+                />
+              </div>
+            ) : null;
+          })()
+        ) : (
+          primaryLease &&
+          pagoEnLinea?.aplica &&
+          pagoEnLinea.cuotas.length > 0 && (
+            <div className="mb-8 lg:max-w-2xl">
+              <PagarLoVencido key={pagoEnLinea.cuotas.map((c) => c.id).join()} leaseId={primaryLease.id} datos={pagoEnLinea} />
+            </div>
+          )
         )}
 
         {/* Cómo pagar: los medios que configuró la inmobiliaria (no se pinta si no hay) */}

@@ -77,5 +77,9 @@ export function usaLosMensajes(params: { isAdmin: boolean; agencyRole: string | 
   return params.isAdmin || (params.agencyRole !== null && ROLES_QUE_USAN_LOS_MENSAJES.includes(params.agencyRole));
 }
 
+/**
+ * 21-10-2026: el texto del back (`MOTIVO_SIN_ACCESO_A_MENSAJES`). «Mensajes» ya
+ * se puede dar desde «Permisos de esta persona».
+ */
 export const MOTIVO_SIN_ACCESO_A_MENSAJES =
-  'Los mensajes con inquilinos y propietarios los manejan el administrador, el asesor, el auxiliar comercial y el coordinador de la inmobiliaria. Si los necesitas, pídeselos a un administrador.';
+  'No tienes el permiso «Mensajes». De fábrica lo tienen el administrador, el asesor, el auxiliar comercial y el coordinador; un administrador te lo puede dar desde Configuración → Usuarios → Permisos de esta persona.';

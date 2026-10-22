@@ -308,3 +308,10 @@ describe('el porcentaje y la plata de cada propietario', () => {
     expect(campoDe('Teléfonos Propietario')).toBe('ownerPhone')
   })
 })
+
+describe('la columna de características (21-10-2026)', () => {
+  it.each(['Características', 'Caracteristicas del inmueble', 'Comodidades', 'Amenidades'])('«%s» va a características', (h) => {
+    expect(autoMapColumns([h])[0].targetField).toBe('caracteristicas')
+  })
+})
+

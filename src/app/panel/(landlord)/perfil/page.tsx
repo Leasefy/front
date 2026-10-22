@@ -1,10 +1,11 @@
 'use client';
+import { CambiarCorreoDeEntrada } from '@/components/cuenta/CambiarCorreoDeEntrada';
 
 import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, TrashSimple, Pencil, Upload, Buildings, FileText } from '@phosphor-icons/react';
+import { User, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, TrashSimple, Pencil, Upload, Buildings, FileText } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -701,10 +702,7 @@ export default function PropietarioPerfilPage() {
                     se vaciaba al guardar (Nico, 02-10-2026). */}
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Correo' : 'Email'}</label>
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                    <Envelope className="w-4 h-4 text-fg-subtle" />
-                    <span className="text-sm text-fg">{formData.email || notSet}</span>
-                  </div>
+                  <CambiarCorreoDeEntrada correo={formData.email} className="px-4 py-3 bg-surface-muted rounded-lg" />
                 </div>
 
                 <div>

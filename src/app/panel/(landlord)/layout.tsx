@@ -204,8 +204,10 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const administrados = useContratosAdministrados();
   const deInmobiliaria = administrados.cargando || administrados.doc !== null || Boolean(administrados.fichaSinContratos);
   // AVALI-3: una cuenta de inquilino entra sólo si es propietario de inmobiliaria.
+  // «Cambiar de cuenta» (21-10-2026): igual una cuenta de inmobiliaria que es
+  // propietaria (la regla es la misma: no nació como propietario).
   const { user } = useAuth();
-  const esCuentaDeInquilino = user?.role === 'tenant';
+  const esCuentaDeInquilino = user?.role !== 'landlord';
   const esPropietarioConfirmado =
     !administrados.cargando && (administrados.doc !== null || Boolean(administrados.fichaSinContratos));
   const showUpgrade = !deInmobiliaria && subscription?.planId === 'starter';
@@ -217,9 +219,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // AVALI-3: una cuenta de inquilino que NO es propietario no tiene nada acá.
     if (esCuentaDeInquilino && !administrados.cargando && !esPropietarioConfirmado) {
-      router.replace('/inquilino');
+      router.replace(getRoleHomeRoute(user?.role));
     }
-  }, [esCuentaDeInquilino, administrados.cargando, esPropietarioConfirmado, router]);
+  }, [esCuentaDeInquilino, administrados.cargando, esPropietarioConfirmado, router, user?.role]);
   useEffect(() => {
     // Las pantallas del propietario independiente no son suyas: de ahí vuelve a lo suyo.
     if (!administrados.cargando && administrados.doc && !esRutaDelPropietarioDeInmobiliaria(pathname)) {

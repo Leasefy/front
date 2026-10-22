@@ -87,6 +87,8 @@ type Pestana = 'todos' | 'inquilinos' | 'propietarios';
  */
 function caeEnLaPestana(persona: DestinatarioPersona, pestana: Pestana): boolean {
   if (pestana === 'todos') return true;
+  // 21-10-2026: la relación que manda el back gana sobre el rol de la cuenta.
+  if (persona.relacion) return pestana === 'inquilinos' ? persona.relacion === 'INQUILINO' : persona.relacion === 'PROPIETARIO';
   if (pestana === 'inquilinos') return persona.role === 'TENANT';
   return persona.role === 'LANDLORD';
 }
@@ -106,11 +108,13 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
   const [error, setError] = useState<unknown>(null);
   const [abriendo, setAbriendo] = useState<string | null>(null);
 
-  const traer = useCallback(async (q: string) => {
+  const traer = useCallback(async (q: string, filtro: Pestana) => {
     setCargando(true);
     setError(null);
     try {
-      setDatos(await messagesApi.getDestinatariosDirectos(q));
+      // 21-10-2026: la pestaña se filtra en el back (antes llegaban los 50
+      // primeros por orden alfabético y «Propietarios» quedaba en 0).
+      setDatos(await messagesApi.getDestinatariosDirectos(q, filtro === 'todos' ? undefined : filtro));
     } catch (err) {
       setError(err);
     } finally {
@@ -123,9 +127,9 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
   // una vez por tecla.
   useEffect(() => {
     if (!abierto) return;
-    const id = setTimeout(() => void traer(busqueda), busqueda ? 300 : 0);
+    const id = setTimeout(() => void traer(busqueda, pestana), busqueda ? 300 : 0);
     return () => clearTimeout(id);
-  }, [abierto, busqueda, traer]);
+  }, [abierto, busqueda, pestana, traer]);
 
   // Se limpia al ABRIR, no al cerrar. El cajón ya no se desmonta de golpe:
   // sigue montado los 500 ms que dura la animación de salida, y limpiar ahí
@@ -162,12 +166,13 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
   const vacio = !cargando && !error && personas.length === 0 && agencias.length === 0;
 
   const conteos = useMemo(
-    () => ({
-      todos: personas.length,
-      inquilinos: personas.filter((p) => p.role === 'TENANT').length,
-      propietarios: personas.filter((p) => p.role === 'LANDLORD').length,
-    }),
-    [personas],
+    () =>
+      datos?.conteos ?? {
+        todos: personas.length,
+        inquilinos: personas.filter((p) => caeEnLaPestana(p, 'inquilinos')).length,
+        propietarios: personas.filter((p) => caeEnLaPestana(p, 'propietarios')).length,
+      },
+    [personas, datos],
   );
 
   const enLaPestana = useMemo(
@@ -266,7 +271,7 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
             <FalloDeCarga
               error={error}
               queEs="la lista de destinatarios"
-              onReintentar={() => void traer(busqueda)}
+              onReintentar={() => void traer(busqueda, pestana)}
               enmarcado={false}
               className="py-10"
             />
@@ -292,8 +297,9 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
                quien sólo tiene que cambiar de pestaña. */
             <VacioDeLaPestana
               pestana={pestana}
-              total={personas.length}
+              total={conteos.todos}
               hayBusqueda={busqueda.length > 0}
+              sinCuenta={pestana === 'propietarios' ? (datos?.propietariosSinCuenta ?? 0) : 0}
               onVerTodos={() => setPestana('todos')}
             />
           ) : (
@@ -316,6 +322,20 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
                   onElegir={() => void abrirHilo({ agencyId: a.id }, a.id)}
                 />
               ))}
+              {/* 21-10-2026: lo que no cabe se busca; y quien no tiene cuenta se dice. */}
+              {esLadoAgencia && (datos?.hayMas ?? 0) > 0 && (
+                <li className={`${RELLENO_DEL_CAJON} py-3 text-caption text-fg-muted`} data-testid="destinatarios-hay-mas">
+                  Hay {datos?.hayMas} más: búscalos por nombre o correo.
+                </li>
+              )}
+              {esLadoAgencia && pestana !== 'inquilinos' && (datos?.propietariosSinCuenta ?? 0) > 0 && (
+                <li className={`${RELLENO_DEL_CAJON} py-3 text-caption text-fg-muted`} data-testid="propietarios-sin-cuenta">
+                  {datos?.propietariosSinCuenta === 1
+                    ? '1 propietario todavía no tiene cuenta en el portal'
+                    : `${datos?.propietariosSinCuenta} propietarios todavía no tienen cuenta en el portal`}
+                  : no se les puede escribir por aquí hasta que entren. Invítalos desde su ficha.
+                </li>
+              )}
             </ul>
           )}
           </EntraAlCambiar>
@@ -330,11 +350,14 @@ function VacioDeLaPestana({
   pestana,
   total,
   hayBusqueda,
+  sinCuenta = 0,
   onVerTodos,
 }: {
   pestana: Pestana;
   total: number;
   hayBusqueda: boolean;
+  /** 21-10-2026: propietarios con ficha pero sin cuenta en el portal. */
+  sinCuenta?: number;
   onVerTodos: () => void;
 }) {
   const quienes = pestana === 'inquilinos' ? 'inquilinos' : 'propietarios';
@@ -352,7 +375,9 @@ function VacioDeLaPestana({
       <p className="max-w-xs text-sm text-fg-muted">
         {hayBusqueda
           ? `Tu búsqueda trajo ${personas}, pero ninguna es de este grupo. Mira en «Todos» o busca otra cosa.`
-          : `Puedes escribirle a ${personas}, pero ninguna es de este grupo. Están en las otras pestañas.`}
+          : sinCuenta > 0
+            ? `${sinCuenta === 1 ? 'Tu propietario todavía no tiene' : `Tus ${sinCuenta} propietarios todavía no tienen`} cuenta en el portal: no se les puede escribir por aquí hasta que entren. Invítalos desde su ficha.`
+            : `Puedes escribirle a ${personas}, pero ninguna es de este grupo. Están en las otras pestañas.`}
       </p>
       <Button
         type="button"
@@ -404,7 +429,10 @@ function FilaPersona({
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
             <span className="truncate text-sm font-medium text-fg">{nombre}</span>
-            <InsigniaDePerfil perfil={perfilDe(persona.role)} conIcono={false} />
+            <InsigniaDePerfil
+              perfil={perfilDe(persona.relacion === 'PROPIETARIO' ? 'LANDLORD' : persona.relacion === 'INQUILINO' ? 'TENANT' : persona.role)}
+              conIcono={false}
+            />
           </span>
           <span className="block truncate text-caption text-fg-muted">{persona.email}</span>
         </span>

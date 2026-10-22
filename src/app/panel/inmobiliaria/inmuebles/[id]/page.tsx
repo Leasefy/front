@@ -11,7 +11,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CrossFade } from '@leasefy/cadence';
-import { CaretLeft, Buildings, CalendarPlus, WifiSlash, Prohibit } from '@phosphor-icons/react';
+import { CaretLeft, Buildings, CalendarPlus, WifiSlash, Prohibit, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { motivosDelError } from '@/lib/errores/descripcion-del-error';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -20,6 +20,7 @@ import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FotosDelInmueble } from '@/components/inmobiliaria/FotosDelInmueble';
 import { PublicadoEnElMarketplace } from '@/components/inmobiliaria/marketplace/PublicadoEnElMarketplace';
+import { fichaDelInmueble } from '@/lib/inmuebles/ficha-para-compartir';
 import { VisitasDelInmueble } from '@/components/inmobiliaria/VisitasDelInmueble';
 import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { VisorDeFotos } from '@/components/inmobiliaria/inmueble/VisorDeFotos';
@@ -146,6 +147,10 @@ function ConsignacionDetailContent() {
    */
   const [motivoAlTerminar, setMotivoAlTerminar] = useState<string[]>([]);
   const [isTerminating, setIsTerminating] = useState(false);
+  /** «Reactivar consignación» (21-10-2026): confirmación y envío. */
+  const [showReactivarDialog, setShowReactivarDialog] = useState(false);
+  const [reactivando, setReactivando] = useState(false);
+  const [motivoAlReactivar, setMotivoAlReactivar] = useState<string[]>([]);
   /**
    * 🔴 17-09: con contrato vigente, terminar OBLIGA a escoger qué pasa con él
    * (seguir hasta el fin o corte a una fecha). Ese diálogo reemplaza al de
@@ -421,6 +426,41 @@ function ConsignacionDetailContent() {
   }, [consignacion, isTerminating, t]);
 
   /*
+   * 🔴 «Reactivar consignación» (Juan y Laura, Portofino, 21-10-2026): un
+   * inmueble «Inactiva» de la migración quedó con el mandato terminado y en
+   * borrador, y la ficha no tenía cómo volver a administrarlo. El back reabre
+   * el MISMO mandato y deja el inmueble disponible para arrendar (o arrendado,
+   * si tiene contrato vigente); publicarlo en el marketplace sigue aparte.
+   */
+  const handleReactivarConfirm = useCallback(async () => {
+    if (!consignacion || reactivando) return;
+    setReactivando(true);
+    setMotivoAlReactivar([]);
+    try {
+      const updated = await consignacionesApi.update(consignacion.id, { status: 'active' });
+      setConsignacionData(updated);
+      refetchProperty();
+      setShowReactivarDialog(false);
+      const disponible = updated.availability === 'available';
+      const arrendado = updated.availability === 'rented';
+      toast.success('Consignación reactivada', {
+        description: arrendado
+          ? 'El inmueble tiene un contrato vigente: queda arrendado.'
+          : disponible
+            ? 'El inmueble quedó disponible para arrendar. Publicarlo en el marketplace se elige en «Editar».'
+            : 'Pon el canon del inmueble en «Editar» para dejarlo disponible.',
+      });
+    } catch (err) {
+      const motivos = motivosDelError(err);
+      setMotivoAlReactivar(
+        motivos.length > 0 ? motivos : [mensajeParaLaPersona(err, { accion: 'reactivar la consignación' })],
+      );
+    } finally {
+      setReactivando(false);
+    }
+  }, [consignacion, reactivando, refetchProperty]);
+
+  /*
    * 🔴 Acá vivía `handleRenew`, que sólo hacía
    * `toast.info('Renovar consignación próximamente')`.
    *
@@ -611,6 +651,10 @@ function ConsignacionDetailContent() {
           onViewPortal={handleViewPortal}
           onChangeStatus={handleChangeStatus}
           onTerminate={handleTerminate}
+          onReactivar={() => {
+            setMotivoAlReactivar([]);
+            setShowReactivarDialog(true);
+          }}
           fechaDeTerminacion={fechaDeTerminacion}
           contratoVigente={contratoVigente}
         />
@@ -647,6 +691,7 @@ function ConsignacionDetailContent() {
             <PublicadoEnElMarketplace
               propertyId={consignacion.propertyId}
               puedeCambiar={puedeEditarPortafolio}
+              ficha={property ? fichaDelInmueble(property) : undefined}
             />
           )}
 
@@ -875,6 +920,57 @@ function ConsignacionDetailContent() {
               loading={isTerminating}
             >
               {t('inmobiliaria.portafolio.detail.terminateDialog.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reactivar — mismo diálogo de Cadence, sin `confirm()` del navegador */}
+      <AlertDialog
+        open={showReactivarDialog}
+        onOpenChange={(open) => {
+          if (!open && !reactivando) {
+            setShowReactivarDialog(false);
+            setMotivoAlReactivar([]);
+          }
+        }}
+      >
+        <AlertDialogContent icon={<ArrowCounterClockwise weight="bold" />}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Reactivar la consignación?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {consignacion.propertyTitle} vuelve a administrarse con los mismos términos (propietario, canon y
+              comisión) y queda disponible para arrendar. Publicarlo en el marketplace se elige aparte, en «Editar».
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {motivoAlReactivar.length > 0 && (
+            <div
+              role="alert"
+              data-testid="reactivar-rechazo"
+              className="rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger"
+            >
+              {motivoAlReactivar.length === 1 ? (
+                motivoAlReactivar[0]
+              ) : (
+                <ul className="list-disc space-y-1 pl-4">
+                  {motivoAlReactivar.map((m) => (
+                    <li key={m}>{m}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={reactivando}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="confirmar-reactivar"
+              onClick={(e) => {
+                e.preventDefault();
+                void handleReactivarConfirm();
+              }}
+              loading={reactivando}
+            >
+              Reactivar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

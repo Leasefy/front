@@ -45,6 +45,7 @@ import type {
 } from '@/lib/api/tenant-acuerdos.types';
 import type {
   CostoResponsable,
+  EstadoDeLaReparacion,
   PqrsEstado,
   SolicitudPqrs,
 } from '@/lib/api/pqrs.types';
@@ -125,6 +126,8 @@ export interface TenantCase {
     respuesta?: { texto: string; at: string; medio: string } | null;
     /** SO-18: los archivos de la solicitud (se abren con URL firmada). */
     adjuntos?: Array<{ id: string; nombre: string; tipo: string; subidoAt: string }>;
+    /** Portofino 21-10: el estado de la tarjeta de Mantenimiento (manda sobre el de la PQRS). */
+    mantenimiento?: EstadoDeLaReparacion | null;
   };
   /**
    * Acuerdo-only pass-through metadata (v7-07). Carries the agent's plan `status`,
@@ -346,6 +349,7 @@ export function pqrsToCase(s: SolicitudPqrs): TenantCase {
           ? { texto: s.respuesta, at: s.resueltaAt ?? s.updatedAt, medio: 'PORTAL' }
           : null,
       adjuntos: s.adjuntos?.map(({ id, nombre, tipo, subidoAt }) => ({ id, nombre, tipo, subidoAt })),
+      mantenimiento: s.mantenimiento ?? null,
     },
   };
 }

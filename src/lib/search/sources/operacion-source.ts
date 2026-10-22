@@ -15,6 +15,7 @@
 import type { SearchResult, SearchSource } from '@/lib/hooks/useFederatedSearch';
 import { getAccessToken } from '@/lib/api/client';
 import { Lifebuoy, Wrench, HardHat, Receipt } from '@phosphor-icons/react';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? '';
 
@@ -42,6 +43,7 @@ async function pedir(q: string): Promise<ResultadoDelBuscador[]> {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...cabecerasDeLaCuenta(),
     },
   });
   // Un back anterior sin la ruta: estas fuentes no tienen nada que decir.

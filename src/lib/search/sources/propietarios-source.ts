@@ -15,6 +15,7 @@ import type { Propietario } from '@/lib/types/inmobiliaria';
 import type { SearchSource, SearchResult } from '@/lib/hooks/useFederatedSearch';
 import { UserCircle } from '@phosphor-icons/react';
 import { formatoPesos } from '@/lib/plata/formato';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? '';
 
@@ -39,6 +40,7 @@ export const propietariosSource: SearchSource = {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...cabecerasDeLaCuenta(),
         },
         signal,
       },

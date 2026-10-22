@@ -149,18 +149,6 @@ const DEUDA_DEL_MES_ROLES: readonly AgencyRole[] = [...CONTADOR_ROLES, AGENCY_RO
 const GESTION_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.AGENTE];
 
 /**
- * 🔴 Mensajes (Nico, 14-10-2026): administrador, asesor y coordinador — el
- * espejo de `ROLES_QUE_USAN_LOS_MENSAJES` y de `AgencyRoleGuard allowed="mensajes"`.
- */
-const MENSAJES_ROLES: readonly AgencyRole[] = [
-  AGENCY_ROLES.ADMIN,
-  AGENCY_ROLES.AGENTE,
-  AGENCY_ROLES.COORDINADOR,
-  // El auxiliar comercial responde a los interesados (20-10-2026).
-  AGENCY_ROLES.AUXILIAR_COMERCIAL,
-];
-
-/**
  * 🔴 La contabilidad también la abre el AUXILIAR CONTABLE (20-10-2026): registra
  * asientos, egresos y facturas de proveedor. Facturación, nómina y
  * liquidaciones siguen con `CONTADOR_ROLES`.
@@ -593,9 +581,9 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // que «Portales» con Inmuebles.
       { key: 'proveedores', labelKey: 'inmobiliaria.nav.proveedores', href: r('/mantenimientos/proveedores'), icon: Toolbox, module: 'operaciones', scope: 'administracion' },
       { key: 'solicitudes', labelKey: 'inmobiliaria.nav.solicitudes', href: r('/solicitudes'), icon: Lifebuoy, module: 'operaciones', scope: 'administracion', ia: true, hintKey: 'inmobiliaria.nav.pqrs' },
-      // `roles` y no `module`: no hay llave de AGENCY_MODULES para mensajes, y
-      // la pantalla se cierra por rol (`AgencyRoleGuard allowed="managers"`).
-      { key: 'mensajes', labelKey: 'inmobiliaria.nav.mensajes', href: r('/mensajes'), icon: Chat, module: null, roles: MENSAJES_ROLES, scope: 'administracion' },
+      // 21-10-2026: «Mensajes» es un permiso (se da desde «Permisos de esta
+      // persona»); `canAccess('mensajes')` cae al rol con un back anterior.
+      { key: 'mensajes', labelKey: 'inmobiliaria.nav.mensajes', href: r('/mensajes'), icon: Chat, module: 'mensajes', scope: 'administracion' },
     ],
   },
 

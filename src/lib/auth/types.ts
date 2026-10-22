@@ -7,6 +7,7 @@
 
 import type { ActiveContext } from './active-context'
 import type { PerfilDeOnboarding } from './perfil-de-onboarding'
+import type { CuentaElegida, CuentasDeLaPersona } from './cuenta-activa'
 
 // ============================================================================
 // Roles
@@ -293,6 +294,14 @@ export interface AuthState {
   /** Effective active context. Pure agency → 'agency'; pure tenant/landlord →
    *  'personal'; dual-context → the user's persisted choice (default personal). */
   activeContext: ActiveContext
+  /**
+   * «Cambiar de cuenta» (21-10-2026): los papeles de la persona —inquilino,
+   * propietario, cada inmobiliaria—, sacados de sus datos por el back. `null`
+   * mientras no se saben (o con un back anterior): una sola cuenta.
+   */
+  cuentas?: CuentasDeLaPersona | null
+  /** La última cuenta que usó en este navegador, si todavía la tiene. */
+  ultimaCuenta?: CuentaElegida | null
 }
 
 

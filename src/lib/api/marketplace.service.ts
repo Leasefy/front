@@ -5,6 +5,9 @@
  */
 
 import { apiClient } from './client';
+import { mapBackendProperty } from './properties.mapper';
+import type { BackendProperty } from './properties.types';
+import type { Property } from '@/lib/types/property';
 
 export interface ResumenDeLaRecomendacion {
   votos: number;
@@ -56,6 +59,8 @@ export interface VideoPublico {
 }
 
 export interface PaginaDeInmobiliaria extends TarjetaDeInmobiliaria {
+  /** 21-10-2026: no ha pagado ningún plan → al final, la zona de publicidad. Un back anterior no lo manda. */
+  muestraVitrina?: boolean;
   redes: Record<RedDeLaInmobiliaria, string | null>;
   whatsapp: string | null;
   opiniones: OpinionPublica[];
@@ -80,6 +85,48 @@ export interface PreguntaPendiente {
 }
 
 const BASE = '/marketplace';
+
+/** Un turno anterior del chat del perfil (lo guarda la pestaña, no el back). */
+export interface TurnoDelChat {
+  rol: 'persona' | 'asistente';
+  texto: string;
+  /** Los inmuebles que mostró el asistente en ese turno. */
+  inmuebles?: string[];
+}
+
+/** «Pregúntale a la inmobiliaria» con IA (21-10-2026). */
+export interface RespuestaDelChat {
+  respuesta: string;
+  inmuebles: Property[];
+  sugerencias: string[];
+  /** Lo que sigue es hablar con la inmobiliaria (falta un dato, visitar, negociar…). */
+  contactar: boolean;
+  /** Cuántas preguntas con IA le quedan hoy (un back anterior no lo manda). */
+  quedan?: number;
+}
+
+/** El 503 del chat sin IA: el front vuelve al buscador de siempre. */
+export const CODIGO_CHAT_SIN_IA = 'CHAT_SIN_IA';
+/** El 429 del cupo con IA agotado (Nico, 21-10-2026): el chat sigue como buscador. */
+export const CODIGO_CHAT_SIN_PREGUNTAS = 'CHAT_SIN_PREGUNTAS';
+
+const CLAVE_DEL_NAVEGADOR = 'leasefy-marketplace-navegador';
+
+/**
+ * El id de este navegador para el cupo del chat con IA (con la IP, es la
+ * «persona»). Sin almacenamiento disponible, `undefined`: cuenta sólo la IP.
+ */
+export function idDelNavegador(): string | undefined {
+  try {
+    const guardado = window.localStorage.getItem(CLAVE_DEL_NAVEGADOR);
+    if (guardado) return guardado;
+    const nuevo = window.crypto.randomUUID();
+    window.localStorage.setItem(CLAVE_DEL_NAVEGADOR, nuevo);
+    return nuevo;
+  } catch {
+    return undefined;
+  }
+}
 
 /** La dirección de su página: por el nombre corto, o por el id si no tiene. */
 export function paginaDe(i: { slug: string | null; id: string }): string {
@@ -117,5 +164,30 @@ export const marketplaceApi = {
   },
   votar(dto: { contractId: string; recomienda: boolean; comentario?: string | null }): Promise<{ ok: true }> {
     return apiClient.post(`${BASE}/recomendaciones`, dto);
+  },
+  /** Le pregunta al chat del perfil (IA con sus inmuebles publicados y su perfil). */
+  async preguntarAlChat(
+    nombre: string,
+    dto: { pregunta: string; historial?: TurnoDelChat[] },
+  ): Promise<RespuestaDelChat> {
+    const r = await apiClient.post<Omit<RespuestaDelChat, 'inmuebles'> & { inmuebles: BackendProperty[] }>(
+      `${BASE}/inmobiliarias/${encodeURIComponent(nombre)}/chat`,
+      { ...dto, navegador: idDelNavegador() },
+    );
+    return { ...r, inmuebles: (r.inmuebles ?? []).map(mapBackendProperty) };
+  },
+  /** Le pregunta al chat de la portada sobre lo que el buscador ya le muestra. */
+  async preguntarALaPortada(dto: {
+    pregunta: string;
+    historial?: TurnoDelChat[];
+    inmuebles: string[];
+    encontrados: number;
+    entendido: string[];
+  }): Promise<RespuestaDelChat> {
+    const r = await apiClient.post<Omit<RespuestaDelChat, 'inmuebles'> & { inmuebles: BackendProperty[] }>(
+      `${BASE}/chat`,
+      { ...dto, navegador: idDelNavegador() },
+    );
+    return { ...r, inmuebles: (r.inmuebles ?? []).map(mapBackendProperty) };
   },
 };

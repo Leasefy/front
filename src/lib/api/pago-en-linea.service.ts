@@ -20,6 +20,17 @@ export interface CuotaQueSePuedePagar {
   vencida: boolean;
   valorCop: number;
   interesCop: number;
+  /** De qué es la cuota (canon, IVA, retención…). Un back anterior no lo manda. */
+  lineas?: LineaDeLaCuota[];
+  /** Lo que ya se abonó a la cuota. Un back anterior no lo manda. */
+  abonadoCop?: number;
+}
+
+/** Una línea del desglose de la cuota; `resta`: se descuenta (retenciones). */
+export interface LineaDeLaCuota {
+  nombre: string;
+  valorCop: number;
+  resta: boolean;
 }
 
 export interface LoQueSePuedePagar {
@@ -37,7 +48,33 @@ export interface LoQueSePuedePagar {
   ultimoRechazo: { solicitudId: string; valorCop: number; motivo: string | null } | null;
 }
 
+/**
+ * 🔴 Un arriendo del inquilino con lo que puede pagar (Nico, 21-10-2026: «que
+ * se muestre bien a qué hace referencia ese pago y de qué inmueble»).
+ */
+export interface ArriendoQueSePuedePagar extends LoQueSePuedePagar {
+  leaseId: string;
+  contractId: string | null;
+  /** El número del contrato en la inmobiliaria. */
+  contratoNumero: number | null;
+  inmueble: { titulo: string | null; direccion: string; ciudad: string | null };
+  inmobiliaria: string | null;
+}
+
+/** Cuántas de las cuotas más viejas de qué arriendo entran al pago. */
+export interface ParteDelPago {
+  leaseId: string;
+  cuotas: number;
+}
+
 export const pagoEnLineaApi = {
+  /**
+   * Todos los arriendos con lo que se puede pagar de cada uno. Un back
+   * anterior no tiene la ruta: quien llama cae al de un solo arriendo.
+   */
+  misArriendos(): Promise<{ arriendos: ArriendoQueSePuedePagar[] }> {
+    return apiClient.get<{ arriendos: ArriendoQueSePuedePagar[] }>('/portal/pago-en-linea/mis-arriendos');
+  },
   loQueSePuedePagar(leaseId: string): Promise<LoQueSePuedePagar> {
     return apiClient.get<LoQueSePuedePagar>(`/portal/pago-en-linea/arriendos/${encodeURIComponent(leaseId)}`);
   },
@@ -51,4 +88,9 @@ export const pagoEnLineaApi = {
 export function totalDeLasMasViejas(cuotas: readonly CuotaQueSePuedePagar[], cuantas: number): number {
   // Al centavo, sin ruido de flotante (la misma suma del back).
   return sumar(...cuotas.slice(0, cuantas).map((c) => c.valorCop));
+}
+
+/** El nombre corto del inmueble: su título, o la dirección si no tiene. */
+export function nombreDelInmueble(a: Pick<ArriendoQueSePuedePagar, 'inmueble'>): string {
+  return a.inmueble.titulo?.trim() || a.inmueble.direccion;
 }

@@ -30,6 +30,7 @@ import type { ValoresPorDefectoDelContrato } from '@/lib/contratos/valores-por-d
 import { normalizeCobro } from './inmobiliaria.service';
 import type { LineaDeCartera } from '@/lib/migracion/lineas-de-cartera';
 import type { ContractAuditEvent, ContractAuditEventType, ContractAuditEventMetadata } from '@/lib/types/contract';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 // ============================================================================
 // Status mapping (UPPERCASE backend -> lowercase frontend)
@@ -319,6 +320,7 @@ export const contractsApi = {
     formData.append('file', file);
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
+    Object.assign(headers, cabecerasDeLaCuenta());
 
     let res: Response;
     try {

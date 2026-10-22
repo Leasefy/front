@@ -43,6 +43,7 @@ import {
   type TasaDeUsura,
   type TasasDeUsura,
 } from './finanzas.types';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 const BASE = '/inmobiliaria/finanzas';
@@ -224,7 +225,7 @@ export const finanzasApi = {
     try {
       respuesta = await fetch(`${BACKEND_URL}${BASE}/giros-devueltos`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasDeLaCuenta() },
         body: f,
       });
     } catch (error) {

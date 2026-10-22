@@ -14,6 +14,7 @@ import { getAccessToken } from '@/lib/api/client';
 import type { Agente } from '@/lib/types/inmobiliaria';
 import type { SearchSource, SearchResult } from '@/lib/hooks/useFederatedSearch';
 import { Users } from '@phosphor-icons/react';
+import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? '';
 
@@ -60,6 +61,7 @@ export const agentesSource: SearchSource = {
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...cabecerasDeLaCuenta(),
       },
       signal,
     });

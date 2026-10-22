@@ -1,3 +1,4 @@
+import type { TipoDeDocumentoDelProveedor } from '@/lib/mantenimiento/documento-del-proveedor';
 import { apiClient } from './client';
 import { subirAdjuntoDePqrs } from './pqrs-adjuntos';
 
@@ -27,6 +28,8 @@ export interface ProveedorDeMantenimiento {
   nombre: string;
   /** NIT o cédula: con eso se le paga y se le retiene. */
   documento: string;
+  /** 21-10-2026: el tipo, aparte. `null` = guardado antes de pedirlo. */
+  tipoDocumento?: TipoDeDocumentoDelProveedor | null;
   telefono: string | null;
   correo: string | null;
   especialidades: string[];
@@ -55,6 +58,7 @@ export interface CalificacionDelProveedor {
 export interface GuardarProveedor {
   nombre: string;
   documento: string;
+  tipoDocumento?: TipoDeDocumentoDelProveedor;
   telefono?: string;
   correo?: string;
   especialidades?: string[];

@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useAuth } from '@/lib/auth/use-auth';
 import { esDestinoQueRegistraSolo, rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
-import { getRoleHomeRoute } from '@/lib/auth/role-routes';
+import { inicioDeLaPersona } from '@/lib/auth/role-routes';
 import { sanitizeReturnUrl } from '@/lib/utils';
 import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
 import { NoPudimosConfirmarTuSesion } from '@/components/auth/NoPudimosConfirmarTuSesion';
@@ -40,6 +40,7 @@ function PostLoginResolver() {
     agencyRole,
     agencyMembershipChecked,
     hasActiveAgencyMembership,
+    ultimaCuenta,
   } = useAuth();
 
   // Bounded fallback for the agency-membership-probe wait — mirrors AuthForm.
@@ -117,7 +118,8 @@ function PostLoginResolver() {
     // default). The bounded `probeWaitElapsed` guarantees we never hang.
     const isAgencyUser = user.role === 'agency' || hasActiveAgencyMembership;
     if (isAgencyUser && !agencyMembershipChecked && !probeWaitElapsed) return;
-    router.replace(getRoleHomeRoute(user.role, agencyRole));
+    // «Al entrar, a la última cuenta que usó» (Nico, 21-10-2026).
+    router.replace(inicioDeLaPersona(user, agencyRole, ultimaCuenta));
   }, [
     router,
     authLoading,
@@ -132,6 +134,7 @@ function PostLoginResolver() {
     agencyRole,
     agencyMembershipChecked,
     hasActiveAgencyMembership,
+    ultimaCuenta,
     probeWaitElapsed,
   ]);
 

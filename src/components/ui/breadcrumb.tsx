@@ -137,7 +137,15 @@ const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
         {showHouseIcon && (
           <>
             <DSBreadcrumbItem>
-              <Link href={homeHref} aria-label="House" className={LINK_CLASSES}>
+              <Link
+                href={homeHref}
+                aria-label="House"
+                className={cn(
+                  LINK_CLASSES,
+                  // Touch: the 12px icon sits in a 44px target (T-0173).
+                  'justify-center [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11',
+                )}
+              >
                 <House className={iconSize} />
               </Link>
             </DSBreadcrumbItem>

@@ -426,3 +426,25 @@ describe('«Tu suscripción» con su glow up (Nico, 03-10-2026)', () => {
     expect(popover().textContent).not.toContain('Ver Planes');
   });
 });
+
+// ── Responsive: the right cluster must leave room for the hamburger (T-0173) ──
+
+describe('PlanHeader — right cluster on phones (T-0173)', () => {
+  it('hides the secondary icons (subscription, invite) below sm so the cluster never covers the menu toggle', () => {
+    render();
+    const invitar = botonDelEquipo()!;
+    const suscripcion = container.querySelector<HTMLButtonElement>('button[aria-label="Tu suscripción"]')!;
+    for (const el of [invitar, suscripcion]) {
+      expect(el).toBeTruthy();
+      expect(el.className).toMatch(/(^|\s)hidden(\s|$)/);
+      expect(el.className).toContain('sm:inline-flex');
+    }
+  });
+
+  it('keeps the menu toggle and the bell always visible', () => {
+    render();
+    const toggle = container.querySelector<HTMLButtonElement>('button[aria-label="Abrir menú de navegación"]')!;
+    expect(toggle.className).toContain('flex-shrink-0');
+    expect(toggle.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+  });
+});

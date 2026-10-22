@@ -661,7 +661,11 @@ export function PlanHeader({
         )}
         </div>
 
-        {/* Right: Actions */}
+        {/* Right: Actions. Below `sm` the subscription bolt and the invite
+            button are hidden (still reachable from the avatar menu and
+            Configuración › Equipo): at 360–414 px the full cluster was wider
+            than the viewport minus the hamburger, covering the menu toggle and
+            the breadcrumb and scrolling the page sideways (T-0173). */}
         <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
           {/* Mobile search toggle — replaces the inline input below sm */}
           {conBuscador && (
@@ -711,7 +715,7 @@ export function PlanHeader({
                   <button
                     type="button"
                     aria-label={locale === 'es' ? 'Tu suscripción' : 'Your subscription'}
-                    className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
+                    className="relative hidden sm:inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
                   >
                     <Lightning className="w-5 h-5 stroke-[1.5px]" />
                     {isBaseTier && (
@@ -888,7 +892,7 @@ export function PlanHeader({
                       : 'Invitar a tu equipo'
                   }
                   title="Invitar a tu equipo"
-                  className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
+                  className="relative hidden sm:inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
                 >
                   <UserPlus className="w-5 h-5 stroke-[1.5px]" />
                   {/* El contador salta al aparecer y la cifra nueva llega en

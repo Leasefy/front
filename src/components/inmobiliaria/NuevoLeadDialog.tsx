@@ -419,7 +419,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
         <div className="space-y-4">
           {consignaciones.length === 0 ? (
             <p className="text-sm text-fg-muted" data-testid="nuevo-lead-sin-inmuebles">
-              {tr("Todavía no tienes inmuebles consignados. Un lead se anota sobre uno: consigna el primero y vuelve acá.")}
+              {tr("Todavía no tienes inmuebles consignados. Un interesado se anota sobre uno: consigna el primero y vuelve aquí.")}
             </p>
           ) : (
             <div className="space-y-1.5">
@@ -631,7 +631,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
             isLoading={enviando}
             data-testid="nuevo-lead-guardar"
           >
-            {tr("Cargar lead")}
+            {tr("Cargar interesado")}
           </Button>
         </DialogFooter>
       </DialogContent>

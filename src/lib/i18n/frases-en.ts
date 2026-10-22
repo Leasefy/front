@@ -327,7 +327,7 @@ export const FRASES_EN: Record<string, string> = {
   "Con estudio": "With screening",
   // components/inmobiliaria/NuevoLeadDialog.tsx
   "Anota a quien preguntó por un inmueble. Entra al embudo como «Interesado».": "Add someone who asked about a property. They enter the pipeline as “Lead”.",
-  "Todavía no tienes inmuebles consignados. Un lead se anota sobre uno: consigna el primero y vuelve acá.": "You don't have any listed properties yet. A lead is added on a property: list the first one and come back.",
+  "Todavía no tienes inmuebles consignados. Un interesado se anota sobre uno: consigna el primero y vuelve aquí.": "You don't have any listed properties yet. A lead is added on a property: list the first one and come back.",
   "Elige un inmueble": "Pick a property",
   "¿De dónde vino?": "Where did they come from?",
   "Con esto se sabe qué portal vale la pena pagar.": "This tells you which portal is worth paying for.",
@@ -342,7 +342,7 @@ export const FRASES_EN: Record<string, string> = {
   "Asesor": "Agent",
   "(opcional: si no, le toca al del inmueble o al del turno)": "(optional: otherwise it goes to the property's agent or whoever is on shift)",
   "Lo decide la regla del turno": "The shift rule decides",
-  "Cargar lead": "Add lead",
+  "Cargar interesado": "Add lead",
   // components/inmobiliaria/PostulacionesMarcadas.tsx
   "Pedir información": "Ask for information",
   // components/inmobiliaria/retencion/RetencionApagada.tsx

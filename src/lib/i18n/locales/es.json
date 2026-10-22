@@ -1837,7 +1837,7 @@
         "occupancy": "Ocupación",
         "occupancyOf": "{{rented}} arrendados de {{total}} en catálogo",
         "outOfCatalog": "{{count}} fuera del catálogo",
-        "activeLeads": "Leads activos",
+        "activeLeads": "Interesados activos",
         "scheduledVisits": "Visitas programadas",
         "contractsInProgress": "Contratos en firma",
         "pendingCollections": "Cobros pendientes",
@@ -1847,8 +1847,8 @@
       },
       "pipeline": {
         "title": "Pipeline activo",
-        "subtitle": "Leads y negociaciones en curso",
-        "empty": "No hay leads activos"
+        "subtitle": "Interesados y negociaciones en curso",
+        "empty": "No hay interesados activos"
       },
       "team": {
         "title": "Equipo",
@@ -1971,7 +1971,7 @@
       "notifications": {
         "title": "Notificaciones",
         "subtitle": "Configura tus alertas por email y push",
-        "newLeads": "Nuevos leads",
+        "newLeads": "Nuevos interesados",
         "newLeadsDesc": "Cuando un candidato aplica a una propiedad",
         "paymentsReceived": "Pagos recibidos",
         "paymentsReceivedDesc": "Cuando se registra un pago de arriendo",
@@ -3518,7 +3518,7 @@
       "noLeads": "Nadie en esta etapa",
       "noLeadsDesc": "Comienza agregando tu primer interesado",
       "stages": {
-        "newLead": "Nuevo Lead",
+        "newLead": "Nuevo interesado",
         "contacted": "Contactado",
         "visited": "Visitado",
         "negotiation": "Negociación",
@@ -3727,9 +3727,9 @@
       "activePipeline": "Pipeline Activo",
       "daySingular": "día",
       "daysPlural": "días",
-      "viewLead": "Ver lead: {{name}}",
+      "viewLead": "Ver interesado: {{name}}",
       "propertyLabel": "Propiedad: {{title}}",
-      "noActiveLeads": "Sin leads activos",
+      "noActiveLeads": "Sin interesados activos",
       "noProspectsInPipeline": "Este agente no tiene prospectos en pipeline",
       "reassignProperty": "Reasignar Propiedad",
       "currentAgent": "Agente Actual",
@@ -9551,7 +9551,7 @@
             "otro": "Otro"
           },
           "origen": {
-            "lead": "Lead",
+            "lead": "Interesado",
             "solicitud": "Solicitud",
             "asesor": "Asesor"
           },

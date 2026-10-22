@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest'
 import type { GiroDelPropietario } from '@/lib/api/portal-del-propietario.service'
 import {
   avanceDelContrato,
+  mesesDelContrato,
   fraseDelGiroDelMes,
   fraseDelMesDelInquilino,
   giradoEnElAnio,
@@ -29,6 +30,10 @@ describe('en qué mes del contrato va', () => {
   it('a mitad de mes cuenta el mes del contrato, no el del calendario', () => {
     expect(avanceDelContrato('2026-03-15', '2027-03-14', '2026-04-10')).toEqual({ mes: 1, de: 12 })
     expect(avanceDelContrato('2026-03-15', '2027-03-14', '2026-04-15')).toEqual({ mes: 2, de: 12 })
+  })
+  it('el fin el mismo día del año siguiente también son 12 meses, no 13', () => {
+    expect(avanceDelContrato('2026-10-21', '2027-10-21', '2026-10-21')).toEqual({ mes: 1, de: 12 })
+    expect(avanceDelContrato('2026-10-21', '2027-10-21', '2027-10-20')).toEqual({ mes: 12, de: 12 })
   })
   it('sin fechas, por empezar o ya terminado: no inventa un avance', () => {
     expect(avanceDelContrato(null, '2027-02-28', '2026-10-21')).toBeNull()
@@ -61,5 +66,20 @@ describe('el mes del inquilino y el giro', () => {
   it('lo girado en el año suma girados y vueltos a girar; el devuelto no cuenta', () => {
     const giros = [giro('2026-01', 'GIRADO'), giro('2026-02', 'REGIRADO'), giro('2026-03', 'DEVUELTO'), giro('2025-12', 'GIRADO')]
     expect(giradoEnElAnio(giros, '2026-10-21')).toBe(2_000_000)
+  })
+})
+
+describe('mesesDelContrato', () => {
+  it('con el fin incluido o el mismo día del año siguiente: 12', () => {
+    expect(mesesDelContrato('2025-11-01', '2026-10-31')).toBe(12)
+    expect(mesesDelContrato('2026-03-15', '2027-03-14')).toBe(12)
+    expect(mesesDelContrato('2026-10-21', '2027-10-21')).toBe(12)
+  })
+  it('seis meses y unos días cuentan el séptimo', () => {
+    expect(mesesDelContrato('2026-01-15', '2026-07-20')).toBe(7)
+  })
+  it('sin fechas o al revés: null', () => {
+    expect(mesesDelContrato(null, '2027-01-01')).toBeNull()
+    expect(mesesDelContrato('2027-01-01', '2026-01-01')).toBeNull()
   })
 })

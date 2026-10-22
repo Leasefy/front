@@ -51,13 +51,25 @@ function mesesDe(iso: string): number {
  * «Mes 8 de 12»: en qué mes del contrato va hoy. `null` sin las dos fechas, o
  * si hoy está fuera del contrato (por empezar o ya terminado: eso lo dice su sello).
  */
+/**
+ * Cuántos meses dura el contrato. El fin puede venir incluido («del 1 de nov
+ * al 31 de oct») o el mismo día del año siguiente («del 21 de oct al 21 de
+ * oct», como lo arma «Generar contrato»): los dos son 12, no 13. `null` sin
+ * las dos fechas o con el fin antes del inicio.
+ */
+export function mesesDelContrato(inicio: string | null | undefined, fin: string | null | undefined): number | null {
+  if (!inicio || !fin) return null;
+  const de = mesesDe(fin) - mesesDe(inicio) + (fin.slice(8, 10) > inicio.slice(8, 10) ? 1 : 0);
+  return de > 0 ? de : null;
+}
+
 export function avanceDelContrato(
   inicio: string | null | undefined,
   fin: string | null | undefined,
   hoy: string,
 ): { mes: number; de: number } | null {
   if (!inicio || !fin) return null;
-  const de = mesesDe(fin) - mesesDe(inicio) + (fin.slice(8, 10) >= inicio.slice(8, 10) ? 1 : 0);
+  const de = mesesDelContrato(inicio, fin) ?? 0;
   const mes = mesesDe(hoy) - mesesDe(inicio) + (hoy.slice(8, 10) >= inicio.slice(8, 10) ? 1 : 0);
   if (de <= 0 || mes < 1 || mes > de) return null;
   return { mes, de };

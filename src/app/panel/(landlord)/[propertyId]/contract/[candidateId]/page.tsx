@@ -3,15 +3,17 @@
 import { useState, useEffect, Suspense, use } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { FileText, Clock, CheckCircle, WarningCircle, Upload, Shield, X, Check, House, Bed, Users, MapPin, User, Calendar, CurrencyDollar } from '@phosphor-icons/react';
+import { FileText, Clock, CheckCircle, WarningCircle, Upload, Shield, X, Check, House, Bed, Users, MapPin, Calendar, CurrencyDollar } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { mesesDelContrato } from '@/lib/propietario/el-mes-del-contrato';
 import { Button } from '@/components/ui/button';
 import { Card, Spinner } from '@/components/ui';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { toast } from '@/components/ui/toast';
-import { Eyebrow, StatusBadge, MonoLabel } from '@leasefy/cadence';
+import { Avatar, StatusBadge, MonoLabel } from '@leasefy/cadence';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { InsuranceSelector } from '@/components/contract/InsuranceSelector';
@@ -369,7 +371,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
   if (!property || !candidate || property.monthlyRent == null) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="p-6 lg:p-8">
           <BackButton href={`/panel/${propertyId}`} label="Volver a candidatos" />
           <div className="mt-8 rounded-lg border border-border bg-surface p-8 text-center">
             <div className="w-16 h-16 rounded-xl bg-surface-muted flex items-center justify-center mx-auto">
@@ -415,24 +417,17 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="p-6 lg:p-8">
         {/* Back link */}
         <BackButton href={`/panel/${propertyId}`} label="Volver a candidatos" />
 
-        {/* Page Header with Info Cards */}
+        {/* GLOW UP (21-10-2026): el encabezado común del portal. */}
         <div className="mt-6 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-            {/* Title */}
-            <div>
-              <Eyebrow accent>Contrato</Eyebrow>
-              <h1 className="mt-1 text-2xl font-semibold text-fg">
-                {contract ? 'Contrato de Arrendamiento' : 'Generar Contrato'}
-              </h1>
-              <p className="mt-1 text-fg-muted">
-                Crea y firma el contrato para formalizar el arriendo
-              </p>
-            </div>
-          </div>
+          <EncabezadoDePantalla
+            seccion="Mis inmuebles"
+            titulo={contract ? 'Contrato de arrendamiento' : 'Generar el contrato'}
+            descripcion="Crea y firma el contrato para formalizar el arriendo."
+          />
 
           {/* Property & Candidate Summary */}
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -454,9 +449,8 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
             {/* Candidate */}
             <Card className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center flex-shrink-0">
-                  <User className="w-5 h-5 text-success" />
-                </div>
+                {/* Cadence 2: el Avatar de la persona. */}
+                <Avatar name={candidate.fullName || 'Inquilino'} size="md" />
                 <div className="min-w-0">
                   <p className="text-xs text-fg-muted">Inquilino</p>
                   <p className="text-sm font-medium text-fg truncate">
@@ -489,8 +483,15 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-fg-muted">Duración</p>
-                  <p className="text-sm font-medium text-fg">
-                    12 meses
+                  {/* Antes decía «12 meses» siempre. Sin contrato son los 12 que pacta
+                      «Generar» (de hoy a un año); con contrato, los de sus fechas. */}
+                  <p className="text-sm font-medium text-fg" data-testid="duracion-del-contrato">
+                    {(() => {
+                      if (!contract) return '12 meses';
+                      const meses = mesesDelContrato(contract.startDate, contract.endDate);
+                      if (meses === null) return 'Sin fechas';
+                      return meses === 1 ? '1 mes' : `${meses} meses`;
+                    })()}
                   </p>
                 </div>
               </div>

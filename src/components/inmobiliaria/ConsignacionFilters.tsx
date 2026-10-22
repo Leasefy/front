@@ -342,10 +342,11 @@ export function ConsignacionFilters({
         ))}
         {/* COMERCIAL (Nico, 04-10-2026): las vacantes largas y los mandatos
             que se vencen. Un segundo clic quita el filtro. */}
-        {conteoComercial ? (
+        {conteoComercial && FILTROS_COMERCIALES.some((f) => conteoComercial[f.id] > 0 || filters.comercial === f.id) ? (
           <>
             <span className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
-            {FILTROS_COMERCIALES.map((f) => (
+            {/* Revisora r22 (Inmuebles #1): las alertas en 0 no salen (como los cajones, decisión 23), salvo la elegida. */}
+            {FILTROS_COMERCIALES.filter((f) => conteoComercial[f.id] > 0 || filters.comercial === f.id).map((f) => (
               <Chip
                 key={f.id}
                 selected={filters.comercial === f.id}

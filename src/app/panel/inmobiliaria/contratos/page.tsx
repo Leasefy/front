@@ -771,7 +771,9 @@ function ContratosContent() {
                   {/* C-16: de quién es el inmueble (también se busca por ahí). */}
                   {propietarioDeLaFila(c) ? (
                     <p className="mt-0.5 truncate pl-5 text-caption text-fg-subtle" data-testid="propietario-de-la-fila">
-                      {tx('Propietario', 'Owner')}: {propietarioDeLaFila(c)}
+                      {/* Ronda 12: el nombre en gris basta; «Propietario:» delante gastaba el ancho. */}
+                      <span className="sr-only">{tx('Propietario', 'Owner')}: </span>
+                      {propietarioDeLaFila(c)}
                     </p>
                   ) : null}
                 </TableCell>

@@ -533,7 +533,7 @@ function PortafolioContent() {
           <>
             {t('inmobiliaria.portafolio.subtitle')}
             {soloDisponibles && (
-              <span className="mt-1 block text-xs" data-testid="portafolio-solo-disponibles">
+              <span className="mt-1 block text-caption" data-testid="portafolio-solo-disponibles">
                 Ves los inmuebles disponibles. Los arrendados son operación de un contrato en curso y no hacen parte de tu rol.
               </span>
             )}

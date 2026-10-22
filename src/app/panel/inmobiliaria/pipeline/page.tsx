@@ -2,14 +2,7 @@
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useEffect, Suspense } from 'react';
-import {
-  Funnel,
-  Users,
-  CalendarCheck,
-  CheckCircle,
-  ChartLineUp,
-  Plus,
-} from '@phosphor-icons/react';
+import { Funnel, Plus } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { PermissionGate } from '@/components/auth/PermissionGate';
@@ -28,18 +21,17 @@ import {
   PipelineDetail,
   type PipelineFiltersState,
 } from '@/components/inmobiliaria';
-import { FranjaDeCifras, KpiCard } from '@leasefy/cadence';
+import { BarraDelEmbudo } from '@/components/inmobiliaria/BarraDelEmbudo';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
-import { KpiValor } from '@/components/estado/KpiValor';
 import { NuevoLeadDialog } from '@/components/inmobiliaria/NuevoLeadDialog';
 import {
   TITULO_AL_NO_MOVER_EL_LEAD,
   mensajeAlNoMoverElLead,
 } from '@/lib/pipeline/errores-del-pipeline';
-import { tasaMedida, textoDeTasa } from '@/lib/tasas';
+import { tasaMedida } from '@/lib/tasas';
 import { useSearchParams } from 'next/navigation';
 import { AgendarVisitaDialog } from '@/components/inmobiliaria/AgendarVisitaDialog';
 import { ParaHoyDelEmbudo } from '@/components/inmobiliaria/ParaHoyDelEmbudo';
@@ -109,6 +101,8 @@ function PipelineContent() {
   const [creandoLead, setCreandoLead] = useState(false);
   /** PL-16: el interesado al que se le está agendando la visita. */
   const [agendandoA, setAgendandoA] = useState<PipelineItem | null>(null);
+  /** La etapa elegida en la barra del embudo (filtra la lista), o `null`. */
+  const [etapa, setEtapa] = useState<PipelineStage | null>(null);
   /** PL-12: el equipo activo, con nombre (también el admin y quien no es asesor). */
   const { equipo } = useEquipo();
   const nombresDelEquipo = useMemo(
@@ -163,6 +157,11 @@ function PipelineContent() {
   const filteredItems = useMemo(() => {
     let result = [...items];
 
+    // La etapa tocada en la barra del embudo.
+    if (etapa) {
+      result = result.filter((i) => i.stage === etapa);
+    }
+
     // Filter by agente
     if (filters.agenteId) {
       result = result.filter((i) => i.agenteId === filters.agenteId);
@@ -196,7 +195,7 @@ function PipelineContent() {
     }
 
     return result;
-  }, [items, filters]);
+  }, [items, filters, etapa]);
 
   // Handle card click - open detail modal
   /* «Para hoy» (ronda 18): a quién hay que mover hoy, de la lista ENTERA (no de lo filtrado). */
@@ -302,6 +301,7 @@ function PipelineContent() {
    * columnas «Arrastra aquí» sin salida.
    */
   const hayFiltros = Boolean(
+    etapa ||
     filters.agenteId ||
       filters.consignacionId ||
       filters.dateFrom ||
@@ -309,6 +309,7 @@ function PipelineContent() {
       filters.search,
   );
   const limpiarFiltros = useCallback(() => {
+    setEtapa(null);
     setFilters({
       agenteId: undefined,
       consignacionId: undefined,
@@ -318,24 +319,6 @@ function PipelineContent() {
     });
   }, []);
 
-  /*
-   * El número de cada tile con los cuatro estados adentro: mientras carga, un
-   * hueco; si la carga falló, «—» con «No se pudo traer». Antes, con el back
-   * caído, los tiles afirmaban «0 leads · 0 en proceso».
-   *
-   * `KpiCard` tipa `value` como string pero lo pinta como hijo
-   * (`children: value` en @leasefy/cadence): el nodo se ve igual que el texto.
-   */
-  //
-  // Las cifras van como NÚMERO: `KpiValor` las cuenta (`AnimatedNumber`) al
-  // llegar y cuando cambian (mover un lead, filtrar). El texto final es el
-  // mismo que con `String(…)`.
-  const valorDeTile = (valor: string | number) =>
-    (
-      <KpiValor cargando={cargandoPorPrimeraVez} fallo={falloSinDatos}>
-        {valor}
-      </KpiValor>
-    ) as unknown as string;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -359,29 +342,16 @@ function PipelineContent() {
         <ParaHoyDelEmbudo pendientes={pendientesDeHoy} onAbrir={handleCardClick} onAgendar={setAgendandoA} />
       ) : null}
 
-      {/* Las cifras juntas, en una franja — sin entrada propia: la página entra con su template. */}
-      <FranjaDeCifras data-testid="cifras-del-embudo">
-        <KpiCard
-          label={t('inmobiliaria.pipeline.stats.totalLeads')}
-          value={valorDeTile(stats.total)}
-          icon={<Users />}
-        />
-        <KpiCard
-          label={t('inmobiliaria.pipeline.stats.inProcess')}
-          value={valorDeTile(stats.inProcess)}
-          icon={<Funnel />}
-        />
-        <KpiCard
-          label={t('inmobiliaria.pipeline.stats.closedThisMonth')}
-          value={valorDeTile(stats.completedThisMonth)}
-          icon={<CheckCircle />}
-        />
-        <KpiCard
-          label={t('inmobiliaria.pipeline.stats.conversionRate')}
-          value={valorDeTile(textoDeTasa(stats.conversionRate, 0))}
-          icon={<ChartLineUp />}
-        />
-      </FranjaDeCifras>
+      {/* Nico (22-10-2026): el embudo en una barra en vez de las 4 cifras. Tocar una etapa deja la
+          lista sólo con ella. Los números con sus cuatro estados (nunca un 0 sin medir). */}
+      <BarraDelEmbudo
+        items={items}
+        cifras={stats}
+        cargando={cargandoPorPrimeraVez}
+        fallo={falloSinDatos}
+        etapa={etapa}
+        onEtapa={setEtapa}
+      />
 
       {/* Unified Data Card - Filters + Content */}
       <div className="rounded-lg border border-border bg-card overflow-hidden">

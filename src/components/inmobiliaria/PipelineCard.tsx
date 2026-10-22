@@ -15,7 +15,14 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import { diaDeLaProximaAccion, proximaAccionVencida } from '@/lib/pipeline/proxima-accion';
+import {
+  diaCortoDelEmbudo,
+  diaDeLaProximaAccion,
+  esUnaVisita,
+  proximaAccionVencida,
+  rotuloDeLaVencida,
+} from '@/lib/pipeline/proxima-accion';
+import { useTr } from '@/lib/i18n/use-tr';
 
 // Risk level colors for badge
 const RISK_LEVEL_COLORS: Record<string, { bg: string; text: string }> = {
@@ -36,6 +43,12 @@ const DAYS_CRITICAL_THRESHOLD = 14;
  */
 export const NombresDeAgentesContext = createContext<Record<string, string>>({});
 
+/**
+ * ¿Hay más de un asesor en la lista? Con uno solo (o ninguno) el nombre en cada
+ * tarjeta es relleno (ronda 20: «Ana Administradora Lab» en 4 de 4). Lo pone el tablero.
+ */
+export const VariosAsesoresContext = createContext<boolean>(true);
+
 interface PipelineCardProps {
   item: PipelineItem;
   onClick?: (item: PipelineItem) => void;
@@ -53,8 +66,10 @@ export function PipelineCard({
   isDragging = false,
   dragHandleProps,
 }: PipelineCardProps) {
-  const { t, formatDate: formatDateI18n } = useI18n();
+  const { t } = useI18n();
+  const tr = useTr();
   const nombreDelAgente = useContext(NombresDeAgentesContext)[item.agenteId];
+  const conAsesor = useContext(VariosAsesoresContext);
   const riskColors = item.riskLevel ? RISK_LEVEL_COLORS[item.riskLevel] : null;
 
   // IMANA-5: la fecha es un DÍA; vencida sólo si ya pasó en Colombia.
@@ -84,7 +99,8 @@ export function PipelineCard({
     >
       {/* Cadence 2: la columna ya dice la etapa; la tarjeta dice QUIÉN, POR QUÉ INMUEBLE y QUÉ SIGUE.
           Sólo lo que pide atención lleva color (lo vencido, lo que lleva mucho en la etapa). */}
-      <div className="flex flex-col gap-3 p-3.5">
+      {/* Ronda 20: tres renglones sin líneas entre ellos (eran cuatro bandas con divisor). */}
+      <div className="flex flex-col gap-2.5 p-3.5">
         {/* Quién */}
         <div className="flex items-start gap-2.5">
           <Avatar name={item.candidateName} src={item.candidateAvatar || undefined} size="sm" />
@@ -109,7 +125,7 @@ export function PipelineCard({
         </div>
 
         {/* Por qué inmueble */}
-        <div className="flex items-center gap-2.5 border-t border-border-faint pt-3">
+        <div className="flex items-center gap-2.5">
           <Avatar kind="inmueble" name={item.propertyTitle} src={item.propertyThumbnail || undefined} size="sm">
             <HouseLine className="size-4" />
           </Avatar>
@@ -128,32 +144,38 @@ export function PipelineCard({
           </div>
         </div>
 
-        {/* Qué sigue: vencido = rojo suave; si no, una línea tranquila */}
+        {/* Qué sigue. Ronda 20: la fecha UNA vez y corta («lun 19 oct»). Vencida: «Visita vencida · lun 19 oct»
+            (la visita ya dice su fecha; otra acción va a continuación). Si no venció, la acción en hasta dos
+            renglones, con la fecha delante sólo si la acción no la dice. */}
         {item.nextAction && (
-          /* Ronda 18: UN renglón, en letra de leer —la fecha una sola vez, «Vencida» sólo si
-             venció— y no tres textos en mono mayúscula. */
           <div
             className={cn(
               'flex items-start gap-2 text-[13px]',
               isOverdue ? 'rounded-[10px] bg-danger-soft px-2.5 py-2 text-danger' : 'text-fg-muted',
             )}
+            title={item.nextAction}
+            data-testid="pipeline-card-que-sigue"
           >
             <CalendarCheck className="mt-0.5 size-3.5 shrink-0" />
-            <p className="min-w-0 flex-1 truncate">
-              {diaDeLaAccion ? (
-                <span className={cn(isOverdue && 'font-medium')}>
-                  {isOverdue ? `${t('inmobiliaria.pipeline.overdueSentence')} · ` : ''}
-                  {formatDateI18n(diaDeLaAccion, { day: 'numeric', month: 'short' })}
-                  {' · '}
+            {isOverdue && diaDeLaAccion ? (
+              <p className="min-w-0 flex-1 truncate">
+                <span className="font-medium">
+                  {tr(rotuloDeLaVencida(item.nextAction))} · {diaCortoDelEmbudo(diaDeLaAccion)}
                 </span>
-              ) : null}
-              {item.nextAction}
-            </p>
+                {esUnaVisita(item.nextAction) ? null : <> · {item.nextAction}</>}
+              </p>
+            ) : (
+              <p className="min-w-0 flex-1 line-clamp-2">
+                {diaDeLaAccion && !/\d/.test(item.nextAction) ? <>{diaCortoDelEmbudo(diaDeLaAccion)} · </> : null}
+                {item.nextAction}
+              </p>
+            )}
           </div>
         )}
 
-        {/* Pie: cuánto lleva en la etapa y quién lo lleva */}
-        <div className="flex items-center justify-between gap-2 border-t border-border-faint pt-2.5">
+        {/* Pie: cuánto lleva en la etapa y quién lo lleva (el asesor sólo si hay más de uno en la lista). */}
+        {daysWarning || conAsesor ? (
+        <div className="flex items-center justify-between gap-2">
           {/* Ronda 18: los días en la etapa sólo cuando ya pesan (7 o más), en minúscula; «0 días en
               etapa» era relleno. */}
           {daysWarning ? (
@@ -169,11 +191,14 @@ export function PipelineCard({
           ) : (
             <span />
           )}
-          <span className="inline-flex min-w-0 items-center gap-1.5 text-[11px] text-fg-muted">
-            {nombreDelAgente ? <Avatar name={nombreDelAgente} size="xs" /> : <User className="size-3 shrink-0" />}
-            <span className="min-w-0 truncate">{nombreDelAgente ?? 'Sin asignar'}</span>
-          </span>
+          {conAsesor ? (
+            <span className="inline-flex min-w-0 items-center gap-1.5 text-[11px] text-fg-muted">
+              {nombreDelAgente ? <Avatar name={nombreDelAgente} size="xs" /> : <User className="size-3 shrink-0" />}
+              <span className="min-w-0 truncate">{nombreDelAgente ?? 'Sin asignar'}</span>
+            </span>
+          ) : null}
         </div>
+        ) : null}
       </div>
     </motion.div>
   );

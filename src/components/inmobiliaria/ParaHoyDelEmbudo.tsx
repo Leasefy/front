@@ -11,18 +11,9 @@ import { useTr } from '@/lib/i18n/use-tr';
 import { formatCurrency } from '@/lib/format';
 import type { PipelineItem } from '@/lib/types/inmobiliaria';
 import type { PendienteDeHoy } from '@/lib/pipeline/para-hoy';
+import { diaCortoDelEmbudo as diaCorto, rotuloDeLaVencida } from '@/lib/pipeline/proxima-accion';
 
 const VISIBLES = 5;
-
-/** «2026-10-19» → «lun 19 oct». */
-function diaCorto(dia: string): string {
-  const fecha = new Date(`${dia}T12:00:00`);
-  return fecha
-    .toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })
-    .replace(/[.,]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 export function ParaHoyDelEmbudo({
   pendientes,
@@ -53,7 +44,8 @@ export function ParaHoyDelEmbudo({
   const visibles = todos ? pendientes : pendientes.slice(0, VISIBLES);
   const porQue = (p: PendienteDeHoy) =>
     p.porQue === 'vencida'
-      ? tr('{accion} vencida · {dia}', { accion: p.item.nextAction ? tr('Acción') : tr('Visita'), dia: diaCorto(p.dia!) })
+      ? // Ronda 20: «Visita vencida» cuando la acción es una visita (antes decía «Acción» justo para las visitas).
+        `${tr(rotuloDeLaVencida(p.item.nextAction))} · ${diaCorto(p.dia!)}`
       : p.porQue === 'hoy'
         ? tr('Para hoy · {dia}', { dia: diaCorto(p.dia!) })
         : tr('{n} días sin moverse', { n: p.item.daysInStage });

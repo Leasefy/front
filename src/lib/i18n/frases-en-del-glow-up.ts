@@ -234,4 +234,17 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Girado': 'Paid out',
   'inmueble incluido': 'property included',
   'inmuebles incluidos': 'properties included',
+  // Ronda 20 (22-10): Giros (lo hecho en el mes, «Siguiente») y Prospección («Mover a…», la barra del embudo).
+  '(hecho este mes)': '(done this month)',
+  '(en curso)': '(in progress)',
+  'Siguiente': 'Next',
+  'Paso': 'Step',
+  'Ir a': 'Go to',
+  'Mover a…': 'Move to…',
+  'Pasar a {etapa}': 'Move to {etapa}',
+  'Marcar como perdido': 'Mark as lost',
+  'Etapas con interesados': 'Stages with prospects',
+  'Visita vencida': 'Overdue visit',
+  'Acción vencida': 'Overdue action',
+  'Giros atrasados': 'Overdue payouts',
 }

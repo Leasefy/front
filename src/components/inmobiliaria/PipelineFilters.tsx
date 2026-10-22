@@ -21,6 +21,7 @@ import { Chip, DatePicker, IconButton, Presence, Avatar } from '@leasefy/cadence
 import { aFechaIso, fechaLocal } from '@/lib/fechas-locales';
 import type { Agente, Consignacion } from '@/lib/types/inmobiliaria';
 import { useTr } from '@/lib/i18n/use-tr';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface PipelineFiltersState {
   agenteId?: string;
@@ -54,7 +55,14 @@ export function PipelineFilters({
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const idDelPanel = `pipeline-filtros-${useId().replace(/:/g, '')}`;
   /** Lo que está puesto en el panel (las fechas de «Entró»): el botón lo cuenta. */
-  const filtrosDelPanel = filters.dateFrom || filters.dateTo ? 1 : 0;
+  /*
+   * Ronda 20 (390): un renglón, [Buscar] [Filtros (n)]. Asesor e Inmueble van adentro del panel de
+   * «Filtros» en el celular (eran tres renglones de controles). El primer pintado es el de escritorio.
+   */
+  const esCelular = useIsMobile();
+  const filtrosDelPanel =
+    (filters.dateFrom || filters.dateTo ? 1 : 0) +
+    (esCelular ? (filters.agenteId ? 1 : 0) + (filters.consignacionId ? 1 : 0) : 0);
   const { t } = useI18n();
 
   const DATE_PRESETS = [
@@ -154,36 +162,9 @@ export function PipelineFilters({
   };
 
 
-  return (
-    <div className="p-4 space-y-3 border-b border-border">
-      {/* Ronda 18: UN renglón a la misma altura —buscar, asesor, inmueble, «Filtros (n)» y
-          limpiar—; las fechas de «Entró» van al panel de «Filtros» (antes eran tres renglones
-          de tres alturas y «Hoy» se leía como «visitas de hoy»). */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-      {/* Row 1: Search */}
-      <div className="relative min-w-0 sm:min-w-[16rem] sm:max-w-md sm:flex-1">
-        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
-        <Input
-          type="text"
-          placeholder={t('inmobiliaria.pipeline.searchPlaceholder')}
-          value={filters.search || ''}
-          onChange={(e) => updateFilter('search', e.target.value || undefined)}
-          className="w-full pl-10 pr-4"
-        />
-        <Presence show={Boolean(filters.search)} direction="none" className="absolute right-2 top-1/2 -translate-y-1/2">
-          <IconButton
-            variant="ghost"
-            size="sm"
-            onClick={() => updateFilter('search', undefined)}
-            aria-label={tr("Limpiar búsqueda")}
-            className="text-muted-foreground"
-            icon={<X className="w-4 h-4" />}
-          />
-        </Presence>
-      </div>
-
-      {/* Row 2: Dropdowns + «Filtros» */}
-      <div className="flex flex-wrap items-center gap-2">
+  // Asesor e Inmueble: en la barra en escritorio; adentro de «Filtros» en el celular.
+  const selectores = (
+    <>
         {/* Agente Dropdown */}
         <Select
           value={filters.agenteId ?? 'all'}
@@ -247,11 +228,46 @@ export function PipelineFilters({
             ))}
           </SelectContent>
         </Select>
+    </>
+  );
+
+  return (
+    <div className="p-4 space-y-3 border-b border-border">
+      {/* Ronda 18: UN renglón a la misma altura —buscar, asesor, inmueble, «Filtros (n)» y
+          limpiar—; las fechas de «Entró» van al panel de «Filtros» (antes eran tres renglones
+          de tres alturas y «Hoy» se leía como «visitas de hoy»). */}
+      <div className="flex items-center gap-2 sm:flex-wrap">
+      {/* Row 1: Search */}
+      <div className="relative min-w-0 flex-1 sm:min-w-[16rem] sm:max-w-md">
+        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+        <Input
+          type="text"
+          placeholder={t('inmobiliaria.pipeline.searchPlaceholder')}
+          value={filters.search || ''}
+          onChange={(e) => updateFilter('search', e.target.value || undefined)}
+          className="w-full pl-10 pr-4"
+        />
+        <Presence show={Boolean(filters.search)} direction="none" className="absolute right-2 top-1/2 -translate-y-1/2">
+          <IconButton
+            variant="ghost"
+            size="sm"
+            onClick={() => updateFilter('search', undefined)}
+            aria-label={tr("Limpiar búsqueda")}
+            className="text-muted-foreground"
+            icon={<X className="w-4 h-4" />}
+          />
+        </Presence>
+      </div>
+
+      {/* Row 2: Dropdowns + «Filtros» */}
+      <div className="flex shrink-0 items-center gap-2 sm:shrink sm:flex-wrap">
+        {esCelular ? null : selectores}
 
         <Button
           variant="secondary"
           hideArrow
-          className="gap-2"
+          // Ronda 20: a la altura del buscador y los selects (44 px; medía 39).
+          className="h-11 gap-2"
           aria-expanded={filtrosAbiertos}
           aria-controls={idDelPanel}
           onClick={() => setFiltrosAbiertos((v) => !v)}
@@ -264,7 +280,7 @@ export function PipelineFilters({
 
         {/* Clear Filters */}
         {/* «Limpiar» aparece con el primer filtro y se va al limpiarlos. */}
-        <Presence show={Boolean(hasAnyFilter)} direction="none" className="flex items-center gap-3">
+        <Presence show={Boolean(hasAnyFilter) && !esCelular} direction="none" className="flex items-center gap-3">
             <div className="hidden sm:block w-px h-6 bg-border" />
             <Button
               variant="ghost"
@@ -286,6 +302,11 @@ export function PipelineFilters({
         className={cn('flex-wrap items-center gap-2 rounded-lg bg-surface-muted/60 p-3', filtrosAbiertos ? 'flex' : 'hidden')}
         data-testid="pipeline-panel-de-filtros"
       >
+        {esCelular ? (
+          <div className="flex w-full flex-wrap items-center gap-2" data-testid="pipeline-filtros-del-celular">
+            {selectores}
+          </div>
+        ) : null}
         <span className="text-body-sm text-fg-muted">{tr('Entró')}</span>
 
         {/* Date Presets - Chip group */}
@@ -323,6 +344,12 @@ export function PipelineFilters({
           />
         </div>
 
+        {esCelular && hasAnyFilter ? (
+          <Button variant="ghost" size="sm" hideArrow onClick={clearAllFilters} className="gap-1.5 text-danger hover:bg-danger-soft hover:text-danger">
+            <X className="w-4 h-4" />
+            {t('inmobiliaria.pipeline.clear')}
+          </Button>
+        ) : null}
       </div>
     </div>
   );

@@ -28,7 +28,9 @@ import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/she
 import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
-import { PipelineCard, NombresDeAgentesContext } from './PipelineCard';
+import { PipelineCard, NombresDeAgentesContext, VariosAsesoresContext } from './PipelineCard';
+import { DropdownList, DropdownListContent, DropdownListItem, DropdownListSeparator, DropdownListTrigger } from '@/components/ui/dropdown-menu';
+import { ArrowRight } from '@phosphor-icons/react';
 import { mensajeDelRechazoDelMotivo } from '@/components/inmobiliaria/agenda/MotivoDialog';
 import { MotivoDePerdidaDialog } from '@/components/inmobiliaria/MotivoDePerdidaDialog';
 import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
@@ -374,6 +376,54 @@ function DroppableColumn({
  * PipelineBoard - Full Kanban board with drag-and-drop between columns
  * Uses @dnd-kit for accessible drag-and-drop functionality
  */
+/**
+ * «Mover a…» de la lista del celular (ronda 20): un menú con la siguiente etapa primero
+ * («Pasar a Evaluación»), las demás después y «Perdido» al final.
+ */
+function MoverA({
+  item,
+  etapas,
+  onMover,
+}: {
+  item: PipelineItem;
+  etapas: readonly PipelineStage[];
+  onMover: (etapa: PipelineStage) => void;
+}) {
+  const tr = useTr();
+  const nombre = (st: PipelineStage) => tr(getPipelineStageInfo(st)?.labelEs || st);
+  const principales: PipelineStage[] = etapas.filter((st) => st !== 'lost');
+  const aqui = principales.indexOf(item.stage);
+  const siguiente = aqui >= 0 ? principales[aqui + 1] : undefined;
+  const otras = etapas.filter((st) => st !== item.stage && st !== siguiente && st !== 'lost');
+  return (
+    <DropdownList>
+      <DropdownListTrigger asChild>
+        <Button variant="secondary" size="sm" hideArrow className="w-full justify-center" data-testid="mover-a">
+          {tr('Mover a…')}
+        </Button>
+      </DropdownListTrigger>
+      <DropdownListContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)]">
+        {siguiente ? (
+          <DropdownListItem onSelect={() => onMover(siguiente)} className="font-medium" data-testid="mover-a-siguiente">
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            {tr('Pasar a {etapa}', { etapa: nombre(siguiente) })}
+          </DropdownListItem>
+        ) : null}
+        {otras.length > 0 ? <DropdownListSeparator /> : null}
+        {otras.map((st) => (
+          <DropdownListItem key={st} onSelect={() => onMover(st)}>
+            {nombre(st)}
+          </DropdownListItem>
+        ))}
+        <DropdownListSeparator />
+        <DropdownListItem onSelect={() => onMover('lost')} className="text-danger">
+          {tr('Marcar como perdido')}
+        </DropdownListItem>
+      </DropdownListContent>
+    </DropdownList>
+  );
+}
+
 export function PipelineBoard({
   items,
   onItemClick,
@@ -391,6 +441,8 @@ export function PipelineBoard({
     }
     return m;
   }, [agentes]);
+  // Ronda 20: el nombre del asesor en cada tarjeta sólo si la lista tiene más de uno.
+  const variosAsesores = useMemo(() => new Set(items.map((i) => i.agenteId).filter(Boolean)).size > 1, [items]);
   const { t } = useI18n();
   const tr = useTr();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -441,6 +493,55 @@ export function PipelineBoard({
     return grouped;
   }, [items]);
 
+  /**
+   * Mover a un interesado de etapa: lo usan el arrastre del tablero y «Mover a…» de la lista del
+   * celular (ronda 20). Las mismas guardas: terminado o sin permiso no se mueve; «Perdido» pide el
+   * motivo; «Visita programada» se agenda.
+   */
+  const moverA = useCallback(
+    async (item: PipelineItem, newStage: PipelineStage) => {
+      // Check if stage actually changed
+      if (item.stage === newStage) return;
+
+      // La tarjeta ya viene bloqueada; esto cubre un arrastre por teclado.
+      // Cerrado y Perdido el back los rechaza con 409 LEAD_TERMINADO.
+      if (esTerminal(item.stage) || !puedeMover) return;
+
+      /*
+       * «Perdido» pide el motivo, igual que el cajón. Antes el arrastre se lo
+       * saltaba y la columna se llenaba de perdidos sin explicación. La
+       * tarjeta no se mueve hasta que se confirma.
+       */
+      if (newStage === 'lost') {
+        setErrorDelMotivo(null);
+        setPerdiendo(item);
+        return;
+      }
+
+      // PL-16: «Visita programada» se agenda (día, hora y asesor).
+      if (newStage === 'visit_scheduled' && onPedirVisita) {
+        onPedirVisita(item);
+        return;
+      }
+
+      // Get stage info for toast
+      const oldStageInfo = getPipelineStageInfo(item.stage);
+      const newStageInfo = getPipelineStageInfo(newStage);
+
+      try {
+        await onStageChange(item.id, newStage);
+      } catch {
+        // Ya lo dijo quien intentó guardarlo, con el motivo real.
+        return;
+      }
+
+      toast.success(t('inmobiliaria.pipeline.stageUpdated'), {
+        description: `${item.candidateName}: ${oldStageInfo?.labelEs || item.stage} → ${newStageInfo?.labelEs || newStage}`,
+      });
+    },
+    [onStageChange, t, puedeMover, onPedirVisita]
+  );
+
   // Handle drag start
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -478,47 +579,9 @@ export function PipelineBoard({
       // Find the item
       const item = items.find((i) => i.id === itemId);
       if (!item) return;
-
-      // Check if stage actually changed
-      if (item.stage === newStage) return;
-
-      // La tarjeta ya viene bloqueada; esto cubre un arrastre por teclado.
-      // Cerrado y Perdido el back los rechaza con 409 LEAD_TERMINADO.
-      if (esTerminal(item.stage) || !puedeMover) return;
-
-      /*
-       * «Perdido» pide el motivo, igual que el cajón. Antes el arrastre se lo
-       * saltaba y la columna se llenaba de perdidos sin explicación. La
-       * tarjeta no se mueve hasta que se confirma.
-       */
-      if (newStage === 'lost') {
-        setErrorDelMotivo(null);
-        setPerdiendo(item);
-        return;
-      }
-
-      // PL-16: «Visita programada» se agenda (día, hora y asesor).
-      if (newStage === 'visit_scheduled' && onPedirVisita) {
-        onPedirVisita(item);
-        return;
-      }
-
-      // Get stage info for toast
-      const oldStageInfo = getPipelineStageInfo(item.stage);
-      const newStageInfo = getPipelineStageInfo(newStage);
-
-      try {
-        await onStageChange(itemId, newStage);
-      } catch {
-        // Ya lo dijo quien intentó guardarlo, con el motivo real.
-        return;
-      }
-
-      toast.success(t('inmobiliaria.pipeline.stageUpdated'), {
-        description: `${item.candidateName}: ${oldStageInfo?.labelEs || item.stage} → ${newStageInfo?.labelEs || newStage}`,
-      });
+      await moverA(item, newStage);
     },
-    [items, onStageChange, t, puedeMover, onPedirVisita]
+    [items, moverA]
   );
 
   /**
@@ -576,6 +639,21 @@ export function PipelineBoard({
    * orden del embudo, sólo con las etapas que tienen gente; la tarjeta abre el cajón, que es donde
    * se cambia de etapa. El primer pintado (servidor, pruebas) es el tablero.
    */
+  // «Perdido» pide el motivo en los dos anchos (arrastre en el tablero, «Mover a…» en el celular).
+  const dialogoDePerdido = (
+    <MotivoDePerdidaDialog
+      abierto={perdiendo !== null}
+      nombre={perdiendo?.candidateName ?? ''}
+      enviando={enviandoMotivo}
+      error={errorDelMotivo}
+      onCerrar={() => {
+        setPerdiendo(null);
+        setErrorDelMotivo(null);
+      }}
+      onConfirmar={(motivo) => void confirmarPerdido(motivo)}
+    />
+  );
+
   const esCelular = useIsMobile();
   if (esCelular) {
     const etapas = [...mainStages, 'lost' as const];
@@ -583,6 +661,7 @@ export function PipelineBoard({
     const sinGente = etapas.length - conGente.length;
     return (
       <NombresDeAgentesContext.Provider value={nombresDeAgentes}>
+        <VariosAsesoresContext.Provider value={variosAsesores}>
         <div className="space-y-5 p-1 pb-4" data-testid="lista-por-etapa">
           {conGente.map((st) => (
             <section key={st} aria-label={tr(getPipelineStageInfo(st)?.labelEs || st)}>
@@ -590,9 +669,15 @@ export function PipelineBoard({
                 {tr(getPipelineStageInfo(st)?.labelEs || st)}
                 <span className="font-mono text-caption tabular-nums text-fg-muted">{itemsByStage[st].length}</span>
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {itemsByStage[st].map((item) => (
-                  <PipelineCard key={item.id} item={item} onClick={onItemClick} />
+                  <div key={item.id} className="space-y-1.5">
+                    <PipelineCard item={item} onClick={onItemClick} />
+                    {/* Ronda 20: mover desde el celular sin abrir el cajón; la siguiente etapa primero. */}
+                    {puedeMover && !esTerminal(item.stage) ? (
+                      <MoverA item={item} etapas={etapas} onMover={(etapa) => void moverA(item, etapa)} />
+                    ) : null}
+                  </div>
                 ))}
               </div>
             </section>
@@ -603,12 +688,15 @@ export function PipelineBoard({
             </p>
           ) : null}
         </div>
+        {dialogoDePerdido}
+        </VariosAsesoresContext.Provider>
       </NombresDeAgentesContext.Provider>
     );
   }
 
   return (
     <NombresDeAgentesContext.Provider value={nombresDeAgentes}>
+    <VariosAsesoresContext.Provider value={variosAsesores}>
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
@@ -643,17 +731,7 @@ export function PipelineBoard({
       </div>
 
       {/* El mismo diálogo y el mismo mínimo que «Marcar perdido» en el cajón. */}
-      <MotivoDePerdidaDialog
-        abierto={perdiendo !== null}
-        nombre={perdiendo?.candidateName ?? ''}
-        enviando={enviandoMotivo}
-        error={errorDelMotivo}
-        onCerrar={() => {
-          setPerdiendo(null);
-          setErrorDelMotivo(null);
-        }}
-        onConfirmar={(motivo) => void confirmarPerdido(motivo)}
-      />
+      {dialogoDePerdido}
 
       {/* Drag Overlay - Shows the card being dragged */}
       <DragOverlay dropAnimation={null}>
@@ -667,6 +745,7 @@ export function PipelineBoard({
         )}
       </DragOverlay>
     </DndContext>
+    </VariosAsesoresContext.Provider>
     </NombresDeAgentesContext.Provider>
   );
 }

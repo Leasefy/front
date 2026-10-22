@@ -37,8 +37,7 @@ import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 import { Button } from '@/components/ui/button'
-import { BarraDeFiltros, Buscador, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
-import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
+import { BarraDeFiltros, Buscador, Desplegable, Filtro, FiltroDeFechas } from '@/components/admin/screen/Filtros'
 
 const POR_PAGINA = 50
 
@@ -330,12 +329,12 @@ export default function ChatPreguntasPage() {
               ]}
             />
           </Filtro>
-          <Filtro etiqueta="Desde" htmlFor="filtro-desde" className="sm:w-44">
-            <CampoDeFecha id="filtro-desde" value={desde} onChange={(v) => setFilters({ desde: v || undefined }, { resetPage: true })} />
-          </Filtro>
-          <Filtro etiqueta="Hasta" htmlFor="filtro-hasta" className="sm:w-44">
-            <CampoDeFecha id="filtro-hasta" value={hasta} onChange={(v) => setFilters({ hasta: v || undefined }, { resetPage: true })} />
-          </Filtro>
+          <FiltroDeFechas
+            desde={desde}
+            hasta={hasta}
+            onDesde={(v) => setFilters({ desde: v || undefined }, { resetPage: true })}
+            onHasta={(v) => setFilters({ hasta: v || undefined }, { resetPage: true })}
+          />
           <Filtro etiqueta="Tema" htmlFor="filtro-tema">
             <Desplegable
               id="filtro-tema"

@@ -9,8 +9,7 @@ import { fmtDateTime } from '@/lib/admin/format'
 import type { Paginated } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
-import { BarraDeFiltros, Buscador, Filtro } from '@/components/admin/screen/Filtros'
-import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
+import { BarraDeFiltros, Buscador, Filtro, FiltroDeFechas } from '@/components/admin/screen/Filtros'
 import { Input } from '@/components/ui/input'
 import { accionDelAdmin, legible } from '@/lib/admin/textos-del-admin'
 import { CajonDelDetalle } from '@/components/admin/screen/CajonDelDetalle'
@@ -158,34 +157,37 @@ export default function AuditExplorerPage() {
                 id="filtro-accion"
                 value={action}
                 onChange={(v) => setFilters({ action: v }, { resetPage: true })}
-                placeholder="p. ej. payment.recovered"
+                placeholder="Acción, p. ej. payment.recovered"
               />
             </Filtro>
-            <Filtro etiqueta="Cédula del deudor" htmlFor="filtro-cedula" className="sm:w-44">
+            {/* El rótulo de cada texto va ADENTRO, como en los desplegables (21-10). */}
+            <Filtro etiqueta="Cédula del deudor" htmlFor="filtro-cedula" className="sm:w-48">
               <Input
                 id="filtro-cedula"
                 className="font-mono"
                 inputMode="numeric"
+                data-etiqueta-adentro=""
                 value={debtorDoc}
                 onChange={(e) => setFilters({ debtorDoc: e.target.value }, { resetPage: true })}
-                placeholder="1234567"
+                placeholder="Cédula del deudor"
               />
             </Filtro>
             <Filtro etiqueta="Id de la entidad" htmlFor="filtro-entidad" className="sm:w-56">
               <Input
                 id="filtro-entidad"
                 className="font-mono"
+                data-etiqueta-adentro=""
                 value={entityId}
                 onChange={(e) => setFilters({ entityId: e.target.value }, { resetPage: true })}
-                placeholder="UUID"
+                placeholder="Id de la entidad (UUID)"
               />
             </Filtro>
-            <Filtro etiqueta="Desde" htmlFor="filtro-desde" className="sm:w-44">
-              <CampoDeFecha id="filtro-desde" value={from} onChange={(v) => setFilters({ from: v }, { resetPage: true })} />
-            </Filtro>
-            <Filtro etiqueta="Hasta" htmlFor="filtro-hasta" className="sm:w-44">
-              <CampoDeFecha id="filtro-hasta" value={to} onChange={(v) => setFilters({ to: v }, { resetPage: true })} />
-            </Filtro>
+            <FiltroDeFechas
+              desde={from}
+              hasta={to}
+              onDesde={(v) => setFilters({ from: v }, { resetPage: true })}
+              onHasta={(v) => setFilters({ to: v }, { resetPage: true })}
+            />
           </BarraDeFiltros>
         }
       />

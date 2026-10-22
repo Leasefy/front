@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useTenantOptions } from '@/lib/admin/use-tenant-options'
+import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
 
 /**
  * Las piezas de la barra de filtros de las tablas del admin, con los controles
@@ -26,7 +27,51 @@ const EtiquetaDelFiltro = createContext<string | null>(null)
 
 /** La fila de filtros: va en el `barra` del `DataTable`. */
 export function BarraDeFiltros({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center', className)}>{children}</div>
+  // Entre un filtro y el siguiente, más aire que entre un rótulo y su control (proximidad).
+  return <div className={cn('flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4', className)}>{children}</div>
+}
+
+/**
+ * Un rango de fechas como UN filtro: «Fecha [desde] – [hasta]». Antes eran dos
+ * filtros sueltos («Desde», «Hasta»), cada uno con su rótulo y su ancho fijo.
+ */
+export function FiltroDeFechas({
+  desde,
+  hasta,
+  onDesde,
+  onHasta,
+  etiqueta = 'Fecha',
+  idDesde = 'filtro-desde',
+  idHasta = 'filtro-hasta',
+}: {
+  desde: string
+  hasta: string
+  onDesde: (valor: string) => void
+  onHasta: (valor: string) => void
+  etiqueta?: string
+  idDesde?: string
+  idHasta?: string
+}) {
+  return (
+    <div className="flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label={etiqueta}>
+      <span className="shrink-0 whitespace-nowrap text-caption text-fg-muted">{etiqueta}</span>
+      <Label htmlFor={idDesde} className="sr-only">
+        Desde
+      </Label>
+      <div className="w-[9.5rem]">
+        <CampoDeFecha id={idDesde} value={desde} onChange={onDesde} placeholder="Desde" />
+      </div>
+      <span aria-hidden="true" className="text-fg-subtle">
+        –
+      </span>
+      <Label htmlFor={idHasta} className="sr-only">
+        Hasta
+      </Label>
+      <div className="w-[9.5rem]">
+        <CampoDeFecha id={idHasta} value={hasta} onChange={onHasta} placeholder="Hasta" />
+      </div>
+    </div>
+  )
 }
 
 /**

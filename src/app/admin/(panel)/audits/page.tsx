@@ -13,8 +13,7 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { legible } from '@/lib/admin/textos-del-admin'
-import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
-import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
+import { BarraDeFiltros, Desplegable, Filtro, FiltroDeFechas } from '@/components/admin/screen/Filtros'
 import { Button } from '@/components/ui/button'
 import { CajonDelDetalle } from '@/components/admin/screen/CajonDelDetalle'
 
@@ -189,12 +188,12 @@ export default function AuditsPage() {
                 opciones={(facets.data?.tenants ?? []).map((t) => ({ valor: t.tenant_id, nombre: t.legal_name ?? t.tenant_id }))}
               />
             </Filtro>
-            <Filtro etiqueta="Desde" htmlFor="filtro-desde" className="sm:w-44">
-              <CampoDeFecha id="filtro-desde" value={from} onChange={(v) => setFilters({ from: v }, { resetPage: true })} />
-            </Filtro>
-            <Filtro etiqueta="Hasta" htmlFor="filtro-hasta" className="sm:w-44">
-              <CampoDeFecha id="filtro-hasta" value={to} onChange={(v) => setFilters({ to: v }, { resetPage: true })} />
-            </Filtro>
+            <FiltroDeFechas
+              desde={from}
+              hasta={to}
+              onDesde={(v) => setFilters({ from: v }, { resetPage: true })}
+              onHasta={(v) => setFilters({ to: v }, { resetPage: true })}
+            />
           </BarraDeFiltros>
         }
       />

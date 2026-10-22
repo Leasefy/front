@@ -10,6 +10,7 @@
  */
 
 import * as React from 'react';
+import { fijarCuentasDeLaSesion } from '@/lib/auth/cuenta-activa';
 import { Suspense } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
@@ -137,11 +138,14 @@ describe('«Pagar cuota» por la sesión de pago', () => {
 
   it('🔴 pide la sesión SÓLO con { planId, cuotaNumber } y el token, y redirige a Wompi', async () => {
     fetchMock.mockResolvedValue(respuesta(200, SESION));
+    fijarCuentasDeLaSesion('u-1', { rolDeRegistro: 'TENANT', inquilino: true, propietario: false, inmobiliarias: [{ id: 'alfa', nombre: 'Alfa', rol: 'ADMIN', nombreEnLaInmobiliaria: null }] });
     await montar();
     await pagar();
+    fijarCuentasDeLaSesion(null, null);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect((init.headers as Record<string, string>)['x-cuenta']).toBe('inquilino');
     expect(url).toBe(RUTA_DE_LA_SESION_DE_LA_CUOTA);
     expect(url).toBe('/api/inquilino/acuerdos/wompi-session');
     expect(init.method).toBe('POST');

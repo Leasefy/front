@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { cabecerasComoInquilino } from '@/lib/auth/cuenta-activa';
 import { getAccessToken } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { buildWompiCheckoutUrl } from '@/lib/payments/wompi-rent-session';
@@ -68,7 +69,7 @@ export function PagarLoVencido({ leaseId, datos }: Props) {
       const token = getAccessToken();
       const res = await fetch('/api/inquilino/pagos/vencido/wompi-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...cabecerasComoInquilino(), },
         body: JSON.stringify({ leaseId, cuotas: cuantas }),
       });
       const cuerpo = (await res.json().catch(() => ({}))) as Record<string, unknown>;

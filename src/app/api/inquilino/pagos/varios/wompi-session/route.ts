@@ -15,6 +15,7 @@
 import { NextResponse } from 'next/server'
 
 import { esIdentificadorSeguro } from '@/lib/utils/identificador-seguro'
+import { cabecerasDeLaCuentaQueLlegan } from '@/lib/payments/cabeceras-de-la-cuenta'
 import { computeWompiIntegrity } from '@/lib/payments/wompi-integrity'
 
 export const runtime = 'nodejs'
@@ -48,16 +49,6 @@ function leerLasPartes(arriendos: unknown): { partes: { leaseId: string; cuotas:
     return { error: `Cada inmueble va una sola vez en el pago. ${RECARGA}` }
   }
   return { partes }
-}
-
-/** Reenvía al back sólo las cabeceras de cuenta que el navegador mandó. */
-function cabecerasDeLaCuentaQueLlegan(req: Request): Record<string, string> {
-  const salida: Record<string, string> = {}
-  for (const nombre of ['x-cuenta', 'x-inmobiliaria']) {
-    const valor = req.headers.get(nombre)
-    if (valor) salida[nombre] = valor
-  }
-  return salida
 }
 
 export async function POST(req: Request) {

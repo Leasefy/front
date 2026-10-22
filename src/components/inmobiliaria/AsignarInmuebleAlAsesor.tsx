@@ -175,7 +175,7 @@ export function AsignarInmuebleAlAsesor({
               <p className="text-sm font-medium text-fg">
                 No hay otro inmueble para darle
               </p>
-              <p className="mt-1 text-xs text-fg-muted">
+              <p className="mt-1 text-caption text-fg-muted">
                 O ya los lleva todos, o tu portafolio todavía está vacío.
               </p>
             </div>
@@ -222,19 +222,19 @@ export function AsignarInmuebleAlAsesor({
                           <span className="block truncate text-sm font-medium text-fg">
                             {c.propertyTitle}
                           </span>
-                          <span className="block truncate text-xs text-fg-muted">
+                          <span className="block truncate text-caption text-fg-muted">
                             {[c.propertyAddress, c.propertyCity].filter(Boolean).join(' · ')}
                           </span>
                           {/* Que se lo estás quitando a alguien tiene que decirse
                               ANTES del clic, no después en el aviso de éxito. */}
                           {loLleva && (
-                            <span className="block truncate text-xs text-warning">
+                            <span className="block truncate text-caption text-warning">
                               Hoy lo lleva {loLleva}
                             </span>
                           )}
                         </span>
                         {guardando === c.id ? (
-                          <span className="shrink-0 text-xs text-fg-muted">Asignando…</span>
+                          <span className="shrink-0 text-caption text-fg-muted">Asignando…</span>
                         ) : (
                           <Check className="h-4 w-4 shrink-0 text-fg-subtle" />
                         )}
@@ -246,7 +246,7 @@ export function AsignarInmuebleAlAsesor({
             )}
 
             {ocultas > 0 && (
-              <p className="text-xs text-fg-muted" data-testid="asignar-inmueble-hay-mas">
+              <p className="text-caption text-fg-muted" data-testid="asignar-inmueble-hay-mas">
                 Se muestran {visibles.length} de {filtradas.length}. Busca para llegar a los
                 otros {ocultas}.
               </p>

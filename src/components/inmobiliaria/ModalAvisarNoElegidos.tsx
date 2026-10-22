@@ -247,7 +247,7 @@ export function ModalAvisarNoElegidos({
                         className="min-w-0 flex-1 cursor-pointer"
                       >
                         <span className="block truncate text-sm text-fg">{c.tenantName}</span>
-                        <span className="block truncate text-xs text-fg-muted">
+                        <span className="block truncate text-caption text-fg-muted">
                           {c.tenantEmail}
                         </span>
                         {estado === 'falló' && motivos[c.id] && (
@@ -257,19 +257,19 @@ export function ModalAvisarNoElegidos({
                         )}
                       </label>
                       {estado === 'listo' && (
-                        <span className="flex items-center gap-1 text-xs text-success">
+                        <span className="flex items-center gap-1 text-caption text-success">
                           <CheckCircle className="h-4 w-4" weight="fill" aria-hidden="true" />
                           Avisado
                         </span>
                       )}
                       {estado === 'falló' && (
-                        <span className="flex items-center gap-1 text-xs text-danger">
+                        <span className="flex items-center gap-1 text-caption text-danger">
                           <WarningCircle className="h-4 w-4" weight="fill" aria-hidden="true" />
                           No salió
                         </span>
                       )}
                       {estado === 'enviando' && (
-                        <span className="text-xs text-fg-muted">Enviando…</span>
+                        <span className="text-caption text-fg-muted">Enviando…</span>
                       )}
                     </li>
                   )
@@ -290,7 +290,7 @@ export function ModalAvisarNoElegidos({
                     maxLength={MAX_LARGO_DEL_TEXTO_AL_CANDIDATO}
                     className="resize-none"
                   />
-                  <p className="text-xs text-fg-muted">
+                  <p className="text-caption text-fg-muted">
                     Lo firma tu inmobiliaria, así que revísalo antes de mandarlo.
                   </p>
                 </div>

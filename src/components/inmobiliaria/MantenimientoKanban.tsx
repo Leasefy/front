@@ -126,8 +126,8 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
     id: 'reported',
     titleKey: 'inmobiliaria.mantenimiento.colReported',
     icon: ListBullets,
-    color: 'text-fg-muted dark:text-fg-muted',
-    bgColor: 'bg-surface-muted dark:bg-surface-muted',
+    color: 'text-fg-muted',
+    bgColor: 'bg-surface-muted',
   },
   {
     id: 'quoted',
@@ -207,8 +207,8 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
       data-testid={`mantenimiento-tarjeta-${solicitud.id}`}
       className={cn(
         'w-full text-left p-3 rounded-md border-l-4 bg-surface',
-        'border border-border dark:border-border-strong',
-        'hover:border-border dark:hover:border-border-strong',
+        'border border-border',
+        'hover:border-border',
         'transition-[border-color,box-shadow] duration-base group',
         onClick && 'cursor-pointer',
         arrastrable && 'cursor-grab active:cursor-grabbing',
@@ -236,10 +236,10 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
           />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-medium text-fg dark:text-white line-clamp-2 group-hover:text-primary dark:group-hover:text-primary transition-colors">
+          <h4 className="text-sm font-medium text-fg line-clamp-2 group-hover:text-primary transition-colors">
             {solicitud.title}
           </h4>
-          <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
+          <p className="text-caption text-fg-muted mt-0.5">
             {typeInfo?.labelEs}
           </p>
         </div>
@@ -256,7 +256,7 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
       </div>
 
       {/* Property */}
-      <div className="text-xs text-fg-muted dark:text-fg-subtle mb-2 line-clamp-1">
+      <div className="text-caption text-fg-muted mb-2 line-clamp-1">
         <HouseLine className="w-3 h-3 inline mr-1" />
         {solicitud.propertyTitle}
       </div>
@@ -264,7 +264,7 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
       {/* Footer */}
       {/* SO-15: con cinco columnas la tarjeta es angosta: el pie se parte en
           renglones enteros en vez de cortar «$» de su cifra. */}
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-caption">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-fg-subtle">
           <span className="flex items-center gap-1 whitespace-nowrap">
             <CalendarBlank className="w-3 h-3" />
@@ -283,7 +283,7 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
         {(solicitud.priority === 'emergency' || solicitud.priority === 'high') && (
           <span
             className={cn(
-              'px-1.5 py-0.5 rounded text-xs font-medium',
+              'px-1.5 py-0.5 rounded text-caption font-medium',
               solicitud.priority === 'emergency'
                 ? 'bg-danger-soft text-danger'
                 : 'bg-warning-soft text-warning'
@@ -453,7 +453,7 @@ function KanbanColumnComponent({
           open={items.length > 0 && encima}
           className="flex items-center justify-center py-4 rounded-md border-2 border-dashed border-primary/30 bg-primary-soft/50"
         >
-          <p className="text-xs text-primary">{t('inmobiliaria.pipeline.dropHere')}</p>
+          <p className="text-caption text-primary">{t('inmobiliaria.pipeline.dropHere')}</p>
         </Collapse>
       </div>
     </div>

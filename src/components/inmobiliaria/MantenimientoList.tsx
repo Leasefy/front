@@ -103,14 +103,14 @@ type SortDirection = 'asc' | 'desc';
 // ============================================================================
 
 const PRIORITY_STYLES: Record<MantenimientoPriority, { bg: string; text: string; labelKey: string }> = {
-  low: { bg: 'bg-surface-muted dark:bg-surface-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
+  low: { bg: 'bg-surface-muted', text: 'text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
   medium: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
   high: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.priorityHigh' },
   emergency: { bg: 'bg-danger-soft', text: 'text-danger', labelKey: 'inmobiliaria.mantenimiento.priorityEmergency' },
 };
 
 const STATUS_STYLES: Record<MantenimientoStatus, { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
-  reported: { bg: 'bg-surface-muted dark:bg-surface-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: ListBullets },
+  reported: { bg: 'bg-surface-muted', text: 'text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: ListBullets },
   quoted: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyCircleDollar },
   approved: { bg: 'bg-success-soft', text: 'text-success', labelKey: 'inmobiliaria.mantenimiento.statusApproved', icon: Check },
   in_progress: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.statusInProgress', icon: Clock },
@@ -184,15 +184,15 @@ function SummaryCards({ data, t }: { data: SolicitudMantenimiento[]; t: (key: st
       {cards.map((card) => (
         <div
           key={card.labelKey}
-          className="p-4 rounded-lg bg-surface dark:bg-bg border border-border dark:border-border-strong"
+          className="p-4 rounded-lg bg-surface border border-border"
         >
           <div className="flex items-center gap-2 mb-1">
             <div className={cn('w-2 h-2 rounded-full', card.color)} />
-            <span className="text-xs font-medium text-fg-muted dark:text-fg-subtle">
+            <span className="text-caption font-medium text-fg-muted">
               {t(card.labelKey)}
             </span>
           </div>
-          <p className="text-2xl font-bold text-fg dark:text-white">{card.value}</p>
+          <p className="text-2xl font-medium text-fg">{card.value}</p>
         </div>
       ))}
     </div>
@@ -374,7 +374,7 @@ function MantenimientoCard({
             />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground line-clamp-1">
+            <h3 className="font-medium text-foreground line-clamp-1">
               {solicitud.title}
             </h3>
             <p className="text-sm text-muted-foreground">
@@ -438,11 +438,11 @@ function MantenimientoCard({
             {solicitud.propertyTitle}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 text-caption text-muted-foreground">
           <MapPin className="w-3 h-3" />
           <span className="line-clamp-1">{solicitud.propertyAddress}</span>
         </div>
-        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 mt-1 text-caption text-muted-foreground">
           <User className="w-3 h-3" />
           <span>{solicitud.tenantName}</span>
         </div>
@@ -451,13 +451,13 @@ function MantenimientoCard({
       {/* Badges Row */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         {/* Priority Badge */}
-        <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium', priorityStyle.bg, priorityStyle.text)}>
+        <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-caption font-medium', priorityStyle.bg, priorityStyle.text)}>
           {solicitud.priority === 'emergency' && <Warning className="w-3 h-3 mr-1" weight="fill" />}
           {t(priorityStyle.labelKey)}
         </span>
 
         {/* Status Badge */}
-        <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium', statusStyle.bg, statusStyle.text)}>
+        <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-caption font-medium', statusStyle.bg, statusStyle.text)}>
           <StatusIcon className="w-3 h-3 mr-1" />
           {t(statusStyle.labelKey)}
         </span>
@@ -641,7 +641,7 @@ export function MantenimientoList({
       {/* Results count - only show in full mode */}
       {!minimal && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          <p className="text-sm text-fg-muted">
             {t('inmobiliaria.mantenimiento.countOf', { filtered: filteredData.length, total: data.length })}
             {hasFilters && ` (${t('inmobiliaria.mantenimiento.filtered')})`}
           </p>

@@ -65,15 +65,15 @@ const ICON_MAP: Record<string, React.ElementType> = {
 // Cadence 2: el ícono va en arena para todas las categorías — los colores son de los estados,
 // no de las categorías (y un ícono en un círculo de color no dice nada que el título no diga).
 const CATEGORY_BG_COLORS: Record<string, string> = {
-  financiero: 'bg-surface-muted dark:bg-ink',
-  operativo: 'bg-surface-muted dark:bg-ink',
-  agentes: 'bg-surface-muted dark:bg-ink',
+  financiero: 'bg-surface-muted',
+  operativo: 'bg-surface-muted',
+  agentes: 'bg-surface-muted',
 };
 
 const CATEGORY_ICON_COLORS: Record<string, string> = {
-  financiero: 'text-fg-muted dark:text-fg-subtle',
-  operativo: 'text-fg-muted dark:text-fg-subtle',
-  agentes: 'text-fg-muted dark:text-fg-subtle',
+  financiero: 'text-fg-muted',
+  operativo: 'text-fg-muted',
+  agentes: 'text-fg-muted',
 };
 
 /**
@@ -157,11 +157,11 @@ export function ReporteCard({
           <div
             className={cn(
               'w-10 h-10 rounded-md flex items-center justify-center shrink-0',
-              isLocked ? 'bg-surface-muted dark:bg-ink' : bgColor
+              isLocked ? 'bg-surface-muted' : bgColor
             )}
           >
             {isLocked ? (
-              <Lock className="w-5 h-5 text-fg-subtle dark:text-fg-muted" />
+              <Lock className="w-5 h-5 text-fg-subtle" />
             ) : (
               <Icon className={cn('w-5 h-5', iconColor)} weight="duotone" />
             )}
@@ -171,8 +171,8 @@ export function ReporteCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h3 className={cn(
-                'font-semibold text-sm truncate',
-                isLocked ? 'text-fg-subtle dark:text-fg-muted' : 'text-fg'
+                'font-medium text-sm truncate',
+                isLocked ? 'text-fg-subtle' : 'text-fg'
               )}>
                 {report.title}
               </h3>
@@ -188,17 +188,17 @@ export function ReporteCard({
                 />
               )}
             </div>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle line-clamp-1">
+            <p className="text-caption text-fg-muted line-clamp-1">
               {report.description}
             </p>
             <div className="flex items-center gap-2 mt-2">
               {formatoDelArchivoQueBaja && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-success-soft text-success">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-caption font-medium bg-success-soft text-success">
                   <FileCsv className="w-3 h-3" />
                   {formatoDelArchivoQueBaja}
                 </span>
               )}
-              <span className="text-xs text-fg-subtle">
+              <span className="text-caption text-fg-subtle">
                 {getReportFrequencyLabel(report.frequency)}
               </span>
             </div>
@@ -222,7 +222,7 @@ export function ReporteCard({
           <div className="flex items-start gap-3">
             <div
               className={cn(
-                'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
+                'w-12 h-12 rounded-lg flex items-center justify-center shrink-0',
                 bgColor
               )}
             >
@@ -231,8 +231,8 @@ export function ReporteCard({
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className={cn(
-                  'font-semibold',
-                  isLocked ? 'text-fg-subtle dark:text-fg-muted' : 'text-fg'
+                  'font-medium',
+                  isLocked ? 'text-fg-subtle' : 'text-fg'
                 )}>
                   {report.title}
                 </h3>
@@ -240,7 +240,7 @@ export function ReporteCard({
                   <Badge className="shrink-0">Pro</Badge>
                 )}
               </div>
-              <p className="text-sm text-fg-muted dark:text-fg-subtle line-clamp-2">
+              <p className="text-sm text-fg-muted line-clamp-2">
                 {report.description}
               </p>
             </div>
@@ -275,20 +275,20 @@ export function ReporteCard({
       <div className="px-5 pb-4">
         <div className="flex flex-wrap items-center gap-2">
           {/* Category Badge */}
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle">
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-caption font-medium bg-surface-muted text-fg-muted">
             {getReportCategoryLabel(report.category)}
           </span>
 
           {/* Formato del archivo — sólo cuando hay archivo */}
           {formatoDelArchivoQueBaja && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle">
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-caption font-medium bg-surface-muted text-fg-muted">
               <FileCsv className="w-3.5 h-3.5" />
               {formatoDelArchivoQueBaja}
             </span>
           )}
 
           {/* Frequency Badge */}
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle">
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-caption font-medium bg-surface-muted text-fg-muted">
             {getReportFrequencyLabel(report.frequency)}
           </span>
         </div>
@@ -299,7 +299,7 @@ export function ReporteCard({
         <span
           className={cn('w-2 h-2 rounded-full shrink-0', status.color)}
         />
-        <span className="text-sm text-fg-muted dark:text-fg-subtle">
+        <span className="text-sm text-fg-muted">
           {t('inmobiliaria.reporte.last')}: {formatLastGeneratedFn(report.lastGenerated, t, fmtDate)}
         </span>
       </div>

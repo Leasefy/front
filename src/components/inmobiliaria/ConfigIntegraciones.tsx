@@ -244,7 +244,7 @@ export function ConfigIntegraciones({
               icon={<Icon className="w-4 h-4" />}
             >
               {tab.label}
-              <span className="text-xs opacity-70">({count})</span>
+              <span className="text-caption opacity-70">({count})</span>
             </Chip>
           );
         })}
@@ -286,7 +286,7 @@ export function ConfigIntegraciones({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h3 className="font-semibold text-foreground">
+                        <h3 className="font-medium text-foreground">
                           {integration.name}
                         </h3>
                         <p className="text-sm text-muted-foreground mt-0.5">
@@ -322,13 +322,13 @@ export function ConfigIntegraciones({
                       </Badge>
 
                       {/* Category Badge */}
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-caption">
                         {getIntegrationCategoryLabel(integration.category)}
                       </Badge>
 
                       {/* Last Sync */}
                       {integration.lastSyncAt && integration.status === 'active' && (
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <span className="text-caption text-muted-foreground flex items-center gap-1">
                           <ArrowsClockwise className="w-3 h-3" />
                           {t('inmobiliaria.config.integrations.syncedAt', { time: formatRelativeTime(integration.lastSyncAt) })}
                         </span>
@@ -340,7 +340,7 @@ export function ConfigIntegraciones({
                       <div className="mt-3 p-2.5 rounded-md bg-danger-soft border border-danger/30">
                         <div className="flex items-start gap-2">
                           <Warning className="w-4 h-4 text-danger shrink-0 mt-0.5" />
-                          <p className="text-xs text-danger">
+                          <p className="text-caption text-danger">
                             {integration.errorMessage}
                           </p>
                         </div>
@@ -354,7 +354,7 @@ export function ConfigIntegraciones({
                         <div className="mt-3 p-2.5 rounded-md bg-warning-soft border border-warning/30">
                           <div className="flex items-start gap-2">
                             <Key className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-                            <p className="text-xs text-warning">
+                            <p className="text-caption text-warning">
                               {t('inmobiliaria.config.integrations.apiKeyNotConfigured')}
                             </p>
                           </div>
@@ -412,7 +412,7 @@ export function ConfigIntegraciones({
           <div className="space-y-4">
             <dl className="grid grid-cols-2 gap-3">
               <div>
-                <dt className="text-xs uppercase tracking-wide text-fg-subtle">
+                <dt className="text-caption uppercase tracking-wide text-fg-subtle">
                   {t('inmobiliaria.config.integrations.detailStatus')}
                 </dt>
                 <dd className="mt-1 text-sm text-fg">
@@ -422,7 +422,7 @@ export function ConfigIntegraciones({
                 </dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wide text-fg-subtle">
+                <dt className="text-caption uppercase tracking-wide text-fg-subtle">
                   {t('inmobiliaria.config.integrations.detailCategory')}
                 </dt>
                 <dd className="mt-1 text-sm text-fg">
@@ -432,7 +432,7 @@ export function ConfigIntegraciones({
                 </dd>
               </div>
               <div className="col-span-2">
-                <dt className="text-xs uppercase tracking-wide text-fg-subtle">
+                <dt className="text-caption uppercase tracking-wide text-fg-subtle">
                   {t('inmobiliaria.config.integrations.detailLastSync')}
                 </dt>
                 <dd className="mt-1 text-sm text-fg">
@@ -446,13 +446,13 @@ export function ConfigIntegraciones({
             {selectedIntegration?.status === 'error' && selectedIntegration.errorMessage && (
               <div className="flex gap-2 rounded-md border border-danger/30 bg-danger-soft p-3">
                 <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
-                <p className="text-xs text-danger">{selectedIntegration.errorMessage}</p>
+                <p className="text-caption text-danger">{selectedIntegration.errorMessage}</p>
               </div>
             )}
 
             <div className="flex gap-2 rounded-md border border-border bg-surface-hover p-3">
               <Key className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 {t('inmobiliaria.config.integrations.keysNotHere')}
               </p>
             </div>

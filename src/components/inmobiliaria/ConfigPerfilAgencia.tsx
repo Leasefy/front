@@ -3,25 +3,7 @@
 import { useState, useCallback, useEffect, useId, useRef } from 'react';
 import { useCambiosPorGuardar } from '@/components/configuracion/cambios-por-guardar';
 import Link from 'next/link';
-import {
-  ArrowRight,
-  Bank,
-  Buildings,
-  Receipt,
-  Envelope,
-  Phone,
-  MapPin,
-  Globe,
-  WhatsappLogo,
-  IdentificationCard,
-  User,
-  Certificate,
-  Percent,
-  Calendar,
-  Bell,
-  Check,
-  Info,
-} from '@phosphor-icons/react';
+import { Bank, Buildings, Receipt, Envelope, Phone, MapPin, Globe, WhatsappLogo, IdentificationCard, User, Certificate, Percent, Calendar, Bell, Check, Info } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
   Button,
@@ -275,7 +257,7 @@ const SectionHeader = ({
     className="flex scroll-mt-16 items-center gap-2 text-foreground"
   >
     <Icon className={cn('w-5 h-5', color)} weight="duotone" />
-    <h3 className="text-base font-semibold">{title}</h3>
+    <h3 className="text-base font-medium">{title}</h3>
   </div>
 );
 
@@ -905,12 +887,12 @@ export function ConfigPerfilAgencia({
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-base font-semibold text-fg">{agency.name}</h2>
+          <h2 className="text-base font-medium text-fg">{agency.name}</h2>
           <p className="text-sm text-fg-muted">
             {t('inmobiliaria.config.profile.subtitle')}
           </p>
           {!canEdit && (
-            <p className="text-xs text-fg-muted flex items-center gap-1">
+            <p className="text-caption text-fg-muted flex items-center gap-1">
               <Info className="w-3.5 h-3.5" />
               {t('inmobiliaria.config.profile.adminOnlyHint')}
             </p>
@@ -1437,28 +1419,28 @@ export function ConfigPerfilAgencia({
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.commission')}</div>
-              <div className="text-foreground font-semibold">
+              <div className="text-muted-foreground text-caption">{t('inmobiliaria.config.profile.commission')}</div>
+              <div className="text-foreground font-medium">
                 {agency.defaultCommissionPercent ?? '—'}%
               </div>
             </div>
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.lateFee')}</div>
-              <div className="text-foreground font-semibold">
+              <div className="text-muted-foreground text-caption">{t('inmobiliaria.config.profile.lateFee')}</div>
+              <div className="text-foreground font-medium">
                 {agency.defaultLateFeePercent ?? '—'}%
               </div>
               {/* CF-02 (QA 04-10): «sólo con el motor apagado» no se entendía. */}
               <div className="text-[11px] text-muted-foreground">Mensual. Se cobra sólo si no usas reglas de mora</div>
             </div>
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.paymentDay')}</div>
-              <div className="text-foreground font-semibold">
+              <div className="text-muted-foreground text-caption">{t('inmobiliaria.config.profile.paymentDay')}</div>
+              <div className="text-foreground font-medium">
                 {agency.paymentDueDay ?? '—'}
               </div>
             </div>
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.disbursementDayLabel')}</div>
-              <div className="text-foreground font-semibold">
+              <div className="text-muted-foreground text-caption">{t('inmobiliaria.config.profile.disbursementDayLabel')}</div>
+              <div className="text-foreground font-medium">
                 {agency.disbursementDay ?? '—'}
               </div>
             </div>
@@ -1548,16 +1530,15 @@ export function ConfigPerfilAgencia({
                 <label htmlFor="motor-de-cobros" className="block text-sm font-medium text-foreground">
                   Motor de cobros con reglas de mora
                 </label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   Apagado: se cobra el % mensual fijo de «{t('inmobiliaria.config.profile.defaultSettings')}».
                   Prendido: mandan las reglas de mora (interés diario, gasto administrativo, topes) y los días de plazo.
                 </p>
                 <Link
                   href="/panel/inmobiliaria/pagos/cartera/reglas-de-mora"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:underline"
                 >
                   Ver reglas de mora
-                  <ArrowRight className="w-3 h-3" />
                 </Link>
               </div>
               <Switch
@@ -1701,8 +1682,8 @@ export function ConfigPerfilAgencia({
         ) : (
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">Motor de cobros</div>
-              <div className="text-foreground font-semibold">
+              <div className="text-muted-foreground text-caption">Motor de cobros</div>
+              <div className="text-foreground font-medium">
                 {agency.motorDeCobrosV2
                   ? 'Reglas de mora'
                   : `% mensual fijo (${agency.defaultLateFeePercent ?? '—'}%)`}
@@ -1714,21 +1695,21 @@ export function ConfigPerfilAgencia({
               className={cn('p-3 rounded-md bg-muted/50', llegoAlPlazo && 'ring-2 ring-warning/60')}
               data-testid="plazo-de-lectura"
             >
-              <div className="text-muted-foreground text-xs">Días de plazo antes de la mora</div>
+              <div className="text-muted-foreground text-caption">Días de plazo antes de la mora</div>
               {plazoSinFijar(agency) ? (
                 <>
-                  <div className="text-warning font-semibold">Sin fijar</div>
+                  <div className="text-warning font-medium">Sin fijar</div>
                   <div className="text-caption text-muted-foreground">
                     Mientras no los fije, lo vencido no entra a la cartera ni a la cobranza.
                   </div>
                 </>
               ) : (
-                <div className="text-foreground font-semibold tabular-nums">{agency.diasDePlazo ?? 0}</div>
+                <div className="text-foreground font-medium tabular-nums">{agency.diasDePlazo ?? 0}</div>
               )}
             </div>
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">Siniestro a los</div>
-              <div className="text-foreground font-semibold tabular-nums">
+              <div className="text-muted-foreground text-caption">Siniestro a los</div>
+              <div className="text-foreground font-medium tabular-nums">
                 {agency.diasParaSiniestro ?? DIAS_PARA_SINIESTRO_POR_DEFECTO} días de mora
               </div>
               <div className="text-[11px] text-muted-foreground">
@@ -1753,7 +1734,7 @@ export function ConfigPerfilAgencia({
                 <label htmlFor="dispersion-exige-pin" className="block text-sm font-medium text-foreground">
                   Pedir código de aprobación en todos los lotes
                 </label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   Cada lote de pagos a propietarios necesita el código que le llega por correo a otra persona
                   con permiso sobre dispersiones, sin importar el monto.
                 </p>
@@ -1790,12 +1771,12 @@ export function ConfigPerfilAgencia({
         ) : (
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">Código en todos los lotes</div>
-              <div className="text-foreground font-semibold">{agency.dispersionExigePin ? 'Sí' : 'No'}</div>
+              <div className="text-muted-foreground text-caption">Código en todos los lotes</div>
+              <div className="text-foreground font-medium">{agency.dispersionExigePin ? 'Sí' : 'No'}</div>
             </div>
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">Segundo aprobador desde</div>
-              <div className="text-foreground font-semibold tabular-nums">
+              <div className="text-muted-foreground text-caption">Segundo aprobador desde</div>
+              <div className="text-foreground font-medium tabular-nums">
                 {agency.dispersionMontoDobleAprobacion != null
                   ? formatCurrency(agency.dispersionMontoDobleAprobacion)
                   : `${formatCurrency(MONTO_DE_LA_SEGUNDA_PERSONA_POR_DEFECTO_COP)} · el que trae Leasefy`}
@@ -1810,7 +1791,7 @@ export function ConfigPerfilAgencia({
           tributario de las partes dice que corresponde. */}
       <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader icon={Percent} title="Impuestos y retenciones" />
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           Tarifas por defecto de Colombia: confírmalas con tu contador. La reteICA depende del municipio
           y hasta que no la configures no se practica. Se aplican sólo cuando el contrato dice quién
           retiene y si el inmueble es comercial.
@@ -1938,26 +1919,26 @@ export function ConfigPerfilAgencia({
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">IVA</div>
-              <div className="text-foreground font-semibold tabular-nums">
+              <div className="text-muted-foreground text-caption">IVA</div>
+              <div className="text-foreground font-medium tabular-nums">
                 {agency.ivaPorcentaje ?? TARIFAS_POR_DEFECTO.ivaPorcentaje} %
               </div>
             </div>
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">Retefuente arrendamiento</div>
-              <div className="text-foreground font-semibold tabular-nums">
+              <div className="text-muted-foreground text-caption">Retefuente arrendamiento</div>
+              <div className="text-foreground font-medium tabular-nums">
                 {agency.retefuenteArrendamientoPorcentaje ?? TARIFAS_POR_DEFECTO.retefuenteArrendamientoPorcentaje} %
               </div>
             </div>
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">Retefuente comisiones</div>
-              <div className="text-foreground font-semibold tabular-nums">
+              <div className="text-muted-foreground text-caption">Retefuente comisiones</div>
+              <div className="text-foreground font-medium tabular-nums">
                 {agency.retefuenteComisionPorcentaje ?? TARIFAS_POR_DEFECTO.retefuenteComisionPorcentaje} %
               </div>
             </div>
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">ReteICA</div>
-              <div className="text-foreground font-semibold tabular-nums">
+              <div className="text-muted-foreground text-caption">ReteICA</div>
+              <div className="text-foreground font-medium tabular-nums">
                 {agency.reteicaPorMil != null ? `${agency.reteicaPorMil} por mil` : 'Sin configurar — no se practica'}
               </div>
               {/* T-0107 ronda 2: reteICA es OPT-OUT (`facturas-de-proveedor.service.ts:
@@ -1971,8 +1952,8 @@ export function ConfigPerfilAgencia({
               ) : null}
             </div>
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">ReteIVA</div>
-              <div className="text-foreground font-semibold tabular-nums">
+              <div className="text-muted-foreground text-caption">ReteIVA</div>
+              <div className="text-foreground font-medium tabular-nums">
                 {agency.reteivaPorcentaje ?? TARIFAS_POR_DEFECTO.reteivaPorcentaje} % del IVA
               </div>
               {/* reteIVA es OPT-IN (`agenteRetenedorIva === true ? tarifa : null`): a
@@ -1984,8 +1965,8 @@ export function ConfigPerfilAgencia({
               ) : null}
             </div>
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-xs">Base mínima de retefuente</div>
-              <div className="text-foreground font-semibold tabular-nums">
+              <div className="text-muted-foreground text-caption">Base mínima de retefuente</div>
+              <div className="text-foreground font-medium tabular-nums">
                 {agency.baseMinimaRetefuenteCop != null
                   ? formatCurrency(agency.baseMinimaRetefuenteCop)
                   : 'Sin mínimo'}
@@ -2015,13 +1996,12 @@ export function ConfigPerfilAgencia({
               </span>
               <Link
                 href="/panel/inmobiliaria/configuracion/mandato"
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:underline"
               >
                 Se declara en Mandato
-                <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
-            <p className="text-xs text-muted-foreground" data-testid="efecto-responsableIva">
+            <p className="text-caption text-muted-foreground" data-testid="efecto-responsableIva">
               {efectoDeResponsableIva(agency.responsableIva)}
             </p>
           </div>
@@ -2046,7 +2026,7 @@ export function ConfigPerfilAgencia({
               ) : (
                 <span className="text-sm text-foreground">{textoEstadoFiscal(agency.agenteRetenedorRenta)}</span>
               )}
-              <p className="text-xs text-muted-foreground" data-testid="efecto-agenteRetenedorRenta">
+              <p className="text-caption text-muted-foreground" data-testid="efecto-agenteRetenedorRenta">
                 No tiene ningún efecto en el sistema todavía: se guarda, pero ningún cálculo lo usa.
               </p>
             </div>
@@ -2062,7 +2042,7 @@ export function ConfigPerfilAgencia({
               ) : (
                 <span className="text-sm text-foreground">{textoEstadoFiscal(agency.agenteRetenedorIva)}</span>
               )}
-              <p className="text-xs text-muted-foreground" data-testid="efecto-agenteRetenedorIva">
+              <p className="text-caption text-muted-foreground" data-testid="efecto-agenteRetenedorIva">
                 {efectoDeRetencionIva(editando ? formData.agenteRetenedorIva : (agency.agenteRetenedorIva ?? null))}
               </p>
             </div>
@@ -2078,12 +2058,12 @@ export function ConfigPerfilAgencia({
               ) : (
                 <span className="text-sm text-foreground">{textoEstadoFiscal(agency.agenteRetenedorIca)}</span>
               )}
-              <p className="text-xs text-muted-foreground" data-testid="efecto-agenteRetenedorIca">
+              <p className="text-caption text-muted-foreground" data-testid="efecto-agenteRetenedorIca">
                 {efectoDeRetencionIca(editando ? formData.agenteRetenedorIca : (agency.agenteRetenedorIca ?? null))}
               </p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Si la inmobiliaria misma practica retenciones al pagar a un proveedor. «Sin definir» no es
             neutro: cada campo dice arriba qué hace hoy.
           </p>

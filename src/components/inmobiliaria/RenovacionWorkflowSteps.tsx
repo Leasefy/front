@@ -105,7 +105,7 @@ function Campo({
 
 function Rotulo({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-muted">{children}</h3>
+    <h3 className="text-caption font-medium uppercase tracking-wide text-fg-muted">{children}</h3>
   );
 }
 
@@ -144,7 +144,7 @@ function AvisoDeCanal({
 }) {
   if (canal === 'panel_y_correo') {
     return (
-      <p className="text-xs text-fg-muted" data-testid="renovacion-canal">
+      <p className="text-caption text-fg-muted" data-testid="renovacion-canal">
         Le llega a su panel de Leasefy{correo ? ` y a su correo (${correo})` : ''}. Desde el panel
         puede aceptar.
       </p>
@@ -152,7 +152,7 @@ function AvisoDeCanal({
   }
   if (canal === 'correo_del_contrato') {
     return (
-      <p className="text-xs text-fg-muted" data-testid="renovacion-canal">
+      <p className="text-caption text-fg-muted" data-testid="renovacion-canal">
         Este inquilino no tiene cuenta en Leasefy: la propuesta le llega al correo del contrato (
         {correo}){respondible ? ' y te responde contestándolo' : ''}. Su respuesta la registras tú
         en el paso siguiente.
@@ -160,7 +160,7 @@ function AvisoDeCanal({
     );
   }
   return (
-    <p className="flex items-start gap-1.5 text-xs text-warning" data-testid="renovacion-canal">
+    <p className="flex items-start gap-1.5 text-caption text-warning" data-testid="renovacion-canal">
       <Warning className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       Sin cuenta ni correo en el contrato: al enviar, la propuesta queda registrada aquí. Hazla
       llegar por WhatsApp o copia el mensaje.
@@ -254,7 +254,7 @@ export function PasoPropuesta({
               value={newRent > 0 ? newRent : ''}
               onChange={(crudo) => onNewRentChange(Number(crudo) || 0)}
               placeholder={formatCurrency(renovacion.currentRent)}
-              className="h-12 text-lg font-semibold"
+              className="h-12 text-lg font-medium"
             />
           </Campo>
           <Campo id="renovacion-ipc" etiqueta="IPC del año anterior" error={errores.ipc}>
@@ -307,7 +307,7 @@ export function PasoPropuesta({
                 <p className="text-fg-muted">
                   Con IPC de {formatearPct(ipcRate, locale)} el canon queda en{' '}
                   {/* Al cambiar el IPC, el tope cuenta hasta el nuevo. */}
-                  <strong className="font-semibold text-fg">
+                  <strong className="font-medium text-fg">
                     <AnimatedNumber
                       value={tope}
                       format={(n) => formatCurrency(renovacionConCentavos ? alCentavo(n) : Math.round(n))}
@@ -333,7 +333,7 @@ export function PasoPropuesta({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-fg-muted">
                 IPC de {sugerido.anio} según el DANE:{' '}
-                <strong className="font-semibold text-fg">{formatearPct(sugerido.rate, locale)}</strong>
+                <strong className="font-medium text-fg">{formatearPct(sugerido.rate, locale)}</strong>
                 . Es el tope legal de aumento en vivienda.
               </p>
               <Button
@@ -386,7 +386,7 @@ export function PasoPropuesta({
 
       <div className="space-y-3 border-t border-border pt-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-fg">Mensaje al inquilino</h3>
+          <h3 className="text-sm font-medium text-fg">Mensaje al inquilino</h3>
           <div className="flex items-center gap-1">
             {editado ? (
               <Button
@@ -433,7 +433,7 @@ export function PasoPropuesta({
           <Avatar name={renovacion.tenantName || '?'} size="sm" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-fg">{renovacion.tenantName}</p>
-            <p className="truncate text-xs text-fg-muted">
+            <p className="truncate text-caption text-fg-muted">
               {[renovacion.tenantEmail, renovacion.tenantPhone].filter(Boolean).join(' · ') ||
                 'Sin correo ni teléfono en el contrato'}
             </p>
@@ -619,7 +619,7 @@ export function PasoFirma({
           <>
             <CheckCircle className="h-7 w-7 text-success" weight="fill" aria-hidden="true" />
             <span className="text-sm font-medium text-success">{archivo.name}</span>
-            <span className="text-xs text-fg-muted">Toca para cambiarlo</span>
+            <span className="text-caption text-fg-muted">Toca para cambiarlo</span>
           </>
         ) : (
           <>
@@ -627,7 +627,7 @@ export function PasoFirma({
             <span className="text-sm text-fg-muted">
               Arrastra el contrato firmado o toca para elegirlo
             </span>
-            <span className="text-xs text-fg-subtle">PDF, JPG o PNG</span>
+            <span className="text-caption text-fg-subtle">PDF, JPG o PNG</span>
           </>
         )}
         {/* allowlist: hidden type=file behind a custom drag/click dropzone (playbook file-input allowlist) */}
@@ -642,7 +642,7 @@ export function PasoFirma({
       </label>
       <ErrorDelCampo id="firma-archivo-error" mensaje={errorDelArchivo} className="mt-0" />
 
-      <p className="text-xs text-fg-muted">
+      <p className="text-caption text-fg-muted">
         Al registrar la firma, el contrato, la consignación y el inmueble quedan con el nuevo canon
         y vencen el {vence}.
       </p>
@@ -674,7 +674,7 @@ export function PasoCompletada({
         <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-success-soft">
           <FlagCheckered className="h-8 w-8 text-success" weight="fill" aria-hidden="true" />
         </div>
-        <h3 className="text-lg font-semibold text-fg">Renovación completada</h3>
+        <h3 className="text-lg font-medium text-fg">Renovación completada</h3>
         <p className="mt-1 text-sm text-fg-muted">
           El contrato sigue hasta el {vence} con un canon de {formatCurrency(finalRent)}.
         </p>
@@ -824,7 +824,7 @@ export function RielDeActividad({
                     className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-primary/70"
                   />
                   <p className="text-sm font-medium text-fg">{etiquetaDeActividad(item.action)}</p>
-                  <p className="text-xs text-fg-muted">
+                  <p className="text-caption text-fg-muted">
                     {item.createdAt
                       ? formatDate(item.createdAt, {
                           day: 'numeric',
@@ -836,7 +836,7 @@ export function RielDeActividad({
                     {item.actorName ? ` · ${item.actorName}` : ''}
                   </p>
                   {texto ? (
-                    <p className="mt-1 line-clamp-4 whitespace-pre-line text-xs text-fg-muted">
+                    <p className="mt-1 line-clamp-4 whitespace-pre-line text-caption text-fg-muted">
                       {texto}
                     </p>
                   ) : null}

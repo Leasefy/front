@@ -200,13 +200,13 @@ export function ConfigCicloDeVidaDelContrato({
     >
       <div>
         <h3 className="text-sm font-medium">Ciclo de vida del contrato</h3>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           Cómo trabaja tu inmobiliaria la carta del incremento, los gastos de cobranza y la garantía de servicios
           públicos. Cada contrato puede cambiar lo suyo.
         </p>
       </div>
 
-      <label className="block text-xs" htmlFor="dias-antes-carta">
+      <label className="block text-caption" htmlFor="dias-antes-carta">
         Días antes del aniversario en que sale la carta del incremento
         <Input
           id="dias-antes-carta"
@@ -220,7 +220,7 @@ export function ConfigCicloDeVidaDelContrato({
         />
       </label>
 
-      <fieldset className="space-y-1 text-xs" disabled={deshabilitado}>
+      <fieldset className="space-y-1 text-caption" disabled={deshabilitado}>
         <legend>¿Tus contratos pactan gastos de cobranza?</legend>
         <p className="text-muted-foreground">
           Si el contrato no lo pacta, la regla de gastos de cobranza no se le cobra. Cada contrato lo puede decir.{' '}
@@ -252,7 +252,7 @@ export function ConfigCicloDeVidaDelContrato({
         </RadioGroup>
       </fieldset>
 
-      <fieldset className="space-y-2 text-xs" disabled={deshabilitado}>
+      <fieldset className="space-y-2 text-caption" disabled={deshabilitado}>
         <legend>Garantía de servicios públicos del inquilino</legend>
         <p className="text-muted-foreground">
           Es plata del inquilino para las facturas de servicios que llegan después de entregar: se pagan con ella y se
@@ -320,7 +320,7 @@ export function ConfigCicloDeVidaDelContrato({
         )}
       </fieldset>
 
-      <fieldset className="space-y-2 text-xs" disabled={deshabilitado}>
+      <fieldset className="space-y-2 text-caption" disabled={deshabilitado}>
         <legend>Estudio del inquilino</legend>
         <p className="text-muted-foreground">
           Cuántos días le vale al solicitante el estudio aprobado para postularse a cualquier inmueble tuyo sin volver
@@ -340,7 +340,7 @@ export function ConfigCicloDeVidaDelContrato({
         </div>
       </fieldset>
 
-      <fieldset className="space-y-2 text-xs" disabled={deshabilitado}>
+      <fieldset className="space-y-2 text-caption" disabled={deshabilitado}>
         <legend>Seguro opcional del inquilino</legend>
         <p className="text-muted-foreground">
           Es un porcentaje DEL CANON, no un valor fijo: así la prima sube con el canon. Lo paga el inquilino, sólo si

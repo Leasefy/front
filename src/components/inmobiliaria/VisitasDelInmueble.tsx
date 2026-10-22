@@ -281,7 +281,7 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
         className={SUPERFICIE_DE_LA_FICHA}
         data-testid="visitas-del-inmueble"
       >
-        <header className="flex items-start gap-3 border-b border-border-faint px-6 pb-4 pt-5 dark:border-border-strong">
+        <header className="flex items-start gap-3 border-b border-border-faint px-6 pb-4 pt-5">
           <CalendarCheck className="mt-0.5 h-[18px] w-[18px] shrink-0 text-fg-subtle" aria-hidden />
           <div className="min-w-0">
             <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Visitas</h3>
@@ -304,7 +304,7 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
       className={SUPERFICIE_DE_LA_FICHA}
       data-testid="visitas-del-inmueble"
     >
-      <header className="flex items-start justify-between gap-4 border-b border-border-faint px-6 pb-4 pt-5 dark:border-border-strong">
+      <header className="flex items-start justify-between gap-4 border-b border-border-faint px-6 pb-4 pt-5">
         <div className="flex min-w-0 items-start gap-3">
           <CalendarCheck className="mt-0.5 h-[18px] w-[18px] shrink-0 text-fg-subtle" aria-hidden />
           <div className="min-w-0">
@@ -444,7 +444,7 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
         {estado === 'listo' && !delAsesor && prendido && (
           <div className="space-y-5">
             <div>
-              <h4 className="text-sm font-semibold text-fg">Cómo se puede visitar</h4>
+              <h4 className="text-sm font-medium text-fg">Cómo se puede visitar</h4>
               <p className="mt-0.5 text-body-sm text-fg-muted">
                 Lo que elijas es lo que el interesado ve en el aviso.
               </p>

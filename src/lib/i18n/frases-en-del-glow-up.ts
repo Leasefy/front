@@ -195,4 +195,5 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Construido en': 'Built in',
   'Sin área, habitaciones ni baños cargados. Complétalos y el aviso público los muestra.': 'No area, bedrooms or bathrooms yet. Add them and the public listing shows them.',
   'No pudimos traer los datos del inmueble.': "We couldn't load the property's details.",
+  'Faltan el área, las habitaciones y los baños: es lo primero que busca quien arrienda.': 'Area, bedrooms and bathrooms are missing: they are the first thing renters look for.',
 }

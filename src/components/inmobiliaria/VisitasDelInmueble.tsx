@@ -78,6 +78,12 @@ export interface VisitasDelInmuebleProps {
    * sabe) y pregunta antes de abrir horarios.
    */
   arrendado?: boolean;
+  /**
+   * Quién está a cargo del inmueble (`consignacion.agenteId`). El horario que manda el back
+   * puede ser el de otra persona (la administradora, por defecto): «que está a cargo» sólo se
+   * dice si es ella (revisión 21-10: la portada decía «Nadie a cargo» y aquí sí había alguien).
+   */
+  agenteId?: string | null;
   /** Hasta cuándo va el contrato vigente (`YYYY-MM-DD…`), si se sabe. */
   arrendadoHasta?: string | null;
 }
@@ -167,7 +173,7 @@ function ModalidadCard({
 
 type Estado = 'cargando' | 'listo' | 'error';
 
-export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHasta = null }: VisitasDelInmuebleProps) {
+export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHasta = null, agenteId }: VisitasDelInmuebleProps) {
   const [preguntarSiArrendado, setPreguntarSiArrendado] = useState(false);
   // La pestaña de horarios elegida lleva su píldora, que se DESLIZA a la otra.
   const indicadorDeLaModalidad = `${useId()}-modalidad`;
@@ -403,7 +409,8 @@ export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHas
           <div className="space-y-3" data-testid="visitas-del-asesor">
             <p className="text-body-sm text-fg-muted">
               Las visitas de este inmueble siguen el horario de visitas de{' '}
-              <span className="font-medium text-fg">{delAsesor.nombre}</span>, que está a cargo. Los
+              <span className="font-medium text-fg">{delAsesor.nombre}</span>
+              {agenteId === undefined || delAsesor.userId === agenteId ? ', que está a cargo' : ''}. Los
               interesados ven esos cupos en el aviso; el cupo reservado desaparece y la visita entra a
               la agenda.
               {prendido &&

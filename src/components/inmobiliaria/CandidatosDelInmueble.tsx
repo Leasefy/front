@@ -214,7 +214,8 @@ export function CandidatosDelInmueble({
         </Stagger>
       )}
 
-      {propertyId && (
+      {/* Con cero candidatos, «Ver candidatos» llevaba a una lista vacía (revisión 21-10). */}
+      {propertyId && (candidatos?.length ?? 0) > 0 && (
         <Link
           href={href}
           className="flex items-center justify-center gap-1.5 border-t border-border px-5 py-3 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"

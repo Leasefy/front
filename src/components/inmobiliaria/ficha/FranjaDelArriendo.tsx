@@ -80,7 +80,9 @@ export function FranjaDelArriendo({
   return (
     <dl
       className={cn(
-        'grid grid-cols-1 gap-x-8 gap-y-5',
+        // En el celular, dos columnas: quién vive a lo ancho y, debajo, «Termina el» y el
+        // asesor lado a lado (revisión 21-10: a 390 quedaban bajo el pliegue).
+        'grid grid-cols-2 gap-x-6 gap-y-5 sm:gap-x-8',
         conInquilino
           ? 'sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]'
           : 'sm:grid-cols-2',
@@ -88,7 +90,7 @@ export function FranjaDelArriendo({
       data-testid="franja-del-arriendo"
     >
       {/* ── Quién vive ─────────────────────────────────────────────── */}
-      <div className="min-w-0">
+      <div className={cn('min-w-0', conInquilino && 'col-span-2 sm:col-span-1')}>
         <dt className={ROTULO}>{tr('Inquilino')}</dt>
         <dd className="mt-2.5">
           {conInquilino ? (
@@ -206,7 +208,7 @@ export function FranjaDelArriendo({
       ) : null}
 
       {/* ── Quién lo lleva ─────────────────────────────────────────── */}
-      <div className={cn('min-w-0', conInquilino && 'sm:col-span-2 xl:col-span-1')}>
+      <div className={cn('min-w-0', conInquilino && 'col-span-1 sm:col-span-2 xl:col-span-1')}>
         <dt className={ROTULO}>{tr('Asesor a cargo')}</dt>
         <dd className="mt-2.5" data-testid="asesor-de-la-ficha">
           {cargandoAsesor ? (

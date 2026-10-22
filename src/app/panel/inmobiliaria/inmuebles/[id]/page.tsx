@@ -609,6 +609,7 @@ function ConsignacionDetailContent() {
         fechaDeTerminacion={fechaDeTerminacion}
         contratoVigente={contratoVigente}
         vacanciaLarga={esVacanciaLarga(situacion?.vacancia)}
+        precioDeVenta={property?.salePrice ?? null}
         migas={
           <nav aria-label={t('inmobiliaria.portafolio.title')} className="flex min-w-0 items-center gap-2 text-sm">
             <Link
@@ -683,7 +684,7 @@ function ConsignacionDetailContent() {
                   quién lo lleva ya están arriba, en la franja.
                 */}
                 {consignacion.propertyId ? (
-                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
                     <FichaDelInmueble
                       property={property}
                       cargando={cargandoProperty}
@@ -757,6 +758,20 @@ function ConsignacionDetailContent() {
                     propertyId={consignacion.propertyId}
                     arrendado={Boolean(consignacion.arrendado)}
                     arrendadoHasta={consignacion.leaseEndDate ?? null}
+                    agenteId={consignacion.agenteId ?? null}
+                  />
+                </div>
+                {/* Revisión 21-10: el inventario va con lo de arrendar (se necesita antes del próximo contrato), no en el historial. */}
+                <div>
+                  {/* 🔴 Nico y Juan Camilo, 2026-09-16: el inventario es del inmueble,
+                      por versiones; sin la migración del back monta la tarjeta de siempre. */}
+                  <InventarioDelInmueble
+                    consignacion={consignacion}
+                    puedeEditar={puedeEditarInventario}
+                    copiaLocal={copiaLocal}
+                    sinSenal={sinSenal}
+                    onActualizada={setConsignacionData}
+                    volverAlContrato={volverAlContrato}
                   />
                 </div>
               </>
@@ -842,23 +857,11 @@ function ConsignacionDetailContent() {
             etiqueta: 'Historial',
             contenido: (
               <>
-                {/* Historial (revisión 21-10): primero lo que pasó; después el inventario y lo del sistema anterior. */}
+                {/* Historial (revisión 21-10): primero lo que pasó; después lo del sistema anterior. */}
                 <div>
                   <ConsignacionTimeline
                     consignacion={consignacion}
                     agenteName={agente?.name}
-                  />
-                </div>
-                <div>
-                  {/* 🔴 Nico y Juan Camilo, 2026-09-16: el inventario es del inmueble,
-                      por versiones; sin la migración del back monta la tarjeta de siempre. */}
-                  <InventarioDelInmueble
-                    consignacion={consignacion}
-                    puedeEditar={puedeEditarInventario}
-                    copiaLocal={copiaLocal}
-                    sinSenal={sinSenal}
-                    onActualizada={setConsignacionData}
-                    volverAlContrato={volverAlContrato}
                   />
                 </div>
                 {/* La historia contable ANTERIOR a Leasefy de este inmueble: los

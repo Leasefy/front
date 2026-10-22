@@ -57,6 +57,7 @@ export function caracteristicasDelInmueble(p: Property, tr: (es: string) => stri
 export function FichaDelInmueble({ property, cargando = false, ubicacion, onEditar, className }: FichaDelInmuebleProps) {
   const tr = useTr();
   const caracteristicas = property ? caracteristicasDelInmueble(property, tr) : [];
+  const faltanLasBasicas = !!property && property.area == null && property.bedrooms == null && property.bathrooms == null;
 
   return (
     <SectionCard title={tr('Características')} icon={<Ruler className="h-4 w-4" />} className={className}>
@@ -78,14 +79,19 @@ export function FichaDelInmueble({ property, cargando = false, ubicacion, onEdit
             </div>
           ))}
         </dl>
-      ) : (
+      ) : null}
+      {/* Faltan lo que más busca quien arrienda (área, habitaciones, baños): se dice con su
+          salida aunque haya otros datos (revisión 21-10: con sólo «Estrato 3» no se ofrecía). */}
+      {!(cargando && !property) && (caracteristicas.length === 0 || faltanLasBasicas) ? (
         <div
-          className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+          className={cn('flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between', caracteristicas.length > 0 && 'mt-5 border-t border-border-faint pt-5 dark:border-border-strong')}
           data-testid="sin-caracteristicas"
         >
           <p className="text-body-sm text-fg-muted">
             {property
-              ? tr('Sin área, habitaciones ni baños cargados. Complétalos y el aviso público los muestra.')
+              ? caracteristicas.length > 0
+                ? tr('Faltan el área, las habitaciones y los baños: es lo primero que busca quien arrienda.')
+                : tr('Sin área, habitaciones ni baños cargados. Complétalos y el aviso público los muestra.')
               : tr('No pudimos traer los datos del inmueble.')}
           </p>
           {property && onEditar ? (
@@ -94,7 +100,7 @@ export function FichaDelInmueble({ property, cargando = false, ubicacion, onEdit
             </Button>
           ) : null}
         </div>
-      )}
+      ) : null}
 
       {ubicacion ? (
         <div className={cn('mt-5 border-t border-border-faint pt-5 dark:border-border-strong')}>{ubicacion}</div>

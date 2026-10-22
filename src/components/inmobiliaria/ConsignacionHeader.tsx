@@ -88,6 +88,8 @@ interface ConsignacionHeaderProps {
   vacanciaLarga?: boolean;
   /** «Agendar visita» en el menú ⋯ (sólo cuando se puede: inmueble disponible). */
   onAgendarVisita?: () => void;
+  /** El precio de venta del inmueble (`property.salePrice`): en una venta es la cifra protagonista. */
+  precioDeVenta?: number | null;
   /*
    * 🔴 `onRenew` se retiró junto con su renglón del menú: «Renovar
    * consignación» sólo mostraba «próximamente». No hay endpoint de renovación
@@ -191,6 +193,7 @@ export function ConsignacionHeader({
   franja,
   vacanciaLarga = false,
   onAgendarVisita,
+  precioDeVenta = null,
 }: ConsignacionHeaderProps) {
   const { t, formatDate } = useI18n();
 
@@ -310,7 +313,7 @@ export function ConsignacionHeader({
           <div
             className={cn(
               'relative w-full shrink-0 overflow-hidden lg:h-auto lg:min-h-[320px] lg:w-[340px] xl:w-[380px]',
-              thumbnailUrl ? 'h-56 bg-surface-muted dark:bg-ink sm:h-72' : 'h-44 sm:h-56',
+              thumbnailUrl ? 'h-56 bg-surface-muted dark:bg-ink sm:h-72' : 'h-28 sm:h-56',
             )}
           >
             {thumbnailUrl && portadaAbre ? (
@@ -346,10 +349,10 @@ export function ConsignacionHeader({
               <CampoDeMedianoche
                 as="div"
                 cruces={false}
-                className="flex h-full w-full flex-row items-center justify-center gap-5 rounded-none px-6 py-5 lg:flex-col lg:gap-4"
+                className="flex h-full w-full flex-row items-center justify-center gap-5 rounded-none px-6 py-3 sm:py-5 lg:flex-col lg:gap-4"
                 data-testid="portada-sin-foto"
               >
-                <Ilustracion nombre="casa" tono="voltaje" tamano={176} className="h-28 w-28 sm:h-36 sm:w-36 lg:h-44 lg:w-44" />
+                <Ilustracion nombre="casa" tono="voltaje" tamano={176} className="h-20 w-20 sm:h-36 sm:w-36 lg:h-44 lg:w-44" />
                 <a
                   href="#fotos"
                   className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1.5 text-body-sm font-medium text-ink-fg ring-1 ring-inset ring-white/20 backdrop-blur-sm transition-colors hover:bg-white/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
@@ -475,11 +478,22 @@ export function ConsignacionHeader({
 
             {/* El canon (o, en una venta, la comisión de venta — §A.2: nunca «$0/mes»). */}
             {consignacion.listingType === 'sale' ? (
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span className="font-mono text-[32px] font-[420] tabular-nums tracking-[-0.03em] text-fg lg:text-[40px]">
-                  {textoDeLaComision(consignacion)}
+              // Venta (revisión 21-10): la cifra grande es el PRECIO; la comisión, un dato chico.
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1" data-testid="precio-de-venta">
+                {precioDeVenta != null && precioDeVenta > 0 ? (
+                  <>
+                    <span className="font-mono text-[32px] font-[420] tabular-nums tracking-[-0.03em] text-fg lg:text-[40px]">
+                      {formatCurrency(precioDeVenta)}
+                    </span>
+                    <span className="text-body text-fg-muted dark:text-fg-subtle">precio de venta</span>
+                  </>
+                ) : (
+                  <span className="text-[22px] font-[420] text-fg-muted">Sin precio de venta</span>
+                )}
+                <span className="basis-full text-body-sm text-fg-muted">
+                  {t('inmobiliaria.consignaciones.header.saleCommission')}:{' '}
+                  <span className="font-mono tabular-nums text-fg">{textoDeLaComision(consignacion)}</span>
                 </span>
-                <span className="text-body text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.header.saleCommission')}</span>
                 {/* Nico 14-10: la venta que entró sin precio. */}
                 {consignacion.canonPorConfirmar ? (
                   <CanonPorConfirmarBadge inmuebleId={consignacion.propertyId} esVenta />

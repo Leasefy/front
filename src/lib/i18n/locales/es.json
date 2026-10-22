@@ -957,7 +957,7 @@
       "bloqueoCompletar": "Completar el inventario",
       "bloqueoActualizar": "Actualizar el inventario",
       "vacioTitulo": "Este inmueble todavía no tiene inventario",
-      "vacioTexto": "Es la lista de lo que hay en el inmueble y en qué estado está. Hazlo y complétalo: sin él no se puede iniciar un contrato.",
+      "vacioTexto": "Es la lista de lo que hay en el inmueble y en qué estado está. Hazlo antes del próximo contrato: sin él no se puede iniciar uno.",
       "empezar": "Empezar el inventario",
       "volverAlContrato": "Volver al contrato",
       "volverListo": "Listo: el inventario está completo. Ya puedes seguir con el contrato.",

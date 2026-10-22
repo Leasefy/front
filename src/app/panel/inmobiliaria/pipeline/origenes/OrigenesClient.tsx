@@ -45,7 +45,7 @@ import {
   Input,
   Label,
 } from '@/components/ui'
-import { leadsApi } from '@/lib/api/crm.service'
+import { leadsApi, type RenglonPorOrigen } from '@/lib/api/crm.service'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { useCrm } from '@/lib/hooks/use-crm'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
@@ -55,6 +55,9 @@ import {
   revisarPlazoParaResponder,
 } from '@/lib/pipeline/limites-del-lead'
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { cn } from '@/lib/utils'
 
 /** El primer día del mes en curso, en `YYYY-MM-DD`. */
 function primeroDelMes(): string {
@@ -67,6 +70,8 @@ function hoyIso(): string {
 }
 
 export function OrigenesClient() {
+  // Ronda 21 (390): una tarjeta por portal con interesados; la tabla se encogía y cortaba «Interesados».
+  const esCelular = useIsMobile()
   const [desde, setDesde] = useState(primeroDelMes)
   const [hasta, setHasta] = useState(hoyIso)
 
@@ -153,29 +158,28 @@ export function OrigenesClient() {
       />
 
       <Card>
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-base">Por portal</CardTitle>
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="desde">Desde</Label>
-              <CampoDeDia
-                id="desde"
-                value={desde}
-                onChange={(v) => setDesde(v)}
-                className="w-40"
-                testid="filtro-desde"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="hasta">Hasta</Label>
-              <CampoDeDia
-                id="hasta"
-                value={hasta}
-                onChange={(v) => setHasta(v)}
-                className="w-40"
-                testid="filtro-hasta"
-              />
-            </div>
+          {/* Ronda 21: una barra, «Entró: [desde] – [hasta]» (antes dos campos con la etiqueta flotando encima). */}
+          <div className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:flex sm:w-auto" role="group" aria-label="Cuándo entraron los interesados">
+            <span className="text-body-sm text-fg-muted">Entró</span>
+            <Label htmlFor="desde" className="sr-only">Desde</Label>
+            <CampoDeDia
+              id="desde"
+              value={desde}
+              onChange={(v) => setDesde(v)}
+              className="w-full sm:w-40"
+              testid="filtro-desde"
+            />
+            <span className="text-fg-subtle" aria-hidden="true">–</span>
+            <Label htmlFor="hasta" className="sr-only">Hasta</Label>
+            <CampoDeDia
+              id="hasta"
+              value={hasta}
+              onChange={(v) => setHasta(v)}
+              className="w-full sm:w-40"
+              testid="filtro-hasta"
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -221,6 +225,9 @@ export function OrigenesClient() {
                   ) : null}
                 </div>
               ) : null}
+              {esCelular ? (
+                <PortalesEnTarjetas renglones={renglones} />
+              ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" data-testid="tabla-por-origen">
                   <thead>
@@ -245,27 +252,26 @@ export function OrigenesClient() {
                         className="border-b last:border-0"
                         data-testid={`fila-${r.origen}`}
                       >
-                        <td className="py-2 pr-4">
-                          {r.nombre}
-                          {r.leads === 0 ? (
-                            <Badge variant="outline" className="ml-2">
-                              sin interesados
-                            </Badge>
-                          ) : null}
-                        </td>
-                        <td className="py-2 pr-4 text-right font-semibold tabular-nums">
+                        {/* Ronda 21: un portal sin interesados sale en CERO (decisión), pero atenuado; y en
+                            vez de «0 %», la conversión dice «sin interesados» (un 0 % sin nadie no es un dato). */}
+                        <td className={cn('py-2 pr-4', r.leads === 0 && 'text-fg-muted')}>{r.nombre}</td>
+                        <td className={cn('py-2 pr-4 text-right font-mono tabular-nums', r.leads === 0 ? 'text-fg-subtle' : 'font-semibold')}>
                           {r.cerrados}
                         </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
+                        <td className={cn('py-2 pr-4 text-right font-mono tabular-nums', r.leads === 0 && 'text-fg-subtle')}>
                           {r.leads}
                         </td>
                         <td className="py-2 pr-4 text-right tabular-nums">
-                          {r.conversion} %
+                          {r.leads === 0 ? (
+                            <span className="text-caption text-fg-subtle">sin interesados</span>
+                          ) : (
+                            <span className="font-mono">{r.conversion} %</span>
+                          )}
                         </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
+                        <td className={cn('py-2 pr-4 text-right font-mono tabular-nums', r.leads === 0 && 'text-fg-subtle')}>
                           {r.abiertos}
                         </td>
-                        <td className="py-2 text-right tabular-nums">
+                        <td className={cn('py-2 text-right font-mono tabular-nums', r.leads === 0 && 'text-fg-subtle')}>
                           {r.perdidos}
                         </td>
                       </tr>
@@ -295,6 +301,7 @@ export function OrigenesClient() {
                   ) : null}
                 </table>
               </div>
+              )}
 
             </EstadoDeDatos>
           )}
@@ -305,6 +312,8 @@ export function OrigenesClient() {
           mitad del tema (de nada sirve saber qué portal trae leads si nadie los
           contesta), pero DESPUÉS del informe: se configura una vez y el informe
           se consulta cada mes (glow up 21-10). */}
+      {/* Ronda 21: es un ajuste, no parte del informe: plegado debajo. */}
+      <MasDetalles etiqueta="Ajuste: cuánto tiene el asesor para responder" montadoSiempre>
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
@@ -363,7 +372,9 @@ export function OrigenesClient() {
               </div>
               <ErrorDelCampo id="horas-lead-error" mensaje={errorDelPlazo} className="mt-0" />
               {configuracion.datos?.origenesDeLead?.length ? (
-                <div className="flex flex-wrap gap-1.5 pt-1">
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  {/* Ronda 21: las pastillas dicen para qué son. */}
+                  <span className="text-caption text-fg-muted">Orígenes que se registran:</span>
                   {configuracion.datos.origenesDeLead.map((o) => (
                     <Badge key={o} variant="secondary">
                       {nombreDelOrigen(o)}
@@ -375,7 +386,44 @@ export function OrigenesClient() {
           )}
         </CardContent>
       </Card>
+      </MasDetalles>
 
+    </div>
+  )
+}
+
+type RenglonDeOrigen = RenglonPorOrigen
+
+/** A 390: una tarjeta por portal con interesados; los que no trajeron nada, en un renglón. */
+function PortalesEnTarjetas({ renglones }: { renglones: readonly RenglonDeOrigen[] }) {
+  const conGente = renglones.filter((r) => r.leads > 0)
+  const enCero = renglones.filter((r) => r.leads === 0)
+  return (
+    <div className="space-y-3" data-testid="portales-en-tarjetas">
+      {conGente.map((r) => (
+        <div key={r.origen} className="rounded-lg border border-border p-3" data-testid={`tarjeta-${r.origen}`}>
+          <p className="font-medium text-fg">{r.nombre}</p>
+          <dl className="mt-2 grid grid-cols-3 gap-2 text-body-sm">
+            <div>
+              <dt className="text-caption text-fg-muted">Cerrados</dt>
+              <dd className="font-mono font-semibold tabular-nums text-fg">{r.cerrados}</dd>
+            </div>
+            <div>
+              <dt className="text-caption text-fg-muted">Interesados</dt>
+              <dd className="font-mono tabular-nums text-fg">{r.leads}</dd>
+            </div>
+            <div>
+              <dt className="text-caption text-fg-muted">Conversión</dt>
+              <dd className="font-mono tabular-nums text-fg">{r.conversion} %</dd>
+            </div>
+          </dl>
+        </div>
+      ))}
+      {enCero.length > 0 ? (
+        <p className="text-caption text-fg-muted">
+          Sin interesados: {enCero.map((r) => r.nombre).join(' · ')}
+        </p>
+      ) : null}
     </div>
   )
 }

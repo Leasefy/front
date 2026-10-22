@@ -144,6 +144,8 @@ describe('OrigenesClient', () => {
     const fila = $('[data-testid="fila-MERCADO_LIBRE"]')
     expect(fila?.textContent).toContain('Mercado Libre')
     expect(fila?.textContent).toContain('sin interesados')
+    // Ronda 21: con nadie, la conversión dice «sin interesados», no un «0 %» que no es un dato.
+    expect(fila?.textContent).not.toContain('0 %')
   })
 
   it('la lectura señala el portal que no cerró nada', async () => {

@@ -123,8 +123,10 @@ function ContenidoDeClausulas() {
           seccion="Contratos"
           titulo="Cláusulas propias"
           descripcion="Lo que tu inmobiliaria agrega a sus contratos, además del texto legal. El articulado de la ley no se edita: estas cláusulas se suman al final y pasan por el mismo validador que revisa todo contrato."
+          // Revisión de Operación (21-10): con la lista vacía, el único botón es el del vacío
+          // («Escribir la primera»); arriba repetía la misma acción.
           accionPrincipal={
-            puedeEditar ? (
+            puedeEditar && (cargando || (clausulas?.length ?? 0) > 0) ? (
               <Button size="sm" hideArrow onClick={() => setEditando('nueva')}>
                 <Plus className="mr-1.5 h-4 w-4" />
                 Escribir una cláusula

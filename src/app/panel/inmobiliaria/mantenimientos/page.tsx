@@ -954,6 +954,15 @@ function MantenimientosContent() {
         onCompletada={puedeEditar ? handleSolicitudCompletada : undefined}
         // SO-14 (04-10): calificar al proveedor al cerrar.
         onCalificado={puedeEditar ? recargarMantenimientos : undefined}
+        // Portofino 22-10: dejársela al propietario o retomarla.
+        onQuienLaHaceCambio={
+          puedeEditar
+            ? async () => {
+                await recargarMantenimientos();
+                setVersionDeAprobaciones((v) => v + 1);
+              }
+            : undefined
+        }
       />
 
       {/* Agregarle una cotización a una solicitud ya creada. Vive en la página
@@ -991,6 +1000,12 @@ function MantenimientosContent() {
         cotizacion={cotizacionDelDialogo}
         sugerencia={sugerenciaDelDialogo}
         preseleccion={preseleccionDelDialogo}
+        // Portofino 22-10: con prioridad Emergencia, la emergencia viene marcada.
+        prioridad={
+          cotizacionPorAprobar
+            ? mantenimientos.find((m) => m.id === cotizacionPorAprobar.solicitudId)?.priority ?? null
+            : null
+        }
         onConfirmar={aprobarCotizacion}
       />
 

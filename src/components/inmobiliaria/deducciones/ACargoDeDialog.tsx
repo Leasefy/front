@@ -42,6 +42,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import type { MantenimientoPriority } from '@/lib/types/inmobiliaria';
 import { useI18n } from '@/lib/i18n';
 import type {
   ACargoDeLaReparacion,
@@ -60,6 +61,7 @@ export function ACargoDeDialog({
   cotizacion,
   sugerencia = null,
   preseleccion = null,
+  prioridad = null,
   onConfirmar,
 }: {
   abierto: boolean;
@@ -73,6 +75,13 @@ export function ACargoDeDialog({
    * a preguntar desde cero.
    */
   preseleccion?: ACargoDeLaReparacion | null;
+  /**
+   * La prioridad de la reparación (Portofino, 22-10-2026). Con «Emergencia» la
+   * excepción de emergencia viene MARCADA: se arregla sin esperar al
+   * propietario («es mejor pelear después con el propietario que dejar al
+   * inquilino tirado»). Se puede desmarcar; igual pide motivo y soporte.
+   */
+  prioridad?: MantenimientoPriority | null;
   /**
    * Se espera: si el back rechaza, el diálogo queda abierto. Con
    * `emergencia`, la reparación del propietario se aprueba SIN esperarlo (D12).
@@ -102,13 +111,13 @@ export function ACargoDeDialog({
     if (abierto) {
       setEleccion(preseleccion);
       setAprobando(false);
-      setEsEmergencia(false);
+      setEsEmergencia(prioridad === 'emergency');
       setMotivoDeEmergencia('');
       setSoporte(null);
       setInquilinoPct(50);
       setMotivoInmobiliaria('');
     }
-  }, [abierto, preseleccion]);
+  }, [abierto, preseleccion, prioridad]);
 
   const emergenciaIncompleta =
     eleccion === 'PROPIETARIO' && esEmergencia && (!motivoDeEmergencia.trim() || !soporte);
@@ -225,6 +234,11 @@ export function ACargoDeDialog({
                 <span className="block text-xs text-fg-muted">{t(k('emergenciaAyuda'))}</span>
               </span>
             </label>
+            {prioridad === 'emergency' && (
+              <p className="text-xs text-fg-muted" data-testid="emergencia-por-la-prioridad">
+                Viene marcada porque la reparación es de prioridad Emergencia: se arregla sin esperar al propietario.
+              </p>
+            )}
             {esEmergencia && (
               <>
                 <label className="block text-xs font-medium text-fg" htmlFor="emergencia-motivo">

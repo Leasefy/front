@@ -1255,9 +1255,27 @@ export interface SolicitudMantenimiento {
    * aprobada, RECHAZADA, de emergencia o anulada). Ausente con un back viejo.
    */
   aprobacionDelPropietario?: AprobacionDeReparacion | null;
+  /**
+   * Portofino 22-10-2026: la hace el propietario por su cuenta (o la hizo).
+   * Ausente con un back anterior; `null` si la hace la inmobiliaria.
+   */
+  laHaceElPropietario?: LaHaceElPropietario | null;
+  /** ¿Se le puede dejar al propietario? (prioridad, estado y la base lista). */
+  puedeHacerlaElPropietario?: boolean;
+  /** Por qué no, cuando es por la prioridad («prioridad Alta: la hace la inmobiliaria»). */
+  porQueNoLaPuedeHacerElPropietario?: string | null;
 
   createdAt: string;
   updatedAt: string;
+}
+
+/** La reparación que hace el propietario por su cuenta (Portofino, 22-10-2026). */
+export interface LaHaceElPropietario {
+  loDecidio: 'PROPIETARIO' | 'INMOBILIARIA';
+  nota: string | null;
+  desde: string;
+  terminadaAt: string | null;
+  terminadaNota: string | null;
 }
 
 export const MANTENIMIENTO_TYPES: { type: MantenimientoType; labelEs: string; labelEn: string; icon: string }[] = [

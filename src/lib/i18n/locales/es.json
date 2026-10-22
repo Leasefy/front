@@ -1958,6 +1958,8 @@
         "proteccionDeDatosDesc": "Las solicitudes de los titulares (habeas data): plazos, sus datos y la constancia de la respuesta",
         "slaDePqrs": "Tiempo de respuesta",
         "slaDePqrsDesc": "Cuánto te demoras en responder una PQRS, por tipo.",
+        "reparaciones": "Reparaciones",
+        "reparacionesDesc": "El tiempo para atender cada prioridad y cuáles hace sólo tu inmobiliaria.",
         "comercial": "Comercial",
         "comercialDesc": "La comisión de tus asesores: por captar y por cerrar, o fija por cierre."
       },

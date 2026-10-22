@@ -227,6 +227,66 @@ export interface AprobacionEnElPortal extends AprobacionDeReparacion {
   inmueble: string;
   reparacion: { titulo: string; descripcion: string };
   cotizacion: { proveedor: string; descripcion: string | null; diasEstimados: number | null } | null;
+  /** Portofino 22-10: la prioridad (LOW…EMERGENCY, como la manda el back). Ausente con un back anterior. */
+  prioridad?: string | null;
+  /** ¿Puede responder «La hago yo»? */
+  puedeHacerlaElPropietario?: boolean;
+  /** La está haciendo (o la hizo) él, por su cuenta. */
+  laHaceElPropietario?: boolean;
+}
+
+/** Una reparación que el propietario hace por su cuenta, en su portal. */
+export interface ReparacionQueHagoYo {
+  solicitudId: string;
+  loDecidio: 'PROPIETARIO' | 'INMOBILIARIA';
+  nota: string | null;
+  desde: string;
+  terminadaAt: string | null;
+  terminadaNota: string | null;
+  inmobiliaria: string;
+  inmueble: string;
+  reparacion: { titulo: string; descripcion: string };
+  prioridad: string;
+  venceAt: string | null;
+}
+
+/** Lo que está en manos del propietario, en la página de Mantenimiento (22-10-2026). */
+export type GrupoConElPropietario = 'ESPERANDO' | 'RECHAZADAS' | 'LA_HACE_EL';
+
+export interface FilaConElPropietario {
+  grupo: GrupoConElPropietario;
+  solicitudId: string;
+  aprobacionId: string | null;
+  reparacion: string;
+  inmueble: string;
+  propietario: string;
+  prioridad: string;
+  valorCop: number | null;
+  desde: string;
+  motivoDeRechazo: string | null;
+  nota: string | null;
+  loDecidio: 'PROPIETARIO' | 'INMOBILIARIA' | null;
+  venceAt: string | null;
+}
+
+export interface BandejaConElPropietario {
+  grupo: GrupoConElPropietario;
+  conteos: Record<GrupoConElPropietario, number>;
+  filas: FilaConElPropietario[];
+  total: number;
+  pagina: number;
+  porPagina: number;
+}
+
+/** Configuración → Reparaciones. Las prioridades van como las manda el back. */
+export type PrioridadDelBack = 'LOW' | 'MEDIUM' | 'HIGH' | 'EMERGENCY';
+
+export interface ConfiguracionDeReparaciones {
+  prioridadesSoloDeLaInmobiliaria: PrioridadDelBack[];
+  prioridadesSugeridas: PrioridadDelBack[];
+  slaHoras: Record<PrioridadDelBack, number>;
+  slaSugerido: Record<PrioridadDelBack, number>;
+  disponible: { prioridades: boolean; sla: boolean; laHaceElPropietario: boolean };
 }
 
 /** Una página del historial del portal (Nico, 12-10-2026: «ese historial puede ser muy grande»). */

@@ -460,6 +460,17 @@ function MantenimientoCard({
           <StatusIcon className="w-3 h-3 mr-1" />
           {t(statusStyle.labelKey)}
         </span>
+
+        {/* Portofino 22-10: la arregla el propietario por su cuenta. */}
+        {solicitud.laHaceElPropietario && !solicitud.laHaceElPropietario.terminadaAt && (
+          <span
+            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning-soft text-warning"
+            data-testid="lista-la-hace-el-propietario"
+          >
+            <User className="w-3 h-3 mr-1" />
+            La hace el propietario
+          </span>
+        )}
       </div>
 
       {/* Footer Info */}

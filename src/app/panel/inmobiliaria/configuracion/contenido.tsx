@@ -10,6 +10,7 @@
 
 import { SeccionAvisos } from './SeccionAvisos';
 import { SeccionSlaDePqrs } from './SeccionSlaDePqrs';
+import { SeccionReparaciones } from './SeccionReparaciones';
 import { SeccionBitacora } from './SeccionBitacora';
 import { SeccionMovimientos } from './SeccionMovimientos';
 import { SeccionProteccionDeDatos } from './SeccionProteccionDeDatos';
@@ -102,6 +103,9 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
       return <SeccionAvisos />;
     case 'sla-de-pqrs':
       return <SeccionSlaDePqrs />;
+    // Portofino 22-10: tiempos por prioridad y quién puede hacer la reparación.
+    case 'reparaciones':
+      return <SeccionReparaciones />;
     case 'notificaciones':
       return <SeccionNotificaciones />;
     case 'preferencias':

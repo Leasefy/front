@@ -222,4 +222,6 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Ver menos': 'See less',
   'Ver los {n}': 'See all {n}',
   'nadie en esta etapa': 'no one in this stage',
+  'Filtros': 'Filters',
+  'Entró': 'Came in',
 }

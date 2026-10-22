@@ -1,11 +1,13 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useId, useState } from 'react';
 import {
   MagnifyingGlass,
   X,
   Buildings,
+  Funnel,
 } from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +51,10 @@ export function PipelineFilters({
   onFilterChange,
 }: PipelineFiltersProps) {
   const tr = useTr();
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+  const idDelPanel = `pipeline-filtros-${useId().replace(/:/g, '')}`;
+  /** Lo que está puesto en el panel (las fechas de «Entró»): el botón lo cuenta. */
+  const filtrosDelPanel = filters.dateFrom || filters.dateTo ? 1 : 0;
   const { t } = useI18n();
 
   const DATE_PRESETS = [
@@ -149,9 +155,13 @@ export function PipelineFilters({
 
 
   return (
-    <div className="p-4 space-y-4 border-b border-border">
+    <div className="p-4 space-y-3 border-b border-border">
+      {/* Ronda 18: UN renglón a la misma altura —buscar, asesor, inmueble, «Filtros (n)» y
+          limpiar—; las fechas de «Entró» van al panel de «Filtros» (antes eran tres renglones
+          de tres alturas y «Hoy» se leía como «visitas de hoy»). */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       {/* Row 1: Search */}
-      <div className="relative max-w-md">
+      <div className="relative min-w-0 sm:min-w-[16rem] sm:max-w-md sm:flex-1">
         <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
         <Input
           type="text"
@@ -172,8 +182,8 @@ export function PipelineFilters({
         </Presence>
       </div>
 
-      {/* Row 2: Dropdowns + Date Presets */}
-      <div className="flex flex-wrap items-center gap-3">
+      {/* Row 2: Dropdowns + «Filtros» */}
+      <div className="flex flex-wrap items-center gap-2">
         {/* Agente Dropdown */}
         <Select
           value={filters.agenteId ?? 'all'}
@@ -238,8 +248,45 @@ export function PipelineFilters({
           </SelectContent>
         </Select>
 
-        {/* Separator */}
-        <div className="hidden sm:block w-px h-6 bg-border" />
+        <Button
+          variant="secondary"
+          hideArrow
+          className="gap-2"
+          aria-expanded={filtrosAbiertos}
+          aria-controls={idDelPanel}
+          onClick={() => setFiltrosAbiertos((v) => !v)}
+          data-testid="pipeline-mas-filtros"
+        >
+          <Funnel className="h-4 w-4" aria-hidden />
+          {tr('Filtros')}
+          {filtrosDelPanel > 0 ? <span className="font-mono text-caption tabular-nums">({filtrosDelPanel})</span> : null}
+        </Button>
+
+        {/* Clear Filters */}
+        {/* «Limpiar» aparece con el primer filtro y se va al limpiarlos. */}
+        <Presence show={Boolean(hasAnyFilter)} direction="none" className="flex items-center gap-3">
+            <div className="hidden sm:block w-px h-6 bg-border" />
+            <Button
+              variant="ghost"
+              size="sm"
+              hideArrow
+              onClick={clearAllFilters}
+              className="gap-1.5 text-danger hover:bg-danger-soft hover:text-danger"
+            >
+              <X className="w-4 h-4" />
+              {t('inmobiliaria.pipeline.clear')}
+            </Button>
+        </Presence>
+      </div>
+      </div>
+
+      {/* El panel de «Filtros»: cuándo ENTRÓ el interesado (montado siempre, visible al abrirlo). */}
+      <div
+        id={idDelPanel}
+        className={cn('flex-wrap items-center gap-2 rounded-lg bg-surface-muted/60 p-3', filtrosAbiertos ? 'flex' : 'hidden')}
+        data-testid="pipeline-panel-de-filtros"
+      >
+        <span className="text-body-sm text-fg-muted">{tr('Entró')}</span>
 
         {/* Date Presets - Chip group */}
         <div className="flex items-center gap-1.5">
@@ -276,21 +323,6 @@ export function PipelineFilters({
           />
         </div>
 
-        {/* Clear Filters */}
-        {/* «Limpiar» aparece con el primer filtro y se va al limpiarlos. */}
-        <Presence show={Boolean(hasAnyFilter)} direction="none" className="flex items-center gap-3">
-            <div className="hidden sm:block w-px h-6 bg-border" />
-            <Button
-              variant="ghost"
-              size="sm"
-              hideArrow
-              onClick={clearAllFilters}
-              className="gap-1.5 text-danger hover:bg-danger-soft hover:text-danger"
-            >
-              <X className="w-4 h-4" />
-              {t('inmobiliaria.pipeline.clear')}
-            </Button>
-        </Presence>
       </div>
     </div>
   );

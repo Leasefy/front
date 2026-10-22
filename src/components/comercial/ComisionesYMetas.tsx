@@ -14,10 +14,11 @@
  */
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { DownloadSimple, WarningCircle } from '@phosphor-icons/react';
+import { DownloadSimple, User } from '@phosphor-icons/react';
 import { AnimatedNumber, Appear, Collapse, CrossFade, Presence } from '@leasefy/cadence';
 
 import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
@@ -110,7 +111,14 @@ function NombreDelAsesor({ nombre, fuerte = false }: { nombre: string; fuerte?: 
   const visible = esCorreo ? 'Sin nombre' : nombre;
   return (
     <div className="flex min-w-0 items-center gap-2.5">
-      <Avatar name={esCorreo ? nombre : visible} size="sm" />
+      {/* Revisora r23 (Comisiones #3): sin nombre, la silueta punteada; antes salían «HO» de «hola+agente@…». */}
+      {esCorreo ? (
+        <Avatar name={nombre} kind="invitada" size="sm">
+          <User className="size-4" aria-hidden="true" />
+        </Avatar>
+      ) : (
+        <Avatar name={visible} size="sm" />
+      )}
       <div className="min-w-0">
         <p className={cn('truncate', fuerte ? 'font-medium text-fg' : 'text-fg')}>{visible}</p>
         {esCorreo ? <p className="truncate text-caption text-fg-muted">{nombre}</p> : null}
@@ -260,7 +268,7 @@ function SeccionDeMetas({ datos, puedeEditar, alCambiar }: { datos: MetasDelMes;
             {datos.soloLaMia ? 'Mi meta del mes' : 'Metas del mes'}
           </h2>
           <p className="text-caption text-fg-muted">
-            Cierres = procesos del embudo cerrados en el mes; captaciones = mandatos consignados en el mes.
+            Captó: firmó el mandato este mes · Cerró: firmó el contrato este mes.
           </p>
         </div>
       </div>
@@ -424,22 +432,27 @@ function SeccionDeComision({
       </div>
 
       {!datos.hayReglas ? (
-        <div className="rounded-md bg-warning-soft border border-border p-4 flex items-start gap-3" data-testid="sin-regla">
-          <WarningCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" aria-hidden="true" />
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Configura la comisión de tus asesores</p>
-            <p className="text-sm text-fg-muted">
-              {esGerente
-                ? 'Todavía no hay regla: Leasefy no calcula ninguna comisión hasta que la pongas (un porcentaje por captar y por cerrar, o un valor fijo por cierre).'
-                : 'Tu inmobiliaria todavía no configuró la comisión de los asesores. Pídele al administrador que la ponga en Configuración → Comercial.'}
-            </p>
-            {esGerente ? (
-              <Button asChild size="sm" hideArrow>
-                <Link href={RUTA_DE_LA_REGLA} data-testid="ir-a-configurar">Configurar la comisión</Link>
-              </Button>
-            ) : null}
-          </div>
-        </div>
+        // Revisora r23 (Comisiones #1): es una configuración de una vez, no algo que anda mal: la lista de lo
+        // que falta para empezar (neutra), no un aviso ámbar con el botón azul adentro.
+        <ListaParaEmpezar
+          paraQue="calcular las comisiones"
+          requisitos={[
+            {
+              id: 'regla',
+              titulo: 'Configura la comisión de tus asesores',
+              detalle: esGerente
+                ? 'Leasefy no calcula ninguna comisión hasta que la pongas: un porcentaje por captar y por cerrar, o un valor fijo por cierre.'
+                : 'Tu inmobiliaria todavía no configuró la comisión de los asesores. Pídele al administrador que la ponga en Configuración → Comercial.',
+              estado: 'falta',
+              accion: esGerente ? (
+                <Button asChild size="sm" variant="outline" hideArrow>
+                  <Link href={RUTA_DE_LA_REGLA} data-testid="ir-a-configurar">Configurar la comisión</Link>
+                </Button>
+              ) : undefined,
+            },
+          ]}
+          data-testid="sin-regla"
+        />
       ) : null}
 
       {datos.hayReglas && esGerente ? (

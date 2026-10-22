@@ -14,7 +14,7 @@
  *    avisar) y cambiar de pestaña es inmediato.
  *  · La barra es la `Tabs` subrayada del sistema; en el celular se desliza.
  */
-import { useCallback, type ReactNode } from 'react';
+import { useCallback, useEffect, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -67,6 +67,19 @@ export function PestanasDeLaFicha<Id extends string>({
     [params, router, ids],
   );
 
+  // Un enlace con ancla (#fotos, #propietarios…) a un bloque de otra pestaña abre esa
+  // pestaña: si no, el enlace llevaría a algo escondido.
+  useEffect(() => {
+    const ancla = window.location.hash.slice(1);
+    if (!ancla) return;
+    const destino = document.getElementById(decodeURIComponent(ancla));
+    const panel = destino?.closest<HTMLElement>('[data-pestana-de-la-ficha]');
+    const suya = panel?.dataset.pestanaDeLaFicha;
+    if (suya && suya !== activa) elegir(suya);
+    // Sólo al llegar: después manda la persona.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <Tabs value={activa} onValueChange={elegir} className={cn('space-y-6', className)}>
       <TabsList className="justify-start" aria-label={etiqueta} data-testid={testId}>
@@ -89,6 +102,7 @@ export function PestanasDeLaFicha<Id extends string>({
           forceMount
           className="mt-0 space-y-6 data-[state=inactive]:hidden"
           data-testid={`panel-${p.id}`}
+          data-pestana-de-la-ficha={p.id}
         >
           {p.contenido}
         </TabsContent>

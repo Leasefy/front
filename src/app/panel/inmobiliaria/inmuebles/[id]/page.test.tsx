@@ -295,6 +295,18 @@ describe('<ConsignacionDetailPage> — entrar por el id del inmueble', () => {
 });
 
 describe('<ConsignacionDetailPage> — Ver en Portal', () => {
+  it('GLOW UP (Nico, 21-10): Resumen · Arrendarlo · Mandato y giro · Historial', () => {
+    useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
+    renderPage();
+    const pestanas = Array.from(container.querySelectorAll('[data-testid^="pestana-"]')).map((p) => p.getAttribute('data-testid'));
+    expect(pestanas).toEqual(['pestana-resumen', 'pestana-arrendarlo', 'pestana-mandato', 'pestana-historial']);
+    const panel = (id: string) => container.querySelector(`[data-testid="panel-${id}"]`)!;
+    expect(panel('resumen').getAttribute('data-state')).toBe('active');
+    expect(panel('arrendarlo').querySelector('#fotos')).not.toBeNull();
+    expect(panel('mandato').querySelector('#propietarios')).not.toBeNull();
+    expect(panel('mandato').querySelector('#documentos')).not.toBeNull();
+  });
+
   it('opens the public ficha for the property in a new tab', () => {
     useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
     renderPage();

@@ -32,7 +32,7 @@ async function montar() {
         pestanas={[
           { id: 'resumen', etiqueta: 'Resumen', contenido: <p data-testid="bloque-resumen">resumen</p> },
           { id: 'cobro', etiqueta: 'Cobro y reglas', cuenta: 3, contenido: <p data-testid="bloque-cobro">cobro</p> },
-          { id: 'historial', etiqueta: 'Historial', contenido: <p data-testid="bloque-historial">historial</p> },
+          { id: 'historial', etiqueta: 'Historial', contenido: <p id="fotos" data-testid="bloque-historial">historial</p> },
         ]}
       />,
     );
@@ -79,6 +79,12 @@ describe('PestanasDeLaFicha', () => {
     await montar();
     expect(visible('historial')).toBe(true);
     expect(visible('resumen')).toBe(false);
+  });
+
+  it('llegar con un #ancla de otra pestaña abre esa pestaña', async () => {
+    window.history.replaceState(null, '', '/panel/inmobiliaria/contratos/k1#fotos');
+    await montar();
+    expect(nav.replace).toHaveBeenCalledWith('/panel/inmobiliaria/contratos/k1?pestana=historial', { scroll: false });
   });
 
   it('elegir una pestaña la escribe en la URL (y la primera la limpia)', async () => {

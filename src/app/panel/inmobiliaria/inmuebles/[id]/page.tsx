@@ -10,6 +10,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha';
 import { CrossFade } from '@leasefy/cadence';
 import { CaretLeft, Buildings, CalendarPlus, WifiSlash, Prohibit } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
@@ -620,177 +621,194 @@ function ConsignacionDetailContent() {
           que se vence. Fuente aparte: si falla, la ficha sigue igual. */}
       {!terminada && idDelMandato && <SituacionComercialDelInmueble consignacionId={idDelMandato} />}
 
-      {/* Main Content - Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Main Info (2/3) */}
-        <div className="lg:col-span-2 space-y-6">
-          <div>
-            <PropertyInfoSection consignacion={consignacion} />
-          </div>
-
-          {/* Las coordenadas viven en el Property (la consignación no las
-              tiene). Sin propertyId no hay mapa que mostrar. */}
-          {consignacion.propertyId && (
-            <div>
-              <UbicacionDelInmueble
-                property={property}
-                cargando={cargandoProperty}
-                consignacion={consignacion}
-                onActualizado={refetchProperty}
-              />
-            </div>
-          )}
-
-          {/* 🔴 (10-10-2026, Nico) Publicado en el marketplace, aparte de
-              disponible. Se oculta solo sin la migración. */}
-          {consignacion.propertyId && (
-            <PublicadoEnElMarketplace
-              propertyId={consignacion.propertyId}
-              puedeCambiar={puedeEditarPortafolio}
-            />
-          )}
-
-          {/* Las fotos viven en el Property; sin propertyId (mandato sin
-              inmueble) no hay galería que mostrar. */}
-          {consignacion.propertyId && (
-            <div id="fotos" className="scroll-mt-20">
-              <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} onVer={setFotoAbierta} />
-            </div>
-          )}
-
-          <div id="propietarios" className="scroll-mt-20">
-            <PropietarioSection
-              propietario={propietario ?? undefined}
-              copropietarios={consignacion.copropietarios}
-              participacionesDesconocidas={consignacion.participacionesDesconocidas === true}
-              onCambiar={() => setShowCambiarPropietario(true)}
-              rutaDeOrigen={`/panel/inmobiliaria/inmuebles/${consignacionId}`}
-              onElegirPrincipal={
-                puedeElegirPrincipal
-                  ? async (propietarioId) => {
-                      await consignacionesApi.elegirPrincipal(consignacion.id, propietarioId);
-                      // La copia local gana sobre el hook: se relee ahí (como al adjuntar el contrato).
-                      await recargarConsignacion();
+      {/*
+        GLOW UP (21-10-2026, Nico eligió «Pestañas por tarea»): Resumen · Arrendarlo ·
+        Mandato y giro (lo configurable) · Historial. Todas se montan (cada bloque
+        carga como antes) y un enlace con #fotos, #propietarios o #documentos abre
+        la pestaña donde vive.
+      */}
+      <PestanasDeLaFicha
+        etiqueta="Secciones del inmueble"
+        pestanas={[
+          {
+            id: 'resumen',
+            etiqueta: 'Resumen',
+            contenido: (
+              <>
+                <div>
+                  <PropertyInfoSection consignacion={consignacion} />
+                </div>
+                {/* Las coordenadas viven en el Property (la consignación no las
+                    tiene). Sin propertyId no hay mapa que mostrar. */}
+                {consignacion.propertyId && (
+                  <div>
+                    <UbicacionDelInmueble
+                      property={property}
+                      cargando={cargandoProperty}
+                      consignacion={consignacion}
+                      onActualizado={refetchProperty}
+                    />
+                  </div>
+                )}
+                <div>
+                  <CurrentLeaseSection consignacion={consignacion} />
+                </div>
+                <div>
+                  <AgenteSection
+                    agente={agente ?? undefined}
+                    encargado={encargado}
+                    commissionPercent={consignacion.commissionPercent}
+                    isSaleListing={consignacion.listingType === 'sale'}
+                    onReassign={handleReassignAgent}
+                  />
+                </div>
+                {terminada ? <RetiroRegistrado consignacionId={consignacion.id} /> : null}
+              </>
+            ),
+          },
+          {
+            id: 'arrendarlo',
+            etiqueta: 'Arrendarlo',
+            contenido: (
+              <>
+                {/* 🔴 (10-10-2026, Nico) Publicado en el marketplace, aparte de
+                    disponible. Se oculta solo sin la migración. */}
+                {consignacion.propertyId && (
+                  <PublicadoEnElMarketplace
+                    propertyId={consignacion.propertyId}
+                    puedeCambiar={puedeEditarPortafolio}
+                  />
+                )}
+                {/* Las fotos viven en el Property; sin propertyId (mandato sin
+                    inmueble) no hay galería que mostrar. */}
+                {consignacion.propertyId && (
+                  <div id="fotos" className="scroll-mt-20">
+                    <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} onVer={setFotoAbierta} />
+                  </div>
+                )}
+                {/* Quién se postuló. Vive acá, antes del contrato vigente: es lo que
+                    pasa mientras el inmueble está disponible. */}
+                <div>
+                  <CandidatosDelInmueble
+                    propertyId={consignacion.propertyId}
+                    consignacionId={consignacion.id}
+                  />
+                </div>
+                {/* Cuándo se puede visitar. Va junto a los candidatos porque es lo
+                    otro que pasa mientras el inmueble está disponible — y sin esto
+                    el aviso del marketplace dice «Sin disponibilidad» siempre. */}
+                <div>
+                  <VisitasDelInmueble
+                    propertyId={consignacion.propertyId}
+                    arrendado={Boolean(consignacion.arrendado)}
+                    arrendadoHasta={consignacion.leaseEndDate ?? null}
+                  />
+                </div>
+              </>
+            ),
+          },
+          {
+            id: 'mandato',
+            etiqueta: 'Mandato y giro',
+            contenido: (
+              <>
+                <div id="propietarios" className="scroll-mt-20">
+                  <PropietarioSection
+                    propietario={propietario ?? undefined}
+                    copropietarios={consignacion.copropietarios}
+                    participacionesDesconocidas={consignacion.participacionesDesconocidas === true}
+                    onCambiar={() => setShowCambiarPropietario(true)}
+                    rutaDeOrigen={`/panel/inmobiliaria/inmuebles/${consignacionId}`}
+                    onElegirPrincipal={
+                      puedeElegirPrincipal
+                        ? async (propietarioId) => {
+                            await consignacionesApi.elegirPrincipal(consignacion.id, propietarioId);
+                            // La copia local gana sobre el hook: se relee ahí (como al adjuntar el contrato).
+                            await recargarConsignacion();
+                          }
+                        : undefined
                     }
-                  : undefined
-              }
-            />
-          </div>
-
-          <div>
-            <AgenteSection
-              agente={agente ?? undefined}
-              encargado={encargado}
-              commissionPercent={consignacion.commissionPercent}
-              isSaleListing={consignacion.listingType === 'sale'}
-              onReassign={handleReassignAgent}
-            />
-          </div>
-
-          {/* D1 y D2 (17-09): con qué modalidad se le gira al propietario y de
-              quién son los intereses de mora. */}
-          <div>
-            <ModalidadDelMandato
-              consignacionId={consignacion.id}
-              esVenta={consignacion.listingType === 'sale'}
-              terminada={terminada}
-            />
-          </div>
-
-          {terminada ? <RetiroRegistrado consignacionId={consignacion.id} /> : null}
-
-          {/* Quién se postuló. Vive acá, antes del contrato vigente: es lo que
-              pasa mientras el inmueble está disponible. */}
-          <div>
-            <CandidatosDelInmueble
-              propertyId={consignacion.propertyId}
-              consignacionId={consignacion.id}
-            />
-          </div>
-
-          {/* Cuándo se puede visitar. Va junto a los candidatos porque es lo
-              otro que pasa mientras el inmueble está disponible — y sin esto
-              el aviso del marketplace dice «Sin disponibilidad» siempre. */}
-          <div>
-            <VisitasDelInmueble
-              propertyId={consignacion.propertyId}
-              arrendado={Boolean(consignacion.arrendado)}
-              arrendadoHasta={consignacion.leaseEndDate ?? null}
-            />
-          </div>
-
-          <div>
-            <CurrentLeaseSection consignacion={consignacion} />
-          </div>
-
-          {/* La historia contable ANTERIOR a Leasefy de este inmueble: los
-              comprobantes del sistema viejo que el back colgó de sus
-              contratos, en tres pestañas (ingresos · egresos · facturas).
-              Después del contrato vigente porque ése es el orden real —
-              arriba lo de hoy, abajo lo que quedó registrado antes. */}
-          <div>
-            <ComprobantesDelSistemaAnterior propertyId={consignacion.propertyId} />
-          </div>
-
-          <div id="documentos" className="scroll-mt-20">
-            <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
-          </div>
-
-          {/* T-0109 contract.md §3.1.C — vía ADICIONAL a C9 (arriba): firma
-              electrónica reforzada del contrato de consignación. Se oculta
-              sola contra un back sin WU-3 (404 en C2). */}
-          <div>
-            <FirmaElectronicaDeConsignacionSection
-              consignacionId={consignacion.id}
-              puedeEditar={puedeEditarPortafolio}
-            />
-          </div>
-
-          {/* 🔴 22-09: quién tocó este inmueble, con su rol. Son DOS recursos
-              en el back —el inmueble (`/properties/:id`: fotos, datos,
-              ubicación) y su mandato (`/inmobiliaria/consignaciones/:id`:
-              estado, canon, terminación)— y aquí se leen como una sola lista. */}
-          <BitacoraDelRecurso
-            recursos={[
-              { tipo: 'inmueble', id: consignacion.propertyId },
-              { tipo: 'consignacion', id: consignacion.id },
-            ]}
-          />
-        </div>
-
-        {/* Right Column - Sidebar (1/3) */}
-        <div className="space-y-6">
-          <div>
-            {/* 🔴 Nico y Juan Camilo, 2026-09-16: el inventario es del inmueble,
-                por versiones; sin la migración del back monta la tarjeta de siempre. */}
-            <InventarioDelInmueble
-              consignacion={consignacion}
-              puedeEditar={puedeEditarInventario}
-              copiaLocal={copiaLocal}
-              sinSenal={sinSenal}
-              onActualizada={setConsignacionData}
-              volverAlContrato={volverAlContrato}
-            />
-          </div>
-
-          <div>
-            <MandatoDelInmueble
-              consignacionId={consignacion.id}
-              propietarioNombre={propietario?.name ?? null}
-              propietarioCorreo={propietario?.email ?? null}
-              direccionDelInmueble={consignacion.propertyAddress ?? null}
-              puedeEditar={puedeEditarInventario}
-            />
-          </div>
-
-          <div>
-            <ConsignacionTimeline
-              consignacion={consignacion}
-              agenteName={agente?.name}
-            />
-          </div>
-        </div>
-      </div>
+                  />
+                </div>
+                {/* D1 y D2 (17-09): con qué modalidad se le gira al propietario y de
+                    quién son los intereses de mora. */}
+                <div>
+                  <ModalidadDelMandato
+                    consignacionId={consignacion.id}
+                    esVenta={consignacion.listingType === 'sale'}
+                    terminada={terminada}
+                  />
+                </div>
+                <div>
+                  <MandatoDelInmueble
+                    consignacionId={consignacion.id}
+                    propietarioNombre={propietario?.name ?? null}
+                    propietarioCorreo={propietario?.email ?? null}
+                    direccionDelInmueble={consignacion.propertyAddress ?? null}
+                    puedeEditar={puedeEditarInventario}
+                  />
+                </div>
+                <div id="documentos" className="scroll-mt-20">
+                  <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
+                </div>
+                {/* T-0109 contract.md §3.1.C — vía ADICIONAL a C9 (arriba): firma
+                    electrónica reforzada del contrato de consignación. Se oculta
+                    sola contra un back sin WU-3 (404 en C2). */}
+                <div>
+                  <FirmaElectronicaDeConsignacionSection
+                    consignacionId={consignacion.id}
+                    puedeEditar={puedeEditarPortafolio}
+                  />
+                </div>
+              </>
+            ),
+          },
+          {
+            id: 'historial',
+            etiqueta: 'Historial',
+            contenido: (
+              <>
+                <div>
+                  {/* 🔴 Nico y Juan Camilo, 2026-09-16: el inventario es del inmueble,
+                      por versiones; sin la migración del back monta la tarjeta de siempre. */}
+                  <InventarioDelInmueble
+                    consignacion={consignacion}
+                    puedeEditar={puedeEditarInventario}
+                    copiaLocal={copiaLocal}
+                    sinSenal={sinSenal}
+                    onActualizada={setConsignacionData}
+                    volverAlContrato={volverAlContrato}
+                  />
+                </div>
+                {/* La historia contable ANTERIOR a Leasefy de este inmueble: los
+                    comprobantes del sistema viejo que el back colgó de sus
+                    contratos, en tres pestañas (ingresos · egresos · facturas).
+                    Después del contrato vigente porque ése es el orden real —
+                    arriba lo de hoy, abajo lo que quedó registrado antes. */}
+                <div>
+                  <ComprobantesDelSistemaAnterior propertyId={consignacion.propertyId} />
+                </div>
+                <div>
+                  <ConsignacionTimeline
+                    consignacion={consignacion}
+                    agenteName={agente?.name}
+                  />
+                </div>
+                {/* 🔴 22-09: quién tocó este inmueble, con su rol. Son DOS recursos
+                    en el back —el inmueble (`/properties/:id`: fotos, datos,
+                    ubicación) y su mandato (`/inmobiliaria/consignaciones/:id`:
+                    estado, canon, terminación)— y aquí se leen como una sola lista. */}
+                <BitacoraDelRecurso
+                  recursos={[
+                    { tipo: 'inmueble', id: consignacion.propertyId },
+                    { tipo: 'consignacion', id: consignacion.id },
+                  ]}
+                />
+              </>
+            ),
+          },
+        ]}
+      />
 
       <VisorDeFotos
         fotos={property?.images ?? []}

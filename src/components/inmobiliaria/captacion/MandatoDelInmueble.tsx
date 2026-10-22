@@ -33,7 +33,7 @@ import { useState } from 'react'
 import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { toast } from '@/components/ui/toast'
 import { errorEnCristiano, motivoEnCristiano } from '@/lib/errores/en-cristiano'
-import { FileText, Lock } from '@phosphor-icons/react'
+import { FileText, HandCoins, Lock } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { Badge, Button } from '@/components/ui'
@@ -120,7 +120,7 @@ function Puerta({
   cuando: string
   completo: boolean
   falta: PapelQueFalta[]
-  /** «2» en vez de «Faltan 2» cuando el rótulo ya dice «Documentos que faltan». */
+  /** «2 papeles» en vez de «Faltan 2» cuando ya hubo giros (IN-14). */
   soloElNumero?: boolean
   /** Abre la subida de ESE papel (22-10). Sin permiso de editar no se ofrece. */
   onSubir?: (papel: PapelQueFalta) => void
@@ -150,7 +150,8 @@ function Puerta({
             : falta.length === 0
               ? 'Sin revisar'
               : soloElNumero
-                ? String(falta.length)
+                ? // Ronda 11: un «2» suelto no decía de qué; «2 papeles» sí.
+                  `${falta.length} ${falta.length === 1 ? 'papel' : 'papeles'}`
                 : `Faltan ${falta.length}`}
         </span>
       </div>
@@ -440,7 +441,8 @@ export function MandatoDelInmueble({
               </div>
             ) : null}
             {firmaReforzada ? (
-              <MasDetalles etiqueta="Firma electrónica reforzada (con el PDF del mandato)" montadoSiempre>
+              // Ronda 11 (390): un rótulo que cabe en un renglón, alineado como el resto.
+              <MasDetalles etiqueta="Firma reforzada (con el PDF)" montadoSiempre>
                 {firmaReforzada}
               </MasDetalles>
             ) : null}
@@ -525,9 +527,6 @@ export function MandatoDelInmueble({
           </EstadoDeDatos>
         )}
 
-        {/* 🔴 C-10 (Nico, 02-10-2026): «Registrar la venta» y la comisión de
-            venta del mandato, viva o anulada con su motivo. */}
-        <VentaDelInmueble consignacionId={consignacionId} />
         <SubirPapelDelMandato
           consignacionId={consignacionId}
           papel={papelASubir}
@@ -538,6 +537,13 @@ export function MandatoDelInmueble({
           }}
         />
       </div>
+      </SectionCard>
+
+      {/* 🔴 C-10 (Nico, 02-10-2026): «Registrar la venta» y la comisión de venta del
+          mandato, viva o anulada con su motivo. Ronda 11 de la revisión: en su propia
+          tarjeta —la venta no es un papel ni una firma—, no dentro de «Papeles y firma». */}
+      <SectionCard title="La venta del inmueble" icon={<HandCoins className="h-4 w-4" />}>
+        <VentaDelInmueble consignacionId={consignacionId} sinTitulo />
       </SectionCard>
     </div>
   )

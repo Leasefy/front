@@ -13468,7 +13468,7 @@
       "deLaCualEnSiniestro": "of which {{monto}} is in claims",
       "tramoEnSiniestro": "In claims",
       "desdeLosDias": "from {{dias}} days past due",
-      "edadDeLaCartera": "Portfolio age · days past due counted AFTER the contract’s grace period. The five buckets add up to the portfolio."
+      "edadDeLaCartera": "Portfolio age · days past due counted after the contract’s grace period. The five buckets add up to the portfolio."
     },
     "porPropietario": {
       "propietario": "Owner",

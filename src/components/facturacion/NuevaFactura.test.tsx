@@ -2433,7 +2433,7 @@ describe('GLOW UP · «Por facturar» dice qué sale hoy y no repite los avisos'
     await montar();
     const estado = q('[data-testid="facturacion-estado-del-mes"]')!.textContent ?? '';
     expect(estado).toContain('0 se pueden emitir hoy');
-    expect(estado).toContain('falta la resolución con qué numerarlas');
+    expect(estado).toContain('sin la resolución con qué numerarlas');
   });
 
   it('🔴 con la lista de la página arriba, el aviso de la resolución no se repite; el del botón se queda', async () => {

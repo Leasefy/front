@@ -1684,14 +1684,22 @@ export function NuevaFactura({
     const deLaTabla = (filas: FacturaDelMes[], numera: boolean) => {
       const emitidas = filas.filter((f) => f.estado === 'EMITIDA').length
       const porEmitir = filas.filter((f) => f.estado !== 'EMITIDA' && sePuedeEmitirHoy(f)).length
-      return { total: filas.length, emitidas, listas: numera ? porEmitir : 0, sinNumero: numera ? 0 : porEmitir }
+      // Revisora r23 (Facturación #1): cada frenada con SU causa; antes todas se le cargaban a la resolución.
+      const porEscenario = filas.filter(
+        (f) => f.estado !== 'EMITIDA' && !sePuedeEmitirHoy(f) && f.codigoNoEmitible === 'ESCENARIO_SIN_CONFIRMAR',
+      ).length
+      return { total: filas.length, emitidas, listas: numera ? porEmitir : 0, sinNumero: numera ? 0 : porEmitir, porEscenario }
     }
     const a = deLaTabla(delMes.inquilinos, numeraElCanon)
     const b = deLaTabla(delMes.propietarios, numeraLaComision)
     const total = a.total + b.total
     const emitidas = a.emitidas + b.emitidas
     const listas = a.listas + b.listas
-    return { total, emitidas, listas, frenadas: total - emitidas - listas, sinResolucion: a.sinNumero + b.sinNumero > 0 }
+    const frenadas = total - emitidas - listas
+    const sinNumero = a.sinNumero + b.sinNumero
+    const porEscenario = a.porEscenario + b.porEscenario
+    const porOtraRazon = Math.max(0, frenadas - sinNumero - porEscenario)
+    return { total, emitidas, listas, frenadas, sinResolucion: sinNumero > 0, sinNumero, porEscenario, porOtraRazon }
   })()
 
   /**
@@ -2113,7 +2121,20 @@ export function NuevaFactura({
                       {estadoDelMes.frenadas.toLocaleString(localeDeLasCifras())}
                     </span>{' '}
                     todavía no {estadoDelMes.frenadas === 1 ? 'sale' : 'salen'}
-                    {estadoDelMes.sinResolucion ? ': falta la resolución con qué numerarlas' : ' (cada fila dice por qué)'}
+                    {': '}
+                    {[
+                      estadoDelMes.porEscenario > 0
+                        ? `${estadoDelMes.porEscenario.toLocaleString(localeDeLasCifras())} sin el escenario tributario confirmado`
+                        : null,
+                      estadoDelMes.sinNumero > 0
+                        ? `${estadoDelMes.sinNumero.toLocaleString(localeDeLasCifras())} sin la resolución con qué numerarlas`
+                        : null,
+                      estadoDelMes.porOtraRazon > 0
+                        ? `${estadoDelMes.porOtraRazon.toLocaleString(localeDeLasCifras())} por otra razón (cada fila dice cuál)`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </>
                 )}
                 .

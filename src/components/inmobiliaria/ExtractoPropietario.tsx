@@ -955,7 +955,7 @@ export function AccionesDelExtracto({
             <Button
               onClick={handleDownloadPDF}
               disabled={isDownloading}
-              className="gap-2 bg-primary hover:opacity-90 text-primary-fg"
+              className="gap-2"
               data-testid="extracto-descargar"
             >
               {isDownloading ? (

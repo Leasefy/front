@@ -476,7 +476,7 @@ export function RecordatorioConfig({
         </Button>
         <Button
           type="button"
-          className="bg-primary hover:opacity-90 text-primary-fg"
+         
           onClick={handleSave}
           disabled={!isValid || isSaving}
         >

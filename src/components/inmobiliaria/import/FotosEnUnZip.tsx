@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { motionDuration, motionEase } from '@leasefy/cadence';
@@ -121,15 +122,16 @@ export function FotosEnUnZip() {
           onChange={(e) => leer(e.target.files?.[0])}
           data-testid="zip-de-fotos"
         />
-        <button
+        <Button
           type="button"
+          hideArrow
           onClick={() => entrada.current?.click()}
           disabled={leyendo || subiendo}
-          className="mt-4 inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-[14px] font-medium text-primary-fg transition-colors duration-fast hover:bg-primary-600 active:scale-[0.97] disabled:opacity-60"
+          className="mt-4"
         >
           <FileZip className="h-4 w-4" aria-hidden />
           {leyendo ? 'Leyendo el ZIP…' : lista ? 'Elegir otro ZIP' : 'Elegir el ZIP'}
-        </button>
+        </Button>
       </div>
 
       {error && (

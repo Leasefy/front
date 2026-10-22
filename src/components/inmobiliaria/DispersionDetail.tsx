@@ -1025,7 +1025,7 @@ export function DispersionDetail({
         {/* Aprobar — primer par de ojos (pendiente → en espera de giro) */}
         {isPending && onApprove && !apruebaPorLote && (
           <Button
-            className="bg-primary hover:opacity-90 text-primary-fg"
+           
             onClick={handleApprove}
             disabled={isProcessing || registreLaDevolucion}
             title={
@@ -1052,7 +1052,7 @@ export function DispersionDetail({
         {/* Marcar girada — segundo par de ojos, con referencia */}
         {esperaReferencia && onProcess && !apruebaPorLote && (
           <Button
-            className="bg-primary hover:opacity-90 text-primary-fg"
+           
             onClick={handleProcess}
             // Quien aprobó no la marca girada: se deshabilita ANTES, con la
             // explicación encima, y no después de un 409.

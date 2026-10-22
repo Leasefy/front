@@ -1,5 +1,6 @@
 'use client'
 
+import { Button } from '@/components/ui/button';
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -250,13 +251,9 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                       </span>
                     </div>
 
-                    <Link
-                      href="/publicar?from=panel"
-                      className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-md hover:opacity-90 transition-colors"
-                    >
-                      Completar propiedad
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
+                    <Button asChild size="sm" hideArrow className="mt-4">
+                      <Link href="/publicar?from=panel">Completar el inmueble</Link>
+                    </Button>
                   </div>
                 </div>
               </div>

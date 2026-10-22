@@ -265,13 +265,12 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
 
         {/* Contact Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          <a
-            href={`mailto:${agente.email}`}
-            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-fg font-medium hover:opacity-90 transition-colors"
-          >
-            <Envelope className="w-4 h-4" />
-            Email
-          </a>
+          <Button asChild hideArrow className="min-w-[120px] flex-1">
+            <a href={`mailto:${agente.email}`}>
+              <Envelope className="w-4 h-4" />
+              Correo
+            </a>
+          </Button>
           <a
             href={`tel:${agente.phone}`}
             className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-surface text-fg font-medium hover:bg-surface-muted transition-colors"

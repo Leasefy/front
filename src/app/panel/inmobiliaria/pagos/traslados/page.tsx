@@ -27,6 +27,7 @@ export default function TrasladosPage() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h1 className="text-h2 text-fg">Traslado de la comisión a tu cuenta</h1>
             <ParaEntenderMas
+              className="-ml-3 sm:ml-0"
               etiqueta="Por qué hay que trasladarla"
               descripcion="Qué es tuyo dentro de la cuenta de recaudo, y por qué no sale solo."
             >

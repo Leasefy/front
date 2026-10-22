@@ -218,7 +218,7 @@ export function TrasladoDeComisionPanel() {
           <section className="space-y-4">
             <TituloDeBloque
               titulo="Esperando tu aprobación"
-              explicacion="Aprobar mueve la plata y le pone comprobante: no sale solo."
+              explicacion="Aprobar mueve la plata y deja comprobante."
             />
             <ul className="space-y-4" data-testid="traslados-propuestos">
               {lista.propuestos.map((t) => (

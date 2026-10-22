@@ -188,7 +188,7 @@ export function RecibosDeCajaDeLaInmobiliaria() {
           <FalloDeCarga error={error} queEs="los recibos de caja" onReintentar={cargar} />
         </div>
       ) : cargando && !datos ? (
-        <EsqueletoTabla columnas={7} />
+        <EsqueletoTabla columnas={5} />
       ) : datos && datos.recibos.length === 0 ? (
         <SinDatos
           hayFiltros={hayFiltros}
@@ -207,66 +207,69 @@ export function RecibosDeCajaDeLaInmobiliaria() {
         />
       ) : datos ? (
         <div className={cn('overflow-x-auto', cargando && 'opacity-70')}>
-          <Table>
-            <TableHeader>
+          {/* GLOW UP (revisión de Dinero, 22-10-2026): cinco columnas —el recibo con su
+              fecha, quién y dónde, el medio, el valor y las acciones— y, bajo 768,
+              una tarjeta por recibo. */}
+          <Table className="max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
-                <TableHead className="w-20">N.º</TableHead>
-                <TableHead>Fecha</TableHead>
+                <TableHead className="w-36">Recibo</TableHead>
                 <TableHead>Inquilino</TableHead>
-                <TableHead>Inmueble</TableHead>
                 <TableHead>Medio</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
-                <TableHead className="w-24" />
+                <TableHead className="w-32" />
               </TableRow>
             </TableHeader>
-            <TableBodyAnimado>
+            <TableBodyAnimado className="max-md:block">
               {datos.recibos.map((r) => (
-                <TableRowAnimada key={r.id} className={cn(r.anulado && 'text-fg-muted')} data-testid={`recibo-${r.numero}`}>
-                  <TableCell className="font-mono tabular-nums">
-                    {r.numero}
+                <TableRowAnimada
+                  key={r.id}
+                  className={cn(
+                    'max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4',
+                    r.anulado && 'text-fg-muted',
+                  )}
+                  data-testid={`recibo-${r.numero}`}
+                >
+                  <TableCell className="whitespace-nowrap max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0">
+                    <span className="font-mono text-body-sm tabular-nums">N.º {r.numero}</span>
                     {r.anulado && (
                       <Badge variant="outline" className="ml-2 border-danger/40 text-danger">
                         Anulado
                       </Badge>
                     )}
+                    <p className="text-caption text-fg-muted">
+                      {diaLegible(r.fecha)}
+                      {r.mes ? ` · cuota de ${nombreDelMes(r.mes)}` : ''}
+                    </p>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {diaLegible(r.fecha)}
-                    {r.mes && <p className="text-caption text-fg-muted">Cuota de {nombreDelMes(r.mes)}</p>}
-                  </TableCell>
-                  <TableCell>
-                    <span className={cn('whitespace-nowrap', !r.inquilino && 'text-fg-muted')}>{r.inquilino ?? 'Sin nombre registrado'}</span>
-                    {r.documento && <p className="text-caption text-fg-muted">{r.documento}</p>}
-                  </TableCell>
-                  <TableCell className="max-w-[18rem]">
-                    <span className="line-clamp-1">{r.inmueble ?? '—'}</span>
-                    {r.contrato && (
-                      <p className="text-caption text-fg-muted">
-                        Contrato #{r.contrato.numero}
-                        {r.contrato.externalId && r.contrato.externalId !== String(r.contrato.numero)
-                          ? ` · ${r.contrato.externalId} en su sistema`
-                          : ''}
-                      </p>
-                    )}
+                  <TableCell className="max-w-[22rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
+                    <span className={cn('font-medium', !r.inquilino && 'font-normal text-fg-muted')}>{r.inquilino ?? 'Sin nombre registrado'}</span>
+                    {r.documento ? <span className="ml-2 font-mono text-caption tabular-nums text-fg-subtle">{r.documento}</span> : null}
+                    <p className="line-clamp-1 text-caption text-fg-muted" title={r.inmueble ?? undefined}>
+                      {r.inmueble ?? '—'}
+                      {r.contrato ? ` · Contrato #${r.contrato.numero}` : ''}
+                    </p>
+                    {r.contrato?.externalId && r.contrato.externalId !== String(r.contrato.numero) ? (
+                      <p className="text-caption text-fg-subtle">{r.contrato.externalId} en su sistema</p>
+                    ) : null}
                     {r.anulado && r.motivoDeLaAnulacion && (
                       <p className="text-caption text-danger">Anulado: {r.motivoDeLaAnulacion}</p>
                     )}
                   </TableCell>
-                  <TableCell className="max-w-[15rem]">
+                  <TableCell className="max-w-[15rem] max-md:col-span-2 max-md:block max-md:max-w-none max-md:p-0 max-md:text-caption max-md:text-fg-muted">
                     {r.medioLegible}
-                    {/* La referencia larga del banco no estira la tabla: un renglón y el texto entero al pasar el cursor. */}
-                    {/* Revisión de Dinero (22-10): la referencia INTERNA («cobro-<uuid>», la del pago en
-                        línea) no se muestra; la del banco sí, en un renglón. */}
+                    {/* La referencia INTERNA («cobro-<uuid>», la del pago en línea) no se muestra;
+                        la del banco sí, en un renglón y entera al pasar el cursor. */}
                     {r.referencia && !/^cobro-[0-9a-f]{8}-/i.test(r.referencia) && (
                       <p className="truncate text-caption text-fg-muted" title={`Ref. ${r.referencia}`}>
                         Ref. {r.referencia}
                       </p>
                     )}
                   </TableCell>
-                  <TableCell className={cn('text-right font-mono tabular-nums', r.anulado ? 'line-through' : 'text-fg')}>
+                  <TableCell className={cn('text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0', r.anulado ? 'line-through' : 'text-fg')}>
                     {formatCurrency(r.valorCop)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0">
                     <div className="flex justify-end gap-1">
                       <IconButton
                         variant="ghost"
@@ -279,8 +282,7 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                         icon={<DownloadSimple className="h-4 w-4" />}
                       />
                       {puedeAnular && !r.anulado && (
-                        // Revisión de Dinero (22-10): anular no se esconde en un ícono suelto; dice lo que hace
-                        // (y abre la confirmación de siempre).
+                        // Anular no se esconde en un ícono suelto; dice lo que hace (y abre la confirmación de siempre).
                         <Button
                           variant="ghost"
                           size="sm"

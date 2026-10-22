@@ -64,7 +64,7 @@
 
 import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowRight, CaretLeft, CaretRight, Coins, Receipt } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Coins, Receipt } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -81,6 +81,7 @@ import {
 } from '@/components/ui/table';
 import { AnimatedNumber, Appear, Presence } from '@leasefy/cadence';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { SinDatos } from '@/components/estado/SinDatos';
 import type { PuntoDeLaSerie, ResumenDeRecaudo } from '@/lib/api/recaudo.types';
 import { formatCurrency } from '@/lib/format';
@@ -277,6 +278,8 @@ export function Recaudo() {
     />
   );
 
+  // 22-10 (revisión de Dinero): las definiciones, detrás de «Qué mide cada cifra».
+  const [verDefiniciones, setVerDefiniciones] = useState(false);
   const siguiente = sumarMeses(month, 1);
   const puedeAvanzar = !esFuturo(siguiente);
 
@@ -328,21 +331,13 @@ export function Recaudo() {
           </Button>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cartera/cobros">{tr("Ver cobros del mes")}</Link>
-          </Button>
+          {/* 22-10: dos salidas (las demás viven en el riel de Pagos), sin flechas. */}
           {/* 🔴 Juan (15-10-2026): «¿dónde se ven los recibos de caja que se generaron?». */}
           <Button asChild variant="secondary" size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/recibos">{tr("Ver los recibos")}</Link>
           </Button>
           <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cartera">{tr("Ver cartera")}</Link>
-          </Button>
-          <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/dispersiones/lotes">
-              {tr("Lotes al banco")}
-              <ArrowRight className="ml-1 h-4 w-4" aria-hidden="true" />
-            </Link>
+            <Link href="/panel/inmobiliaria/pagos/dispersiones/lotes">{tr("Lotes al banco")}</Link>
           </Button>
         </div>
       </div>
@@ -381,12 +376,31 @@ export function Recaudo() {
                   {tr("Ir a la deuda del mes")}
                 </Link>
             </Presence>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" data-testid="cifras">
+            {/* GLOW UP (revisión de Dinero, 22-10-2026: «5 cifras con párrafos»): UNA
+                cifra grande —lo que llegó contra lo que se debe, con su barra— y las
+                demás compactas al lado; lo que mide cada una, plegado. */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                aria-pressed={verDefiniciones}
+                onClick={() => setVerDefiniciones((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-full text-body-sm font-medium text-fg-muted underline-offset-4 hover:text-fg hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                data-testid="que-mide-el-recaudo"
+              >
+                {verDefiniciones ? tr('Ocultar qué mide cada cifra') : tr('Qué mide cada cifra')}
+              </button>
+            </div>
+            <div
+              className="-mt-3 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-2"
+              data-testid="cifras"
+            >
               {/* 🔴 Primero lo que el mes HACE DEBER. Es la cifra de la que
                   cuelgan las demás, y la que existe desde que se firma cada
                   contrato: no hay que emitir nada para que haya deuda. */}
               <Cifra
                 id="se-debe"
+                verDefinicion={verDefiniciones}
+                className="lg:col-start-2 lg:row-start-1"
                 etiqueta={tr("Se debe")}
                 valor={resumen.deudaDelMesCop}
                 comparacion={vs('se-debe', 'seDebe', 'neutro', resumen.deudaDelMesCop)}
@@ -398,8 +412,27 @@ export function Recaudo() {
               />
               <Cifra
                 id="llego"
+                destacada
+                verDefinicion={verDefiniciones}
+                className="sm:col-span-2 lg:col-span-1 lg:col-start-1 lg:row-span-2 lg:row-start-1"
                 etiqueta={tr("Llegó")}
                 valor={resumen.recaudadoCop}
+                extra={
+                  resumen.deudaDelMesCop > 0 ? (
+                    <div className="mt-1 space-y-1.5">
+                      <div className="flex h-2 w-full overflow-hidden rounded-full bg-surface-muted" role="img" aria-label={tr('Qué parte de lo que se debe ya llegó')}>
+                        <span
+                          className="h-full rounded-full bg-success-500"
+                          style={{ width: `${Math.min(100, Math.max(0, ((resumen.deudaDelMesCop - resumen.pendienteCop) / resumen.deudaDelMesCop) * 100))}%` }}
+                        />
+                      </div>
+                      <p className="text-body-sm text-fg-muted">
+                        {tr('de')} <span className="font-mono tabular-nums text-fg">{formatCurrency(resumen.deudaDelMesCop)}</span>{' '}
+                        {tr('que se deben en')} {nombreDelMes(month, locale)}
+                      </p>
+                    </div>
+                  ) : null
+                }
                 comparacion={vs('llego', 'llego', 'subirEsBueno', resumen.recaudadoCop)}
                 /* 🔴 PG-09 (03-10-2026): hablaba de «cobros de este mes»
                    (`recaudadoDelMesCop` sale de `Cobro.month`), y la deuda vive
@@ -410,6 +443,8 @@ export function Recaudo() {
               />
               <Cifra
                 id="pendiente"
+                verDefinicion={verDefiniciones}
+                className="lg:col-start-3 lg:row-start-1"
                 etiqueta={tr("Pendiente")}
                 valor={resumen.pendienteCop}
                 tono={resumen.pendienteCop > 0 ? 'warning' : undefined}
@@ -427,6 +462,8 @@ export function Recaudo() {
               />
               <Cifra
                 id="dispersado"
+                verDefinicion={verDefiniciones}
+                className="lg:col-start-2 lg:row-start-2"
                 etiqueta={tr("Dispersado")}
                 valor={resumen.dispersadoCop}
                 comparacion={vs('dispersado', 'salio', 'neutro', resumen.dispersadoCop)}
@@ -438,6 +475,8 @@ export function Recaudo() {
               />
               <Cifra
                 id="disponible"
+                verDefinicion={verDefiniciones}
+                className="lg:col-start-3 lg:row-start-2"
                 etiqueta={tr("Disponible")}
                 valor={resumen.disponibleCop}
                 tono={resumen.disponibleCop < 0 ? 'danger' : undefined}
@@ -524,6 +563,9 @@ export function Recaudo() {
             {/* Los mismos doce meses, en la tabla de la casa. La fila del mes
                 en foco va marcada y cualquier fila cambia el mes: es el
                 selector de arriba, pero con los números a la vista. */}
+            {/* 22-10 (revisión de Dinero): la tabla de doce meses repetía el gráfico;
+                queda plegada debajo, montada (la fila cambia el mes, como siempre). */}
+            <MasDetalles etiqueta={tr('Ver mes por mes, en números')} etiquetaAbierto={tr('Ocultar mes por mes')} montadoSiempre>
             <section
               className="overflow-hidden rounded-lg border border-border bg-surface"
               aria-labelledby="serie-mensual-titulo"
@@ -632,6 +674,7 @@ export function Recaudo() {
                 </TableBody>
               </Table>
             </section>
+            </MasDetalles>
 
             {/* Los recibos del mes, agrupados por medio de pago (así los manda
                 el back). El pie suma: es la misma cifra que «Llegó». */}
@@ -714,6 +757,10 @@ function Cifra({
   definicion,
   tono,
   comparacion,
+  destacada = false,
+  verDefinicion = false,
+  extra,
+  className,
 }: {
   id: string;
   etiqueta: string;
@@ -722,16 +769,25 @@ function Cifra({
   tono?: 'warning' | 'danger';
   /** La línea «vs mes anterior», a la misma fecha. */
   comparacion?: ReactNode;
+  /** La cifra que decide la pantalla: grande (22-10). */
+  destacada?: boolean;
+  /** «Qué mide cada cifra» abierto: la definición se ve. Plegada sigue montada. */
+  verDefinicion?: boolean;
+  extra?: ReactNode;
+  className?: string;
 }) {
   return (
     <section
-      className="space-y-2 rounded-lg border border-border bg-surface p-5"
+      className={cn('flex min-w-0 flex-col gap-1.5 bg-surface px-5 py-4', destacada && 'gap-2 py-5 sm:px-6', className)}
       data-testid={`cifra-${id}`}
     >
-      <p className="text-label text-fg-muted">{etiqueta}</p>
+      <p className={cn(destacada ? 'font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle' : 'text-caption text-fg-muted')}>
+        {etiqueta}
+      </p>
       <p
         className={cn(
-          'font-mono text-2xl font-medium tabular-nums text-fg',
+          'font-mono tabular-nums text-fg',
+          destacada ? 'text-[32px] font-medium leading-none tracking-[-0.02em] sm:text-[40px]' : 'text-[19px]',
           tono === 'warning' && 'text-warning',
           tono === 'danger' && 'text-danger',
         )}
@@ -740,8 +796,11 @@ function Cifra({
         {/* Cuenta desde la del mes anterior al cambiar de mes. */}
         <AnimatedNumber value={valor} format={formatCurrency} />
       </p>
+      {extra}
       {comparacion}
-      <p className="text-xs leading-relaxed text-fg-muted">{definicion}</p>
+      <p hidden={!verDefinicion} className={cn('text-caption leading-relaxed text-fg-muted', verDefinicion && 'animate-rise-in')}>
+        {definicion}
+      </p>
     </section>
   );
 }

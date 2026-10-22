@@ -79,7 +79,7 @@ export function PublishShell({ children }: PublishShellProps) {
   return (
     <div className="min-h-screen bg-bg">
       {/* Mobile Header */}
-      <header className="lg:hidden sticky top-0 z-10 bg-surface border-b border-border">
+      <header className="lg:hidden sticky top-0 z-10 bg-surface border-b border-border pt-[var(--area-segura-arriba)]">
         <div className="px-4 py-3">
           <Button
             variant="link"

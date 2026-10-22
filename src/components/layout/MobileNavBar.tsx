@@ -57,7 +57,8 @@ export function MobileNavBar({ navItems }: MobileNavBarProps) {
     <>
       <nav
         className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-surface border-t border-border"
-        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0px)' }}
+        // `--area-segura-abajo`: en la app de Android vieja el env() no trae la barra de gestos.
+        style={{ paddingBottom: 'max(var(--area-segura-abajo), env(safe-area-inset-bottom), 0px)' }}
         aria-label="Mobile navigation"
       >
         <div className="flex items-stretch justify-around">

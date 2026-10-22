@@ -43,6 +43,8 @@ import {
   type CuentasDeLaPersona,
 } from './cuenta-activa'
 import { requestNotificationPermission, removeFcmToken } from '@/lib/firebase/messaging'
+import { esLaApp } from '@/lib/app-nativa/puente'
+import { entrarConGoogleEnLaApp } from '@/lib/app-nativa/entrar'
 import type { Session } from '@supabase/supabase-js'
 import { esCorreoYaRegistrado } from './correo'
 import { decodeAccessToken } from './jwt'
@@ -1623,6 +1625,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * y el registro antes de llevarla al destino.
    */
   const signInWithGoogle = useCallback(async (regreso?: string) => {
+    // En la app de iOS/Android Google no deja entrar desde la vista web: va por la
+    // hoja segura del sistema (ver `lib/app-nativa/entrar.ts`).
+    if (esLaApp()) {
+      await entrarConGoogleEnLaApp(regreso)
+      return
+    }
     const supabase = getSupabase()
     if (!supabase) throw new Error('Supabase not initialized')
     const destino =

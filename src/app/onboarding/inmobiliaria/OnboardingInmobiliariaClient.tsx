@@ -138,7 +138,7 @@ function ProvisionedOnboardingWizard() {
   if (status === 'error') {
     return (
       <div className="min-h-screen bg-bg">
-        <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
+        <header className="flex items-center justify-between px-5 pt-[calc(1rem+var(--area-segura-arriba))] pb-4 sm:px-8 sm:pt-[calc(1.25rem+var(--area-segura-arriba))] sm:pb-5">
           <LeasefyLogotype className="h-6 w-auto" title="Leasefy" />
           <SalirDelRegistro />
         </header>

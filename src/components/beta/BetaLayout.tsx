@@ -76,7 +76,7 @@ export function BetaLayout({ children, basePath, variant = 'fullscreen', dentroD
             : // Embedded: fill the classic panel content area. The sticky
               // PlanHeader is h-16 (4rem); below lg the layout reserves pb-20
               // (5rem) for the MobileNavBar.
-              'relative h-[calc(100dvh-4rem-5rem)] lg:h-[calc(100dvh-4rem)]',
+              'relative h-[calc(100dvh-var(--plan-header-h,4rem)-5rem-var(--area-segura-abajo))] lg:h-[calc(100dvh-var(--plan-header-h,4rem))]',
           'flex flex-col md:flex-row',
           'bg-background'
         )}

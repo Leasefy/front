@@ -338,7 +338,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           className={cn(
             // pb-20 reserves space for the mobile bottom nav, which is visible
             // below lg (same breakpoint where the desktop sidebar appears).
-            'transition-all duration-200 pb-20 lg:pb-0',
+            'transition-all duration-200 pb-[calc(5rem+var(--area-segura-abajo))] lg:pb-0',
             isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
           )}
         >
@@ -387,7 +387,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           <main
             id="main-content"
             tabIndex={-1}
-            className="mx-auto w-full max-w-[1920px]"
+            // La cabecera ya cubre la hora del celular (app de iOS/Android): lo de
+            // adentro no vuelve a dejarle espacio (ver globals.css).
+            className="mx-auto w-full max-w-[1920px] [--area-segura-arriba:0px]"
           >
             {/* Un solo hijo: el candado lo pone junto a su bienvenida, y tres
                 sueltos quedaban como una lista sin llaves (aviso de React). */}

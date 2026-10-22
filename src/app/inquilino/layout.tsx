@@ -166,7 +166,7 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
         isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
       )}>
         <PlanHeader tenantSubscription={tenantSubscription} />
-        <main id="main-content" tabIndex={-1}>
+        <main id="main-content" tabIndex={-1} className="[--area-segura-arriba:0px]">
           {children}
         </main>
       </div>

@@ -82,7 +82,7 @@ export default function AuthPage() {
         {/* ── La tarjeta del formulario ──────────────────────────────────── */}
         <div className="relative z-10 flex min-h-screen flex-col lg:flex-row lg:items-center lg:justify-end lg:p-8">
           <div
-            className="relative flex w-full flex-col px-6 py-6 sm:px-10 sm:py-8 lg:max-h-[calc(100vh-4rem)] lg:w-[480px] lg:overflow-y-auto lg:rounded-lg lg:bg-surface lg:p-10 lg:shadow-[0_24px_64px_-16px_rgba(20,19,15,0.45)] lg:ring-1 lg:ring-black/5"
+            className="relative flex w-full flex-col px-6 pt-[calc(1.5rem+var(--area-segura-arriba))] pb-[calc(1.5rem+var(--area-segura-abajo))] sm:px-10 sm:pt-[calc(2rem+var(--area-segura-arriba))] sm:pb-[calc(2rem+var(--area-segura-abajo))] lg:max-h-[calc(100vh-4rem)] lg:w-[480px] lg:overflow-y-auto lg:rounded-lg lg:bg-surface lg:p-10 lg:shadow-[0_24px_64px_-16px_rgba(20,19,15,0.45)] lg:ring-1 lg:ring-black/5"
             data-lenis-prevent
             data-testid="auth-tarjeta"
           >
@@ -107,7 +107,8 @@ export default function AuthPage() {
               href="/"
               aria-label="Cerrar y volver al inicio"
               title="Cerrar"
-              className={`${ASPA_DE_CIERRE} absolute right-6 top-6 z-10 sm:right-8 sm:top-8 lg:right-10 lg:top-10`}
+              // En la app de iOS/Android no hay «inicio» al que volver: entrar ES el inicio.
+              className={`${ASPA_DE_CIERRE} absolute right-6 top-6 z-10 sm:right-8 sm:top-8 lg:right-10 lg:top-10 [html[data-app]_&]:hidden`}
               data-testid="auth-cerrar"
             >
               <X size={16} weight="bold" aria-hidden="true" />

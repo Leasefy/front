@@ -63,7 +63,7 @@ export function WorkspaceNav() {
       items={pestanas}
       ariaLabel={`Pestañas de ${t(workspace.labelKey)}`}
       cssVar="--workspace-nav-h"
-      topClass="top-[calc(4rem+var(--secciones-h,0px))]"
+      topClass="top-[calc(var(--plan-header-h,4rem)+var(--secciones-h,0px))]"
       nivel="pestanas"
       pathname={pathname ?? ''}
     />

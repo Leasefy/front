@@ -349,7 +349,7 @@ export default function AprobacionPage() {
           el resultado es largo, y la salida no puede quedarse arriba fuera de
           alcance. Patrón canónico de `WizardShell` / `PublishShell`. Lenis usa
           scroll nativo, así que `sticky` funciona sin trucos. */}
-      <header className="sticky top-0 z-20 border-b border-border bg-surface">
+      <header className="sticky top-0 z-20 border-b border-border bg-surface pt-[var(--area-segura-arriba)]">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4">
           {/* El logo real, el mismo del sidebar: monocromo por currentColor. */}
           <BrandHomeLink aria-label="Leasefy — inicio" className="text-fg">

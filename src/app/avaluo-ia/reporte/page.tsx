@@ -60,7 +60,7 @@ export default function ReporteAvaluoPage() {
   return (
     <div className="min-h-screen bg-surface-muted">
       {/* ── Brand bar ──────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-10 bg-surface/85 backdrop-blur border-b border-border">
+      <header className="sticky top-0 z-10 bg-surface/85 backdrop-blur border-b border-border pt-[var(--area-segura-arriba)]">
         <div className="mx-auto max-w-[560px] px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BrandMark size={26} />

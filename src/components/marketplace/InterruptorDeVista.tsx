@@ -29,7 +29,7 @@ export function InterruptorDeVista({
   ];
   return (
     <div
-      className="sticky top-16 z-30 border-b border-border bg-background lg:top-[76px]"
+      className="sticky top-[calc(4rem+var(--area-segura-arriba))] z-30 border-b border-border bg-background lg:top-[calc(76px+var(--area-segura-arriba))]"
       data-testid="interruptor-de-vista"
       data-tapa-arriba
     >

@@ -1,6 +1,8 @@
 import { getMessaging, getToken, onMessage, type MessagePayload } from 'firebase/messaging'
 import { getFirebaseApp } from './config'
 import { apiClient } from '@/lib/api/client'
+import { esLaApp } from '@/lib/app-nativa/puente'
+import { registrarAvisosEnLaApp } from '@/lib/app-nativa/avisos'
 
 /**
  * Request notification permission and obtain FCM token.
@@ -10,6 +12,9 @@ import { apiClient } from '@/lib/api/client'
  */
 export async function requestNotificationPermission(): Promise<string | null> {
   if (typeof window === 'undefined') return null
+
+  // En la app de iOS/Android el permiso y el token los da el sistema, no el navegador.
+  if (esLaApp()) return registrarAvisosEnLaApp().catch(() => null)
 
   if (!('Notification' in window)) {
     console.warn('[FCM] Notifications not supported in this browser')

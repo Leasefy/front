@@ -321,7 +321,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
   return (
     <div className={cn(
       embedded
-        ? 'flex flex-col h-[calc(100vh-64px)]'
+        ? 'flex flex-col h-[calc(100vh-var(--plan-header-h,64px))]'
         : 'min-h-screen bg-background'
     )}>
       {!embedded && !sinNavbar && <Navbar />}
@@ -431,7 +431,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
           <div
             className={cn(
               'sticky z-20 border-b border-border bg-background/95 backdrop-blur-[2px]',
-              embedded ? 'top-0' : 'top-16 lg:top-[76px]',
+              embedded ? 'top-0' : 'top-[calc(4rem+var(--area-segura-arriba))] lg:top-[calc(76px+var(--area-segura-arriba))]',
             )}
           >
             <div className="px-4 md:px-6 py-3 flex flex-wrap items-center gap-2">
@@ -567,7 +567,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
               : cn(
                   'w-full lg:w-1/2 2xl:w-2/5 lg:fixed lg:right-0',
                   // El header de la landing mide 64px y 76px desde lg.
-                  'lg:top-[76px] h-[calc(100vh-64px)] lg:h-[calc(100vh-76px)]',
+                  'lg:top-[calc(76px+var(--area-segura-arriba))] h-[calc(100vh-64px-var(--area-segura-arriba))] lg:h-[calc(100vh-76px-var(--area-segura-arriba))]',
                   !showMap && 'hidden lg:block'
                 )
           )}

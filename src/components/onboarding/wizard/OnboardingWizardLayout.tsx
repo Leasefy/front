@@ -69,7 +69,7 @@ export function OnboardingWizardLayout({
 }: OnboardingWizardLayoutProps) {
   return (
       <div className={cn('min-h-screen w-full bg-bg', className)}>
-        <header className="flex items-center justify-between gap-4 px-4 py-4 sm:px-8 sm:py-5">
+        <header className="flex items-center justify-between gap-4 px-4 pt-[calc(1rem+var(--area-segura-arriba))] pb-4 sm:px-8 sm:pt-[calc(1.25rem+var(--area-segura-arriba))] sm:pb-5">
           {marca ?? (
             <span className="flex items-center" aria-label="Leasefy">
               <LeasefyLogotype className="h-6 w-auto" title="Leasefy" />

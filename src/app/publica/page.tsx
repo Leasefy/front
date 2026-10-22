@@ -130,7 +130,7 @@ function Publica() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <header className="sticky top-0 z-20 border-b border-border/70 bg-bg/90 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-border/70 bg-bg/90 backdrop-blur pt-[var(--area-segura-arriba)]">
         <div className="mx-auto flex h-16 max-w-[1100px] items-center justify-between px-4 sm:px-6">
           <Link href="/" aria-label="Leasefy — inicio" className="inline-flex text-fg">
             <LeasefyLogotype size={20} title="Leasefy" />

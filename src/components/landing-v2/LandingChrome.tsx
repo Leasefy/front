@@ -84,7 +84,7 @@ export function LandingChrome({ activo, children }: LandingChromeProps) {
        */}
       <div
         data-testid="landing-chrome"
-        className={`lv2 ${interTight.variable} ${ibmPlexMono.variable} ${inter.variable}`}
+        className={`lv2 pt-[var(--area-segura-arriba)] ${interTight.variable} ${ibmPlexMono.variable} ${inter.variable}`}
         style={
           {
             // Mismo puente de tokens que usa el layout de (landing): la hoja

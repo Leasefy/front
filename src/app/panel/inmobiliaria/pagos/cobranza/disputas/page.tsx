@@ -89,7 +89,7 @@ const CAMPOS_DE_LA_DISPUTA = Object.keys(ID_DEL_CAMPO_DE_LA_DISPUTA) as CampoDeL
  * (En una clase de Tailwind se puede escribir pegado porque Tailwind
  * normaliza el `calc` al generar el CSS; acá no hay quien lo haga.)
  */
-const TOPE = 'calc(4rem + var(--secciones-h, 0px) + var(--workspace-nav-h, 3rem))'
+const TOPE = 'calc(var(--plan-header-h, 4rem) + var(--secciones-h, 0px) + var(--workspace-nav-h, 3rem))'
 
 // ── Filtro por estado (SegmentedControl) ─────────────────────────────────────
 

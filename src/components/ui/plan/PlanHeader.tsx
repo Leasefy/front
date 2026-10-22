@@ -484,7 +484,9 @@ export function PlanHeader({
   };
 
   return (
-    <header className={cn('sticky top-0 z-30 bg-bg border-b border-border', className)}>
+    // `pt-[var(--area-segura-arriba)]`: en la app de iOS/Android la cabecera se
+    // estira debajo de la hora y la isla (en el navegador vale 0; ver globals.css).
+    <header className={cn('sticky top-0 z-30 bg-bg border-b border-border pt-[var(--area-segura-arriba)]', className)}>
       <div className="flex items-center justify-between h-16 px-4 sm:px-6">
         {/* Left: mobile menu trigger + MagnifyingGlass */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0">

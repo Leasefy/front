@@ -21,6 +21,8 @@ import { AceptarLegalesAlEntrar } from "@/components/legal/AceptarLegalesAlEntra
 import { LlavesDeLaPlata } from "@/components/plata/LlavesDeLaPlata";
 import { MotionProvider } from "@leasefy/cadence";
 import { RecordarLaCuenta } from "@/components/auth/RecordarLaCuenta";
+import { PuenteDeLaApp } from "@/components/app-nativa/PuenteDeLaApp";
+import { plataformaPorElUserAgent } from "@/lib/app-nativa/puente";
 
 // Cadence: Schibsted Grotesk — Regular (cuerpo) + Semibold (títulos).
 // Una sola familia para sans + heading; se mapea en globals.css.
@@ -130,8 +132,16 @@ export default async function RootLayout({
   // El idioma de la parte pública (`/es`, `/en`): lo pone el middleware.
   const deLaUrl = cabeceras.get(CABECERA_DEL_IDIOMA);
   const idioma = esIdioma(deLaUrl) ? deLaUrl : IDIOMA_POR_DEFECTO;
+  // La app de iOS/Android se anuncia en el user-agent («LeasefyApp/1»): `data-app`
+  // deja que el CSS la reconozca desde el primer pintado (ver `lib/app-nativa`).
+  const plataformaDeLaApp = plataformaPorElUserAgent(cabeceras.get("user-agent"));
   return (
-    <html lang={idioma} className={`lenis ${schibsted.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html
+      lang={idioma}
+      className={`lenis ${schibsted.variable} ${jetbrainsMono.variable}`}
+      data-app={plataformaDeLaApp ?? undefined}
+      suppressHydrationWarning
+    >
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -185,6 +195,9 @@ export default async function RootLayout({
           {/* «Centavos en todo»: qué áreas ya escriben centavos, para los
               formatos de pantalla (no pinta nada). */}
           <LlavesDeLaPlata />
+          {/* La app de iOS/Android: descargas, enlaces, botón atrás, avisos.
+              En el navegador no hace nada. */}
+          <PuenteDeLaApp />
         </ThemeProvider>
         </MotionProvider>
         </IdiomaDeLaPagina>

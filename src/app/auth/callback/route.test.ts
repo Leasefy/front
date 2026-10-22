@@ -135,3 +135,33 @@ describe('/auth/callback — enlace de «¿Olvidaste tu contraseña?»', () => {
     expect(res.headers.get('set-cookie') ?? '').not.toContain(COOKIE_DE_RECUPERACION)
   })
 })
+
+describe('/auth/callback — regreso de Google hacia la app de iOS/Android', () => {
+  it('con ?app=1 NO canjea: devuelve el código a la app por co.leasefy.app://', async () => {
+    const res = await pedir('app=1&code=codigo_de_google&returnUrl=%2Fauth%2Fpost-login')
+    expect(res.status).toBeGreaterThanOrEqual(300)
+    expect(res.status).toBeLessThan(400)
+    const u = new URL(res.headers.get('location')!)
+    expect(u.protocol).toBe('co.leasefy.app:')
+    expect(u.host).toBe('auth')
+    expect(u.pathname).toBe('/callback')
+    expect(u.searchParams.get('code')).toBe('codigo_de_google')
+    expect(u.searchParams.get('returnUrl')).toBe('/auth/post-login')
+    expect(u.searchParams.has('app')).toBe(false)
+    expect(sb.exchangeCodeForSession).not.toHaveBeenCalled()
+  })
+
+  it('también devuelve el error de Google (la persona no autorizó)', async () => {
+    const res = await pedir('app=1&error=access_denied&error_description=No%20autorizado')
+    const u = new URL(res.headers.get('location')!)
+    expect(u.protocol).toBe('co.leasefy.app:')
+    expect(u.searchParams.get('error')).toBe('access_denied')
+  })
+
+  it('sin la marca, el mismo código se canjea como siempre (lo pide la app desde su vista web)', async () => {
+    sb.exchangeCodeForSession.mockResolvedValue({ error: null })
+    const res = await pedir('code=codigo_de_google&returnUrl=%2Fauth%2Fpost-login')
+    expect(sb.exchangeCodeForSession).toHaveBeenCalledWith('codigo_de_google')
+    expect(destinoDe(res)).toBe('/auth/post-login')
+  })
+})

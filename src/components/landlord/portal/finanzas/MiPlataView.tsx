@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Buildings, ChartPieSlice, CurrencyDollar, ChatCircleText, CaretRight } from '@phosphor-icons/react';
-import { PageHeader, KpiCard } from '@leasefy/cadence';
+import { KpiCard } from '@leasefy/cadence';
 import { Card } from '@/components/ui';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { useI18n } from '@/lib/i18n';
@@ -13,6 +13,7 @@ import type {
   FinanzasRecaudoAnual,
 } from '@/lib/api/owner-finanzas.types';
 import { DescargarInformeButton } from './DescargarInformeButton';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 interface MiPlataViewProps {
   agencyId: string | null;
@@ -53,11 +54,12 @@ export function MiPlataView({
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <PageHeader
-          title="Mi plata"
-          subtitle="Tus pagos, la proyección de tu contrato y tu portafolio, en un solo lugar."
-          actions={<DescargarInformeButton agencyId={agencyId} />}
+      <div className="p-6 lg:p-8">
+        <EncabezadoDePantalla
+          seccion="Contratos y plata"
+          titulo="Mi plata"
+          descripcion="Tus pagos, la proyección de tu contrato y tu portafolio, en un solo lugar."
+          acciones={<DescargarInformeButton agencyId={agencyId} />}
         />
 
         {/* KPIs */}

@@ -1,7 +1,7 @@
 'use client';
 
 import { FileText, Clock, CheckCircle, WarningCircle, Pen } from '@phosphor-icons/react';
-import { PageHeader, KpiCard } from '@leasefy/cadence';
+import { KpiCard } from '@leasefy/cadence';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ContractExpandableItem } from '@/components/contract/ContractExpandableItem';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -15,6 +15,7 @@ import {
   ContratosConLaInmobiliaria,
   useContratosAdministrados,
 } from '@/components/landlord/ContratosConLaInmobiliaria';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 // ============================================================================
 // TextTs
@@ -76,9 +77,9 @@ export default function ContratosPage() {
 
   if (isLoading || (allContracts.length === 0 && administrados.cargando)) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="p-6 lg:p-8">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
-        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
+        <EsqueletoDePagina variante="list" />
       </div>
     );
   }
@@ -86,7 +87,7 @@ export default function ContratosPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="p-6 lg:p-8">
           <FalloDeCarga
             error={errorCrudo ?? error}
             queEs="tus contratos"
@@ -102,10 +103,11 @@ export default function ContratosPage() {
   if (allContracts.length === 0 && administrados.doc) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-          <PageHeader
-            title={t('landlord.contracts.title')}
-            subtitle={t('landlord.contracts.subtitle')}
+        <div className="p-6 lg:p-8 space-y-8">
+          {/* Propietario de una inmobiliaria: aquí no hay sección del independiente. */}
+          <EncabezadoDePantalla
+            titulo={t('landlord.contracts.title')}
+            descripcion={t('landlord.contracts.subtitle')}
           />
           <ContratosConLaInmobiliaria doc={administrados.doc} />
         </div>
@@ -115,13 +117,14 @@ export default function ContratosPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="p-6 lg:p-8">
 
         {/* Header */}
         <div className="mb-8">
-          <PageHeader
-            title={t('landlord.contracts.title')}
-            subtitle={t('landlord.contracts.subtitle')}
+          <EncabezadoDePantalla
+            seccion="Contratos y plata"
+            titulo={t('landlord.contracts.title')}
+            descripcion={t('landlord.contracts.subtitle')}
           />
         </div>
 

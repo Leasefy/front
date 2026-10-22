@@ -231,9 +231,9 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
 
 function ContractPageLoading() {
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="p-6 lg:p-8">
       {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
-      <EsqueletoDePagina variante="wizard" className="mx-auto max-w-7xl" />
+      <EsqueletoDePagina variante="wizard" />
     </div>
   );
 }

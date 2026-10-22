@@ -8,8 +8,8 @@
  * ya trae la vista real que consume `useOwnerPortal` + los servicios owner-facing.
  */
 import type { Icon } from '@phosphor-icons/react';
-import { PageHeader } from '@leasefy/cadence';
 import { EmptyState } from '@/components/ui/empty-state';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 export interface PortalPlaceholderProps {
   /** Título de la sección (header). */
@@ -25,8 +25,8 @@ export interface PortalPlaceholderProps {
 export function PortalPlaceholder({ title, subtitle, icon, emptyDescription }: PortalPlaceholderProps) {
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <PageHeader title={title} subtitle={subtitle} />
+      <div className="p-6 lg:p-8">
+        <EncabezadoDePantalla titulo={title} descripcion={subtitle} />
         <div className="mt-8">
           <EmptyState icon={icon} title="Próximamente" description={emptyDescription} />
         </div>

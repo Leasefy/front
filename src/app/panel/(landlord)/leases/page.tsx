@@ -8,11 +8,12 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Button } from '@/components/ui';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
-import { PageHeader, KpiCard } from '@leasefy/cadence';
+import { KpiCard } from '@leasefy/cadence';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLeases } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 // ============================================================================
 // TextTs
@@ -106,9 +107,9 @@ export default function LandlordLeasesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="p-6 lg:p-8">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
-        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
+        <EsqueletoDePagina variante="list" />
       </div>
     );
   }
@@ -116,7 +117,7 @@ export default function LandlordLeasesPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="p-6 lg:p-8">
           {/* Mostraba `description={error}`: el mensaje crudo del backend,
               en inglés, como único texto de la pantalla. */}
           <FalloDeCarga error={errorCrudo ?? error} queEs="tus arriendos" onReintentar={refetch} />
@@ -127,10 +128,10 @@ export default function LandlordLeasesPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="p-6 lg:p-8">
 
         {/* Header */}
-        <PageHeader title={t('landlord.leases.title')} subtitle={t('landlord.leases.subtitle')} />
+        <EncabezadoDePantalla seccion="Contratos y plata" titulo={t('landlord.leases.title')} descripcion={t('landlord.leases.subtitle')} />
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

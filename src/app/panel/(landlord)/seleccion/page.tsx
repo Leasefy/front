@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { UsersThree, CaretRight, CheckCircle } from '@phosphor-icons/react';
-import { PageHeader } from '@leasefy/cadence';
-import { Card } from '@/components/ui';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { EmptyState } from '@/components/ui/empty-state';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { useOwnerProcesos } from '@/lib/hooks/useOwnerPortal';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
@@ -17,9 +17,9 @@ export default function SeleccionPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="p-6 lg:p-8">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
-        <EsqueletoDePagina variante="list" className="mx-auto max-w-4xl" />
+        <EsqueletoDePagina variante="list" className="max-w-4xl" />
       </div>
     );
   }
@@ -35,24 +35,32 @@ export default function SeleccionPage() {
     );
   }
 
+  // Lo pendiente primero (glow up, 21-10-2026): los que esperan tu elección van
+  // arriba; los ya resueltos, abajo, en el orden de siempre.
+  const ordenados = procesos
+    .map((p, i) => ({ p, i }))
+    .sort((a, b) => Number(a.p.chosenCandidacyId !== null) - Number(b.p.chosenCandidacyId !== null) || a.i - b.i)
+    .map(({ p }) => p);
+
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <PageHeader
-          title="Elegir inquilino"
-          subtitle="Compara los postulados asegurables y elige tú quién vive en tu inmueble."
+    <div>
+      <div className="max-w-4xl p-6 lg:p-8">
+        <EncabezadoDePantalla
+          seccion="Mis inmuebles"
+          titulo="Elegir inquilino"
+          descripcion="Compara los postulados asegurables y elige tú quién vive en tu inmueble."
         />
 
         {procesos.length === 0 ? (
-          <Card className="p-6 mt-8">
-            <p className="text-sm text-fg-muted">
-              No tienes procesos de elección abiertos. Cuando tu inmobiliaria reúna postulados
-              asegurables para uno de tus inmuebles, aparecerá acá para que elijas.
-            </p>
-          </Card>
+          <EmptyState
+            ilustracion="casa"
+            icon={UsersThree}
+            title="No tienes elecciones abiertas"
+            description="Cuando tu inmobiliaria reúna postulados asegurables para uno de tus inmuebles, aparece acá para que elijas."
+          />
         ) : (
-          <ul className="mt-8 space-y-3">
-            {procesos.map((p) => {
+          <ul className="mt-6 space-y-3" data-testid="procesos-de-eleccion">
+            {ordenados.map((p) => {
               const resuelto = p.chosenCandidacyId !== null;
               return (
                 <li key={p.id}>

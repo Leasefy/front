@@ -70,7 +70,7 @@ export function ComparacionView({ agencyId, processId, comparacion, reload }: Co
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-5xl p-6 lg:p-8">
         <Link
           href="/panel/seleccion"
           className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg mb-4"

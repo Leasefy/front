@@ -556,7 +556,7 @@ function FilaDeInquilino({
             // Un nombre de empresa de 80 letras no puede empujar el estado y el
             // canon fuera de la tabla: se corta a 20rem y el completo va en `title`.
             title={persona.nombre}
-            className="flex min-w-0 max-w-[22rem] items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex min-w-0 max-w-[20rem] items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             data-testid="inquilino-abrir"
           >
             <Avatar name={persona.nombre} size="sm" className="shrink-0" />

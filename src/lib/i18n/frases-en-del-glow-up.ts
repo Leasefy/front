@@ -224,4 +224,6 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'nadie en esta etapa': 'no one in this stage',
   'Filtros': 'Filters',
   'Entró': 'Came in',
+  '+ 1 etapa sin interesados': '+ 1 stage with no prospects',
+  '+ {n} etapas sin interesados': '+ {n} stages with no prospects',
 }

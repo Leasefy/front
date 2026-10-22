@@ -33,6 +33,7 @@ import { mensajeDelRechazoDelMotivo } from '@/components/inmobiliaria/agenda/Mot
 import { MotivoDePerdidaDialog } from '@/components/inmobiliaria/MotivoDePerdidaDialog';
 import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
 import { useTr } from '@/lib/i18n/use-tr';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // ============================================================================
 // Types
@@ -391,6 +392,7 @@ export function PipelineBoard({
     return m;
   }, [agentes]);
   const { t } = useI18n();
+  const tr = useTr();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   // El lead que se soltó en «Perdido» y espera su motivo.
@@ -567,6 +569,43 @@ export function PipelineBoard({
     () => PIPELINE_STAGES.filter((s) => s.stage !== 'lost').map((s) => s.stage),
     [],
   );
+
+  /*
+   * Ronda 18 (390): sin tablero. Arrastrar entre columnas que no se ven es imposible en el
+   * celular y la primera columna, la que se veía, solía estar vacía. Una lista por etapa, en el
+   * orden del embudo, sólo con las etapas que tienen gente; la tarjeta abre el cajón, que es donde
+   * se cambia de etapa. El primer pintado (servidor, pruebas) es el tablero.
+   */
+  const esCelular = useIsMobile();
+  if (esCelular) {
+    const etapas = [...mainStages, 'lost' as const];
+    const conGente = etapas.filter((st) => (itemsByStage[st]?.length ?? 0) > 0);
+    const sinGente = etapas.length - conGente.length;
+    return (
+      <NombresDeAgentesContext.Provider value={nombresDeAgentes}>
+        <div className="space-y-5 p-1 pb-4" data-testid="lista-por-etapa">
+          {conGente.map((st) => (
+            <section key={st} aria-label={tr(getPipelineStageInfo(st)?.labelEs || st)}>
+              <h3 className="mb-2 flex items-baseline gap-2 text-body-sm font-medium text-fg">
+                {tr(getPipelineStageInfo(st)?.labelEs || st)}
+                <span className="font-mono text-caption tabular-nums text-fg-muted">{itemsByStage[st].length}</span>
+              </h3>
+              <div className="space-y-2">
+                {itemsByStage[st].map((item) => (
+                  <PipelineCard key={item.id} item={item} onClick={onItemClick} />
+                ))}
+              </div>
+            </section>
+          ))}
+          {sinGente > 0 ? (
+            <p className="text-caption text-fg-subtle">
+              {tr(sinGente === 1 ? '+ 1 etapa sin interesados' : '+ {n} etapas sin interesados', { n: sinGente })}
+            </p>
+          ) : null}
+        </div>
+      </NombresDeAgentesContext.Provider>
+    );
+  }
 
   return (
     <NombresDeAgentesContext.Provider value={nombresDeAgentes}>

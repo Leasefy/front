@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Leasefy</string>
+    <string name="title_activity_main">Leasefy</string>
+    <string name="package_name">co.leasefy.app</string>
+    <string name="custom_url_scheme">co.leasefy.app</string>
+    <string name="canal_de_avisos">Avisos de Leasefy</string>
+    <string name="canal_de_avisos_descripcion">Pagos, contratos, solicitudes y mensajes de tu inmobiliaria.</string>
+</resources>

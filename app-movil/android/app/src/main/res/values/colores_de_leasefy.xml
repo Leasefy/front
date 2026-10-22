@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Arranque de la app (Android 12+ dibuja el símbolo sobre este fondo). -->
+    <color name="fondo_de_inicio">#FFFFFF</color>
+    <color name="simbolo_de_inicio">#1A40FF</color>
+</resources>

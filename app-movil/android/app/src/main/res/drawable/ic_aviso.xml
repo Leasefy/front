@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ícono de los avisos en la barra de estado: silueta blanca del símbolo. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <group android:translateX="2.000" android:translateY="1.336" android:scaleX="0.08299" android:scaleY="0.08299">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M8.58904 186C1.58904 186 -2.41096 178 1.58904 171L55.589 83C60.589 75 68.589 71 78.589 71H117.589C129.589 71 137.589 76 143.589 87L162.589 124C165.589 129 169.589 131 176.589 131H203.589C212.589 131 218.589 135 222.589 143L237.589 171C241.589 179 236.589 186 227.589 186H190.589C182.589 186 176.589 182 172.589 174L143.589 123C140.589 118 135.589 115 129.589 115H109.589C103.589 115 98.589 118 95.589 123L66.589 175C62.589 182 56.589 186 48.589 186H8.58904Z"/>
+    </group>
+</vector>

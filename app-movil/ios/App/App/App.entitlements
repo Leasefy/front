@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Avisos (notificaciones). Xcode lo pasa a «production» al exportar para la tienda. -->
+	<key>aps-environment</key>
+	<string>development</string>
+	<!-- «Continuar con Apple». -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+	<!-- Los enlaces de leasefy.co (invitación, firmar, confirmar correo) abren la app,
+	     y el llavero ofrece las contraseñas guardadas de leasefy.co al entrar. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:leasefy.co</string>
+		<string>webcredentials:leasefy.co</string>
+	</array>
+</dict>
+</plist>

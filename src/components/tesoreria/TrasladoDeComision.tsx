@@ -463,13 +463,13 @@ function FilaDelTraslado({ traslado }: { traslado: Traslado }) {
         <div>
           <dt className="text-fg">Intereses y gastos</dt>
           <dd className="font-mono tabular-nums">
-            {plata(traslado.interesesCop + traslado.gastosDeCobranzaCop)}
+            {traslado.interesesCop + traslado.gastosDeCobranzaCop === 0 ? '—' : plata(traslado.interesesCop + traslado.gastosDeCobranzaCop)}
           </dd>
         </div>
         <div>
           <dt className="text-fg">Retenciones</dt>
           <dd className="font-mono tabular-nums">
-            − {plata(traslado.retencionesComisionCop)}
+            {traslado.retencionesComisionCop === 0 ? '—' : `− ${plata(traslado.retencionesComisionCop)}`}
           </dd>
         </div>
       </dl>

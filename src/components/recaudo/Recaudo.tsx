@@ -757,7 +757,7 @@ export function Recaudo() {
                         {totalDeRecibos.cantidad}
                       </TableCell>
                       <TableCell className="text-right font-mono font-medium tabular-nums text-fg">
-                        <AnimatedNumber value={totalDeRecibos.valorCop} format={formatCurrency} />
+                        <AnimatedNumber value={totalDeRecibos.valorCop} format={plata} />
                       </TableCell>
                     </TableRow>
                   </TableFooter>

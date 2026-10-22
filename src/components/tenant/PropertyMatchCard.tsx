@@ -65,7 +65,7 @@ export function PropertyMatchCard({
           <h4 className="text-sm font-medium text-plan-primary truncate group-hover:text-plan-secondary transition-colors">
             {property.title}
           </h4>
-          <p className="text-xs text-plan-muted mt-0.5">
+          <p className="text-caption text-plan-muted mt-0.5">
             {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
             {property.monthlyRent != null ? `${formatCurrency(property.monthlyRent)}/mes` : '—'}
           </p>
@@ -218,7 +218,7 @@ export function PropertyMatchCard({
         {/* Sólo lo que el inmueble trae: los migrados llegan sin habitaciones,
             baños ni área, y «hab · baños · m²» sin número no dice nada. */}
         {datos.length > 0 && (
-          <div className="flex items-center gap-3 mt-2 text-xs text-plan-muted">
+          <div className="flex items-center gap-3 mt-2 text-caption text-plan-muted">
             {datos.map((dato, i) => (
               <span key={dato} className="flex items-center gap-3">
                 {i > 0 && <span className="w-1 h-1 rounded-full bg-plan-border" />}
@@ -231,7 +231,7 @@ export function PropertyMatchCard({
         {/* Recommendation - fixed height with line clamp */}
         <div className="flex items-start gap-2 mt-3 p-2.5 bg-surface-muted/50 rounded-sm min-h-[52px]">
           <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-plan-secondary line-clamp-2">{recommendation}</p>
+          <p className="text-caption text-plan-secondary line-clamp-2">{recommendation}</p>
         </div>
 
         {/* Spacer to push CTA to bottom */}

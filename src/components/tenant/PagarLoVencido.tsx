@@ -103,9 +103,9 @@ export function PagarLoVencido({ leaseId, datos }: Props) {
       : `${cuantas} cuotas (${mesEnPalabras(cuotas[0].mes)} a ${mesEnPalabras(cuotas[cuantas - 1].mes)})`;
 
   return (
-    <section data-testid="pagar-lo-vencido" className="rounded-xl border border-primary/30 bg-primary-soft p-6">
+    <section data-testid="pagar-lo-vencido" className="rounded-lg border border-primary/30 bg-primary-soft p-6">
       <div className="mb-1 flex items-center gap-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface">
           <CreditCard className="h-5 w-5 text-primary" />
         </div>
         <h2 className="text-sm font-medium text-primary">{hayVencidas ? 'Pagar lo vencido' : 'Pagar tu próxima cuota'}</h2>
@@ -169,7 +169,7 @@ export function PagarLoVencido({ leaseId, datos }: Props) {
                 <Icono weight={marcada ? 'fill' : 'regular'} className={cn('h-5 w-5 flex-shrink-0', marcada ? 'text-primary' : 'text-fg-subtle')} />
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-medium text-fg">Cuota de {mesEnPalabras(c.mes)}</span>
-                  <span className={cn('block text-xs', c.vencida ? 'text-danger' : 'text-fg-muted')}>
+                  <span className={cn('block text-caption', c.vencida ? 'text-danger' : 'text-fg-muted')}>
                     {c.vencida ? `Vencida desde el ${diaEnPalabras(c.vence)}` : `Vence el ${diaEnPalabras(c.vence)}`}
                     {c.interesCop > 0 ? ` · incluye ${formatCurrency(c.interesCop)} de intereses` : ''}
                   </span>
@@ -187,7 +187,7 @@ export function PagarLoVencido({ leaseId, datos }: Props) {
           <AnimatedNumber value={total} format={(n) => formatCurrency(n)} />
         </span>
       </div>
-      <p className="mt-1 text-xs text-fg-muted">Pagas exactamente esto: la comisión de la pasarela la asume la inmobiliaria.</p>
+      <p className="mt-1 text-caption text-fg-muted">Pagas exactamente esto: la comisión de la pasarela la asume la inmobiliaria.</p>
 
       <Presence show={confirmando && cuantas > 0} initial={false}>
         {confirmando && cuantas > 0 && (

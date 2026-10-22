@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Appear, motionDuration, motionEase } from '@leasefy/cadence';
-import { UserCircle, ArrowRight, CheckCircle, ClipboardText } from '@phosphor-icons/react';
+import { CheckCircle, ClipboardText } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { cn } from '@/lib/utils';
@@ -55,37 +55,37 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
       {/* Como un vacío del sistema: aparece después de cargar (8 px, `Appear`). */}
       <Appear className="max-w-md w-full text-center">
         {/* Icon */}
-        <div className="w-20 h-20 mx-auto mb-6 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 flex items-center justify-center">
-          <ClipboardText className="w-10 h-10 text-[#1A40FF] dark:text-[#5570FF]" />
+        <div className="w-20 h-20 mx-auto mb-6 rounded-lg bg-[#EEF1FF] border border-[#1A40FF]/30 flex items-center justify-center">
+          <ClipboardText className="w-10 h-10 text-[#1A40FF]" />
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl font-semibold text-fg dark:text-white mb-3">
+        <h2 className="text-h3 text-fg mb-3">
           {locale === 'es' ? 'Completa tu perfil' : 'Complete your profile'}
         </h2>
 
         {/* Context-specific message */}
-        <p className="text-fg-muted dark:text-fg-subtle mb-6 leading-relaxed">
+        <p className="text-fg-muted mb-6 leading-relaxed">
           {locale === 'es' ? contextMessage.es : contextMessage.en}
         </p>
 
         {/* Progress indicator */}
         <div className="mb-8 px-4">
-          <div className="flex items-center justify-between text-sm text-fg-muted dark:text-fg-subtle mb-2">
+          <div className="flex items-center justify-between text-sm text-fg-muted mb-2">
             <span>
               {locale === 'es' ? 'Progreso del perfil' : 'Profile progress'}
             </span>
-            <span className="font-medium text-fg dark:text-fg-subtle">
+            <span className="font-medium text-fg">
               {completedSteps.length}/{totalSteps}
             </span>
           </div>
-          <div className="h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
             {/* Se llena con `transform` (translateX), no con `width`. */}
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: `${progressPercentage - 100}%` }}
               transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-              className="h-full w-full bg-[#1A40FF] dark:bg-[#5570FF] rounded-full"
+              className="h-full w-full bg-[#1A40FF] rounded-full"
             />
           </div>
         </div>
@@ -101,8 +101,8 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
                 className={cn(
                   'w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors',
                   isCompleted
-                    ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
-                    : 'bg-surface-muted dark:bg-ink text-fg-subtle dark:text-fg-muted'
+                    ? 'bg-[#E8F3EC] text-[#2C7A53]'
+                    : 'bg-surface-muted text-fg-subtle'
                 )}
               >
                 {isCompleted ? (
@@ -118,20 +118,19 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
         {/* CTA Button */}
         <Link
           href="/onboarding/inquilino"
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#1A40FF] hover:opacity-90 dark:bg-[#1A40FF] dark:hover:opacity-90 text-white font-medium rounded-full transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#1A40FF] hover:opacity-90 text-white font-medium rounded-full transition-colors"
         >
           {completedSteps.length > 0
             ? (locale === 'es' ? 'Continuar perfil' : 'Continue profile')
             : (locale === 'es' ? 'Comenzar ahora' : 'Get started')}
-          <ArrowRight className="w-4 h-4" />
         </Link>
 
         {/* Secondary link */}
-        <p className="mt-4 text-sm text-fg-muted dark:text-fg-subtle">
+        <p className="mt-4 text-sm text-fg-muted">
           {locale === 'es' ? '¿Prefieres explorar primero?' : 'Prefer to explore first?'}{' '}
           <Link
             href="/inquilino/explorar"
-            className="text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] font-medium"
+            className="text-[#1A40FF] hover:text-[#1A40FF] font-medium"
           >
             {locale === 'es' ? 'Ver propiedades' : 'Browse properties'}
           </Link>

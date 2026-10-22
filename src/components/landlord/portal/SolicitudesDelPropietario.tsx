@@ -120,7 +120,7 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
                       <span className="truncate font-medium text-fg">{s.asunto}</span>
                       <Badge variant={estado.variant}>{estado.label}</Badge>
                     </div>
-                    <p className="mt-1 text-xs text-fg-muted">
+                    <p className="mt-1 text-caption text-fg-muted">
                       <span className="font-mono">{s.radicado}</span> · {TIPO[s.tipo] ?? s.tipo}
                       {s.propiedadDireccion ? ` · ${s.propiedadDireccion}` : ''} · {fechaLegible(s.createdAt)}
                     </p>

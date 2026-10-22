@@ -91,7 +91,7 @@ export function PedirDetalleDelRechazo({
   }
 
   return (
-    <section className="rounded-xl bg-surface-muted p-6" data-testid="pedir-detalle-del-rechazo">
+    <section className="rounded-lg bg-surface-muted p-6" data-testid="pedir-detalle-del-rechazo">
       <div className="flex items-start gap-3">
         <ChatCircleText className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" aria-hidden="true" />
         <div className="min-w-0 flex-1 space-y-1">

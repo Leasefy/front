@@ -135,16 +135,16 @@ export function PagarCuota({
   }, [planId, cuota.number]);
 
   return (
-    <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
+    <section className="rounded-lg border border-border bg-surface p-5 sm:p-6">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
-          <CreditCard className="w-5 h-5 text-fg-muted dark:text-fg-subtle" aria-hidden="true" />
+        <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
+          <CreditCard className="w-5 h-5 text-fg-muted" aria-hidden="true" />
         </div>
         <div>
-          <h2 className="text-sm font-semibold text-fg dark:text-white">
+          <h2 className="text-sm font-semibold text-fg">
             {es ? 'Pago de cuota' : 'Installment payment'}
           </h2>
-          <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
+          <p className="text-caption text-fg-muted mt-0.5">
             {es
               ? `Próxima cuota por pagar: ${nombreDeLaCuota(cuota.number, locale).toLowerCase()}`
               : `Next installment due: ${nombreDeLaCuota(cuota.number, locale).toLowerCase()}`}
@@ -159,7 +159,7 @@ export function PagarCuota({
           distance="xs"
           role="status"
           data-testid="pagar-cuota-en-revision"
-          className="text-sm text-fg dark:text-white"
+          className="text-sm text-fg"
         >
           {es
             ? 'Recibimos un pago por el acuerdo completo y tu inmobiliaria lo está revisando. Mientras tanto no tienes que pagar ninguna cuota.'
@@ -192,7 +192,7 @@ export function PagarCuota({
         {motivo}
       </Presence>
 
-      <p className="mt-3 text-xs text-fg-subtle dark:text-fg-muted">
+      <p className="mt-3 text-caption text-fg-subtle">
         {es
           ? 'Cuando pagues, el estado de la cuota queda en confirmando hasta que se verifique; se confirma en tu historial una vez validado. Cualquier recibo es un comprobante interno.'
           : 'After you pay, the installment stays confirming until verified; it is confirmed in your history once validated. Any receipt is an internal voucher.'}

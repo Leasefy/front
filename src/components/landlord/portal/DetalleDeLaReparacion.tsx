@@ -86,7 +86,7 @@ function tipoDeLaReparacion(tipo: string | null): string | null {
 function Seccion({ titulo, children, testid }: { titulo: string; children: React.ReactNode; testid: string }) {
   return (
     <section className="space-y-2 border-t border-border-faint pt-5 first:border-t-0 first:pt-0" data-testid={testid}>
-      <h3 className="text-sm font-semibold text-fg">{titulo}</h3>
+      <h3 className="text-sm font-medium text-fg">{titulo}</h3>
       {children}
     </section>
   );

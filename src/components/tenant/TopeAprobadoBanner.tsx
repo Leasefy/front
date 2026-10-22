@@ -184,7 +184,7 @@ export function TopeAprobadoBanner({
             <p className="text-sm text-fg">{tf(`${NS}.calculando`, 'Estamos calculando tu tope')}</p>
           )}
           {aprobacion.condicionada && (
-            <p className="text-xs text-warning mt-0.5">
+            <p className="text-caption text-warning mt-0.5">
               {tf(`${NS}.condicionada`, 'Con condiciones por resolver')}
             </p>
           )}
@@ -195,7 +195,7 @@ export function TopeAprobadoBanner({
         {dias !== null && vig && (
           <span
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
+              'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-caption font-medium',
               vig === 'vigente' && 'bg-surface-muted text-fg-muted',
               vig === 'por_vencer' && 'bg-warning-soft text-warning',
               vig === 'vencida' && 'bg-danger-soft text-danger',
@@ -238,7 +238,7 @@ export function SobreTopeOverlay({ referencia }: { referencia: Referencia | null
     // Superficie sólida, sin `backdrop-blur`: el glass morphism sobre contenido
     // está prohibido en Cadence (DESIGN.md §1 y §9). La marca se lee igual.
     <div className="absolute inset-x-0 bottom-0 z-10 rounded-b-lg border-t border-border bg-surface-muted px-3 py-2">
-      <p className="flex items-center gap-1 text-xs font-medium text-fg">
+      <p className="flex items-center gap-1 text-caption font-medium text-fg">
         {esTope
           ? tf(`${NS}.overlay.sobreTope`, 'Supera lo que podemos respaldarte')
           : tf(`${NS}.overlay.sobreConsultado`, 'Por encima de lo que consultaste')}
@@ -272,7 +272,7 @@ export function SobreTopeOverlay({ referencia }: { referencia: Referencia | null
         )}
       </p>
       {referencia && (
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {esTope ? tf(`${NS}.aprobadoHasta`, 'Estás aprobado hasta') + ' ' : tf(`${NS}.overlay.consultaste`, 'Consultaste') + ' '}
           <span className="font-mono tabular-nums">{formatCurrency(referencia.valorCop)}</span>
           {!esTope && ` — ${tf(`${NS}.overlay.asesorRevisa`, 'un asesor puede revisarlo')}`}
@@ -309,7 +309,7 @@ export function SobreTopeAlert({
     <div
       role="alert"
       className={cn(
-        'flex items-start gap-3 rounded-lg border border-[hsl(var(--warning-500)/0.3)] bg-[hsl(var(--warning-50))] p-4 dark:bg-[hsl(var(--warning-500)/0.12)]',
+        'flex items-start gap-3 rounded-lg border border-[hsl(var(--warning-500)/0.3)] bg-[hsl(var(--warning-50))] p-4',
         className,
       )}
     >

@@ -181,7 +181,7 @@ export function SolicitarPlanPagoModal({
           ) : targetLease ? (
             <div className="rounded-[14px] border border-border bg-surface-hover p-4">
               <p className="text-sm font-medium text-fg">{targetLease.propertyTitle}</p>
-              <p className="text-xs text-fg-muted mt-0.5">
+              <p className="text-caption text-fg-muted mt-0.5">
                 {[targetLease.propertyAddress, targetLease.propertyCity]
                   .filter(Boolean)
                   .join(', ')}

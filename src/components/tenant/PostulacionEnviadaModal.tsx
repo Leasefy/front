@@ -141,7 +141,7 @@ export function PostulacionEnviadaModal({
         {codigo ? (
           <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Código de seguimiento</p>
+              <p className="text-caption text-muted-foreground">Código de seguimiento</p>
               <p
                 className="font-mono text-lg font-semibold tracking-wider text-foreground"
                 data-testid="codigo-seguimiento"

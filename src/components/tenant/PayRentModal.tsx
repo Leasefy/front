@@ -287,7 +287,7 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
             {paymentInfo.currentPeriodStatus === 'REJECTED' && (
               <div className="rounded-[14px] border border-danger/30 bg-danger-soft p-3 flex items-start gap-2">
                 <WarningCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
-                <div className="text-xs text-danger">
+                <div className="text-caption text-danger">
                   <p className="font-medium mb-0.5">Tu pago anterior fue rechazado.</p>
                   {paymentInfo.currentPeriodRejectionReason && (
                     <p className="opacity-90">{paymentInfo.currentPeriodRejectionReason}</p>
@@ -304,7 +304,7 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
                 {formatCurrency(paymentInfo.monthlyRent)}
               </p>
             </div>
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               Vas a completar el pago en la página segura de <strong>Wompi</strong> (PSE,
               tarjeta o Nequi). La confirmación aparece en tu historial una vez verificado.
             </p>
@@ -316,7 +316,7 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
           <div className="py-10 flex flex-col items-center justify-center gap-3 text-center">
             <Spinner size="xl" variant="current" className="text-primary" />
             <p className="text-sm font-medium text-fg">Te estamos llevando al pago seguro…</p>
-            <p className="text-xs text-fg-muted">No cierres esta ventana.</p>
+            <p className="text-caption text-fg-muted">No cierres esta ventana.</p>
           </div>
         )}
         </CrossFade>
@@ -383,16 +383,16 @@ function PeriodBlockedPanel({
 }) {
   return (
     <div className="space-y-3">
-      <div className="rounded-[14px] border border-border bg-surface-hover p-3 w-full text-xs">
+      <div className="rounded-[14px] border border-border bg-surface-hover p-3 w-full text-caption">
         <Row label="Monto" value={formatCurrency(amount)} mono />
       </div>
       {status === 'APPROVED' ? (
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           Tu pago de este mes ya fue confirmado por el propietario.
         </p>
       ) : (
         // PENDING_VALIDATION — período en verificación (no volver a pagar)
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           Tu pago está en verificación. No hace falta volver a pagar — vas a
           ver la confirmación en tu historial cuando termine.
         </p>

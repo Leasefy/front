@@ -14,10 +14,10 @@ interface ScoreCardProps {
 }
 
 const LEVEL_ICON_COLORS: Record<RiskLevel, string> = {
-  A: 'text-[#2C7A53] dark:text-[#3EAE70]',
-  B: 'text-[#1A40FF] dark:text-[#5570FF]',
-  C: 'text-[#B7791F] dark:text-[#D2992F]',
-  D: 'text-[#C4503B] dark:text-[#E0664D]',
+  A: 'text-[#2C7A53]',
+  B: 'text-[#1A40FF]',
+  C: 'text-[#B7791F]',
+  D: 'text-[#C4503B]',
 };
 
 export function ScoreCard({ isPaid, level, onClick }: ScoreCardProps) {
@@ -27,22 +27,20 @@ export function ScoreCard({ isPaid, level, onClick }: ScoreCardProps) {
     return (
       <button
         onClick={onClick}
-        className="rounded-xl bg-surface-muted p-5 text-left w-full hover:bg-surface-muted dark:hover:bg-border transition-colors group"
+        className="rounded-lg bg-surface-muted p-5 text-left w-full hover:bg-surface-muted transition-colors group"
       >
-        <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
-          <Shield className="w-5 h-5 text-fg-subtle dark:text-fg-muted" />
-        </div>
-        <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
+        <Shield className="w-5 h-5 text-fg-subtle shrink-0" aria-hidden="true" />
+        <p className="text-caption text-fg-muted mb-1">
           {locale === 'es' ? 'Tu score' : 'Your score'}
         </p>
         <div className="flex items-center gap-2">
-          <p className="text-base font-medium text-fg-subtle dark:text-fg-muted">
+          <p className="text-base font-medium text-fg-subtle">
             {locale === 'es' ? 'Sin evaluar' : 'Not evaluated'}
           </p>
           {/* Decía "Evaluar perfil", una acción que no existe: la evaluación
               la lanza la inmobiliaria sobre una postulación. Ahora la etiqueta
               dice cuándo aparece, y el detalle lo explica. */}
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle text-[10px] font-medium rounded-full">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-muted text-fg-muted text-[10px] font-medium rounded-full">
             <Lock className="w-3 h-3" />
             {locale === 'es' ? 'Al postularte' : 'When you apply'}
           </span>
@@ -56,21 +54,21 @@ export function ScoreCard({ isPaid, level, onClick }: ScoreCardProps) {
   return (
     <button
       onClick={onClick}
-      className="rounded-xl bg-surface-muted p-5 text-left w-full hover:bg-surface-muted dark:hover:bg-border transition-colors group"
+      className="rounded-lg bg-surface-muted p-5 text-left w-full hover:bg-surface-muted transition-colors group"
     >
-      <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
+      <div className="w-10 h-10 rounded-lg bg-surface flex items-center justify-center mb-3">
         <Shield className={cn('w-5 h-5', LEVEL_ICON_COLORS[level])} />
       </div>
-      <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
+      <p className="text-caption text-fg-muted mb-1">
         {locale === 'es' ? 'Tu score' : 'Your score'}
       </p>
       <div className="flex items-center gap-2">
-        <p className="text-2xl font-bold text-fg dark:text-white">{level}</p>
+        <p className="text-2xl font-bold text-fg">{level}</p>
         <Badge variant={getRiskBadgeVariant(level)} className="text-[10px] px-2 py-0.5">
           {info.label}
         </Badge>
       </div>
-      <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1 group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
+      <p className="text-[10px] text-fg-subtle mt-1 group-hover:text-[#1A40FF] transition-colors">
         {locale === 'es' ? 'Ver detalle' : 'View detail'}
       </p>
     </button>

@@ -22,9 +22,9 @@ export function ContratosSinArriendo({ contratos }: { contratos: ContratoDelPort
       {contratos.map((c) => {
         const lugar = [c.direccion, c.ciudad].filter(Boolean).join(', ');
         return (
-          <article key={c.contratoId} className="rounded-xl border border-border bg-surface p-5" data-testid={`contrato-del-portal-${c.contratoId}`}>
+          <article key={c.contratoId} className="rounded-lg border border-border bg-surface p-5" data-testid={`contrato-del-portal-${c.contratoId}`}>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="text-base font-semibold text-fg">
+              <h3 className="text-base font-medium text-fg">
                 {c.numero ? `Contrato ${c.numero}` : 'Contrato'}
               </h3>
               <span className="text-sm text-fg-muted">con {c.inmobiliaria.nombre}</span>

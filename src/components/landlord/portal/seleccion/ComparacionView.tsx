@@ -107,7 +107,7 @@ export function ComparacionView({ agencyId, processId, comparacion, reload }: Co
                 <Card key={c.id} className="p-4 flex flex-col gap-3">
                   <div>
                     <p className="font-medium truncate">{c.candidateName}</p>
-                    <p className="text-xs text-fg-muted capitalize">{c.stage.replace(/_/g, ' ')}</p>
+                    <p className="text-caption text-fg-muted capitalize">{c.stage.replace(/_/g, ' ')}</p>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -116,7 +116,7 @@ export function ComparacionView({ agencyId, processId, comparacion, reload }: Co
                       {c.insurabilityVerdict ?? (c.elegible ? 'Asegurable' : 'Sin verdicto')}
                     </Badge>
                     {c.score != null && (
-                      <span className="text-xs text-fg-muted">
+                      <span className="text-caption text-fg-muted">
                         Score <span className="font-mono tabular-nums text-fg">{c.score}</span>
                       </span>
                     )}
@@ -124,12 +124,12 @@ export function ComparacionView({ agencyId, processId, comparacion, reload }: Co
 
                   <div className="mt-auto pt-1">
                     {!canChoose ? (
-                      <p className="text-xs text-fg-muted">
+                      <p className="text-caption text-fg-muted">
                         {chosenName ? 'Proceso resuelto' : 'No elegible'}
                       </p>
                     ) : isPending ? (
                       <div className="space-y-2">
-                        <p className="text-xs text-fg-muted flex items-start gap-1">
+                        <p className="text-caption text-fg-muted flex items-start gap-1">
                           <Warning className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                           Elegir a {c.candidateName} habilita el contrato. ¿Confirmas?
                         </p>

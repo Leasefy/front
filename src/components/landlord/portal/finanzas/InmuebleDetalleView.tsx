@@ -64,7 +64,7 @@ export function InmuebleDetalleView({ detalle, pagos }: InmuebleDetalleViewProps
             {contract.preaviso.options.length > 0 && (
               <div className="mt-5 pt-4 border-t border-border">
                 <p className="text-sm font-medium mb-1">Opciones de preaviso</p>
-                <p className="text-xs text-fg-muted mb-3">
+                <p className="text-caption text-fg-muted mb-3">
                   Informativo. La decisión de terminar o renovar es tuya y de tu inmobiliaria.
                 </p>
                 <ul className="space-y-2">
@@ -101,7 +101,7 @@ export function InmuebleDetalleView({ detalle, pagos }: InmuebleDetalleViewProps
                       <p className="text-sm text-fg-muted">{n.payload.detalle}</p>
                     )}
                   </div>
-                  <span className="text-xs text-fg-muted shrink-0">{formatDate(n.occurredAt)}</span>
+                  <span className="text-caption text-fg-muted shrink-0">{formatDate(n.occurredAt)}</span>
                 </li>
               ))}
             </ul>
@@ -119,7 +119,7 @@ export function InmuebleDetalleView({ detalle, pagos }: InmuebleDetalleViewProps
                 <li key={p.paymentRef} className="py-3 flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-sm font-medium capitalize">{p.concepto}</p>
-                    <p className="text-xs text-fg-muted">
+                    <p className="text-caption text-fg-muted">
                       {formatDate(p.paidAt)}
                       {p.periodo ? ` · ${p.periodo}` : ''}
                     </p>

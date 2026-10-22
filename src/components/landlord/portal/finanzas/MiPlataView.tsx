@@ -101,7 +101,7 @@ export function MiPlataView({
                       {inm.contract && (
                         <div className="text-right">
                           <p className="font-medium font-mono tabular-nums">{formatCurrency(inm.contract.canonCop)}</p>
-                          <p className="text-xs text-fg-muted">
+                          <p className="text-caption text-fg-muted">
                             Vence {formatDate(inm.contract.endDate)}
                           </p>
                         </div>
@@ -133,7 +133,7 @@ export function MiPlataView({
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm">Vence {formatDate(c.endDate)}</p>
-                    <p className="text-xs text-fg-muted">
+                    <p className="text-caption text-fg-muted">
                       <span className="font-mono tabular-nums">{c.daysLeft}</span> días · {c.preaviso.windowOpen ? 'ventana de preaviso abierta' : 'preaviso más adelante'}
                     </p>
                   </div>
@@ -195,7 +195,7 @@ export function MiPlataView({
               {proyeccion.assumptions.length > 0 && (
                 <ul className="mt-4 space-y-1">
                   {proyeccion.assumptions.map((a, i) => (
-                    <li key={i} className="text-xs text-fg-muted">• {a}</li>
+                    <li key={i} className="text-caption text-fg-muted">• {a}</li>
                   ))}
                 </ul>
               )}

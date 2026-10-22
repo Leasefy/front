@@ -93,7 +93,7 @@ export function DigestView({ digest }: { digest: Digest }) {
               <p className="font-medium font-mono tabular-nums">{p.solicitudes.abiertas}</p>
             </div>
           </div>
-          {p.solicitudes.nota && <p className="text-xs text-fg-muted mt-3">{p.solicitudes.nota}</p>}
+          {p.solicitudes.nota && <p className="text-caption text-fg-muted mt-3">{p.solicitudes.nota}</p>}
         </Card>
 
         {/* Daños resueltos */}

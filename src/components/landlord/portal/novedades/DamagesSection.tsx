@@ -44,7 +44,7 @@ export function DamagesSection({ danos }: { danos: DanosResponse | null }) {
                   {t.category ?? 'Daño'}
                   {t.severity ? <span className="text-fg-muted"> · {t.severity}</span> : null}
                 </p>
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   Reportado {formatDate(t.createdAt)}
                   {t.resolvedAt ? ` · resuelto ${formatDate(t.resolvedAt)}` : ''}
                 </p>

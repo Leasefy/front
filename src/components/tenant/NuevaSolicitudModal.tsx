@@ -465,7 +465,7 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
             <Paperclip className="w-4 h-4" />
             {locale === 'es' ? 'Agregar fotos' : 'Add photos'}
           </Button>
-          <p className="text-xs text-fg-muted mt-1.5">
+          <p className="text-caption text-fg-muted mt-1.5">
             {locale === 'es'
               ? 'Imágenes o PDF, hasta 10 MB cada uno.'
               : 'Images or PDF, up to 10 MB each.'}

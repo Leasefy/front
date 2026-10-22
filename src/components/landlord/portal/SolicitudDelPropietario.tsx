@@ -62,16 +62,16 @@ export function SolicitudDelPropietario({ id }: { id: string }) {
       />
       <dl className="grid grid-cols-1 gap-3 rounded-lg border border-border bg-surface p-4 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-xs text-fg-muted">Inmueble</dt>
+          <dt className="text-caption text-fg-muted">Inmueble</dt>
           <dd className="text-fg">{s.propiedadDireccion ?? '—'}</dd>
         </div>
         <div>
-          <dt className="text-xs text-fg-muted">Radicada el</dt>
+          <dt className="text-caption text-fg-muted">Radicada el</dt>
           <dd className="text-fg">{fechaLegible(s.createdAt)}</dd>
         </div>
         {abierta && s.slaVenceAt && (
           <div>
-            <dt className="text-xs text-fg-muted">Respuesta a más tardar el</dt>
+            <dt className="text-caption text-fg-muted">Respuesta a más tardar el</dt>
             <dd className="text-fg">{fechaLegible(s.slaVenceAt)}</dd>
           </div>
         )}
@@ -84,7 +84,7 @@ export function SolicitudDelPropietario({ id }: { id: string }) {
           {caso.events.map((e) => (
             <li key={e.id} className="flex justify-between gap-3">
               <span className="text-fg">{e.label}</span>
-              <span className="shrink-0 text-xs text-fg-muted">{fechaLegible(e.timestamp)}</span>
+              <span className="shrink-0 text-caption text-fg-muted">{fechaLegible(e.timestamp)}</span>
             </li>
           ))}
         </ol>

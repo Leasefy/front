@@ -429,7 +429,7 @@ function Cifra({
         </p>
         {/* La nota promete el catálogo filtrado. En demo eso no puede pasar,
             porque el resultado no se guarda: la promesa se pone en futuro. */}
-        <p className="text-xs text-fg-muted mt-2">
+        <p className="text-caption text-fg-muted mt-2">
           {esDemo
             ? tf(
                 `${NS}.cifra.hastaNotaDemo`,
@@ -449,7 +449,7 @@ function Cifra({
           {formatCurrency(canonConsultadoCop)}
           <span className="text-base font-sans font-normal text-fg-muted"> {tf(`${NS}.porMes`, '/mes')}</span>
         </p>
-        <p className="text-xs text-fg-muted mt-2">
+        <p className="text-caption text-fg-muted mt-2">
           {tf(`${NS}.cifra.paraNota`, 'Es el canon que consultaste. Si te interesa algo más caro, un asesor lo revisa.')}
         </p>
       </div>
@@ -495,7 +495,7 @@ function Aseguradoras({ tf, result }: { tf: Tf; result: PreApprovalResult }) {
             />
             {aseguradoraDisplayName(a.aseguradora)}
             {a.status === 'conditional' && (
-              <span className="text-xs text-fg-muted">
+              <span className="text-caption text-fg-muted">
                 {tf(`${NS}.aseguradoras.condicional`, 'con condiciones')}
               </span>
             )}

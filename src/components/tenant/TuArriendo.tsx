@@ -43,12 +43,12 @@ export function TuArriendo({
       <section
         aria-busy="true"
         aria-label={es ? 'Tu arriendo' : 'Your rental'}
-        className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6"
+        className="rounded-lg border border-border bg-surface p-6"
         data-testid="tu-arriendo-cargando"
       >
-        <div className="h-5 w-40 rounded-md bg-surface-muted dark:bg-border animate-pulse" />
-        <div className="mt-4 h-8 w-56 rounded-md bg-surface-muted dark:bg-border animate-pulse" />
-        <div className="mt-6 h-10 w-48 rounded-full bg-surface-muted dark:bg-border animate-pulse" />
+        <div className="h-5 w-40 rounded-md bg-surface-muted animate-pulse" />
+        <div className="mt-4 h-8 w-56 rounded-md bg-surface-muted animate-pulse" />
+        <div className="mt-6 h-10 w-48 rounded-full bg-surface-muted animate-pulse" />
       </section>
     );
   }
@@ -68,16 +68,16 @@ export function TuArriendo({
 
   return (
     <section
-      className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6 space-y-5"
+      className="rounded-lg border border-border bg-surface p-6 space-y-5"
       data-testid="tu-arriendo"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-primary-soft flex items-center justify-center flex-shrink-0">
             <House className="w-5 h-5 text-primary" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-xl font-semibold text-fg dark:text-white">
+            <h2 className="text-h3 text-fg">
               {v.inmuebles.length > 1
                 ? es
                   ? 'Tus arriendos'
@@ -88,8 +88,8 @@ export function TuArriendo({
             </h2>
             <ul className="mt-0.5 space-y-0.5" data-testid="tu-arriendo-inmuebles">
               {v.inmuebles.map((i) => (
-                <li key={i.contratoId} className="text-sm text-fg-muted dark:text-fg-subtle">
-                  <span className="text-fg dark:text-white">{i.titulo}</span>
+                <li key={i.contratoId} className="text-sm text-fg-muted">
+                  <span className="text-fg">{i.titulo}</span>
                   {i.direccion ? <span> · {i.direccion}</span> : null}
                 </li>
               ))}
@@ -98,7 +98,7 @@ export function TuArriendo({
         </div>
         <Link
           href="/inquilino/arriendo"
-          className="text-sm text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white font-medium"
+          className="text-sm text-fg-muted hover:text-fg font-medium"
         >
           {es ? 'Ver mi arriendo' : 'View my rental'}
         </Link>
@@ -139,11 +139,11 @@ export function TuArriendo({
 
       {v.proximo ? (
         <div data-testid="tu-arriendo-proximo">
-          <p className="text-label text-fg-muted dark:text-fg-subtle">{es ? 'Próximo pago' : 'Next payment'}</p>
-          <p className="mt-1 text-3xl font-semibold font-mono text-fg dark:text-white">
+          <p className="text-label text-fg-muted">{es ? 'Próximo pago' : 'Next payment'}</p>
+          <p className="mt-1 text-3xl font-semibold font-mono text-fg">
             {formatCurrency(v.proximo.valor)}
           </p>
-          <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
+          <p className="text-sm text-fg-muted mt-0.5">
             {es ? `Vence el ${fechaLarga(v.proximo.fecha)}` : `Due ${fechaLarga(v.proximo.fecha)}`}
             {v.proximo.cuantas > 1 ? (es ? ` · ${contar(v.proximo.cuantas, 'cuota')} ese día` : ` · ${v.proximo.cuantas} that day`) : null}
           </p>

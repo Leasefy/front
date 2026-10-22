@@ -37,15 +37,15 @@ interface DocumentAnalysisSectionProps {
 
 const STATUS_CONFIG = {
   PENDING: { icon: Clock, color: 'text-fg-subtle', bg: 'bg-surface-muted', label: 'Pendiente' },
-  PROCESSING: { icon: SpinnerGap, color: 'text-primary', bg: 'bg-primary-soft dark:bg-[#1A40FF]/15', label: 'Procesando...' },
-  COMPLETED: { icon: CheckCircle, color: 'text-success', bg: 'bg-success-soft dark:bg-[#2C7A53]/15', label: 'Completado' },
-  FAILED: { icon: XCircle, color: 'text-danger', bg: 'bg-danger-soft dark:bg-[#C4503B]/15', label: 'Error' },
+  PROCESSING: { icon: SpinnerGap, color: 'text-primary', bg: 'bg-primary-soft', label: 'Procesando...' },
+  COMPLETED: { icon: CheckCircle, color: 'text-success', bg: 'bg-success-soft', label: 'Completado' },
+  FAILED: { icon: XCircle, color: 'text-danger', bg: 'bg-danger-soft', label: 'Error' },
 } as const;
 
 const RISK_COLORS: Record<string, string> = {
-  BAJO: 'text-success dark:text-[#3EAE70]',
-  MEDIO: 'text-warning dark:text-[#D2992F]',
-  ALTO: 'text-danger dark:text-[#E0664D]',
+  BAJO: 'text-success',
+  MEDIO: 'text-warning',
+  ALTO: 'text-danger',
 };
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -79,7 +79,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
         onClick={() => result.status === 'COMPLETED' && setExpanded(!expanded)}
         className={cn(
           'w-full flex items-center gap-3 px-4 py-3 text-left',
-          result.status === 'COMPLETED' && 'cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+          result.status === 'COMPLETED' && 'cursor-pointer hover:bg-black/[0.02]'
         )}
       >
         <StatusIcon
@@ -89,7 +89,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
           <p className="text-sm font-medium text-fg truncate">
             {getDocTypeLabel(result.documentType)}
           </p>
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {config.label}
             {result.status === 'COMPLETED' && result.scoreFinal !== null && (
               <> &middot; Score: <span className="font-medium">{result.scoreFinal}/100</span></>
@@ -112,7 +112,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
         )}
 
         {result.status === 'FAILED' && result.errorMessage && (
-          <span className="text-xs text-danger truncate max-w-[150px]">{result.errorMessage}</span>
+          <span className="text-caption text-danger truncate max-w-[150px]">{result.errorMessage}</span>
         )}
       </button>
 
@@ -134,7 +134,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
           {/* Justification */}
           {result.justificacion && (
             <div>
-              <p className="text-xs font-medium text-fg-muted mb-1">Justificacion</p>
+              <p className="text-caption font-medium text-fg-muted mb-1">Justificacion</p>
               <p className="text-sm text-fg-muted leading-relaxed">{result.justificacion}</p>
             </div>
           )}
@@ -142,7 +142,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
           {/* Recommendation */}
           {result.recomendacion && (
             <div>
-              <p className="text-xs font-medium text-fg-muted mb-1">Recomendacion</p>
+              <p className="text-caption font-medium text-fg-muted mb-1">Recomendacion</p>
               <p className="text-sm text-fg-muted leading-relaxed">{result.recomendacion}</p>
             </div>
           )}
@@ -150,12 +150,12 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
           {/* Flags */}
           {result.flags && Array.isArray(result.flags) && result.flags.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-fg-muted mb-1">Alertas</p>
+              <p className="text-caption font-medium text-fg-muted mb-1">Alertas</p>
               <div className="flex flex-wrap gap-1.5">
                 {result.flags.map((flag, i) => (
                   <span
                     key={i}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-warning-soft dark:bg-[#B7791F]/15 text-warning dark:text-[#D2992F] text-xs rounded-sm"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-warning-soft text-warning text-caption rounded-sm"
                   >
                     <Warning className="w-3 h-3" />
                     {String(flag)}
@@ -232,7 +232,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
       <div className={cn('space-y-4', className)}>
         <div className="flex items-center gap-2">
           <Brain className="w-5 h-5 text-primary" />
-          <h4 className="text-sm font-semibold text-fg">
+          <h4 className="text-sm font-medium text-fg">
             Analisis IA de documentos
           </h4>
         </div>
@@ -255,7 +255,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Brain className="w-5 h-5 text-primary" />
-          <h4 className="text-sm font-semibold text-fg">
+          <h4 className="text-sm font-medium text-fg">
             Analisis IA de documentos
           </h4>
         </div>
@@ -266,7 +266,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
             variant={hasResults ? 'outline' : 'default'}
             onClick={handleTrigger}
             disabled={triggering || isAnalyzing}
-            className="text-xs"
+            className="text-caption"
           >
             {triggering || isAnalyzing ? (
               <>
@@ -287,15 +287,15 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
 
       {/* Error */}
       {error && (
-        <div className="rounded-md bg-danger-soft dark:bg-[#C4503B]/15 border border-danger/30 dark:border-[#C4503B]/40 px-3 py-2">
-          <p className="text-sm text-danger dark:text-[#E0664D]">{error}</p>
+        <div className="rounded-md bg-danger-soft border border-danger/30 px-3 py-2">
+          <p className="text-sm text-danger">{error}</p>
         </div>
       )}
 
       {/* Progress summary */}
       {isAnalyzing && summary && summary.total > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-fg-muted">
+          <div className="flex items-center justify-between text-caption text-fg-muted">
             <span>Progreso: {summary.completed + summary.failed}/{summary.total} documentos</span>
             <span>{Math.round(((summary.completed + summary.failed) / summary.total) * 100)}%</span>
           </div>
@@ -321,7 +321,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
               size="md"
               variant={summary.averageScore >= 70 ? 'success' : summary.averageScore >= 50 ? 'warning' : 'danger'}
             />
-            <p className="text-xs text-fg-muted mt-1">
+            <p className="text-caption text-fg-muted mt-1">
               Score promedio &middot; {summary.completed} completado{summary.completed !== 1 && 's'}
               {summary.failed > 0 && <>, {summary.failed} fallido{summary.failed !== 1 && 's'}</>}
             </p>
@@ -334,8 +334,8 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
         <div className={cn(
           'p-3 rounded-lg border',
           results.crossValidation.consistencyScore >= 80
-            ? 'bg-success-soft dark:bg-[#2C7A53]/15 border-success/30 dark:border-[#2C7A53]/40'
-            : 'bg-warning-soft dark:bg-[#B7791F]/15 border-warning/30 dark:border-[#B7791F]/40'
+            ? 'bg-success-soft border-success/30'
+            : 'bg-warning-soft border-warning/30'
         )}>
           <div className="flex items-center gap-2 mb-1">
             <Shield className="w-4 h-4" />
@@ -344,7 +344,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
             </span>
           </div>
           {results.crossValidation.inconsistencies.length > 0 && (
-            <ul className="text-xs space-y-1 mt-2">
+            <ul className="text-caption space-y-1 mt-2">
               {results.crossValidation.inconsistencies.map((inc, i) => (
                 <li key={i} className="flex items-start gap-1.5">
                   <Warning className="w-3 h-3 mt-0.5 flex-shrink-0" />

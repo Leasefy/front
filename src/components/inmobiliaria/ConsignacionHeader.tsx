@@ -79,6 +79,8 @@ interface ConsignacionHeaderProps {
    * terminado hay que decirlo: el contrato sigue su curso por su lado.
    */
   contratoVigente?: boolean;
+  /** El estrato del inmueble, para decirlo junto al tipo. */
+  estrato?: number | null;
   /** Las migas de pan («‹ Inmuebles / …»): van en la misma fila que las acciones. */
   migas?: ReactNode;
   /** Una acción de la página que va antes de las de la ficha («Pedir cita»). */
@@ -189,6 +191,7 @@ export function ConsignacionHeader({
   onTerminate,
   fechaDeTerminacion,
   contratoVigente,
+  estrato,
   migas,
   accionPrevia,
   franja,
@@ -453,6 +456,8 @@ export function ConsignacionHeader({
               <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">
                 <PropertyIcon className="h-3.5 w-3.5" aria-hidden="true" />
                 {t(`inmobiliaria.consignaciones.propertyType.${consignacion.propertyType}`)}
+                {/* 22-10 (revisión): el estrato va con el tipo, no en una tarjeta de un solo dato. */}
+                {estrato != null && estrato > 0 ? ` · Estrato ${estrato}` : null}
               </span>
             </div>
 

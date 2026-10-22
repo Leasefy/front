@@ -614,6 +614,7 @@ function ConsignacionDetailContent() {
         onTerminate={handleTerminate}
         fechaDeTerminacion={fechaDeTerminacion}
         contratoVigente={contratoVigente}
+        estrato={property?.stratum ?? null}
         vacanciaLarga={esVacanciaLarga(situacion?.vacancia)}
         precioDeVenta={property?.salePrice ?? null}
         migas={
@@ -754,12 +755,14 @@ function ConsignacionDetailContent() {
                     // corta y la columna izquierda terminaba 400 px antes; entonces el mapa
                     // va a la columna ancha y la ficha, a la derecha bajo el propietario.
                     const pocas = !!property && conMapa && caracteristicasDelInmueble(property, (x) => x).length <= 2;
+                    // Si lo único que hay es el estrato (ya está en la portada), sin tarjeta.
+                    const soloEstrato = !!property && caracteristicasDelInmueble(property, (x) => x).every((c) => c.clave === 'estrato');
                     return pocas ? (
                       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
                         <div className="lg:col-span-2">{elMapa}</div>
                         <div className="space-y-6">
                           {losDuenos}
-                          {laFicha()}
+                          {soloEstrato ? null : laFicha()}
                         </div>
                       </div>
                     ) : (

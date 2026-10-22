@@ -103,7 +103,7 @@ export function StepBasicInfo({ formData, updateFormData, consignaciones, select
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-base font-semibold text-fg mb-2">
+        <h3 className="text-base font-medium text-fg mb-2">
           {t('inmobiliaria.acta.basicInfo')}
         </h3>
         <p className="text-sm text-fg-muted">
@@ -241,7 +241,7 @@ export function StepRoomSelection({ formData, updateFormData, t }: StepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-base font-semibold text-fg mb-2">
+        <h3 className="text-base font-medium text-fg mb-2">
           {t('inmobiliaria.acta.spacesTitle')}
         </h3>
         <p className="text-sm text-fg-muted">
@@ -390,7 +390,7 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-base font-semibold text-fg mb-2">
+        <h3 className="text-base font-medium text-fg mb-2">
           {t('inmobiliaria.acta.inventoryTitle')}
         </h3>
         <p className="text-sm text-fg-muted">
@@ -413,7 +413,7 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
             >
               {getRoomLabel(room)}
               {progress.total > 0 && (
-                <span className="ml-2 px-1.5 py-0.5 rounded text-xs bg-surface-hover">
+                <span className="ml-2 px-1.5 py-0.5 rounded text-caption bg-surface-hover">
                   {progress.total}
                 </span>
               )}
@@ -576,7 +576,7 @@ export function StepMetersKeys({ formData, updateFormData, t }: StepProps) {
       {/* Meters Section */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-base font-semibold text-fg mb-2">
+          <h3 className="text-base font-medium text-fg mb-2">
             {t('inmobiliaria.acta.metersTitle')}
           </h3>
           <p className="text-sm text-fg-muted">
@@ -589,7 +589,7 @@ export function StepMetersKeys({ formData, updateFormData, t }: StepProps) {
           <div className="space-y-2">
             <label className="text-sm font-medium text-fg flex items-center gap-2">
               <span className="w-6 h-6 rounded-md bg-primary-soft flex items-center justify-center">
-                <span className="text-xs">💧</span>
+                <span className="text-caption">💧</span>
               </span>
               {t('inmobiliaria.acta.waterMeter')}
             </label>
@@ -623,7 +623,7 @@ export function StepMetersKeys({ formData, updateFormData, t }: StepProps) {
           <div className="space-y-2">
             <label className="text-sm font-medium text-fg flex items-center gap-2">
               <span className="w-6 h-6 rounded-md bg-warning-soft flex items-center justify-center">
-                <span className="text-xs">🔥</span>
+                <span className="text-caption">🔥</span>
               </span>
               {t('inmobiliaria.acta.gasMeter')}
             </label>
@@ -642,7 +642,7 @@ export function StepMetersKeys({ formData, updateFormData, t }: StepProps) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-fg">
+            <h3 className="text-base font-medium text-fg">
               {t('inmobiliaria.acta.keysTitle')}
             </h3>
             <p className="text-sm text-fg-muted">
@@ -713,7 +713,7 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-base font-semibold text-fg mb-2">
+        <h3 className="text-base font-medium text-fg mb-2">
           {t('inmobiliaria.acta.observationsTitle')}
         </h3>
         <p className="text-sm text-fg-muted">
@@ -753,7 +753,7 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
           placeholder={t('inmobiliaria.acta.observationsPlaceholder')}
           className="w-full resize-none"
         />
-        <p className="text-xs text-fg-muted text-right">
+        <p className="text-caption text-fg-muted text-right">
           {formData.generalObservations.length} {t('inmobiliaria.acta.characters')}
         </p>
       </div>
@@ -806,7 +806,7 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
                     deductions: [...current, { concept: '', amount: 0 }],
                   });
                 }}
-                className="h-auto p-0 text-xs"
+                className="h-auto p-0 text-caption"
               >
                 + {t('inmobiliaria.acta.addDeduction')}
               </Button>
@@ -913,7 +913,7 @@ export function StepSignatures({ formData, updateFormData, selectedConsignacion,
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-base font-semibold text-fg mb-2">
+        <h3 className="text-base font-medium text-fg mb-2">
           {t('inmobiliaria.acta.reviewTitle')}
         </h3>
         <p className="text-sm text-fg-muted">
@@ -925,7 +925,7 @@ export function StepSignatures({ formData, updateFormData, selectedConsignacion,
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Property */}
         <div className="p-4 rounded-lg bg-surface-muted border border-border">
-          <p className="text-xs text-fg-muted uppercase tracking-wide mb-2">
+          <p className="text-caption text-fg-muted uppercase tracking-wide mb-2">
             {t('inmobiliaria.acta.property')}
           </p>
           <p className="font-medium text-fg text-sm">
@@ -935,7 +935,7 @@ export function StepSignatures({ formData, updateFormData, selectedConsignacion,
 
         {/* Spaces */}
         <div className="p-4 rounded-lg bg-surface-muted border border-border">
-          <p className="text-xs text-fg-muted uppercase tracking-wide mb-2">
+          <p className="text-caption text-fg-muted uppercase tracking-wide mb-2">
             {t('inmobiliaria.acta.spacesItems')}
           </p>
           <p className="font-medium text-fg text-sm">
@@ -948,7 +948,7 @@ export function StepSignatures({ formData, updateFormData, selectedConsignacion,
 
         {/* Keys */}
         <div className="p-4 rounded-lg bg-surface-muted border border-border">
-          <p className="text-xs text-fg-muted uppercase tracking-wide mb-2">
+          <p className="text-caption text-fg-muted uppercase tracking-wide mb-2">
             {t('inmobiliaria.acta.keys')}
           </p>
           <p className="font-medium text-fg text-sm">
@@ -959,7 +959,7 @@ export function StepSignatures({ formData, updateFormData, selectedConsignacion,
 
       {/* Condition Summary */}
       <div className="p-4 rounded-lg bg-surface-muted border border-border">
-        <p className="text-xs text-fg-muted uppercase tracking-wide mb-3">
+        <p className="text-caption text-fg-muted uppercase tracking-wide mb-3">
           {t('inmobiliaria.acta.conditionSummary')}
         </p>
         <div className="flex flex-wrap gap-2">
@@ -967,7 +967,7 @@ export function StepSignatures({ formData, updateFormData, selectedConsignacion,
             <span
               key={condition}
               className={cn(
-                'px-3 py-1.5 rounded-md text-xs font-medium',
+                'px-3 py-1.5 rounded-md text-caption font-medium',
                 count > 0
                   ? getConditionColor(condition as ItemCondition)
                   : 'bg-surface-muted text-fg-subtle'
@@ -981,7 +981,7 @@ export function StepSignatures({ formData, updateFormData, selectedConsignacion,
 
       {/* General Condition */}
       <div className="p-4 rounded-lg border-2 border-border">
-        <p className="text-xs text-fg-muted uppercase tracking-wide mb-2">
+        <p className="text-caption text-fg-muted uppercase tracking-wide mb-2">
           {t('inmobiliaria.acta.generalState')}
         </p>
         <span className={cn('px-3 py-1.5 rounded-md text-sm font-medium', getConditionColor(formData.generalCondition))}>
@@ -1016,7 +1016,7 @@ export function StepSignatures({ formData, updateFormData, selectedConsignacion,
                 <p className="text-sm font-medium text-fg">
                   {partyLabels[party]}
                 </p>
-                <p className="text-xs text-fg-muted mt-1">
+                <p className="text-caption text-fg-muted mt-1">
                   {t('inmobiliaria.acta.pendingSignature')}
                 </p>
               </div>
@@ -1024,7 +1024,7 @@ export function StepSignatures({ formData, updateFormData, selectedConsignacion,
           })}
         </div>
 
-        <p className="text-xs text-fg-muted text-center">
+        <p className="text-caption text-fg-muted text-center">
           {t('inmobiliaria.acta.signaturesInfo')}
         </p>
       </div>

@@ -289,7 +289,7 @@ function DialogoDeCuenta({
             id="cuenta-etiqueta-error"
             mensaje={errores.etiqueta}
             pista={
-              <span className="text-xs text-fg-subtle">
+              <span className="text-caption text-fg-subtle">
                 Para reconocerla si mañana tienes más de una. Opcional.
               </span>
             }
@@ -323,14 +323,14 @@ function DialogoDeCuenta({
             id="cuenta-identificador-error"
             mensaje={errores.identificadorEnElPortal}
             pista={
-              <span className="text-xs text-fg-subtle">
+              <span className="text-caption text-fg-subtle">
                 No guardamos contraseñas. Esto es sólo para que el equipo sepa con
                 qué usuario cargar el archivo.
               </span>
             }
           />
           {conexion.cuidado && (
-            <p className="text-xs text-warning" data-testid="cuidado-del-portal">
+            <p className="text-caption text-warning" data-testid="cuidado-del-portal">
               {conexion.cuidado}
             </p>
           )}
@@ -569,7 +569,7 @@ function DialogoDePublicar({
                             </span>
                           ) : null}
                         </span>
-                        <span className="block truncate text-xs text-fg-muted">
+                        <span className="block truncate text-caption text-fg-muted">
                           {i.donde}
                         </span>
                       </span>
@@ -584,7 +584,7 @@ function DialogoDePublicar({
             <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-fg">{elegido.titulo}</p>
-                <p className="truncate text-xs text-fg-muted">{elegido.donde}</p>
+                <p className="truncate text-caption text-fg-muted">{elegido.donde}</p>
               </div>
               <Button
                 variant="ghost"
@@ -642,7 +642,7 @@ function DialogoDePublicar({
                       <li>{revision.ocupacion.motivo ?? revision.ocupacion.porQue}</li>
                     ) : null}
                   </ul>
-                  <p className="text-xs text-fg-subtle">
+                  <p className="text-caption text-fg-subtle">
                     Complétalo en la ficha del inmueble y vuelve aquí.
                   </p>
                 </div>
@@ -776,7 +776,7 @@ function TarjetaDePortal({
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium text-fg">{p.nombre}</p>
-          <p className="mt-0.5 text-xs">
+          <p className="mt-0.5 text-caption">
             {alDia ? (
               <span className="text-success">● Lista para publicar</span>
             ) : enPausa ? (
@@ -902,7 +902,7 @@ function TarjetaDePortal({
                   <li key={linea}>· {linea}</li>
                 ))}
               </ul>
-              <p className="text-xs text-fg-subtle">
+              <p className="text-caption text-fg-subtle">
                 Verificado el 19-09-2026 — {conexion.fuente}
               </p>
             </div>
@@ -1100,7 +1100,7 @@ export function PortalesClient() {
     <div className="space-y-6 p-6 lg:p-8">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Publicación en portales</h1>
+          <h1 className="text-h2 tracking-tight">Publicación en portales</h1>
           <p className="text-sm text-fg-muted">
             Publica tus inmuebles en los portales donde tu inmobiliaria ya tiene
             cuenta, y mira en un solo lugar cuáles están publicados y dónde.
@@ -1269,12 +1269,12 @@ export function PortalesClient() {
                           <td className="py-2 pr-4">
                             <Badge variant={rotulo.variant}>{rotulo.texto}</Badge>
                             {f.ultimoError ? (
-                              <div className="mt-1 text-xs text-destructive">
+                              <div className="mt-1 text-caption text-destructive">
                                 {f.ultimoError}
                               </div>
                             ) : null}
                             {f.exportadaEl && f.estado === 'POR_EXPORTAR' ? (
-                              <div className="mt-1 text-xs text-fg-muted">
+                              <div className="mt-1 text-caption text-fg-muted">
                                 Archivo descargado el {f.exportadaEl.slice(0, 10)}
                               </div>
                             ) : null}

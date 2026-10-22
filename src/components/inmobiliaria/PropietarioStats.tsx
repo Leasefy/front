@@ -85,13 +85,13 @@ function StatCard({ icon: Icon, label, value, subValue, trend, color }: StatCard
   return (
     <div className="p-4 rounded-lg border border-border bg-card">
       <div className="flex items-start justify-between mb-3">
-        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', colors.bg)}>
+        <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', colors.bg)}>
           <Icon className={cn('w-5 h-5', colors.icon)} />
         </div>
       </div>
 
       <div>
-        <p className="text-xs text-muted-foreground mb-1">{label}</p>
+        <p className="text-caption text-muted-foreground mb-1">{label}</p>
         <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
         {subValue && (
           <p className="text-sm text-muted-foreground mt-0.5">{subValue}</p>
@@ -107,7 +107,7 @@ function StatCard({ icon: Icon, label, value, subValue, trend, color }: StatCard
           )}
           <span
             className={cn(
-              'text-xs font-medium',
+              'text-caption font-medium',
               trend.positive ? 'text-success' : 'text-danger'
             )}
           >
@@ -215,19 +215,19 @@ export function PropietarioStats({
     return (
       <div className={cn('grid grid-cols-2 sm:grid-cols-4 gap-3', className)}>
         <div className="p-3 rounded-lg bg-muted/50">
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.properties')}</p>
+          <p className="text-caption text-muted-foreground">{t('inmobiliaria.propietario.stats.properties')}</p>
           <p className="text-xl font-semibold text-foreground">
             {propietario.propertyCount}
           </p>
         </div>
         <div className="p-3 rounded-lg bg-muted/50">
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.rented')}</p>
+          <p className="text-caption text-muted-foreground">{t('inmobiliaria.propietario.stats.rented')}</p>
           <p className="text-xl font-semibold text-foreground">
             {propietario.activeLeases}
           </p>
         </div>
         <div className="p-3 rounded-lg bg-muted/50">
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.monthlyRent')}</p>
+          <p className="text-caption text-muted-foreground">{t('inmobiliaria.propietario.stats.monthlyRent')}</p>
           <p className="text-xl font-semibold text-foreground">
             {formatCurrency(propietario.totalMonthlyRent)}
           </p>
@@ -238,7 +238,7 @@ export function PropietarioStats({
             ? 'bg-warning-soft'
             : 'bg-success-soft'
         )}>
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.pending')}</p>
+          <p className="text-caption text-muted-foreground">{t('inmobiliaria.propietario.stats.pending')}</p>
           <p className={cn(
             'text-xl font-semibold',
             hasPendingBalance

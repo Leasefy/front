@@ -182,7 +182,7 @@ export function CarteraDePropietarios() {
               la misma del Tablero, Liquidaciones y el chat, neta de
               deducciones. Lo de los meses siguientes, aparte. */}
           <div className="p-4" data-testid="por-girar-por-pagar">
-            <p className="text-xs text-fg-muted" title={definicionDePorGirar(hastaMes)}>
+            <p className="text-caption text-fg-muted" title={definicionDePorGirar(hastaMes)}>
               {rotuloDePorGirar(hastaMes)}
             </p>
             <p
@@ -203,25 +203,25 @@ export function CarteraDePropietarios() {
                 </span>
               </p>
             ) : null}
-            <p className="mt-0.5 text-xs text-fg-muted">
+            <p className="mt-0.5 text-caption text-fg-muted">
               {datos?.propietarios.length ?? 0}{' '}
               {datos?.propietarios.length === 1 ? 'propietario' : 'propietarios'} ·{' '}
               {datos?.meses.length ?? 0} {datos?.meses.length === 1 ? 'mes' : 'meses'}
             </p>
           </div>
           <div className="p-4">
-            <p className="text-xs text-fg-muted">Ya girado</p>
+            <p className="text-caption text-fg-muted">Ya girado</p>
             <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg-muted">
               {formatCurrency(datos?.totales.giradoCop ?? 0)}
             </p>
-            <p className="mt-0.5 text-xs text-fg-muted">Dispersiones completadas</p>
+            <p className="mt-0.5 text-caption text-fg-muted">Dispersiones completadas</p>
           </div>
           <div className="p-4">
-            <p className="text-xs text-fg-muted">Neto liquidado</p>
+            <p className="text-caption text-fg-muted">Neto liquidado</p>
             <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg">
               {formatCurrency(datos?.totales.netoCop ?? 0)}
             </p>
-            <p className="mt-0.5 text-xs text-fg-muted">Girado más pendiente</p>
+            <p className="mt-0.5 text-caption text-fg-muted">Girado más pendiente</p>
           </div>
         </div>
 
@@ -352,7 +352,7 @@ export function CarteraDePropietarios() {
           Convención compartida: «Canon causado» con CAUSADO, «Canon recaudado»
           sólo con RECAUDADO.
         */}
-        <p className="text-xs text-fg-muted" data-testid="pie-de-la-base">
+        <p className="text-caption text-fg-muted" data-testid="pie-de-la-base">
           {t('cartera.porPagar.pieCausado')}
         </p>
       </div>
@@ -402,7 +402,7 @@ function FilasDelPropietario({
             href={`${rutaDelEstadoDeCuenta('propietario', propietario.propietarioId)}?volver=${encodeURIComponent(VOLVER_A)}`}
             data-testid="propietario-estado-de-cuenta"
             title={`Ver el estado de cuenta de ${propietario.nombre || 'este propietario'}`}
-            className="ml-6 mt-0.5 inline-block text-xs text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="ml-6 mt-0.5 inline-block text-caption text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             Estado de cuenta
           </Link>
@@ -492,7 +492,7 @@ function DetalleDeMeses({ meses }: { meses: readonly MesDelPropietario[] }) {
             <TableCell className="text-right font-medium text-fg">
               <Peso valor={mes.netoCop} />
             </TableCell>
-            <TableCell className="whitespace-nowrap text-xs text-fg-muted">
+            <TableCell className="whitespace-nowrap text-caption text-fg-muted">
               {NOMBRE_DEL_ESTADO_DEL_GIRO[mes.estado]}
             </TableCell>
             <TableCell className="text-right text-fg">

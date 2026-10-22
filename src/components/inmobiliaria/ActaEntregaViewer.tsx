@@ -128,7 +128,7 @@ function PartyCard({ label, name, cedula, phone, email, icon }: PartyCardProps) 
           {icon}
         </div>
         <div>
-          <p className="text-xs text-fg-muted uppercase tracking-wide">
+          <p className="text-caption text-fg-muted uppercase tracking-wide">
             {label}
           </p>
           <p className="font-medium text-fg">{name}</p>
@@ -231,11 +231,11 @@ export function ActaEntregaViewer({
               <Badge variant={acta.type === 'entrega' ? 'default' : 'secondary'}>
                 {getActaTypeLabel(acta.type)}
               </Badge>
-              <span className={cn('px-3 py-1 rounded-full text-xs font-medium', getActaStatusColor(acta.status))}>
+              <span className={cn('px-3 py-1 rounded-full text-caption font-medium', getActaStatusColor(acta.status))}>
                 {getActaStatusLabel(acta.status)}
               </span>
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-fg mb-1">
+            <h1 className="text-h2 tracking-tight text-fg mb-1">
               {acta.propertyTitle}
             </h1>
             <p className="text-sm text-fg-muted">{acta.propertyAddress}</p>
@@ -303,7 +303,7 @@ export function ActaEntregaViewer({
               className={cn('px-3 py-2 rounded-lg text-center', getConditionColor(condition))}
             >
               <p className="text-lg font-bold">{count}</p>
-              <p className="text-xs">{getConditionLabel(condition)}</p>
+              <p className="text-caption">{getConditionLabel(condition)}</p>
             </div>
           ))}
         </div>
@@ -323,7 +323,7 @@ export function ActaEntregaViewer({
                   <h4 className="font-medium text-fg">
                     {getRoomLabel(room)}
                   </h4>
-                  <p className="text-xs text-fg-muted">
+                  <p className="text-caption text-fg-muted">
                     {roomItems.length} {t('inmobiliaria.acta.itemsLabel')}
                   </p>
                 </div>
@@ -367,7 +367,7 @@ export function ActaEntregaViewer({
                             <div className="flex justify-center">
                               <span
                                 className={cn(
-                                  'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
+                                  'inline-flex items-center gap-1 px-2 py-1 rounded-full text-caption font-medium',
                                   getConditionColor(item.condition)
                                 )}
                               >
@@ -408,7 +408,7 @@ export function ActaEntregaViewer({
                         </p>
                         <span
                           className={cn(
-                            'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
+                            'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-medium',
                             getConditionColor(item.condition)
                           )}
                         >
@@ -416,7 +416,7 @@ export function ActaEntregaViewer({
                         </span>
                       </div>
                       {item.hasDefects && item.defectDescription && (
-                        <p className="text-xs text-warning mt-1">
+                        <p className="text-caption text-warning mt-1">
                           {item.defectDescription}
                         </p>
                       )}
@@ -469,7 +469,7 @@ export function ActaEntregaViewer({
                 <p className="text-2xl font-bold text-fg font-mono">
                   {meter.reading}
                 </p>
-                <p className="text-xs text-fg-muted">{meter.unit}</p>
+                <p className="text-caption text-fg-muted">{meter.unit}</p>
               </div>
             );
           })}
@@ -490,14 +490,12 @@ export function ActaEntregaViewer({
               key={index}
               className="flex items-center gap-3 p-4 rounded-lg bg-card border border-border"
             >
-              <div className="w-10 h-10 rounded-md bg-surface-muted flex items-center justify-center">
-                <Key className="w-5 h-5 text-fg-muted" />
-              </div>
+              <Key className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-fg text-sm truncate">
                   {key.type}
                 </p>
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   {t('inmobiliaria.acta.quantity')}: {key.quantity}
                 </p>
               </div>
@@ -516,7 +514,7 @@ export function ActaEntregaViewer({
       <Section title={t('inmobiliaria.acta.observationsTitle')} icon={<ClipboardText className="w-4 h-4" />}>
         <div className="space-y-4">
           <div>
-            <p className="text-xs text-fg-muted uppercase tracking-wide mb-2">
+            <p className="text-caption text-fg-muted uppercase tracking-wide mb-2">
               {t('inmobiliaria.acta.generalCondition')}
             </p>
             <span className={cn('px-4 py-2 rounded-lg text-sm font-medium', getConditionColor(acta.generalCondition))}>
@@ -526,7 +524,7 @@ export function ActaEntregaViewer({
 
           {acta.generalObservations && (
             <div>
-              <p className="text-xs text-fg-muted uppercase tracking-wide mb-2">
+              <p className="text-caption text-fg-muted uppercase tracking-wide mb-2">
                 {t('inmobiliaria.acta.observations')}
               </p>
               <p className="text-fg-muted whitespace-pre-wrap">
@@ -552,7 +550,7 @@ export function ActaEntregaViewer({
             {/* Deductions */}
             {acta.deductions && acta.deductions.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs text-fg-muted uppercase tracking-wide">
+                <p className="text-caption text-fg-muted uppercase tracking-wide">
                   {t('inmobiliaria.acta.deductions')}
                 </p>
                 {acta.deductions.map((deduction, index) => (
@@ -565,7 +563,7 @@ export function ActaEntregaViewer({
                         {deduction.concept}
                       </p>
                       {deduction.notes && (
-                        <p className="text-xs text-danger">{deduction.notes}</p>
+                        <p className="text-caption text-danger">{deduction.notes}</p>
                       )}
                     </div>
                     <span className="font-mono font-medium tabular-nums text-danger">
@@ -629,7 +627,7 @@ export function ActaEntregaViewer({
                     </p>
                     <p className="text-sm text-success">{partyNames[party]}</p>
                     {signature?.signedAt && (
-                      <p className="text-xs text-success/80 mt-2">
+                      <p className="text-caption text-success/80 mt-2">
                         {t('inmobiliaria.acta.signed')}: {formatDateTime(signature.signedAt)}
                       </p>
                     )}
@@ -695,7 +693,7 @@ export function ActaEntregaViewer({
       )}
 
       {/* Metadata */}
-      <div className="text-xs text-fg-muted text-center space-y-1">
+      <div className="text-caption text-fg-muted text-center space-y-1">
         <p>ID: {acta.id}</p>
         <p>
           {t('inmobiliaria.acta.created')}: {formatDateTime(acta.createdAt)} | {t('inmobiliaria.acta.updated')}: {formatDateTime(acta.updatedAt)}

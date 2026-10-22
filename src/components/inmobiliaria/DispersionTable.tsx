@@ -243,7 +243,7 @@ export function DispersionTable({
       {/*
         allowlist: disparador de orden — Cadence no trae uno (DataTable no
         ordena). El botón HEREDA el tratamiento del encabezado del DS
-        (`font: inherit`), en vez de traer el suyo: antes ponía `text-xs
+        (`font: inherit`), en vez de traer el suyo: antes ponía `text-caption
         font-semibold`, que reemplaza la mono 11px en mayúsculas del `TH` por
         otra tipografía. Por eso esta tabla se leía distinta de todas las demás.
       */}
@@ -303,7 +303,7 @@ export function DispersionTable({
                       <p className="font-medium text-foreground truncate max-w-[180px]">
                         {dispersion.propietarioName}
                       </p>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[180px]">
+                      <div className="flex items-center gap-1 text-caption text-muted-foreground truncate max-w-[180px]">
                         <Bank className="w-3 h-3" />
                         <span>
                           {/* N-07 (QA-PAGOS-95): enmascarada en la lista; completa en el detalle. */}
@@ -338,7 +338,7 @@ export function DispersionTable({
                     {formatCurrency(dispersion.totalCollected)}
                   </span>
                   {baseDelCanon === 'MIXTA' && (
-                    <span className="block text-xs text-muted-foreground" data-testid="dispersion-base-de-la-fila">
+                    <span className="block text-caption text-muted-foreground" data-testid="dispersion-base-de-la-fila">
                       {t(
                         dispersion.baseDelCanon === 'RECAUDADO'
                           ? 'inmobiliaria.dispersiones.tableView.filaRecaudado'
@@ -362,7 +362,7 @@ export function DispersionTable({
                     {formatCurrency(loQueSeGira(dispersion).aGirarCop)}
                   </span>
                   {loQueSeGira(dispersion).enContraCop > 0 && (
-                    <span className="block text-xs text-muted-foreground tabular-nums" data-testid="dispersion-en-contra">
+                    <span className="block text-caption text-muted-foreground tabular-nums" data-testid="dispersion-en-contra">
                       {t('inmobiliaria.dispersiones.tableView.enContra', {
                         monto: formatCurrency(loQueSeGira(dispersion).enContraCop),
                       })}
@@ -465,7 +465,7 @@ export function DispersionTable({
                   <span className="font-semibold text-foreground">
                     {t('inmobiliaria.dispersiones.tableView.totalCount', { count: dispersiones.length })}
                   </span>
-                  <div className="flex items-center gap-3 text-xs">
+                  <div className="flex items-center gap-3 text-caption">
                     {summary.pending > 0 && (
                       <Badge variant="warning" className="tabular-nums">
                         {t('inmobiliaria.dispersiones.tableView.pendingAbbr', { count: summary.pending })}
@@ -519,7 +519,7 @@ export function DispersionTable({
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
             <PaperPlaneTilt className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-1">
+          <h3 className="text-lg font-medium text-foreground mb-1">
             {t('inmobiliaria.dispersiones.tableView.emptyTitle')}
           </h3>
           <p className="text-muted-foreground">

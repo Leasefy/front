@@ -503,7 +503,7 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
         <div className="flex items-center gap-3" data-testid="encargado-del-inmueble">
           <Avatar name={encargado.nombre} size="lg" />
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-fg truncate">{encargado.nombre}</h4>
+            <h4 className="font-medium text-fg truncate">{encargado.nombre}</h4>
             <p className="text-sm text-fg-muted dark:text-fg-subtle">{encargado.rol}</p>
           </div>
           {onReassign && (
@@ -527,7 +527,7 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
           </p>
           {onReassign && (
             <>
-              <p className="mx-auto mt-1 max-w-xs text-xs text-fg-subtle">
+              <p className="mx-auto mt-1 max-w-xs text-caption text-fg-subtle">
                 Quien quede a cargo atiende las visitas y responde a los candidatos.
               </p>
               <Button hideArrow className="mt-4" onClick={onReassign}>
@@ -744,7 +744,7 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-fg text-sm">{t(k('consignmentContract'))}</p>
-                <p className="text-xs text-fg-muted">{t(k('consignmentContractView'))}</p>
+                <p className="text-caption text-fg-muted">{t(k('consignmentContractView'))}</p>
               </div>
             </button>
             <Button
@@ -753,7 +753,7 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
               hideArrow
               onClick={elegirPdf}
               disabled={subiendo}
-              className="h-auto shrink-0 px-2 text-xs text-fg-muted hover:text-fg"
+              className="h-auto shrink-0 px-2 text-caption text-fg-muted hover:text-fg"
               data-testid="documento-contrato-reemplazar"
             >
               {subiendo ? t(k('consignmentContractUploading')) : t(k('consignmentContractReplace'))}
@@ -778,7 +778,7 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
                 Mientras sube sí se dice, porque eso es estado, no acción. */}
             <div className="flex-1 min-w-0">
               <p className="font-medium text-fg text-sm">{t(k('consignmentContract'))}</p>
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 {subiendo
                   ? t(k('consignmentContractUploading'))
                   : t(k('consignmentContractMissing'))}
@@ -816,7 +816,7 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-medium text-fg text-sm">{t(k('handoverReport'))}</p>
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               {subtituloDelActa}
             </p>
           </div>

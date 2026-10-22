@@ -431,7 +431,7 @@ function FilaDeCartera({
             )}
           </p>
           {item.tenantPhone ? (
-            <span className="mt-0.5 flex items-center gap-2 text-xs text-fg-muted">
+            <span className="mt-0.5 flex items-center gap-2 text-caption text-fg-muted">
               <a
                 href={`tel:${item.tenantPhone}`}
                 onClick={(e) => e.stopPropagation()}
@@ -457,7 +457,7 @@ function FilaDeCartera({
           ) : (
             /* Sin teléfono no hay llamada ni WhatsApp: es la deuda que sólo se
                puede cobrar por correo, y hay que saberlo antes de intentarlo. */
-            <span className="mt-0.5 block text-xs text-warning">
+            <span className="mt-0.5 block text-caption text-warning">
               {t('cartera.tabla.sinTelefono')}
             </span>
           )}
@@ -516,7 +516,7 @@ function FilaDeCartera({
           {/* El plazo se dice sólo donde explica algo: es la razón por la que
               una cuota vencida todavía no es cartera. */}
           {item.cajon === 'VENCIDA_EN_PLAZO' && item.diasDePlazo > 0 ? (
-            <div className="whitespace-nowrap text-xs text-fg-subtle">
+            <div className="whitespace-nowrap text-caption text-fg-subtle">
               {t(
                 item.diasDePlazo === 1
                   ? 'cartera.tabla.unDiaDePlazo'
@@ -525,7 +525,7 @@ function FilaDeCartera({
               )}
             </div>
           ) : null}
-          <div className="whitespace-nowrap text-xs text-fg-subtle max-md:hidden">
+          <div className="whitespace-nowrap text-caption text-fg-subtle max-md:hidden">
             {/* Tres estados, no dos. `null` es «no hay cobro emitido desde el
                 cual escribirle»; un 0 es un cero VERDADERO («no le hemos
                 escrito»). Taparlos con el mismo texto los vuelve el mismo
@@ -552,7 +552,7 @@ function FilaDeCartera({
             {formatCurrency(item.pendingAmount)}
           </div>
           {item.paidAmount > 0 && (
-            <div className="font-mono text-xs tabular-nums text-fg-subtle">
+            <div className="font-mono text-caption tabular-nums text-fg-subtle">
               {t('cartera.tabla.abonado', { monto: formatCurrency(item.paidAmount) })}
             </div>
           )}
@@ -657,12 +657,12 @@ function InteresDeLaFila({
           {formatCurrency(interes.pendienteCop)}
         </div>
         {interes.abonadoCop > 0 && (
-          <div className="font-mono text-xs tabular-nums text-fg-subtle">
+          <div className="font-mono text-caption tabular-nums text-fg-subtle">
             {t(CLAVE_DE_MORA.abonado, { monto: formatCurrency(interes.abonadoCop) })}
           </div>
         )}
         {interes.pagadaEnMora && (
-          <div className="text-xs text-fg-subtle">{t(CLAVE_DE_MORA.pagadaEnMora)}</div>
+          <div className="text-caption text-fg-subtle">{t(CLAVE_DE_MORA.pagadaEnMora)}</div>
         )}
       </div>
     )
@@ -670,7 +670,7 @@ function InteresDeLaFila({
 
   if (interes.motivo && interes.sinReglas) {
     return (
-      <div className="whitespace-nowrap text-xs" title={interes.motivo}>
+      <div className="whitespace-nowrap text-caption" title={interes.motivo}>
         <div className="text-warning" data-testid="cartera-sin-reglas">
           {t(CLAVE_DE_MORA.sinReglas)}
         </div>
@@ -687,7 +687,7 @@ function InteresDeLaFila({
 
   if (interes.motivo) {
     return (
-      <span className="whitespace-nowrap text-xs text-fg-muted" title={interes.motivo}>
+      <span className="whitespace-nowrap text-caption text-fg-muted" title={interes.motivo}>
         {t(CLAVE_DE_MORA.sinInteres)}
       </span>
     )

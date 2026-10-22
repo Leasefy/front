@@ -410,7 +410,7 @@ export function CarteraCompleta() {
             plazo · cartera) y, debajo de la cartera, qué parte ya es siniestro o
             está castigada. Las palabras siguen siendo las de «Cartera por concepto». */}
         <div
-          className="grid grid-cols-1 overflow-hidden rounded-2xl border border-border bg-surface"
+          className="grid grid-cols-1 overflow-hidden rounded-lg border border-border bg-surface"
           data-testid="resumen-de-cartera"
           // 15-10: con centavos la cifra no cabía; cada ficha la achica a su ancho (`cifra-que-cabe`).
           style={estiloDeLaFranja([
@@ -651,7 +651,7 @@ export function CarteraCompleta() {
               arriba, como una franja (no como tarjetas sueltas encima). */}
           {/* ── La edad DE LA CARTERA. Cada ficha es un filtro. ──────────── */}
           <div className="border-b border-border" data-testid="edad-en-la-tabla">
-            <p className="px-4 pt-3 text-xs text-fg-muted">{t('cartera.porEdad.edadDeLaCartera')}</p>
+            <p className="px-4 pt-3 text-caption text-fg-muted">{t('cartera.porEdad.edadDeLaCartera')}</p>
             {/*
               🔴 21-09-2026, abriendo esta pantalla con la agencia migrada:
               «31 a 60», «61 a 90» y «Más de 90 días» salían en $0 con 788 casos
@@ -662,7 +662,7 @@ export function CarteraCompleta() {
               leen como «no hay mora vieja», que es lo contrario de la verdad.
             */}
             {tramosVaciosPorElSiniestro.length > 0 ? (
-              <p className="px-4 pt-1 text-xs text-fg-muted" data-testid="tramos-que-no-se-llenan">
+              <p className="px-4 pt-1 text-caption text-fg-muted" data-testid="tramos-que-no-se-llenan">
                 {/* Ronda 12: dicho como es —sólo un contrato con respaldo pasa a siniestro—,
                     para no contradecir las deudas viejas de la tabla sin respaldo. */}
                 {tramosVaciosPorElSiniestro.map((e) => NOMBRE_DE_EDAD[e]).join(', ')}: con el
@@ -697,13 +697,13 @@ export function CarteraCompleta() {
                     {activa ? (
                       <MotionIndicator layoutId={`${marca}-tramo`} className="inset-0 -z-10 bg-primary-soft" />
                     ) : null}
-                    <p className="text-xs text-fg-muted">{NOMBRE_DE_EDAD[tramo.edad]}</p>
+                    <p className="text-caption text-fg-muted">{NOMBRE_DE_EDAD[tramo.edad]}</p>
                     {/* COLA-01: a 390 px la ficha deja ≈149 px; text-base cabe una cifra de diez dígitos. */}
                     {/* Ronda 11: el rojo es gravedad; un tramo vacío no es grave → «—» atenuado. */}
                     <p className={cn('mt-1 font-mono text-base font-semibold tabular-nums sm:text-lg', tramo.monto === 0 ? 'text-fg-subtle' : TONO[tramo.edad])}>
                       {tramo.monto === 0 ? '—' : plataDeLaFranja(tramo.monto)}
                     </p>
-                    <p className="mt-0.5 text-xs text-fg-muted">
+                    <p className="mt-0.5 text-caption text-fg-muted">
                       {tramo.items.length} {tramo.items.length === 1 ? 'deuda' : 'deudas'}
                     </p>
                   </button>
@@ -726,11 +726,11 @@ export function CarteraCompleta() {
                   {vista === 'siniestros' ? (
                     <MotionIndicator layoutId={`${marca}-tramo`} className="inset-0 -z-10 bg-primary-soft" />
                   ) : null}
-                  <p className="text-xs text-fg-muted">{t('cartera.porEdad.tramoEnSiniestro')}</p>
+                  <p className="text-caption text-fg-muted">{t('cartera.porEdad.tramoEnSiniestro')}</p>
                   <p className={cn('mt-1 font-mono text-base font-semibold tabular-nums sm:text-lg', cartera.enSiniestro.monto === 0 ? 'text-fg-subtle' : 'text-danger')}>
                     {cartera.enSiniestro.monto === 0 ? '—' : plataDeLaFranja(cartera.enSiniestro.monto)}
                   </p>
-                  <p className="mt-0.5 text-xs text-fg-muted">
+                  <p className="mt-0.5 text-caption text-fg-muted">
                     {t('cartera.porEdad.desdeLosDias', { dias: siniestros.diasParaSiniestro })}
                   </p>
                 </button>
@@ -785,7 +785,7 @@ export function CarteraCompleta() {
                 <button
                   type="button"
                   onClick={() => setPropietario(null)}
-                  className="inline-flex max-w-[14rem] items-center gap-1 rounded-full border border-border bg-surface-muted px-2.5 py-1 text-xs text-fg hover:border-fg-subtle"
+                  className="inline-flex max-w-[14rem] items-center gap-1 rounded-full border border-border bg-surface-muted px-2.5 py-1 text-caption text-fg hover:border-fg-subtle"
                   data-testid="chip-propietario"
                 >
                   <span className="truncate">{propietario.nombre}</span>

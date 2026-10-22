@@ -52,7 +52,7 @@ function RequirementSection({
             {title}
           </h4>
           {description && (
-            <p className="text-xs text-fg-muted mt-0.5">
+            <p className="text-caption text-fg-muted mt-0.5">
               {description}
             </p>
           )}
@@ -62,7 +62,7 @@ function RequirementSection({
             type="button"
             onClick={() => { if (isNonNegotiable) onToggleNonNegotiable(); }}
             className={cn(
-              'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-[color,background-color,border-color,box-shadow] duration-base',
+              'flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-medium transition-[color,background-color,border-color,box-shadow] duration-base',
               !isNonNegotiable
                 ? 'bg-surface text-fg'
                 : 'text-fg-subtle hover:text-fg-muted'
@@ -75,7 +75,7 @@ function RequirementSection({
             type="button"
             onClick={() => { if (!isNonNegotiable) onToggleNonNegotiable(); }}
             className={cn(
-              'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-[color,background-color,border-color,box-shadow] duration-base',
+              'flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-medium transition-[color,background-color,border-color,box-shadow] duration-base',
               isNonNegotiable
                 ? 'bg-primary text-primary-fg'
                 : 'text-fg-subtle hover:text-fg-muted'
@@ -255,7 +255,7 @@ export function StepTenantRequirements() {
                     >
                       {option.label}
                     </span>
-                    <span className="text-xs text-fg-subtle">
+                    <span className="text-caption text-fg-subtle">
                       {option.description}
                     </span>
                   </div>
@@ -309,7 +309,7 @@ export function StepTenantRequirements() {
                     >
                       {option.label}
                     </span>
-                    <span className="text-xs text-fg-subtle">
+                    <span className="text-caption text-fg-subtle">
                       {option.description}
                     </span>
                   </div>
@@ -341,7 +341,7 @@ export function StepTenantRequirements() {
                 placeholder="Sin límite"
                 className="w-full font-mono tabular-nums"
               />
-              <span className="text-xs text-fg-subtle whitespace-nowrap">
+              <span className="text-caption text-fg-subtle whitespace-nowrap">
                 {requirements.maxOccupants === 0 ? 'Sin límite' : 'personas'}
               </span>
             </div>
@@ -446,7 +446,7 @@ export function StepTenantRequirements() {
                     >
                       {option.label}
                     </span>
-                    <span className="text-xs text-fg-subtle">
+                    <span className="text-caption text-fg-subtle">
                       {option.description}
                     </span>
                   </div>
@@ -473,7 +473,7 @@ export function StepTenantRequirements() {
         if (nonNegotiableCount > 0) {
           return (
             <p className="text-sm text-fg-muted">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-soft text-primary rounded-full text-xs font-medium">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-soft text-primary rounded-full text-caption font-medium">
                 <Lock className="w-3 h-3" />
                 <span className="font-mono tabular-nums">{nonNegotiableCount}</span>
               </span>{' '}

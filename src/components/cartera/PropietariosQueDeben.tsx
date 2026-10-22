@@ -101,7 +101,7 @@ export function PropietariosQueDeben() {
           <Receipt className="h-4 w-4 text-warning" aria-hidden="true" />
           {t(k('titulo'))}
         </h2>
-        <p className="max-w-2xl text-xs text-fg-muted">{t(k('descripcion'))}</p>
+        <p className="max-w-2xl text-caption text-fg-muted">{t(k('descripcion'))}</p>
       </div>
       <EstadoDeDatos cargando={false} error={error} queEs={t(k('queSon'))} onReintentar={cargar}>
         {deudas && (
@@ -119,7 +119,7 @@ export function PropietariosQueDeben() {
                   className="rounded-lg border border-border bg-bg p-3"
                   data-testid={`tramo-propietarios-${edad}`}
                 >
-                  <p className="text-xs text-fg-muted">{NOMBRE_DE_EDAD[edad]}</p>
+                  <p className="text-caption text-fg-muted">{NOMBRE_DE_EDAD[edad]}</p>
                   <p
                     className={cn(
                       'mt-1 font-mono text-lg font-semibold tabular-nums',
@@ -128,7 +128,7 @@ export function PropietariosQueDeben() {
                   >
                     {formatCurrency(enElTramo(deudas.porEdades, edad))}
                   </p>
-                  <p className="mt-0.5 text-xs text-fg-muted">
+                  <p className="mt-0.5 text-caption text-fg-muted">
                     {conceptos(renglonesEnElTramo(deudas.porEdades, edad))}
                   </p>
                 </div>
@@ -178,10 +178,10 @@ export function PropietariosQueDeben() {
                         </TableCell>
                       )
                     })}
-                    <TableCell className="whitespace-nowrap text-right text-xs text-fg-muted">
+                    <TableCell className="whitespace-nowrap text-right text-caption text-fg-muted">
                       {enDias(p.porEdades?.diasDelMasViejo ?? 0)}
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="text-caption">
                       {p.ultimaCuentaDeCobro ? (
                         <Link
                           href={rutaDeLaCuentaDeCobro(p.propietarioId, p.ultimaCuentaDeCobro.id)}
@@ -214,7 +214,7 @@ export function PropietariosQueDeben() {
                       {formatCurrency(enElTramo(deudas.porEdades, edad))}
                     </TableCell>
                   ))}
-                  <TableCell className="whitespace-nowrap text-right text-xs text-fg-muted">
+                  <TableCell className="whitespace-nowrap text-right text-caption text-fg-muted">
                     {conceptos(
                       EDADES.reduce(
                         (s, edad) => s + renglonesEnElTramo(deudas.porEdades, edad),

@@ -255,7 +255,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
             <Receipt className="w-8 h-8 text-fg-subtle" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-foreground">
+            <h2 className="text-h3 text-foreground">
               {t(k('notFound'))}
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -283,7 +283,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
     <span
       className={cn(
         'inline-flex items-center border font-medium',
-        tam === 'grande' ? 'self-start rounded-md px-3 py-1.5 text-sm' : 'rounded-sm px-2 py-0.5 text-xs',
+        tam === 'grande' ? 'self-start rounded-md px-3 py-1.5 text-sm' : 'rounded-sm px-2 py-0.5 text-caption',
         colors.text,
         colors.bg,
         colors.border,
@@ -313,8 +313,8 @@ function ApBillDetailContent({ billId }: { billId: string }) {
       <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
-          <p className="text-xs font-semibold text-primary">{t(k('m1BannerTitle'))}</p>
-          <p className="text-xs text-primary mt-0.5">{t(k('m1BannerDesc'))}</p>
+          <p className="text-caption font-semibold text-primary">{t(k('m1BannerTitle'))}</p>
+          <p className="text-caption text-primary mt-0.5">{t(k('m1BannerDesc'))}</p>
         </div>
       </div>
 
@@ -360,15 +360,15 @@ function ApBillDetailContent({ billId }: { billId: string }) {
               <span className="font-mono">{bill.invoiceNumber}</span>
             </DetailRow>
             <DetailRow label={t(k('labelVendor'))}>
-              <span className="font-mono text-xs text-muted-foreground">{bill.vendorId}</span>
+              <span className="font-mono text-caption text-muted-foreground">{bill.vendorId}</span>
             </DetailRow>
             <DetailRow label={t(k('labelCostCenter'))}>{bill.costCenterCode}</DetailRow>
             <DetailRow label={t(k('labelCreatedBy'))}>
-              <span className="font-mono text-xs">{bill.createdBy}</span>
+              <span className="font-mono text-caption">{bill.createdBy}</span>
             </DetailRow>
             <DetailRow label={t(k('labelApprovedBy'))}>
               {bill.approvedBy != null ? (
-                <span className="font-mono text-xs">{bill.approvedBy}</span>
+                <span className="font-mono text-caption">{bill.approvedBy}</span>
               ) : (
                 <span className="text-muted-foreground italic">{t(k('noApprover'))}</span>
               )}

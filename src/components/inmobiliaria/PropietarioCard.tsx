@@ -64,7 +64,7 @@ export function PropietarioCard({
           <p className="font-medium text-foreground truncate text-sm">
             {propietario.name}
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             {propietario.propertyCount} {propietario.propertyCount === 1 ? t('inmobiliaria.propietarios.card.property') : t('inmobiliaria.propietarios.card.properties')}
           </p>
         </div>
@@ -102,7 +102,7 @@ export function PropietarioCard({
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className={cn(
-            'w-12 h-12 rounded-xl flex items-center justify-center',
+            'w-12 h-12 rounded-lg flex items-center justify-center',
             isCompany
               ? 'bg-muted text-muted-foreground'
               : 'bg-primary-soft text-primary'
@@ -110,7 +110,7 @@ export function PropietarioCard({
             {isCompany ? <Buildings className="w-6 h-6" /> : <User className="w-6 h-6" />}
           </div>
           <div>
-            <h3 className="text-base font-semibold text-foreground line-clamp-1">
+            <h3 className="text-base font-medium text-foreground line-clamp-1">
               {propietario.name}
             </h3>
             <p className="text-sm text-muted-foreground">
@@ -137,12 +137,12 @@ export function PropietarioCard({
         <div className="p-3 rounded-lg bg-muted/50">
           <div className="flex items-center gap-2 mb-1">
             <Buildings className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.card.propertiesLabel')}</span>
+            <span className="text-caption text-muted-foreground">{t('inmobiliaria.propietarios.card.propertiesLabel')}</span>
           </div>
           <p className="text-lg font-semibold text-foreground">
             {propietario.propertyCount}
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             {propietario.activeLeases}{' '}
             {propietario.activeLeases === 1
               ? t('inmobiliaria.propietarios.card.rentedOne')
@@ -152,7 +152,7 @@ export function PropietarioCard({
         <div className="p-3 rounded-lg bg-muted/50">
           <div className="flex items-center gap-2 mb-1">
             <CurrencyDollar className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.card.monthlyRent')}</span>
+            <span className="text-caption text-muted-foreground">{t('inmobiliaria.propietarios.card.monthlyRent')}</span>
           </div>
           {sinPlata ? (
             <p className="text-lg font-semibold text-fg-subtle" title={t('inmobiliaria.propietario.table.sinAccesoALaPlata')}>
@@ -165,7 +165,7 @@ export function PropietarioCard({
             </p>
           )}
           {hasPendingBalance && (
-            <p className="text-xs text-warning">
+            <p className="text-caption text-warning">
               {formatCurrency(propietario.pendingBalance)} {t('inmobiliaria.propietarios.card.pendingAbbr')}
             </p>
           )}
@@ -208,13 +208,13 @@ export function PropietarioCard({
           {propietario.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="px-2 py-0.5 rounded-full bg-muted text-xs text-muted-foreground"
+              className="px-2 py-0.5 rounded-full bg-muted text-caption text-muted-foreground"
             >
               {tag}
             </span>
           ))}
           {propietario.tags.length > 3 && (
-            <span className="px-2 py-0.5 rounded-full bg-muted text-xs text-muted-foreground">
+            <span className="px-2 py-0.5 rounded-full bg-muted text-caption text-muted-foreground">
               +{propietario.tags.length - 3}
             </span>
           )}

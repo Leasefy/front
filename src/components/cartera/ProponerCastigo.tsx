@@ -209,7 +209,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
         />
         <Scales className="h-4 w-4 text-fg-muted" aria-hidden="true" />
         <span className="text-sm font-medium text-fg">Proponer un castigo</span>
-        <span className="text-xs text-fg-muted">
+        <span className="text-caption text-fg-muted">
           Lo aprueban el administrador y el contador, dos personas distintas.
         </span>
       </button>
@@ -220,7 +220,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
           {/* ── 1. De quién ──────────────────────────────────────────── */}
           {!elegido && (
             <div className="space-y-2">
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 Los contratos que hoy tienen cartera, del atraso más viejo al más
                 reciente.
               </p>
@@ -256,7 +256,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
                           <span className="block truncate text-sm text-fg">
                             {c.inquilino}
                           </span>
-                          <span className="block truncate text-xs text-fg-muted">
+                          <span className="block truncate text-caption text-fg-muted">
                             {c.inmueble}
                           </span>
                         </span>
@@ -264,7 +264,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
                           <span className="block font-mono text-sm tabular-nums text-fg">
                             {formatCurrency(c.carteraCop)}
                           </span>
-                          <span className="block text-xs text-fg-muted">
+                          <span className="block text-caption text-fg-muted">
                             {c.diasDeLaMasVieja === 1
                               ? '1 día de mora'
                               : `${c.diasDeLaMasVieja} días de mora`}
@@ -284,7 +284,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-fg">
                   {candidatas?.inquilino ?? elegido.inquilino}
-                  <span className="ml-2 text-xs text-fg-muted">{elegido.inmueble}</span>
+                  <span className="ml-2 text-caption text-fg-muted">{elegido.inmueble}</span>
                 </p>
                 <Button
                   hideArrow
@@ -336,7 +336,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
                                 {formatCurrency(c.capitalCop)}
                               </span>
                             </span>
-                            <span className="block text-xs text-fg-muted">
+                            <span className="block text-caption text-fg-muted">
                               {c.diasDeMora === 1
                                 ? '1 día de mora'
                                 : `${c.diasDeMora} días de mora`}
@@ -347,7 +347,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
                             {/* 🔴 El motivo, no la ausencia. */}
                             {c.porQueNo && (
                               <span
-                                className="block text-xs text-warning"
+                                className="block text-caption text-warning"
                                 data-testid="por-que-no-se-castiga"
                               >
                                 {c.porQueNo}

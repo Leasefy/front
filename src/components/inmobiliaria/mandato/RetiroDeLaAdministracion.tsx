@@ -233,7 +233,7 @@ export function RetiroDeLaAdministracionDialog({
                 <span className="block text-sm font-medium text-foreground">
                   La inmobiliaria sigue hasta el fin del contrato
                 </span>
-                <span className="block text-xs text-muted-foreground">
+                <span className="block text-caption text-muted-foreground">
                   El contrato sigue su curso con la inmobiliaria: se cobra, se liquida y se gira como
                   hoy hasta que termine.
                 </span>
@@ -247,7 +247,7 @@ export function RetiroDeLaAdministracionDialog({
               />
               <span>
                 <span className="block text-sm font-medium text-foreground">Corte a una fecha</span>
-                <span className="block text-xs text-muted-foreground">
+                <span className="block text-caption text-muted-foreground">
                   Liquidación final al propietario; las cuotas posteriores de los dos lados salen de la
                   cartera de la inmobiliaria y se genera el aviso al inquilino de a quién pagar.
                 </span>
@@ -347,7 +347,7 @@ function VistaDelCorte({ previa }: { previa: PrevisualizacionDelCorte }) {
         desde {delInquilino[0] ? mesLegible(delInquilino[0].mes) : 'el mes siguiente'}.
       </p>
       {previa.cuotasQueNoSeTocan.length > 0 ? (
-        <div className="text-xs text-warning">
+        <div className="text-caption text-warning">
           <p className="font-medium">No se tocan, aunque son posteriores al corte:</p>
           <ul className="list-disc pl-4">
             {previa.cuotasQueNoSeTocan.map((c) => (
@@ -426,16 +426,16 @@ export function RetiroRegistrado({ consignacionId }: { consignacionId: string })
     <section className="rounded-lg border border-border bg-card p-5 space-y-3" data-testid="retiro-registrado">
       <div className="flex items-center gap-2">
         <SignOut className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-        <h3 className="text-base font-semibold text-foreground">Retiro de la administración</h3>
+        <h3 className="text-base font-medium text-foreground">Retiro de la administración</h3>
       </div>
       <p className="text-sm text-foreground">
         {retiro.modo === 'CORTE'
           ? `Con corte al ${diaLegible(retiro.fechaDeCorte)}: ${retiro.cuotasAnuladas.length} cuotas posteriores salieron de la cartera.`
           : `La inmobiliaria sigue administrando el contrato hasta su fin${retiro.fechaDeCorte ? ` (${diaLegible(retiro.fechaDeCorte)})` : ''}.`}
       </p>
-      {retiro.motivo ? <p className="text-xs text-muted-foreground">Motivo: {retiro.motivo}</p> : null}
+      {retiro.motivo ? <p className="text-caption text-muted-foreground">Motivo: {retiro.motivo}</p> : null}
       {retiro.cuotasSinAnular.length > 0 ? (
-        <p className="text-xs text-warning">
+        <p className="text-caption text-warning">
           {retiro.cuotasSinAnular.length} cuotas posteriores no se tocaron (tenían plata, cobro o eran del
           sistema anterior).
         </p>
@@ -451,7 +451,7 @@ export function RetiroRegistrado({ consignacionId }: { consignacionId: string })
             <DownloadSimple className="w-4 h-4 mr-1" aria-hidden="true" />
             Descargar PDF
           </Button>
-          <span className="text-xs text-muted-foreground self-center">Generado, sin enviar.</span>
+          <span className="text-caption text-muted-foreground self-center">Generado, sin enviar.</span>
         </div>
       ) : null}
 

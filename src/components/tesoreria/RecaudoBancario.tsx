@@ -835,7 +835,7 @@ function Previa({ previa }: { previa: PreviaDelRecaudo }) {
           ['Total', formatCurrency(previa.totalCop)],
         ].map(([etiqueta, valor]) => (
           <div key={etiqueta} className="rounded border border-border bg-bg p-3">
-            <dt className="text-xs text-fg-muted">{etiqueta}</dt>
+            <dt className="text-caption text-fg-muted">{etiqueta}</dt>
             <dd className="font-mono tabular-nums text-fg">{valor}</dd>
           </div>
         ))}
@@ -844,11 +844,11 @@ function Previa({ previa }: { previa: PreviaDelRecaudo }) {
       {previa.muestra.length > 0 ? (
         <div className="overflow-x-auto rounded border border-border">
           <table className="w-full text-sm" data-testid="muestra-del-recaudo">
-            <caption className="p-2 text-left text-xs text-fg-muted">
+            <caption className="p-2 text-left text-caption text-fg-muted">
               Las primeras líneas, leídas con este formato. Compáralas contra el archivo abierto
               al lado: si una columna está corrida, se ve aquí y no después de importar.
             </caption>
-            <thead className="bg-bg text-xs text-fg-muted">
+            <thead className="bg-bg text-caption text-fg-muted">
               <tr>
                 <th className="p-2 text-left">Línea</th>
                 <th className="p-2 text-left">Referencia</th>
@@ -900,12 +900,12 @@ function Rechazadas({
         {rechazadas.slice(0, 10).map((r) => (
           <li key={r.linea} className="space-y-0.5">
             <p className="text-fg">Línea {r.linea}: {r.motivo}</p>
-            <p className="truncate font-mono text-xs text-fg-muted">{r.crudo}</p>
+            <p className="truncate font-mono text-caption text-fg-muted">{r.crudo}</p>
           </li>
         ))}
       </ul>
       {rechazadas.length > 10 ? (
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           Y {rechazadas.length - 10} más. Están todas en el detalle del archivo, con su texto
           crudo, para poder reclamárselas al banco.
         </p>

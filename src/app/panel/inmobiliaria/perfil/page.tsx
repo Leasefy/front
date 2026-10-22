@@ -574,7 +574,7 @@ export default function InmobiliariaPerfilPage() {
                             <p className="text-sm font-medium text-fg">
                               {locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}
                             </p>
-                            <p className="text-xs text-fg-muted">
+                            <p className="text-caption text-fg-muted">
                               {locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}
                             </p>
                           </div>
@@ -593,15 +593,13 @@ export default function InmobiliariaPerfilPage() {
                       </div>
                     ) : (
                       <>
-                        <div className="w-12 h-12 rounded-md bg-surface-muted flex items-center justify-center mx-auto mb-3">
-                          <Upload className="w-6 h-6 text-fg-muted" />
-                        </div>
+                        <Upload className="w-6 h-6 text-fg-muted shrink-0 mx-auto" aria-hidden="true" />
                         <p className="text-sm font-medium text-fg">
                           {isDragging
                             ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here')
                             : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
                         </p>
-                        <p className="text-xs text-fg-muted mt-1">
+                        <p className="text-caption text-fg-muted mt-1">
                           {locale === 'es' ? 'Arrastra o haz clic — JPG, PNG (máx. 5MB)' : 'Drag or click - JPG, PNG (max 5MB)'}
                         </p>
                       </>
@@ -632,26 +630,22 @@ export default function InmobiliariaPerfilPage() {
                 {/* Quick Stats */}
                 <div className="mt-6 pt-6 border-t border-border space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center">
-                      <Buildings className="w-5 h-5 text-success" />
-                    </div>
+                    <Buildings className="w-5 h-5 text-success shrink-0" aria-hidden="true" />
                     <div>
                       <p className="text-sm font-medium text-fg">
                         {memberRole ? `Rol: ${AGENCY_ROLE_LABELS[memberRole] ?? memberRole}` : '—'}
                       </p>
-                      <p className="text-xs text-fg-muted">
+                      <p className="text-caption text-fg-muted">
                         {memberRole ? (AGENCY_ROLE_DESC[memberRole] ?? '') : ''}
                       </p>
                     </div>
                   </div>
                   {agency?.name && (
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
-                        <Briefcase className="w-5 h-5 text-primary" />
-                      </div>
+                      <Briefcase className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
                       <div>
                         <p className="text-sm font-medium text-fg">{agency.name}</p>
-                        <p className="text-xs text-fg-muted">
+                        <p className="text-caption text-fg-muted">
                           {agency.nit ? `NIT: ${agency.nit}` : (locale === 'es' ? 'Agencia actual' : 'Current agency')}
                         </p>
                       </div>
@@ -666,14 +660,14 @@ export default function InmobiliariaPerfilPage() {
                 system in the backend, so nothing else is shown as verified. */}
             {emailVerified && (
               <div className="rounded-lg border border-border bg-card p-6">
-                <h3 className="text-base font-semibold text-fg mb-4 flex items-center gap-2">
+                <h3 className="text-base font-medium text-fg mb-4 flex items-center gap-2">
                   <Shield className="w-5 h-5 text-fg-muted" />
                   {locale === 'es' ? 'Estado de verificación' : 'Verification status'}
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between py-2.5 px-3 rounded-md bg-surface-muted">
                     <span className="text-sm font-medium text-fg">Email</span>
-                    <span className="flex items-center gap-1.5 text-xs font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
+                    <span className="flex items-center gap-1.5 text-caption font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
                       <CheckCircle className="w-3.5 h-3.5" />
                       {locale === 'es' ? 'Verificado' : 'Verified'}
                     </span>
@@ -688,7 +682,7 @@ export default function InmobiliariaPerfilPage() {
             {/* Personal Information */}
             <div id="perfil-personal" className="scroll-mt-6 rounded-lg border border-border bg-card p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-base font-semibold text-fg">
+                <h3 className="text-base font-medium text-fg">
                   {locale === 'es' ? 'Información personal' : 'Personal information'}
                 </h3>
                 {/* «Editar» ⇄ «Cancelar / Guardar» se cruzan en su lugar. */}
@@ -811,7 +805,7 @@ export default function InmobiliariaPerfilPage() {
             {/* Emergency Contact */}
             <div id="perfil-emergencia" className="scroll-mt-6 rounded-lg border border-border bg-card p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-base font-semibold text-fg">
+                <h3 className="text-base font-medium text-fg">
                   {locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}
                 </h3>
                 {/* «Editar» ⇄ «Cancelar / Guardar» se cruzan en su lugar. */}
@@ -876,7 +870,7 @@ export default function InmobiliariaPerfilPage() {
 
             {/* Danger Zone */}
             <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-6">
-              <h3 className="text-base font-semibold text-danger mb-2 flex items-center gap-2">
+              <h3 className="text-base font-medium text-danger mb-2 flex items-center gap-2">
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
@@ -1002,7 +996,7 @@ export default function InmobiliariaPerfilPage() {
                       ))}
                     </ul>
                   </div>
-                  <p className="text-xs text-fg-muted">
+                  <p className="text-caption text-fg-muted">
                     {locale === 'es'
                       ? 'No vas a poder darte de baja si tienes contratos de arriendo activos a tu nombre o si eres el único administrador de la inmobiliaria.'
                       : 'You cannot delete your account while you have active leases in your name, or while you are the agency’s only administrator.'}

@@ -23,6 +23,12 @@ export default function MiEstadoDeCuentaPage() {
     <PantallaDelEstadoDeCuenta
       cargar={() => estadoDeCuentaApi.mio()}
       volverA={{ label: 'Volver a pagos', href: '/inquilino/pagos' }}
+      // Revisora r23 (portal del inquilino): el vacío le habla a quien mira, no «Este cliente no tiene contratos»
+      // (el texto del panel). Lo mismo que el portal del propietario.
+      textosSinContratos={{
+        titulo: 'Todavía no tienes un contrato de arriendo con nosotros',
+        detalle: 'Cuando la inmobiliaria firme tu contrato, aquí vas a ver cada cuota, lo que pagaste y lo que te falta.',
+      }}
       acciones={(doc, nota) => (
         <BotonDescargarPDF doc={doc} hoy={doc.fecha} nota={nota} />
       )}

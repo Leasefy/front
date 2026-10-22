@@ -43,13 +43,14 @@
  * pesos se ven y no se editan acá; y se elige por nombre, nunca por UUID.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { ArrowRight, Copy, MagicWand, Users, House } from '@phosphor-icons/react'
 import { SegmentedControl } from '@leasefy/cadence'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { Stagger, StaggerItem } from '@leasefy/cadence'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { usePipelineItems } from '@/lib/hooks/useInmobiliaria'
@@ -83,7 +84,8 @@ function Puntaje({ valor }: { valor: number }) {
     <span className="flex items-center gap-2" aria-label={tr('Calce del {n} por ciento', { n: acotado })}>
       <span className="bg-surface-muted h-1.5 w-16 overflow-hidden rounded-full" aria-hidden="true">
         <span
-          className="bg-primary block h-full rounded-full"
+          // Ronda 22: el azul es para la acción; el puntaje del calce va en grafito.
+          className="bg-fg-muted block h-full rounded-full"
           style={{ width: `${acotado}%` }}
         />
       </span>
@@ -166,6 +168,19 @@ export function CalceClient() {
   const [direccion, setDireccion] = useState<Direccion>('interesado')
   const [leadId, setLeadId] = useState('')
   const [propertyId, setPropertyId] = useState('')
+  // Ronda 22: se llega con el interesado (o el inmueble) ya elegido: `?interesado=` / `?inmueble=`.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    const interesado = p.get('interesado')
+    const inmueble = p.get('inmueble')
+    if (interesado) {
+      setDireccion('interesado')
+      setLeadId(interesado)
+    } else if (inmueble) {
+      setDireccion('inmueble')
+      setPropertyId(inmueble)
+    }
+  }, [])
 
   /*
    * Los leads del tablero, para poder elegir por NOMBRE en vez de por UUID.
@@ -207,13 +222,13 @@ export function CalceClient() {
   const nombreDelInteresado = delLead.datos?.lead.nombre ?? ''
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{tr("Qué ofrecer")}</h1>
-        <p className="text-fg-muted text-sm">
-          {tr("A un interesado, los inmuebles que le sirven. A un inmueble que se libera, los interesados a los que les sirve — con el porqué listo para mandar.")}
-        </p>
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* Ronda 22: el encabezado de todas las pantallas. */}
+      <EncabezadoDePantalla
+        seccion={tr('Captación y arriendo')}
+        titulo={tr("Qué ofrecer")}
+        descripcion={tr("A un interesado, los inmuebles que le sirven. A un inmueble que se libera, los interesados a los que les sirve — con el porqué listo para mandar.")}
+      />
 
       {/* Las dos direcciones son la MISMA pregunta mirada desde los dos lados. */}
       <SegmentedControl<Direccion>
@@ -366,7 +381,8 @@ export function CalceClient() {
                           >
                             <div className="min-w-0 flex-1">
                               <p className="font-medium">
-                                {o.inmueble?.title ?? o.propertyId}
+                                {/* Ronda 22: nunca el id interno: el título, si no la dirección. */}
+                                {o.inmueble?.title || (o.inmueble as { address?: string } | undefined)?.address || tr('Inmueble sin título')}
                                 <span className="text-fg-muted ml-2 text-sm font-normal">
                                   {[o.inmueble?.neighborhood, o.inmueble?.city]
                                     .filter(Boolean)

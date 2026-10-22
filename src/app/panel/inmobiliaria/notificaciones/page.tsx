@@ -11,6 +11,8 @@ import { useRouter } from 'next/navigation';
 import { Bell, Check, Gear } from '@phosphor-icons/react';
 import { Chip, CrossFade, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
 import { Button } from '@/components/ui';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -42,11 +44,15 @@ export default function NotificacionesDeLaInmobiliariaPage() {
   const vacio = !bandeja.cargando && !bandeja.error && bandeja.grupos.length === 0;
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-fg">Notificaciones</h1>
-          <p className="mt-1 text-sm text-fg-muted" data-testid="notificaciones-resumen">
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* GLOW UP 22-10 (UX): el contenedor y el encabezado de las demás pantallas del panel (antes otro
+          ancho, otro margen y un título en negrilla); el conteo de sin leer es su línea. Los filtros van
+          DENTRO de la lista, como en Deuda del mes: «Todas» y «Sin leer» en pestañas con su conteo, y las
+          categorías al lado. */}
+      <EncabezadoDePantalla
+        titulo="Notificaciones"
+        descripcion={
+          <span data-testid="notificaciones-resumen">
             {bandeja.cargando
               ? 'Cargando…'
               : bandeja.unreadCount > 0
@@ -54,58 +60,55 @@ export default function NotificacionesDeLaInmobiliariaPage() {
                 : bandeja.total > 0
                   ? `Leíste todas (${plural(bandeja.total, 'notificación', 'notificaciones')})`
                   : 'No tienes notificaciones'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={bandeja.unreadCount === 0}
-            onClick={() => bandeja.marcarTodasLeidas().catch(fallo('marcar las notificaciones como leídas'))}
-          >
-            <Check className="h-4 w-4" aria-hidden="true" />
-            Marcar todas como leídas
-          </Button>
-          <IconButton
-            variant="ghost"
-            icon={<Gear className="h-5 w-5" />}
-            aria-label="Qué me llega por correo"
-            title="Qué me llega por correo"
-            onClick={() => router.push('/panel/inmobiliaria/configuracion/notificaciones')}
+          </span>
+        }
+        acciones={
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={bandeja.unreadCount === 0}
+              onClick={() => bandeja.marcarTodasLeidas().catch(fallo('marcar las notificaciones como leídas'))}
+            >
+              <Check className="h-4 w-4" aria-hidden="true" />
+              Marcar todas como leídas
+            </Button>
+            <IconButton
+              variant="ghost"
+              size="sm"
+              icon={<Gear className="h-4 w-4" />}
+              aria-label="Qué me llega por correo"
+              title="Qué me llega por correo"
+              onClick={() => router.push('/panel/inmobiliaria/configuracion/notificaciones')}
+            />
+          </>
+        }
+      />
+
+      <div className="max-w-4xl overflow-hidden rounded-lg border border-border bg-surface">
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <PestanasDeEstado
+            etiqueta="Leídas y sin leer"
+            valor={soloSinLeer ? 'sin-leer' : 'todas'}
+            onCambio={(v) => setSoloSinLeer(v === 'sin-leer')}
+            pestanas={[
+              { valor: 'todas', etiqueta: 'Todas', cuantos: bandeja.cargando ? null : bandeja.total, fija: true, testid: 'notificaciones-todas' },
+              { valor: 'sin-leer', etiqueta: 'Sin leer', cuantos: bandeja.cargando ? null : bandeja.unreadCount, fija: true, tono: 'aviso', testid: 'notificaciones-sin-leer' },
+            ]}
           />
+          <div className="flex items-center gap-2 overflow-x-auto" role="group" aria-label="Filtrar por categoría">
+            {FILTROS_DE_CATEGORIA.map((f) => (
+              <Chip
+                key={f.id}
+                selected={categoria === f.id}
+                onClick={() => setCategoria((c) => (c === f.id ? undefined : f.id))}
+                className="whitespace-nowrap"
+              >
+                {f.label}
+              </Chip>
+            ))}
+          </div>
         </div>
-      </div>
-
-      <div
-        className="mb-5 flex items-center gap-2 overflow-x-auto border-b border-border pb-4"
-        role="group"
-        aria-label="Filtrar notificaciones"
-      >
-        <Chip
-          selected={!soloSinLeer && !categoria}
-          onClick={() => { setSoloSinLeer(false); setCategoria(undefined); }}
-          className="whitespace-nowrap"
-        >
-          Todas
-        </Chip>
-        <Chip selected={soloSinLeer} onClick={() => setSoloSinLeer((v) => !v)} className="whitespace-nowrap">
-          Sin leer
-          {bandeja.unreadCount > 0 && <span className="ml-1 tabular-nums">{bandeja.unreadCount}</span>}
-        </Chip>
-        <span aria-hidden="true" className="mx-1 h-5 w-px flex-shrink-0 bg-border" />
-        {FILTROS_DE_CATEGORIA.map((f) => (
-          <Chip
-            key={f.id}
-            selected={categoria === f.id}
-            onClick={() => setCategoria((c) => (c === f.id ? undefined : f.id))}
-            className="whitespace-nowrap"
-          >
-            {f.label}
-          </Chip>
-        ))}
-      </div>
-
-      <div className="overflow-hidden rounded-lg border border-border bg-surface">
         <CrossFade
           swapKey={
             bandeja.cargando
@@ -152,7 +155,7 @@ export default function NotificacionesDeLaInmobiliariaPage() {
       </div>
 
       {bandeja.hayMas && (
-        <div className="mt-4 flex justify-center">
+        <div className="flex max-w-4xl justify-center">
           <Button variant="secondary" size="sm" disabled={bandeja.cargandoMas} onClick={() => void bandeja.cargarMas()}>
             {bandeja.cargandoMas ? 'Cargando…' : 'Ver más'}
           </Button>

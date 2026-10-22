@@ -60,7 +60,8 @@ describe('DigestView', () => {
       root.render(React.createElement(DigestView, { digest }))
     })
 
-    expect(container.textContent ?? '').toContain('2026-07')
+    // El mes con su nombre, no «2026-07» (glow up 21-10).
+    expect(container.textContent ?? '').toContain('julio de 2026')
   })
 
   it('renders a "no disponible" state without throwing when payload is null', () => {

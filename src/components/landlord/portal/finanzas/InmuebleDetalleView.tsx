@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { CaretLeft } from '@phosphor-icons/react';
+import { BackButton } from '@/components/ui/back-button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Card } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import type { FinanzasInmuebleDetalle, FinanzasPagos } from '@/lib/api/owner-finanzas.types';
@@ -21,20 +21,20 @@ export function InmuebleDetalleView({ detalle, pagos }: InmuebleDetalleViewProps
   const { property, contract, novedades } = detalle;
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <Link
-          href="/panel/portafolio"
-          className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg mb-4"
-        >
-          <CaretLeft className="w-4 h-4" /> Mi plata
-        </Link>
+    <div>
+      <div className="max-w-4xl p-6 lg:p-8">
+        <BackButton href="/panel/portafolio" label="Volver a Mi plata" className="mb-4" />
 
-        <h1 className="text-2xl font-semibold">{property.label}</h1>
-        <p className="text-sm text-fg-muted mt-1 capitalize">
-          {property.occupancyStatus}
-          {property.vacantSince ? ` · vacante desde ${formatDate(property.vacantSince)}` : ''}
-        </p>
+        <EncabezadoDePantalla
+          seccion="Mi plata"
+          titulo={property.label}
+          descripcion={
+            <span className="capitalize">
+              {property.occupancyStatus}
+              {property.vacantSince ? ` · vacante desde ${formatDate(property.vacantSince)}` : ''}
+            </span>
+          }
+        />
 
         {/* Contrato */}
         {contract ? (

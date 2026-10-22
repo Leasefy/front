@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { Bell, CaretRight, CheckCircle } from '@phosphor-icons/react';
-import { PageHeader } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Card } from '@/components/ui';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { useI18n } from '@/lib/i18n';
 import { useOwnerNovedades } from '@/lib/hooks/useOwnerPortal';
+import { nombreDelMes } from '@/lib/recaudo/meses';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
 import { DamagesSection } from '@/components/landlord/portal/novedades/DamagesSection';
 
@@ -15,14 +16,14 @@ import { DamagesSection } from '@/components/landlord/portal/novedades/DamagesSe
  * portal no cableado→"Próximamente"; con data→secciones.
  */
 export default function NovedadesPage() {
-  const { formatDate } = useI18n();
+  const { formatDate, locale } = useI18n();
   const { digests, danos, isLoading, unavailable } = useOwnerNovedades();
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="p-6 lg:p-8">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
-        <EsqueletoDePagina variante="list" className="mx-auto max-w-4xl" />
+        <EsqueletoDePagina variante="list" className="max-w-4xl" />
       </div>
     );
   }
@@ -38,16 +39,28 @@ export default function NovedadesPage() {
     );
   }
 
+  /*
+   * Lo que está en curso primero (glow up, 21-10-2026): un daño en proceso es
+   * algo que la persona sigue; el resumen del mes se consulta. Sin daños en
+   * curso, el resumen va arriba como siempre.
+   */
+  const hayDanosEnCurso = Boolean(
+    danos?.available && danos.tickets.some((t) => t.estadoDisplay === 'en_proceso'),
+  );
+
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <PageHeader
-          title="Novedades"
-          subtitle="Tu resumen mensual y el estado de los daños, sin tener que llamar."
+    <div>
+      <div className="max-w-4xl p-6 lg:p-8">
+        <EncabezadoDePantalla
+          seccion="Solicitudes"
+          titulo="Novedades"
+          descripcion="Tu resumen mensual y el estado de los daños, sin tener que llamar."
         />
 
+        {hayDanosEnCurso && <DamagesSection danos={danos} />}
+
         {/* Resumen mensual */}
-        <Card className="p-4 sm:p-6 mt-8">
+        <Card className="p-4 sm:p-6 mt-6">
           <h2 className="text-base font-semibold mb-4">Resumen mensual</h2>
           {digests.length === 0 ? (
             <p className="text-sm text-fg-muted">
@@ -63,7 +76,10 @@ export default function NovedadesPage() {
                     className="flex items-center justify-between gap-4 py-3 hover:bg-surface-muted rounded-lg px-2 -mx-2 transition-colors"
                   >
                     <div className="min-w-0">
-                      <p className="font-medium font-mono tabular-nums">{d.periodo}</p>
+                      {/* El mes con su nombre («julio de 2026»), no «2026-07». */}
+                      <p className="font-medium first-letter:uppercase">
+                        {nombreDelMes(d.periodo, locale === 'en' ? 'en' : 'es')}
+                      </p>
                       <p className="text-xs text-fg-muted">
                         {d.deliveredAt ? `Enviado ${formatDate(d.deliveredAt)}` : `Generado ${formatDate(d.generatedAt)}`}
                       </p>
@@ -80,7 +96,7 @@ export default function NovedadesPage() {
         </Card>
 
         {/* Daños (fail-soft) */}
-        <DamagesSection danos={danos} />
+        {!hayDanosEnCurso && <DamagesSection danos={danos} />}
       </div>
     </div>
   );

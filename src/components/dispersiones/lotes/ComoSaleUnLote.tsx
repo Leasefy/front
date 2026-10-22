@@ -29,7 +29,7 @@ export const PASOS_DE_UN_LOTE: PasoExplicado[] = [
     icono: Stack,
     titulo: 'Armas el lote eligiendo el banco',
     explicacion:
-      'Eliges el mes y el banco desde el que giras. Se congelan las dispersiones con los datos bancarios de hoy; todavía no se gira nada.',
+      'Eliges el mes y el banco desde el que giras. Se congelan los giros con los datos bancarios de hoy; todavía no se gira nada.',
     quien: 'tu',
     tuParte: 'toca «Armar el lote» en la tarjeta del mes.',
   },

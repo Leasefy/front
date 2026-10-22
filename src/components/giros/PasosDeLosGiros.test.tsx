@@ -38,3 +38,38 @@ describe('Giros a propietarios — los cuatro pasos (Nico, 22-10)', () => {
     expect(actual?.getAttribute('data-testid')).toBe('paso-de-los-giros-revisar');
   });
 });
+
+describe('Giros a propietarios — lo hecho en el mes y lo que sigue (ronda 19)', () => {
+  it('el paso hecho lleva el chulo en vez del número; el que va en curso, un punto', () => {
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() =>
+      root!.render(
+        <PasosDeLosGiros paso="banco" estados={{ liquidar: 'hecho', revisar: 'hecho', banco: 'hecho', pagado: 'en_curso' }} />,
+      ),
+    );
+    expect(host.querySelector('[data-testid="paso-hecho-liquidar"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid="paso-hecho-banco"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid="paso-en-curso-pagado"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid="paso-de-los-giros-liquidar"]')?.textContent).toContain('(hecho este mes)');
+  });
+
+  it('sin estados, ningún paso dice que está hecho', () => {
+    montar('liquidar');
+    expect(host!.querySelector('[data-testid^="paso-hecho-"]')).toBeNull();
+  });
+
+  it('al pie, el siguiente paso con su botón; en el último no hay nada', async () => {
+    const { SiguientePasoDeLosGiros } = await import('./PasosDeLosGiros');
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() => root!.render(<SiguientePasoDeLosGiros paso="liquidar" />));
+    const ir = host.querySelector('[data-testid="ir-al-paso-revisar"]');
+    expect(ir?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/dispersiones');
+    expect(ir?.textContent).toBe('Ir a Revisar y aprobar');
+    act(() => root!.render(<SiguientePasoDeLosGiros paso="pagado" />));
+    expect(host.querySelector('[data-testid="siguiente-paso-de-los-giros"]')).toBeNull();
+  });
+});

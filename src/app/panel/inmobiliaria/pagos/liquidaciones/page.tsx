@@ -38,7 +38,8 @@
 
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
-import { PasosDeLosGiros, SECCION_DE_LOS_GIROS, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
+import { SECCION_DE_LOS_GIROS, SiguientePasoDeLosGiros, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
+import { PasosDeLosGirosDelMes } from '@/components/giros/PasosDeLosGirosDelMes';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Wallet, CalendarBlank, DotsThreeVertical, MagnifyingGlass, Trash } from '@phosphor-icons/react';
@@ -96,6 +97,7 @@ import { AvisoSinPorcentaje } from '@/components/inmobiliaria/AvisoSinPorcentaje
 import { PorGirarDeLaInmobiliaria } from '@/components/liquidaciones/PorGirarDeLaInmobiliaria';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { conSigno } from '@/lib/plata/escribir-plata';
 import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
 import { leerLiquidacionFrenada } from '@/lib/api/dispersiones-errores';
@@ -144,8 +146,8 @@ function AjustesDeLaFila({
   etiquetas: { aFavor: string; aCargo: string; deducciones: string };
 }) {
   const renglones = [
-    aFavor > 0 ? { clave: 'a-favor', etiqueta: etiquetas.aFavor, valor: `+${formatCurrency(aFavor)}`, tono: 'text-fg' } : null,
-    aCargo > 0 ? { clave: 'a-cargo', etiqueta: etiquetas.aCargo, valor: `−${formatCurrency(aCargo)}`, tono: 'text-danger' } : null,
+    aFavor > 0 ? { clave: 'a-favor', etiqueta: etiquetas.aFavor, valor: conSigno('+', formatCurrency(aFavor)), tono: 'text-fg' } : null,
+    aCargo > 0 ? { clave: 'a-cargo', etiqueta: etiquetas.aCargo, valor: conSigno('−', formatCurrency(aCargo)), tono: 'text-danger' } : null,
   ].filter(Boolean) as { clave: string; etiqueta: string; valor: string; tono: string }[];
   // Cada ajuste en dos renglones (su nombre y la cifra): de lado a lado la
   // columna se llevaba 180 px y la tabla seguía sin caber.
@@ -165,7 +167,7 @@ function AjustesDeLaFila({
         {deducciones > 0 ? (
           <>
             <span className="block font-sans text-fg-subtle">{etiquetas.deducciones}</span>
-            <span className="block font-mono tabular-nums text-danger">−{formatCurrency(deducciones)}</span>
+            <span className="block font-mono tabular-nums text-danger">{conSigno('−', formatCurrency(deducciones))}</span>
           </>
         ) : (
           <span className="font-mono text-fg-muted">—</span>
@@ -378,9 +380,9 @@ function TesoreriaContent() {
       sign: '',
       tone: 'text-fg',
     },
-    { labelKey: 'fComision', value: suma('totalCommission'), sign: '−', tone: 'text-danger' },
+    { labelKey: 'fComision', value: suma('totalCommission'), sign: '−', tone: 'text-fg' },
     ...(ivaDelMes > 0
-      ? [{ labelKey: 'fIva', value: ivaDelMes, sign: '−', tone: 'text-danger' }]
+      ? [{ labelKey: 'fIva', value: ivaDelMes, sign: '−', tone: 'text-fg' }]
       : []),
     ...(retenidoDelMes > 0
       ? [{ labelKey: 'fRetencionesComision', value: retenidoDelMes, sign: '+', tone: 'text-fg' }]
@@ -449,7 +451,7 @@ function TesoreriaContent() {
         titulo={tr(TITULO_DE_LOS_GIROS)}
         descripcion={tr(descripcionDelPaso('liquidar'))}
       />
-      <PasosDeLosGiros paso="liquidar" />
+      <PasosDeLosGirosDelMes paso="liquidar" mes={month} />
 
       {/* 🔴 «Por girar» de la inmobiliaria: UNA sola cifra, hasta el mes en
           curso, la misma del Tablero y de «Cartera → Por pagar» (Nico,
@@ -546,7 +548,7 @@ function TesoreriaContent() {
                             mes anterior (`AnimatedNumber`). */}
                         <span className={cn('shrink-0 whitespace-nowrap font-mono tabular-nums', row.tone)} data-testid="tesoreria-cifra-del-paso">
                           {/* «− $ 770.000», con espacio (VOZ-Y-TONO §4). */}
-                          {row.sign ? `${row.sign} ` : ''}
+                          {row.sign ? `${row.sign}\u00a0` : ''}
                           <AnimatedNumber value={row.value} format={formatCurrency} />
                         </span>
                       </div>
@@ -577,7 +579,7 @@ function TesoreriaContent() {
                   {deduccionesDelMes > 0 && (
                     <div className="flex items-center justify-between gap-2 text-sm" data-testid="tesoreria-deducciones-total">
                       <span className="text-muted-foreground">{t(k('fDeducciones'))}</span>
-                      <span className="shrink-0 whitespace-nowrap font-mono tabular-nums text-danger">−{formatCurrency(deduccionesDelMes)}</span>
+                      <span className="shrink-0 whitespace-nowrap font-mono tabular-nums text-danger">{conSigno('−', formatCurrency(deduccionesDelMes))}</span>
                     </div>
                   )}
                   {conDeducciones && (aGirarDelMes !== neto || enContraDelMes > 0) && (
@@ -733,13 +735,14 @@ function TesoreriaContent() {
                         >
                           <TableCell className="font-medium text-fg">{p.propietarioName}</TableCell>
                           <TableCell className="whitespace-nowrap font-mono tabular-nums">{formatCurrency(p.totalCollected)}</TableCell>
-                          <TableCell className="whitespace-nowrap font-mono tabular-nums text-danger">
-                            − {formatCurrency(p.totalCommission)}
+                          {/* Ronda 20: la comisión neutra en los tres pasos (era roja aquí). */}
+                          <TableCell className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
+                            {conSigno('−', formatCurrency(p.totalCommission))}
                             {/* El IVA de la comisión debajo, no en una columna
                                 más: la tabla ya no cabía a lo ancho (21-09). */}
                             {(p.totalIvaComision ?? 0) > 0 && (
                               <span className="block text-caption" data-testid="tesoreria-iva-fila">
-                                {t(k('colIva'))} − {formatCurrency(p.totalIvaComision ?? 0)}
+                                {t(k('colIva'))} {conSigno('−', formatCurrency(p.totalIvaComision ?? 0))}
                               </span>
                             )}
                             {(p.totalRetencionesComision ?? 0) > 0 && (
@@ -748,7 +751,7 @@ function TesoreriaContent() {
                                 <span className="block max-w-[9rem] whitespace-normal font-sans">
                                   {t(k('fRetencionesComision'))}
                                 </span>
-                                +{formatCurrency(p.totalRetencionesComision ?? 0)}
+                                {conSigno('+', formatCurrency(p.totalRetencionesComision ?? 0))}
                               </span>
                             )}
                           </TableCell>
@@ -915,6 +918,7 @@ function TesoreriaContent() {
           </EstadoDeDatos>
         </div>
       )}
+      <SiguientePasoDeLosGiros paso="liquidar" />
       <AlertDialog
         open={porCancelar !== null}
         onOpenChange={(abierto) => {

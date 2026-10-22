@@ -266,7 +266,7 @@ export function DispersionResumen({
         <div className="px-6 py-4 bg-muted/30 border-t border-border flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
             {apruebaPorLote
-              ? tr('Tu inmobiliaria aprueba las dispersiones por lote, con código.')
+              ? tr('Tu inmobiliaria aprueba los giros por lote, con código.')
               : summary.dispersionsPending !== 1
                 ? t('inmobiliaria.dispersiones.resumen.pendingToProcessPlural', { count: summary.dispersionsPending })
                 : t('inmobiliaria.dispersiones.resumen.pendingToProcess', { count: summary.dispersionsPending })}

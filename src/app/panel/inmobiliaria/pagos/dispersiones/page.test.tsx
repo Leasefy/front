@@ -307,7 +307,7 @@ describe('D1 — un fallo de carga no es «no hay dispersiones»', () => {
     const zona = q('dispersiones-lista') as HTMLElement;
     expect(q('fallo-de-carga', zona)).not.toBeNull();
     expect(q('sin-datos', zona)).toBeNull();
-    expect(host.textContent).not.toContain('Todavía no hay dispersiones');
+    expect(host.textContent).not.toContain('Todavía no hay giros');
 
     await act(async () => {
       (q('reintentar', zona) as HTMLButtonElement).click();
@@ -322,7 +322,7 @@ describe('D1 — un fallo de carga no es «no hay dispersiones»', () => {
     await montar();
     const vacio = q('sin-datos') as HTMLElement;
     expect(vacio.getAttribute('data-caso')).toBe('vacio');
-    expect(vacio.textContent).toContain('Todavía no hay dispersiones de');
+    expect(vacio.textContent).toContain('Todavía no hay giros de');
   });
 
   it('D8: una búsqueda sin coincidencias dice «ningún resultado», no que el mes está vacío', async () => {
@@ -344,7 +344,7 @@ describe('D2 — «Aprobar todas»', () => {
       (q('resumen-aprobar-todas') as HTMLButtonElement).click();
     });
     const dialogo = document.querySelector('[role="alertdialog"]');
-    expect(dialogo?.textContent).toContain('Vas a aprobar 3 dispersiones por');
+    expect(dialogo?.textContent).toContain('Vas a aprobar 3 giros por');
     expect(dialogo?.textContent).toContain('¿Seguimos?');
     expect(m.approve).not.toHaveBeenCalled();
   });
@@ -574,8 +574,8 @@ describe('02-10 — aprobar y girar con la regla de oro', () => {
   it('🔴 aprobar con un 5xx: «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
     m.approve.mockRejectedValue(fallo500());
     const { titulo, descripcion } = await aprobarDesdeElCajon();
-    expect(titulo).toBe('No se pudo aprobar la dispersión');
-    expect(descripcion).toContain('No pudimos aprobar la dispersión: algo falló de nuestro lado');
+    expect(titulo).toBe('No se pudo aprobar el giro');
+    expect(descripcion).toContain('No pudimos aprobar el giro: algo falló de nuestro lado');
     expect(descripcion).toContain('ab12cd34');
     expect(descripcion).not.toMatch(/conexi[oó]n/);
   });

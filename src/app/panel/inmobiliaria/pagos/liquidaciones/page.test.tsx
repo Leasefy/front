@@ -580,7 +580,7 @@ describe('PG-06 y PG-15 (QA de Pagos, 03-10-2026)', () => {
     expect(encabezados).not.toContain('inmobiliaria.tesoreria.colDeducciones');
     const ajustes = Array.from(host.querySelectorAll('[data-testid="tesoreria-ajustes-fila"]'));
     expect(ajustes[0]!.textContent).toContain('inmobiliaria.tesoreria.colAFavor');
-    expect(ajustes[0]!.textContent).toMatch(/\+\$\s?50\.000/);
+    expect(ajustes[0]!.textContent).toMatch(/\+\s\$\s?50\.000/);
     expect(ajustes[1]!.textContent).toContain('—');
   });
 });

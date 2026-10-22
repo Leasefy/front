@@ -144,7 +144,7 @@ export function OrigenesClient() {
                 cancela una cuenta.
               </p>
               <p>
-                No hay costo por lead: Leasefy no sabe cuánto pagas por cada portal, y un costo inventado sería peor que
+                No hay costo por interesado: Leasefy no sabe cuánto pagas por cada portal, y un costo inventado sería peor que
                 no tenerlo.
               </p>
             </div>
@@ -209,7 +209,7 @@ export function OrigenesClient() {
                     <p>
                       Lo que más produjo: <strong>{mejor.nombre}</strong>, con{' '}
                       {mejor.cerrados} arriendo{mejor.cerrados === 1 ? '' : 's'}{' '}
-                      de {mejor.leads} lead{mejor.leads === 1 ? '' : 's'}.
+                      de {mejor.leads} {mejor.leads === 1 ? 'interesado' : 'interesados'}.
                     </p>
                   ) : null}
                   {peor ? (

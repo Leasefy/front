@@ -530,7 +530,7 @@ export function DispersionDetail({
    */
   const ayudaDelPie = ofreceLote ? (
     <p className="text-caption text-muted-foreground" data-testid="dispersion-por-lote">
-      {tr("Tu inmobiliaria aprueba y gira las dispersiones por lote, con código: esta se aprueba en Lotes, no desde aquí.")}
+      {tr("Tu inmobiliaria aprueba y paga los giros por lote, con código: este se aprueba en el paso 3, Archivo del banco, no desde aquí.")}
     </p>
   ) : conReferencia && esQuienAprobo ? (
     <p
@@ -538,7 +538,7 @@ export function DispersionDetail({
       data-testid="dispersion-aprobador-no-gira"
       className="text-caption text-warning"
     >
-      {tr("Tú aprobaste esta dispersión: la referencia del giro la carga otra persona del equipo. Es el segundo par de ojos sobre la plata del propietario.")}
+      {tr("Tú aprobaste este giro: su referencia la carga otra persona del equipo. Es el segundo par de ojos sobre la plata del propietario.")}
     </p>
   ) : undefined;
 

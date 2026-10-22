@@ -36,8 +36,8 @@ export const FRASES_EN: Record<string, string> = {
   "Vas a aprobar": "You're about to approve",
   "por": "for",
   ". ¿Seguimos?": ". Continue?",
-  "Son las pendientes que ves en la lista de": "These are the pending ones you see in the list for",
-  ". Cada una queda lista para que otra persona anote la referencia del giro; el sistema no transfiere plata.": ". Each one is left ready for someone else to record the transfer reference; the system doesn't move money.",
+  "Son los pendientes que ves en la lista de": "These are the pending ones you see in the list for",
+  ". Cada uno queda listo para que otra persona anote su referencia; el sistema no transfiere plata.": ". Each one is left ready for someone else to record the transfer reference; the system doesn't move money.",
   "Cancelar": "Cancel",
   // app/panel/inmobiliaria/pagos/recaudo/page.tsx
   "Pagos · inquilinos": "Payments · tenants",
@@ -419,8 +419,8 @@ export const FRASES_EN: Record<string, string> = {
   // components/inmobiliaria/DispersionTable.tsx
   "Acciones": "Actions",
   // components/inmobiliaria/DispersionDetail.tsx
-  "Tu inmobiliaria aprueba y gira las dispersiones por lote, con código: esta se aprueba en Lotes, no desde aquí.": "Your agency approves and pays out disbursements by batch, with a code: this one is approved in Batches, not from here.",
-  "Tú aprobaste esta dispersión: la referencia del giro la carga otra persona del equipo. Es el segundo par de ojos sobre la plata del propietario.": "You approved this disbursement: someone else on the team records the transfer reference. It's the second pair of eyes on the owner's money.",
+  "Tu inmobiliaria aprueba y paga los giros por lote, con código: este se aprueba en el paso 3, Archivo del banco, no desde aquí.": "Your agency approves and pays out payouts by batch, with a code: this one is approved in step 3, Bank file, not here.",
+  "Tú aprobaste este giro: su referencia la carga otra persona del equipo. Es el segundo par de ojos sobre la plata del propietario.": "You approved this payout: someone else on the team enters its reference. It is the second pair of eyes on the owner's money.",
   "WhatsApp": "WhatsApp",
   "Sin cuenta bancaria: no se le puede girar": "No bank account: the payout can't be sent",
   "Pídele al propietario banco, tipo, número y titular, y cargalos en su ficha. Hasta entonces este giro queda esperando.": "Ask the owner for bank, account type, number and holder, and add them to their profile. Until then this payout waits.",
@@ -635,7 +635,7 @@ export const FRASES_EN: Record<string, string> = {
   "{n} por defecto": "{n} by default",
   "De la comisión · 20 % por defecto": "Of the commission · 20 % by default",
   "Acuerdo de pago esperando tu aprobación": "Payment agreement waiting for your approval",
-  "Tu inmobiliaria aprueba las dispersiones por lote, con código.": "Your agency approves disbursements by batch, with a code.",
+  "Tu inmobiliaria aprueba los giros por lote, con código.": "Your agency approves payouts by batch, with a code.",
   "Contrato en curso": "Lease in progress",
   "Candidato aprobado": "Applicant approved",
   "Ya hay un contrato creado para esta aplicación.": "A lease has already been created for this application.",

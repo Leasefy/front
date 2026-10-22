@@ -86,7 +86,8 @@ import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
 import { CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useTr } from '@/lib/i18n/use-tr';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
-import { PasosDeLosGiros, SECCION_DE_LOS_GIROS, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
+import { SECCION_DE_LOS_GIROS, SiguientePasoDeLosGiros, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
+import { PasosDeLosGirosDelMes } from '@/components/giros/PasosDeLosGirosDelMes';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -452,9 +453,9 @@ function DispersionesContent() {
         avisarQueEstaEnUnLote(enLote, id);
         return;
       }
-      toast.error('No se pudo aprobar la dispersión', {
+      toast.error('No se pudo aprobar el giro', {
         id,
-        description: motivoDeLaAccion(error, 'aprobar la dispersión'),
+        description: motivoDeLaAccion(error, 'aprobar el giro'),
       });
     }
   }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote, avisarQueEstaEnUnLote]);
@@ -586,7 +587,7 @@ function DispersionesContent() {
             {
               id: lote[i].id,
               nombre: lote[i].propietarioName,
-              motivo: motivoDeLaAccion(r.reason, 'aprobar la dispersión'),
+              motivo: motivoDeLaAccion(r.reason, 'aprobar el giro'),
             },
           ]
         : [],
@@ -783,7 +784,7 @@ function DispersionesContent() {
     bloqueDeResumen = (
       <FalloDeCarga
         error={resumenFallo}
-        queEs="el resumen de dispersiones"
+        queEs="el resumen de los giros"
         onReintentar={() => Promise.all([cargarResumen(), refetchDispersiones()])}
       />
     );
@@ -813,7 +814,7 @@ function DispersionesContent() {
           </Button>
         }
       />
-      <PasosDeLosGiros paso="revisar" />
+      <PasosDeLosGirosDelMes paso="revisar" mes={filters.month} />
 
       {/* Summary Section — la página ya no anima su propia entrada (la pone el
           `template.tsx`); se anima el CAMBIO: esqueleto → resumen / fallo se
@@ -906,7 +907,7 @@ function DispersionesContent() {
             error={errorDeLista}
             conservarContenido={conservarLista}
             vacio={filteredDispersiones.length === 0}
-            queEs="las dispersiones"
+            queEs="los giros"
             onReintentar={refetchDispersiones}
             esqueleto={
               viewMode === 'table' ? (
@@ -920,9 +921,9 @@ function DispersionesContent() {
                 hayFiltros={hayFiltros}
                 // Con filtros, SinDatos arma «Ningún <queSon> coincide…»:
                 // «resultado» concuerda, «dispersion» no.
-                queSon={hayFiltros ? 'resultados' : 'dispersiones'}
+                queSon={hayFiltros ? 'resultados' : 'giros'}
                 icono={PaperPlaneTilt}
-                titulo={`Todavía no hay dispersiones de ${monthDisplay}`}
+                titulo={`Todavía no hay giros de ${monthDisplay}`}
                 descripcion={tr("Se arman con la cuota del propietario de cada contrato, haya pagado el inquilino o no. Genéralas desde el asistente.")}
                 crear={{
                   label: t('inmobiliaria.dispersiones.wizard.title'),
@@ -986,6 +987,8 @@ function DispersionesContent() {
         )}
       </div>
 
+      <SiguientePasoDeLosGiros paso="revisar" />
+
       {/* Dispersion Detail Modal */}
       <DispersionDetail
         isOpen={isDetailOpen}
@@ -1044,11 +1047,11 @@ function DispersionesContent() {
           <AlertDialogHeader>
             <AlertDialogTitle>
               {tr("Vas a aprobar")} {pendientesEnPantalla.length}{' '}
-              {pendientesEnPantalla.length === 1 ? 'dispersión' : 'dispersiones'} {tr("por")}{' '}
+              {pendientesEnPantalla.length === 1 ? 'giro' : 'giros'} {tr("por")}{' '}
               {formatCurrency(plataPendienteEnPantalla)}{tr(". ¿Seguimos?")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {tr("Son las pendientes que ves en la lista de")} {monthDisplay}{tr(". Cada una queda lista para que otra persona anote la referencia del giro; el sistema no transfiere plata.")}
+              {tr("Son los pendientes que ves en la lista de")} {monthDisplay}{tr(". Cada uno queda listo para que otra persona anote su referencia; el sistema no transfiere plata.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

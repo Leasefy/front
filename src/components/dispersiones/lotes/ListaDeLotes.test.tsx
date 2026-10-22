@@ -624,7 +624,7 @@ describe('<ListaDeLotes> — los fallos (02-10)', () => {
   it('🔴 si no se pudo contar el mes por un 5xx, la frase lo dice con la referencia', async () => {
     candidatos.mockRejectedValue(fallo500());
     await montar('2026-09');
-    expect(frase()).toContain('No pudimos contar las dispersiones del mes: algo falló de nuestro lado');
+    expect(frase()).toContain('No pudimos contar los giros del mes: algo falló de nuestro lado');
     expect(frase()).toContain('ab12cd34');
   });
 });

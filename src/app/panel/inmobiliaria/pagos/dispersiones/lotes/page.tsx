@@ -7,15 +7,17 @@
  * Permiso: `dispersiones`/view, el mismo del `GET` del back.
  */
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ListaDeLotes } from '@/components/dispersiones/lotes/ListaDeLotes';
 import { ComoSaleUnLote } from '@/components/dispersiones/lotes/ComoSaleUnLote';
+import { PasosDeLosGirosDelMes } from '@/components/giros/PasosDeLosGirosDelMes';
+import { esMesValido, mesActual } from '@/lib/recaudo/meses';
 import {
-  PasosDeLosGiros,
+  SiguientePasoDeLosGiros,
   SECCION_DE_LOS_GIROS,
   TITULO_DE_LOS_GIROS,
   descripcionDelPaso,
@@ -24,19 +26,24 @@ import {
 import { useTr } from '@/lib/i18n/use-tr';
 
 /**
- * «Ir a Lotes» desde una dispersión trae su mes (`?mes=2026-09`): la pantalla
- * abre en ESE mes y no en el de hoy. `useSearchParams` en Next 14 pide
- * Suspense; el respaldo es la lista en el mes actual.
+ * «Ir a Lotes» desde un giro trae su mes (`?mes=2026-09`): la pantalla abre en
+ * ESE mes y no en el de hoy. `useSearchParams` en Next 14 pide Suspense; el
+ * respaldo es la lista en el mes actual.
+ *
+ * El paso 4 («Marcar pagado») es esta misma pantalla con los lotes que faltan
+ * por marcar, y sin la tarjeta para armar el lote, que es del paso 3.
  */
-/** El paso 4 («Marcar pagado») es esta misma pantalla con los lotes que faltan por marcar. */
 function pasoDeLaRuta(paso: string | null): PasoDeLosGiros {
   return paso === 'pagado' ? 'pagado' : 'banco';
 }
 
-function EncabezadoYPasos() {
+function LotesDelPaso() {
   const params = useSearchParams();
   const tr = useTr();
   const paso = pasoDeLaRuta(params.get('paso'));
+  const mesPedido = params.get('mes');
+  // El riel dice lo hecho en el mes que se elige en la lista.
+  const [mes, setMes] = useState(() => (mesPedido && esMesValido(mesPedido) ? mesPedido : mesActual()));
   return (
     <>
       {/* «¿Cómo funciona?» a la derecha, donde iría el botón de acción
@@ -47,19 +54,16 @@ function EncabezadoYPasos() {
         descripcion={tr(descripcionDelPaso(paso))}
         ayuda={<ComoSaleUnLote />}
       />
-      <PasosDeLosGiros paso={paso} />
+      <PasosDeLosGirosDelMes paso={paso} mes={mes} />
+      <ListaDeLotes
+        key={paso}
+        mesInicial={mes}
+        filtroInicial={paso === 'pagado' ? 'en_curso' : undefined}
+        sinArmar={paso === 'pagado'}
+        onCambiarMes={setMes}
+      />
+      <SiguientePasoDeLosGiros paso={paso} />
     </>
-  );
-}
-
-function ListaEnElMesPedido() {
-  const params = useSearchParams();
-  // Paso 4: abre en los lotes «en curso», los que esperan que el banco pague y se marquen.
-  return (
-    <ListaDeLotes
-      mesInicial={params.get('mes')}
-      filtroInicial={params.get('paso') === 'pagado' ? 'en_curso' : undefined}
-    />
   );
 }
 
@@ -78,10 +82,7 @@ export default function LotesDeDispersionPage() {
             />
           }
         >
-          <EncabezadoYPasos />
-        </Suspense>
-        <Suspense fallback={<ListaDeLotes />}>
-          <ListaEnElMesPedido />
+          <LotesDelPaso />
         </Suspense>
       </div>
     </PageGuard>

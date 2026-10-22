@@ -485,7 +485,7 @@ describe('🔴 destildar llega hasta el generate', () => {
     await esperarElRecalculo();
 
     expect(q('cuantos-seleccionados')?.textContent).toContain('1 de 2');
-    expect(host.textContent).toContain('Generar 1 dispersión');
+    expect(host.textContent).toContain('Generar 1 giro');
   });
 
   it('los que quedaron fuera se nombran al terminar', async () => {
@@ -666,8 +666,8 @@ describe('02-10 — confirmar con la regla de oro', () => {
         referencia: 'ab12cd34',
       }),
     );
-    expect(titulo).toBe('No se generaron las dispersiones');
-    expect(descripcion).toContain('No pudimos generar las dispersiones: algo falló de nuestro lado');
+    expect(titulo).toBe('No se generaron los giros');
+    expect(descripcion).toContain('No pudimos generar los giros: algo falló de nuestro lado');
     expect(descripcion).toContain('ab12cd34');
     expect(descripcion).not.toMatch(/conexi[oó]n/);
   });

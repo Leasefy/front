@@ -14,10 +14,13 @@
  */
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useTr } from '@/lib/i18n/use-tr';
+import { buttonVariants } from '@/components/ui/button';
+import type { EstadoDeLosPasos, PasoDelGiro } from '@/lib/giros/estado-de-los-pasos';
 
-export type PasoDeLosGiros = 'liquidar' | 'revisar' | 'banco' | 'pagado';
+export type PasoDeLosGiros = PasoDelGiro;
 
 const RAIZ = '/panel/inmobiliaria/pagos';
 
@@ -61,7 +64,16 @@ export function descripcionDelPaso(paso: PasoDeLosGiros): string {
 export const TITULO_DE_LOS_GIROS = 'Giros a propietarios';
 export const SECCION_DE_LOS_GIROS = 'Pagar a propietarios';
 
-export function PasosDeLosGiros({ paso, className }: { paso: PasoDeLosGiros; className?: string }) {
+export function PasosDeLosGiros({
+  paso,
+  estados,
+  className,
+}: {
+  paso: PasoDeLosGiros;
+  /** En qué va cada paso en el mes (de los lotes del mes). Sin dato, el paso no dice nada. */
+  estados?: EstadoDeLosPasos;
+  className?: string;
+}) {
   const tr = useTr();
   const indiceActual = PASOS_DE_LOS_GIROS.findIndex((p) => p.id === paso);
   /* A 390 el riel no cabe: se desliza solo hasta el paso actual, para que siempre se vea dónde estás. */
@@ -80,7 +92,8 @@ export function PasosDeLosGiros({ paso, className }: { paso: PasoDeLosGiros; cla
       >
         {PASOS_DE_LOS_GIROS.map((p, i) => {
           const actual = p.id === paso;
-          const hecho = indiceActual > i;
+          const antes = indiceActual > i;
+          const estado = estados?.[p.id];
           return (
             <li key={p.id} className="flex shrink-0 items-center gap-1">
               {i > 0 ? <span className="h-px w-3 bg-border sm:w-5" aria-hidden="true" /> : null}
@@ -97,16 +110,34 @@ export function PasosDeLosGiros({ paso, className }: { paso: PasoDeLosGiros; cla
                     : 'text-fg-muted hover:bg-surface-muted hover:text-fg',
                 )}
               >
-                <span
-                  className={cn(
-                    'font-mono text-caption tabular-nums',
-                    actual ? '' : hecho ? 'text-fg-muted' : 'text-fg-subtle',
-                  )}
-                  aria-hidden="true"
-                >
-                  {i + 1}
-                </span>
+                {/* Ronda 19: el paso hecho en el mes lleva el chulo en vez del número; el que va en curso, un punto. */}
+                {estado === 'hecho' ? (
+                  <Check
+                    className={cn('h-3.5 w-3.5', actual ? '' : 'text-success')}
+                    weight="bold"
+                    aria-hidden="true"
+                    data-testid={`paso-hecho-${p.id}`}
+                  />
+                ) : (
+                  <span
+                    className={cn(
+                      'font-mono text-caption tabular-nums',
+                      actual ? '' : antes ? 'text-fg-muted' : 'text-fg-subtle',
+                    )}
+                    aria-hidden="true"
+                  >
+                    {i + 1}
+                  </span>
+                )}
                 {tr(p.titulo)}
+                {estado === 'en_curso' ? (
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-warning-500"
+                    aria-hidden="true"
+                    data-testid={`paso-en-curso-${p.id}`}
+                  />
+                ) : null}
+                {estado ? <span className="sr-only">{estado === 'hecho' ? tr('(hecho este mes)') : tr('(en curso)')}</span> : null}
                 {actual ? <span className="sr-only">{tr('(paso actual)')}</span> : null}
               </Link>
             </li>
@@ -114,5 +145,36 @@ export function PasosDeLosGiros({ paso, className }: { paso: PasoDeLosGiros; cla
         })}
       </ol>
     </nav>
+  );
+}
+
+/**
+ * Al pie de cada paso: lo que sigue, con su botón (ronda 19 de la revisora:
+ * «ni ofrece el siguiente»). En el último paso no hay nada que seguir.
+ */
+export function SiguientePasoDeLosGiros({ paso, className }: { paso: PasoDeLosGiros; className?: string }) {
+  const tr = useTr();
+  const i = PASOS_DE_LOS_GIROS.findIndex((p) => p.id === paso);
+  const siguiente = PASOS_DE_LOS_GIROS[i + 1];
+  if (!siguiente) return null;
+  return (
+    <div
+      className={cn('flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between', className)}
+      data-testid="siguiente-paso-de-los-giros"
+    >
+      <p className="min-w-0 text-body-sm text-fg-muted">
+        <span className="font-mono text-caption uppercase tracking-wide text-fg-subtle">
+          {tr('Siguiente')} · {tr('Paso')} {i + 2}
+        </span>
+        <span className="block text-fg">{tr(siguiente.descripcion)}</span>
+      </p>
+      <Link
+        href={siguiente.href}
+        className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'shrink-0')}
+        data-testid={`ir-al-paso-${siguiente.id}`}
+      >
+        {tr('Ir a')} {tr(siguiente.titulo)}
+      </Link>
+    </div>
   );
 }

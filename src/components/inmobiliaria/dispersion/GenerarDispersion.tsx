@@ -401,21 +401,21 @@ export function GenerarDispersion({
           description: deLasTardias,
         });
       } else if (r.created === 0) {
-        toast.info('No se generó ninguna dispersión', {
+        toast.info('No se generó ningún giro', {
           description:
             r.skipped > 0
-              ? `Ya existían las ${r.skipped} dispersiones de ${mesEnTitulo(mes)}.`
+              ? `Ya existían los ${r.skipped} giros de ${mesEnTitulo(mes)}.`
               : `No quedaba ninguna cuota de propietario por girar en ${mesEnTitulo(mes)}.`,
         });
       } else {
-        toast.success('Dispersiones generadas correctamente', {
+        toast.success('Giros generados', {
           description: [
             // Los que quedaron fuera se dicen: «se generaron 3» se lee igual en
             // un mes de 3 propietarios que en uno de 40 donde alguien destildó
             // 37 sin darse cuenta.
             r.noElegidos > 0
               ? `${r.created} para ${mesEnTitulo(mes)}. ${r.noElegidos} quedaron fuera de la selección.`
-              : `Se generaron ${r.created} dispersiones para ${mesEnTitulo(mes)}`,
+              : `Se generaron ${r.created} giros de ${mesEnTitulo(mes)}`,
             deLasTardias,
           ]
             .filter(Boolean)
@@ -435,8 +435,8 @@ export function GenerarDispersion({
       // Lo que no es un dato del inmueble va con la regla de oro: un 5xx dice
       // «de nuestro lado» con la referencia; «conexión», sólo sin respuesta.
       // Antes un 5xx o la red dejaban el toast sin una palabra de por qué.
-      toast.error(frenada?.titulo ?? 'No se generaron las dispersiones', {
-        description: frenada?.mensaje ?? motivoDeUnaAccion(e, 'generar las dispersiones'),
+      toast.error(frenada?.titulo ?? 'No se generaron los giros', {
+        description: frenada?.mensaje ?? motivoDeUnaAccion(e, 'generar los giros'),
       });
     } finally {
       setEnviando(false);
@@ -656,7 +656,7 @@ export function GenerarDispersion({
       {errorAlGenerar != null && (
         <FalloDelAsistente
           error={errorAlGenerar}
-          queNoSalio="No se generaron las dispersiones"
+          queNoSalio="No se generaron los giros"
         />
       )}
       </Presence>
@@ -723,8 +723,8 @@ export function GenerarDispersion({
                     ? 'Sumar a 1 liquidación'
                     : `Sumar a ${tardiasQueSeSuman.length} liquidaciones`
                   : dentro.length === 1
-                    ? 'Generar 1 dispersión'
-                    : `Generar ${dentro.length} dispersiones`}
+                    ? 'Generar 1 giro'
+                    : `Generar ${dentro.length} giros`}
               </Button>
             </div>
           </div>

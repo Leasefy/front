@@ -27,7 +27,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
 import { ArrowRight, Bank, Plus } from '@phosphor-icons/react';
-import { Banner, MotionIndicator } from '@leasefy/cadence';
+import { Banner } from '@leasefy/cadence';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,7 @@ import { lotesDeDispersionApi, type LoteResumen } from '@/lib/api/lotes-de-dispe
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { formatDateTime, plataPareja } from '@/lib/format';
 import { nombreDelMes } from '@/lib/utils/mes';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { esMesValido, mesActual } from '@/lib/recaudo/meses';
 import { cn } from '@/lib/utils';
 import { NOMBRE_DEL_ESTADO, TONO_DEL_ESTADO } from './estado-del-lote';
@@ -155,10 +156,16 @@ function pasaElFiltro(lote: LoteResumen, filtro: Filtro): boolean {
 export function ListaDeLotes({
   mesInicial,
   filtroInicial,
+  onCambiarMes,
+  sinArmar = false,
 }: {
   mesInicial?: string | null;
   /** Giros a propietarios, paso 4 (22-10-2026): abre en los lotes que faltan por marcar pagados. */
   filtroInicial?: Filtro;
+  /** El riel de los pasos sigue el mes que se elige aquí. */
+  onCambiarMes?: (mes: string) => void;
+  /** Paso 4 (ronda 19): sin la tarjeta para armar el lote, que es del paso 3. */
+  sinArmar?: boolean;
 } = {}) {
   const router = useRouter();
   const { canAccess } = usePermissions();
@@ -167,6 +174,13 @@ export function ListaDeLotes({
   const [filtro, setFiltro] = useState<Filtro>(filtroInicial ?? 'todos');
   // «Ir a Lotes» desde una dispersión trae su mes en `?mes=`.
   const [mes, setMes] = useState(() => (mesInicial && esMesValido(mesInicial) ? mesInicial : mesActual()));
+  const elegirMes = useCallback(
+    (nuevo: string) => {
+      setMes(nuevo);
+      onCambiarMes?.(nuevo);
+    },
+    [onCambiarMes],
+  );
   const [armando, setArmando] = useState(false);
   const [pendientes, setPendientes] = useState<PendientesDelMes | null>(null);
   const [errorDePendientes, setErrorDePendientes] = useState<string | null>(null);
@@ -198,8 +212,8 @@ export function ListaDeLotes({
         if (vigente) {
           setErrorDePendientes(
             mensajeParaLaPersona(e, {
-              porDefecto: 'No se pudieron contar las dispersiones del mes.',
-              accion: 'contar las dispersiones del mes',
+              porDefecto: 'No se pudieron contar los giros del mes.',
+              accion: 'contar los giros del mes',
             }),
           );
         }
@@ -235,12 +249,13 @@ export function ListaDeLotes({
 
   return (
     <div className="space-y-6" data-testid="lista-de-lotes">
+      {!sinArmar && (
       <section
         className="space-y-4 rounded-lg border border-border bg-surface p-4 shadow-sm"
         data-testid="mes-de-los-lotes"
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <SelectorDeMes mes={mes} onCambiar={setMes} testId="mes-del-lote" />
+          <SelectorDeMes mes={mes} onCambiar={elegirMes} testId="mes-del-lote" />
           {puedeArmar && pendientes && pendientes.esperan > 0 && (
             <Button onClick={() => setArmando(true)} hideArrow data-testid="armar-lote-del-mes">
               <Plus className="h-4 w-4" />
@@ -258,34 +273,23 @@ export function ListaDeLotes({
           portal del banco.
         </p>
       </section>
+      )}
 
       {lotes.length > 0 && (
       <div className="rounded-lg border border-border bg-surface shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-          <div className="flex flex-wrap gap-1" role="tablist" aria-label="Filtrar por estado">
-            {FILTROS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                role="tab"
-                aria-selected={filtro === f.id}
-                onClick={() => setFiltro(f.id)}
-                className={cn(
-                  'relative isolate rounded-full px-3 py-1 text-xs font-medium transition-colors',
-                  filtro === f.id ? 'text-primary-fg' : 'text-fg-muted hover:bg-surface-muted',
-                )}
-              >
-                {/* La píldora del filtro elegido SE DESLIZA al nuevo. */}
-                {filtro === f.id ? (
-                  <MotionIndicator layoutId="lotes-filtro" className="inset-0 -z-10 rounded-full bg-primary" />
-                ) : null}
-                {f.nombre}
-              </button>
-            ))}
-          </div>
-          <span className="font-mono text-xs text-fg-muted tabular-nums">
-            {visibles.length} {visibles.length === 1 ? 'lote' : 'lotes'}
-          </span>
+          <PestanasDeEstado
+            etiqueta="Filtrar por estado"
+            valor={filtro}
+            onCambio={setFiltro}
+            pestanas={FILTROS.map((f) => ({
+              valor: f.id,
+              etiqueta: f.nombre,
+              cuantos: lotes.filter((l) => pasaElFiltro(l, f.id)).length,
+              fija: f.id === 'todos',
+              testid: `filtro-de-lotes-${f.id}`,
+            }))}
+          />
         </div>
 
         {visibles.length === 0 ? (

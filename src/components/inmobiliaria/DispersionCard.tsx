@@ -24,6 +24,7 @@ import {
   getDispersionStatusColor,
   getDispersionStatusLabel,
 } from '@/lib/types/inmobiliaria';
+import { conSigno } from '@/lib/plata/escribir-plata';
 import { ROTULO_DEL_CANON } from '@/lib/propietarios/base-del-canon';
 import { enmascarar } from '@/components/inmobiliaria/medios-de-pago/legible';
 import { useTr, useLocaleDeFechas } from '@/lib/i18n/use-tr';
@@ -231,15 +232,16 @@ export function DispersionCard({
             <span data-testid="tarjeta-rotulo-canon">{ROTULO_DEL_CANON[dispersion.baseDelCanon ?? 'CAUSADO']}</span>
             <span className="font-mono tabular-nums">{formatCurrency(dispersion.totalCollected)}</span>
           </div>
-          <div className="flex items-center justify-between text-warning">
-            <span>{tr("Comisión de administración")}</span>
-            <span className="font-mono tabular-nums">− {formatCurrency(dispersion.totalCommission)}</span>
+          {/* Ronda 20: la comisión neutra (era marrón aquí, roja en el paso 1 y azul en la tabla), y el «−» pegado a su cifra. */}
+          <div className="flex items-center justify-between gap-3 text-fg-muted dark:text-fg-subtle">
+            <span className="min-w-0">{tr("Comisión de administración")}</span>
+            <span className="shrink-0 whitespace-nowrap font-mono tabular-nums">{conSigno('−', formatCurrency(dispersion.totalCommission))}</span>
           </div>
           {/* 🔴 22-09: el IVA de la comisión, en su línea (antes no se nombraba). */}
           {(dispersion.totalIvaComision ?? 0) > 0 && (
-            <div className="flex items-center justify-between text-warning" data-testid="tarjeta-iva-comision">
-              <span>{tr("IVA de la comisión")}</span>
-              <span className="font-mono tabular-nums">− {formatCurrency(dispersion.totalIvaComision ?? 0)}</span>
+            <div className="flex items-center justify-between gap-3 text-fg-muted dark:text-fg-subtle" data-testid="tarjeta-iva-comision">
+              <span className="min-w-0">{tr("IVA de la comisión")}</span>
+              <span className="shrink-0 whitespace-nowrap font-mono tabular-nums">{conSigno('−', formatCurrency(dispersion.totalIvaComision ?? 0))}</span>
             </div>
           )}
         </div>

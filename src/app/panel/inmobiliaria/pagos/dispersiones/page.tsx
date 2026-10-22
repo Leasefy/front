@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
 import {
-  Bank,
   PaperPlaneTilt,
   Table,
   SquaresFour,
@@ -87,6 +86,7 @@ import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
 import { CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useTr } from '@/lib/i18n/use-tr';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { PasosDeLosGiros, SECCION_DE_LOS_GIROS, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -798,19 +798,12 @@ function DispersionesContent() {
           qué es en una línea y, a la derecha, lo secundario y lo principal—,
           con el contenedor de todo el panel (antes `p-4 md:p-6`: esta pantalla
           arrancaba 8 px más a la izquierda que Liquidaciones). */}
+      {/* Giros a propietarios (Nico, 22-10-2026): Dispersiones es el PASO 2 de la misma tarea. «Lotes
+          al banco» ya no es un botón suelto: es el paso 3 del riel. */}
       <EncabezadoDePantalla
-        seccion={tr('Pagar a propietarios')}
-        titulo={t('inmobiliaria.dispersiones.title')}
-        descripcion={tr('Lo que se le gira a cada propietario en el mes, y en qué va cada giro.')}
-        acciones={
-          // Los lotes al banco: el archivo plano con doble aprobación.
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href={RUTA_LOTES}>
-              <Bank className="w-4 h-4" />
-              {tr("Lotes al banco")}
-            </Link>
-          </Button>
-        }
+        seccion={tr(SECCION_DE_LOS_GIROS)}
+        titulo={tr(TITULO_DE_LOS_GIROS)}
+        descripcion={tr(descripcionDelPaso('revisar'))}
         accionPrincipal={
           <Button asChild size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/dispersiones/generar">
@@ -820,6 +813,7 @@ function DispersionesContent() {
           </Button>
         }
       />
+      <PasosDeLosGiros paso="revisar" />
 
       {/* Summary Section — la página ya no anima su propia entrada (la pone el
           `template.tsx`); se anima el CAMBIO: esqueleto → resumen / fallo se

@@ -1072,7 +1072,8 @@
       "pendientesDeAplicar": "Unapplied money",
       "recaudoBancario": "Bank collections",
       "recibos": "Receipts",
-      "deudaDelMes": "Debt this month"
+      "deudaDelMes": "Debt this month",
+      "girosAPropietarios": "Owner payouts"
     },
     "piloto": {
       "titulo": "Autopilot",

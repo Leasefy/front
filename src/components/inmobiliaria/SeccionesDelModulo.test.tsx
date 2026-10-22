@@ -138,10 +138,10 @@ describe('SeccionesDelModulo — las cards no se van al entrar en una sección',
     // del módulo que mira todas, y el riel le pone una línea detrás.
     expect(lista.map((c) => c.label)).toEqual([
       'tableroFinanciero',
-      'liquidaciones',
-      'dispersiones',
+      // Giros a propietarios (Nico, 22-10-2026): Liquidaciones y Dispersiones son UNA entrada.
+      'girosAPropietarios',
     ])
-    expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['liquidaciones'])
+    expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['girosAPropietarios'])
   })
 
   it('la lista de cobros emitidos deja marcada a Cartera: es una lectura suya, no un módulo', () => {
@@ -320,7 +320,8 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     // el 2026-09-16 la raíz es de esa cara.
     expect(caras().map((c) => c.href)).toEqual([
       '/panel/inmobiliaria/pagos',
-      '/panel/inmobiliaria/pagos/liquidaciones',
+      // Propietarios entra por «Giros a propietarios», que abre en el paso 1 (22-10-2026).
+      '/panel/inmobiliaria/pagos/giros',
       '/panel/inmobiliaria/pagos/cuadre',
     ])
   })
@@ -346,10 +347,10 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['propietarios'])
     expect(cards().map((c) => c.label)).toEqual([
       'tableroFinanciero',
-      'liquidaciones',
-      'dispersiones',
+      // Giros a propietarios (Nico, 22-10-2026): Liquidaciones y Dispersiones son UNA entrada.
+      'girosAPropietarios',
     ])
-    expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['dispersiones'])
+    expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['girosAPropietarios'])
   })
 
   /*
@@ -364,8 +365,8 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['propietarios'])
     expect(cards().map((c) => c.label)).toEqual([
       'tableroFinanciero',
-      'liquidaciones',
-      'dispersiones',
+      // Giros a propietarios (Nico, 22-10-2026): Liquidaciones y Dispersiones son UNA entrada.
+      'girosAPropietarios',
     ])
     expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['tableroFinanciero'])
   })
@@ -413,8 +414,7 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     render('/panel/inmobiliaria/pagos/dispersiones')
     expect(cards().map((c) => c.href)).toEqual([
       '/panel/inmobiliaria/pagos/tablero',
-      '/panel/inmobiliaria/pagos/liquidaciones',
-      '/panel/inmobiliaria/pagos/dispersiones',
+      '/panel/inmobiliaria/pagos/giros',
     ])
     render('/panel/inmobiliaria/pagos/cartera')
     expect(cards().map((c) => c.href)).toEqual([
@@ -510,8 +510,8 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     render('/panel/inmobiliaria/pagos/liquidaciones')
     expect(cards().map((c) => c.label)).toEqual([
       'tableroFinanciero',
-      'liquidaciones',
-      'dispersiones',
+      // Giros a propietarios (Nico, 22-10-2026): Liquidaciones y Dispersiones son UNA entrada.
+      'girosAPropietarios',
     ])
     render('/panel/inmobiliaria/pagos/traslados')
     expect(cards().map((c) => c.label)).toEqual([

@@ -479,7 +479,8 @@ describe('arquitectura del panel — resolución de rutas', () => {
   it('la pestaña activa es la de href más largo que coincida', () => {
     const pagos = modulos.find((m) => m.key === 'pagos')!;
     const tabs = pestanasDelModulo(pagos);
-    expect(pestanaActiva(tabs, `${PANEL}/pagos/dispersiones/lotes/2`)?.href).toBe(`${PANEL}/pagos/dispersiones`);
+    // Giros a propietarios (22-10-2026): un lote es el paso 3 de la entrada unida.
+    expect(pestanaActiva(tabs, `${PANEL}/pagos/dispersiones/lotes/2`)?.href).toBe(`${PANEL}/pagos/giros`);
     expect(pestanaActiva(tabs, `${PANEL}/pagos/cartera`)?.href).toBe(`${PANEL}/pagos/cartera`);
     expect(pestanaActiva(tabs, `${PANEL}/pagos?estado=vencidos`)?.href).toBe(`${PANEL}/pagos`);
   });
@@ -519,9 +520,10 @@ describe('arquitectura del panel — resolución de rutas', () => {
     const tabs = pestanasDelModulo(pagos);
     expect(pestanaActiva(tabs, `${PANEL}/pagos`)?.href).toBe(`${PANEL}/pagos`);
     expect(pestanaActiva(tabs, `${PANEL}/pagos/abc-123`)).toBeNull();
-    expect(pestanaActiva(tabs, `${PANEL}/pagos/dispersiones/lotes/1`)?.href).toBe(`${PANEL}/pagos/dispersiones`);
+    // Giros a propietarios (22-10-2026): las rutas de los cuatro pasos marcan la misma entrada.
+    expect(pestanaActiva(tabs, `${PANEL}/pagos/dispersiones/lotes/1`)?.href).toBe(`${PANEL}/pagos/giros`);
     expect(pestanaActiva(tabs, `${PANEL}/pagos/liquidaciones/por-aprobar`)?.href).toBe(
-      `${PANEL}/pagos/liquidaciones`,
+      `${PANEL}/pagos/giros`,
     );
   });
 });
@@ -613,8 +615,9 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
       `${PANEL}/pagos/cartera`,
       // 🔴 Juan (15-10-2026): «¿dónde se ven los recibos de caja?».
       `${PANEL}/pagos/recibos`,
-      `${PANEL}/pagos/liquidaciones`,
-      `${PANEL}/pagos/dispersiones`,
+      // 🔴 Giros a propietarios (Nico, 22-10-2026: «unirlas»): Liquidaciones y Dispersiones son
+      // los pasos de UNA entrada (`tambienEn`), no dos hermanas.
+      `${PANEL}/pagos/giros`,
       `${PANEL}/pagos/cuadre`,
       `${PANEL}/pagos/traslados`,
       `${PANEL}/pagos/pendientes`,
@@ -628,7 +631,7 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
       'inquilinos',
       'inquilinos',
       'inquilinos',
-      'propietarios',
+      // Giros a propietarios: una sola entrada para lo que sale (22-10-2026).
       'propietarios',
       'tesoreria',
       'tesoreria',
@@ -688,9 +691,12 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
     });
     expect(porHref('/pagos/recaudo')?.module).toBe('cobros');
     expect(porHref('/pagos/cartera')?.module).toBe('cobros');
-    expect(porHref('/pagos/liquidaciones')?.module).toBeNull();
-    expect(porHref('/pagos/liquidaciones')?.roles).toEqual([AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]);
-    expect(porHref('/pagos/dispersiones')?.module).toBe('dispersiones');
+    // 🔴 Giros a propietarios (Nico, 22-10-2026): una entrada para Liquidaciones y Dispersiones, con
+    // el gate de girar (`dispersiones`), que de fábrica tienen ADMIN y CONTADOR —los mismos que
+    // tenía Liquidaciones—. Cada página conserva su `PageGuard` (Liquidaciones, ADMIN y CONTADOR).
+    expect(porHref('/pagos/giros')?.module).toBe('dispersiones');
+    expect(porHref('/pagos/giros')?.roles).toBeUndefined();
+    expect(porHref('/pagos/giros')?.tambienEn).toEqual([`${PANEL}/pagos/liquidaciones`, `${PANEL}/pagos/dispersiones`]);
     // Ninguna de las que venían de Cobros gana un gate de rol nuevo: si lo
     // ganaran, quien tiene `cobros` y no es contador perdería su trabajo.
     // (Cobranza, la tercera, se cuida en el bloque de «Agentes IA».)
@@ -1009,8 +1015,7 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
       '/pagos/recaudo-bancario',
       '/pagos/cartera',
       '/pagos/recibos',
-      '/pagos/liquidaciones',
-      '/pagos/dispersiones',
+      '/pagos/giros',
       '/pagos/cuadre',
       '/pagos/traslados',
       '/pagos/pendientes',

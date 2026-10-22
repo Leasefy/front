@@ -7,6 +7,8 @@ import { GenerarDispersion } from '@/components/inmobiliaria/dispersion/GenerarD
 import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { PasosDeLosGiros, SECCION_DE_LOS_GIROS } from '@/components/giros/PasosDeLosGiros';
+import { useTr } from '@/lib/i18n/use-tr';
 
 /**
  * La pantalla de generar la dispersión del mes.
@@ -17,6 +19,7 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
  */
 function GenerarDispersionesContent() {
   const { t } = useI18n();
+  const tr = useTr();
   const router = useRouter();
 
   /**
@@ -45,10 +48,11 @@ function GenerarDispersionesContent() {
     <div className="space-y-6 p-6 lg:p-8">
       <BackButton href="/panel/inmobiliaria/pagos/dispersiones" label={t('inmobiliaria.common.back')} />
       <EncabezadoDePantalla
-        seccion={t('inmobiliaria.nav.dispersiones')}
+        seccion={tr(SECCION_DE_LOS_GIROS)}
         titulo={t('inmobiliaria.dispersiones.wizard.title')}
         descripcion={t('inmobiliaria.dispersiones.subtitle')}
       />
+      <PasosDeLosGiros paso="revisar" />
       <GenerarDispersion onComplete={handleComplete} onCancel={handleCancel} />
     </div>
   );

@@ -1072,7 +1072,8 @@
       "pendientesDeAplicar": "Pendientes de aplicar",
       "recaudoBancario": "Recaudo bancario",
       "recibos": "Recibos",
-      "deudaDelMes": "Deuda del mes"
+      "deudaDelMes": "Deuda del mes",
+      "girosAPropietarios": "Giros a propietarios"
     },
     "piloto": {
       "titulo": "Piloto automático",

@@ -196,4 +196,17 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Sin área, habitaciones ni baños cargados. Complétalos y el aviso público los muestra.': 'No area, bedrooms or bathrooms yet. Add them and the public listing shows them.',
   'No pudimos traer los datos del inmueble.': "We couldn't load the property's details.",
   'Faltan el área, las habitaciones y los baños: es lo primero que busca quien arrienda.': 'Area, bedrooms and bathrooms are missing: they are the first thing renters look for.',
+  // components/giros/PasosDeLosGiros.tsx (Giros a propietarios, 22-10-2026)
+  'Giros a propietarios': 'Owner payouts',
+  'Pasos del giro a propietarios': 'Owner payout steps',
+  '(paso actual)': '(current step)',
+  'Liquidar': 'Settle',
+  'Revisar y aprobar': 'Review and approve',
+  'Archivo del banco': 'Bank file',
+  'Marcar pagado': 'Mark as paid',
+  'Lo que le toca a cada propietario en el mes: su parte del canon, menos la comisión y los descuentos.': 'What each owner is owed this month: their share of the rent, minus the commission and deductions.',
+  'La dispersión del mes, giro por giro: revísala y apruébala antes de armar el lote.': "This month's payouts, one by one: review and approve them before building the batch.",
+  'Arma el lote del mes y descarga el archivo plano para subirlo al portal del banco.': "Build the month's batch and download the flat file to upload it to your bank's portal.",
+  'Cuando el banco ya pagó, marca el lote pagado: así cada propietario queda al día.': 'Once the bank has paid, mark the batch as paid so every owner is up to date.',
+  'tus elecciones de inquilino': 'your tenant selections',
 }

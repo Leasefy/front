@@ -152,12 +152,19 @@ function pasaElFiltro(lote: LoteResumen, filtro: Filtro): boolean {
   return lote.estado === filtro;
 }
 
-export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}) {
+export function ListaDeLotes({
+  mesInicial,
+  filtroInicial,
+}: {
+  mesInicial?: string | null;
+  /** Giros a propietarios, paso 4 (22-10-2026): abre en los lotes que faltan por marcar pagados. */
+  filtroInicial?: Filtro;
+} = {}) {
   const router = useRouter();
   const { canAccess } = usePermissions();
   const { lotes, cargando, error, refetch } = useLotesDeDispersion({});
   const { nombreDe } = useNombresDelEquipo();
-  const [filtro, setFiltro] = useState<Filtro>('todos');
+  const [filtro, setFiltro] = useState<Filtro>(filtroInicial ?? 'todos');
   // «Ir a Lotes» desde una dispersión trae su mes en `?mes=`.
   const [mes, setMes] = useState(() => (mesInicial && esMesValido(mesInicial) ? mesInicial : mesActual()));
   const [armando, setArmando] = useState(false);

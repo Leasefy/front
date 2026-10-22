@@ -282,6 +282,12 @@ export interface PantallaDelPanel {
    * sea la Sala de un agente (ver `pestanasDelModulo`).
    */
   exact?: boolean;
+  /**
+   * Otras rutas que son esta misma pantalla (por prefijo, con borde de segmento). «Giros a
+   * propietarios» (22-10-2026) es UNA entrada para Liquidaciones, Dispersiones y los lotes al
+   * banco: sus rutas no cambian (hay enlaces a ellas en toda la plataforma).
+   */
+  tambienEn?: readonly string[];
   /** AGENCY_MODULES key que la gobierna ('view'); null = sin gate de módulo. */
   module: string | null;
   /** Alternativas: alcanza con ver UNO (ver `NavItemWithModule.modulos`). */
@@ -689,8 +695,12 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // Lo que SALE (cara propietarios). Las facturas de proveedor (CxP)
           // cuelgan de Liquidaciones: hoy no tienen listado propio, y no se
           // inventa uno.
-          { labelKey: 'inmobiliaria.nav.liquidaciones', href: r('/pagos/liquidaciones'), icon: Wallet, module: null, roles: CONTADOR_ROLES, cara: 'propietarios' },
-          { labelKey: 'inmobiliaria.nav.dispersiones', href: r('/pagos/dispersiones'), icon: PaperPlaneTilt, module: 'dispersiones', cara: 'propietarios' },
+          // 🔴 GIROS A PROPIETARIOS (Nico, 22-10-2026: «unirlas»): Liquidaciones y Dispersiones eran
+          // dos entradas hermanas y nada decía que son la misma tarea en orden. Ahora es UNA (`/pagos/giros`,
+          // que abre en el paso 1, liquidar) y queda marcada en los cuatro (`PasosDeLosGiros`). El gate
+          // es `dispersiones` —girar es eso—, que de fábrica tienen ADMIN y CONTADOR, los mismos de
+          // Liquidaciones (back, `role-defaults.ts`). Cada página conserva su `PageGuard`.
+          { labelKey: 'inmobiliaria.nav.girosAPropietarios', href: r('/pagos/giros'), tambienEn: [r('/pagos/liquidaciones'), r('/pagos/dispersiones')], icon: PaperPlaneTilt, module: 'dispersiones', cara: 'propietarios' },
           // 🔴 Lo que está EN LA CUENTA (cara tesorería) — Nico, 18-09 de
           // noche. Estas cuatro pantallas existían desde el 17 y el 18 pero
           // nunca entraron a la navegación: vivían como cinco enlaces azules
@@ -849,8 +859,18 @@ export function pestanasDelModulo(m: ModuloDelPanel): PantallaDelPanel[] {
   return [raiz, ...(m.pantallas ?? []).map((p) => ({ ...p, scope: p.scope ?? m.scope }))];
 }
 
+/** Lo largo de lo que calzó (el href o una de `tambienEn`), o null si nada calza. */
+function largoDelCalce(p: PantallaDelPanel, pathname: string): number | null {
+  let largo: number | null =
+    pathname === p.href || (!p.exact && pathname.startsWith(`${p.href}/`)) ? p.href.length : null;
+  for (const otra of p.tambienEn ?? []) {
+    if ((pathname === otra || pathname.startsWith(`${otra}/`)) && (largo === null || otra.length > largo)) largo = otra.length;
+  }
+  return largo;
+}
+
 function coincide(p: PantallaDelPanel, pathname: string): boolean {
-  return pathname === p.href || (!p.exact && pathname.startsWith(`${p.href}/`));
+  return largoDelCalce(p, pathname) !== null;
 }
 
 function sinQuery(pathname: string): string {
@@ -915,7 +935,11 @@ export function grupoDelModulo(modulo: ModuloDelPanel): GrupoDelPanel | null {
 /** La pestaña activa dentro de un módulo: la de href más largo que coincida. */
 export function pestanaActiva(pestanas: PantallaDelPanel[], pathname: string): PantallaDelPanel | null {
   const ruta = sinQuery(pathname);
-  return pestanas.filter((p) => coincide(p, ruta)).sort((a, b) => b.href.length - a.href.length)[0] ?? null;
+  return (
+    pestanas
+      .filter((p) => coincide(p, ruta))
+      .sort((a, b) => (largoDelCalce(b, ruta) ?? 0) - (largoDelCalce(a, ruta) ?? 0))[0] ?? null
+  );
 }
 
 /** La pantalla (N2 o N3) dueña de una ruta, con su módulo. */

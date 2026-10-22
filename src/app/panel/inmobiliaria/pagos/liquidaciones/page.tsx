@@ -38,6 +38,7 @@
 
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { PasosDeLosGiros, SECCION_DE_LOS_GIROS, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Wallet, CalendarBlank, DotsThreeVertical, MagnifyingGlass, Trash } from '@phosphor-icons/react';
@@ -55,6 +56,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useTr } from '@/lib/i18n/use-tr';
 import { SectionLabel } from '@/components/ui/section-label';
 import { PestanasDeLiquidaciones } from '@/components/liquidaciones/PestanasDeLiquidaciones';
 import { CajonDeLaLiquidacion } from '@/components/liquidaciones/CajonDeLaLiquidacion';
@@ -250,6 +252,7 @@ async function leerLiquidacion(month: string): Promise<LiquidacionParaLaPantalla
 
 function TesoreriaContent() {
   const { t } = useI18n();
+  const tr = useTr();
   const k = (s: string) => `inmobiliaria.tesoreria.${s}`;
   // Antes era `useState(mesEnCurso)` sin setter: el mes anterior —el que de
   // verdad se liquida los primeros días— no se podía ver.
@@ -434,7 +437,14 @@ function TesoreriaContent() {
             Registrar la factura de un proveedor —incluida la lectura desde
             foto— vive ahora en Facturación → Compras, que es esa sección.
             Acá se lee el neto de cada propietario, no se crean documentos. */}
-      <EncabezadoDePantalla seccion={t(k('label'))} titulo={t(k('title'))} descripcion={t(k('subtitle'))} />
+      {/* Giros a propietarios (Nico, 22-10-2026): Liquidaciones es el PASO 1 de la misma tarea que
+          Dispersiones y los lotes al banco. Un encabezado para los cuatro pasos y el riel que los ordena. */}
+      <EncabezadoDePantalla
+        seccion={tr(SECCION_DE_LOS_GIROS)}
+        titulo={tr(TITULO_DE_LOS_GIROS)}
+        descripcion={tr(descripcionDelPaso('liquidar'))}
+      />
+      <PasosDeLosGiros paso="liquidar" />
 
       {/* 🔴 «Por girar» de la inmobiliaria: UNA sola cifra, hasta el mes en
           curso, la misma del Tablero y de «Cartera → Por pagar» (Nico,

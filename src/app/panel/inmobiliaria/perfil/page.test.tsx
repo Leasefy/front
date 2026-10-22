@@ -29,6 +29,10 @@ const { useAuthMock, updateProfileMock } = vi.hoisted(() => ({
   updateProfileMock: vi.fn(),
 }))
 
+// El correo de entrada tiene su propia prueba (CambiarCorreoDeEntrada.test.tsx); acá sólo se pinta.
+vi.mock('@/components/cuenta/CambiarCorreoDeEntrada', () => ({
+  CambiarCorreoDeEntrada: ({ correo }: { correo: string }) => <span data-testid="correo-de-entrada">{correo}</span>,
+}));
 vi.mock('@/lib/auth', () => ({ useAuth: () => useAuthMock() }))
 
 vi.mock('@/lib/i18n', () => ({

@@ -38,7 +38,7 @@ import { inventarioDeLaFicha, useActasDelMandato } from '@/lib/actas/actas-del-m
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 
 // Bank name mapping
-const BANK_NAMES: Record<string, string> = {
+export const BANK_NAMES: Record<string, string> = {
   bancolombia: 'Bancolombia',
   davivienda: 'Davivienda',
   bbva: 'BBVA Colombia',

@@ -164,6 +164,9 @@ vi.mock('@/components/inmobiliaria/ficha/FichaDelInmueble', () => ({
 vi.mock('@/components/inmobiliaria/ficha/LoQueFaltaDelInmueble', () => ({
   LoQueFaltaDelInmueble: () => null,
 }));
+vi.mock('@/components/inmobiliaria/ficha/PropietariosDelResumen', () => ({
+  PropietariosDelResumen: () => null,
+}));
 
 vi.mock('@/components/inmobiliaria/ActaEntregaView', () => ({
   ActaEntregaView: () => null,

@@ -5,6 +5,7 @@ import { esVacanciaLarga } from '@/lib/comercial/comercial';
 import { FranjaDelArriendo } from '@/components/inmobiliaria/ficha/FranjaDelArriendo';
 import { FichaDelInmueble } from '@/components/inmobiliaria/ficha/FichaDelInmueble';
 import { LoQueFaltaDelInmueble } from '@/components/inmobiliaria/ficha/LoQueFaltaDelInmueble';
+import { PropietariosDelResumen } from '@/components/inmobiliaria/ficha/PropietariosDelResumen';
 import { tieneCoordenadas } from '@/components/map/coordenadas';
 import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
 import { useAsesores, rolDelAsesor } from '@/lib/hooks/use-asesores';
@@ -704,7 +705,7 @@ function ConsignacionDetailContent() {
                       property={property}
                       cargando={cargandoProperty}
                       onEditar={terminada ? undefined : handleEdit}
-                      className={conMapa ? 'lg:col-span-2' : 'lg:col-span-3'}
+                      className="lg:col-span-2"
                       // Sin coordenadas, la ubicación es un renglón de «Lo que falta» (arriba);
                       // con el mandato terminado se dice aquí, sin acción que ofrecer.
                       ubicacion={
@@ -719,14 +720,23 @@ function ConsignacionDetailContent() {
                         )
                       }
                     />
-                    {conMapa ? (
-                      <UbicacionDelInmueble
-                        property={property}
-                        cargando={cargandoProperty}
-                        consignacion={consignacion}
-                        onActualizado={refetchProperty}
+                    {/* La columna derecha: quién es el dueño y, si está ubicado, el mapa. */}
+                    <div className="space-y-6">
+                      <PropietariosDelResumen
+                        consignacionId={consignacion.id}
+                        propietario={propietario}
+                        copropietarios={consignacion.copropietarios ?? []}
+                        participacionesDesconocidas={consignacion.participacionesDesconocidas === true}
                       />
-                    ) : null}
+                      {conMapa ? (
+                        <UbicacionDelInmueble
+                          property={property}
+                          cargando={cargandoProperty}
+                          consignacion={consignacion}
+                          onActualizado={refetchProperty}
+                        />
+                      ) : null}
+                    </div>
                   </div>
                 ) : (
                   // Cartera migrada sin inmueble detrás: no hay ficha ni mapa que mostrar, y se dice.

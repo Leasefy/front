@@ -64,6 +64,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@leasefy/cadence';
 import { sinMayusculasSostenidas } from '@/lib/inmuebles/titulo-de-la-ficha';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -795,7 +796,8 @@ function ContratosContent() {
                     const fin = c.endDate ? tiempoHastaElFin(c.endDate, locale) : null;
                     return (
                       <>
-                        <span className="text-foreground md:block">{fmtDate(c.endDate, locale)}</span>
+                        {/* Ronda 17: en la tabla, la fecha corta («1 nov 2026»). */}
+                        <span className="text-foreground md:block">{locale === 'en' ? fmtDate(c.endDate, locale) : fechaCorta(c.endDate)}</span>
                         <span className="md:hidden"> · </span>
                         {estado.clave === 'TERMINA' ? (
                           // Ronda 15: «termina hoy» es lo más urgente → rojo, no el mismo naranja de «en 17 días».

@@ -136,10 +136,8 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, conFiltros,
             type="search"
             value={filtros.busqueda}
             onChange={(e) => poner('busqueda', e.target.value)}
-            placeholder={tx(
-              'Buscar por número, inquilino o dirección…',
-              'Search by number, tenant or address…',
-            )}
+            // Ronda 17: un texto que cabe a 390 (el largo se cortaba).
+            placeholder={tx('Buscar contrato o inquilino', 'Search contract or tenant')}
             aria-label={tx('Buscar contratos', 'Search contracts')}
             // QA-CONT-95: sin la «×» nativa del buscador (salían dos, A-10).
             className="w-full pl-10 pr-10 [&::-webkit-search-cancel-button]:hidden"

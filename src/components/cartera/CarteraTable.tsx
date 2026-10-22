@@ -94,6 +94,7 @@ import {
   interesDe,
   totalConInteres,
 } from './interes-de-mora'
+import { cn } from '@/lib/utils'
 
 /** A dónde vuelve el estado de cuenta que se abra desde esta tabla. */
 const VOLVER_A = '/panel/inmobiliaria/pagos/cartera'
@@ -465,7 +466,8 @@ function FilaDeCartera({
           {/* «2026-09» es el identificador del mes, no cómo se lee: la casa
               lo escribe con letras (`nombreDelMes`, ver DispersionCard). */}
           <div className="whitespace-nowrap text-fg">{nombreDelMes(item.month, locale)}</div>
-          <div className="text-caption tabular-nums text-fg-subtle">
+          {/* Ronda 12 (390): en el celular el chip de días ya lo dice. */}
+          <div className="text-caption tabular-nums text-fg-subtle max-md:hidden">
             {t('cartera.tabla.vence', { fecha: formatDate(item.vence) })}
           </div>
         </div>
@@ -518,7 +520,7 @@ function FilaDeCartera({
               )}
             </div>
           ) : null}
-          <div className="whitespace-nowrap text-xs text-fg-subtle">
+          <div className="whitespace-nowrap text-xs text-fg-subtle max-md:hidden">
             {/* Tres estados, no dos. `null` es «no hay cobro emitido desde el
                 cual escribirle»; un 0 es un cero VERDADERO («no le hemos
                 escrito»). Taparlos con el mismo texto los vuelve el mismo
@@ -538,7 +540,8 @@ function FilaDeCartera({
       </TableCell>
 
       {/* Saldo: el pendiente manda; el abono va debajo sólo si lo hubo. */}
-      <TableCell className="align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t('cartera.tabla.debe')}>
+      {/* Ronda 12 (390): sin intereses, «Debe» es igual al Total: en el celular sólo el Total. */}
+      <TableCell className={cn('align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left', !interesDe(item) && item.paidAmount === 0 && 'max-md:hidden')} data-rotulo={t('cartera.tabla.debe')}>
         <div className="whitespace-nowrap">
           <div className="font-mono font-medium tabular-nums text-fg">
             {formatCurrency(item.pendingAmount)}

@@ -184,6 +184,8 @@ export function TableroFinancieroPanel() {
   }, [mes, sedeId]);
 
   const sedes = tablero?.sedes ?? [];
+  // 22-10 (revisión): UN «Qué mide cada cifra» para las cuatro tarjetas.
+  const [queMide, setQueMide] = useState(false);
 
   return (
     <div className="space-y-6" data-testid="tablero-financiero">
@@ -197,6 +199,17 @@ export function TableroFinancieroPanel() {
         descripcion={tr(
           'Lo que entró, lo que deben, lo que hay que girar y lo que ganó la inmobiliaria en el mes.',
         )}
+        ayuda={
+          <button
+            type="button"
+            aria-pressed={queMide}
+            onClick={() => setQueMide((v) => !v)}
+            className="rounded-full text-body-sm font-medium text-fg-muted underline-offset-4 hover:text-fg hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            data-testid="tablero-que-mide"
+          >
+            {queMide ? tr('Ocultar qué mide cada cifra') : tr('Qué mide cada cifra')}
+          </button>
+        }
         acciones={
           <div
             className="flex flex-wrap items-center gap-1 rounded-full border border-border bg-surface py-0.5 pl-1 pr-1"
@@ -248,10 +261,10 @@ export function TableroFinancieroPanel() {
                 la mañana en 2×2: cada tarjeta con UNA cifra grande, lo que la
                 explica en renglones y su enlace; un renglón en cero no se pinta. */}
             <div className="grid gap-5 lg:grid-cols-2">
-              <BloqueDeRecaudo tablero={tablero} />
-              <BloqueDeCartera tablero={tablero} />
-              <BloqueDePropietarios tablero={tablero} />
-              <BloqueDeMargen tablero={tablero} />
+              <BloqueDeRecaudo tablero={tablero} queMide={queMide} />
+              <BloqueDeCartera tablero={tablero} queMide={queMide} />
+              <BloqueDePropietarios tablero={tablero} queMide={queMide} />
+              <BloqueDeMargen tablero={tablero} queMide={queMide} />
             </div>
             <BloqueDeDeudores tablero={tablero} />
 
@@ -298,7 +311,7 @@ function Renglones({ children }: { children: ReactNode }) {
   return <div className="border-t border-border px-5 py-2">{children}</div>;
 }
 
-function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
+function BloqueDeRecaudo({ tablero, queMide }: { tablero: Tablero; queMide: boolean }) {
   const tr = useTr();
   const { recaudo } = tablero;
   // Los mismos decimales en TODO el tablero (revisión 22-10: las cuatro cifras héroe no coincidían).
@@ -311,6 +324,7 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
 
   return (
     <TarjetaDeCifras
+      queMideDesdeAfuera={queMide}
       testId="bloque-recaudo"
       className="flex h-full flex-col"
       titulo={tr('Recaudo')}
@@ -408,7 +422,7 @@ function MarcaDelTramo({ i, total }: { i: number; total: number }) {
   );
 }
 
-function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
+function BloqueDeCartera({ tablero, queMide }: { tablero: Tablero; queMide: boolean }) {
   const tr = useTr();
   const { cartera } = tablero;
   // Los mismos decimales en TODO el tablero (revisión 22-10: las cuatro cifras héroe no coincidían).
@@ -416,6 +430,7 @@ function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
   const sumaDeTramos = cartera.tramos.reduce((a, t) => a + Math.max(t.carteraCop, 0), 0);
   return (
     <TarjetaDeCifras
+      queMideDesdeAfuera={queMide}
       testId="bloque-cartera"
       className="flex h-full flex-col"
       titulo={tr('Cartera por edades')}
@@ -574,13 +589,14 @@ function BloqueDeDeudores({ tablero }: { tablero: Tablero }) {
   );
 }
 
-function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
+function BloqueDePropietarios({ tablero, queMide }: { tablero: Tablero; queMide: boolean }) {
   const tr = useTr();
   const { propietarios } = tablero;
   // Los mismos decimales en TODO el tablero (revisión 22-10: las cuatro cifras héroe no coincidían).
   const plata = plataDelTablero(tablero);
   return (
     <TarjetaDeCifras
+      queMideDesdeAfuera={queMide}
       testId="bloque-propietarios"
       className="flex h-full flex-col"
       titulo={tr('Plata de los propietarios')}
@@ -660,13 +676,14 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
   );
 }
 
-function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
+function BloqueDeMargen({ tablero, queMide }: { tablero: Tablero; queMide: boolean }) {
   const tr = useTr();
   const { margen } = tablero;
   // Los mismos decimales en TODO el tablero (revisión 22-10: las cuatro cifras héroe no coincidían).
   const plata = plataDelTablero(tablero);
   return (
     <TarjetaDeCifras
+      queMideDesdeAfuera={queMide}
       testId="bloque-margen"
       className="flex h-full flex-col"
       titulo={tr('Lo que gana la inmobiliaria')}

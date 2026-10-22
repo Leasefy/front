@@ -236,6 +236,7 @@ export function TarjetaDeCifras({
   children,
   testId,
   className,
+  queMideDesdeAfuera,
 }: {
   titulo: string;
   /** Una línea: la pregunta que contesta el bloque. */
@@ -246,9 +247,15 @@ export function TarjetaDeCifras({
   children: ReactNode;
   testId?: string;
   className?: string;
+  /**
+   * 22-10 (revisión): «Qué mide cada cifra» lo maneja la pantalla, una sola vez
+   * (el Tablero tenía cuatro botones iguales). Con esto, la tarjeta no pinta el suyo.
+   */
+  queMideDesdeAfuera?: boolean;
 }) {
   const tr = useTr();
-  const [abiertas, setAbiertas] = useState(false);
+  const [abiertasPropio, setAbiertas] = useState(false);
+  const abiertas = queMideDesdeAfuera ?? abiertasPropio;
   return (
     <section
       className={cn('overflow-hidden rounded-[20px] border border-border bg-surface', className)}
@@ -260,6 +267,7 @@ export function TarjetaDeCifras({
           {pregunta ? <p className="text-body-sm text-fg-muted">{pregunta}</p> : null}
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {queMideDesdeAfuera === undefined ? (
           <button
             type="button"
             className="inline-flex items-center gap-1.5 rounded-full text-body-sm font-medium text-fg-muted underline-offset-4 transition-colors duration-fast hover:text-fg hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -270,6 +278,7 @@ export function TarjetaDeCifras({
             <Info className="h-4 w-4" aria-hidden="true" />
             {abiertas ? tr('Ocultar qué mide cada cifra') : tr('Qué mide cada cifra')}
           </button>
+          ) : null}
           {accion}
         </div>
       </div>

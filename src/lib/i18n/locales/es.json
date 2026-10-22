@@ -6172,7 +6172,7 @@
         "cotizadorIntegraciones": "Integraciones",
         "pagosHome": "Pagos",
         "mantenimiento": "Mantenimiento",
-        "mantenimientoTickets": "Tickets",
+        "mantenimientoTickets": "Solicitudes",
         "mantenimientoResumen": "Resumen"
       },
       "breadcrumb": {
@@ -6195,7 +6195,7 @@
         "pagos": "Volver a pagos",
         "siniestros": "Volver a siniestros",
         "estudios": "Volver a estudios",
-        "tickets": "Volver a tickets"
+        "tickets": "Volver a las solicitudes"
       },
       "cotizador": {
         "placeholder": {
@@ -7016,12 +7016,12 @@
       "mantenimiento": {
         "overview": {
           "title": "Centro de Triage de Mantenimiento",
-          "subtitle": "Salud operativa de tickets de mantenimiento",
+          "subtitle": "Cómo van las solicitudes de mantenimiento",
           "lastUpdated": "Actualizado hace",
           "errorLoading": "Error al cargar el resumen",
           "antiGamingLabel": "Métricas anti-gaming",
           "kpis": {
-            "ticketsAbiertos": "Tickets abiertos",
+            "ticketsAbiertos": "Solicitudes abiertas",
             "emergenciasActivas": "Emergencias activas",
             "vencidos": "Vencidos",
             "tiempoPrimeraRespuesta": "Tiempo 1ª respuesta",
@@ -7037,8 +7037,8 @@
         "inbox": {
           "title": "Bandeja priorizada",
           "subtitle": "Las solicitudes, de la más urgente a la menos urgente",
-          "empty": "No hay tickets de mantenimiento",
-          "emptyFiltered": "Ningún ticket coincide con los filtros",
+          "empty": "Ninguna solicitud de mantenimiento: cuando un inquilino reporte un daño, aparece aquí.",
+          "emptyFiltered": "Ninguna solicitud coincide con los filtros",
           "sortedByScore": "Por prioridad",
           "errorLoading": "Error al cargar la bandeja",
           "card": {
@@ -7148,10 +7148,10 @@
           "sinProveedor": "Sin proveedor"
         },
         "detalle": {
-          "title": "Detalle del ticket",
+          "title": "Detalle de la solicitud",
           "errorLoading": "Error al cargar el detalle",
-          "noEncontrado": "No encontramos este ticket",
-          "noEncontradoDesc": "Puede que el enlace esté mal o que el ticket ya no exista. Vuelve a la lista para buscarlo.",
+          "noEncontrado": "No encontramos esta solicitud",
+          "noEncontradoDesc": "Puede que el enlace esté mal o que la solicitud ya no exista. Vuelve a la lista para buscarlo.",
           "queEntendi": "Qué entendí",
           "clasificacion": "Clasificación",
           "imagenes": "Imágenes",
@@ -7170,7 +7170,7 @@
           "cerrar": {
             "label": "Cerrar (no procede)",
             "confirmTitle": "Confirmar cierre",
-            "confirmDesc": "El ticket queda cerrado como «no procede». ¿Deseas continuar?",
+            "confirmDesc": "La solicitud queda cerrada como «no procede».",
             "confirm": "Confirmar cierre",
             "cancel": "Cancelar"
           }

@@ -61,7 +61,7 @@ afterEach(async () => {
 describe('La ficha del ticket', () => {
   it('un ticket que no está lo dice como ticket (no como bandeja vacía) y deja volver a la lista', async () => {
     await montar();
-    expect(document.body.textContent).toContain('No encontramos este ticket');
+    expect(document.body.textContent).toContain('No encontramos esta solicitud');
     expect(enlacesALaLista()).toHaveLength(1);
   });
 

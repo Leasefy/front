@@ -653,7 +653,13 @@ function FilaDeInquilino({
               {textoDeVigentes(t, vigentes.length)}
             </span>
           ) : principal ? (
-            <EstadoDelArriendo arriendo={principal} />
+            // Glow up 22-10 (ronda 12): un arriendo activo no lleva chip —«Activo» en cada
+            // fila de la pestaña «Activos» no decía nada—; sólo lo que NO es activo se nombra.
+            estadoParaMostrar(principal) === 'ACTIVE' ? (
+              <span className="sr-only" data-estado="ACTIVE">{t('inquilinos.estados.activo')}</span>
+            ) : (
+              <EstadoDelArriendo arriendo={principal} />
+            )
           ) : null}
         </TableCell>
 
@@ -795,10 +801,20 @@ function TarjetasDeInquilinos({
                       {textoDeVigentes(t, vigentes.length)}
                     </span>
                   ) : principal ? (
-                    <EstadoDelArriendo arriendo={principal} />
+                    estadoParaMostrar(principal) === 'ACTIVE' ? (
+                      <span className="sr-only">{t('inquilinos.estados.activo')}</span>
+                    ) : (
+                      <EstadoDelArriendo arriendo={principal} />
+                    )
                   ) : null}
                 </span>
               </span>
+              {/* Glow up 22-10 (ronda 12): el inmueble es lo segundo con que se reconoce a un inquilino. */}
+              {!varios && principal?.inmueble?.address ? (
+                <span className="mt-1 block truncate text-caption text-fg-muted" title={principal.inmueble.address}>
+                  {sinMayusculasSostenidas(principal.inmueble.address)}
+                </span>
+              ) : null}
               {!sinArriendo ? (
                 <span className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <span className="whitespace-nowrap font-mono text-sm tabular-nums text-fg">

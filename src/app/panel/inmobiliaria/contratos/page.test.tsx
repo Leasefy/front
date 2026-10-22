@@ -615,6 +615,11 @@ describe('ContratosPage — los filtros', () => {
   const elegir = async (testid: string, opcion: string) =>
     click(`[data-testid="${testid}"] ~ div [data-opcion="${opcion}"], [data-testid="${testid}"] + div [data-opcion="${opcion}"]`)
 
+  // La pantalla abre en «Activos» (21-10): estas pruebas miran los filtros sobre la lista entera.
+  beforeEach(() => {
+    window.history.replaceState(null, '', '/panel/inmobiliaria/contratos?estado=all')
+  })
+
   it('🔴 la barra aparece con contratos y no sobre una lista vacía', async () => {
     withContracts([])
     await renderPage()
@@ -623,7 +628,8 @@ describe('ContratosPage — los filtros', () => {
     withContracts(LISTA)
     await renderPage()
     expect(container.querySelector('[data-testid="filtros-de-contratos"]')).not.toBeNull()
-    expect(container.querySelector('[data-testid="conteo-filtrado"]')?.textContent).toBe('3 de 3')
+    // Sin filtros no se repite el total: ya está en la pestaña (21-10).
+    expect(container.querySelector('[data-testid="conteo-filtrado"]')).toBeNull()
   })
 
   it('migrados / creados acá', async () => {
@@ -632,7 +638,7 @@ describe('ContratosPage — los filtros', () => {
 
     await click('[data-testid="segmento-migrado"]')
     expect(nombres()).toEqual(['Carla Migrada'])
-    expect(container.querySelector('[data-testid="conteo-filtrado"]')?.textContent).toBe('1 de 3')
+    expect(container.querySelector('[data-testid="conteo-filtrado"]')?.textContent).toBe('1 contrato')
 
     await click('[data-testid="segmento-nativo"]')
     expect(nombres()).toEqual(['Ana Activa', 'Bruno Borrador'])
@@ -695,15 +701,16 @@ describe('ContratosPage — los filtros', () => {
  * lo que se ve.
  */
 describe('ContratosPage — las cifras son el encabezado de la tabla, no un bloque aparte', () => {
-  it('🔴 los cuatro contadores están DENTRO de la tarjeta de la tabla', async () => {
+  it('🔴 las pestañas de estado están DENTRO de la tarjeta de la tabla, y las que están en 0 no aparecen', async () => {
     withContracts([contract({ id: 'c1', status: 'active' })])
     await renderPage()
     const tarjeta = container.querySelector('[data-testid="filtros-de-contratos"]')!.closest('section')
     expect(tarjeta).not.toBeNull()
-    const dentro = tarjeta!.querySelectorAll('[data-testid="contratos-kpi"]')
-    expect(dentro).toHaveLength(4)
-    // Y ninguno quedó suelto por fuera.
-    expect(container.querySelectorAll('[data-testid="contratos-kpi"]')).toHaveLength(4)
+    const dentro = Array.from(tarjeta!.querySelectorAll('[data-testid="contratos-kpi"]'))
+    // Con un solo contrato activo quedan las dos fijas: «Activos» y «Todos» (21-10: sin «Por firmar 0»).
+    expect(dentro.map((p) => p.textContent)).toEqual(['Activos1', 'Todos1'])
+    // Y ninguna quedó suelta por fuera.
+    expect(container.querySelectorAll('[data-testid="contratos-kpi"]')).toHaveLength(2)
   })
 
   it('van ANTES de los filtros: primero de qué habla la tabla, después cómo se achica', async () => {
@@ -720,16 +727,14 @@ describe('ContratosPage — las cifras son el encabezado de la tabla, no un bloq
 describe('ContratosPage — la consulta caída no se disfraza de cero ni de vacío (C1 · C2)', () => {
   const kpis = () => Array.from(container.querySelectorAll('[data-testid="contratos-kpi"]'))
 
-  it('🔴 con un 500, los cuatro contadores muestran «—» y «No se pudo traer», nunca 0', async () => {
+  it('🔴 con un 500 no hay pestañas con ceros: se dice «No se pudo traer», nunca 0', async () => {
     withContracts([], { error: 'Internal server error', errorCrudo: new ApiError(500, 'Internal server error') })
     await renderPage()
 
-    expect(kpis()).toHaveLength(4)
-    for (const kpi of kpis()) {
-      expect(kpi.textContent).toContain('—')
-      expect(kpi.textContent).toContain('No se pudo traer')
-      expect(kpi.textContent).not.toMatch(/\d/)
-    }
+    expect(kpis()).toHaveLength(0)
+    const resumen = container.querySelector('[data-testid="resumen-de-contratos"]')!
+    expect(resumen.textContent).toContain('No se pudo traer')
+    expect(resumen.textContent).not.toMatch(/\d/)
   })
 
   it('con un 500 el fallo va en la tabla con «Intentar de nuevo», y no afirma «Sin contratos aún»', async () => {
@@ -822,16 +827,17 @@ describe('ContratosPage — las cifras filtran la tabla (glow up 21-10)', () => 
       c.textContent?.startsWith(etiqueta),
     )!
 
-  it('«Borradores» deja sólo los borradores y se marca; otro toque, la lista entera', async () => {
+  it('abre en «Activos»; «Borradores» deja sólo los borradores y se marca; «Todos», la lista entera', async () => {
     withContracts(LISTA, { stats: STATS })
     await renderPage()
-    expect(filas()).toHaveLength(4)
+    expect(cifra('Activos').getAttribute('aria-pressed')).toBe('true')
+    expect(nombres()).toEqual(['Ana Activa'])
 
     await act(async () => cifra('Borradores').click())
     expect(nombres()).toEqual(['Bruno Borrador'])
     expect(cifra('Borradores').getAttribute('aria-pressed')).toBe('true')
 
-    await act(async () => cifra('Borradores').click())
+    await act(async () => cifra('Todos').click())
     expect(filas()).toHaveLength(4)
   })
 
@@ -840,7 +846,8 @@ describe('ContratosPage — las cifras filtran la tabla (glow up 21-10)', () => 
     await renderPage()
     await act(async () => cifra('Borradores').click())
     expect(window.location.search).toBe('?estado=draft')
-    await act(async () => cifra('Borradores').click())
+    // «Activos» es como abre: la URL queda limpia.
+    await act(async () => cifra('Activos').click())
     expect(window.location.search).toBe('')
 
     // Volver a la lista con el enlace que quedó: arranca filtrada.
@@ -860,11 +867,25 @@ describe('ContratosPage — las cifras filtran la tabla (glow up 21-10)', () => 
     expect(nombres().sort()).toEqual(['Carla Propietario', 'Diana Inquilina'])
   })
 
-  it('sin vencidos sin renovar, esa cifra no aparece (quedan las cuatro de siempre)', async () => {
+  it('sin vencidos sin renovar (ni terminados), esas pestañas no aparecen', async () => {
     withContracts(LISTA, { stats: STATS })
     await renderPage()
     expect(container.querySelector('[data-testid="ver-vencidos-sin-renovar"]')).toBeNull()
-    expect(container.querySelectorAll('[data-testid="contratos-kpi"]')).toHaveLength(4)
+    expect(Array.from(container.querySelectorAll('[data-testid="contratos-kpi"]')).map((p) => p.textContent)).toEqual([
+      'Activos1',
+      'Por firmar2',
+      'Borradores1',
+      'Todos4',
+    ])
+  })
+
+  it('lo que toca va arriba en una línea, y lleva a su pestaña', async () => {
+    withContracts(LISTA, { stats: STATS })
+    await renderPage()
+    const linea = container.querySelector<HTMLElement>('[data-testid="contratos-lo-que-toca"]')!
+    expect(linea.textContent).toContain('2 esperan una firma')
+    await act(async () => linea.querySelector('button')!.click())
+    expect(nombres().sort()).toEqual(['Carla Propietario', 'Diana Inquilina'])
   })
 
   it('con vencidos sin renovar, su cifra (con punto) deja sólo esos', async () => {

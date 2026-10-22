@@ -29,12 +29,18 @@ import {
   vencidoSinRenovar,
   filtrosALaUrl,
   filtrosDesdeLaUrl,
+  filtrosDeLaPestana,
+  FILTROS_AL_ENTRAR,
+  PESTANAS_DE_CONTRATOS,
+  ESTADOS_POR_FIRMAR,
+  type PestanaDeContratos,
 } from '@/lib/contratos/filtrar-contratos';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { useEstadoEnLaUrl } from '@/lib/hooks/use-estado-en-la-url';
 import { numeroDelContrato } from '@/lib/contratos/numero-del-contrato';
 import { ContratoFilters } from '@/components/contratos/ContratoFilters';
 import { formatearVigencia } from '@/lib/contratos/fecha-de-vigencia';
-import { estadoParaMostrar, noHaEmpezado } from '@/lib/contratos/estado-para-mostrar';
+import { estadoParaMostrar } from '@/lib/contratos/estado-para-mostrar';
 import { useRouter } from 'next/navigation';
 import { fmtCop } from './format';
 import {
@@ -56,7 +62,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
-import { Avatar, Cifra, FranjaDeCifras } from '@leasefy/cadence';
+import { Avatar } from '@leasefy/cadence';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -110,46 +116,6 @@ function propietarioDeLaFila(c: Contract): string | null {
 
 // ── Stat card ────────────────────────────────────────────────────────────────
 
-/**
- * Una cifra del encabezado de la tabla.
- *
- * 🔴 19-09-2026 · Antes era una tarjeta con borde y fondo propios, flotando
- * fuera de la tabla. Ya no: vive DENTRO de la tarjeta de la tabla, así que no
- * necesita su propio marco —tendría dos bordes, uno adentro del otro— y se
- * separa de sus vecinas con una línea, como las pestañas de la deuda del mes.
- */
-function CifraDeLaTabla({
-  label,
-  value,
-  sub,
-  tono,
-  onClick,
-  activa,
-  testid = 'contratos-kpi',
-}: {
-  label: string;
-  value: number | string;
-  /** La línea de abajo: «No se pudo traer» cuando el número es una raya por un fallo. */
-  sub?: string;
-  /** El punto, sólo cuando la cifra pide atención (por firmar, vencidos sin renovar). */
-  tono?: 'aviso';
-  /** GLOW UP 21-10: la cifra filtra la tabla (la misma `Cifra` de Postulaciones, PQRS y Documentos). */
-  onClick?: () => void;
-  activa?: boolean;
-  testid?: string;
-}) {
-  return (
-    <Cifra
-      etiqueta={label}
-      valor={value}
-      detalle={sub}
-      tono={tono}
-      onClick={onClick}
-      activa={activa}
-      data-testid={testid}
-    />
-  );
-}
 
 // ── Celda del número ─────────────────────────────────────────────────────────
 
@@ -250,22 +216,15 @@ function ContratosContent() {
    */
   // 21-10 (DESIGN §25.1, 6b): los filtros viven también en la URL — abrir un
   // contrato y volver ya no los pierde, y un enlace puede traer «los por firmar».
-  const [filtros, setFiltros] = useEstadoEnLaUrl<FiltrosDeContratos>(FILTROS_INICIALES, {
-    leer: filtrosDesdeLaUrl,
-    escribir: filtrosALaUrl,
+  // Abre en «Activos» (revisión de diseño 21-10): los terminados son la mitad de
+  // la lista y no son trabajo de hoy; están a un toque, en su pestaña.
+  const [filtros, setFiltros] = useEstadoEnLaUrl<FiltrosDeContratos>(FILTROS_AL_ENTRAR, {
+    leer: (p) => filtrosDesdeLaUrl(p, FILTROS_AL_ENTRAR),
+    escribir: (f, p) => filtrosALaUrl(f, p, FILTROS_AL_ENTRAR),
   });
   const contratosFiltrados = useMemo(
     () => filtrarContratos(contracts, filtros),
     [contracts, filtros],
-  );
-  const conFiltros = hayFiltros(filtros);
-  /*
-   * QA-CONT C-05 (Nico, 03-10-2026): un contrato que empieza el 1 de noviembre
-   * NO es «Activo» ni suma en los activos: dice «Empieza el 1 de nov».
-   */
-  const porEmpezar = useMemo(
-    () => contracts.filter((c) => c.status === 'active' && noHaEmpezado(c)).length,
-    [contracts],
   );
   // QA-CONT-95 (A-03): los vencidos sin renovar tampoco son «Activos» (la fila
   // dice «Vencido»); se cuentan aparte, como los por empezar.
@@ -273,16 +232,35 @@ function ContratosContent() {
     () => contracts.filter((c) => vencidoSinRenovar(c)).length,
     [contracts],
   );
-  /** GLOW UP 21-10: tocar una cifra deja sólo esos; tocarla otra vez, la lista entera. Conserva la búsqueda y el orden. */
-  const verSoloEstos = (estado: EstadoDeFiltro) =>
-    setFiltros((f) => ({
-      ...f,
-      estado: f.estado === estado && f.vigencia === 'all' ? 'all' : estado,
-      vigencia: 'all',
-    }));
+  /*
+   * 🔴 21-10 (revisión de diseño): las cinco cifras grandes —dos casi siempre en
+   * 0, «Total» dicho tres veces— pasan a PESTAÑAS de estado con su conteo dentro
+   * de la tarjeta. Cada conteo sale de la MISMA lista con los demás filtros
+   * puestos, así que la pestaña dice exactamente cuántas filas va a mostrar.
+   */
+  const pestanaActual: PestanaDeContratos =
+    (filtros.vigencia === 'vencido_sin_renovar' || filtros.vigencia === 'por_empezar') && filtros.estado === 'all'
+      ? filtros.vigencia
+      : filtros.vigencia === 'all' && (PESTANAS_DE_CONTRATOS as readonly string[]).includes(filtros.estado)
+        ? (filtros.estado as PestanaDeContratos)
+        : ('otro' as PestanaDeContratos);
+  const conteoPorPestana = useMemo(() => {
+    const sinVista = { ...filtros, estado: 'all' as EstadoDeFiltro, vigencia: 'all' as const };
+    const cuantos = (p: PestanaDeContratos) => filtrarContratos(contracts, { ...sinVista, ...filtrosDeLaPestana(p) }).length;
+    return Object.fromEntries(PESTANAS_DE_CONTRATOS.map((p) => [p, cuantos(p)])) as Record<PestanaDeContratos, number>;
+  }, [contracts, filtros]);
+  const verPestana = (p: PestanaDeContratos) => setFiltros((f) => ({ ...f, ...filtrosDeLaPestana(p) }));
+  /** La pestaña no es un filtro: «Limpiar» y «con filtros» miran lo demás. */
+  const deLaPestana = pestanaActual === ('otro' as PestanaDeContratos) ? {} : filtrosDeLaPestana(pestanaActual);
+  const conFiltros = hayFiltros({ ...filtros, ...(pestanaActual === ('otro' as PestanaDeContratos) ? {} : filtrosDeLaPestana('all')) });
   const limpiarFiltros = () =>
-    // El orden no es un filtro: se conserva.
-    setFiltros({ ...FILTROS_INICIALES, campo: filtros.campo, sentido: filtros.sentido });
+    // El orden no es un filtro, y la pestaña tampoco: se conservan.
+    setFiltros({ ...FILTROS_INICIALES, ...deLaPestana, campo: filtros.campo, sentido: filtros.sentido });
+  /** Lo que toca, sobre la lista entera (no sobre lo filtrado): sale arriba sólo si hay algo. */
+  const porFirmar = useMemo(
+    () => contracts.filter((c) => c.status && ESTADOS_POR_FIRMAR.includes(c.status)).length,
+    [contracts],
+  );
 
   const {
     pageItems,
@@ -467,6 +445,27 @@ function ContratosContent() {
         </AlertaAccionable>
       ) : null}
 
+      {/* Lo que toca, en UNA línea y sólo si hay algo (21-10, revisión de diseño):
+          antes era la quinta cifra, a la derecha, con el mismo peso que «Borradores 0». */}
+      {!isLoading && !error && (vencidosSinRenovar > 0 || porFirmar > 0) ? (
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-fg" data-testid="contratos-lo-que-toca">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-warning-500" aria-hidden="true" />
+          {vencidosSinRenovar > 0 ? (
+            <button type="button" className="underline-offset-2 hover:underline" onClick={() => verPestana('vencido_sin_renovar')}>
+              {vencidosSinRenovar === 1
+                ? tx('1 contrato venció y nadie lo renovó', '1 contract ended and was not renewed')
+                : tx(`${vencidosSinRenovar} contratos vencieron y nadie los renovó`, `${vencidosSinRenovar} contracts ended and were not renewed`)}
+            </button>
+          ) : null}
+          {vencidosSinRenovar > 0 && porFirmar > 0 ? <span className="text-fg-subtle" aria-hidden="true">·</span> : null}
+          {porFirmar > 0 ? (
+            <button type="button" className="underline-offset-2 hover:underline" onClick={() => verPestana('por_firmar')}>
+              {porFirmar === 1 ? tx('1 espera una firma', '1 awaits a signature') : tx(`${porFirmar} esperan una firma`, `${porFirmar} await a signature`)}
+            </button>
+          ) : null}
+        </p>
+      ) : null}
+
       {/* Table */}
       <section className="rounded-lg border border-border bg-card overflow-hidden">
         {/*
@@ -489,63 +488,29 @@ function ContratosContent() {
             toque y la lista muestra esos; otro toque (o «Total»), la lista entera. Los vencidos sin
             renovar dejan de ser un enlace escondido debajo de «Activos»: son su propia cifra, con el
             punto ámbar, y sólo cuando hay alguno. */}
-        <FranjaDeCifras
-          data-testid="resumen-de-contratos"
-          className="rounded-none border-0 border-b border-border"
-        >
-          <CifraDeLaTabla
-            label={tx('Total', 'Total')}
-            value={isLoading || error ? '—' : stats.total}
-            sub={error ? sinDato : undefined}
-            onClick={isLoading || error ? undefined : () => verSoloEstos('all')}
-            activa={!isLoading && !error && filtros.estado === 'all' && filtros.vigencia === 'all'}
-          />
-          <CifraDeLaTabla
-            label={tx('Activos', 'Active')}
-            value={isLoading || error ? '—' : stats.active - porEmpezar - vencidosSinRenovar}
-            sub={
-              error
-                ? sinDato
-                : !isLoading && porEmpezar > 0
-                  ? tx(`+ ${porEmpezar} por empezar`, `+ ${porEmpezar} not started yet`)
-                  : undefined
-            }
-            onClick={isLoading || error ? undefined : () => verSoloEstos('active')}
-            activa={filtros.estado === 'active' && filtros.vigencia === 'all'}
-          />
-          <CifraDeLaTabla
-            label={tx('Por firmar', 'Awaiting signature')}
-            value={isLoading || error ? '—' : stats.pendingLandlord + stats.pendingTenant}
-            sub={error ? sinDato : undefined}
-            tono={!isLoading && !error && stats.pendingLandlord + stats.pendingTenant > 0 ? 'aviso' : undefined}
-            onClick={isLoading || error ? undefined : () => verSoloEstos('por_firmar')}
-            activa={filtros.estado === 'por_firmar' && filtros.vigencia === 'all'}
-          />
-          <CifraDeLaTabla
-            label={tx('Borradores', 'Drafts')}
-            value={isLoading || error ? '—' : stats.draft}
-            sub={error ? sinDato : undefined}
-            onClick={isLoading || error ? undefined : () => verSoloEstos('draft')}
-            activa={filtros.estado === 'draft' && filtros.vigencia === 'all'}
-          />
-          {/* 🔴 Juan (15-10-2026): «dice 5 vencidos sin renovar, pero no cuáles». */}
-          {!error && !isLoading && vencidosSinRenovar > 0 ? (
-            <CifraDeLaTabla
-              label={tx('Vencidos sin renovar', 'Ended, not renewed')}
-              value={vencidosSinRenovar}
-              tono="aviso"
-              onClick={() =>
-                setFiltros((f) =>
-                  f.vigencia === 'vencido_sin_renovar'
-                    ? { ...FILTROS_INICIALES, campo: f.campo, sentido: f.sentido }
-                    : { ...FILTROS_INICIALES, campo: f.campo, sentido: f.sentido, vigencia: 'vencido_sin_renovar' },
-                )
-              }
-              activa={filtros.vigencia === 'vencido_sin_renovar'}
-              testid="ver-vencidos-sin-renovar"
+        <div className="space-y-3 border-b border-border px-4 pb-3 pt-4">
+          {isLoading || error ? (
+            <p className="text-caption text-fg-muted" data-testid="resumen-de-contratos">
+              {isLoading ? tx('Cargando los contratos…', 'Loading contracts…') : sinDato}
+            </p>
+          ) : (
+            <PestanasDeEstado<PestanaDeContratos>
+              etiqueta={tx('Estado de los contratos', 'Contract status')}
+              data-testid="resumen-de-contratos"
+              valor={pestanaActual}
+              onCambio={verPestana}
+              pestanas={[
+                { valor: 'active', etiqueta: tx('Activos', 'Active'), cuantos: conteoPorPestana.active, fija: true, testid: 'contratos-kpi' },
+                { valor: 'por_empezar', etiqueta: tx('Por empezar', 'Not started yet'), cuantos: conteoPorPestana.por_empezar, testid: 'contratos-kpi' },
+                { valor: 'vencido_sin_renovar', etiqueta: tx('Vencidos sin renovar', 'Ended, not renewed'), cuantos: conteoPorPestana.vencido_sin_renovar, tono: 'aviso', testid: 'ver-vencidos-sin-renovar' },
+                { valor: 'por_firmar', etiqueta: tx('Por firmar', 'Awaiting signature'), cuantos: conteoPorPestana.por_firmar, tono: 'aviso', testid: 'contratos-kpi' },
+                { valor: 'draft', etiqueta: tx('Borradores', 'Drafts'), cuantos: conteoPorPestana.draft, testid: 'contratos-kpi' },
+                { valor: 'terminados', etiqueta: tx('Terminados', 'Ended'), cuantos: conteoPorPestana.terminados, testid: 'contratos-kpi' },
+                { valor: 'all', etiqueta: tx('Todos', 'All'), cuantos: conteoPorPestana.all, fija: true, testid: 'contratos-kpi' },
+              ]}
             />
-          ) : null}
-        </FranjaDeCifras>
+          )}
+        </div>
 
         {/*
           La barra de búsqueda y filtros, debajo de la cabecera y encima de la
@@ -558,7 +523,8 @@ function ContratosContent() {
             filtros={filtros}
             onFiltros={setFiltros}
             totalFiltrado={contratosFiltrados.length}
-            total={contracts.length}
+            conFiltros={conFiltros}
+            onLimpiar={limpiarFiltros}
           />
         )}
 

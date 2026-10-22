@@ -4,6 +4,7 @@ import { useVacanciaYMandatos } from '@/lib/comercial/use-vacancia-y-mandatos';
 import { esVacanciaLarga } from '@/lib/comercial/comercial';
 import { FranjaDelArriendo } from '@/components/inmobiliaria/ficha/FranjaDelArriendo';
 import { FichaDelInmueble } from '@/components/inmobiliaria/ficha/FichaDelInmueble';
+import { LoQueFaltaDelInmueble } from '@/components/inmobiliaria/ficha/LoQueFaltaDelInmueble';
 import { tieneCoordenadas } from '@/components/map/coordenadas';
 import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
 import { useAsesores, rolDelAsesor } from '@/lib/hooks/use-asesores';
@@ -16,6 +17,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { CrossFade } from '@leasefy/cadence';
 import { CaretLeft, Buildings, CalendarPlus, WifiSlash, Prohibit } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
@@ -683,6 +685,19 @@ function ConsignacionDetailContent() {
                   inmueble y dónde queda—, en 2/3 + 1/3. Quién vive, hasta cuándo y
                   quién lo lleva ya están arriba, en la franja.
                 */}
+                {/* Lo pendiente PRIMERO (revisión 21-10): vencimiento, firma, papeles, mapa y fotos,
+                    cada uno con su botón. Con el mandato terminado no hay nada que poner en regla. */}
+                {!terminada ? (
+                  <LoQueFaltaDelInmueble
+                    consignacion={consignacion}
+                    property={property}
+                    cargandoProperty={cargandoProperty}
+                    arrendado={contratoVigente}
+                    onEditar={handleEdit}
+                    onActualizado={refetchProperty}
+                    puedeEditar={puedeEditarPortafolio}
+                  />
+                ) : null}
                 {consignacion.propertyId ? (
                   <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
                     <FichaDelInmueble
@@ -690,8 +705,10 @@ function ConsignacionDetailContent() {
                       cargando={cargandoProperty}
                       onEditar={terminada ? undefined : handleEdit}
                       className={conMapa ? 'lg:col-span-2' : 'lg:col-span-3'}
+                      // Sin coordenadas, la ubicación es un renglón de «Lo que falta» (arriba);
+                      // con el mandato terminado se dice aquí, sin acción que ofrecer.
                       ubicacion={
-                        conMapa || (cargandoProperty && !property) ? undefined : (
+                        !terminada || conMapa || (cargandoProperty && !property) ? undefined : (
                           <UbicacionDelInmueble
                             variante="fila"
                             property={property}
@@ -841,14 +858,15 @@ function ConsignacionDetailContent() {
                   <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
                 </div>
                 {/* T-0109 contract.md §3.1.C — vía ADICIONAL a C9 (arriba): firma
-                    electrónica reforzada del contrato de consignación. Se oculta
-                    sola contra un back sin WU-3 (404 en C2). */}
-                <div>
+                    electrónica reforzada del contrato de consignación. Revisión 21-10: la
+                    firma del mandato vivía en tres bloques; ésta, que es la opcional, va
+                    plegada debajo de «Papeles y firma». Se oculta sola sin WU-3. */}
+                <MasDetalles etiqueta="Firma electrónica reforzada (con el PDF del contrato)" montadoSiempre>
                   <FirmaElectronicaDeConsignacionSection
                     consignacionId={consignacion.id}
                     puedeEditar={puedeEditarPortafolio}
                   />
-                </div>
+                </MasDetalles>
               </>
             ),
           },

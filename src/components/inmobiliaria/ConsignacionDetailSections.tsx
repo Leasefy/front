@@ -264,7 +264,9 @@ export function PropietarioSection({
   return (
     <SectionCard title={t('inmobiliaria.consignaciones.detail.ownerTitle')} icon={<User className="w-4 h-4" />}>
       <div className="space-y-5">
-        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+        {/* Con varios dueños no va el bloque grande del principal: la lista de abajo los
+            muestra a todos (revisión 21-10: la principal salía dos veces en la tarjeta). */}
+        <div className={cn('flex flex-wrap items-start justify-between gap-x-6 gap-y-3', variosDuenos && 'hidden')}>
           <div className="flex min-w-0 items-center gap-3">
             <Avatar name={propietario.name} size="lg" />
             <div className="min-w-0">
@@ -369,7 +371,7 @@ export function PropietarioSection({
             participación) lleva su marca: es el que figura como dueño en todo lo
             que sigue leyendo un solo id. */}
         {variosDuenos && (
-          <div className="border-t border-border-faint pt-4 dark:border-border-strong" data-testid="copropietarios-lista">
+          <div data-testid="copropietarios-lista">
             <div className="flex items-center justify-between gap-3">
               <p className={ROTULO}>Propietarios ({copropietarios!.length})</p>
               {onCambiar && (

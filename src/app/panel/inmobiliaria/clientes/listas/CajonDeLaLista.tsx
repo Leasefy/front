@@ -24,7 +24,7 @@
  * clientes reales: acá no se carga nada a ciegas.
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Presence } from '@leasefy/cadence'
 import { UploadSimple, Warning } from '@phosphor-icons/react'
 
@@ -79,6 +79,8 @@ export interface CajonDeLaListaProps {
   onOpenChange: (abierto: boolean) => void
   /** Se llama cuando el back confirmó: la pantalla vuelve a leer. */
   onCargada: () => void
+  /** La lista que viene elegida (el botón «Cargarla» de cada requisito). Por defecto, OFAC. */
+  codigoInicial?: string
 }
 
 /** Lo que se leyó del archivo, antes de mandar nada. */
@@ -100,9 +102,13 @@ interface LoQueSeLeyo {
 /** Los campos del cajón que pueden traer un error propio. */
 type CampoDeLaLista = 'vigenteDesde' | 'archivo'
 
-export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaListaProps) {
+export function CajonDeLaLista({ abierto, onOpenChange, onCargada, codigoInicial }: CajonDeLaListaProps) {
   const hoy = new Date().toISOString().slice(0, 10)
-  const [codigo, setCodigo] = useState<string>('OFAC')
+  const [codigo, setCodigo] = useState<string>(codigoInicial ?? 'OFAC')
+  // Al abrir desde «Cargarla» de una lista, el cajón ya viene con esa lista elegida.
+  useEffect(() => {
+    if (abierto && codigoInicial) setCodigo(codigoInicial)
+  }, [abierto, codigoInicial])
   const [vigenteDesde, setVigenteDesde] = useState(hoy)
   const [leyendo, setLeyendo] = useState(false)
   const [cargando, setCargando] = useState(false)

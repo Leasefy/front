@@ -1839,9 +1839,7 @@ function TodoListo({ pasos }: { pasos: PasoDeMigracion[] }) {
       className="mb-6 flex items-start gap-4 rounded-lg bg-primary-soft p-5 sm:gap-5 sm:p-6"
       data-testid="muro-todo-listo"
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg">
-        <Check className="h-5 w-5" weight="bold" />
-      </span>
+      <Check className="mt-0.5 h-6 w-6 shrink-0 text-primary" weight="bold" aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <p className="font-mono text-[11px] uppercase tracking-wider text-fg-subtle">
           {t("migracion.muro.todoListo.eyebrow")}

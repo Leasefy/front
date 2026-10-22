@@ -1,5 +1,6 @@
 'use client';
 
+import { Avatar } from '@leasefy/cadence';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -165,7 +166,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                   {/* Simulated DataCrédito page */}
                   <div className="bg-surface rounded-md p-4 max-w-lg mx-auto">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="h-8 w-8 rounded bg-primary flex items-center justify-center text-primary-fg text-caption font-medium">DC</div>
+                      <Avatar name="DataCrédito" size="sm" />
                       <span className="text-sm font-medium text-fg">DataCrédito</span>
                       <span className="text-caption text-fg-subtle">Consulta de historial crediticio</span>
                     </div>

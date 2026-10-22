@@ -24,7 +24,7 @@
  * W2 (agent.recovery).
  */
 
-import { CheckCircle, WarningCircle, MinusCircle, Sparkle, ArrowRight } from '@phosphor-icons/react'
+import { CheckCircle, WarningCircle, MinusCircle, ShieldCheck, ArrowRight } from '@phosphor-icons/react'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import type {
@@ -197,10 +197,8 @@ export function VeredictoAsegurabilidad({
       {showRecommendation && recommendedCarrierName && (
         <div className="border-t border-border bg-primary-soft px-6 py-5">
           <div className="flex items-start gap-3">
-            {/* El ÚNICO acento de marca del bloque */}
-            <span className="shrink-0 flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-primary-fg">
-              <Sparkle weight="fill" className="w-[18px] h-[18px]" />
-            </span>
+            {/* El acento del bloque: un ícono suelto en voltaje (sin la chispa de «IA» ni la caja de color). */}
+            <ShieldCheck weight="bold" className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-caption font-medium uppercase tracking-wide text-primary">

@@ -232,11 +232,10 @@ function InteresDeMora({ factura }: { factura: FacturaDelMes }) {
           : 'Lo calcula el motor de mora sobre la cuota, con las reglas de esta inmobiliaria. Crece cada día hasta que la factura se emita.'
       }
     >
-      Mora <span className="font-mono tabular-nums">{formatCurrency(mora.recargosCop)}</span> ·{' '}
-      {mora.diasDeMora} {mora.diasDeMora === 1 ? 'día' : 'días'} ·{' '}
-      <span className={delCobro ? 'text-fg-subtle' : 'text-warning'}>
-        {delCobro ? 'del cobro' : 'sobre la cuota'}
-      </span>
+      {/* Revisión de Dinero (22-10): «Mora $ 126.000 · 0 días · del cobro» no se entendía. */}
+      Incluye <span className="font-mono tabular-nums">{formatCurrency(mora.recargosCop)}</span> de mora
+      {mora.diasDeMora > 0 ? ` (${mora.diasDeMora} ${mora.diasDeMora === 1 ? 'día' : 'días'})` : ''}
+      {delCobro ? <span className="text-fg-subtle"> · ya liquidada en el cobro</span> : <span className="text-warning"> · sigue creciendo</span>}
     </p>
   )
 }
@@ -528,7 +527,7 @@ function EstadoDeLaFactura({
             el consecutivo interno queda debajo, para poder cruzarlo. */}
         {factura.numeroDian && (
           <span className="font-mono text-caption tabular-nums text-fg-muted">
-            interna N° {factura.numero}
+            N.º interno {factura.numero}
           </span>
         )}
       </div>

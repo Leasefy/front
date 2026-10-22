@@ -789,7 +789,7 @@ describe('NuevaFactura', () => {
       await montar();
       const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')!;
       expect(fila.textContent).toContain('FE-41');
-      expect(fila.textContent).toContain('interna N° 41');
+      expect(fila.textContent).toContain('N.º interno 41');
     });
 
     it('con resolución vigente dice con qué número sigue', async () => {
@@ -1349,7 +1349,8 @@ describe('NuevaFactura', () => {
       const mora = q('[data-testid="mora-ct-1|2026-09|INQUILINO"]');
       expect(mora?.textContent).toContain('41.000');
       expect(mora?.textContent).toContain('41 días');
-      expect(mora?.textContent).toContain('sobre la cuota');
+      // Revisión 21-10: en palabras de la persona («sigue creciendo» = sobre la cuota).
+      expect(mora?.textContent).toContain('sigue creciendo');
     });
 
     it('🔴 un interés que ya liquidó el cobro se marca «del cobro»', async () => {
@@ -1358,8 +1359,8 @@ describe('NuevaFactura', () => {
       );
       await montar();
       const mora = q('[data-testid="mora-ct-1|2026-09|INQUILINO"]');
-      expect(mora?.textContent).toContain('del cobro');
-      expect(mora?.textContent).not.toContain('sobre la cuota');
+      expect(mora?.textContent).toContain('ya liquidada en el cobro');
+      expect(mora?.textContent).not.toContain('sigue creciendo');
     });
 
     it('el encabezado totaliza la mora aparte de la base y el IVA', async () => {

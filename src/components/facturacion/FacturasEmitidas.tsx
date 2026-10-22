@@ -595,7 +595,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                     <span>{f.destinatario === 'INQUILINO' ? 'Inquilino' : 'Propietario'}</span>
                     <span aria-hidden="true">·</span>
                     <span className="font-mono tabular-nums text-fg">{f.numeroDian ?? 'Sin número DIAN'}</span>
-                    <span className="font-mono tabular-nums">interna N.º {f.numero}</span>
+                    <span className="font-mono tabular-nums">N.º interno {f.numero}</span>
                     {botonDelPdf(f)}
                   </p>
                   {estadoAnteLaDian(f)}

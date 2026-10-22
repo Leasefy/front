@@ -125,7 +125,9 @@ export function VsMesAnterior({
 
   const v: VariacionDeLaCifra = comparativa.vsMesAnterior[cifra];
   const mesAnterior = soloElMes(comparativa.mesAnterior, locale);
-  if (v.pct === null) {
+  // Revisión de Dinero (22-10): «+4.113,6 % vs. el 21 de septiembre» no informa nada: con una
+  // base casi en cero, una variación de mil por ciento o más se dice como «sin comparación».
+  if (v.pct === null || Math.abs(v.pct) >= 1000) {
     return (
       <p className="text-caption text-fg-muted" data-testid={`vs-${id}`} data-estado="sin-comparacion">
         {t(`${C}.vs.sinComparacion`, { mes: mesAnterior })}

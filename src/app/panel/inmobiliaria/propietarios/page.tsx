@@ -818,9 +818,7 @@ function PropietariosContent() {
               detalle={
                 plataOculta
                   ? sinAccesoALaPlata
-                  : !kpiSinDato && (stats.generadoSinGirar ?? 0) > 0
-                    ? t('inmobiliaria.propietarios.generadoSinGirar', { monto: plataDeLasCifras(stats.generadoSinGirar ?? 0) })
-                    : undefined
+                  : undefined
               }
               // El punto ámbar dice «hay giros atrasados» (antes, el ícono de alerta de la tarjeta).
               tono={!kpiSinDato && !plataOculta && stats.pendingCount > 0 ? 'aviso' : undefined}
@@ -836,6 +834,17 @@ function PropietariosContent() {
               data-testid="cifra-giros-atrasados"
             />
           </FranjaDeCifras>
+          {/* Ronda 22: lo generado y sin girar en su renglón, con su enlace (la cifra es un botón —decisión de
+              Nico— y un enlace no puede ir dentro de un botón). */}
+          {!kpiSinDato && !plataOculta && (stats.generadoSinGirar ?? 0) > 0 ? (
+            <p className="flex flex-wrap items-center gap-x-2 border-b border-border px-5 py-2.5 text-body-sm text-fg-muted" data-testid="generado-sin-girar">
+              <span className="h-1.5 w-1.5 rounded-full bg-warning-500" aria-hidden="true" />
+              {t('inmobiliaria.propietarios.generadoSinGirar', { monto: plataDeLasCifras(stats.generadoSinGirar ?? 0) })}
+              <Link href="/panel/inmobiliaria/pagos/dispersiones" className="font-medium text-primary underline-offset-4 hover:underline">
+                Ver en Giros a propietarios
+              </Link>
+            </p>
+          ) : null}
 
         {/* Pestañas por tarea (Nico, 22-10-2026) a la izquierda; tabla o tarjetas a la derecha. */}
         <div className="flex flex-col gap-2 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between md:gap-4">

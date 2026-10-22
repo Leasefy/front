@@ -658,7 +658,8 @@ export function PipelineBoard({
   if (esCelular) {
     const etapas = [...mainStages, 'lost' as const];
     const conGente = etapas.filter((st) => (itemsByStage[st]?.length ?? 0) > 0);
-    const sinGente = etapas.length - conGente.length;
+    // Ronda 22: las mismas etapas que la barra del embudo (sin «Perdido»): decían «+ 7» arriba y «+ 8» aquí.
+    const sinGente = mainStages.filter((st) => (itemsByStage[st]?.length ?? 0) === 0).length;
     return (
       <NombresDeAgentesContext.Provider value={nombresDeAgentes}>
         <VariosAsesoresContext.Provider value={variosAsesores}>

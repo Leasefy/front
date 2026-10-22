@@ -68,7 +68,7 @@ describe('La ficha del ticket', () => {
   it('el fallo también deja volver a la lista', async () => {
     estado.error = 'se cayó';
     await montar();
-    expect(document.body.textContent).toContain('Error al cargar el detalle');
+    expect(document.body.textContent).toContain('No se pudo cargar el detalle');
     expect(enlacesALaLista()).toHaveLength(1);
   });
 

@@ -13,7 +13,8 @@ import { cn } from '@/lib/utils'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { PageGuard } from '@/components/auth/PageGuard'
-import { EmptyState } from '@/components/data-display/EmptyState'
+// La de `ui` es la que pinta la ilustración 3D (`ilustracion`); la de data-display la ignoraba.
+import { EmptyState } from '@/components/ui/empty-state'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { Input } from '@/components/ui'
@@ -361,7 +362,7 @@ function PostulacionesContenido() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder={tr("Buscar por candidato, email o propiedad...")}
+                  placeholder={tr("Buscar por candidato, correo o inmueble")}
                   className="pl-9 pr-9"
                 />
                 {search && (
@@ -385,7 +386,7 @@ function PostulacionesContenido() {
                 description={
                   search || filter !== 'ALL'
                     ? 'Ninguna postulación coincide con los filtros'
-                    : 'Cuando un inquilino se postule a una de tus propiedades, aparecerá aquí.'
+                    : 'Cuando un inquilino se postule a uno de tus inmuebles, aparecerá aquí.'
                 }
               />
             ) : (

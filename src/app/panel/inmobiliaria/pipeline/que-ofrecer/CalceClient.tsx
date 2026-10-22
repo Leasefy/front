@@ -225,8 +225,10 @@ export function CalceClient() {
             value: 'interesado',
             label: (
               <span className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                {tr("Tengo un interesado")}
+                <Users className="h-4 w-4 shrink-0" />
+                {/* Ronda 22 (390): la frase entera no cabía en su mitad del control y se salía. */}
+                <span className="sm:hidden">{tr('Un interesado')}</span>
+                <span className="hidden sm:inline">{tr("Tengo un interesado")}</span>
               </span>
             ),
             ariaLabel: 'Tengo un interesado',
@@ -235,8 +237,9 @@ export function CalceClient() {
             value: 'inmueble',
             label: (
               <span className="flex items-center gap-2">
-                <House className="h-4 w-4" />
-                {tr("Se liberó un inmueble")}
+                <House className="h-4 w-4 shrink-0" />
+                <span className="sm:hidden">{tr('Un inmueble libre')}</span>
+                <span className="hidden sm:inline">{tr("Se liberó un inmueble")}</span>
               </span>
             ),
             ariaLabel: tr('Se liberó un inmueble'),
@@ -278,7 +281,7 @@ export function CalceClient() {
                 title={tr("Todavía no hay a quién ofrecerle")}
                 description={tr("Cuando entre un interesado al tablero, aquí te digo qué inmuebles le sirven.")}
                 action={{
-                  label: 'Ir al pipeline',
+                  label: 'Ir a Prospección',
                   href: '/panel/inmobiliaria/pipeline',
                 }}
               />
@@ -448,7 +451,7 @@ export function CalceClient() {
                 ilustracion="casa"
                 title={tr("Todavía no hay inmuebles en el tablero")}
                 description={tr("Los inmuebles de esta lista salen de los interesados de Prospección: son los que alguien está mirando.")}
-                action={{ label: 'Ir al pipeline', href: '/panel/inmobiliaria/pipeline' }}
+                action={{ label: 'Ir a Prospección', href: '/panel/inmobiliaria/pipeline' }}
               />
             ) : !propertyId.trim() ? (
               <p className="text-fg-muted text-sm">

@@ -205,7 +205,9 @@ export function TarjetaDeProyeccion({
 
   return (
     <section
-      className="space-y-3 self-start rounded-lg border border-border bg-surface p-5 sm:p-6"
+      // Nico (22-10): con `self-start` quedaba más corta que el gráfico y dejaba un hueco blanco debajo;
+      // ahora las dos tarjetas de la fila terminan a la misma altura.
+      className="space-y-3 rounded-lg border border-border bg-surface p-5 sm:p-6"
       aria-labelledby="proyeccion-titulo"
       data-testid="proyeccion"
       data-estado={p.estado}

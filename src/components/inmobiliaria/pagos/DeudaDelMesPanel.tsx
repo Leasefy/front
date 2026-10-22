@@ -716,13 +716,13 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                  buscador, en UN renglón. En el orden en que una deuda los
                  recorre —nace futura, vence, y recién después es cartera—, con
                  las palabras de «Cartera por concepto». */}
-          <div className="flex flex-col gap-3 border-b border-border px-5 pt-1 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+          <div className="flex flex-col gap-3 border-b border-border px-5 pt-1 sm:px-6 lg:flex-row lg:items-stretch lg:justify-between lg:gap-6 lg:pt-0">
             <div
               role="tablist"
               aria-label="Qué cuotas ver en la tabla"
               data-testid="cajones-del-mes"
               data-lenis-prevent
-              className="-mx-1 flex min-w-0 items-stretch gap-5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="-mx-1 flex min-w-0 items-stretch gap-5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:pt-1"
             >
               {/* 🔴 Los conteos de las pestañas salen de la misma fuente —las
                   filas—, para que cuadren: «todo lo que falta» es la suma de los
@@ -782,7 +782,9 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             </div>
 
             {/* 4 · El buscador, DENTRO de la tarjeta. */}
-            <div className="relative w-full pb-3 lg:w-72 lg:shrink-0 lg:pb-0">
+            {/* Nico (22-10): el buscador quedaba con más aire arriba que abajo (el `pt-1` de la barra lo
+                corría). En escritorio ocupa todo el alto de la barra y se centra entre las dos líneas. */}
+            <div className="relative w-full pb-3 lg:flex lg:w-72 lg:shrink-0 lg:items-center lg:pb-0">
               <MagnifyingGlass
                 className="pointer-events-none absolute left-3 top-[18px] h-4 w-4 -translate-y-1/2 text-fg-muted lg:top-1/2"
                 aria-hidden="true"

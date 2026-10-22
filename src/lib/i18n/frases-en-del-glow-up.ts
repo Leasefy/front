@@ -263,4 +263,8 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Estás aquí': 'You are here',
   '(hecho)': '(done)',
   'Es lo de esta pantalla': 'It is on this screen',
+  // Ronda 22: Captación.
+  'Un interesado': 'A prospect',
+  'Un inmueble libre': 'A free property',
+  'Buscar por candidato, correo o inmueble': 'Search by applicant, email or property',
 }

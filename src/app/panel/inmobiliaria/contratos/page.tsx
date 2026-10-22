@@ -301,7 +301,8 @@ function ContratosContent() {
    * filas mezclan estados (Terminados, Todos); la terminación programada de un
    * activo se dice en «Vence».
    */
-  const conEstado = !(['active', 'por_empezar', 'vencido_sin_renovar', 'por_firmar', 'draft'] as string[]).includes(pestanaActual);
+  // Nico (22-10): «a esta sí le dejaría la columna de Estado» → va en todas las pestañas.
+  const conEstado = true;
   const estadoDeLaFila = (c: Contract) => {
     const v = vigenciaDelContrato({
       status: c.status,

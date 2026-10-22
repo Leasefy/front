@@ -110,7 +110,7 @@ vi.mock('@/components/ui', () => ({
     React.createElement('input', props),
 }))
 
-vi.mock('@/components/data-display/EmptyState', () => ({
+vi.mock('@/components/ui/empty-state', () => ({
   EmptyState: ({ title }: { title: string }) =>
     React.createElement('div', { 'data-testid': 'empty-state' }, title),
 }))

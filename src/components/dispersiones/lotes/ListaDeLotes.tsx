@@ -158,6 +158,7 @@ export function ListaDeLotes({
   filtroInicial,
   onCambiarMes,
   sinArmar = false,
+  mes: mesDeAfuera,
 }: {
   mesInicial?: string | null;
   /** Giros a propietarios, paso 4 (22-10-2026): abre en los lotes que faltan por marcar pagados. */
@@ -166,6 +167,8 @@ export function ListaDeLotes({
   onCambiarMes?: (mes: string) => void;
   /** Paso 4 (ronda 19): sin la tarjeta para armar el lote, que es del paso 3. */
   sinArmar?: boolean;
+  /** El mes lo elige el selector único de Giros: la lista no pinta el suyo. */
+  mes?: string;
 } = {}) {
   const router = useRouter();
   const { canAccess } = usePermissions();
@@ -173,7 +176,8 @@ export function ListaDeLotes({
   const { nombreDe } = useNombresDelEquipo();
   const [filtro, setFiltro] = useState<Filtro>(filtroInicial ?? 'todos');
   // «Ir a Lotes» desde una dispersión trae su mes en `?mes=`.
-  const [mes, setMes] = useState(() => (mesInicial && esMesValido(mesInicial) ? mesInicial : mesActual()));
+  const [mesPropio, setMes] = useState(() => (mesInicial && esMesValido(mesInicial) ? mesInicial : mesActual()));
+  const mes = mesDeAfuera ?? mesPropio;
   const elegirMes = useCallback(
     (nuevo: string) => {
       setMes(nuevo);
@@ -255,7 +259,8 @@ export function ListaDeLotes({
         data-testid="mes-de-los-lotes"
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <SelectorDeMes mes={mes} onCambiar={elegirMes} testId="mes-del-lote" />
+          {/* Con el selector único de Giros arriba, aquí no va otro (la frase de abajo ya nombra el mes). */}
+          {mesDeAfuera ? null : <SelectorDeMes mes={mes} onCambiar={elegirMes} testId="mes-del-lote" />}
           {puedeArmar && pendientes && pendientes.esperan > 0 && (
             <Button onClick={() => setArmando(true)} hideArrow data-testid="armar-lote-del-mes">
               <Plus className="h-4 w-4" />

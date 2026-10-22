@@ -40,9 +40,10 @@ import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-ac
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { SECCION_DE_LOS_GIROS, SiguientePasoDeLosGiros, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
 import { PasosDeLosGirosDelMes } from '@/components/giros/PasosDeLosGirosDelMes';
+import { claveDelMes, esMesDeLosGiros } from '@/lib/giros/meses-de-los-giros';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Wallet, CalendarBlank, DotsThreeVertical, MagnifyingGlass, Trash } from '@phosphor-icons/react';
+import { Wallet, DotsThreeVertical, MagnifyingGlass, Trash } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
@@ -72,13 +73,6 @@ import {
 } from '@/components/ui/table';
 import { AnimatedNumber, Presence } from '@leasefy/cadence';
 import { Button, Badge } from '@/components/ui';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   DropdownList,
   DropdownListContent,
@@ -198,38 +192,13 @@ function sinTildes(texto: string): string {
   return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
 
-/** Cuántos meses hacia atrás ofrece el selector, contando el corriente. */
-const MESES_EN_EL_SELECTOR = 12;
-
-function claveDelMes(fecha: Date): string {
-  return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
-}
-
 /** El mes en curso, en el formato que espera el back (`2026-02`). */
 function mesEnCurso(): string {
   return claveDelMes(new Date());
 }
 
-/**
- * 🔴 PG-R18 (QA de Pagos, decisión de Nico 03-10-2026): cuántos meses por
- * venir ofrece el selector. Antes estaba topado en el mes corriente; con la
- * base CAUSADO (el default) la liquidación de un mes futuro existe —lo que los
- * contratos van a cobrar—, y «Por pagar a propietarios» ya llega al mes en
- * curso + 3. Lo mismo aquí.
- */
-const MESES_HACIA_ADELANTE = 3;
-
-/**
- * Los meses del selector, del más nuevo al más viejo: hasta el mes en curso
- * + 3 y doce hacia atrás (contando el corriente).
- */
-function mesesRecientes(): { value: string; label: string }[] {
-  const hoy = new Date();
-  return Array.from({ length: MESES_EN_EL_SELECTOR + MESES_HACIA_ADELANTE }, (_, i) => {
-    const value = claveDelMes(new Date(hoy.getFullYear(), hoy.getMonth() + MESES_HACIA_ADELANTE - i, 1));
-    return { value, label: mesEnTitulo(value) };
-  });
-}
+// Los meses que se ofrecen (PG-R18, Nico 03-10-2026) viven en `lib/giros/meses-de-los-giros.ts`: son los
+// mismos para los cuatro pasos de Giros.
 
 type Propietario = PropietarioDeLaLiquidacion;
 
@@ -259,7 +228,11 @@ function TesoreriaContent() {
   // Antes era `useState(mesEnCurso)` sin setter: el mes anterior —el que de
   // verdad se liquida los primeros días— no se podía ver.
   const [month, setMonth] = useState(mesEnCurso);
-  const meses = useMemo(mesesRecientes, []);
+  // El mes viaja entre los pasos de Giros (`?mes=`): se lee al montar, no en el primer pintado (servidor).
+  useEffect(() => {
+    const pedido = new URLSearchParams(window.location.search).get('mes');
+    if (esMesDeLosGiros(pedido)) setMonth(pedido);
+  }, []);
 
   const [vista, setVista] = useState<LiquidacionParaLaPantalla | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -451,7 +424,7 @@ function TesoreriaContent() {
         titulo={tr(TITULO_DE_LOS_GIROS)}
         descripcion={tr(descripcionDelPaso('liquidar'))}
       />
-      <PasosDeLosGirosDelMes paso="liquidar" mes={month} />
+      <PasosDeLosGirosDelMes paso="liquidar" mes={month} onCambiarMes={setMonth} />
 
       {/* 🔴 «Por girar» de la inmobiliaria: UNA sola cifra, hasta el mes en
           curso, la misma del Tablero y de «Cartera → Por pagar» (Nico,
@@ -627,22 +600,8 @@ function TesoreriaContent() {
               <section className="rounded-lg border border-border bg-card overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
                   <PestanasDeLiquidaciones />
-                  {/* `w-56` y no `min-w`: el trigger del DS es `w-full`, así que
-                      con sólo un mínimo se estiraba a todo el renglón y el mes
-                      quedaba de banda, peor que antes. */}
-                  <Select value={month} onValueChange={setMonth}>
-                    <SelectTrigger className="w-56 gap-2" aria-label="Mes de la liquidación">
-                      <CalendarBlank className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {meses.map((m) => (
-                        <SelectItem key={m.value} value={m.value}>
-                          {m.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {/* Ronda 19: el mes ya no se elige aquí: es el selector ÚNICO de los cuatro pasos, a la
+                      derecha del riel (`MesDeLosGiros`). */}
                 </div>
                 {/* El buscador DENTRO de la tarjeta de la tabla, con el alcance
                     a su lado: suelto arriba no diría qué está filtrando. */}
@@ -918,7 +877,7 @@ function TesoreriaContent() {
           </EstadoDeDatos>
         </div>
       )}
-      <SiguientePasoDeLosGiros paso="liquidar" />
+      <SiguientePasoDeLosGiros paso="liquidar" mes={month} />
       <AlertDialog
         open={porCancelar !== null}
         onOpenChange={(abierto) => {

@@ -814,7 +814,11 @@ function DispersionesContent() {
           </Button>
         }
       />
-      <PasosDeLosGirosDelMes paso="revisar" mes={filters.month} />
+      <PasosDeLosGirosDelMes
+        paso="revisar"
+        mes={filters.month}
+        onCambiarMes={(mes) => setFilters((prev) => ({ ...prev, month: mes }))}
+      />
 
       {/* Summary Section — la página ya no anima su propia entrada (la pone el
           `template.tsx`); se anima el CAMBIO: esqueleto → resumen / fallo se
@@ -987,7 +991,7 @@ function DispersionesContent() {
         )}
       </div>
 
-      <SiguientePasoDeLosGiros paso="revisar" />
+      <SiguientePasoDeLosGiros paso="revisar" mes={filters.month} />
 
       {/* Dispersion Detail Modal */}
       <DispersionDetail

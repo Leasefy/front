@@ -54,15 +54,15 @@ function LotesDelPaso() {
         descripcion={tr(descripcionDelPaso(paso))}
         ayuda={<ComoSaleUnLote />}
       />
-      <PasosDeLosGirosDelMes paso={paso} mes={mes} />
+      <PasosDeLosGirosDelMes paso={paso} mes={mes} onCambiarMes={setMes} />
+      {/* El mes lo manda el selector único de arriba (la lista ya no tiene el suyo). */}
       <ListaDeLotes
         key={paso}
-        mesInicial={mes}
+        mes={mes}
         filtroInicial={paso === 'pagado' ? 'en_curso' : undefined}
         sinArmar={paso === 'pagado'}
-        onCambiarMes={setMes}
       />
-      <SiguientePasoDeLosGiros paso={paso} />
+      <SiguientePasoDeLosGiros paso={paso} mes={mes} />
     </>
   );
 }

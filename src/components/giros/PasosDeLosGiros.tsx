@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { useTr } from '@/lib/i18n/use-tr';
 import { buttonVariants } from '@/components/ui/button';
 import type { EstadoDeLosPasos, PasoDelGiro } from '@/lib/giros/estado-de-los-pasos';
+import { conElMes } from '@/lib/giros/meses-de-los-giros';
 
 export type PasoDeLosGiros = PasoDelGiro;
 
@@ -67,11 +68,14 @@ export const SECCION_DE_LOS_GIROS = 'Pagar a propietarios';
 export function PasosDeLosGiros({
   paso,
   estados,
+  mes,
   className,
 }: {
   paso: PasoDeLosGiros;
   /** En qué va cada paso en el mes (de los lotes del mes). Sin dato, el paso no dice nada. */
   estados?: EstadoDeLosPasos;
+  /** El mes que se mira: viaja en el enlace de cada paso. */
+  mes?: string;
   className?: string;
 }) {
   const tr = useTr();
@@ -98,7 +102,7 @@ export function PasosDeLosGiros({
             <li key={p.id} className="flex shrink-0 items-center gap-1">
               {i > 0 ? <span className="h-px w-3 bg-border sm:w-5" aria-hidden="true" /> : null}
               <Link
-                href={p.href}
+                href={conElMes(p.href, mes)}
                 aria-current={actual ? 'step' : undefined}
                 data-testid={`paso-de-los-giros-${p.id}`}
                 className={cn(
@@ -152,7 +156,16 @@ export function PasosDeLosGiros({
  * Al pie de cada paso: lo que sigue, con su botón (ronda 19 de la revisora:
  * «ni ofrece el siguiente»). En el último paso no hay nada que seguir.
  */
-export function SiguientePasoDeLosGiros({ paso, className }: { paso: PasoDeLosGiros; className?: string }) {
+export function SiguientePasoDeLosGiros({
+  paso,
+  mes,
+  className,
+}: {
+  paso: PasoDeLosGiros;
+  /** El mes que se mira: el siguiente paso abre en ese mes. */
+  mes?: string;
+  className?: string;
+}) {
   const tr = useTr();
   const i = PASOS_DE_LOS_GIROS.findIndex((p) => p.id === paso);
   const siguiente = PASOS_DE_LOS_GIROS[i + 1];
@@ -169,7 +182,7 @@ export function SiguientePasoDeLosGiros({ paso, className }: { paso: PasoDeLosGi
         <span className="block text-fg">{tr(siguiente.descripcion)}</span>
       </p>
       <Link
-        href={siguiente.href}
+        href={conElMes(siguiente.href, mes)}
         className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'shrink-0')}
         data-testid={`ir-al-paso-${siguiente.id}`}
       >

@@ -247,4 +247,5 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Visita vencida': 'Overdue visit',
   'Acción vencida': 'Overdue action',
   'Giros atrasados': 'Overdue payouts',
+  'Mes de los giros': 'Payout month',
 }

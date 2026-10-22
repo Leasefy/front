@@ -74,7 +74,6 @@ import {
   Plus,
   UploadSimple,
   UserCircle,
-  Users,
 } from '@phosphor-icons/react';
 import { FranjaDeCifras, KpiCard, Presence } from '@leasefy/cadence';
 
@@ -497,14 +496,11 @@ function ContenidoDeInquilinos() {
           hay pendientes. */}
       <InvitacionesPendientes version={versionDeInvitaciones} />
 
-      {/* Los tres números miden lo VIGENTE, no lo histórico: un canon que suma
-          contratos terminados no es plata que entra este mes. */}
+      {/* Los números miden lo VIGENTE, no lo histórico: un canon que suma
+          contratos terminados no es plata que entra este mes. Ronda 20: sin la
+          cifra «Inquilinos», que contradecía a la pestaña «Todos» de al lado
+          (dos «todos» distintos en la misma vista, y nadie decide con ella). */}
       <FranjaDeCifras fila="xl" data-testid="cifras-de-inquilinos">
-        <KpiCard
-          label={t('inquilinos.kpi.personas')}
-          value={valorDeTile(String(totales?.personas ?? ''))}
-          icon={<Users />}
-        />
         <KpiCard
           label={t('inquilinos.kpi.arriendosVigentes')}
           value={valorDeTile(String(totales?.vigentes ?? ''))}

@@ -70,6 +70,7 @@ import {
 import { cn } from '@/lib/utils';
 import { sinMayusculasSostenidas } from '@/lib/inmuebles/titulo-de-la-ficha';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { tiempoHastaElFin } from '@/lib/inmuebles/tiempo-hasta-el-fin';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 import { useI18n } from '@/lib/i18n';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
@@ -279,16 +280,19 @@ export function BarraDeInquilinos({
           { valor: 'todos', etiqueta: t('inquilinos.filtros.todos'), cuantos: numeros.todos, fija: true, testid: 'pestana-todos' },
         ]}
       />
-      <SearchInput
-        value={buscar}
-        onChange={(e) => onBuscar(e.target.value)}
-        onClear={() => onBuscar('')}
-        placeholder={t('inquilinos.buscarPlaceholder')}
-        inputSize="md"
-        // Ronda 19: con `w-full` el buscador encogía el riel y «Todos» quedaba fuera a 1440.
-        className="w-full lg:w-96 lg:flex-none"
-        data-testid="inquilinos-buscar"
-      />
+      {/* Ronda 20: el `className` de SearchInput va al <input> y su envoltorio es `w-full`: el ancho
+          y el lugar (contra el borde derecho) los pone este contenedor. */}
+      <div className="w-full lg:ml-auto lg:w-96 lg:flex-none">
+        <SearchInput
+          value={buscar}
+          onChange={(e) => onBuscar(e.target.value)}
+          onClear={() => onBuscar('')}
+          placeholder={t('inquilinos.buscarPlaceholder')}
+          inputSize="md"
+          className="w-full"
+          data-testid="inquilinos-buscar"
+        />
+      </div>
     </div>
   );
 }
@@ -367,6 +371,9 @@ function TablaDeInquilinos({ inquilinos, onAbrir, orden, onOrdenar, marcadas, on
     [ordenados],
   );
 
+  // Ronda 20: la columna del desplegable sólo si alguien de la página tiene varios arriendos (vacía dejaba ≈64 px entre la casilla y el avatar).
+  const conDesplegable = useMemo(() => ordenados.some((p) => p.arriendos.length > 1), [ordenados]);
+
   const ordenarPor = (siguiente: CampoDeOrden) => {
     const nuevo = siguienteOrden({ campo, sentido }, siguiente);
     if (onOrdenar) onOrdenar(nuevo);
@@ -424,7 +431,7 @@ function TablaDeInquilinos({ inquilinos, onAbrir, orden, onOrdenar, marcadas, on
                 />
               </TableHead>
             )}
-            <TableHead className="w-10 p-4" />
+            {conDesplegable ? <TableHead className="w-10 p-4" /> : null}
             <Ordenable campo="nombre">{t('inquilinos.tabla.inquilino')}</Ordenable>
             <TableHead className="p-4 text-left">{t('inquilinos.tabla.inmueble')}</TableHead>
             {conEstado ? <TableHead className="p-4 text-left">{t('inquilinos.tabla.estado')}</TableHead> : null}
@@ -450,6 +457,7 @@ function TablaDeInquilinos({ inquilinos, onAbrir, orden, onOrdenar, marcadas, on
               }
               persona={persona}
               conEstado={conEstado}
+              conDesplegable={conDesplegable}
               desplegada={desplegados.has(persona.tenantId)}
               onAlternar={() => alternar(persona.tenantId)}
               onAbrir={() => onAbrir(persona)}
@@ -461,10 +469,48 @@ function TablaDeInquilinos({ inquilinos, onAbrir, orden, onOrdenar, marcadas, on
   );
 }
 
+/** «6 de mar de 2025» → «6 mar 2025»: la fecha corta de la casa, como en Contratos. */
+function sinDe(fecha: string): string {
+  return fecha.replace(/ de /g, ' ');
+}
+
+function VigenciaDeLaFila({
+  desde,
+  hasta,
+  formatDate,
+  locale,
+}: {
+  desde: string | null;
+  hasta: string | null;
+  formatDate: (f: string | Date) => string;
+  locale?: string;
+}) {
+  const inicio = sinDe(fechaOGuion(desde, formatDate));
+  const diaFin = diaDeVigencia(hasta);
+  if (diaFin === null) {
+    return (
+      <span className="whitespace-nowrap text-body-sm text-fg-muted">
+        {inicio} → —
+      </span>
+    );
+  }
+  const falta = tiempoHastaElFin(diaFin, locale === 'en' ? 'en' : 'es');
+  return (
+    <span className="whitespace-nowrap text-body-sm" title={`Desde ${inicio}`} data-testid="inquilino-vigencia">
+      <span className="sr-only">Desde {inicio}, hasta </span>
+      <span className="text-fg">{sinDe(fechaOGuion(hasta, formatDate))}</span>
+      {falta ? (
+        <span className={cn(falta.tono === 'pronto' ? 'text-warning' : 'text-fg-subtle')}> · {falta.texto}</span>
+      ) : null}
+    </span>
+  );
+}
+
 function FilaDeInquilino({
   casilla,
   persona,
   conEstado = true,
+  conDesplegable = true,
   desplegada,
   onAlternar,
   onAbrir,
@@ -474,11 +520,13 @@ function FilaDeInquilino({
   persona: Inquilino;
   /** Sin la columna «Estado» (nadie en la página tiene algo que decir ahí). */
   conEstado?: boolean;
+  /** Sin la celda del desplegable (nadie en la página tiene varios arriendos). */
+  conDesplegable?: boolean;
   desplegada: boolean;
   onAlternar: () => void;
   onAbrir: () => void;
 }) {
-  const { t, formatCurrency: formatoDeSiempre, formatDate } = useI18n();
+  const { t, formatCurrency: formatoDeSiempre, formatDate, locale } = useI18n();
   const formatCurrency = useContext(FormatoDeLaPlata) ?? formatoDeSiempre;
   const puedeCrearContrato = usePuedeCrearContrato();
   const vigentes = arriendosVigentes(persona);
@@ -502,6 +550,7 @@ function FilaDeInquilino({
       >
         {casilla !== undefined && <TableCell className="w-10 py-4 pl-4 pr-0 align-middle">{casilla}</TableCell>}
         {/* Desplegar: sólo tiene sentido con más de un arriendo. */}
+        {conDesplegable ? (
         <TableCell className="p-4 align-middle">
           {varios ? (
             <IconButton
@@ -520,6 +569,7 @@ function FilaDeInquilino({
             />
           ) : null}
         </TableCell>
+        ) : null}
 
         {/* Nombre + correo, con su Avatar (GLOW UP 21-10). Antes iba SIN avatar porque el de
             entonces era el mismo muñequito para todos («52 px que no dicen nada»); el de Cadence 2
@@ -665,13 +715,9 @@ function FilaDeInquilino({
           {varios || !principal ? (
             <span className="text-sm text-fg-subtle">—</span>
           ) : (
-            /* Apiladas, no en una línea: «28 de feb de 2026 — 27 de feb de
-               2027» son ~230 px y empujaban la última columna fuera de la
-               pantalla. */
-            <div className="whitespace-nowrap font-mono text-xs tabular-nums text-fg-muted">
-              <div>{fechaOGuion(principal.desde, formatDate)}</div>
-              <div className="text-fg-subtle">→ {fechaOGuion(principal.hasta, formatDate)}</div>
-            </div>
+            /* Ronda 20: un renglón en sans y corto, «5 mar 2027 · en 4 meses»: lo que se mira es
+               cuándo termina. El inicio va en el `title` y para el lector de pantalla. */
+            <VigenciaDeLaFila desde={principal.desde} hasta={principal.hasta} formatDate={formatDate} locale={locale} />
           )}
         </TableCell>
 
@@ -681,7 +727,10 @@ function FilaDeInquilino({
           entrada de las filas); al contraer se va de una. */}
       {varios && desplegada && (
         <TableRowAnimada data-testid="inquilino-arriendos">
-          <TableCell colSpan={(casilla !== undefined ? 7 : 6) - (conEstado ? 0 : 1)} className="bg-surface-muted/50 p-4">
+          <TableCell
+            colSpan={(casilla !== undefined ? 7 : 6) - (conEstado ? 0 : 1) - (conDesplegable ? 0 : 1)}
+            className="bg-surface-muted/50 p-4"
+          >
             <ul className="space-y-2">
               {persona.arriendos.map((a) => (
                 /* 🔴 La llave es el CONTRATO, no el `Lease`: desde el 20-09

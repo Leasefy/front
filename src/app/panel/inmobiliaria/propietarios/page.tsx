@@ -16,7 +16,6 @@ import {
   Warning,
   GridFour,
   List,
-  Users,
   UserCircle,
   Funnel,
 } from '@phosphor-icons/react';
@@ -767,16 +766,12 @@ function PropietariosContent() {
               cortaba («$96.600.0») y las etiquetas también («PROPIETA…»). Una
               columna en el celular, dos en tableta y cuatro desde `xl`, donde la
               cifra cabe con el menú abierto. */}
+          {/* Ronda 20: sin la cifra «Propietarios», que repetía la pestaña «Todos»; con tres cifras, a 390
+              van de a dos y «Giros atrasados» a lo ancho (la cifra se achica para caber, `CifraQueCabe`). */}
           <FranjaDeCifras
-            fila="xl"
             data-testid="cifras-de-propietarios"
             className="rounded-none border-0 border-b border-border"
           >
-            <KpiCard
-              label={t('inmobiliaria.propietarios.title')}
-              value={valorDeTile(MILES.format(stats.totalPropietarios))}
-              icon={<Users />}
-            />
             <KpiCard
               label={t('inmobiliaria.propietarios.properties')}
               value={valorDeTile(MILES.format(stats.totalProperties))}
@@ -796,7 +791,8 @@ function PropietariosContent() {
                 kpiSinDato || plataOculta
                   ? 'Giros atrasados'
                   : stats.pendingCount > 0
-                    ? t('inmobiliaria.propietarios.withBalance', { count: stats.pendingCount })
+                    ? // Ronda 20: el monto sin el conteo; cuántos son lo dice la pestaña «Por girar».
+                      'Giros atrasados'
                     : t('inmobiliaria.propietarios.noPending')
               }
               valor={

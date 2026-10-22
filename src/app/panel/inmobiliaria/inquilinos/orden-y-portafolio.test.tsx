@@ -216,7 +216,7 @@ describe('Inquilinos · I-07: los KPI son del portafolio', () => {
 
   it('sin filtros salen de la lista (que ES el portafolio)', () => {
     montar();
-    expect(tiles()).toEqual(['25', '25', '25000000']);
+    expect(tiles()).toEqual(['25', '25000000']);
   });
 
   it('🔴 con una búsqueda que no encuentra a nadie, NO caen a 0 · $ 0: siguen siendo los del portafolio', () => {
@@ -230,7 +230,7 @@ describe('Inquilinos · I-07: los KPI son del portafolio', () => {
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
     expect(hook.args.at(-1)?.buscar).toBe('nadie');
-    expect(tiles()).toEqual(['25', '25', '25000000']);
+    expect(tiles()).toEqual(['25', '25000000']);
   });
 
   it('pide el portafolio al hook', () => {

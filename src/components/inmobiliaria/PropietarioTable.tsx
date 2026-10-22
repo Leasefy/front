@@ -604,12 +604,15 @@ export function PropietarioTable({
                       <SinAccesoALaPlata texto={sinAcceso} />
                     ) : (
                     <span className="text-muted-foreground text-sm tabular-nums">
+                      {/* Ronda 20: «17 oct 2026», la fecha corta de la casa (sin los «de»). */}
                       {propietario.lastPaymentDate
-                        ? new Date(propietario.lastPaymentDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })
+                        ? new Date(propietario.lastPaymentDate)
+                            .toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                            .replace(/ de /g, ' ')
                         : '—'}
                     </span>
                     )}

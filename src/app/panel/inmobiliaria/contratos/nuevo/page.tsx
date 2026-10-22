@@ -1462,7 +1462,7 @@ function NuevoContratoContent() {
           />
           {/* Ronda 19: el seguro va DEBAJO del título y las opciones del respaldo, no encima. */}
           <div className="mt-5 max-w-xs">
-          <Field id="contrato-seguro" label="Seguro de Leasefy" hint="Opcional">
+          <Field id="contrato-seguro" label="Seguro de Leasefy (opcional)">
             <Select
               value={form.insuranceTier}
               onValueChange={(v) => updateForm('insuranceTier', v as InsuranceTier)}
@@ -1505,27 +1505,6 @@ function NuevoContratoContent() {
                 describedBy={errorDe('endDate') ? `${idDelCampoDelContrato('endDate')}-error` : undefined}
               />
             </Field>
-            {/* QA-CONT-95 C-16 (`fecha-de-cartera.md`): dos fechas, la de inicio y
-                la de cartera; el primer mes se cobra desde la de cartera. */}
-            <Field
-              id={idDelCampoDelContrato('fechaDeCartera')}
-              label="Desde cuándo se cobra (opcional)"
-              error={errorDe('fechaDeCartera')}
-              hint="El día en que recibe el inmueble. Vacío = desde la fecha de inicio."
-            >
-              <CampoDeDia
-                id={idDelCampoDelContrato('fechaDeCartera')}
-                value={form.fechaDeCartera}
-                onChange={(v) => updateForm('fechaDeCartera', v)}
-                min={form.startDate || undefined}
-                max={form.endDate || undefined}
-                invalido={Boolean(errorDe('fechaDeCartera'))}
-                describedBy={errorDe('fechaDeCartera') ? `${idDelCampoDelContrato('fechaDeCartera')}-error` : undefined}
-                quitable
-                etiquetaDeQuitar="Quitar la fecha desde la que se cobra"
-                testid="fecha-de-cartera"
-              />
-            </Field>
             {/* El monto se agrupa DENTRO del campo. La ayudita de abajo repetía
                 la misma cifra formateada, que es donde nadie mira mientras
                 escribe; ahora sólo queda el mínimo, que sí dice algo. */}
@@ -1540,6 +1519,28 @@ function NuevoContratoContent() {
                 areas={AREAS_DE_LA_DEUDA}
                 value={form.monthlyRent}
                 onChange={(crudo) => updateForm('monthlyRent', crudo)}
+              />
+            </Field>
+            {/* Ronda 20: fechas → canon → lo opcional (desde cuándo se cobra, días de plazo).
+                QA-CONT-95 C-16 (`fecha-de-cartera.md`): dos fechas, la de inicio y
+                la de cartera; el primer mes se cobra desde la de cartera. */}
+            <Field
+              id={idDelCampoDelContrato('fechaDeCartera')}
+              label="Desde cuándo se cobra (opcional)"
+              error={errorDe('fechaDeCartera')}
+              hint="El día en que recibe el inmueble. Si no lo pones, desde la fecha de inicio."
+            >
+              <CampoDeDia
+                id={idDelCampoDelContrato('fechaDeCartera')}
+                value={form.fechaDeCartera}
+                onChange={(v) => updateForm('fechaDeCartera', v)}
+                min={form.startDate || undefined}
+                max={form.endDate || undefined}
+                invalido={Boolean(errorDe('fechaDeCartera'))}
+                describedBy={errorDe('fechaDeCartera') ? `${idDelCampoDelContrato('fechaDeCartera')}-error` : undefined}
+                quitable
+                etiquetaDeQuitar="Quitar la fecha desde la que se cobra"
+                testid="fecha-de-cartera"
               />
             </Field>
             {esManual && comisionDesconocida && (
@@ -1621,22 +1622,17 @@ function NuevoContratoContent() {
                   className="tabular-nums"
                 />
               </Field>
-            ) : (
-              <div className="space-y-1.5" data-testid="dia-de-pago-fecha-a-fecha">
-                <p className="text-caption font-medium text-fg">Día de pago</p>
-                <p className="text-body-sm text-fg-muted">Fecha a fecha: cada cuota vence el día en que empieza su período.</p>
-              </div>
-            )}
+            ) : null /* Ronda 20: sin prorrateo no hay día que elegir, y «fecha a fecha» ya lo dicen «¿Se prorratea?» y el Resumen. */}
             <Field
               id={idDelCampoDelContrato('diasDePlazo')}
               label="Días de plazo antes de la mora"
               error={errorDe('diasDePlazo')}
               hint={
                 valoresDelBack?.reglaDeCobro?.plazoSinFijar === true
-                  ? 'Vacío = los de la inmobiliaria, que todavía no los fijó: hasta que los fije no corre mora. Días después del vencimiento en los que todavía no corre mora.'
+                  ? 'Si no lo pones, los de tu inmobiliaria, que todavía no los fijó: hasta que los fije no corre mora. Días después del vencimiento en los que todavía no corre mora.'
                   : porDefecto?.diasDePlazo != null
-                  ? `Vacío = los de la inmobiliaria (${porDefecto.diasDePlazo === 1 ? '1 día' : `${porDefecto.diasDePlazo} días`}). Días después del vencimiento en los que todavía no corre mora.`
-                  : 'Vacío = los de la inmobiliaria. Días después del vencimiento en los que todavía no corre mora.'
+                  ? `Si no lo pones, los de tu inmobiliaria (${porDefecto.diasDePlazo === 1 ? '1 día' : `${porDefecto.diasDePlazo} días`}). Días después del vencimiento en los que todavía no corre mora.`
+                  : 'Si no lo pones, los de tu inmobiliaria. Días después del vencimiento en los que todavía no corre mora.'
               }
             >
               <Input

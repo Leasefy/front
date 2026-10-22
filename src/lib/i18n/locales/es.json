@@ -2516,7 +2516,7 @@
       "upToDate": "Al día",
       "withBalance": "{{count}} con giros atrasados",
       "noPending": "Sin giros atrasados",
-      "generadoSinGirar": "{{monto}} generado en Dispersiones sin girar",
+      "generadoSinGirar": "{{monto}} sin girar",
       "viewTable": "Tabla",
       "viewCards": "Tarjetas",
       "showing": "Mostrando",
@@ -2527,8 +2527,8 @@
         "properties": "inmuebles",
         "pendingBadge": "Giro atrasado",
         "propertiesLabel": "Inmuebles",
-        "rented": "arrendadas",
-        "rentedOne": "arrendada",
+        "rented": "arrendados",
+        "rentedOne": "arrendado",
         "monthlyRent": "Canon mensual",
         "pendingAbbr": "atrasado",
         "sendEmail": "Enviar email",
@@ -2652,7 +2652,7 @@
           "contrato": "Volver al contrato",
           "inmueble": "Volver al inmueble",
           "cobro": "Volver a cobros",
-          "dispersiones": "Volver a dispersiones",
+          "dispersiones": "Volver a Giros a propietarios",
           "otro": "Volver"
         },
         "createdAt": "Creado",
@@ -5680,7 +5680,7 @@
         "address": "Dirección",
         "city": "Ciudad",
         "optional": "Opcional",
-        "bankDataTitle": "Datos bancarios para dispersiones",
+        "bankDataTitle": "Datos bancarios para los giros",
         "bankDataInfo": "Estos datos se usarán para transferir el canon mensual al propietario, después de descontar la comisión de administración.",
         "bankDataHidden": "Tu rol no ve la cuenta bancaria de los propietarios. Lo que guardes aquí no la cambia; la registra o la corrige quien tenga acceso a los giros.",
         "bankOptional": "Si la certificación bancaria todavía no llega, guárdalo sin cuenta: queda con «Datos pendientes: cuenta bancaria» y no se le gira hasta registrarla. Si llenas la cuenta, van banco, tipo y número.",
@@ -5778,7 +5778,7 @@
         "unoDesde": "1 giro vencido desde el {{fecha}}",
         "variosDesde": "{{n}} giros vencidos desde el {{fecha}}",
         "vencidoDesde": "Vencido desde el {{fecha}}",
-        "generado": "{{monto}} generado en Dispersiones",
+        "generado": "{{monto}} sin girar",
         "sinDiaDeGiro": "Sin día de giro"
       },
       "alertas": {
@@ -5790,14 +5790,14 @@
         },
         "pendienteDeGiro": {
           "titulo": "Tiene {{monto}} en giros atrasados",
-          "detalle": "Son cuotas suyas con el giro vencido y sin girar, las mismas de su estado de cuenta. Se giran desde Dispersiones, con el extracto del mes.",
-          "accion": "Ir a dispersiones",
-          "generado": "En Dispersiones ya hay {{monto}} generado y sin girar."
+          "detalle": "Son cuotas suyas con el giro vencido y sin girar, las mismas de su estado de cuenta. Se giran desde Giros a propietarios, con el extracto del mes.",
+          "accion": "Ir a Giros a propietarios",
+          "generado": "En Giros a propietarios ya hay {{monto}} generado y sin girar."
         },
         "generadoSinGirar": {
-          "titulo": "Hay {{monto}} generado en Dispersiones sin girar",
-          "detalle": "Son dispersiones ya generadas que todavía no salieron. No es un atraso: se giran desde Dispersiones, con el extracto del mes.",
-          "accion": "Ir a dispersiones"
+          "titulo": "Hay {{monto}} generado y sin girar",
+          "detalle": "Son giros ya generados que todavía no salieron. No es un atraso: se giran desde Giros a propietarios, con el extracto del mes.",
+          "accion": "Ir a Giros a propietarios"
         },
         "sinArrendar": {
           "tituloUno": "«{{inmueble}}» está sin arrendar",
@@ -5821,8 +5821,8 @@
         "monthlyRent": "Canon mensual",
         "pending": "Giro atrasado",
         "lastPayment": "Último pago",
-        "rented": "arrendadas",
-        "rentedOne": "arrendada",
+        "rented": "arrendados",
+        "rentedOne": "arrendado",
         "upToDate": "Al día",
         "viewDetail": "Ver detalle",
         "copropiedades": "+{{n}} como copropietario",
@@ -5840,7 +5840,7 @@
       },
       "bankInfo": {
         "bankAccount": "Cuenta bancaria",
-        "forDispersions": "Para dispersiones de canon",
+        "forDispersions": "Para los giros del canon",
         "bank": "Banco",
         "type": "Tipo",
         "number": "Número",
@@ -12092,7 +12092,7 @@
         "address": "Dirección",
         "city": "Ciudad",
         "optional": "Opcional",
-        "bankDataTitle": "Datos bancarios para dispersiones",
+        "bankDataTitle": "Datos bancarios para los giros",
         "bankDataInfo": "Estos datos se usarán para transferir el canon mensual al propietario, después de descontar la comisión de administración.",
         "bank": "Banco",
         "selectBank": "Seleccionar banco...",
@@ -12157,7 +12157,7 @@
         "monthlyRent": "Canon mensual",
         "pending": "Pendiente",
         "lastPayment": "Último pago",
-        "rented": "arrendadas",
+        "rented": "arrendados",
         "upToDate": "Al día",
         "viewDetail": "Ver detalle",
         "edit": "Editar",
@@ -12170,7 +12170,7 @@
       },
       "bankInfo": {
         "bankAccount": "Cuenta bancaria",
-        "forDispersions": "Para dispersiones de canon",
+        "forDispersions": "Para los giros del canon",
         "bank": "Banco",
         "type": "Tipo",
         "number": "Número",
@@ -13362,7 +13362,7 @@
     "subtitulo": "Las personas que viven en los inmuebles que administras, con todos sus arriendos juntos. Carga uno aquí, o trae los que ya tienes en otro sistema con la migración.",
     "queEs": "los inquilinos",
     "queSon": "inquilinos",
-    "buscarPlaceholder": "Busca por nombre, correo o teléfono",
+    "buscarPlaceholder": "Buscar por nombre, correo o teléfono",
     "filtroEstado": "Filtrar por estado del arriendo",
     "filtros": {
       "activos": "Activos",

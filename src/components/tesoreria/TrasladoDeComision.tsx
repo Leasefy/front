@@ -21,7 +21,7 @@
  */
 
 import { nombreDelMes } from '@/lib/recaudo/meses';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { ArrowsLeftRight, CheckCircle, Prohibit, XCircle } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -75,6 +75,7 @@ const TONO_DEL_ESTADO: Record<Traslado['estado'], 'success' | 'warning' | 'outli
 
 export function TrasladoDeComisionPanel() {
   const [periodo, setPeriodo] = useState(mesAnterior);
+  const yaSeMovioAlPendiente = useRef(false);
   const [lista, setLista] = useState<ListaDeTraslados | null>(null);
   const [propuesta, setPropuesta] = useState<PropuestaDeTraslado | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -95,6 +96,13 @@ export function TrasladoDeComisionPanel() {
       ]);
       setLista(l);
       setPropuesta(p);
+      // 22-10 (revisión): con un traslado esperando aprobación, la pantalla se abre en SU
+      // mes (una vez): lo que hay que decidir va primero, no el cálculo de otro mes.
+      const pendiente = l.propuestos.find((t) => /^\d{4}-\d{2}$/.test(t.periodo));
+      if (pendiente && !yaSeMovioAlPendiente.current && pendiente.periodo !== periodo) {
+        yaSeMovioAlPendiente.current = true;
+        setPeriodo(pendiente.periodo);
+      }
     } catch (error) {
       setFallo(error);
     } finally {

@@ -30,7 +30,12 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { agendaApi } from '@/lib/api/agenda.service'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
-import { CalendarCheck, UserPlus } from '@phosphor-icons/react'
+import { CalendarCheck, Copy, UserPlus } from '@phosphor-icons/react'
+import { usePipelineItems } from '@/lib/hooks/useInmobiliaria'
+import { paraHoy } from '@/lib/pipeline/para-hoy'
+import { diaCortoDelEmbudo, esUnaVisita } from '@/lib/pipeline/proxima-accion'
+import { hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa'
+import type { PipelineItem } from '@/lib/types/inmobiliaria'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { Cifra, FranjaDeCifras, Stagger, StaggerItem } from '@leasefy/cadence'
@@ -73,6 +78,36 @@ function avisarQueNoSeGuardo(error: unknown, titulo: string, accion: string) {
   })
 }
 
+/**
+ * Revisora r22 (Preparar visitas #5): la visita no trae el id del interesado; se busca en Prospección por su
+ * teléfono o su correo y el inmueble, para que el nombre abra su ficha. Sin coincidencia segura, no se enlaza.
+ */
+export function interesadoDeLaVisita(
+  v: { telefono: string | null; correo: string | null; inmueble: { id: string } | null },
+  items: readonly PipelineItem[],
+): PipelineItem | null {
+  const digitos = (t: string | null | undefined) => String(t ?? '').replace(/\D/g, '')
+  const tel = digitos(v.telefono)
+  const correo = (v.correo ?? '').trim().toLowerCase()
+  if (!tel && !correo) return null
+  const coinciden = items.filter(
+    (i) =>
+      (!v.inmueble || i.propertyId === v.inmueble.id) &&
+      ((tel.length >= 7 && digitos(i.candidatePhone).endsWith(tel.slice(-10))) ||
+        (correo !== '' && (i.candidateEmail ?? '').trim().toLowerCase() === correo)),
+  )
+  return coinciden.length === 1 ? coinciden[0]! : null
+}
+
+async function copiarElRecordatorio(texto: string) {
+  try {
+    await navigator.clipboard.writeText(texto)
+    toast.success('Recordatorio copiado', { description: 'Pégalo en el WhatsApp o el correo de la persona.' })
+  } catch {
+    toast.error('No pudimos copiarlo', { description: 'Tu navegador no nos dejó usar el portapapeles.' })
+  }
+}
+
 export function VisitasClient() {
   const { canAccess } = usePermissions()
   const puedeEditar = canAccess('pipeline', 'edit')
@@ -90,6 +125,15 @@ export function VisitasClient() {
     const nombre = nombreDe(userId)
     return nombre.startsWith('Usuario ') ? 'Asesor sin nombre' : nombre
   }
+
+  // Revisora r22 (#1): las visitas vencidas sin cerrar (las que Prospección pone en «Para hoy»): lo primero
+  // que hay que preparar es reagendarlas o marcar si llegó.
+  const { pipelineItems } = usePipelineItems()
+  const itemsDelTablero = pipelineItems ?? []
+  const vencidas = useMemo(
+    () => paraHoy(itemsDelTablero, hoyEnColombia()).filter((p) => p.porQue === 'vencida' && esUnaVisita(p.item.nextAction)),
+    [itemsDelTablero],
+  )
 
   const [tocando, setTocando] = useState<string | null>(null)
   const [marcando, setMarcando] = useState(false)
@@ -300,10 +344,43 @@ export function VisitasClient() {
         </div>
       )}
 
+      {vencidas.length > 0 ? (
+        <section className="rounded-lg border border-border bg-surface" data-testid="visitas-vencidas">
+          <header className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-4">
+            <h2 className="text-[15px] font-medium text-fg">
+              {vencidas.length === 1 ? '1 visita vencida sin cerrar' : `${vencidas.length} visitas vencidas sin cerrar`}
+            </h2>
+            <p className="text-caption text-fg-muted">Reagéndala o marca si llegó, desde su ficha en Prospección.</p>
+          </header>
+          <ul className="mt-2 divide-y divide-border-faint">
+            {vencidas.map(({ item, dia }) => (
+              <li key={item.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-fg">{item.candidateName}</p>
+                  <p className="truncate text-body-sm text-fg-muted">
+                    {item.propertyTitle || item.propertyAddress}
+                    {dia ? <span className="font-mono"> · {diaCortoDelEmbudo(dia)}</span> : null}
+                  </p>
+                </div>
+                <Link
+                  href={`/panel/inmobiliaria/pipeline?lead=${encodeURIComponent(item.id)}`}
+                  className="text-body-sm font-medium text-primary underline-offset-4 hover:underline"
+                  data-testid={`vencida-${item.id}`}
+                >
+                  Abrir su ficha
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {/* Ronda 22: con las dos listas vacías, UN vacío con su acción (eran dos tarjetas iguales de ~320 px). */}
       {todoVacio ? (
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="nada-por-preparar">
-          Nada por preparar: no hay visitas en los próximos 7 días ni recordatorios por mandar.
+          {vencidas.length > 0
+            ? 'Fuera de las vencidas, no hay visitas en los próximos 7 días ni recordatorios por mandar.'
+            : 'Nada por preparar: no hay visitas en los próximos 7 días ni recordatorios por mandar.'}
           <Link href="/panel/inmobiliaria/pipeline" className="font-medium text-primary underline-offset-4 hover:underline">
             Agendar una visita
           </Link>
@@ -351,7 +428,20 @@ export function VisitasClient() {
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="space-y-0.5">
                         <p className="font-medium">
-                          {v.quien ?? 'Interesado'}
+                          {(() => {
+                            const delTablero = interesadoDeLaVisita(v, itemsDelTablero)
+                            return delTablero ? (
+                              <Link
+                                href={`/panel/inmobiliaria/pipeline?lead=${encodeURIComponent(delTablero.id)}`}
+                                className="underline-offset-4 hover:underline"
+                                data-testid={`abrir-interesado-${v.visitId}`}
+                              >
+                                {v.quien ?? 'Interesado'}
+                              </Link>
+                            ) : (
+                              v.quien ?? 'Interesado'
+                            )
+                          })()}
                           <span className="text-muted-foreground ml-2 text-sm font-normal">
                             {v.comoSeLee}
                           </span>
@@ -489,17 +579,30 @@ export function VisitasClient() {
               }
             >
               <p className="text-muted-foreground mb-3 text-sm">
-                Esta pantalla NO envía: arma el texto y deja la constancia. El
-                envío sale por los avisos de la inmobiliaria.
+                Esta pantalla no envía: arma el texto y deja la constancia. El
+                envío sale por los avisos de la inmobiliaria; si lo mandas tú, cada uno trae «Copiar».
               </p>
               {/* Los recordatorios entran escalonados; el que se marca, sale. */}
               <Stagger as="ul" className="divide-y" data-testid="lista-recordatorios">
                 {pendientes.map((r) => (
-                  <StaggerItem as="li" key={r.visitId} className="space-y-1 py-3">
-                    <p className="text-sm">{r.mensaje}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {r.correo ?? r.telefono ?? 'sin correo ni teléfono'}
-                    </p>
+                  <StaggerItem as="li" key={r.visitId} className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 py-3">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="text-sm">{r.mensaje}</p>
+                      <p className="text-muted-foreground text-caption">
+                        {r.correo ?? r.telefono ?? 'sin correo ni teléfono'}
+                      </p>
+                    </div>
+                    {/* Revisora r22 (#4): «Copiar» en cada recordatorio, como «Copiar el mensaje» de Qué ofrecer. */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      hideArrow
+                      onClick={() => void copiarElRecordatorio(r.mensaje)}
+                      data-testid={`copiar-recordatorio-${r.visitId}`}
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copiar
+                    </Button>
                   </StaggerItem>
                 ))}
               </Stagger>

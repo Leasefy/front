@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
-const { api, permisos, toastError } = vi.hoisted(() => ({
+const { api, permisos, toastError, tablero } = vi.hoisted(() => ({
   toastError: vi.fn(),
   api: {
     porAtender: (() => Promise.resolve(null)) as () => Promise<unknown>,
@@ -25,6 +25,7 @@ const { api, permisos, toastError } = vi.hoisted(() => ({
     avisoAlInquilino: vi.fn(async () => undefined),
   },
   permisos: { edit: true },
+  tablero: { items: [] as Record<string, unknown>[] },
 }))
 
 // Los nombres del equipo salen de la sesión; acá basta un doble (sin nombre conocido → «Asesor sin nombre»).
@@ -49,6 +50,10 @@ vi.mock('@/lib/api/crm.service', async () => {
     leadsApi: { asesores: () => api.asesores() },
   }
 })
+// Revisora r22: las vencidas y el nombre que abre al interesado salen del tablero de Prospección.
+vi.mock('@/lib/hooks/useInmobiliaria', () => ({
+  usePipelineItems: () => ({ pipelineItems: tablero.items, isLoading: false, errorCrudo: null, refetch: vi.fn() }),
+}))
 vi.mock('@/components/ui/toast', () => ({
   toast: { error: toastError, success: vi.fn(), info: vi.fn() },
 }))
@@ -128,6 +133,7 @@ beforeEach(() => {
   api.marcarNoShow.mockClear()
   api.quitarNoShow.mockClear()
   permisos.edit = true
+  tablero.items = []
   contenedor = document.createElement('div')
   document.body.appendChild(contenedor)
   root = createRoot(contenedor)
@@ -231,7 +237,9 @@ describe('VisitasClient', () => {
     expect($('[data-testid="marcar-recordatorios"]')?.textContent).toContain(
       'Marcar como enviados',
     )
-    expect(contenedor.textContent).toContain('NO envía')
+    // Manual de voz: sin mayúsculas para enfatizar; la regla se sigue diciendo.
+    expect(contenedor.textContent).toContain('no envía')
+    expect($('[data-testid="copiar-recordatorio-v-9"]')?.textContent).toContain('Copiar')
   })
 
   it('sin permiso no ofrece ninguna acción', async () => {
@@ -284,5 +292,29 @@ describe('VisitasClient — cuando una acción falla', () => {
   it('un 409 dice lo que mandó el back', async () => {
     const texto = await marcarNoLlegoCon(new ApiError(409, 'La visita todavía no ha pasado.'))
     expect(texto).toBe('La visita todavía no ha pasado.')
+  })
+})
+
+
+describe('revisora r22 (Preparar visitas #1 y #5)', () => {
+  it('arriba, las visitas vencidas sin cerrar, con el enlace a su ficha en Prospección', async () => {
+    tablero.items = [
+      { id: 'lead-1', candidateName: 'Pedro', propertyTitle: 'Casa 5', stage: 'visit_scheduled', nextAction: 'Visita el 19 de oct', nextActionDate: '2020-01-10', daysInStage: 3 },
+      { id: 'lead-2', candidateName: 'Lucía', propertyTitle: 'Apto 9', stage: 'lead', nextAction: 'Llamar', nextActionDate: '2020-01-10', daysInStage: 3 },
+    ]
+    await pintar()
+    const bloque = $('[data-testid="visitas-vencidas"]')
+    expect(bloque?.textContent).toContain('1 visita vencida sin cerrar')
+    expect(bloque?.textContent).toContain('Pedro')
+    expect(bloque?.textContent).not.toContain('Lucía')
+    expect($('[data-testid="vencida-lead-1"]')?.getAttribute('href')).toBe('/panel/inmobiliaria/pipeline?lead=lead-1')
+  })
+
+  it('el nombre de la visita abre al interesado cuando se lo reconoce por su correo y el inmueble', async () => {
+    tablero.items = [
+      { id: 'lead-ana', candidateName: 'Ana Restrepo', candidateEmail: 'ANA@ejemplo.com', candidatePhone: '', propertyId: 'p-1', stage: 'visit_scheduled', daysInStage: 1 },
+    ]
+    await pintar()
+    expect($('[data-testid="abrir-interesado-temprana"]')?.getAttribute('href')).toBe('/panel/inmobiliaria/pipeline?lead=lead-ana')
   })
 })

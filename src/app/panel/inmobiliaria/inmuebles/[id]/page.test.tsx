@@ -159,6 +159,7 @@ vi.mock('@/components/inmobiliaria/ConsignacionDetailSections', () => ({
 
 vi.mock('@/components/inmobiliaria/ficha/FichaDelInmueble', () => ({
   FichaDelInmueble: () => null,
+  caracteristicasDelInmueble: () => [],
 }));
 
 vi.mock('@/components/inmobiliaria/ficha/LoQueFaltaDelInmueble', () => ({

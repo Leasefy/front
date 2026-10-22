@@ -221,4 +221,5 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'Reagendar': 'Reschedule',
   'Ver menos': 'See less',
   'Ver los {n}': 'See all {n}',
+  'nadie en esta etapa': 'no one in this stage',
 }

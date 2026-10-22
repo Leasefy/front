@@ -168,6 +168,32 @@ function DroppableColumn({
   // Calculate if we need to show "Ver todo" button (show when 3+ items)
   const showExpandButton = items.length >= maxVisibleCards;
 
+  /*
+   * Ronda 18: una etapa SIN nadie se pliega a un riel de 44 px con su nombre en vertical y el
+   * «0». Antes eran 280 px de «Nadie en esta etapa» por columna: con 4 interesados el tablero
+   * medía ≈2.650 px y Evaluación, Aprobado, Contrato, Entrega y Cerrado quedaban fuera, a la
+   * derecha. Al arrastrar una tarjeta encima, el riel se abre (`isOver`) para soltarla.
+   */
+  if (items.length === 0 && !isOver) {
+    const nombre = tr(stageInfo?.labelEs || stage);
+    return (
+      <div
+        ref={setNodeRef}
+        className="flex min-h-[220px] w-11 shrink-0 flex-col items-center gap-2 rounded-[18px] bg-surface-muted/50 py-3"
+        title={`${nombre}: ${tr('nadie en esta etapa')}`}
+        aria-label={`${nombre}: 0`}
+        data-testid={`columna-plegada-${stage}`}
+      >
+        <span
+          className={cn('h-2 w-2 rounded-full', bgColorClass.replace('-100', '-500').replace('-soft', ''))}
+          aria-hidden="true"
+        />
+        <span className="font-mono text-caption tabular-nums text-fg-subtle">0</span>
+        <span className="rotate-180 whitespace-nowrap text-body-sm text-fg-muted [writing-mode:vertical-rl]">{nombre}</span>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={setNodeRef}

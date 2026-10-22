@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Sin conexión · Leasefy</title>
+  <style>
+    :root {
+      --fondo: #ffffff; --texto: #14130f; --suave: #5f5d57; --linea: #e7e5df;
+      --azul: #1A40FF; --azul-texto: #ffffff;
+      --arriba: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+      --abajo: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --fondo: #0f0f0d; --texto: #f4f3ef; --suave: #a3a19a; --linea: #2a2925; --azul: #5b78ff; }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--fondo); color: var(--texto); }
+    body {
+      font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: calc(24px + var(--arriba)) 24px calc(24px + var(--abajo));
+      -webkit-user-select: none; user-select: none;
+    }
+    main { width: 100%; max-width: 360px; text-align: center; }
+    svg { width: 64px; height: auto; color: var(--azul); }
+    h1 { font-size: 22px; line-height: 1.25; margin: 28px 0 8px; letter-spacing: -0.01em; }
+    p { margin: 0; color: var(--suave); }
+    button {
+      margin-top: 32px; width: 100%; min-height: 48px; border: 0; border-radius: 12px;
+      background: var(--azul); color: var(--azul-texto); font: 600 16px/1 inherit; cursor: pointer;
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+    button:active { transform: scale(0.98); opacity: 0.9; }
+    button[disabled] { opacity: 0.6; }
+    .estado { margin-top: 16px; min-height: 1.5em; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <main>
+    <svg viewBox="-4 68 250 140" fill="currentColor" aria-hidden="true"><path d="M8.58904 186C1.58904 186 -2.41096 178 1.58904 171L55.589 83C60.589 75 68.589 71 78.589 71H117.589C129.589 71 137.589 76 143.589 87L162.589 124C165.589 129 169.589 131 176.589 131H203.589C212.589 131 218.589 135 222.589 143L237.589 171C241.589 179 236.589 186 227.589 186H190.589C182.589 186 176.589 182 172.589 174L143.589 123C140.589 118 135.589 115 129.589 115H109.589C103.589 115 98.589 118 95.589 123L66.589 175C62.589 182 56.589 186 48.589 186H8.58904Z"/></svg>
+    <h1>No pudimos conectarnos con Leasefy</h1>
+    <p>Revisa que tu celular tenga internet. Tu información está guardada; apenas vuelva la conexión, sigues donde ibas.</p>
+    <button id="reintentar" type="button">Intentar de nuevo</button>
+    <p class="estado" id="estado" role="status" aria-live="polite"></p>
+  </main>
+  <script>
+    (function () {
+      var URL_DE_LEASEFY = '__URL_DE_LEASEFY__'
+      var boton = document.getElementById('reintentar')
+      var estado = document.getElementById('estado')
+      var cap = window.Capacitor
+      if (cap && cap.nativePromise) {
+        cap.nativePromise('SplashScreen', 'hide', {}).catch(function () {})
+      }
+      function reintentar() {
+        boton.disabled = true
+        estado.textContent = 'Conectando…'
+        fetch(URL_DE_LEASEFY + '/manifest.json', { cache: 'no-store', mode: 'no-cors' })
+          .then(function () { location.replace(URL_DE_LEASEFY) })
+          .catch(function () {
+            boton.disabled = false
+            estado.textContent = 'Todavía sin conexión. Vuelve a intentarlo en un momento.'
+          })
+      }
+      boton.addEventListener('click', reintentar)
+      window.addEventListener('online', reintentar)
+    })()
+  </script>
+</body>
+</html>

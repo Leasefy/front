@@ -1,0 +1,11 @@
+node_modules/
+build/
+www/
+.DS_Store
+# Llaves y configuración de Firebase: NUNCA al repo.
+*.jks
+*.keystore
+*.p8
+*.mobileprovision
+llave-de-subida.properties
+android/local.properties

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Tocar un aviso de Leasefy abre la app: el back los manda con esta acción
+                 (push.service.ts, android.notification.clickAction). Sin este filtro el toque
+                 no hace nada. -->
+            <intent-filter>
+                <action android:name="FLUTTER_NOTIFICATION_CLICK" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- Regreso de «Continuar con Google»: co.leasefy.app://auth/callback?code=… -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="@string/custom_url_scheme" />
+            </intent-filter>
+
+            <!-- Los enlaces de leasefy.co de los correos y de WhatsApp abren la app
+                 (se verifican con https://leasefy.co/.well-known/assetlinks.json).
+                 La misma lista vive en el front: src/lib/app-nativa/enlaces-de-la-app.ts. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="leasefy.co" />
+                <data android:pathPrefix="/invitacion" />
+                <data android:pathPrefix="/firmar" />
+                <data android:pathPrefix="/confirmar-cuenta" />
+                <data android:pathPrefix="/auth/callback" />
+                <data android:pathPrefix="/auth/confirmar" />
+                <data android:pathPrefix="/auth/enlace" />
+                <data android:pathPrefix="/auth/update-password" />
+                <data android:pathPrefix="/panel" />
+                <data android:pathPrefix="/inquilino" />
+                <data android:pathPrefix="/mi-arriendo" />
+                <data android:pathPrefix="/estado-de-cuenta" />
+                <data android:pathPrefix="/propiedades" />
+                <data android:pathPrefix="/es/propiedades" />
+                <data android:pathPrefix="/en/propiedades" />
+                <data android:pathPrefix="/aplicar" />
+                <data android:pathPrefix="/mis-aplicaciones" />
+                <data android:pathPrefix="/aprobacion" />
+                <data android:pathPrefix="/mandato" />
+            </intent-filter>
+
+        </activity>
+
+        <!-- Color del círculo de los avisos y su ícono en la barra de estado. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_aviso" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/ic_launcher_background" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="avisos" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+    </application>
+
+    <!-- Permissions -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Avisos (Android 13+ pide permiso). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Fotos de inmuebles, inspecciones y documentos desde la cámara. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Dictarle al asistente. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <!-- Para abrir WhatsApp, el teléfono y el correo desde los botones de la plataforma. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+    </queries>
+</manifest>

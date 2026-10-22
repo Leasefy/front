@@ -1,0 +1,29 @@
+{
+  "name": "leasefy-app-movil",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App de Leasefy para iOS y Android: la plataforma de leasefy.co dentro de una app nativa (Capacitor).",
+  "scripts": {
+    "www": "node scripts/preparar-www.mjs",
+    "sync": "node scripts/preparar-www.mjs && cap sync",
+    "sync:local": "LEASEFY_URL=${LEASEFY_URL:-http://localhost:3161} npm run sync",
+    "ios": "cap open ios",
+    "android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "8.0.5",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.5",
+    "@capacitor/ios": "8.5.3",
+    "@capacitor/push-notifications": "8.1.3",
+    "@capacitor/share": "8.0.3",
+    "@capacitor/splash-screen": "8.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3",
+    "playwright-core": "1.56.1",
+    "typescript": "5.9.3"
+  }
+}

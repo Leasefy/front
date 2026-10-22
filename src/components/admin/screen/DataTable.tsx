@@ -197,6 +197,8 @@ export function DataTable<T>({
   const { get, setFilters } = useEstadoDeLaTabla()
   const esCelular = useIsMobile()
   const [exportando, setExportando] = useState(false)
+  /** En el celular los filtros propios se pliegan detrás de «Filtros». */
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
   const k = (nombre: string) => (id ? `${id}.${nombre}` : nombre)
 
   const busqueda = buscar ? get(k('q')) : ''
@@ -424,18 +426,48 @@ export function DataTable<T>({
       {barraArriba || barraAbajo ? (
         <div className="space-y-3 border-b border-border p-4">
           {barraArriba ? (
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-              {conBuscador ? (
-                <div className="w-full min-w-0 sm:max-w-sm sm:flex-1">
-                  <Buscador
-                    id={k('buscar')}
-                    value={busqueda}
-                    onChange={(v) => poner({ [k('q')]: v })}
-                    placeholder={typeof buscar === 'string' ? buscar : 'Buscar'}
-                  />
+            /* 🔴 21-10 (Nico: «esos selects por ahí tirados»): UNA línea, todo al
+               centro y a la misma altura — buscador, filtros, y Exportar a la
+               derecha. En el celular el buscador va a lo ancho y los filtros se
+               pliegan detrás de «Filtros (n)». */
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              {conBuscador || barra ? (
+                <div
+                  className={cn(
+                    'flex w-full min-w-0 items-center gap-2',
+                    conBuscador ? 'sm:w-auto sm:min-w-[16rem] sm:max-w-sm sm:flex-1' : 'sm:hidden',
+                  )}
+                >
+                  {conBuscador ? (
+                    <div className="min-w-0 flex-1">
+                      <Buscador
+                        id={k('buscar')}
+                        value={busqueda}
+                        onChange={(v) => poner({ [k('q')]: v })}
+                        placeholder={typeof buscar === 'string' ? buscar : 'Buscar'}
+                      />
+                    </div>
+                  ) : null}
+                  {barra ? (
+                    <Button
+                      variant="secondary"
+                      hideArrow
+                      className={cn('shrink-0 gap-2 sm:hidden', !conBuscador && 'w-full')}
+                      aria-expanded={filtrosAbiertos}
+                      onClick={() => setFiltrosAbiertos((v) => !v)}
+                      data-testid="tabla-boton-filtros"
+                    >
+                      <Funnel className="h-4 w-4" aria-hidden />
+                      Filtros{propiosPuestos > 0 ? ` (${propiosPuestos})` : ''}
+                    </Button>
+                  ) : null}
                 </div>
               ) : null}
-              {barra ? <div className="min-w-0 sm:flex-1">{barra}</div> : null}
+              {barra ? (
+                <div className={cn('min-w-0 sm:block', filtrosAbiertos ? 'block' : 'hidden')} data-testid="tabla-filtros-propios">
+                  {barra}
+                </div>
+              ) : null}
               {acciones || exportar ? (
                 <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
                   {acciones}
@@ -502,7 +534,15 @@ function ConConteo({ nombre, cuantos }: { nombre: string; cuantos: number }) {
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
       {nombre}
-      <span className="rounded bg-muted px-1.5 py-0.5 text-caption tabular-nums">{NUMERO.format(cuantos)}</span>
+      {/* Un cero no se gana un recuadro: va atenuado. */}
+      <span
+        className={cn(
+          'rounded px-1.5 py-0.5 text-caption tabular-nums',
+          cuantos === 0 ? 'text-fg-subtle' : 'bg-muted',
+        )}
+      >
+        {NUMERO.format(cuantos)}
+      </span>
     </span>
   )
 }

@@ -63,6 +63,7 @@ import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@leasefy/cadence';
+import { sinMayusculasSostenidas } from '@/lib/inmuebles/titulo-de-la-ficha';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -760,8 +761,10 @@ function ContratosContent() {
                       </span>
                     ) : (
                       <span className="truncate" title={`${c.propertyAddress}, ${c.propertyCity}`}>
-                        {c.propertyAddress}
-                        {c.propertyCity ? `, ${c.propertyCity}` : ''}
+                        {/* Glow up 22-10: la dirección migrada viene en MAYÚSCULAS; se lee con
+                            mayúscula inicial (el texto entero sigue en el título). */}
+                        {sinMayusculasSostenidas(c.propertyAddress ?? '')}
+                        {c.propertyCity ? `, ${sinMayusculasSostenidas(c.propertyCity)}` : ''}
                       </span>
                     )}
                   </div>

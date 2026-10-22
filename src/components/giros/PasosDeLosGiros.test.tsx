@@ -73,3 +73,19 @@ describe('Giros a propietarios — lo hecho en el mes y lo que sigue (ronda 19)'
     expect(host.querySelector('[data-testid="siguiente-paso-de-los-giros"]')).toBeNull();
   });
 });
+
+describe('Giros a propietarios — con el mes girado entero (ronda 21)', () => {
+  it('el pie no manda al siguiente paso: dice que el mes está listo', async () => {
+    const { SiguientePasoDeLosGiros } = await import('./PasosDeLosGiros');
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() =>
+      root!.render(
+        <SiguientePasoDeLosGiros paso="banco" estados={{ liquidar: 'hecho', revisar: 'hecho', banco: 'hecho', pagado: 'hecho' }} />,
+      ),
+    );
+    expect(host.querySelector('[data-testid="giros-del-mes-listos"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid^="ir-al-paso-"]')).toBeNull();
+  });
+});

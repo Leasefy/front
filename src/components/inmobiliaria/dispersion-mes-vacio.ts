@@ -58,8 +58,8 @@ export function motivoDelMesVacio({
       titulo: 'Ya están generadas',
       detalle:
         yaGenerados === 1
-          ? `La dispersión de ${enElMes} ya existe. Búscala en la lista.`
-          : `Las ${numero.format(yaGenerados)} dispersiones de ${enElMes} ya existen. Búscalas en la lista.`,
+          ? `El giro de ${enElMes} ya existe. Búscalo en la lista.`
+          : `Los ${numero.format(yaGenerados)} giros de ${enElMes} ya existen. Búscalos en la lista.`,
     };
   }
 
@@ -101,12 +101,12 @@ export function motivoDelMesVacio({
 
   if (vacio.enUnaDispersion > 0) {
     return {
-      titulo: 'Ya están en una dispersión',
+      titulo: 'Ya están en un giro',
       detalle: `${
         vacio.enUnaDispersion === 1
           ? `La cuota de propietario de ${enElMes} ya quedó`
           : `Las ${cuotas(vacio.enUnaDispersion)} de ${enElMes} ya quedaron`
-      } en una dispersión. Búscala en la lista.`,
+      } en un giro. Búscalo en la lista.`,
     };
   }
 

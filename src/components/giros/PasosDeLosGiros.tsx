@@ -87,7 +87,8 @@ export function PasosDeLosGiros({
     const actual = ol?.querySelector<HTMLElement>('[aria-current="step"]');
     if (!ol || !actual || ol.scrollWidth <= ol.clientWidth) return;
     ol.scrollLeft = Math.max(0, actual.offsetLeft - (ol.clientWidth - actual.offsetWidth) / 2);
-  }, [paso]);
+    // Ronda 21: también cuando llega lo hecho en el mes: el chulo ensancha los pasos y el actual quedaba cortado.
+  }, [paso, estados]);
   return (
     <nav aria-label={tr('Pasos del giro a propietarios')} className={cn('min-w-0', className)} data-testid="pasos-de-los-giros">
       <ol
@@ -159,15 +160,30 @@ export function PasosDeLosGiros({
 export function SiguientePasoDeLosGiros({
   paso,
   mes,
+  estados,
   className,
 }: {
   paso: PasoDeLosGiros;
   /** El mes que se mira: el siguiente paso abre en ese mes. */
   mes?: string;
+  /** Lo hecho en el mes: con todo girado, en vez del siguiente paso dice que el mes está listo. */
+  estados?: EstadoDeLosPasos;
   className?: string;
 }) {
   const tr = useTr();
   const i = PASOS_DE_LOS_GIROS.findIndex((p) => p.id === paso);
+  // Ronda 21: con el mes ya girado entero no se manda a «Arma el lote»: se dice que está listo.
+  if (estados?.pagado === 'hecho') {
+    return (
+      <div
+        className={cn('flex items-center gap-2 border-t border-border pt-4 text-body-sm text-fg-muted', className)}
+        data-testid="giros-del-mes-listos"
+      >
+        <Check className="h-4 w-4 shrink-0 text-success" weight="bold" aria-hidden="true" />
+        {tr('Este mes ya está girado: los cuatro pasos están hechos.')}
+      </div>
+    );
+  }
   const siguiente = PASOS_DE_LOS_GIROS[i + 1];
   if (!siguiente) return null;
   return (

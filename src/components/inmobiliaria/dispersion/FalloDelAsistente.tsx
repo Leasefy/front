@@ -41,7 +41,7 @@ export function FalloDelAsistente({
     return (
       <AvisoLiquidacionFrenada
         frenada={frenada}
-        despues="generar las dispersiones"
+        despues="generar los giros"
       />
     );
   }
@@ -60,7 +60,7 @@ export function FalloDelAsistente({
   return (
     <FalloDeCarga
       error={error}
-      queEs="las dispersiones del mes"
+      queEs="los giros del mes"
       onReintentar={onReintentar}
       enmarcado
     />

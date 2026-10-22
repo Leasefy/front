@@ -41,6 +41,7 @@ import { mesEnTitulo } from '@/lib/utils/mes';
 import { enmascarar } from '@/components/inmobiliaria/medios-de-pago/legible';
 import { baseDeLasDispersiones, type BaseDelCanonDelExtracto } from '@/lib/propietarios/base-del-canon';
 import { useTr } from '@/lib/i18n/use-tr';
+import { conSigno } from '@/lib/plata/escribir-plata';
 
 /**
  * 🔴 N-39 (QA-PAGOS-95 r2): lo que se GIRA de una dispersión — entero o nada.
@@ -345,9 +346,10 @@ export function DispersionTable({
                 </TableCell>
 
                 {/* Commission */}
+                {/* Ronda 21: neutra, en mono y con su «−», como en los pasos 1 y 3 (era azul de enlace). */}
                 <TableCell className="p-4">
-                  <span className="font-medium text-primary tabular-nums">
-                    {formatCurrency(dispersion.totalCommission)}
+                  <span className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
+                    {conSigno('−', formatCurrency(dispersion.totalCommission))}
                   </span>
                 </TableCell>
 
@@ -490,8 +492,8 @@ export function DispersionTable({
                 </span>
               </TableCell>
               <TableCell className="p-4">
-                <span className="font-bold text-primary tabular-nums">
-                  {formatCurrency(summary.totalCommissions)}
+                <span className="whitespace-nowrap font-mono font-medium tabular-nums text-fg-muted">
+                  {conSigno('−', formatCurrency(summary.totalCommissions))}
                 </span>
               </TableCell>
               <TableCell className="p-4">

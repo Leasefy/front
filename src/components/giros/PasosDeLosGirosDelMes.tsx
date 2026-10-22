@@ -9,7 +9,7 @@ import { useMemo } from 'react';
 import { useLotesDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
 import { estadoDeLosPasos } from '@/lib/giros/estado-de-los-pasos';
 import { cn } from '@/lib/utils';
-import { PasosDeLosGiros, type PasoDeLosGiros } from './PasosDeLosGiros';
+import { PasosDeLosGiros, SiguientePasoDeLosGiros, type PasoDeLosGiros } from './PasosDeLosGiros';
 import { MesDeLosGiros } from './MesDeLosGiros';
 
 export function PasosDeLosGirosDelMes({
@@ -36,4 +36,11 @@ export function PasosDeLosGirosDelMes({
       ) : null}
     </div>
   );
+}
+
+/** El «Siguiente» al pie de un paso, sabiendo lo hecho en el mes. */
+export function SiguientePasoDelMes({ paso, mes, className }: { paso: PasoDeLosGiros; mes: string; className?: string }) {
+  const { lotes } = useLotesDeDispersion({ month: mes });
+  const estados = useMemo(() => estadoDeLosPasos(lotes, mes), [lotes, mes]);
+  return <SiguientePasoDeLosGiros paso={paso} mes={mes} estados={estados} className={className} />;
 }

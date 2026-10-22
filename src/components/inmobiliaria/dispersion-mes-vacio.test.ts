@@ -65,13 +65,13 @@ describe('motivoDelMesVacio', () => {
     expect(m.detalle).toContain('propietario de tu inmobiliaria');
   });
 
-  it('las ya atadas a una dispersión se buscan en la lista', () => {
+  it('las ya atadas a un giro se buscan en la lista', () => {
     const m = motivoDelMesVacio({
       mes: '2026-09',
       yaGenerados: 0,
       vacio: vacio({ cuotasDelMes: 730, enUnaDispersion: 730 }),
     });
-    expect(m.titulo).toBe('Ya están en una dispersión');
+    expect(m.titulo).toBe('Ya están en un giro');
     expect(m.detalle).toContain('730 cuotas de propietario');
   });
 
@@ -84,7 +84,7 @@ describe('motivoDelMesVacio', () => {
   it('las ya generadas mandan, aunque la cuenta diga otra cosa', () => {
     const m = motivoDelMesVacio({ mes: '2026-09', yaGenerados: 2, vacio: vacio() });
     expect(m.titulo).toBe('Ya están generadas');
-    expect(m.detalle).toContain('Búscalas');
+    expect(m.detalle).toContain('Búscalos');
   });
 
   it('un back que todavía no manda la cuenta recibe la frase general, sin cobros', () => {

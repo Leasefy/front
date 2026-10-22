@@ -14,10 +14,9 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ListaDeLotes } from '@/components/dispersiones/lotes/ListaDeLotes';
 import { ComoSaleUnLote } from '@/components/dispersiones/lotes/ComoSaleUnLote';
-import { PasosDeLosGirosDelMes } from '@/components/giros/PasosDeLosGirosDelMes';
+import { PasosDeLosGirosDelMes, SiguientePasoDelMes } from '@/components/giros/PasosDeLosGirosDelMes';
 import { esMesValido, mesActual } from '@/lib/recaudo/meses';
 import {
-  SiguientePasoDeLosGiros,
   SECCION_DE_LOS_GIROS,
   TITULO_DE_LOS_GIROS,
   descripcionDelPaso,
@@ -62,7 +61,7 @@ function LotesDelPaso() {
         filtroInicial={paso === 'pagado' ? 'en_curso' : undefined}
         sinArmar={paso === 'pagado'}
       />
-      <SiguientePasoDeLosGiros paso={paso} mes={mes} />
+      <SiguientePasoDelMes paso={paso} mes={mes} />
     </>
   );
 }

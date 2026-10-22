@@ -38,8 +38,8 @@
 
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
-import { SECCION_DE_LOS_GIROS, SiguientePasoDeLosGiros, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
-import { PasosDeLosGirosDelMes } from '@/components/giros/PasosDeLosGirosDelMes';
+import { SECCION_DE_LOS_GIROS, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
+import { PasosDeLosGirosDelMes, SiguientePasoDelMes } from '@/components/giros/PasosDeLosGirosDelMes';
 import { claveDelMes, esMesDeLosGiros } from '@/lib/giros/meses-de-los-giros';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -877,7 +877,7 @@ function TesoreriaContent() {
           </EstadoDeDatos>
         </div>
       )}
-      <SiguientePasoDeLosGiros paso="liquidar" mes={month} />
+      <SiguientePasoDelMes paso="liquidar" mes={month} />
       <AlertDialog
         open={porCancelar !== null}
         onOpenChange={(abierto) => {

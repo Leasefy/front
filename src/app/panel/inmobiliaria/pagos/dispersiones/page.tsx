@@ -86,8 +86,8 @@ import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
 import { CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useTr } from '@/lib/i18n/use-tr';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
-import { SECCION_DE_LOS_GIROS, SiguientePasoDeLosGiros, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
-import { PasosDeLosGirosDelMes } from '@/components/giros/PasosDeLosGirosDelMes';
+import { SECCION_DE_LOS_GIROS, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
+import { PasosDeLosGirosDelMes, SiguientePasoDelMes } from '@/components/giros/PasosDeLosGirosDelMes';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -991,7 +991,7 @@ function DispersionesContent() {
         )}
       </div>
 
-      <SiguientePasoDeLosGiros paso="revisar" mes={filters.month} />
+      <SiguientePasoDelMes paso="revisar" mes={filters.month} />
 
       {/* Dispersion Detail Modal */}
       <DispersionDetail

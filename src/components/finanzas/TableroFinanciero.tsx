@@ -451,7 +451,7 @@ function BloqueDeCartera({ tablero, queMide }: { tablero: Tablero; queMide: bool
       className="flex h-full flex-col"
       titulo={tr('Cartera por edades')}
       pregunta={tr('¿Cuánto pasó el plazo, y de qué edad?')}
-      explicacion="Lo que ya pasó el plazo del contrato, partido por los días DESPUÉS del plazo. No es la deuda total: lo que todavía no vence y lo vencido dentro del plazo no se persiguen."
+      explicacion="Lo que ya pasó el plazo del contrato, partido por los días después del plazo. No es la deuda total: lo que todavía no vence y lo vencido dentro del plazo no se persiguen."
       accion={
         <EnlaceDelBloque href="/panel/inmobiliaria/pagos/cartera">{tr('Ver la cartera')}</EnlaceDelBloque>
       }

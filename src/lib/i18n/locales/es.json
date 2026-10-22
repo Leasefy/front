@@ -13503,7 +13503,7 @@
       "deLaCualEnSiniestro": "de la cual {{monto}} en siniestro",
       "tramoEnSiniestro": "En siniestro",
       "desdeLosDias": "desde los {{dias}} días de mora",
-      "edadDeLaCartera": "Edad de la cartera · días de mora contados DESPUÉS del plazo del contrato. Los cinco tramos suman la cartera."
+      "edadDeLaCartera": "Edad de la cartera · días de mora contados después del plazo del contrato. Los cinco tramos suman la cartera."
     },
     "porPropietario": {
       "propietario": "Propietario",

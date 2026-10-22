@@ -555,8 +555,8 @@ export function CarteraCompleta() {
                   <ShieldWarning className="h-3.5 w-3.5" aria-hidden="true" />
                   En siniestro
                 </span>
-                <span className="cifra-que-cabe mt-1 block font-mono text-[17px] tabular-nums text-fg">
-                  {plataDeLaFranja(siniestros.totalCop)}
+                <span className={cn('cifra-que-cabe mt-1 block font-mono text-[17px] tabular-nums', siniestros.totalCop === 0 ? 'text-fg-subtle' : 'text-fg')}>
+                  {siniestros.totalCop === 0 ? '—' : plataDeLaFranja(siniestros.totalCop)}
                 </span>
                 <span className="mt-0.5 block text-caption text-fg-muted">
                   {siniestros.cantidad === 0
@@ -586,8 +586,8 @@ export function CarteraCompleta() {
                   <Scales className="h-3.5 w-3.5" aria-hidden="true" />
                   Castigada
                 </span>
-                <span className="cifra-que-cabe mt-1 block font-mono text-[17px] tabular-nums text-fg-muted">
-                  {plataDeLaFranja(castigada.totalCop)}
+                <span className={cn('cifra-que-cabe mt-1 block font-mono text-[17px] tabular-nums', castigada.totalCop === 0 ? 'text-fg-subtle' : 'text-fg-muted')}>
+                  {castigada.totalCop === 0 ? '—' : plataDeLaFranja(castigada.totalCop)}
                 </span>
                 <span className="mt-0.5 block text-caption text-fg-muted">
                   {castigada.cantidad === 0
@@ -664,8 +664,10 @@ export function CarteraCompleta() {
                 esa mora está en «En siniestro».
               </p>
             ) : null}
+            {/* Ronda 11 (390): en el celular los tramos van en una grilla de dos —el riel
+                que se desplazaba escondía justo los más graves—. */}
             <div
-              className="mt-2 flex divide-x divide-border overflow-x-auto border-t border-border"
+              className="mt-2 grid grid-cols-2 gap-px border-t border-border bg-border sm:flex sm:gap-0 sm:divide-x sm:divide-border sm:overflow-x-auto sm:bg-transparent"
               role="group"
               aria-label="Edad de la cartera"
               data-testid="tramos-de-la-cartera"
@@ -680,7 +682,7 @@ export function CarteraCompleta() {
                     aria-pressed={activa}
                     data-testid={`tramo-${tramo.edad}`}
                     className={cn(
-                      'relative isolate min-w-[150px] flex-1 px-4 py-3 text-left transition-colors',
+                      'relative isolate min-w-0 flex-1 bg-surface px-4 py-3 text-left transition-colors sm:min-w-[150px]',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
                       activa ? '' : 'hover:bg-surface-muted',
                     )}
@@ -691,8 +693,9 @@ export function CarteraCompleta() {
                     ) : null}
                     <p className="text-xs text-fg-muted">{NOMBRE_DE_EDAD[tramo.edad]}</p>
                     {/* COLA-01: a 390 px la ficha deja ≈149 px; text-base cabe una cifra de diez dígitos. */}
-                    <p className={cn('mt-1 font-mono text-base font-semibold tabular-nums sm:text-lg', TONO[tramo.edad])}>
-                      {plataDeLaFranja(tramo.monto)}
+                    {/* Ronda 11: el rojo es gravedad; un tramo vacío no es grave → «—» atenuado. */}
+                    <p className={cn('mt-1 font-mono text-base font-semibold tabular-nums sm:text-lg', tramo.monto === 0 ? 'text-fg-subtle' : TONO[tramo.edad])}>
+                      {tramo.monto === 0 ? '—' : plataDeLaFranja(tramo.monto)}
                     </p>
                     <p className="mt-0.5 text-xs text-fg-muted">
                       {tramo.items.length} {tramo.items.length === 1 ? 'deuda' : 'deudas'}
@@ -709,7 +712,7 @@ export function CarteraCompleta() {
                   aria-pressed={vista === 'siniestros'}
                   data-testid="tramo-siniestro"
                   className={cn(
-                    'relative isolate min-w-[150px] flex-1 px-4 py-3 text-left transition-colors',
+                    'relative isolate min-w-0 flex-1 bg-surface px-4 py-3 text-left transition-colors sm:min-w-[150px]',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
                     vista === 'siniestros' ? '' : 'hover:bg-surface-muted',
                   )}
@@ -718,8 +721,8 @@ export function CarteraCompleta() {
                     <MotionIndicator layoutId={`${marca}-tramo`} className="inset-0 -z-10 bg-primary-soft" />
                   ) : null}
                   <p className="text-xs text-fg-muted">{t('cartera.porEdad.tramoEnSiniestro')}</p>
-                  <p className="mt-1 font-mono text-base font-semibold tabular-nums text-danger sm:text-lg">
-                    {plataDeLaFranja(cartera.enSiniestro.monto)}
+                  <p className={cn('mt-1 font-mono text-base font-semibold tabular-nums sm:text-lg', cartera.enSiniestro.monto === 0 ? 'text-fg-subtle' : 'text-danger')}>
+                    {cartera.enSiniestro.monto === 0 ? '—' : plataDeLaFranja(cartera.enSiniestro.monto)}
                   </p>
                   <p className="mt-0.5 text-xs text-fg-muted">
                     {t('cartera.porEdad.desdeLosDias', { dias: siniestros.diasParaSiniestro })}
@@ -738,7 +741,8 @@ export function CarteraCompleta() {
               className="border-b border-border px-4 py-2.5 text-sm text-fg-muted"
               data-testid="que-significa"
             >
-              {edad ? QUE_SIGNIFICA[edad] : queSignificaElCajon(cajon!)}{' '}
+              {/* Ronda 11: con la cartera elegida, su frase ya está bajo la cifra grande. */}
+              {edad ? QUE_SIGNIFICA[edad] : cajon === 'CARTERA' ? 'Estás viendo sólo la cartera.' : queSignificaElCajon(cajon!)}{' '}
               <button
                 type="button"
                 className="underline underline-offset-2 hover:text-fg"

@@ -88,7 +88,7 @@ export const FRASES_EN: Record<string, string> = {
   "No pudimos actualizar la lista. Lo que ves es de la última vez que cargó.": "We couldn't refresh the list. What you see is from the last time it loaded.",
   "Reintentar": "Retry",
   "Todavía no te ha llegado ninguna postulación": "You haven't received any applications yet",
-  "Cuando alguien se postule a una de tus propiedades, aparece acá con su estado y si tiene estudio de arrendamiento.": "When someone applies to one of your properties, they show up here with their status and whether they have a rental screening.",
+  "Cuando alguien se postule a uno de tus inmuebles, aparece aquí con su estado y si tiene estudio de arrendamiento.": "When someone applies to one of your properties, they show up here with their status and whether they have a rental screening.",
   "Cómo funciona una postulación": "How an application works",
   "El recorrido completo de una postulación": "The full path of an application",
   "Los primeros seis pasos los hace el inquilino; del séptimo en adelante, tú.": "The tenant takes the first six steps; from the seventh on, you do.",

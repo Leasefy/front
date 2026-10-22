@@ -309,8 +309,9 @@ function PostulacionesContenido() {
               sumarle otro abría un hueco de media pantalla antes del mapa. */}
           <EmptyState
             icon={ClipboardText}
+            ilustracion="buzon"
             title={tr("Todavía no te ha llegado ninguna postulación")}
-            description={tr("Cuando alguien se postule a una de tus propiedades, aparece acá con su estado y si tiene estudio de arrendamiento.")}
+            description={tr("Cuando alguien se postule a uno de tus inmuebles, aparece aquí con su estado y si tiene estudio de arrendamiento.")}
           />
           {/* 🔴 21-09: acá estaba el mapa de ONCE tarjetas, desplegado, ocupando
               la pantalla entera de una lista vacía. Nico: «eso ahí expuesto…

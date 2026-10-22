@@ -357,7 +357,8 @@ export function CuotasDelMesTabla({
         </TableBodyAnimado>
       </Table>
 
-      {shouldPaginate && (
+      {/* 22-10: sin paginación cuando todas las filas caben en una página (el «1» azul sobraba). */}
+      {shouldPaginate && total > pageSize && (
         <div className="border-t border-border px-4 py-3" data-testid="pagos-cuotas-pie">
           <TablePagination
             total={total}

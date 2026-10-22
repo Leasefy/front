@@ -195,18 +195,22 @@ function PagosHome() {
         <CrossFade swapKey={wiError ? 'fallo' : 'bandeja'} initial={false}>
       {wiError ? (
         <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.atencion.aria')}>
-          <h2 className="text-base font-semibold text-fg">
+          {/* 22-10 (revisión): con el asistente caído, UN renglón callado en vez de una tarjeta
+              de 300 px encima de la deuda (que es lo que la persona vino a ver). */}
+          <h2 className="sr-only">
             {t('inmobiliaria.ai.pagos_home.resumen.atencion.titulo')}
           </h2>
           {/* 🔴 Antes esto era un cartel rojo fijo, sin salida (Nico,
               2026-09-04: «¿por qué dice que no puede cargar y no da opción de
               reintentar?»). `FalloDeCarga` distingue los cuatro tipos de fallo
               y sólo ofrece reintentar cuando reintentar puede cambiar algo. */}
-          <FalloDeCarga
-            error={wiError}
-            queEs="lo que necesita tu atención"
-            onReintentar={reintentarAtencion}
-          />
+          <p className="flex flex-wrap items-center gap-x-2 text-body-sm text-fg-muted" data-testid="atencion-sin-asistente">
+            <span className="h-1.5 w-1.5 rounded-full bg-warning-500" aria-hidden="true" />
+            El asistente de pagos no responde ahora: lo que necesita tu atención no se pudo leer.
+            <button type="button" onClick={() => void reintentarAtencion()} className="font-medium text-primary underline-offset-4 hover:underline">
+              Reintentar
+            </button>
+          </p>
         </section>
       ) : hayAtencion || wiLoading ? (
         <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.atencion.aria')}>
@@ -232,7 +236,8 @@ function PagosHome() {
           que falta, y el recibo de caja. */}
       <DeudaDelMesPanel />
 
-      {/* Actividad reciente — acotada a 5. */}
+      {/* Actividad reciente — acotada a 5. 22-10: sin asistente no se pinta (ya lo dice el renglón de arriba). */}
+      {ovError ? null : (
       <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.actividad.aria')}>
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-base font-semibold text-fg">
@@ -293,6 +298,7 @@ function PagosHome() {
         )}
         </CrossFade>
       </section>
+      )}
     </div>
   )
 }

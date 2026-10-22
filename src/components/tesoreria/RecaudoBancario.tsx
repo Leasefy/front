@@ -43,7 +43,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import Link from 'next/link';
-import { Bank, CheckCircle, Plus, UploadSimple, WarningOctagon } from '@phosphor-icons/react';
+import { CheckCircle, Plus, UploadSimple, WarningOctagon } from '@phosphor-icons/react';
 import { Appear } from '@leasefy/cadence';
 import { PasosDeLaTarea, type PasoDeLaTarea } from '@/components/pantalla/PasosDeLaTarea';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
@@ -163,20 +163,15 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
         contenido: (
           // 🔴 UN vacío y UNA acción (21-09): antes eran dos cajas de texto y ningún botón.
           <section className="space-y-4" data-testid="sin-convenio">
-            <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
-                <Bank className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <div className="space-y-1">
-                <h2 className="text-body-sm font-semibold text-fg">
-                  Todavía no recaudas por convenio con un banco
-                </h2>
-                <p className="max-w-xl text-body-sm text-fg-muted">
-                  Con un convenio, el archivo de recaudo de tu banco entra acá y cada pago se cruza
-                  solo con su inquilino (por la referencia o por la cédula). Te ayudamos a
-                  configurarlo: elige tu banco o sube un archivo de ejemplo.
-                </p>
-              </div>
+            {/* Revisión de Dinero (22-10): sin la cajita de ícono ni el párrafo que repetía la
+                descripción de la pantalla: un título, una línea y la acción. */}
+            <div className="space-y-1">
+              <h2 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">
+                Todavía no recaudas por convenio con un banco
+              </h2>
+              <p className="max-w-xl text-body-sm text-fg-muted">
+                Elige tu banco o sube un archivo de ejemplo y te ayudamos a configurarlo.
+              </p>
             </div>
             <Button
               hideArrow
@@ -184,7 +179,6 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
               onClick={() => setEnElCajon('nuevo')}
               data-testid="configurar-convenio"
             >
-              <Plus className="h-4 w-4" aria-hidden="true" />
               Configurar el convenio
             </Button>
             {/* La salida que ya existe hoy, dicha sin competir con la acción. */}

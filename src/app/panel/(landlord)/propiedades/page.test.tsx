@@ -99,3 +99,61 @@ describe('Mis propiedades — a 390 px', () => {
     expect(riel.querySelector('[role="radiogroup"]')).toBeTruthy();
   });
 });
+
+const inmueble = (id: string, titulo: string, candidatos: number, status = 'available') => ({
+  id,
+  title: titulo,
+  address: `Calle ${id}`,
+  city: 'Medellín',
+  neighborhood: 'Laureles',
+  status,
+  bedrooms: 2,
+  bathrooms: 1,
+  area: 60,
+  monthlyRent: 1_800_000,
+  adminFee: 0,
+  candidateCount: candidatos,
+  images: [],
+});
+
+describe('Mis propiedades — el flujo (glow up 21-10)', () => {
+  it('los inmuebles con candidatos por revisar van primero, el que más tiene arriba', () => {
+    pintar({
+      properties: [inmueble('a', 'Sin nadie', 0), inmueble('b', 'Con uno', 1), inmueble('c', 'Con tres', 3)],
+    });
+    const titulos = [...container.querySelectorAll('h3')].map((h) => h.textContent);
+    expect(titulos).toEqual(['Con tres', 'Con uno', 'Sin nadie']);
+  });
+
+  it('cada tarjeta lleva a su inmueble y ya no trae el menú con «Editar» que no hacía nada', () => {
+    pintar({ properties: [inmueble('a', 'Casa', 0)] });
+    expect(container.querySelector('a[href="/panel/a"]')).toBeTruthy();
+    expect(container.textContent).not.toContain(T.edit);
+    expect(container.querySelector(`[aria-label="${T.moreOptions}"]`)).toBeNull();
+  });
+
+  it('con inmuebles pero sin coincidencias: lo dice y no «No tienes propiedades»', async () => {
+    pintar({ properties: [inmueble('a', 'Casa', 0, 'rented')] });
+    const buscar = (container.querySelector(`input[aria-label="${T.searchLabel}"]`) ??
+      container.querySelector('input[type="search"], input[type="text"]')) as HTMLInputElement;
+    // Lo que la persona escribe pasa por el `onChange` de React (el `input` del navegador).
+    const propiedades = Object.keys(buscar).find((k) => k.startsWith('__reactProps'));
+    await act(async () => {
+      buscar.value = 'zzz';
+      (buscar as unknown as Record<string, { onChange: (e: unknown) => void }>)[propiedades!].onChange({
+        target: buscar,
+        currentTarget: buscar,
+      });
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(container.textContent).toContain('Ningún inmueble coincide');
+    expect(container.textContent).not.toContain(T.emptyTitle);
+  });
+
+  it('las cifras van en la franja común', () => {
+    pintar({ properties: [inmueble('a', 'Casa', 0, 'rented')] });
+    expect($('[data-testid="cifras-de-las-propiedades"]')?.textContent).toContain(T.totalProperties);
+  });
+});

@@ -1,25 +1,20 @@
 'use client';
 
-import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
-import { Buildings, Plus, MapPin, Bed, Bathtub, Square, Eye, PencilSimple, DotsThreeVertical, Users, CurrencyDollar, GridFour, List, House, TrendUp } from '@phosphor-icons/react';
+import { Buildings, Plus, MapPin, Bed, Bathtub, Square, Users, GridFour, List, House, TrendUp } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useLandlordProperties } from '@/lib/hooks/useLandlord';
 import { useI18n } from '@/lib/i18n';
 import { PlanStatusBadge } from '@/components/ui/plan/PlanStatusBadge';
-import {
-  DropdownList,
-  DropdownListContent,
-  DropdownListItem,
-  DropdownListTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Button, Card } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { PageHeader, KpiCard, SearchInput, SegmentedControl, IconButton, CrossFade, StaggerItem } from '@leasefy/cadence';
+import { FranjaDeCifras, KpiCard, SearchInput, SegmentedControl, CrossFade, StaggerItem } from '@leasefy/cadence';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 
 type ViewMode = 'grid' | 'list';
@@ -62,7 +57,7 @@ function EsqueletoDeLasPropiedades({ etiqueta }: { etiqueta: string }) {
 type FunnelStatus = 'all' | 'available' | 'rented' | 'pending';
 
 export default function PropiedadesPage() {
-  const { t, formatCurrency: i18nFormatCurrency } = useI18n();
+  const { t, locale, formatCurrency: i18nFormatCurrency } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filterStatus, setFunnelStatus] = useState<FunnelStatus>('all');
   const [searchQuery, setMagnifyingGlassQuery] = useState('');
@@ -82,13 +77,19 @@ export default function PropiedadesPage() {
    */
   const entrada = useEntradaTrasCargar(isLoadingProperties);
 
-  // Apply filters
-  const filteredProperties = myProperties.filter(p => {
-    if (filterStatus !== 'all' && p.status !== filterStatus) return false;
-    if (searchQuery && !p.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !p.address.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
+  // Apply filters. Lo pendiente primero (glow up, 21-10-2026): los inmuebles con
+  // candidatos por revisar van arriba, el que más tiene primero; los demás quedan
+  // en el orden de siempre.
+  const filteredProperties = myProperties
+    .filter(p => {
+      if (filterStatus !== 'all' && p.status !== filterStatus) return false;
+      if (searchQuery && !p.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !p.address.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      return true;
+    })
+    .map((p, i) => ({ p, i }))
+    .sort((a, b) => (b.p.candidateCount ?? 0) - (a.p.candidateCount ?? 0) || a.i - b.i)
+    .map(({ p }) => p);
 
   // Calculate stats
   const totalProperties = myProperties.length;
@@ -116,16 +117,17 @@ export default function PropiedadesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className="p-6 lg:p-8">
+      <div>
         {/* Header. A 390 px el botón con su texto no cabía al lado del título y
             se montaba sobre el encabezado (y se salía de la pantalla): en
             pantallas chicas va sólo el «+», con su nombre para el lector. */}
-        <PageHeader
+        <EncabezadoDePantalla
           className="mb-6"
-          title={t('landlord.properties.title')}
-          subtitle={t('landlord.properties.subtitle')}
-          actions={
+          seccion="Mis inmuebles"
+          titulo={t('landlord.properties.title')}
+          descripcion={t('landlord.properties.subtitle')}
+          accionPrincipal={
             <Button asChild hideArrow>
               <Link
                 href="/publicar?from=panel"
@@ -158,9 +160,8 @@ export default function PropiedadesPage() {
         {/* Stats Cards. Por debajo de lg el total y el ingreso van a lo ancho:
             a 390 px el ingreso («$ 8.900.000») no cabía en media fila y se
             salía de su tarjeta. Así quedan tres filas sin huecos. */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <FranjaDeCifras fila="xl" className="mb-6" data-testid="cifras-de-las-propiedades">
           <KpiCard
-            className="col-span-2 lg:col-span-1"
             label={t('landlord.properties.totalProperties')}
             value={String(totalProperties)}
             icon={<Buildings />}
@@ -176,12 +177,11 @@ export default function PropiedadesPage() {
             icon={<Users />}
           />
           <KpiCard
-            className="col-span-2 lg:col-span-1"
             label={t('landlord.properties.monthlyIncome')}
             value={i18nFormatCurrency(totalMonthlyIncome)}
             icon={<TrendUp />}
           />
-        </div>
+        </FranjaDeCifras>
 
         {/* Funnels */}
         <Card className="p-4 mb-6">
@@ -259,36 +259,6 @@ export default function PropiedadesPage() {
                       />
                       <div className="absolute top-3 left-3">
                         {getStatusBadge(property.status)}
-                      </div>
-                      <div onClick={(e) => e.preventDefault()}>
-                        <DropdownList>
-                          <DropdownListTrigger asChild>
-                            <IconButton
-                              variant="solid"
-                              className="absolute top-3 right-3 bg-surface/90"
-                              icon={<DotsThreeVertical className="w-4 h-4" />}
-                              aria-label={t('landlord.properties.moreOptions')}
-                            />
-                          </DropdownListTrigger>
-                          <DropdownListContent align="end" className={cn(ANCHO_DEL_MENU_DE_ACCIONES, "rounded-lg")}>
-                            <DropdownListItem asChild className="rounded-md">
-                              <Link href={`/panel/${property.id}`}>
-                                <Eye className="w-4 h-4 mr-2" />
-                                {t('landlord.properties.viewDetail')}
-                              </Link>
-                            </DropdownListItem>
-                            <DropdownListItem className="rounded-md">
-                              <PencilSimple className="w-4 h-4 mr-2" />
-                              {t('landlord.properties.edit')}
-                            </DropdownListItem>
-                            <DropdownListItem asChild className="rounded-md">
-                              <Link href={`/panel/${property.id}`}>
-                                <Users className="w-4 h-4 mr-2" />
-                                {t('landlord.properties.viewCandidates')}
-                              </Link>
-                            </DropdownListItem>
-                          </DropdownListContent>
-                        </DropdownList>
                       </div>
                     </div>
 
@@ -415,30 +385,6 @@ export default function PropiedadesPage() {
                       </span>
                     )}
 
-                    {/* Actions */}
-                    <div onClick={(e) => e.preventDefault()}>
-                      <DropdownList>
-                        <DropdownListTrigger asChild>
-                          <IconButton
-                            variant="ghost"
-                            icon={<DotsThreeVertical className="w-4 h-4" />}
-                            aria-label={t('landlord.properties.moreOptions')}
-                          />
-                        </DropdownListTrigger>
-                        <DropdownListContent align="end" className={cn(ANCHO_DEL_MENU_DE_ACCIONES, "rounded-lg")}>
-                          <DropdownListItem asChild className="rounded-md">
-                            <Link href={`/panel/${property.id}`}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              {t('landlord.properties.viewDetail')}
-                            </Link>
-                          </DropdownListItem>
-                          <DropdownListItem className="rounded-md">
-                            <PencilSimple className="w-4 h-4 mr-2" />
-                            {t('landlord.properties.edit')}
-                          </DropdownListItem>
-                        </DropdownListContent>
-                      </DropdownList>
-                    </div>
                   </Link>
                   </StaggerItem>
                 );
@@ -447,24 +393,34 @@ export default function PropiedadesPage() {
             </div>
           )
         ) : (
-          /* Empty State */
-          <div className="bg-surface rounded-lg border border-border py-20 text-center">
-            <div className="w-16 h-16 rounded-xl bg-surface-muted mx-auto mb-5 flex items-center justify-center">
-              <Buildings className="w-8 h-8 text-fg-subtle" />
-            </div>
-            <h3 className="text-xl font-semibold text-fg mb-2">
-              {t('landlord.properties.emptyTitle')}
-            </h3>
-            <p className="text-fg-muted mb-6 max-w-sm mx-auto">
-              {t('landlord.properties.emptyDescription')}
-            </p>
-            <Button asChild hideArrow>
-              <Link href="/publicar?from=panel">
-                <Plus className="w-4 h-4" />
-                {t('landlord.properties.publishProperty')}
-              </Link>
-            </Button>
-          </div>
+          /* Vacío. Con inmuebles pero sin coincidencias, lo dice y deja limpiar
+             la búsqueda: antes decía «No tienes propiedades» a quien sí tenía. */
+          myProperties.length > 0 ? (
+            <EmptyState
+              icon={Buildings}
+              title={locale === 'en' ? 'No property matches' : 'Ningún inmueble coincide'}
+              description={
+                locale === 'en'
+                  ? 'Try another search or status.'
+                  : 'Prueba con otra búsqueda u otro estado.'
+              }
+              action={{
+                label: locale === 'en' ? 'See all' : 'Ver todos',
+                onClick: () => {
+                  setMagnifyingGlassQuery('');
+                  setFunnelStatus('all');
+                },
+              }}
+            />
+          ) : (
+            <EmptyState
+              ilustracion="casa"
+              icon={Buildings}
+              title={t('landlord.properties.emptyTitle')}
+              description={t('landlord.properties.emptyDescription')}
+              action={{ label: t('landlord.properties.publishProperty'), href: '/publicar?from=panel' }}
+            />
+          )
         )}
         </CrossFade>
         </motion.div>

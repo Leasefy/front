@@ -39,6 +39,7 @@
   "exclude": [
     "node_modules",
     "prisma",
-    "tests/e2e"
+    "tests/e2e",
+    "app-movil"
   ]
 }

@@ -114,10 +114,14 @@ import { useInquilinos } from '@/lib/hooks/use-inquilinos';
 import { plataPareja } from '@/lib/format';
 import { seMuestranLosCentavos } from '@/lib/plata/escribir-plata';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { type Inquilino } from '@/lib/api/inquilinos.service';
 import {
-  type FiltroDeEstado,
-  type Inquilino,
-} from '@/lib/api/inquilinos.service';
+  estadoDelBack,
+  filasDeLaPestana,
+  laListaCuentaLosSinArriendo,
+  sinArriendo as noTieneArriendo,
+  type PestanaDeInquilinos,
+} from '@/lib/inquilinos/pestanas';
 
 /**
  * El camino al contrato entero (inmueble, fechas, canon, PDF), donde el
@@ -213,9 +217,15 @@ function ContenidoDeInquilinos() {
   const personaBuscada = searchParams.get('persona');
 
   const [buscar, setBuscar] = useState('');
-  const [estado, setEstado] = useState<FiltroDeEstado>(
+  /*
+   * Pestañas por tarea (Nico, 22-10-2026): «Activos · Sin arriendo · Terminados · Todos». El back
+   * sólo sabe de activos/terminados/todos; «Sin arriendo» se le pide como «activos» y se separa
+   * aquí (`lib/inquilinos/pestanas.ts`).
+   */
+  const [pestana, setPestana] = useState<PestanaDeInquilinos>(
     personaBuscada ? 'todos' : 'activos',
   );
+  const estado = estadoDelBack(pestana);
   const [abierto, setAbierto] = useState<Inquilino | null>(null);
   const [creando, setCreando] = useState(false);
   /** E-16: la persona cuyos datos se están corrigiendo (sobre su ficha abierta). */
@@ -233,7 +243,7 @@ function ContenidoDeInquilinos() {
   const [orden, setOrden] = useState<OrdenDeInquilinos>({ campo: 'nombre', sentido: 'asc' });
 
   const {
-    inquilinos,
+    inquilinos: listaDelBack,
     consulta,
     cargando,
     error,
@@ -247,8 +257,34 @@ function ContenidoDeInquilinos() {
   // lista (y los números) que fallaron se piden otra vez, solos.
   useAlVolverLaConexion(refrescar, Boolean(error || errorPortafolio));
 
+  /* Las filas de la pestaña, sacadas de la lista ENTERA que mandó el back para ella. */
+  const inquilinos = useMemo(() => filasDeLaPestana(listaDelBack, pestana), [listaDelBack, pestana]);
+  /*
+   * Cuántos no tienen arriendo, para el número de su pestaña (y para restarlos de «Activos»). Las
+   * listas de «activos» y «todos» los traen; con «terminados» puesta se usa lo último que se
+   * contó con esa misma búsqueda. Sin saberlo, la pestaña va sin número.
+   */
+  const sinArriendoContados = useRef<Map<string, number>>(new Map());
+  const cuantosSinArriendo = useMemo(() => {
+    const busqueda = buscar.trim();
+    const corte = consulta ? consulta.indexOf('|') : -1;
+    const estadoDeLasFilas = corte >= 0 ? consulta!.slice(0, corte) : null;
+    const busquedaDeLasFilas = corte >= 0 ? consulta!.slice(corte + 1) : null;
+    if (
+      !cargando &&
+      !error &&
+      busquedaDeLasFilas === busqueda &&
+      estadoDeLasFilas !== null &&
+      laListaCuentaLosSinArriendo(estadoDeLasFilas as PestanaDeInquilinos)
+    ) {
+      const cuantos = listaDelBack.filter(noTieneArriendo).length;
+      sinArriendoContados.current.set(busqueda, cuantos);
+      return cuantos;
+    }
+    return sinArriendoContados.current.get(busqueda) ?? null;
+  }, [buscar, consulta, cargando, error, listaDelBack]);
   // Acciones masivas (Nico, 10-10-2026). Con otro filtro o búsqueda, lo marcado se suelta.
-  const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas(`${estado}|${buscar}`);
+  const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas(`${pestana}|${buscar}`);
   const inquilinosMarcados = useMemo(
     () => inquilinos.filter((p) => marcadas.has(p.tenantId)),
     [inquilinos, marcadas],
@@ -327,7 +363,7 @@ function ContenidoDeInquilinos() {
   const verExistente = useCallback((existente: { llave: string; tenantId?: string }) => {
     setCreando(false);
     setBuscar(existente.llave);
-    setEstado('todos');
+    setPestana('todos');
     setPorAbrir(existente);
   }, []);
   useEffect(() => {
@@ -361,10 +397,10 @@ function ContenidoDeInquilinos() {
     useTablePagination(ordenados, {
       initialPageSize: 10,
       // I-11: cambiar el orden también vuelve a la página 1.
-      resetKey: `${buscar}|${estado}|${orden.campo}|${orden.sentido}`,
+      resetKey: `${buscar}|${pestana}|${orden.campo}|${orden.sentido}`,
     });
 
-  const hayFiltros = buscar.trim().length > 0 || estado !== 'activos';
+  const hayFiltros = buscar.trim().length > 0 || pestana !== 'activos';
 
   /*
    * 🔴 El vacío tiene que decir la verdad.
@@ -404,9 +440,9 @@ function ContenidoDeInquilinos() {
    * igual que el texto (mismo arreglo que Pipeline).
    */
   const deLaLista = esElPortafolio({ buscar, estado });
-  const totales = deLaLista ? totalesDelPortafolio(inquilinos) : portafolio;
+  const totales = deLaLista ? totalesDelPortafolio(listaDelBack) : portafolio;
   // Un solo formato de plata en la cifra de arriba y en la tabla (glow up 22-10).
-  const valoresDeLaLista = [totales?.canon, ...inquilinos.flatMap((p) => p.arriendos.map((a) => a.canonCop))];
+  const valoresDeLaLista = [totales?.canon, ...listaDelBack.flatMap((p) => p.arriendos.map((a) => a.canonCop))];
   const plataDeLaLista = valoresDeLaLista.some((v) => typeof v === 'number' && seMuestranLosCentavos(v))
     ? plataPareja(valoresDeLaLista, locale === 'en' ? 'en' : 'es')
     : formatCurrency;
@@ -501,17 +537,26 @@ function ContenidoDeInquilinos() {
             la nada es un campo que no puede encontrar nada. Con filtros
             puestos es al revés — es la única forma de volver.
           */}
-          {(inquilinos.length > 0 || hayFiltros) && (
+          {(listaDelBack.length > 0 || hayFiltros) && (
             <BarraDeInquilinos
               buscar={buscar}
               onBuscar={setBuscar}
-              estado={estado}
-              onEstado={setEstado}
+              estado={pestana}
+              onEstado={setPestana}
               conteos={conteos}
+              sinArriendo={cuantosSinArriendo}
             />
           )}
 
-          {inquilinos.length === 0 ? (
+          {inquilinos.length === 0 && pestana === 'sinArriendo' && !buscar.trim() ? (
+            /* La pestaña de un trabajo hecho: nadie sin contrato. */
+            <SinDatos
+              queSon={t('inquilinos.queSon')}
+              ilustracion="contrato"
+              titulo={t('inquilinos.vacioSinArriendo')}
+              descripcion={t('inquilinos.vacioSinArriendoDetalle')}
+            />
+          ) : inquilinos.length === 0 ? (
             <SinDatos
               hayFiltros={hayFiltros}
               queSon={t('inquilinos.queSon')}
@@ -525,7 +570,7 @@ function ContenidoDeInquilinos() {
                 hayFiltros
                   ? () => {
                       setBuscar('');
-                      setEstado('activos');
+                      setPestana('activos');
                     }
                   : undefined
               }

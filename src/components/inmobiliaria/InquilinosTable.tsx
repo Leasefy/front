@@ -52,7 +52,9 @@ import {
   SortDescending,
   Warning,
 } from '@phosphor-icons/react';
-import { Avatar, IconButton, SearchInput, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
+import { Avatar, IconButton, SearchInput, Stagger, StaggerItem } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { conteosDeLasPestanas, type PestanaDeInquilinos } from '@/lib/inquilinos/pestanas';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -86,10 +88,8 @@ import {
   type ArriendoDeInquilino,
   type ConteosDeInquilinos,
   type EstadoDeArriendo,
-  type FiltroDeEstado,
   type Inquilino,
 } from '@/lib/api/inquilinos.service';
-import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
 
 /**
  * La única variante de `/contratos/nuevo` que carga sin postulación: a secas
@@ -223,35 +223,19 @@ function fechaOGuion(
 export interface BarraDeInquilinosProps {
   buscar: string;
   onBuscar: (valor: string) => void;
-  estado: FiltroDeEstado;
-  onEstado: (estado: FiltroDeEstado) => void;
+  estado: PestanaDeInquilinos;
+  onEstado: (estado: PestanaDeInquilinos) => void;
   /**
    * Cuántas personas hay detrás de cada pestaña. `null` = sin número (todavía
    * no llegaron, o el conteo falló): un número equivocado es peor que ninguno.
    */
   conteos?: ConteosDeInquilinos | null;
-}
-
-const NUMERO = cifrasDeLaPantalla();
-
-/**
- * Una pestaña con su número al lado.
- *
- * 🔴 20-09 · Sin número, para saber si hay inquilinos terminados había que
- * clickear —lo que dispara otra consulta— y si no había ninguno la pantalla
- * quedaba vacía sin decir que esa pestaña nunca tuvo a nadie. El cero se dice
- * igual que cualquier otro número: es la respuesta a por qué está vacío.
- */
-function ConNumero({ etiqueta, cuantos }: { etiqueta: string; cuantos?: number }) {
-  if (cuantos === undefined) return <>{etiqueta}</>;
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      {etiqueta}
-      <span className="rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">
-        {NUMERO.format(cuantos)}
-      </span>
-    </span>
-  );
+  /**
+   * Pestañas por tarea (Nico, 22-10-2026): cuántos no tienen arriendo. Con el dato (número o
+   * `null` si no se sabe) aparece «Sin arriendo» y «Activos» deja de contarlos. Sin la prop, las
+   * tres pestañas de siempre.
+   */
+  sinArriendo?: number | null;
 }
 
 /**
@@ -268,58 +252,40 @@ export function BarraDeInquilinos({
   estado,
   onEstado,
   conteos = null,
+  sinArriendo,
 }: BarraDeInquilinosProps) {
   const { t } = useI18n();
+  const conPestanaSinArriendo = sinArriendo !== undefined;
+  const numeros = conPestanaSinArriendo
+    ? conteosDeLasPestanas(conteos, sinArriendo)
+    : { activos: conteos?.activos ?? null, sinArriendo: null, terminados: conteos?.terminados ?? null, todos: conteos?.todos ?? null };
   return (
-    <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
+      {/* Las pestañas por tarea, como en Contratos y Propietarios: el número de cada una es lo que
+          se ve al tocarla. Activos, Terminados y Todos se ven aunque estén en cero (el cero
+          responde por qué la pestaña está vacía); «Sin arriendo», sólo cuando hay alguien. */}
+      <PestanasDeEstado<PestanaDeInquilinos>
+        etiqueta={t('inquilinos.filtroEstado')}
+        data-testid="pestanas-de-inquilinos"
+        valor={estado}
+        onCambio={onEstado}
+        pestanas={[
+          { valor: 'activos', etiqueta: t('inquilinos.filtros.activos'), cuantos: numeros.activos, fija: true, testid: 'pestana-activos' },
+          ...(conPestanaSinArriendo
+            ? [{ valor: 'sinArriendo' as const, etiqueta: t('inquilinos.filtros.sinArriendo'), cuantos: numeros.sinArriendo, tono: 'aviso' as const, testid: 'pestana-sin-arriendo' }]
+            : []),
+          { valor: 'terminados', etiqueta: t('inquilinos.filtros.terminados'), cuantos: numeros.terminados, fija: true, testid: 'pestana-terminados' },
+          { valor: 'todos', etiqueta: t('inquilinos.filtros.todos'), cuantos: numeros.todos, fija: true, testid: 'pestana-todos' },
+        ]}
+      />
       <SearchInput
         value={buscar}
         onChange={(e) => onBuscar(e.target.value)}
         onClear={() => onBuscar('')}
         placeholder={t('inquilinos.buscarPlaceholder')}
         inputSize="md"
-        className="w-full sm:max-w-md"
+        className="w-full lg:max-w-sm"
         data-testid="inquilinos-buscar"
-      />
-      <SegmentedControl<FiltroDeEstado>
-        value={estado}
-        onChange={onEstado}
-        aria-label={t('inquilinos.filtroEstado')}
-        options={[
-          {
-            value: 'activos',
-            label: (
-              <ConNumero
-                etiqueta={t('inquilinos.filtros.activos')}
-                cuantos={conteos?.activos}
-              />
-            ),
-            ariaLabel: conteos
-              ? `${t('inquilinos.filtros.activos')}: ${conteos.activos}`
-              : t('inquilinos.filtros.activos'),
-          },
-          {
-            value: 'terminados',
-            label: (
-              <ConNumero
-                etiqueta={t('inquilinos.filtros.terminados')}
-                cuantos={conteos?.terminados}
-              />
-            ),
-            ariaLabel: conteos
-              ? `${t('inquilinos.filtros.terminados')}: ${conteos.terminados}`
-              : t('inquilinos.filtros.terminados'),
-          },
-          {
-            value: 'todos',
-            label: (
-              <ConNumero etiqueta={t('inquilinos.filtros.todos')} cuantos={conteos?.todos} />
-            ),
-            ariaLabel: conteos
-              ? `${t('inquilinos.filtros.todos')}: ${conteos.todos}`
-              : t('inquilinos.filtros.todos'),
-          },
-        ]}
       />
     </div>
   );
@@ -386,6 +352,18 @@ function TablaDeInquilinos({ inquilinos, onAbrir, orden, onOrdenar, marcadas, on
     () => ordenarInquilinos(inquilinos, campo, sentido),
     [inquilinos, campo, sentido],
   );
+  /*
+   * Glow up 22-10 (rondas 13 y 14): la columna «Estado» sólo cuando alguna fila tiene algo que
+   * decir —sin arriendo, varios arriendos, o uno que no es activo («Empieza el…», «En firma»)—.
+   * En «Activos» quedaba vacía en 8 de cada 10 filas.
+   */
+  const conEstado = useMemo(
+    () =>
+      ordenados.some(
+        (p) => p.arriendos.length !== 1 || estadoParaMostrar(arriendoPrincipal(p) ?? p.arriendos[0]) !== 'ACTIVE',
+      ),
+    [ordenados],
+  );
 
   const ordenarPor = (siguiente: CampoDeOrden) => {
     const nuevo = siguienteOrden({ campo, sentido }, siguiente);
@@ -447,7 +425,7 @@ function TablaDeInquilinos({ inquilinos, onAbrir, orden, onOrdenar, marcadas, on
             <TableHead className="w-10 p-4" />
             <Ordenable campo="nombre">{t('inquilinos.tabla.inquilino')}</Ordenable>
             <TableHead className="p-4 text-left">{t('inquilinos.tabla.inmueble')}</TableHead>
-            <TableHead className="p-4 text-left">{t('inquilinos.tabla.estado')}</TableHead>
+            {conEstado ? <TableHead className="p-4 text-left">{t('inquilinos.tabla.estado')}</TableHead> : null}
             <Ordenable campo="canon">{t('inquilinos.tabla.canon')}</Ordenable>
             <TableHead className="p-4 text-left">{t('inquilinos.tabla.vigencia')}</TableHead>
           </TableRow>
@@ -469,6 +447,7 @@ function TablaDeInquilinos({ inquilinos, onAbrir, orden, onOrdenar, marcadas, on
                 ) : undefined
               }
               persona={persona}
+              conEstado={conEstado}
               desplegada={desplegados.has(persona.tenantId)}
               onAlternar={() => alternar(persona.tenantId)}
               onAbrir={() => onAbrir(persona)}
@@ -483,6 +462,7 @@ function TablaDeInquilinos({ inquilinos, onAbrir, orden, onOrdenar, marcadas, on
 function FilaDeInquilino({
   casilla,
   persona,
+  conEstado = true,
   desplegada,
   onAlternar,
   onAbrir,
@@ -490,6 +470,8 @@ function FilaDeInquilino({
   /** La casilla de las acciones masivas, si la tabla las tiene. */
   casilla?: React.ReactNode;
   persona: Inquilino;
+  /** Sin la columna «Estado» (nadie en la página tiene algo que decir ahí). */
+  conEstado?: boolean;
   desplegada: boolean;
   onAlternar: () => void;
   onAbrir: () => void;
@@ -627,41 +609,43 @@ function FilaDeInquilino({
           )}
         </TableCell>
 
-        <TableCell className="p-4 align-middle">
-          {sinArriendo ? (
-            /*
-             * Las DOS cosas, no una: que no tiene arriendo —o sea que no se le
-             * está cobrando nada— y por dónde dárselo. Decir sólo lo primero
-             * deja a alguien mirando una fila que no explica qué hacer.
-             */
-            <div className="flex flex-col items-start gap-1">
-              <Badge variant="secondary">{t('inquilinos.sinArriendo')}</Badge>
-              {puedeCrearContrato ? (
-                <Link
-                  href={rutaDelContratoManualPara(persona)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline"
-                  data-testid="inquilino-crear-contrato"
-                >
-                  <Plus className="h-3 w-3" weight="bold" aria-hidden="true" />
-                  {t('inquilinos.crearSuContrato')}
-                </Link>
-              ) : null}
-            </div>
-          ) : varios ? (
-            <span className="text-sm text-fg-muted tabular-nums">
-              {textoDeVigentes(t, vigentes.length)}
-            </span>
-          ) : principal ? (
-            // Glow up 22-10 (ronda 12): un arriendo activo no lleva chip —«Activo» en cada
-            // fila de la pestaña «Activos» no decía nada—; sólo lo que NO es activo se nombra.
-            estadoParaMostrar(principal) === 'ACTIVE' ? (
-              <span className="sr-only" data-estado="ACTIVE">{t('inquilinos.estados.activo')}</span>
-            ) : (
-              <EstadoDelArriendo arriendo={principal} />
-            )
-          ) : null}
-        </TableCell>
+        {conEstado ? (
+          <TableCell className="p-4 align-middle">
+            {sinArriendo ? (
+              /*
+               * Las DOS cosas, no una: que no tiene arriendo —o sea que no se le
+               * está cobrando nada— y por dónde dárselo. Decir sólo lo primero
+               * deja a alguien mirando una fila que no explica qué hacer.
+               */
+              <div className="flex flex-col items-start gap-1">
+                <Badge variant="secondary">{t('inquilinos.sinArriendo')}</Badge>
+                {puedeCrearContrato ? (
+                  <Link
+                    href={rutaDelContratoManualPara(persona)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline"
+                    data-testid="inquilino-crear-contrato"
+                  >
+                    <Plus className="h-3 w-3" weight="bold" aria-hidden="true" />
+                    {t('inquilinos.crearSuContrato')}
+                  </Link>
+                ) : null}
+              </div>
+            ) : varios ? (
+              <span className="text-sm text-fg-muted tabular-nums">
+                {textoDeVigentes(t, vigentes.length)}
+              </span>
+            ) : principal ? (
+              // Glow up 22-10 (ronda 12): un arriendo activo no lleva chip —«Activo» en cada
+              // fila de la pestaña «Activos» no decía nada—; sólo lo que NO es activo se nombra.
+              estadoParaMostrar(principal) === 'ACTIVE' ? (
+                <span className="sr-only" data-estado="ACTIVE">{t('inquilinos.estados.activo')}</span>
+              ) : (
+                <EstadoDelArriendo arriendo={principal} />
+              )
+            ) : null}
+          </TableCell>
+        ) : null}
 
         <TableCell className="p-4 align-middle">
           {sinArriendo ? (
@@ -695,7 +679,7 @@ function FilaDeInquilino({
           entrada de las filas); al contraer se va de una. */}
       {varios && desplegada && (
         <TableRowAnimada data-testid="inquilino-arriendos">
-          <TableCell colSpan={casilla !== undefined ? 7 : 6} className="bg-surface-muted/50 p-4">
+          <TableCell colSpan={(casilla !== undefined ? 7 : 6) - (conEstado ? 0 : 1)} className="bg-surface-muted/50 p-4">
             <ul className="space-y-2">
               {persona.arriendos.map((a) => (
                 /* 🔴 La llave es el CONTRATO, no el `Lease`: desde el 20-09

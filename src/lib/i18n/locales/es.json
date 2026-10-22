@@ -13365,7 +13365,8 @@
     "filtros": {
       "activos": "Activos",
       "terminados": "Terminados",
-      "todos": "Todos"
+      "todos": "Todos",
+      "sinArriendo": "Sin arriendo"
     },
     "kpi": {
       "personas": "Inquilinos",
@@ -13458,7 +13459,9 @@
       "enFirma": "En firma",
       "porEmpezar": "Por empezar",
       "empiezaEl": "Empieza el {{fecha}}"
-    }
+    },
+    "vacioSinArriendo": "Todos tus inquilinos tienen su contrato.",
+    "vacioSinArriendoDetalle": "Quien crees a mano o traigas de la migración sin contrato aparece aquí, con «Crear su contrato»."
   },
   "cartera": {
     "tabla": {

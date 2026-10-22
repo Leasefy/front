@@ -13330,7 +13330,8 @@
     "filtros": {
       "activos": "Active",
       "terminados": "Ended",
-      "todos": "All"
+      "todos": "All",
+      "sinArriendo": "No lease"
     },
     "kpi": {
       "personas": "Tenants",
@@ -13423,7 +13424,9 @@
       "enFirma": "Being signed",
       "porEmpezar": "Not started",
       "empiezaEl": "Starts on {{fecha}}"
-    }
+    },
+    "vacioSinArriendo": "Every tenant has a contract.",
+    "vacioSinArriendoDetalle": "Anyone you add by hand or bring from the migration without a contract shows up here, with “Create their contract”."
   },
   "cartera": {
     "tabla": {

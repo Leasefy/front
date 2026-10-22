@@ -429,12 +429,14 @@ function Propuesta({ propuesta }: { propuesta: PropuestaDeTraslado }) {
 }
 
 function FilaDelTraslado({ traslado }: { traslado: Traslado }) {
+  // Los mismos decimales en toda la tarjeta (revisión 22-10).
+  const plata = plataPareja([traslado.totalCop, traslado.comisionCop, traslado.ivaComisionCop, traslado.interesesCop + traslado.gastosDeCobranzaCop, traslado.retencionesComisionCop]);
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-mono text-lg tabular-nums text-fg">
-            {formatCurrency(traslado.totalCop)}
+            {plata(traslado.totalCop)}
           </p>
           <p className="text-sm text-fg-muted">
             {/^\d{4}-\d{2}$/.test(traslado.periodo) ? nombreDelMes(traslado.periodo) : traslado.periodo} ·{' '}
@@ -452,22 +454,22 @@ function FilaDelTraslado({ traslado }: { traslado: Traslado }) {
       <dl className="grid grid-cols-2 gap-2 text-xs text-fg-muted sm:grid-cols-4">
         <div>
           <dt className="text-fg">Comisión</dt>
-          <dd className="font-mono tabular-nums">{formatCurrency(traslado.comisionCop)}</dd>
+          <dd className="font-mono tabular-nums">{plata(traslado.comisionCop)}</dd>
         </div>
         <div>
           <dt className="text-fg">IVA</dt>
-          <dd className="font-mono tabular-nums">{formatCurrency(traslado.ivaComisionCop)}</dd>
+          <dd className="font-mono tabular-nums">{plata(traslado.ivaComisionCop)}</dd>
         </div>
         <div>
           <dt className="text-fg">Intereses y gastos</dt>
           <dd className="font-mono tabular-nums">
-            {formatCurrency(traslado.interesesCop + traslado.gastosDeCobranzaCop)}
+            {plata(traslado.interesesCop + traslado.gastosDeCobranzaCop)}
           </dd>
         </div>
         <div>
           <dt className="text-fg">Retenciones</dt>
           <dd className="font-mono tabular-nums">
-            − {formatCurrency(traslado.retencionesComisionCop)}
+            − {plata(traslado.retencionesComisionCop)}
           </dd>
         </div>
       </dl>

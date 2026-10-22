@@ -282,7 +282,11 @@ export function Recaudo() {
   const [verDefiniciones, setVerDefiniciones] = useState(false);
   const siguiente = sumarMeses(month, 1);
   // Los mismos decimales en las cinco cifras (revisión 22-10).
-  const plata = plataPareja(resumen ? [resumen.deudaDelMesCop, resumen.recaudadoCop, resumen.pendienteCop, resumen.dispersadoCop, resumen.disponibleCop] : []);
+  const plata = plataPareja([
+    ...(resumen ? [resumen.deudaDelMesCop, resumen.recaudadoCop, resumen.pendienteCop, resumen.dispersadoCop, resumen.disponibleCop] : []),
+    ...(serie ?? []).flatMap((p) => [p.deudaDelMesCop, p.recaudadoCop, p.dispersadoCop]),
+    ...(resumen?.porMedio ?? []).map((m) => m.valorCop),
+  ]);
   const puedeAvanzar = !esFuturo(siguiente);
 
   const puntos = useMemo(() => serieParaLaTabla(serie ?? []), [serie]);
@@ -663,13 +667,13 @@ export function Recaudo() {
                             {conMayusculaInicial(nombreDelMes(p.month, locale))}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
-                            {formatCurrency(p.deudaDelMesCop)}
+                            {plata(p.deudaDelMesCop)}
                           </TableCell>
                           <TableCell
                             className="whitespace-nowrap text-right font-mono tabular-nums text-fg"
                             data-testid="serie-numerador"
                           >
-                            {numerador === null ? '—' : formatCurrency(numerador)}
+                            {numerador === null ? '—' : plata(numerador)}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
                             {/* Sin contra qué medir no hay porcentaje: un «0 %» diría que no se recaudó. */}
@@ -679,10 +683,10 @@ export function Recaudo() {
                             className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted"
                             data-testid="serie-recaudado"
                           >
-                            {formatCurrency(p.recaudadoCop)}
+                            {plata(p.recaudadoCop)}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
-                            {formatCurrency(p.dispersadoCop)}
+                            {plata(p.dispersadoCop)}
                           </TableCell>
                         </TableRow>
                       );
@@ -739,7 +743,7 @@ export function Recaudo() {
                         <TableCell className="text-fg">{tr(m.nombre || nombreDelMedio(m.medio))}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums text-fg-muted">{m.cantidad}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums text-fg">
-                          {formatCurrency(m.valorCop)}
+                          {plata(m.valorCop)}
                         </TableCell>
                       </TableRowAnimada>
                     ))

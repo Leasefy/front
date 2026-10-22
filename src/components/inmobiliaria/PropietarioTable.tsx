@@ -471,12 +471,15 @@ export function PropietarioTable({
                   <TableCell className="p-4">
                     <div>
                       {/* La cifra arriba en mono; cuántas están arrendadas, debajo (antes se partía «0 (0 / arrendadas)»). */}
-                      <span className="font-mono text-foreground tabular-nums">
-                        {propietario.propertyCount}
+                      {/* Glow up 22-10: sin inmuebles, «—» atenuado (no «0 / 0 arrendadas» en cada fila). */}
+                      <span className={cn('font-mono tabular-nums', propietario.propertyCount === 0 ? 'text-fg-subtle' : 'text-foreground')}>
+                        {propietario.propertyCount === 0 ? '—' : propietario.propertyCount}
                       </span>
-                      <span className="block whitespace-nowrap text-xs text-muted-foreground">
-                        {arrendadas(t, propietario.activeLeases)}
-                      </span>
+                      {propietario.propertyCount > 0 ? (
+                        <span className="block whitespace-nowrap text-xs text-muted-foreground">
+                          {arrendadas(t, propietario.activeLeases)}
+                        </span>
+                      ) : null}
                       {/* El minoritario existe: sus copropiedades van aparte
                           del conteo de mandatos donde es principal. */}
                       {(propietario.copropiedadesCount ?? 0) > 0 && (
@@ -495,8 +498,8 @@ export function PropietarioTable({
                     {sinPlata ? (
                       <SinAccesoALaPlata texto={sinAcceso} />
                     ) : (
-                      <span className="font-semibold text-foreground tabular-nums">
-                        {formatCurrency(propietario.totalMonthlyRent)}
+                      <span className={cn('font-mono tabular-nums', propietario.totalMonthlyRent ? 'text-foreground' : 'text-fg-subtle')}>
+                        {propietario.totalMonthlyRent ? formatCurrency(propietario.totalMonthlyRent) : '—'}
                       </span>
                     )}
                   </TableCell>

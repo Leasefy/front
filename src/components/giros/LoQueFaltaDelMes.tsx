@@ -84,6 +84,7 @@ export function LoQueFaltaDelMes({
   paso,
   mes,
   onCambiarMes,
+  onCompleto,
   className,
 }: {
   /** La pantalla en la que se está (su fila se marca). */
@@ -91,6 +92,8 @@ export function LoQueFaltaDelMes({
   mes: string;
   /** Sin él, la tarjeta va sin selector de mes. */
   onCambiarMes?: (mes: string) => void;
+  /** Revisora r22 (Giros #3): avisa si el mes elegido está girado completo, para que «Por girar» diga que es de meses anteriores. */
+  onCompleto?: (completo: boolean) => void;
   className?: string;
 }) {
   const tr = useTr();
@@ -109,6 +112,10 @@ export function LoQueFaltaDelMes({
     [datos, lotes, errorDeLotes],
   );
   const cargando = datos === null || (cargandoLotes && lotes.length === 0);
+  const completo = !cargando && Boolean(resultado?.completo);
+  useEffect(() => {
+    onCompleto?.(completo);
+  }, [completo, onCompleto]);
   const delMes = nombreDelMes(mes);
 
   let respuesta: string;

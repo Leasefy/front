@@ -25,7 +25,11 @@ import {
 import { plataPareja } from '@/lib/format';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
-export function PorGirarDeLaInmobiliaria() {
+/**
+ * Revisora r22 (Giros #3): con el mes elegido ya girado, «Por girar hasta octubre: $ X» al lado de «Octubre está girado
+ * completo» se leía como una contradicción. Esa plata es de meses anteriores, y la cifra lo dice.
+ */
+export function PorGirarDeLaInmobiliaria({ mesGirado, nombreDelMes }: { mesGirado?: boolean; nombreDelMes?: string } = {}) {
   const [cifra, setCifra] = useState<PorGirarDelBack | null>(null);
 
   useEffect(() => {
@@ -55,13 +59,21 @@ export function PorGirarDeLaInmobiliaria() {
           data-testid="por-girar-liquidaciones"
         >
           <div className="min-w-0">
-            <p className="text-sm text-muted-foreground">{rotuloDePorGirar(cifra.hastaMes)}</p>
+            <p className="text-sm text-muted-foreground">
+              {mesGirado && cifra.porGirarCop > 0 ? 'Por girar, de meses anteriores' : rotuloDePorGirar(cifra.hastaMes)}
+            </p>
             <p
-              className="mt-1 whitespace-nowrap font-mono text-2xl font-semibold tabular-nums text-fg"
+              className="mt-1 whitespace-nowrap font-mono text-2xl tabular-nums text-fg"
               data-testid="por-girar-cifra"
             >
               <AnimatedNumber value={cifra.porGirarCop} format={plataDeLaFranja} />
             </p>
+            {mesGirado && cifra.porGirarCop > 0 ? (
+              <p className="mt-1 text-caption text-fg-muted" data-testid="por-girar-de-meses-anteriores">
+                {nombreDelMes ? `${nombreDelMes.charAt(0).toUpperCase()}${nombreDelMes.slice(1)} ya está girado` : 'El mes elegido ya está girado'}: esta
+                plata es de meses anteriores.
+              </p>
+            ) : null}
             {/* GLOW UP (21-10): la cifra primero; lo que cuenta, plegado (la misma frase del Tablero y de Cartera). */}
             <MasDetalles etiqueta="Qué cuenta esta cifra" montadoSiempre className="mt-1">
               <p className="text-caption text-fg-muted">{definicionDePorGirar(cifra.hastaMes)}</p>
@@ -72,7 +84,7 @@ export function PorGirarDeLaInmobiliaria() {
               {rotuloDeProximosGiros(cifra.proximosGiros.desdeMes, cifra.proximosGiros.hastaMes)}
             </p>
             <p
-              className="mt-1 whitespace-nowrap font-mono text-2xl font-semibold tabular-nums text-fg-muted"
+              className="mt-1 whitespace-nowrap font-mono text-2xl tabular-nums text-fg-muted"
               data-testid="proximos-giros"
             >
               <AnimatedNumber value={cifra.proximosGiros.totalCop} format={plataDeLaFranja} />

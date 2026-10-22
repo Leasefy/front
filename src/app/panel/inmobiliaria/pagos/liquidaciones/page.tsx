@@ -40,6 +40,7 @@ import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-ac
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { SECCION_DE_LOS_GIROS, TITULO_DE_LOS_GIROS, descripcionDelPaso } from '@/components/giros/PasosDeLosGiros';
 import { LoQueFaltaDelMes } from '@/components/giros/LoQueFaltaDelMes';
+import { nombreDelMes } from '@/lib/utils/mes';
 import { claveDelMes, esMesDeLosGiros } from '@/lib/giros/meses-de-los-giros';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -229,6 +230,8 @@ function TesoreriaContent() {
   // Antes era `useState(mesEnCurso)` sin setter: el mes anterior —el que de
   // verdad se liquida los primeros días— no se podía ver.
   const [month, setMonth] = useState(mesEnCurso);
+  // Revisora r22 (Giros #3): «Lo que falta del mes» dice si el mes elegido está girado completo.
+  const [mesGirado, setMesGirado] = useState(false);
   const esCelular = useIsMobile();
   // El mes viaja entre los pasos de Giros (`?mes=`): se lee al montar, no en el primer pintado (servidor).
   useEffect(() => {
@@ -427,12 +430,12 @@ function TesoreriaContent() {
         descripcion={tr(descripcionDelPaso('liquidar'))}
       />
       {/* Decisión 17 de Nico (22-10): «Lo que falta del mes» en vez del riel de chulos. */}
-      <LoQueFaltaDelMes paso="liquidar" mes={month} onCambiarMes={setMonth} />
+      <LoQueFaltaDelMes paso="liquidar" mes={month} onCambiarMes={setMonth} onCompleto={setMesGirado} />
 
       {/* 🔴 «Por girar» de la inmobiliaria: UNA sola cifra, hasta el mes en
           curso, la misma del Tablero y de «Cartera → Por pagar» (Nico,
           04-10-2026). La tabla de abajo es el neto de UN mes. */}
-      <PorGirarDeLaInmobiliaria />
+      <PorGirarDeLaInmobiliaria mesGirado={mesGirado} nombreDelMes={nombreDelMes(month)} />
 
       {frenada ? (
         <AvisoLiquidacionFrenada frenada={frenada} despues="calcular el neto" />

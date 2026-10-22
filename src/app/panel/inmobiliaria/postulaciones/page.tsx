@@ -59,7 +59,8 @@ const STATUS_CONFIG: Record<
   UNDER_REVIEW:    { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
   APPROVED:        { label: 'Aprobado',          bg: 'bg-success-soft',   text: 'text-success' },
   REJECTED:        { label: 'Rechazado',         bg: 'bg-danger-soft',    text: 'text-danger' },
-  NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-warning-soft',   text: 'text-warning' },
+  // Revisora r22 (VOZ): sin abreviar.
+  NEEDS_INFO:      { label: 'Pide información',  bg: 'bg-warning-soft',   text: 'text-warning' },
   WITHDRAWN:       { label: 'Retirado',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
   CONTRACT_FAILED: { label: 'Contrato fallido',  bg: 'bg-danger-soft',    text: 'text-danger' },
   // Aprobar a una persona desplaza a las demás del mismo inmueble a
@@ -90,7 +91,7 @@ const FILTERS: {
 }[] = [
   { key: 'ALL',         label: 'Total',          statuses: null },
   { key: 'IN_REVIEW',   label: 'En revisión',    tono: 'voltaje', statuses: ['SUBMITTED', 'UNDER_REVIEW', 'PREAPPROVED'] },
-  { key: 'NEEDS_INFO',  label: 'Pide info',      tono: 'aviso',   statuses: ['NEEDS_INFO'] },
+  { key: 'NEEDS_INFO',  label: 'Pide información', tono: 'aviso',   statuses: ['NEEDS_INFO'] },
   { key: 'APPROVED',    label: 'Aprobadas',      statuses: ['APPROVED'] },
   { key: 'REJECTED',    label: 'Rechazadas',     statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED'] },
   // QA-IA-A (04-10-2026): el no adjudicado NO es un rechazo —el inmueble quedó
@@ -107,8 +108,11 @@ function formatDate(iso: string, fechas: 'es-CO' | 'en-US' = 'es-CO'): string {
   if (!iso) return '—'
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
-  // La fecha de la casa: «4 de octubre de 2026» (no «04 de oct de 2026»).
-  return d.toLocaleDateString(fechas, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Bogota' })
+  // Revisora r22 (#7): la fecha corta, como Contratos: «18 oct 2026».
+  return d
+    .toLocaleDateString(fechas, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })
+    .replace(/\./g, '')
+    .replace(/ de /g, ' ')
 }
 
 function PostulacionesContenido() {
@@ -253,6 +257,9 @@ function PostulacionesContenido() {
    * no lo trae dice «Sin puntaje».
    */
   const hayPuntaje = items.some((c) => Boolean(c.riskScore))
+  // Revisora r22 (#7): el estudio es opcional; si NADIE lo tiene, la columna diría «Sin estudio» en todas las
+  // filas y se leería como algo que falta. Sale cuando alguna postulación lo trae (o trae otra marca).
+  const hayEstudio = items.some((c) => c.marcaDelEstudio !== undefined && c.marcaDelEstudio?.codigo !== 'SIN_ESTUDIO')
   const esCelular = useIsMobile()
 
   return (
@@ -261,7 +268,7 @@ function PostulacionesContenido() {
       <EncabezadoDePantalla
         seccion={tr('Captación y arriendo')}
         titulo={tr("Postulaciones")}
-        descripcion={tr("Quién se postuló a tus inmuebles: ábrela para revisarla y decidir.")}
+        descripcion={tr("Revisa a quienes se postularon y decide a quién le arriendas.")}
       />
 
       {/* El refresco de fondo falló con la lista ya en pantalla: se conserva y se
@@ -430,13 +437,13 @@ function PostulacionesContenido() {
                         <CasillaDeLaPagina ids={pageItems.map((p) => p.id)} marcadas={marcadas} onMarcar={marcar} queSon="postulaciones" />
                       </TableHead>
                     )}
-                    <TableHead>{tr("Candidato")}</TableHead>
-                    <TableHead>{tr("Propiedad")}</TableHead>
+                    <TableHead>{tr("Interesado")}</TableHead>
+                    <TableHead>{tr("Inmueble")}</TableHead>
                     <TableHead>{tr("Estado")}</TableHead>
                     {/* 🔴 El estudio es opcional (Nico, 04-10-2026): quien se
                         postuló sin él (o con el canon por encima de su
                         respaldo) se ve marcado aquí. */}
-                    <TableHead>{tr("Estudio")}</TableHead>
+                    {hayEstudio && <TableHead>{tr("Estudio")}</TableHead>}
                     {hayPuntaje && <TableHead>{tr("Puntaje")}</TableHead>}
                     <TableHead>{tr("Fecha")}</TableHead>
                   </TableRow>
@@ -493,9 +500,11 @@ function PostulacionesContenido() {
                             {tr(statusCfg.label)}
                           </span>
                         </TableCell>
-                        <TableCell>
-                          <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} conEstudio />
-                        </TableCell>
+                        {hayEstudio && (
+                          <TableCell>
+                            <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} conEstudio />
+                          </TableCell>
+                        )}
                         {hayPuntaje && (
                           <TableCell>
                             {c.riskScore ? (

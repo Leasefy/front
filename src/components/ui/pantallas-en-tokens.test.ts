@@ -270,8 +270,6 @@ const COLOR_CRUDO_JUSTIFICADO: Record<string, string> = {
     'Scrim y píldoras sobre la FOTO de portada del inmueble (`bg-black/60`, ' +
     '`text-white`, `ring-white/70`), y la píldora «Agregar fotos» sobre el campo de ' +
     'medianoche (`bg-white/10`, `ring-white/20`). Ni la foto ni la medianoche cambian con el tema.',
-  'components/inmobiliaria/ConsignacionCard.tsx':
-    'Píldora de comisión sobre la foto de la tarjeta (`bg-black/60 text-white`).',
   'components/inmobiliaria/FotosDelInmueble.tsx':
     'Degradé `from-black/60` y píldora «Subiendo» sobre la foto; y ' +
     '`bg-danger … text-white` en «No se subió» — `text-danger-fg` es el rojo mismo, ' +

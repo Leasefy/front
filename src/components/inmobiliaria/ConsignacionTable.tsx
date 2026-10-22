@@ -237,6 +237,8 @@ export function ConsignacionTable({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Sort consignaciones
+  const hayAsesor = consignaciones.some((row) => row.kind === 'consignacion' && Boolean(agentesMap[row.agenteId]));
+
   const sortedConsignaciones = useMemo(() => {
     const result = [...consignaciones];
 
@@ -403,9 +405,12 @@ export function ConsignacionTable({
             <TableHead className="text-left px-3 hidden lg:table-cell">
               {t('inmobiliaria.consignaciones.table.owner')}
             </TableHead>
-            <TableHead className="text-left px-3 hidden md:table-cell">
-              {t('inmobiliaria.consignaciones.table.agent')}
-            </TableHead>
+            {/* Revisora r22 (Inmuebles #3): la columna sólo cuando algún inmueble tiene asesor (decía «—» en todas). */}
+            {hayAsesor && (
+              <TableHead className="text-left px-3 hidden md:table-cell">
+                {t('inmobiliaria.consignaciones.table.agent')}
+              </TableHead>
+            )}
             <TableHead className="w-12 px-3"></TableHead>
           </TableRow>
         </TableHeader>
@@ -651,6 +656,7 @@ export function ConsignacionTable({
                 </TableCell>
 
                 {/* Agente — su foto o su Avatar con iniciales y su tono. */}
+                {hayAsesor && (
                 <TableCell className="px-3 py-3 hidden md:table-cell">
                   {agenteInfo ? (
                     <div className="flex items-center gap-2">
@@ -663,6 +669,7 @@ export function ConsignacionTable({
                     <span className="text-muted-foreground">—</span>
                   )}
                 </TableCell>
+                )}
 
                 {/* Actions */}
                 <TableCell className="px-3 py-3" onClick={(e) => e.stopPropagation()}>

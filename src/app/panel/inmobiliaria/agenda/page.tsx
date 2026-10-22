@@ -64,15 +64,25 @@ const PESTANAS: { id: Pestana; label: string }[] = [
   { id: 'semana', label: 'Semana' },
 ];
 
-/** Dot color per event type (matches the summary tiles). */
+/**
+ * El punto de cada tipo, en tinta (revisora r22, Agenda #6): cada fin de contrato iba en rojo aunque faltaran
+ * meses. El rojo queda sólo para lo atrasado (`puntoDelEvento`).
+ */
 const TIPO_DOT: Record<EventoTipo, string> = {
-  visita: 'bg-primary',
-  firma_pendiente: 'bg-warning-500',
-  vencimiento_contrato: 'bg-error-500',
-  seguimiento: 'bg-primary',
-  inspeccion: 'bg-neutral-300 dark:bg-neutral-600',
-  tarea: 'bg-neutral-300 dark:bg-neutral-600',
+  visita: 'bg-fg',
+  firma_pendiente: 'bg-fg-muted',
+  vencimiento_contrato: 'bg-fg-subtle',
+  seguimiento: 'bg-fg-muted',
+  inspeccion: 'bg-fg-subtle/60',
+  tarea: 'bg-fg-subtle/60',
 };
+const puntoDelEvento = (e: EventoAgenda) => (e.estado === 'vencido' ? 'bg-danger' : TIPO_DOT[e.tipo]);
+
+/** «Pendiente» es lo normal de lo que viene: no se pinta (iba en las diez filas); sí lo demás. */
+const conEstadoVisible = (e: EventoAgenda) => e.estado !== 'pendiente';
+
+/** El origen «Sistema» no dice nada (todo lo que no es una tarea lo trae el sistema): no se pinta. */
+const ORIGEN_QUE_NO_SE_DICE = 'sistema';
 
 /**
  * El título sin el inmueble cuando el inmueble ya va en «Vínculo», al lado (glow up 21-10):
@@ -283,6 +293,19 @@ function AgendaContent() {
    * vencimientos un día para atrás no sirve. Mismo helper que usa el cajón,
    * así que tabla y detalle nunca dicen días distintos.
    */
+  /** «22 oct» (y el año si no es este): dentro de un grupo del día, la fecha larga sobra. */
+  const formatFechaCorta = (iso: string) => {
+    const d = fechaLocal(iso) ?? new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    const otroAno = d.getFullYear() !== new Date().getFullYear();
+    return new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
+      day: 'numeric',
+      month: 'short',
+      ...(otroAno ? { year: 'numeric' } : {}),
+    })
+      .format(d)
+      .replace('.', '');
+  };
   const formatFecha = (iso: string) => {
     const d = fechaLocal(iso) ?? new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
@@ -551,7 +574,7 @@ function AgendaContent() {
                                 )}
                               >
                                 <span className="flex items-center gap-1.5">
-                                  <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', TIPO_DOT[e.tipo])} />
+                                  <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', puntoDelEvento(e))} />
                                   <span className="tabular-nums text-fg-muted">{e.hora ? horaDeLaCasa(e.hora) : 'Todo el día'}</span>
                                 </span>
                                 <span className="mt-0.5 block truncate text-fg">{e.titulo}</span>
@@ -581,7 +604,22 @@ function AgendaContent() {
                 />
               </li>
             ) : (
-              eventos.map((e) => (
+              eventos.flatMap((e: EventoAgenda, i: number) => {
+                // Revisora r22 (#7): los grupos del día también a 390 («Hoy», «Mañana»…).
+                const grupo = grupoDelDia(e.fecha);
+                const nuevoGrupo = i === 0 || grupoDelDia(eventos[i - 1].fecha) !== grupo;
+                return [
+                  ...(nuevoGrupo
+                    ? [
+                        <li
+                          key={`grupo-${grupo}`}
+                          className="bg-surface-muted/50 px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle"
+                          data-testid="agenda-grupo-tarjetas"
+                        >
+                          {NOMBRE_DEL_GRUPO[grupo]} · {eventos.filter((x) => grupoDelDia(x.fecha) === grupo).length}
+                        </li>,
+                      ]
+                    : []),
                 <li key={e.id}>
                   <button
                     type="button"
@@ -589,23 +627,27 @@ function AgendaContent() {
                     className="flex w-full items-start gap-3 px-4 py-3 text-left"
                     data-testid="agenda-tarjeta"
                   >
-                    <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', TIPO_DOT[e.tipo])} />
+                    <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', puntoDelEvento(e))} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium text-fg">{e.titulo}</span>
+                      {/* Revisora r22 (#7): a 390 el título en dos renglones, no cortado. */}
+                      <span className="block line-clamp-2 break-words font-medium text-fg">{e.titulo}</span>
                       <span className="block text-caption text-fg-muted">
-                        {formatFecha(e.fecha)}
+                        <span className="font-mono">{formatFechaCorta(e.fecha)}</span>
                         {e.hora ? ` · ${horaDeLaCasa(e.hora)}` : ''} · {t(k(`rowTipo_${e.tipo}`))}
                       </span>
                       {e.responsableNombre && (
                         <span className="block truncate text-caption text-fg-muted">{e.responsableNombre}</span>
                       )}
                     </span>
-                    <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-caption font-medium', ESTADO_BADGE[e.estado])}>
-                      {t(k(`estado_${e.estado}`))}
-                    </span>
+                    {conEstadoVisible(e) ? (
+                      <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-caption font-medium', ESTADO_BADGE[e.estado])}>
+                        {t(k(`estado_${e.estado}`))}
+                      </span>
+                    ) : null}
                   </button>
-                </li>
-              ))
+                </li>,
+                ];
+              })
             )}
           </ul>
 
@@ -663,7 +705,8 @@ function AgendaContent() {
                     data-testid="agenda-fila"
                   >
                     <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
-                      <span className="block">{formatFecha(e.fecha)}</span>
+                      {/* Revisora r22 (#4): dentro de su grupo («Hoy», «Mañana»…), la fecha corta. */}
+                      <span className="block font-mono text-body-sm">{formatFechaCorta(e.fecha)}</span>
                       {/* AG-12: la hora sale en la fila. */}
                       {e.hora && <span className="block text-caption" data-testid="agenda-hora">{horaDeLaCasa(e.hora)}</span>}
                     </TableCell>
@@ -672,12 +715,13 @@ function AgendaContent() {
                         <p className="text-foreground font-medium truncate" title={e.titulo}>{tituloSinElVinculo(e)}</p>
                         <p className="text-caption text-muted-foreground truncate">
                           <span className="inline-flex items-center gap-1.5">
-                            <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', TIPO_DOT[e.tipo])} />
+                            <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', puntoDelEvento(e))} />
                             {t(k(`rowTipo_${e.tipo}`))}
                           </span>
-                          {' · '}
-                          {/* AG-13: «Tú» sólo a quien creó la tarea. */}
-                          {origenDelEvento(e, miUserId, (o) => t(k(`origen_${o}`)))}
+                          {/* AG-13: «Tú» sólo a quien creó la tarea. Sin «· Sistema» (revisora r22, #3). */}
+                          {e.tipo === 'tarea' || e.origen !== ORIGEN_QUE_NO_SE_DICE
+                            ? ` · ${origenDelEvento(e, miUserId, (o) => t(k(`origen_${o}`)))}`
+                            : ''}
                           {e.descripcion && e.tipo !== 'visita' ? ` · ${e.descripcion}` : ''}
                         </p>
                       </div>
@@ -703,9 +747,11 @@ function AgendaContent() {
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium', ESTADO_BADGE[e.estado])}>
-                          {t(k(`estado_${e.estado}`))}
-                        </span>
+                        {conEstadoVisible(e) ? (
+                          <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium', ESTADO_BADGE[e.estado])}>
+                            {t(k(`estado_${e.estado}`))}
+                          </span>
+                        ) : null}
                         {puedeEditar && e.tipo === 'visita' && e.estadoRaw === 'PENDING' && (
                           <span className="flex items-center gap-1.5">
                             <Button

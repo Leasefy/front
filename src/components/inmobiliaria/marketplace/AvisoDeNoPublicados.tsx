@@ -14,6 +14,10 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { marketplaceDelPortafolioApi, type ListaParaElegir } from '@/lib/api/marketplace-del-portafolio.service'
 import { ElegirQuePublicar } from './ElegirQuePublicar'
+import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras'
+
+/** Revisora r22 (Inmuebles #2): «2.923», no «2923». */
+const MILES = cifrasDeLaPantalla()
 
 export function AvisoDeNoPublicados({
   version = 0,
@@ -50,15 +54,16 @@ export function AvisoDeNoPublicados({
         data-testid="aviso-no-publicados"
       >
         <div className="flex items-start gap-3">
-          <Storefront className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <Storefront className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" />
           <div>
             <p className="text-sm font-medium text-fg">
-              {resumen.noPublicados} {resumen.noPublicados === 1 ? 'inmueble no sale' : 'inmuebles no salen'} en el marketplace
+              <span className="font-mono tabular-nums">{MILES.format(resumen.noPublicados)}</span>{' '}
+              {resumen.noPublicados === 1 ? 'inmueble no sale' : 'inmuebles no salen'} en el marketplace
             </p>
             <p className="text-body-sm text-fg-muted">
               Lo que migraste queda sin publicar hasta que elijas.
               {resumen.noPublicadosConFotos > 0
-                ? ` ${resumen.noPublicadosConFotos} ya ${resumen.noPublicadosConFotos === 1 ? 'tiene' : 'tienen'} fotos.`
+                ? ` ${MILES.format(resumen.noPublicadosConFotos)} ya ${resumen.noPublicadosConFotos === 1 ? 'tiene' : 'tienen'} fotos.`
                 : ''}
             </p>
           </div>

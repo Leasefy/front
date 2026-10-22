@@ -681,7 +681,14 @@ function PortafolioContent() {
                       `Consignacion`-typed; the two shapes share no
                       commission/availability/tenant fields to unify).
                     */}
-                    {paginatedConsignaciones.map((row) => (
+                    {/* Revisora r22 (Inmuebles #6): el mismo orden que la tabla por defecto (por título). */}
+                    {[...paginatedConsignaciones]
+                      .sort((a, b) => {
+                        const x = a.propertyTitle.toLowerCase();
+                        const y = b.propertyTitle.toLowerCase();
+                        return x < y ? -1 : x > y ? 1 : 0;
+                      })
+                      .map((row) => (
                       // `flex`: la tarjeta sigue llenando el alto de su fila.
                       <StaggerItem key={portafolioRowKey(row)} className="flex">
                         {row.kind === 'consignacion' ? (

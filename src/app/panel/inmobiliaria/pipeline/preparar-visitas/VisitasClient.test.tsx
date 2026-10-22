@@ -27,6 +27,10 @@ const { api, permisos, toastError } = vi.hoisted(() => ({
   permisos: { edit: true },
 }))
 
+// Los nombres del equipo salen de la sesión; acá basta un doble (sin nombre conocido → «Asesor sin nombre»).
+vi.mock('@/components/dispersiones/lotes/use-nombres-del-equipo', () => ({
+  useNombresDelEquipo: () => ({ nombreDe: (id: string) => `Usuario ${id}`, yo: null }),
+}))
 vi.mock('@/lib/api/crm.service', async () => {
   const real =
     await vi.importActual<typeof import('@/lib/api/crm.service')>(

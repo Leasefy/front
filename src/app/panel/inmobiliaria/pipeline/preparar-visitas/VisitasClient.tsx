@@ -25,6 +25,7 @@
  * los prenda (y el 14-09 ya costó ~680 correos reales desde un back local).
  */
 
+import { useNombresDelEquipo } from '@/components/dispersiones/lotes/use-nombres-del-equipo'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { agendaApi } from '@/lib/api/agenda.service'
@@ -83,6 +84,12 @@ export function VisitasClient() {
     ['visitas'],
   )
   const asesores = useCrm(() => leadsApi.asesores(), [], [])
+  const { nombreDe } = useNombresDelEquipo()
+  /** Sin nombre conocido, «Asesor sin nombre»: el «Usuario 1a2b3c4d» del respaldo es un id interno. */
+  const nombreDelAsesor = (userId: string) => {
+    const nombre = nombreDe(userId)
+    return nombre.startsWith('Usuario ') ? 'Asesor sin nombre' : nombre
+  }
 
   const [tocando, setTocando] = useState<string | null>(null)
   const [marcando, setMarcando] = useState(false)
@@ -316,7 +323,7 @@ export function VisitasClient() {
                 <EmptyState
                   icon={CalendarCheck}
                   title="No hay visitas próximas"
-                  description="Cuando un interesado pida una visita desde el aviso, aparece acá para asignarle asesor."
+                  description="Cuando un interesado pida una visita desde el aviso, aparece aquí para asignarle asesor."
                 />
               }
             >
@@ -376,7 +383,8 @@ export function VisitasClient() {
                             <SelectContent>
                               {(asesores.datos ?? []).map((a) => (
                                 <SelectItem key={a.userId} value={a.userId}>
-                                  {a.userId.slice(0, 8)} · {a.leadsActivos} leads
+                                  {/* El nombre de la persona, nunca un pedazo de su id interno (glow up 22-10). */}
+                                  {nombreDelAsesor(a.userId)} · {a.leadsActivos} {a.leadsActivos === 1 ? 'interesado' : 'interesados'}
                                 </SelectItem>
                               ))}
                             </SelectContent>

@@ -64,7 +64,7 @@ function ConfidenceBadge({ level, label }: ConfidenceBadgeProps) {
   };
 
   return (
-    <MonoLabel className={cn('inline-flex items-center gap-1 text-xs', colorMap[level])}>
+    <MonoLabel className={cn('inline-flex items-center gap-1 text-caption', colorMap[level])}>
       <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', dotMap[level])} />
       {label}
     </MonoLabel>
@@ -168,10 +168,10 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
           página a 530 px de ancho (QA-MIG-A, MG-29). */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0">
-          <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+          <h2 className="text-h3 text-fg mb-1">
             {t('inmobiliaria.import.mapping.title')}
           </h2>
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          <p className="text-sm text-fg-muted">
             {t('inmobiliaria.import.mapping.subtitle')}
           </p>
         </div>
@@ -189,7 +189,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
             size="sm"
             hideArrow
             onClick={handleReset}
-            className="text-xs"
+            className="text-caption"
           >
             {t('inmobiliaria.import.mapping.reset')}
           </Button>
@@ -230,12 +230,12 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
             >
               {/* Source Column */}
               <div className="min-w-0 sm:flex-1">
-                <span className="inline-block font-mono text-xs bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle px-2 py-1 rounded-sm truncate max-w-full">
+                <span className="inline-block font-mono text-caption bg-surface-muted text-fg px-2 py-1 rounded-sm truncate max-w-full">
                   {mapping.sourceColumn}
                 </span>
                 {/* Sample values */}
                 {samples.length > 0 && (
-                  <p className="text-xs text-fg-subtle mt-1 truncate">
+                  <p className="text-caption text-fg-subtle mt-1 truncate">
                     {t('inmobiliaria.import.mapping.sampleValues')} {samples.join(', ')}
                   </p>
                 )}
@@ -247,7 +247,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
               {/* Target Field Dropdown — o las dos partes de una columna compuesta */}
               {mapping.partes ? (
                 <div className="w-full min-w-0 space-y-1.5 sm:flex-1" data-testid={`partes-${mapping.sourceColumn}`}>
-                  <p className="text-xs text-fg-subtle">
+                  <p className="text-caption text-fg-subtle">
                     Dos datos en una celda, partidos por el guion de la izquierda:
                   </p>
                   {([0, 1] as const).map((indice) => {
@@ -255,7 +255,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
                     return (
                       <div key={indice} className="flex items-center gap-2">
                         <span
-                          className="font-mono text-xs text-fg-subtle w-28 shrink-0 truncate"
+                          className="font-mono text-caption text-fg-subtle w-28 shrink-0 truncate"
                           title={muestra}
                         >
                           {indice === 0 ? '1.º' : '2.º'} «{recortar(muestra, 14)}»
@@ -283,7 +283,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
                   })}
                   <button
                     type="button"
-                    className="text-xs text-primary hover:underline"
+                    className="text-caption text-primary hover:underline"
                     onClick={() => handleUnir(mapping.sourceColumn)}
                     data-testid={`unir-${mapping.sourceColumn}`}
                   >
@@ -313,7 +313,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
                   {compuesta ? (
                     <button
                       type="button"
-                      className="text-xs text-primary hover:underline text-left"
+                      className="text-caption text-primary hover:underline text-left"
                       onClick={() => handleDividir(mapping.sourceColumn)}
                       data-testid={`dividir-${mapping.sourceColumn}`}
                     >

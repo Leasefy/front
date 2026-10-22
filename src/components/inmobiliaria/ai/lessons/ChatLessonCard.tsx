@@ -58,7 +58,7 @@ function agentLabel(agent: ChatLesson['pattern']['agent']): string {
 const STATUS_ACCENT: Record<ChatLesson['status'], string> = {
   candidate: 'border-l-[#1A40FF]',
   certified: 'border-l-[#2C7A53]',
-  rejected: 'border-l-neutral-300 dark:border-l-neutral-700',
+  rejected: 'border-l-neutral-300',
 }
 
 /** Relative "última vez" without a date-fns dependency (Intl semantics). */
@@ -105,10 +105,10 @@ export function ChatLessonCard({
       data-testid="chat-lesson-card"
       data-status={lesson.status}
       className={cn(
-        'rounded-lg border border-neutral-200/70 dark:border-border/50',
+        'rounded-lg border border-neutral-200/70',
         'border-l-[3px]',
         STATUS_ACCENT[lesson.status],
-        'bg-white dark:bg-card/80',
+        'bg-white',
         'transition-opacity duration-base ease-standard',
         isRejected && 'opacity-60',
         className,
@@ -117,28 +117,28 @@ export function ChatLessonCard({
       <div className="p-4 sm:p-5">
         {/* Header: kind + agent badges, status chip */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 px-2 py-0.5 text-[11px] font-medium text-[#1A40FF] dark:text-[#5570FF]">
+          <span className="inline-flex items-center rounded-md bg-[#EEF1FF] px-2 py-0.5 text-[11px] font-medium text-[#1A40FF]">
             {KIND_LABEL[lesson.kind]}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-[11px] font-medium text-neutral-600 dark:text-neutral-300">
+          <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
             <Robot weight="duotone" className="h-3 w-3" />
             {agentLabel(lesson.pattern.agent)}
           </span>
 
           <div className="ml-auto">
             {isCertified && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-2 py-0.5 text-[11px] font-medium text-[#2C7A53] dark:text-[#3EAE70]">
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#E8F3EC] px-2 py-0.5 text-[11px] font-medium text-[#2C7A53]">
                 <CheckCircle weight="fill" className="h-3.5 w-3.5" />
                 Certificada
               </span>
             )}
             {isRejected && (
-              <span className="inline-flex items-center rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+              <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-500">
                 Descartada
               </span>
             )}
             {isCandidate && (
-              <span className="inline-flex items-center rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 px-2 py-0.5 text-[11px] font-medium text-[#B7791F] dark:text-[#D2992F]">
+              <span className="inline-flex items-center rounded-full bg-[#F8F0E0] px-2 py-0.5 text-[11px] font-medium text-[#B7791F]">
                 Candidata
               </span>
             )}
@@ -146,7 +146,7 @@ export function ChatLessonCard({
         </div>
 
         {/* Recommendation — the primary text (brand heading font) */}
-        <p className="mt-3 font-heading text-[15px] font-medium leading-snug text-neutral-900 dark:text-white">
+        <p className="mt-3 font-heading text-[15px] font-medium leading-snug text-neutral-900">
           {lesson.recommendation}
         </p>
 
@@ -156,7 +156,7 @@ export function ChatLessonCard({
             {lesson.pattern.tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center rounded bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 text-[10px] text-neutral-500 dark:text-neutral-400"
+                className="inline-flex items-center rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] text-neutral-500"
               >
                 #{tag}
               </span>
@@ -165,7 +165,7 @@ export function ChatLessonCard({
         )}
 
         {/* Evidence */}
-        <dl className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+        <dl className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-neutral-500">
           <div className="flex items-center gap-1">
             <dt className="sr-only">Observaciones</dt>
             <dd className="tabular-nums">
@@ -182,11 +182,11 @@ export function ChatLessonCard({
               <div className="flex items-center gap-1">
                 <dt className="sr-only">Aprobadas / rechazadas</dt>
                 <dd className="tabular-nums">
-                  <span className="text-[#2C7A53] dark:text-[#3EAE70]">
+                  <span className="text-[#2C7A53]">
                     {lesson.evidence.approved ?? 0} aprob.
                   </span>
                   {' · '}
-                  <span className="text-[#C4503B] dark:text-[#E0664D]">
+                  <span className="text-[#C4503B]">
                     {lesson.evidence.rejected ?? 0} rech.
                   </span>
                 </dd>
@@ -201,7 +201,7 @@ export function ChatLessonCard({
 
         {/* Sample question */}
         {lesson.evidence.sampleQuestion && (
-          <p className="mt-2 border-l-2 border-neutral-200 dark:border-neutral-700 pl-2.5 text-xs italic text-neutral-500 dark:text-neutral-400">
+          <p className="mt-2 border-l-2 border-neutral-200 pl-2.5 text-caption italic text-neutral-500">
             “{lesson.evidence.sampleQuestion}”
           </p>
         )}

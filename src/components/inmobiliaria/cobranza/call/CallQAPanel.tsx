@@ -54,9 +54,9 @@ function ScoreRow({
   const pct = score == null ? null : Math.round(score)
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between text-caption">
         <span className="text-fg-muted">{label}</span>
-        <span className={`font-mono font-semibold tabular-nums ${c.text}`}>
+        <span className={`font-mono tabular-nums ${c.text}`}>
           {pct == null ? '—' : `${pct}/100`}
         </span>
       </div>
@@ -125,7 +125,7 @@ export default function CallQAPanel({ qa }: CallQAPanelProps) {
       aria-label={t('inmobiliaria.ai.cobranza.call.qa.title')}
       className="rounded-lg border border-border bg-surface p-4"
     >
-      <h2 className="text-sm font-semibold text-fg mb-3">
+      <h2 className="text-sm font-medium text-fg mb-3">
         {t('inmobiliaria.ai.cobranza.call.qa.title')}
       </h2>
       {allNull ? (
@@ -145,7 +145,7 @@ export default function CallQAPanel({ qa }: CallQAPanelProps) {
             (llamada 01a03712: 4/4/4/4 del juez, capada por Habeas Data).
           */}
           {qa.compliance === false && (
-            <p className="text-xs text-fg-subtle -mt-1">
+            <p className="text-caption text-fg-subtle -mt-1">
               {t('inmobiliaria.ai.cobranza.call.qa.cappedNote')}{' '}
               <span className="text-warning font-medium">
                 {qa.violations.length > 0

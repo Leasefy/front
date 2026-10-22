@@ -153,7 +153,7 @@ export function WizardShell({
             <h1 className="text-sm font-medium text-fg truncate">
               {property.title}
             </h1>
-            <div className="flex items-center gap-1 text-xs text-fg-muted">
+            <div className="flex items-center gap-1 text-caption text-fg-muted">
               <MapPin className="h-3 w-3" />
               <span className="truncate">{property.neighborhood}</span>
             </div>
@@ -163,17 +163,17 @@ export function WizardShell({
             <p className="text-sm font-mono tabular-nums font-medium text-fg">
               {property.monthlyRent != null ? formatCurrency(property.monthlyRent) : '—'}
             </p>
-            {property.monthlyRent != null && <p className="text-xs text-fg-muted">/mes</p>}
+            {property.monthlyRent != null && <p className="text-caption text-fg-muted">/mes</p>}
           </div>
         </div>
 
         {/* Mobile progress indicator */}
         <div className="px-4 pb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-mono tabular-nums font-medium text-fg" aria-live="polite" aria-atomic="true">
+            <span className="text-caption font-mono tabular-nums font-medium text-fg" aria-live="polite" aria-atomic="true">
               Paso {currentStep} de {totalSteps}
             </span>
-            <span className="text-xs text-fg-muted">
+            <span className="text-caption text-fg-muted">
               {currentStepConfig?.label}
             </span>
           </div>
@@ -213,7 +213,7 @@ export function WizardShell({
                 </h1>
                 {/* Sin barrio, sólo la ciudad: nunca «, Sabaneta». */}
                 {(property.neighborhood || property.city) && (
-                  <div className="flex items-center gap-1 text-xs text-fg-muted mt-1">
+                  <div className="flex items-center gap-1 text-caption text-fg-muted mt-1">
                     <MapPin className="h-3 w-3" />
                     <span>{[property.neighborhood, property.city].filter(Boolean).join(', ')}</span>
                   </div>
@@ -223,7 +223,7 @@ export function WizardShell({
                   <span className="text-sm font-mono tabular-nums font-medium text-fg">
                     {property.monthlyRent != null ? formatCurrency(property.monthlyRent) : '—'}
                   </span>
-                  {property.monthlyRent != null && <span className="text-xs text-fg-muted">/mes</span>}
+                  {property.monthlyRent != null && <span className="text-caption text-fg-muted">/mes</span>}
                 </div>
               </div>
             </div>
@@ -231,7 +231,7 @@ export function WizardShell({
 
           {/* Step title and description */}
           <div className="p-6 xl:p-8 border-b border-border">
-            <h2 className="text-xl font-semibold text-fg tracking-tight">
+            <h2 className="text-h3 text-fg tracking-tight">
               {currentStepConfig?.description}
             </h2>
             <p className="text-sm text-fg-muted mt-2 leading-relaxed">
@@ -282,7 +282,7 @@ export function WizardShell({
                         }
                         className={cn(
                           'relative z-10 size-8 rounded-full flex items-center justify-center transition-[color,background-color,border-color,box-shadow]',
-                          'font-mono text-[13px] font-semibold tabular-nums',
+                          'font-mono text-[13px] tabular-nums',
                           isCompleted && !isCurrent
                             ? 'bg-primary border-2 border-primary text-primary-fg'
                             : isCurrent
@@ -348,7 +348,7 @@ export function WizardShell({
               {/* Desktop step header - hidden on mobile since sidebar shows it */}
               <div className="hidden lg:block px-6 py-5 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center size-8 rounded-full bg-ink text-ink-fg font-mono text-sm font-semibold tabular-nums">
+                  <span className="flex items-center justify-center size-8 rounded-full bg-ink text-ink-fg font-mono text-sm tabular-nums">
                     {currentStep}
                   </span>
                   <div>
@@ -449,7 +449,7 @@ export function WizardShell({
             </div>
 
             {/* FloppyDisk indicator */}
-            <p className="text-center text-xs text-fg-muted mt-4">
+            <p className="text-center text-caption text-fg-muted mt-4">
               Tu progreso se guarda automáticamente
             </p>
           </div>

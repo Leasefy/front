@@ -68,7 +68,7 @@ const METHOD_CARDS: MethodCard[] = [
     // badge blanco al lado de dos con color.
     badgeVariant: 'warning',
     icon: Globe,
-    // Sin `dark:bg-ink`: ese override deja la baldosa del mismo color que el
+    // Sin ``: ese override deja la baldosa del mismo color que el
     // fondo. `bg-surface-muted` ya resuelve los dos temas.
     iconBg: 'bg-surface-muted',
     disabled: false,
@@ -94,10 +94,10 @@ export function StepChooseMethod({ state, updateState, origen }: ImportStepProps
           la puesta en marcha (el muro) sí hacen falta. */}
       {origen !== 'inmuebles' && (
         <div>
-          <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+          <h2 className="text-h3 text-fg mb-1">
             {t('inmobiliaria.import.title')}
           </h2>
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          <p className="text-sm text-fg-muted">
             {t('inmobiliaria.import.subtitle')}
           </p>
         </div>
@@ -125,17 +125,17 @@ export function StepChooseMethod({ state, updateState, origen }: ImportStepProps
               className={cn(
                 'animate-stagger-in flex flex-col items-start justify-start text-left rounded-lg border-2 p-6 transition-[border-color,background-color,box-shadow] duration-base',
                 card.disabled
-                  ? 'opacity-60 cursor-not-allowed border-border dark:border-border-strong'
+                  ? 'opacity-60 cursor-not-allowed border-border'
                   : isSelected
                     ? 'border-primary/30 bg-primary-soft cursor-pointer'
-                    : 'border-border dark:border-border-strong hover:border-primary/30 dark:hover:border-primary/30 cursor-pointer'
+                    : 'border-border hover:border-primary/30 cursor-pointer'
               )}
               style={{ animationDelay: retrasoEscalonado(index) }}
               disabled={card.disabled}
             >
               {/* Icon */}
               <div className={cn(
-                'w-12 h-12 rounded-xl flex items-center justify-center mb-4',
+                'w-12 h-12 rounded-lg flex items-center justify-center mb-4',
                 card.iconBg
               )}>
                 <CardIcon className={cn(
@@ -143,7 +143,7 @@ export function StepChooseMethod({ state, updateState, origen }: ImportStepProps
                   card.method === 'enlaces' ? 'text-primary' :
                   card.method === 'excel' ? 'text-success' :
                   card.method === 'software' ? 'text-warning' :
-                  'text-fg-muted dark:text-fg-subtle'
+                  'text-fg-muted'
                 )} />
               </div>
 
@@ -153,18 +153,18 @@ export function StepChooseMethod({ state, updateState, origen }: ImportStepProps
               </Badge>
 
               {/* Title & Description */}
-              <h3 className="font-semibold text-fg dark:text-white text-base mb-1">
+              <h3 className="font-medium text-fg text-base mb-1">
                 {t(card.titleKey)}
               </h3>
-              <p className="text-sm text-fg-muted dark:text-fg-subtle leading-relaxed">
+              <p className="text-sm text-fg-muted leading-relaxed">
                 {t(card.descKey)}
               </p>
 
               {/* Selected Indicator */}
               {isSelected && !card.disabled && (
                 <div className="mt-4 flex items-center gap-2 text-primary">
-                  <div className="w-2 h-2 rounded-full bg-primary dark:bg-primary" />
-                  <MonoLabel className="text-xs">Seleccionado</MonoLabel>
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <MonoLabel className="text-caption">Seleccionado</MonoLabel>
                 </div>
               )}
             </button>

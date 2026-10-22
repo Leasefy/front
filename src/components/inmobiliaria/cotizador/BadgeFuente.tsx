@@ -99,7 +99,7 @@ export function BadgeFuente({ stubMode, fuente, hideIcon = false, className }: B
     <span
       className={[
         'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5',
-        'text-xs font-medium leading-none whitespace-nowrap',
+        'text-caption font-medium leading-none whitespace-nowrap',
         meta.cls,
         className ?? '',
       ]
@@ -125,7 +125,7 @@ export function BadgeFuente({ stubMode, fuente, hideIcon = false, className }: B
             {pill}
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+        <TooltipContent side="top" className="max-w-xs text-caption leading-relaxed">
           {t(`${NS}.${meta.tooltipKey}`)}
         </TooltipContent>
       </Tooltip>

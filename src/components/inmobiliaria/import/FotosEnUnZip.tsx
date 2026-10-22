@@ -106,7 +106,7 @@ export function FotosEnUnZip() {
 
   return (
     <div className="space-y-5" data-testid="fotos-en-un-zip">
-      <div className="rounded-xl border border-border bg-surface p-5">
+      <div className="rounded-lg border border-border bg-surface p-5">
         <p className="text-[15px] font-medium text-fg">Cómo armar el ZIP</p>
         <ul className="mt-2 space-y-1 text-caption text-fg-muted">
           <li>· Una carpeta por inmueble, con su código: el de tu sistema anterior (por ejemplo «4021») o el de Leasefy.</li>
@@ -150,7 +150,7 @@ export function FotosEnUnZip() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: motionDuration.base, ease: motionEase.enter }}
-          className="rounded-xl border border-border bg-surface"
+          className="rounded-lg border border-border bg-surface"
         >
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
             <p className="text-[14.5px] text-fg">

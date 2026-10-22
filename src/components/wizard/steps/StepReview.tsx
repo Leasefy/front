@@ -79,7 +79,7 @@ export function StepReview() {
             <p className="text-sm text-warning font-medium">
               Algunos pasos están incompletos
             </p>
-            <p className="text-xs text-warning/80 mt-1">
+            <p className="text-caption text-warning/80 mt-1">
               Completa todos los pasos antes de enviar tu aplicación.
             </p>
           </div>
@@ -102,7 +102,7 @@ export function StepReview() {
           </p>
           <p className="text-muted-foreground">{personal.currentAddress || '-'}</p>
           {personal.timeAtCurrentAddress !== undefined && personal.timeAtCurrentAddress > 0 && (
-            <p className="text-muted-foreground text-xs">
+            <p className="text-muted-foreground text-caption">
               {personal.timeAtCurrentAddress} meses en dirección actual
             </p>
           )}
@@ -156,7 +156,7 @@ export function StepReview() {
           </div>
           <div className="border-t border-border pt-2 flex justify-between">
             <span className="text-foreground font-medium">Disponible:</span>
-            <span className="font-semibold text-success">
+            <span className="font-medium text-success">
               {income.availableForRent ? formatCurrency(income.availableForRent) : '-'}
             </span>
           </div>
@@ -210,11 +210,11 @@ export function StepReview() {
           <div className="flex flex-col gap-2">
             {consentText ? (
               <div className="border border-border rounded-md bg-muted/30 p-3">
-                <p className="text-xs font-medium text-foreground mb-1.5">
+                <p className="text-caption font-medium text-foreground mb-1.5">
                   {consentText.title}
                 </p>
                 <div
-                  className="text-xs text-muted-foreground leading-relaxed max-h-32 overflow-y-auto pr-1"
+                  className="text-caption text-muted-foreground leading-relaxed max-h-32 overflow-y-auto pr-1"
                   data-testid="consent-text-body"
                 >
                   {consentText.text}
@@ -242,7 +242,7 @@ export function StepReview() {
         </div>
 
         {!acceptTerms || !authorizeVerification ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Acepta los términos y autoriza la verificación para continuar.
           </p>
         ) : null}
@@ -275,7 +275,7 @@ function SummaryCard({ icon, title, onEdit, children }: SummaryCardProps) {
           size="sm"
           hideArrow
           onClick={onEdit}
-          className="text-xs text-muted-foreground hover:text-foreground"
+          className="text-caption text-muted-foreground hover:text-foreground"
         >
           <Pencil className="h-3.5 w-3.5" />
           Editar
@@ -305,7 +305,7 @@ function DocumentStatus({ label, uploaded, required }: DocumentStatusProps) {
       {uploaded ? (
         <Check className="h-4 w-4 text-success" />
       ) : (
-        <span className="h-4 w-4 flex items-center justify-center text-xs">
+        <span className="h-4 w-4 flex items-center justify-center text-caption">
           {required ? '!' : '-'}
         </span>
       )}

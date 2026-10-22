@@ -270,7 +270,7 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
           <p className="text-sm font-medium text-fg truncate">
             {fila.datos.title || fila.datos.address || `Fila ${fila.fila}`}
           </p>
-          <p className="text-xs text-fg-muted truncate">
+          <p className="text-caption text-fg-muted truncate">
             {[fila.datos.address, fila.datos.city].filter(Boolean).join(', ') || 'Sin datos de dirección'}
           </p>
         </div>
@@ -324,7 +324,7 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
       {/* Nico 14-10: el tipo que dice la dirección, para confirmarlo de un clic (nunca se pone solo). */}
       {fila.sugerenciaDeTipo ? (
         <div className="flex flex-wrap items-center gap-2" data-testid="fila-sugerencia-de-tipo">
-          <span className="text-xs text-fg-muted">
+          <span className="text-caption text-fg-muted">
             La dirección dice «{fila.sugerenciaDeTipo.porque}».
           </span>
           <Button
@@ -350,7 +350,7 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
 
       {/* T-0129 — neutral: no frena la fila, sólo avisa cómo va a quedar. */}
       {fila.datosPendientes?.includes('canon') && (
-        <p className="text-xs text-fg-muted" data-testid="fila-sin-canon">
+        <p className="text-caption text-fg-muted" data-testid="fila-sin-canon">
           {AVISO_FILA_SIN_CANON}
         </p>
       )}
@@ -365,9 +365,9 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
           mandato al activar, para verlo aquí y no en la ficha después. */}
       {fila.datos.propietarios && fila.datos.propietarios.length >= 2 && (
         <ul className="space-y-0.5" data-testid="duenos-de-la-fila">
-          <li className="text-xs text-fg-muted">{fila.datos.propietarios.length} propietarios</li>
+          <li className="text-caption text-fg-muted">{fila.datos.propietarios.length} propietarios</li>
           {fila.datos.propietarios.map((p, i) => (
-            <li key={`${p.documento ?? p.nombre ?? i}`} className="flex items-baseline justify-between gap-3 text-xs">
+            <li key={`${p.documento ?? p.nombre ?? i}`} className="flex items-baseline justify-between gap-3 text-caption">
               <span className="min-w-0 truncate text-fg">
                 {p.nombre ?? p.documento ?? 'Sin nombre'}
                 {p.documento && p.nombre ? <span className="text-fg-subtle"> · {p.documento}</span> : null}

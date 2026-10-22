@@ -131,8 +131,8 @@ export function BarChart({
   data,
   maxValue: maxOverride,
   height = 160,
-  color = 'bg-ink dark:bg-muted',
-  secondaryColor = 'bg-muted dark:bg-ink',
+  color = 'bg-ink',
+  secondaryColor = 'bg-muted',
   showLabels = true,
   horizontal = false,
 }: BarChartProps) {
@@ -160,7 +160,7 @@ export function BarChart({
                 <span className="text-foreground font-medium truncate mr-2">
                   {point.label}
                 </span>
-                <span className="text-muted-foreground text-xs whitespace-nowrap">
+                <span className="text-muted-foreground text-caption whitespace-nowrap">
                   {point.value}
                   {hasSecondary &&
                     point.secondaryValue != null &&
@@ -168,7 +168,7 @@ export function BarChart({
                 </span>
               </div>
               <div className="space-y-1">
-                <div className="h-2.5 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
+                <div className="h-2.5 bg-surface-muted rounded-full overflow-hidden">
                   <BarraQueCrece eje="x"
                     className={cn(
                       'h-full rounded-full',
@@ -178,7 +178,7 @@ export function BarChart({
                   />
                 </div>
                 {hasSecondary && point.secondaryValue != null && (
-                  <div className="h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
+                  <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
                     <BarraQueCrece eje="x"
                       className={cn(
                         'h-full rounded-full',

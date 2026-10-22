@@ -290,7 +290,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
               role="alert"
               aria-live="assertive"
               data-testid="cf-cap-banner"
-              className="rounded-lg border border-[#B7791F]/30 bg-[#F8F0E0] px-4 py-3 text-sm text-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F] dark:border-[#B7791F]/30"
+              className="rounded-lg border border-[#B7791F]/30 bg-[#F8F0E0] px-4 py-3 text-sm text-[#B7791F]"
             >
               {t('inmobiliaria.ai.cotizador.askWhy.capExhausted.body', {
                 cap: error && error.code === 429 ? error.cap : capCount,
@@ -308,7 +308,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             <div>
               <label className="block text-sm font-medium mb-1">
                 {t('inmobiliaria.ai.cotizador.askWhy.variableLabels.canon')}
-                <span className="ml-2 font-mono text-xs text-muted-foreground">
+                <span className="ml-2 font-mono text-caption text-muted-foreground">
                   {formatCop(draftValues.canon)}
                 </span>
               </label>
@@ -381,7 +381,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                       disabled={ro}
                       onClick={() => activate('tipo', tipo)}
                       className={[
-                        'relative isolate rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors',
+                        'relative isolate rounded-lg border px-2 py-1.5 text-caption font-medium transition-colors',
                         isActive
                           ? 'border-primary text-primary'
                           : 'border-border bg-card text-foreground hover:bg-muted',
@@ -421,11 +421,11 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                         aria-disabled={ro || draftValues.codeudores <= minC ? 'true' : 'false'}
                         disabled={ro || draftValues.codeudores <= minC}
                         onClick={() => activate('codeudores', draftValues.codeudores - 1)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Minus size={16} />
                       </button>
-                      <span className="min-w-[2rem] text-center text-base font-semibold font-mono tabular-nums">
+                      <span className="min-w-[2rem] text-center text-base font-medium font-mono tabular-nums">
                         <AnimatedNumber value={draftValues.codeudores} format={(n) => String(Math.round(n))} />
                       </span>
                       <button
@@ -434,7 +434,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                         aria-disabled={ro || draftValues.codeudores >= maxC ? 'true' : 'false'}
                         disabled={ro || draftValues.codeudores >= maxC}
                         onClick={() => activate('codeudores', draftValues.codeudores + 1)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Plus size={16} />
                       </button>
@@ -449,7 +449,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
           <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Original */}
             <div className="space-y-2 opacity-60">
-              <h3 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              <h3 className="text-caption font-mono uppercase tracking-wide text-muted-foreground">
                 {t('inmobiliaria.ai.cotizador.askWhy.originalColumn')}
               </h3>
               {originalCarriers.map((c, i) => (
@@ -460,7 +460,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             </div>
             {/* Hypothetical */}
             <div className="space-y-2">
-              <h3 className="text-xs font-mono uppercase tracking-wide text-foreground">
+              <h3 className="text-caption font-mono uppercase tracking-wide text-foreground">
                 {t('inmobiliaria.ai.cotizador.askWhy.hypotheticalColumn')}
               </h3>
               {/* Esperando → consultando → el resultado hipotético: cada
@@ -481,7 +481,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                 </div>
               )}
               {!isLoading && !result && !error && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   {t('inmobiliaria.ai.cotizador.askWhy.noResultPlaceholder')}
                 </p>
               )}
@@ -527,7 +527,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             {/* Error UX (D-33-13) */}
             {error && error.code === 'timeout' && (
               <div className="mt-2 space-y-2">
-                <p role="alert" className="text-sm text-[#C4503B] dark:text-[#E0664D]">
+                <p role="alert" className="text-sm text-[#C4503B]">
                   {/* La frase del hook, ya en español y por el traductor (02-10-2026). */}
                   {error.mensaje || t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
                 </p>
@@ -536,7 +536,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                   data-testid="cf-retry"
                   aria-label={t('inmobiliaria.ai.cotizador.askWhy.retryButton')}
                   onClick={() => { void handleSubmit() }}
-                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs hover:bg-muted"
+                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-caption hover:bg-muted"
                 >
                   {t('inmobiliaria.ai.cotizador.askWhy.retryButton')}
                 </button>
@@ -544,7 +544,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             )}
             {error && (error.code === 500 || error.code === 'network') && (
               <div className="mt-2 space-y-2">
-                <p role="alert" className="text-sm text-[#C4503B] dark:text-[#E0664D]">
+                <p role="alert" className="text-sm text-[#C4503B]">
                   {/* 5xx: «de nuestro lado» + referencia; la red: la conexión. */}
                   {error.mensaje || t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
                 </p>
@@ -553,14 +553,14 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                   data-testid="cf-retry"
                   aria-label={t('inmobiliaria.ai.cotizador.askWhy.retryButton')}
                   onClick={() => { void handleSubmit() }}
-                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs hover:bg-muted"
+                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-caption hover:bg-muted"
                 >
                   {t('inmobiliaria.ai.cotizador.askWhy.retryButton')}
                 </button>
               </div>
             )}
             {error && error.code === 400 && (
-              <p role="alert" className="mt-2 text-sm text-[#C4503B] dark:text-[#E0664D]">
+              <p role="alert" className="mt-2 text-sm text-[#C4503B]">
                 {/* Lo que el micro dijo que está mal, en español; nunca su `error` en inglés. */}
                 {error.mensaje || t('inmobiliaria.ai.cotizador.askWhy.error400Prefix') + error.message}
               </p>
@@ -569,7 +569,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
 
           {/* Footer + Submit */}
           <footer className="space-y-2 border-t border-border pt-3">
-            <p data-testid="cf-footer" className="text-xs text-muted-foreground">
+            <p data-testid="cf-footer" className="text-caption text-muted-foreground">
               {footerText}
             </p>
             <div
@@ -589,7 +589,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                   void handleSubmit()
                 }}
                 className={[
-                  'w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors',
+                  'w-full rounded-lg px-4 py-2.5 text-sm font-medium transition-colors',
                   canSubmit
                     ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                     : 'bg-muted text-muted-foreground cursor-not-allowed',

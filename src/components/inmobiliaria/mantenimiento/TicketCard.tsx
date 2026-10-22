@@ -90,7 +90,7 @@ function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-medium',
         className,
       )}
     >
@@ -128,12 +128,12 @@ export function TicketCard({ ticket, onSelect }: TicketCardProps) {
     >
       {/* Header: title + score pill */}
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-sm font-semibold text-fg leading-snug">
+        <h3 className="text-sm font-medium text-fg leading-snug">
           {ticket.titulo}
         </h3>
         <span
           className={cn(
-            'shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold tabular-nums',
+            'shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-caption font-medium tabular-nums',
             BUCKET_CLASSES[ticket.bucket],
           )}
           aria-label={`${t('inmobiliaria.ai.mantenimiento.card.score')} ${ticket.score} ${bucketLabel}`}
@@ -145,7 +145,7 @@ export function TicketCard({ ticket, onSelect }: TicketCardProps) {
       </div>
 
       {/* Inmueble */}
-      <p className="mt-1.5 flex items-center gap-1 text-xs text-fg-muted">
+      <p className="mt-1.5 flex items-center gap-1 text-caption text-fg-muted">
         <MapPin size={13} weight="duotone" className="shrink-0" />
         <span className="truncate">
           {ticket.inmueble.address}
@@ -159,14 +159,14 @@ export function TicketCard({ ticket, onSelect }: TicketCardProps) {
         <Badge className="bg-surface-muted text-fg-muted" Icon={Wrench}>
           {cat}
         </Badge>
-        <span className="inline-flex items-center gap-1 text-xs text-fg-subtle">
+        <span className="inline-flex items-center gap-1 text-caption text-fg-subtle">
           <Clock size={12} weight="duotone" className="shrink-0" />
           {relativeTime(ticket.createdAt, locale)}
         </span>
       </div>
 
       {/* Proveedor sugerido */}
-      <p className="mt-2 text-xs text-fg-muted">
+      <p className="mt-2 text-caption text-fg-muted">
         <span className="text-fg-subtle">
           {t('inmobiliaria.ai.mantenimiento.card.proveedorSugerido')}:
         </span>{' '}
@@ -182,7 +182,7 @@ export function TicketCard({ ticket, onSelect }: TicketCardProps) {
       </p>
 
       {/* Responsable — ALWAYS a hypothesis, never a verdict (FENCE) */}
-      <p className="mt-1 text-xs text-fg-muted">
+      <p className="mt-1 text-caption text-fg-muted">
         <span aria-hidden="true">≈ </span>
         {responsableLabel}
       </p>

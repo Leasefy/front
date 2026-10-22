@@ -186,14 +186,14 @@ export function TeamManagementSection(
           {teamMembersList.map((member) => (
             <div key={member.id} className="flex items-center justify-between px-4 py-4 sm:px-5">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                  <span className="text-sm font-semibold text-[#1A40FF] dark:text-[#5570FF]">
+                <div className="w-10 h-10 rounded-full bg-[#EEF1FF] flex items-center justify-center">
+                  <span className="text-sm font-medium text-[#1A40FF]">
                     {(member.name || member.email || '?').charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-fg">{member.name || t('landlordSettings.team.pendingInvitation')}</p>
-                  <p className="text-xs text-fg-subtle">{member.email}</p>
+                  <p className="text-caption text-fg-subtle">{member.email}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -208,13 +208,13 @@ export function TeamManagementSection(
                         setEditMemberForm({ name: member.name || '', role: member.role });
                         setShowEditMemberModal(true);
                       }}
-                      className="text-xs text-[#1A40FF] dark:text-[#5570FF] hover:underline"
+                      className="text-caption text-[#1A40FF] hover:underline"
                     >
                       {t('landlordSettings.team.edit')}
                     </button>
                     <button
                       onClick={() => void handleRemoveMember(member)}
-                      className="text-xs text-danger hover:underline"
+                      className="text-caption text-danger hover:underline"
                     >
                       {t('landlordSettings.team.remove')}
                     </button>
@@ -309,7 +309,7 @@ export function TeamManagementSection(
                   className={cn(
                     'w-full flex items-center gap-3 p-4 rounded-lg border transition-colors text-left',
                     inviteForm.role === role.value
-                      ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20'
+                      ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10'
                       : 'border-border hover:border-border-strong bg-surface'
                   )}
                 >
@@ -325,7 +325,7 @@ export function TeamManagementSection(
                   </div>
                   <div>
                     <p className="text-sm font-medium text-fg">{role.label}</p>
-                    <p className="text-xs text-fg-subtle">{role.desc}</p>
+                    <p className="text-caption text-fg-subtle">{role.desc}</p>
                   </div>
                 </button>
               ))}
@@ -401,7 +401,7 @@ export function TeamManagementSection(
                   className={cn(
                     'w-full flex items-center gap-3 p-4 rounded-lg border transition-colors text-left',
                     editMemberForm.role === role.value
-                      ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20'
+                      ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10'
                       : 'border-border hover:border-border-strong bg-surface'
                   )}
                 >
@@ -417,7 +417,7 @@ export function TeamManagementSection(
                   </div>
                   <div>
                     <p className="text-sm font-medium text-fg">{role.label}</p>
-                    <p className="text-xs text-fg-subtle">{role.desc}</p>
+                    <p className="text-caption text-fg-subtle">{role.desc}</p>
                   </div>
                 </button>
               ))}

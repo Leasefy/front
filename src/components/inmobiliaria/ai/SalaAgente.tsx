@@ -159,7 +159,7 @@ function OverviewBody({
         className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
         data-testid="sala-agente-empty"
       >
-        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-muted">
+        <div className="flex items-center justify-center w-14 h-14 rounded-lg bg-surface-muted">
           <EmptyIcon
             weight="duotone"
             className="h-6 w-6 text-fg-subtle"
@@ -167,7 +167,7 @@ function OverviewBody({
           />
         </div>
         <div className="space-y-1.5">
-          <p className="text-[15px] font-semibold text-fg">
+          <p className="text-[15px] font-medium text-fg">
             {t(`${WORKSPACE_NS}.sala.emptyTitle`)}
           </p>
           <p className="text-sm text-fg-subtle max-w-sm leading-relaxed mx-auto">
@@ -194,8 +194,8 @@ function OverviewBody({
               className="rounded-lg border border-border bg-card p-4"
               data-testid={`sala-kpi-${kpi.id}`}
             >
-              <p className="text-xs text-muted-foreground leading-tight">{kpi.label}</p>
-              <p className="text-xl font-semibold text-foreground mt-1 tabular-nums">
+              <p className="text-caption text-muted-foreground leading-tight">{kpi.label}</p>
+              <p className="text-xl font-medium text-foreground mt-1 tabular-nums">
                 <AnimatedNumber
                   value={kpi.value}
                   from={desde}
@@ -209,11 +209,11 @@ function OverviewBody({
 
       {/* Pipeline por estado */}
       <section className="rounded-lg border border-border bg-card p-4 space-y-3" data-testid="sala-pipeline">
-        <h2 className="text-sm font-semibold text-foreground">
+        <h2 className="text-sm font-medium text-foreground">
           {pipelineTitle ?? t(`${WORKSPACE_NS}.sala.pipelineTitle`)}
         </h2>
         {pipelineTotal === 0 ? (
-          <p className="text-xs text-muted-foreground">{t(`${WORKSPACE_NS}.sala.pipelineEmpty`)}</p>
+          <p className="text-caption text-muted-foreground">{t(`${WORKSPACE_NS}.sala.pipelineEmpty`)}</p>
         ) : (
           <>
             {/* La barra crece desde la izquierda (sólo `scaleX`); el ancho de
@@ -257,9 +257,9 @@ function OverviewBody({
 
       {/* Actividad reciente */}
       <section className="rounded-lg border border-border bg-card p-4 space-y-3" data-testid="sala-feed">
-        <h2 className="text-sm font-semibold text-foreground">{t(`${WORKSPACE_NS}.sala.feedTitle`)}</h2>
+        <h2 className="text-sm font-medium text-foreground">{t(`${WORKSPACE_NS}.sala.feedTitle`)}</h2>
         {overview.feed.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{t(`${WORKSPACE_NS}.sala.feedEmpty`)}</p>
+          <p className="text-caption text-muted-foreground">{t(`${WORKSPACE_NS}.sala.feedEmpty`)}</p>
         ) : (
           // Lo que el agente acaba de hacer entra ARRIBA bajando a su lugar.
           <Stagger as="ul" direction="down" className="divide-y divide-border">
@@ -274,7 +274,7 @@ function OverviewBody({
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{entry.titulo}</p>
-                    <p className="text-xs text-muted-foreground truncate">{entry.detalle}</p>
+                    <p className="text-caption text-muted-foreground truncate">{entry.detalle}</p>
                   </div>
                   <span className="text-[11px] text-muted-foreground tabular-nums shrink-0 mt-0.5">
                     {relativeTime(entry.occurredAt, t)}
@@ -317,13 +317,13 @@ export function SalaAgente({
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
           {/* Navegación arriba (breadcrumb en el header + tabs en WorkspaceNav). */}
-          <h1 className="text-2xl font-semibold text-foreground">{titulo}</h1>
+          <h1 className="text-h2 text-foreground">{titulo}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">{descripcion}</p>
         </div>
 
         <Link
           href={colaHref}
-          className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition-[opacity,transform] duration-fast ease-enter"
+          className="shrink-0 inline-flex items-center gap-1.5 text-caption font-medium px-3 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition-[opacity,transform] duration-fast ease-enter"
           data-testid="sala-cola-cta"
         >
           {colaLabel ?? t(`${WORKSPACE_NS}.sala.irACola`)}

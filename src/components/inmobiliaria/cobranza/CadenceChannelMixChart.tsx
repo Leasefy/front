@@ -108,7 +108,7 @@ export function CadenceChannelMixChart({ data }: CadenceChannelMixChartProps) {
 
   return (
     <div>
-      <p className="text-xs font-medium text-fg-subtle mb-2">
+      <p className="text-caption font-medium text-fg-subtle mb-2">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.channelMix.title')}
       </p>
       <ResponsiveContainer width="100%" height={280}>

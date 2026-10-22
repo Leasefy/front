@@ -93,7 +93,7 @@ export function TipoDeLasFilasSinTipo({
       data-testid="tipo-de-las-filas-sin-tipo"
     >
       <div>
-        <h3 className="text-sm font-semibold text-fg">
+        <h3 className="text-sm font-medium text-fg">
           {totalSinTipo > 0
             ? `${filas(totalSinTipo)} sin tipo de inmueble`
             : 'Filas que no son inmuebles'}

@@ -123,7 +123,7 @@ export function ConciliacionResumen({ data, isLoading, showSkeleton }: Conciliac
           data-testid={`conciliacion-total-${kpi.id}`}
         >
           <p className="text-caption text-fg-muted">{kpi.label}</p>
-          <p className="mt-1.5 text-2xl font-semibold tabular-nums text-fg">
+          <p className="mt-1.5 text-2xl font-medium tabular-nums text-fg">
             {kpi.valor === null ? formatTasa(null) : <AnimatedNumber value={kpi.valor} format={kpi.formato} />}
           </p>
         </div>
@@ -165,7 +165,7 @@ export function HallazgosDelAgente({ data, colaHref }: HallazgosDelAgenteProps) 
                 aria-hidden="true"
               />
             </span>
-            <h2 className="text-base font-semibold text-fg">Lo que encontró el agente</h2>
+            <h2 className="text-base font-medium text-fg">Lo que encontró el agente</h2>
           </div>
 
           {enCola > 0 ? (
@@ -187,7 +187,7 @@ export function HallazgosDelAgente({ data, colaHref }: HallazgosDelAgenteProps) 
                   className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-1 text-caption text-fg-muted"
                   data-testid={`conciliacion-hallazgo-${h.tipo}`}
                 >
-                  <span className="font-semibold tabular-nums text-fg">
+                  <span className="font-medium tabular-nums text-fg">
                     <AnimatedNumber value={h.cantidad} format={(n) => String(Math.round(n))} />
                   </span>
                   {h.etiqueta}

@@ -142,7 +142,7 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
         <p className="text-sm font-medium text-foreground">
           {t('inmobiliaria.ai.workspace.traza.emptyTitle')}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <p className="text-caption text-muted-foreground mt-0.5">
           {t('inmobiliaria.ai.workspace.traza.emptyBody')}
         </p>
       </div>

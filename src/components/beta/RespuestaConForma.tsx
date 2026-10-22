@@ -462,7 +462,7 @@ export function TarjetaDeEntidad({
       }
     >
       <div>
-        <p className="font-body text-[17px] font-semibold leading-snug text-fg">{entidad.titulo}</p>
+        <p className="font-body text-[17px] font-medium leading-snug text-fg">{entidad.titulo}</p>
         {(entidad.documento || entidad.telefono || entidad.correo) && (
           <p className="mt-0.5 font-mono text-[13px] tabular-nums text-fg-muted">
             {[entidad.documento, entidad.telefono, entidad.correo].filter(Boolean).join(' · ')}

@@ -134,7 +134,7 @@ export function ThresholdVersionsTable({
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
       <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center justify-between">
-        <MonoLabel className="text-xs text-muted-foreground">
+        <MonoLabel className="text-caption text-muted-foreground">
           {t('inmobiliaria.ai.cobranza.reporte.thresholds.versionsHeading')}
         </MonoLabel>
         {!supported && (

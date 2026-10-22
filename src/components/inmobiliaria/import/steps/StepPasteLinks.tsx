@@ -135,17 +135,17 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+        <h2 className="text-h3 text-fg mb-1">
           Pega los enlaces de tus inmuebles
         </h2>
-        <p className="text-sm text-fg-muted dark:text-fg-subtle">
+        <p className="text-sm text-fg-muted">
           Uno por línea. Leemos cada ficha y armamos el inmueble con sus fotos.
         </p>
       </div>
 
       <div className="rounded-md bg-surface-muted border border-border p-3 flex items-start gap-2">
         <LinkSimple className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5" aria-hidden="true" />
-        <p className="text-body-sm text-fg-muted dark:text-fg-subtle">
+        <p className="text-body-sm text-fg-muted">
           Sirve el mismo enlace que mandas por WhatsApp: el de SIMI, Daytona, Nuby,
           Wasi, FincaRaíz, Metrocuadrado o Ciencuadras. Si la ficha se ve en el
           navegador sin entrar con usuario, se puede leer.
@@ -158,13 +158,13 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
           onChange={(e) => setPegado(e.target.value)}
           disabled={leyendo}
           rows={7}
-          className="font-mono text-xs"
+          className="font-mono text-caption"
           aria-label="Enlaces de los inmuebles"
           data-testid="enlaces-textarea"
           placeholder={'https://www.fincaraiz.com.co/inmueble/...\nhttps://mi-inmobiliaria.wasi.co/propiedad/...\nhttps://app.simi.net.co/ficha/...'}
         />
         <div className="flex items-center justify-between">
-          <p className="text-xs text-fg-subtle dark:text-fg-muted" data-testid="enlaces-contados">
+          <p className="text-caption text-fg-subtle" data-testid="enlaces-contados">
             {enlaces.length === 0
               ? 'Ningún enlace todavía'
               : `${enlaces.length} ${enlaces.length === 1 ? 'enlace' : 'enlaces'} para leer`}
@@ -187,7 +187,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
           Se cuenta, como en la geocodificación — un texto fijo parece colgado. */}
       {leyendo && (
         <div className="space-y-2">
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          <p className="text-sm text-fg-muted">
             Leyendo las fichas — {avance.listos} de {avance.total}
           </p>
           <Progress
@@ -263,42 +263,42 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
                     aria-hidden="true"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-fg dark:text-white truncate">
+                    <p className="text-sm font-medium text-fg truncate">
                       {p.propertyTitle ?? 'Inmueble sin título'}
                     </p>
-                    <p className="text-xs font-mono text-fg-subtle truncate">{p.enlaceOrigen}</p>
+                    <p className="text-caption font-mono text-fg-subtle truncate">{p.enlaceOrigen}</p>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                      <span className="text-xs text-fg-muted">
+                      <span className="text-caption text-fg-muted">
                         {p.imagenes?.length ?? 0}{' '}
                         {(p.imagenes?.length ?? 0) === 1 ? 'foto' : 'fotos'}
                       </span>
                       {p.propertyZone && (
-                        <span className="text-xs text-fg-muted">{p.propertyZone}</span>
+                        <span className="text-caption text-fg-muted">{p.propertyZone}</span>
                       )}
                       {p.propertyArea && (
-                        <span className="text-xs text-fg-muted">{p.propertyArea} m²</span>
+                        <span className="text-caption text-fg-muted">{p.propertyArea} m²</span>
                       )}
                       {/* Qué se ofrece y por cuánto, en la misma línea: una
                           venta de $320.000.000 que se lee como un canon mensual
                           pasa desapercibida si el precio no dice de qué es. */}
                       {p.salePrice ? (
-                        <span className="text-xs text-fg-muted" data-testid={`negocio-${p._rowIndex}`}>
+                        <span className="text-caption text-fg-muted" data-testid={`negocio-${p._rowIndex}`}>
                           venta · {formatearPesos(p.salePrice)}
                         </span>
                       ) : p.monthlyRent ? (
-                        <span className="text-xs text-fg-muted" data-testid={`negocio-${p._rowIndex}`}>
+                        <span className="text-caption text-fg-muted" data-testid={`negocio-${p._rowIndex}`}>
                           arriendo · {formatearPesos(p.monthlyRent)}/mes
                         </span>
                       ) : null}
                       {otrosFaltantes.length > 0 && (
-                        <span className="text-xs text-warning">
+                        <span className="text-caption text-warning">
                           falta {otrosFaltantes.join(', ')}
                         </span>
                       )}
                       {/* No falta, pero tampoco es de fiar: la calle no vino y
                           se completó con una referencia o el municipio. */}
                       {direccionEsAproximada && !leFaltaDireccion && (
-                        <span className="text-xs text-warning" data-testid={`direccion-aproximada-${p._rowIndex}`}>
+                        <span className="text-caption text-warning" data-testid={`direccion-aproximada-${p._rowIndex}`}>
                           dirección aproximada
                         </span>
                       )}
@@ -314,7 +314,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
                       <div className="mt-2">
                         <label
                           className={cn(
-                            'block text-xs mb-1',
+                            'block text-caption mb-1',
                             leFaltaDireccion || direccionEsAproximada ? 'text-warning' : 'text-fg-muted',
                           )}
                           htmlFor={`direccion-${p._rowIndex}`}
@@ -350,7 +350,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
                   aria-hidden="true"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-mono text-fg-subtle truncate">{r.url}</p>
+                  <p className="text-caption font-mono text-fg-subtle truncate">{r.url}</p>
                   <p className="text-sm text-danger mt-0.5">{r.mensaje}</p>
                 </div>
               </li>
@@ -389,7 +389,7 @@ function Recuadro({
     >
       <MonoLabel
         className={cn(
-          'flex items-center gap-1 text-xs mb-1',
+          'flex items-center gap-1 text-caption mb-1',
           tono === 'success' ? 'text-success' : tono === 'danger' ? 'text-danger' : 'text-fg-muted',
         )}
       >
@@ -398,7 +398,7 @@ function Recuadro({
       </MonoLabel>
       <p
         className={cn(
-          'text-2xl font-bold',
+          'text-2xl font-medium',
           tono === 'success' ? 'text-success' : tono === 'danger' ? 'text-danger' : 'text-fg',
         )}
       >

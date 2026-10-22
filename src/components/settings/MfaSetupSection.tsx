@@ -373,7 +373,7 @@ export function MfaSetupSection({
           </div>
           <div>
             <p className="text-sm font-medium text-fg">Autenticación de dos factores</p>
-            <p className="text-xs text-fg-subtle">Cargando...</p>
+            <p className="text-caption text-fg-subtle">Cargando...</p>
           </div>
         </div>
         <Spinner size="sm" variant="muted" />
@@ -405,7 +405,7 @@ export function MfaSetupSection({
             size="sm"
             hideArrow
             onClick={abrirDesactivar}
-            className="rounded-md text-xs text-danger border-danger/30 hover:bg-danger-soft"
+            className="rounded-md text-caption text-danger border-danger/30 hover:bg-danger-soft"
           >
             Desactivar
           </Button>
@@ -514,7 +514,7 @@ export function MfaSetupSection({
           </div>
           <div>
             <p className="text-sm font-medium text-fg">Configurar 2FA</p>
-            <p className="text-xs text-fg-subtle">Escanea el código QR con tu app de autenticación</p>
+            <p className="text-caption text-fg-subtle">Escanea el código QR con tu app de autenticación</p>
           </div>
         </div>
 
@@ -531,9 +531,9 @@ export function MfaSetupSection({
 
         {/* Secret key for manual entry */}
         <div className="p-3 bg-surface-muted rounded-lg">
-          <p className="text-xs text-fg-subtle mb-1">O ingresa este código manualmente:</p>
+          <p className="text-caption text-fg-subtle mb-1">O ingresa este código manualmente:</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-xs font-mono text-fg break-all select-all">
+            <code className="flex-1 text-caption font-mono text-fg break-all select-all">
               {enrollData.secret}
             </code>
             <IconButton
@@ -603,7 +603,7 @@ export function MfaSetupSection({
         </div>
         <div>
           <p className="text-sm font-medium text-fg">Autenticación de dos factores</p>
-          <p className="text-xs text-fg-subtle">Capa extra de seguridad para tu cuenta</p>
+          <p className="text-caption text-fg-subtle">Capa extra de seguridad para tu cuenta</p>
         </div>
       </div>
       <Button
@@ -612,7 +612,7 @@ export function MfaSetupSection({
         hideArrow
         onClick={() => void handleStartEnroll()}
         disabled={isLoading}
-        className="rounded-md text-xs bg-success text-white hover:bg-success"
+        className="rounded-md text-caption bg-success text-white hover:bg-success"
       >
         {isLoading ? <Spinner size="xs" variant="current" /> : <Shield className="w-3.5 h-3.5" />}
         {isLoading ? 'Cargando...' : 'Activar'}

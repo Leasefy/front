@@ -54,10 +54,10 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
           encabezado que tenía afuera, y una barra de colores con códigos S0…SX
           y ningún texto no dice qué es. */}
       <div className="mb-3">
-        <h3 className="text-sm font-semibold text-fg">
+        <h3 className="text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cobranza.overview.funnel.title')}
         </h3>
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {tr("Qué porcentaje de tus casos está en cada etapa de mora.")}
         </p>
       </div>
@@ -103,7 +103,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
       {/* Legend */}
       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
         {stagesWithPct.map(({ stage, pct, colors, label }) => (
-          <div key={stage} className="flex items-center gap-1.5 text-xs text-fg-subtle">
+          <div key={stage} className="flex items-center gap-1.5 text-caption text-fg-subtle">
             <span className={`inline-block w-2.5 h-2.5 rounded-sm ${colors.bg} border ${colors.border}`} />
             {/* El nombre primero: «S3» no significa nada para quien no se
                 sabe la taxonomía de memoria. El código queda de apoyo. */}

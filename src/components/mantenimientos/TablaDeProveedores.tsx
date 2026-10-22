@@ -270,7 +270,7 @@ export function TablaDeProveedores({
   const cajonChip = (valor: Cajon, etiqueta: string) => (
     <Chip selected={cajon === valor} onClick={() => setCajon(valor)} data-testid={`cajon-${valor}`}>
       {etiqueta}
-      <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">
+      <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-caption tabular-nums">
         {conteos[valor]}
       </span>
     </Chip>
@@ -288,8 +288,8 @@ export function TablaDeProveedores({
             <Wrench className="h-[18px] w-[18px] text-fg-muted" weight="duotone" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-foreground">A quién llamas</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <h2 className="text-base font-medium text-foreground">A quién llamas</h2>
+            <p className="mt-0.5 text-caption text-muted-foreground">
               Arriba quedan los que tienen algo pendiente en sus papeles: a esos
               no se les puede facturar ni mandar a un inmueble todavía.
             </p>
@@ -345,7 +345,7 @@ export function TablaDeProveedores({
           que poder conciliarse. */}
       {hayFiltros && (
         <p
-          className="border-b border-border px-5 py-2 text-xs text-fg-muted"
+          className="border-b border-border px-5 py-2 text-caption text-fg-muted"
           data-testid="alcance-de-proveedores"
         >
           {filtrados.length} de {proveedores.length}{' '}
@@ -428,7 +428,7 @@ export function TablaDeProveedores({
                       quedaba con el elemento más brillante de su fila. */}
                   {!p.activo && <Badge variant="outline">Inactivo</Badge>}
                 </div>
-                <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{p.documento}</p>
+                <p className="mt-0.5 text-caption tabular-nums text-muted-foreground">{p.documento}</p>
               </TableCell>
 
               <TableCell className="max-w-[200px] px-5 py-4 align-top text-muted-foreground max-md:block max-md:max-w-none max-md:p-0">
@@ -437,7 +437,7 @@ export function TablaDeProveedores({
                     {p.telefono ? (
                       <p className="tabular-nums text-foreground">{p.telefono}</p>
                     ) : null}
-                    {p.correo ? <p className="truncate text-xs">{p.correo}</p> : null}
+                    {p.correo ? <p className="truncate text-caption">{p.correo}</p> : null}
                   </>
                 ) : (
                   <span>—</span>
@@ -462,7 +462,7 @@ export function TablaDeProveedores({
               <TableCell className="px-5 py-4 align-top max-md:block max-md:p-0">
                 <Estrellas calificacion={p.calificacion} trabajos={p.trabajosCalificados} />
                 {p.reaperturasPorGarantia > 0 && (
-                  <p className="mt-1 text-xs text-warning">
+                  <p className="mt-1 text-caption text-warning">
                     {p.reaperturasPorGarantia === 1
                       ? 'Un trabajo hubo que rehacerlo en garantía'
                       : `${p.reaperturasPorGarantia} trabajos hubo que rehacerlos en garantía`}
@@ -479,14 +479,14 @@ export function TablaDeProveedores({
                 {p.avisos.length > 0 ? (
                   <ul className="space-y-1" data-testid="avisos-del-proveedor">
                     {p.avisos.map((a) => (
-                      <li key={a} className="flex items-start gap-1.5 text-xs text-warning">
+                      <li key={a} className="flex items-start gap-1.5 text-caption text-warning">
                         <WarningCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         <span>{a}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <div className="text-xs">
+                  <div className="text-caption">
                     {/* «Al día» no grita: en una tabla sana es lo que dicen casi
                         todas las filas, y el único color de la columna tiene
                         que quedar para lo que sí pide una acción hoy. */}
@@ -574,10 +574,10 @@ function Estrellas({
   trabajos: number;
 }) {
   if (calificacion === null) {
-    return <span className="text-xs text-muted-foreground">Sin calificar todavía</span>;
+    return <span className="text-caption text-muted-foreground">Sin calificar todavía</span>;
   }
   return (
-    <span className="flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground">
+    <span className="flex items-center gap-1 whitespace-nowrap text-caption text-muted-foreground">
       <Star className="h-3.5 w-3.5 text-warning" weight="fill" />
       <span className="font-medium tabular-nums text-foreground">{calificacion.toFixed(1)}</span>
       <span>

@@ -130,8 +130,8 @@ export function AcuerdosGeneralesTabla() {
     <Card>
       <div className="flex items-start justify-between gap-4 flex-wrap border-b border-border px-4 py-3">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-fg">Acuerdos generales</h2>
-          <p className="text-xs text-fg-muted max-w-xl leading-relaxed">
+          <h2 className="text-sm font-medium text-fg">Acuerdos generales</h2>
+          <p className="text-caption text-fg-muted max-w-xl leading-relaxed">
             Las reglas que el agente cierra solo: «si el deudor cabe aquí, tómalo
             y no me preguntes». Sin ninguno sólo se acepta el pago total: sin
             descuento y sin cuotas, ni del agente ni en un acuerdo armado a mano.
@@ -198,7 +198,7 @@ export function AcuerdosGeneralesTabla() {
           <p className="text-sm font-medium text-fg">
             Todavía no escribiste ningún acuerdo general
           </p>
-          <p className="text-xs text-fg-muted max-w-md">
+          <p className="text-caption text-fg-muted max-w-md">
             {/* QA-AGENTES 16-10: decía que el agente negociaba «con las condiciones
                 que trae Leasefy por etapa». Desde la regla del 18-09 (micro
                 459b5783) sin acuerdo general es pago total: sin descuento y sin
@@ -234,12 +234,12 @@ export function AcuerdosGeneralesTabla() {
                 <TableRowAnimada key={a.id} data-testid={`acuerdo-general-${a.id}`}>
                   <TableCell>
                     <span className="font-medium text-fg">{a.name}</span>
-                    <span className="block text-xs text-fg-muted">{a.conditionEs}</span>
+                    <span className="block text-caption text-fg-muted">{a.conditionEs}</span>
                   </TableCell>
-                  <TableCell className="text-fg-muted text-xs max-w-[18rem]">
+                  <TableCell className="text-fg-muted text-caption max-w-[18rem]">
                     {cuandoAplica(a)}
                   </TableCell>
-                  <TableCell className="text-fg-muted text-xs max-w-[18rem]">
+                  <TableCell className="text-fg-muted text-caption max-w-[18rem]">
                     {queOfrece(a)}
                   </TableCell>
                   {/* Números alineados: es una columna que se compara. */}
@@ -284,7 +284,7 @@ export function AcuerdosGeneralesTabla() {
       </CrossFade>
 
       {acuerdos.length > 1 && (
-        <p className="border-t border-border px-4 py-2 text-xs text-fg-muted">
+        <p className="border-t border-border px-4 py-2 text-caption text-fg-muted">
           Si un deudor califica para varios, gana el de mayor prioridad.
         </p>
       )}

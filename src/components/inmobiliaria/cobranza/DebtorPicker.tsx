@@ -101,7 +101,7 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
             <p className="text-sm font-medium text-fg truncate">
               {value.fullName}
             </p>
-            <p className="text-xs text-fg-muted font-mono tabular-nums">
+            <p className="text-caption text-fg-muted font-mono tabular-nums">
               {value.cedulaMasked}
             </p>
           </div>
@@ -114,7 +114,7 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
             onChange(null)
             setQuery('')
           }}
-          className="shrink-0 gap-1 h-auto px-2 py-1 text-xs text-fg-muted hover:text-fg [&_svg]:size-3.5"
+          className="shrink-0 gap-1 h-auto px-2 py-1 text-caption text-fg-muted hover:text-fg [&_svg]:size-3.5"
         >
           <X className="w-3.5 h-3.5" aria-hidden="true" />
           Cambiar
@@ -140,9 +140,9 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
         />
       </div>
 
-      {hint && <p className="text-xs text-fg-muted">{hint}</p>}
+      {hint && <p className="text-caption text-fg-muted">{hint}</p>}
 
-      <Presence as="p" show={Boolean(error)} className="text-xs text-danger">
+      <Presence as="p" show={Boolean(error)} className="text-caption text-danger">
           No pudimos cargar los deudores. {error}
       </Presence>
 
@@ -158,7 +158,7 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
           Buscando…
         </div>
       ) : pages.length === 0 && !error ? (
-        <p className="px-1 py-3 text-xs text-fg-muted">
+        <p className="px-1 py-3 text-caption text-fg-muted">
           {payload
             ? 'Ningún deudor coincide con esa búsqueda.'
             : 'Aún no hay deudores en la cartera.'}
@@ -190,7 +190,7 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
                   <span className="block text-sm text-fg truncate">
                     {d.fullName}
                   </span>
-                  <span className="block text-xs text-fg-muted font-mono tabular-nums">
+                  <span className="block text-caption text-fg-muted font-mono tabular-nums">
                     {d.cedulaMasked}
                   </span>
                 </button>
@@ -198,7 +198,7 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
             ))}
           </Stagger>
           {sobrantes > 0 && (
-            <p className="text-xs text-fg-muted tabular-nums">
+            <p className="text-caption text-fg-muted tabular-nums">
               {sobrantes} resultado{sobrantes === 1 ? '' : 's'} más — afina la
               búsqueda.
             </p>

@@ -101,7 +101,7 @@ export function AcuerdosTabla({
           onChange={onFiltro}
           aria-label="Filtrar acuerdos por estado"
         />
-        <span className="text-xs text-fg-muted tabular-nums">
+        <span className="text-caption text-fg-muted tabular-nums">
           <AnimatedNumber value={total} format={(n) => String(Math.round(n))} />{' '}
           {total === 1 ? 'acuerdo' : 'acuerdos'}
         </span>
@@ -141,7 +141,7 @@ export function AcuerdosTabla({
               ? 'Todavía no hay acuerdos de pago'
               : 'Sin acuerdos en este estado'}
           </p>
-          <p className="text-xs text-fg-muted max-w-sm">
+          <p className="text-caption text-fg-muted max-w-sm">
             {filtro === 'todos'
               ? 'Aquí aparece lo que cada deudor se comprometió a pagar: lo que el agente registra en una llamada y los planes de cuotas que armes.'
               : 'Cambia el filtro para ver los demás.'}

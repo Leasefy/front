@@ -71,7 +71,7 @@ export function FormasDeOfrecerElAcuerdo({ puedeCambiar }: { puedeCambiar: boole
       aria-labelledby="heading-formas-del-acuerdo"
     >
       <div>
-        <h2 id="heading-formas-del-acuerdo" className="text-xl font-semibold text-foreground">
+        <h2 id="heading-formas-del-acuerdo" className="text-xl font-medium text-foreground">
           Formas de ofrecer el acuerdo
         </h2>
         <p className="text-sm text-fg-muted mt-1 max-w-2xl">

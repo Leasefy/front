@@ -196,15 +196,15 @@ export function ForceStageModal({
                 </p>
                 <p className="mt-0.5 text-sm font-medium text-fg">
                   {stageDisplayName(currentStage, locale)}
-                  <span className="ml-1.5 font-mono text-xs text-fg-subtle">{currentStage}</span>
+                  <span className="ml-1.5 font-mono text-caption text-fg-subtle">{currentStage}</span>
                 </p>
-                <p className="mt-1 text-xs leading-relaxed text-fg-muted">
+                <p className="mt-1 text-caption leading-relaxed text-fg-muted">
                   {stageAgentPlan(currentStage, locale)}
                 </p>
               </div>
 
               <label className="block">
-                <span className="text-xs font-medium text-fg-subtle">
+                <span className="text-caption font-medium text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.targetLabel')}
                 </span>
                 <Select
@@ -261,7 +261,7 @@ export function ForceStageModal({
                   <p className="text-[11px] font-medium uppercase tracking-wide text-primary">
                     {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.effectLabel')}
                   </p>
-                  <CrossFade as="p" swapKey={targetVisible} mode="popLayout" direction="none" className="mt-1 text-xs leading-relaxed text-fg">
+                  <CrossFade as="p" swapKey={targetVisible} mode="popLayout" direction="none" className="mt-1 text-caption leading-relaxed text-fg">
                     {stageAgentPlan(targetVisible, locale)}
                   </CrossFade>
                   <p className="mt-1.5 text-[11px] leading-relaxed text-fg-muted">
@@ -272,7 +272,7 @@ export function ForceStageModal({
               </Collapse>
 
               <label className="block">
-                <span className="text-xs font-medium text-fg-subtle">
+                <span className="text-caption font-medium text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonLabel')}
                 </span>
                 <Textarea
@@ -296,7 +296,7 @@ export function ForceStageModal({
             </div>
           ))}
 
-        <Presence as="p" show={Boolean(error)} role="alert" className="text-xs text-danger" data-testid="intervencion-error">
+        <Presence as="p" show={Boolean(error)} role="alert" className="text-caption text-danger" data-testid="intervencion-error">
             {error}
         </Presence>
 

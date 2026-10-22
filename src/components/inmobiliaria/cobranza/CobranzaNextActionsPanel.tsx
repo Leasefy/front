@@ -42,7 +42,7 @@ function StageBadge({ stage }: { stage: string }) {
   return (
     <span
       title={stage}
-      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${colors.bg} ${colors.text} border ${colors.border}`}
+      className={`inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium ${colors.bg} ${colors.text} border ${colors.border}`}
     >
       {label}
     </span>
@@ -66,7 +66,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
       <p className="text-sm text-fg-subtle">
         {t('inmobiliaria.ai.cobranza.overview.nextActions.empty')}
       </p>
-      <p className="text-xs text-fg-muted max-w-xs">
+      <p className="text-caption text-fg-muted max-w-xs">
         {tr("El agente programa los contactos solo; aquí aparecen a medida que los agenda.")}
       </p>
     </div>
@@ -98,7 +98,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
               <p className="text-sm font-medium text-fg truncate">
                 {action.debtorNameRedacted}
               </p>
-              <p className="text-xs text-fg-subtle">
+              <p className="text-caption text-fg-subtle">
                 {formatTime(action.plannedFor)}
               </p>
             </div>
@@ -116,7 +116,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
       {/* Flat list — md+ */}
       <div className="hidden md:block rounded-lg border border-border bg-card">
         <div className="px-5 py-4 border-b border-border-faint">
-          <h2 className="text-base font-semibold text-fg">
+          <h2 className="text-base font-medium text-fg">
             {t('inmobiliaria.ai.cobranza.overview.nextActions.title')}
           </h2>
         </div>
@@ -126,7 +126,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
       {/* Accordion — sm */}
       <details className="md:hidden rounded-lg border border-border bg-card group">
         <summary className="px-5 py-4 cursor-pointer flex items-center justify-between list-none">
-          <span className="text-base font-semibold text-fg">
+          <span className="text-base font-medium text-fg">
             {t('inmobiliaria.ai.cobranza.overview.nextActions.title')}
           </span>
           <CaretDown

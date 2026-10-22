@@ -178,13 +178,13 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
           <div className="mx-6 mt-5 rounded-lg border border-border bg-surface-muted p-4 animate-content-reveal" style={{ animationDelay: '0.15s' }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-fg-subtle">Resultado</p>
-                <p className="text-lg font-semibold text-fg mt-0.5">
+                <p className="text-caption text-fg-subtle">Resultado</p>
+                <p className="text-lg font-medium text-fg mt-0.5">
                   Score {activity.metadata.score}/100
                 </p>
               </div>
               <span className={cn(
-                'w-10 h-10 rounded-xl flex items-center justify-center text-base font-bold',
+                'w-10 h-10 rounded-lg flex items-center justify-center text-base font-medium',
                 activity.metadata.level === 'A' && 'bg-success-soft text-success',
                 activity.metadata.level === 'B' && 'bg-primary-soft text-primary',
                 activity.metadata.level === 'C' && 'bg-warning-soft text-warning',
@@ -200,7 +200,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
         )}
 
         {/* Status bar */}
-        <div className="mx-6 mt-5 flex items-center gap-4 text-xs text-fg-subtle animate-content-reveal" style={{ animationDelay: '0.2s' }}>
+        <div className="mx-6 mt-5 flex items-center gap-4 text-caption text-fg-subtle animate-content-reveal" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center gap-1.5">
             {activity.status === 'success' ? (
               <CheckCircle weight="fill" className="h-3.5 w-3.5 text-success" />
@@ -231,7 +231,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
             trae pasos —trae el desenlace—, así que eso es lo que se muestra, y
             el hueco se dice en vez de rellenarse. */}
         <div className="px-6 py-5 animate-content-reveal" style={{ animationDelay: '0.25s' }} data-testid="actividad-resultado">
-          <h3 className="text-sm font-semibold text-fg mb-3">Qué devolvió el agente</h3>
+          <h3 className="text-sm font-medium text-fg mb-3">Qué devolvió el agente</h3>
           {resultado ? (
             <p className="text-sm text-fg-muted leading-relaxed">{resultado}</p>
           ) : (
@@ -241,7 +241,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
           )}
 
           <div className="mt-4 rounded-lg border border-border bg-surface-muted px-4 py-3">
-            <p className="text-xs text-fg-subtle leading-relaxed" data-testid="actividad-sin-paso-a-paso">
+            <p className="text-caption text-fg-subtle leading-relaxed" data-testid="actividad-sin-paso-a-paso">
               El paso a paso de la ejecución no se guarda: el agente registra el
               resultado y cuánto tardó, no cada operación que hizo para llegar
               ahí.
@@ -249,7 +249,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
           </div>
 
           {activity.metadata?.applicationId && (
-            <p className="mt-3 text-xs text-fg-subtle">
+            <p className="mt-3 text-caption text-fg-subtle">
               Postulación{' '}
               <span className="font-mono tabular-nums">
                 {activity.metadata.applicationId}
@@ -270,7 +270,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
               {/* What happened */}
               <div>
                 <h4 className={cn(
-                  'text-xs font-semibold uppercase tracking-wide mb-1.5',
+                  'text-caption font-medium uppercase tracking-wide mb-1.5',
                   errorContext.severity === 'critical' ? 'text-danger' : 'text-warning',
                 )}>
                   Qué pasó
@@ -283,7 +283,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
               {/* Why it matters */}
               <div>
                 <h4 className={cn(
-                  'text-xs font-semibold uppercase tracking-wide mb-1.5',
+                  'text-caption font-medium uppercase tracking-wide mb-1.5',
                   errorContext.severity === 'critical' ? 'text-danger' : 'text-warning',
                 )}>
                   Por qué importa
@@ -296,7 +296,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
               {/* What to do */}
               <div>
                 <h4 className={cn(
-                  'text-xs font-semibold uppercase tracking-wide mb-1.5',
+                  'text-caption font-medium uppercase tracking-wide mb-1.5',
                   errorContext.severity === 'critical' ? 'text-danger' : 'text-warning',
                 )}>
                   Qué hacer
@@ -305,7 +305,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
                   {errorContext.whatToDo.map((step, i) => (
                     <li key={i} className="flex gap-2.5 text-sm text-fg-muted">
                       <span className={cn(
-                        'flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5',
+                        'flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium mt-0.5',
                         errorContext.severity === 'critical'
                           ? 'bg-danger-soft text-danger'
                           : 'bg-warning-soft text-warning',

@@ -161,7 +161,7 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
       <Link href={`/panel/inmobiliaria/configuracion/agentes?agent=${agent.id}`} className="group block rounded-lg border border-border bg-surface p-4 hover:border-border-strong hover:shadow-sm transition-all overflow-hidden cursor-pointer">
         {/* Header: badge + active + info */}
         <div className="flex items-center gap-2 mb-3">
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-surface-muted text-fg-subtle">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-surface-muted text-fg-subtle">
             <Robot weight="bold" className="h-2.5 w-2.5" />
             Agente AI
           </span>
@@ -181,11 +181,11 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
           <div className={cn('rounded-md p-2 flex-shrink-0', agent.colorBg)}>
             <AgentIcon weight="duotone" className={cn('h-4 w-4', agent.color)} />
           </div>
-          <h3 className="font-semibold text-sm text-fg truncate flex-1">{name}</h3>
+          <h3 className="font-medium text-sm text-fg truncate flex-1">{name}</h3>
         </div>
 
         {/* Description */}
-        <p className="mt-2 text-xs text-fg-subtle line-clamp-2">
+        <p className="mt-2 text-caption text-fg-subtle line-clamp-2">
           {description}
         </p>
 
@@ -195,7 +195,7 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
             {metrics.map((m) => (
               <div key={m.label}>
                 <p className="text-[11px] text-fg-subtle">{m.label}</p>
-                <p className="text-base font-semibold text-fg font-mono tabular-nums">{m.value}</p>
+                <p className="text-base font-medium text-fg font-mono tabular-nums">{m.value}</p>
               </div>
             ))}
           </div>
@@ -263,7 +263,7 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
                   size="sm"
                   hideArrow
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (trace) setShowExecution(true); }}
-                  className="h-auto whitespace-nowrap p-0 text-xs"
+                  className="h-auto whitespace-nowrap p-0 text-caption"
                 >
                   {locale === 'es' ? 'Ver trace' : 'View trace'}
                 </Button>
@@ -300,7 +300,7 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
         )}
 
         {/* View detail hint */}
-        <div className="mt-2.5 flex items-center gap-1 text-xs text-fg-subtle group-hover:text-primary transition-colors">
+        <div className="mt-2.5 flex items-center gap-1 text-caption text-fg-subtle group-hover:text-primary transition-colors">
           {locale === 'es' ? 'Ver detalle del agente' : 'View agent detail'}
           <ArrowRight className="h-3 w-3" />
         </div>

@@ -56,8 +56,8 @@ const ICON_COLORS: Record<string, string> = {
   emerald: 'text-success',
   blue: 'text-primary',
   amber: 'text-warning',
-  purple: 'text-neutral-600 dark:text-neutral-300',
-  pink: 'text-neutral-600 dark:text-neutral-300',
+  purple: 'text-neutral-600',
+  pink: 'text-neutral-600',
   indigo: 'text-primary',
 };
 
@@ -148,11 +148,11 @@ export function AgentResultCard({
   return (
     <div
       className={cn(
-        'border border-neutral-200/60 dark:border-border/50',
+        'border border-neutral-200/60',
         'border-l-[3px]',
         borderColor,
         'rounded-md overflow-hidden',
-        'bg-white/60 dark:bg-card/60',
+        'bg-white/60',
         'transition-all duration-200',
         className
       )}
@@ -165,8 +165,8 @@ export function AgentResultCard({
         aria-label={`${meta.label}: ${isExpanded ? t('beta.agents.hideDetails') : t('beta.agents.showDetails')}`}
         className={cn(
           'w-full flex items-center gap-2 px-3 py-2',
-          'text-left text-xs',
-          'hover:bg-neutral-50/80 dark:hover:bg-neutral-800/30',
+          'text-left text-caption',
+          'hover:bg-neutral-50/80',
           'transition-colors duration-150'
         )}
       >
@@ -214,7 +214,7 @@ export function AgentResultCard({
           <div className="px-3 pb-2.5 pt-0.5">
             <p
               className={cn(
-                'text-xs leading-relaxed',
+                'text-caption leading-relaxed',
                 isFailed
                   ? 'text-danger'
                   : 'text-muted-foreground'
@@ -235,7 +235,7 @@ export function AgentResultCard({
                 }}
                 className={cn(
                   'mt-2 gap-1.5 px-2.5 py-1 h-auto rounded-sm',
-                  'text-xs font-medium',
+                  'text-caption font-medium',
                   'bg-danger-soft text-danger',
                   'border border-danger/30',
                   'hover:bg-danger-soft'

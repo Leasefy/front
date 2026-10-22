@@ -319,7 +319,7 @@ function FilaDeInmueble({
                   </span>
                 )}
               </p>
-              <p className="truncate text-xs text-fg-muted">
+              <p className="truncate text-caption text-fg-muted">
                 {inmueble.propertyAddress}
                 {inmueble.monthlyRent != null && (
                   <span className="ml-2 font-mono tabular-nums">{formatCurrency(inmueble.monthlyRent)}</span>
@@ -386,7 +386,7 @@ function FilaDeInmueble({
         <TableRow data-testid="fila-nuevo-propietario">
           <TableCell colSpan={4} className="bg-surface-muted/60">
             <div className="rounded-lg border border-border bg-card p-5">
-              <h3 className="mb-4 text-base font-semibold text-fg">
+              <h3 className="mb-4 text-base font-medium text-fg">
                 {t('inmobiliaria.import.confirm.mandateBatch.porInmueble.nuevoPropietarioTitulo', {
                   title: inmueble.propertyTitle,
                 })}

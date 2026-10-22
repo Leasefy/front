@@ -45,7 +45,7 @@ export interface AcuerdoDetalleSheetProps {
 /** Etiqueta de sección, en el registro del DS. */
 function Rotulo({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+    <h3 className="text-caption font-medium uppercase tracking-wide text-fg-muted">
       {children}
     </h3>
   )
@@ -189,7 +189,6 @@ function CuerpoDelAcuerdo({ acuerdo }: { acuerdo: AcuerdoRow }) {
             <Button asChild variant="outline" hideArrow>
               <Link href={`${BASE}/deudores/${acuerdo.debtorId}`}>
                 Ver deudor
-                <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             </Button>
           }
@@ -207,7 +206,6 @@ function CuerpoDelAcuerdo({ acuerdo }: { acuerdo: AcuerdoRow }) {
               <Link href={`${BASE}/pagos/planes/${acuerdo.planId}`}>
                 {/* QA-IA-95 (05-10-2026, IA-B-03): «aprobar» sólo si espera la aprobación; uno vigente o cerrado se ve. */}
                 {acuerdo.estado === 'por_aprobar' ? 'Revisar y aprobar' : 'Ver el plan'}
-                <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             </Button>
           )}

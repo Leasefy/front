@@ -129,7 +129,7 @@ export function InsightsAssumptionTable({
                     <Badge variant={stateVariant}>{stateLabel}</Badge>
                   </TableCell>
                   {/* Updated At (hidden on xs) */}
-                  <TableCell className="px-4 py-2.5 text-xs text-fg-muted whitespace-nowrap hidden sm:table-cell">
+                  <TableCell className="px-4 py-2.5 text-caption text-fg-muted whitespace-nowrap hidden sm:table-cell">
                     {formattedDate}
                   </TableCell>
                 </TableRow>

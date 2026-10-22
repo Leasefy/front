@@ -64,10 +64,10 @@ export function TicketDetail({
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-h2 text-neutral-900 tracking-tight">
             {detail.titulo}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">{subtitle}</p>
+          <p className="text-neutral-500 mt-0.5 text-sm">{subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant={severityVariant(detail.severidad)}>

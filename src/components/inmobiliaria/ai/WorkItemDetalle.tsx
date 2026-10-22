@@ -184,7 +184,7 @@ export function WorkItemDetalle({
           className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
           data-testid="caso-no-disponible"
         >
-          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-muted">
+          <div className="flex items-center justify-center w-14 h-14 rounded-lg bg-surface-muted">
             <BreadcrumbIcon
               weight="duotone"
               className="h-6 w-6 text-fg-subtle"
@@ -192,7 +192,7 @@ export function WorkItemDetalle({
             />
           </div>
           <div className="space-y-1.5">
-            <p className="text-[15px] font-semibold text-fg">
+            <p className="text-[15px] font-medium text-fg">
               {t('inmobiliaria.ai.workspace.pages.comun.detalleNoDisponibleTitle')}
             </p>
             <p className="text-sm text-fg-subtle max-w-sm leading-relaxed mx-auto">
@@ -217,7 +217,7 @@ export function WorkItemDetalle({
           className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
           data-testid="caso-not-found"
         >
-          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-muted">
+          <div className="flex items-center justify-center w-14 h-14 rounded-lg bg-surface-muted">
             <MagnifyingGlass
               weight="duotone"
               className="h-6 w-6 text-fg-subtle"
@@ -225,7 +225,7 @@ export function WorkItemDetalle({
             />
           </div>
           <div className="space-y-1.5">
-            <p className="text-[15px] font-semibold text-fg">
+            <p className="text-[15px] font-medium text-fg">
               {t(`${NS}.notFoundTitle`)}
             </p>
             <p className="text-sm text-fg-subtle max-w-sm leading-relaxed mx-auto">
@@ -302,14 +302,14 @@ export function WorkItemDetalle({
                   <CheckCircle className="w-5 h-5 text-success" weight="duotone" aria-hidden="true" />
                 )}
                 <p
-                  className={`text-sm font-semibold ${
+                  className={`text-sm font-medium ${
                     item.estado === 'fallo' ? 'text-danger' : 'text-foreground'
                   }`}
                 >
                   {estadoLabel(t, item.estado, item.agente)}
                 </p>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 {[
                   item.decidedBy
                     ? t(`${NS}.decididoPor`, { nombre: item.decidedBy })
@@ -335,15 +335,15 @@ export function WorkItemDetalle({
               className="rounded-lg border border-border bg-card p-4 space-y-2"
               data-testid={`caso-contexto-${i}`}
             >
-              <h2 className="text-sm font-semibold text-foreground">{block.title}</h2>
+              <h2 className="text-sm font-medium text-foreground">{block.title}</h2>
               <dl className="divide-y divide-border">
                 {block.rows.map((row, j) => (
                   <div
                     key={`${row.label}-${j}`}
                     className="py-1.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3"
                   >
-                    <dt className="text-xs text-muted-foreground">{row.label}</dt>
-                    <dd className="text-xs font-medium text-foreground tabular-nums text-right">
+                    <dt className="text-caption text-muted-foreground">{row.label}</dt>
+                    <dd className="text-caption font-medium text-foreground tabular-nums text-right">
                       {row.value}
                     </dd>
                   </div>
@@ -361,7 +361,7 @@ export function WorkItemDetalle({
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">{crossLink.pregunta}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{crossLink.destino}</p>
+                <p className="text-caption text-muted-foreground mt-0.5">{crossLink.destino}</p>
               </div>
               <ArrowRight
                 className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-[color,transform] duration-fast ease-enter shrink-0"
@@ -373,7 +373,7 @@ export function WorkItemDetalle({
 
         {/* Traza */}
         <aside className="lg:col-span-2 space-y-2">
-          <h2 className="text-sm font-semibold text-foreground">{t(`${NS}.trazaTitle`)}</h2>
+          <h2 className="text-sm font-medium text-foreground">{t(`${NS}.trazaTitle`)}</h2>
           <TrazaCaso entries={traza} agente={item.agente} />
         </aside>
       </div>

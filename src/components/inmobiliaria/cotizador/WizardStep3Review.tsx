@@ -117,7 +117,7 @@ export function WizardStep3Review({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base font-semibold text-fg">
+      <h2 className="text-base font-medium text-fg">
         {t('inmobiliaria.ai.cotizador.nueva.step3.heading')}
       </h2>
 

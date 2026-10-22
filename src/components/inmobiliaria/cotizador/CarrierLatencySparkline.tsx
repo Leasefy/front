@@ -30,7 +30,7 @@ export function CarrierLatencySparkline({ data, isLoading = false }: CarrierLate
   if (isLoading) {
     return (
       <div className="h-[160px] flex items-center justify-center">
-        <div className="h-4 w-32 rounded bg-surface-muted dark:bg-ink animate-pulse" />
+        <div className="h-4 w-32 rounded bg-surface-muted animate-pulse" />
       </div>
     )
   }
@@ -38,7 +38,7 @@ export function CarrierLatencySparkline({ data, isLoading = false }: CarrierLate
   if (data.length === 0) {
     return (
       <div className="h-[160px] flex items-center justify-center">
-        <p className="text-xs text-fg-subtle text-center py-8">
+        <p className="text-caption text-fg-subtle text-center py-8">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.noLatencyData')}
         </p>
       </div>

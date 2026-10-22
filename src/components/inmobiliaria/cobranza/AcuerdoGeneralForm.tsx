@@ -292,8 +292,8 @@ export function AcuerdoGeneralForm({
       {/* 1 — Qué es */}
       <Card className="p-4 sm:p-5 space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-fg">Qué es</h2>
-          <p className="text-xs text-fg-muted">
+          <h2 className="text-sm font-medium text-fg">Qué es</h2>
+          <p className="text-caption text-fg-muted">
             El nombre es para ti; la condición es lo que el agente le dice al deudor.
           </p>
         </div>
@@ -336,8 +336,8 @@ export function AcuerdoGeneralForm({
       {/* 2 — Cuándo aplica */}
       <Card className="p-4 sm:p-5 space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-fg">Cuándo aplica</h2>
-          <p className="text-xs text-fg-muted">
+          <h2 className="text-sm font-medium text-fg">Cuándo aplica</h2>
+          <p className="text-caption text-fg-muted">
             Lo que dejes vacío no filtra. Sin nada marcado, aplica a cualquier deudor.
           </p>
         </div>
@@ -426,8 +426,8 @@ export function AcuerdoGeneralForm({
       {/* 3 — Qué ofrece */}
       <Card className="p-4 sm:p-5 space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-fg">Qué ofrece</h2>
-          <p className="text-xs text-fg-muted">
+          <h2 className="text-sm font-medium text-fg">Qué ofrece</h2>
+          <p className="text-caption text-fg-muted">
             El descuento va siempre sobre intereses. El capital no se descuenta.
           </p>
         </div>
@@ -499,8 +499,8 @@ export function AcuerdoGeneralForm({
       <Card className="p-4 sm:p-5 space-y-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-fg">Prioridad</h2>
-            <p className="text-xs text-fg-muted max-w-md">
+            <h2 className="text-sm font-medium text-fg">Prioridad</h2>
+            <p className="text-caption text-fg-muted max-w-md">
               Si un deudor califica para varios acuerdos, gana el número más alto.
             </p>
           </div>
@@ -520,8 +520,8 @@ export function AcuerdoGeneralForm({
 
         <div className="flex items-start justify-between gap-4 border-t border-border pt-4">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-fg">Activo</h2>
-            <p className="text-xs text-fg-muted max-w-md">
+            <h2 className="text-sm font-medium text-fg">Activo</h2>
+            <p className="text-caption text-fg-muted max-w-md">
               Apagado queda guardado pero el agente no lo usa.
             </p>
           </div>

@@ -197,7 +197,7 @@ export function CajaDeLlegada({
             className={cn(
               'relative z-[1] border bg-surface',
               compacta ? 'rounded-[26px]' : 'rounded-[30px]',
-              'shadow-[0_12px_40px_-18px_rgba(20,19,15,0.18)] dark:shadow-[0_12px_40px_-18px_rgba(0,0,0,0.7)]',
+              'shadow-[0_12px_40px_-18px_rgba(20,19,15,0.18)]',
               'transition-[border-color,box-shadow] duration-reveal',
               encendida || dictado.escuchando ? 'border-border-faint' : 'border-border'
             )}

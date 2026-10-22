@@ -235,7 +235,7 @@ export function DocumentUpload({
               {value?.fileName}
             </p>
             {value?.file && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 {formatFileSize(value.file.size)}
               </p>
             )}
@@ -305,7 +305,7 @@ export function DocumentUpload({
                   setState('idle');
                   setUploadError('');
                 }}
-                className="rounded-sm text-xs"
+                className="rounded-sm text-caption"
               >
                 Intentar de nuevo
               </Button>
@@ -325,7 +325,7 @@ export function DocumentUpload({
                   </span>{' '}
                   o arrastra tu archivo
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-caption text-muted-foreground mt-1">
                   {accept
                     .split(',')
                     .map((t) => t.replace('.', '').toUpperCase())
@@ -342,7 +342,7 @@ export function DocumentUpload({
       {/* Stale slot — the File was lost serialising to localStorage on reload.
           Prompt a re-attach so the user knows which document to add again. */}
       {isStale && state === 'idle' && !displayError && (
-        <p className="text-xs text-warning">
+        <p className="text-caption text-warning">
           Vuelve a adjuntar “{value?.fileName}”: se desconectó al recargar la página.
         </p>
       )}

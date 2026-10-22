@@ -209,7 +209,7 @@ export function AutonomiaPanel({
         // incluidos): lo que cambia es que cada opción dice qué implica, en vez
         // de esconder esa frase detrás de la que esté elegida.
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-fg">{t(`${NS}.modoTitle`)}</h2>
+          <h2 className="text-sm font-medium text-fg">{t(`${NS}.modoTitle`)}</h2>
           <div
             role="radiogroup"
             aria-label={t(`${NS}.grupoAria`)}
@@ -241,7 +241,7 @@ export function AutonomiaPanel({
                     />
                   )}
                   <span className="flex items-start justify-between gap-2">
-                    <span className={`text-sm font-semibold ${activo ? 'text-primary' : 'text-fg'}`}>
+                    <span className={`text-sm font-medium ${activo ? 'text-primary' : 'text-fg'}`}>
                       {label}
                     </span>
                     {activo && (
@@ -252,7 +252,7 @@ export function AutonomiaPanel({
                       />
                     )}
                   </span>
-                  {hint && <span className="mt-1.5 block text-xs leading-relaxed text-fg-muted">{hint}</span>}
+                  {hint && <span className="mt-1.5 block text-caption leading-relaxed text-fg-muted">{hint}</span>}
                   {activo && (
                     <span className="mt-2 block text-[11px] font-medium uppercase tracking-wide text-primary">
                       {t(`${NS}.modoActivo`)}
@@ -270,11 +270,11 @@ export function AutonomiaPanel({
             data-testid={`autonomia-modo-${data.modo}`}
             aria-current="true"
             title={activeHint !== activeHintKey ? activeHint : undefined}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1.5 text-xs font-medium text-primary ring-1 ring-primary/30"
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1.5 text-caption font-medium text-primary ring-1 ring-primary/30"
           >
             {t(`${NS}.modo.${data.modo}`)}
           </span>
-          <p className="text-xs text-fg-muted" data-testid="autonomia-donde-se-cambia">
+          <p className="text-caption text-fg-muted" data-testid="autonomia-donde-se-cambia">
             {puedeCambiar ? (
               <>
                 El modo se cambia desde el{' '}
@@ -294,7 +294,7 @@ export function AutonomiaPanel({
           Con las tarjetas ya está dicha en la que está elegida: aquí sólo hace
           falta cuando el modo es un chip de lectura. */}
       {!editable && activeHint !== activeHintKey && (
-        <p className="text-xs text-fg-muted" data-testid="autonomia-modo-hint">
+        <p className="text-caption text-fg-muted" data-testid="autonomia-modo-hint">
           {activeHint}
         </p>
       )}
@@ -305,7 +305,7 @@ export function AutonomiaPanel({
           gris chico se confundía con la frase del modo. */}
       {data.efectoReal && (
         <section className="rounded-lg border border-border bg-surface p-4" data-testid="autonomia-efecto-real">
-          <h2 className="text-sm font-semibold text-fg">{t(`${NS}.efectoTitle`)}</h2>
+          <h2 className="text-sm font-medium text-fg">{t(`${NS}.efectoTitle`)}</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-fg-muted">{data.efectoReal}</p>
         </section>
       )}
@@ -313,7 +313,7 @@ export function AutonomiaPanel({
       {/* Nota de sólo lectura del agente */}
       {data.nota && (
         <section className="rounded-lg bg-surface-muted/40 p-4" data-testid="autonomia-nota">
-          <h2 className="text-sm font-semibold text-fg">{t(`${NS}.notaTitle`)}</h2>
+          <h2 className="text-sm font-medium text-fg">{t(`${NS}.notaTitle`)}</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-fg-muted">{data.nota}</p>
         </section>
       )}
@@ -321,7 +321,7 @@ export function AutonomiaPanel({
       {/* T-323 callout */}
       {data.t323 && (
         <div
-          className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-3 text-xs text-warning"
+          className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-3 text-caption text-warning"
           data-testid="autonomia-t323"
         >
           {t(`${NS}.t323`)}
@@ -335,9 +335,9 @@ export function AutonomiaPanel({
           frase quedaba a media pantalla de su etiqueta. Aquí el valor arranca
           en su columna y baja de renglón cuando no cabe. */}
       <section className="rounded-lg border border-border bg-surface p-4" data-testid="autonomia-valla">
-        <h2 className="text-sm font-semibold text-fg">{t(`${NS}.vallaTitle`)}</h2>
+        <h2 className="text-sm font-medium text-fg">{t(`${NS}.vallaTitle`)}</h2>
         {data.valla.length === 0 ? (
-          <p className="mt-1.5 text-xs text-fg-muted">{t(`${NS}.vallaEmpty`)}</p>
+          <p className="mt-1.5 text-caption text-fg-muted">{t(`${NS}.vallaEmpty`)}</p>
         ) : (
           <dl className="mt-2 divide-y divide-border">
             {data.valla.map((regla) => (
@@ -346,7 +346,7 @@ export function AutonomiaPanel({
                 className="grid gap-x-6 gap-y-1 py-3 first:pt-1 last:pb-0 sm:grid-cols-[minmax(0,15rem)_1fr]"
                 data-testid={`autonomia-valla-${regla.id}`}
               >
-                <dt className="flex items-start gap-2 text-xs text-fg-muted">
+                <dt className="flex items-start gap-2 text-caption text-fg-muted">
                   <span
                     className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
                       regla.estado === 'activo' ? 'bg-success' : 'bg-fg-subtle'
@@ -359,7 +359,7 @@ export function AutonomiaPanel({
                     frases enteras, y la cifra tabular ensancha también la COMA
                     —es un separador numérico—, así que «registrada, con quién»
                     se leía «registrada ,  con quién». */}
-                <dd className="text-xs font-medium leading-relaxed text-fg">{regla.value}</dd>
+                <dd className="text-caption font-medium leading-relaxed text-fg">{regla.value}</dd>
               </div>
             ))}
           </dl>

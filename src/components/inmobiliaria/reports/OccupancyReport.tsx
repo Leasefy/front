@@ -117,8 +117,8 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Occupancy by Zone - CSS Bar Chart */}
-      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+      <div className="rounded-lg border border-border bg-surface p-5">
+        <h3 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
           <MapPin className="w-4 h-4 text-fg-muted" />
           Ocupación por zona
         </h3>
@@ -157,8 +157,8 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Monthly Occupancy Trend - CSS Dot/Bar Chart */}
-      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+      <div className="rounded-lg border border-border bg-surface p-5">
+        <h3 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
           <TrendUp className="w-4 h-4 text-fg-muted" />
           Tendencia de ocupación (12 meses)
         </h3>
@@ -194,12 +194,12 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
                     className={cn(
                       'w-full rounded-t transition-opacity duration-base group-hover:opacity-80',
                       medido === null
-                        ? 'bg-border dark:bg-border-strong'
+                        ? 'bg-border'
                         : medido >= 90
-                          ? 'bg-success dark:bg-success'
+                          ? 'bg-success'
                           : medido >= 85
-                            ? 'bg-primary dark:bg-primary'
-                            : 'bg-warning dark:bg-warning'
+                            ? 'bg-primary'
+                            : 'bg-warning'
                     )}
                     style={{ height: `${height}%` }}
                   />
@@ -214,9 +214,9 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Property Table */}
-      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
-        <div className="p-4 border-b border-border dark:border-border-strong">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+      <div className="rounded-lg border border-border bg-surface overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
             <House className="w-4 h-4 text-fg-muted" />
             Detalle por propiedad
           </h3>
@@ -224,7 +224,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader>
-              <TableRow className="border-b border-border-faint dark:border-border-strong">
+              <TableRow className="border-b border-border-faint">
                 <TableHead className="text-left py-3 px-4">Propiedad</TableHead>
                 <TableHead className="text-left py-3 px-4">Zona</TableHead>
                 <TableHead className="text-left py-3 px-4">Estado</TableHead>
@@ -237,7 +237,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
               {pageItems.map((prop) => (
                 <TableRow
                   key={prop.id}
-                  className="border-b border-border-faint dark:border-border-strong/50 hover:bg-surface-muted dark:hover:bg-ink transition-colors"
+                  className="border-b border-border-faint hover:bg-surface-muted transition-colors"
                 >
                   <TableCell className="py-2.5 px-4 font-medium text-foreground">
                     {/* Una fila sin nombre no se deja en blanco (la captura del
@@ -267,7 +267,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
 
         {/* Pie: sólo si hay más de una página. */}
         {shouldPaginate && (
-          <div className="border-t border-border dark:border-border-strong px-4 py-3">
+          <div className="border-t border-border px-4 py-3">
             <TablePagination
               total={total}
               page={page}
@@ -321,7 +321,7 @@ function KPICard({
 }) {
   const colors = COLOR_MAP[color];
   return (
-    <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
+    <div className="p-4 rounded-lg border border-border bg-surface">
       <div className="flex items-center gap-3">
         <div
           className={cn(
@@ -332,8 +332,8 @@ function KPICard({
           <Icon className={cn('w-5 h-5', colors.text)} />
         </div>
         <div>
-          <p className="text-2xl font-bold text-foreground">{value}</p>
-          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="text-2xl font-medium text-foreground">{value}</p>
+          <p className="text-caption text-muted-foreground">{label}</p>
           {subtitle && (
             <p className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</p>
           )}

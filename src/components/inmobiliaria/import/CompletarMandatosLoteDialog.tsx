@@ -307,7 +307,7 @@ function CuerpoDelLote({
           <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-fg-muted">%</span>
         </div>
         {modo === 'unoPorUno' && (
-          <p className="mt-1 text-xs text-fg-muted">
+          <p className="mt-1 text-caption text-fg-muted">
             {t('inmobiliaria.import.confirm.mandateBatch.porInmueble.comisionGeneralHint')}
           </p>
         )}
@@ -325,7 +325,7 @@ function CuerpoDelLote({
           onChange={(v) => setContractDate(v)}
         />
         {modo === 'unoPorUno' && (
-          <p className="mt-1 text-xs text-fg-muted">
+          <p className="mt-1 text-caption text-fg-muted">
             {t('inmobiliaria.import.confirm.mandateBatch.porInmueble.fechaHint')}
           </p>
         )}

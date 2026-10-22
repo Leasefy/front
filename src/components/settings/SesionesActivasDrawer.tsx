@@ -111,7 +111,7 @@ export function CuerpoDeSesiones({ onCerrarSesion }: { onCerrarSesion: () => voi
       {/* Sin `title`: el título accesible lo pone el envoltorio (este cuerpo se
           monta en un test sin el contexto del Sheet). */}
       <SheetHeader>
-        <h2 className="text-lg font-semibold text-fg">{t(`${NS}.sessionsTitle`)}</h2>
+        <h2 className="text-h3 text-fg">{t(`${NS}.sessionsTitle`)}</h2>
         <p className="text-body-sm text-fg-muted">{t(`${NS}.sessionsIntro`)}</p>
       </SheetHeader>
 

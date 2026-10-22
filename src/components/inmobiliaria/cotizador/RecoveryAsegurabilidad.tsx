@@ -160,13 +160,13 @@ function RecoveryBlock({
       <div className="px-5 pt-5 pb-4 border-b border-border">
         <div className="flex items-center gap-2.5">
           <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0" />
-          <span className="text-xs font-medium uppercase tracking-wide text-primary">
+          <span className="text-caption font-medium uppercase tracking-wide text-primary">
             {t('inmobiliaria.ai.cotizador.detail.recovery.eyebrow')}
           </span>
         </div>
         <h2
           id="recovery-heading"
-          className="mt-2.5 text-base font-semibold tracking-tight text-fg leading-tight"
+          className="mt-2.5 text-base font-medium tracking-tight text-fg leading-tight"
         >
           {t('inmobiliaria.ai.cotizador.detail.recovery.titulo')}
         </h2>
@@ -193,7 +193,7 @@ function RecoveryBlock({
                     {p.label}
                   </p>
                   {p.detail && (
-                    <p className="mt-0.5 text-xs text-fg-muted">
+                    <p className="mt-0.5 text-caption text-fg-muted">
                       {p.detail}
                     </p>
                   )}
@@ -217,7 +217,7 @@ function RecoveryBlock({
           candidato → nueva consulta; sugerir otro inmueble → matching); the
           rest are optional callbacks that degrade to "Próximamente". */}
       <div className="px-5 pb-4">
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-muted">
+        <p className="mb-2 text-caption font-medium uppercase tracking-wide text-fg-muted">
           {tf('inmobiliaria.ai.cotizador.detail.recovery.menu.eyebrow', 'Otros caminos')}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -287,7 +287,7 @@ function RecoveryBlock({
 
       {/* Footer — primary CTA reuses the existing re-quote flow. */}
       <div className="flex items-center justify-between gap-4 border-t border-border px-5 py-4">
-        <span className="text-xs text-fg-muted">
+        <span className="text-caption text-fg-muted">
           {t('inmobiliaria.ai.cotizador.detail.recovery.footerNote')}
         </span>
         <Button
@@ -342,7 +342,7 @@ function CondicionadoBlock({
           <ListChecks weight="duotone" className="w-4 h-4 text-warning" />
           <h2
             id="condicionado-heading"
-            className="text-base font-semibold text-warning"
+            className="text-base font-medium text-warning"
           >
             {t('inmobiliaria.ai.cotizador.detail.condiciones.titulo')}
           </h2>
@@ -363,7 +363,7 @@ function CondicionadoBlock({
               <p className="text-sm text-fg leading-relaxed">
                 {e.condicion}
               </p>
-              <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-warning">
+              <p className="mt-0.5 text-caption font-medium uppercase tracking-wide text-warning">
                 {e.carrier}
               </p>
             </div>
@@ -380,7 +380,6 @@ function CondicionadoBlock({
             onClick={onResolverCondiciones}
           >
             {t('inmobiliaria.ai.cotizador.detail.condiciones.resolver')}
-            <ArrowRight className="w-4 h-4" />
           </Button>
         ) : (
           <Button

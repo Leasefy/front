@@ -84,10 +84,10 @@ function SerieBlock({ serie }: { serie: AnaliticaSerie }) {
       className="rounded-lg border border-border bg-card p-4 space-y-3"
       data-testid={`analitica-serie-${serie.id}`}
     >
-      <h2 className="text-sm font-semibold text-foreground">{serie.label}</h2>
+      <h2 className="text-sm font-medium text-foreground">{serie.label}</h2>
 
       {max === 0 ? (
-        <p className="text-xs text-muted-foreground" data-testid="analitica-serie-empty">
+        <p className="text-caption text-muted-foreground" data-testid="analitica-serie-empty">
           {t(`${NS}.serieEmpty`)}
         </p>
       ) : (
@@ -203,8 +203,8 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
               className="rounded-lg border border-border bg-card p-4"
               data-testid={`analitica-kpi-${kpi.id}`}
             >
-              <p className="text-xs text-muted-foreground leading-tight">{kpi.label}</p>
-              <p className="text-xl font-semibold text-foreground mt-1 tabular-nums">
+              <p className="text-caption text-muted-foreground leading-tight">{kpi.label}</p>
+              <p className="text-xl font-medium text-foreground mt-1 tabular-nums">
                 <AnimatedNumber
                   value={kpi.value}
                   from={huboCarga.current ? 0 : undefined}

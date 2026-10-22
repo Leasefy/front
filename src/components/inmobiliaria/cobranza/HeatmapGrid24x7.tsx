@@ -136,7 +136,7 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
 
   return (
     <div role="region" aria-label={regionTitle}>
-      <p className="text-xs font-medium text-fg-subtle mb-2">
+      <p className="text-caption font-medium text-fg-subtle mb-2">
         {regionTitle}
       </p>
       {/* Single focusable scroll wrapper — the 168 cells are NOT in the tab
@@ -214,7 +214,7 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
       {/* Selected-cell summary line (tap-to-inspect) */}
       <p
         aria-live="polite"
-        className="text-xs text-fg-muted mt-1.5 min-h-4"
+        className="text-caption text-fg-muted mt-1.5 min-h-4"
       >
         {/* El detalle de la celda se cruza con un fundido al elegir otra. */}
         <CrossFade

@@ -116,7 +116,7 @@ export function BetaLayout({ children, basePath, variant = 'fullscreen', dentroD
           {/* Title */}
           <div className="flex items-center gap-1.5">
             <Sparkle className="w-4 h-4 text-primary" weight="fill" />
-            <span className="text-sm font-semibold text-fg">
+            <span className="text-sm font-medium text-fg">
               {t('beta.title')}
             </span>
           </div>

@@ -245,7 +245,7 @@ export function ChatTemplatesMenu({
             'absolute left-0 z-50 w-[min(400px,calc(100vw-4.5rem))]',
             abajo ? 'top-full mt-2' : 'bottom-full mb-2',
             'overflow-hidden rounded-[20px] border border-border bg-surface p-1.5',
-            'shadow-[0_18px_48px_-12px_rgba(20,19,15,0.22)] dark:shadow-[0_18px_48px_-12px_rgba(0,0,0,0.85)]',
+            'shadow-[0_18px_48px_-12px_rgba(20,19,15,0.22)]',
             className
           )}
         >

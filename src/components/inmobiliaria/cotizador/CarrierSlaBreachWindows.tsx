@@ -80,7 +80,7 @@ export function CarrierSlaBreachWindows({
 
   return (
     <div className="rounded-lg border border-border bg-card p-5">
-      <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
+      <p className="text-caption font-medium uppercase tracking-wide text-fg-muted mb-3">
         {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.title')}
       </p>
 
@@ -131,7 +131,7 @@ export function CarrierSlaBreachWindows({
                       {w.endedAt ? (
                         <span className="text-fg-muted">{formatDate(w.endedAt)}</span>
                       ) : (
-                        <span className="text-warning text-xs font-medium">
+                        <span className="text-warning text-caption font-medium">
                           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.ongoing')}
                         </span>
                       )}

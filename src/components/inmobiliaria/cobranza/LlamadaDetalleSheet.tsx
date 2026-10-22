@@ -176,7 +176,7 @@ function CajonAbierto({ callId }: { callId: string }) {
               <p className="text-sm text-danger font-medium">
                 {t('inmobiliaria.ai.cobranza.call.error')}
               </p>
-              <p className="text-xs text-danger/80">{error}</p>
+              <p className="text-caption text-danger/80">{error}</p>
               <Button
                 type="button"
                 variant="outline"

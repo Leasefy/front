@@ -200,7 +200,7 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
       <div key={nombre} className="space-y-2">
         <Label htmlFor={`medio-${nombre}`}>
           {etiquetaDelCampo(nombre, valores.tipo)}
-          {!obligatorio && <span className="ml-1 text-xs text-fg-muted">(opcional)</span>}
+          {!obligatorio && <span className="ml-1 text-caption text-fg-muted">(opcional)</span>}
         </Label>
         <Input
           id={`medio-${nombre}`}
@@ -268,7 +268,7 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
 
           <div className="space-y-2">
             <Label htmlFor="medio-instrucciones">
-              Instrucciones <span className="ml-1 text-xs text-fg-muted">(opcional)</span>
+              Instrucciones <span className="ml-1 text-caption text-fg-muted">(opcional)</span>
             </Label>
             <Textarea
               id="medio-instrucciones"
@@ -287,7 +287,7 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
             <label className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3 text-sm">
               <span>
                 Visible al inquilino
-                <span className="block text-xs text-fg-muted">Aparece en su portal en «Cómo pagar».</span>
+                <span className="block text-caption text-fg-muted">Aparece en su portal en «Cómo pagar».</span>
               </span>
               <Switch
                 checked={valores.visibleAlInquilino ?? true}
@@ -298,7 +298,7 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
             <label className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3 text-sm">
               <span>
                 Activo
-                <span className="block text-xs text-fg-muted">Apagado no se ofrece en ningún lado.</span>
+                <span className="block text-caption text-fg-muted">Apagado no se ofrece en ningún lado.</span>
               </span>
               <Switch
                 checked={valores.activo ?? true}

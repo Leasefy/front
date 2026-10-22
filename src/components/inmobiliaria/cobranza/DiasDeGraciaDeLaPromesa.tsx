@@ -76,7 +76,7 @@ export function DiasDeGraciaDeLaPromesa({ puedeCambiar }: { puedeCambiar: boolea
       aria-labelledby="heading-promesas"
     >
       <div>
-        <h2 id="heading-promesas" className="text-xl font-semibold text-foreground">
+        <h2 id="heading-promesas" className="text-xl font-medium text-foreground">
           Promesas de pago
         </h2>
         <p className="text-sm text-fg-muted mt-1 max-w-2xl">

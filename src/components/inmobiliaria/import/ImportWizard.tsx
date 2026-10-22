@@ -571,7 +571,7 @@ export function ImportWizard({
                       ? 'bg-success text-white'
                       : status === 'current'
                         ? 'bg-primary text-primary-fg ring-4 ring-primary/30'
-                        // Sin `dark:bg-ink`: ese override daba rgb(20,19,15) sobre
+                        // Sin ``: ese override daba rgb(20,19,15) sobre
                         // un fondo de página rgb(17,17,19) — el círculo desaparecía.
                         // `bg-surface-muted` ya es sensible al tema y da
                         // rgb(36,34,28), más separado del fondo que en claro.
@@ -584,11 +584,11 @@ export function ImportWizard({
                     )}
                   </div>
                   <span className={cn(
-                    'text-xs font-medium whitespace-nowrap',
+                    'text-caption font-medium whitespace-nowrap',
                     status === 'current'
                       ? 'text-primary'
                       : status === 'completed'
-                        ? 'text-fg dark:text-white'
+                        ? 'text-fg'
                         : 'text-fg-subtle'
                   )}>
                     {paso.label}
@@ -613,7 +613,7 @@ export function ImportWizard({
         {/* Mobile Progress */}
         <div className="md:hidden">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-fg dark:text-white">
+            <span className="text-sm font-medium text-fg">
               {t('inmobiliaria.import.wizard.mobileProgress', {
                 current: pasoMacro,
                 total: PASOS_VISIBLES.length,
@@ -636,7 +636,7 @@ export function ImportWizard({
       </div>
 
       {/* Step Content */}
-      <div className="bg-surface dark:bg-bg rounded-lg border border-border dark:border-border-strong">
+      <div className="bg-surface rounded-lg border border-border">
         <RanuraVivaContext.Provider value={ranuraViva}>
           <div className="p-6 space-y-6">
             {/*
@@ -691,7 +691,7 @@ export function ImportWizard({
           // cambia, éste cambia con ella.
           // A 390 px los tres botones no caben en fila con `px-6`: el pie
           // empujaba la página a 458 px (QA-MIG-A, MG-29). Se envuelve.
-          <div className="px-4 py-4 sm:px-6 rounded-b-lg border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex flex-wrap items-center justify-between gap-2" data-testid="pie-del-asistente">
+          <div className="px-4 py-4 sm:px-6 rounded-b-lg border-t border-border-faint bg-surface-muted flex flex-wrap items-center justify-between gap-2" data-testid="pie-del-asistente">
             {/* Cancel Button */}
             <Button
               type="button"

@@ -546,7 +546,7 @@ export function ConciliacionDelAgente() {
           <Robot className="h-[18px] w-[18px] text-fg-muted" weight="duotone" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-semibold text-fg">Lo que vio el agente</h2>
+          <h2 className="text-base font-medium text-fg">Lo que vio el agente</h2>
           <p className="mt-0.5 text-caption text-fg-muted">
             {tieneDatos
               ? `${total} ${total === 1 ? 'movimiento' : 'movimientos'} propios del agente, con su clasificación por caso. Confirmar aquí no emite recibo de caja.`
@@ -588,7 +588,7 @@ export function ConciliacionDelAgente() {
           <section className="overflow-hidden rounded-lg border border-border bg-surface">
             <div className="flex items-center justify-between border-b border-border p-4">
               <div>
-                <h3 className="text-sm font-semibold text-fg">{t(k('movimientosTitle'))}</h3>
+                <h3 className="text-sm font-medium text-fg">{t(k('movimientosTitle'))}</h3>
                 <p className="mt-0.5 text-caption text-fg-muted">{t(k('movimientosDesc'))}</p>
               </div>
               <Button
@@ -692,8 +692,8 @@ export function ConciliacionDelAgente() {
         <div className="flex items-start gap-2.5 rounded-lg border border-border bg-surface-muted p-3">
           <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" weight="duotone" aria-hidden="true" />
           <div>
-            <p className="text-xs font-semibold text-fg-muted">{t(k('m2BannerTitle'))}</p>
-            <p className="mt-0.5 text-xs text-fg-muted">{t(k('m2BannerDesc'))}</p>
+            <p className="text-caption font-medium text-fg-muted">{t(k('m2BannerTitle'))}</p>
+            <p className="mt-0.5 text-caption text-fg-muted">{t(k('m2BannerDesc'))}</p>
           </div>
         </div>
 
@@ -706,7 +706,7 @@ export function ConciliacionDelAgente() {
         */}
         <section className="space-y-3">
           <SectionLabel>Cargarle un extracto al agente</SectionLabel>
-          <p className="max-w-2xl text-xs text-fg-muted">
+          <p className="max-w-2xl text-caption text-fg-muted">
             Sólo CSV de Bancolombia o Davivienda, y sólo para que el agente lo clasifique: esto no
             emite recibos de caja ni toca los cobros. Para conciliar de verdad usa el extracto de
             arriba.
@@ -756,7 +756,7 @@ export function ConciliacionDelAgente() {
         </section>
 
         {!tieneDatos && (
-          <p className="flex items-start gap-2 text-xs text-fg-muted">
+          <p className="flex items-start gap-2 text-caption text-fg-muted">
             <Bank className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             Cuando el agente tenga movimientos propios, aquí aparecen su resumen por caso y la cola
             con confirmar, rechazar y revertir.

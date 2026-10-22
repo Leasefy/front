@@ -353,7 +353,7 @@ function FilaDeCaso({
         <TableCell className="max-w-[420px] align-top">
           <p className="font-medium text-fg">{item.titulo}</p>
 
-          <p className="mt-0.5 flex items-baseline gap-2 text-xs">
+          <p className="mt-0.5 flex items-baseline gap-2 text-caption">
             <span className="font-medium text-fg-muted">{item.accionSugerida.label}</span>
             {typeof item.accionSugerida.confianza === 'number' && (
               <span className="shrink-0 tabular-nums text-fg-subtle">
@@ -364,7 +364,7 @@ function FilaDeCaso({
             )}
           </p>
 
-          <p className="mt-0.5 text-xs leading-relaxed text-fg-muted line-clamp-2">
+          <p className="mt-0.5 text-caption leading-relaxed text-fg-muted line-clamp-2">
             {item.accionSugerida.razon}
           </p>
 
@@ -500,7 +500,7 @@ function FilaDeCaso({
                   setErrorDelMotivo(null)
                 }}
                 rows={2}
-                className="w-full max-w-2xl resize-none text-xs"
+                className="w-full max-w-2xl resize-none text-caption"
                 placeholder={t(`${WORKSPACE_NS}.acciones.motivoPlaceholder`)}
                 {...(errorDelMotivo
                   ? { 'aria-describedby': `${motivoId}-error`, 'aria-invalid': true as const }

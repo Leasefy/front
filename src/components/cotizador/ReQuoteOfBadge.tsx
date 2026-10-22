@@ -28,7 +28,7 @@ export function ReQuoteOfBadge({ parentId }: ReQuoteOfBadgeProps): React.JSX.Ele
     <Link
       href={`/panel/inmobiliaria/postulaciones/asegurabilidad/${parentId}`}
       data-testid="re-quote-of-badge"
-      className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+      className="inline-flex items-center gap-1 text-caption font-medium text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
     >
       {label}
     </Link>

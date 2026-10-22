@@ -129,7 +129,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
           {/* QA-IA-A (04-10-2026): con la píldora de milisegundos a la derecha,
               en una tarjeta angosta el nombre de la aseguradora se truncaba a
               nada. El tiempo de respuesta vive en la tabla comparativa. */}
-          <span className="font-heading font-semibold text-foreground truncate">
+          <span className="font-heading font-medium text-foreground truncate">
             {nombreDeLaAseguradora(carrier.carrier)}
           </span>
         </div>
@@ -159,9 +159,9 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
         <div className="space-y-2">
           {/* Sin `stat-number`: esa clase pone text-7xl en escritorio y la prima
               se salía de la tarjeta («$ 54» cortado). */}
-          <div className={['font-mono tabular-nums text-2xl font-bold break-words', colors.text].join(' ')}>
+          <div className={['font-mono tabular-nums text-2xl font-medium break-words', colors.text].join(' ')}>
             <AnimatedNumber value={carrier.primaMensualCop ?? 0} from={0} format={formatoCop} />
-            <span className="text-xs font-normal text-muted-foreground ml-1">/mes</span>
+            <span className="text-caption font-normal text-muted-foreground ml-1">/mes</span>
           </div>
           {carrier.condiciones.length > 0 && (
             <div className="space-y-1">

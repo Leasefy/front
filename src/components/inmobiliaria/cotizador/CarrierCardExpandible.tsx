@@ -201,7 +201,7 @@ export function CarrierCardExpandible({
       {/* Key facts grid */}
       <dl className="grid grid-cols-2 gap-x-6 gap-y-3">
         <div>
-          <dt className="text-xs uppercase tracking-wide text-fg-muted">
+          <dt className="text-caption uppercase tracking-wide text-fg-muted">
             {t('inmobiliaria.ai.cotizador.detail.matriz.colCosto')}
             {/* matriz.colCosto = "Costo estimado" (existing key) */}
           </dt>
@@ -209,7 +209,7 @@ export function CarrierCardExpandible({
             {prima ? (
               <span className="font-mono tabular-nums">
                 {prima}
-                <span className="ml-1 text-xs font-normal text-fg-muted">/mes</span>
+                <span className="ml-1 text-caption font-normal text-fg-muted">/mes</span>
               </span>
             ) : (
               <span className="text-fg-muted">—</span>
@@ -217,7 +217,7 @@ export function CarrierCardExpandible({
           </dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-fg-muted">
+          <dt className="text-caption uppercase tracking-wide text-fg-muted">
             {t('inmobiliaria.ai.cotizador.detail.matriz.colTiempo')}
           </dt>
           <dd className="mt-0.5 flex items-center gap-1 font-medium text-fg">
@@ -236,7 +236,7 @@ export function CarrierCardExpandible({
       {/* Condiciones (conditional / approved-with-conditions) */}
       {carrier.condiciones.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-xs uppercase tracking-wide text-fg-muted">
+          <p className="text-caption uppercase tracking-wide text-fg-muted">
             {t('inmobiliaria.ai.cotizador.detail.carrier.condicionesTitle')}
           </p>
           <ul className="space-y-1">
@@ -256,7 +256,7 @@ export function CarrierCardExpandible({
       {/* Motivo de rechazo / error */}
       {carrier.motivoRechazo && (
         <div className="space-y-1">
-          <p className="text-xs uppercase tracking-wide text-fg-muted">
+          <p className="text-caption uppercase tracking-wide text-fg-muted">
             {t('inmobiliaria.ai.cotizador.detail.carrier.motivoRechazoTitle')}
           </p>
           <p className="text-sm text-danger">{carrier.motivoRechazo}</p>
@@ -265,7 +265,7 @@ export function CarrierCardExpandible({
 
       {/* Derived "por qué" */}
       <div className="rounded-lg bg-surface-muted px-3 py-2.5">
-        <p className="text-xs uppercase tracking-wide text-fg-muted">
+        <p className="text-caption uppercase tracking-wide text-fg-muted">
           {t('inmobiliaria.ai.cotizador.detail.carrierCard.porQueTitle')}
         </p>
         <p className="mt-1 text-sm text-fg-muted leading-relaxed">
@@ -275,7 +275,7 @@ export function CarrierCardExpandible({
 
       {/* Estimado disclaimer line (only on priced results) */}
       {isPriced && carrier.isStub && (
-        <p className="text-xs text-fg-muted leading-relaxed">
+        <p className="text-caption text-fg-muted leading-relaxed">
           {t('inmobiliaria.ai.cotizador.detail.matriz.estimadoDisclaimer')}
         </p>
       )}
@@ -283,7 +283,7 @@ export function CarrierCardExpandible({
       {/* Actions — coherent placeholders, no invented endpoints */}
       <div className="flex flex-wrap items-center gap-2 pt-1">
         {carrier.condiciones.length > 0 && (
-          <span className="text-xs text-fg-muted">
+          <span className="text-caption text-fg-muted">
             {t('inmobiliaria.ai.cotizador.detail.carrierCard.condicionesVisibleHint')}
           </span>
         )}
@@ -336,7 +336,7 @@ export function CarrierCardExpandible({
         </div>
         <div className="flex items-center gap-3 shrink-0">
           {prima && (
-            <span className={cn('font-mono tabular-nums text-sm font-semibold', tokens.text)}>
+            <span className={cn('font-mono tabular-nums text-sm font-medium', tokens.text)}>
               {prima}
             </span>
           )}

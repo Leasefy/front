@@ -327,7 +327,7 @@ export function CargasAMedias({
         );
       })}
 
-      <p className="text-xs text-fg-subtle">
+      <p className="text-caption text-fg-subtle">
         Si en cambio subes el mismo archivo de nuevo, los inmuebles se duplican.
       </p>
     </section>

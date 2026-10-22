@@ -122,7 +122,7 @@ export function InsightsMonthlyCostPreview({
       <div className="text-center">
         <Link
           href={COSTOS_HREF}
-          className="text-xs text-primary underline-offset-4 hover:underline font-medium"
+          className="text-caption text-primary underline-offset-4 hover:underline font-medium"
         >
           {t('inmobiliaria.ai.cotizador.insights.costPreview.viewAll')}
         </Link>

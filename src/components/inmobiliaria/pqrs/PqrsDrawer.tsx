@@ -71,7 +71,7 @@ const ESTADO_DEL_MANTENIMIENTO: Record<string, string> = {
 function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactNode }) {
   return (
     <div className="space-y-0.5">
-      <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">{etiqueta}</dt>
+      <dt className="text-caption font-medium uppercase tracking-wide text-fg-muted">{etiqueta}</dt>
       <dd className="text-sm text-fg">{children}</dd>
     </div>
   )

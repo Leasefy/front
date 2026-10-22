@@ -39,13 +39,13 @@ interface CarteraPorEtapaProps {
 
 /** La gravedad de cada etapa, en los tokens de estado (de gris a rojo). */
 export const COLOR_DE_LA_ETAPA: Record<CarteraStage, string> = {
-  S0: 'bg-neutral-300 dark:bg-neutral-500',
+  S0: 'bg-neutral-300',
   S1: 'bg-warning-500/50',
   S2: 'bg-warning-500',
   S3: 'bg-warning-700',
   S4: 'bg-error-500',
   S5: 'bg-error-700',
-  SX: 'bg-neutral-500 dark:bg-neutral-400',
+  SX: 'bg-neutral-500',
 }
 
 const COLUMNAS = 'grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_5rem_9rem_8rem_1rem]'

@@ -106,7 +106,7 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // esas pantallas enteras a 13: compromisos del deudor, reporte diario,
 // suscripción, umbrales, fallidos y auditoría (35 textos a `text-caption`; los
 // rótulos en mayúsculas se quedan en 12).
-const CUANTOS_HABIA = 1702; // 22-10: bajó con el glow up (ratchet)
+const CUANTOS_HABIA = 1223; // 22-10: bajó con el glow up (ratchet)
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {
@@ -130,6 +130,8 @@ describe('🔴 el contenido no se lee en 12 píxeles', () => {
   /** Un barrido roto no puede pasar en verde para siempre. */
   it('el barrido mira archivos de verdad', () => {
     const { porArchivo } = contarDoce();
-    expect(porArchivo.size).toBeGreaterThan(400);
+    // 22-10 (glow up de los portales, el admin y las pantallas fuera de las rondas): los archivos con `text-xs` bajaron
+    // de ~450 a ~290 porque se limpiaron, no porque el barrido dejara de mirar. 200 sigue detectando un barrido roto.
+    expect(porArchivo.size).toBeGreaterThan(200);
   });
 });

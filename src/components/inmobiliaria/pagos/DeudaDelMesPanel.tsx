@@ -471,7 +471,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
   }
 
   // Los mismos decimales en toda la franja (revisión 22-10).
-  const plata = plataPareja([t?.totalCop, t?.pendienteCop, t?.pagadoCop, t?.porVencerCop, t?.vencidaEnPlazoCop, t?.carteraCop])
+  const plata = plataPareja([t?.totalCop, t?.pendienteCop, t?.pagadoCop, t?.porVencerCop, t?.vencidaEnPlazoCop, t?.carteraCop, interesDelMes, t?.totalConInteresCop])
   const cuantasCuotas = (n: number) => `${numberFormatter.format(n)} ${n === 1 ? 'cuota' : 'cuotas'}`
   const cuantosInquilinos = (n: number) => `${numberFormatter.format(n)} ${n === 1 ? 'inquilino' : 'inquilinos'}`
 
@@ -565,7 +565,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                   <span className="text-fg-muted" data-testid="mes-falta-con-intereses">
                     {' ('}
                     {traducir(CLAVE_DE_MORA.conIntereses, {
-                      monto: formatCurrency(
+                      monto: plata(
                         hayVencidasSinPlazo
                           ? (t?.pendienteCop ?? 0) + interesDelMes
                           : t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
@@ -651,7 +651,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                       title={traducir(CLAVE_DE_MORA.explicacion)}
                     >
                       {traducir(CLAVE_DE_MORA.masIntereses, {
-                        monto: formatCurrency(interesDelMes),
+                        monto: plata(interesDelMes),
                       })}
                     </span>
                   ) : null,

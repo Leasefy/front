@@ -42,6 +42,7 @@ import { finanzasApi } from '@/lib/api/finanzas.service';
 import type { CuadreDeTerceros as Respuesta } from '@/lib/api/finanzas.types';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { plataPareja } from '@/lib/format';
 // PG-13 (QA-PAGOS-95): «hasta el 4 de octubre de 2026», nunca «hasta el 2026-10-04».
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
@@ -373,6 +374,8 @@ function Cuadre({ datos }: { datos: Respuesta }) {
  * traslado hecho, o «sobra» donde sólo está lo tuyo sin trasladar.
  */
 function LaCuentaEnPalabras({ datos }: { datos: Respuesta }) {
+  // Los mismos decimales en toda la columna (revisión 22-10).
+  const plata = plataPareja((datos.renglones ?? []).map((r) => r.valorCop));
   return (
     <section className="space-y-3" data-testid="cuadre-renglones">
       <TituloDeBloque
@@ -399,7 +402,7 @@ function LaCuentaEnPalabras({ datos }: { datos: Respuesta }) {
               <p className="text-caption leading-relaxed text-fg-muted">{conLaPlataPegada(r.explicacion)}</p>
             </div>
             <p className={cn('shrink-0 font-mono text-body-sm tabular-nums', r.signo === '=' ? 'font-medium text-fg' : 'text-fg')}>
-              {r.valorCop === null ? '—' : formatCurrency(r.valorCop)}
+              {r.valorCop === null ? '—' : plata(r.valorCop)}
             </p>
           </li>
         ))}

@@ -422,7 +422,8 @@ export function CarteraCompleta() {
         >
           <div className="space-y-4 px-5 py-5 sm:px-6">
             <p className="font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle">{nombreDelCajon('CARTERA')}</p>
-            <div className="flex flex-col gap-x-4 gap-y-2 lg:flex-row lg:items-end lg:justify-between">
+            {/* Ronda 16 (390): más aire entre la cartera (con su barra) y la deuda total. */}
+            <div className="flex flex-col gap-x-4 gap-y-5 lg:flex-row lg:items-end lg:justify-between lg:gap-y-2">
               {/* Ronda 15: la cifra de la cartera y SU barra (por edad) en un mismo bloque. */}
               <div className="min-w-0 space-y-3 lg:flex-1">
               {/* La cartera: la cifra grande. Tocarla deja la tabla en la cartera. */}

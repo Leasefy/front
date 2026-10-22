@@ -14,7 +14,7 @@
  */
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { HubDeContabilidad } from '@/components/contabilidad/HubDeContabilidad';
 import { ROLES_DE_LA_CONTABILIDAD } from '@/lib/auth/roles-de-la-contabilidad';
 
@@ -22,15 +22,12 @@ export default function ContabilidadPage() {
   return (
     <PageGuard module="reportes" roles={ROLES_DE_LA_CONTABILIDAD} seccion="Contabilidad">
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-h2 text-fg">Contabilidad</h1>
-          {/* Lo que se viene a hacer aquí, en una línea (glow up 21-10): el cierre del mes. */}
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-            Cierra el mes con el libro en orden y entrégale al contador lo que firma. Un asiento nunca se
-            edita ni se borra: se reversa.
-          </p>
-        </header>
+        {/* Revisora r23 (Contabilidad #5): el encabezado común, con la sección del menú («Dinero») y una línea. */}
+        <EncabezadoDePantalla
+          seccion="Dinero"
+          titulo="Contabilidad"
+          descripcion="Cierra el mes con el libro en orden y entrégale al contador lo que firma."
+        />
         <HubDeContabilidad />
       </div>
     </PageGuard>

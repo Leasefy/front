@@ -148,6 +148,7 @@ import { RangoDeFechas } from './RangoDeFechas';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { CierreDePeriodo } from './asientos/CierreDePeriodo';
 import { PasosDeLaTarea, type EstadoDelPaso } from '@/components/pantalla/PasosDeLaTarea';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { EN_CURSO_EN_EL_CENTRO } from '@/components/procesos/estado-del-proceso';
 import { DetalleDeAsiento } from './asientos/DetalleDeAsiento';
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
@@ -1418,7 +1419,16 @@ export function HubDeContabilidad() {
                 ? 'El libro del mes en CSV y los informes que firma.'
                 : 'El libro del mes en CSV y los informes que firma. Mejor con el mes cerrado: así no cambia después.',
             estado: paso4,
-            fijo: <ParaElContador incrustado />,
+            // Revisora r23 (Contabilidad #1): siempre a la mano, pero abierto sólo cuando es el paso actual; antes
+            // ~470 px desplegados mientras el paso 1 era el que tocaba.
+            fijo:
+              paso4 === 'actual' ? (
+                <ParaElContador incrustado />
+              ) : (
+                <MasDetalles etiqueta="El libro en CSV y los informes que firma · Ver" etiquetaAbierto="Ocultar" montadoSiempre>
+                  <ParaElContador incrustado />
+                </MasDetalles>
+              ),
           },
         ]}
       />
@@ -1439,17 +1449,26 @@ export function HubDeContabilidad() {
       ) : null}
 
       {/* Para consultar: lo último que entró al libro (la fila abre el asiento). */}
-      <UltimosAsientos
-        asientos={datos.ultimos}
-        cargando={cargando}
-        fallo={falloDe('libro')}
-        onAbrir={setAsientoAbierto}
-      />
+      {/* Revisora r23 (Contabilidad #2): lo que se consulta, plegado; no es del cierre del mes. */}
+      <MasDetalles etiqueta="Últimos asientos del libro" etiquetaAbierto="Ocultar" montadoSiempre data-testid="ultimos-asientos-plegados">
+        <UltimosAsientos
+          asientos={datos.ultimos}
+          cargando={cargando}
+          fallo={falloDe('libro')}
+          onAbrir={setAsientoAbierto}
+        />
+      </MasDetalles>
 
       {/* Las pantallas, agrupadas por CUÁNDO se usan (antes, doce tarjetas iguales con ícono en un
           círculo de color y flecha). */}
+      <MasDetalles
+        etiqueta="Todas las pantallas de contabilidad"
+        etiquetaAbierto="Ocultar las pantallas"
+        montadoSiempre
+        data-testid="pantallas-de-contabilidad-plegadas"
+      >
       <section className="space-y-3" aria-labelledby="pantallas-de-contabilidad">
-        <h2 id="pantallas-de-contabilidad" className="text-sm font-medium text-fg">
+        <h2 id="pantallas-de-contabilidad" className="sr-only">
           Todas las pantallas de contabilidad
         </h2>
         <nav aria-label="Secciones de contabilidad" className="grid gap-x-5 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -1478,6 +1497,7 @@ export function HubDeContabilidad() {
           ))}
         </nav>
       </section>
+      </MasDetalles>
 
       {/* El asiento de «Últimos asientos», en el mismo cajón del libro. Si se
           reversa desde aquí, la portada se vuelve a leer: cambió el libro. */}

@@ -129,62 +129,50 @@ export function BandejaDeCartasDelIncremento({ puedeEditar }: { puedeEditar: boo
     );
   }
 
+  /*
+   * 21-10 (revisión de Operación): UN renglón, no una tarjeta con tres losetas
+   * grandes —casi siempre dos en cero— sobre la tabla de Renovaciones. Cada
+   * conteo sigue siendo el camino a la cola ya filtrada; el que está en cero se
+   * atenúa y el rojo sólo sale con constancias que faltan.
+   */
   return (
     <section
-      className="space-y-4 rounded-lg border border-border bg-card p-5"
+      className="flex flex-col gap-2 rounded-[16px] border border-border-faint bg-surface px-4 py-3 dark:border-border-strong dark:bg-bg lg:flex-row lg:items-center lg:justify-between lg:gap-4"
       data-testid="bandeja-de-cartas"
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <EnvelopeSimple className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-base font-semibold">Cartas del incremento</h2>
-        </div>
+      <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1">
+        <span className="mr-2 flex items-center gap-2 text-body-sm font-medium text-fg">
+          <EnvelopeSimple className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
+          Cartas del incremento
+        </span>
+        <span className="contents" data-testid="tablero-de-cartas">
+          <Loseta testid="sin-constancia" rotulo="sin constancia" cuantas={datos.vencidasSinConstancia} detalle="El aniversario ya pasó y no hay constancia." urgente />
+          <Loseta testid="por-enviar" rotulo="por enviar" cuantas={datos.porEnviar} detalle={`El aniversario llega en menos de ${datos.diasAntes} días.`} />
+          <Loseta testid="enviadas" rotulo="enviadas" cuantas={datos.enviadas} detalle="Con su constancia guardada." />
+        </span>
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1">
+        {!datos.disponible && (
+          <span className="text-caption text-warning-700 dark:text-warning-100">
+            Falta una actualización de la base: se ven las cartas, pero todavía no se pueden enviar.
+          </span>
+        )}
+        <span className="hidden text-caption text-fg-subtle xl:inline">
+          Salen {datos.diasAntes} días antes del aniversario; el canon sube igual.
+        </span>
         <Link
           href={RUTA_DE_LAS_CARTAS}
-          className="text-caption font-medium text-primary underline-offset-4 hover:underline"
+          className="text-body-sm font-medium text-primary underline-offset-4 hover:underline"
           data-testid="abrir-cola-de-cartas"
         >
           Abrir la cola →
         </Link>
       </div>
-      <p className="text-caption text-muted-foreground">
-        Cada carta aparece sola {datos.diasAntes} días antes del aniversario. El canon sube igual en la fecha; la carta
-        es transparencia.
-      </p>
-      {!datos.disponible && (
-        <p className="text-caption text-warning-700 dark:text-warning-100">
-          Falta una actualización de la base: se ven las cartas, pero todavía no se pueden enviar.
-        </p>
-      )}
-
-      {/* 🔴 El tablero: tres losetas, la roja primero, cada una un camino a la
-          cola ya filtrada. Antes acá empezaban 57 cartas de cuatro renglones. */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" data-testid="tablero-de-cartas">
-        <Loseta
-          testid="sin-constancia"
-          rotulo="Sin constancia"
-          cuantas={datos.vencidasSinConstancia}
-          detalle="El aniversario ya pasó y no hay constancia."
-          urgente
-        />
-        <Loseta
-          testid="por-enviar"
-          rotulo="Por enviar"
-          cuantas={datos.porEnviar}
-          detalle={`El aniversario llega en menos de ${datos.diasAntes} días.`}
-        />
-        <Loseta
-          testid="enviadas"
-          rotulo="Enviadas"
-          cuantas={datos.enviadas}
-          detalle="Con su constancia guardada."
-        />
-      </div>
     </section>
   );
 }
 
-/** Una loseta del tablero: el conteo ES el camino a esa parte de la cola. */
+/** Un conteo del renglón: el número ES el camino a esa parte de la cola. */
 function Loseta({
   rotulo,
   cuantas,
@@ -198,23 +186,18 @@ function Loseta({
   urgente?: boolean;
   testid: string;
 }) {
+  const grita = urgente && cuantas > 0;
   return (
     <Link
       href={`${RUTA_DE_LAS_CARTAS}?estado=${testid}`}
       data-testid={`loseta-${testid}`}
-      className={`block rounded-lg border p-3 transition-colors hover:bg-surface-muted ${
-        urgente && cuantas > 0 ? 'border-destructive/40 bg-destructive/5' : 'border-border'
+      title={detalle}
+      className={`inline-flex items-baseline gap-1.5 rounded-full px-2.5 py-1 text-body-sm transition-colors hover:bg-surface-muted ${
+        grita ? 'bg-destructive/5 text-destructive' : cuantas === 0 ? 'text-fg-subtle' : 'text-fg'
       }`}
     >
-      <p className="text-caption text-muted-foreground">{rotulo}</p>
-      <p
-        className={`font-mono text-2xl font-semibold tabular-nums ${
-          urgente && cuantas > 0 ? 'text-destructive' : 'text-foreground'
-        }`}
-      >
-        {cuantas}
-      </p>
-      <p className="text-caption text-muted-foreground">{detalle}</p>
+      <span className={`font-mono tabular-nums ${grita ? 'font-semibold' : ''}`}>{cuantas}</span>
+      <span>{rotulo}</span>
     </Link>
   );
 }

@@ -41,6 +41,11 @@ vi.mock('@/components/ui/toast', () => ({
 vi.mock('@leasefy/cadence', () => ({
   Eyebrow: ({ children }: { children?: React.ReactNode }) => React.createElement('span', null, children),
 }));
+// El encabezado común (21-10) y su «¿Cómo funciona?» tienen sus propias pruebas: acá sólo el título.
+vi.mock('@/components/pantalla/EncabezadoDePantalla', () => ({
+  EncabezadoDePantalla: ({ titulo }: { titulo?: React.ReactNode }) => React.createElement('h1', null, titulo),
+}));
+vi.mock('@/components/ui/para-entender-mas', () => ({ ParaEntenderMas: () => null }));
 vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children?: React.ReactNode }) => React.createElement(React.Fragment, null, children),
 }));

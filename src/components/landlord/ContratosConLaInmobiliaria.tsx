@@ -1,4 +1,5 @@
 'use client';
+import { StatusBadge } from '@leasefy/cadence';
 
 /**
  * Los contratos que una INMOBILIARIA le administra a este propietario.
@@ -242,15 +243,10 @@ export function ContratosConLaInmobiliaria({ doc }: { doc: EstadoDeCuenta }) {
                 {c.inmueble.direccion}
               </p>
             </div>
-            <span
-              className={
-                selloDelContrato(c).vivo
-                  ? 'rounded-full bg-success-soft px-2.5 py-0.5 text-body-sm text-success'
-                  : 'rounded-full bg-surface-muted px-2.5 py-0.5 text-body-sm text-fg-muted'
-              }
-            >
+            {/* El estado con su punto y su palabra (StatusBadge de Cadence). */}
+            <StatusBadge tone={selloDelContrato(c).vivo ? 'success' : 'neutral'}>
               {selloDelContrato(c).texto}
-            </span>
+            </StatusBadge>
             {fichas[c.id] && fichas[c.id] !== 'fallo' ? <ComoVa ficha={fichas[c.id] as FichaDelInmueble} giros={giros} /> : null}
             </Link>
           </li>

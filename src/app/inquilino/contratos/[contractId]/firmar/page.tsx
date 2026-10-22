@@ -61,9 +61,7 @@ function SigningSuccess({ locale, estado }: { locale: string; estado: ContractSt
   return (
     // Firmar → «¡Contrato firmado!»: la confirmación llega (es un cambio).
     <Appear className="max-w-lg mx-auto text-center py-16">
-      <div className="w-20 h-20 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-6">
-        <Confetti className="w-10 h-10 text-success" />
-      </div>
+      <Confetti className="w-10 h-10 text-success mx-auto mb-4" aria-hidden="true" />
       <h2 className="text-h3 text-fg mb-3" data-testid="firma-exitosa-titulo">
         {mensaje.titulo}
       </h2>

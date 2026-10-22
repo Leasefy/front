@@ -662,9 +662,7 @@ export default function ParaTiPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-plan-border">
             <div className="p-5 text-center">
-              <div className="w-10 h-10 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-medium font-mono tabular-nums text-success">40%</span>
-              </div>
+              <p className="mb-2 font-mono text-h3 tabular-nums text-success">40 %</p>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Asequibilidad' : 'Affordability'}
               </h3>
@@ -674,9 +672,7 @@ export default function ParaTiPage() {
             </div>
 
             <div className="p-5 text-center">
-              <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-medium font-mono tabular-nums text-primary">30%</span>
-              </div>
+              <p className="mb-2 font-mono text-h3 tabular-nums text-primary">30 %</p>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Compatibilidad' : 'Compatibility'}
               </h3>
@@ -686,9 +682,7 @@ export default function ParaTiPage() {
             </div>
 
             <div className="p-5 text-center">
-              <div className="w-10 h-10 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-medium font-mono tabular-nums text-fg-muted">15%</span>
-              </div>
+              <p className="mb-2 font-mono text-h3 tabular-nums text-fg-muted">15 %</p>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Perfil' : 'Profile'}
               </h3>
@@ -698,9 +692,7 @@ export default function ParaTiPage() {
             </div>
 
             <div className="p-5 text-center">
-              <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-medium font-mono tabular-nums text-warning">15%</span>
-              </div>
+              <p className="mb-2 font-mono text-h3 tabular-nums text-warning">15 %</p>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Preferencias' : 'Preferences'}
               </h3>

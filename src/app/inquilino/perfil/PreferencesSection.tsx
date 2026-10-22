@@ -229,7 +229,7 @@ export function PreferencesSection() {
               isLoading={isSaving}
               onClick={handleSave}
               disabled={isSaving}
-              className="gap-1.5 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
+              className="gap-1.5"
             >
               {!isSaving && <FloppyDisk className="w-3.5 h-3.5" />}
               {t('common.save')}

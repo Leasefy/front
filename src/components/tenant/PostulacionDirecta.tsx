@@ -256,11 +256,9 @@ export function PostulacionDirecta({
           {/* Qué inmueble */}
           <div className="border-b border-border p-6">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft">
-                <CheckCircle className="h-5 w-5 text-primary" weight="fill" />
-              </div>
+              <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" weight="fill" aria-hidden="true" />
               <div className="min-w-0 space-y-1">
-                <h1 className="text-xl font-semibold text-foreground">
+                <h1 className="text-h3 text-foreground">
                   Ya tenemos todo lo tuyo
                 </h1>
                 <p className="text-sm text-muted-foreground">

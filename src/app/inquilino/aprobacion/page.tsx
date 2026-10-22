@@ -461,9 +461,7 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
 function ExpiradoView({ tf }: { tf: (k: string, f: string) => string }) {
   return (
     <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-3">
-      <div className="w-12 h-12 rounded-full bg-warning-soft flex items-center justify-center">
-        <Clock className="w-6 h-6 text-warning" aria-hidden="true" />
-      </div>
+      <Clock className="w-6 h-6 text-warning" aria-hidden="true" />
       <h2 className="text-h3 text-fg">
         {tf(`${NS}.expirado.title`, 'Tu tiempo para completar la aprobación venció')}
       </h2>
@@ -495,9 +493,7 @@ function ErrorEstudioView({
 }) {
   return (
     <section className="rounded-lg border border-border bg-surface p-8 shadow-sm space-y-3">
-      <div className="w-12 h-12 rounded-full bg-danger-soft flex items-center justify-center">
-        <WarningOctagon className="w-6 h-6 text-danger" aria-hidden="true" />
-      </div>
+      <WarningOctagon className="w-6 h-6 text-danger" aria-hidden="true" />
       <h2 className="text-h3 text-fg">
         {tf(`${NS}.error.title`, 'Algo falló al hacer tu estudio')}
       </h2>

@@ -652,7 +652,7 @@ export default function PerfilPage() {
                       isLoading={isSaving}
                       onClick={handleSaveAvatar}
                       disabled={isSaving}
-                      className="flex-1 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
+                      className="flex-1"
                     >
                       {!isSaving && <FloppyDisk className="w-4 h-4" />}
                       {t('common.save')}
@@ -720,7 +720,7 @@ export default function PerfilPage() {
                       isLoading={isSaving}
                       onClick={() => handleSaveProfile(editablePersonalFields(user))}
                       disabled={isSaving}
-                      className="gap-1.5 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
+                      className="gap-1.5"
                     >
                       {!isSaving && <FloppyDisk className="w-3.5 h-3.5" />}
                       {t('common.save')}
@@ -936,7 +936,7 @@ export default function PerfilPage() {
                       isLoading={isSaving}
                       onClick={() => handleSaveProfile(EMERGENCY_FIELDS)}
                       disabled={isSaving}
-                      className="gap-1.5 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
+                      className="gap-1.5"
                     >
                       {!isSaving && <FloppyDisk className="w-3.5 h-3.5" />}
                       {t('common.save')}

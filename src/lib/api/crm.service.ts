@@ -13,6 +13,7 @@
  * 403, 5xx y red = fallo con reintento.
  */
 
+import { enviarFormulario } from './ciclo-de-vida.service'
 import { ApiError, apiClient } from '@/lib/api/client'
 
 const BASE = '/inmobiliaria'
@@ -640,6 +641,15 @@ export interface DocumentoDelMandato {
   createdAt: string
 }
 
+/** Un papel que falta (o venció). `propietarioId`: de qué dueño, en un inmueble con varios. */
+export interface PapelQueFalta {
+  tipo: string
+  nombre: string
+  porQue: string
+  detalle: string
+  propietarioId?: string | null
+}
+
 export interface DocumentosDelMandato {
   disponible: boolean
   motivo: string | null
@@ -647,11 +657,11 @@ export interface DocumentosDelMandato {
   documentos: DocumentoDelMandato[]
   paraPublicar: {
     completo: boolean
-    falta: { tipo: string; nombre: string; porQue: string; detalle: string }[]
+    falta: PapelQueFalta[]
   }
   paraElPrimerGiro: {
     completo: boolean
-    falta: { tipo: string; nombre: string; porQue: string; detalle: string }[]
+    falta: PapelQueFalta[]
   }
   /**
    * IN-14 (QA 04-10): si ya se le giró a alguno de los dueños del mandato. Con
@@ -718,6 +728,22 @@ export const captacionApi = {
     apiClient.get<DocumentosDelMandato>(
       `${BASE}/captacion/mandatos/${consignacionId}/documentos`,
     ),
+
+  /**
+   * Sube un papel del mandato (POST multipart, campo `archivo`; PDF o imagen de
+   * hasta 10 MB). El certificado de tradición exige `expedidoEl` (AAAA-MM-DD).
+   */
+  subirDocumento: (
+    consignacionId: string,
+    datos: { tipo: string; propietarioId?: string | null; expedidoEl?: string; archivo: File },
+  ) => {
+    const formulario = new FormData()
+    formulario.append('tipo', datos.tipo)
+    if (datos.propietarioId) formulario.append('propietarioId', datos.propietarioId)
+    if (datos.expedidoEl) formulario.append('expedidoEl', datos.expedidoEl)
+    formulario.append('archivo', datos.archivo)
+    return enviarFormulario<unknown>(`${BASE}/captacion/mandatos/${consignacionId}/documentos`, formulario)
+  },
 
   urlDelDocumento: (id: string) =>
     apiClient.get<{ url: string }>(`${BASE}/captacion/documentos/${id}/url`),

@@ -38,7 +38,8 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { Badge, Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { TarjetaDeLaFicha as SectionCard } from '@/components/pantalla/TarjetaDeLaFicha'
-import { captacionApi } from '@/lib/api/crm.service'
+import { captacionApi, type PapelQueFalta } from '@/lib/api/crm.service'
+import { SubirPapelDelMandato } from './SubirPapelDelMandato'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { useCrm } from '@/lib/hooks/use-crm'
 
@@ -68,17 +69,18 @@ interface Props {
  * («con su fecha de expedición, vale 30 días»).
  */
 export function agruparLoQueFalta(
-  falta: { tipo: string; nombre: string; porQue: string; detalle: string }[],
-): { clave: string; nombre: string; detalle: string | null; vencido: boolean; veces: number }[] {
-  const grupos = new Map<string, { clave: string; nombre: string; detalle: string | null; vencido: boolean; veces: number }>();
+  falta: PapelQueFalta[],
+): { clave: string; nombre: string; detalle: string | null; vencido: boolean; veces: number; papel: PapelQueFalta }[] {
+  const grupos = new Map<string, { clave: string; nombre: string; detalle: string | null; vencido: boolean; veces: number; papel: PapelQueFalta }>();
   for (const f of falta) {
-    const clave = `${f.tipo}-${f.nombre}-${f.porQue}`;
+    // 22-10: con el dueño en la clave — la cédula de Jorge y la de Ana son dos papeles.
+    const clave = `${f.tipo}-${f.nombre}-${f.porQue}-${f.propietarioId ?? ''}`;
     const yaEsta = grupos.get(clave);
     if (yaEsta) {
       yaEsta.veces += 1;
       continue;
     }
-    grupos.set(clave, { clave, nombre: f.nombre, detalle: loQueAgrega(f.nombre, f.detalle), vencido: f.porQue === 'VENCIDO', veces: 1 });
+    grupos.set(clave, { clave, nombre: f.nombre, detalle: loQueAgrega(f.nombre, f.detalle), vencido: f.porQue === 'VENCIDO', veces: 1, papel: f });
   }
   return [...grupos.values()];
 }
@@ -109,13 +111,16 @@ function Puerta({
   completo,
   falta,
   soloElNumero = false,
+  onSubir,
 }: {
   titulo: string
   cuando: string
   completo: boolean
-  falta: { tipo: string; nombre: string; porQue: string; detalle: string }[]
+  falta: PapelQueFalta[]
   /** «2» en vez de «Faltan 2» cuando el rótulo ya dice «Documentos que faltan». */
   soloElNumero?: boolean
+  /** Abre la subida de ESE papel (22-10). Sin permiso de editar no se ofrece. */
+  onSubir?: (papel: PapelQueFalta) => void
 }) {
   return (
     <div className="space-y-1.5" data-testid={`puerta-${titulo}`}>
@@ -148,7 +153,7 @@ function Puerta({
       {falta.length > 0 ? (
         <ul className="space-y-1.5 text-sm">
           {agruparLoQueFalta(falta).map((f) => (
-            <li key={f.clave} className="flex items-start gap-2.5">
+            <li key={f.clave} className="flex items-start gap-2.5" data-testid={`papel-que-falta-${f.papel.tipo}`}>
               <span
                 className={cn(
                   'mt-[5px] h-2.5 w-2.5 shrink-0 rounded-full border',
@@ -156,7 +161,7 @@ function Puerta({
                 )}
                 aria-hidden="true"
               />
-              <span className="min-w-0">
+              <span className="min-w-0 flex-1">
                 <span className={f.vencido ? 'text-danger' : 'text-fg'}>
                   {f.nombre}
                   {f.vencido ? ' (vencido)' : ''}
@@ -166,6 +171,18 @@ function Puerta({
                 ) : null}
                 {f.detalle ? <span className="text-fg-muted"> — {f.detalle}</span> : null}
               </span>
+              {onSubir ? (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  hideArrow
+                  className="ml-auto h-7 shrink-0 px-3"
+                  onClick={() => onSubir(f.papel)}
+                  data-testid={`subir-papel-${f.papel.tipo}`}
+                >
+                  {f.vencido ? 'Subir uno nuevo' : 'Subir'}
+                </Button>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -209,6 +226,8 @@ export function MandatoDelInmueble({
   )
 
   const [descargando, setDescargando] = useState(false)
+  /** El papel que se está subiendo (22-10: cada papel que falta trae su «Subir»). */
+  const [papelASubir, setPapelASubir] = useState<PapelQueFalta | null>(null)
 
   // El mandato firmado, con la huella comprobada por el back: si el archivo no
   // es el que firmó el propietario, el back no da el enlace y se dice por qué.
@@ -262,85 +281,11 @@ export function MandatoDelInmueble({
     <div data-testid="mandato-del-inmueble">
       <SectionCard title="Papeles y firma del mandato" icon={<FileText className="h-4 w-4" />}>
       <div className="space-y-5">
-        {documentos.noHabilitado ? (
-          <p
-            className="text-muted-foreground text-sm"
-            data-testid="mandato-no-habilitado"
-          >
-            {motivoEnCristiano(documentos.noHabilitado)}
-          </p>
-        ) : (
-          <EstadoDeDatos
-            cargando={documentos.cargando}
-            error={documentos.errorCrudo}
-            queEs="los documentos del mandato"
-            onReintentar={documentos.refetch}
-            conservarContenido
-          >
-            {documentos.datos ? (
-              <div className="space-y-4">
-                {/* 🔴 Dos puertas, separadas: son dos riesgos distintos. */}
-                <Puerta
-                  titulo="publicar"
-                  cuando="Antes de publicar"
-                  completo={documentos.datos.paraPublicar.completo}
-                  falta={documentos.datos.paraPublicar.falta}
-                />
-                {/* IN-14 (QA 04-10): a un inmueble que ya gira hace meses le
-                    seguía diciendo «Antes del primer giro — Faltan 2». Si ya
-                    hubo giros, son «Documentos que faltan» y punto. */}
-                <Puerta
-                  titulo="giro"
-                  cuando={yaHuboGiros ? 'Documentos que faltan' : 'Antes del primer giro'}
-                  soloElNumero={yaHuboGiros}
-                  completo={documentos.datos.paraElPrimerGiro.completo}
-                  falta={documentos.datos.paraElPrimerGiro.falta}
-                />
-
-                {documentos.datos.documentos.filter((d) => !d.reemplazadoEl)
-                  .length > 0 ? (
-                  <ul className="divide-y" data-testid="documentos-del-mandato">
-                    {documentos.datos.documentos
-                      .filter((d) => !d.reemplazadoEl)
-                      .map((d) => (
-                        <li
-                          key={d.id}
-                          className="flex items-center justify-between gap-2 py-2 text-sm"
-                          data-testid={`documento-${d.tipo}`}
-                        >
-                          <span className="flex items-center gap-1.5">
-                            <FileText className="text-muted-foreground h-4 w-4" />
-                            {d.nombreDelTipo}
-                          </span>
-                          {/* Los días que le quedan al certificado: es lo
-                              accionable, no «está». */}
-                          {d.diasQueLeQuedan !== null ? (
-                            <Badge
-                              variant={
-                                d.diasQueLeQuedan <= 0
-                                  ? 'destructive'
-                                  : d.diasQueLeQuedan <= 7
-                                    ? 'outline'
-                                    : 'secondary'
-                              }
-                            >
-                              {d.diasQueLeQuedan <= 0
-                                ? 'Vencido'
-                                : `${d.diasQueLeQuedan} días`}
-                            </Badge>
-                          ) : null}
-                        </li>
-                      ))}
-                  </ul>
-                ) : null}
-              </div>
-            ) : null}
-          </EstadoDeDatos>
-        )}
-
+        {/* 22-10 (revisión): la firma primero —es el primer paso de «lo que falta»
+            en el Resumen—, después los papeles, cada uno con su «Subir». */}
         {/* La firma del mandato */}
         {!firmas.noHabilitado ? (
-          <div className="space-y-2 border-t pt-4" data-testid="firma-del-mandato">
+          <div className="space-y-2 border-b border-border-faint pb-5 dark:border-border-strong" data-testid="firma-del-mandato">
             <p className="text-sm font-medium">Firma del mandato</p>
             {/* 🔴 Antes sólo decía «todavía no está firmado», sin decir quién
                 firma ni por qué (Nico, 18-09-2026). Sin eso, el botón es un
@@ -392,7 +337,7 @@ export function MandatoDelInmueble({
                 disabled={pidiendo}
                 data-testid="pedir-firma"
               >
-                Crear enlace de firma
+                Mandar a firmar
               </Button>
             ) : null}
 
@@ -487,9 +432,96 @@ export function MandatoDelInmueble({
           </div>
         ) : null}
 
+        {documentos.noHabilitado ? (
+          <p
+            className="text-muted-foreground text-sm"
+            data-testid="mandato-no-habilitado"
+          >
+            {motivoEnCristiano(documentos.noHabilitado)}
+          </p>
+        ) : (
+          <EstadoDeDatos
+            cargando={documentos.cargando}
+            error={documentos.errorCrudo}
+            queEs="los documentos del mandato"
+            onReintentar={documentos.refetch}
+            conservarContenido
+          >
+            {documentos.datos ? (
+              <div className="space-y-4">
+                {/* 🔴 Dos puertas, separadas: son dos riesgos distintos. */}
+                <Puerta
+                  titulo="publicar"
+                  cuando="Antes de publicar"
+                  completo={documentos.datos.paraPublicar.completo}
+                  falta={documentos.datos.paraPublicar.falta}
+                  onSubir={puedeEditar ? setPapelASubir : undefined}
+                />
+                {/* IN-14 (QA 04-10): a un inmueble que ya gira hace meses le
+                    seguía diciendo «Antes del primer giro — Faltan 2». Si ya
+                    hubo giros, son «Documentos que faltan» y punto. */}
+                <Puerta
+                  titulo="giro"
+                  cuando={yaHuboGiros ? 'Documentos que faltan' : 'Antes del primer giro'}
+                  soloElNumero={yaHuboGiros}
+                  completo={documentos.datos.paraElPrimerGiro.completo}
+                  falta={documentos.datos.paraElPrimerGiro.falta}
+                  onSubir={puedeEditar ? setPapelASubir : undefined}
+                />
+
+                {documentos.datos.documentos.filter((d) => !d.reemplazadoEl)
+                  .length > 0 ? (
+                  <ul className="divide-y" data-testid="documentos-del-mandato">
+                    {documentos.datos.documentos
+                      .filter((d) => !d.reemplazadoEl)
+                      .map((d) => (
+                        <li
+                          key={d.id}
+                          className="flex items-center justify-between gap-2 py-2 text-sm"
+                          data-testid={`documento-${d.tipo}`}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <FileText className="text-muted-foreground h-4 w-4" />
+                            {d.nombreDelTipo}
+                          </span>
+                          {/* Los días que le quedan al certificado: es lo
+                              accionable, no «está». */}
+                          {d.diasQueLeQuedan !== null ? (
+                            <Badge
+                              variant={
+                                d.diasQueLeQuedan <= 0
+                                  ? 'destructive'
+                                  : d.diasQueLeQuedan <= 7
+                                    ? 'outline'
+                                    : 'secondary'
+                              }
+                            >
+                              {d.diasQueLeQuedan <= 0
+                                ? 'Vencido'
+                                : `${d.diasQueLeQuedan} días`}
+                            </Badge>
+                          ) : null}
+                        </li>
+                      ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+          </EstadoDeDatos>
+        )}
+
         {/* 🔴 C-10 (Nico, 02-10-2026): «Registrar la venta» y la comisión de
             venta del mandato, viva o anulada con su motivo. */}
         <VentaDelInmueble consignacionId={consignacionId} />
+        <SubirPapelDelMandato
+          consignacionId={consignacionId}
+          papel={papelASubir}
+          onCerrar={() => setPapelASubir(null)}
+          onSubido={() => {
+            invalidar('portafolio')
+            void documentos.refetch()
+          }}
+        />
       </div>
       </SectionCard>
     </div>

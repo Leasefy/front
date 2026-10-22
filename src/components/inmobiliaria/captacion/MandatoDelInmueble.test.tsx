@@ -27,6 +27,7 @@ const { api, toastError } = vi.hoisted(() => ({
         envio: 'ENVIADO',
       }),
     ),
+    subirDocumento: vi.fn(async (): Promise<unknown> => ({})),
     mandatoFirmado: vi.fn(
       async (): Promise<unknown> => ({
         url: 'https://almacen/mandato.pdf?firmada',
@@ -49,6 +50,7 @@ vi.mock('@/lib/api/crm.service', async () => {
       firmas: () => api.firmas(),
       pedirFirmaElectronica: api.pedirFirma,
       mandatoFirmado: api.mandatoFirmado,
+      subirDocumento: api.subirDocumento,
       // La venta del inmueble (02-10-2026) vive en la misma tarjeta; tiene su
       // propia prueba (`VentaDelInmueble.test.tsx`).
       comisionesDeVenta: async () => ({ disponible: true, motivo: null, viva: null, anuladas: [] }),
@@ -366,5 +368,63 @@ describe('MandatoDelInmueble — el error al pedir la firma', () => {
       new ApiError(409, 'Ya hay una firma pendiente para este mandato.', 'FIRMA_PENDIENTE'),
     )
     expect(await pedirLaFirma()).toBe('Ya hay una firma pendiente para este mandato.')
+  })
+})
+
+/*
+ * 🔴 22-10 (revisión de la ficha): cada papel que falta trae su «Subir» —antes
+ * «Ver los papeles» llevaba a una lista sin salida—. La ruta es la del back desde
+ * el 18-09; el certificado de tradición pide su fecha de expedición.
+ */
+describe('subir un papel del mandato', () => {
+  beforeEach(() => {
+    contenedor = document.createElement('div')
+    document.body.appendChild(contenedor)
+    root = createRoot(contenedor)
+    api.documentos = () => Promise.resolve(DOCUMENTOS)
+    api.firmas = () => Promise.resolve({ disponible: true, motivo: null, firmas: [] })
+    api.subirDocumento.mockClear()
+  })
+  afterEach(() => {
+    act(() => root?.unmount())
+    contenedor.remove()
+    document.body.innerHTML = ''
+  })
+
+  it('cada papel que falta ofrece «Subir»; sin permiso de editar, no', async () => {
+    await pintar(true)
+    expect($('[data-testid="subir-papel-RUT"]')).not.toBeNull()
+    expect($('[data-testid="subir-papel-MANDATO_FIRMADO"]')).not.toBeNull()
+    act(() => root?.unmount())
+    root = createRoot(contenedor)
+    await pintar(false)
+    expect($('[data-testid="subir-papel-RUT"]')).toBeNull()
+  })
+
+  it('sin archivo no se manda nada y se dice qué falta; con archivo va a la ruta del mandato', async () => {
+    await pintar(true)
+    await clic($('[data-testid="subir-papel-RUT"]') as HTMLElement)
+    expect($$('[data-testid="cajon-subir-papel"]')).not.toBeNull()
+    await clic($$('[data-testid="confirmar-subir-papel"]'))
+    expect(api.subirDocumento).not.toHaveBeenCalled()
+    expect(document.body.textContent).toContain('Elige el archivo.')
+
+    const input = $$('[data-testid="archivo-del-papel"]') as HTMLInputElement
+    const archivo = new File(['%PDF'], 'rut.pdf', { type: 'application/pdf' })
+    await act(async () => {
+      Object.defineProperty(input, 'files', { value: [archivo], configurable: true })
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await clic($$('[data-testid="confirmar-subir-papel"]'))
+    expect(api.subirDocumento).toHaveBeenCalledWith('cons-1', expect.objectContaining({ tipo: 'RUT', archivo }))
+  })
+})
+
+describe('problemaDelArchivo', () => {
+  it('PDF o foto de hasta 10 MB', async () => {
+    const { problemaDelArchivo } = await import('./SubirPapelDelMandato')
+    expect(problemaDelArchivo(null)).toBe('Elige el archivo.')
+    expect(problemaDelArchivo(new File(['x'], 'a.docx', { type: 'application/msword' }))).toContain('PDF o una foto')
+    expect(problemaDelArchivo(new File(['x'], 'a.pdf', { type: 'application/pdf' }))).toBeNull()
   })
 })

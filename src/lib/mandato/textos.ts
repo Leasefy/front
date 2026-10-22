@@ -41,7 +41,8 @@ export const SIN_MODALIDAD_PACTADA =
  * decida quien genera los giros, sin regla especial pactada en el mandato.
  */
 export function modalidadEnPalabras(m: ModalidadResuelta | null | undefined): string {
-  if (!m?.modalidad) return 'Como siempre, sin regla especial';
+  // 22-10 (revisión): «Como siempre» no decía la regla; ésta es la regla en una frase.
+  if (!m?.modalidad) return 'Sin regla pactada: se liquida como el resto';
   return m.fuente === 'INMOBILIARIA'
     ? `${NOMBRE_DE_LA_MODALIDAD[m.modalidad]} (la de la inmobiliaria)`
     : NOMBRE_DE_LA_MODALIDAD[m.modalidad];

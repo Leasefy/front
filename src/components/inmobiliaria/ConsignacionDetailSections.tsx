@@ -32,6 +32,7 @@ import { formatParticipacion } from '@/lib/types/inmobiliaria';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { useTr } from '@/lib/i18n/use-tr';
 import { inventarioDeLaFicha, useActasDelMandato } from '@/lib/actas/actas-del-mandato';
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
@@ -88,6 +89,9 @@ export function TerminosDelMandatoSection({ consignacion, onEditar }: TerminosDe
   const tr = useTr();
   const terminada = consignacion.status === 'terminated';
   const sinVencimiento = !consignacion.contractEndDate;
+  // Sin comisión que decir: una venta sin % de venta, o un arriendo cuya comisión no llegó.
+  const comisionSinDato =
+    consignacion.listingType === 'sale' ? consignacion.saleCommissionPercent == null : consignacion.comisionDesconocida === true;
   const ROTULO = 'font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle';
   const VALOR = 'mt-1.5 whitespace-nowrap text-[15px] font-medium tabular-nums text-fg';
 
@@ -100,8 +104,18 @@ export function TerminosDelMandatoSection({ consignacion, onEditar }: TerminosDe
         </div>
         <div className="min-w-0">
           <dt className={ROTULO}>{tr('Vence')}</dt>
-          <dd className={cn(VALOR, sinVencimiento && 'font-normal text-fg-muted')}>
-            {consignacion.contractEndDate ? formatDate(consignacion.contractEndDate) : tr('Sin fecha')}
+          {/* 22-10 (revisión): lo que falta se dice DENTRO de su celda, con su salida
+              (antes, además, un renglón ámbar abajo que lo repetía). */}
+          <dd className={cn(VALOR, sinVencimiento && 'font-normal text-fg-muted')} data-testid={sinVencimiento && !terminada ? 'mandato-sin-vencimiento' : undefined}>
+            {consignacion.contractEndDate ? fechaCorta(consignacion.contractEndDate) : tr('Sin fecha')}
+            {sinVencimiento && !terminada && onEditar ? (
+              <>
+                {' · '}
+                <button type="button" onClick={onEditar} className="font-medium text-primary underline-offset-4 hover:underline">
+                  {tr('Ponerla')}
+                </button>
+              </>
+            ) : null}
           </dd>
         </div>
         <div className="min-w-0">
@@ -110,7 +124,21 @@ export function TerminosDelMandatoSection({ consignacion, onEditar }: TerminosDe
               ? t('inmobiliaria.consignaciones.header.saleCommission')
               : t('inmobiliaria.consignaciones.header.commission')}
           </dt>
-          <dd className={cn(VALOR, 'font-mono')} data-testid="comision-del-mandato">{textoDeLaComision(consignacion)}</dd>
+          {comisionSinDato ? (
+            <dd className={cn(VALOR, 'font-normal text-fg-muted')} data-testid="comision-del-mandato">
+              {consignacion.listingType === 'sale' ? tr('Sin pactar') : tr('Sin comisión registrada')}
+              {!terminada && onEditar ? (
+                <>
+                  {' · '}
+                  <button type="button" onClick={onEditar} className="font-medium text-primary underline-offset-4 hover:underline">
+                    {tr('Ponerla')}
+                  </button>
+                </>
+              ) : null}
+            </dd>
+          ) : (
+            <dd className={cn(VALOR, 'font-mono')} data-testid="comision-del-mandato">{textoDeLaComision(consignacion)}</dd>
+          )}
         </div>
         {/* `> 0` y no `&&` a secas: con `0` React pinta el «0» suelto. */}
         {!!consignacion.minimumTerm && consignacion.minimumTerm > 0 ? (
@@ -122,26 +150,6 @@ export function TerminosDelMandatoSection({ consignacion, onEditar }: TerminosDe
           </div>
         ) : null}
       </dl>
-
-      {sinVencimiento && !terminada ? (
-        <div
-          className="mt-5 flex flex-col gap-3 border-t border-border-faint pt-5 dark:border-border-strong sm:flex-row sm:items-center sm:justify-between"
-          data-testid="mandato-sin-vencimiento"
-        >
-          <p className="flex min-w-0 items-start gap-2.5 text-body-sm text-fg-muted">
-            <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-warning-500" aria-hidden="true" />
-            <span>
-              <span className="font-medium text-fg">{tr('El mandato no tiene fecha de vencimiento.')}</span>{' '}
-              {tr('Con la fecha, Leasefy le avisa al asesor y al gerente 30 días antes.')}
-            </span>
-          </p>
-          {onEditar ? (
-            <Button variant="secondary" size="sm" hideArrow className="shrink-0 self-start sm:self-auto" onClick={onEditar}>
-              {tr('Poner la fecha')}
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
     </SectionCard>
   );
 }

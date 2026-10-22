@@ -367,7 +367,8 @@ export function PropietarioTable({
 
           {/* Results Count */}
           <span className="ml-auto text-sm text-muted-foreground tabular-nums">
-            <AnimatedNumber value={totalFiltrado} format={(n) => String(Math.round(n))} /> {t('inmobiliaria.propietario.table.of')} {total}
+            {/* Ronda 13: con separador de miles («1.751 de 1.751»). */}
+            <AnimatedNumber value={totalFiltrado} format={(n) => Math.round(n).toLocaleString('es-CO')} /> {t('inmobiliaria.propietario.table.of')} {total.toLocaleString('es-CO')}
           </span>
         </div>
 

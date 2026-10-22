@@ -1,9 +1,10 @@
 'use client';
+import { CambiarCorreoDeEntrada } from '@/components/cuenta/CambiarCorreoDeEntrada';
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Envelope, Phone, MapPin, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, TrashSimple, Pencil, Upload, Buildings } from '@phosphor-icons/react';
+import { User, Phone, MapPin, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, TrashSimple, Pencil, Upload, Buildings } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
 import { cn } from '@/lib/utils';
@@ -832,10 +833,7 @@ export default function InmobiliariaPerfilPage() {
                 {/* Email — read-only */}
                 <div>
                   <label className="block text-sm font-medium text-fg mb-2">Email</label>
-                  <div className={fieldDisplay}>
-                    <Envelope className="w-4 h-4 text-fg-muted" />
-                    <span className="text-sm text-fg">{formData.email || '—'}</span>
-                  </div>
+                  <CambiarCorreoDeEntrada correo={formData.email} className={fieldDisplay} />
                 </div>
 
                 {/* Teléfono */}

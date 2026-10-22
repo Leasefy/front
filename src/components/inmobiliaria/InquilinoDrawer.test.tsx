@@ -44,7 +44,9 @@ vi.mock('@/lib/i18n', () => ({
 // El botón «Enviar mensaje» de la cabecera navega con el router de Next, que
 // en un test sin App Router no existe.
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  // La ficha propia (enFicha) arma sus pestañas con `?pestana=`.
+  useSearchParams: () => new URLSearchParams(''),
 }));
 
 // Copiar un dato de contacto avisa con un toast; el cajón no lo pinta él mismo.
@@ -235,6 +237,13 @@ describe('inicialesDe', () => {
 })
 
 describe('<CuerpoDelCajon>', () => {
+  it('en la ficha propia el nombre es el título de la página (h1); en el cajón no', () => {
+    montar(detalle())
+    expect(container!.querySelector('h1')).toBeNull()
+    act(() => root!.render(<CuerpoDelCajon detalle={detalle()} enFicha />))
+    expect(container!.querySelector('h1')?.textContent).toBe('Esteban López Quintero')
+  })
+
   it('la cabecera trae nombre, correo y teléfono', () => {
     montar(detalle())
     expect(texto()).toContain('Esteban López Quintero')

@@ -735,9 +735,17 @@ export function CuerpoDelCajon({
                 `SheetTitle` del envoltorio (un `h2`). Éste era otro `h2` con
                 el mismo texto. Y se ajusta en dos renglones: a 390 px se
                 cortaba en «Ana So…». */}
-            <p className="break-words text-lg font-semibold leading-snug text-fg" data-testid="inquilino-cajon-nombre">
-              {persona.nombre}
-            </p>
+            {/* En la ficha propia el nombre ES el título de la página (su h1, como
+                en las otras fichas); en el cajón el título accesible es el SheetTitle. */}
+            {enFicha ? (
+              <h1 className="break-words text-h2 leading-snug text-fg" data-testid="inquilino-cajon-nombre">
+                {persona.nombre}
+              </h1>
+            ) : (
+              <p className="break-words text-lg font-semibold leading-snug text-fg" data-testid="inquilino-cajon-nombre">
+                {persona.nombre}
+              </p>
+            )}
             <p className="mt-0.5 text-xs text-fg-subtle">
               {sinArriendos
                 ? t('inquilinos.sinArriendo')

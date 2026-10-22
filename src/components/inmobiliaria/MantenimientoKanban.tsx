@@ -46,6 +46,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getMantenimientoTypeInfo } from '@/lib/types/inmobiliaria';
 import { detectarColumnaDelPuntero } from './mantenimiento-kanban-colisiones';
+import { diasDeCalendarioDesde } from '@/lib/fechas/dias-de-calendario';
 
 // ============================================================================
 // Types
@@ -175,11 +176,9 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
 // Helper Functions
 // ============================================================================
 
+/** Días de calendario (hoy = 0): con `Math.ceil`, lo de hace minutos decía «Hace 1 día». */
 function getDaysSinceCreated(createdAt: string): number {
-  const created = new Date(createdAt);
-  const now = new Date();
-  const diffTime = now.getTime() - created.getTime();
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diasDeCalendarioDesde(createdAt);
 }
 
 // ============================================================================

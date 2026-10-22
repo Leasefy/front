@@ -4097,6 +4097,7 @@
       "timeline": {
         "title": "History",
         "eventsCount": "{{count}} events",
+        "eventsCountOne": "1 event",
         "showLess": "Show less",
         "showMoreEvents": "Show {{count}} more events",
         "noEvents": "No activity yet",

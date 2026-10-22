@@ -11,7 +11,6 @@ import {
   Bank,
   Phone,
   Envelope,
-  ArrowRight,
   FileText,
   Images,
   UserCircle,
@@ -289,7 +288,6 @@ export function PropietarioSection({
             )}
             <Link href={perfil} className="inline-flex items-center gap-1 text-body-sm font-medium text-primary underline-offset-2 hover:underline">
               {t('inmobiliaria.consignaciones.detail.viewProfile')}
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>
         </div>
@@ -740,7 +738,6 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
                 <p className="font-medium text-fg text-sm">{t(k('consignmentContract'))}</p>
                 <p className="text-xs text-fg-muted">{t(k('consignmentContractView'))}</p>
               </div>
-              <ArrowRight className="w-4 h-4 text-fg-subtle" />
             </button>
             <Button
               variant="link"
@@ -815,7 +812,6 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
               {subtituloDelActa}
             </p>
           </div>
-          <ArrowRight className="w-4 h-4 shrink-0 text-fg-subtle" />
         </Link>
 
         {/* Photos Gallery */}

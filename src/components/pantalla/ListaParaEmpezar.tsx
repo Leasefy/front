@@ -192,7 +192,9 @@ export function ListaParaEmpezar({
               key={r.id}
               className={cn(
                 'flex flex-col gap-3 px-5 py-3.5 sm:flex-row sm:items-center',
-                r.id === siguiente && 'bg-primary-soft',
+                // 22-10 (revisión): el paso actual se marca con su número en voltaje
+                // (la única chispa); el renglón, en arena, no en azul.
+                r.id === siguiente && 'bg-surface-muted/70',
               )}
               data-testid={testId ? `${testId}-${r.id}` : undefined}
               data-estado={r.estado}
@@ -208,7 +210,7 @@ export function ListaParaEmpezar({
                   >
                     {r.titulo}
                     {r.id === siguiente ? (
-                      <span className="rounded-full bg-primary px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-wide text-primary-fg">
+                      <span className="rounded-full border border-fg/70 px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-wide text-fg">
                         {tr('Sigue')}
                       </span>
                     ) : null}

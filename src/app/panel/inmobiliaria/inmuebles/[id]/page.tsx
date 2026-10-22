@@ -3,7 +3,8 @@ import { AvisoDelMandatoQueVence } from '@/components/comercial/SituacionComerci
 import { useVacanciaYMandatos } from '@/lib/comercial/use-vacancia-y-mandatos';
 import { esVacanciaLarga } from '@/lib/comercial/comercial';
 import { FranjaDelArriendo } from '@/components/inmobiliaria/ficha/FranjaDelArriendo';
-import { FichaDelInmueble } from '@/components/inmobiliaria/ficha/FichaDelInmueble';
+import { FichaDelInmueble, caracteristicasDelInmueble } from '@/components/inmobiliaria/ficha/FichaDelInmueble';
+import { CandidatosQueEsperan } from '@/components/inmobiliaria/ficha/CandidatosQueEsperan';
 import { LoQueFaltaDelInmueble } from '@/components/inmobiliaria/ficha/LoQueFaltaDelInmueble';
 import { PropietariosDelResumen } from '@/components/inmobiliaria/ficha/PropietariosDelResumen';
 import { tieneCoordenadas } from '@/components/map/coordenadas';
@@ -19,6 +20,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { portadaDelInmueble } from '@/lib/inmuebles/titulo-de-la-ficha';
 import { CrossFade } from '@leasefy/cadence';
 import { CaretLeft, Buildings, CalendarPlus, WifiSlash, Prohibit } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
@@ -575,7 +577,6 @@ function ConsignacionDetailContent() {
   }
 
   const conMapa = !!property && tieneCoordenadas(property.latitude, property.longitude);
-  const sinVencimiento = !terminada && !consignacion.contractEndDate;
 
   return (
     <CrossFade swapKey="ficha">
@@ -624,7 +625,7 @@ function ConsignacionDetailContent() {
             </Link>
             <span className="hidden text-fg-subtle sm:inline" aria-hidden="true">/</span>
             <span className="hidden max-w-[min(60ch,40vw)] truncate font-medium text-fg sm:inline">
-              {consignacion.propertyTitle}
+              {portadaDelInmueble(consignacion, t(`inmobiliaria.consignaciones.propertyType.${consignacion.propertyType}`)).titulo}
             </span>
           </nav>
         }
@@ -688,6 +689,10 @@ function ConsignacionDetailContent() {
                 */}
                 {/* Lo pendiente PRIMERO (revisión 21-10): vencimiento, firma, papeles, mapa y fotos,
                     cada uno con su botón. Con el mandato terminado no hay nada que poner en regla. */}
+                {/* 22-10 (revisión): disponible, lo primero es quién espera una decisión. */}
+                {!terminada && !contratoVigente ? (
+                  <CandidatosQueEsperan propertyId={consignacion.propertyId} consignacionId={consignacion.id} />
+                ) : null}
                 {!terminada ? (
                   <LoQueFaltaDelInmueble
                     consignacion={consignacion}
@@ -700,44 +705,68 @@ function ConsignacionDetailContent() {
                   />
                 ) : null}
                 {consignacion.propertyId ? (
-                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
-                    <FichaDelInmueble
-                      property={property}
-                      cargando={cargandoProperty}
-                      onEditar={terminada ? undefined : handleEdit}
-                      className="lg:col-span-2"
-                      // Sin coordenadas, la ubicación es un renglón de «Lo que falta» (arriba);
-                      // con el mandato terminado se dice aquí, sin acción que ofrecer.
-                      ubicacion={
-                        !terminada || conMapa || (cargandoProperty && !property) ? undefined : (
-                          <UbicacionDelInmueble
-                            variante="fila"
-                            property={property}
-                            cargando={cargandoProperty}
-                            consignacion={consignacion}
-                            onActualizado={refetchProperty}
-                          />
-                        )
-                      }
-                    />
-                    {/* La columna derecha: quién es el dueño y, si está ubicado, el mapa. */}
-                    <div className="space-y-6">
+                  (() => {
+                    const laFicha = (clase?: string) => (
+                      <FichaDelInmueble
+                        property={property}
+                        cargando={cargandoProperty}
+                        onEditar={terminada ? undefined : handleEdit}
+                        loQueFaltaEnLaLista={!terminada && !contratoVigente}
+                        className={clase}
+                        // Sin coordenadas, la ubicación es un renglón de «Lo que falta» (arriba);
+                        // con el mandato terminado se dice aquí, sin acción que ofrecer.
+                        ubicacion={
+                          !terminada || conMapa || (cargandoProperty && !property) ? undefined : (
+                            <UbicacionDelInmueble
+                              variante="fila"
+                              property={property}
+                              cargando={cargandoProperty}
+                              consignacion={consignacion}
+                              onActualizado={refetchProperty}
+                            />
+                          )
+                        }
+                      />
+                    );
+                    const losDuenos = (
                       <PropietariosDelResumen
                         consignacionId={consignacion.id}
                         propietario={propietario}
                         copropietarios={consignacion.copropietarios ?? []}
                         participacionesDesconocidas={consignacion.participacionesDesconocidas === true}
                       />
-                      {conMapa ? (
-                        <UbicacionDelInmueble
-                          property={property}
-                          cargando={cargandoProperty}
-                          consignacion={consignacion}
-                          onActualizado={refetchProperty}
-                        />
-                      ) : null}
-                    </div>
-                  </div>
+                    );
+                    const elMapa = conMapa ? (
+                      <UbicacionDelInmueble
+                        property={property}
+                        cargando={cargandoProperty}
+                        consignacion={consignacion}
+                        onActualizado={refetchProperty}
+                      />
+                    ) : null;
+                    // 22-10 (revisión, 1440): con dos características o menos la ficha es
+                    // corta y la columna izquierda terminaba 400 px antes; entonces el mapa
+                    // va a la columna ancha y la ficha, a la derecha bajo el propietario.
+                    const pocas = !!property && conMapa && caracteristicasDelInmueble(property, (x) => x).length <= 2;
+                    return pocas ? (
+                      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+                        <div className="lg:col-span-2">{elMapa}</div>
+                        <div className="space-y-6">
+                          {losDuenos}
+                          {laFicha()}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+                        {laFicha('lg:col-span-2')}
+                        {/* La columna derecha: quién es el dueño y, si está ubicado, el mapa. */}
+                        <div className="space-y-6">
+                          {losDuenos}
+                          {elMapa}
+                        </div>
+                      </div>
+                    );
+                  })()
                 ) : (
                   // Cartera migrada sin inmueble detrás: no hay ficha ni mapa que mostrar, y se dice.
                   <p className="rounded-[16px] border border-border-faint px-5 py-4 text-body-sm text-fg-muted dark:border-border-strong" data-testid="resumen-sin-inmueble">
@@ -748,11 +777,28 @@ function ConsignacionDetailContent() {
               </>
             ),
           },
-          {
+          // 22-10 (revisión): con el mandato terminado no hay nada que arrendar;
+          // en venta, la pestaña es «Venderlo».
+          ...(terminada ? [] : [{
             id: 'arrendarlo',
-            etiqueta: 'Arrendarlo',
+            etiqueta: consignacion.listingType === 'sale' ? 'Venderlo' : 'Arrendarlo',
             contenido: (
               <>
+                {/* 22-10 (revisión): el orden del trabajo —candidatos que esperan,
+                    fotos, publicar, visitas, inventario—, no el de los datos. */}
+                <div>
+                  <CandidatosDelInmueble
+                    propertyId={consignacion.propertyId}
+                    consignacionId={consignacion.id}
+                  />
+                </div>
+                {/* Las fotos viven en el Property; sin propertyId (mandato sin
+                    inmueble) no hay galería que mostrar. */}
+                {consignacion.propertyId && (
+                  <div id="fotos" className="scroll-mt-20">
+                    <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} onVer={setFotoAbierta} compacta={contratoVigente} />
+                  </div>
+                )}
                 {/* 🔴 (10-10-2026, Nico) Publicado en el marketplace, aparte de
                     disponible. Se oculta solo sin la migración. */}
                 {consignacion.propertyId && (
@@ -762,21 +808,6 @@ function ConsignacionDetailContent() {
                     onVerAviso={terminada ? undefined : handleViewPortal}
                   />
                 )}
-                {/* Las fotos viven en el Property; sin propertyId (mandato sin
-                    inmueble) no hay galería que mostrar. */}
-                {consignacion.propertyId && (
-                  <div id="fotos" className="scroll-mt-20">
-                    <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} onVer={setFotoAbierta} compacta={contratoVigente} />
-                  </div>
-                )}
-                {/* Quién se postuló. Vive acá, antes del contrato vigente: es lo que
-                    pasa mientras el inmueble está disponible. */}
-                <div>
-                  <CandidatosDelInmueble
-                    propertyId={consignacion.propertyId}
-                    consignacionId={consignacion.id}
-                  />
-                </div>
                 {/* Cuándo se puede visitar. Va junto a los candidatos porque es lo
                     otro que pasa mientras el inmueble está disponible — y sin esto
                     el aviso del marketplace dice «Sin disponibilidad» siempre. */}
@@ -803,21 +834,36 @@ function ConsignacionDetailContent() {
                 </div>
               </>
             ),
-          },
+          }]),
           {
             id: 'mandato',
-            // El punto: el mandato sin fecha de vencimiento pide algo aquí.
-            etiqueta: sinVencimiento ? (
-              <span className="inline-flex items-center gap-1.5">
-                Mandato y giro
-                <span className="h-1.5 w-1.5 rounded-full bg-warning-500" aria-hidden="true" />
-                <span className="sr-only">(falta la fecha de vencimiento)</span>
-              </span>
-            ) : (
-              'Mandato y giro'
-            ),
+            // 22-10 (revisión): sin el punto ámbar —se leía sólo por color y el
+            // Resumen ya dice lo que falta—.
+            etiqueta: 'Mandato y giro',
             contenido: (
               <>
+                {/* 22-10 (revisión): primero lo que falta hacer —papeles y firma—,
+                    con la firma reforzada (opcional) en el mismo lugar; después los
+                    términos y lo configurable. */}
+                <div>
+                  <MandatoDelInmueble
+                    consignacionId={consignacion.id}
+                    propietarioNombre={propietario?.name ?? null}
+                    propietarioCorreo={propietario?.email ?? null}
+                    direccionDelInmueble={consignacion.propertyAddress ?? null}
+                    puedeEditar={puedeEditarInventario}
+                  />
+                </div>
+                {/* T-0109 contract.md §3.1.C — vía ADICIONAL a C9 (arriba): firma
+                    electrónica reforzada del contrato de consignación. Revisión 21-10: la
+                    firma del mandato vivía en tres bloques; ésta, que es la opcional, va
+                    plegada debajo de «Papeles y firma». Se oculta sola sin WU-3. */}
+                <MasDetalles etiqueta="Firma electrónica reforzada (con el PDF del contrato)" montadoSiempre>
+                  <FirmaElectronicaDeConsignacionSection
+                    consignacionId={consignacion.id}
+                    puedeEditar={puedeEditarPortafolio}
+                  />
+                </MasDetalles>
                 <TerminosDelMandatoSection consignacion={consignacion} onEditar={terminada ? undefined : handleEdit} />
                 <div id="propietarios" className="scroll-mt-20">
                   <PropietarioSection
@@ -855,28 +901,9 @@ function ConsignacionDetailContent() {
                     onReassign={handleReassignAgent}
                   />
                 ) : null}
-                <div>
-                  <MandatoDelInmueble
-                    consignacionId={consignacion.id}
-                    propietarioNombre={propietario?.name ?? null}
-                    propietarioCorreo={propietario?.email ?? null}
-                    direccionDelInmueble={consignacion.propertyAddress ?? null}
-                    puedeEditar={puedeEditarInventario}
-                  />
-                </div>
                 <div id="documentos" className="scroll-mt-20">
                   <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
                 </div>
-                {/* T-0109 contract.md §3.1.C — vía ADICIONAL a C9 (arriba): firma
-                    electrónica reforzada del contrato de consignación. Revisión 21-10: la
-                    firma del mandato vivía en tres bloques; ésta, que es la opcional, va
-                    plegada debajo de «Papeles y firma». Se oculta sola sin WU-3. */}
-                <MasDetalles etiqueta="Firma electrónica reforzada (con el PDF del contrato)" montadoSiempre>
-                  <FirmaElectronicaDeConsignacionSection
-                    consignacionId={consignacion.id}
-                    puedeEditar={puedeEditarPortafolio}
-                  />
-                </MasDetalles>
               </>
             ),
           },
@@ -890,6 +917,7 @@ function ConsignacionDetailContent() {
                   <ConsignacionTimeline
                     consignacion={consignacion}
                     agenteName={agente?.name}
+                    titulo="Lo que pasó"
                   />
                 </div>
                 {/* La historia contable ANTERIOR a Leasefy de este inmueble: los
@@ -898,18 +926,22 @@ function ConsignacionDetailContent() {
                     Después del contrato vigente porque ése es el orden real —
                     arriba lo de hoy, abajo lo que quedó registrado antes. */}
                 <div>
-                  <ComprobantesDelSistemaAnterior propertyId={consignacion.propertyId} />
+                  <ComprobantesDelSistemaAnterior propertyId={consignacion.propertyId} ocultarSinComprobantes />
                 </div>
                 {/* 🔴 22-09: quién tocó este inmueble, con su rol. Son DOS recursos
                     en el back —el inmueble (`/properties/:id`: fotos, datos,
                     ubicación) y su mandato (`/inmobiliaria/consignaciones/:id`:
                     estado, canon, terminación)— y aquí se leen como una sola lista. */}
-                <BitacoraDelRecurso
-                  recursos={[
-                    { tipo: 'inmueble', id: consignacion.propertyId },
-                    { tipo: 'consignacion', id: consignacion.id },
-                  ]}
-                />
+                {/* 22-10 (revisión: «un solo historial»): la bitácora de quién
+                    cambió qué dato va plegada debajo de lo que pasó. */}
+                <MasDetalles etiqueta="Ver quién cambió los datos" etiquetaAbierto="Ocultar quién cambió los datos">
+                  <BitacoraDelRecurso
+                    recursos={[
+                      { tipo: 'inmueble', id: consignacion.propertyId },
+                      { tipo: 'consignacion', id: consignacion.id },
+                    ]}
+                  />
+                </MasDetalles>
               </>
             ),
           },

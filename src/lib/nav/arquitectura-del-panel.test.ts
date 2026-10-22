@@ -309,6 +309,7 @@ describe('arquitectura del panel — sidebar', () => {
       '/reportes/resumen': 'resumen-del-negocio',
       '/mantenimientos/tickets': 'tickets',
       '/contratos/aprobar': 'por-aprobar',
+      '/pipeline': 'prospeccion', // vocabulario: manual de voz (22-10), sin anglicismos en el menú
     };
     /*
      * 🔴 R4 mide el nombre con el que se NAVEGA a la ruta, que para la raíz de

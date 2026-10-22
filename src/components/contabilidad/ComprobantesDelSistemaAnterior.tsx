@@ -74,9 +74,11 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import Link from 'next/link'
 import { Receipt } from '@phosphor-icons/react'
 import { SegmentedControl } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha'
 
 import {
@@ -116,19 +118,22 @@ type Vinculo =
   | { contractId: string; propertyId?: never }
   | { propertyId: string; contractId?: never }
 
-type Props = Vinculo
+type Props = Vinculo & {
+  /** En la ficha del inmueble: sin comprobantes migrados, la sección no se pinta. */
+  ocultarSinComprobantes?: boolean
+}
 
 /** El orden de las pestañas es el de Nico; «Otros» va al final y sólo si hay. */
 const PESTANAS: { clase: ClaseDeComprobante; etiqueta: string; vacio: string }[] = [
   {
     clase: 'ingreso',
     etiqueta: 'Ingresos',
-    vacio: 'Ningún comprobante de ingreso del sistema anterior quedó colgado acá.',
+    vacio: 'No hay comprobantes de ingreso del sistema anterior aquí.',
   },
   {
     clase: 'egreso',
     etiqueta: 'Egresos',
-    vacio: 'Ningún comprobante de egreso del sistema anterior quedó colgado acá.',
+    vacio: 'No hay comprobantes de egreso del sistema anterior aquí.',
   },
   {
     clase: 'factura',
@@ -140,7 +145,7 @@ const PESTANAS: { clase: ClaseDeComprobante; etiqueta: string; vacio: string }[]
     // que no está acá; el arreglo es pedirle al sistema viejo el export con la
     // columna del cliente, y eso es lo que dice el vacío.
     vacio:
-      'Ninguna factura del sistema anterior quedó colgada acá. Una factura se cuelga cuando su concepto nombra al inquilino o al propietario; si el export las trae como «Factura 57521», sin cliente, no hay por dónde colgarlas y hace falta pedirlo con la columna del cliente.',
+      'No hay facturas del sistema anterior aquí. Una factura aparece cuando su concepto nombra al inquilino o al propietario; si el archivo las trae como «Factura 57521», sin cliente, hay que pedirlo de nuevo con la columna del cliente.',
   },
   {
     clase: 'otro',
@@ -232,6 +237,10 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
   // y se lee como «no hay facturas».
   const pagina = useTablePagination(documentos, { resetKey: clase })
 
+  // 22-10 (revisión de la ficha): en la ficha del inmueble, sin comprobantes
+  // migrados la sección no se pinta (era un vacío de 400 px en el Historial).
+  if (props.ocultarSinComprobantes && conteos !== null && totalGeneral === 0) return null
+
   return (
     // 21-10 (revisión de la ficha): la superficie y el título de las demás secciones.
     <section
@@ -274,8 +283,13 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
         <SinDatos
           queSon="comprobantes migrados"
           icono={Receipt}
-          titulo="Sin comprobantes del sistema anterior"
-          descripcion={`${contractId ? 'Este contrato' : 'Este inmueble'} no tiene comprobantes de la contabilidad vieja colgados. Aparecen acá cuando se sube el export de comprobantes en Migración → Registros contables y el concepto nombra al inquilino o al propietario.`}
+          titulo="Todavía no hay comprobantes del sistema anterior"
+          descripcion={`Aparecen aquí cuando subas los comprobantes del sistema anterior en Migración → Registros contables y el concepto nombre al inquilino o al propietario de ${contractId ? 'este contrato' : 'este inmueble'}.`}
+          accion={
+            <Button asChild variant="secondary" size="sm" hideArrow>
+              <Link href="/panel/inmobiliaria/migracion/contables">Ir a Registros contables</Link>
+            </Button>
+          }
         />
       ) : (
         <div className="space-y-3">

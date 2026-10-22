@@ -12,9 +12,9 @@
 import { SUPERFICIE_DE_LA_FICHA } from '@/components/pantalla/TarjetaDeLaFicha';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Users, ArrowRight } from '@phosphor-icons/react';
+import { Users } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { AnimatedNumber, Stagger, StaggerItem } from '@leasefy/cadence';
+import { Avatar, Stagger, StaggerItem } from '@leasefy/cadence';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
@@ -25,19 +25,19 @@ import type { LandlordCandidate, LandlordApplicationStatus } from '@/lib/api/app
 /** Mismos rótulos que la tabla de Postulaciones: una postulación, un nombre. */
 const ESTADO: Record<LandlordApplicationStatus, { label: string; bg: string; text: string }> = {
   DRAFT: { label: 'Borrador', bg: 'bg-surface-muted', text: 'text-fg-muted' },
-  SUBMITTED: { label: 'Postulado', bg: 'bg-primary-soft', text: 'text-primary' },
-  UNDER_REVIEW: { label: 'En revisión', bg: 'bg-primary-soft', text: 'text-primary' },
+  SUBMITTED: { label: 'Postulado', bg: 'bg-surface-muted', text: 'text-fg' },
+  UNDER_REVIEW: { label: 'En revisión', bg: 'bg-surface-muted', text: 'text-fg' },
   APPROVED: { label: 'Aprobado', bg: 'bg-success-soft', text: 'text-success' },
   REJECTED: { label: 'Rechazado', bg: 'bg-danger-soft', text: 'text-danger' },
   NEEDS_INFO: { label: 'Pide info', bg: 'bg-warning-soft', text: 'text-warning' },
   WITHDRAWN: { label: 'Retirado', bg: 'bg-surface-muted', text: 'text-fg-muted' },
   CONTRACT_FAILED: { label: 'Contrato fallido', bg: 'bg-danger-soft', text: 'text-danger' },
   NO_ADJUDICADO: { label: 'No adjudicado', bg: 'bg-surface-muted', text: 'text-fg-muted' },
-  PREAPPROVED: { label: 'Preaprobado', bg: 'bg-primary-soft', text: 'text-primary' },
+  PREAPPROVED: { label: 'Preaprobado', bg: 'bg-success-soft', text: 'text-success' },
 };
 
 /** Los que todavía esperan una decisión — es el número que importa. */
-const ESPERANDO: LandlordApplicationStatus[] = ['SUBMITTED', 'UNDER_REVIEW', 'NEEDS_INFO'];
+export const ESPERANDO: LandlordApplicationStatus[] = ['SUBMITTED', 'UNDER_REVIEW', 'NEEDS_INFO'];
 
 /** Cuántos se enseñan acá: la lista entera vive en su pantalla. */
 const CUANTOS_SE_MUESTRAN = 3;
@@ -133,12 +133,6 @@ export function CandidatosDelInmueble({
             </p>
           </div>
         </div>
-        {candidatos !== null && candidatos.length > 0 && (
-          <span className="font-mono text-2xl font-semibold tabular-nums text-fg">
-            {/* Cuenta cuando llega uno nuevo o se relee después de decidir. */}
-            <AnimatedNumber value={candidatos.length} format={(n) => String(Math.round(n))} />
-          </span>
-        )}
       </div>
 
       {/* F7: un mandato migrado de cartera nace sin inmueble, y a los
@@ -184,9 +178,7 @@ export function CandidatosDelInmueble({
                   aria-label={`Ver la postulación de ${c.tenantName || 'este candidato'}`}
                   className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-surface-muted"
                 >
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-soft text-xs font-medium text-primary">
-                    {(c.tenantName || '?').charAt(0).toUpperCase()}
-                  </span>
+                  <Avatar name={c.tenantName || '?'} size="sm" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm text-fg">{c.tenantName}</span>
                     <span className="block truncate text-xs text-fg-muted">{c.tenantEmail}</span>
@@ -223,7 +215,6 @@ export function CandidatosDelInmueble({
           {candidatos && candidatos.length > CUANTOS_SE_MUESTRAN
             ? `Ver los ${candidatos.length} candidatos`
             : 'Ver candidatos'}
-          <ArrowRight className="h-4 w-4" />
         </Link>
       )}
 

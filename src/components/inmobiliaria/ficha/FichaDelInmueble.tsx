@@ -30,6 +30,8 @@ interface FichaDelInmuebleProps {
   ubicacion?: ReactNode;
   /** Abre «Editar» para completar lo que falta. */
   onEditar?: () => void;
+  /** La lista de lo que falta ya pide área, habitaciones y baños: aquí no se repite. */
+  loQueFaltaEnLaLista?: boolean;
   className?: string;
 }
 
@@ -54,7 +56,7 @@ export function caracteristicasDelInmueble(p: Property, tr: (es: string) => stri
   return lista.filter((c): c is Caracteristica => c !== null);
 }
 
-export function FichaDelInmueble({ property, cargando = false, ubicacion, onEditar, className }: FichaDelInmuebleProps) {
+export function FichaDelInmueble({ property, cargando = false, ubicacion, onEditar, loQueFaltaEnLaLista = false, className }: FichaDelInmuebleProps) {
   const tr = useTr();
   const caracteristicas = property ? caracteristicasDelInmueble(property, tr) : [];
   const faltanLasBasicas = !!property && property.area == null && property.bedrooms == null && property.bathrooms == null;
@@ -82,7 +84,7 @@ export function FichaDelInmueble({ property, cargando = false, ubicacion, onEdit
       ) : null}
       {/* Faltan lo que más busca quien arrienda (área, habitaciones, baños): se dice con su
           salida aunque haya otros datos (revisión 21-10: con sólo «Estrato 3» no se ofrecía). */}
-      {!(cargando && !property) && (caracteristicas.length === 0 || faltanLasBasicas) ? (
+      {!(cargando && !property) && (caracteristicas.length === 0 || (faltanLasBasicas && !loQueFaltaEnLaLista)) ? (
         <div
           className={cn('flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between', caracteristicas.length > 0 && 'mt-5 border-t border-border-faint pt-5 dark:border-border-strong')}
           data-testid="sin-caracteristicas"

@@ -5,12 +5,14 @@
  * ficha (revisión de diseño, 21-10-2026: «lo pendiente estaba a 1–3 pestañas de
  * distancia y sólo lo anunciaba un punto ámbar de 6 px»).
  *
- * Cada renglón sale de un dato real y trae el botón que lo resuelve:
- *  · el mandato con fecha de vencimiento (sin ella no hay aviso de 30 días);
+ * Cada renglón sale de un dato real y trae el botón que lo resuelve, en el orden
+ * de lo que más pesa (revisión 22-10):
  *  · el mandato firmado (las firmas del mandato);
  *  · los papeles del propietario (antes de publicar y antes del primer giro);
  *  · el inmueble en el mapa;
- *  · las fotos, sólo si no está arrendado (son para arrendarlo).
+ *  · las fotos, sólo si no está arrendado (son para arrendarlo);
+ *  · área, habitaciones y baños, si no está arrendado;
+ *  · y al final, opcional, la fecha de vencimiento del mandato (un recordatorio).
  * El inventario no entra: vive en sus actas y no se afirma lo que no se sabe.
  * Lo que no se pudo revisar (el back sin la migración, una caída) queda como
  * «desconocido», nunca como hecho. Con todo listo, la lista se pliega sola.
@@ -60,20 +62,7 @@ export function LoQueFaltaDelInmueble({
 
   const requisitos: Requisito[] = [];
 
-  // 1 · El vencimiento del mandato.
-  requisitos.push({
-    id: 'vencimiento',
-    titulo: 'El mandato tiene fecha de vencimiento',
-    detalle: consignacion.contractEndDate ? undefined : 'Con la fecha, Leasefy avisa al asesor y al gerente 30 días antes.',
-    estado: consignacion.contractEndDate ? 'listo' : 'falta',
-    accion: puedeEditar ? (
-      <Button size="sm" variant="secondary" hideArrow onClick={onEditar}>
-        Poner la fecha
-      </Button>
-    ) : undefined,
-  });
-
-  // 2 · La firma del mandato.
+  // 1 · La firma del mandato.
   const lasFirmas = firmas.datos?.firmas ?? [];
   const firmado = lasFirmas.some((f) => f.estado === 'FIRMADA');
   const pendiente = lasFirmas.find((f) => f.estado === 'PENDIENTE');
@@ -89,7 +78,7 @@ export function LoQueFaltaDelInmueble({
     ),
   });
 
-  // 3 · Los papeles del propietario.
+  // 2 · Los papeles del propietario.
   const d = documentos.datos;
   const faltan = d ? d.paraPublicar.falta.length + d.paraElPrimerGiro.falta.length : 0;
   const papelesListos = !!d && d.paraPublicar.completo && d.paraElPrimerGiro.completo;
@@ -105,7 +94,7 @@ export function LoQueFaltaDelInmueble({
     ),
   });
 
-  // 4 · En el mapa.
+  // 3 · En el mapa.
   if (consignacion.propertyId) {
     const enElMapa = !!property && tieneCoordenadas(property.latitude, property.longitude);
     requisitos.push({
@@ -122,7 +111,7 @@ export function LoQueFaltaDelInmueble({
     });
   }
 
-  // 5 · Las fotos (sólo si se va a arrendar).
+  // 4 · Las fotos (sólo si se va a arrendar).
   if (consignacion.propertyId && !arrendado) {
     const conFotos = (property?.images?.length ?? 0) > 0;
     requisitos.push({
@@ -137,6 +126,38 @@ export function LoQueFaltaDelInmueble({
       ),
     });
   }
+
+  // Las características que más busca quien arrienda (revisión 22-10: vivían fuera de
+  // la lista, con otro texto). Se pide si faltan las tres básicas.
+  if (consignacion.propertyId && !arrendado) {
+    const faltanLasBasicas = !!property && property.area == null && property.bedrooms == null && property.bathrooms == null;
+    requisitos.push({
+      id: 'caracteristicas',
+      titulo: 'La ficha tiene área, habitaciones y baños',
+      detalle: faltanLasBasicas ? 'Es lo primero que busca quien arrienda.' : undefined,
+      estado: cargandoProperty && !property ? 'cargando' : !property ? 'desconocido' : faltanLasBasicas ? 'falta' : 'listo',
+      accion:
+        property && puedeEditar ? (
+          <Button size="sm" variant="secondary" hideArrow onClick={onEditar}>
+            Completar la ficha
+          </Button>
+        ) : undefined,
+    });
+  }
+
+  // Al final y OPCIONAL (revisión 22-10): la fecha de vencimiento es un recordatorio,
+  // no algo que impida arrendar; no cuenta en «te faltan N» ni lleva «Sigue».
+  requisitos.push({
+    id: 'vencimiento',
+    titulo: 'El mandato tiene fecha de vencimiento',
+    detalle: consignacion.contractEndDate ? undefined : 'Con la fecha, Leasefy avisa al asesor y al gerente 30 días antes.',
+    estado: consignacion.contractEndDate ? 'listo' : 'opcional',
+    accion: puedeEditar ? (
+      <Button size="sm" variant="secondary" hideArrow onClick={onEditar}>
+        Poner la fecha
+      </Button>
+    ) : undefined,
+  });
 
   return (
     <>

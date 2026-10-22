@@ -82,11 +82,16 @@ function findViewPortalButton(): HTMLButtonElement | undefined {
 }
 
 describe('<ConsignacionHeader> — property thumbnail', () => {
-  it('sin foto: la portada es el 3D de la casa con «Agregar fotos» (21-10), no una foto', () => {
+  it('sin foto: la portada es el 3D de la casa, no una foto; «Agregar fotos» sólo si está arrendado (22-10)', () => {
     render();
     expect(container.querySelector('[data-testid="portada-sin-foto"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="portada-agregar-fotos"]')?.getAttribute('href')).toBe('#fotos');
+    // Disponible: «Agregar fotos» ya es un paso de la lista de lo que falta; no se repite en la portada.
+    expect(container.querySelector('[data-testid="portada-agregar-fotos"]')).toBeNull();
     expect(container.querySelector('[data-testid="portada-abrir"]')).toBeNull();
+    act(() => root.unmount());
+    root = createRoot(container);
+    render({ contratoVigente: true });
+    expect(container.querySelector('[data-testid="portada-agregar-fotos"]')?.getAttribute('href')).toBe('#fotos');
   });
 
   it('renders the property photo when propertyThumbnailUrl is provided', () => {

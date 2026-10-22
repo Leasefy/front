@@ -19,7 +19,7 @@
  */
 
 import Link from 'next/link';
-import { ArrowRight, Envelope, Phone } from '@phosphor-icons/react';
+import { Envelope, Phone } from '@phosphor-icons/react';
 import { Avatar, iconButtonVariants } from '@leasefy/cadence';
 
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
@@ -75,22 +75,30 @@ export function FranjaDelArriendo({
   const nombre = inquilino?.nombre ?? consignacion.currentTenantName;
   const conInquilino = hayInquilino(consignacion);
   const fin = consignacion.leaseEndDate ? tiempoHastaElFin(consignacion.leaseEndDate, locale ?? 'es', hoy) : null;
-  const textoDeVacancia = vacancia ? textoDeLaVacancia(vacancia) : null;
+  // 22-10 (revisión): «No sabemos desde cuándo está vacante» no informa y repite el
+  // DISPONIBLE de arriba; sólo se dice la vacancia cuando se sabe desde cuándo.
+  const textoDeVacancia =
+    vacancia && vacancia.dias !== null && vacancia.desde !== null ? textoDeLaVacancia(vacancia) : null;
+  // En venta no hay inquilino que esperar: la franja dice sólo quién lo lleva.
+  const esVenta = consignacion.listingType === 'sale';
+  const mostrarInquilino = conInquilino || !esVenta;
 
   return (
     <dl
       className={cn(
-        // En el celular, dos columnas: quién vive a lo ancho y, debajo, «Termina el» y el
-        // asesor lado a lado (revisión 21-10: a 390 quedaban bajo el pliegue).
-        'grid grid-cols-2 gap-x-6 gap-y-5 sm:gap-x-8',
+        // En el celular, UNA columna (revisión 22-10: a dos columnas se cortaba «Ana Admi…»).
+        'grid grid-cols-1 gap-x-6 gap-y-5 sm:gap-x-8',
         conInquilino
           ? 'sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]'
-          : 'sm:grid-cols-2',
+          : mostrarInquilino
+            ? 'sm:grid-cols-2'
+            : 'sm:grid-cols-1',
       )}
       data-testid="franja-del-arriendo"
     >
       {/* ── Quién vive ─────────────────────────────────────────────── */}
-      <div className={cn('min-w-0', conInquilino && 'col-span-2 sm:col-span-1')}>
+      {mostrarInquilino ? (
+      <div className="min-w-0">
         <dt className={ROTULO}>{tr('Inquilino')}</dt>
         <dd className="mt-2.5">
           {conInquilino ? (
@@ -167,6 +175,7 @@ export function FranjaDelArriendo({
           )}
         </dd>
       </div>
+      ) : null}
 
       {/* ── Hasta cuándo ───────────────────────────────────────────── */}
       {conInquilino ? (
@@ -200,7 +209,6 @@ export function FranjaDelArriendo({
                 data-testid="ver-contrato-del-inquilino"
               >
                 {tr('Ver contrato')}
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             ) : null}
           </dd>
@@ -208,7 +216,7 @@ export function FranjaDelArriendo({
       ) : null}
 
       {/* ── Quién lo lleva ─────────────────────────────────────────── */}
-      <div className={cn('min-w-0', conInquilino && 'col-span-1 sm:col-span-2 xl:col-span-1')}>
+      <div className={cn('min-w-0', conInquilino && 'sm:col-span-2 xl:col-span-1')}>
         <dt className={ROTULO}>{tr('Asesor a cargo')}</dt>
         <dd className="mt-2.5" data-testid="asesor-de-la-ficha">
           {cargandoAsesor ? (
@@ -242,7 +250,6 @@ export function FranjaDelArriendo({
               {onAsignarAsesor ? (
                 <button type="button" onClick={onAsignarAsesor} className={cn(ENLACE, 'mt-1')} data-testid="asignar-asesor">
                   {tr('Asignar asesor')}
-                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               ) : null}
             </>

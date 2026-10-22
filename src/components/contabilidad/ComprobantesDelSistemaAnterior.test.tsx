@@ -303,7 +303,7 @@ describe('<ComprobantesDelSistemaAnterior>', () => {
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
     expect(pestana('ingreso')).toBeNull()
     expect(container.querySelector('[data-testid="comprobantes-total"]')).toBeNull()
-    expect(texto()).toContain('Sin comprobantes del sistema anterior')
+    expect(texto()).toContain('Todavía no hay comprobantes del sistema anterior')
     // No hay una segunda petición «por si acaso»: ya se sabe que no hay nada.
     expect(porContrato).toHaveBeenCalledTimes(1)
   })

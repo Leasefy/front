@@ -1034,7 +1034,7 @@
       "caraPropietarios": "Pagar a propietarios",
       "caraPropietariosDetalle": "la plata que sale",
       "secDirectorio": "Directorio",
-      "pipelineCorto": "Pipeline",
+      "pipelineCorto": "Prospección",
       "mantenimientos": "Mantenimientos",
       "proveedores": "Proveedores",
       "soportesCorto": "Soportes",
@@ -2692,7 +2692,7 @@
       "viewProfile": "Ver perfil",
       "leaderboard": "Ranking",
       "metrics": "Métricas",
-      "pipeline": "Pipeline",
+      "pipeline": "Prospección",
       "viewTable": "Tabla",
       "viewCards": "Tarjetas",
       "closingsMonth": "Cierres mes",
@@ -4132,6 +4132,7 @@
       "timeline": {
         "title": "Historial",
         "eventsCount": "{{count}} eventos",
+        "eventsCountOne": "1 evento",
         "showLess": "Ver menos",
         "showMoreEvents": "Ver {{count}} eventos más",
         "noEvents": "Todavía no hay actividad",
@@ -4171,7 +4172,7 @@
       "header": {
         "commission": "comisión",
         "saleCommission": "comisión de venta",
-        "consignacion": "Consignación",
+        "consignacion": "Mandato",
         "verFotos": "Ver {{count}} fotos",
         "agregarFotos": "Agregar fotos",
         "verFoto": "Ver la foto",
@@ -4190,15 +4191,15 @@
         "renewConsignment": "Renovar consignación",
         "terminateConsignment": "Terminar consignación",
         "terminada": {
-          "titulo": "Esta consignación terminó el {{fecha}}",
-          "tituloSinFecha": "Esta consignación está terminada",
-          "detalle": "El inmueble ya no se administra ni se publica desde este mandato.",
+          "titulo": "Este mandato terminó el {{fecha}}",
+          "tituloSinFecha": "Este mandato está terminado",
+          "detalle": "El inmueble ya no se administra ni se publica.",
           "conContrato": "Ojo: el inmueble tiene un contrato de arriendo vigente, que sigue su curso por su lado.",
           "editar": "Editar el inmueble",
           "editarAyuda": "Sólo lo descriptivo del inmueble: el mandato terminó y sus términos ya no se editan.",
           "viewOnPortal": "La consignación terminó: el inmueble ya no se muestra en el portal desde este mandato.",
           "pedirCita": "La consignación terminó: no se agendan visitas.",
-          "nuevaConsignacion": "Nueva consignación",
+          "nuevaConsignacion": "Nuevo mandato",
           "nuevaConsignacionAyuda": "Para volver a administrar este inmueble."
         }
       },
@@ -12243,7 +12244,7 @@
       "new": "Nuevo",
       "sections": {
         "cobros": "Cobros",
-        "pipeline": "Pipeline",
+        "pipeline": "Prospección",
         "mantenimiento": "Mantenimiento",
         "decisions": "Decisiones pendientes"
       },

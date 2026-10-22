@@ -21,6 +21,8 @@ import {
   Package,
   Receipt,
 } from '@phosphor-icons/react';
+import { textoDelHistorial } from '@/lib/inmuebles/texto-del-historial';
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
@@ -195,7 +197,7 @@ export function ConsignacionTimeline({
   titulo,
 }: ConsignacionTimelineProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { t, formatDate: fmtDate, formatRelativeDate: fmtRelDate } = useI18n();
+  const { t, formatRelativeDate: fmtRelDate } = useI18n();
 
   // ── De dónde salen los eventos ───────────────────────────────────────────
   //
@@ -306,8 +308,10 @@ export function ConsignacionTimeline({
         type: TIPO_DEL_HISTORIAL[e.tipo] ?? 'data_edited',
         date: e.fecha,
         // IN-06: «Cobro de 2026-07» → «Cobro de julio de 2026».
-        title: periodosEnPalabras(e.titulo),
-        description: periodosEnPalabras(e.detalle ?? ''),
+        // 22-10 (revisión): con las palabras de la casa, no las del back
+        // («Agente asignado», «fichas del pipeline»).
+        title: textoDelHistorial(periodosEnPalabras(e.titulo)),
+        description: textoDelHistorial(periodosEnPalabras(e.detalle ?? '')),
         actor: e.esSistema ? t('inmobiliaria.consignaciones.timeline.actors.system') : e.actor,
       });
     }
@@ -386,7 +390,9 @@ export function ConsignacionTimeline({
       icon={<Clock className="h-4 w-4" />}
       acciones={
         <span className="font-mono text-[11px] uppercase tracking-[0.1em] tabular-nums text-fg-subtle">
-          {t('inmobiliaria.consignaciones.timeline.eventsCount', { count: events.length })}
+          {events.length === 1
+            ? t('inmobiliaria.consignaciones.timeline.eventsCountOne')
+            : t('inmobiliaria.consignaciones.timeline.eventsCount', { count: events.length })}
         </span>
       }
     >
@@ -439,8 +445,13 @@ export function ConsignacionTimeline({
                         <h4 className="text-[15px] font-medium text-fg">
                           {event.title}
                         </h4>
-                        <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.06em] text-fg-subtle">
-                          {fmtRelDate(event.date)}
+                        {/* 22-10 (revisión): UNA fecha, la del día («17 oct 2026»);
+                            la distancia («hace 4 días») queda al pasar el puntero. */}
+                        <span
+                          className="shrink-0 font-mono text-[12px] tabular-nums text-fg-subtle"
+                          title={fmtRelDate(event.date)}
+                        >
+                          {fechaCorta(diaEnColombia(event.date) ?? event.date)}
                         </span>
                       </div>
 
@@ -450,18 +461,12 @@ export function ConsignacionTimeline({
                         </p>
                       )}
 
-                      <div className="flex items-center gap-3 text-xs text-fg-muted dark:text-fg-subtle">
-                        <span>{fmtDate(event.date)}</span>
-                        {event.actor && (
-                          <>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              {event.actor}
-                            </span>
-                          </>
-                        )}
-                      </div>
+                      {event.actor ? (
+                        <p className="flex items-center gap-1 text-caption text-fg-muted dark:text-fg-subtle">
+                          <User className="h-3 w-3" aria-hidden="true" />
+                          {event.actor}
+                        </p>
+                      ) : null}
                     </div>
                   </StaggerItem>
                 );

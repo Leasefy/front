@@ -40,6 +40,7 @@ import { CampoDeMedianoche, IconButton, Ilustracion, StatusBadge, type SemanticT
 import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { portadaDelInmueble, sinMayusculasSostenidas } from '@/lib/inmuebles/titulo-de-la-ficha';
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { cajonDelInmueble } from '@/lib/inmobiliaria/cajon-del-inmueble';
 
@@ -210,6 +211,10 @@ export function ConsignacionHeader({
   const terminada = consignacion.status === 'terminated';
 
   const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType];
+  const portada = portadaDelInmueble(consignacion, t(`inmobiliaria.consignaciones.propertyType.${consignacion.propertyType}`));
+  const lineaDeLaDireccion = portada.eraDireccion
+    ? [portada.direccion, portada.ciudad].filter(Boolean).join(', ')
+    : sinMayusculasSostenidas(direccionSinRepetir(consignacion));
   // QA con avatares (04-10): un borrador no está publicado; decía «Disponible».
   const esBorrador = cajonDelInmueble({ kind: 'consignacion', ...consignacion }) === 'borrador';
   const availability = esBorrador
@@ -248,8 +253,9 @@ export function ConsignacionHeader({
               title={t('inmobiliaria.consignaciones.header.terminada.nuevaConsignacionAyuda')}
             >
               <Link href="/panel/inmobiliaria/inmuebles/nuevo?origen=existente" data-testid="header-nueva-consignacion">
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('inmobiliaria.consignaciones.header.terminada.nuevaConsignacion')}</span>
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                {/* 22-10 (revisión): con texto también en el celular; un «+» solo no dice qué crea. */}
+                {t('inmobiliaria.consignaciones.header.terminada.nuevaConsignacion')}
               </Link>
             </Button>
           ) : null}
@@ -353,6 +359,9 @@ export function ConsignacionHeader({
                 data-testid="portada-sin-foto"
               >
                 <Ilustracion nombre="casa" tono="voltaje" tamano={176} className="h-20 w-20 sm:h-36 sm:w-36 lg:h-44 lg:w-44" />
+                {/* 22-10 (revisión): disponible, «Agregar fotos» ya es un paso de la lista
+                    de lo que falta; aquí sólo cuando la lista no lo pide (arrendado). */}
+                {contratoVigente ? (
                 <a
                   href="#fotos"
                   className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1.5 text-body-sm font-medium text-ink-fg ring-1 ring-inset ring-white/20 backdrop-blur-sm transition-colors hover:bg-white/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
@@ -361,6 +370,7 @@ export function ConsignacionHeader({
                   <Images className="h-4 w-4" aria-hidden="true" />
                   {t('inmobiliaria.consignaciones.header.agregarFotos')}
                 </a>
+                ) : null}
               </CampoDeMedianoche>
             )}
 
@@ -442,8 +452,10 @@ export function ConsignacionHeader({
               </span>
             </div>
 
+            {/* 22-10 (revisión): si el «título» es la dirección cruda de la cartera
+                migrada, el h1 es «Apartamento en Caldas» y la dirección va legible abajo. */}
             <h1 className="mb-2 text-[28px] font-[420] leading-[1.1] tracking-[-0.02em] text-fg [text-wrap:balance] lg:text-[34px]">
-              {consignacion.propertyTitle}
+              {portada.titulo}
             </h1>
 
             {/* Terminada: una línea callada bajo el título (el chip ya dice «terminada»),
@@ -467,10 +479,10 @@ export function ConsignacionHeader({
               </p>
             )}
 
-            {direccionSinRepetir(consignacion) ? (
-              <p className="mb-5 flex items-start gap-2 text-[15px] text-fg-muted dark:text-fg-subtle">
+            {lineaDeLaDireccion ? (
+              <p className="mb-5 flex items-start gap-2 text-[15px] text-fg-muted dark:text-fg-subtle" data-testid="direccion-de-la-portada">
                 <MapPin className="mt-[3px] h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="min-w-0">{direccionSinRepetir(consignacion)}</span>
+                <span className="min-w-0">{lineaDeLaDireccion}</span>
               </p>
             ) : (
               <div className="mb-5" />
@@ -492,7 +504,11 @@ export function ConsignacionHeader({
                 )}
                 <span className="basis-full text-body-sm text-fg-muted">
                   {t('inmobiliaria.consignaciones.header.saleCommission')}:{' '}
-                  <span className="font-mono tabular-nums text-fg">{textoDeLaComision(consignacion)}</span>
+                  {consignacion.saleCommissionPercent != null ? (
+                    <span className="font-mono tabular-nums text-fg">{textoDeLaComision(consignacion)}</span>
+                  ) : (
+                    <span className="text-fg">sin pactar</span>
+                  )}
                 </span>
                 {/* Nico 14-10: la venta que entró sin precio. */}
                 {consignacion.canonPorConfirmar ? (

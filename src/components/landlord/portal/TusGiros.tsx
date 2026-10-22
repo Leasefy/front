@@ -76,7 +76,9 @@ export function TusGiros({ doc }: { doc: EstadoDeCuenta }) {
   // Tablero (Nico, 21-10): «cuánto he generado» = lo que la inmobiliaria ya le giró este año.
   const hoy = hoyEnColombia();
   return (
-    <FranjaDeCifras fila="lg" data-testid="tus-giros">
+    // QA 21-10 (390 px): de a dos por fila «$ 1.803.830,09» se cortaba y las etiquetas
+    // quedaban en «Te han girado en…». Con plata larga, una por fila en el celular.
+    <FranjaDeCifras fila="xl" data-testid="tus-giros">
       <Cifra
         etiqueta={`Te han girado en ${hoy.slice(0, 4)}`}
         valor={

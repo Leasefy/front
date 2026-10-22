@@ -183,6 +183,12 @@ function ComoVa({ ficha, giros }: { ficha: FichaDelInmueble; giros: GiroDelPropi
   );
 }
 
+/** Vigentes, luego los que van a empezar, luego terminados y cancelados (sort estable). */
+function ordenDelEstado(c: EstadoDeCuenta['contratos'][number]): number {
+  const estado = estadoDe(c);
+  return estado === 'VIGENTE' ? 0 : estado === 'POR_EMPEZAR' ? 1 : 2;
+}
+
 export function ContratosConLaInmobiliaria({ doc }: { doc: EstadoDeCuenta }) {
   // QA-PROP-95 (PO-01): un firmado que todavía no empieza no es «vigente».
   const vigentes = doc.contratos.filter((c) => estadoDe(c) === 'VIGENTE').length;
@@ -216,7 +222,11 @@ export function ContratosConLaInmobiliaria({ doc }: { doc: EstadoDeCuenta }) {
         </Link>
       </div>
       <ul className="divide-y divide-border-faint">
-        {doc.contratos.map((c) => (
+        {/* QA 21-10: los vigentes primero (con su «cómo va»); los terminados después,
+            en el orden de siempre. Antes iban por número y los vivos quedaban en la mitad. */}
+        {[...doc.contratos]
+          .sort((a, b) => ordenDelEstado(a) - ordenDelEstado(b))
+          .map((c) => (
           <li key={c.id}>
             {/* QA 11-10: cada contrato abre la ficha de su inmueble. */}
             <Link

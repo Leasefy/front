@@ -200,7 +200,9 @@ export default function ArriendoPage() {
         {/* GLOW UP (21-10): las tres cifras en la franja común (antes, tres tarjetas teñidas con su ícono en
             caja). El estado va primero: es lo que se viene a mirar. Status refleja las cuotas, no una constante. */}
         {activeLeases.length > 0 && (
-          <FranjaDeCifras className="mb-8" data-testid="cifras-del-arriendo">
+          // QA 21-10 (390 px): de a dos por fila, «$ 1.400.000» se cortaba y el estado se partía
+          // en tres renglones. Con plata larga, una por fila en el celular (fila="xl" de Cadence).
+          <FranjaDeCifras className="mb-8" fila="xl" data-testid="cifras-del-arriendo">
             <Cifra
               etiqueta={locale === 'es' ? 'Estado' : 'Status'}
               valor={overallStatus ? overallStatus.label : '—'}

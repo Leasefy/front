@@ -59,6 +59,23 @@ describe('ContratosConLaInmobiliaria', () => {
     expect(host.querySelector('a[href="/panel/estado-de-cuenta"]')).not.toBeNull();
   });
 
+  it('QA 21-10: los vigentes van primero, aunque su número sea más alto', async () => {
+    mio.mockResolvedValue(
+      estadoDeCuenta({
+        contratos: [
+          contrato({ id: 'c1', numero: '92', rol: 'PROPIETARIO', vigente: false }),
+          contrato({ id: 'c2', numero: '282', rol: 'PROPIETARIO', vigente: true }),
+          contrato({ id: 'c3', numero: '100', rol: 'PROPIETARIO', vigente: false }),
+        ],
+      }),
+    );
+    await montar();
+    const orden = Array.from(host.querySelectorAll('[data-testid^="abrir-inmueble-"]')).map((a) =>
+      a.getAttribute('data-testid'),
+    );
+    expect(orden).toEqual(['abrir-inmueble-c2', 'abrir-inmueble-c1', 'abrir-inmueble-c3']);
+  });
+
   it('un fallo NO se vuelve «tienes contratos»: la pantalla sigue con lo suyo', async () => {
     mio.mockRejectedValue(new Error('403'));
     await montar();

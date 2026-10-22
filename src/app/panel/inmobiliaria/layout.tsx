@@ -3,7 +3,7 @@
 import { InvitacionAMejorarElPlan } from '@/components/plan/InvitacionAMejorarElPlan';
 import { useMemo, useEffect, type ReactNode } from 'react';
 import { usePathname /* , useRouter */ } from 'next/navigation';
-import { ChatsCircle, AirTrafficControl } from '@phosphor-icons/react';
+import { ChatsCircle, SquaresFour } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGuard';
 import { puedeVerLaSuscripcion } from '@/lib/auth/quien-ve-la-suscripcion';
@@ -216,7 +216,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       // automático»— vive en el H1 de la sección, que es donde identifica.
       label: t('inmobiliaria.nav.piloto'),
       href: '/panel/inmobiliaria/piloto',
-      icon: AirTrafficControl,
+      // C5 (plan de la barra): Inicio con la cuadrícula de la familia propia (AirTrafficControl no estaba en ella).
+      icon: SquaresFour,
       module: null,
       // Sin píldora `ai`: el rótulo ya no nombra un agente, y «Inicio · IA»
       // se lee como si el inicio fuera un agente. El badge sí queda: dice

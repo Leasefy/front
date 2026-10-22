@@ -1073,7 +1073,8 @@
       "recaudoBancario": "Recaudo bancario",
       "recibos": "Recibos",
       "deudaDelMes": "Deuda del mes",
-      "girosAPropietarios": "Giros a propietarios"
+      "girosAPropietarios": "Giros a propietarios",
+      "secCaptacionCorta": "Captación"
     },
     "piloto": {
       "titulo": "Piloto automático",

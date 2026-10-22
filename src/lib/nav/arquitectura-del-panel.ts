@@ -3,7 +3,6 @@ import {
   Kanban,
   Buildings,
   ClipboardText,
-  FilePlus,
   Wrench,
   Lifebuoy,
   Chat,
@@ -11,15 +10,12 @@ import {
   CurrencyDollar,
   Receipt,
   Bank,
-  Calculator,
   UserCircle,
   UsersThree,
   FileText,
   ChartLine,
   Scales,
   GitMerge,
-  // ShieldCheck,  ← reactivar junto con «Evaluación de candidatos» (postulaciones/estudio)
-  ListChecks,
   Umbrella,
   ArrowsClockwise,
   Coins,
@@ -39,7 +35,6 @@ import {
   CalendarCheck,
   Signature,
   ShieldWarning,
-  Toolbox,
   Scroll,
   Vault,
   ArrowsLeftRight,
@@ -47,6 +42,12 @@ import {
   HeartStraight,
   SealCheck,
   Gavel,
+  // ShieldCheck,  ← reactivar junto con «Evaluación de candidatos» (postulaciones/estudio)
+  ListChecks,
+  Storefront,
+  EnvelopeSimple,
+  BookOpenText,
+  FolderSimple,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { ROLES_QUE_CONCILIAN, ROLES_QUE_VEN_LOS_BANCOS, SIN_EL_AUXILIAR_DE_CARTERA } from './el-auxiliar-de-cartera-no-ve-los-bancos';
@@ -362,6 +363,8 @@ export interface ModuloDelPanel extends PantallaDelPanel {
 
 export interface GrupoDelPanel {
   key: 'agentes' | 'captacion' | 'operacion' | 'dinero' | 'directorio' | 'pie';
+  /** El rótulo de la barra cuando el nombre largo no cabe (≤ 12 letras en DM Mono). */
+  labelCortoKey?: string;
   /** Clave i18n de la cabecera; null = sin cabecera (el pie). */
   labelKey: string | null;
   modulos: ModuloDelPanel[];
@@ -445,6 +448,8 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
   // contrato que sale de acá ya se vive en Operación (Nico, 2026-09-12).
   {
     key: 'captacion',
+    // Decisión 20 de Nico (22-10): en la barra, «CAPTACIÓN» (el nombre largo no cabía en DM Mono); las páginas siguen con el largo.
+    labelCortoKey: 'inmobiliaria.nav.secCaptacionCorta',
     labelKey: 'inmobiliaria.nav.secCaptacion',
     modulos: [
       {
@@ -561,7 +566,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         // QA-CONT CR-04 (Nico, 03-10-2026): sin el abogado externo, como
         // Inquilinos (E-05): tiene `contratos` para lo jurídico pero «sólo sus
         // casos» (O-05); la lista entera con cánones y deudas no es suya.
-        key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FilePlus, module: 'contratos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion', dataTourTarget: 'sidebar-contratos',
+        key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FileText, module: 'contratos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion', dataTourTarget: 'sidebar-contratos',
         pantallas: [
           { labelKey: 'inmobiliaria.nav.renovaciones', href: r('/contratos/renovaciones'), icon: ArrowsClockwise, module: 'operaciones' },
           // A-13: la invitación a firmar vence a los 7 días. Acá se ve qué
@@ -597,11 +602,11 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // como sub-pantalla de Mantenimientos porque el riel no se dibuja con
       // una card sola: quedaría inalcanzable desde el menú. Mismo criterio
       // que «Portales» con Inmuebles.
-      { key: 'proveedores', labelKey: 'inmobiliaria.nav.proveedores', href: r('/mantenimientos/proveedores'), icon: Toolbox, module: 'operaciones', scope: 'administracion' },
+      { key: 'proveedores', labelKey: 'inmobiliaria.nav.proveedores', href: r('/mantenimientos/proveedores'), icon: Storefront, module: 'operaciones', scope: 'administracion' },
       { key: 'solicitudes', labelKey: 'inmobiliaria.nav.solicitudes', href: r('/solicitudes'), icon: Lifebuoy, module: 'operaciones', scope: 'administracion', ia: true, hintKey: 'inmobiliaria.nav.pqrs' },
       // `roles` y no `module`: no hay llave de AGENCY_MODULES para mensajes, y
       // la pantalla se cierra por rol (`AgencyRoleGuard allowed="managers"`).
-      { key: 'mensajes', labelKey: 'inmobiliaria.nav.mensajes', href: r('/mensajes'), icon: Chat, module: null, roles: MENSAJES_ROLES, scope: 'administracion' },
+      { key: 'mensajes', labelKey: 'inmobiliaria.nav.mensajes', href: r('/mensajes'), icon: EnvelopeSimple, module: null, roles: MENSAJES_ROLES, scope: 'administracion' },
     ],
   },
 
@@ -730,7 +735,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       },
       { key: 'facturacion', labelKey: 'inmobiliaria.nav.facturacion', href: r('/facturacion'), icon: Receipt, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
       // Conciliación (la Sala de su agente) se mudó a «Agentes IA» el 2026-09-16.
-      { key: 'contabilidad', labelKey: 'inmobiliaria.nav.contabilidadCorta', href: r('/contabilidad'), icon: Calculator, module: null, roles: CONTABILIDAD_ROLES, scope: 'finanzas' },
+      { key: 'contabilidad', labelKey: 'inmobiliaria.nav.contabilidadCorta', href: r('/contabilidad'), icon: BookOpenText, module: null, roles: CONTABILIDAD_ROLES, scope: 'finanzas' },
       // 🔴 NÓMINA es un módulo de PAGO (Nico, 17-09): `moduloPago` hace que la
       // fila no exista para quien no lo compró — ni siquiera un instante mientras
       // cargan los permisos, porque el gate falla cerrado. Y `CONTADOR_ROLES`
@@ -756,7 +761,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // externo: el back le niega la sección entera (E-05).
       { key: 'inquilinos', labelKey: 'inquilinos.titulo', href: r('/inquilinos'), icon: UsersThree, module: 'contratos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion' },
       // ROLES (14-10-2026): el back le cierra los documentos al abogado externo (sólo sus casos).
-      { key: 'documentos', labelKey: 'inmobiliaria.nav.documentos', href: r('/documentos'), icon: FileText, module: 'documentos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'general', exact: true },
+      { key: 'documentos', labelKey: 'inmobiliaria.nav.documentos', href: r('/documentos'), icon: FolderSimple, module: 'documentos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'general', exact: true },
     ],
   },
 

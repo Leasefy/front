@@ -1073,7 +1073,8 @@
       "recaudoBancario": "Bank collections",
       "recibos": "Receipts",
       "deudaDelMes": "Debt this month",
-      "girosAPropietarios": "Owner payouts"
+      "girosAPropietarios": "Owner payouts",
+      "secCaptacionCorta": "Acquisition"
     },
     "piloto": {
       "titulo": "Autopilot",

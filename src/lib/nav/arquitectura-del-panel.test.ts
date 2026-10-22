@@ -951,7 +951,7 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     };
     const filas = filterAgencyNav(filasDelSidebar(t, sinAgentes), sinAgentes);
     expect(filas.map((f) => f.label)).not.toContain('inmobiliaria.nav.secAgentes');
-    expect(filas.map((f) => f.label)).toContain('inmobiliaria.nav.secCaptacion');
+    expect(filas.map((f) => f.label)).toContain('inmobiliaria.nav.secCaptacionCorta') // decisión 20 de Nico: en la barra, «Captación»;
 
     // Con una sola fila visible, la sección aparece con esa fila.
     const soloAnalytics: NavFilterContext = { ...sinAgentes, canAccess: (m) => m === 'analytics' };

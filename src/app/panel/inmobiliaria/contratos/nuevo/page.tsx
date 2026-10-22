@@ -1622,7 +1622,7 @@ function NuevoContratoContent() {
               </Field>
             ) : (
               <div className="space-y-1.5" data-testid="dia-de-pago-fecha-a-fecha">
-                <p className="text-xs font-medium text-fg">Día de pago</p>
+                <p className="text-caption font-medium text-fg">Día de pago</p>
                 <p className="text-body-sm text-fg-muted">Fecha a fecha: cada cuota vence el día en que empieza su período.</p>
               </div>
             )}

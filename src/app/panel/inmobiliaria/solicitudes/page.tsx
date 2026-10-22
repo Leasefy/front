@@ -10,7 +10,8 @@ import { ArrowLeft, Lifebuoy, Plus } from '@phosphor-icons/react';
 import { lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Cifra, FranjaDeCifras, SearchInput, type TonoDeCifra } from '@leasefy/cadence';
+import { SearchInput, type TonoDeCifra } from '@leasefy/cadence';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -245,33 +246,27 @@ function PqrsContent() {
             franja empieza por lo urgente (vencidas, por vencer) y sigue con los estados; cada cifra
             filtra la tabla y se vuelve a tocar para quitar el filtro. Antes los estados eran una
             franja aparte que sólo informaba y un desplegable con lo mismo. */}
-        <FranjaDeCifras
-          columnas={4}
-          aria-label="Filtrar por plazo y estado"
-          data-testid="pqrs-por-estado"
-          className="rounded-none border-0 border-b border-border"
-        >
-          {CIFRAS_DE_PQRS.map((item) => (
-            <Cifra
-              key={item.key}
-              etiqueta={item.etiqueta ?? t(k(`estado_${item.key}`))}
-              tono={!isLoading && !error && resumen[item.field] > 0 ? item.tono : undefined}
-              detalle={!isLoading && error ? 'No se pudo traer' : undefined}
-              activa={filtros.estado === item.filtro}
-              onClick={() =>
-                setFiltros((f) => ({ ...f, estado: f.estado === item.filtro ? 'todos' : item.filtro }))
-              }
-              valor={
-                isLoading ? (
-                  // Un 0 mientras carga afirma «no hay ninguna», que no se sabe: esqueleto.
-                  <span className="mt-1 block h-7 w-10 animate-pulse rounded bg-surface-muted" aria-hidden="true" />
-                ) : (
-                  <span data-testid="pqrs-resumen-valor">{error ? '—' : resumen[item.field]}</span>
-                )
-              }
-            />
-          ))}
-        </FranjaDeCifras>
+        {/* Revisión de Operación (21-10): ocho cifras grandes —siete en cero— pasan a pestañas
+            de estado con su conteo; las en cero no salen (salvo «Todas» y la elegida), y la de
+            vencidas lleva el punto. Mientras carga o si falló, sin números: nunca un 0 inventado. */}
+        <div className="border-b border-border px-4 py-3" data-testid="pqrs-por-estado">
+          <PestanasDeEstado
+            etiqueta="Filtrar por plazo y estado"
+            valor={filtros.estado}
+            onCambio={(v) => setFiltros((f) => ({ ...f, estado: v }))}
+            pestanas={[
+              { valor: 'todos' as FiltrosDePqrs['estado'], etiqueta: 'Todas', cuantos: null, fija: true, testid: 'pqrs-pestana-todas' },
+              ...CIFRAS_DE_PQRS.map((item) => ({
+                valor: item.filtro,
+                etiqueta: item.etiqueta ?? t(k(`estado_${item.key}`)),
+                cuantos: isLoading || error ? null : resumen[item.field],
+                tono: item.key === 'vencidas' ? ('aviso' as const) : undefined,
+                testid: `pqrs-pestana-${item.key}`,
+              })),
+            ]}
+          />
+          {!isLoading && error ? <p className="mt-2 text-caption text-fg-muted">No se pudo traer el resumen.</p> : null}
+        </div>
         <div className="flex flex-col gap-2 border-b border-border p-4 sm:flex-row sm:items-center">
           <SearchInput
             value={filtros.texto}

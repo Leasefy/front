@@ -10609,7 +10609,7 @@
       "colInmueble": "Property / contract",
       "colAsignado": "Assigned to",
       "colEstado": "Status",
-      "colSla": "SLA",
+      "colSla": "Due",
       "emptyTitle": "No requests yet",
       "emptyDesc": "Log the first one with “New request”.",
       "sinInmueble": "No property",

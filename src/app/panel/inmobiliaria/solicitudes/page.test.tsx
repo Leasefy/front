@@ -258,14 +258,11 @@ describe('solicitudes — el resumen no afirma ceros que no sabe (S1 · S2 · S3
   // GLOW UP 21-10: la franja de la tabla (plazo + estados), que también filtra.
   const grilla = () => container.querySelector('[data-testid="pqrs-por-estado"]')
 
-  it('🔴 con la lista caída, las ocho cifras dicen «—» y «No se pudo traer», no 0', async () => {
+  it('🔴 con la lista caída, las pestañas no dicen números y avisan «No se pudo traer», no 0', async () => {
     listarMock.mockRejectedValue(new ApiError(500, 'Internal server error'))
     await montar()
 
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
-    const valores = Array.from(container.querySelectorAll('[data-testid="pqrs-resumen-valor"]'))
-    expect(valores).toHaveLength(8)
-    for (const v of valores) expect(v.textContent).toBe('—')
     expect(grilla()!.textContent).toContain('No se pudo traer')
     expect(grilla()!.textContent).not.toMatch(/\d/)
   })
@@ -276,17 +273,14 @@ describe('solicitudes — el resumen no afirma ceros que no sabe (S1 · S2 · S3
 
     expect(grilla()).not.toBeNull()
     expect(grilla()!.textContent).not.toMatch(/\d/)
-    expect(container.querySelectorAll('[data-testid="pqrs-resumen-valor"]')).toHaveLength(0)
   })
 
   it('con la lista bien, el resumen muestra sus números', async () => {
     listarMock.mockResolvedValue({ resumen: RESUMEN, solicitudes: [OTRA] })
     await montar()
 
-    const valores = Array.from(container.querySelectorAll('[data-testid="pqrs-resumen-valor"]')).map(
-      (v) => v.textContent,
-    )
-    expect(valores).toContain('1')
+    // Revisión 21-10: pestañas con su conteo (las en cero no salen).
+    expect(grilla()!.textContent).toMatch(/1/)
     expect(grilla()!.textContent).not.toContain('No se pudo traer')
   })
 

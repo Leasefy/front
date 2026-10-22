@@ -10644,7 +10644,7 @@
       "colInmueble": "Inmueble / contrato",
       "colAsignado": "Asignado a",
       "colEstado": "Estado",
-      "colSla": "SLA",
+      "colSla": "Vence",
       "emptyTitle": "Sin solicitudes aún",
       "emptyDesc": "Radica la primera con «Nueva solicitud».",
       "sinInmueble": "Sin inmueble",

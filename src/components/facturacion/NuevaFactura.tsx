@@ -1775,8 +1775,8 @@ export function NuevaFactura({
     // está fija abajo: el pie se pega ENCIMA de ella, no detrás (FA-15).
     className="bottom-[calc(env(safe-area-inset-bottom)+3.5625rem)] lg:bottom-0"
     testid="facturacion-acciones"
-    // Tiene acciones que sirven sin marcar nada: la barra queda completa.
-    siempreConAcciones
+    // Tiene acciones que sirven sin marcar nada; 22-10 (revisión): con 0 marcadas no tapa el buscador.
+    siempreConAcciones={elegidas.length > 0}
     marcadas={elegidas.length}
     queSon={['factura', 'facturas']}
     monto={elegidas.length > 0 ? formatCurrency(totalElegido) : null}

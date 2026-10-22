@@ -231,7 +231,7 @@ export function RecibosDeCajaDeLaInmobiliaria() {
                   )}
                   data-testid={`recibo-${r.numero}`}
                 >
-                  <TableCell className="whitespace-nowrap max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0">
+                  <TableCell className="md:whitespace-nowrap max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0">
                     <span className="font-mono text-body-sm tabular-nums">N.º {r.numero}</span>
                     {r.anulado && (
                       <Badge variant="outline" className="ml-2 border-danger/40 text-danger">

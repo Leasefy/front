@@ -352,8 +352,8 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
             <span data-testid="comparacion-mes-anterior">
               {conMayusculaInicial(nombreDelMes(recaudo.mesAnterior.mes))}:{' '}
               {/* N-06: con el numerador del back, el mismo con que se sacó su %. */}
-              {formatCurrency(recaudo.mesAnterior.abonadoCop ?? recaudo.mesAnterior.recaudadoCop)} de{' '}
-              {formatCurrency(recaudo.mesAnterior.causadoCop)} ({tasaEnPantalla(recaudo.mesAnterior.tasaPct)}).
+              {plata(recaudo.mesAnterior.abonadoCop ?? recaudo.mesAnterior.recaudadoCop)} de{' '}
+              {plata(recaudo.mesAnterior.causadoCop)} ({tasaEnPantalla(recaudo.mesAnterior.tasaPct)}).
               Variación:{' '}
               <span data-testid="variacion-del-recaudo">{textoDeLaVariacion(recaudo.variacionPct)}</span>
               {/* TB-04: un solo guion (antes «— —»). */}
@@ -434,7 +434,7 @@ function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
           pie={
             cartera.enSiniestroCop > 0 ? (
               <span data-testid="cartera-en-siniestro">
-                Aparte, {formatCurrency(cartera.enSiniestroCop)} en siniestro: lo reclama la
+                Aparte, {plata(cartera.enSiniestroCop)} en siniestro: lo reclama la
                 aseguradora, no la cobranza.
               </span>
             ) : undefined
@@ -498,6 +498,7 @@ function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
               </>
             }
             marca={<MarcaDelTramo i={i} total={cartera.tramos.length} />}
+            formato={plata}
             valor={tramo.carteraCop}
             definicion={definicionDelTramo(tramo)}
           />

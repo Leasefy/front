@@ -152,7 +152,7 @@ export function CuotasDelMesTabla({
     useTablePagination(filas, { initialPageSize: 10, resetKey: `${mes}|${hayFiltros}` })
 
   // Los mismos decimales en cada columna de plata (revisión 22-10).
-  const plataDeLaColumna = plataPareja(pageItems.flatMap((f) => [f.totalCop, f.pendienteCop, f.pagadoCop]))
+  const plataDeLaColumna = plataPareja(pageItems.flatMap((f) => [f.totalCop, f.pendienteCop, f.pagadoCop, interesPendiente(f)]))
 
   return (
     <div
@@ -294,7 +294,7 @@ export function CuotasDelMesTabla({
                   {interes > 0 && (
                     <p className="text-caption text-danger" data-testid="cuota-intereses">
                       {t(CLAVE_DE_MORA.masIntereses, {
-                        monto: formatCurrency(interes),
+                        monto: plataDeLaColumna(interes),
                       })}
                     </p>
                   )}

@@ -218,6 +218,10 @@ export function CarteraCompleta() {
   // Las fichas y la franja hablan de TODA la cartera, no de lo filtrado: si
   // se achicaran con el filtro, dejarían de servir para elegir el filtro.
   const cartera = useMemo(() => discriminar(items, casosEnSiniestro), [items, casosEnSiniestro])
+  // 22-10 (revisión): «no se llena» sólo si de verdad está vacío; con plata adentro sería falso.
+  const tramosVaciosPorElSiniestro = tramosQueNoSeLlenan.filter(
+    (e) => (cartera.tramos.find((t) => t.edad === e)?.monto ?? 0) === 0,
+  )
   /*
    * 15-10-2026 (Nico, con Juan de Portofino: «la que deberíamos ver es lo que
    * está vencido como cartera»): si hay cartera, la pantalla ENTRA en ella. La
@@ -638,10 +642,10 @@ export function CarteraCompleta() {
               pueden llenarse nunca. Tres ceros permanentes sin explicación se
               leen como «no hay mora vieja», que es lo contrario de la verdad.
             */}
-            {tramosQueNoSeLlenan.length > 0 ? (
+            {tramosVaciosPorElSiniestro.length > 0 ? (
               <p className="px-4 pt-1 text-xs text-fg-muted" data-testid="tramos-que-no-se-llenan">
                 Con el siniestro a los {siniestros!.diasParaSiniestro} días, la cartera viva
-                no llega a {tramosQueNoSeLlenan.map((e) => NOMBRE_DE_EDAD[e]).join(', ')}:
+                no llega a {tramosVaciosPorElSiniestro.map((e) => NOMBRE_DE_EDAD[e]).join(', ')}:
                 esa mora está en «En siniestro».
               </p>
             ) : null}

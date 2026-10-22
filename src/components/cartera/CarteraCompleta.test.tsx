@@ -754,7 +754,9 @@ describe('CarteraCompleta', () => {
   describe('los tramos que la configuración deja vacíos', () => {
     it('con el siniestro a los 30 días, dice cuáles no se pueden llenar', () => {
       conReporte(
+        // 22-10: sin deudas en esos tramos (con plata adentro, decir «no se llena» sería falso).
         reporte({
+          items: [],
           siniestros: { cantidad: 0, totalCop: 0, diasParaSiniestro: 30, items: [] },
         }),
       )
@@ -769,7 +771,9 @@ describe('CarteraCompleta', () => {
 
     it('con el siniestro a los 90 días, sólo el último queda fuera', () => {
       conReporte(
+        // 22-10: sin deudas en esos tramos (con plata adentro, decir «no se llena» sería falso).
         reporte({
+          items: [],
           siniestros: { cantidad: 0, totalCop: 0, diasParaSiniestro: 90, items: [] },
         }),
       )

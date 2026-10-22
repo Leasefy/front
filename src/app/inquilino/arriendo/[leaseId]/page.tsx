@@ -361,7 +361,8 @@ export default function LeaseDetailPage() {
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
                 <div>
                   <h1 className="text-2xl lg:text-3xl font-semibold text-fg tracking-tight">
-                    {lease.propertyTitle}
+                    {/* QA 21-10: un inmueble sin título dejaba el h1 vacío; la dirección lo nombra. */}
+                    {lease.propertyTitle || lease.propertyAddress}
                   </h1>
                   <p className="text-fg-muted mt-2 flex items-center gap-1.5">
                     <MapPin className="w-4 h-4" />
@@ -783,7 +784,10 @@ export default function LeaseDetailPage() {
                     {formatFullDate(lease.startDate)} — {formatFullDate(lease.endDate)}
                   </p>
                 </div>
-                <div>
+                {/* QA 21-10: el back todavía no manda la garantía en el arriendo; sin dato, el
+                    bloque mostraba la etiqueta y un escudo solos. */}
+                {lease.guaranteeType ? (
+                <div data-testid="garantia-del-arriendo">
                   <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Garantía' : 'Guarantee'}</p>
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4 text-success" />
@@ -793,8 +797,9 @@ export default function LeaseDetailPage() {
                        lease.guaranteeType}
                     </p>
                   </div>
-                  <p className="text-xs text-fg-muted mt-1 ml-6">{lease.guaranteeDetails}</p>
+                  {lease.guaranteeDetails ? <p className="text-xs text-fg-muted mt-1 ml-6">{lease.guaranteeDetails}</p> : null}
                 </div>
+                ) : null}
 
                 {/* Documents */}
                 <div className="pt-4 border-t border-border-faint space-y-2">
@@ -838,6 +843,21 @@ export default function LeaseDetailPage() {
                       <Download className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted transition-colors" />
                     </a>
                   )}
+
+                  {/* QA 21-10: sin ningún enlace aquí, el bloque quedaba con la etiqueta sola.
+                      Los documentos del contrato viven en «Contrato y documentos». */}
+                  {!lease.contractUrl && !lease.insuranceUrl && !lease.inventoryUrl ? (
+                    <Link
+                      href="/inquilino/contratos"
+                      className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl hover:bg-surface-muted transition-colors"
+                      data-testid="ver-contrato-y-documentos"
+                    >
+                      <FileText className="w-4 h-4 text-fg-muted" />
+                      <span className="text-sm text-fg flex-1">
+                        {locale === 'es' ? 'Ver tu contrato y documentos' : 'See your contract and documents'}
+                      </span>
+                    </Link>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -848,33 +868,43 @@ export default function LeaseDetailPage() {
                 <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
                   <User className="w-5 h-5 text-fg-muted" />
                 </div>
-                <h2 className="font-semibold text-fg">{locale === 'es' ? 'Propietario' : 'Landlord'}</h2>
+                {/* QA 21-10: en un contrato de inmobiliaria esta persona es de la inmobiliaria, no el
+                    dueño; el arriendo no dice cuál es, así que el título vale para los dos. */}
+                <h2 className="font-semibold text-fg">{locale === 'es' ? 'Quién administra tu arriendo' : 'Who manages your rental'}</h2>
               </div>
               <div className="p-6">
                 <div className="flex items-center gap-4 mb-5">
                   {/* Cadence 2: el Avatar del sistema, nunca iniciales a mano. */}
                   <Avatar name={lease.landlordName || 'Propietario'} size="lg" />
                   <div>
-                    <p className="font-semibold text-fg">{lease.landlordName}</p>
-                    <p className="text-sm text-fg-muted">{locale === 'es' ? 'Propietario verificado' : 'Verified landlord'}</p>
+                    <p className="font-semibold text-fg">{lease.landlordName || (locale === 'es' ? 'Sin nombre registrado' : 'No name on file')}</p>
+                    {/* Antes: «Propietario verificado», una verificación que nadie hace. */}
+                    <p className="text-sm text-fg-muted">{locale === 'es' ? 'Escríbele por Mensajes' : 'Write to them in Messages'}</p>
                   </div>
                 </div>
 
                 <div className="space-y-2 mb-5">
-                  <a
-                    href={`mailto:${lease.landlordEmail}`}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-fg-muted hover:text-fg bg-surface-muted rounded-xl hover:bg-surface-muted transition-colors"
-                  >
-                    <Envelope className="w-4 h-4 text-fg-subtle" />
-                    {lease.landlordEmail}
-                  </a>
-                  <a
-                    href={`tel:${lease.landlordPhone}`}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-fg-muted hover:text-fg bg-surface-muted rounded-xl hover:bg-surface-muted transition-colors"
-                  >
-                    <Phone className="w-4 h-4 text-fg-subtle" />
-                    {lease.landlordPhone}
-                  </a>
+                  {/* QA 21-10: sin teléfono (o sin correo) la fila quedaba vacía, con su ícono solo. */}
+                  {lease.landlordEmail ? (
+                    <a
+                      href={`mailto:${lease.landlordEmail}`}
+                      className="flex items-center gap-3 px-4 py-3 text-sm text-fg-muted hover:text-fg bg-surface-muted rounded-xl hover:bg-surface-muted transition-colors"
+                      data-testid="contacto-correo"
+                    >
+                      <Envelope className="w-4 h-4 text-fg-subtle" />
+                      {lease.landlordEmail}
+                    </a>
+                  ) : null}
+                  {lease.landlordPhone ? (
+                    <a
+                      href={`tel:${lease.landlordPhone}`}
+                      className="flex items-center gap-3 px-4 py-3 text-sm text-fg-muted hover:text-fg bg-surface-muted rounded-xl hover:bg-surface-muted transition-colors"
+                      data-testid="contacto-telefono"
+                    >
+                      <Phone className="w-4 h-4 text-fg-subtle" />
+                      {lease.landlordPhone}
+                    </a>
+                  ) : null}
                 </div>
 
                 <Link

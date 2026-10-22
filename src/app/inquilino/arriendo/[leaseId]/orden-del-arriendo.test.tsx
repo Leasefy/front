@@ -70,5 +70,16 @@ describe('el detalle del arriendo — en el orden del trabajo', () => {
 
     const volver = Array.from(host.querySelectorAll('a')).find((a) => a.textContent?.includes('Volver a Mi arriendo'));
     expect(volver?.getAttribute('href')).toBe('/inquilino/arriendo');
+
+    // QA 21-10 en el laboratorio: sin filas vacías ni promesas que nadie verifica.
+    const $ = (id: string) => host.querySelector(`[data-testid="${id}"]`);
+    expect(host.textContent).toContain('Quién administra tu arriendo');
+    expect(host.textContent).not.toContain('Propietario verificado');
+    expect($('contacto-correo')).not.toBeNull();
+    expect($('contacto-telefono')).toBeNull(); // sin teléfono, sin fila
+    expect($('garantia-del-arriendo')).toBeNull(); // el back no la manda
+    // (el `next/link` de prueba no pasa el data-testid: se busca por el texto)
+    const documentos = Array.from(host.querySelectorAll('a')).find((a) => a.textContent?.includes('Ver tu contrato y documentos'));
+    expect(documentos?.getAttribute('href')).toBe('/inquilino/contratos');
   });
 });

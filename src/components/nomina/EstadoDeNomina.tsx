@@ -155,6 +155,10 @@ function Contenido({
         {aprendices ? <Avisos avisos={[aprendices]} testId="cuota-de-aprendices" /> : null}
       </div>
 
+      {/* 22-10 (revisión de Dinero): mientras falte configurar, la portada es SÓLO la
+          lista de lo que falta —sin pasos ni cifras en $ 0 que no pueden moverse—. */}
+      {!puedeLiquidar(estado) ? null : (
+      <>
       <NominaDelMes mes={mes} periodos={periodos} sePuedeLiquidar={puedeLiquidar(estado)} />
 
       <section className="space-y-3" aria-labelledby="costo-de-la-nomina">
@@ -169,7 +173,11 @@ function Contenido({
           </div>
           <SelectorDeMes mes={mes} onCambiar={onMes} />
         </div>
-        {resumen.disponible ? (
+        {resumen.disponible && resumen.costoTotalCop === 0 && (resumen.netoCop ?? 0) === 0 ? (
+          <p className="rounded-2xl border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="costo-de-la-nomina">
+            Todavía no hay períodos aprobados en {nombreDelMes(mes)}: el costo aparece cuando apruebes el primero.
+          </p>
+        ) : resumen.disponible ? (
           <>
             <FranjaDeCifras fila="xl" aria-label="El costo de la nómina" data-testid="costo-de-la-nomina">
               <Cifra
@@ -234,6 +242,8 @@ function Contenido({
           />
         )}
       </section>
+      </>
+      )}
 
       <PantallasDeNomina />
 

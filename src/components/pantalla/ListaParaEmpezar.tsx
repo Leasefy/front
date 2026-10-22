@@ -58,6 +58,12 @@ export interface ListaParaEmpezarProps {
   descripcion?: ReactNode;
   /** Llave para recordar si la persona la dejó plegada (por pantalla). */
   recordarComo?: string;
+  /**
+   * Empieza plegada en UNA línea aunque falte algo, diciendo «Sigue: …» (22-10,
+   * revisión de Dinero: en Facturación eran 7 capas antes de la primera fila).
+   * Para pantallas donde la lista se deja lista una vez y el trabajo es otro.
+   */
+  plegadaAlInicio?: boolean;
   className?: string;
   'data-testid'?: string;
 }
@@ -88,6 +94,7 @@ export function ListaParaEmpezar({
   requisitos,
   descripcion,
   recordarComo,
+  plegadaAlInicio = false,
   className,
   'data-testid': testId,
 }: ListaParaEmpezarProps) {
@@ -107,12 +114,13 @@ export function ListaParaEmpezar({
    * o la abrió a mano, se respeta lo que eligió (hasta que cambie el estado de
    * «todo listo»: un requisito nuevo que falta la vuelve a abrir).
    */
-  const [abierta, setAbierta] = useState(!todoListo);
+  const [abierta, setAbierta] = useState(!todoListo && !plegadaAlInicio);
   useEffect(() => {
     const recordada = leerPlegada(recordarComo);
-    if (todoListo) setAbierta(recordada === false);
+    if (todoListo || plegadaAlInicio) setAbierta(recordada === false);
     else setAbierta(true);
-  }, [todoListo, recordarComo]);
+  }, [todoListo, recordarComo, plegadaAlInicio]);
+  const queSigue = requisitos.find((r) => r.id === siguiente)?.titulo;
 
   const titulo = todoListo
     ? tr('Todo listo para {que}', { que: paraQue })
@@ -145,7 +153,7 @@ export function ListaParaEmpezar({
         onClick={() => {
           const nueva = !abierta;
           setAbierta(nueva);
-          if (todoListo) guardarPlegada(recordarComo, !nueva);
+          if (todoListo || plegadaAlInicio) guardarPlegada(recordarComo, !nueva);
         }}
       >
         {todoListo ? (
@@ -171,7 +179,11 @@ export function ListaParaEmpezar({
         )}
         <span className="min-w-0 flex-1">
           <span className="block text-body font-semibold text-fg">{titulo}</span>
-          {!todoListo && descripcion ? (
+          {!todoListo && !abierta && queSigue ? (
+            <span className="mt-0.5 block text-body-sm text-fg-muted" data-testid={testId ? `${testId}-sigue` : undefined}>
+              {tr('Sigue')}: {queSigue}
+            </span>
+          ) : !todoListo && descripcion ? (
             <span className="mt-0.5 block text-body-sm text-fg-muted">{descripcion}</span>
           ) : null}
         </span>

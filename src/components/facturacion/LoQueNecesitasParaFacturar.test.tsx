@@ -115,12 +115,23 @@ async function pintar() {
   });
 }
 
+/** 22-10: la lista empieza plegada en una línea («Sigue: …»); se abre como la abre la persona. */
+async function abrirLaLista() {
+  const boton = document.querySelector<HTMLButtonElement>('[data-testid="lo-que-necesitas-para-facturar"] > button[aria-expanded="false"]');
+  if (boton) {
+    await act(async () => {
+      boton.click();
+    });
+  }
+}
+
 describe('LoQueNecesitasParaFacturar', () => {
   it('🔴 sin resolución vigente, es lo que sigue y su botón abre la carga', async () => {
     resoluciones.mockResolvedValue(vigente(false));
     tercerosSinCorreo.mockResolvedValue({ total: 10, sinCorreo: 3 });
     estadoAnteLaDian.mockResolvedValue({ estado: 'FALTA_RESOLUCION', titulo: 'Falta la resolución', transmite: false, ambiente: null, pasos: [], avisos: [], descripcion: '' });
     await pintar();
+    await abrirLaLista();
     const fila = q('[data-testid="lo-que-necesitas-para-facturar-resolucion"]')!;
     expect(fila.getAttribute('data-estado')).toBe('falta');
     expect(fila.textContent).toContain('Sigue');
@@ -190,6 +201,7 @@ describe('LoQueNecesitasParaFacturar', () => {
     tercerosSinCorreo.mockRejectedValue(new Error('caído'));
     estadoAnteLaDian.mockRejectedValue(new Error('caído'));
     await pintar();
+    await abrirLaLista();
     expect(q('[data-testid="lo-que-necesitas-para-facturar"]')!.textContent).not.toContain('Todo listo');
     expect(q('[data-testid="lo-que-necesitas-para-facturar-resolucion"]')!.getAttribute('data-estado')).toBe(
       'desconocido',

@@ -234,6 +234,8 @@ export function LoQueNecesitasParaFacturar({
       descripcion={tr('Se hace una sola vez. Empieza por el que dice «Sigue».')}
       requisitos={requisitos}
       recordarComo="facturacion"
+      // 22-10 (revisión de Dinero): plegada en una línea («Sigue: …»); el trabajo del mes va primero.
+      plegadaAlInicio
       data-testid="lo-que-necesitas-para-facturar"
     />
   );

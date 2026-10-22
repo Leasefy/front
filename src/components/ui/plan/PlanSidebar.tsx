@@ -122,6 +122,16 @@ function useEsMac(): boolean {
   return useSyncExternalStore(sinSuscripcion, () => esMac(), () => false);
 }
 
+/** «⌘K» (o «Ctrl K») a la derecha del buscador abierto: la tecla que abre la paleta, a la vista. */
+function AtajoDelBuscador() {
+  const mac = useEsMac();
+  return (
+    <span className="pointer-events-none absolute right-5 top-[calc(50%-2px)] -translate-y-1/2" aria-hidden="true">
+      <Kbd size="sm">{mac ? '⌘K' : 'Ctrl K'}</Kbd>
+    </span>
+  );
+}
+
 export interface NavItem {
   label: string;
   href: string;
@@ -635,32 +645,21 @@ function NavSkeleton({ isCollapsed }: { isCollapsed: boolean }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Secciones plegables (Nico, 2026-09-22: «no se distingue muy bien entre la
-// sección y las opciones; deberíamos volverlas secciones con dropdown porque
-// tenemos mucha información»).
+// sección y las opciones; deberíamos volverlas secciones con dropdown»).
 //
-// Antes la cabecera era el `SidebarSection` de Cadence: mono, 11 px, MAYÚSCULAS,
-// en `text-fg-subtle` (#726E68) — y las filas iban en `text-fg-muted`
-// (#6E6A63). Mismo gris con 2 puntos de diferencia: la jerarquía la cargaba
-// sólo el tamaño. Ahora la cabecera es un CONTROL:
-//   · tinta plena (`text-fg`) y semibold, contra filas en gris con ícono;
-//   · en sentence case, porque en Cadence los controles van así (los eyebrows
-//     mono en mayúsculas son rótulos, y esto ya no es un rótulo: se aprieta);
-//   · un chevron que gira, y un fondo al pasar el mouse — forma de botón;
-//   · las filas cuelgan de una guía vertical (la raya de la izquierda) y la
-//     fila activa enciende su tramo.
-// Plegada, la cabecera sigue diciendo lo que adentro importa: la suma de los
-// contadores y, si la página actual vive ahí, la cabecera va en el azul.
+// Cómo es hoy (plan de la barra C1–C9, 22-10; revisora r23):
+//   · la barra es una hoja de ARENA y la fila activa una tarjeta BLANCA con el
+//     texto y el ícono en voltaje (decisiones 18 y 19 de Nico);
+//   · la cabecera de cada sección es un RÓTULO en mono MAYÚSCULA (como los de
+//     todo el panel), con su chevron: plegada, se ve; abierta, sólo al pasar el
+//     mouse o con el foco;
+//   · las filas caen en el mismo borde que Inicio (sin la guía vertical de
+//     antes) y van a 33 px una de otra;
+//   · plegada, la cabecera sigue diciendo lo que adentro importa: la suma de
+//     los contadores y, si la página actual vive ahí, la cabecera en el azul.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Sangría + guía. La raya cae a 11 px, justo donde empieza el texto de la
- * cabecera (10 px): se lee como «esto cuelga de eso». La sangría es corta a
- * propósito —la fila recorta su propio aire de 10 a 8 px a la izquierda y a
- * 6 a la derecha— porque cada píxel sale del ancho de la etiqueta: con 15 px
- * de sangría «Solicitudes · PQRS» + la píldora IA se cortaba en «PQ…»
- * (captura del 22-09). Ningún nombre se corta al ancho normal de 240 px.
- */
-// C4 (plan de la barra, 22-10): sin la guía vertical; las filas de una sección caen en el mismo borde que Inicio.
+/** El espacio de las filas de una sección: el mismo borde que Inicio, 33 px entre filas. */
 const GUIA_DE_SECCION = 'mt-0.5 space-y-px';
 
 interface SeccionPlegableProps {
@@ -731,9 +730,10 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
           aria-hidden="true"
           weight="bold"
           className={cn(
-            'h-3 w-3 shrink-0 text-fg-subtle transition-transform duration-base ease-enter group-hover/seccion:text-fg',
+            'h-3 w-3 shrink-0 text-fg-subtle transition-[transform,opacity] duration-base ease-enter group-hover/seccion:text-fg',
             'motion-reduce:transition-none',
-            !abierta && '-rotate-90',
+            // Revisora r23 (barra C3): abierta, el chevron sólo al pasar el mouse o con el foco; plegada se ve siempre.
+            abierta ? 'opacity-0 group-hover/seccion:opacity-100 group-focus-visible/seccion:opacity-100' : '-rotate-90',
           )}
         />
       </button>
@@ -751,7 +751,7 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
         inert={!abierta}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className={cn(GUIA_DE_SECCION, 'mb-1 mt-0.5 space-y-0.5')}>
+          <div className={cn(GUIA_DE_SECCION, 'mb-1 mt-0.5 space-y-px')}>
             {bloque.filas.map((item) => (
               <NavItemComponent
                 key={item.href}
@@ -1071,17 +1071,21 @@ export function SidebarContent({
       {/* Search — cadence SidebarSearch opens the command palette (⌘K).
           Falls back to the aboveNav slot for layouts that don't wire it. */}
       {!isCollapsed && (onSearchClick || aboveNav) && (
-        <div className="px-3 pb-1" data-tour-target="buscador">
+        <div className="relative px-3 pb-1" data-tour-target="buscador">
           {onSearchClick ? (
-            <SidebarSearch
-              readOnly
-              placeholder={tr(searchPlaceholder ?? 'Buscar')}
-              className="cursor-pointer"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                onSearchClick();
-              }}
-            />
+            <>
+              <SidebarSearch
+                readOnly
+                placeholder={tr(searchPlaceholder ?? 'Buscar')}
+                className="cursor-pointer pr-14"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onSearchClick();
+                }}
+              />
+              {/* Revisora r23 (barra C4): el atajo también con la barra abierta, no sólo en el riel plegado. */}
+              <AtajoDelBuscador />
+            </>
           ) : (
             aboveNav
           )}

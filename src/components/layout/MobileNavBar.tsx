@@ -64,8 +64,9 @@ const CASILLA =
 // El azul de la fila activa del menú (globals.css): en oscuro, apagado, no el
 // índigo saturado de `primary-soft`.
 const CASILLA_ACTIVA = 'bg-[color:var(--menu-activa)] text-[color:var(--menu-activa-tinta)]';
-// Sin el `tracking-wider` de antes: con seis casillas a 390 px, «DIRECTORIO» se cortaba.
-const ROTULO = 'mt-1 max-w-full truncate text-[9px] font-mono uppercase tracking-[0.02em]';
+// Revisora r23 (barra #6): en mono MAYÚSCULA de 9 px «DIRECTOR…» se cortaba y no se leía. Host Grotesk de 11 px
+// con la inicial en mayúscula: «Directorio» cabe en los 64 px de cada casilla.
+const ROTULO = 'mt-1 max-w-full truncate text-[11px] leading-tight';
 
 function Contador({ n }: { n: number }) {
   if (n <= 0) return null;

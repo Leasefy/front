@@ -75,7 +75,7 @@ const METHOD_CARDS: MethodCard[] = [
   },
 ];
 
-export function StepChooseMethod({ state, updateState }: ImportStepProps) {
+export function StepChooseMethod({ state, updateState, origen }: ImportStepProps) {
   const { t } = useI18n();
 
   const handleSelect = (method: ImportMethod, disabled?: boolean) => {
@@ -89,14 +89,19 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
-          {t('inmobiliaria.import.title')}
-        </h2>
-        <p className="text-sm text-fg-muted dark:text-fg-subtle">
-          {t('inmobiliaria.import.subtitle')}
-        </p>
-      </div>
+      {/* Desde Inmuebles la página ya dice este título y esta línea en su
+          encabezado: repetirlos aquí era leer lo mismo dos veces seguidas. En
+          la puesta en marcha (el muro) sí hacen falta. */}
+      {origen !== 'inmuebles' && (
+        <div>
+          <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+            {t('inmobiliaria.import.title')}
+          </h2>
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            {t('inmobiliaria.import.subtitle')}
+          </p>
+        </div>
+      )}
 
       {/* Method Cards Grid — cuatro métodos: de a dos en tablet, en fila en desktop */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -13,10 +13,10 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -117,18 +117,15 @@ function Contenido() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1.5">
-        <SectionLabel>Pagos · recaudo</SectionLabel>
-        <h1 className="text-h2 text-fg">Aseguradoras</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Las que pagan siniestros. Cuando una paga, el recibo lleva a la aseguradora como pagador: las cuotas
-          quedan pagadas para la inmobiliaria y el propietario, y en el estado de cuenta del inquilino esa deuda
-          sale «subrogada a la aseguradora».{' '}
-          <Link className="underline" href="/panel/inmobiliaria/pagos/recaudo">
-            Volver a Recaudo
-          </Link>
-        </p>
-      </header>
+      {/* La vuelta va arriba (antes, un enlace al final de la descripción). */}
+      <div className="space-y-3">
+        <BackButton href="/panel/inmobiliaria/pagos/recaudo" label="Volver a Recaudo" />
+        <EncabezadoDePantalla
+          seccion="Pagos · recaudo"
+          titulo="Aseguradoras"
+          descripcion="Las que pagan siniestros. Cuando una paga, el recibo lleva a la aseguradora como pagador: las cuotas quedan pagadas para la inmobiliaria y el propietario, y en el estado de cuenta del inquilino esa deuda sale «subrogada a la aseguradora»."
+        />
+      </div>
 
       {puedeEditar && (
         <div className="flex flex-wrap items-start gap-2 rounded-lg border border-border p-4" data-testid="nueva-aseguradora">

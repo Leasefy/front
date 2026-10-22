@@ -25,7 +25,7 @@ import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { CuentasPorPagar } from '@/components/contabilidad/gastos/CuentasPorPagar'
 import { Nota } from '@/components/contabilidad/piezas'
 import { PestanasDeLiquidaciones } from '@/components/liquidaciones/PestanasDeLiquidaciones'
-import { SectionLabel } from '@/components/ui/section-label'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 /**
  * 🔴 CB-R21 (04-10-2026) · Nico, tal cual: «Proveedores: Una sola, en Gastos».
@@ -43,15 +43,13 @@ function PagosCola() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <header className="space-y-1.5">
-        {/* PG-16: lo que se ve acá son las facturas de PROVEEDOR, no las
-            liquidaciones de los propietarios. */}
-        <SectionLabel>Pagos · proveedores</SectionLabel>
-        <h1 className="text-h2 text-fg">Cuentas por pagar</h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          Las facturas de proveedor causadas en Gastos: lo que se debe, lo vencido y lo pagado.
-        </p>
-      </header>
+      {/* PG-16: lo que se ve acá son las facturas de PROVEEDOR, no las
+          liquidaciones de los propietarios. */}
+      <EncabezadoDePantalla
+        seccion="Pagos · proveedores"
+        titulo="Cuentas por pagar"
+        descripcion="Las facturas de proveedor causadas en Gastos: lo que se debe, lo vencido y lo pagado."
+      />
 
       <PestanasDeLiquidaciones />
 

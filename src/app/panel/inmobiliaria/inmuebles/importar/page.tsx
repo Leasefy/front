@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';import { PageGuard } from '@/components/auth/PageGuard';
+import { useState } from 'react';
 
-import { FileArrowUp } from '@phosphor-icons/react';
+import { PageGuard } from '@/components/auth/PageGuard';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@leasefy/cadence';
 import { ImportWizard } from '@/components/inmobiliaria/import/ImportWizard';
@@ -15,26 +16,19 @@ function ImportarContent() {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Back Link */}
-      <BackButton
-        href="/panel/inmobiliaria/inmuebles"
-        label={t('inmobiliaria.portafolio.detail.backToPortfolio')}
-      />
-
-      {/* Title */}
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
-          <FileArrowUp className="w-6 h-6 text-primary" weight="duotone" />
-        </div>
-        <div>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.import.title')}
-          </h1>
-          <p className="text-sm text-fg-muted line-clamp-2 max-w-2xl">
-            {t('inmobiliaria.import.subtitle')}
-          </p>
-        </div>
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* El contenedor y el encabezado de todo el panel (antes p-4 md:p-6 y un
+          título con ícono propio, distinto al resto de Inmuebles). */}
+      <div className="space-y-3">
+        <BackButton
+          href="/panel/inmobiliaria/inmuebles"
+          label={t('inmobiliaria.portafolio.detail.backToPortfolio')}
+        />
+        <EncabezadoDePantalla
+          seccion={t('inmobiliaria.nav.inmuebles')}
+          titulo={t('inmobiliaria.import.title')}
+          descripcion={t('inmobiliaria.import.subtitle')}
+        />
       </div>
 
       {/* Dos caminos, como en la migración (Nico, 09-10-2026: «ambas, Excel o

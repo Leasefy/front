@@ -11,7 +11,7 @@ import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ListaDeLotes } from '@/components/dispersiones/lotes/ListaDeLotes';
 import { ComoSaleUnLote } from '@/components/dispersiones/lotes/ComoSaleUnLote';
 
@@ -31,16 +31,12 @@ export default function LotesDeDispersionPage() {
       <div className="space-y-6 p-6 lg:p-8">
         {/* «¿Cómo funciona?» a la derecha, donde iría el botón de acción
             (05-10-2026): abre el cajón con los cinco pasos de un lote. */}
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1.5">
-            <SectionLabel>Pagos</SectionLabel>
-            <h1 className="text-h2 text-fg">Lotes al banco</h1>
-            <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-              Los pagos a propietarios de un mes, juntos, en el archivo plano del banco desde el que giras.
-            </p>
-          </div>
-          <ComoSaleUnLote />
-        </header>
+        <EncabezadoDePantalla
+          seccion="Pagos"
+          titulo="Lotes al banco"
+          descripcion="Los pagos a propietarios de un mes, juntos, en el archivo plano del banco desde el que giras."
+          ayuda={<ComoSaleUnLote />}
+        />
         <Suspense fallback={<ListaDeLotes />}>
           <ListaEnElMesPedido />
         </Suspense>

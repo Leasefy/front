@@ -7080,6 +7080,8 @@
         "detalle": {
           "title": "Ticket detail",
           "errorLoading": "Failed to load detail",
+          "noEncontrado": "We couldn't find this ticket",
+          "noEncontradoDesc": "The link may be wrong or the ticket may no longer exist. Go back to the list to find it.",
           "queEntendi": "What I understood",
           "clasificacion": "Classification",
           "imagenes": "Images",
@@ -7423,6 +7425,7 @@
           "error": "Failed to load call",
           "errorRetry": "Retry",
           "empty": "No data for this call",
+          "emptyDesc": "It may still be processing, or the link may be wrong. Go back to the calls list to find it.",
           "header": {
             "startedAt": "Started",
             "duration": "Duration",

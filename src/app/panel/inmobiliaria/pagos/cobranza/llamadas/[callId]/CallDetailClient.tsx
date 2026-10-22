@@ -6,7 +6,10 @@
 
 import * as React from 'react'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
+import { BackButton } from '@/components/ui/back-button'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { EmptyState } from '@/components/data-display/EmptyState'
+import { PhoneSlash } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
@@ -168,29 +171,27 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   }
 
 
+  // Sin la llamada no se sabe de qué deudor es: la salida va a la lista de
+  // llamadas (antes el fallo y el vacío no tenían ninguna).
+  const aLasLlamadas = {
+    label: t('inmobiliaria.ai.volverA.llamadas'),
+    href: '/panel/inmobiliaria/pagos/cobranza/llamadas',
+  }
+
   // -------- Error --------
   if (error && !data) {
     return (
       <CrossFade swapKey="fallo">
-      <div className="p-6 lg:p-8">
-        <div className="rounded-lg border border-danger/30 bg-danger-soft p-6 max-w-xl">
-          <p className="text-sm text-danger font-medium">
-            {t('inmobiliaria.ai.cobranza.call.error')}
-          </p>
-          <p className="text-xs text-danger/80 mt-1">{error}</p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              void refetch()
-            }}
-            hideArrow
-            className="mt-3"
-          >
-            {t('inmobiliaria.ai.cobranza.call.errorRetry')}
-          </Button>
-        </div>
+      <div className="space-y-4 p-6 lg:p-8">
+        <BackButton href={aLasLlamadas.href} label={aLasLlamadas.label} />
+        <FalloDeCarga
+          error={error}
+          queEs="la llamada"
+          onReintentar={() => {
+            void refetch()
+          }}
+          volverA={aLasLlamadas}
+        />
       </div>
       </CrossFade>
     )
@@ -200,10 +201,13 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   if (!data) {
     return (
       <CrossFade swapKey="vacio">
-      <div className="p-6 lg:p-8">
-        <p className="text-sm text-fg-muted">
-          {t('inmobiliaria.ai.cobranza.call.empty')}
-        </p>
+      <div className="space-y-4 p-6 lg:p-8">
+        <BackButton href={aLasLlamadas.href} label={aLasLlamadas.label} />
+        <EmptyState
+          icon={PhoneSlash}
+          title={t('inmobiliaria.ai.cobranza.call.empty')}
+          description={t('inmobiliaria.ai.cobranza.call.emptyDesc')}
+        />
       </div>
       </CrossFade>
     )
@@ -220,12 +224,10 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-3">
-        <Link
+        <BackButton
           href={`/panel/inmobiliaria/pagos/cobranza/deudores/${data.debtorId}`}
-          className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline min-h-11"
-        >
-          ← {t('inmobiliaria.ai.cobranza.call.back')}
-        </Link>
+          label={t('inmobiliaria.ai.cobranza.call.back')}
+        />
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-h2 text-fg">

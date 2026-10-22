@@ -19,7 +19,7 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
-import { ArrowLeft, DownloadSimple, Package, Printer, SpinnerGap } from '@phosphor-icons/react';
+import { DownloadSimple, Package, Printer, SpinnerGap } from '@phosphor-icons/react';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import { ApiError } from '@/lib/api/client';
 import { descargar } from '@/lib/propietarios/exportar-datos';
@@ -28,6 +28,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { useConsignacion, usePropietario } from '@/lib/hooks/useInmobiliaria';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/ui/back-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table,
@@ -108,13 +109,11 @@ export default function ActaDeEntregaPage() {
           ficha» quedaba en tres renglones: en el celular, el enlace arriba y
           los dos botones debajo, a lo ancho. */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" data-acta-oculto>
-        <Link
+        <BackButton
           href={`/panel/inmobiliaria/inmuebles/${consignacionId}`}
-          className="inline-flex items-center gap-2 whitespace-nowrap text-sm text-fg-muted hover:text-fg"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {t('inmobiliaria.acta.backToProperty')}
-        </Link>
+          label={t('inmobiliaria.acta.backToProperty')}
+          className="self-start whitespace-nowrap"
+        />
         <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
           <Button variant="outline" hideArrow onClick={() => window.print()} disabled={!consignacion} data-testid="acta-imprimir">
             <Printer className="h-4 w-4" />

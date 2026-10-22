@@ -7115,6 +7115,8 @@
         "detalle": {
           "title": "Detalle del ticket",
           "errorLoading": "Error al cargar el detalle",
+          "noEncontrado": "No encontramos este ticket",
+          "noEncontradoDesc": "Puede que el enlace esté mal o que el ticket ya no exista. Vuelve a la lista para buscarlo.",
           "queEntendi": "Qué entendí",
           "clasificacion": "Clasificación",
           "imagenes": "Imágenes",
@@ -7458,6 +7460,7 @@
           "error": "Error cargando la llamada",
           "errorRetry": "Reintentar",
           "empty": "Sin datos para esta llamada",
+          "emptyDesc": "Puede que todavía se esté procesando o que el enlace esté mal. Vuelve a la lista de llamadas para buscarla.",
           "header": {
             "startedAt": "Inicio",
             "duration": "Duración",

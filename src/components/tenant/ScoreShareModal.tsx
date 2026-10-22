@@ -62,8 +62,8 @@ export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareM
           </DialogTitle>
           <DialogDescription>
             {locale === 'es'
-              ? 'Comparte tu score verificado con propietarios o inmobiliarias.'
-              : 'Share your verified score with landlords or agencies.'}
+              ? 'Comparte tu calificación verificada con propietarios o inmobiliarias.'
+              : 'Share your verified rating with landlords or agencies.'}
           </DialogDescription>
         </DialogHeader>
 

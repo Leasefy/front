@@ -815,8 +815,10 @@ function TarjetasDePropietarios({
               </span>
               {/* Revisora r22 (Propietarios #2): «1 inmueble · 1 arrendado» y «Canon $ …» en un renglón; lo atrasado y
                   sus giros, a lo ancho debajo (antes la columna de la plata partía «1 / inmueble / (1 arrendado)»). */}
-              <span className="mt-2.5 flex items-baseline justify-between gap-3">
-                <span className="min-w-0 text-sm text-fg-muted">
+              {/* Ronda 23, B2: a 390 los dos lados son `whitespace-nowrap` y no cabían en un renglón: «1 inmueble ·
+                  1 arrendado» se montaba encima del canon. Con `flex-wrap`, si no caben, el canon baja al siguiente. */}
+              <span className="mt-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <span className="text-sm text-fg-muted">
                   {propietario.propertyCount === 0 ? (
                     <span className="text-fg-subtle">Sin inmuebles</span>
                   ) : (

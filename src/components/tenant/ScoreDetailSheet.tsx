@@ -189,8 +189,8 @@ function LockedContent({ locale }: { locale: string }) {
             (docs/VOCABULARIO.md). */}
         <p className="text-sm text-fg-muted leading-relaxed">
           {locale === 'es'
-            ? 'Un score verificable que muestra tu confiabilidad como inquilino. La inmobiliaria lo genera al estudiar tu postulación, y queda aquí para que lo compartas.'
-            : 'A verifiable score that shows your reliability as a tenant. The agency generates it when reviewing your application, and it stays here for you to share.'}
+            ? 'Una calificación verificable que muestra tu confiabilidad como inquilino. La inmobiliaria la genera al estudiar tu postulación, y queda aquí para que la compartas.'
+            : 'A verifiable rating that shows your reliability as a tenant. The agency generates it when reviewing your application, and it stays here for you to share.'}
         </p>
       </div>
 
@@ -198,8 +198,8 @@ function LockedContent({ locale }: { locale: string }) {
       <div className="space-y-3">
         {[
           {
-            es: 'Score verificable con código único',
-            en: 'Verifiable score with unique code',
+            es: 'Calificación verificable con código único',
+            en: 'Verifiable rating with unique code',
           },
           {
             es: 'PDF descargable para compartir',

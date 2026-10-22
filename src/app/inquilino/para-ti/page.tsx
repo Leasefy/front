@@ -360,7 +360,7 @@ export default function ParaTiPage() {
                   <span className="grid h-5 w-5 place-items-center rounded-full bg-white font-mono text-[10px] font-medium text-brand">
                     {riskLevel}
                   </span>
-                  <span>Score {RISK_LEVEL_LABELS[riskLevel]}</span>
+                  <span>{locale === 'es' ? 'Calificación' : 'Rating'} {RISK_LEVEL_LABELS[riskLevel]}</span>
                 </div>
 
                 <div className={chipDelHero}>
@@ -677,7 +677,7 @@ export default function ParaTiPage() {
                 {locale === 'es' ? 'Compatibilidad' : 'Compatibility'}
               </h3>
               <p className="text-caption text-plan-muted">
-                {locale === 'es' ? 'Tu score de riesgo vs requisitos del propietario' : 'Your risk score vs landlord requirements'}
+                {locale === 'es' ? 'Tu calificación frente a lo que pide el propietario' : 'Your risk score vs landlord requirements'}
               </p>
             </div>
 

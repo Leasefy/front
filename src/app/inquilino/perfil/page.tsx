@@ -662,7 +662,7 @@ export default function PerfilPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">
-                    Email
+                    {locale === 'es' ? 'Correo' : 'Email'}
                   </label>
                   {/* Email is managed by the auth provider and is not editable here */}
                   <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">

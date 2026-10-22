@@ -13,10 +13,10 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { AnimatedNumber, Collapse, CrossFade, Presence } from '@leasefy/cadence';
+import { AnimatedNumber, Collapse, CrossFade } from '@leasefy/cadence';
 import { useEntradaTrasCargar, useHuboEsqueleto } from '@/components/portales/use-entrada-tras-cargar';
 import { AparecerSi } from '@/components/portales/AparecerSi';
-import { Buildings, Users, Clock, WarningCircle, CurrencyDollar, TrendUp, Calendar, ArrowUpRight, CaretDown, CaretRight, CreditCard, UserCheck, CalendarCheck, CalendarBlank, MapPin, Chat, Plus, FileText, ChartBar, Bell, CheckCircle, Check } from '@phosphor-icons/react';
+import { Buildings, Users, Clock, WarningCircle, CurrencyDollar, Calendar, ArrowUpRight, CaretDown, CaretRight, CreditCard, UserCheck, CalendarCheck, CalendarBlank, MapPin, Chat, Plus, FileText, ChartBar, Bell, CheckCircle, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { BrandDot, BrandContour, MonoLabel, StatusBadge, SEMANTIC, type SemanticTone } from '@/components/brand';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -425,17 +425,8 @@ function PanelDelPropietarioIndependiente() {
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
                 <CurrencyDollar className="w-5 h-5 text-white/90" />
               </div>
-              <Presence
-                as="span"
-                show={!isLoading}
-                initial={false}
-                distance="xs"
-                className="px-2.5 py-1 text-white/90 text-caption font-medium rounded-full flex items-center gap-1"
-                style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}
-              >
-                  <TrendUp className="w-3 h-3" weight="bold" />
-                  +12%
-              </Presence>
+              {/* Ronda 23, B5: aquí había un «+12%» fijo, sin ningún dato detrás. Sin la variación real del
+                  mes no se pinta nada. */}
             </div>
             <MonoLabel className="block text-[11px] font-medium text-white/55 mb-1.5">{t('landlord.dashboard.monthlyIncome')}</MonoLabel>
             {isLoading ? (

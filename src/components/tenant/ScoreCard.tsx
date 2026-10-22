@@ -31,7 +31,7 @@ export function ScoreCard({ isPaid, level, onClick }: ScoreCardProps) {
       >
         <Shield className="w-5 h-5 text-fg-subtle shrink-0" aria-hidden="true" />
         <p className="text-caption text-fg-muted mb-1">
-          {locale === 'es' ? 'Tu score' : 'Your score'}
+          {locale === 'es' ? 'Tu calificación' : 'Your rating'}
         </p>
         <div className="flex items-center gap-2">
           <p className="text-base font-medium text-fg-subtle">
@@ -60,7 +60,7 @@ export function ScoreCard({ isPaid, level, onClick }: ScoreCardProps) {
         <Shield className={cn('w-5 h-5', LEVEL_ICON_COLORS[level])} />
       </div>
       <p className="text-caption text-fg-muted mb-1">
-        {locale === 'es' ? 'Tu score' : 'Your score'}
+        {locale === 'es' ? 'Tu calificación' : 'Your rating'}
       </p>
       <div className="flex items-center gap-2">
         <p className="text-2xl font-bold text-fg">{level}</p>

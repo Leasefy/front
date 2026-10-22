@@ -983,8 +983,9 @@ export function SidebarContent({
     // `reducedMotion="user"`: con «reducir movimiento» el resaltado de la fila
     // activa salta en vez de deslizarse.
     <ResalteConFundido.Provider value={resalteConFundido}>
-    // Decisión 18 de Nico (22-10): la barra es una hoja de arena; la página sigue en papel. `--menu-activa` se pisa SÓLO
-    // aquí (blanca en claro): la barra del celular y las pestañas siguen con el celeste de globals.css.
+    {/* Decisión 18 de Nico (22-10): la barra es una hoja de arena; la página sigue en papel. `--menu-activa` se pisa SÓLO
+        aquí (blanca en claro): la barra del celular y las pestañas siguen con el celeste de globals.css.
+        (Ronda 23, B1: era un comentario `//` dentro del JSX y se pintaba como texto encima de la barra.) */}
     <div className="relative flex h-full flex-col bg-surface-muted [--menu-activa:var(--surface)] dark:[--menu-activa:rgba(110,135,255,0.2)]">
       {/* Header — cadence §Navigation workspace switcher (expanded) or the
           brand mark on the collapsed rail. El botón de plegar vive aquí (Nico,

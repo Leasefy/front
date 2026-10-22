@@ -423,7 +423,14 @@ mejor cada cosa y más bonito». Toda explicación de cómo funciona algo (pasos
 
 ### Sidebar / Layout
 The `PlanSidebar` + `PlanHeader` pattern (`src/components/ui/plan/`) is the canonical layout. Use as-is.
-- **Unified shell background:** sidebar, page body, and header all share the cadence page bg
+- **La barra lateral es una hoja de arena** (decisión 18 de Nico, 22-10-2026; reemplaza lo de abajo para la barra): el
+  `aside` y el cajón del celular van en `bg-surface-muted` con `border-r border-border`; la página y el encabezado siguen en
+  papel. Dentro de la barra la fila activa es una TARJETA BLANCA con filete (`--menu-activa` se pisa a `var(--surface)` sólo
+  dentro de la barra, decisión 19) y el texto y el ícono en voltaje: el azul de la activa vive en la letra. Filas de 32 px en
+  tinta de 14 px con el ícono en ceniza; rótulos de sección en DM Mono 10,5 de 12 letras como mucho («CAPTACIÓN», decisión 20);
+  sin guía vertical: logo, buscador, «＋», rótulos e íconos caen en el mismo borde; el azul sólo en la activa («Nueva
+  consignación» secondary, «IA» y contadores en gris mono). Plan completo: memory/archivos/glow-up-qa-21-10/plan-sidebar-22-10.md.
+- **Unified shell background (página y encabezado):** sidebar, page body, and header all share the cadence page bg
   `--bg` (`#FBFAF9` light / `#141310` dark). Separation comes from hairline borders (`border-r` /
   `border-b`), not a bg-color step. Cards/KPIs sit on `bg-surface` for elevation against
   the shell. Body is driven by `--plan-page-bg` (kept = `--bg` in both modes: `#FBFAF9` / `#141310`);

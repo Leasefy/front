@@ -41,7 +41,7 @@ describe('CarteraPorEtapa', () => {
     )
     expect(document.querySelectorAll('[data-testid^="cartera-etapa-"]')).toHaveLength(1)
     expect($('cartera-etapa-S3')?.textContent).toContain('Mora pre-jurídica')
-    expect($('cartera-etapa-S3')?.textContent).toContain('5 días en promedio')
+    expect($('cartera-etapa-S3')?.textContent).toContain('5 días')
     expect($('cartera-barra')?.querySelectorAll('[data-etapa]')).toHaveLength(1)
     expect($('cartera-sin-casos')?.textContent).toContain('Pre-vencimiento')
     expect($('cartera-sin-casos')?.textContent).not.toContain('pre-jurídica')

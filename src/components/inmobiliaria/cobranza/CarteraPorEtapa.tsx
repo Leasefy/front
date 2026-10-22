@@ -123,7 +123,7 @@ export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa }: CarteraP
       >
         <span>{tx('Etapa', 'Stage')}</span>
         <span className="text-right">{tx('Casos', 'Cases')}</span>
-        <span className="text-right">{tx('En la etapa', 'In stage')}</span>
+        <span className="text-right">{tx('Promedio en la etapa', 'Avg. in stage')}</span>
         <span className="text-right">{tx('Esta semana', 'This week')}</span>
         <span />
       </div>
@@ -134,7 +134,13 @@ export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa }: CarteraP
           const delta = f.weeklyDelta ?? 0
           const cambio =
             delta === 0 ? null : (
-              <span className={cn('inline-flex items-center gap-0.5 font-mono tabular-nums', delta > 0 ? 'text-danger' : 'text-success')}>
+              <span
+                className={cn(
+                  'inline-flex items-center gap-0.5 font-mono tabular-nums',
+                  // Más cuotas por vencer no es malo: en pre-vencimiento el cambio no lleva juicio.
+                  f.stage === 'S0' ? 'text-fg-muted' : delta > 0 ? 'text-danger' : 'text-success',
+                )}
+              >
                 {delta > 0 ? <ArrowUp size={12} aria-hidden="true" /> : <ArrowDown size={12} aria-hidden="true" />}
                 {delta > 0 ? `+${delta}` : delta}
               </span>
@@ -170,7 +176,7 @@ export function CarteraPorEtapa({ etapas, isLoading = false, onEtapa }: CarteraP
                   </span>
                 </span>
                 <span className="text-right font-mono text-body tabular-nums text-fg">{f.count}</span>
-                <span className="hidden text-right text-caption text-fg-muted sm:block">{tx(`${dias(promedio)} en promedio`, `${dias(promedio)} on average`)}</span>
+                <span className="hidden text-right font-mono text-caption tabular-nums text-fg-muted sm:block">{dias(promedio)}</span>
                 <span className="hidden text-right text-caption text-fg-subtle sm:block">{cambio ?? '—'}</span>
                 <CaretRight className="hidden h-4 w-4 text-fg-subtle sm:block" aria-hidden="true" />
               </button>

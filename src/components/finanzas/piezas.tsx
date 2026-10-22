@@ -21,7 +21,8 @@
 import { AnimatedNumber } from '@leasefy/cadence';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { enCristiano } from '@/lib/errores/en-cristiano';
-import { Info, Warning, WarningOctagon } from '@phosphor-icons/react';
+import { Info, WarningOctagon } from '@phosphor-icons/react';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 
 import { CifraQueCabe } from '@/components/estado/CifraQueCabe';
 import { useTr } from '@/lib/i18n/use-tr';
@@ -45,6 +46,8 @@ export interface CifraProps {
   tono?: 'warning' | 'danger' | 'success';
   /** Una línea extra debajo de la definición (comparaciones, detalles). */
   pie?: ReactNode;
+  /** Algo debajo de la cifra, antes del pie (una barra de avance). */
+  extra?: ReactNode;
   /**
    * Cómo se escribe la cifra. Por defecto, `formatCurrency` de siempre. Las
    * pantallas de Contabilidad pasan la plata de la casa («$ 80.330.850»,
@@ -81,6 +84,7 @@ export function Cifra({
   destacada,
   marca,
   className,
+  extra,
 }: CifraProps) {
   const enTarjeta = useContext(QueMideCadaCifra);
   const medido = valor !== null && Number.isFinite(valor);
@@ -96,6 +100,7 @@ export function Cifra({
         texto={medido ? formato(valor as number) : SIN_MEDIR}
         definicion={medido ? definicion : (sinMedir ?? definicion)}
         pie={pie}
+        extra={extra}
       >
         {medido ? <AnimatedNumber value={valor as number} format={formato} /> : SIN_MEDIR}
       </CeldaDeCifra>
@@ -367,9 +372,11 @@ export function RenglonDeCifra({
   subtotal,
   tono,
   formato = formatCurrency,
+  marca,
+  pie,
 }: {
   id: string;
-  etiqueta: string;
+  etiqueta: ReactNode;
   valor: number | null;
   definicion: string;
   /** `'-'` = se resta: se escribe «−» delante de la cifra. */
@@ -377,6 +384,10 @@ export function RenglonDeCifra({
   subtotal?: boolean;
   tono?: CifraProps['tono'];
   formato?: (n: number) => string;
+  /** Un punto de color antes de la etiqueta (el tramo de una barra). */
+  marca?: ReactNode;
+  /** Un renglón chico debajo, siempre visible («120 cuotas», un enlace). */
+  pie?: ReactNode;
 }) {
   const { abiertas } = useContext(QueMideCadaCifra) ?? { abiertas: true };
   const medido = valor !== null && Number.isFinite(valor);
@@ -386,13 +397,14 @@ export function RenglonDeCifra({
       data-testid={`cifra-${id}`}
     >
       <div className="flex items-baseline justify-between gap-4">
-        <p className={cn('text-body-sm', subtotal ? 'font-semibold text-fg' : 'text-fg-muted')}>
-          {etiqueta}
+        <p className={cn('flex min-w-0 items-center gap-2 text-body-sm', subtotal ? 'font-medium text-fg' : 'text-fg-muted')}>
+          {marca}
+          <span className="min-w-0">{etiqueta}</span>
         </p>
         <p
           className={cn(
             'shrink-0 font-mono text-body-sm tabular-nums',
-            subtotal ? 'font-semibold text-fg' : 'text-fg',
+            subtotal ? 'font-medium text-fg' : 'text-fg',
             medido && tono && TONO[tono],
           )}
         >
@@ -402,6 +414,7 @@ export function RenglonDeCifra({
           </span>
         </p>
       </div>
+      {pie ? <div className="pt-0.5 text-caption text-fg-muted">{pie}</div> : null}
       <p
         hidden={!abiertas}
         className={cn('pt-0.5 text-caption leading-relaxed text-fg-muted', abiertas && 'animate-rise-in')}
@@ -431,26 +444,40 @@ export function Avisos({
   titulo?: string;
 }) {
   if (avisos.length === 0) return null;
+  /*
+   * GLOW UP (revisión de Dinero, 22-10-2026): eran franjas amarillas con
+   * borde, apiladas encima de todo, y empujaban la cifra que importa hacia
+   * abajo. Ahora es UN renglón con su punto ámbar: con un aviso, el aviso; con
+   * varios, «N cosas afectan estas cifras» y el detalle plegado (montado: el
+   * texto sigue en la página para quien lo busque). Manual de voz: «Aviso: un
+   * renglón, junto a lo que afecta».
+   */
+  const uno = avisos.length === 1;
   return (
-    <div
-      className="flex gap-2 rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm text-fg"
-      data-testid={testId}
-      role="status"
-    >
-      <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-      <div className="space-y-1">
-        {titulo ? <p className="font-medium">{titulo}</p> : null}
-        <ul className="space-y-1">
-          {avisos.map((aviso) => (
-            <li key={aviso}>{aviso}</li>
-          ))}
-        </ul>
-      </div>
+    <div className="flex items-start gap-2.5 text-body-sm text-fg" data-testid={testId} role="status">
+      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-warning-500" aria-hidden="true" />
+      {uno ? (
+        <p className="min-w-0">
+          {titulo ? <span className="sr-only">{titulo}: </span> : null}
+          {avisos[0]}
+        </p>
+      ) : (
+        <MasDetalles
+          montadoSiempre
+          etiqueta={`${avisos.length} cosas afectan estas cifras`}
+          etiquetaAbierto="Ocultar"
+        >
+          {titulo ? <p className="sr-only">{titulo}</p> : null}
+          <ul className="list-disc space-y-1 pl-4 text-fg-muted marker:text-fg-subtle">
+            {avisos.map((aviso) => (
+              <li key={aviso}>{aviso}</li>
+            ))}
+          </ul>
+        </MasDetalles>
+      )}
     </div>
   );
 }
-
-// ── «Todavía no está la migración» ──────────────────────────────────────────
 
 /**
  * El cartel de la pieza que espera una migración.

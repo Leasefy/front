@@ -40,7 +40,7 @@
  * gana la inmobiliaria, como la cuenta que es: se suma, se resta y da.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from '@phosphor-icons/react';
 import { Progress } from '@leasefy/cadence';
@@ -50,7 +50,6 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
 import {
   Avisos,
   Cifra,
-  CifraDeTexto,
   FilaDeCifras,
   RenglonDeCifra,
   TarjetaDeCifras,
@@ -244,10 +243,17 @@ export function TableroFinancieroPanel() {
               titulo="Lo que estos números no cuentan"
             />
 
-            <BloqueDeRecaudo tablero={tablero} />
-            <BloqueDeCartera tablero={tablero} />
-            <BloqueDePropietarios tablero={tablero} />
-            <BloqueDeMargen tablero={tablero} />
+            {/* GLOW UP (revisión de Dinero, 22-10-2026): eran 19 cifras del mismo
+                peso en cuatro franjas a lo ancho. Ahora son las cuatro preguntas de
+                la mañana en 2×2: cada tarjeta con UNA cifra grande, lo que la
+                explica en renglones y su enlace; un renglón en cero no se pinta. */}
+            <div className="grid gap-5 lg:grid-cols-2">
+              <BloqueDeRecaudo tablero={tablero} />
+              <BloqueDeCartera tablero={tablero} />
+              <BloqueDePropietarios tablero={tablero} />
+              <BloqueDeMargen tablero={tablero} />
+            </div>
+            <BloqueDeDeudores tablero={tablero} />
 
             <p className="text-caption text-fg-muted">
               {/* PG-13 (03-10-2026): la fecha de la casa, no «2026-10-03». */}
@@ -278,6 +284,10 @@ function EnlaceDelBloque({ href, children }: { href: string; children: string })
 
 // ══ (a) Recaudo ═════════════════════════════════════════════════════════════
 
+function Renglones({ children }: { children: ReactNode }) {
+  return <div className="border-t border-border px-5 py-2">{children}</div>;
+}
+
 function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
   const tr = useTr();
   const { recaudo } = tablero;
@@ -290,6 +300,7 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
   return (
     <TarjetaDeCifras
       testId="bloque-recaudo"
+      className="flex h-full flex-col"
       titulo={tr('Recaudo')}
       pregunta={tr('¿Cuánto entró, y qué parte de lo del mes ya llegó?')}
       explicacion={`Cuánto entró por caja hoy y en el mes, contra ${base}. Así lo mide esta inmobiliaria: ${recaudo.rotulo}`}
@@ -297,31 +308,13 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
         <EnlaceDelBloque href="/panel/inmobiliaria/pagos/recaudo">{tr('Ver el recaudo')}</EnlaceDelBloque>
       }
     >
-      <FilaDeCifras className="sm:grid-cols-2 xl:grid-cols-4">
+      <FilaDeCifras>
         <Cifra
           id="recaudo-del-mes"
           etiqueta="Entró en el mes"
           valor={recaudo.delMesCop}
           destacada
           definicion="Todo lo que entró por caja en el mes seleccionado, sin importar de qué mes era la deuda."
-        />
-        <Cifra
-          id="recaudo-del-dia"
-          etiqueta="Entró hoy"
-          valor={recaudo.delDiaCop}
-          definicion={`Los recibos de caja con fecha ${fechaLarga(tablero.hoy)}, de cualquier período.`}
-        />
-        <Cifra
-          id="causado-del-mes"
-          etiqueta="Se debe del mes"
-          valor={recaudo.causadoDelMesCop}
-          definicion={`${conMayusculaInicial(base)} en el mes. Es el denominador del porcentaje de al lado.`}
-        />
-        <CifraDeTexto
-          id="tasa-de-recaudo"
-          etiqueta="% recaudado"
-          texto={tasaEnPantalla(recaudo.tasaPct)}
-          definicion={definicionDeLaTasa(recaudo, tablero.mes, base)}
           extra={
             tasaMedida ? (
               <Progress
@@ -329,35 +322,54 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
                 size="xs"
                 color={(recaudo.tasaPct as number) >= 100 ? 'success' : 'primary'}
                 label={tr('Qué parte de lo del mes ya llegó')}
-                className="my-1"
+                className="mt-2"
               />
             ) : null
           }
+        />
+      </FilaDeCifras>
+      <Renglones>
+        <RenglonDeCifra
+          id="tasa-de-recaudo"
+          etiqueta="Ya llegó de lo del mes"
+          valor={tasaMedida ? (recaudo.tasaPct as number) : null}
+          formato={(n) => tasaEnPantalla(n)}
+          definicion={definicionDeLaTasa(recaudo, tablero.mes, base)}
           pie={
             <span data-testid="comparacion-mes-anterior">
               {conMayusculaInicial(nombreDelMes(recaudo.mesAnterior.mes))}:{' '}
               {/* N-06: con el numerador del back, el mismo con que se sacó su %. */}
               {formatCurrency(recaudo.mesAnterior.abonadoCop ?? recaudo.mesAnterior.recaudadoCop)} de{' '}
-              {formatCurrency(recaudo.mesAnterior.causadoCop)} ({tasaEnPantalla(recaudo.mesAnterior.tasaPct)}
-              ). Variación del recaudo:{' '}
+              {formatCurrency(recaudo.mesAnterior.causadoCop)} ({tasaEnPantalla(recaudo.mesAnterior.tasaPct)}).
+              Variación:{' '}
               <span data-testid="variacion-del-recaudo">{textoDeLaVariacion(recaudo.variacionPct)}</span>
-              {/* TB-04: un solo guion (antes «— —»: la raya de la cifra y otra delante de la frase). */}
+              {/* TB-04: un solo guion (antes «— —»). */}
               {recaudo.variacionPct === null
                 ? '. El mes anterior no recaudó nada, así que no hay contra qué comparar.'
                 : '.'}
             </span>
           }
         />
-      </FilaDeCifras>
+        <RenglonDeCifra
+          id="causado-del-mes"
+          etiqueta="Se debe del mes"
+          valor={recaudo.causadoDelMesCop}
+          definicion={`${conMayusculaInicial(base)} en el mes. Es el denominador del porcentaje.`}
+        />
+        <RenglonDeCifra
+          id="recaudo-del-dia"
+          etiqueta="Entró hoy"
+          valor={recaudo.delDiaCop}
+          definicion={`Los recibos de caja con fecha ${fechaLarga(tablero.hoy)}, de cualquier período.`}
+        />
+      </Renglones>
     </TarjetaDeCifras>
   );
 }
 
-// ══ (b) Cartera por edades ══════════════════════════════════════════════════
-
 /**
- * El color de cada tramo en la barra por edades: el mismo ámbar de la cartera,
- * más fuerte cuanto más vieja; lo de más de 90 días, en rojo.
+ * El color de cada tramo de edad: de ámbar suave a rojo. El último (el más viejo)
+ * es el más grave.
  */
 function colorDelTramo(i: number, total: number): { clase: string; opacidad: number } {
   if (i === total - 1) return { clase: 'bg-danger', opacidad: 1 };
@@ -369,7 +381,7 @@ function MarcaDelTramo({ i, total }: { i: number; total: number }) {
   const { clase, opacidad } = colorDelTramo(i, total);
   return (
     <span
-      className={cn('inline-block h-2.5 w-2.5 shrink-0 rounded-full', clase)}
+      className={cn('inline-block h-2 w-2 shrink-0 rounded-full', clase)}
       style={{ opacity: opacidad }}
       aria-hidden="true"
     />
@@ -383,148 +395,179 @@ function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
   return (
     <TarjetaDeCifras
       testId="bloque-cartera"
+      className="flex h-full flex-col"
       titulo={tr('Cartera por edades')}
-      pregunta={tr('¿Cuánto pasó el plazo, de qué edad, y quiénes pesan más?')}
+      pregunta={tr('¿Cuánto pasó el plazo, y de qué edad?')}
       explicacion="Lo que ya pasó el plazo del contrato, partido por los días DESPUÉS del plazo. No es la deuda total: lo que todavía no vence y lo vencido dentro del plazo no se persiguen."
       accion={
-        <EnlaceDelBloque href="/panel/inmobiliaria/pagos/cartera">{tr('Ver la cartera entera')}</EnlaceDelBloque>
+        <EnlaceDelBloque href="/panel/inmobiliaria/pagos/cartera">{tr('Ver la cartera')}</EnlaceDelBloque>
       }
     >
-      {cartera.plazoSinFijar && (
-        <p
-          className="mx-5 mb-4 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-fg"
-          data-testid="cartera-plazo-sin-fijar"
-        >
-          La cartera está en cero porque esta inmobiliaria todavía no fijó sus días de plazo: sin
-          plazo, lo vencido se ve como «Vencida», no corre mora y no entra a la cobranza.{' '}
-          <Link
-            href={FIJAR_EL_PLAZO_HREF}
-            className="font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Fijar los días de plazo
-          </Link>
-        </p>
-      )}
-      {sumaDeTramos > 0 ? (
-        // La barra por edades: de un vistazo, qué tan vieja es la cartera.
-        <div
-          className="mx-5 mb-4 flex h-2.5 overflow-hidden rounded-full bg-surface-muted"
-          role="img"
-          aria-label={cartera.tramos
-            .map((t) => `${t.nombre}: ${formatCurrency(t.carteraCop)}`)
-            .join(' · ')}
-          data-testid="barra-por-edades"
-        >
-          {cartera.tramos.map((t, i) => {
-            const { clase, opacidad } = colorDelTramo(i, cartera.tramos.length);
-            const ancho = (Math.max(t.carteraCop, 0) / sumaDeTramos) * 100;
-            if (ancho <= 0) return null;
-            return (
-              <span
-                key={t.tramo}
-                className={cn('h-full transition-[width] duration-slow ease-emphasis', clase)}
-                style={{ width: `${ancho}%`, opacity: opacidad }}
-              />
-            );
-          })}
-        </div>
-      ) : null}
-      <FilaDeCifras className="sm:grid-cols-2 xl:grid-cols-5">
+      <FilaDeCifras>
         <Cifra
           id="cartera-total"
           etiqueta="Cartera"
           valor={cartera.totalCop}
           destacada
-          className="sm:col-span-2 xl:col-span-1"
-          definicion="El capital que pasó el plazo y todavía persigue la cobranza. Es la suma de los tramos de al lado; lo que está en siniestro va aparte."
-          tono="warning"
+          definicion="El capital que pasó el plazo y todavía persigue la cobranza. Es la suma de los tramos; lo que está en siniestro va aparte."
+          tono={cartera.totalCop > 0 ? 'warning' : undefined}
           pie={
-            <span data-testid="cartera-en-siniestro">
-              Aparte, {formatCurrency(cartera.enSiniestroCop)} en siniestro: lo reclama la
-              aseguradora, no la cobranza.
-            </span>
+            cartera.enSiniestroCop > 0 ? (
+              <span data-testid="cartera-en-siniestro">
+                Aparte, {formatCurrency(cartera.enSiniestroCop)} en siniestro: lo reclama la
+                aseguradora, no la cobranza.
+              </span>
+            ) : undefined
+          }
+          extra={
+            sumaDeTramos > 0 ? (
+              <div
+                className="mt-2 flex h-2 gap-0.5 overflow-hidden rounded-full bg-surface-muted"
+                role="img"
+                aria-label={cartera.tramos
+                  .map((t) => `${t.nombre}: ${formatCurrency(t.carteraCop)}`)
+                  .join(' · ')}
+                data-testid="barra-por-edades"
+              >
+                {cartera.tramos.map((t, i) => {
+                  const { clase, opacidad } = colorDelTramo(i, cartera.tramos.length);
+                  const ancho = (Math.max(t.carteraCop, 0) / sumaDeTramos) * 100;
+                  if (ancho <= 0) return null;
+                  return (
+                    <span
+                      key={t.tramo}
+                      className={cn('h-full transition-[width] duration-slow ease-emphasis', clase)}
+                      style={{ width: `${ancho}%`, opacity: opacidad }}
+                    />
+                  );
+                })}
+              </div>
+            ) : null
           }
         />
+      </FilaDeCifras>
+      {cartera.plazoSinFijar && (
+        <div
+          className="flex items-start gap-2.5 border-t border-border px-5 py-3 text-body-sm text-fg"
+          data-testid="cartera-plazo-sin-fijar"
+        >
+          <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-warning-500" aria-hidden="true" />
+          <p>
+            La cartera está en cero porque esta inmobiliaria todavía no fijó sus días de plazo: sin
+            plazo, lo vencido se ve como «Vencida», no corre mora y no entra a la cobranza.{' '}
+            <Link
+              href={FIJAR_EL_PLAZO_HREF}
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Fijar los días de plazo
+            </Link>
+          </p>
+        </div>
+      )}
+      <Renglones>
         {cartera.tramos.map((tramo, i) => (
-          <Cifra
+          <RenglonDeCifra
             key={tramo.tramo}
             id={`tramo-${tramo.tramo}`}
-            etiqueta={tramo.nombre}
+            etiqueta={
+              <>
+                {tramo.nombre}
+                <span className="ml-2 font-mono text-caption tabular-nums text-fg-subtle">
+                  {NUMERO.format(tramo.cuotas)} {tramo.cuotas === 1 ? 'cuota' : 'cuotas'}
+                </span>
+              </>
+            }
             marca={<MarcaDelTramo i={i} total={cartera.tramos.length} />}
             valor={tramo.carteraCop}
             definicion={definicionDelTramo(tramo)}
-            pie={`${NUMERO.format(tramo.cuotas)} ${tramo.cuotas === 1 ? 'cuota' : 'cuotas'}`}
           />
         ))}
-      </FilaDeCifras>
-
-      <div className="border-t border-border">
-        <div className="flex flex-wrap items-baseline justify-between gap-2 px-5 py-3">
-          <h3 className="text-body-sm font-semibold text-fg">Los 20 deudores más grandes</h3>
-          <p className="text-caption text-fg-muted">{QUE_ES_LA_ETAPA}</p>
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Documento</TableHead>
-                <TableHead className="text-right">Debe</TableHead>
-                <TableHead className="text-right">Días de mora</TableHead>
-                <TableHead>Etapa</TableHead>
-                <TableHead className="text-right">Contratos</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {cartera.deudores.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-sm text-fg-muted">
-                    Nadie tiene cartera vencida en este corte. No es un error: es una cartera en cero.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                cartera.deudores.map((d, i) => (
-                  <TableRow key={d.clienteId ?? `${d.nombre}-${i}`} data-testid="fila-deudor">
-                    <TableCell className="font-medium text-fg">{d.nombre}</TableCell>
-                    <TableCell className="font-mono text-caption">{d.documento || '—'}</TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {formatCurrency(d.saldoCop)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {NUMERO.format(d.diasDeMora)}
-                    </TableCell>
-                    <TableCell>{NOMBRE_DE_LA_ETAPA[d.etapa] ?? d.etapa}</TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">{d.contratos}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      </Renglones>
     </TarjetaDeCifras>
   );
 }
 
-// ══ (c) Propietarios ════════════════════════════════════════════════════════
+/**
+ * Los que más deben, a lo ancho debajo de las cuatro preguntas: es una lista para
+ * actuar (a quién llamar primero), no una cifra. Bajo 768 cada deudor es una tarjeta.
+ */
+function BloqueDeDeudores({ tablero }: { tablero: Tablero }) {
+  const tr = useTr();
+  const { cartera } = tablero;
+  return (
+    <section
+      className="overflow-hidden rounded-[20px] border border-border bg-surface"
+      data-testid="bloque-deudores"
+    >
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pb-3 pt-5">
+        <h2 className="text-h3 text-fg">{tr('Los que más deben')}</h2>
+        <p className="max-w-xl text-caption text-fg-muted">{QUE_ES_LA_ETAPA}</p>
+      </div>
+      <Table className="max-md:block">
+        <TableHeader className="max-md:hidden">
+          <TableRow>
+            <TableHead>Cliente</TableHead>
+            <TableHead className="text-right">Debe</TableHead>
+            <TableHead className="text-right">Días de mora</TableHead>
+            <TableHead>Etapa</TableHead>
+            <TableHead className="text-right">Contratos</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody className="max-md:block">
+          {cartera.deudores.length === 0 ? (
+            <TableRow className="max-md:block">
+              <TableCell colSpan={5} className="py-10 text-center text-sm text-fg-muted max-md:block">
+                Nadie tiene cartera vencida en este corte. No es un error: es una cartera en cero.
+              </TableCell>
+            </TableRow>
+          ) : (
+            cartera.deudores.map((d, i) => (
+              <TableRow
+                key={d.clienteId ?? `${d.nombre}-${i}`}
+                data-testid="fila-deudor"
+                className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-5 max-md:py-3"
+              >
+                <TableCell className="max-md:block max-md:p-0">
+                  <p className="font-medium text-fg">{d.nombre}</p>
+                  <p className="font-mono text-caption text-fg-subtle">{d.documento || '—'}</p>
+                </TableCell>
+                <TableCell className="text-right font-mono tabular-nums max-md:block max-md:p-0">
+                  {formatCurrency(d.saldoCop)}
+                </TableCell>
+                <TableCell className="text-right font-mono tabular-nums text-fg-muted max-md:col-start-1 max-md:block max-md:p-0 max-md:text-left max-md:text-caption">
+                  {NUMERO.format(d.diasDeMora)}
+                  <span className="md:hidden"> {d.diasDeMora === 1 ? 'día' : 'días'} de mora</span>
+                </TableCell>
+                <TableCell className="text-fg-muted max-md:block max-md:p-0 max-md:text-right max-md:text-caption">
+                  {NOMBRE_DE_LA_ETAPA[d.etapa] ?? d.etapa}
+                </TableCell>
+                <TableCell className="text-right font-mono tabular-nums text-fg-muted max-md:hidden">
+                  {d.contratos}
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </section>
+  );
+}
 
 function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
   const tr = useTr();
   const { propietarios } = tablero;
-  const conProximos = Boolean(propietarios.proximosGiros);
   return (
     <TarjetaDeCifras
       testId="bloque-propietarios"
+      className="flex h-full flex-col"
       titulo={tr('Plata de los propietarios')}
       pregunta={tr('¿Cuánto hay que girarles, y qué está trabado?')}
       explicacion="Lo que les toca, en qué estado está y qué está trabado. Lo retenido no es plata nuestra: es de ellos y no les llegó."
       accion={
-        <EnlaceDelBloque href="/panel/inmobiliaria/pagos/dispersiones">{tr('Ir a dispersiones')}</EnlaceDelBloque>
+        <EnlaceDelBloque href="/panel/inmobiliaria/pagos/dispersiones">{tr('Ir a los giros')}</EnlaceDelBloque>
       }
     >
-      {/* Cinco celdas (o cuatro sin próximos giros): la primera ocupa la fila
-          entera en dos columnas para que ninguna fila quede con hueco. */}
-      <FilaDeCifras className={cn('sm:grid-cols-2', conProximos ? 'xl:grid-cols-5' : 'xl:grid-cols-4')}>
+      <FilaDeCifras>
         {/* 🔴 «Por girar» → UNA sola cifra: hasta el mes EN CURSO, aunque el
             tablero mire otro mes (Nico, 04-10-2026). La manda el back con la
             misma función de las otras pantallas. */}
@@ -533,11 +576,48 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
           etiqueta={rotuloDePorGirar(propietarios.porGirarHastaMes ?? tablero.mes)}
           valor={propietarios.porGirarCop}
           destacada
-          className={conProximos ? 'sm:col-span-2 xl:col-span-1' : undefined}
           definicion={definicionDePorGirar(propietarios.porGirarHastaMes ?? tablero.mes)}
         />
-        {propietarios.proximosGiros && (
-          <Cifra
+      </FilaDeCifras>
+      <Renglones>
+        {propietarios.lotesPorAprobar > 0 || propietarios.enLotesPorAprobarCop > 0 ? (
+          <RenglonDeCifra
+            id="en-lotes-por-aprobar"
+            etiqueta="En lotes por aprobar"
+            valor={propietarios.enLotesPorAprobarCop}
+            definicion={`Ya está armado en ${propietarios.lotesPorAprobar} ${propietarios.lotesPorAprobar === 1 ? 'lote' : 'lotes'} esperando aprobación: nadie lo ha autorizado todavía.`}
+            pie={
+              propietarios.lotesPorAprobar > 0 ? (
+                <Link
+                  href="/panel/inmobiliaria/pagos/dispersiones/lotes"
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                  data-testid="ir-a-aprobar-lotes"
+                >
+                  {propietarios.lotesPorAprobar === 1
+                    ? tr('Ver el lote por aprobar')
+                    : tr('Ver los {n} lotes por aprobar', { n: propietarios.lotesPorAprobar })}
+                </Link>
+              ) : undefined
+            }
+          />
+        ) : null}
+        {propietarios.retenidoCop > 0 ? (
+          <RenglonDeCifra
+            id="retenido"
+            etiqueta="Retenido"
+            valor={propietarios.retenidoCop}
+            definicion="Giros frenados por un cambio de cuenta bancaria sin aprobar o por una devolución del banco."
+            tono="warning"
+          />
+        ) : null}
+        <RenglonDeCifra
+          id="girado-del-mes"
+          etiqueta={`Girado en ${nombreDelMes(tablero.mes)}`}
+          valor={propietarios.giradoDelMesCop}
+          definicion="Lo que salió al banco ese mes, por el día en que salió: lotes marcados como pagados y dispersiones procesadas una a una. Es el mismo «Dispersado» de Recaudo."
+        />
+        {propietarios.proximosGiros ? (
+          <RenglonDeCifra
             id="proximos-giros"
             etiqueta={rotuloDeProximosGiros(
               propietarios.proximosGiros.desdeMes,
@@ -546,46 +626,11 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
             valor={propietarios.proximosGiros.totalCop}
             definicion="Lo de los meses siguientes al mes en curso. Va aparte: todavía no se debe girar y no se suma a «Por girar»."
           />
-        )}
-        <Cifra
-          id="retenido"
-          etiqueta="Retenido"
-          valor={propietarios.retenidoCop}
-          definicion="Giros frenados por un cambio de cuenta bancaria sin aprobar o por una devolución del banco."
-          tono="warning"
-        />
-        <Cifra
-          id="en-lotes-por-aprobar"
-          etiqueta="En lotes por aprobar"
-          valor={propietarios.enLotesPorAprobarCop}
-          definicion={`Ya está armado en ${propietarios.lotesPorAprobar} ${propietarios.lotesPorAprobar === 1 ? 'lote' : 'lotes'} esperando aprobación: nadie lo ha autorizado todavía.`}
-          pie={
-            propietarios.lotesPorAprobar > 0 ? (
-              <Link
-                href="/panel/inmobiliaria/pagos/dispersiones/lotes"
-                className="font-medium text-primary underline-offset-4 hover:underline"
-                data-testid="ir-a-aprobar-lotes"
-              >
-                {propietarios.lotesPorAprobar === 1
-                  ? tr('Ver el lote por aprobar')
-                  : tr('Ver los {n} lotes por aprobar', { n: propietarios.lotesPorAprobar })}
-              </Link>
-            ) : undefined
-          }
-        />
-        <Cifra
-          id="girado-del-mes"
-          etiqueta={`Girado en ${nombreDelMes(tablero.mes)}`}
-          valor={propietarios.giradoDelMesCop}
-          definicion="Lo que salió al banco ese mes, por el día en que salió: lotes marcados como pagados y dispersiones procesadas una a una. Es el mismo «Dispersado» de Recaudo."
-          tono="success"
-        />
-      </FilaDeCifras>
+        ) : null}
+      </Renglones>
     </TarjetaDeCifras>
   );
 }
-
-// ══ (d) Margen ══════════════════════════════════════════════════════════════
 
 function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
   const tr = useTr();
@@ -593,19 +638,19 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
   return (
     <TarjetaDeCifras
       testId="bloque-margen"
+      className="flex h-full flex-col"
       titulo={tr('Lo que gana la inmobiliaria')}
-      pregunta={tr('¿Cuánto le quedó a la inmobiliaria, después de lo que cuesta mover la plata?')}
+      pregunta={tr('¿Cuánto le quedó, después de lo que cuesta mover la plata?')}
       explicacion="Ingresos propios del mes menos los costos de mover la plata que la inmobiliaria asume. Lo que se le traslada al propietario o al inquilino NO entra acá: no es costo suyo."
     >
-      {/* Se lee como la cuenta que es: lo que entra, lo que sale, lo que queda. */}
-      <FilaDeCifras className="lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <FilaDeCifras>
         <Cifra
           id="margen"
           etiqueta="Margen"
           valor={margen.margenCop}
           destacada
           definicion="Ingresos propios menos costos de la plata."
-          tono={margen.margenCop < 0 ? 'danger' : 'success'}
+          tono={margen.margenCop < 0 ? 'danger' : undefined}
           pie={
             <span data-testid="margen-pct">
               {margen.margenPct === null
@@ -614,63 +659,68 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
             </span>
           }
         />
-        <div className="grid gap-x-8 bg-surface px-5 py-3 sm:grid-cols-2">
-          <div>
-            <RenglonDeCifra
-              id="comisiones"
-              etiqueta="Comisiones"
-              valor={margen.comisionesCop}
-              definicion="Comisión de administración CAUSADA en el mes, se haya cobrado o no."
-            />
-            <RenglonDeCifra
-              id="intereses"
-              etiqueta="Intereses de mora"
-              valor={margen.interesesCop}
-              definicion="Interés de mora RECAUDADO en el mes. Sólo el que le queda a la inmobiliaria según el mandato."
-            />
-            <RenglonDeCifra
-              id="gastos-de-cobranza"
-              etiqueta="Gastos de cobranza"
-              valor={margen.gastosDeCobranzaCop}
-              definicion="Lo que se le cobró al inquilino por la gestión de cobro y entró por caja en el mes."
-            />
-            <RenglonDeCifra
-              id="ingresos-propios"
-              etiqueta="Ingresos propios"
-              valor={margen.ingresosPropiosCop}
-              subtotal
-              definicion="La suma de los tres de arriba. No incluye el canon: ese es del propietario."
-            />
-          </div>
-          <div>
-            <RenglonDeCifra
-              id="gmf"
-              etiqueta="4x1000 (GMF)"
-              valor={margen.gmfCop}
-              signo="-"
-              tono="danger"
-              definicion="Sólo la parte que asume la inmobiliaria. Lo que se traslada al propietario sale en su liquidación y no es costo nuestro."
-            />
-            <RenglonDeCifra
-              id="pasarela"
-              etiqueta="Pasarela de pago"
-              valor={margen.pasarelaCop}
-              signo="-"
-              tono="danger"
-              definicion="Sólo la parte que asume la inmobiliaria. Lo que se traslada al inquilino va como línea aparte de su recibo."
-            />
-            <RenglonDeCifra
-              id="costos"
-              etiqueta="Costos de la plata"
-              valor={margen.costosCop}
-              signo="-"
-              subtotal
-              tono="danger"
-              definicion="4x1000 más pasarela, de lo que asume la inmobiliaria."
-            />
-          </div>
-        </div>
       </FilaDeCifras>
+      {/* Se lee como la cuenta que es: lo que entra, lo que sale, lo que queda.
+          Un renglón en cero no se pinta; los subtotales sí. */}
+      <Renglones>
+        {margen.comisionesCop !== 0 ? (
+          <RenglonDeCifra
+            id="comisiones"
+            etiqueta="Comisiones"
+            valor={margen.comisionesCop}
+            definicion="Comisión de administración CAUSADA en el mes, se haya cobrado o no."
+          />
+        ) : null}
+        {margen.interesesCop !== 0 ? (
+          <RenglonDeCifra
+            id="intereses"
+            etiqueta="Intereses de mora"
+            valor={margen.interesesCop}
+            definicion="Interés de mora RECAUDADO en el mes. Sólo el que le queda a la inmobiliaria según el mandato."
+          />
+        ) : null}
+        {margen.gastosDeCobranzaCop !== 0 ? (
+          <RenglonDeCifra
+            id="gastos-de-cobranza"
+            etiqueta="Gastos de cobranza"
+            valor={margen.gastosDeCobranzaCop}
+            definicion="Lo que se le cobró al inquilino por la gestión de cobro y entró por caja en el mes."
+          />
+        ) : null}
+        <RenglonDeCifra
+          id="ingresos-propios"
+          etiqueta="Ingresos propios"
+          valor={margen.ingresosPropiosCop}
+          subtotal
+          definicion="Comisiones, intereses y gastos de cobranza. No incluye el canon: ese es del propietario."
+        />
+        {margen.gmfCop !== 0 ? (
+          <RenglonDeCifra
+            id="gmf"
+            etiqueta="4×1000"
+            valor={margen.gmfCop}
+            signo="-"
+            definicion="Sólo la parte que asume la inmobiliaria. Lo que se traslada al propietario sale en su liquidación y no es costo nuestro."
+          />
+        ) : null}
+        {margen.pasarelaCop !== 0 ? (
+          <RenglonDeCifra
+            id="pasarela"
+            etiqueta="Pasarela de pago"
+            valor={margen.pasarelaCop}
+            signo="-"
+            definicion="Sólo la parte que asume la inmobiliaria. Lo que se traslada al inquilino va como línea aparte de su recibo."
+          />
+        ) : null}
+        <RenglonDeCifra
+          id="costos"
+          etiqueta="Costos de la plata"
+          valor={margen.costosCop}
+          signo="-"
+          subtotal
+          definicion="4×1000 más pasarela, de lo que asume la inmobiliaria."
+        />
+      </Renglones>
     </TarjetaDeCifras>
   );
 }

@@ -4821,7 +4821,7 @@
         "fileDownloaded": "Archivo descargado",
         "exportedSuccessfully": "{{title}} exportado correctamente",
         "exportError": "Error al exportar",
-        "tryAgainLater": "Intenta de nuevo más tarde",
+        "tryAgainLater": "Falló de nuestro lado; ya quedó registrado. Vuelve a intentarlo en un momento.",
         "generatingReports": "Generando {{count}} reportes...",
         "reportsGenerated": "Reportes generados",
         "reportsUpdated": "{{count}} reportes actualizados"
@@ -5074,7 +5074,7 @@
         "actaCreated": "Acta creada",
         "actaSaved": "El acta de {{type}} ha sido guardada",
         "actaError": "Error al crear acta",
-        "actaErrorDesc": "Hubo un error al crear el acta. Intenta de nuevo."
+        "actaErrorDesc": "El acta no se pudo crear de nuestro lado. Lo que llenaste sigue aquí: vuelve a intentarlo."
       }
     },
     "mensajes": {
@@ -5161,7 +5161,7 @@
         },
         "errors": {
           "createAccount": "Error al crear la cuenta. Inténtalo de nuevo.",
-          "unexpected": "Ocurrió un error inesperado. Inténtalo de nuevo."
+          "unexpected": "El registro falló de nuestro lado. Lo que llenaste sigue aquí: vuelve a intentarlo."
         },
         "portfolioSizes": {
           "smallLabel": "Pequeño",
@@ -5326,7 +5326,7 @@
       "actaCreated": "Acta creada",
       "actaCreatedDesc": "Listo: el acta de entrega quedó creada.",
       "actaError": "Error al crear acta",
-      "actaErrorDesc": "Hubo un error al crear el acta. Intenta de nuevo.",
+      "actaErrorDesc": "El acta no se pudo crear de nuestro lado. Lo que llenaste sigue aquí: vuelve a intentarlo.",
       "condExcellent": "Excelente",
       "condGood": "Bueno",
       "condFair": "Regular",
@@ -6493,7 +6493,7 @@
             "porQueConditional": "Acepta el caso, pero con {{n}} condiciones que debes resolver antes de radicar.",
             "porQueRejected": "No aprobó este caso con los datos actuales.",
             "porQueRejectedWithReason": "No aprobó este caso por el motivo indicado arriba.",
-            "porQueError": "No pudimos obtener una respuesta de esta aseguradora; intenta de nuevo más tarde.",
+            "porQueError": "Esta aseguradora no respondió. Las demás opciones siguen valiendo; puedes volver a cotizar con ella en un rato.",
             "porQueStub": "Resultado de demostración — esta aseguradora aún no está conectada en modo real.",
             "porQuePending": "Todavía estamos consultando a esta aseguradora.",
             "condicionesVisibleHint": "Condiciones listadas arriba",
@@ -6594,7 +6594,7 @@
             "porQueConditional": "Acepta el caso, pero con {{n}} condiciones que debes resolver antes de radicar.",
             "porQueRejected": "No aprobó este caso con los datos actuales.",
             "porQueRejectedWithReason": "No aprobó este caso por el motivo indicado arriba.",
-            "porQueError": "No pudimos obtener una respuesta de esta aseguradora; intenta de nuevo más tarde.",
+            "porQueError": "Esta aseguradora no respondió. Las demás opciones siguen valiendo; puedes volver a cotizar con ella en un rato.",
             "porQueStub": "Resultado de demostración — esta aseguradora aún no está conectada en modo real.",
             "porQuePending": "Todavía estamos consultando a esta aseguradora.",
             "condicionesVisibleHint": "Condiciones listadas arriba",
@@ -9923,7 +9923,7 @@
             },
             "error": {
               "label": "Error",
-              "desc": "Ocurrió un error técnico durante la consulta."
+              "desc": "La consulta falló de nuestro lado. Ya quedó registrado; vuelve a lanzarla."
             },
             "resultadoVencido": {
               "label": "Resultado vencido",
@@ -10787,7 +10787,7 @@
       "manualNote": "Completa los datos del tercero manualmente.",
       "errorTitle": "No pudimos leer los documentos",
       "errorUnavailable": "El servicio de IA no está disponible ahora. Puedes llenar el formulario manualmente.",
-      "errorGeneric": "Ocurrió un error al procesar los documentos. Intenta de nuevo o llena el formulario manualmente.",
+      "errorGeneric": "No pudimos leer los documentos. Vuelve a subirlos o llena el formulario a mano.",
       "errorUnsupported": "Ese formato no se puede leer. Sube una foto (JPG, PNG), un PDF o un archivo de Word (.doc, .docx).",
       "errorTooLarge": "Un archivo supera el tamaño máximo (10 MB). Comprímelo o sube una copia más liviana.",
       "errorTotalTooLarge": "Los archivos suman más de 20 MB. Sube menos archivos o más livianos.",
@@ -10830,7 +10830,7 @@
       "errorMic": "No pudimos acceder al micrófono. Revisa los permisos.",
       "errorNoAudio": "Graba una descripción primero.",
       "errorUnavailable": "El servicio de IA no está disponible ahora. Puedes crear el inmueble manualmente.",
-      "errorGeneric": "Ocurrió un error al procesar la captura. Intenta de nuevo o usa el formulario manual.",
+      "errorGeneric": "No pudimos leer la captura. Vuelve a intentarlo o usa el formulario a mano.",
       "errorTitle": "No pudimos procesar la captura",
       "retry": "Reintentar",
       "manualFlow": "Crear manual",

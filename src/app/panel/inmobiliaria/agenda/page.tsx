@@ -373,6 +373,19 @@ function AgendaContent() {
   };
 
   const porVista = data?.porVista;
+  /*
+   * Decisión 24 de Nico (22-10): lo pendiente primero. La primera vez que llegan los conteos, si hay atrasadas y nadie
+   * eligió otra pestaña, la pantalla pasa a «Atrasadas» (como Propietarios abre en «Por girar»). Una sola vez.
+   */
+  const yaAbrioEnLoPendiente = useRef(false);
+  useEffect(() => {
+    if (yaAbrioEnLoPendiente.current || !porVista) return;
+    yaAbrioEnLoPendiente.current = true;
+    if (pestana === 'proximas' && porVista.vencidas > 0) {
+      setPestana('vencidas');
+      setPage(1);
+    }
+  }, [porVista, pestana]);
   const diasDeLaSemana = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(lunes);
     d.setDate(d.getDate() + i);
@@ -404,7 +417,7 @@ function AgendaContent() {
         }
       />
 
-      {/* Ronda 22: lo que se pasó de fecha, primero (la pantalla abre en «Próximas»: lo fija su prueba). */}
+      {/* Ronda 22: lo que se pasó de fecha, primero (decisión 24: la pantalla abre en «Atrasadas» si hay; esto queda si alguien vuelve a «Próximas»). */}
       {pestana !== 'vencidas' && (porVista?.vencidas ?? 0) > 0 ? (
         <p className="flex flex-wrap items-center gap-2 text-body-sm text-fg" data-testid="agenda-atrasadas-aviso">
           <span className="h-1.5 w-1.5 rounded-full bg-warning-500" aria-hidden="true" />

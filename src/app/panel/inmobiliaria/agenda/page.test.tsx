@@ -333,6 +333,18 @@ describe('A3 — sin `operaciones:edit` no se dibuja lo que el back rechaza con 
     }
   })
 
+  it('decisión 24 de Nico: con atrasadas, la pantalla abre en «Atrasadas» (una vez)', async () => {
+    getAgendaMock.mockResolvedValue({
+      ...CON_VISITA_PENDIENTE,
+      porVista: { ...(CON_VISITA_PENDIENTE as { porVista?: Record<string, number> }).porVista, proximas: 1, vencidas: 3 },
+    })
+    await montar()
+    expect(getAgendaMock).toHaveBeenLastCalledWith(expect.objectContaining({ vista: 'vencidas' }))
+    expect(
+      container.querySelector('[data-testid="agenda-pestana-vencidas"]')?.getAttribute('aria-selected'),
+    ).toBe('true')
+  })
+
   it('AG-02: «Vencidas» va aparte de «Próximas»', async () => {
     getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
     await montar()

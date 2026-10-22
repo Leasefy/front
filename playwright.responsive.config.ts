@@ -17,9 +17,14 @@ import { loadE2eEnv } from './tests/e2e-responsive/support/env';
  *   RESPONSIVE_FAST=1       restrict to the FAST subset (set by the :fast script)
  *   RESPONSIVE_WORKERS      parallel workers (default 4; the dev server is the bottleneck)
  *   RESPONSIVE_REPORT_DIR   findings.json / summary.md / screenshots (default ./responsive-report)
+ *   RESPONSIVE_WARMUP       0 = skip the warm-up pass, 1 = force it; default: on for localhost only
+ *                           (RESPONSIVE_WARMUP_ROUTE_MS = per-route navigation cap, default 90000)
  *   RESPONSIVE_REUSE_AUTH=1 / RESPONSIVE_REUSE_RESOLVED=1   skip re-login / re-crawl when the files from
  *                           a previous run exist (iterating on the suite)
  *   RESPONSIVE_ALLOW_POST   regex of URLs the read-only guard may let through (default none)
+ *
+ * Recommended target: `pnpm build && npx next start -p 3001` (no dev overlay, no per-route
+ * compile, far faster and steadier than `next dev`); then RESPONSIVE_WARMUP=0 is enough.
  *
  * Browsers: `npx playwright install chromium firefox webkit` and, for the Edge projects,
  * Microsoft Edge itself (`npx playwright install msedge`). A missing browser makes its
@@ -63,10 +68,19 @@ export default defineConfig({
       dependencies: ['setup-auth'],
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
     },
+    {
+      // Visits every route once per persona so cold `next dev` compiles do not become page
+      // errors. Skips itself against non-local targets or with RESPONSIVE_WARMUP=0.
+      name: 'setup-warmup',
+      retries: 0,
+      testMatch: /setup\/warmup\.setup\.ts/,
+      dependencies: ['setup-resolve'],
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
+    },
     ...selected.map((device) => ({
       name: device.id,
       testMatch: /responsive\.spec\.ts/,
-      dependencies: ['setup-resolve'],
+      dependencies: ['setup-warmup'],
       metadata: metaFor(device),
       use: device.use,
     })),

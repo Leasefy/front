@@ -31,3 +31,18 @@ export function loadE2eEnv(): string | null {
   }
   return file;
 }
+
+/**
+ * Warm-up pass switch: `RESPONSIVE_WARMUP=0` off, `=1` on, unset = on only against localhost
+ * (a dev server compiles on first request; a deployed or `next start` target does not need it).
+ */
+export function warmupEnabled(baseURL: string | undefined): boolean {
+  const flag = process.env.RESPONSIVE_WARMUP;
+  if (flag === '0' || flag === 'false') return false;
+  if (flag === '1' || flag === 'true') return true;
+  try {
+    return ['localhost', '127.0.0.1', '[::1]'].includes(new URL(baseURL ?? 'http://localhost:3001').hostname);
+  } catch {
+    return true;
+  }
+}

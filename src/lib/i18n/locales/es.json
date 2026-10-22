@@ -4027,7 +4027,7 @@
         "assignLater": "Podrás asignar agentes después",
         "importButton": "Importar {{count}} inmuebles",
         "importing": "Importando inmueble {{current}} de {{total}}...",
-        "successTitle": "¡Importación completada!",
+        "successTitle": "Listo: la importación terminó",
         "successDesc": "Se importaron {{count}} inmuebles a tu portafolio",
         "viewPortfolio": "Ver portafolio",
         "importMore": "Importar más",
@@ -5231,7 +5231,7 @@
           "savingProfile": "Guardando..."
         },
         "success": {
-          "welcome": "¡Bienvenido, {{agencyName}}!",
+          "welcome": "Te damos la bienvenida, {{agencyName}}",
           "description": "Listo: tu inmobiliaria quedó registrada. Entra a tu panel para empezar.",
           "goToPanel": "Ir al panel",
           "planIncludes": "Tu plan incluye:",
@@ -7891,7 +7891,7 @@
             "timing": "Tiempos"
           },
           "empty": {
-            "title": "¡Buen trabajo!",
+            "title": "Ninguna escalación abierta",
             "description": "No hay escalaciones pendientes en este momento."
           },
           "liveRegion": {

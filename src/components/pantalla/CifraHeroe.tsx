@@ -49,6 +49,8 @@ interface CifraHeroeProps {
   /** Contra qué se mide la barra; por defecto, la suma de los tramos. */
   total?: number;
   pie?: ReactNode;
+  /** `mediana`: cuando hay otra cifra más importante en la pantalla (p. ej. lo que se aprueba). */
+  tamano?: 'grande' | 'mediana';
   className?: string;
   'data-testid'?: string;
 }
@@ -67,6 +69,7 @@ export function CifraHeroe({
   tramos = [],
   total,
   pie,
+  tamano = 'grande',
   className,
   'data-testid': testId,
 }: CifraHeroeProps) {
@@ -80,7 +83,12 @@ export function CifraHeroe({
       <div className="space-y-1.5">
         <p className="font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle">{rotulo}</p>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="font-mono text-[32px] font-medium leading-none tracking-[-0.02em] tabular-nums text-fg sm:text-[40px]">
+          <span
+            className={cn(
+              'font-mono font-medium leading-none tracking-[-0.02em] tabular-nums text-fg',
+              tamano === 'grande' ? 'text-[32px] sm:text-[40px]' : 'text-[22px] sm:text-[24px]',
+            )}
+          >
             {cifra}
           </span>
           {contexto ? <span className="text-[15px] leading-snug text-fg-muted">{contexto}</span> : null}

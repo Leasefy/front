@@ -767,7 +767,7 @@ export function Recaudo() {
                       <TableRowAnimada key={m.medio} data-testid="medio-fila">
                         <TableCell className="text-fg">
                           {tr(m.nombre || nombreDelMedio(m.medio))}
-                          <span className="text-caption text-fg-muted md:hidden">
+                          <span className="whitespace-nowrap text-caption text-fg-muted md:hidden">
                             {' · '}
                             {en
                               ? `${m.cantidad} ${m.cantidad === 1 ? 'receipt' : 'receipts'}`

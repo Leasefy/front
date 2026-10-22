@@ -205,7 +205,7 @@ export function TarjetaDeProyeccion({
 
   return (
     <section
-      className="space-y-3 rounded-lg border border-border bg-surface p-5 sm:p-6"
+      className="space-y-3 self-start rounded-lg border border-border bg-surface p-5 sm:p-6"
       aria-labelledby="proyeccion-titulo"
       data-testid="proyeccion"
       data-estado={p.estado}

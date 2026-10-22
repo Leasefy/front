@@ -282,7 +282,7 @@ export function TrasladoDeComisionPanel() {
             </div>
           </div>
 
-          {propuesta ? <Propuesta propuesta={propuesta} plata={plata} /> : null}
+          {propuesta ? <Propuesta propuesta={propuesta} plata={plata} secundaria={Boolean(lista?.propuestos.length)} /> : null}
 
           {/* Revisión de Dinero (22-10): con un traslado ya propuesto, la tarea es aprobarlo (arriba);
               proponer otro competía como segunda acción principal. */}
@@ -404,7 +404,16 @@ function valoresDelTraslado(t: Traslado): number[] {
   return [t.totalCop, t.comisionCop, t.ivaComisionCop, t.interesesCop + t.gastosDeCobranzaCop, t.retencionesComisionCop];
 }
 
-function Propuesta({ propuesta, plata: plataDeLaPagina }: { propuesta: PropuestaDeTraslado; plata?: FormatoDePlata }) {
+function Propuesta({
+  propuesta,
+  plata: plataDeLaPagina,
+  secundaria = false,
+}: {
+  propuesta: PropuestaDeTraslado;
+  plata?: FormatoDePlata;
+  /** Ronda 13: con un traslado esperando aprobación, ésta es un detalle (la cifra grande es la que se aprueba). */
+  secundaria?: boolean;
+}) {
   // Los mismos decimales en la franja y en los renglones (revisión 22-10).
   const plata =
     plataDeLaPagina ??
@@ -424,6 +433,7 @@ function Propuesta({ propuesta, plata: plataDeLaPagina }: { propuesta: Propuesta
         <CifraHeroe
           className="px-5 pb-4 pt-5 sm:px-6"
           data-testid="total-del-traslado"
+          tamano={secundaria ? 'mediana' : 'grande'}
           rotulo="Total a trasladar"
           cifra={propuesta.totalCop === 0 ? '—' : plata(propuesta.totalCop)}
           contexto="de la cuenta de recaudo a tu cuenta propia"

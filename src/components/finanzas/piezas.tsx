@@ -19,6 +19,7 @@
  */
 
 import { AnimatedNumber } from '@leasefy/cadence';
+import Link from 'next/link';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { enCristiano } from '@/lib/errores/en-cristiano';
 import { Info, WarningOctagon } from '@phosphor-icons/react';
@@ -470,7 +471,7 @@ export function Avisos({
       {uno ? (
         <p className="min-w-0">
           {titulo ? <span className="sr-only">{titulo}: </span> : null}
-          {avisos[0]}
+          <TextoDelAviso aviso={avisos[0]} />
         </p>
       ) : (
         <MasDetalles
@@ -481,7 +482,7 @@ export function Avisos({
           {titulo ? <p className="sr-only">{titulo}</p> : null}
           <ul className="list-disc space-y-1 pl-4 text-fg-muted marker:text-fg-subtle">
             {avisos.map((aviso) => (
-              <li key={aviso}>{aviso}</li>
+              <li key={aviso}><TextoDelAviso aviso={aviso} /></li>
             ))}
           </ul>
         </MasDetalles>
@@ -561,5 +562,22 @@ export function TituloDeBloque({
       </div>
       {accion ? <div className="shrink-0">{accion}</div> : null}
     </div>
+  );
+}
+
+/**
+ * El texto de un aviso del back. Ronda 12 de la revisión: el que manda a
+ * «Costos de la plata» lleva su enlace (antes había que ir a buscarlo).
+ */
+const RUTA_DE_COSTOS_DE_LA_PLATA = '/panel/inmobiliaria/configuracion/costos-de-la-plata';
+function TextoDelAviso({ aviso }: { aviso: string }) {
+  if (!/costos de la plata/i.test(aviso)) return <>{aviso}</>;
+  return (
+    <>
+      {aviso}{' '}
+      <Link href={RUTA_DE_COSTOS_DE_LA_PLATA} className="font-medium text-primary underline-offset-4 hover:underline">
+        Configurar los costos
+      </Link>
+    </>
   );
 }

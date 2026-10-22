@@ -526,9 +526,12 @@ function BloqueDeCartera({ tablero, queMide }: { tablero: Tablero; queMide: bool
             etiqueta={
               <span className={tramo.carteraCop === 0 ? 'text-fg-subtle' : undefined}>
                 {tramo.nombre}
-                <span className="ml-2 font-mono text-caption tabular-nums text-fg-subtle">
-                  {tramo.cuotas === 0 ? '—' : `${NUMERO.format(tramo.cuotas)} ${tramo.cuotas === 1 ? 'cuota' : 'cuotas'}`}
-                </span>
+                {/* Ronda 12: un tramo vacío lleva UNA raya (la del monto), no dos. */}
+                {tramo.cuotas === 0 ? null : (
+                  <span className="ml-2 font-mono text-caption tabular-nums text-fg-subtle">
+                    {`${NUMERO.format(tramo.cuotas)} ${tramo.cuotas === 1 ? 'cuota' : 'cuotas'}`}
+                  </span>
+                )}
               </span>
             }
             marca={<MarcaDelTramo i={i} total={cartera.tramos.length} />}

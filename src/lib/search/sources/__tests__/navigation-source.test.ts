@@ -29,8 +29,8 @@ describe('navigationSource — chips', () => {
 
   it('una acción lleva un solo chip «Acción»', async () => {
     const filas = await buscar('nueva consignación');
-    const accion = filas.find((f) => f.title === 'Nueva consignación');
-    expect(accion, 'la acción Nueva consignación tiene que estar en el catálogo').toBeDefined();
+    const accion = filas.find((f) => f.title === 'Nuevo mandato');
+    expect(accion, 'la acción Nuevo mandato tiene que estar en el catálogo').toBeDefined();
     expect(accion?.type).toBe('accion');
     expect(accion?.badges).toEqual([{ label: 'Acción', color: 'violet' }]);
   });
@@ -104,7 +104,7 @@ describe('navigationSource — chips', () => {
       sinPortafolio,
       new AbortController().signal,
     );
-    expect(filas.find((f) => f.title === 'Nueva consignación')).toBeUndefined();
+    expect(filas.find((f) => f.title === 'Nuevo mandato')).toBeUndefined();
   });
 
   it('Evaluación de candidatos no sale: está oculta por ahora (Nico, 2026-09-08)', async () => {

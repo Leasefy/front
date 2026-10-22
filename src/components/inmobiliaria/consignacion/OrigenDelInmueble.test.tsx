@@ -1,5 +1,5 @@
 /**
- * La pregunta que abre «Nueva consignación»: nuevo o existente. Y no ofrece
+ * La pregunta que abre «Nuevo mandato»: nuevo o existente. Y no ofrece
  * «uno que ya tengo» cuando no hay ninguno sin propietario.
  */
 import * as React from 'react'
@@ -74,7 +74,7 @@ describe('<OrigenDelInmueble>', () => {
 })
 
 describe('origenInicial — cuándo se pregunta y cuándo no', () => {
-  it('🔴 desde «Nueva consignación» NO se pregunta: va derecho al flujo completo', () => {
+  it('🔴 desde «Nuevo mandato» NO se pregunta: va derecho al flujo completo', () => {
     // El botón del portafolio, la barra lateral, el buscador y el panel de
     // inicio entran sin `propietarioId`. Nico (2026-09-03): «desde el nueva
     // consignación de inmuebles siempre es el flujo de nueva consignación».

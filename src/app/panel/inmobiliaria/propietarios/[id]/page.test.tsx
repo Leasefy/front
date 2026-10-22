@@ -1,7 +1,7 @@
 /**
  * page.test.tsx — la ficha del propietario hace lo que dice.
  *
- * Nico (2026-09-02 13:09): «Nueva consignación» decía «Próximamente»; arriba
+ * Nico (2026-09-02 13:09): «Nuevo mandato» decía «Próximamente»; arriba
  * no había navegación clara ni forma de volver a donde se entró; «Generar
  * extracto» y «Exportar datos» no hacían nada. Y por debajo, Editar / Eliminar
  * / Notas iban contra un `setTimeout`: cartel verde, nada guardado.
@@ -348,7 +348,7 @@ describe('Volver — a donde se entró', () => {
   });
 });
 
-describe('Nueva consignación', () => {
+describe('Nuevo mandato', () => {
   it('abre el asistente con este propietario ya elegido y vuelve aquí al terminar', async () => {
     await render();
     await click('nueva-consignacion');

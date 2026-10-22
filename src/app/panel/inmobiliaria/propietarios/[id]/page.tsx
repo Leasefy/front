@@ -805,7 +805,7 @@ function PropietarioDetailContent() {
     }
   };
 
-  // «Nueva consignación» abre el asistente con este propietario ya elegido, y
+  // «Nuevo mandato» abre el asistente con este propietario ya elegido, y
   // al terminar vuelve acá — con el inmueble nuevo en la lista.
   const nuevaConsignacion = () =>
     router.push(

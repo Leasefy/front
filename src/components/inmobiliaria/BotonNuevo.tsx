@@ -17,7 +17,7 @@
  *    `docs/VOCABULARIO.md`.
  *
  * 2. **La explicación aparece una sola vez por flujo.** La primera vez que
- *    alguien abre "Nueva consignación" se le dice qué va a hacer, en tres
+ *    alguien abre "Nuevo mandato" se le dice qué va a hacer, en tres
  *    pasos, y qué necesita tener a mano; de ahí en adelante entra directo. Un
  *    cartel que reaparece se vuelve un obstáculo, y se cierra sin leer.
  *

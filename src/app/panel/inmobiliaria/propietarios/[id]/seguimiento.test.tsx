@@ -11,7 +11,7 @@
  *
  * (Lo que sigue es la cabecera de `page.test.tsx`.)
  *
- * Nico (2026-09-02 13:09): «Nueva consignación» decía «Próximamente»; arriba
+ * Nico (2026-09-02 13:09): «Nuevo mandato» decía «Próximamente»; arriba
  * no había navegación clara ni forma de volver a donde se entró; «Generar
  * extracto» y «Exportar datos» no hacían nada. Y por debajo, Editar / Eliminar
  * / Notas iban contra un `setTimeout`: cartel verde, nada guardado.

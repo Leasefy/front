@@ -584,16 +584,16 @@ export function ConsignacionTable({
                     */}
                     {row.listingType === 'sale' ? (
                       row.kind === 'sinMandato' ? (
-                        <p className="font-semibold text-foreground tabular-nums">
+                        <p className="font-mono text-foreground tabular-nums">
                           {row.salePrice != null
                             ? formatCurrency(row.salePrice)
                             : row.canonPorConfirmar ? TEXTO_PRECIO_POR_COMPLETAR : '—'}
-                          <span className="ml-1 text-xs font-normal text-muted-foreground">
+                          <span className="ml-1 font-sans text-caption text-muted-foreground">
                             {t('inmobiliaria.consignaciones.table.saleTag')}
                           </span>
                         </p>
                       ) : (
-                        <p className="font-semibold text-muted-foreground tabular-nums">
+                        <p className="text-muted-foreground">
                           {t('inmobiliaria.consignaciones.table.saleTag')}
                         </p>
                       )

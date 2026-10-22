@@ -1,5 +1,5 @@
 /**
- * Qué exige el paso «Propiedad» de «Nueva consignación» (QA 04-10, IN-16).
+ * Qué exige el paso «Propiedad» de «Nuevo mandato» (QA 04-10, IN-16).
  *
  * Exigía barrio, habitaciones, baños, área y una descripción de 20 letras para
  * CUALQUIER tipo: un Lote o una Bodega pedían habitaciones y baños, y «Editar

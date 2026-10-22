@@ -212,7 +212,7 @@ describe('<ConsignacionHeader> — un mandato TERMINADO se ve y se comporta dist
     expect(container.querySelector('[data-testid="terminada-con-contrato"]')).toBeNull();
   });
 
-  it('el kebab no ofrece «Terminar» otra vez, no hay «Cambiar estado» ni botones apagados, y hay «Nueva consignación»', () => {
+  it('el kebab no ofrece «Terminar» otra vez, no hay «Cambiar estado» ni botones apagados, y hay «Nuevo mandato»', () => {
     render({ consignacion: terminada });
     expect(container.querySelector('[aria-label="inmobiliaria.consignaciones.header.moreActions"]')).toBeNull();
     expect(conTexto('inmobiliaria.consignaciones.header.changeStatus')).toBeUndefined();

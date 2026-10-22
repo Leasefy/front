@@ -720,7 +720,7 @@ function PortafolioContent() {
                     icono={Buildings}
                     titulo={t('inmobiliaria.portafolio.noProperties')}
                     descripcion={t('inmobiliaria.portafolio.noPropertiesDesc')}
-                    crear={{ label: 'Nueva consignación', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
+                    crear={{ label: 'Nuevo mandato', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
                     onLimpiarFiltros={limpiarFiltros}
                   />
                 )}
@@ -766,7 +766,7 @@ function PortafolioContent() {
                     icono={Buildings}
                     titulo={t('inmobiliaria.portafolio.noProperties')}
                     descripcion={t('inmobiliaria.portafolio.noPropertiesDesc')}
-                    crear={{ label: 'Nueva consignación', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
+                    crear={{ label: 'Nuevo mandato', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
                     onLimpiarFiltros={limpiarFiltros}
                   />
                 )}

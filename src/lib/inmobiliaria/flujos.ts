@@ -54,7 +54,7 @@ export interface FlujoNuevo {
   module: string | null
   /**
    * 🔴 ROLES (auditoría 14-10-2026): la acción que pide EMPEZAR el flujo. Con
-   * `view` el botón «Nuevo» le ofrecía «Nueva consignación» al de sólo lectura y
+   * `view` el botón «Nuevo» le ofrecía «Nuevo mandato» al de sólo lectura y
    * al coordinador, y «Nuevo contrato» al abogado externo; al guardar, 403.
    */
   accion: string

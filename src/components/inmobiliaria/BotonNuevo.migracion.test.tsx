@@ -97,14 +97,14 @@ describe('BotonNuevo → Migrar mis datos', () => {
   it('is hidden for non-admins, other entries stay', () => {
     permisos = { ...permisos, isAdmin: false }
     montar()
-    expect(item(/consignación/i)).toBeDefined()
+    expect(item(/mandato/i)).toBeDefined() // manual de voz: «mandato», no «consignación»
     expect(item(/Migrar mis datos/)).toBeUndefined()
   })
 
   it('is hidden while the migration wall is already blocking', () => {
     migracion = { ...migracion!, estado: { bloquea: true } }
     montar()
-    expect(item(/consignación/i)).toBeDefined()
+    expect(item(/mandato/i)).toBeDefined() // manual de voz: «mandato», no «consignación»
     expect(item(/Migrar mis datos/)).toBeUndefined()
   })
 })

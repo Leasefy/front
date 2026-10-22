@@ -1866,7 +1866,7 @@
         "title": "Acciones rápidas",
         "newOwner": "Nuevo propietario",
         "newOwnerDesc": "Registrar propietario",
-        "newConsignment": "Nueva consignación",
+        "newConsignment": "Nuevo mandato",
         "newConsignmentDesc": "Agregar inmueble",
         "registerPayment": "Registrar cobro",
         "registerPaymentDesc": "Recibir pago",
@@ -2565,7 +2565,7 @@
         "payments": "Pagos",
         "notes": "Notas",
         "noProperties": "No hay inmuebles consignados",
-        "newConsignment": "Nueva consignación",
+        "newConsignment": "Nuevo mandato",
         "noPayments": "No hay historial de pagos",
         "internalNotes": "Notas internas",
         "noNotes": "Sin notas",
@@ -3784,7 +3784,7 @@
       "title": "Inmuebles",
       "subtitle": "Los inmuebles que administras, con su propietario y su comisión.",
       "search": "Buscar inmueble...",
-      "addProperty": "Nueva consignación",
+      "addProperty": "Nuevo mandato",
       "noProperties": "Todavía no administras ningún inmueble",
       "noPropertiesDesc": "Consigna el primero: sobre esa consignación se arman el cobro, el contrato y la liquidación al propietario.",
       "filters": {
@@ -3903,7 +3903,7 @@
         }
       },
       "new": {
-        "title": "Nueva consignación",
+        "title": "Nuevo mandato",
         "backToOwner": "Volver al propietario",
         "subtitle": "Agregar un nuevo inmueble al portafolio",
         "step1": "Propietario",
@@ -4355,7 +4355,7 @@
         "property": "Inmueble",
         "zone": "Zona",
         "rent": "Canon",
-        "saleTag": "(venta)",
+        "saleTag": "En venta",
         "commission": "Comisión",
         "owner": "Propietario",
         "agent": "Asesor",
@@ -10902,7 +10902,7 @@
       },
       "quickActions": {
         "title": "Acciones rápidas",
-        "nuevaConsignacion": "Nueva consignación",
+        "nuevaConsignacion": "Nuevo mandato",
         "cobranza": "Ir a Cobranza",
         "cotizador": "Ir a Asegurabilidad",
         "reportes": "Ver reportes",
@@ -11049,7 +11049,7 @@
       },
       "flujos": {
         "consignacion": {
-          "label": "Nueva consignación",
+          "label": "Nuevo mandato",
           "desc": "Suma un inmueble al portafolio con su propietario",
           "intro": {
             "titulo": "Vas a crear una consignación",
@@ -11194,7 +11194,7 @@
       },
       "cierre": {
         "titulo": "Listo, ya conoces tu panel",
-        "punto1": "Empiezas por «Nueva consignación» y sigues el inmueble hasta el contrato.",
+        "punto1": "Empiezas por «Nuevo mandato» y sigues el inmueble hasta el contrato.",
         "punto2": "Pagos reúne las dos caras de la plata: lo que entra de los inquilinos y lo que sale hacia los propietarios.",
         "punto3": "El buscador y el chat te llevan a cualquier parte sin recorrer el menú.",
         "volver": "Puedes volver a verlo desde Configuración → Preferencias.",
@@ -11208,7 +11208,7 @@
         },
         "nuevo": {
           "titulo": "Aquí empieza todo lo nuevo",
-          "cuerpo": "«Nueva consignación» es el acuerdo con el propietario para administrar su inmueble: eliges al propietario, cargas el inmueble y el canon, y defines la comisión.",
+          "cuerpo": "«Nuevo mandato» es el acuerdo con el propietario para administrar su inmueble: eliges al propietario, cargas el inmueble y el canon, y defines la comisión.",
           "dato": "El chevron de al lado abre los otros arranques: avalúo, asegurabilidad y contrato."
         },
         "inmuebles": {

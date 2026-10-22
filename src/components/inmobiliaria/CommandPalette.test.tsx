@@ -237,7 +237,7 @@ describe('Novedades — nunca una clave cruda', () => {
 
     expect(texto()).not.toContain('Novedades')
     // Las acciones rápidas siguen ahí: el buscador no se cae con el feed.
-    expect(texto()).toContain('Nueva consignación')
+    expect(texto()).toContain('Nuevo mandato')
   })
 
   it('sin eventos lo dice, no inventa filas', () => {
@@ -256,7 +256,7 @@ describe('estado vacío — el pie no miente', () => {
     montar()
     const filas = opciones()
     expect(filas.length).toBe(5)
-    expect(filas[0]?.textContent).toContain('Nueva consignación')
+    expect(filas[0]?.textContent).toContain('Nuevo mandato')
     expect(filas[0]?.textContent).toContain('Un inmueble nuevo con su propietario')
     expect(filas[1]?.textContent).toContain('Deudores, llamadas y acuerdos de pago')
     expect(filas[0]?.getAttribute('aria-selected')).toBe('true')

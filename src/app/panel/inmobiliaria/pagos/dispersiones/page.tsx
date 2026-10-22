@@ -228,6 +228,14 @@ function DispersionesContent() {
 
   // State for view mode
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+  // Revisión de Dinero (22-10): sin interruptor «Tabla / Tarjetas». La tabla desde 768 px y
+  // las tarjetas solas por debajo (a 390 la tabla se encogía aunque existía la otra vista).
+  useEffect(() => {
+    const ajustar = () => setViewMode(window.innerWidth < 768 ? 'cards' : 'table');
+    ajustar();
+    window.addEventListener('resize', ajustar);
+    return () => window.removeEventListener('resize', ajustar);
+  }, []);
 
   // State for modals
   const [selectedDispersion, setSelectedDispersion] = useState<Dispersion | null>(null);
@@ -846,8 +854,9 @@ function DispersionesContent() {
       {/* Unified Card - View Toggle + Filters + Content + Pagination */}
       <div className="rounded-lg border border-border bg-card">
         {/* View Toggle Header - FIRST (Primary hierarchy) */}
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
+        <div className="flex items-center justify-end border-b border-border px-4 py-3">
           <SegmentedControl
+            className="hidden"
             aria-label={t('inmobiliaria.dispersiones.viewTable')}
             value={viewMode}
             onChange={(v) => setViewMode(v as ViewMode)}

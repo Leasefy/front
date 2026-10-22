@@ -3594,7 +3594,7 @@
       "moveTo": "Mover a",
       "overdue": "Vencido:",
       "agent": "Asesor",
-      "inStage": "en etapa",
+      "inStage": "en la etapa",
       "today": "Hoy",
       "week": "Semana",
       "monthPreset": "Mes",
@@ -3605,7 +3605,8 @@
       "to": "a",
       "clear": "Limpiar",
       "enteredPipeline": "Entró al embudo",
-      "historyNotRecorded": "Del recorrido anterior no hay registro: hoy sólo se guarda la etapa actual y desde cuándo entró. Cuando se registren los cambios de etapa, la línea de tiempo completa aparece acá."
+      "historyNotRecorded": "Del recorrido anterior no hay registro: hoy sólo se guarda la etapa actual y desde cuándo entró. Cuando se registren los cambios de etapa, la línea de tiempo completa aparece acá.",
+      "overdueSentence": "Vencida"
     },
     "agente": {
       "workload": "Carga de trabajo",

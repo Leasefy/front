@@ -130,36 +130,45 @@ export function PipelineCard({
 
         {/* Qué sigue: vencido = rojo suave; si no, una línea tranquila */}
         {item.nextAction && (
+          /* Ronda 18: UN renglón, en letra de leer —la fecha una sola vez, «Vencida» sólo si
+             venció— y no tres textos en mono mayúscula. */
           <div
             className={cn(
-              'flex items-start gap-2 text-xs',
+              'flex items-start gap-2 text-[13px]',
               isOverdue ? 'rounded-[10px] bg-danger-soft px-2.5 py-2 text-danger' : 'text-fg-muted',
             )}
           >
-            <CalendarCheck className="mt-px size-3.5 shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate">{item.nextAction}</p>
-              {diaDeLaAccion && (
-                <p className={cn('mt-0.5 font-mono text-[10.5px] uppercase tracking-[0.04em]', isOverdue ? 'font-medium' : 'text-fg-subtle')}>
-                  {isOverdue ? t('inmobiliaria.pipeline.overdue') + ' ' : ''}
+            <CalendarCheck className="mt-0.5 size-3.5 shrink-0" />
+            <p className="min-w-0 flex-1 truncate">
+              {diaDeLaAccion ? (
+                <span className={cn(isOverdue && 'font-medium')}>
+                  {isOverdue ? `${t('inmobiliaria.pipeline.overdueSentence')} · ` : ''}
                   {formatDateI18n(diaDeLaAccion, { day: 'numeric', month: 'short' })}
-                </p>
-              )}
-            </div>
+                  {' · '}
+                </span>
+              ) : null}
+              {item.nextAction}
+            </p>
           </div>
         )}
 
         {/* Pie: cuánto lleva en la etapa y quién lo lleva */}
         <div className="flex items-center justify-between gap-2 border-t border-border-faint pt-2.5">
-          <span
-            className={cn(
-              'inline-flex shrink-0 items-center gap-1 whitespace-nowrap font-mono text-[10.5px] uppercase tracking-[0.04em] tabular-nums',
-              daysCritical ? 'text-danger' : daysWarning ? 'text-warning' : 'text-fg-subtle',
-            )}
-          >
-            {daysCritical ? <Warning className="size-3" /> : <Clock className="size-3" />}
-            {dias}
-          </span>
+          {/* Ronda 18: los días en la etapa sólo cuando ya pesan (7 o más), en minúscula; «0 días en
+              etapa» era relleno. */}
+          {daysWarning ? (
+            <span
+              className={cn(
+                'inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] tabular-nums',
+                daysCritical ? 'text-danger' : 'text-warning-ink',
+              )}
+            >
+              {daysCritical ? <Warning className="size-3" /> : <Clock className="size-3" />}
+              {dias}
+            </span>
+          ) : (
+            <span />
+          )}
           <span className="inline-flex min-w-0 items-center gap-1.5 text-[11px] text-fg-muted">
             {nombreDelAgente ? <Avatar name={nombreDelAgente} size="xs" /> : <User className="size-3 shrink-0" />}
             <span className="min-w-0 truncate">{nombreDelAgente ?? 'Sin asignar'}</span>

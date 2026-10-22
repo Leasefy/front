@@ -3559,7 +3559,7 @@
       "moveTo": "Move to",
       "overdue": "Overdue:",
       "agent": "Advisor",
-      "inStage": "in stage",
+      "inStage": "in this stage",
       "today": "Today",
       "week": "Week",
       "monthPreset": "Month",
@@ -3570,7 +3570,8 @@
       "to": "to",
       "clear": "Clear",
       "enteredPipeline": "Entered the pipeline",
-      "historyNotRecorded": "Earlier stages are not recorded: today only the current stage and when it started are stored. Once stage changes are logged, the full timeline will show up here."
+      "historyNotRecorded": "Earlier stages are not recorded: today only the current stage and when it started are stored. Once stage changes are logged, the full timeline will show up here.",
+      "overdueSentence": "Overdue"
     },
     "agente": {
       "workload": "Workload",

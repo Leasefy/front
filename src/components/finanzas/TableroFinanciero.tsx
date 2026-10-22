@@ -530,7 +530,7 @@ function BloqueDeDeudores({ tablero }: { tablero: Tablero }) {
       <Table className="max-md:block">
         <TableHeader className="max-md:hidden">
           <TableRow>
-            <TableHead>Cliente</TableHead>
+            <TableHead>Inquilino</TableHead>
             <TableHead className="text-right">Debe</TableHead>
             <TableHead className="text-right">Días de mora</TableHead>
             <TableHead>Etapa</TableHead>

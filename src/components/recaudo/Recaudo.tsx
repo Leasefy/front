@@ -480,7 +480,7 @@ export function Recaudo() {
                 id="dispersado"
                 verDefinicion={verDefiniciones}
                 className="lg:col-start-2 lg:row-start-2"
-                etiqueta={tr("Dispersado")}
+                etiqueta={tr("Girado")}
                 valor={resumen.dispersadoCop}
                 comparacion={vs('dispersado', 'salio', 'neutro', resumen.dispersadoCop)}
                 definicion={
@@ -630,7 +630,7 @@ export function Recaudo() {
                         {tr("recibos con fecha del mes")}
                       </span>
                     </TableHead>
-                    <TableHead className="whitespace-nowrap text-right">{tr("Dispersado")}</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">{tr("Girado")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

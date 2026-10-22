@@ -73,7 +73,7 @@ export function LoQueFaltaDelInmueble({
   const pendiente = lasFirmas.find((f) => f.estado === 'PENDIENTE');
   requisitos.push({
     id: 'firma',
-    titulo: 'El mandato está firmado',
+    titulo: 'Firmar el mandato',
     detalle: firmado ? undefined : pendiente ? `Se le mandó el enlace a ${pendiente.firmanteNombre}; falta que firme.` : esVenta ? 'Lo firma el propietario: es lo que te autoriza a venderlo.' : 'Lo firma el propietario: es lo que te autoriza a administrar y arrendar.',
     estado: firmas.cargando && !firmas.datos ? 'cargando' : firmas.noHabilitado || firmas.errorCrudo || firmas.datos?.disponible === false ? 'desconocido' : firmado ? 'listo' : 'falta',
     accion: (
@@ -93,7 +93,7 @@ export function LoQueFaltaDelInmueble({
   const papelesListos = !!d && d.paraPublicar.completo && d.paraElPrimerGiro.completo;
   requisitos.push({
     id: 'papeles',
-    titulo: 'Los papeles del propietario están completos',
+    titulo: 'Completar los papeles del propietario',
     detalle: papelesListos ? undefined : faltan > 0 ? `${faltan === 1 ? 'Falta 1 papel' : `Faltan ${faltan} papeles`} (cédula, certificados, RUT…).` : undefined,
     estado: documentos.cargando && !d ? 'cargando' : documentos.noHabilitado || documentos.errorCrudo || (!papelesListos && faltan === 0) ? 'desconocido' : papelesListos ? 'listo' : 'falta',
     accion: (
@@ -108,7 +108,7 @@ export function LoQueFaltaDelInmueble({
     const enElMapa = !!property && tieneCoordenadas(property.latitude, property.longitude);
     requisitos.push({
       id: 'mapa',
-      titulo: 'El inmueble está en el mapa',
+      titulo: 'Ubicar el inmueble en el mapa',
       detalle: enElMapa ? undefined : 'Sin ubicación, el aviso público no muestra el mapa.',
       estado: cargandoProperty && !property ? 'cargando' : !property ? 'desconocido' : enElMapa ? 'listo' : 'falta',
       accion:
@@ -125,7 +125,7 @@ export function LoQueFaltaDelInmueble({
     const conFotos = (property?.images?.length ?? 0) > 0;
     requisitos.push({
       id: 'fotos',
-      titulo: 'El inmueble tiene fotos',
+      titulo: 'Agregar las fotos',
       detalle: conFotos ? undefined : 'Sin fotos, el aviso sale con un espacio vacío.',
       estado: cargandoProperty && !property ? 'cargando' : !property ? 'desconocido' : conFotos ? 'listo' : 'falta',
       accion: (
@@ -142,7 +142,7 @@ export function LoQueFaltaDelInmueble({
     const faltanLasBasicas = !!property && property.area == null && property.bedrooms == null && property.bathrooms == null;
     requisitos.push({
       id: 'caracteristicas',
-      titulo: 'La ficha tiene área, habitaciones y baños',
+      titulo: 'Completar área, habitaciones y baños',
       detalle: faltanLasBasicas ? (esVenta ? 'Es lo primero que busca quien compra.' : 'Es lo primero que busca quien arrienda.') : undefined,
       estado: cargandoProperty && !property ? 'cargando' : !property ? 'desconocido' : faltanLasBasicas ? 'falta' : 'listo',
       accion:
@@ -158,7 +158,7 @@ export function LoQueFaltaDelInmueble({
   // no algo que impida arrendar; no cuenta en «te faltan N» ni lleva «Sigue».
   requisitos.push({
     id: 'vencimiento',
-    titulo: 'El mandato tiene fecha de vencimiento',
+    titulo: 'Poner la fecha de vencimiento del mandato',
     detalle: consignacion.contractEndDate ? undefined : 'Con la fecha, Leasefy avisa al asesor y al gerente 30 días antes.',
     estado: consignacion.contractEndDate ? 'listo' : 'opcional',
     accion: puedeEditar ? (

@@ -71,17 +71,17 @@ describe('<LoQueFaltaDelInmueble>', () => {
   it('dice lo que falta con datos reales: vencimiento, firma, papeles y mapa', async () => {
     await pintar();
     const t = container.textContent ?? '';
-    expect(t).toContain('El mandato tiene fecha de vencimiento');
-    expect(t).toContain('El mandato está firmado');
+    expect(t).toContain('Poner la fecha de vencimiento del mandato');
+    expect(t).toContain('Firmar el mandato');
     expect(t).toContain('Faltan 2 papeles');
-    expect(t).toContain('El inmueble está en el mapa');
+    expect(t).toContain('Ubicar el inmueble en el mapa');
   });
 
   it('arrendado no pide fotos; disponible sí', async () => {
     await pintar({ arrendado: true });
-    expect(container.textContent).not.toContain('El inmueble tiene fotos');
+    expect(container.textContent).not.toContain('Agregar las fotos');
     await pintar({ arrendado: false });
-    expect(container.textContent).toContain('El inmueble tiene fotos');
+    expect(container.textContent).toContain('Agregar las fotos');
   });
 
   it('con el enlace de firma mandado, lo dice con el nombre de quien firma', async () => {

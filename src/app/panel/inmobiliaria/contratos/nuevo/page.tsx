@@ -1609,7 +1609,7 @@ function NuevoContratoContent() {
             {/* Nico (22-10): fecha a fecha el día de pago no se usa (vence el día en que empieza
                 cada período), así que el campo sólo sale si se prorratea. El valor se manda igual. */}
             {form.prorratearPrimerMes ? (
-              <Field id={idDelCampoDelContrato('paymentDay')} label="Día de pago" error={errorDe('paymentDay')} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
+              <Field id={idDelCampoDelContrato('paymentDay')} label="Día de pago" error={errorDe('paymentDay')} hint="Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1.">
                 <Input
                   {...ariaDelCampoDelContrato('paymentDay', errorDe('paymentDay'))}
                   type="number"

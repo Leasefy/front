@@ -4173,6 +4173,7 @@
         "saleCommission": "comisión de venta",
         "consignacion": "Consignación",
         "verFotos": "Ver {{count}} fotos",
+        "agregarFotos": "Agregar fotos",
         "verFoto": "Ver la foto",
         "abrirFotos": "Ver las fotos del inmueble",
         "perMonth": "/mes",
@@ -4404,7 +4405,7 @@
         }
       },
       "detail": {
-        "propertyInfo": "Información de Propiedad",
+        "propertyInfo": "Información del inmueble",
         "fullAddress": "Dirección completa",
         "zoneCity": "Zona / Ciudad",
         "contractStartDate": "Fecha inicio contrato",

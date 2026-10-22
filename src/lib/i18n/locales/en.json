@@ -4138,6 +4138,7 @@
         "saleCommission": "sale commission",
         "consignacion": "Consignment",
         "verFotos": "See {{count}} photos",
+        "agregarFotos": "Add photos",
         "verFoto": "See the photo",
         "abrirFotos": "See the property photos",
         "perMonth": "/mo",

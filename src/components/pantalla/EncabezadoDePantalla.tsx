@@ -63,14 +63,23 @@ export function EncabezadoDePantalla({
       className={cn('flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between', className)}
       data-testid={testId}
     >
-      <div className="min-w-0 space-y-1.5">
-        {seccion ? <SectionLabel>{seccion}</SectionLabel> : null}
+      {/*
+        🔴 21-10 (Nico: «impacto visual real en todo»): el encabezado editorial.
+        Título grande y liviano con el interletrado cerrado de la marca (30 px en
+        el celular, 40 en escritorio), la sección en mono con aire, y la línea de
+        para qué sirve en texto de lectura (15 px), no en el gris chico de antes.
+        Es la pieza que comparten ~250 pantallas: el cambio se ve en todas.
+      */}
+      <div className="min-w-0 space-y-2">
+        {seccion ? (
+          <SectionLabel className="tracking-[0.14em] text-fg-subtle">{seccion}</SectionLabel>
+        ) : null}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h1 className="text-h2 text-fg">{titulo}</h1>
+          <h1 className="text-[30px] font-[420] leading-[1.08] tracking-[-0.025em] text-fg lg:text-[40px]">{titulo}</h1>
           {junto}
         </div>
         {descripcion ? (
-          <p className="max-w-2xl text-body-sm text-fg-muted">{descripcion}</p>
+          <p className="max-w-2xl text-[15px] leading-relaxed text-fg-muted">{descripcion}</p>
         ) : null}
       </div>
       {hayAcciones ? (

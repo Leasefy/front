@@ -77,18 +77,20 @@ function SectionCard({ title, icon, children, className }: SectionCardProps) {
     // Sin entrada propia: la ficha entera entra con su `CrossFade` al llegar
     // de la carga (y con el `template.tsx` al navegar).
     <div
+      // 21-10 (impacto visual): superficie elevada sin borde duro, el título liviano
+      // con su ícono suelto (sin la cajita gris), y aire de lectura adentro.
       className={cn(
-        'rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden',
+        'overflow-hidden rounded-[24px] border border-border-faint bg-surface shadow-[0_1px_2px_rgba(20,19,15,0.04),0_10px_28px_-18px_rgba(20,19,15,0.16)] dark:border-border-strong dark:bg-bg',
         className
       )}
     >
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-border-faint dark:border-border-strong">
-        <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle">
+      <div className="flex items-center gap-2.5 px-6 pb-1 pt-5 text-fg-subtle">
+        <span className="flex h-5 w-5 items-center justify-center [&>svg]:h-[18px] [&>svg]:w-[18px]" aria-hidden="true">
           {icon}
-        </div>
-        <h3 className="font-semibold text-fg">{title}</h3>
+        </span>
+        <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">{title}</h3>
       </div>
-      <div className="p-5">{children}</div>
+      <div className="px-6 pb-6 pt-4">{children}</div>
     </div>
   );
 }
@@ -109,14 +111,14 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.fullAddress')}</p>
+            <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.fullAddress')}</p>
             <p className="text-sm font-medium text-fg flex items-start gap-1.5">
               <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-fg-subtle" />
               {consignacion.propertyAddress}
             </p>
           </div>
           <div>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.zoneCity')}</p>
+            <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.zoneCity')}</p>
             <p className="text-sm font-medium text-fg">
               {barrioYCiudad(consignacion.propertyZone, consignacion.propertyCity) || '—'}
             </p>
@@ -125,7 +127,7 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
 
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-3 border-t border-border-faint dark:border-border-strong">
           <div>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.contractStartDate')}</p>
+            <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.contractStartDate')}</p>
             <p className="text-sm font-medium text-fg flex items-center gap-1.5">
               <CalendarBlank className="w-4 h-4 text-fg-subtle" />
               {formatDate(consignacion.contractDate)}
@@ -133,7 +135,7 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
           </div>
           {consignacion.contractEndDate && (
             <div>
-              <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.contractEndDate')}</p>
+              <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.contractEndDate')}</p>
               <p className="text-sm font-medium text-fg flex items-center gap-1.5">
                 <CalendarBlank className="w-4 h-4 text-fg-subtle" />
                 {formatDate(consignacion.contractEndDate)}
@@ -143,7 +145,7 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
           {/* `> 0` y no `&&` a secas: con `0` React pinta el «0» suelto. */}
           {!!consignacion.minimumTerm && consignacion.minimumTerm > 0 && (
             <div>
-              <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.minimumTerm')}</p>
+              <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.minimumTerm')}</p>
               <p className="text-sm font-medium text-fg">
                 {consignacion.minimumTerm} {t('inmobiliaria.consignaciones.detail.months')}
               </p>
@@ -771,14 +773,14 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
           <div className="grid grid-cols-2 gap-3">
             {consignacion.leaseEndDate && (
               <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
-                <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.leaseEnd')}</p>
+                <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.leaseEnd')}</p>
                 <p className="text-sm font-medium text-fg">
                   {formatDate(consignacion.leaseEndDate)}
                 </p>
               </div>
             )}
             <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
-              <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.monthlyRentLabel')}</p>
+              <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{t('inmobiliaria.consignaciones.detail.monthlyRentLabel')}</p>
               <p className="text-sm font-medium text-fg">
                 {/* A SALE mandate can never have `availability: 'RENTED'`
                     (contract-addendum-2.md §A.7 rule R4), so `monthlyRent`

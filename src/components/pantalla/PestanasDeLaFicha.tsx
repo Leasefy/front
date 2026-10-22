@@ -109,7 +109,7 @@ export function PestanasDeLaFicha<Id extends string>({
         {pestanas.map((p) => (
           // En una línea siempre: a 390 px «Cobro y reglas» se partía en dos y la
           // segunda quedaba cortada. La barra se desliza (TabsList), no se parte.
-          <TabsTrigger key={p.id} value={p.id} data-testid={`pestana-${p.id}`} className="shrink-0 whitespace-nowrap">
+          <TabsTrigger key={p.id} value={p.id} data-testid={`pestana-${p.id}`} className="shrink-0 whitespace-nowrap text-[15px]">
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
               {p.etiqueta}
               {typeof p.cuenta === 'number' ? (

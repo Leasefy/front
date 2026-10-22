@@ -82,9 +82,11 @@ function findViewPortalButton(): HTMLButtonElement | undefined {
 }
 
 describe('<ConsignacionHeader> — property thumbnail', () => {
-  it('shows the placeholder icon when no photo is available yet', () => {
+  it('sin foto: la portada es el 3D de la casa con «Agregar fotos» (21-10), no una foto', () => {
     render();
-    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('[data-testid="portada-sin-foto"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="portada-agregar-fotos"]')?.getAttribute('href')).toBe('#fotos');
+    expect(container.querySelector('[data-testid="portada-abrir"]')).toBeNull();
   });
 
   it('renders the property photo when propertyThumbnailUrl is provided', () => {
@@ -96,7 +98,7 @@ describe('<ConsignacionHeader> — property thumbnail', () => {
 
   it('falls back to the placeholder when the property has zero photos', () => {
     render({ propertyThumbnailUrl: '' });
-    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('[data-testid="portada-sin-foto"]')).not.toBeNull();
   });
 });
 

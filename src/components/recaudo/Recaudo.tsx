@@ -317,17 +317,18 @@ export function Recaudo() {
     <div className="space-y-6">
       {/* ── El mes ─────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2" data-testid="selector-de-mes">
+        {/* Ronda 12: el mismo selector de mes que el Tablero (píldora con flechas). */}
+        <div className="flex items-center gap-1 rounded-full border border-border bg-surface px-1 py-0.5" data-testid="selector-de-mes">
           <Button
-            variant="secondary"
-            size="sm"
+            variant="ghost"
+            size="icon"
             hideArrow
             aria-label={tr("Mes anterior")}
             onClick={() => setMonth(sumarMeses(month, -1))}
           >
             <CaretLeft className="h-4 w-4" aria-hidden="true" />
           </Button>
-          <p className="min-w-[11rem] text-center font-mono text-sm tabular-nums" data-testid="mes-en-foco">
+          <p className="min-w-[10.5rem] text-center text-sm font-medium text-fg" data-testid="mes-en-foco">
             {/* El mes nuevo entra con un fundido; las cifras de abajo cuentan
                 desde las del mes anterior. */}
             <Appear as="span" key={month} direction="none">
@@ -335,8 +336,8 @@ export function Recaudo() {
             </Appear>
           </p>
           <Button
-            variant="secondary"
-            size="sm"
+            variant="ghost"
+            size="icon"
             hideArrow
             aria-label={tr("Mes siguiente")}
             disabled={!puedeAvanzar}

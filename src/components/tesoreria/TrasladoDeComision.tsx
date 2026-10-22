@@ -272,11 +272,14 @@ export function TrasladoDeComisionPanel() {
                 dice «Agosto de 2026» y no deja pasar de hoy. */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-fg">Qué habría que trasladar</h2>
-            <SelectorDeMes
-              mes={periodo}
-              onCambiar={setPeriodo}
-              testId="periodo-del-traslado"
-            />
+            {/* Ronda 12: la misma píldora que el Tablero y Recaudo. */}
+            <div className="rounded-full border border-border bg-surface px-1 py-0.5">
+              <SelectorDeMes
+                mes={periodo}
+                onCambiar={setPeriodo}
+                testId="periodo-del-traslado"
+              />
+            </div>
           </div>
 
           {propuesta ? <Propuesta propuesta={propuesta} plata={plata} /> : null}

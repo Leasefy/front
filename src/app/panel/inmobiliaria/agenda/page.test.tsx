@@ -309,13 +309,13 @@ describe('A3 — sin `operaciones:edit` no se dibuja lo que el back rechaza con 
     expect(container.querySelector('[data-testid="agenda-fila"]')).not.toBeNull()
   })
 
-  it('CONTADOR/VIEWER con la agenda vacía: el vacío no ofrece «Agendar una visita»', async () => {
+  it('CONTADOR/VIEWER con la agenda vacía: el vacío no ofrece «Agendar visita»', async () => {
     _puedeEditar = false
     getAgendaMock.mockResolvedValue(AGENDA_VACIA)
     await montar()
 
     expect(container.textContent).toContain('emptyTitle')
-    expect(container.textContent).not.toContain('Agendar una visita')
+    expect(container.textContent).not.toContain('Agendar visita')
   })
 
   it('AG-11 (04-10-2026): la asesora (pipeline sin operaciones) también agenda y crea tareas', async () => {

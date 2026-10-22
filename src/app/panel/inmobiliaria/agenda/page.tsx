@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { toast } from '@/components/ui/toast';
 import { CalendarBlank, CalendarPlus, Plus, CaretLeft, CaretRight, Check } from '@phosphor-icons/react';
@@ -39,10 +40,10 @@ import { tareaIdOf, type VistaDeAgenda } from '@/lib/api/agenda.types';
 
 /** Resumen por tipo de evento — color por tipo (estático). */
 const RESUMEN_ITEMS: { key: string; tono?: TonoDeCifra; field: keyof typeof RESUMEN_AGENDA_VACIO }[] = [
-  { key: 'visitas', tono: 'voltaje', field: 'visitas' },
+  { key: 'visitas', field: 'visitas' },
   { key: 'firmas', tono: 'aviso', field: 'firmasPendientes' },
   { key: 'vencimientos', tono: 'peligro', field: 'vencimientos' },
-  { key: 'seguimientos', tono: 'voltaje', field: 'seguimientos' },
+  { key: 'seguimientos', field: 'seguimientos' },
   { key: 'inspecciones', field: 'inspecciones' },
   { key: 'tareas', field: 'tareas' },
 ];
@@ -392,6 +393,86 @@ function AgendaContent() {
     return d;
   });
 
+
+  /*
+   * Lo que se hace con cada evento, el mismo en la fila y en la tarjeta del celular (revisora r23, Agenda #1 y #2:
+   * lo atrasado tiene que poder cerrarse, y a 390 ninguna tarjeta tenía acción). Un fin de contrato o una firma
+   * pendiente llevan a su contrato (renovar, terminar o firmar); la visita y la tarea, sus acciones de siempre.
+   */
+  const accionesDe = (e: EventoAgenda) => (
+    <>
+      {(e.tipo === 'vencimiento_contrato' || e.tipo === 'firma_pendiente') && e.vinculoTipo === 'contrato' && e.vinculoId ? (
+        <Button asChild variant="link" size="sm" className="h-auto px-0 text-caption font-medium">
+          <Link
+            href={`/panel/inmobiliaria/contratos/${encodeURIComponent(e.vinculoId)}`}
+            onClick={(ev) => ev.stopPropagation()}
+            data-testid="agenda-ver-contrato"
+          >
+            Ver contrato
+          </Link>
+        </Button>
+      ) : null}
+      {puedeEditar && e.tipo === 'visita' && e.estadoRaw === 'PENDING' && (
+        <span className="flex items-center gap-1.5">
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            disabled={actingId === visitIdOf(e.id)}
+            // AG-06: sin asesor, confirmar abre el cajón para elegirlo.
+            onClick={(ev) => {
+              ev.stopPropagation();
+              if (e.sinAsesor) {
+                setSeleccionado(e);
+                return;
+              }
+              void runCitaAction(visitIdOf(e.id), () => agendaApi.aceptarCita(visitIdOf(e.id)));
+            }}
+            className="h-auto px-0 text-caption font-medium text-success"
+          >
+            {t(k('citaConfirmar'))}
+          </Button>
+          <span className="text-border">·</span>
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            disabled={actingId === visitIdOf(e.id)}
+            onClick={(ev) => { ev.stopPropagation(); setErrorDelMotivo(null); setMotivoDe({ visitId: visitIdOf(e.id), cual: 'rechazar' }); }}
+            className="h-auto px-0 text-caption font-medium text-danger"
+          >
+            {t(k('citaRechazar'))}
+          </Button>
+        </span>
+      )}
+      {puedeEditar && e.tipo === 'visita' && e.estadoRaw === 'ACCEPTED' && (
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          disabled={actingId === visitIdOf(e.id)}
+          onClick={(ev) => { ev.stopPropagation(); setErrorDelMotivo(null); setMotivoDe({ visitId: visitIdOf(e.id), cual: 'cancelar' }); }}
+          className="h-auto px-0 text-caption font-medium text-fg-muted"
+        >
+          {t(k('citaCancelar'))}
+        </Button>
+      )}
+      {puedeEditar && e.tipo === 'tarea' && e.estadoRaw === 'PENDIENTE' && (
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          disabled={actingId === tareaIdOf(e.id)}
+          onClick={(ev) => { ev.stopPropagation(); void completarTarea(e); }}
+          className="h-auto gap-1 px-0 text-caption font-medium text-success"
+          data-testid="tarea-hecha-fila"
+        >
+          <Check className="h-3.5 w-3.5" weight="bold" />
+          Hecha
+        </Button>
+      )}
+    </>
+  );
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Ronda 22: el encabezado de todas las pantallas (sección · título · una línea | la secundaria y la única azul). */}
@@ -496,7 +577,7 @@ function AgendaContent() {
       {/* Resumen por tipo */}
       <section className="space-y-3">
         <SectionLabel>
-          {pestana === 'vencidas' ? 'Vencidas' : pestana === 'hechas' ? 'Hechas (última semana)' : pestana === 'semana' ? 'Esta semana' : t(k('resumenLabel'))}
+          {pestana === 'vencidas' ? 'Atrasadas' : pestana === 'hechas' ? 'Hechas (última semana)' : pestana === 'semana' ? 'Esta semana' : t(k('resumenLabel'))}
         </SectionLabel>
         {/* Cadence 2: los seis tipos en UNA franja (antes, seis tarjetas sueltas). */}
         <FranjaDeCifras data-testid="agenda-resumen">
@@ -613,7 +694,7 @@ function AgendaContent() {
                   icono={CalendarBlank}
                   titulo={pestana === 'vencidas' ? 'Nada vencido' : pestana === 'hechas' ? 'Nada hecho esta semana' : t(k('emptyTitle'))}
                   descripcion={pestana === 'proximas' ? t(k('emptyDesc')) : ''}
-                  crear={puedeEditar && pestana === 'proximas' ? { label: 'Agendar una visita', onClick: () => setCitaOpen(true) } : undefined}
+                  crear={puedeEditar && pestana === 'proximas' ? { label: 'Agendar visita', onClick: () => setCitaOpen(true) } : undefined}
                 />
               </li>
             ) : (
@@ -629,7 +710,7 @@ function AgendaContent() {
                           className="bg-surface-muted/50 px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle"
                           data-testid="agenda-grupo-tarjetas"
                         >
-                          {NOMBRE_DEL_GRUPO[grupo]} · {eventos.filter((x) => grupoDelDia(x.fecha) === grupo).length}
+                          {NOMBRE_DEL_GRUPO[grupo]}
                         </li>,
                       ]
                     : []),
@@ -652,12 +733,16 @@ function AgendaContent() {
                         <span className="block truncate text-caption text-fg-muted">{e.responsableNombre}</span>
                       )}
                     </span>
-                    {conEstadoVisible(e) ? (
+                    {conEstadoVisible(e) && !(pestana === 'vencidas' && e.estado === 'vencido') ? (
                       <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-caption font-medium', ESTADO_BADGE[e.estado])}>
                         {t(k(`estado_${e.estado}`))}
                       </span>
                     ) : null}
                   </button>
+                  {/* Revisora r23 (Agenda #2): la acción también en la tarjeta, al pie y a la derecha. */}
+                  <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 px-4 pb-3 empty:hidden" data-testid="agenda-tarjeta-acciones">
+                    {accionesDe(e)}
+                  </div>
                 </li>,
                 ];
               })
@@ -686,7 +771,7 @@ function AgendaContent() {
                       descripcion={pestana === 'proximas' ? t(k('emptyDesc')) : ''}
                       crear={
                         puedeEditar && pestana === 'proximas'
-                          ? { label: 'Agendar una visita', onClick: () => setCitaOpen(true) }
+                          ? { label: 'Agendar visita', onClick: () => setCitaOpen(true) }
                           : undefined
                       }
                     />
@@ -706,7 +791,7 @@ function AgendaContent() {
                               colSpan={COLUMNS.length}
                               className="bg-surface-muted/50 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle"
                             >
-                              {NOMBRE_DEL_GRUPO[grupo]} · {eventos.filter((x) => grupoDelDia(x.fecha) === grupo).length}
+                              {NOMBRE_DEL_GRUPO[grupo]}
                             </TableCell>
                           </TableRowAnimada>,
                         ]
@@ -760,70 +845,12 @@ function AgendaContent() {
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        {conEstadoVisible(e) ? (
+                        {conEstadoVisible(e) && !(pestana === 'vencidas' && e.estado === 'vencido') ? (
                           <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium', ESTADO_BADGE[e.estado])}>
                             {t(k(`estado_${e.estado}`))}
                           </span>
                         ) : null}
-                        {puedeEditar && e.tipo === 'visita' && e.estadoRaw === 'PENDING' && (
-                          <span className="flex items-center gap-1.5">
-                            <Button
-                              type="button"
-                              variant="link"
-                              size="sm"
-                              disabled={actingId === visitIdOf(e.id)}
-                              // AG-06: sin asesor, confirmar abre el cajón para elegirlo.
-                              onClick={(ev) => {
-                                ev.stopPropagation();
-                                if (e.sinAsesor) {
-                                  setSeleccionado(e);
-                                  return;
-                                }
-                                void runCitaAction(visitIdOf(e.id), () => agendaApi.aceptarCita(visitIdOf(e.id)));
-                              }}
-                              className="h-auto px-0 text-caption font-medium text-success"
-                            >
-                              {t(k('citaConfirmar'))}
-                            </Button>
-                            <span className="text-border">·</span>
-                            <Button
-                              type="button"
-                              variant="link"
-                              size="sm"
-                              disabled={actingId === visitIdOf(e.id)}
-                              onClick={(ev) => { ev.stopPropagation(); setErrorDelMotivo(null); setMotivoDe({ visitId: visitIdOf(e.id), cual: 'rechazar' }); }}
-                              className="h-auto px-0 text-caption font-medium text-danger"
-                            >
-                              {t(k('citaRechazar'))}
-                            </Button>
-                          </span>
-                        )}
-                        {puedeEditar && e.tipo === 'visita' && e.estadoRaw === 'ACCEPTED' && (
-                          <Button
-                            type="button"
-                            variant="link"
-                            size="sm"
-                            disabled={actingId === visitIdOf(e.id)}
-                            onClick={(ev) => { ev.stopPropagation(); setErrorDelMotivo(null); setMotivoDe({ visitId: visitIdOf(e.id), cual: 'cancelar' }); }}
-                            className="h-auto px-0 text-caption font-medium text-fg-muted"
-                          >
-                            {t(k('citaCancelar'))}
-                          </Button>
-                        )}
-                        {puedeEditar && e.tipo === 'tarea' && e.estadoRaw === 'PENDIENTE' && (
-                          <Button
-                            type="button"
-                            variant="link"
-                            size="sm"
-                            disabled={actingId === tareaIdOf(e.id)}
-                            onClick={(ev) => { ev.stopPropagation(); void completarTarea(e); }}
-                            className="h-auto gap-1 px-0 text-caption font-medium text-success"
-                            data-testid="tarea-hecha-fila"
-                          >
-                            <Check className="h-3.5 w-3.5" weight="bold" />
-                            Hecha
-                          </Button>
-                        )}
+                        {accionesDe(e)}
                       </div>
                     </TableCell>
                   </TableRowAnimada>,

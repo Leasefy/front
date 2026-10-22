@@ -208,7 +208,7 @@ describe('VisitasClient', () => {
     )
     await pintar()
     const boton = $('[data-testid="no-show-temprana"]')
-    expect(boton?.textContent).toContain('sí llegó')
+    expect(boton?.textContent).toContain('Sí llegó (deshacer)')
     await act(async () => {
       ;(boton as HTMLElement).dispatchEvent(
         new MouseEvent('click', { bubbles: true }),

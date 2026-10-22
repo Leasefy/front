@@ -381,8 +381,9 @@ export function VisitasClient() {
           {vencidas.length > 0
             ? 'Fuera de las vencidas, no hay visitas en los próximos 7 días ni recordatorios por mandar.'
             : 'Nada por preparar: no hay visitas en los próximos 7 días ni recordatorios por mandar.'}
+          {/* Revisora r23 (Preparar visitas #2): el enlace dice a dónde lleva; agendar se hace desde la ficha del interesado. */}
           <Link href="/panel/inmobiliaria/pipeline" className="font-medium text-primary underline-offset-4 hover:underline">
-            Agendar una visita
+            Ir a Prospección
           </Link>
         </p>
       ) : (
@@ -527,7 +528,7 @@ export function VisitasClient() {
                         onClick={() => void noShow(v.visitId, v.noShow)}
                         data-testid={`no-show-${v.visitId}`}
                       >
-                        {v.noShow ? 'No, sí llegó' : 'No llegó'}
+                        {v.noShow ? 'Sí llegó (deshacer)' : 'No llegó'}
                       </Button>
                     ) : null}
                   </StaggerItem>

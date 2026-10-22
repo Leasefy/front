@@ -58,7 +58,7 @@ export function SidebarThemeToggle({ collapsed = false, labels }: SidebarThemeTo
         onClick={() => setTheme(next)}
         title={next === 'dark' ? l.dark : l.light}
         aria-label={next === 'dark' ? l.dark : l.light}
-        className="flex items-center justify-center w-full px-2.5 py-2.5 rounded-full text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
+        className="mx-auto grid h-10 w-10 place-items-center rounded-[12px] text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
       >
         <Icon className="w-[18px] h-[18px]" />
       </button>
@@ -69,7 +69,8 @@ export function SidebarThemeToggle({ collapsed = false, labels }: SidebarThemeTo
     <div
       role="group"
       aria-label={l.group}
-      className="inline-flex items-center gap-0.5 p-0.5 rounded-full bg-surface-muted"
+      // C7 (plan de la barra, 22-10): con la esquina de la casa y un filete (en arena el gris desaparecía).
+      className="inline-flex items-center gap-0.5 rounded-[10px] p-0.5 ring-1 ring-inset ring-border"
     >
       {(['light', 'dark'] as const).map((m) => {
         const Icon = m === 'light' ? Sun : Moon;
@@ -83,10 +84,10 @@ export function SidebarThemeToggle({ collapsed = false, labels }: SidebarThemeTo
             aria-label={m === 'light' ? l.light : l.dark}
             title={m === 'light' ? l.light : l.dark}
             className={cn(
-              'flex items-center justify-center w-7 h-7 rounded-full transition-colors',
+              'flex h-6 w-7 items-center justify-center rounded-[8px] transition-colors',
               isActive
-                ? 'bg-surface text-fg shadow-sm'
-                : 'text-fg-muted hover:text-fg'
+                ? 'bg-surface text-fg'
+                : 'text-fg-subtle hover:text-fg'
             )}
           >
             <Icon className="w-4 h-4" weight={isActive ? 'fill' : 'regular'} />

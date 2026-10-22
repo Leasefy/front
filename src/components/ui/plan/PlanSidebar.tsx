@@ -1173,14 +1173,15 @@ export function SidebarContent({
           )}
           {/* Ayuda y tema comparten fila: son los dos ajustes de chrome, y así
               el pie no crece una línea más por cada uno. */}
-          <div className="flex items-center gap-2">
+          {/* C7 (plan de la barra, 22-10): el pie en la misma retícula del menú, con la esquina de la casa. */}
+          <div className="flex items-center gap-2 border-t border-border-faint pt-2">
             {ayudaHref ? (
               <Link
                 href={ayudaHref}
                 onClick={onItemClick}
-                className="flex flex-1 items-center gap-3 px-3 py-2 rounded-full text-[13px] text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
+                className="flex h-8 flex-1 items-center gap-[10px] rounded-[12px] px-[10px] text-[14px] text-fg transition-colors hover:bg-surface-hover"
               >
-                <Question className="w-[18px] h-[18px]" />
+                <Question className="h-4 w-4 text-fg-subtle" />
                 <span>{tr('Ayuda')}</span>
               </Link>
             ) : (

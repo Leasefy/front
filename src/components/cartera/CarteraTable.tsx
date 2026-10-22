@@ -93,6 +93,7 @@ import {
   CLAVE_DE_MORA,
   interesDe,
   totalConInteres,
+  interesPendiente,
 } from './interes-de-mora'
 import { cn } from '@/lib/utils'
 import { sinMayusculasSostenidas } from '@/lib/inmuebles/titulo-de-la-ficha'
@@ -542,7 +543,7 @@ function FilaDeCartera({
 
       {/* Saldo: el pendiente manda; el abono va debajo sólo si lo hubo. */}
       {/* Ronda 12 (390): sin intereses, «Debe» es igual al Total: en el celular sólo el Total. */}
-      <TableCell className={cn('align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left', !interesDe(item) && item.paidAmount === 0 && 'max-md:hidden')} data-rotulo={t('cartera.tabla.debe')}>
+      <TableCell className={cn('align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left', interesPendiente(item) === 0 && item.paidAmount === 0 && 'max-md:hidden')} data-rotulo={t('cartera.tabla.debe')}>
         <div className="whitespace-nowrap">
           <div className="font-mono font-medium tabular-nums text-fg">
             {formatCurrency(item.pendingAmount)}

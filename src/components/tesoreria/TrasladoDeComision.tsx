@@ -253,7 +253,9 @@ export function TrasladoDeComisionPanel() {
 
           {propuesta ? <Propuesta propuesta={propuesta} /> : null}
 
-          {propuesta?.hayQueTrasladar && propuesta.disponible ? (
+          {/* Revisión de Dinero (22-10): con un traslado ya propuesto, la tarea es aprobarlo (arriba);
+              proponer otro competía como segunda acción principal. */}
+          {propuesta?.hayQueTrasladar && propuesta.disponible && !(lista?.propuestos.length) ? (
             <Button
               onClick={() => void proponer()}
               disabled={trabajando}

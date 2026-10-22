@@ -40,6 +40,61 @@ async function firstVisible(locator: Locator): Promise<Locator | null> {
   return null;
 }
 
+/**
+ * The panel shell paints a full-screen "waiting" veil while the session / permissions load; the
+ * whole app is behind it (and out of the accessibility tree) until it goes away.
+ */
+async function waitForShellVeil(page: Page, timeoutMs = 25_000): Promise<void> {
+  await page
+    .waitForFunction(() => !document.querySelector('[data-testid="muro-esperando-estado"]'), undefined, {
+      timeout: timeoutMs,
+    })
+    .catch(() => {});
+}
+
+/**
+ * Looks for the navigation toggles with auto-retry: a slow `next dev` can take several seconds
+ * to hydrate the header after the veil is gone, and a one-shot lookup reported "toggle missing"
+ * for pages that were simply not ready.
+ */
+async function findNavigationToggles(
+  page: Page,
+  timeoutMs = 10_000,
+): Promise<{ hamburger: Locator | null; more: Locator | null }> {
+  await waitForShellVeil(page);
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const hamburger = await firstVisible(page.getByRole('button', { name: NAV_TRIGGER }));
+    const more = await firstVisible(
+      page.locator('nav[aria-label="Mobile navigation"] button[aria-haspopup="dialog"]'),
+    );
+    if (hamburger || more || Date.now() >= deadline) return { hamburger, more };
+    await page.waitForTimeout(400);
+  }
+}
+
+/**
+ * Opens the collapsed accordion groups of a freshly opened drawer through their own
+ * `aria-expanded="false"` trigger, so the items inside are rendered and get audited. Only
+ * buttons INSIDE the open dialog (never the page behind it), not in the pre-open snapshot, without a popup, and
+ * whose label is not an action word are touched. Nothing is submitted.
+ */
+async function expandCollapsedGroups(page: Page, max = 14): Promise<void> {
+  for (let i = 0; i < max; i++) {
+    const trigger = await firstVisible(
+      page.locator(`[role=dialog] button[aria-expanded="false"]:not([aria-haspopup]):not([${NAV_MARK}])`),
+    );
+    if (!trigger) return;
+    const label =
+      ((await trigger.getAttribute('aria-label')) ?? '') + ' ' + ((await trigger.innerText().catch(() => '')) ?? '');
+    // Whatever happens next, never look at this button again (also keeps the loop finite).
+    await trigger.evaluate((el, attr) => el.setAttribute(attr, '1'), NAV_MARK).catch(() => {});
+    if (ACTION_WORDS.test(label)) continue;
+    await trigger.click({ timeout: 2500 }).catch(() => {});
+    await page.waitForTimeout(450); // accordion animation
+  }
+}
+
 async function closeOverlay(page: Page): Promise<boolean> {
   await page.keyboard.press('Escape').catch(() => {});
   await page.waitForTimeout(550);
@@ -67,11 +122,8 @@ export async function checkMobileNavigation(page: Page): Promise<Finding[]> {
   const findings: Finding[] = [];
   const triggers: Array<{ name: string; locator: Locator }> = [];
 
-  const hamburger = await firstVisible(page.getByRole('button', { name: NAV_TRIGGER }));
+  const { hamburger, more } = await findNavigationToggles(page);
   if (hamburger) triggers.push({ name: 'navigation toggle', locator: hamburger });
-  const more = await firstVisible(
-    page.locator('nav[aria-label="Mobile navigation"] button[aria-haspopup="dialog"]'),
-  );
   if (more) triggers.push({ name: 'bottom-bar "More"', locator: more });
 
   if (!triggers.length) {
@@ -79,7 +131,7 @@ export async function checkMobileNavigation(page: Page): Promise<Finding[]> {
       type: 'nav-missing',
       severity: 'hard',
       detail:
-        'No navigation toggle found on a narrow viewport (looked for a button named "Menú" / "Abrir menú…" and for the bottom-bar "More" button).',
+        'No navigation toggle found on a narrow viewport after the loading veil went away and a 10s wait (looked for a button named "Menú" / "Abrir menú…" and for the bottom-bar "More" button).',
     });
     return findings;
   }
@@ -98,6 +150,7 @@ export async function checkMobileNavigation(page: Page): Promise<Finding[]> {
       continue;
     }
     await page.waitForTimeout(700); // drawer / sheet animation
+    await expandCollapsedGroups(page);
     const report = await page.evaluate(auditRevealedItems, NAV_MARK);
     if (report.total === 0) {
       findings.push({

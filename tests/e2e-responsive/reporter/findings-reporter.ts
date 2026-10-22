@@ -67,6 +67,7 @@ const TYPE_TITLES: Record<string, string> = {
   'content-under-fixed': 'Content hidden under fixed bars (soft)',
   'page-error': 'Page errors (not layout)',
   redirected: 'Redirected routes (informational)',
+  'forbidden-for-role': 'Forbidden for this role (informational, not measured)',
   note: 'Notes',
   'blocked-mutation': 'Requests blocked by the read-only guard',
   'suite-error': 'Suite errors (the check itself crashed or timed out)',
@@ -109,6 +110,7 @@ export default class FindingsReporter implements Reporter {
     if (project.startsWith('setup')) {
       for (const a of test.annotations) {
         if (a.type === 'auth-failed') this.setupNotes.push(`Login failed - ${a.description}`);
+        if (a.type === 'warm-up') this.setupNotes.push(`Warm-up - ${a.description}`);
         if (a.type === 'skip' && a.description) this.setupNotes.push(`${test.title}: skipped - ${a.description}`);
       }
       if (result.status === 'failed' || result.status === 'timedOut') {
@@ -303,7 +305,7 @@ export default class FindingsReporter implements Reporter {
     for (const type of order) {
       const c = json.countsByType[type];
       if (!c) continue;
-      L.push(`| ${TYPE_TITLES[type]} | ${hardTypes.has(type) ? 'hard' : type === 'redirected' || type === 'blocked-mutation' || type === 'note' ? 'info' : 'soft'} | ${c.occurrences} | ${c.routes} |`);
+      L.push(`| ${TYPE_TITLES[type]} | ${hardTypes.has(type) ? 'hard' : type === 'redirected' || type === 'forbidden-for-role' || type === 'blocked-mutation' || type === 'note' ? 'info' : 'soft'} | ${c.occurrences} | ${c.routes} |`);
     }
     L.push('');
 

@@ -84,3 +84,36 @@ export function readResolved(id: PersonaId): Record<string, { path: string | nul
 export function statusFile(id: PersonaId): string {
   return path.join(AUTH_DIR, `${id}.status.json`);
 }
+
+/** A valid, empty state: used for anonymous and for personas that could not log in. */
+export const EMPTY_STATE_FILE = path.join(AUTH_DIR, '_empty.json');
+
+/** True when a storageState holds the Supabase session (cookie or localStorage token). */
+export function hasSupabaseSession(state: unknown): boolean {
+  const s = state as {
+    cookies?: Array<{ name: string; value: string }>;
+    origins?: Array<{ localStorage?: Array<{ name: string; value: string }> }>;
+  } | null;
+  if (!s || typeof s !== 'object') return false;
+  const token = /^sb-.+-auth-token/;
+  if ((s.cookies ?? []).some((c) => token.test(c.name) && c.value.length > 20)) return true;
+  return (s.origins ?? []).some((o) => (o.localStorage ?? []).some((l) => token.test(l.name) && l.value.length > 20));
+}
+
+/**
+ * The storageState a persona's tests run with: its saved session when that file is valid,
+ * otherwise an empty state (the spec then skips the persona using its status file). The saved
+ * file is never created empty or overwritten by a failed login.
+ */
+export function storageStateFor(persona: Persona): string {
+  if (persona.envPrefix) {
+    try {
+      if (hasSupabaseSession(JSON.parse(fs.readFileSync(authFile(persona.id), 'utf8')))) return authFile(persona.id);
+    } catch {
+      // Missing or half-written: fall through to the empty state.
+    }
+  }
+  fs.mkdirSync(AUTH_DIR, { recursive: true });
+  if (!fs.existsSync(EMPTY_STATE_FILE)) fs.writeFileSync(EMPTY_STATE_FILE, JSON.stringify({ cookies: [], origins: [] }));
+  return EMPTY_STATE_FILE;
+}

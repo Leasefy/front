@@ -12,6 +12,7 @@ export type FindingType =
   | 'content-under-fixed'
   | 'page-error'
   | 'redirected'
+  | 'forbidden-for-role'
   | 'blocked-mutation'
   | 'note'
   | 'suite-error';

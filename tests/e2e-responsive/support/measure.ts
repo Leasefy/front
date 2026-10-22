@@ -30,6 +30,8 @@ export interface ClippedItem {
   text: string;
   scroll: number;
   client: number;
+  /** The full text is available some other way (title / aria-label). */
+  titled: boolean;
 }
 
 export interface FixedPair {
@@ -91,6 +93,25 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
     }
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0;
+  };
+
+  /**
+   * True when the element sits inside an ancestor that hides it for good: aria-hidden / inert,
+   * or an `overflow: hidden|clip` box with no area (a collapsed accordion group) or that does
+   * not intersect the element at all. Deliberately conservative: a partly clipped element
+   * (a truncated breadcrumb) is NOT "clipped away", so real occlusion keeps being measured.
+   */
+  const clippedAway = (e: Element): boolean => {
+    const r = e.getBoundingClientRect();
+    for (let n = e.parentElement; n && n !== document.body && n !== de; n = n.parentElement) {
+      if (n.getAttribute('aria-hidden') === 'true' || n.hasAttribute('inert')) return true;
+      const cs = getComputedStyle(n);
+      if (!/(hidden|clip)/.test(cs.overflowX + ' ' + cs.overflowY)) continue;
+      const nr = n.getBoundingClientRect();
+      if (nr.height < 2 || nr.width < 2) return true;
+      if (r.bottom <= nr.top + 1 || r.top >= nr.bottom - 1 || r.right <= nr.left + 1 || r.left >= nr.right - 1) return true;
+    }
+    return false;
   };
 
   const part = (e: Element): string => {
@@ -196,14 +217,21 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
   const hasOwnText = (e: Element): boolean =>
     Array.from(e.childNodes).some((n) => n.nodeType === 3 && (n.textContent ?? '').trim().length > 1);
   const clipped: ClippedItem[] = [];
+  // Visually hidden by design (skip links, screen-reader-only announcements): not a layout bug.
+  const HIDDEN_BY_DESIGN = '.sr-only,.skip-link,[class*="skip-link"],[class*="visually-hidden"],[class*="sr-only"]';
   for (const e of all as HTMLElement[]) {
     if (!hasOwnText(e) || !visible(e)) continue;
+    if (e.matches(HIDDEN_BY_DESIGN) || e.closest(HIDDEN_BY_DESIGN)) continue;
+    const box = e.getBoundingClientRect();
+    if (box.width < 8 || box.height < 8) continue; // 1px accessibility elements
+    if (clippedAway(e)) continue;
     const cs = getComputedStyle(e);
     if (cs.display === 'inline') continue;
     const lineClamp = cs.getPropertyValue('-webkit-line-clamp');
     if (lineClamp && lineClamp !== 'none') continue;
     const hidesX = /(hidden|clip)/.test(cs.overflowX);
     const hidesY = /(hidden|clip)/.test(cs.overflowY);
+    const titled = !!(e.getAttribute('title') || e.getAttribute('aria-label') || e.closest('[title]'));
     if (hidesX && cs.textOverflow !== 'ellipsis' && e.scrollWidth > e.clientWidth + 2) {
       clipped.push({
         selector: sel(e),
@@ -211,6 +239,7 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
         text: (e.textContent ?? '').trim().slice(0, 40),
         scroll: e.scrollWidth,
         client: e.clientWidth,
+        titled,
       });
     } else if (hidesY && e.scrollHeight > e.clientHeight + 2 && e.clientHeight > 0) {
       clipped.push({
@@ -219,6 +248,7 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
         text: (e.textContent ?? '').trim().slice(0, 40),
         scroll: e.scrollHeight,
         client: e.clientHeight,
+        titled,
       });
     }
   }
@@ -233,6 +263,7 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
       if (getComputedStyle(e).pointerEvents === 'none') return false;
       const r = e.getBoundingClientRect();
       if (r.width <= 1 || r.height <= 1) return false; // sr-only / skip links
+      if (clippedAway(e)) return false; // collapsed accordion groups, off-canvas carousel items
       return visible(e);
     },
   );
@@ -354,6 +385,9 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
     if (!hit) return true;
     if (inPortal(hit)) return true; // Next dev indicator
     if (hit === el || el.contains(hit) || hit.contains(el)) return true;
+    // A sibling inside the same interactive ancestor (a span in the same <a>/<button>) is not an occluder.
+    const parentInteractive = el.parentElement?.closest(INTERACTIVE);
+    if (parentInteractive && parentInteractive.contains(hit)) return true;
     const label = el.closest('label');
     if (label && label.contains(hit)) return true;
     const hl = hit.closest('label') as HTMLLabelElement | null;
@@ -477,6 +511,33 @@ export function errorProbe(): PageErrorProbe {
   return { isError: false, reason: '' };
 }
 
+/**
+ * The access-denied card ("No tienes acceso a ...", PageGuard / AgentModuleGate): the persona's
+ * role does not include the screen, so there is no real layout to measure. Matched on a short
+ * visible block that STARTS with the phrase, so a sentence elsewhere on a normal page does not
+ * count.
+ */
+export function forbiddenProbe(): { forbidden: boolean; text: string } {
+  const nodes = Array.from(
+    document.querySelectorAll('h1,h2,h3,h4,[role=heading],[role=alert],[role=status],main p,main div'),
+  );
+  for (const n of nodes) {
+    const own = Array.from(n.childNodes)
+      .filter((c) => c.nodeType === 3)
+      .map((c) => c.textContent ?? '')
+      .join(' ')
+      .trim();
+    const full = ((n as HTMLElement).innerText ?? '').trim();
+    let text = '';
+    if (/^No tienes acceso\b/i.test(own)) text = own;
+    else if (/^No tienes acceso\b/i.test(full) && full.length < 160) text = full;
+    if (!text) continue;
+    const r = n.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) return { forbidden: true, text: text.replace(/\s+/g, ' ').slice(0, 100) };
+  }
+  return { forbidden: false, text: '' };
+}
+
 export interface OverlayReport {
   found: boolean;
   kind: string;
@@ -583,11 +644,28 @@ export function auditRevealedItems(attr: string): NavItemReport {
       .trim()
       .replace(/\s+/g, ' ')
       .slice(0, 40)}"`;
+  // Items inside a collapsed accordion group (overflow hidden, zero height) or an aria-hidden /
+  // inert subtree are not on screen: they are not "unreachable", they are closed.
+  const clippedAway = (e: Element): boolean => {
+    const r = e.getBoundingClientRect();
+    for (let n = e.parentElement; n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
+      if (n.getAttribute('aria-hidden') === 'true' || n.hasAttribute('inert')) return true;
+      const cs = getComputedStyle(n);
+      if (!/(hidden|clip)/.test(cs.overflowX + ' ' + cs.overflowY)) continue;
+      const nr = n.getBoundingClientRect();
+      if (nr.height < 2 || nr.width < 2) return true;
+      if (r.bottom <= nr.top + 1 || r.top >= nr.bottom - 1 || r.right <= nr.left + 1 || r.left >= nr.right - 1) return true;
+    }
+    return false;
+  };
   const items = Array.from(document.querySelectorAll('a[href],button,[role=menuitem]')).filter((e) => {
     if (e.hasAttribute(attr)) return false;
     const r = e.getBoundingClientRect();
     const cs = getComputedStyle(e);
-    return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && cs.opacity !== '0';
+    if (!(r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && cs.opacity !== '0')) {
+      return false;
+    }
+    return !clippedAway(e);
   });
   const unreachable: Array<{ selector: string; reason: string }> = [];
   for (const e of items.slice(0, 120)) {

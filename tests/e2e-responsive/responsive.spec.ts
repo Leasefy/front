@@ -7,18 +7,11 @@ import { FINDINGS_ATTACHMENT, HARD_TYPES, type Finding, type TestFindings } from
 import { installReadOnlyGuard, type Guard } from './support/guard';
 import { checkMobileNavigation, checkOverlays, checkTabs } from './support/interactions';
 import type { DeviceMeta } from './support/devices';
-import { overlayProbe, pageSweep, type SweepResult } from './support/measure';
+import { forbiddenProbe, overlayProbe, pageSweep, type SweepResult } from './support/measure';
 import { openAndSettle, waitForSettled, type OpenResult } from './support/page-ready';
-import {
-  PERSONAS,
-  authFile,
-  readResolved,
-  statusFile,
-  type Persona,
-  type PersonaId,
-} from './support/personas';
-import { isDynamic, pathnameOf, type Resolution } from './support/resolve';
-import { ROUTES, SHARES_RESOLVED_IDS_WITH } from './support/routes';
+import { concretePath, selectRoutes } from './support/open-path';
+import { PERSONAS, personaById, statusFile, storageStateFor, type Persona, type PersonaId } from './support/personas';
+import { ROUTES } from './support/routes';
 import { applySharedSession, refreshSharedSession } from './support/session';
 
 /**
@@ -35,7 +28,13 @@ const MAX_SHOT_HEIGHT = 12_000;
 
 const REPORT_DIR = path.resolve(process.env.RESPONSIVE_REPORT_DIR ?? 'responsive-report');
 
-const test = base.extend<{ guard: Guard }>({
+const test = base.extend<{ guard: Guard; personaId: PersonaId }>({
+  personaId: ['anonymous', { option: true }],
+  // Resolved when the test starts (the auth setup has run by then): a valid saved session, or
+  // an empty state for anonymous / unavailable personas. Never a half-written file.
+  storageState: async ({ personaId }, provide) => {
+    await provide(storageStateFor(personaById(personaId)));
+  },
   guard: [
     async ({ context }, use) => {
       await use(await installReadOnlyGuard(context));
@@ -56,16 +55,6 @@ const slug = (s: string): string =>
     .replace(/^_+|_+$/g, '')
     .slice(0, 110) || 'root';
 
-const resolvedCache = new Map<PersonaId, Record<string, Resolution>>();
-function resolvedFor(id: PersonaId): Record<string, Resolution> {
-  const source = SHARES_RESOLVED_IDS_WITH[id] ?? id;
-  const cached = resolvedCache.get(source);
-  if (cached) return cached;
-  const data = readResolved(source) as Record<string, Resolution>;
-  resolvedCache.set(source, data);
-  return data;
-}
-
 function personaStatus(persona: Persona): { ok: boolean; reason?: string } {
   if (!persona.envPrefix) return { ok: true };
   try {
@@ -73,15 +62,6 @@ function personaStatus(persona: Persona): { ok: boolean; reason?: string } {
   } catch {
     return { ok: false, reason: 'auth setup did not run for this persona' };
   }
-}
-
-/** Resolves the concrete path to open, or the reason it cannot be opened. */
-function concretePath(persona: Persona, route: string): { open: string | null; reason?: string } {
-  if (!isDynamic(route)) return { open: route };
-  const r = resolvedFor(persona.id)[pathnameOf(route)];
-  if (!r) return { open: null, reason: 'dynamic route was not resolved (resolve setup did not run)' };
-  if (!r.path) return { open: null, reason: r.reason ?? 'could not be resolved' };
-  return { open: r.path };
 }
 
 function metaOf(testInfo: TestInfo): DeviceMeta {
@@ -166,9 +146,12 @@ function findingsFromSweep(sweep: SweepResult, touch: boolean): Finding[] {
   for (const c of sweep.clipped.slice(0, 8)) {
     out.push({
       type: 'clipped-text',
-      severity: 'soft',
+      // Cut text whose full content is still available (title / aria-label) is informational.
+      severity: c.titled ? 'info' : 'soft',
       selector: c.selector,
-      detail: `Text "${c.text}" is cut off (${c.axis === 'x' ? 'width' : 'height'}: content ${c.scroll}px in a ${c.client}px box, overflow hidden, no ellipsis).`,
+      detail: `Text "${c.text}" is cut off (${c.axis === 'x' ? 'width' : 'height'}: content ${c.scroll}px in a ${c.client}px box, overflow hidden, no ellipsis${
+        c.titled ? '; the full text is in a title / aria-label' : ''
+      }).`,
       data: { ...c, clippedTotal: sweep.clippedTotal },
     });
   }
@@ -207,23 +190,11 @@ function findingsFromSweep(sweep: SweepResult, touch: boolean): Finding[] {
   return out;
 }
 
-/**
- * RESPONSIVE_ROUTE_FILTER: regex tested against "<persona> <route>"; only matches run.
- * RESPONSIVE_SAMPLE=N: keep every Nth route of each persona (deterministic, always keeps the
- * first). The default is every route; both exist because a dev server needs hours for the full
- * list on several devices.
- */
-function selectRoutes(persona: PersonaId, routes: string[]): string[] {
-  const filter = process.env.RESPONSIVE_ROUTE_FILTER ? new RegExp(process.env.RESPONSIVE_ROUTE_FILTER) : null;
-  const every = Math.max(1, Number(process.env.RESPONSIVE_SAMPLE ?? 1));
-  return routes.filter((route, index) => index % every === 0 && (!filter || filter.test(`${persona} ${route}`)));
-}
-
 // ---- tests -------------------------------------------------------------------------------
 
 for (const persona of PERSONAS) {
   test.describe(persona.id, () => {
-    test.use({ storageState: persona.envPrefix ? authFile(persona.id) : { cookies: [], origins: [] } });
+    test.use({ personaId: persona.id });
 
     for (const route of selectRoutes(persona.id, ROUTES[persona.id])) {
       test(route, async ({ page, context, browser, baseURL, guard }, testInfo) => {
@@ -310,6 +281,20 @@ for (const persona of PERSONAS) {
             severity: 'soft',
             detail: `${opened.error.reason}${opened.status ? ` (HTTP ${opened.status})` : ''}. Not a layout finding: layout checks skipped.`,
             data: { status: opened.status },
+          });
+          await takeScreenshot();
+          await attach(testInfo, payload);
+          return;
+        }
+
+        // "No tienes acceso a ...": the role does not include this screen. Record it as info and
+        // do not measure the empty-state card as if it were the real screen.
+        const denied = await page.evaluate(forbiddenProbe).catch(() => ({ forbidden: false, text: '' }));
+        if (denied.forbidden) {
+          findings.push({
+            type: 'forbidden-for-role',
+            severity: 'info',
+            detail: `${persona.id} sees "${denied.text}": the real screen is not available to this role, layout checks skipped.`,
           });
           await takeScreenshot();
           await attach(testInfo, payload);

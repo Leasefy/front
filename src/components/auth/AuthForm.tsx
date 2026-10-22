@@ -1244,7 +1244,7 @@ export function AuthForm({
               <fieldset disabled={isLoading} className="min-w-0 space-y-4">
                 <div className="space-y-1.5">
                   <AuthInput
-                    label="Email"
+                    label="Correo"
                     type="email"
                     placeholder="tu@email.com"
                     {...correoDeLogin}
@@ -1349,7 +1349,7 @@ export function AuthForm({
               <fieldset disabled={isLoading} className="min-w-0 space-y-4">
                 <div className="space-y-1.5">
                   <AuthInput
-                    label="Email"
+                    label="Correo"
                     type="email"
                     placeholder="tu@email.com"
                     {...correoDeRegistro}
@@ -1560,7 +1560,7 @@ export function AuthForm({
             <fieldset disabled={isLoading} className="min-w-0 space-y-4">
               <div className="space-y-1.5">
                 <AuthInput
-                  label="Email"
+                  label="Correo"
                   type="email"
                   placeholder="tu@email.com"
                   {...correoDeRecuperacion}

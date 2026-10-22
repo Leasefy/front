@@ -458,7 +458,7 @@ export function PipelineDetail({
                 <Button
                   variant="secondary"
                   hideArrow
-                  onClick={() => copyToClipboard(item.candidateEmail, 'Email')}
+                  onClick={() => copyToClipboard(item.candidateEmail, 'Correo')}
                   className="justify-start gap-2 px-3 text-muted-foreground"
                 >
                   <Envelope className="w-4 h-4 shrink-0" />

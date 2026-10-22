@@ -447,7 +447,7 @@
     "verification": {
       "title": "Verificaciones",
       "identity": "Identidad verificada",
-      "email": "Email verificado",
+      "email": "Correo verificado",
       "phone": "Teléfono verificado",
       "income": "Ingresos verificados",
       "employment": "Empleo verificado",
@@ -496,7 +496,7 @@
     },
     "notifications": {
       "title": "Notificaciones",
-      "email": "Notificaciones por email",
+      "email": "Notificaciones por correo",
       "push": "Notificaciones push",
       "sms": "Notificaciones SMS",
       "payments": "Recordatorios de pago",
@@ -609,7 +609,7 @@
       "contractRemindersDesc": "Alertas sobre vencimientos",
       "newMessages": "Mensajes nuevos",
       "newMessagesDesc": "Notificaciones push en tu dispositivo",
-      "promotionalEmails": "Emails promocionales",
+      "promotionalEmails": "Correos promocionales",
       "promotionalEmailsDesc": "Ofertas y novedades de la plataforma"
     },
     "team": {
@@ -964,7 +964,7 @@
       "volverPendiente": "Vienes de crear un contrato: cuando completes el inventario, vuelve para seguir."
     },
     "nav": {
-      "dashboard": "Dashboard",
+      "dashboard": "Tablero",
       "aiAgents": "Resumen",
       "propietarios": "Propietarios",
       "inmuebles": "Inmuebles",
@@ -1827,7 +1827,7 @@
       "cancelled": "Cancelado"
     },
     "dashboard": {
-      "title": "Dashboard inmobiliaria",
+      "title": "Tablero de la inmobiliaria",
       "subtitle": "Resumen de operaciones y métricas clave",
       "kpi": {
         "totalProperties": "Inmuebles totales",
@@ -1972,7 +1972,7 @@
       },
       "notifications": {
         "title": "Notificaciones",
-        "subtitle": "Configura tus alertas por email y push",
+        "subtitle": "Configura tus alertas por correo y push",
         "newLeads": "Nuevos interesados",
         "newLeadsDesc": "Cuando un candidato aplica a un inmueble",
         "paymentsReceived": "Pagos recibidos",
@@ -2090,7 +2090,7 @@
         "brandingSaved": "Branding actualizado",
         "brandingSavedDesc": "Los cambios de marca han sido guardados",
         "inviteSent": "Invitación enviada",
-        "inviteSentDesc": "Se ha enviado un email de invitación al usuario",
+        "inviteSentDesc": "Se ha enviado un correo de invitación al usuario",
         "roleUpdated": "Rol actualizado",
         "userStatusUpdated": "Estado del usuario actualizado",
         "inviteResent": "Invitación reenviada",
@@ -2459,7 +2459,7 @@
           "included": "Incluido"
         },
         "supportLevel": {
-          "email": "Email",
+          "email": "Correo",
           "priority": "Prioritario",
           "dedicated": "Dedicado"
         },
@@ -2533,7 +2533,7 @@
         "rentedOne": "arrendado",
         "monthlyRent": "Canon mensual",
         "pendingAbbr": "atrasado",
-        "sendEmail": "Enviar email",
+        "sendEmail": "Enviar correo",
         "call": "Llamar",
         "viewDetail": "Ver detalle"
       },
@@ -2796,7 +2796,7 @@
         "lateLabel": "Mora",
         "viewDetail": "Ver detalle",
         "registerPayment": "Registrar pago",
-        "sendEmail": "Enviar email",
+        "sendEmail": "Enviar correo",
         "totalSummary": "Total ({{count}} cobros)",
         "noCollections": "No hay cobros para mostrar",
         "noCollectionsDesc": "Ajusta los filtros o selecciona otro mes"
@@ -3193,7 +3193,7 @@
         "downloading": "Descargando...",
         "copyTooltip": "Copiar",
         "call": "Llamar",
-        "email": "Email",
+        "email": "Correo",
         "titularDeLaFichaHoy": "Tomado de la ficha de hoy: este giro es anterior a la copia del titular.",
         "repartoTitulo": "Repartido en {{n}} cuentas",
         "repartoANombreDe": "A nombre de {{titular}}",
@@ -3404,7 +3404,7 @@
         "notification": {
           "recipient": "Destinatario",
           "messagePreview": "Vista previa del mensaje",
-          "sendEmail": "Enviar Email",
+          "sendEmail": "Enviar Correo",
           "markNotified": "Marcar como notificado",
           "or": "o"
         },
@@ -3702,8 +3702,8 @@
       "creating": "Creando...",
       "createAgent": "Crear Agente",
       "errorNameRequired": "El nombre es requerido",
-      "errorEmailRequired": "El email es requerido",
-      "errorEmailInvalid": "El email no es válido",
+      "errorEmailRequired": "El correo es requerido",
+      "errorEmailInvalid": "El correo no es válido",
       "errorCommissionRange": "Debe ser entre 0 y 100",
       "sortRecommended": "Recomendados",
       "sortByName": "Por nombre",
@@ -4444,7 +4444,7 @@
         "paymentAccount": "Cuenta para el giro",
         "accountTypeSavings": "Ahorros",
         "accountTypeChecking": "Corriente",
-        "email": "Email",
+        "email": "Correo",
         "call": "Llamar",
         "agentTitle": "Asesor a cargo",
         "noAgentAssigned": "Nadie está a cargo todavía",
@@ -4831,7 +4831,7 @@
       "title": "Analítica",
       "subtitle": "Métricas clave, tendencias y proyecciones de tu portafolio",
       "tabs": {
-        "dashboard": "Dashboard",
+        "dashboard": "Tablero",
         "trends": "Tendencias",
         "forecasting": "Proyecciones"
       },
@@ -5143,7 +5143,7 @@
       "skip": "Omitir",
       "finish": "Finalizar",
       "finishing": "Finalizando...",
-      "goToDashboard": "Ir al Dashboard",
+      "goToDashboard": "Ir al panel",
       "register": {
         "back": "Atrás",
         "continue": "Continuar",
@@ -5831,7 +5831,7 @@
         "sinAccesoALaPlata": "Sin acceso a la plata",
         "plataOculta": "Tu rol no ve la plata de los propietarios: el canon, lo pendiente y el último pago salen «—».",
         "edit": "Editar",
-        "sendEmail": "Enviar email",
+        "sendEmail": "Enviar correo",
         "call": "Llamar",
         "delete": "Eliminar",
         "noResults": "No se encontraron propietarios",
@@ -5859,7 +5859,7 @@
         "titularElPropietario": "El propietario"
       },
       "selector": {
-        "searchPlaceholder": "Buscar propietario por nombre, email o documento...",
+        "searchPlaceholder": "Buscar propietario por nombre, correo o documento...",
         "addNew": "Agregar nuevo",
         "newOwner": "Nuevo propietario",
         "edit": "Editar",
@@ -7268,7 +7268,7 @@
             "configCta": "Ajustar cadencia de contacto",
             "channelVoice": "Llamada",
             "channelWhatsapp": "WhatsApp",
-            "channelEmail": "Email",
+            "channelEmail": "Correo",
             "configCtaTooltip": "Disponible en una próxima actualización"
           },
           "errorLoading": "Error cargando datos",
@@ -7313,13 +7313,13 @@
             "channel": "Canal",
             "cedula": "Cédula",
             "phone": "Teléfono",
-            "email": "Email",
+            "email": "Correo",
             "lastActivity": "Última actividad"
           },
           "channels": {
             "voice": "Llamada",
             "whatsapp": "WhatsApp",
-            "email": "Email"
+            "email": "Correo"
           },
           "emptyFiltered": "Sin deudores con estos filtros",
           "empty": {
@@ -8024,7 +8024,7 @@
           "suscripcion": {
             "empty": {
               "title": "Aún no hay suscriptores al reporte",
-              "description": "Agrega emails para recibir el reporte diario automáticamente.",
+              "description": "Agrega correos para recibir el reporte diario automáticamente.",
               "cta": {
                 "label": "Agregar suscriptor"
               }
@@ -11370,7 +11370,7 @@
   },
   "validation": {
     "required": "Este campo es requerido",
-    "email": "Ingresa un email válido",
+    "email": "Ingresa un correo válido",
     "phone": "Ingresa un teléfono válido",
     "minLength": "Mínimo {{min}} caracteres",
     "maxLength": "Máximo {{max}} caracteres",
@@ -12066,7 +12066,7 @@
         "paymentDate": "Fecha de pago",
         "print": "Imprimir",
         "sending": "Enviando...",
-        "sendEmail": "Enviar por Email",
+        "sendEmail": "Enviar por Correo",
         "downloading": "Descargando...",
         "downloadPDF": "Descargar PDF",
         "documentGenerated": "Documento generado el",
@@ -12075,7 +12075,7 @@
         "pdfError": "Error al descargar PDF",
         "emailSent": "Extracto enviado",
         "emailSentTo": "Se envió el extracto a",
-        "emailError": "Error al enviar email"
+        "emailError": "Error al enviar correo"
       },
       "form": {
         "personalInfo": "Información personal",
@@ -12113,8 +12113,8 @@
         "saveChanges": "Guardar cambios",
         "errNameRequired": "El nombre es requerido",
         "errNameMin": "El nombre debe tener al menos 3 caracteres",
-        "errEmailRequired": "El email es requerido",
-        "errEmailInvalid": "Email inválido",
+        "errEmailRequired": "El correo es requerido",
+        "errEmailInvalid": "Correo inválido",
         "errPhoneRequired": "El teléfono es requerido",
         "errPhoneInvalid": "Teléfono inválido",
         "errDocRequired": "El documento es requerido",
@@ -12146,7 +12146,7 @@
         "lowOccupancy": "La ocupación está por debajo del 70%"
       },
       "table": {
-        "searchPlaceholder": "Buscar por nombre, email, documento...",
+        "searchPlaceholder": "Buscar por nombre, correo, documento...",
         "export": "Exportar",
         "all": "Todos",
         "person": "Persona",
@@ -12163,7 +12163,7 @@
         "upToDate": "Al día",
         "viewDetail": "Ver detalle",
         "edit": "Editar",
-        "sendEmail": "Enviar email",
+        "sendEmail": "Enviar correo",
         "call": "Llamar",
         "delete": "Eliminar",
         "noResults": "No se encontraron propietarios",
@@ -12185,7 +12185,7 @@
         "verified": "Datos verificados"
       },
       "selector": {
-        "searchPlaceholder": "Buscar propietario por nombre, email o documento...",
+        "searchPlaceholder": "Buscar propietario por nombre, correo o documento...",
         "addNew": "Agregar nuevo",
         "newOwner": "Nuevo propietario",
         "edit": "Editar",
@@ -12303,7 +12303,7 @@
         "subtitle": "Elige sobre que te notificamos y por donde.",
         "channel": "Canal de notificacion",
         "inApp": "En la app",
-        "email": "Email",
+        "email": "Correo",
         "whatsapp": "WhatsApp",
         "all": "Todos",
         "toggleLabel": "Notificaciones de {{agent}}"
@@ -12337,10 +12337,10 @@
       "score": "Puntaje de autonomia"
     },
     "appSwitcher": {
-      "dashboard": "Dashboard",
+      "dashboard": "Tablero",
       "aiBeta": "AI Beta",
       "goToBeta": "Ir a Beta",
-      "goToDashboard": "Ir a Dashboard"
+      "goToDashboard": "Ir al panel"
     },
     "mobile": {
       "openMenu": "Abrir menu",

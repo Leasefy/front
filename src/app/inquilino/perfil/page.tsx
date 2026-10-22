@@ -672,7 +672,7 @@ export default function PerfilPage() {
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-surface-muted border border-border-faint">
-                    <span className="text-sm font-medium text-fg">Email</span>
+                    <span className="text-sm font-medium text-fg">Correo</span>
                     <span className="flex items-center gap-1.5 text-caption font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
                       <CheckCircle className="w-3.5 h-3.5" />
                       {t('profile.verification.verified')}

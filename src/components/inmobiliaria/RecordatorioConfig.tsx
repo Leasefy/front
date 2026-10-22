@@ -35,7 +35,7 @@ const DAYS_AFTER_OPTIONS = [1, 3, 7, 15, 30] as const;
 type Channel = 'email' | 'sms' | 'whatsapp';
 
 const CHANNELS: { value: Channel; label: string; icon: React.ElementType }[] = [
-  { value: 'email', label: 'Email', icon: Envelope },
+  { value: 'email', label: 'Correo', icon: Envelope },
   { value: 'sms', label: 'SMS', icon: DeviceMobile },
   { value: 'whatsapp', label: 'WhatsApp', icon: WhatsappLogo },
 ];

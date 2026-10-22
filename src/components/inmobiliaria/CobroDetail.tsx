@@ -356,7 +356,7 @@ export function CobroDetail({
                 <ContactAction
                   icon={Envelope}
                   href={`mailto:${cobro.tenantEmail}`}
-                  label="Email"
+                  label="Correo"
                   className="bg-primary-soft hover:bg-primary-soft text-primary dark:bg-primary/30 dark:hover:bg-primary/50 dark:text-primary"
                 />
               )}

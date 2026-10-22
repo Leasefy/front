@@ -25,7 +25,8 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 import { ArrowsLeftRight, CheckCircle, Prohibit, XCircle } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { Avisos, Cifra, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
+import { Avisos, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -226,7 +227,8 @@ export function TrasladoDeComisionPanel() {
                   data-testid={`traslado-${t.id}`}
                 >
                   <FilaDelTraslado traslado={t} plata={plata} />
-                  <div className="flex flex-wrap gap-2">
+                  {/* Ronda 11 (390): la acción de la tarjeta va a lo ancho. */}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                     {/* 22-10 (revisión): aprobarlo es LA acción de la pantalla → la azul. */}
                     <Button
                       onClick={() => void aprobar(t)}
@@ -392,54 +394,62 @@ function Propuesta({ propuesta, plata: plataDeLaPagina }: { propuesta: Propuesta
     <div className="space-y-4">
       <Avisos avisos={propuesta.avisos} testId="avisos-de-la-propuesta" />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Cifra
-          id="total-del-traslado"
-          formato={plata}
-          etiqueta="Total a trasladar"
-          valor={propuesta.totalCop}
-          definicion="De la cuenta de recaudo a tu cuenta propia. Cuando salga del banco, el cuadre de plata de terceros da cero."
-          tono={propuesta.hayQueTrasladar ? 'success' : undefined}
+      {/* Ronda 11 de la revisión (22-10): eran tres tarjetas de cifras (total, comisión
+          causada, ya propuesto) que el desglose de abajo vuelve a decir; el mismo
+          número salía cuatro veces. Ahora el total va grande ENCIMA del desglose, que
+          suma y explica renglón por renglón. */}
+      <section
+        className="overflow-hidden rounded-2xl border border-border bg-surface"
+        data-testid="propuesta-del-traslado"
+      >
+        <CifraHeroe
+          className="px-5 pb-4 pt-5 sm:px-6"
+          data-testid="total-del-traslado"
+          rotulo="Total a trasladar"
+          cifra={propuesta.totalCop === 0 ? '—' : plata(propuesta.totalCop)}
+          contexto="de la cuenta de recaudo a tu cuenta propia"
+          pie={
+            propuesta.renglones.length === 0 && (propuesta.comisionCop > 0 || propuesta.yaTrasladadoCop > 0) ? (
+              // Sin desglose del back, las dos cifras de las que sale el total, en una línea.
+              <>
+                Comisión causada <span className="font-mono tabular-nums text-fg">{plata(propuesta.comisionCop)}</span>
+                {propuesta.yaTrasladadoCop > 0 ? (
+                  <>
+                    {' · '}ya propuesto o trasladado{' '}
+                    <span className="font-mono tabular-nums text-fg">{plata(propuesta.yaTrasladadoCop)}</span>
+                  </>
+                ) : null}
+                . Cuando salga del banco, el cuadre de plata de terceros da cero.
+              </>
+            ) : (
+              'Cuando salga del banco, el cuadre de plata de terceros da cero.'
+            )
+          }
         />
-        <Cifra
-          id="comision-causada"
-          formato={plata}
-          etiqueta="Comisión causada"
-          valor={propuesta.comisionCop}
-          definicion="La comisión de administración del mes, según las cuotas del lado propietario. Se causa al liquidar, haya pagado o no el inquilino."
-        />
-        <Cifra
-          id="ya-trasladado"
-          formato={plata}
-          etiqueta="Ya propuesto o trasladado"
-          valor={propuesta.yaTrasladadoCop}
-          definicion="Lo que ya está en un traslado propuesto o aprobado de este mes. Se resta para no sacar dos veces la misma plata."
-        />
-      </div>
-
-      {propuesta.renglones.length > 0 ? (
-        // 22-10 (revisión de Dinero: «tabla rota a 390»): renglón por renglón como un
-        // recibo —el concepto y su porqué a la izquierda, la cifra a la derecha—.
-        <section className="space-y-2">
-          <p className="text-caption text-fg-muted">Renglón por renglón, con el porqué de cada uno. Es lo que lee quien aprueba.</p>
-          <ol className="rounded-2xl border border-border bg-surface px-5 py-1 sm:px-6" data-testid="renglones-del-traslado">
-            {propuesta.renglones.map((r) => (
-              <li
-                key={r.concepto}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 border-t border-border-faint py-3 first:border-t-0 dark:border-border-strong"
-              >
-                <div className="min-w-0 space-y-0.5">
-                  <p className="text-body-sm text-fg">{r.concepto}</p>
-                  <p className="text-caption leading-relaxed text-fg-muted">{r.porQue}</p>
-                </div>
-                <p className={`shrink-0 font-mono text-body-sm tabular-nums ${r.valorCop < 0 ? 'text-warning-ink' : 'text-fg'}`}>
-                  {r.valorCop === 0 ? '—' : r.valorCop < 0 ? `− ${plata(Math.abs(r.valorCop))}` : plata(r.valorCop)}
-                </p>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
+        {propuesta.renglones.length > 0 ? (
+          // Renglón por renglón como un recibo: el concepto y su cifra en la misma
+          // línea, el porqué a todo el ancho debajo (a 390 ya no queda en media columna).
+          <>
+            <p className="border-t border-border px-5 pt-3 text-caption text-fg-muted sm:px-6">
+              Renglón por renglón, con el porqué de cada uno. Es lo que lee quien aprueba.
+            </p>
+            <ol className="px-5 pb-1 sm:px-6" data-testid="renglones-del-traslado">
+              {propuesta.renglones.map((r) => (
+                <li
+                  key={r.concepto}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-0.5 border-t border-border-faint py-3 first:border-t-0 dark:border-border-strong"
+                >
+                  <p className="min-w-0 text-body-sm text-fg">{r.concepto}</p>
+                  <p className={`shrink-0 font-mono text-body-sm tabular-nums ${r.valorCop < 0 ? 'text-warning-ink' : 'text-fg'}`}>
+                    {r.valorCop === 0 ? '—' : r.valorCop < 0 ? `− ${plata(Math.abs(r.valorCop))}` : plata(r.valorCop)}
+                  </p>
+                  <p className="col-span-2 text-caption leading-relaxed text-fg-muted">{r.porQue}</p>
+                </li>
+              ))}
+            </ol>
+          </>
+        ) : null}
+      </section>
     </div>
   );
 }

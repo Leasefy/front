@@ -48,7 +48,7 @@ export default function TrasladosPage() {
                   sobra es tu comisión sin trasladar.
                 </p>
                 <p>
-                  Acá se <strong className="text-fg">propone</strong> con su desglose renglón por
+                  Aquí se <strong className="text-fg">propone</strong> con su desglose renglón por
                   renglón y una persona lo <strong className="text-fg">aprueba</strong>. No sale
                   solo: mover plata entre cuentas deja comprobante y lleva firma.
                 </p>
@@ -56,7 +56,7 @@ export default function TrasladosPage() {
             </ParaEntenderMas>
           </div>
           <p className="max-w-2xl text-sm text-fg-muted">
-            Tu comisión está en la cuenta de recaudo. Acá se propone moverla y se aprueba.
+            Tu comisión está en la cuenta de recaudo. Aquí se propone moverla y se aprueba.
           </p>
         </header>
         <TrasladoDeComisionPanel />

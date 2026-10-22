@@ -62,6 +62,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { formatDateTime, plataPareja } from '@/lib/format';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { esMesValido, mesActual } from '@/lib/recaudo/meses';
 import { cn } from '@/lib/utils';
 import { NOMBRE_DEL_ESTADO, TONO_DEL_ESTADO } from './estado-del-lote';
@@ -234,6 +235,7 @@ export function ListaDeLotes({
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(visibles, { resetKey: filtro });
 
+  const esCelular = useIsMobile();
   // Una columna que dice lo mismo en todas las filas de la página no ayuda a decidir.
   const conArmadoPor = new Set(pageItems.map((l) => l.creadoPorUserId)).size > 1;
   const conAprobadoPor = new Set(pageItems.map((l) => l.aprobadoPorUserId ?? '')).size > 1;
@@ -309,6 +311,42 @@ export function ListaDeLotes({
             action={{ label: 'Ver todos', onClick: () => setFiltro('todos') }}
             className="m-4"
           />
+        ) : esCelular ? (
+          /* Ronda 21 (390): una tarjeta por lote —mes, estado y total— y su acción; la tabla encogida
+             escondía el Total. */
+          <ul className="divide-y divide-border" data-testid="lotes-en-tarjetas">
+            {pageItems.map((lote) => {
+              const paraMarcar = sinArmar && lote.estado === 'ARCHIVO_GENERADO';
+              return (
+                <li key={lote.id}>
+                  <Link
+                    href={`/panel/inmobiliaria/pagos/dispersiones/lotes/${lote.id}`}
+                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface-muted/60"
+                    data-testid={`lote-tarjeta-${lote.id}`}
+                  >
+                    <span className="min-w-0">
+                      <span className="block font-medium text-fg">{nombreDelMes(lote.month)}</span>
+                      <span className="mt-1 flex items-center gap-2">
+                        <Badge variant={TONO_DEL_ESTADO[lote.estado]}>{NOMBRE_DEL_ESTADO[lote.estado]}</Badge>
+                        <span className="text-caption text-fg-muted">
+                          {lote.cantidad} {lote.cantidad === 1 ? 'pago' : 'pagos'}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="block whitespace-nowrap font-mono tabular-nums text-fg">
+                        {plataPareja(pageItems.map((l) => l.totalCop))(lote.totalCop)}
+                      </span>
+                      <span className={cn('mt-1 inline-flex items-center gap-1 text-caption', paraMarcar ? 'font-medium text-fg' : 'text-fg-muted')}>
+                        {paraMarcar ? 'Marcar pagado' : 'Abrir'}
+                        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         ) : (
           <div className="overflow-x-auto">
             <Table>

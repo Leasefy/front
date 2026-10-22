@@ -92,6 +92,7 @@ import { PorGirarDeLaInmobiliaria } from '@/components/liquidaciones/PorGirarDeL
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { conSigno } from '@/lib/plata/escribir-plata';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
 import { leerLiquidacionFrenada } from '@/lib/api/dispersiones-errores';
@@ -228,6 +229,7 @@ function TesoreriaContent() {
   // Antes era `useState(mesEnCurso)` sin setter: el mes anterior —el que de
   // verdad se liquida los primeros días— no se podía ver.
   const [month, setMonth] = useState(mesEnCurso);
+  const esCelular = useIsMobile();
   // El mes viaja entre los pasos de Giros (`?mes=`): se lee al montar, no en el primer pintado (servidor).
   useEffect(() => {
     const pedido = new URLSearchParams(window.location.search).get('mes');
@@ -650,6 +652,40 @@ function TesoreriaContent() {
                     </div>
                   ) : null;
                 })()}
+                {esCelular ? (
+                  /* Ronda 21 (390): una tarjeta por propietario con lo que decide —el neto y el estado—; la
+                     tabla encogida escondía el Neto. La tarjeta abre el mismo cajón que la fila. */
+                  <ul className="divide-y divide-border" data-testid="liquidaciones-en-tarjetas">
+                    {paginado.pageItems.map((p) => {
+                      const aGirar = p.conDeducciones ? p.conDeducciones.aGirarCop : p.netToPropietario;
+                      return (
+                        <li key={p.propietarioId}>
+                          <button
+                            type="button"
+                            onClick={() => setAbierta(p)}
+                            className="flex w-full items-start justify-between gap-3 px-5 py-3 text-left hover:bg-surface-muted/60"
+                            data-testid="tesoreria-tarjeta"
+                          >
+                            <span className="min-w-0">
+                              <span className="block line-clamp-2 font-medium text-fg">{p.propietarioName}</span>
+                              {p.liquidacion ? (
+                                <span className="mt-1 block text-caption text-fg-muted">{NOMBRE_DEL_ESTADO[p.liquidacion.estado]}</span>
+                              ) : null}
+                            </span>
+                            <span
+                              className={cn(
+                                'shrink-0 whitespace-nowrap font-mono font-semibold tabular-nums',
+                                aGirar < 0 ? 'text-danger' : aGirar > 0 ? 'text-success' : 'text-fg-muted',
+                              )}
+                            >
+                              {formatCurrency(aGirar)}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -860,6 +896,7 @@ function TesoreriaContent() {
                     </TableBodyAnimado>
                   </Table>
                 </div>
+                )}
                 {paginado.shouldPaginate && (
                   <div className="border-t border-border px-5 py-3">
                     <TablePagination

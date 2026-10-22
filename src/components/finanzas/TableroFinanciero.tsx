@@ -42,7 +42,6 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowRight } from '@phosphor-icons/react';
 import { Progress } from '@leasefy/cadence';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -195,7 +194,7 @@ export function TableroFinancieroPanel() {
         seccion={tr('Finanzas')}
         titulo={tr('Tablero financiero')}
         descripcion={tr(
-          'Lo que entró, lo que deben, lo que hay que girar y lo que ganó la inmobiliaria: las cuatro preguntas de la mañana, en un mes y una sede.',
+          'Lo que entró, lo que deben, lo que hay que girar y lo que ganó la inmobiliaria en el mes.',
         )}
         acciones={
           <div
@@ -277,7 +276,6 @@ function EnlaceDelBloque({ href, children }: { href: string; children: string })
       className="inline-flex items-center gap-1 text-body-sm font-medium text-primary underline-offset-4 hover:underline"
     >
       {children}
-      <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
     </Link>
   );
 }
@@ -356,12 +354,14 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
           valor={recaudo.causadoDelMesCop}
           definicion={`${conMayusculaInicial(base)} en el mes. Es el denominador del porcentaje.`}
         />
+        {recaudo.delDiaCop === 0 ? null : (
         <RenglonDeCifra
           id="recaudo-del-dia"
           etiqueta="Entró hoy"
           valor={recaudo.delDiaCop}
           definicion={`Los recibos de caja con fecha ${fechaLarga(tablero.hoy)}, de cualquier período.`}
         />
+        )}
       </Renglones>
     </TarjetaDeCifras>
   );
@@ -687,6 +687,8 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
             definicion="Lo que se le cobró al inquilino por la gestión de cobro y entró por caja en el mes."
           />
         ) : null}
+        {/* 22-10 (revisión): el subtotal sólo con dos o más componentes; con uno, repetía la cifra. */}
+        {[margen.comisionesCop, margen.interesesCop, margen.gastosDeCobranzaCop].filter((v) => v !== 0).length >= 2 ? (
         <RenglonDeCifra
           id="ingresos-propios"
           etiqueta="Ingresos propios"
@@ -694,6 +696,7 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
           subtotal
           definicion="Comisiones, intereses y gastos de cobranza. No incluye el canon: ese es del propietario."
         />
+        ) : null}
         {margen.gmfCop !== 0 ? (
           <RenglonDeCifra
             id="gmf"
@@ -712,6 +715,7 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
             definicion="Sólo la parte que asume la inmobiliaria. Lo que se traslada al inquilino va como línea aparte de su recibo."
           />
         ) : null}
+        {[margen.gmfCop, margen.pasarelaCop].filter((v) => v !== 0).length >= 2 ? (
         <RenglonDeCifra
           id="costos"
           etiqueta="Costos de la plata"
@@ -720,6 +724,7 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
           subtotal
           definicion="4×1000 más pasarela, de lo que asume la inmobiliaria."
         />
+        ) : null}
       </Renglones>
     </TarjetaDeCifras>
   );

@@ -114,6 +114,9 @@ export function VisitasClient() {
   const visitas = porAtender.datos?.visitas ?? []
   const pendientes = recordatorios.datos?.visitas ?? []
   const horas = porAtender.datos?.horasDeAvisoAlInquilino ?? 24
+  const todoVacio =
+    !porAtender.cargando && !recordatorios.cargando && !porAtender.errorCrudo && !recordatorios.errorCrudo &&
+    visitas.length === 0 && pendientes.length === 0
 
   // 🔴 Lo que falta, primero.
   const ordenadas = useMemo(
@@ -297,6 +300,16 @@ export function VisitasClient() {
         </div>
       )}
 
+      {/* Ronda 22: con las dos listas vacías, UN vacío con su acción (eran dos tarjetas iguales de ~320 px). */}
+      {todoVacio ? (
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="nada-por-preparar">
+          Nada por preparar: no hay visitas en los próximos 7 días ni recordatorios por mandar.
+          <Link href="/panel/inmobiliaria/pipeline" className="font-medium text-primary underline-offset-4 hover:underline">
+            Agendar una visita
+          </Link>
+        </p>
+      ) : (
+      <>
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Visitas por preparar</CardTitle>
@@ -494,6 +507,8 @@ export function VisitasClient() {
           )}
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   )
 }

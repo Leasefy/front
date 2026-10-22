@@ -105,6 +105,7 @@ export function VsMesAnterior({
   fallo,
   valorMostrado,
   formato = formatCurrency,
+  callarSinComparacion = false,
 }: {
   id: string;
   comparativa: Comparativa | null;
@@ -115,6 +116,11 @@ export function VsMesAnterior({
   valorMostrado: number;
   /** El formato de la plata de la página (ronda 11: el mismo «,00» que las cifras de arriba). */
   formato?: (n: number | null | undefined) => string;
+  /**
+   * Ronda 11: cuando NINGUNA cifra tiene contra qué compararse, la página lo dice
+   * UNA vez arriba y cada cifra calla (antes «Sin comparación con …» ×5).
+   */
+  callarSinComparacion?: boolean;
 }) {
   const { t, locale } = useI18n();
   if (!comparativa) {
@@ -131,6 +137,7 @@ export function VsMesAnterior({
   // Revisión de Dinero (22-10): «+4.113,6 % vs. el 21 de septiembre» no informa nada: con una
   // base casi en cero, una variación de mil por ciento o más se dice como «sin comparación».
   if (v.pct === null || Math.abs(v.pct) >= 1000) {
+    if (callarSinComparacion) return null;
     return (
       <p className="text-caption text-fg-muted" data-testid={`vs-${id}`} data-estado="sin-comparacion">
         {t(`${C}.vs.sinComparacion`, { mes: mesAnterior })}
@@ -170,6 +177,14 @@ export function VsMesAnterior({
         </span>
       )}
     </p>
+  );
+}
+
+/** ¿Ninguna de las cinco cifras tiene contra qué compararse? (sin mes anterior, o con una base casi en cero). */
+export function sinComparacionEnNinguna(comparativa: Comparativa | null): boolean {
+  if (!comparativa) return false;
+  return Object.values(comparativa.vsMesAnterior).every(
+    (v) => v.pct === null || Math.abs(v.pct) >= 1000,
   );
 }
 
@@ -220,6 +235,13 @@ export function TarjetaDeProyeccion({
               })}
             </p>
           )}
+          {p.tasa === 0 ? (
+            <p className="text-caption leading-relaxed text-fg-muted" data-testid="proyeccion-sin-tasa">
+              {locale === 'en'
+                ? 'In the months used, nothing still due came in before the close: the projection is what already came in.'
+                : 'En los meses de la historia no entró nada de lo por vencer antes del cierre: la proyección es lo que ya llegó.'}
+            </p>
+          ) : (
           <p className="text-caption leading-relaxed text-fg-muted" data-testid="proyeccion-formula">
             {t(`${C}.proyeccion.formula`, {
               llego: formato(p.llegoCop),
@@ -229,6 +251,7 @@ export function TarjetaDeProyeccion({
               cierre: formato(p.cierreCop ?? 0),
             })}
           </p>
+          )}
           {p.historia.length < p.mesesPedidos && (
             <p className="text-caption text-warning" data-testid="proyeccion-historia-corta">
               {t(`${C}.proyeccion.historiaCorta`, {

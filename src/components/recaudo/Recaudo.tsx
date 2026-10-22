@@ -91,7 +91,13 @@ import { esFuturo, mesActual, nombreDelMes, sumarMeses } from '@/lib/recaudo/mes
 import { normalizarMedio } from '@/lib/finanzas/medios';
 import { cn } from '@/lib/utils';
 import { GraficoDeRecaudo } from './GraficoDeRecaudo';
-import { ComparativaDelMes, VsMesAnterior, type SentidoDeLaCifra } from './ComparativaDelMes';
+import {
+  ComparativaDelMes,
+  VsMesAnterior,
+  sinComparacionEnNinguna,
+  soloElMes,
+  type SentidoDeLaCifra,
+} from './ComparativaDelMes';
 import { useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr';
 import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras'
 
@@ -261,6 +267,7 @@ export function Recaudo() {
   const comparativaDelMes = useComparativaDelRecaudo(month);
   const { comparativa } = comparativaDelMes;
   const falloLaComparativa = Boolean(comparativaDelMes.error) && !comparativaDelMes.cargando;
+  const sinComparacion = sinComparacionEnNinguna(comparativa);
   /** La línea «vs mes anterior» de una cifra. */
   const vs = (
     id: string,
@@ -276,6 +283,7 @@ export function Recaudo() {
       fallo={falloLaComparativa}
       valorMostrado={valorMostrado}
       formato={plata}
+      callarSinComparacion={sinComparacion}
     />
   );
 
@@ -386,7 +394,16 @@ export function Recaudo() {
             {/* GLOW UP (revisión de Dinero, 22-10-2026: «5 cifras con párrafos»): UNA
                 cifra grande —lo que llegó contra lo que se debe, con su barra— y las
                 demás compactas al lado; lo que mide cada una, plegado. */}
-            <div className="flex justify-end">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+              {sinComparacion && comparativa ? (
+                <p className="text-caption text-fg-muted" data-testid="sin-comparacion-en-ninguna">
+                  {en
+                    ? `No comparison with ${soloElMes(comparativa.mesAnterior, 'en')}: that month had almost no activity.`
+                    : `Sin comparación con ${soloElMes(comparativa.mesAnterior)}: ese mes casi no tuvo movimiento.`}
+                </p>
+              ) : (
+                <span />
+              )}
               <button
                 type="button"
                 aria-pressed={verDefiniciones}
@@ -401,23 +418,9 @@ export function Recaudo() {
               className="-mt-3 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-2"
               data-testid="cifras"
             >
-              {/* 🔴 Primero lo que el mes HACE DEBER. Es la cifra de la que
-                  cuelgan las demás, y la que existe desde que se firma cada
-                  contrato: no hay que emitir nada para que haya deuda. */}
-              <Cifra
-                formato={plata}
-                id="se-debe"
-                verDefinicion={verDefiniciones}
-                className="lg:col-start-2 lg:row-start-1"
-                etiqueta={tr("Se debe")}
-                valor={resumen.deudaDelMesCop}
-                comparacion={vs('se-debe', 'seDebe', 'neutro', resumen.deudaDelMesCop)}
-                definicion={
-                  en
-                    ? `What was agreed in the ${numero(resumen.cuotasDelMes)} ${cuotas(resumen.cuotasDelMes)} for ${nombreDelMes(month, 'en')}, paid or not. It's born with the lease; no one has to generate it.`
-                    : `Lo pactado en las ${numero(resumen.cuotasDelMes)} ${plural(resumen.cuotasDelMes, 'cuota', 'cuotas')} de ${nombreDelMes(month)}, pagadas o no. Nace con el contrato; nadie tiene que generarlo.`
-                }
-              />
+              {/* Ronda 11 (390): «Llegó» va primero en el orden de la página —es lo que se
+                  lee primero en el celular—; en escritorio cada cifra tiene su lugar
+                  fijo en la grilla (lg:col-start), así que allí nada cambia. */}
               <Cifra
                 formato={plata}
                 id="llego"
@@ -459,6 +462,23 @@ export function Recaudo() {
                    (`pagadoDeLasCuotasDelMesCop`, entrara cuando entrara); con un
                    back sin ese campo, sólo qué son los recibos. */
                 definicion={definicionDeLoQueLlego(resumen, month, locale)}
+              />
+              {/* 🔴 Primero lo que el mes HACE DEBER. Es la cifra de la que
+                  cuelgan las demás, y la que existe desde que se firma cada
+                  contrato: no hay que emitir nada para que haya deuda. */}
+              <Cifra
+                formato={plata}
+                id="se-debe"
+                verDefinicion={verDefiniciones}
+                className="lg:col-start-2 lg:row-start-1"
+                etiqueta={tr("Se debe")}
+                valor={resumen.deudaDelMesCop}
+                comparacion={vs('se-debe', 'seDebe', 'neutro', resumen.deudaDelMesCop)}
+                definicion={
+                  en
+                    ? `What was agreed in the ${numero(resumen.cuotasDelMes)} ${cuotas(resumen.cuotasDelMes)} for ${nombreDelMes(month, 'en')}, paid or not. It's born with the lease; no one has to generate it.`
+                    : `Lo pactado en las ${numero(resumen.cuotasDelMes)} ${plural(resumen.cuotasDelMes, 'cuota', 'cuotas')} de ${nombreDelMes(month)}, pagadas o no. Nace con el contrato; nadie tiene que generarlo.`
+                }
               />
               <Cifra
                 formato={plata}

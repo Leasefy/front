@@ -558,6 +558,8 @@ function ConciliacionCola() {
           <BarraDeAccionesMasivas
             variant="pie"
             testid="conciliacion-acciones"
+            // Tiene acciones que sirven sin marcar nada: la barra queda completa.
+            siempreConAcciones
             marcadas={selectedEligible.length}
             queSon={['cruce', 'cruces']}
             onQuitar={clearSelection}

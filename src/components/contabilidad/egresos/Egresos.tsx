@@ -864,6 +864,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 variant="pie"
                 className={marcados.length > 0 ? undefined : 'static'}
                 testid="armar-lote"
+                // Tiene acciones que sirven sin marcar nada: la barra queda completa.
+                siempreConAcciones
                 marcadas={marcados.length}
                 queSon={['egreso', 'egresos']}
                 monto={marcados.length > 0 ? <Monto valor={totalDelLote(marcados)} /> : null}

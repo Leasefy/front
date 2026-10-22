@@ -546,6 +546,11 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FilePlus, module: 'contratos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion', dataTourTarget: 'sidebar-contratos',
         pantallas: [
           { labelKey: 'inmobiliaria.nav.renovaciones', href: r('/contratos/renovaciones'), icon: ArrowsClockwise, module: 'operaciones' },
+          // 🔴 Portofino 22-10-2026: los incrementos de un MES, renovados o no.
+          // Renovaciones sólo lista lo que vence; un contrato ya renovado con
+          // incremento no salía en ningún lado (antes era la cola de cartas,
+          // `/renovaciones/cartas`, que ahora redirige acá).
+          { labelKey: 'inmobiliaria.nav.incrementos', href: r('/contratos/incrementos'), icon: TrendUp, module: 'operaciones' },
           // A-13: la invitación a firmar vence a los 7 días. Acá se ve qué
           // recordatorio toca y qué se venció — y que el inmueble SIGUE
           // reservado hasta que alguien cancele.

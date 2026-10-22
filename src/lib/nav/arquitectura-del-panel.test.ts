@@ -562,6 +562,9 @@ describe('arquitectura del panel — Contratos vive en Operación (Nico, 2026-09
     // ni el encuadre, no cuántas pantallas tiene.
     expect(contratos?.pantallas?.map((p) => p.href)).toEqual([
       `${PANEL}/contratos/renovaciones`,
+      // «Incrementos» entró el 22-10-2026 (Portofino): los incrementos de un
+      // mes, renovados o no. Antes era la cola de cartas dentro de Renovaciones.
+      `${PANEL}/contratos/incrementos`,
       `${PANEL}/contratos/firmas`,
       // «Cláusulas propias» entró el 18-09-2026: lo que la inmobiliaria agrega
       // a sus contratos además del texto legal. Va como sección y no como fila

@@ -214,6 +214,19 @@ export interface IncrementosDelContrato {
 }
 
 /** D6 · Una carta en la bandeja de la inmobiliaria. */
+export type EstadoDelIncremento =
+  | 'POR_ENVIAR'
+  | 'VENCIDA_SIN_CONSTANCIA'
+  | 'ENVIADA'
+  | 'PROXIMA'
+  | 'SIN_INCREMENTO';
+
+/** Los aniversarios entre dos días, `AAAA-MM-DD` (los dos incluidos). */
+export interface PeriodoDeLosIncrementos {
+  desde: string;
+  hasta: string;
+}
+
 export interface CartaEnLaBandeja {
   contractId: string;
   code: number;
@@ -223,9 +236,22 @@ export interface CartaEnLaBandeja {
   inmueble: string | null;
   desde: string;
   diasParaElAniversario: number;
-  estado: 'POR_ENVIAR' | 'VENCIDA_SIN_CONSTANCIA' | 'ENVIADA';
+  /**
+   * Con período (pantalla Incrementos, Portofino 22-10-2026) también
+   * `PROXIMA` (falta más de N días; ya se puede enviar) y `SIN_INCREMENTO`
+   * (el aniversario no sube: `motivo` dice por qué).
+   */
+  estado: EstadoDelIncremento;
   alertaRoja: boolean;
-  origen: string;
+  /** `null` en un aniversario que no sube. */
+  origen: string | null;
+  /** Lo que sigue llegó el 22-10-2026: un back anterior no lo manda. */
+  documentoDelInquilino?: string | null;
+  /** El último día del contrato, `AAAA-MM-DD`. */
+  finDelContrato?: string;
+  /** Vence en 90 días o menos: también está en Renovaciones. */
+  porRenovar?: boolean;
+  motivo?: string | null;
   porcentaje: number | null;
   canonAnteriorCop: number;
   canonNuevoCop: number;
@@ -269,6 +295,8 @@ export interface CartaParaVer {
 
 export interface BandejaDeCartas {
   diasAntes: number;
+  /** El período pedido; `null` (o ausente en un back anterior) = la bandeja de siempre. */
+  periodo?: PeriodoDeLosIncrementos | null;
   disponible: boolean;
   porEnviar: number;
   vencidasSinConstancia: number;
@@ -718,7 +746,12 @@ export const cicloDeVidaApi = {
     ),
 
   /** D6: la bandeja de cartas por enviar de la inmobiliaria. */
-  bandejaDeCartas: () => apiClient.get<BandejaDeCartas>('/inmobiliaria/cartas-de-incremento'),
+  bandejaDeCartas: (periodo?: PeriodoDeLosIncrementos) =>
+    apiClient.get<BandejaDeCartas>(
+      periodo
+        ? `/inmobiliaria/cartas-de-incremento?desde=${periodo.desde}&hasta=${periodo.hasta}`
+        : '/inmobiliaria/cartas-de-incremento',
+    ),
 
   // ── D5 ──
   prorroga: (contractId: string) =>

@@ -1776,7 +1776,13 @@
       "moreButton": "Más",
       "moreAriaLabel": "Ver más opciones de navegación",
       "sheetTitle": "Más opciones",
-      "closeButton": "Cerrar"
+      "closeButton": "Cerrar",
+      "secciones": {
+        "sec-captacion": "Captación",
+        "sec-operacion": "Operación",
+        "sec-dinero": "Dinero",
+        "sec-directorio": "Directorio"
+      }
     },
     "common": {
       "title": "Inmobiliaria",

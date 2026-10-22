@@ -1741,7 +1741,13 @@
       "moreButton": "More",
       "moreAriaLabel": "View more navigation options",
       "sheetTitle": "More options",
-      "closeButton": "Close"
+      "closeButton": "Close",
+      "secciones": {
+        "sec-captacion": "Leasing",
+        "sec-operacion": "Operations",
+        "sec-dinero": "Money",
+        "sec-directorio": "Directory"
+      }
     },
     "common": {
       "title": "Real Estate Agency",

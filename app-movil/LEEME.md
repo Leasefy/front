@@ -20,9 +20,14 @@ Del lado del front, todo lo que habla con la app está en `src/lib/app-nativa/` 
 Los comandos de abajo se corren dentro de `app-movil/`; el front no lo compila (está en el `exclude` del
 `tsconfig.json`).
 
-**Para qué aparatos:** iPhone y teléfonos Android, en vertical. En iOS es sólo iPhone
-(`TARGETED_DEVICE_FAMILY = 1`): en un iPad se puede instalar igual, en modo iPhone, y Apple no pide
-capturas de iPad.
+**Para qué aparatos:** iPhone, iPad y Android (teléfonos y tablets).
+- iPhone y teléfonos Android: sólo en vertical.
+- iPad (`TARGETED_DEVICE_FAMILY = "1,2"`): gira a las cuatro orientaciones (`UISupportedInterfaceOrientations~ipad`),
+  como pide iPadOS para las ventanas que cambian de tamaño. La app pide la versión móvil de la página
+  (`preferredContentMode: 'mobile'`), así que el front usa su diseño adaptable: barra de abajo en vertical y menú
+  lateral desde 1024 px (iPad de 13" en vertical o cualquier iPad en horizontal).
+- Tablets Android: con `targetSdk 36` (Android 16), en pantallas grandes el sistema ignora el bloqueo a vertical
+  y la app gira igual que en iPad.
 
 ## Compilar
 

@@ -77,8 +77,10 @@ No se recolecta ubicación, contactos, historial de navegación ni datos de uso 
 
 Con una inmobiliaria de demostración (datos inventados; nunca datos de clientes):
 
-- iPhone 6,9" (1320 × 2868) y 6,5" (1284 × 2778): 4 a 6 capturas. No hacen falta de iPad: la app es sólo
-  para iPhone.
+- iPhone 6,9" (1320 × 2868) y 6,5" (1284 × 2778): 4 a 6 capturas.
+- iPad 13" (2064 × 2752, vertical, o 2752 × 2064, horizontal): 4 capturas. La app corre en iPad.
+- Tablet Android (opcional, recomendado): 4 capturas de 7" y de 10"; sin ellas Google no la marca como «diseñada
+  para tablets».
 - Android teléfono (1080 × 1920 o más): 4 a 8 capturas.
 
 Pantallas sugeridas: inicio del inquilino con su próximo pago · pagar el arriendo · estado de cuenta ·

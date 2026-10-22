@@ -9,3 +9,4 @@ www/
 *.mobileprovision
 llave-de-subida.properties
 android/local.properties
+salidas/

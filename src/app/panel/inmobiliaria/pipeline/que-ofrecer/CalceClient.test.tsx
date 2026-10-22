@@ -224,7 +224,10 @@ describe('CalceClient', () => {
     await pintar()
     await abrirComoSeDecide()
     expect(contenedor.textContent).toContain('los de por defecto')
-    expect(contenedor.textContent).toContain('zona: 40')
+    // Revisora r23 (Qué ofrecer #2): cada peso con su nombre y su porcentaje, no la llave cruda («zona: 40»).
+    expect(contenedor.textContent).toContain('Zona 40 %')
+    expect(contenedor.textContent).toContain('Holgura en el presupuesto 10 %')
+    expect(contenedor.textContent).not.toContain('zona: 40')
   })
 
   it('🔴 y NO están puestos sobre la pantalla hasta que alguien los pida', async () => {

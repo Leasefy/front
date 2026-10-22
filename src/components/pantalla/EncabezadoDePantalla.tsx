@@ -90,7 +90,12 @@ export function EncabezadoDePantalla({
             '[&>[data-principal]]:order-first [&>[data-principal]]:w-full sm:[&>[data-principal]]:order-none sm:[&>[data-principal]]:w-auto',
           )}
         >
-          {ayuda ? <div className="flex items-center">{ayuda}</div> : null}
+          {/* Revisora r23 (Pendientes, Cuadre, Recaudo bancario): bajo `lg` la fila de acciones queda debajo del
+              título, a la izquierda, y el botón fantasma de la ayuda se veía sangrado ~12 px por su relleno. Se
+              corre a la orilla del título; arriba a la derecha (lg) queda como estaba. */}
+          {ayuda ? (
+            <div className="flex items-center [&>[data-variante=fantasma]]:-ml-3 lg:[&>[data-variante=fantasma]]:ml-0">{ayuda}</div>
+          ) : null}
           {acciones}
           {accionPrincipal ? (
             <div data-principal="" className="flex [&>*]:w-full sm:[&>*]:w-auto">

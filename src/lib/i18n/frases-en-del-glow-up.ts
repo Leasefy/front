@@ -304,4 +304,10 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Sin nada por arreglar": "Nothing to fix",
   "de {esperado} esperados": "of {esperado} expected",
   "El negocio": "The business",
+  "Los inmuebles que le sirven a un interesado, con el mensaje listo para mandar.": "The properties that suit a prospect, with the message ready to send.",
+  "Elige un interesado y te muestro qué inmuebles le sirven, y por qué.": "Pick a prospect and I will show you which properties suit them, and why.",
+  "Zona": "Area",
+  "Fecha de entrada": "Move-in date",
+  "Tipo": "Type",
+  "Holgura en el presupuesto": "Budget headroom",
 }

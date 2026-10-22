@@ -162,10 +162,11 @@ export function OrigenesClient() {
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-base">Por portal</CardTitle>
           {/* Ronda 21: una barra, «Entró: [desde] – [hasta]» (antes dos campos con la etiqueta flotando encima). */}
-          <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:flex sm:w-auto" role="group" aria-label="Cuándo entraron los interesados">
-            {/* Ronda 22 (390): «Entró» en su renglón; las dos fechas se reparten el ancho (salían «1 oct 2…»). */}
-            <span className="col-span-3 text-body-sm text-fg-muted sm:col-span-1">Entró</span>
-            <Label htmlFor="desde" className="sr-only">Desde</Label>
+          {/* Revisora r23 (Orígenes #1): a 390 las dos fechas repartidas en un renglón se cortaban («22 oct 202…»).
+              Bajo `sm`, una por renglón a lo ancho con su «Desde» / «Hasta» a la vista; el «–» sólo en escritorio. */}
+          <div className="grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 sm:flex sm:w-auto" role="group" aria-label="Cuándo entraron los interesados">
+            <span className="col-span-2 text-body-sm text-fg-muted sm:col-span-1">Entró</span>
+            <Label htmlFor="desde" className="text-body-sm font-normal text-fg-muted sm:sr-only">Desde</Label>
             <CampoDeDia
               id="desde"
               value={desde}
@@ -173,8 +174,8 @@ export function OrigenesClient() {
               className="w-full sm:w-40"
               testid="filtro-desde"
             />
-            <span className="text-fg-subtle" aria-hidden="true">–</span>
-            <Label htmlFor="hasta" className="sr-only">Hasta</Label>
+            <span className="hidden text-fg-subtle sm:inline" aria-hidden="true">–</span>
+            <Label htmlFor="hasta" className="text-body-sm font-normal text-fg-muted sm:sr-only">Hasta</Label>
             <CampoDeDia
               id="hasta"
               value={hasta}

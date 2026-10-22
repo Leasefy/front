@@ -174,6 +174,15 @@ const ORDEN_DE_LA_ETAPA: Record<string, number> = {
   lead: 2, completed: 3, lost: 3,
 }
 
+/** El nombre de cada peso del calce (la llave del back, en palabras). */
+const NOMBRE_DEL_PESO: Record<string, string> = {
+  zona: 'Zona',
+  fecha: 'Fecha de entrada',
+  habitaciones: 'Habitaciones',
+  tipo: 'Tipo',
+  holgura: 'Holgura en el presupuesto',
+}
+
 export function opcionesDeInteresados(items: readonly PipelineItem[], en = false): ComboboxOption[] {
   const etapa = (st: string) => PIPELINE_STAGES.find((x) => x.stage === st)
   return [...items]
@@ -326,7 +335,47 @@ export function CalceClient() {
       <EncabezadoDePantalla
         seccion={tr('Captación y arriendo')}
         titulo={tr("Qué ofrecer")}
-        descripcion={tr("A un interesado, los inmuebles que le sirven. A un inmueble que se libera, los interesados a los que les sirve — con el porqué listo para mandar.")}
+        descripcion={tr("Los inmuebles que le sirven a un interesado, con el mensaje listo para mandar.")}
+        // Revisora r23 (Qué ofrecer #1): «Cómo se decide» arriba a la derecha, en la ayuda; antes iba aislado al pie.
+        ayuda={
+            <ParaEntenderMas
+              etiqueta={tr("Cómo se decide")}
+              titulo={tr("Cómo se decide un calce")}
+              descripcion={tr("Dos cosas distintas: lo que un inmueble tiene que cumplir para aparecer, y cuánto pesa cada coincidencia en el orden.")}
+            >
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium">{tr("Requisitos (no se configuran)")}</p>
+                  <ul className="text-fg-muted list-disc pl-5 text-sm">
+                    {(enSuIdioma(en, config.datos?.requisitos, config.datos?.requisitosEn) ?? []).map((r) => (
+                      <li key={r}>{r}</li>
+                    ))}
+                  </ul>
+                </div>
+                {config.datos?.pesos ? (
+                  <div>
+                    <p className="text-sm font-medium">
+                      {tr("Pesos")} {config.datos.configurados ? '' : tr('(los de por defecto)')}
+                    </p>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {/* Revisora r23 (Qué ofrecer #2): cada peso con su nombre, no la llave cruda («zona: 40»). */}
+                      {Object.entries(config.datos.pesos).map(([k, v]) => (
+                        <Badge key={k} variant="secondary">
+                          {tr(NOMBRE_DEL_PESO[k] ?? k)} {v} %
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                <p className="text-fg-muted text-caption">
+                  {tr("Los pesos se cambian en la configuración de la inmobiliaria, no aquí: moverlos desde la pantalla de trabajo invita a ajustarlos hasta que salga el inmueble que uno quería vender.")}{' '}
+                  <Link href="/panel/inmobiliaria/configuracion" className="text-primary underline">
+                    {tr("Ir a configuración")}
+                  </Link>
+                </p>
+              </div>
+            </ParaEntenderMas>
+        }
       />
 
       {/* Las dos direcciones son la MISMA pregunta mirada desde los dos lados. */}
@@ -374,7 +423,7 @@ export function CalceClient() {
                 options={opcionesDelInteresado}
                 placeholder={tr(leadsDelTablero.length === 0
                   ? 'Todavía no hay interesados en el tablero'
-                  : 'Buscar por nombre, teléfono o inmueble')}
+                  : 'Nombre, teléfono o inmueble')}
                 searchPlaceholder={tr('Nombre, teléfono o inmueble')}
                 disabled={leadsDelTablero.length === 0}
                 data-testid="input-lead"
@@ -394,7 +443,7 @@ export function CalceClient() {
               />
             ) : !leadId.trim() ? (
               <p className="text-fg-muted text-sm">
-                {tr("Elige un interesado y te muestro qué inmuebles le calzan, y por qué.")}
+                {tr("Elige un interesado y te muestro qué inmuebles le sirven, y por qué.")}
               </p>
             ) : delLead.noHabilitado ? (
               <p className="text-fg-muted text-sm" data-testid="calce-no-habilitado">
@@ -630,47 +679,6 @@ export function CalceClient() {
         </Card>
       )}
 
-      {/* 🔴 Cómo se decide un calce: se consulta una vez, no cada vez que se
-          abre la pantalla. Era un `<details>` al pie —y abierto empujaba las
-          opciones hacia abajo, que es justo lo que la persona vino a mirar—;
-          desde el 21-09 se abre encima con `ParaEntenderMas` y la devuelve
-          intacta al cerrarla. */}
-      <ParaEntenderMas
-        etiqueta={tr("Cómo se decide")}
-        titulo={tr("Cómo se decide un calce")}
-        descripcion={tr("Dos cosas distintas: lo que un inmueble tiene que cumplir para aparecer, y cuánto pesa cada coincidencia en el orden.")}
-      >
-        <div className="space-y-3">
-          <div>
-            <p className="text-sm font-medium">{tr("Requisitos (no se configuran)")}</p>
-            <ul className="text-fg-muted list-disc pl-5 text-sm">
-              {(enSuIdioma(en, config.datos?.requisitos, config.datos?.requisitosEn) ?? []).map((r) => (
-                <li key={r}>{r}</li>
-              ))}
-            </ul>
-          </div>
-          {config.datos?.pesos ? (
-            <div>
-              <p className="text-sm font-medium">
-                {tr("Pesos")} {config.datos.configurados ? '' : tr('(los de por defecto)')}
-              </p>
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {Object.entries(config.datos.pesos).map(([k, v]) => (
-                  <Badge key={k} variant="secondary">
-                    {k}: {v}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          <p className="text-fg-muted text-xs">
-            {tr("Los pesos se cambian en la configuración de la inmobiliaria, no aquí: moverlos desde la pantalla de trabajo invita a ajustarlos hasta que salga el inmueble que uno quería vender.")}{' '}
-            <Link href="/panel/inmobiliaria/configuracion" className="text-primary underline">
-              {tr("Ir a configuración")}
-            </Link>
-          </p>
-        </div>
-      </ParaEntenderMas>
     </div>
   )
 }

@@ -312,7 +312,7 @@ export default function RetencionDashboardPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <CabeceraDeVinci
         titulo={tr("Retención")}
-        descripcion={tr("Vinci lee las señales del ERP —mora, PQRS, mantenimientos, fin del contrato, incremento, giros atrasados— y te dice quién se puede ir: el propietario que saca su inmueble o el inquilino que no renueva.")}
+        descripcion={tr("Vinci lee las señales de tu operación —mora, PQRS, mantenimientos, fin del contrato, incremento, giros atrasados— y te dice quién se puede ir: el propietario que saca su inmueble o el inquilino que no renueva.")}
         acciones={
           r ? (
             <Button
@@ -342,7 +342,7 @@ export default function RetencionDashboardPage() {
             titulo={tr("Vinci no puede medir todavía.")}
             data-testid="vinci-no-disponible"
           >
-            {tr("Faltan datos del ERP (")}{r.faltan.join(', ')}{tr("). No muestra casos inventados.")}
+            {tr("Faltan datos (")}{r.faltan.join(', ')}{tr("). No muestra casos inventados.")}
           </AlertaAccionable>
         ) : null}
         {r?.disponible ? (
@@ -416,10 +416,10 @@ export default function RetencionDashboardPage() {
                 titulo={tr("Nadie pasa el umbral hoy")}
                 descripcion={
                   en
-                    ? `With today's ERP signals, no owner or tenant reaches ${r.umbral}/100.${r.enCobranza ? ` The ${r.enCobranza} ${r.enCobranza === 1 ? 'tenant' : 'tenants'} more than 60 days late are handled by collections.` : ''}`
+                    ? `With today's signals, no owner or tenant reaches ${r.umbral}/100.${r.enCobranza ? ` The ${r.enCobranza} ${r.enCobranza === 1 ? 'tenant' : 'tenants'} more than 60 days late are handled by collections.` : ''}`
                     : r.enCobranza
-                    ? `Con las señales del ERP de hoy, ningún propietario ni inquilino llega a ${r.umbral}/100. Los ${plural(r.enCobranza, 'inquilino', 'inquilinos')} con más de 60 días de mora los lleva cobranza.`
-                    : `Con las señales del ERP de hoy, ningún propietario ni inquilino llega a ${r.umbral}/100.`
+                    ? `Con las señales de hoy, ningún propietario ni inquilino llega a ${r.umbral}/100. Los ${plural(r.enCobranza, 'inquilino', 'inquilinos')} con más de 60 días de mora los lleva cobranza.`
+                    : `Con las señales de hoy, ningún propietario ni inquilino llega a ${r.umbral}/100.`
                 }
               />
             }

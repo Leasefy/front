@@ -1848,7 +1848,7 @@
         "cuotasPendientesSinDato": "El servidor todavía no manda las cuotas del contrato"
       },
       "pipeline": {
-        "title": "Pipeline activo",
+        "title": "Captación en curso",
         "subtitle": "Interesados y negociaciones en curso",
         "empty": "No hay interesados activos"
       },
@@ -4770,7 +4770,7 @@
           "withValue": "{{count}} con valor comercial"
         },
         "chart": {
-          "title": "Top {{n}} por neto al propietario",
+          "title": "Los {{n}} que más le dejan al propietario",
           "titleEmpty": "Neto al propietario por inmueble",
           "subtitle": "Lo que cada inmueble deja después de comisión, retenciones y gastos.",
           "empty": "Ningún inmueble le dejó neto al propietario en este periodo."
@@ -9206,12 +9206,12 @@
             "desconectadoTitulo": "Las solicitudes de avalúo están desconectadas",
             "directoDetalle": "Abre el asistente y carga los datos del inmueble tú mismo.",
             "abriendoAsistente": "Abriendo asistente…",
-            "linkCta": "Generar link para compartir",
-            "linkDetalle": "Envía el link a tu cliente para que lo complete; el avalúo saldrá a nombre de tu inmobiliaria.",
-            "generandoLink": "Generando link…",
-            "linkListoDetalle": "Envía este link a tu cliente; el avalúo saldrá a nombre de tu inmobiliaria.",
+            "linkCta": "Generar enlace para compartir",
+            "linkDetalle": "Envía el enlace a tu cliente para que lo complete; el avalúo saldrá a nombre de tu inmobiliaria.",
+            "generandoLink": "Generando enlace…",
+            "linkListoDetalle": "Envía este enlace a tu cliente; el avalúo saldrá a nombre de tu inmobiliaria.",
             "linkAria": "Link para compartir el avalúo",
-            "copiarLink": "Copiar link para compartir",
+            "copiarLink": "Copiar enlace para compartir",
             "abrirAhora": "Abrir ahora",
             "errorCopiar": "No pudimos copiar el link. Cópialo manualmente.",
             "errorSolicitar": "No pudimos solicitar el avalúo. Intenta de nuevo.",

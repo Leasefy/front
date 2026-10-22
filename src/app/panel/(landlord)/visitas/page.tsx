@@ -491,10 +491,11 @@ export default function VisitasPage() {
           />
         </FranjaDeCifras>
 
-        {/* Tabs */}
+        {/* Tabs — revisora r24 (N7): a 390 se salían 187 px; ahora se deslizan dentro de su riel. */}
+        <div className="mb-6 max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-lenis-prevent>
         <SegmentedControl
           size="md"
-          className="mb-6"
+          className="[&>button]:whitespace-nowrap"
           aria-label={t('landlord.visits.title')}
           value={tabFunnel}
           onChange={(value) => setTabFunnel(value)}
@@ -511,6 +512,7 @@ export default function VisitasPage() {
             ),
           }))}
         />
+        </div>
 
         {/* Table */}
         {getFunneledVisits().length === 0 ? (

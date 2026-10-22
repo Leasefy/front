@@ -542,10 +542,10 @@ function ResumenDelNegocio() {
             <EmptyState
               icon={Kanban}
               title={t('inmobiliaria.dashboard.pipeline.empty')}
-              description="Los candidatos en proceso aparecerán aquí a medida que avancen en el pipeline."
+              description="Los candidatos en proceso aparecerán aquí a medida que avancen en Prospección."
             />
           ) : (
-            <SinAcceso que="el pipeline" />
+            <SinAcceso que="la prospección" />
           )}
         </div>
 

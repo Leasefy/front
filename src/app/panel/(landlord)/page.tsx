@@ -505,15 +505,25 @@ function PanelDelPropietarioIndependiente() {
               <>
                 <div className="flex items-center gap-2">
                   <p className="font-mono text-h2 tabular-nums text-fg">
-                    <AnimatedNumber
-                      value={dashboardData.financial.collectionRate}
-                      from={huboCarga ? 0 : undefined}
-                      format={(n) => String(Math.round(n))}
-                    />%
+                    {/* Revisora r24 (N8): sin el tablero del back no hay tasa que mostrar; antes salía un 100 % de
+                        respaldo y «Excelente» fijo, sin ningún dato detrás. */}
+                    {dashboard ? (
+                      <>
+                        <AnimatedNumber
+                          value={dashboardData.financial.collectionRate}
+                          from={huboCarga ? 0 : undefined}
+                          format={(n) => String(Math.round(n))}
+                        />%
+                      </>
+                    ) : (
+                      '—'
+                    )}
                   </p>
-                  <StatusBadge tone="success" dot={false}>
-                    {t('landlord.dashboard.excellent')}
-                  </StatusBadge>
+                  {dashboard && dashboardData.financial.collectionRate >= 95 ? (
+                    <StatusBadge tone="success" dot={false}>
+                      {t('landlord.dashboard.excellent')}
+                    </StatusBadge>
+                  ) : null}
                 </div>
                 <p className="text-sm text-fg-muted mt-2">
                   {t('landlord.dashboard.thisMonth')}

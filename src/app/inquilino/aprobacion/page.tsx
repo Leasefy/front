@@ -182,7 +182,7 @@ function AprobadoView({
             {bureau!.minimumScore !== null && (
               <div className="rounded-lg border border-border bg-surface-muted p-4">
                 <p className="font-mono text-caption uppercase tracking-[0.08em] text-fg-subtle">
-                  {tf(`${NS}.aprobado.scoreBuro`, 'Score de buró')}
+                  {tf(`${NS}.aprobado.scoreBuro`, 'Puntaje del buró')}
                 </p>
                 <p className="font-mono text-xl font-normal tabular-nums text-fg">
                   {bureau!.minimumScore}

@@ -165,7 +165,7 @@ describe('aprobado', () => {
     })
     render()
     const t = texto()
-    expect(t).toContain('Score de buró')
+    expect(t).toContain('Puntaje del buró')
     expect(t).toMatch(/650/)
     expect(t).toContain('Capacidad de pago mensual')
     expect(t).toMatch(/3\.000\.000/)
@@ -184,7 +184,7 @@ describe('aprobado', () => {
       },
     })
     render()
-    expect(texto()).not.toContain('Score de buró')
+    expect(texto()).not.toContain('Puntaje del buró')
   })
 })
 

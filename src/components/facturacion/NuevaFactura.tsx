@@ -1773,7 +1773,8 @@ export function NuevaFactura({
     compacta
     // Bajo `lg` la barra de navegación del celular (56 px + la zona segura)
     // está fija abajo: el pie se pega ENCIMA de ella, no detrás (FA-15).
-    className="bottom-[calc(env(safe-area-inset-bottom)+3.5625rem)] lg:bottom-0"
+    // Nico (22-10): con 0 marcadas la barra no se ve (sigue montada); aparece al marcar la primera.
+    className={cn('bottom-[calc(env(safe-area-inset-bottom)+3.5625rem)] lg:bottom-0', elegidas.length === 0 && 'hidden')}
     testid="facturacion-acciones"
     // Tiene acciones que sirven sin marcar nada; 22-10 (revisión): con 0 marcadas no tapa el buscador.
     siempreConAcciones={elegidas.length > 0}

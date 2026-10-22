@@ -21,6 +21,7 @@ import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { getAccessToken } from '@/lib/api/client';
+import { cabecerasComoInquilino } from '@/lib/auth/cuenta-activa';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { buildWompiCheckoutUrl } from '@/lib/payments/wompi-rent-session';
 import {
@@ -69,7 +70,12 @@ export function PagarTusArriendos({ arriendos }: Props) {
       const token = getAccessToken();
       const res = await fetch('/api/inquilino/pagos/varios/wompi-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          // El back exige el papel de inquilino: quien también es de una inmobiliaria paga con esa cuenta.
+          ...cabecerasComoInquilino(),
+        },
         body: JSON.stringify({ arriendos: partesDelPago(arriendos, marcado) }),
       });
       const cuerpo = (await res.json().catch(() => ({}))) as Record<string, unknown>;

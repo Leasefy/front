@@ -50,6 +50,16 @@ function leerLasPartes(arriendos: unknown): { partes: { leaseId: string; cuotas:
   return { partes }
 }
 
+/** Reenvía al back sólo las cabeceras de cuenta que el navegador mandó. */
+function cabecerasDeLaCuentaQueLlegan(req: Request): Record<string, string> {
+  const salida: Record<string, string> = {}
+  for (const nombre of ['x-cuenta', 'x-inmobiliaria']) {
+    const valor = req.headers.get(nombre)
+    if (valor) salida[nombre] = valor
+  }
+  return salida
+}
+
 export async function POST(req: Request) {
   let arriendos: unknown
   try {
@@ -81,7 +91,13 @@ export async function POST(req: Request) {
 
   const res = await fetch(`${BACKEND_URL}/portal/pago-en-linea/varios`, {
     method: 'POST',
-    headers: { Authorization: authorization, 'Content-Type': 'application/json' },
+    headers: {
+      Authorization: authorization,
+      'Content-Type': 'application/json',
+      // «Cambiar de cuenta»: el back decide el papel con estas cabeceras; sin ellas una persona
+      // que además es de una inmobiliaria no pasa el guard de inquilino.
+      ...cabecerasDeLaCuentaQueLlegan(req),
+    },
     body: JSON.stringify({ arriendos: leido.partes }),
   })
   if (!res.ok) {

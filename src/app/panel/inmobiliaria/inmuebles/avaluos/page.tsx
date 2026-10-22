@@ -55,6 +55,7 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { Badge } from '@/components/ui/badge'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { Button } from '@/components/ui/button'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
@@ -312,122 +313,91 @@ function AvaluosSala() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* ── Header ─────────────────────────────────────────────────────
-          «¿Cómo funciona?» va aquí, donde iría el botón de acción (Nico,
-          05-10-2026): abre el cajón con los cuatro pasos y la nota del
-          revisor. Antes era una tarjeta de cuatro columnas siempre a la vista. */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <h1 className="text-h2 text-fg">
-            {t(`${NS}.salaTitulo`)}
-          </h1>
-          <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">{t(`${NS}.salaDesc`)}</p>
-        </div>
-        <ParaEntenderMas
-          etiqueta={t(`${NS}.comoFunciona.title`)}
-          titulo={t(`${NS}.comoFunciona.titulo`)}
-          descripcion={t(`${NS}.comoFunciona.descripcion`)}
-          variante="secundario"
-          className="self-start sm:shrink-0"
-        >
-          <PasosExplicados
-            data-testid="avaluos-como-funciona"
-            pasos={COMO_FUNCIONA_STEPS.map((step) => ({
-              id: step.clave,
-              icono: step.icon,
-              titulo: t(`${NS}.comoFunciona.${step.clave}.title`),
-              explicacion: t(`${NS}.comoFunciona.${step.clave}.desc`),
-              quien: step.quien,
-              tuParte: step.tuParte ? t(`${NS}.comoFunciona.${step.clave}.tuParte`) : undefined,
-            }))}
-            nota={t(`${NS}.firmaNota`)}
-          />
-        </ParaEntenderMas>
-      </header>
-
-      {/* ── Solicitar un avalúo ────────────────────────────────────────
-          TWO distinct actions, both backed by `avaluosApi.solicitar()`:
-          "directo" opens the wizard now (lo hago yo), "link" mints a
-          shareable URL (se lo mando a un cliente). Each has its own loading
-          state so one spinner never blocks the other. */}
-      <div
-        className="rounded-lg border border-border bg-card p-5 space-y-4"
-        data-testid="avaluos-solicitar"
-      >
-        <h2 className="text-base font-medium text-foreground">{t(`${NS}.solicitarTitle`)}</h2>
-
-        {servicioDesconectado && (
-          <div
-            className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2"
-            data-testid="avaluos-servicio-no-configurado"
+      {/* GLOW UP 22-10 (UX, al nivel de Deuda del mes): el encabezado común —«Hacer un avalúo» (lo hago yo)
+          la principal, «Generar link para compartir» (se lo mando a un cliente) la secundaria, «¿Cómo
+          funciona?» en la ayuda—. Antes las dos acciones vivían en dos tarjetas dentro de otra tarjeta, y
+          la lista de avalúos (el trabajo) quedaba debajo del pliegue. */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secAgentes')}
+        titulo={t(`${NS}.salaTitulo`)}
+        descripcion={t(`${NS}.salaDesc`)}
+        ayuda={
+          <ParaEntenderMas
+            etiqueta={t(`${NS}.comoFunciona.title`)}
+            titulo={t(`${NS}.comoFunciona.titulo`)}
+            descripcion={t(`${NS}.comoFunciona.descripcion`)}
           >
-            <WarningCircle
-              className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
-              aria-hidden="true"
+            <PasosExplicados
+              data-testid="avaluos-como-funciona"
+              pasos={COMO_FUNCIONA_STEPS.map((step) => ({
+                id: step.clave,
+                icono: step.icon,
+                titulo: t(`${NS}.comoFunciona.${step.clave}.title`),
+                explicacion: t(`${NS}.comoFunciona.${step.clave}.desc`),
+                quien: step.quien,
+                tuParte: step.tuParte ? t(`${NS}.comoFunciona.${step.clave}.tuParte`) : undefined,
+              }))}
+              nota={t(`${NS}.firmaNota`)}
             />
-            <div>
-              <p className="text-sm font-medium text-warning">
-                {t(`${NS}.desconectadoTitulo`)}
-              </p>
-              {/* `solicitarUnavailable`, la MISMA frase que usa el vacío de la
-                  cola: el servicio está desconectado en un solo lugar del
-                  diccionario, no en dos que se despegan.
+          </ParaEntenderMas>
+        }
+        acciones={
+          <Button
+            size="sm"
+            hideArrow
+            variant="outline"
+            title={t(`${NS}.linkDetalle`)}
+            isLoading={generatingLink}
+            disabled={generatingLink || servicioDesconectado}
+            onClick={onGenerarLink}
+            data-testid="avaluos-generar-link-cta"
+          >
+            <ShareNetwork className="size-4" />
+            {generatingLink ? t(`${NS}.generandoLink`) : t(`${NS}.linkCta`)}
+          </Button>
+        }
+        accionPrincipal={
+          <Button
+            size="sm"
+            hideArrow
+            title={t(`${NS}.directoDetalle`)}
+            isLoading={openingWizard}
+            disabled={openingWizard || servicioDesconectado}
+            onClick={onSolicitarDirecto}
+            data-testid="avaluos-solicitar-directo-cta"
+          >
+            {openingWizard ? t(`${NS}.abriendoAsistente`) : t(`${NS}.solicitarCta`)}
+          </Button>
+        }
+      />
 
-                  Lo que decía antes —«Tus avalúos anteriores se siguen viendo
-                  más abajo»— era falso: la lista de abajo sale del MISMO
-                  servicio y falla por la misma razón (502). Un aviso no puede
-                  prometer lo que la pantalla incumple diez centímetros abajo. */}
-              <p className="text-body-sm text-fg-muted mt-0.5">
-                {t(`${NS}.solicitarUnavailable`)}
-              </p>
-            </div>
-          </div>
-        )}
+      {servicioDesconectado && (
+        <div
+          className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2"
+          data-testid="avaluos-servicio-no-configurado"
+        >
+          <WarningCircle
+            className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
+            aria-hidden="true"
+          />
+          <div>
+            <p className="text-sm font-medium text-warning">
+              {t(`${NS}.desconectadoTitulo`)}
+            </p>
+            {/* `solicitarUnavailable`, la MISMA frase que usa el vacío de la
+                cola: el servicio está desconectado en un solo lugar del
+                diccionario, no en dos que se despegan.
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Directo — lo hago yo */}
-          <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">{t(`${NS}.solicitarCta`)}</p>
-              <p className="text-caption text-muted-foreground leading-snug">
-                {t(`${NS}.directoDetalle`)}
-              </p>
-            </div>
-            <Button
-              hideArrow
-              className="mt-auto w-full"
-              isLoading={openingWizard}
-              disabled={openingWizard || servicioDesconectado}
-              onClick={onSolicitarDirecto}
-              data-testid="avaluos-solicitar-directo-cta"
-            >
-              {openingWizard ? t(`${NS}.abriendoAsistente`) : t(`${NS}.solicitarCta`)}
-            </Button>
-          </div>
-
-          {/* Link para compartir — se lo mando a un cliente */}
-          <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">{t(`${NS}.linkCta`)}</p>
-              <p className="text-caption text-muted-foreground leading-snug">
-                {t(`${NS}.linkDetalle`)}
-              </p>
-            </div>
-            <Button
-              hideArrow
-              variant="secondary"
-              className="mt-auto w-full"
-              isLoading={generatingLink}
-              disabled={generatingLink || servicioDesconectado}
-              onClick={onGenerarLink}
-              data-testid="avaluos-generar-link-cta"
-            >
-              <ShareNetwork className="size-4" />
-              {generatingLink ? t(`${NS}.generandoLink`) : t(`${NS}.linkCta`)}
-            </Button>
+                Lo que decía antes —«Tus avalúos anteriores se siguen viendo
+                más abajo»— era falso: la lista de abajo sale del MISMO
+                servicio y falla por la misma razón (502). Un aviso no puede
+                prometer lo que la pantalla incumple diez centímetros abajo. */}
+            <p className="text-body-sm text-fg-muted mt-0.5">
+              {t(`${NS}.solicitarUnavailable`)}
+            </p>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── Shareable link ─────────────────────────────────────────────
           Output of the "Generar link para compartir" action: the minted wizard

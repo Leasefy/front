@@ -92,7 +92,7 @@ export function ResumenDelContratoNuevo({
       className={cn('rounded-lg border border-border bg-card p-5 shadow-sm', className)}
       data-testid="resumen-del-contrato"
     >
-      <h2 id="resumen-del-contrato-titulo" className="text-base font-semibold text-fg">
+      <h2 id="resumen-del-contrato-titulo" className="text-h3 text-fg">
         Resumen
       </h2>
 

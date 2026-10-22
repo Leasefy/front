@@ -73,7 +73,7 @@ export function RespaldoDelArriendo({
       <div className="flex items-start gap-2.5">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-fg-subtle" weight="duotone" aria-hidden="true" />
         <div>
-          <h3 className="text-sm font-semibold text-fg">Respaldo del arriendo</h3>
+          <h3 className="text-h3 text-fg">Respaldo del arriendo</h3>
           <p className="mt-0.5 text-sm text-fg-muted">
             Queda en el contrato. Sin el número de la póliza no hay a quién
             reclamarle si algo pasa.

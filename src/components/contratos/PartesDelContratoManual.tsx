@@ -287,7 +287,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
   return (
     <section className="space-y-5 rounded-lg border border-border bg-card p-5" data-testid="partes-manuales">
       <div>
-        <h2 className="text-base font-semibold text-fg">¿Sobre qué inmueble y para quién?</h2>
+        <h2 className="text-h3 text-fg">¿Sobre qué inmueble y para quién?</h2>
         <p className="mt-0.5 text-sm text-fg-muted">
           El propietario sale del inmueble consignado. El resto del contrato es igual que cualquier otro.
         </p>

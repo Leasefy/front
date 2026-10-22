@@ -1283,7 +1283,7 @@ function NuevoContratoContent() {
 
         {/* 1) Contract origin */}
         <section className="rounded-lg border border-border bg-card p-5 space-y-4">
-          <h2 className="text-base font-semibold text-foreground">Tipo de contrato</h2>
+          <h2 className="text-h3 text-fg">Tipo de contrato</h2>
           {/* C-14: «Generar con IA» sólo se ofrece cuando el backend dice que
               está configurada (`iaDisponible`). Apagada con «No disponible» era
               una promesa muerta en medio de las dos formas que sí sirven. */}
@@ -1374,7 +1374,7 @@ function NuevoContratoContent() {
           {/* 2) PDF upload */}
           {form.mode === 'upload' && (
             <section className="rounded-lg border border-border bg-card p-5 space-y-3">
-              <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
+              <h2 className="text-h3 text-fg">PDF del contrato</h2>
               {form.pdfFile ? (
                 <div className="flex items-center gap-3 p-3 rounded-lg border border-success/30 bg-success-soft">
                   <FileText className="w-5 h-5 text-primary flex-shrink-0" />
@@ -1462,7 +1462,7 @@ function NuevoContratoContent() {
         <div className="min-w-0 space-y-6" data-testid="nuevo-contrato-terminos">
         {/* 3) Dates + amounts */}
         <section className="rounded-lg border border-border bg-card p-5 space-y-4">
-          <h2 className="text-base font-semibold text-foreground">Términos</h2>
+          <h2 className="text-h3 text-fg">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" onBlur={alDejarUnCampo}>
             <Field id={idDelCampoDelContrato('startDate')} label="Fecha de inicio" error={errorDe('startDate')}>
               <CampoDeDia

@@ -175,8 +175,8 @@ export default function GuardadosPage() {
                     ? 'Se arrendaron o las quitaron del catálogo. Busca otras y vuelve a guardar las que te sirvan.'
                     : 'They were rented or removed from the catalog. Browse others and save the ones you like.'
                   : locale === 'es'
-                    ? 'Toca el corazón en los inmuebles que te interesen y los encuentras aquí para compararlos.'
-                    : 'Tap the heart on the properties you like and find them here to compare them.'
+                    ? 'Abre un inmueble y toca el corazón para guardarlo: aquí los encuentras para compararlos.'
+                    : 'Open a property and tap the heart to save it: you will find them here to compare.'
               }
               action={{
                 label: locale === 'es' ? 'Ver inmuebles para mí' : 'See homes for me',

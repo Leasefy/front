@@ -13,6 +13,7 @@
 
 import { CurrencyDollar, Wallet, TrendUp, Info } from '@phosphor-icons/react'
 import { CrossFade, IconButton } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { useI18n } from '@/lib/i18n'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import {
@@ -78,6 +79,58 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
       caption: t('inmobiliaria.ai.cotizador.costos.forecastCaption'),
     },
   ]
+
+  /*
+   * Ronda 30 (la vara de Deuda del mes): LA RESPUESTA es lo que se gasta al mes (CifraHeroe); el costo por
+   * cotización y la proyección a 30 días acompañan al pie, en una línea. Antes eran tres tarjetas del mismo peso.
+   * Mientras carga, el esqueleto de siempre.
+   */
+  if (!isLoading) {
+    const [costo, gasto, proyeccion] = cards
+    return (
+      <section className="rounded-lg border border-border bg-card px-5 py-5" data-testid="costos-cifra">
+        <CifraHeroe
+          tamano="mediana"
+          rotulo={gasto.label}
+          cifra={gasto.value}
+          pie={
+            <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+              <span>
+                {costo.label} <span className="font-mono tabular-nums text-fg">{costo.value}</span>
+              </span>
+              <span aria-hidden="true">·</span>
+              <span>
+                {proyeccion.label} <span className="font-mono tabular-nums text-fg">{proyeccion.value}</span>
+              </span>
+              {proyeccion.caption ? (
+                <span className="inline-flex items-center gap-1">
+                  <span aria-hidden="true">·</span>
+                  {proyeccion.caption}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <IconButton
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          icon={<Info className="h-3 w-3" />}
+                          aria-label={t('inmobiliaria.ai.cotizador.costos.forecastTooltip')}
+                          className="flex-shrink-0"
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-xs text-caption">
+                        {t('inmobiliaria.ai.cotizador.costos.forecastTooltip')}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </span>
+              ) : null}
+            </span>
+          }
+        />
+      </section>
+    )
+  }
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

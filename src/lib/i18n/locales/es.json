@@ -6336,7 +6336,7 @@
               "cargando": "Cargando aseguradoras…",
               "sinAseguradoras": "Tu inmobiliaria no tiene aseguradoras habilitadas. Habilítalas en la pestaña «Aseguradoras».",
               "seleccionaUna": "Marca al menos una aseguradora.",
-              "errorRegistro": "No pudimos traer la lista de aseguradoras.",
+              "errorRegistro": "No se pudo traer la lista de aseguradoras.",
               "reintentar": "Intentar de nuevo"
             },
             "prioridad": {

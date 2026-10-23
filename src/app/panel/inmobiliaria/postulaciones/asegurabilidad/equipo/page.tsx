@@ -37,10 +37,11 @@ import { useI18n } from '@/lib/i18n'
 const NS = 'inmobiliaria.ai.asegurabilidad.equipo'
 
 /** Acento de marca por familia de nodo (tokens semánticos del DS). */
+// Ronda 30 (Cadence 2: sin íconos en cajas de color): las tres familias en neutro; el título dice cuál es.
 const ACCENT = {
-  blue: { fg: 'text-primary', chip: 'bg-primary-soft' },
-  green: { fg: 'text-success', chip: 'bg-success-soft' },
-  amber: { fg: 'text-warning', chip: 'bg-warning-soft' },
+  blue: { fg: 'text-fg-muted', chip: 'bg-surface-muted' },
+  green: { fg: 'text-fg-muted', chip: 'bg-surface-muted' },
+  amber: { fg: 'text-fg-muted', chip: 'bg-surface-muted' },
 } as const
 
 type Accent = keyof typeof ACCENT

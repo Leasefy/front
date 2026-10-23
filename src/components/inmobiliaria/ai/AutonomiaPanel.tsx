@@ -254,7 +254,7 @@ export function AutonomiaPanel({
                   </span>
                   {hint && <span className="mt-1.5 block text-caption leading-relaxed text-fg-muted">{hint}</span>}
                   {activo && (
-                    <span className="mt-2 block text-[11px] font-medium uppercase tracking-wide text-primary">
+                    <span className="mt-2 block font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-primary">
                       {t(`${NS}.modoActivo`)}
                     </span>
                   )}
@@ -284,7 +284,7 @@ export function AutonomiaPanel({
                 , en «Autonomía» del encabezado.
               </>
             ) : (
-              <>Solo un administrador puede cambiar el modo, desde el Piloto.</>
+              <>Sólo un administrador puede cambiar el modo, desde el Piloto.</>
             )}
           </p>
         </div>

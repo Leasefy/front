@@ -107,7 +107,7 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
             /* Si la lista no cargó, la persona no está eligiendo nada: se dice. */
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-fg-muted">
-                {tf(`${K}.aseguradoras.errorRegistro`, 'No pudimos traer la lista de aseguradoras.')}
+                {tf(`${K}.aseguradoras.errorRegistro`, 'No se pudo traer la lista de aseguradoras.')}
               </p>
               <Button variant="outline" size="sm" hideArrow onClick={() => void registry.refetch()}>
                 {tf(`${K}.aseguradoras.reintentar`, 'Intentar de nuevo')}

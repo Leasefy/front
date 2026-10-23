@@ -3,20 +3,19 @@
 import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
 import { useState, useRef } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, Buildings, FileText } from '@phosphor-icons/react';
+import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, Buildings, FileText } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Button, Input, Spinner } from '@/components/ui';
+import { Button, Input } from '@/components/ui';
+import Link from 'next/link';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar';
 import {
-  AnimatedNumber,
   Collapse,
   CrossFade,
   IconButton,
   Avatar,
-  motionDuration,
-  motionEase,
 } from '@leasefy/cadence';
 import {
   Dialog,
@@ -182,9 +181,6 @@ export default function PropietarioPerfilPage() {
     },
   ];
 
-  const completedSteps = setupSteps.filter(s => s.completed).length;
-  const totalSteps = setupSteps.length;
-  const completionPercentage = Math.round((completedSteps / totalSteps) * 100);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -382,135 +378,52 @@ export default function PropietarioPerfilPage() {
     <div className="min-h-screen bg-bg">
       <div className="p-6 lg:p-8">
 
-        {/* Header */}
-        <header className="mb-8">
-          <div>
-            <h1 className="text-3xl font-medium text-fg tracking-tight">
-              {locale === 'es' ? 'Mi Perfil' : 'My Profile'}
-            </h1>
-            <p className="mt-1 text-fg-muted">
-              {locale === 'es' ? 'Gestiona tu información personal y preferencias' : 'Manage your personal information and preferences'}
-            </p>
-          </div>
-        </header>
+        {/* GLOW UP 22-10 (como el perfil del inquilino): el encabezado común y lo que falta del perfil en la lista
+            de siempre —«Para completar tu perfil te faltan N pasos», cada uno con «Completar»—. Antes, un bloque
+            azul con barra, anillo de porcentaje y cinco tarjetas con el ícono en una caja de color. */}
+        <EncabezadoDePantalla
+          className="mb-8"
+          titulo={locale === 'es' ? 'Mi perfil' : 'My profile'}
+          descripcion={locale === 'es' ? 'Tus datos personales y cómo te contactamos.' : 'Your personal details and how we reach you.'}
+        />
 
-        {/* Setup Progress Section — la barra, el anillo y el porcentaje se
-            revelan desde 0 y, al completar un paso, avanzan desde donde estaban. */}
-        <section className="mb-8">
-          <div className="rounded-lg bg-[#EEF1FF] p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Shield className="w-6 h-6 text-[#1A40FF] shrink-0" aria-hidden="true" />
-                  <div>
-                    <h2 className="text-h3 text-fg">
-                      {locale === 'es' ? 'Completar perfil' : 'Complete profile'}
-                    </h2>
-                    <p className="text-sm text-[#1A40FF]">
-                      {locale === 'es'
-                        ? `${completedSteps} de ${totalSteps} pasos completados`
-                        : `${completedSteps} of ${totalSteps} steps completed`}
-                    </p>
-                  </div>
-                </div>
-                {/* `transform` (translateX), no `width`: no recalcula el layout por cuadro. */}
-                <div className="h-2 bg-white/50 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ x: '-100%' }}
-                    animate={{ x: `${completionPercentage - 100}%` }}
-                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                    className="h-full w-full bg-[#1A40FF] rounded-full"
-                  />
-                </div>
-                <p className="text-caption text-fg-muted mt-2">
-                  {completionPercentage === 100
-                    ? (locale === 'es' ? 'Perfil completo! Tienes acceso a todas las funciones.' : 'Profile complete! You have access to all features.')
-                    : (locale === 'es' ? 'Completa tu perfil para acceder a todas las funciones' : 'Complete your profile to access all features')}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-center">
-                <div className="relative w-24 h-24">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="white" strokeWidth="8" opacity="0.5" className="" />
-                    <motion.circle
-                      cx="50" cy="50" r="40" fill="none" stroke="#1A40FF" strokeWidth="8" strokeLinecap="round"
-                      initial={{ strokeDasharray: '0 251.2' }}
-                      animate={{ strokeDasharray: `${completionPercentage * 2.512} 251.2` }}
-                      transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-medium text-fg">
-                      <AnimatedNumber value={completionPercentage} from={0} format={(n) => String(Math.round(n))} />%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {setupSteps.map((step, index) => {
-                const Icon = step.icon;
-                return (
-                  <div
-                    key={step.id}
-                    className={cn(
-                      'rounded-lg p-4 transition-colors',
-                      step.completed
-                        ? 'bg-white/80'
-                        : 'bg-surface border-2 border-dashed border-[#1A40FF]/30'
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={cn(
-                        'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
-                        step.completed ? 'bg-[#E8F3EC]' : 'bg-[#EEF1FF]'
-                      )}>
-                        {step.completed ? (
-                          <CheckCircle className="w-4 h-4 text-[#2C7A53]" />
-                        ) : (
-                          <Icon className="w-4 h-4 text-[#1A40FF]" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn('text-sm font-medium truncate', step.completed ? 'text-fg' : 'text-[#1A40FF]')}>
-                          {step.label}
-                        </p>
-                        {step.completed ? (
-                          <span className="text-caption text-[#2C7A53]">{locale === 'es' ? 'Completado' : 'Completed'}</span>
-                        ) : (
-                          <span className="text-caption text-fg-muted">{locale === 'es' ? 'Pendiente' : 'Pending'}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
+        <ListaParaEmpezar
+          className="mb-8"
+          paraQue={locale === 'es' ? 'completar tu perfil' : 'complete your profile'}
+          requisitos={setupSteps.map((step) => ({
+            id: step.id,
+            titulo: step.label,
+            estado: step.completed ? ('listo' as const) : ('falta' as const),
+            accion: (
+              <Button
+                size="sm"
+                variant="outline"
+                hideArrow
+                onClick={() => {
+                  if (step.id === 'basic-info') {
+                    setAvatarPreview(savedAvatar);
+                    setEditingSection('avatar');
+                  } else {
+                    setEditingSection(step.id === 'emergency-contact' ? 'emergency' : 'personal');
+                  }
+                }}
+              >
+                {locale === 'es' ? 'Completar' : 'Complete'}
+              </Button>
+            ),
+          }))}
+          data-testid="perfil-lo-que-falta"
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}
           <div className="lg:col-span-1 space-y-6">
             <div className="rounded-lg border border-border bg-surface overflow-hidden">
-              <div className="relative bg-[#EEF1FF] h-28">
-                {editingSection !== 'avatar' && (
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setAvatarPreview(savedAvatar); setEditingSection('avatar'); }}
-                    aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
-                    className="absolute top-3 right-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white"
-                    icon={<Pencil className="w-4 h-4" />}
-                  />
-                )}
-              </div>
-              <div className="px-6 pb-6">
+              {/* Sin la franja azul de adorno ni el lápiz de vidrio (blanco sobre azul claro, casi no se veía). */}
+              <div className="px-6 pb-6 pt-6">
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
 
-                <div className="relative -mt-14 mb-4">
+                <div className="relative mb-4 w-28">
                   <div
                     className={cn("w-28 h-28 rounded-full border-4 border-surface overflow-hidden", editingSection === 'avatar' && "cursor-pointer")}
                     onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
@@ -528,7 +441,7 @@ export default function PropietarioPerfilPage() {
                       size="sm"
                       onClick={handleAvatarClick}
                       aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
-                      className="absolute bottom-1 right-1 bg-primary text-primary-fg hover:bg-neutral-800"
+                      className="absolute bottom-1 right-1 bg-ink text-white hover:bg-ink/90"
                       icon={<Camera className="w-4 h-4" />}
                     />
                   )}
@@ -540,7 +453,7 @@ export default function PropietarioPerfilPage() {
                     onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleAvatarClick}
                     className={cn(
                       "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
-                      isDragging ? "border-[#1A40FF]/30 bg-[#EEF1FF]" : "border-border hover:border-[#1A40FF]/30 hover:bg-surface-muted"
+                      isDragging ? "border-primary/30 bg-primary-soft" : "border-border hover:border-primary/30 hover:bg-surface-muted"
                     )}
                   >
                     {avatarPreview ? (
@@ -580,6 +493,19 @@ export default function PropietarioPerfilPage() {
                 ) : (
                   <h2 className="text-h3 text-fg">{fullName}</h2>
                 )}
+                {editingSection !== 'avatar' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    hideArrow
+                    onClick={() => { setAvatarPreview(savedAvatar); setEditingSection('avatar'); }}
+                    className="mt-4"
+                    aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
+                  >
+                    <Camera className="w-4 h-4" aria-hidden="true" />
+                    {locale === 'es' ? 'Cambiar foto o nombre' : 'Change photo or name'}
+                  </Button>
+                )}
                 {/* «Propietario desde Enero 2024» era una fecha inventada, igual
                     para todos (Nico, 02-10-2026): no se muestra. */}
 
@@ -589,7 +515,7 @@ export default function PropietarioPerfilPage() {
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </Button>
                     <Button size="sm" hideArrow onClick={() => handleSave('avatar')} disabled={isSaving} className="flex-1 justify-center gap-2">
-                      {isSaving ? <Spinner size="sm" variant="current" /> : <FloppyDisk className="w-4 h-4" />}
+                      {!isSaving && <FloppyDisk className="w-4 h-4" aria-hidden="true" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
                     </Button>
                   </div>
@@ -600,28 +526,21 @@ export default function PropietarioPerfilPage() {
                     él); a quien le administra una inmobiliaria no le dicen nada. */}
                 {!deInmobiliaria && (
                 <div className="mt-6 pt-6 border-t border-border-faint space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Buildings className="w-5 h-5 text-[#2C7A53] shrink-0" aria-hidden="true" />
-                    <div>
-                      <p className="text-sm font-medium text-fg">
-                        {locale === 'es' ? 'Propiedades publicadas' : 'Published properties'}
-                      </p>
-                      <p className="text-caption text-fg-muted">
-                        {locale === 'es' ? 'Gestiona tus propiedades' : 'Manage your properties'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-[#1A40FF] shrink-0" aria-hidden="true" />
-                    <div>
-                      <p className="text-sm font-medium text-fg">
-                        {locale === 'es' ? 'Contratos activos' : 'Active contracts'}
-                      </p>
-                      <p className="text-caption text-fg-muted">
-                        {locale === 'es' ? 'Arriendos vigentes' : 'Current leases'}
-                      </p>
-                    </div>
-                  </div>
+                  {/* Antes, dos filas que no decían nada ni llevaban a ningún lado: ahora son los atajos. */}
+                  <Link href="/panel/propiedades" className="flex items-center gap-3 rounded-md hover:bg-surface-muted -mx-2 px-2 py-1.5">
+                    <Buildings className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block text-sm text-fg">{locale === 'es' ? 'Mis inmuebles' : 'My properties'}</span>
+                      <span className="block text-caption text-fg-muted">{locale === 'es' ? 'Los que publicas y arriendas' : 'The ones you list and rent'}</span>
+                    </span>
+                  </Link>
+                  <Link href="/panel/leases" className="flex items-center gap-3 rounded-md hover:bg-surface-muted -mx-2 px-2 py-1.5">
+                    <FileText className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block text-sm text-fg">{locale === 'es' ? 'Mis contratos' : 'My contracts'}</span>
+                      <span className="block text-caption text-fg-muted">{locale === 'es' ? 'Arriendos vigentes' : 'Current leases'}</span>
+                    </span>
+                  </Link>
                 </div>
                 )}
               </div>
@@ -638,7 +557,7 @@ export default function PropietarioPerfilPage() {
                 cruzan (lo nuevo entra ya, lo viejo sale por encima). */}
             <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-medium text-fg">
+                <h3 className="text-h3 text-fg">
                   {locale === 'es' ? 'Información personal' : 'Personal information'}
                 </h3>
                 <CrossFade swapKey={editingSection === 'personal' ? 'editar' : 'ver'} mode="popLayout">
@@ -653,7 +572,7 @@ export default function PropietarioPerfilPage() {
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </Button>
                     <Button size="sm" hideArrow onClick={() => handleSave('personal')} disabled={isSaving} className="gap-1.5">
-                      {isSaving ? <Spinner size="sm" variant="current" /> : <FloppyDisk className="w-3.5 h-3.5" />}
+                      {!isSaving && <FloppyDisk className="w-4 h-4" aria-hidden="true" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
                     </Button>
                   </div>
@@ -758,7 +677,7 @@ export default function PropietarioPerfilPage() {
             {/* Emergency Contact — mismo cruce que los datos personales. */}
             <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-medium text-fg">{locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}</h3>
+                <h3 className="text-h3 text-fg">{locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}</h3>
                 <CrossFade swapKey={editingSection === 'emergency' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'emergency' ? (
                   <Button variant="ghost" size="sm" hideArrow onClick={() => setEditingSection('emergency')} className="gap-1.5">
@@ -771,7 +690,7 @@ export default function PropietarioPerfilPage() {
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </Button>
                     <Button size="sm" hideArrow onClick={() => handleSave('emergency')} disabled={isSaving} className="gap-1.5">
-                      {isSaving ? <Spinner size="sm" variant="current" /> : <FloppyDisk className="w-3.5 h-3.5" />}
+                      {!isSaving && <FloppyDisk className="w-4 h-4" aria-hidden="true" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
                     </Button>
                   </div>
@@ -798,8 +717,8 @@ export default function PropietarioPerfilPage() {
             </div>
 
             {/* Danger Zone */}
-            <div className="rounded-lg border border-[#C4503B]/30 bg-[#F8EAE7]/30 p-6">
-              <h3 className="font-medium text-[#C4503B] mb-2 flex items-center gap-2">
+            <div className="rounded-lg border border-danger/30 bg-danger-soft/30 p-6">
+              <h3 className="text-h3 text-danger mb-2 flex items-center gap-2">
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>

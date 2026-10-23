@@ -336,7 +336,9 @@ describe('Perfil del propietario — sólo lo que es verdad', () => {
     })
     await renderPage()
     const texto = container.textContent ?? ''
-    expect(texto).toContain('2 de 5 pasos completados')
+    // Glow up 22-10: la lista de la casa (mismo dato: 2 de 5 listos, faltan 3).
+    expect(texto).toContain('Para completar tu perfil te faltan 3 pasos')
+    expect(texto).toContain('2/5')
     expect(texto).not.toContain('Perfil completo')
     expect(texto).not.toMatch(/Verificar (teléfono|identidad)/)
   })

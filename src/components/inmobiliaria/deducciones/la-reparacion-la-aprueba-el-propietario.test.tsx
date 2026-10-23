@@ -25,6 +25,10 @@ const api = vi.hoisted(() => ({
   soporte: vi.fn(),
   bandeja: vi.fn(),
   registrarEmergencia: vi.fn(),
+  // Portofino 22-10: «La hago yo» y «Ya quedó».
+  lasQueHagoYo: vi.fn(),
+  laHagoYo: vi.fn(),
+  yaQuedo: vi.fn(),
 }));
 vi.mock('@/lib/api/aprobaciones-de-reparacion.service', () => ({
   aprobacionesDeReparacionApi: api,
@@ -92,6 +96,8 @@ beforeEach(() => {
   document.body.appendChild(contenedor);
   raiz = createRoot(contenedor);
   Object.values(api).forEach((f) => f.mockReset());
+  // Portofino 22-10: sin reparaciones que haga él, salvo que la prueba diga otra cosa.
+  api.lasQueHagoYo.mockResolvedValue([]);
 });
 afterEach(() => {
   act(() => raiz.unmount());
@@ -287,6 +293,74 @@ describe('en el portal del propietario: «Aprobar reparaciones»', () => {
       raiz.render(<AprobarReparacionesPage />);
     });
     expect(q('aprobaciones-vacio')).not.toBeNull();
+  });
+
+  /*
+   * Portofino 22-10: «para tiempos más laxos, "la puede hacer usted"; de
+   * crítico urgente, sólo la inmobiliaria».
+   */
+  it('«La hago yo» en una que el propietario puede hacer: no se descuenta nada', async () => {
+    api.delPortal.mockResolvedValue({
+      pendientes: [{ ...PENDIENTE, prioridad: 'MEDIUM', puedeHacerlaElPropietario: true }],
+      historial: [],
+    });
+    api.laHagoYo.mockResolvedValue({ loDecidio: 'PROPIETARIO', nota: null, desde: '2026-10-22T15:00:00Z', terminadaAt: null, terminadaNota: null });
+    await act(async () => {
+      raiz.render(<AprobarReparacionesPage />);
+    });
+    await act(async () => {
+      (q('la-hago-yo') as HTMLButtonElement).click();
+    });
+    await act(async () => {
+      (q('la-hago-yo-confirmar') as HTMLButtonElement).click();
+    });
+    expect(api.laHagoYo).toHaveBeenCalledWith('ap-1', '');
+  });
+
+  it('en Alta no se ofrece «La hago yo» y dice por qué', async () => {
+    api.delPortal.mockResolvedValue({
+      pendientes: [{ ...PENDIENTE, prioridad: 'HIGH', puedeHacerlaElPropietario: false }],
+      historial: [],
+    });
+    await act(async () => {
+      raiz.render(<AprobarReparacionesPage />);
+    });
+    expect(q('la-hago-yo')).toBeNull();
+    expect(q('la-hace-la-inmobiliaria')?.textContent).toMatch(/prioridad Alta: la hace tu inmobiliaria/);
+  });
+
+  it('«Ya quedó» en la que está haciendo él', async () => {
+    api.delPortal.mockResolvedValue({ pendientes: [], historial: [] });
+    api.lasQueHagoYo.mockResolvedValueOnce([
+      {
+        solicitudId: 'sol-9',
+        loDecidio: 'INMOBILIARIA',
+        nota: 'Lo hablamos por teléfono',
+        desde: '2026-10-20T15:00:00Z',
+        terminadaAt: null,
+        terminadaNota: null,
+        inmobiliaria: 'Portofino',
+        inmueble: 'Apto 402',
+        reparacion: { titulo: 'Pintura de la sala', descripcion: '' },
+        prioridad: 'LOW',
+        venceAt: null,
+      },
+    ]);
+    api.yaQuedo.mockResolvedValue({});
+    await act(async () => {
+      raiz.render(<AprobarReparacionesPage />);
+    });
+    // Con una que hace él, la página no dice «no tienes nada».
+    expect(q('aprobaciones-vacio')).toBeNull();
+    expect(q('la-hago-yo')).toBeNull();
+    expect(q('las-que-hago-yo')?.textContent).toContain('Pintura de la sala');
+    await act(async () => {
+      (q('ya-quedo') as HTMLButtonElement).click();
+    });
+    await act(async () => {
+      (q('ya-quedo-confirmar') as HTMLButtonElement).click();
+    });
+    expect(api.yaQuedo).toHaveBeenCalledWith('sol-9', '');
   });
 });
 

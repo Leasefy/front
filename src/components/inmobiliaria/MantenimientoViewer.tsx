@@ -63,6 +63,7 @@ import {
 import { IconButton } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { PropuestaYCargoDeLaReparacion } from '@/components/inmobiliaria/deducciones/PropuestaYCargoDeLaReparacion';
+import { QuienHaceLaReparacion } from '@/components/inmobiliaria/mantenimiento/QuienHaceLaReparacion';
 import type {
   SolicitudMantenimiento,
   MantenimientoType,
@@ -107,6 +108,11 @@ export interface MantenimientoViewerProps {
    * proveedor» en una solicitud completada con proveedor del registro.
    */
   onCalificado?: () => void | Promise<void>;
+  /**
+   * Portofino 22-10-2026: con este callback la tarjeta ofrece «Que la haga el
+   * propietario» y «La retoma la inmobiliaria»; se llama después del cambio.
+   */
+  onQuienLaHaceCambio?: () => void | Promise<void>;
 }
 
 interface TimelineEvent {
@@ -477,6 +483,7 @@ export function MantenimientoViewer({
   onRequestQuote,
   onCompletada,
   onCalificado,
+  onQuienLaHaceCambio,
 }: MantenimientoViewerProps) {
   const { t, formatDate: fmtDate } = useI18n();
   const [showNoteDialog, setShowNoteDialog] = useState(false);
@@ -744,6 +751,21 @@ export function MantenimientoViewer({
                   <p className="text-muted-foreground">{t('inmobiliaria.mantenimiento.owner')}</p>
                   <p className="font-medium text-foreground">{solicitud.propietarioName}</p>
                 </div>
+                {/* Portofino 22-10: el proveedor elegido al crearla (o el de la cotización aprobada). */}
+                {solicitud.proveedor && (
+                  <div className="col-span-2" data-testid="detalle-proveedor">
+                    <p className="text-muted-foreground">Proveedor</p>
+                    <p className="font-medium text-foreground">
+                      {solicitud.proveedor.nombre}
+                      {solicitud.proveedor.telefono ? (
+                        <span className="font-normal text-muted-foreground"> · {solicitud.proveedor.telefono}</span>
+                      ) : null}
+                      {!solicitud.proveedor.activo ? (
+                        <span className="font-normal text-warning"> · inactivo en Proveedores</span>
+                      ) : null}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -794,6 +816,11 @@ export function MantenimientoViewer({
             solicitud={solicitud}
             onRevisar={onApproveQuote ? (_id, quoteId) => handleSelectQuote(quoteId) : undefined}
           />
+
+          {/* Portofino 22-10: ¿la hace la inmobiliaria o el propietario? */}
+          {onQuienLaHaceCambio ? (
+            <QuienHaceLaReparacion solicitud={solicitud} onCambio={onQuienLaHaceCambio} />
+          ) : null}
 
           {/* Quotations Section */}
           {(solicitud.status === 'quoted' ||

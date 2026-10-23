@@ -893,9 +893,19 @@ export const contractsApi = {
 
   async agregarConcepto(
     id: string,
-    dto: Omit<ConceptoDelContrato, 'id'>,
-  ): Promise<ConceptoDelContrato> {
-    return apiClient.post<ConceptoDelContrato>(`/contracts/${id}/conceptos`, dto);
+    dto: NuevoConceptoDelContrato,
+  ): Promise<ConceptoDelContrato & { avisos?: string[] }> {
+    return apiClient.post<ConceptoDelContrato & { avisos?: string[] }>(`/contracts/${id}/conceptos`, dto);
+  },
+
+  /** Portofino 22-10: los meses del contrato para elegir dónde cobrar un concepto. */
+  async mesesParaUnConcepto(
+    id: string,
+    paga: ConceptoDelContrato['paga'],
+  ): Promise<{ disponible: boolean; meses: MesParaUnConcepto[] }> {
+    return apiClient.get<{ disponible: boolean; meses: MesParaUnConcepto[] }>(
+      `/contracts/${id}/conceptos/meses?paga=${paga === 'INQUILINO' ? 'INQUILINO' : 'PROPIETARIO'}`,
+    );
   },
 
   async quitarConcepto(id: string, conceptoId: string): Promise<{ id: string }> {
@@ -1574,6 +1584,31 @@ export interface ConceptoDelContrato {
    * ausente = no (y un back sin la migración del mandato no lo manda).
    */
   comisionable?: boolean | null;
+  /**
+   * Portofino 22-10: los meses en que entra y cuánto en cada uno (ya ubicados:
+   * `mesPedido` cuando el mes elegido estaba pagado o caía después del fin).
+   * `null` = como siempre.
+   */
+  planDeMeses?: MesDelPlanDelConcepto[] | null;
+}
+
+export interface MesDelPlanDelConcepto {
+  mes: string;
+  valorCop: number;
+  mesPedido?: string;
+}
+
+/** Portofino 22-10: lo que se manda al agregar un concepto con meses. */
+export interface NuevoConceptoDelContrato extends Omit<ConceptoDelContrato, 'id' | 'planDeMeses'> {
+  meses?: Array<{ mes: string; valorCop: number }>;
+}
+
+/** Un mes del contrato para elegir dónde cobrar un concepto. */
+export interface MesParaUnConcepto {
+  mes: string;
+  /** `false` = esa cuota ya está pagada (o cobrada, o girada) o ya venció: el valor pasa a la siguiente. */
+  sePuede: boolean;
+  porQue?: 'PAGADA' | 'VENCIDA';
 }
 
 /**

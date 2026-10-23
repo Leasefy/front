@@ -36,7 +36,7 @@ import type {
 } from '@/lib/api/pqrs-agencia.types'
 import { MEDIOS_SIN_PORTAL } from '@/lib/api/pqrs-agencia.types'
 import { getRoleLabel, type AgencyRole } from '@/lib/types/inmobiliaria'
-import { ACCEPT_DE_ADJUNTOS, problemaDelAdjunto } from '@/lib/api/pqrs-adjuntos'
+import { ACCEPT_DE_ADJUNTOS_DE_PQRS, problemaDelAdjuntoDePqrs } from '@/lib/api/pqrs-adjuntos'
 import {
   ESTADO_BADGE,
   ESTADO_LABEL,
@@ -183,7 +183,7 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
   /** SO-18: una foto o un PDF a la PQRS; el back decide por los bytes. */
   async function adjuntar(archivo: File) {
     if (!pqrs) return
-    const problema = problemaDelAdjunto(archivo)
+    const problema = problemaDelAdjuntoDePqrs(archivo)
     if (problema) {
       toast.error('No se pudo adjuntar', { description: problema })
       return
@@ -359,7 +359,7 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
                     <input
                       ref={inputArchivo}
                       type="file"
-                      accept={ACCEPT_DE_ADJUNTOS}
+                      accept={ACCEPT_DE_ADJUNTOS_DE_PQRS}
                       className="sr-only"
                       data-testid="pqrs-adjuntar-input"
                       onChange={(e) => {
@@ -377,7 +377,7 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
                       data-testid="pqrs-adjuntar"
                     >
                       <Paperclip className="h-4 w-4" />
-                      {subiendo ? 'Subiendo…' : 'Adjuntar foto o PDF'}
+                      {subiendo ? 'Subiendo…' : 'Adjuntar foto, video o PDF'}
                     </Button>
                   </>
                 )}

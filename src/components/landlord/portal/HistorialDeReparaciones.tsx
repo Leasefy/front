@@ -27,14 +27,14 @@ import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { aprobacionesDeReparacionApi } from '@/lib/api/aprobaciones-de-reparacion.service';
 import type { AprobacionEnElPortal, PaginaDelHistorialDeAprobaciones } from '@/lib/types/deducciones';
-import { DetalleDeLaReparacion, ESTADO_CORTO } from './DetalleDeLaReparacion';
+import { DetalleDeLaReparacion, estadoCorto } from './DetalleDeLaReparacion';
 
 function fechaDeLaFila(a: AprobacionEnElPortal): string {
   return fechaCorta(diaEnColombia(a.decididaAt ?? a.anuladaAt ?? a.pedidaAt));
 }
 
 function Estado({ a }: { a: AprobacionEnElPortal }) {
-  const estado = ESTADO_CORTO[a.estado];
+  const estado = estadoCorto(a);
   return (
     <span className={`inline-flex rounded-full px-2 py-0.5 text-caption font-medium ${estado.tono}`}>
       {estado.texto}

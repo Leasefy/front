@@ -101,6 +101,7 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'action', title: 'Nuevo contrato', context: 'Contratos', href: `${P}/contratos`, keywords: 'crear contrato arriendo', permission: { module: 'contratos', action: 'create' } },
   { kind: 'action', title: 'Migrar contratos', context: 'Contratos', href: `${P}/contratos/migrar`, keywords: 'importar traer contratos cartera excel', permission: { module: 'contratos', action: 'create' } },
   { kind: 'page', title: 'Renovaciones', context: 'Contratos', href: `${P}/contratos/renovaciones`, keywords: 'renovar incremento ipc vencimiento', permission: { module: 'operaciones', action: 'view' } },
+  { kind: 'page', title: 'Incrementos', context: 'Contratos', href: `${P}/contratos/incrementos`, keywords: 'incremento ipc carta aniversario canon sube notificacion', permission: { module: 'operaciones', action: 'view' } },
 
   // ── Operación ─────────────────────────────────────────────────────────────
   { kind: 'page', title: 'Mantenimientos', context: 'Operación', href: `${P}/mantenimientos`, keywords: 'reparaciones arreglos operaciones', permission: { module: 'operaciones', action: 'view' } },

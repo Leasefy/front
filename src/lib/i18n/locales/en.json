@@ -979,6 +979,8 @@
       "contratos": "Contracts",
       "dispersiones": "Disbursements",
       "renovaciones": "Renewals",
+      "incrementos": "Rent increases",
+      "serviciosPublicos": "Utilities",
       "operaciones": "Maintenance",
       "documentos": "Documents",
       "documentosRevision": "Document review",
@@ -1923,6 +1925,8 @@
         "proteccionDeDatosDesc": "Data subject requests (habeas data): deadlines, their data and the record of the answer",
         "slaDePqrs": "Response time",
         "slaDePqrsDesc": "How long you take to answer a PQRS, by type.",
+        "reparaciones": "Repairs",
+        "reparacionesDesc": "How long you take for each priority and which ones only your agency handles.",
         "comercial": "Sales",
         "comercialDesc": "Your agents' commission: for listing and for closing, or a fixed amount per deal."
       },
@@ -3694,6 +3698,7 @@
         "captura": "Capture with AI",
         "candidatos": "Candidates",
         "verAviso": "View public listing",
+        "copiarFicha": "Copy listing card",
         "publicarEnElMarketplace": "Publish on the marketplace",
         "quitarDelMarketplace": "Remove from the marketplace",
         "eliminar": "Remove from portfolio"

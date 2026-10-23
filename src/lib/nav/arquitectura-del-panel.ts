@@ -22,6 +22,7 @@ import {
   ListChecks,
   Umbrella,
   ArrowsClockwise,
+  Lightning,
   Coins,
   CurrencyCircleDollar,
   ChatCircleText,
@@ -546,6 +547,11 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FilePlus, module: 'contratos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion', dataTourTarget: 'sidebar-contratos',
         pantallas: [
           { labelKey: 'inmobiliaria.nav.renovaciones', href: r('/contratos/renovaciones'), icon: ArrowsClockwise, module: 'operaciones' },
+          // 🔴 Portofino 22-10-2026: los incrementos de un MES, renovados o no.
+          // Renovaciones sólo lista lo que vence; un contrato ya renovado con
+          // incremento no salía en ningún lado (antes era la cola de cartas,
+          // `/renovaciones/cartas`, que ahora redirige acá).
+          { labelKey: 'inmobiliaria.nav.incrementos', href: r('/contratos/incrementos'), icon: TrendUp, module: 'operaciones' },
           // A-13: la invitación a firmar vence a los 7 días. Acá se ve qué
           // recordatorio toca y qué se venció — y que el inmueble SIGUE
           // reservado hasta que alguien cancele.
@@ -580,6 +586,10 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // una card sola: quedaría inalcanzable desde el menú. Mismo criterio
       // que «Portales» con Inmuebles.
       { key: 'proveedores', labelKey: 'inmobiliaria.nav.proveedores', href: r('/mantenimientos/proveedores'), icon: Toolbox, module: 'operaciones', scope: 'administracion' },
+      // 🔴 Portofino 22-10-2026: «necesito que creemos también dentro de
+      // operación la parte de servicios públicos»: quién está al día, las
+      // facturas que suben los inquilinos, la entrada por días y la salida.
+      { key: 'servicios-publicos', labelKey: 'inmobiliaria.nav.serviciosPublicos', href: r('/servicios-publicos'), icon: Lightning, module: 'operaciones', scope: 'administracion' },
       { key: 'solicitudes', labelKey: 'inmobiliaria.nav.solicitudes', href: r('/solicitudes'), icon: Lifebuoy, module: 'operaciones', scope: 'administracion', ia: true, hintKey: 'inmobiliaria.nav.pqrs' },
       // 21-10-2026: «Mensajes» es un permiso (se da desde «Permisos de esta
       // persona»); `canAccess('mensajes')` cae al rol con un back anterior.

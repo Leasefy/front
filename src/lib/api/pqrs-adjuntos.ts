@@ -28,6 +28,47 @@ export function problemaDelAdjunto(archivo: File): string | null {
   return null
 }
 
+/**
+ * Los adjuntos de una PQRS aceptan además VIDEOS (QA en Chrome, 21-10-2026: el
+ * inquilino no podía mandar el video de la fuga). 20 MB, el techo del back y el
+ * mismo de los videos del mantenimiento. Las fotos y los PDF siguen en 10 MB.
+ * Sólo para la PQRS: los documentos del proveedor siguen con `problemaDelAdjunto`.
+ */
+export const TIPOS_DE_VIDEO_DE_PQRS = ['video/mp4', 'video/quicktime', 'video/webm'] as const
+export const MAX_BYTES_DE_VIDEO_DE_PQRS = 20 * 1024 * 1024
+export const ACCEPT_DE_ADJUNTOS_DE_PQRS = `${ACCEPT_DE_ADJUNTOS},.mp4,.mov,.webm,video/mp4,video/quicktime,video/webm`
+
+const EXTENSION_DE_VIDEO: Record<string, (typeof TIPOS_DE_VIDEO_DE_PQRS)[number]> = {
+  mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  mov: 'video/quicktime',
+  webm: 'video/webm',
+}
+
+/** ¿Es un video? Por el tipo que dice el navegador o, si viene vacío, por la extensión. */
+export function esVideoDePqrs(archivo: { name: string; type: string }): boolean {
+  if ((TIPOS_DE_VIDEO_DE_PQRS as readonly string[]).includes(archivo.type)) return true
+  if (archivo.type) return false
+  const ext = archivo.name.split('.').pop()?.toLowerCase() ?? ''
+  return ext in EXTENSION_DE_VIDEO
+}
+
+/** La frase del problema de un adjunto de PQRS (foto, video o PDF), o `null`. */
+export function problemaDelAdjuntoDePqrs(archivo: File): string | null {
+  if (esVideoDePqrs(archivo)) {
+    return archivo.size > MAX_BYTES_DE_VIDEO_DE_PQRS
+      ? `«${archivo.name}» pesa más de 20 MB. Envía un video más corto (unos 20 segundos).`
+      : null
+  }
+  if (archivo.size > MAX_BYTES_DE_ADJUNTO) {
+    return `«${archivo.name}» pesa más de 10 MB. Envía una foto más liviana o un PDF de menos de 10 MB.`
+  }
+  if (!(TIPOS_DE_ADJUNTO as readonly string[]).includes(archivo.type)) {
+    return `«${archivo.name}» no es una foto, un video ni un PDF. Sólo se reciben fotos (JPG, PNG o WEBP), videos (MP4, MOV o WEBM) y PDF.`
+  }
+  return null
+}
+
 export interface AdjuntoSubido {
   id: string
   nombre: string

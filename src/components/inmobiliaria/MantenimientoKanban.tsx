@@ -22,6 +22,7 @@ import {
   Lightning,
   Snowflake,
   HouseLine,
+  Truck,
   PaintBrush,
   Key,
   DotsThreeCircle,
@@ -34,6 +35,7 @@ import {
   Check,
   ListBullets,
   CalendarBlank,
+  UserCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -46,6 +48,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getMantenimientoTypeInfo } from '@/lib/types/inmobiliaria';
 import { detectarColumnaDelPuntero } from './mantenimiento-kanban-colisiones';
+import { diasDeCalendarioDesde } from '@/lib/fechas/dias-de-calendario';
 
 // ============================================================================
 // Types
@@ -175,11 +178,9 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
 // Helper Functions
 // ============================================================================
 
+/** Días de calendario (hoy = 0): con `Math.ceil`, lo de hace minutos decía «Hace 1 día». */
 function getDaysSinceCreated(createdAt: string): number {
-  const created = new Date(createdAt);
-  const now = new Date();
-  const diffTime = now.getTime() - created.getTime();
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diasDeCalendarioDesde(createdAt);
 }
 
 // ============================================================================
@@ -272,6 +273,27 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
         <HouseLine className="w-3 h-3 inline mr-1" />
         {solicitud.propertyTitle}
       </div>
+
+      {/* Portofino 22-10: con quién se trabaja. */}
+      {solicitud.proveedor && (
+        <div className="text-xs text-fg-muted dark:text-fg-subtle mb-2 line-clamp-1" data-testid="tarjeta-proveedor">
+          <Truck className="w-3 h-3 inline mr-1" aria-hidden="true" />
+          {solicitud.proveedor.nombre}
+        </div>
+      )}
+
+      {/* Portofino 22-10: la arregla el propietario por su cuenta. */}
+      {solicitud.laHaceElPropietario && !solicitud.laHaceElPropietario.terminadaAt && (
+        <div className="mb-2">
+          <span
+            className="inline-flex items-center gap-1 rounded bg-warning-soft px-1.5 py-0.5 text-xs font-medium text-warning"
+            data-testid="tarjeta-la-hace-el-propietario"
+          >
+            <UserCircle className="w-3 h-3" aria-hidden="true" />
+            La hace el propietario
+          </span>
+        </div>
+      )}
 
       {/* Footer */}
       {/* SO-15: con cinco columnas la tarjeta es angosta: el pie se parte en

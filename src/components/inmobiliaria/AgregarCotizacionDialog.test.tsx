@@ -51,6 +51,18 @@ beforeEach(() => {
   );
 });
 
+// 21-10-2026: el tipo de documento es obligatorio y es un Select de Radix (no se
+// abre en happy-dom). En la prueba, un <select> nativo con el mismo id.
+vi.mock('@/components/inmobiliaria/mantenimiento/TipoDeDocumentoDelProveedor', () => ({
+  TipoDeDocumentoDelProveedor: ({ id, valor, onCambiar }: { id: string; valor: string; onCambiar: (t: string) => void }) => (
+    <select id={id} value={valor} onChange={(e) => onCambiar(e.target.value)}>
+      <option value="">Elige el tipo</option>
+      <option value="CC">Cédula de ciudadanía</option>
+      <option value="NIT">NIT</option>
+    </select>
+  ),
+}));
+
 import { AgregarCotizacionDialog } from './AgregarCotizacionDialog';
 import { ApiError } from '@/lib/api/client';
 import { MENSAJES_DEL_MANTENIMIENTO } from '@/lib/mantenimiento/limites-del-mantenimiento';
@@ -139,8 +151,17 @@ async function montar(props: Partial<React.ComponentProps<typeof AgregarCotizaci
   return { onGuardar: onGuardar as ReturnType<typeof vi.fn>, onOpenChange };
 }
 
+function elegir(select: HTMLSelectElement, valor: string) {
+  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!;
+  act(() => {
+    setter.call(select, valor);
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
+
 function llenarTodo() {
   escribir(campo('cotizacion-proveedor'), 'Plomería El Rayo');
+  elegir(document.body.querySelector<HTMLSelectElement>('#cotizacion-tipo-documento')!, 'NIT');
   escribir(campo('cotizacion-documento'), '900123456');
   escribir(campo('cotizacion-monto'), '350000');
   escribir(campo('cotizacion-alcance'), 'Cambio del sifón y prueba de presión');
@@ -293,6 +314,25 @@ describe('<AgregarCotizacionDialog>', () => {
     });
     expect(onGuardar).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain('Escoge el proveedor de la lista o regístralo.');
+  });
+
+  it('Portofino 22-10: el proveedor elegido al crear la solicitud llega ya escogido', async () => {
+    proveedoresApi.listar.mockResolvedValue([
+      { id: 'p-1', nombre: 'Plomería QA Día S.A.S.', telefono: '3001112233', especialidades: ['PLUMBING'], calificacion: 4.5, avisos: [] },
+    ]);
+    const { onGuardar } = await montar({ solicitud: hacerSolicitud({ proveedorId: 'p-1' }) });
+    escribir(campo('cotizacion-monto'), '180000');
+    escribir(campo('cotizacion-alcance'), 'Cambio del sifón');
+    await act(async () => {
+      guardar().click();
+    });
+    expect(onGuardar).toHaveBeenCalledTimes(1);
+    expect(onGuardar.mock.calls[0][1]).toMatchObject({
+      proveedorId: 'p-1',
+      providerName: 'Plomería QA Día S.A.S.',
+      providerPhone: '3001112233',
+    });
+    expect(proveedoresApi.crear).not.toHaveBeenCalled();
   });
 
   it('🔴 un valor de once cifras se ataja antes de enviar, con la frase del back', async () => {

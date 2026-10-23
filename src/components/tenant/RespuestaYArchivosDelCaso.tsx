@@ -6,7 +6,7 @@
  *   · SO-06: «Respuesta de la inmobiliaria: …» — hasta hoy veía «Resuelta» sin
  *     saber qué se resolvió.
  *   · SO-18: sus archivos (se abren con un enlace que dura una hora) y «Agregar
- *     foto o PDF» mientras no esté cerrada.
+ *     foto, video o PDF» mientras no esté cerrada.
  */
 import { useRef, useState } from 'react';
 import { ChatCircleText, FilePdf, Image as Imagen, Paperclip } from '@phosphor-icons/react';
@@ -14,7 +14,7 @@ import { ChatCircleText, FilePdf, Image as Imagen, Paperclip } from '@phosphor-i
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { pqrsApi } from '@/lib/api/pqrs.service';
-import { ACCEPT_DE_ADJUNTOS, problemaDelAdjunto } from '@/lib/api/pqrs-adjuntos';
+import { ACCEPT_DE_ADJUNTOS_DE_PQRS, problemaDelAdjuntoDePqrs } from '@/lib/api/pqrs-adjuntos';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { fechaLegible } from '@/lib/api/facturacion-por-mes.service';
 
@@ -45,7 +45,7 @@ export function RespuestaYArchivosDelCaso({ caseId, solicitud, onCambio, comoPro
   const cerrada = solicitud.estado === 'cerrada';
 
   async function subir(archivo: File) {
-    const problema = problemaDelAdjunto(archivo);
+    const problema = problemaDelAdjuntoDePqrs(archivo);
     if (problema) {
       toast.error('No se pudo adjuntar', { description: problema });
       return;
@@ -106,7 +106,7 @@ export function RespuestaYArchivosDelCaso({ caseId, solicitud, onCambio, comoPro
               <input
                 ref={input}
                 type="file"
-                accept={ACCEPT_DE_ADJUNTOS}
+                accept={ACCEPT_DE_ADJUNTOS_DE_PQRS}
                 className="sr-only"
                 onChange={(e) => {
                   const archivo = e.target.files?.[0];
@@ -117,7 +117,7 @@ export function RespuestaYArchivosDelCaso({ caseId, solicitud, onCambio, comoPro
               />
               <Button variant="outline" size="sm" hideArrow disabled={subiendo} onClick={() => input.current?.click()}>
                 <Paperclip className="h-4 w-4" />
-                {subiendo ? 'Subiendo…' : 'Agregar foto o PDF'}
+                {subiendo ? 'Subiendo…' : 'Agregar foto, video o PDF'}
               </Button>
             </>
           )}

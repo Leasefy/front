@@ -95,6 +95,9 @@ function ResultadosContent() {
       summary?.payments_today_total_cop ??
       ov?.kpis.pagadoHoyCop ??
       null
+    // Revisora r25 (Resultados #3): sin el agregado, lo que se muestra es lo
+    // pagado HOY; se dice así y no «Valor recuperado» (mezclaba periodos).
+    const recuperadoEsDeHoy = rec?.recoveredValueCop == null && recuperadoCop != null
 
     // Casos cerrados — solo del agregado de recovery.
     const casosCerrados = rec?.casesClosed ?? null
@@ -130,34 +133,29 @@ function ResultadosContent() {
       {
         key: 'recuperado',
         grupo: 'recupero',
-        label: 'Valor recuperado',
+        label: recuperadoEsDeHoy ? 'Pagado hoy' : 'Valor recuperado',
         value: recuperadoCop != null ? formatCurrency(recuperadoCop) : null,
-        sublabel:
-          recuperadoCop != null
-            ? 'Recaudo confirmado'
-            : 'Aún sin recaudo confirmado',
+        // Sin renglón de relleno (revisora r25, #4): sólo se dice algo cuando falta el dato.
+        sublabel: recuperadoCop != null ? '' : 'Aún sin recaudo confirmado',
       },
       {
         key: 'casos-cerrados',
         grupo: 'recupero',
         label: 'Casos cerrados',
         value: casosCerrados != null ? formatNumber(casosCerrados) : null,
-        sublabel:
-          casosCerrados != null
-            ? 'Casos con desenlace'
-            : 'Aún sin casos cerrados',
+        sublabel: casosCerrados != null ? '' : 'Aún sin casos cerrados',
       },
       {
         key: 'gestionados',
         grupo: 'trabajo',
         label: 'Casos gestionados',
         value: gestionados != null ? formatNumber(gestionados) : null,
-        sublabel: 'Trabajados por el agente',
+        sublabel: '',
       },
       {
         key: 'tiempo-recuperacion',
         grupo: 'recupero',
-        label: 'Tiempo prom. de recuperación',
+        label: 'Tiempo promedio de recuperación',
         value:
           tiempoRecuperacion != null
             ? `${formatNumber(tiempoRecuperacion)} ${tiempoRecuperacion === 1 ? 'día' : 'días'}`
@@ -212,7 +210,7 @@ function ResultadosContent() {
         grupo: 'trabajo',
         label: 'Casos escalados',
         value: escalados != null ? formatNumber(escalados) : null,
-        sublabel: 'Subidos a revisión humana',
+        sublabel: '',
       },
       {
         // El agregado define `moraReducedPct` positivo = la mora BAJÓ. La
@@ -232,7 +230,7 @@ function ResultadosContent() {
         tono: moraReducida == null || moraReducida === 0 ? undefined : moraReducida > 0 ? 'exito' : 'peligro',
         value:
           moraReducida != null
-            ? `${formatNumber(Math.abs(moraReducida))} pts`
+            ? `${formatNumber(Math.abs(moraReducida))} puntos`
             : null,
         sublabel:
           moraReducida == null
@@ -367,7 +365,7 @@ function ResultadosContent() {
               key={kpi.key}
               etiqueta={kpi.label}
               valor={kpi.value ?? EM_DASH}
-              detalle={kpi.sublabel}
+              detalle={kpi.sublabel || undefined}
               tono={kpi.value != null ? kpi.tono : undefined}
               data-testid={`resultado-kpi-${kpi.key}`}
             />
@@ -427,12 +425,6 @@ function ResultadosContent() {
             <span>Algunas métricas no se pudieron cargar; mostramos lo disponible.</span>
           </Presence>
 
-          {/* Lo que hizo el agente, en una frase: es lo primero que se lee. */}
-          {narrativa && (
-            <p className="max-w-3xl text-body leading-relaxed text-fg" data-testid="resultados-narrativa">
-              {narrativa}
-            </p>
-          )}
         </div>
 
         {/* LA RESPUESTA: lo que recuperó. Debajo, cómo lo logró (3 cifras) y,
@@ -442,7 +434,10 @@ function ResultadosContent() {
             data-testid="resultado-kpi-recuperado"
             rotulo={recuperadoKpi.label}
             cifra={recuperadoKpi.value ?? EM_DASH}
-            contexto={recuperadoKpi.sublabel}
+            contexto={recuperadoKpi.sublabel || undefined}
+            // Revisora r25 (Resultados #2): lo primero es la cifra; la frase de
+            // lo que hizo el agente queda como su pie (antes un párrafo encima).
+            pie={narrativa ? <span data-testid="resultados-narrativa">{narrativa}</span> : undefined}
           />
         ) : null}
         {franja('recupero', 'Lo que recuperó', 'La plata y los casos que el agente llevó hasta el pago.')}

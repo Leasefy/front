@@ -28,6 +28,7 @@ import { MagnifyingGlass } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { RUTA_DEL_MARKETPLACE } from '@/lib/nav/portal-del-inquilino'
 
@@ -43,7 +44,7 @@ const NS = 'inquilino.catalogoAprobacion'
 
 export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }) {
   const tf = useTf()
-  const { properties, isLoading } = useProperties()
+  const { properties, isLoading, errorCrudo, refetch } = useProperties()
   const { isWishlisted, toggleWishlist } = useWishlist()
   const referencia = referenciaCanon(aprobacion)
 
@@ -138,7 +139,11 @@ export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }
 
         <QueSignificaPostularse className="mb-6" />
 
-        {!isLoading && ordenadas.length === 0 ? (
+        {/* Un fallo NO es un vacío (guardián cuatro-estados): si los inmuebles no llegaron, se dice y se reintenta;
+            nunca «no hay inmuebles dentro de tu tope» sobre un dato que no llegó. */}
+        {errorCrudo ? (
+          <FalloDeCarga error={errorCrudo} queEs="los inmuebles que puedes tomar" onReintentar={() => void refetch()} />
+        ) : !isLoading && ordenadas.length === 0 ? (
           /* Sin nada dentro del tope no se rellena con cosas que no puede
              tomar: se dice, y se ofrece la salida. */
           <div className="rounded-lg border border-border bg-surface" data-testid="catalogo-vacio">

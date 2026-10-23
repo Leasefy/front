@@ -11,9 +11,10 @@ import type { Aprobacion } from '@/lib/api/aprobacion.service'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const props = vi.hoisted(() => ({ lista: [] as unknown[], cargando: false }))
-vi.mock('@/lib/hooks/useProperties', () => ({ useProperties: () => ({ properties: props.lista, isLoading: props.cargando }) }))
+const props = vi.hoisted(() => ({ lista: [] as unknown[], cargando: false, fallo: null as unknown }))
+vi.mock('@/lib/hooks/useProperties', () => ({ useProperties: () => ({ properties: props.lista, isLoading: props.cargando, errorCrudo: props.fallo, refetch: vi.fn() }) }))
 vi.mock('@/lib/hooks/useWishlist', () => ({ useWishlist: () => ({ isWishlisted: () => false, toggleWishlist: vi.fn() }) }))
+vi.mock('@/components/estado/FalloDeCarga', () => ({ FalloDeCarga: () => <div data-testid="fallo-de-carga" /> }))
 vi.mock('@/components/tenant/QueSignificaPostularse', () => ({ QueSignificaPostularse: () => null }))
 vi.mock('@/components/property/PropertyGrid', () => ({
   PropertyGrid: ({ properties }: { properties: { id: string }[] }) => (
@@ -70,5 +71,14 @@ describe('CatalogoPorAprobacion', () => {
     expect(host.textContent).not.toContain('Volver a Inicio')
     // Sin nada dentro del tope: el vacío, sin rellenar con lo que no puede tomar.
     expect(host.querySelector('[data-testid="catalogo-vacio"]')).not.toBeNull()
+  })
+
+  it('si los inmuebles no llegaron, lo dice con reintento: nunca «no hay inmuebles dentro de tu tope»', () => {
+    props.lista = []
+    props.fallo = new Error('caído')
+    montar(aprobada)
+    expect(host.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
+    expect(host.querySelector('[data-testid="catalogo-vacio"]')).toBeNull()
+    props.fallo = null
   })
 })

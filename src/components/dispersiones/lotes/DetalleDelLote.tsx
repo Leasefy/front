@@ -31,7 +31,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
 import {
-  CaretLeft,
   Check,
   DownloadSimple,
   FileText,
@@ -69,7 +68,8 @@ import {
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
-import { SectionLabel } from '@/components/ui/section-label';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -429,29 +429,28 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
     <div className="space-y-6" data-testid="detalle-del-lote" data-estado={lote.estado}>
       <Button asChild variant="ghost" size="sm" hideArrow className="-ml-2">
         <Link href="/panel/inmobiliaria/pagos/dispersiones/lotes">
-          <CaretLeft className="h-4 w-4" />
           Lotes al banco
         </Link>
       </Button>
 
       {/* ── Encabezado ─────────────────────────────────────────────────── */}
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1.5">
-          <SectionLabel>Finanzas · Lote al banco</SectionLabel>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-h2 tracking-tight text-fg">
-              Lote de {nombreDelMes(lote.month)}
-            </h1>
-            <Badge variant={TONO_DEL_ESTADO[lote.estado]} data-testid="estado-del-lote">
-              {NOMBRE_DEL_ESTADO[lote.estado]}
-            </Badge>
-          </div>
-          <p className="max-w-2xl text-sm text-fg-muted">{QUE_SIGUE[lote.estado]}</p>
-        </div>
-        <p className="font-mono text-caption text-fg-muted">
-          Lote {lote.id.slice(0, 8)} · armado {formatDateTime(lote.createdAt)}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Giros a propietarios · Lotes al banco"
+        titulo={`Lote de ${nombreDelMes(lote.month)}`}
+        junto={
+          <Badge variant={TONO_DEL_ESTADO[lote.estado]} data-testid="estado-del-lote">
+            {NOMBRE_DEL_ESTADO[lote.estado]}
+          </Badge>
+        }
+        descripcion={
+          <>
+            {QUE_SIGUE[lote.estado]}
+            <span className="mt-1 block font-mono text-caption text-fg-subtle">
+              Lote {lote.id.slice(0, 8)} · armado {formatDateTime(lote.createdAt)}
+            </span>
+          </>
+        }
+      />
 
       {/* ── Avisos que cambian lo que se puede hacer ────────────────────── */}
       {lote.estado === 'ANULADO' && (
@@ -519,25 +518,28 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
       <LineaDeTiempo lote={lote} />
 
       {/* ── Cifras ──────────────────────────────────────────────────────── */}
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Cifra etiqueta="Total a girar" valor={formatCurrency(lote.totalCop)} destacada />
-        <Cifra etiqueta="Pagos en el archivo" valor={String(lote.cantidad)} />
-        <Cifra
-          etiqueta="Excluidos"
-          valor={String(excluidos.length)}
-          tono={excluidos.length > 0 ? 'warning' : undefined}
-        />
-        <Cifra
-          etiqueta="Aprobado por"
-          valor={lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, vista.aprobadoPorNombre) : 'Nadie todavía'}
-          mono={false}
-          detalle={
-            lote.aprobadoAt
-              ? `${notaP4 ? 'Como administrador, en el mismo paso · ' : ''}${formatDateTime(lote.aprobadoAt)}`
-              : undefined
-          }
-        />
-      </section>
+      {/* LA RESPUESTA: cuánto sale en este lote y a cuántos. Quién lo aprobó va
+          en su línea (antes eran cuatro tarjetas del mismo peso). */}
+      <CifraHeroe
+        data-testid="total-del-lote"
+        rotulo="Total a girar"
+        cifra={formatCurrency(lote.totalCop)}
+        contexto={
+          `en ${lote.cantidad} ${lote.cantidad === 1 ? 'pago' : 'pagos'} del archivo` +
+          (excluidos.length > 0 ? ` · ${excluidos.length} ${excluidos.length === 1 ? 'excluido' : 'excluidos'}` : '')
+        }
+        pie={
+          <>
+            Aprobado por{' '}
+            <span className="text-fg">
+              {lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, vista.aprobadoPorNombre) : 'nadie todavía'}
+            </span>
+            {lote.aprobadoAt
+              ? ` · ${notaP4 ? 'Como administrador, en el mismo paso · ' : ''}${formatDateTime(lote.aprobadoAt)}`
+              : ''}
+          </>
+        }
+      />
 
       {/* ── Acciones ────────────────────────────────────────────────────── */}
       {acciones.length > 0 && (
@@ -965,38 +967,6 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
 
 // ── Piezas ──────────────────────────────────────────────────────────────────
 
-function Cifra({
-  etiqueta,
-  valor,
-  detalle,
-  destacada = false,
-  mono = true,
-  tono,
-}: {
-  etiqueta: string;
-  valor: string;
-  detalle?: string;
-  destacada?: boolean;
-  mono?: boolean;
-  tono?: 'warning';
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
-      <p className="text-caption text-fg-muted">{etiqueta}</p>
-      <p
-        className={cn(
-          'mt-1 truncate font-medium text-fg',
-          destacada ? 'text-2xl' : 'text-lg',
-          mono && 'font-mono tabular-nums',
-          tono === 'warning' && 'text-warning',
-        )}
-      >
-        {valor}
-      </p>
-      {detalle && <p className="mt-0.5 text-caption text-fg-muted">{detalle}</p>}
-    </div>
-  );
-}
 
 /**
  * Los cinco pasos del camino, con la fecha en la que cada uno pasó. Un lote
@@ -1055,7 +1025,7 @@ function LineaDeTiempo({ lote }: { lote: LoteDeDispersion }) {
               {porWompi && estado === 'ARCHIVO_GENERADO' ? 'En Wompi' : NOMBRE_DEL_ESTADO[estado]}
             </span>
             {(hecho || (actual && !anulado)) && fecha && (
-              <span className="font-mono text-[10px] text-fg-muted">{formatDateTime(fecha)}</span>
+              <span className="font-mono text-caption text-fg-muted">{formatDateTime(fecha)}</span>
             )}
           </li>
         );

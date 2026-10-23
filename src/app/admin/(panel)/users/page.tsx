@@ -254,7 +254,10 @@ export default function UsersPage() {
             contenido: (
       <DataTable
         id="equipo"
-        columns={rosterColumns}
+        // Ronda 30 (revisora r27 y T15): con todos ya adentro, «Cuenta: Ya entró» en todas las filas repetía
+        // «Última sesión»; la columna sale (va al Excel) y vuelve cuando alguien nunca ha entrado.
+        columns={nuncaEntraron === 0 ? rosterColumns.filter((c) => c.header !== 'Cuenta') : rosterColumns}
+        masEnElExcel={nuncaEntraron === 0 ? [{ header: 'Cuenta', texto: (r) => (r.supabase.exists_in_auth ? 'Ya entró' : 'Nunca ha entrado') }] : undefined}
         rows={data ? admins : undefined}
         getKey={(r) => r.email}
         isLoading={isLoading}
@@ -266,7 +269,8 @@ export default function UsersPage() {
         queSon={['persona', 'personas']}
         buscar="Correo"
         segmentos={SEGMENTOS_DEL_EQUIPO}
-        ordenInicial={{ columna: 4, sentido: 'desc' }}
+        // «Última acción»: un lugar antes si la columna «Cuenta» no se pinta.
+        ordenInicial={{ columna: nuncaEntraron === 0 ? 3 : 4, sentido: 'desc' }}
         exportar="equipo-leasefy"
       />
             ),

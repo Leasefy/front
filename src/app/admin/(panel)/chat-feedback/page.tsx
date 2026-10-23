@@ -187,7 +187,8 @@ export default function ChatFeedbackPage() {
         onRowClick={setAbierta}
         filaMarcada={(f) => f.id === abierta?.id}
         queSon={['valoración', 'valoraciones']}
-        buscar="Buscar en la pregunta o el comentario"
+        // Ronda 30 (revisora r27): corto, a 390 se cortaba («Buscar en la pregun…»).
+        buscar="Pregunta o comentario"
         segmentos={SEGMENTOS}
         ordenInicial={{ columna: 0, sentido: 'desc' }}
         filtrosEnLaUrl={['agencia']}

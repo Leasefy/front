@@ -104,6 +104,9 @@ export default function PilotoDeLasInmobiliariasPage() {
     }
   }
 
+  const detalleComun =
+    data && data.length > 1 && data.every((f) => f.detalle === data[0].detalle) ? data[0].detalle : null
+
   const columnas: Column<PilotoDeLaInmobiliaria>[] = [
     {
       header: 'Inmobiliaria',
@@ -112,7 +115,12 @@ export default function PilotoDeLasInmobiliariasPage() {
       cell: (f) => (
         <div className="min-w-0">
           <span className="text-body-sm font-medium text-fg">{f.legal_name}</span>
-          <span className="block text-caption text-fg-muted" data-testid={`admin-piloto-detalle-${f.tenant_id}`}>
+          {/* Ronda 30 (revisora r27): si la frase es la misma en todas, se dice una vez arriba de la tabla y aquí
+              queda sólo para lectores de pantalla (mismo data-testid). */}
+          <span
+            className={detalleComun ? 'sr-only' : 'block text-caption text-fg-muted'}
+            data-testid={`admin-piloto-detalle-${f.tenant_id}`}
+          >
             {f.detalle}
           </span>
         </div>
@@ -234,6 +242,12 @@ export default function PilotoDeLasInmobiliariasPage() {
           {hecho}
         </Alert>
       )}
+
+      {detalleComun ? (
+        <p className="text-body-sm text-fg-muted" data-testid="admin-piloto-detalle-comun">
+          En todas: {detalleComun.charAt(0).toLowerCase() + detalleComun.slice(1)}
+        </p>
+      ) : null}
 
       <DataTable
         columns={columnas}

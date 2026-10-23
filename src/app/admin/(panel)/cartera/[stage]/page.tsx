@@ -172,13 +172,7 @@ export default function CarteraStagePage() {
         label="Cartera"
         title={etapa.nombre}
         description={`${etapa.pista.charAt(0).toUpperCase()}${etapa.pista.slice(1)}. Primero los que llevan más tiempo en la etapa.`}
-        junto={
-          result.data ? (
-            <Pill tone={etapa.tono}>
-              {result.data.total.toLocaleString('es-CO')} {result.data.total === 1 ? 'deudor' : 'deudores'}
-            </Pill>
-          ) : null
-        }
+        // Ronda 30 (el mismo número nunca dos veces): sin la insignia «N deudores»; lo dice el paginador.
       />
 
       <DataTable

@@ -206,8 +206,18 @@ export default function CarteraPage() {
               ),
           }))}
           total={unaSola ? undefined : total}
+          // Ronda 30 (revisora r27: «la pantalla no muestra QUIÉN está en cobro»): con UNA etapa no hay tramo
+          // que abrir; el pie lleva a la lista de esos deudores.
           pie={
-            sinCasos.length > 0 && conCasos.length > 0
+            unaSola ? (
+              <Link
+                href={`/admin/cartera/${unaSola.stage}`}
+                className="rounded-sm text-fg underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                data-testid="cartera-ver-quienes"
+              >
+                {total === 1 ? 'Ver quién es' : `Ver quiénes son los ${total.toLocaleString('es-CO')}`}
+              </Link>
+            ) : sinCasos.length > 0 && conCasos.length > 0
               ? `Sin casos en ${sinCasos.length === 1 ? 'la etapa' : `${sinCasos.length} etapas`}: ${sinCasos
                   .map((b) => ETAPA[b.stage].nombre.toLowerCase())
                   .join(', ')}.`

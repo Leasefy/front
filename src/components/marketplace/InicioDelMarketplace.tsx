@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { motionDuration, motionEase, motionStagger, Stagger, StaggerItem } from '@leasefy/cadence';
 import { Buildings, House, MagnifyingGlass, MapTrifold } from '@phosphor-icons/react';
 
@@ -43,6 +43,26 @@ import { Recomienda, TarjetaDeInmobiliaria, TarjetaDelVideo, Tira } from './inmo
 /** Ronda 30 (diseño nuevo): los títulos de sección livianos de la landing 2 (peso 420, 23–28 px). */
 const TITULO_DE_SECCION =
   'font-heading text-[clamp(23px,2vw,28px)] font-[420] leading-[1.15] tracking-[-0.025em] text-fg [text-wrap:balance]';
+
+/**
+ * Ronda 30 (diseño nuevo): lo de abajo de la llegada aparece al llegar a él (el `revela` de la landing 2): sube
+ * 22 px y se enciende, una sola vez. Con movimiento reducido, ya está ahí.
+ */
+function Revela({ children, className }: { children: ReactNode; className?: string }) {
+  const quieto = useReducedMotion();
+  if (quieto) return <div className={className}>{children}</div>;
+  return (
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, y: 22 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '0px 0px -60px 0px' }}
+      transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 function entrada(paso: number) {
   return {
@@ -239,7 +259,7 @@ export function InicioDelMarketplace() {
             {/* ── Lo más nuevo ── */}
             {recientes.length > 0 && (
               <section className="mt-2 px-[clamp(16px,2.6vw,32px)]" aria-labelledby="recien-publicados">
-                <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-2.5">
+                <Revela className="flex flex-wrap items-end justify-between gap-x-5 gap-y-2.5">
                   <h2 id="recien-publicados" className={TITULO_DE_SECCION}>
                     Recién publicados
                   </h2>
@@ -250,8 +270,8 @@ export function InicioDelMarketplace() {
                     <MapTrifold className="h-4 w-4" aria-hidden />
                     Ver todo con mapa, sin escribir
                   </Link>
-                </div>
-                <Stagger className="mt-[22px] grid gap-x-[22px] gap-y-9 [grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr))]">
+                </Revela>
+                <Stagger inView className="mt-[22px] grid gap-x-[22px] gap-y-9 [grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr))]">
                   {recientes.map((p) => {
                     const quien = p.agencyId ? deLosRecientes.get(p.agencyId) : undefined;
                     return (
@@ -270,14 +290,16 @@ export function InicioDelMarketplace() {
             {/* ── Quién publica: su página es su perfil en Leasefy ── */}
             {inmobiliarias.length > 0 && (
               <section className="mt-16 px-[clamp(16px,2.6vw,32px)]" aria-labelledby="inmobiliarias-en-leasefy">
-                <h2 id="inmobiliarias-en-leasefy" className={TITULO_DE_SECCION}>
-                  Inmobiliarias en Leasefy
-                </h2>
-                <p className="mt-1 text-[14.5px] text-fg-muted">
-                  Síguelas para ver lo que publican, o pregúntale directamente a cada una.
-                </p>
+                <Revela>
+                  <h2 id="inmobiliarias-en-leasefy" className={TITULO_DE_SECCION}>
+                    Inmobiliarias en Leasefy
+                  </h2>
+                  <p className="mt-1 text-[14.5px] text-fg-muted">
+                    Síguelas para ver lo que publican, o pregúntale directamente a cada una.
+                  </p>
+                </Revela>
                 {/* Una sola ocupa todo el ancho; varias, de a dos en pantallas anchas (`auto-fit`). */}
-                <Stagger className="mt-[22px] grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(520px,100%),1fr))]">
+                <Stagger inView className="mt-[22px] grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(520px,100%),1fr))]">
                   {inmobiliarias.map((t) => (
                     <StaggerItem key={t.id}>
                       <TarjetaDeInmobiliaria t={t} />
@@ -327,7 +349,9 @@ export function InicioDelMarketplace() {
             <ReproductorDelVideo videos={paraVer} indice={videoAbierto} alCambiar={setVideoAbierto} />
 
             {/* ── Publicar: uno, muchos o la página, según quién mira ── */}
-            <PublicarDesdeElMarketplace />
+            <Revela>
+              <PublicarDesdeElMarketplace />
+            </Revela>
           </div>
         </main>
       </div>

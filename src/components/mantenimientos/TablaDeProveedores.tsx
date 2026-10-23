@@ -52,7 +52,17 @@ import {
   WarningCircle,
   Wrench,
   ArrowCounterClockwise,
+  DotsThree,
+  Prohibit,
 } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -79,7 +89,23 @@ import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pag
 import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { sinElNumeroRepetido } from '@/lib/pantalla/pestanas-sin-repetir';
 import { ESPECIALIDADES, EN_PALABRAS } from './especialidades';
+
+/**
+ * El documento como se lee (revisora r27: «900123456» iba sin formato): los
+ * miles con punto y, si viene, el dígito de verificación tras el guion
+ * («900.123.456-7»). Lo que no sea un número (un pasaporte) va tal cual.
+ */
+export function documentoLegible(documento: string | null | undefined): string {
+  const crudo = (documento ?? '').trim();
+  const partes = /^([\d.\s]+?)(?:-(\d))?$/.exec(crudo);
+  if (!partes) return crudo;
+  const digitos = partes[1].replace(/[.\s]/g, '');
+  if (!/^\d+$/.test(digitos)) return crudo;
+  const conPuntos = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return partes[2] ? `${conPuntos}-${partes[2]}` : conPuntos;
+}
 import type { ProveedorDeMantenimiento } from '@/lib/api/proveedores-de-mantenimiento.service';
 
 type Cajon = 'activos' | 'inactivos' | 'todos';
@@ -299,11 +325,12 @@ export function TablaDeProveedores({
             etiqueta="Activos e inactivos"
             valor={cajon}
             onCambio={setCajon}
-            pestanas={[
+            // R2 (revisora r27): «Activos 1 · Todos 1» decía el número dos veces.
+            pestanas={sinElNumeroRepetido<Cajon>([
               { valor: 'activos', etiqueta: 'Activos', cuantos: conteos.activos, fija: true, testid: 'cajon-activos' },
               { valor: 'inactivos', etiqueta: 'Inactivos', cuantos: conteos.inactivos, testid: 'cajon-inactivos' },
               { valor: 'todos', etiqueta: 'Todos', cuantos: conteos.todos, fija: true, testid: 'cajon-todos' },
-            ]}
+            ], 'todos', cajon)}
           />
           <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-border lg:block" />
           <Select value={especialidad} onValueChange={setEspecialidad}>
@@ -432,7 +459,7 @@ export function TablaDeProveedores({
                       quedaba con el elemento más brillante de su fila. */}
                   {!p.activo && <Badge variant="outline">Inactivo</Badge>}
                 </div>
-                <p className="mt-0.5 text-caption tabular-nums text-muted-foreground">{p.documento}</p>
+                <p className="mt-0.5 text-caption tabular-nums text-muted-foreground">{documentoLegible(p.documento)}</p>
               </TableCell>
 
               {hayContacto ? (
@@ -531,10 +558,26 @@ export function TablaDeProveedores({
                       <Button variant="secondary" size="sm" hideArrow onClick={() => onEditar(p)}>
                         Editar
                       </Button>
+                      {/* Revisora r27 (Fitts): lo que apaga, lejos de lo frecuente: «Desactivar»
+                          va en el «⋯», no pegado a «Editar». */}
                       {p.activo ? (
-                        <Button variant="ghost" size="sm" hideArrow onClick={() => onDesactivar(p)}>
-                          Desactivar
-                        </Button>
+                        <DropdownList>
+                          <DropdownListTrigger asChild>
+                            <IconButton
+                              variant="ghost"
+                              size="sm"
+                              icon={<DotsThree className="h-5 w-5" weight="bold" />}
+                              aria-label={`Más acciones de ${p.nombre}`}
+                              data-testid={`mas-acciones-${p.id}`}
+                            />
+                          </DropdownListTrigger>
+                          <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
+                            <DropdownListItem className="gap-3" onClick={() => onDesactivar(p)}>
+                              <Prohibit className="h-4 w-4" />
+                              <span className="text-sm">Desactivar</span>
+                            </DropdownListItem>
+                          </DropdownListContent>
+                        </DropdownList>
                       ) : (
                         <Button variant="ghost" size="sm" hideArrow onClick={() => onReactivar(p)}>
                           <ArrowCounterClockwise className="mr-1 h-4 w-4" />

@@ -117,6 +117,24 @@ const $ = (id: string) =>
 const botones = () =>
   Array.from(contenedor.querySelectorAll('button')).map((b) => b.textContent?.trim())
 
+/**
+ * «Desactivar» vive en el «⋯» de la fila (revisora r27, Fitts). El disparador
+ * de Radix abre con `pointerdown`, no con `click`; el menú se pinta en un
+ * portal colgado del `body`.
+ */
+async function desactivarDelPrimero(): Promise<HTMLElement | undefined> {
+  const disparador = contenedor.querySelector<HTMLElement>('[data-testid^="mas-acciones-"]')
+  expect(disparador).toBeTruthy()
+  await act(async () => {
+    disparador!.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, pointerId: 1 }),
+    )
+  })
+  return Array.from(document.body.querySelectorAll<HTMLElement>('[role="menuitem"]')).find(
+    (el) => el.textContent?.trim() === 'Desactivar',
+  )
+}
+
 const nombresEnOrden = () =>
   Array.from(contenedor.querySelectorAll('[data-testid="proveedor"]')).map(
     (fila) => fila.querySelector('td')?.textContent?.trim(),
@@ -179,17 +197,15 @@ describe('Registro de proveedores', () => {
     const textos = botones()
     expect(textos.some((t) => t?.includes('Registrar proveedor'))).toBe(true)
     expect(textos).toContain('Editar')
-    expect(textos).toContain('Desactivar')
+    // «Desactivar», en el «⋯» de la fila y no pegado a «Editar» (r27).
+    expect(textos).not.toContain('Desactivar')
+    expect(await desactivarDelPrimero()).toBeTruthy()
   })
 
   it('P3 — desactivar llama a desactivar (no a borrar) y dice que el historial se conserva', async () => {
     h.api.desactivar.mockResolvedValue({ ...UNO, activo: false })
     await montar()
-    await clic(
-      Array.from(contenedor.querySelectorAll('button')).find(
-        (b) => b.textContent?.trim() === 'Desactivar',
-      ),
-    )
+    await clic(await desactivarDelPrimero())
     expect(h.api.desactivar).toHaveBeenCalledWith('p-1')
     expect(h.toast.success).toHaveBeenCalledWith(
       expect.stringContaining('historial se conserva'),
@@ -205,11 +221,7 @@ describe('Registro de proveedores', () => {
       ),
     )
     await montar()
-    await clic(
-      Array.from(contenedor.querySelectorAll('button')).find(
-        (b) => b.textContent?.trim() === 'Desactivar',
-      ),
-    )
+    await clic(await desactivarDelPrimero())
     // El motivo del back, entero; el traductor le suma el código para soporte.
     expect(h.toast.error.mock.calls[0]?.[0]).toBe('No se pudo desactivar el proveedor')
     expect(h.toast.error.mock.calls[0]?.[1]?.description).toContain(
@@ -220,9 +232,8 @@ describe('Registro de proveedores', () => {
   it('P4b · 02-10 — sin respuesta (status 0) habla de la conexión; un 5xx, de nuestro lado', async () => {
     h.api.desactivar.mockRejectedValueOnce(new ApiError(0, 'Failed to fetch'))
     await montar()
-    const desactivar = () =>
-      Array.from(contenedor.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Desactivar')
-    await clic(desactivar())
+    const desactivar = () => desactivarDelPrimero()
+    await clic(await desactivar())
     expect(h.toast.error.mock.calls[0]?.[1]?.description).toMatch(/conexi[oó]n/i)
 
     h.api.desactivar.mockRejectedValueOnce(
@@ -233,7 +244,7 @@ describe('Registro de proveedores', () => {
         referencia: 'ab12cd34',
       }),
     )
-    await clic(desactivar())
+    await clic(await desactivar())
     const descripcion = h.toast.error.mock.calls[1]?.[1]?.description as string
     expect(descripcion).toContain('de nuestro lado')
     expect(descripcion).toContain('ab12cd34')
@@ -365,6 +376,22 @@ describe('Proveedores — la tabla, con lo que tienen todas nuestras tablas', ()
       (i) => !tabla!.contains(i),
     )
     expect(fuera).toEqual([])
+  })
+
+  it('el documento se lee con sus puntos y el dígito de verificación («900.123.456-7»)', async () => {
+    h.api.listar.mockResolvedValue([UNO, { ...AL_DIA, documento: '900123456-7' }])
+    await montar()
+    expect(contenedor.textContent).toContain('900.123.456')
+    expect(contenedor.textContent).toContain('900.123.456-7')
+    expect(contenedor.textContent).not.toContain('900123456')
+  })
+
+  it('R2 (r27) — con todos activos, «Todos» va sin el número que ya dice «Activos»', async () => {
+    h.api.listar.mockResolvedValue([UNO])
+    await montar()
+    const tabla = $('proveedores-tabla')!
+    expect(tabla.querySelector('[data-testid="cajon-activos"]')!.textContent).toBe('Activos1')
+    expect(tabla.querySelector('[data-testid="cajon-todos"]')!.textContent).toBe('Todos')
   })
 
   it('T2 — «ver los inactivos» es un cajón de la tabla, no una casilla suelta', async () => {

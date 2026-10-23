@@ -14,8 +14,10 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Prohibit } from '@phosphor-icons/react';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -97,28 +99,36 @@ function Contenido() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1.5">
-        <SectionLabel>Pagos · inquilinos</SectionLabel>
-        <h1 className="text-h2 text-fg">Estudios pagados</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          El estudio lo paga el solicitante a la inmobiliaria: recibo y factura. No se devuelve y, mientras esté vigente,
-          le sirve para cualquier inmueble sin volver a pagar.{' '}
-          <Link className="underline" href="/panel/inmobiliaria/pagos/recaudo">
-            Volver a Recaudo
-          </Link>
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Pagos · inquilinos"
+        titulo="Estudios pagados"
+        descripcion="Lo que pagaron los solicitantes por su estudio, con su recibo y su factura. No se devuelve y, vigente, sirve para cualquier inmueble."
+        acciones={
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/pagos/recaudo">Volver a Recaudo</Link>
+          </Button>
+        }
+      />
+      {pagos && pagos.length > 0 ? (
+        <CifraHeroe
+          data-testid="estudios-cobrado"
+          rotulo="Cobrado en estudios"
+          cifra={formatCurrency(pagos.filter((p) => !p.anulado).reduce((s, p) => s + p.valorCop, 0))}
+          contexto={`en ${pagos.filter((p) => !p.anulado).length} ${pagos.filter((p) => !p.anulado).length === 1 ? 'estudio' : 'estudios'}`}
+          tamano="mediana"
+        />
+      ) : null}
       <EstadoDeDatos
         cargando={cargando}
         error={error}
         queEs="los estudios pagados"
         onReintentar={cargar}
         vacio={!pagos || pagos.length === 0}
-        cuandoVacio={<p className="text-sm text-fg-muted">Todavía no hay estudios pagados.</p>}
+        cuandoVacio={<p className="text-body-sm text-fg-muted">Todavía no hay estudios pagados.</p>}
       >
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm" data-testid="estudios-pagados">
-            <thead className="bg-surface-muted text-left text-xs text-fg-muted">
+            <thead className="bg-surface-muted text-left text-caption text-fg-muted">
               <tr>
                 <th className="p-3">Recibo</th>
                 <th className="p-3">Fecha</th>
@@ -133,15 +143,15 @@ function Contenido() {
               {(pagos ?? []).map((p) => (
                 <tr key={p.id} className="border-t border-border">
                   <td className="p-3 font-mono">#{p.numeroRecibo}</td>
-                  <td className="p-3">{p.fecha}</td>
+                  <td className="p-3 font-mono text-caption">{fechaCorta(p.fecha)}</td>
                   <td className="p-3">
                     {p.solicitante.nombre}
-                    {p.solicitante.documento ? <span className="block text-xs text-fg-muted">{p.solicitante.documento}</span> : null}
+                    {p.solicitante.documento ? <span className="block text-caption text-fg-muted">{p.solicitante.documento}</span> : null}
                   </td>
                   <td className="p-3 text-right font-mono tabular-nums">{formatCurrency(p.valorCop)}</td>
                   <td className="p-3">{p.factura.estado === 'GENERADA' ? 'Generada (sin número)' : p.factura.estado}</td>
                   <td className="p-3">
-                    {p.anulado ? `Anulado: ${p.motivoDeAnulacion ?? ''}` : p.vigente ? `Vigente hasta ${p.vigenteHasta.slice(0, 10)}` : 'Vencido'}
+                    {p.anulado ? `Anulado: ${p.motivoDeAnulacion ?? ''}` : p.vigente ? `Vigente hasta ${fechaCorta(p.vigenteHasta.slice(0, 10))}` : 'Vencido'}
                   </td>
                   <td className="p-3 text-right">
                     {esAdministrador && !p.anulado && (

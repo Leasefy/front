@@ -13,26 +13,25 @@
 
 import Link from 'next/link';
 
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { Button } from '@/components/ui';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AutopagosDeLaInmobiliaria } from '@/components/inmobiliaria/pagos/autopago/AutopagosDeLaInmobiliaria';
-import { SectionLabel } from '@/components/ui/section-label';
 
 export default function AutopagoPage() {
   return (
     <PageGuard module="cobros" action="view">
-      <div className="space-y-6 p-4 md:p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <SectionLabel>Pagos · inquilinos</SectionLabel>
-          <h1 className="text-h2 text-fg">Autopago</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Los inquilinos que inscribieron el cobro automático de su cuota, con el tope que pusieron y cómo salió el
-            último intento. Aquí sólo se mira: el autopago lo inscribe, lo pausa o lo cancela el inquilino desde su
-            portal.{' '}
-            <Link className="underline" href="/panel/inmobiliaria/pagos/recaudo">
-              Volver a Recaudo
-            </Link>
-          </p>
-        </header>
+      <div className="space-y-6 p-6 lg:p-8">
+        <EncabezadoDePantalla
+          seccion="Pagos · inquilinos"
+          titulo="Autopago"
+          descripcion="Los inquilinos que inscribieron el cobro automático de su cuota, con su tope y cómo salió el último intento. Lo inscribe, pausa o cancela el inquilino desde su portal."
+          acciones={
+            <Button asChild variant="outline" size="sm" hideArrow>
+              <Link href="/panel/inmobiliaria/pagos/recaudo">Volver a Recaudo</Link>
+            </Button>
+          }
+        />
         <AutopagosDeLaInmobiliaria />
       </div>
     </PageGuard>

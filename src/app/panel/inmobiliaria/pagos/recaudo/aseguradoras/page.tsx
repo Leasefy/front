@@ -131,7 +131,7 @@ function Contenido() {
         <div className="flex flex-wrap items-start gap-2 rounded-lg border border-border p-4" data-testid="nueva-aseguradora">
           <div>
             <label className="text-sm" htmlFor="aseguradora-nombre">
-              <span className="block text-xs text-fg-muted">Nombre</span>
+              <span className="block text-caption text-fg-muted">Nombre</span>
               <input
                 id="aseguradora-nombre"
                 className="mt-1 rounded-md border border-border bg-surface p-2 text-sm"
@@ -151,7 +151,7 @@ function Contenido() {
           </div>
           <div>
             <label className="text-sm" htmlFor="aseguradora-nit">
-              <span className="block text-xs text-fg-muted">NIT</span>
+              <span className="block text-caption text-fg-muted">NIT</span>
               <input
                 id="aseguradora-nit"
                 className="mt-1 rounded-md border border-border bg-surface p-2 text-sm"
@@ -190,7 +190,7 @@ function Contenido() {
       >
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm" data-testid="aseguradoras">
-            <thead className="bg-surface-muted text-left text-xs text-fg-muted">
+            <thead className="bg-surface-muted text-left text-caption text-fg-muted">
               <tr>
                 <th className="p-3">Aseguradora</th>
                 <th className="p-3">NIT</th>

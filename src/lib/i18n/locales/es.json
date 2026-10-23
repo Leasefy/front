@@ -7287,15 +7287,15 @@
         },
         "deudores": {
           "title": "Casos",
-          "subtitle": "Cada caso es un deudor con cartera en curso. Arriba, los más estancados.",
+          "subtitle": "Cada caso es un inquilino con cartera en curso. Arriba, los más estancados.",
           "filters": {
             "title": "Filtros",
             "stage": "Etapa",
             "channel": "Canal",
             "daysInStage": "Días en etapa",
             "search": {
-              "placeholder": "Nombre o cédula (4+ dígitos)",
-              "label": "Buscar deudor"
+              "placeholder": "Nombre o documento (4 dígitos o más)",
+              "label": "Buscar un caso"
             },
             "clear": "Limpiar filtros"
           },
@@ -7307,13 +7307,13 @@
           "loadingMore": "Cargando más…",
           "openFilters": "Mostrar filtros",
           "closeFilters": "Cerrar filtros",
-          "searchMinChars": "Escribe al menos 4 dígitos para buscar por cédula",
+          "searchMinChars": "Escribe al menos 4 dígitos para buscar por documento",
           "columns": {
             "name": "Nombre",
             "stage": "Etapa",
             "daysInStage": "Días",
             "channel": "Canal",
-            "cedula": "Cédula",
+            "cedula": "Documento",
             "phone": "Teléfono",
             "email": "Correo",
             "lastActivity": "Última actividad"
@@ -7323,7 +7323,7 @@
             "whatsapp": "WhatsApp",
             "email": "Correo"
           },
-          "emptyFiltered": "Sin deudores con estos filtros",
+          "emptyFiltered": "Ningún caso con estos filtros",
           "empty": {
             "title": "Aún no hay deudores",
             "description": "Importa una cartera CSV o agrega deudores manualmente.",

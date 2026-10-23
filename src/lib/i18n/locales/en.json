@@ -7252,7 +7252,7 @@
         },
         "deudores": {
           "title": "Cases",
-          "subtitle": "Each case is a debtor with an open balance. Most stalled first.",
+          "subtitle": "Each case is a tenant with an open balance. Most stalled first.",
           "filters": {
             "title": "Filters",
             "stage": "Stage",
@@ -7260,7 +7260,7 @@
             "daysInStage": "Days in stage",
             "search": {
               "placeholder": "Name or ID (4+ digits)",
-              "label": "Search debtor"
+              "label": "Search a case"
             },
             "clear": "Clear filters"
           },
@@ -7288,7 +7288,7 @@
             "whatsapp": "WhatsApp",
             "email": "Email"
           },
-          "emptyFiltered": "No debtors match these filters",
+          "emptyFiltered": "No cases match these filters",
           "empty": {
             "title": "No debtors yet",
             "description": "Import a CSV portfolio or add manually.",

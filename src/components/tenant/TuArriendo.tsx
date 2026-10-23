@@ -18,6 +18,7 @@
  * Mientras carga no afirma nada; si la lectura falla lo dice con reintento.
  */
 
+import { resumirElCliente } from '@/components/estado-de-cuenta/resumen';
 import Link from 'next/link';
 import { Presence, StatusBadge } from '@leasefy/cadence';
 
@@ -84,6 +85,20 @@ export function TuArriendo({
   }
 
   const v = vistaDeTuArriendo(estado.doc, hoy, titulos);
+  /*
+   * Revisora r27 (Inicio): la cifra de lo vencido con su barra, la MISMA cuenta del estado de cuenta y de Pagos
+   * (lo cancelado, lo vencido y lo que falta por vencer), para leer de un vistazo cuánto va del contrato.
+   */
+  const r = resumirElCliente(estado.doc, hoy);
+  const porVencer = Math.max(0, r.restaPorPagar - r.vencidoCop);
+  const tramos =
+    r.cancelado + r.restaPorPagar > 0
+      ? [
+          { clave: 'cancelado', etiqueta: es ? 'Pagado' : 'Paid', monto: r.cancelado, tono: 'exito' as const, cifra: formatCurrency(r.cancelado) },
+          { clave: 'vencido', etiqueta: es ? 'Vencido' : 'Overdue', monto: r.vencidoCop, tono: r.enMora ? ('critico' as const) : ('aviso' as const), cifra: formatCurrency(r.vencidoCop) },
+          { clave: 'por-vencer', etiqueta: es ? 'Por vencer' : 'Not yet due', monto: porVencer, tono: 'neutro' as const, cifra: formatCurrency(porVencer) },
+        ]
+      : undefined;
   const cuandoVence = (fecha: string, cuantas: number) =>
     es
       ? `Vence el ${fechaLarga(fecha)}${cuantas > 1 ? ` · ${contar(cuantas, 'cuota')} ese día` : ''}`
@@ -136,6 +151,7 @@ export function TuArriendo({
                     </span>
                   }
                   cifra={formatCurrency(v.vencido.valor)}
+                  tramos={tramos}
                   contexto={
                     es
                       ? `${contar(v.vencido.cuotas, 'cuota')}; la más vieja venció el ${fechaLarga(v.vencido.desde)}. ${

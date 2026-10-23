@@ -44,7 +44,12 @@ interface AuditFacets {
 /** /audits — Compliance events table with facet selects + CSV export (FRONT.md §6.8 · BACK.md §8.13). */
 /** Los detalles en palabras (sólo lo que tiene nombre; ids y códigos, al cajón y al Excel). */
 function resumenDeLosDetalles(detalles: unknown): string {
-  return resumenDeLosDatos(detalles) || 'Ábrelo para ver los detalles'
+  // Ronda 28 (revisora r27): sin el canal, que ya tiene su columna («Detalles: Canal: Correo» lo repetía).
+  const sinCanal =
+    detalles && typeof detalles === 'object' && !Array.isArray(detalles)
+      ? Object.fromEntries(Object.entries(detalles as Record<string, unknown>).filter(([k]) => !/^(channel|canal)$/i.test(k)))
+      : detalles
+  return resumenDeLosDatos(sinCanal) || 'Ábrelo para ver los detalles'
 }
 
 export default function AuditsPage() {
@@ -102,7 +107,10 @@ export default function AuditsPage() {
   }
 
 
-  const columns: Column<EventRow>[] = [
+  // Ronda 28 (revisora r27, T15): sin deudor en ninguna fila de la página, sin la columna de «—».
+  const sinDeudorEnNinguna = Boolean(events.data) && (events.data?.data ?? []).every((r) => !r.debtor_name)
+
+  const todasLasColumnas: Column<EventRow>[] = [
     {
       header: 'Cuándo',
       cell: (r) => (
@@ -139,11 +147,13 @@ export default function AuditsPage() {
     },
   ]
 
+  const columns = sinDeudorEnNinguna ? todasLasColumnas.filter((c) => c.header !== 'Deudor') : todasLasColumnas
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Auditoría"
-        description="Los eventos de cumplimiento: Habeas Data, Ley 2300, identidad y barandas."
+        description="Los eventos de cumplimiento: Habeas Data, Ley 2300, identidad y límites de los agentes."
       />
 
       {exportError && <Alert variant="danger">{exportError}</Alert>}
@@ -167,7 +177,7 @@ export default function AuditsPage() {
         acciones={
           <Button variant="outline" size="sm" hideArrow onClick={onExport} disabled={exporting} isLoading={exporting} className="gap-2">
             {exporting ? null : <DownloadSimple className="h-4 w-4" aria-hidden="true" />}
-            {exporting ? 'Descargando…' : 'Descargar en CSV (hasta 50.000)'}
+            {exporting ? 'Armando el CSV…' : 'Exportar a CSV (hasta 50.000)'}
           </Button>
         }
         barra={

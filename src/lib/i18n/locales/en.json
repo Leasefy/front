@@ -4707,7 +4707,7 @@
         "over90": "Over 90 days"
       },
       "rentabilidad": {
-        "eyebrow": "Finance",
+        "eyebrow": "Reports",
         "back": "Back to Reports",
         "title": "Profitability by property",
         "description": "For each property: expected versus collected in the period, the agency commission, withholdings and charges, maintenance expenses and the net left to the owner. Plus occupancy and the annual yield on the commercial value when it is on record.",

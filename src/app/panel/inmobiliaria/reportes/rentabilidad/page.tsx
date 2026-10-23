@@ -18,7 +18,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
 import {
-  ArrowLeft,
   ArrowDown,
   ArrowUp,
   ArrowsDownUp,
@@ -42,6 +41,8 @@ import { BASE_POR_DEFECTO, claveDelRotulo } from '@/lib/tasa-de-recaudo';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
@@ -112,6 +113,26 @@ function Barra({ pct, className }: { pct: number; className?: string }) {
   );
 }
 
+/** Un cero no es un dato que leer: «—» atenuado (VOZ §4). */
+function plataOGuion(valor: number) {
+  return valor === 0 ? <span className="text-fg-subtle">—</span> : formatCurrency(valor);
+}
+
+type FiltroDeRecaudo = 'todos' | 'con' | 'sin' | 'mora';
+const DEL_FILTRO: Record<Exclude<FiltroDeRecaudo, 'todos'>, (f: RentabilidadFila) => boolean> = {
+  con: (f) => f.recaudadoCop > 0,
+  sin: (f) => f.recaudadoCop === 0 && f.esperadoCop > 0,
+  mora: (f) => f.enMoraCop > 0,
+};
+
+/** Sin tildes y en minúsculas, para el buscador. */
+function normalizar(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+/** Con menos de cinco inmuebles con neto, un «los que más dejan» no compara nada. */
+const MINIMO_PARA_EL_GRAFICO = 5;
+
 // ── Contenido ────────────────────────────────────────────────────────────────
 
 function RentabilidadContent() {
@@ -153,11 +174,22 @@ function RentabilidadContent() {
   const ordenar = useCallback((columna: Columna) => {
     setOrden((prev) => alternarOrden(prev, columna));
   }, []);
-  const filasOrdenadas = useMemo(() => ordenarFilas(filas, orden), [filas, orden]);
+  /* Revisora r24 #5: con 970 inmuebles, buscar y filtrar dentro de la tarjeta. */
+  const [busqueda, setBusqueda] = useState('');
+  const [filtro, setFiltro] = useState<FiltroDeRecaudo>('todos');
+  const filasFiltradas = useMemo(() => {
+    const q = normalizar(busqueda);
+    const delFiltro = filtro === 'todos' ? filas : filas.filter(DEL_FILTRO[filtro]);
+    if (!q) return delFiltro;
+    return delFiltro.filter((f) =>
+      normalizar(`${f.propertyTitle} ${f.codigo ?? ''} ${f.propietarioNombre ?? ''} ${f.propertyCity ?? ''} ${f.propertyAddress ?? ''}`).includes(q),
+    );
+  }, [filas, busqueda, filtro]);
+  const filasOrdenadas = useMemo(() => ordenarFilas(filasFiltradas, orden), [filasFiltradas, orden]);
 
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(
     filasOrdenadas,
-    { resetKey: `${orden.columna}|${orden.direccion}|${consulta.desde}|${consulta.hasta}` },
+    { resetKey: `${orden.columna}|${orden.direccion}|${consulta.desde}|${consulta.hasta}|${busqueda}|${filtro}` },
   );
 
   // CSV del mismo rango que se está mirando.
@@ -188,7 +220,10 @@ function RentabilidadContent() {
     }
   }, [consulta, t]);
 
-  const COLUMNAS: Array<{ id: Columna; label: string; numeric?: boolean }> = [
+  const totales = report?.totales;
+  /* Revisora r24 #2: sin ningún valor comercial registrado la columna diría «—» en todas las filas. */
+  const hayValorComercial = (totales?.conValor ?? 0) > 0;
+  const COLUMNAS_TODAS: Array<{ id: Columna; label: string; numeric?: boolean }> = [
     { id: 'inmueble', label: t('inmobiliaria.reportes.rentabilidad.table.property') },
     { id: 'canon', label: t('inmobiliaria.reportes.rentabilidad.table.rent'), numeric: true },
     { id: 'ocupacion', label: t('inmobiliaria.reportes.rentabilidad.table.occupancy') },
@@ -198,9 +233,9 @@ function RentabilidadContent() {
     { id: 'neto', label: t('inmobiliaria.reportes.rentabilidad.table.net'), numeric: true },
     { id: 'rentabilidad', label: t('inmobiliaria.reportes.rentabilidad.table.yield'), numeric: true },
   ];
+  const COLUMNAS = hayValorComercial ? COLUMNAS_TODAS : COLUMNAS_TODAS.filter((c) => c.id !== 'rentabilidad');
 
   const fichaDe = (f: RentabilidadFila) => `/panel/inmobiliaria/inmuebles/${f.consignacionId}`;
-  const totales = report?.totales;
   /*
    * Con qué fórmula se midió la tasa de las filas y de los totales: la de la
    * inmobiliaria. Una respuesta de antes del 2026-09-16 no la trae, y ésa medía
@@ -213,14 +248,9 @@ function RentabilidadContent() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* GLOW UP 22-10 (UX, al nivel de Deuda del mes): la vuelta arriba; el encabezado común con una
           línea de para qué sirve, la explicación larga en la ayuda y el CSV como secundaria. */}
+      {/* GLOW UP 22-10 (revisora r24 #4 y #7): sin «Volver a Reportes» (el riel ya lo hace) y el período en
+          las acciones del encabezado, como el mes en Giros; «Desde/Hasta» sólo con «Rango libre». */}
       <div className="space-y-3">
-        <Link
-          href="/panel/inmobiliaria/reportes"
-          className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          {t('inmobiliaria.reportes.rentabilidad.back')}
-        </Link>
         <EncabezadoDePantalla
           seccion={t('inmobiliaria.reportes.rentabilidad.eyebrow')}
           titulo={t('inmobiliaria.reportes.rentabilidad.title')}
@@ -231,6 +261,20 @@ function RentabilidadContent() {
             </ParaEntenderMas>
           }
           acciones={
+            <>
+            <div className="max-w-full overflow-x-auto [scrollbar-width:none]" data-lenis-prevent>
+              <SegmentedControl<PresetDePeriodo>
+                value={preset}
+                onChange={elegirPreset}
+                size="sm"
+                className="[&>button]:whitespace-nowrap"
+                aria-label={t('inmobiliaria.reportes.rentabilidad.period.label')}
+                options={PRESETS_DE_PERIODO.map((p) => ({
+                  value: p,
+                  label: t(`inmobiliaria.reportes.rentabilidad.period.${p}`),
+                }))}
+              />
+            </div>
             <Button
               size="sm"
               variant="outline"
@@ -245,35 +289,14 @@ function RentabilidadContent() {
                 ? t('inmobiliaria.reportes.rentabilidad.downloading')
                 : t('inmobiliaria.reportes.rentabilidad.download')}
             </Button>
+            </>
           }
         />
       </div>
 
-      {/* Periodo */}
-      <section
-        className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"
-        aria-labelledby="rentabilidad-periodo"
-      >
-        <div className="space-y-2">
-          <p id="rentabilidad-periodo" className="text-caption font-medium text-fg-muted">
-            {t('inmobiliaria.reportes.rentabilidad.period.label')}
-          </p>
-          {/* A 390 «3 meses» se partía en dos renglones dentro de un botón de
-              28 px: cada opción en una línea y el riel se desliza. */}
-          <div className="max-w-full overflow-x-auto [scrollbar-width:none]" data-lenis-prevent>
-            <SegmentedControl<PresetDePeriodo>
-              value={preset}
-              onChange={elegirPreset}
-              size="sm"
-              className="[&>button]:whitespace-nowrap"
-              aria-label={t('inmobiliaria.reportes.rentabilidad.period.label')}
-              options={PRESETS_DE_PERIODO.map((p) => ({
-                value: p,
-                label: t(`inmobiliaria.reportes.rentabilidad.period.${p}`),
-              }))}
-            />
-          </div>
-        </div>
+      {/* Periodo: sólo el rango libre pide escribir meses. */}
+      {preset === 'libre' || errorDeRango ? (
+      <section className="flex flex-col gap-3" aria-label={t('inmobiliaria.reportes.rentabilidad.period.label')}>
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-end gap-2">
             <div className="space-y-1">
@@ -320,6 +343,7 @@ function RentabilidadContent() {
           />
         </div>
       </section>
+      ) : null}
 
       <EstadoDeDatos
         cargando={isLoading && !report}
@@ -353,9 +377,11 @@ function RentabilidadContent() {
             <CifraHeroe
               rotulo={t('inmobiliaria.reportes.rentabilidad.stats.collected')}
               cifra={plataQueCuenta(totales.recaudadoCop)}
-              contexto={tr('de los {esperado} esperados en {inmuebles} · {tasa}', {
+              contexto={tr('de los {esperado} esperados en {inmuebles}, de {desde} a {hasta} · {tasa}', {
                 esperado: formatCurrency(totales.esperadoCop),
                 inmuebles: t('inmobiliaria.reportes.rentabilidad.stats.properties', { count: totales.inmuebles }),
+                desde: etiquetaDelMes(consulta.desde, locale),
+                hasta: etiquetaDelMes(consulta.hasta, locale),
                 tasa: t('inmobiliaria.reportes.rentabilidad.stats.collectionRate', {
                   pct: totales.tasaDeRecaudoPct.toLocaleString(locale === 'en' ? 'en-US' : 'es-CO', { maximumFractionDigits: 1 }),
                   rotulo: rotuloDeLaTasa,
@@ -375,9 +401,11 @@ function RentabilidadContent() {
                   favor del propietario: «queda debiendo», con la regla de `lib/dinero/neto-del-propietario`. */}
               {[
                 { clave: 'comision', etiqueta: t('inmobiliaria.reportes.rentabilidad.stats.commission'), valor: formatCurrency(totales.comisionCop) },
-                { clave: 'neto', etiqueta: t('inmobiliaria.reportes.rentabilidad.stats.netToOwners'), valor: netoDelPropietario(totales.netoPropietarioCop, formatCurrency).texto },
+                /* Revisora r24 #3: cada cifra dice su base —el neto sale de lo CAUSADO (puede pasar a lo
+                   recaudado) y la vacancia es una estimación sobre el canon, en pesos enteros—. */
+                { clave: 'neto', etiqueta: tr('Neto causado a propietarios'), valor: netoDelPropietario(totales.netoPropietarioCop, formatCurrency).texto },
                 { clave: 'ocupacion', etiqueta: t('inmobiliaria.reportes.rentabilidad.stats.occupancy'), valor: formatearPct(totales.ocupacionPromedioPct, locale) },
-                { clave: 'vacancia', etiqueta: t('inmobiliaria.reportes.rentabilidad.stats.vacancyLoss'), valor: formatCurrency(totales.ingresoPerdidoPorVacanciaCop) },
+                { clave: 'vacancia', etiqueta: tr('Vacancia estimada sobre el canon'), valor: formatCurrency(Math.round(totales.ingresoPerdidoPorVacanciaCop)) },
               ].map((c) => (
                 <div key={c.clave} className="min-w-0 space-y-0.5" data-testid={`cifra-${c.clave}`}>
                   <dt className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">{c.etiqueta}</dt>
@@ -390,17 +418,36 @@ function RentabilidadContent() {
 
         {/* Tabla */}
         <section className="rounded-lg border border-border bg-card overflow-hidden">
-          <div className="border-b border-border p-5">
-            <h2 className="text-base font-medium text-fg">
-              {t('inmobiliaria.reportes.rentabilidad.table.title')}
-            </h2>
-            <p className="mt-0.5 text-caption text-fg-muted">
-              {t('inmobiliaria.reportes.rentabilidad.table.subtitle')}
-            </p>
+          {/* Revisora r24 #5: la barra del trabajo dentro de la tarjeta —pestañas por recaudo y el buscador—. */}
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+            <PestanasDeEstado<FiltroDeRecaudo>
+              etiqueta={tr('Filtrar por recaudo')}
+              valor={filtro}
+              onCambio={setFiltro}
+              pestanas={[
+                { valor: 'todos', etiqueta: tr('Todos'), cuantos: filas.length, fija: true, testid: 'rentabilidad-todos' },
+                { valor: 'con', etiqueta: tr('Con recaudo'), cuantos: filas.filter(DEL_FILTRO.con).length, testid: 'rentabilidad-con' },
+                { valor: 'sin', etiqueta: tr('Sin recaudo'), cuantos: filas.filter(DEL_FILTRO.sin).length, testid: 'rentabilidad-sin' },
+                { valor: 'mora', etiqueta: tr('En mora'), cuantos: filas.filter(DEL_FILTRO.mora).length, tono: 'aviso', testid: 'rentabilidad-mora' },
+              ]}
+            />
+            <Input
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder={tr('Inmueble, propietario o ciudad')}
+              aria-label={tr('Buscar un inmueble')}
+              className="w-full lg:w-72"
+              data-testid="rentabilidad-buscar"
+            />
           </div>
+          {!hayValorComercial && totales ? (
+            <p className="border-b border-border-faint px-4 py-2.5 text-caption text-fg-muted" data-testid="sin-valor-comercial">
+              {tr('La rentabilidad sobre el valor sale cuando registres el valor comercial en la ficha del inmueble.')}
+            </p>
+          ) : null}
 
-          <Table>
-            <TableHeader>
+          <Table className="max-md:block">
+            <TableHeader className="max-md:hidden">
               <TableRow>
                 {COLUMNAS.map((col) => {
                   const activa = orden.columna === col.id;
@@ -453,7 +500,14 @@ function RentabilidadContent() {
 
             {/* Otro período, ordenar o paginar: las filas entran escalonadas
                 y las que sobran salen (paginada: sin `layout`). */}
-            <TableBodyAnimado>
+            <TableBodyAnimado className="max-md:block">
+              {pageItems.length === 0 ? (
+                <TableRow className="max-md:block">
+                  <TableCell colSpan={COLUMNAS.length} className="py-10 text-center text-body-sm text-fg-muted max-md:block">
+                    {tr('Ningún inmueble coincide con la búsqueda o el filtro.')}
+                  </TableCell>
+                </TableRow>
+              ) : null}
               {pageItems.map((f) => {
                 /* 🔴 El respaldo pasó de «tuvo cobro ese mes» a «tuvo CUOTA
                    ese mes» el 2026-09-16 (`RentabilidadOcupacionFuente`): una
@@ -471,10 +525,10 @@ function RentabilidadContent() {
                   <TableRowAnimada
                     key={f.consignacionId}
                     onClick={() => router.push(fichaDe(f))}
-                    className="cursor-pointer transition-colors hover:bg-muted/40"
+                    className="cursor-pointer transition-colors hover:bg-muted/40 max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
                     data-testid="fila-de-rentabilidad"
                   >
-                    <TableCell className="max-w-[260px]">
+                    <TableCell className="max-w-[260px] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
                       <Link
                         href={fichaDe(f)}
                         onClick={(e) => e.stopPropagation()}
@@ -489,7 +543,7 @@ function RentabilidadContent() {
                         <span className="block truncate text-caption text-fg-muted">{f.propietarioNombre}</span>
                       </Link>
                     </TableCell>
-                    <TableCell numeric className="whitespace-nowrap font-mono tabular-nums">
+                    <TableCell numeric className="whitespace-nowrap font-mono tabular-nums max-md:hidden">
                       {f.canonDesconocido ? (
                         <span
                           className="text-fg-muted"
@@ -501,8 +555,8 @@ function RentabilidadContent() {
                         formatCurrency(f.canonCop)
                       )}
                     </TableCell>
-                    <TableCell title={detalleOcupacion}>
-                      <div className="flex items-center gap-2">
+                    <TableCell title={detalleOcupacion} className="max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0">
+                      <div className="flex items-center gap-2 max-md:justify-end">
                         <span className="w-14 shrink-0 font-mono text-caption tabular-nums text-fg">
                           {formatearPct(f.ocupacionPct, locale)}
                         </span>
@@ -511,31 +565,43 @@ function RentabilidadContent() {
                     </TableCell>
                     <TableCell
                       numeric
-                      className="whitespace-nowrap"
+                      className="whitespace-nowrap max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-left"
                       title={`${formatearPct(f.tasaDeRecaudoPct, locale)} ${rotuloDeLaTasa} · ${formatCurrency(f.enMoraCop)} en mora`}
                     >
-                      <div className="flex flex-col items-end gap-1">
+                      <div className="flex flex-col items-end gap-1 max-md:items-start">
                         <span className="font-mono text-sm tabular-nums text-fg">
-                          {formatCurrency(f.recaudadoCop)}
-                          <span className="text-fg-muted"> / {formatCurrency(f.esperadoCop)}</span>
+                          {f.recaudadoCop === 0 && f.esperadoCop === 0 ? (
+                            <span className="text-fg-subtle">—</span>
+                          ) : (
+                            <>
+                              {formatCurrency(f.recaudadoCop)}
+                              <span className="text-fg-muted"> / {formatCurrency(f.esperadoCop)}</span>
+                            </>
+                          )}
                         </span>
                         <Barra pct={f.tasaDeRecaudoPct} className={f.enMoraCop > 0 ? 'bg-warning' : undefined} />
                       </div>
                     </TableCell>
-                    <TableCell numeric className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
-                      {formatCurrency(f.comisionCop)}
+                    <TableCell numeric className="whitespace-nowrap font-mono tabular-nums text-fg-muted max-md:hidden">
+                      {plataOGuion(f.comisionCop)}
                     </TableCell>
-                    <TableCell numeric className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
-                      {formatCurrency(f.gastosMantenimientoCop)}
+                    <TableCell numeric className="whitespace-nowrap font-mono tabular-nums text-fg-muted max-md:hidden">
+                      {plataOGuion(f.gastosMantenimientoCop)}
                     </TableCell>
                     <TableCell
                       numeric
-                      className={`whitespace-nowrap font-mono font-medium tabular-nums ${netoDelPropietario(f.netoPropietarioCop).clase}`}
+                      className={`whitespace-nowrap font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right ${netoDelPropietario(f.netoPropietarioCop).clase}`}
                       title={netoDelPropietario(f.netoPropietarioCop).explicacion ?? undefined}
                     >
-                      {netoDelPropietario(f.netoPropietarioCop, formatCurrency).texto}
+                      {f.netoPropietarioCop === 0 ? (
+                        <span className="text-fg-subtle">—</span>
+                      ) : (
+                        netoDelPropietario(f.netoPropietarioCop, formatCurrency).texto
+                      )}
+                      <span className="hidden text-caption text-fg-muted max-md:block">{tr('neto')}</span>
                     </TableCell>
-                    <TableCell numeric className="whitespace-nowrap font-mono tabular-nums">
+                    {hayValorComercial ? (
+                    <TableCell numeric className="whitespace-nowrap font-mono tabular-nums max-md:hidden">
                       {f.rentabilidadNetaAnualPct === null ? (
                         <span className="text-fg-muted" title={t('inmobiliaria.reportes.rentabilidad.table.noValue')}>
                           —
@@ -544,13 +610,14 @@ function RentabilidadContent() {
                         formatearPct(f.rentabilidadNetaAnualPct, locale)
                       )}
                     </TableCell>
+                    ) : null}
                   </TableRowAnimada>
                 );
               })}
             </TableBodyAnimado>
 
             {totales && (
-              <TableFooter>
+              <TableFooter className="max-md:hidden">
                 <TableRow data-testid="fila-de-totales">
                   <TableCell className="font-mono text-caption uppercase tracking-[0.04em] text-fg-subtle">
                     {t('inmobiliaria.reportes.rentabilidad.table.totals')}
@@ -579,7 +646,7 @@ function RentabilidadContent() {
                   >
                     {netoDelPropietario(totales.netoPropietarioCop, formatCurrency).texto}
                   </TableCell>
-                  <TableCell numeric />
+                  {hayValorComercial ? <TableCell numeric /> : null}
                 </TableRow>
               </TableFooter>
             )}
@@ -602,8 +669,9 @@ function RentabilidadContent() {
         {/* Notas del back: explican el cálculo, no piden nada. Una alerta
             sin acción no se justifica (contrato de `AlertaAccionable`); van
             como lista sobria. */}
-        {/* Gráfico */}
-        <section className="rounded-lg border border-border bg-card overflow-hidden">
+        {/* Gráfico: con menos de cinco inmuebles con neto no compara nada (revisora r24 #7). */}
+        {cuantosEnElGrafico(filas) >= MINIMO_PARA_EL_GRAFICO ? (
+        <section className="rounded-lg border border-border bg-card overflow-hidden" data-testid="seccion-del-grafico">
           <div className="border-b border-border p-5">
             <h2 className="text-base font-medium text-fg">
               {/* Cuenta sólo los que dejaron neto: los que quedan en $0 no tienen barra. */}
@@ -619,6 +687,7 @@ function RentabilidadContent() {
             <GraficoDeRentabilidad filas={filas} />
           </div>
         </section>
+        ) : null}
 
         {report && report.notas.length > 0 && (
           <section className="space-y-1.5 px-1" data-testid="notas-del-reporte">

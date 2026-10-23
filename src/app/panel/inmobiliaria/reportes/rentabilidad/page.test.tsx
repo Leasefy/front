@@ -340,7 +340,26 @@ describe('RentabilidadPage — totales y filas', () => {
 
     expect(container.querySelector('[data-testid="fila-de-totales"]')?.textContent).toContain(formatCurrency(23_800_000))
     expect(container.querySelector('[data-testid="notas-del-reporte"]')?.textContent).toContain('Los gastos se descuentan del neto.')
-    expect(container.querySelector('[data-testid="grafico"]')?.getAttribute('data-barras')).toBe('2')
+    // Revisora r24: con menos de cinco inmuebles con neto, el «los que más dejan» no se pinta.
+    expect(container.querySelector('[data-testid="grafico"]')).toBeNull()
+  })
+
+  it('con cinco o más inmuebles con neto, el gráfico sí se pinta con todas las filas', async () => {
+    const CINCO = Array.from({ length: 5 }, (_, i) =>
+      fila({ consignacionId: `c-${i}`, propertyTitle: `Casa ${i}`, netoPropietarioCop: 1_000_000 * (i + 1) }),
+    )
+    conReporte(reporte(CINCO))
+    await renderPage()
+    expect(container.querySelector('[data-testid="grafico"]')?.getAttribute('data-barras')).toBe('5')
+  })
+
+  it('el buscador y las pestañas por recaudo filtran la tabla (revisora r24 #5)', async () => {
+    conReporte(reporte([...DOS, fila({ consignacionId: 'c-cero', propertyTitle: 'Bodega', recaudadoCop: 0, enMoraCop: 300_000 })]))
+    await renderPage()
+    expect(filas()).toHaveLength(3)
+    await click(container.querySelector('[data-testid="rentabilidad-sin"]'))
+    expect(filas()).toHaveLength(1)
+    expect(primeraFila()).toContain('Bodega')
   })
 })
 
@@ -414,6 +433,9 @@ describe('RentabilidadPage — periodo', () => {
     const llamadasAntes = useReportMock.mock.calls.length
     const [, hasta] = useReportMock.mock.calls[0]
 
+    // Revisora r24 #4: «Desde/Hasta» sólo aparecen con «Rango libre».
+    expect(container.querySelector('#rentabilidad-desde')).toBeNull()
+    await click(container.querySelector('[data-preset="libre"]'))
     const input = container.querySelector<HTMLInputElement>('#rentabilidad-desde')!
     await act(async () => {
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!

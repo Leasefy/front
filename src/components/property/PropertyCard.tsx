@@ -379,7 +379,7 @@ export function PropertyCard({
         {/* Features — clean chips. Sólo lo que se sabe (antes «— hab» en un local)
             y sin partirse en dos líneas en una tarjeta angosta (QA, 10-10-2026). */}
         {(areaConocida(area) || (bedrooms ?? 0) > 0 || (bathrooms ?? 0) > 0) && (
-          <div className="flex flex-wrap items-center gap-2 mt-4" aria-label="Características de la propiedad">
+          <div className="flex flex-wrap items-center gap-2 mt-4" aria-label="Características del inmueble">
             {areaConocida(area) && (
               <span className={chip}>
                 <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">

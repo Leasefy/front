@@ -480,7 +480,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
               {/* Conteo + orden, a la derecha de la misma fila. */}
               <div className="ml-auto flex items-center gap-3">
                 <p className="text-sm text-fg-muted whitespace-nowrap">
-                  <span className="font-mono tabular-nums font-medium text-fg">{total}</span> {total === 1 ? 'propiedad' : 'propiedades'}
+                  <span className="font-mono tabular-nums font-medium text-fg">{total}</span> {total === 1 ? 'inmueble' : 'inmuebles'}
                 </p>
                 <div className="relative">
                   <Button

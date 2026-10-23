@@ -143,7 +143,7 @@ export interface PropertyDetailViewProps {
 export function PropertyDetailView({
   propertyId,
   listingHref = '/propiedades',
-  listingLabel = 'Propiedades',
+  listingLabel = 'Inmuebles',
 }: PropertyDetailViewProps) {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { user } = useAuth();

@@ -103,7 +103,7 @@ export function AISearchInput({
           onFocus={() => setConFoco(true)}
           onBlur={() => setConFoco(false)}
           placeholder={placeholder}
-          aria-label="Búsqueda inteligente de propiedades"
+          aria-label="Búsqueda inteligente de inmuebles"
           disabled={isMagnifyingGlassing}
           enterKeyHint="search"
           autoComplete="off"

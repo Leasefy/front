@@ -4,7 +4,7 @@ import { useContratosAdministrados } from '@/components/landlord/ContratosConLaI
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
-import { Bell, Check, TrashSimple, Gear, FileText, FileArrowUp, CurrencyDollar, CaretRight, Warning, Calendar, UserPlus, PenNib, Clock } from '@phosphor-icons/react';
+import { Bell, Check, TrashSimple, Gear, FileText, FileArrowUp, CurrencyDollar, Warning, Calendar, UserPlus, PenNib, Clock } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
@@ -67,7 +67,7 @@ function NotificationSkeleton() {
   return (
     <div className="flex items-start gap-4 px-5 py-4 border-b border-border-faint animate-pulse">
       {/* Icon skeleton */}
-      <div className="w-10 h-10 rounded-lg bg-surface-muted flex-shrink-0" />
+      <div className="mt-0.5 w-5 h-5 rounded bg-surface-muted flex-shrink-0" />
 
       {/* Content skeleton */}
       <div className="flex-1 min-w-0 space-y-2">
@@ -241,22 +241,16 @@ export default function NotificacionesPage() {
                   className={cn(
                     'flex items-start gap-4 px-5 py-4 hover:bg-surface-hover transition-colors cursor-pointer group',
                     index !== filteredNotifications.length - 1 &&
-                      'border-b border-border-faint',
-                    !notification.read && 'bg-primary-soft/50'
+                      'border-b border-border-faint'
                   )}
                 >
-                  {/* Icon */}
-                  <div
-                    className={cn(
-                      'w-10 h-10 flex items-center justify-center flex-shrink-0 rounded-lg',
-                      categoryConfig.bgColor,
-                      categoryConfig.darkBgColor
+                  {/* Glow up 22-10: el ícono suelto (antes, en una caja de color) y la no leída con su punto,
+                      sin la fila teñida de azul. */}
+                  <div className="relative mt-0.5 flex-shrink-0">
+                    <IconComponent className="w-5 h-5 text-fg-muted" aria-hidden="true" />
+                    {!notification.read && (
+                      <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
                     )}
-                  >
-                    <IconComponent
-                      className={cn('w-5 h-5', categoryConfig.color)}
-                      weight={!notification.read ? 'fill' : 'regular'}
-                    />
                   </div>
 
                   {/* Content */}
@@ -282,10 +276,7 @@ export default function NotificacionesPage() {
                         •
                       </span>
                       <span
-                        className={cn(
-                          'text-caption font-medium',
-                          categoryConfig.color
-                        )}
+                        className="text-caption text-fg-subtle"
                       >
                         {categoryConfig.label}
                       </span>
@@ -295,11 +286,11 @@ export default function NotificacionesPage() {
                   {/* Action Button */}
                   {notification.actionLabel && (
                     <div
-                      className="hidden sm:flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="hidden sm:flex items-center gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Button
-                        variant="secondary"
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           if (notification.actionUrl) {
@@ -338,13 +329,6 @@ export default function NotificacionesPage() {
                     />
                   </div>
 
-                  {/* Unread indicator and arrow */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {!notification.read && (
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                    )}
-                    <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted transition-colors" />
-                  </div>
                 </StaggerItem>
               );
             })}

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { UsersThree, CaretRight, CheckCircle } from '@phosphor-icons/react';
+import { UsersThree, CheckCircle } from '@phosphor-icons/react';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
@@ -92,7 +92,6 @@ export default function SeleccionPage() {
                       ) : (
                         <span className="text-caption font-medium text-primary">Comparar</span>
                       )}
-                      <CaretRight className="w-4 h-4 text-fg-muted" />
                     </div>
                   </Link>
                 </li>

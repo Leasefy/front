@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, CaretRight, CheckCircle } from '@phosphor-icons/react';
+import { Bell, CheckCircle } from '@phosphor-icons/react';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { Card } from '@/components/ui';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
@@ -86,7 +86,6 @@ export default function NovedadesPage() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {d.deliveredAt && <CheckCircle className="w-4 h-4 text-primary" weight="fill" aria-hidden="true" />}
-                      <CaretRight className="w-4 h-4 text-fg-muted" />
                     </div>
                   </Link>
                 </li>

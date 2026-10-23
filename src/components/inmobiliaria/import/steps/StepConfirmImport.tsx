@@ -363,6 +363,12 @@ function StepConfirmImportCuerpo({
   const [irACrear, setIrACrear] = useState(false);
   /* Con una carga TERMINADA que aún tiene filas por revisar: volver a la lista. */
   const [verRevisionDeNuevo, setVerRevisionDeNuevo] = useState(false);
+  /* «Revisar las N» de la tarjeta de la carga terminada: lo mismo que «Revisar las que faltan», de una. */
+  useEffect(() => {
+    if (!state.abrirLaRevision) return;
+    setVerRevisionDeNuevo(true);
+    updateState({ importedCount: 0, abrirLaRevision: false });
+  }, [state.abrirLaRevision, updateState]);
   const [revisando, setRevisando] = useState(false);
   /* Lo que va mirando «Volver a revisar»: con 1.654 pendientes son varios
      minutos, y un botón que sólo gira no dice si avanza. */

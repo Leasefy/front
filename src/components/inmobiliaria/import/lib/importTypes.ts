@@ -177,6 +177,11 @@ export interface ImportWizardState {
    * último paso sigue desde `siguienteDesde` en vez de abrir otro lote.
    */
   subidaRetomada?: { lote: string; total: number; recibidas: number } | null;
+  /**
+   * Revisora r25 (Importar): «Revisar las 19» de una carga TERMINADA abre derecho la lista de lo que falta
+   * corregir (lo mismo que «Revisar las que faltan» del resumen), sin pasar por el resumen.
+   */
+  abrirLaRevision?: boolean;
 }
 
 // Target fields that columns can map to

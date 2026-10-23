@@ -48,7 +48,7 @@ export function CargasAMedias({
 }: {
   lotes: readonly EstadoDeLoteInmuebles[];
   /** Entrar a la carga, en la etapa en que quedó. */
-  onRetomar: (lote: EstadoDeLoteInmuebles) => void;
+  onRetomar: (lote: EstadoDeLoteInmuebles, opciones?: { revisar?: boolean }) => void;
   /** La carga ya no existe: el asistente suelta el lote si era el suyo. */
   onDescartada: (lote: string) => void;
   /** Algo cambió en el servidor: volver a leer la lista. */
@@ -165,9 +165,25 @@ export function CargasAMedias({
                     Reintentar las fallidas
                   </Button>
                 ) : null}
+                {/* Revisora r25: con filas por revisar, la acción dice cuántas y abre esa lista; el resumen
+                    queda al lado, callado. */}
+                {d.porRevisar > 0 ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    hideArrow
+                    disabled={ocupada}
+                    data-testid={`revisar-${l.lote}`}
+                    onClick={() => onRetomar(l, { revisar: true })}
+                  >
+                    {d.porRevisar === 1
+                      ? 'Revisar la que falta'
+                      : `Revisar las ${d.porRevisar.toLocaleString(localeDeLasCifras())}`}
+                  </Button>
+                ) : null}
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant={d.porRevisar > 0 ? 'ghost' : 'outline'}
                   hideArrow
                   disabled={ocupada}
                   data-testid={`retomar-${l.lote}`}

@@ -270,7 +270,7 @@ export function ImportWizard({
   const pasoActual = visibleSteps[currentStep - 1]?.id ?? 1;
 
   const retomarLote = useCallback(
-    (l: EstadoDeLoteInmuebles) => {
+    (l: EstadoDeLoteInmuebles, opciones?: { revisar?: boolean }) => {
       const etapa = etapaDeLaCarga(l);
       const aEnviar = wizardState.properties.filter((p) => p.hasErrors || p.selected).length;
       if (etapa === 'subiendo') {
@@ -291,6 +291,7 @@ export function ImportWizard({
       updateState({
         loteRetomado: l.lote,
         subidaRetomada: null,
+        abrirLaRevision: Boolean(opciones?.revisar),
         ...(wizardState.method === 'portal' ? { method: null } : {}),
       });
       setCurrentStep(wizardState.method === 'portal' ? STEPS.length : visibleSteps.length);

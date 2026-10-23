@@ -711,7 +711,7 @@ function AgendaContent() {
                                 )}
                               >
                                 <span className="flex items-center gap-1.5">
-                                  <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', puntoDelEvento(e, pestana === 'vencidas'))} />
+                                  <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', puntoDelEvento(e))} />
                                   <span className="tabular-nums text-fg-muted">{e.hora ? horaDeLaCasa(e.hora) : 'Todo el día'}</span>
                                 </span>
                                 <span className="mt-0.5 block truncate text-fg">{e.titulo}</span>

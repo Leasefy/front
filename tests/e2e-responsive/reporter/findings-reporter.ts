@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import type { FullConfig, FullResult, Reporter, Suite, TestCase, TestResult } from '@playwright/test/reporter';
 
+import { breakerBanner, breakerTripped } from '../support/breaker';
 import { FINDINGS_ATTACHMENT, type Finding, type FindingType, type TestFindings } from '../support/findings';
 
 /**
@@ -77,6 +78,7 @@ const SEVERITY_WEIGHT = { hard: 3, soft: 1, info: 0 } as const;
 
 export default class FindingsReporter implements Reporter {
   private rows: Row[] = [];
+  private prepared = false;
   private setupNotes: string[] = [];
   private started = 0;
   private projectNames: string[] = [];
@@ -87,6 +89,16 @@ export default class FindingsReporter implements Reporter {
     this.started = Date.now();
     this.workers = config.workers;
     this.projectNames = config.projects.map((p) => p.name).filter((n) => !n.startsWith('setup'));
+    void suite;
+    // Deliberately NOT touching responsive-report/ here: `--list` and a run that dies in global
+    // setup (dead server) never run a test, and must leave the previous report alone. The
+    // directory is prepared lazily by `prepare()` on the first finished test.
+  }
+
+  /** Wipes (or, with RESPONSIVE_REPORT_KEEP=1, re-reads) the report dir once, when the first test ends. */
+  private prepare(): void {
+    if (this.prepared) return;
+    this.prepared = true;
     if (process.env.RESPONSIVE_REPORT_KEEP !== '1') fs.rmSync(reportDir(), { recursive: true, force: true });
     fs.mkdirSync(reportDir(), { recursive: true });
     // Rows are appended to rows.ndjson as tests finish, so a run that dies half way (or several
@@ -102,10 +114,10 @@ export default class FindingsReporter implements Reporter {
         }
       }
     }
-    void suite;
   }
 
   onTestEnd(test: TestCase, result: TestResult): void {
+    this.prepare();
     const project = test.parent.project()?.name ?? '';
     if (project.startsWith('setup')) {
       for (const a of test.annotations) {
@@ -158,6 +170,11 @@ export default class FindingsReporter implements Reporter {
   }
 
   onEnd(result: FullResult): void {
+    // Nothing ran (`--list`, or global setup failed): leave the previous report untouched.
+    if (!this.prepared) {
+      if (breakerTripped()) console.error(breakerBanner());
+      return;
+    }
     // The same test can appear twice (a retry that was appended, or two overlapping runs): keep the last.
     const latest = new Map<string, Row>();
     for (const row of this.rows) latest.set(row.persona + "|" + row.route + "|" + row.device, row);
@@ -203,6 +220,7 @@ export default class FindingsReporter implements Reporter {
     fs.writeFileSync(path.join(dir, 'findings.json'), JSON.stringify(json, null, 2));
     fs.writeFileSync(path.join(dir, 'summary.md'), this.renderSummary(json, routes, skipped));
     console.log(`\nResponsive report: ${path.join(dir, 'summary.md')}`);
+    if (breakerTripped()) console.error(breakerBanner());
   }
 
   // ---- aggregation ------------------------------------------------------------------------

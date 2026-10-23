@@ -86,7 +86,6 @@ export function ConfigFacturacion({
     pageSize,
     setPage,
     setPageSize,
-    shouldPaginate,
   } = useTablePagination(invoices);
 
   const { currentPlanId, state, isLoading: subLoading, error: subError, refetch: subRefetch } =
@@ -309,7 +308,7 @@ export function ConfigFacturacion({
               {/* Price */}
               <div className="p-4 rounded-md bg-muted/50 mb-4">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-medium text-foreground">
+                  <span className="font-mono text-2xl tabular-nums text-foreground">
                     {priceDisplay?.amount}
                   </span>
                   {priceDisplay?.period && (
@@ -569,7 +568,7 @@ export function ConfigFacturacion({
                   <TableHead className="text-left py-3 px-4">
                     {t('inmobiliaria.config.billing.invoiceDate')}
                   </TableHead>
-                  <TableHead className="text-left py-3 px-4">
+                  <TableHead className="text-right py-3 px-4">
                     {t('inmobiliaria.config.billing.invoiceAmount')}
                   </TableHead>
                   <TableHead className="text-left py-3 px-4">
@@ -589,13 +588,13 @@ export function ConfigFacturacion({
                     <TableCell className="py-3 px-4">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm text-foreground">
+                        <span className="font-mono text-sm text-foreground">
                           {formatDate(invoice.date)}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="py-3 px-4">
-                      <span className="text-sm font-medium text-foreground">
+                    <TableCell className="py-3 px-4 text-right">
+                      <span className="font-mono text-sm tabular-nums text-foreground">
                         {formatCOP(invoice.amount, idiomaDeLasCifras())}
                       </span>
                     </TableCell>
@@ -626,8 +625,8 @@ export function ConfigFacturacion({
               </TableBody>
             </Table>
 
-            {/* Pie: sólo si hay más de una página. */}
-            {shouldPaginate && (
+            {/* Ronda 30 (regla de Nico): el pie siempre que haya facturas, también con una página. */}
+            {invoices.length > 0 && (
               <div className="border-t border-border px-4 py-3">
                 <TablePagination
                   total={total}
@@ -684,7 +683,7 @@ function UsageRow({
           <Icon className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm text-foreground">{label}</span>
         </div>
-        <span className="text-sm font-medium text-foreground">
+        <span className="font-mono text-sm tabular-nums text-foreground">
           {used}
           {isUnlimited ? '' : ` / ${limit}`}
         </span>

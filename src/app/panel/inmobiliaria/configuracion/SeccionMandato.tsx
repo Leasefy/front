@@ -140,8 +140,9 @@ function ModalidadPorDefecto({
         no tengan una propia usan ésta.
       </p>
       {/* Radios del sistema de diseño (21-09): el del navegador mide 13 px. */}
+      {/* Ronda 30: las opciones como filas con una línea fina (antes cajas con borde dentro de la tarjeta). */}
       <RadioGroup
-        className="space-y-2"
+        className="divide-y divide-border border-y border-border"
         value={valor ?? ''}
         onValueChange={(nuevo) => setValor((nuevo || null) as typeof valor)}
       >
@@ -154,7 +155,7 @@ function ModalidadPorDefecto({
         ).map(([v, nombre, ayuda]) => (
           <label
             key={v || 'ninguna'}
-            className="flex items-start gap-3 rounded-md border border-border p-3 cursor-pointer hover:bg-surface-hover"
+            className="flex items-start gap-3 px-1 py-3 cursor-pointer hover:bg-surface-hover"
           >
             <RadioGroupItem
               value={v ?? ''}
@@ -390,7 +391,9 @@ function IvaDeLaComision({
             key={String(v)}
             size="sm"
             hideArrow
-            variant={actual === v ? 'default' : 'outline'}
+            // Ronda 30: la elegida en tinta (antes en voltaje: el azul es la acción, no un estado).
+            variant={actual === v ? 'ink' : 'outline'}
+            aria-pressed={actual === v}
             disabled={guardando}
             onClick={() => {
               if (conBarra) setElegido(v);

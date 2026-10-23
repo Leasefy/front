@@ -235,6 +235,8 @@ export function ConfigIntegraciones({
         {CATEGORY_TABS.map((tab) => {
           const Icon = tab.icon;
           const count = tab.value === 'all' ? integrations.length : categoryCounts[tab.value];
+          // Ronda 30: una categoría en cero no se pinta (salvo la elegida).
+          if (tab.value !== 'all' && !count && selectedCategory !== tab.value) return null;
 
           return (
             <Chip
@@ -244,7 +246,7 @@ export function ConfigIntegraciones({
               icon={<Icon className="w-4 h-4" />}
             >
               {tab.label}
-              <span className="text-caption opacity-70">({count})</span>
+              <span className="font-mono text-caption opacity-70">{count}</span>
             </Chip>
           );
         })}
@@ -271,16 +273,8 @@ export function ConfigIntegraciones({
               >
                 <div className="flex items-start gap-4">
                   {/* Icon */}
-                  <div
-                    className={cn(
-                      'w-12 h-12 rounded-lg flex items-center justify-center shrink-0',
-                      integration.isEnabled && integration.status === 'active'
-                        ? 'bg-primary-soft text-primary'
-                        : 'bg-surface-muted text-fg-muted'
-                    )}
-                  >
-                    <Icon className="w-6 h-6" weight="duotone" />
-                  </div>
+                  {/* Ronda 30: el ícono suelto (antes en una caja azul cuando estaba activa). */}
+                  <Icon className="mt-0.5 h-6 w-6 shrink-0 text-fg-muted" weight="light" aria-hidden="true" />
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
@@ -303,6 +297,7 @@ export function ConfigIntegraciones({
                           checked={integration.isEnabled}
                           onCheckedChange={() => handleToggle(integration)}
                           disabled={isToggling}
+                          aria-label={`${integration.isEnabled ? 'Apagar' : 'Prender'} ${integration.name}`}
                         />
                       </div>
                     </div>
@@ -337,7 +332,7 @@ export function ConfigIntegraciones({
 
                     {/* Error Message */}
                     {integration.status === 'error' && integration.errorMessage && (
-                      <div className="mt-3 p-2.5 rounded-md bg-danger-soft border border-danger/30">
+                      <div className="mt-3">
                         <div className="flex items-start gap-2">
                           <Warning className="w-4 h-4 text-danger shrink-0 mt-0.5" />
                           <p className="text-caption text-danger">
@@ -351,7 +346,7 @@ export function ConfigIntegraciones({
                     {integration.isEnabled &&
                       integration.status === 'pending' &&
                       !integration.apiKeyConfigured && (
-                        <div className="mt-3 p-2.5 rounded-md bg-warning-soft border border-warning/30">
+                        <div className="mt-3">
                           <div className="flex items-start gap-2">
                             <Key className="w-4 h-4 text-warning shrink-0 mt-0.5" />
                             <p className="text-caption text-warning">
@@ -412,7 +407,7 @@ export function ConfigIntegraciones({
           <div className="space-y-4">
             <dl className="grid grid-cols-2 gap-3">
               <div>
-                <dt className="text-caption uppercase tracking-wide text-fg-subtle">
+                <dt className="font-mono text-label uppercase text-fg-subtle">
                   {t('inmobiliaria.config.integrations.detailStatus')}
                 </dt>
                 <dd className="mt-1 text-sm text-fg">
@@ -422,7 +417,7 @@ export function ConfigIntegraciones({
                 </dd>
               </div>
               <div>
-                <dt className="text-caption uppercase tracking-wide text-fg-subtle">
+                <dt className="font-mono text-label uppercase text-fg-subtle">
                   {t('inmobiliaria.config.integrations.detailCategory')}
                 </dt>
                 <dd className="mt-1 text-sm text-fg">
@@ -432,7 +427,7 @@ export function ConfigIntegraciones({
                 </dd>
               </div>
               <div className="col-span-2">
-                <dt className="text-caption uppercase tracking-wide text-fg-subtle">
+                <dt className="font-mono text-label uppercase text-fg-subtle">
                   {t('inmobiliaria.config.integrations.detailLastSync')}
                 </dt>
                 <dd className="mt-1 text-sm text-fg">

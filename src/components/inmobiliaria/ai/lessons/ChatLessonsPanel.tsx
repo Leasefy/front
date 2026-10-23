@@ -46,6 +46,40 @@ import { isAgentConfigured, type CertifyDecision } from '@/lib/api/ai-hub-lesson
 import { mensajeDelFalloDeLaAccion } from '@/lib/chat/fallo-de-la-accion'
 import { useChatLessons } from '@/lib/hooks/use-chat-lessons'
 import { ChatLessonCard } from './ChatLessonCard'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+
+/** Ronda 30 (regla de Nico: listas con paginación): cada grupo de lecciones, de a 10. */
+function LeccionesPaginadas<T extends { id: string }>({
+  items,
+  render,
+}: {
+  items: T[]
+  render: (item: T) => React.ReactNode
+}) {
+  const pag = useTablePagination(items, {})
+  return (
+    <>
+      <Stagger className="space-y-3">
+        {pag.pageItems.map((item) => (
+          <StaggerItem key={item.id}>{render(item)}</StaggerItem>
+        ))}
+      </Stagger>
+      {items.length > pag.pageSize ? (
+        <div className="pt-3">
+          <TablePagination
+            total={pag.total}
+            page={pag.page}
+            pageSize={pag.pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={pag.setPage}
+            onPageSizeChange={pag.setPageSize}
+          />
+        </div>
+      ) : null}
+    </>
+  )
+}
 import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 const STATUS_ORDER = ['candidate', 'certified', 'rejected'] as const
@@ -148,7 +182,7 @@ export function ChatLessonsPanel() {
           <Info className="h-5 w-5 text-fg-muted mt-0.5 flex-shrink-0" aria-hidden="true" />
           <div>
             <p className="text-sm font-medium text-fg">
-              El servicio del asistente no está conectado en este entorno.
+              El asistente de Leasefy no está disponible en este momento.
             </p>
             <p className="text-sm text-fg-muted mt-0.5">
               Las lecciones aparecerán aquí cuando el asistente esté disponible.
@@ -226,8 +260,8 @@ export function ChatLessonsPanel() {
         <div className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted px-4 py-3">
           <Lightning className="h-5 w-5 text-fg-muted mt-0.5 flex-shrink-0" aria-hidden="true" />
           <p className="text-sm text-fg-muted">
-            Estás viendo las lecciones en modo lectura. Solo administradores y
-            agentes pueden certificarlas.
+            Estás viendo las lecciones en modo lectura. Sólo administradores y
+            asesores pueden certificarlas.
           </p>
         </div>
       )}
@@ -243,7 +277,7 @@ export function ChatLessonsPanel() {
                 className="font-heading text-sm font-medium text-fg"
               >
                 {GROUP_TITLE[status]}
-                <span className="ml-1.5 text-caption font-normal text-fg-muted tabular-nums">
+                <span className="ml-1.5 font-mono text-caption font-normal text-fg-muted tabular-nums">
                   <AnimatedNumber value={items.length} format={(n) => String(Math.round(n))} />
                 </span>
               </h2>
@@ -253,18 +287,17 @@ export function ChatLessonsPanel() {
             </div>
             {/* Certificar o descartar mueve la lección de grupo: sale de éste
                 y entra en el otro. */}
-            <Stagger className="space-y-3">
-              {items.map((lesson) => (
-                <StaggerItem key={lesson.id}>
-                  <ChatLessonCard
-                    lesson={lesson}
-                    canCertify={canCertify}
-                    pendingId={pendingId}
-                    onDecide={handleDecide}
-                  />
-                </StaggerItem>
-              ))}
-            </Stagger>
+            <LeccionesPaginadas
+              items={items}
+              render={(lesson) => (
+                <ChatLessonCard
+                  lesson={lesson}
+                  canCertify={canCertify}
+                  pendingId={pendingId}
+                  onDecide={handleDecide}
+                />
+              )}
+            />
           </section>
         )
       })}

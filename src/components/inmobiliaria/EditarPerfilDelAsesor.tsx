@@ -230,10 +230,18 @@ export function EditarPerfilDelAsesor({
               max={100}
               value={comision}
               onChange={(e) => setComision(e.target.value)}
+              aria-invalid={!comisionValida || undefined}
+              aria-describedby="asesor-comision-ayuda"
             />
-            <p className="text-caption text-fg-muted">
-              De cada comisión de la inmobiliaria,{' '}
-              {comisionValida ? `${comisionNumero} % es del asesor y ${100 - comisionNumero} % queda en la agencia` : 'la parte del asesor'}.
+            {/* Ronda 30: el error va bajo el campo (antes sólo un toast al guardar). */}
+            <p
+              id="asesor-comision-ayuda"
+              className={comisionValida ? 'text-caption text-fg-muted' : 'text-caption text-danger'}
+              role={comisionValida ? undefined : 'alert'}
+            >
+              {comisionValida
+                ? `De cada comisión de la inmobiliaria, ${comisionNumero} % es del asesor y ${100 - comisionNumero} % queda en la inmobiliaria.`
+                : 'Escribe un número entre 0 y 100.'}
             </p>
           </div>
 

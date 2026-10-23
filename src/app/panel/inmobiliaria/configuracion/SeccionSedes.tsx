@@ -49,6 +49,8 @@ import { finanzasApi } from '@/lib/api/finanzas.service';
 import type { Sede, Sedes } from '@/lib/api/finanzas.types';
 import { EsqueletoDeSeccion, VacioDeSeccion } from './piezas';
 import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 
 const NUMERO = cifrasDeLaPantalla();
 
@@ -76,6 +78,8 @@ export function SeccionSedes() {
 
   const disponible = datos?.disponible !== false;
   const sedes = datos?.sedes ?? [];
+  // Ronda 30 (regla de Nico: tablas con paginación).
+  const pag = useTablePagination(sedes, {});
   const sinAsignar = datos?.sinAsignar ?? { inmuebles: 0, contratos: 0 };
 
   async function marcarPorDefecto(sede: Sede) {
@@ -166,7 +170,7 @@ export function SeccionSedes() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    sedes.map((s) => (
+                    pag.pageItems.map((s) => (
                       <TableRow
                         key={s.id}
                         data-testid={`sede-${s.codigo}`}
@@ -225,6 +229,18 @@ export function SeccionSedes() {
                 </TableBody>
               </Table>
             </div>
+            {sedes.length > 0 ? (
+              <div className="border-t border-border px-4 py-3">
+                <TablePagination
+                  total={pag.total}
+                  page={pag.page}
+                  pageSize={pag.pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={pag.setPage}
+                  onPageSizeChange={pag.setPageSize}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

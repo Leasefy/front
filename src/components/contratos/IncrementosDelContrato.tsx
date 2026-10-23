@@ -39,6 +39,7 @@ import {
   CartaDelIncrementoCajon,
   type CartaQueSeAbre,
 } from "@/components/contratos/CartaDelIncrementoCajon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const PESOS = plataEnPantalla(localeDeLasCifras, {
   style: "currency",
@@ -508,21 +509,28 @@ function Aniversario({
             <div className="flex flex-wrap items-end gap-2 rounded-md border border-border p-2" data-testid={`constancia-${a.desde}`}>
               <label className="text-caption">
                 Medio
-                <select
-                  id={ids.medio}
-                  className="mt-1 block rounded-md border border-border bg-background px-2 py-1 text-sm"
+                {/* Ronda 30: el Select de Cadence (antes el <select> del navegador). */}
+                <Select
                   value={medio}
-                  onChange={(e) => {
-                    setMedio(e.target.value as "FISICO" | "WHATSAPP" | "OTRO");
+                  onValueChange={(v) => {
+                    setMedio(v as "FISICO" | "WHATSAPP" | "OTRO");
                     limpiar("medio");
                   }}
-                  aria-invalid={errores.medio ? true : undefined}
-                  aria-describedby={`${ids.medio}-error`}
                 >
-                  <option value="FISICO">En físico</option>
-                  <option value="WHATSAPP">Por WhatsApp</option>
-                  <option value="OTRO">Otro</option>
-                </select>
+                  <SelectTrigger
+                    id={ids.medio}
+                    className="mt-1"
+                    aria-invalid={errores.medio ? true : undefined}
+                    aria-describedby={`${ids.medio}-error`}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="FISICO">En físico</SelectItem>
+                    <SelectItem value="WHATSAPP">Por WhatsApp</SelectItem>
+                    <SelectItem value="OTRO">Otro</SelectItem>
+                  </SelectContent>
+                </Select>
                 <ErrorDelCampo id={`${ids.medio}-error`} mensaje={errores.medio} />
               </label>
               <label className="text-caption">

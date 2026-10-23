@@ -1229,7 +1229,7 @@ function AprobarCambio({
     <Dialog open onOpenChange={(v) => !v && onCerrar()}>
       <DialogContent size="md" variant="confirm" icon={<Stamp weight="bold" />}>
         <DialogHeader>
-          <DialogTitle>Aprobar el giro a la cuenta nueva</DialogTitle>
+          <DialogTitle>¿Aprobar el giro a la cuenta nueva?</DialogTitle>
           <DialogDescription>
             {esReparto(cambio.cuentaNueva)
               ? `Reparto en ${cambio.cuentaNueva.reparto!.length} cuentas.${
@@ -1333,7 +1333,7 @@ function CerrarCambio({
         icon={rechazo ? <XCircle weight="bold" /> : <Prohibit weight="bold" />}
       >
         <DialogHeader>
-          <DialogTitle>{rechazo ? 'Rechazar el cambio de cuenta' : 'Anular el cambio de cuenta'}</DialogTitle>
+          <DialogTitle>{rechazo ? "¿Rechazar el cambio de cuenta?" : "¿Anular el cambio de cuenta?"}</DialogTitle>
           <DialogDescription>
             {rechazo
               ? 'La ficha vuelve a la cuenta anterior y el giro deja de estar retenido.'

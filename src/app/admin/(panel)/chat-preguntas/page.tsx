@@ -22,7 +22,7 @@
  */
 
 import { useState } from 'react'
-import { Alert, Card, Chip, FranjaDeCifras, MonoLabel, Sheet, SheetBody, SheetContent, SheetHeader } from '@leasefy/cadence'
+import { Alert, Card, Chip, Cifra, FranjaDeCifras, MonoLabel, Sheet, SheetBody, SheetContent, SheetHeader } from '@leasefy/cadence'
 import {
   getChatPreguntas,
   type SugerenciaDelChat,
@@ -32,7 +32,7 @@ import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtCOP, fmtDateTime, USD_TO_COP } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
@@ -190,7 +190,7 @@ function DetalleDelTurno({ t, onClose }: { t: TurnoDelChat | null; onClose: () =
                 ) : (
                   <div className="flex flex-wrap gap-1">
                     {t.especialistas.map((e) => (
-                      <Pill key={`e-${e}`} tone="info">{especialistaLegible(e)}</Pill>
+                      <Pill key={`e-${e}`} tone="neutral">{especialistaLegible(e)}</Pill>
                     ))}
                     {t.fuentes
                       .filter((f) => !f.startsWith('especialista:'))
@@ -411,21 +411,29 @@ export default function ChatPreguntasPage() {
             {fechaLarga(hasta || diaDeBogota(data.ventana.hasta))}
             {data.ventana.truncado ? ' · las 5.000 más recientes' : ''}
           </MonoLabel>
-          <FranjaDeCifras fila="lg">
-            <KpiCard label="Preguntas" value={totales!.preguntas} hint={`${totales!.inmobiliarias} ${totales!.inmobiliarias === 1 ? 'inmobiliaria' : 'inmobiliarias'}`} />
-            <KpiCard
-              label="Sin respuesta"
-              value={totales!.porcentajeSinRespuesta == null ? '—' : `${String(totales!.porcentajeSinRespuesta).replace('.', ',')} %`}
-              hint={`${totales!.sinRespuesta} de ${totales!.preguntas}`}
-              tone={(totales!.porcentajeSinRespuesta ?? 0) >= 25 ? 'bad' : 'default'}
+          {/* Glow up 22-10: LA RESPUESTA (qué parte de las preguntas se quedó sin respuesta) en una cifra con su
+              barra, y cuatro cifras de apoyo; antes, 6 tarjetas del mismo peso. */}
+          <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+            <CifraHeroe
+              rotulo="Sin respuesta"
+              cifra={totales!.porcentajeSinRespuesta == null ? '—' : `${String(totales!.porcentajeSinRespuesta).replace('.', ',')} %`}
+              contexto={`${totales!.sinRespuesta.toLocaleString('es-CO')} de ${totales!.preguntas.toLocaleString('es-CO')} preguntas, de ${totales!.inmobiliarias} ${totales!.inmobiliarias === 1 ? 'inmobiliaria' : 'inmobiliarias'}`}
+              tramos={[
+                { clave: 'respondidas', etiqueta: 'Con respuesta', monto: totales!.preguntas - totales!.sinRespuesta, tono: 'exito', cifra: (totales!.preguntas - totales!.sinRespuesta).toLocaleString('es-CO') },
+                { clave: 'sin', etiqueta: 'Sin respuesta', monto: totales!.sinRespuesta, tono: 'critico', cifra: totales!.sinRespuesta.toLocaleString('es-CO') },
+              ]}
+              total={totales!.preguntas}
+              data-testid="chat-preguntas-sin-respuesta"
             />
-            <KpiCard label="Reformuladas" value={totales!.reformulaciones} />
-            <KpiCard label="Abandonos" value={totales!.abandonos} />
-            <KpiCard label="Se cortaron" value={totales!.fallas} tone={totales!.fallas > 0 ? 'warn' : 'default'} />
-            <KpiCard
-              label="Costo"
-              value={totales!.turnosConCosto === 0 ? '—' : costo(totales!.costoUsd)}
-              hint={totales!.turnosConCosto === 0 ? 'Todavía sin costo anotado' : `${totales!.turnosConCosto} turnos con costo`}
+          </div>
+          <FranjaDeCifras fila="lg" columnas={4} aria-label="Lo demás de las preguntas">
+            <Cifra etiqueta="Reformuladas" valor={totales!.reformulaciones} />
+            <Cifra etiqueta="Abandonos" valor={totales!.abandonos} />
+            <Cifra etiqueta="Se cortaron" valor={totales!.fallas} tono={totales!.fallas > 0 ? 'aviso' : undefined} />
+            <Cifra
+              etiqueta="Costo"
+              valor={totales!.turnosConCosto === 0 ? '—' : costo(totales!.costoUsd)}
+              detalle={totales!.turnosConCosto === 0 ? 'todavía sin costo anotado' : `${totales!.turnosConCosto} turnos con costo`}
             />
           </FranjaDeCifras>
 

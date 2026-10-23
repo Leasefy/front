@@ -442,8 +442,8 @@ export function PropertyIACapture() {
         <div className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
           <Sparkle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
           <div>
-            <p className="text-xs font-semibold text-warning">{t(k('reviewBannerTitle'))}</p>
-            <p className="text-xs text-warning/90 mt-0.5">
+            <p className="text-caption font-medium text-warning">{t(k('reviewBannerTitle'))}</p>
+            <p className="text-caption text-warning/90 mt-0.5">
               {t(k('reviewBannerDesc'), { confidence: String(confidencePct) })}
             </p>
           </div>
@@ -571,7 +571,7 @@ export function PropertyIACapture() {
           <WarningCircle className="w-7 h-7 text-danger" weight="duotone" />
         </div>
         <div className="space-y-1">
-          <h3 className="text-base font-semibold text-fg">{t(k('errorTitle'))}</h3>
+          <h3 className="text-base font-medium text-fg">{t(k('errorTitle'))}</h3>
           <p className="text-sm text-fg-muted max-w-sm">{errorMsg}</p>
         </div>
         <div className="flex items-center gap-2 mt-1">
@@ -602,7 +602,7 @@ export function PropertyIACapture() {
       {/* Audio recorder */}
       <section className="bg-card rounded-lg border border-border p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-fg">{t(k('recordTitle'))}</h2>
+          <h2 className="text-base font-medium text-fg">{t(k('recordTitle'))}</h2>
           {(isRecording || audioBlob) && (
             <span className={cn('text-sm font-mono tabular-nums', isRecording ? 'text-danger' : 'text-fg-muted')}>
               {mmss}
@@ -639,7 +639,7 @@ export function PropertyIACapture() {
             <p className="text-sm font-medium text-fg">
               {isRecording ? t(k('stopRecording')) : t(k('startRecording'))}
             </p>
-            <p className="text-xs text-fg-muted">{t(k('recordHint'))}</p>
+            <p className="text-caption text-fg-muted">{t(k('recordHint'))}</p>
           </button>
         ) : (
           <div className="space-y-3">
@@ -662,8 +662,8 @@ export function PropertyIACapture() {
       {/* Photos (optional) */}
       <section className="bg-card rounded-lg border border-border p-5 space-y-4">
         <div>
-          <h2 className="text-base font-semibold text-fg">{t(k('photosTitle'))}</h2>
-          <p className="text-xs text-fg-muted mt-0.5">{t(k('photosHint'))}</p>
+          <h2 className="text-base font-medium text-fg">{t(k('photosTitle'))}</h2>
+          <p className="text-caption text-fg-muted mt-0.5">{t(k('photosHint'))}</p>
         </div>
         <input
           ref={photoInputRef}
@@ -696,7 +696,7 @@ export function PropertyIACapture() {
               className="w-20 h-20 rounded-xl border-2 border-dashed border-border bg-surface-muted/40 hover:bg-surface-muted/70 flex flex-col items-center justify-center gap-1 text-fg-muted transition-colors"
             >
               <ImageSquare className="w-5 h-5" />
-              <span className="text-[10px] font-medium">{t(k('addPhotos'))}</span>
+              <span className="text-caption font-medium">{t(k('addPhotos'))}</span>
             </button>
           )}
         </div>

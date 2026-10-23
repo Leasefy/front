@@ -58,7 +58,7 @@ export function BitacoraDelContrato({ contractId }: { contractId: string }) {
     <section className="rounded-lg border border-border bg-card overflow-hidden" data-testid="bitacora-del-contrato">
       <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
         <ClockCounterClockwise className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-        <h3 className="text-base font-semibold text-foreground">Bitácora del mandato</h3>
+        <h3 className="text-base font-medium text-foreground">Bitácora del mandato</h3>
       </div>
       <div className="p-5">
         <EstadoDeDatos
@@ -74,9 +74,9 @@ export function BitacoraDelContrato({ contractId }: { contractId: string }) {
               <li key={e.id} className="border-l-2 border-border pl-3">
                 <p className="text-sm font-medium text-foreground">{e.titulo}</p>
                 {e.detalle ? (
-                  <p className="text-xs text-muted-foreground">{e.detalle}</p>
+                  <p className="text-caption text-muted-foreground">{e.detalle}</p>
                 ) : null}
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   {new Date(e.createdAt).toLocaleString('es-CO', {
                     day: 'numeric',
                     month: 'long',
@@ -89,7 +89,7 @@ export function BitacoraDelContrato({ contractId }: { contractId: string }) {
                 {e.tieneAnexo ? (
                   <button
                     type="button"
-                    className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                    className="mt-1 inline-flex items-center gap-1 text-caption text-primary hover:underline"
                     onClick={() => void abrirAnexo(e)}
                   >
                     <Paperclip className="w-3 h-3" aria-hidden="true" />

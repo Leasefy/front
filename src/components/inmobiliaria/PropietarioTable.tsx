@@ -99,7 +99,7 @@ function ConChip({ etiqueta, cuantos }: { etiqueta: string; cuantos: number }) {
     <span className="inline-flex items-center gap-1.5">
       {etiqueta}
       <span
-        className="rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums"
+        className="rounded bg-muted px-1.5 py-0.5 text-caption tabular-nums"
         data-testid={`conteo-${etiqueta.toLowerCase().replace(/\s+/g, '-')}`}
       >
         {NUMERO.format(cuantos)}
@@ -543,7 +543,7 @@ export function PropietarioTable({
                         {propietario.propertyCount === 0 ? '—' : propietario.propertyCount}
                       </span>
                       {propietario.propertyCount > 0 ? (
-                        <span className="block whitespace-nowrap text-xs text-muted-foreground">
+                        <span className="block whitespace-nowrap text-caption text-muted-foreground">
                           {arrendadas(t, propietario.activeLeases)}
                         </span>
                       ) : null}
@@ -551,7 +551,7 @@ export function PropietarioTable({
                           del conteo de mandatos donde es principal. */}
                       {(propietario.copropiedadesCount ?? 0) > 0 && (
                         <span
-                          className="block text-xs text-muted-foreground tabular-nums"
+                          className="block text-caption text-muted-foreground tabular-nums"
                           data-testid="copropiedades-del-propietario"
                         >
                           {t('inmobiliaria.propietario.table.copropiedades', { n: propietario.copropiedadesCount ?? 0 })}
@@ -638,7 +638,7 @@ export function PropietarioTable({
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
             <User className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-1">
+          <h3 className="text-lg font-medium text-foreground mb-1">
             {t('inmobiliaria.propietario.table.noResults')}
           </h3>
           <p className="text-muted-foreground">

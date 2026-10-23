@@ -118,7 +118,7 @@ export function CandidatosDelInmueble({
           <Users className="h-[18px] w-[18px] shrink-0 text-fg-subtle" aria-hidden="true" />
           <div>
             <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Candidatos</h3>
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               {!propertyId
                 ? 'Sin inmueble asociado'
                 : candidatos === null
@@ -181,18 +181,18 @@ export function CandidatosDelInmueble({
                   <Avatar name={c.tenantName || '?'} size="sm" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm text-fg">{c.tenantName}</span>
-                    <span className="block truncate text-xs text-fg-muted">{c.tenantEmail}</span>
+                    <span className="block truncate text-caption text-fg-muted">{c.tenantEmail}</span>
                     {/* 🔴 El estudio es opcional (Nico, 04-10-2026). */}
                     <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} className="mt-1" />
                   </span>
                   {c.riskScore && (
-                    <span className="shrink-0 font-mono text-xs tabular-nums text-fg-muted">
+                    <span className="shrink-0 font-mono text-caption tabular-nums text-fg-muted">
                       {c.riskScore.totalScore} · {c.riskScore.level}
                     </span>
                   )}
                   <span
                     className={cn(
-                      'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                      'shrink-0 rounded-full px-2.5 py-0.5 text-caption font-medium',
                       est.bg,
                       est.text,
                     )}

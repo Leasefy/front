@@ -110,7 +110,7 @@ export function DisponiblesSinSenal({ aviso = null }: Props = {}) {
 
       {aviso && (
         <p
-          className={`mt-2 text-xs ${aviso.ok ? 'text-success' : 'text-warning'}`}
+          className={`mt-2 text-caption ${aviso.ok ? 'text-success' : 'text-warning'}`}
           role="status"
           data-testid="aviso-sin-senal"
         >
@@ -120,7 +120,7 @@ export function DisponiblesSinSenal({ aviso = null }: Props = {}) {
 
       <Collapse open={abierto}>
       <div className="space-y-3 pt-3">
-      <p className="text-xs text-fg-muted">
+      <p className="text-caption text-fg-muted">
         {copias.length === 1
           ? 'Este inmueble ya está descargado en este dispositivo: puedes abrirlo y llenar su inventario aunque no haya señal, y se sube cuando vuelvas a tener.'
           : 'Estos inmuebles ya están descargados en este dispositivo: puedes abrirlos y llenar su inventario aunque no haya señal, y se suben cuando vuelvas a tener.'}{' '}
@@ -157,7 +157,7 @@ export function DisponiblesSinSenal({ aviso = null }: Props = {}) {
               <p className="text-sm text-fg truncate group-hover:text-primary transition-colors">
                 {copia.titulo}
               </p>
-              <p className="text-xs text-fg-muted truncate">
+              <p className="text-caption text-fg-muted truncate">
                 {/* La dirección sólo si no es el mismo título (antes salía dos veces). */}
                 {copia.direccion && copia.direccion.trim() !== copia.titulo.trim() ? `${copia.direccion} · ` : ''}
                 {t('inmobiliaria.sinSenal.guardado', { cuando: cuando(copia.guardadoEn) })}
@@ -166,7 +166,7 @@ export function DisponiblesSinSenal({ aviso = null }: Props = {}) {
             {/* «Se abre desde» sólo cuando hay algo que decir: con la ficha del
                 inmueble sola, el renglón ya lleva ahí. */}
             {delContrato && (
-            <p className="text-xs text-fg-muted truncate" data-testid="se-abre-desde">
+            <p className="text-caption text-fg-muted truncate" data-testid="se-abre-desde">
               {t('inmobiliaria.sinSenal.seAbreDesde')}{' '}
               {delInmueble && (
                 <Link href={delInmueble} className="hover:text-primary transition-colors underline">

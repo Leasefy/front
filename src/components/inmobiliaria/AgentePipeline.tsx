@@ -66,10 +66,10 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
             <Funnel className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
           </div>
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-fg dark:text-white">
+            <h3 className="font-medium text-fg dark:text-white">
               {t('inmobiliaria.agente.activePipeline')}
             </h3>
-            <span className="px-2 py-0.5 rounded-full bg-surface-muted dark:bg-ink text-xs font-medium text-fg-muted dark:text-fg-subtle">
+            <span className="px-2 py-0.5 rounded-full bg-surface-muted dark:bg-ink text-caption font-medium text-fg-muted dark:text-fg-subtle">
               {activeItems.length}
             </span>
           </div>
@@ -124,7 +124,7 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
                         </div>
 
                         {/* Property Title */}
-                        <p className="text-xs text-fg-muted dark:text-fg-subtle truncate mb-2">
+                        <p className="text-caption text-fg-muted dark:text-fg-subtle truncate mb-2">
                           {item.propertyTitle}
                         </p>
 
@@ -132,13 +132,13 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
                         <div className="flex items-center gap-2 flex-wrap">
                           <span
                             className={cn(
-                              'px-2 py-0.5 rounded-full text-xs font-medium',
+                              'px-2 py-0.5 rounded-full text-caption font-medium',
                               stageInfo?.color
                             )}
                           >
                             {stageInfo?.labelEs}
                           </span>
-                          <span className="flex items-center gap-1 text-xs text-fg-subtle">
+                          <span className="flex items-center gap-1 text-caption text-fg-subtle">
                             <Clock className="w-3 h-3" />
                             {daysInStageText}
                           </span>

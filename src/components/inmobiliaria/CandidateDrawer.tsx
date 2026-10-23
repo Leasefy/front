@@ -837,7 +837,7 @@ function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCand
                           <div className="px-2 py-0.5 rounded-full bg-surface-muted text-fg-muted text-caption font-medium">
                             {r.compatibilityScore}%
                           </div>
-                          <p className="text-[10px] text-fg-muted mt-0.5">{tr("match")}</p>
+                          <p className="text-caption text-fg-muted mt-0.5">{tr("match")}</p>
                         </div>
                         <ArrowUpRight className="w-4 h-4 text-fg-muted group-hover:text-fg-muted transition-colors" />
                       </Link>
@@ -1226,7 +1226,7 @@ function FactorDelScore({
       <div className="flex items-baseline gap-3">
         <span className="min-w-0 flex-1 truncate text-caption text-foreground">{etiqueta}</span>
         {peso !== undefined && (
-          <span className="shrink-0 text-[11px] text-fg-subtle">
+          <span className="shrink-0 text-caption text-fg-subtle">
             {tr("pesa")} <span className="font-mono tabular-nums">{peso}%</span>
           </span>
         )}
@@ -1264,13 +1264,13 @@ function DetalleDeCredito({
     <div className="mt-2 ml-3 space-y-1.5 border-l border-border pl-3">
       {bureau && (
         <div className="flex items-baseline gap-2">
-          <span className="min-w-0 flex-1 truncate text-[11px] text-fg-muted">{tr("Buró de crédito")}</span>
+          <span className="min-w-0 flex-1 truncate text-caption text-fg-muted">{tr("Buró de crédito")}</span>
           {bureauUnavailable ? (
-            <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">
+            <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-caption font-medium text-warning">
               {tr("Sin dato — el buró no respondió")}
             </span>
           ) : (
-            <span className="shrink-0 font-mono text-[11px] tabular-nums text-foreground">
+            <span className="shrink-0 font-mono text-caption tabular-nums text-foreground">
               {bureau.value}
             </span>
           )}
@@ -1278,14 +1278,14 @@ function DetalleDeCredito({
       )}
       {asegurabilidad && (
         <div className="flex items-baseline gap-2">
-          <span className="min-w-0 flex-1 truncate text-[11px] text-fg-muted">{tr("Asegurabilidad")}</span>
-          <span className="shrink-0 font-mono text-[11px] tabular-nums text-foreground">
+          <span className="min-w-0 flex-1 truncate text-caption text-fg-muted">{tr("Asegurabilidad")}</span>
+          <span className="shrink-0 font-mono text-caption tabular-nums text-foreground">
             {asegurabilidad.value}
           </span>
         </div>
       )}
       {bureauUnavailable && (
-        <p className="text-[11px] leading-snug text-warning">
+        <p className="text-caption leading-snug text-warning">
           {tr("El crédito se calculó con la mitad de la información, así que este puntaje está por debajo de lo que le corresponde.")}
         </p>
       )}
@@ -1454,7 +1454,7 @@ function IntegrityFlagCard({ flag }: { flag: IntegrityFlag }) {
           {explicacion.caraACara.brecha && (
             <span
               className={cn(
-                'self-center rounded-full border px-2 py-0.5 text-[11px] font-medium tabular-nums',
+                'self-center rounded-full border px-2 py-0.5 text-caption font-medium tabular-nums',
                 tono.texto,
                 'border-current/30',
               )}
@@ -1479,13 +1479,13 @@ function IntegrityFlagCard({ flag }: { flag: IntegrityFlag }) {
           <details className="mt-1 ml-5">
             <summary
               className={cn(
-                'cursor-pointer list-none text-[11px] underline underline-offset-2 opacity-70',
+                'cursor-pointer list-none text-caption underline underline-offset-2 opacity-70',
                 tono.texto,
               )}
             >
               {tr("Ver detalle técnico")}
             </summary>
-            <p className={cn('mt-1 font-mono text-[11px] leading-relaxed opacity-80', tono.texto)}>
+            <p className={cn('mt-1 font-mono text-caption leading-relaxed opacity-80', tono.texto)}>
               {flag.detail}
             </p>
           </details>
@@ -1510,7 +1510,7 @@ function ValorEnfrentado({
     <div className={cn('rounded-md border border-current/20 bg-surface/60 px-2.5 py-1.5', tono)}>
       {/* Sin `uppercase`: el agente manda rótulos largos («nómina quincenal
           normalizada a mensual») y en mayúscula con tracking ocupan el doble. */}
-      <p className="text-[10px] leading-tight opacity-70 first-letter:uppercase">{rotulo}</p>
+      <p className="text-caption leading-tight opacity-70 first-letter:uppercase">{rotulo}</p>
       <p className="text-caption font-medium tabular-nums">{valor}</p>
     </div>
   );
@@ -1572,7 +1572,7 @@ function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId:
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-caption font-medium text-foreground truncate">{label}</p>
-        <p className="text-[10px] text-fg-muted truncate">
+        <p className="text-caption text-fg-muted truncate">
           {doc.fileName ?? 'archivo'}
           {sizeKb && ` · ${sizeKb}`}
         </p>

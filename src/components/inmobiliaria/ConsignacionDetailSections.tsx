@@ -92,7 +92,7 @@ export function TerminosDelMandatoSection({ consignacion, onEditar }: TerminosDe
   // Sin comisión que decir: una venta sin % de venta, o un arriendo cuya comisión no llegó.
   const comisionSinDato =
     consignacion.listingType === 'sale' ? consignacion.saleCommissionPercent == null : consignacion.comisionDesconocida === true;
-  const ROTULO = 'font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle';
+  const ROTULO = 'font-mono text-caption uppercase tracking-[0.1em] text-fg-subtle';
   const VALOR = 'mt-1.5 whitespace-nowrap text-[15px] font-medium tabular-nums text-fg';
 
   return (
@@ -257,7 +257,7 @@ export function PropietarioSection({
     ? `****${propietario.bankAccount.accountNumber.slice(-4)}`
     : null;
 
-  const ROTULO = 'font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle';
+  const ROTULO = 'font-mono text-caption uppercase tracking-[0.1em] text-fg-subtle';
   const perfil = rutaDeOrigen
     ? conRegreso(`/panel/inmobiliaria/propietarios/${propietario.id}`, rutaDeOrigen)
     : `/panel/inmobiliaria/propietarios/${propietario.id}`;
@@ -407,7 +407,7 @@ export function PropietarioSection({
                         lista (dato raro), el primero, como antes. */}
                     {(principalEnLaLista ? c.propietarioId === propietario.id : i === 0) && (
                       <span
-                        className="shrink-0 rounded-[6px] border border-border-faint px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-fg-subtle dark:border-border-strong"
+                        className="shrink-0 rounded-[6px] border border-border-faint px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-fg-subtle dark:border-border-strong"
                         data-testid="copropietario-principal-chip"
                       >
                         Principal
@@ -543,7 +543,7 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
   // Calculate agent's commission from property commission
   const agentCommissionPercent = (commissionPercent * agente.commissionSplit) / 100;
   const agencyCommissionPercent = commissionPercent - agentCommissionPercent;
-  const ROTULO = 'font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle';
+  const ROTULO = 'font-mono text-caption uppercase tracking-[0.1em] text-fg-subtle';
 
   /*
    * 21-10 (revisión de la ficha): quién está a cargo ya se ve en la portada; aquí,

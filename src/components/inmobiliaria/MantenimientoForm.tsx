@@ -416,7 +416,7 @@ function PrioritySelector({ selected, onSelect, t }: PrioritySelectorProps) {
             label={
               <span
                 className={cn(
-                  'font-semibold',
+                  'font-medium',
                   priority.value === 'emergency' && 'text-danger',
                   priority.value === 'high' && 'text-warning',
                   priority.value === 'medium' && 'text-primary',
@@ -644,7 +644,7 @@ export function MantenimientoForm({
       <div className="space-y-8" ref={raiz}>
       {/* Section 1: Property Selection */}
       <div className="space-y-4" data-campo="consignacionId">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+        <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
           <HouseLine className="h-4 w-4 text-fg-muted" />
           {t('inmobiliaria.mantenimiento.property')}
         </h3>
@@ -662,7 +662,7 @@ export function MantenimientoForm({
 
       {/* Section 2: Request Details */}
       <div className="space-y-6 pt-6 border-t border-border-faint dark:border-border-strong">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+        <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
           <Wrench className="h-4 w-4 text-fg-muted" />
           {t('inmobiliaria.mantenimiento.requestDetail')}
         </h3>
@@ -783,7 +783,7 @@ export function MantenimientoForm({
 
       {/* Section 3: Responsibility */}
       <div className="space-y-6 pt-6 border-t border-border-faint dark:border-border-strong">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+        <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
           <Wallet className="h-4 w-4 text-fg-muted" />
           {t('inmobiliaria.mantenimiento.responsibility')}
         </h3>

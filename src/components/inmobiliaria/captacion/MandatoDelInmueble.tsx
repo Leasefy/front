@@ -131,14 +131,14 @@ function Puerta({
   return (
     <div className="space-y-1.5" data-testid={`puerta-${titulo}`}>
       <div className="flex items-center justify-between gap-2">
-        <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{cuando}</p>
+        <p className="font-mono text-caption uppercase tracking-[0.1em] text-fg-subtle">{cuando}</p>
         {/* 🔴 «Faltan 0» no es un estado (Nico, 18-09-2026). Pasa cuando el
             back dice «incompleto» pero devuelve la lista de faltantes vacía
             —por ejemplo sin la migración—, y en pantalla queda una cuenta que
             no significa nada. Si no sabemos qué falta, se dice. */}
         <span
           className={cn(
-            'font-mono text-[11px] uppercase tracking-[0.08em] tabular-nums',
+            'font-mono text-caption uppercase tracking-[0.08em] tabular-nums',
             completo ? 'text-success' : falta.length === 0 ? 'text-fg-subtle' : 'text-warning',
           )}
         >
@@ -358,7 +358,7 @@ export function MandatoDelInmueble({
               />
               <CajonCuerpo className="space-y-4">
                 <div className="space-y-1">
-                  <p className="text-xs text-fg-muted">Le llega a</p>
+                  <p className="text-caption text-fg-muted">Le llega a</p>
                   <p className="text-sm font-medium text-fg">{propietarioNombre ?? 'El propietario'}</p>
                   {propietarioCorreo ? (
                     <p className="font-mono text-sm text-fg" data-testid="correo-destino">{propietarioCorreo}</p>
@@ -369,7 +369,7 @@ export function MandatoDelInmueble({
                   )}
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-fg-muted">El documento</p>
+                  <p className="text-caption text-fg-muted">El documento</p>
                   <p className="flex items-start gap-2 text-sm text-fg">
                     <FileText className="mt-0.5 h-4 w-4 flex-shrink-0 text-fg-muted" aria-hidden="true" />
                     <span>

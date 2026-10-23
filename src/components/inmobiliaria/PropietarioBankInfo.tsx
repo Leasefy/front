@@ -62,10 +62,10 @@ export function PropietarioBankInfo({
               <Bank className="w-5 h-5 text-fg-muted" />
             </div>
             <div>
-              <h4 className="font-semibold text-fg">
+              <h4 className="font-medium text-fg">
                 {t('inmobiliaria.propietario.bankInfo.bankAccount')}
               </h4>
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 {t('inmobiliaria.propietario.bankInfo.sinCuenta')}
               </p>
             </div>
@@ -121,10 +121,10 @@ export function PropietarioBankInfo({
             <Bank className="w-5 h-5 text-success" />
           </div>
           <div>
-            <h4 className="font-semibold text-fg">
+            <h4 className="font-medium text-fg">
               {t('inmobiliaria.propietario.bankInfo.bankAccount')}
             </h4>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle">
+            <p className="text-caption text-fg-muted dark:text-fg-subtle">
               {t('inmobiliaria.propietario.bankInfo.forDispersions')}
             </p>
           </div>
@@ -275,7 +275,7 @@ export function PropietarioBankInfoCompact({
         <p className="text-sm font-medium text-fg truncate">
           {bank?.name || bankAccount.bankName || bankAccount.bank} {maskAccount(bankAccount.accountNumber)}
         </p>
-        <p className="text-xs text-fg-muted dark:text-fg-subtle">
+        <p className="text-caption text-fg-muted dark:text-fg-subtle">
           {accountTypeLabel} • {bankAccount.accountHolder}
         </p>
       </div>

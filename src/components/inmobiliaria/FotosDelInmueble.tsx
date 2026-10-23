@@ -250,7 +250,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer, compacta = false
           <Images className="h-[18px] w-[18px] shrink-0 text-fg-subtle" aria-hidden="true" />
           <h3 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">Fotos</h3>
         </div>
-        <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle tabular-nums" data-testid="fotos-contador">
+        <span className="font-mono text-caption uppercase tracking-[0.1em] text-fg-subtle tabular-nums" data-testid="fotos-contador">
           {subiendo
             ? `Subiendo ${enCamino.filter((f) => f.estado !== 'fallo').length}…`
             : `${imagenes.length} de ${PROPERTY_PHOTO_MAX_COUNT}`}
@@ -308,7 +308,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer, compacta = false
                   <img src={img.url} alt={`Foto ${i + 1} del inmueble`} className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" loading="lazy" />
                 </button>
                 {i === 0 && (
-                  <span className="pointer-events-none absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-primary-fg">
+                  <span className="pointer-events-none absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 font-mono text-caption uppercase tracking-[0.1em] text-primary-fg">
                     <Star weight="fill" className="h-3 w-3" /> Portada
                   </span>
                 )}
@@ -320,7 +320,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer, compacta = false
                       hideArrow
                       onClick={() => void hacerPortada(img)}
                       disabled={ocupada !== null}
-                      className="h-auto rounded-md bg-surface/90 px-2 py-1 text-xs font-medium hover:bg-surface disabled:bg-surface/90 disabled:opacity-50"
+                      className="h-auto rounded-md bg-surface/90 px-2 py-1 text-caption font-medium hover:bg-surface disabled:bg-surface/90 disabled:opacity-50"
                       aria-label={`Hacer portada la foto ${i + 1}`}
                     >
                       Portada
@@ -348,11 +348,11 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer, compacta = false
                 <img src={f.url} alt="" className={cn('aspect-[4/3] w-full object-cover', f.estado !== 'fallo' && 'opacity-60')} />
                 <div className="absolute inset-0 flex items-center justify-center">
                   {f.estado === 'fallo' ? (
-                    <span className="rounded-full bg-danger px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white">
+                    <span className="rounded-full bg-danger px-2 py-0.5 font-mono text-caption uppercase tracking-[0.1em] text-white">
                       No se subió
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em] text-white">
+                    <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 font-mono text-caption uppercase tracking-[0.1em] text-white">
                       <Spinner size="sm" className="text-white" />
                       {f.estado === 'subiendo' ? 'Subiendo' : 'En cola'}
                     </span>
@@ -379,7 +379,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer, compacta = false
         )}
 
         {!cargando && !error && imagenes.length > 0 && (
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {cupo > 0
               ? `Caben ${cupo} ${cupo === 1 ? 'foto más' : 'fotos más'}. Arrástralas aquí, elígelas o pégalas con Ctrl+V. La primera es la portada.`
               : `Llegaste al máximo de ${PROPERTY_PHOTO_MAX_COUNT} fotos. Quita una para subir otra.`}
@@ -417,7 +417,7 @@ function SeparadorDeEnlace() {
   return (
     <div className="flex items-center gap-3" aria-hidden>
       <span className="h-px flex-1 bg-border-faint" />
-      <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-fg-subtle">
+      <span className="font-mono text-caption uppercase tracking-[0.15em] text-fg-subtle">
         o tráelas del aviso
       </span>
       <span className="h-px flex-1 bg-border-faint" />

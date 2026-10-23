@@ -738,11 +738,18 @@ export function CuerpoDelCajon({
             {/* En la ficha propia el nombre ES el título de la página (su h1, como
                 en las otras fichas); en el cajón el título accesible es el SheetTitle. */}
             {enFicha ? (
-              <h1 className="break-words text-h2 leading-snug text-fg" data-testid="inquilino-cajon-nombre">
-                {persona.nombre}
-              </h1>
+              <>
+                {/* Glow up 22-10: la sección arriba y el título con la medida del encabezado común (40 px, liviano). */}
+                <p className="font-mono text-caption uppercase tracking-[0.14em] text-fg-subtle">Inquilinos</p>
+                <h1
+                  className="break-words text-[30px] font-[420] leading-[1.08] tracking-[-0.025em] text-fg lg:text-[40px]"
+                  data-testid="inquilino-cajon-nombre"
+                >
+                  {persona.nombre}
+                </h1>
+              </>
             ) : (
-              <p className="break-words text-lg font-semibold leading-snug text-fg" data-testid="inquilino-cajon-nombre">
+              <p className="break-words text-lg font-medium leading-snug text-fg" data-testid="inquilino-cajon-nombre">
                 {persona.nombre}
               </p>
             )}
@@ -898,7 +905,7 @@ function Seccion({
   return (
     <section className="space-y-2.5">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border pb-2">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+        <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
           {titulo}
           {conteo !== undefined ? (
             <span className="rounded-full bg-surface-muted px-2 py-0.5 font-mono text-caption font-medium tabular-nums text-fg-muted">
@@ -1013,7 +1020,7 @@ function Numero({
       <dd
         className={cn(
           // I-28: una cifra de plata NUNCA se corta con «…»: no se puede leer cuánto debe.
-          'mt-1 whitespace-nowrap font-mono text-lg font-semibold tabular-nums',
+          'mt-1 whitespace-nowrap font-mono text-lg tabular-nums',
           tono === 'alerta' ? 'text-danger' : tono === 'apagado' ? 'text-fg-subtle' : 'text-fg',
         )}
       >

@@ -420,7 +420,7 @@ function Timeline({ events, fmtDate }: { events: TimelineEvent[]; fmtDate: (d: s
               {event.description && (
                 <p className="text-sm text-muted-foreground mt-0.5">{event.description}</p>
               )}
-              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 mt-1 text-caption text-muted-foreground">
                 <span>{fmtDate(event.date)}</span>
                 {event.actor && (
                   <>
@@ -677,7 +677,7 @@ export function MantenimientoViewer({
           <div className="flex flex-wrap gap-2 mt-2.5">
             <span
               className={cn(
-                'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
+                'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-medium',
                 statusStyle.bg,
                 statusStyle.text
               )}
@@ -687,7 +687,7 @@ export function MantenimientoViewer({
             </span>
             <span
               className={cn(
-                'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
+                'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-medium',
                 priorityStyle.bg,
                 priorityStyle.text
               )}
@@ -702,7 +702,7 @@ export function MantenimientoViewer({
         <CajonCuerpo className="space-y-6">
           {/* Property & People */}
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
               <Buildings className="w-4 h-4" />
               {t('inmobiliaria.mantenimiento.propertyAndPeople')}
             </h4>
@@ -729,7 +729,7 @@ export function MantenimientoViewer({
 
           {/* Description */}
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
               <FileText className="w-4 h-4" />
               {t('inmobiliaria.mantenimiento.descriptionLabel')}
             </h4>
@@ -750,7 +750,7 @@ export function MantenimientoViewer({
 
           {/* Before Photos */}
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
               <Camera className="w-4 h-4" />
               {t('inmobiliaria.mantenimiento.photosBefore')}
             </h4>
@@ -779,7 +779,7 @@ export function MantenimientoViewer({
             solicitud.status === 'reported' ||
             solicitud.quotes.length > 0) && (
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
                 <CurrencyDollar className="w-4 h-4" />
                 {t('inmobiliaria.mantenimiento.quotations')}
               </h4>
@@ -797,7 +797,7 @@ export function MantenimientoViewer({
           {/* After Photos (if in progress or completed) */}
           {['in_progress', 'completed'].includes(solicitud.status) && (
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
                 <CheckCircle className="w-4 h-4" />
                 {t('inmobiliaria.mantenimiento.photosAfter')}
               </h4>
@@ -818,7 +818,7 @@ export function MantenimientoViewer({
           {/* Completion Notes */}
           {solicitud.status === 'completed' && solicitud.completionNotes && (
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
                 <Note className="w-4 h-4" />
                 {t('inmobiliaria.mantenimiento.completionNotes')}
               </h4>
@@ -830,7 +830,7 @@ export function MantenimientoViewer({
 
           {/* Timeline */}
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
               <Clock className="w-4 h-4" />
               {t('inmobiliaria.mantenimiento.history')}
             </h4>

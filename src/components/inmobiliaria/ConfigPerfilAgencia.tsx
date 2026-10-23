@@ -1430,7 +1430,7 @@ export function ConfigPerfilAgencia({
                 {agency.defaultLateFeePercent ?? '—'}%
               </div>
               {/* CF-02 (QA 04-10): «sólo con el motor apagado» no se entendía. */}
-              <div className="text-[11px] text-muted-foreground">Mensual. Se cobra sólo si no usas reglas de mora</div>
+              <div className="text-caption text-muted-foreground">Mensual. Se cobra sólo si no usas reglas de mora</div>
             </div>
             <div className="p-3 rounded-md bg-muted/50">
               <div className="text-muted-foreground text-caption">{t('inmobiliaria.config.profile.paymentDay')}</div>
@@ -1712,7 +1712,7 @@ export function ConfigPerfilAgencia({
               <div className="text-foreground font-medium tabular-nums">
                 {agency.diasParaSiniestro ?? DIAS_PARA_SINIESTRO_POR_DEFECTO} días de mora
               </div>
-              <div className="text-[11px] text-muted-foreground">
+              <div className="text-caption text-muted-foreground">
                 aviso a la aseguradora a los{' '}
                 {agency.diasParaAvisoAseguradora ?? DIAS_PARA_AVISO_ASEGURADORA_POR_DEFECTO} · sólo con el motor prendido
               </div>
@@ -1946,7 +1946,7 @@ export function ConfigPerfilAgencia({
                   la tarifa sin avisar que no se aplica sería la misma mentira que produjo
                   los 40.132 cuotas con IVA en cero. */}
               {agency.reteicaPorMil != null && agency.agenteRetenedorIca === false ? (
-                <div className="text-[11px] text-warning" data-testid="reteica-no-se-aplica">
+                <div className="text-caption text-warning" data-testid="reteica-no-se-aplica">
                   No se aplica: declarado que no es agente de reteICA
                 </div>
               ) : null}
@@ -1959,7 +1959,7 @@ export function ConfigPerfilAgencia({
               {/* reteIVA es OPT-IN (`agenteRetenedorIva === true ? tarifa : null`): a
                   diferencia de reteICA, el default (null) NO aplica. */}
               {agency.agenteRetenedorIva !== true ? (
-                <div className="text-[11px] text-warning" data-testid="reteiva-no-se-aplica">
+                <div className="text-caption text-warning" data-testid="reteiva-no-se-aplica">
                   No se aplica hoy: sólo si es agente de reteIVA
                 </div>
               ) : null}

@@ -332,7 +332,7 @@ export function ConsignacionTable({
         allowlist: disparador de orden — Cadence no trae uno (DataTable no
         ordena). El botón HEREDA el tratamiento del encabezado del DS en vez de
         traer el suyo. Dos motivos, los dos medidos en pantalla:
-        1. `text-xs font-semibold` reemplazaba la mono de 11px del `TH` por otra
+        1. `text-caption font-medium` reemplazaba la mono de 11px del `TH` por otra
            tipografía, así que esta tabla se leía distinta de las demás.
         2. El navegador le da `text-transform: none` a los controles de
            formulario, y eso PISA el `uppercase` que el `TH` hereda. Por eso
@@ -559,7 +559,7 @@ export function ConsignacionTable({
                         e.stopPropagation();
                         handleCompletarMandato();
                       }}
-                      className="h-auto gap-1.5 bg-warning-soft px-3 py-1 text-xs font-medium text-warning hover:bg-warning-soft hover:opacity-80"
+                      className="h-auto gap-1.5 bg-warning-soft px-3 py-1 text-caption font-medium text-warning hover:bg-warning-soft hover:opacity-80"
                     >
                       <WarningCircle className="w-3.5 h-3.5" weight="fill" />
                       {t('inmobiliaria.consignaciones.table.missingMandate')}
@@ -627,7 +627,7 @@ export function ConsignacionTable({
                       (§A.2 — "Administración: $0" no debe aparecer nunca).
                     */}
                     {row.listingType !== 'sale' && row.adminFee != null && row.adminFee > 0 && (
-                      <p className="text-xs text-muted-foreground tabular-nums">
+                      <p className="text-caption text-muted-foreground tabular-nums">
                         {t('inmobiliaria.consignaciones.table.adminFee', { amount: formatCurrency(row.adminFee) })}
                       </p>
                     )}
@@ -812,7 +812,7 @@ export function ConsignacionTable({
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
             <Buildings className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-1">
+          <h3 className="text-lg font-medium text-foreground mb-1">
             {t('inmobiliaria.consignaciones.table.emptyTitle')}
           </h3>
           <p className="text-muted-foreground">

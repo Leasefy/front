@@ -417,7 +417,7 @@ export function ExtractoPropietario({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Personal Info */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <User className="w-4 h-4 text-primary" />
               {t('inmobiliaria.propietario.extracto.ownerInfo')}
             </div>
@@ -439,7 +439,7 @@ export function ExtractoPropietario({
               lista de propietarios: la lista llegaba con el banco plano y
               leer `bankAccount.bank` de ahí tumbaba el modal entero. */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <Bank className="w-4 h-4 text-primary" />
               {t('inmobiliaria.propietario.extracto.bankAccount')}
             </div>
@@ -465,7 +465,7 @@ export function ExtractoPropietario({
 
       {/* Properties Table */}
       <div className="p-6 border-b border-border">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-4">
           <Receipt className="w-4 h-4 text-primary" />
           {t('inmobiliaria.propietario.extracto.propertyDetail')}
         </div>
@@ -559,7 +559,7 @@ export function ExtractoPropietario({
                               se dice cuánto, como en el PDF (2026-09-13). */}
                           {prop.participacionLabel ? (
                             <span
-                              className="mt-1 w-fit rounded-full bg-primary-soft px-2 py-0.5 font-mono text-[11px] tabular-nums text-primary"
+                              className="mt-1 w-fit rounded-full bg-primary-soft px-2 py-0.5 font-mono text-caption tabular-nums text-primary"
                               data-testid="participacion-en-el-extracto"
                             >
                               {/* E-10: el mes de una cesión dice sus días («15 de 30 días del mes»). */}
@@ -585,7 +585,7 @@ export function ExtractoPropietario({
                             copropiedad. Causado o recaudado según `base`. */}
                         {formatCurrency(prop.rentCollected)}
                         {base === 'MIXTA' && (
-                          <span className="block text-[11px] font-normal text-muted-foreground" data-testid="extracto-base-de-la-fila">
+                          <span className="block text-caption font-normal text-muted-foreground" data-testid="extracto-base-de-la-fila">
                             {t(
                               baseDeLaLinea(prop) === 'RECAUDADO'
                                 ? 'inmobiliaria.propietario.extracto.filaRecaudado'
@@ -619,7 +619,7 @@ export function ExtractoPropietario({
                         />
                       </TableCell>
                       <TableCell
-                        className={cn('text-right text-sm font-semibold text-success', celdaFija('derecha', 'cuerpo'))}
+                        className={cn('text-right text-sm font-medium text-success', celdaFija('derecha', 'cuerpo'))}
                       >
                         <FileteDeColumnaFija columna="neto" visible={desborde.haciaLaDerecha} />
                         {formatCurrency(prop.netAmount)}
@@ -638,7 +638,7 @@ export function ExtractoPropietario({
                 {/* El rótulo del total va en la columna de Propiedad (fija) y no
                     en una celda de cuatro columnas: una celda tan ancha, fija a
                     la izquierda, taparía lo que se corre por debajo. */}
-                <TableRow className="bg-muted/50 hover:bg-muted/50 font-semibold">
+                <TableRow className="bg-muted/50 hover:bg-muted/50 font-medium">
                   <TableCell className={cn('text-foreground', ANCHO_PROPIEDAD, celdaFija('izquierda', 'cabecera-o-pie'))}>
                     <FileteDeColumnaFija columna="propiedad" visible={desborde.haciaLaIzquierda} />
                     {t('inmobiliaria.propietario.extracto.total')} ({extracto.lineItems.length} {extracto.lineItems.length === 1 && locale === 'es' ? 'propiedad' : t('inmobiliaria.propietario.extracto.properties')})
@@ -769,7 +769,7 @@ export function ExtractoPropietario({
               )}
               <div className="border-t border-border pt-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-foreground">{t('inmobiliaria.propietario.extracto.totalNet')}</span>
+                  <span className="text-sm font-medium text-foreground">{t('inmobiliaria.propietario.extracto.totalNet')}</span>
                   <span className="text-sm font-bold text-success">
                     {formatCurrency(extracto.totals.totalNet)}
                   </span>

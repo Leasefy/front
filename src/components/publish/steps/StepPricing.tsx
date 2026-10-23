@@ -131,7 +131,7 @@ export function StepPricing() {
                 />
               </div>
               <ErrorDelCampo id={idDelError('deposit')} mensaje={errorDeposito} />
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 Generalmente equivale a 1–2 meses de arriendo
               </p>
             </>
@@ -160,7 +160,7 @@ export function StepPricing() {
             </div>
           </div>
           {draft.deposit > 0 && (
-            <div className="text-xs text-fg-muted pt-2">
+            <div className="text-caption text-fg-muted pt-2">
               + Depósito inicial de <span className="font-mono tabular-nums">{formatCurrency(draft.deposit)}</span>
             </div>
           )}

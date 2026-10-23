@@ -89,7 +89,7 @@ export function StepType() {
                   {type.label}
                 </p>
                 <p className={cn(
-                  'text-xs mt-1',
+                  'text-caption mt-1',
                   isSelected ? 'text-primary' : 'text-fg-subtle'
                 )}>
                   {type.description}

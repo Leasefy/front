@@ -97,7 +97,7 @@ export function StepLocation() {
           </div>
           <ErrorDelCampo id={idDelError('city')} mensaje={errorCiudad} />
         </div>
-        <p className="text-xs text-fg-subtle italic">
+        <p className="text-caption text-fg-subtle italic">
           Pronto estaremos en más ciudades de Colombia.
         </p>
       </div>
@@ -122,7 +122,7 @@ export function StepLocation() {
         </div>
         <ErrorDelCampo id={idDelError('neighborhood')} mensaje={errorBarrio} />
         {!draft.city && (
-          <p className="text-xs text-warning">
+          <p className="text-caption text-warning">
             Primero selecciona una ciudad
           </p>
         )}
@@ -143,7 +143,7 @@ export function StepLocation() {
           onChange={updateDraft}
         />
         <ErrorDelCampo id={idDelError('address')} mensaje={errorDireccion} />
-        <p className="text-xs text-fg-muted flex items-center gap-1.5">
+        <p className="text-caption text-fg-muted flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-success" />
           La dirección exacta solo será visible para inquilinos confirmados
         </p>

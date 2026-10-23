@@ -130,7 +130,7 @@ export function StepDescription() {
               onClick={handleGenerateTitle}
               disabled={generatingField === 'description' || descTextTr.isTyping}
               className={cn(
-                "h-auto gap-1.5 px-2 py-1 text-xs font-medium disabled:opacity-40",
+                "h-auto gap-1.5 px-2 py-1 text-caption font-medium disabled:opacity-40",
                 titleTextTr.isTyping
                   ? "text-warning hover:text-warning"
                   : "text-primary hover:text-primary"
@@ -163,7 +163,7 @@ export function StepDescription() {
             )}
           </div>
           <ErrorDelCampo id={idDelError('title')} mensaje={errorTitulo} />
-          <p className="text-xs text-fg-subtle text-right font-mono tabular-nums">
+          <p className="text-caption text-fg-subtle text-right font-mono tabular-nums">
             {draft.title.length}/80 caracteres
           </p>
         </div>
@@ -183,7 +183,7 @@ export function StepDescription() {
               onClick={handleGenerateDescription}
               disabled={generatingField === 'title' || titleTextTr.isTyping}
               className={cn(
-                "h-auto gap-1.5 px-2 py-1 text-xs font-medium disabled:opacity-40",
+                "h-auto gap-1.5 px-2 py-1 text-caption font-medium disabled:opacity-40",
                 descTextTr.isTyping
                   ? "text-warning hover:text-warning"
                   : "text-primary hover:text-primary"
@@ -218,7 +218,7 @@ export function StepDescription() {
             )}
           </div>
           <ErrorDelCampo id={idDelError('description')} mensaje={errorDescripcion} />
-          <p className="text-xs text-fg-subtle text-right font-mono tabular-nums">
+          <p className="text-caption text-fg-subtle text-right font-mono tabular-nums">
             {draft.description.length}/1000 caracteres
           </p>
         </div>

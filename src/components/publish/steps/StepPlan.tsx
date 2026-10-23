@@ -132,7 +132,7 @@ export function StepPlan() {
                     >
                       {ownerType.label}
                     </span>
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    <span className="text-caption text-neutral-500 dark:text-neutral-400">
                       {ownerType.description}
                     </span>
                   </div>
@@ -263,7 +263,7 @@ export function StepPlan() {
                               {plan.price}
                             </span>
                             {plan.priceNote && (
-                              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                              <span className="text-caption text-neutral-500 dark:text-neutral-400">
                                 {plan.priceNote}
                               </span>
                             )}
@@ -290,7 +290,7 @@ export function StepPlan() {
                                     : 'text-fg-muted',
                                 )}
                               />
-                              <span className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                              <span className="text-caption text-neutral-500 dark:text-neutral-400 truncate">
                                 {feature}
                               </span>
                             </div>
@@ -320,7 +320,7 @@ export function StepPlan() {
             </div>
 
             {/* Trust indicator */}
-            <div className="flex items-center justify-center gap-6 pt-4 text-xs text-neutral-500 dark:text-neutral-400">
+            <div className="flex items-center justify-center gap-6 pt-4 text-caption text-neutral-500 dark:text-neutral-400">
               <span className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-success" />
                 Sin compromisos

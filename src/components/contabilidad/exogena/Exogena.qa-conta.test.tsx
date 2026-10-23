@@ -135,6 +135,15 @@ async function pintar(anioInicial?: number) {
     await Promise.resolve();
     await Promise.resolve();
   });
+  // Revisora r25 (Exógena #1): cada formato es UNA fila; sus bloqueos, avisos, preguntas y
+  // acciones viven en su cajón. Las pruebas miran el 1001 con su cajón abierto.
+  const abrirElFormato = document.querySelector('[data-testid="abrir-formato-1001"]') as HTMLButtonElement | null;
+  if (abrirElFormato) {
+    await act(async () => {
+      abrirElFormato.click();
+      await Promise.resolve();
+    });
+  }
 }
 
 

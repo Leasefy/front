@@ -124,9 +124,9 @@ describe('escrituras', () => {
 });
 
 describe('🔴 el aviso del Prevalidador', () => {
-  it('dice que el CSV es la plantilla y que Leasefy NO transmite', () => {
+  it('dice que el CSV es la plantilla y que Leasefy no transmite', () => {
     expect(AVISO_DEL_PREVALIDADOR).toContain('plantilla del Prevalidador');
-    expect(AVISO_DEL_PREVALIDADOR).toContain('Leasefy NO transmite');
+    expect(AVISO_DEL_PREVALIDADOR).toContain('Leasefy no transmite');
     expect(AVISO_DEL_PREVALIDADOR).toContain('XML firmado');
   });
 });

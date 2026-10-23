@@ -288,7 +288,7 @@ export const PENDIENTES_DEL_CONTADOR: readonly string[] = [
  * saber que falta cargarla en el Prevalidador.
  */
 export const AVISO_DEL_PREVALIDADOR =
-  'Este CSV es la plantilla del Prevalidador de la DIAN: tiene las columnas del formato y los datos ya cuadrados contra el libro. Leasefy NO transmite la exógena. El XML firmado lo produce el Prevalidador después de cargar esta plantilla.';
+  'Este CSV es la plantilla del Prevalidador de la DIAN: tiene las columnas del formato y los datos ya cuadrados contra el libro. Leasefy no transmite la exógena. El XML firmado lo produce el Prevalidador después de cargar esta plantilla.';
 
 // ══ Helpers ═════════════════════════════════════════════════════════════════
 

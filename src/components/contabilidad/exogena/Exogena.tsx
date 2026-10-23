@@ -45,7 +45,7 @@
  * motivo.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DownloadSimple, Prohibit, SealCheck } from '@phosphor-icons/react';
 
 import {
@@ -60,7 +60,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
@@ -129,6 +131,9 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
   const [observaciones, setObservaciones] = useState('');
   const [anulando, setAnulando] = useState<FormatoDeExogena | null>(null);
   const [motivo, setMotivo] = useState('');
+  /** Revisora r25 (Exógena #1): el formato cuyo cajón está abierto. */
+  const [visto, setVisto] = useState<FormatoDeExogena | null>(null);
+  const filasRef = useRef<HTMLElement | null>(null);
 
   const escritura = usePuedeEscribir();
   // El CSV pide `reportes:export` en el back (23-09, datos personales).
@@ -155,6 +160,9 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
     setOcupado(formato);
     try {
       setAbierto(await exogenaApi.formato(formato, anio));
+      // Las filas se leen en la página, a lo ancho: el cajón se cierra y la vista baja a ellas.
+      setVisto(null);
+      requestAnimationFrame(() => filasRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
     } catch (e) {
       toast.error(mensajeDeContabilidad(e, 'No se pudieron armar las filas del formato.'));
     } finally {
@@ -257,12 +265,24 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
   const siguienteVistoBueno =
     resumen.formatos.find((f) => escritura.puede && sePuedeAprobar(f, resumen.disponible).puede)?.formato ?? null;
   const cifras = localeDeLasCifras();
+  // Revisora r25 (Exógena #2): la respuesta es lo que FALTA resolver (bloqueados + sin visto
+  // bueno); «0 de 6 con visto bueno» ponía el cero en grande. Un formato sin filas no se
+  // resuelve: queda en su tramo. Con todo resuelto, cuántos tienen el visto bueno.
+  const porResolver = conBloqueo.length + porRevisar.length;
+  const cuantosFormatos = resumen.formatos.length.toLocaleString(cifras);
+  const formatoVisto = visto ? (resumen.formatos.find((f) => f.formato === visto) ?? null) : null;
 
   return (
     <div className="space-y-6" data-testid="exogena">
       <CifraHeroe
-        rotulo={`Formatos de ${anio} con visto bueno`}
-        cifra={`${conVistoBueno.length.toLocaleString(cifras)} de ${resumen.formatos.length.toLocaleString(cifras)}`}
+        rotulo={porResolver > 0 ? `Formatos de ${anio} por resolver` : `Formatos de ${anio} con visto bueno`}
+        cifra={
+          porResolver > 0
+            ? `${porResolver.toLocaleString(cifras)} de ${cuantosFormatos}`
+            : `${conVistoBueno.length.toLocaleString(cifras)} de ${cuantosFormatos}`
+        }
+        esCero={porResolver === 0 && conVistoBueno.length === 0}
+        cuandoEsCero={`Ningún formato de ${anio} tiene filas: no hay nada que presentar.`}
         contexto={
           <span data-testid="totales-del-anio">
             {totales.filas.toLocaleString(cifras)} filas en los seis formatos ·{' '}
@@ -271,9 +291,9 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
         }
         total={resumen.formatos.length}
         tramos={[
-          { clave: 'listos', etiqueta: 'Con visto bueno', monto: conVistoBueno.length, tono: 'exito', cifra: conVistoBueno.length.toLocaleString(cifras) },
-          { clave: 'por-revisar', etiqueta: 'Falta el visto bueno', monto: porRevisar.length, tono: 'neutro', cifra: porRevisar.length.toLocaleString(cifras) },
           { clave: 'bloqueados', etiqueta: 'No se pueden presentar', monto: conBloqueo.length, tono: 'critico', cifra: conBloqueo.length.toLocaleString(cifras) },
+          { clave: 'por-revisar', etiqueta: 'Falta el visto bueno', monto: porRevisar.length, tono: 'aviso', cifra: porRevisar.length.toLocaleString(cifras) },
+          { clave: 'listos', etiqueta: 'Con visto bueno', monto: conVistoBueno.length, tono: 'exito', cifra: conVistoBueno.length.toLocaleString(cifras) },
           { clave: 'sin-filas', etiqueta: 'Sin filas', monto: sinFilas.length, tono: 'neutro', cifra: sinFilas.length.toLocaleString(cifras) },
         ]}
         // 🔴 ARRIBA, antes de cualquier botón de descarga: Leasefy no transmite.
@@ -300,22 +320,22 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
               Configuración
             </TabsTrigger>
           </TabsList>
-          <label className="flex items-center gap-2 text-body-sm text-fg-muted">
-            <span>Año gravable</span>
-            <select
-              aria-label="Año gravable"
-              className="h-10 rounded-md border border-border bg-surface px-3 text-body-sm text-fg"
-              value={anio}
-              onChange={(e) => setAnio(Number(e.target.value))}
-              data-testid="selector-de-anio"
-            >
-              {anios.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-            </select>
-          </label>
+          {/* Revisora r25 (C4): el Select de la casa, no el <select> del navegador. */}
+          <div className="flex items-center gap-2 text-body-sm text-fg-muted">
+            <span aria-hidden="true">Año gravable</span>
+            <Select value={String(anio)} onValueChange={(v) => setAnio(Number(v))}>
+              <SelectTrigger aria-label="Año gravable" className="w-28" data-testid="selector-de-anio">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {anios.map((a) => (
+                  <SelectItem key={a} value={String(a)}>
+                    {a}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <TabsContent value="formatos" className="space-y-6 pt-5">
@@ -357,158 +377,195 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
           <Avisos avisos={avisosDeTodos} testId="avisos-de-todos-los-formatos" titulo="Para mirar antes de presentar, en todos los formatos" />
         ) : null}
 
-        <ul className="space-y-4">
+        {/* Revisora r25 (Exógena #1): cada formato en UNA fila —código · nombre · filas y
+            total · estado · «Ver»—; sus bloqueos, avisos, preguntas y acciones, en su cajón.
+            Antes los seis abiertos con su caja roja y su caja ámbar: 4.843 px a 1440. */}
+        <ul
+          className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface"
+          aria-label="Los formatos del año"
+        >
           {resumen.formatos.map((f) => {
-            const permiso = sePuedeAprobar(f, resumen.disponible);
-            // 🔴 CB-12: las frases del back sin los 🔴 (el cartel ya trae el
-            // ícono del DS) y con la plata de la casa.
-            const paraElContador = (f.paraElContador ?? []).map(textoDelBack);
-            const bloqueos = f.bloqueos.map(textoDelBack);
-            const avisosDelFormato = f.avisos.map(textoDelBack).filter((a) => !avisosDeTodos.includes(a));
             const estado = estadoParaMostrarDelFormato(f);
-            const ayuda = ayudaDelFormato(f, permiso, escritura);
             return (
               <li
                 key={f.formato}
-                className="space-y-3 rounded-lg border border-border bg-surface p-4"
-                data-testid={`formato-${f.formato}`}
+                className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3"
+                data-testid={`fila-${f.formato}`}
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="space-y-0.5">
-                    <p className="text-body-sm font-medium text-fg">
-                      <span className="font-mono font-normal">{f.formato}</span> · {f.nombre}
-                    </p>
-                    <p className="text-caption text-fg-muted">{DE_DONDE_SALE[f.formato]}</p>
-                    <p className="text-caption text-fg-muted">
-                      {f.filas.toLocaleString(localeDeLasCifras())}{' '}
-                      {f.filas === 1 ? 'fila' : 'filas'} ·{' '}
-                      <Monto valor={f.totalCop} className="text-caption" />
-                      {f.aprobadoAt ? ` · visto bueno el ${diaLegible(f.aprobadoAt)}` : ''}
-                    </p>
-                    {f.observaciones ? (
-                      <p className="text-caption text-fg-muted">
-                        Observaciones: {f.observaciones}
-                      </p>
-                    ) : null}
-                  </div>
-                  {/* 🔴 CB-12: el estado REAL. «Generada» al lado de «Esto impide
-                      presentar el formato» se leía como «lista». */}
-                  <Badge
-                    variant={
-                      estado.tono === 'peligro'
-                        ? 'destructive'
-                        : estado.tono === 'listo'
-                          ? 'secondary'
-                          : 'outline'
-                    }
-                    title={NOMBRE_DEL_ESTADO_DE_FORMATO[f.estado]}
-                    data-testid={`estado-${f.formato}`}
-                  >
-                    {estado.texto}
-                  </Badge>
-                </div>
-
-                {/* Rojo: impide. */}
-                <Bloqueos
-                  bloqueos={bloqueos}
-                  titulo="Esto impide presentar el formato"
-                  testId={`bloqueos-${f.formato}`}
-                />
-
-                {/* Amarillo: hay que mirarlo. */}
-                <Avisos
-                  avisos={avisosDelFormato}
-                  testId={`avisos-${f.formato}`}
-                  titulo="Para mirar antes de presentar"
-                />
-
-                {/* 🔴 Las preguntas de ESTE formato, listadas enteras. */}
-                {paraElContador.length > 0 ? (
-                  <VistoBuenoDelContador
-                    titulo={`Lo que el contador tiene que decidir en el ${f.formato}`}
-                    puntos={paraElContador}
-                    testId={`para-el-contador-${f.formato}`}
-                  />
-                ) : null}
-
-                <div className="flex flex-wrap items-end gap-3">
-                  <AccionConMotivo
-                    puede={f.filas > 0}
-                    motivo="Este formato no tiene filas: no hay nada que mirar."
-                    ocupado={ocupado === f.formato}
-                    textoOcupado="Armando…"
-                    onClick={() => void abrir(f.formato)}
-                    testId={`ver-${f.formato}`}
-                    motivoVisible={false}
-                  >
-                    Ver las filas
-                  </AccionConMotivo>
-
-                  <AccionConMotivo
-                    puede={exportacion.puede && f.filas > 0}
-                    motivo={
-                      exportacion.motivo ?? 'Este formato no tiene filas: el archivo saldría vacío.'
-                    }
-                    ocupado={ocupado === f.formato}
-                    textoOcupado="Generando…"
-                    onClick={() => void descargar(f.formato)}
-                    testId={`descargar-${f.formato}`}
-                    motivoVisible={false}
-                  >
-                    <DownloadSimple className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                    Descargar el CSV
-                  </AccionConMotivo>
-
-                  {/* 🔴 Con bloqueos NO hay «aprobar igual»: el botón está
-                      apagado con el bloqueo textual del back como motivo. */}
-                  <AccionConMotivo
-                    puede={escritura.puede && permiso.puede}
-                    motivo={escritura.motivo ?? (permiso.motivo ? textoDelBack(permiso.motivo) : null)}
-                    onClick={() => {
-                      setAprobando(f.formato);
-                      setObservaciones('');
-                    }}
-                    variant={siguienteVistoBueno === f.formato ? 'default' : 'outline'}
-                    testId={`aprobar-${f.formato}`}
-                    motivoVisible={false}
-                  >
-                    <SealCheck className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                    Visto bueno del contador
-                  </AccionConMotivo>
-
-                  <AccionConMotivo
-                    puede={escritura.puede && f.estado === 'APROBADA'}
-                    motivo={
-                      escritura.motivo ?? 'Sólo se anula un formato que ya tiene el visto bueno.'
-                    }
-                    onClick={() => {
-                      setAnulando(f.formato);
-                      setMotivo('');
-                    }}
-                    testId={`anular-${f.formato}`}
-                    motivoVisible={false}
-                  >
-                    <Prohibit className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                    Quitar el visto bueno
-                  </AccionConMotivo>
-                </div>
-                {/* CB-12: UNA ayuda corta; cada botón guarda su motivo entero
-                    en el `title` y para el lector de pantalla. */}
-                {ayuda ? (
-                  <p className="text-caption text-fg-muted" data-testid={`ayuda-${f.formato}`}>
-                    {ayuda}
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <p className="text-body-sm text-fg">
+                    <span className="font-mono">{f.formato}</span> · {f.nombre}
                   </p>
-                ) : null}
+                  <p className="text-caption text-fg-muted">
+                    {f.filas.toLocaleString(cifras)} {f.filas === 1 ? 'fila' : 'filas'} ·{' '}
+                    <Monto valor={f.totalCop} className="text-caption" />
+                    {f.aprobadoAt ? ` · visto bueno el ${diaLegible(f.aprobadoAt)}` : ''}
+                  </p>
+                </div>
+                {/* 🔴 CB-12: el estado REAL. «Generada» al lado de «Esto impide
+                    presentar el formato» se leía como «lista». */}
+                <Badge
+                  variant={estado.tono === 'peligro' ? 'destructive' : estado.tono === 'listo' ? 'secondary' : 'outline'}
+                  title={NOMBRE_DEL_ESTADO_DE_FORMATO[f.estado]}
+                  data-testid={`estado-${f.formato}`}
+                >
+                  {estado.texto}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  hideArrow
+                  onClick={() => setVisto(f.formato)}
+                  aria-label={`Ver el formato ${f.formato}`}
+                  data-testid={`abrir-formato-${f.formato}`}
+                >
+                  Ver
+                </Button>
               </li>
             );
           })}
         </ul>
       </section>
 
+      {/* ── El cajón del formato ──────────────────────────────────────── */}
+      <Cajon abierto={formatoVisto !== null} onOpenChange={(a) => !a && setVisto(null)} tamano="md">
+        {formatoVisto
+          ? (() => {
+              const f = formatoVisto;
+              const permiso = sePuedeAprobar(f, resumen.disponible);
+              // 🔴 CB-12: las frases del back sin los 🔴 (el cartel ya trae el
+              // ícono del DS) y con la plata de la casa.
+              const paraElContador = (f.paraElContador ?? []).map(textoDelBack);
+              const bloqueos = f.bloqueos.map(textoDelBack);
+              const avisosDelFormato = f.avisos.map(textoDelBack).filter((a) => !avisosDeTodos.includes(a));
+              const estado = estadoParaMostrarDelFormato(f);
+              const ayuda = ayudaDelFormato(f, permiso, escritura);
+              const yaTieneVistoBueno = f.estado === 'APROBADA';
+              return (
+                <div className="contents" data-testid={`formato-${f.formato}`}>
+                  <CajonCabecera
+                    titulo={
+                      <>
+                        <span className="font-mono">{f.formato}</span> · {f.nombre}
+                      </>
+                    }
+                    descripcion={DE_DONDE_SALE[f.formato]}
+                  />
+                  <CajonCuerpo className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-body-sm text-fg-muted">
+                        {f.filas.toLocaleString(cifras)} {f.filas === 1 ? 'fila' : 'filas'} ·{' '}
+                        <Monto valor={f.totalCop} />
+                        {f.aprobadoAt ? ` · visto bueno el ${diaLegible(f.aprobadoAt)}` : ''}
+                      </p>
+                      <Badge
+                        variant={estado.tono === 'peligro' ? 'destructive' : estado.tono === 'listo' ? 'secondary' : 'outline'}
+                        title={NOMBRE_DEL_ESTADO_DE_FORMATO[f.estado]}
+                      >
+                        {estado.texto}
+                      </Badge>
+                    </div>
+                    {f.observaciones ? (
+                      <p className="text-caption text-fg-muted">Observaciones: {f.observaciones}</p>
+                    ) : null}
+
+                    {/* Rojo: impide. */}
+                    <Bloqueos bloqueos={bloqueos} titulo="Esto impide presentar el formato" testId={`bloqueos-${f.formato}`} />
+
+                    {/* Amarillo: hay que mirarlo. */}
+                    <Avisos avisos={avisosDelFormato} testId={`avisos-${f.formato}`} titulo="Para mirar antes de presentar" />
+
+                    {/* 🔴 Las preguntas de ESTE formato, listadas enteras. */}
+                    {paraElContador.length > 0 ? (
+                      <VistoBuenoDelContador
+                        titulo={`Lo que el contador tiene que decidir en el ${f.formato}`}
+                        puntos={paraElContador}
+                        testId={`para-el-contador-${f.formato}`}
+                      />
+                    ) : null}
+
+                    <div className="flex flex-wrap items-end gap-3">
+                      <AccionConMotivo
+                        puede={f.filas > 0}
+                        motivo="Este formato no tiene filas: no hay nada que mirar."
+                        ocupado={ocupado === f.formato}
+                        textoOcupado="Armando…"
+                        onClick={() => void abrir(f.formato)}
+                        testId={`ver-${f.formato}`}
+                        motivoVisible={false}
+                      >
+                        Ver las filas
+                      </AccionConMotivo>
+
+                      <AccionConMotivo
+                        puede={exportacion.puede && f.filas > 0}
+                        motivo={exportacion.motivo ?? 'Este formato no tiene filas: el archivo saldría vacío.'}
+                        ocupado={ocupado === f.formato}
+                        textoOcupado="Generando…"
+                        onClick={() => void descargar(f.formato)}
+                        testId={`descargar-${f.formato}`}
+                        motivoVisible={false}
+                      >
+                        <DownloadSimple className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                        Descargar el CSV
+                      </AccionConMotivo>
+                    </div>
+                    {/* CB-12: UNA ayuda corta; cada botón guarda su motivo entero
+                        en el `title` y para el lector de pantalla. */}
+                    {ayuda ? (
+                      <p className="text-caption text-fg-muted" data-testid={`ayuda-${f.formato}`}>
+                        {ayuda}
+                      </p>
+                    ) : null}
+                  </CajonCuerpo>
+                  <CajonPie>
+                    {/* Revisora r25: sólo la acción que aplica —visto bueno O quitarlo—, no
+                        las dos con una apagada. 🔴 Con bloqueos NO hay «aprobar igual»: el
+                        botón está apagado con el bloqueo textual del back como motivo. */}
+                    {yaTieneVistoBueno ? (
+                      <AccionConMotivo
+                        puede={escritura.puede}
+                        motivo={escritura.motivo ?? 'Sólo se anula un formato que ya tiene el visto bueno.'}
+                        onClick={() => {
+                          setVisto(null);
+                          setAnulando(f.formato);
+                          setMotivo('');
+                        }}
+                        testId={`anular-${f.formato}`}
+                        motivoVisible={false}
+                      >
+                        <Prohibit className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                        Quitar el visto bueno
+                      </AccionConMotivo>
+                    ) : (
+                      <AccionConMotivo
+                        puede={escritura.puede && permiso.puede}
+                        motivo={escritura.motivo ?? (permiso.motivo ? textoDelBack(permiso.motivo) : null)}
+                        onClick={() => {
+                          setVisto(null);
+                          setAprobando(f.formato);
+                          setObservaciones('');
+                        }}
+                        variant={siguienteVistoBueno === f.formato || (escritura.puede && permiso.puede) ? 'default' : 'outline'}
+                        testId={`aprobar-${f.formato}`}
+                        motivoVisible={false}
+                      >
+                        <SealCheck className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                        Visto bueno del contador
+                      </AccionConMotivo>
+                    )}
+                  </CajonPie>
+                </div>
+              );
+            })()
+          : null}
+      </Cajon>
+
       {/* ── Las filas del formato abierto ─────────────────────────────── */}
       {abierto ? (
         <section
-          className="space-y-3 rounded-lg border border-border bg-surface p-4"
+          ref={filasRef}
+          className="scroll-mt-24 space-y-3 rounded-lg border border-border bg-surface p-4"
           data-testid="filas-del-formato"
         >
           <div className="flex flex-wrap items-baseline justify-between gap-2">

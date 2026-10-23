@@ -285,7 +285,7 @@ export function ConfiguracionDeExogena({ anio }: { anio: number }) {
             ) : (
               <p>
                 Leasefy todavía no publicó el año {anio}: no hay nada que heredar, y sin tope
-                propio NO se agrupa nada en cuantías menores.
+                propio no se agrupa nada en cuantías menores.
               </p>
             )}
           </div>

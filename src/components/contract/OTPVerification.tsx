@@ -394,7 +394,7 @@ export function OTPVerification({
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     disabled={status === 'verifying' || status === 'verified'}
                     className={cn(
-                      'h-[56px] w-[46px] rounded-[12px] bg-surface text-center font-mono text-[22px] font-semibold transition-[color,background-color,border-color,box-shadow,opacity]',
+                      'h-[56px] w-[46px] rounded-[12px] bg-surface text-center font-mono text-[22px] font-medium transition-[color,background-color,border-color,box-shadow,opacity]',
                       'focus:border-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-[rgba(26,64,255,0.14)]',
                       digit ? 'border-[1.5px] border-fg' : 'border border-border',
                       status === 'error' && 'border-danger bg-danger-soft animate-shake',
@@ -473,7 +473,7 @@ export function OTPVerification({
           )}
 
           {/* Help text */}
-          <div className="rounded-[14px] border border-border p-3 text-xs text-fg-muted">
+          <div className="rounded-[14px] border border-border p-3 text-caption text-fg-muted">
             <p>
               <strong>Nota:</strong> La verificación por código enviado a tu correo garantiza que
               solo tú puedes firmar {queSeFirma}. Este proceso cumple con la Ley 527/1999 sobre

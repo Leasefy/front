@@ -226,14 +226,14 @@ function TimelineEventItem({
           <div className="min-w-0">
             <h4 className="font-medium text-fg text-sm">{event.title}</h4>
             {event.description && (
-              <p className="text-xs text-fg-muted mt-0.5 break-words whitespace-pre-wrap">
+              <p className="text-caption text-fg-muted mt-0.5 break-words whitespace-pre-wrap">
                 {event.description}
               </p>
             )}
           </div>
           <div className="text-right shrink-0">
-            <p className="text-xs text-fg-muted">{formatDate(event.timestamp)}</p>
-            <p className="text-[10px] text-fg-muted font-mono">
+            <p className="text-caption text-fg-muted">{formatDate(event.timestamp)}</p>
+            <p className="text-caption text-fg-muted font-mono">
               {new Date(event.timestamp).toLocaleTimeString(locale === 'es' ? 'es-CO' : 'en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -246,28 +246,28 @@ function TimelineEventItem({
         {isSignature && showDetails && (
           <div className="mt-3 rounded-sm bg-surface-muted p-3 space-y-2">
             {event.actor && (
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2 text-caption">
                 <PenNib className="h-3 w-3 text-fg-muted" />
                 <span className="text-fg-muted">Firmante:</span>
                 <span className="text-fg font-medium">{event.actor}</span>
               </div>
             )}
             {event.ipAddress && (
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2 text-caption">
                 <Globe className="h-3 w-3 text-fg-muted" />
                 <span className="text-fg-muted">IP:</span>
                 <span className="text-fg font-mono">{maskIpAddress(event.ipAddress)}</span>
               </div>
             )}
             {event.userAgent && (
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2 text-caption">
                 <Monitor className="h-3 w-3 text-fg-muted" />
                 <span className="text-fg-muted">Dispositivo:</span>
                 <span className="text-fg truncate max-w-[240px]">{parseUserAgent(event.userAgent)}</span>
               </div>
             )}
             {event.otpVerified && (
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2 text-caption">
                 <Shield className="h-3 w-3 text-success" />
                 <span className="text-success font-medium">
                   Identidad verificada por código de un solo uso
@@ -280,7 +280,7 @@ function TimelineEventItem({
 
         {/* Badge verificado en vista compacta */}
         {isSignature && !showDetails && event.otpVerified && (
-          <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-success">
+          <div className="mt-2 inline-flex items-center gap-1.5 text-caption text-success">
             <Shield className="h-3 w-3" />
             <span>Verificado</span>
           </div>
@@ -288,7 +288,7 @@ function TimelineEventItem({
 
         {/* Para rechazos mostramos el actor fuera del detalle técnico */}
         {(event.type === 'rejection_modifications' || event.type === 'rejection_definitive') && event.actor && (
-          <p className="mt-1 text-[11px] text-fg-muted">— {event.actor}</p>
+          <p className="mt-1 text-caption text-fg-muted">— {event.actor}</p>
         )}
       </div>
     </div>
@@ -310,8 +310,8 @@ export function AuditTrail({ contract, rejections = [], expanded = false, classN
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-fg-muted" />
-          <h3 className="font-semibold text-fg">Historial del contrato</h3>
-          <span className="text-xs text-fg-muted bg-surface-muted px-2 py-0.5 rounded-full">
+          <h3 className="font-medium text-fg">Historial del contrato</h3>
+          <span className="text-caption text-fg-muted bg-surface-muted px-2 py-0.5 rounded-full">
             {events.length} {events.length === 1 ? 'evento' : 'eventos'}
           </span>
         </div>
@@ -320,7 +320,7 @@ export function AuditTrail({ contract, rejections = [], expanded = false, classN
             variant="ghost"
             size="sm"
             onClick={() => setShowDetails(!showDetails)}
-            className="text-xs"
+            className="text-caption"
           >
             {showDetails ? (
               <><CaretUp className="mr-1 h-3 w-3" />Ocultar detalles</>
@@ -350,7 +350,7 @@ export function AuditTrail({ contract, rejections = [], expanded = false, classN
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 bg-surface-muted/50 border-t border-border text-xs text-fg-muted text-center">
+      <div className="px-4 py-3 bg-surface-muted/50 border-t border-border text-caption text-fg-muted text-center">
         <p>Los eventos se registran con marca de tiempo inmutable.</p>
       </div>
     </div>

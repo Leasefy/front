@@ -110,7 +110,7 @@ export function CodeudoresSection({ contractId, puedeEditar }: CodeudoresSection
           <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle">
             <Users className="w-4 h-4" />
           </div>
-          <h3 className="font-semibold text-fg">Codeudores</h3>
+          <h3 className="font-medium text-fg">Codeudores</h3>
         </div>
         {puedeEditar && !formularioAbierto && (
           <Button variant="outline" size="sm" hideArrow onClick={() => setFormularioAbierto(true)} className="gap-1.5" data-testid="agregar-codeudor">
@@ -137,7 +137,7 @@ export function CodeudoresSection({ contractId, puedeEditar }: CodeudoresSection
                   <StaggerItem as="li" key={c.id} className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted dark:bg-ink px-3 py-2" data-testid="codeudor-item">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-fg truncate">{c.nombre}</p>
-                      <p className="text-xs text-fg-muted">
+                      <p className="text-caption text-fg-muted">
                         {c.tipoDeDocumento} {c.documento} · {c.email}
                       </p>
                     </div>

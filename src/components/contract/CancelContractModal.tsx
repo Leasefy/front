@@ -81,7 +81,7 @@ export function CancelContractModal({
         </DialogHeader>
 
         <div className="space-y-1">
-          <label className="block text-xs font-medium text-fg">
+          <label className="block text-caption font-medium text-fg">
             Motivo <span className="text-fg-muted font-normal">(opcional)</span>
           </label>
           <Textarea
@@ -98,7 +98,7 @@ export function CancelContractModal({
           />
           <div className="flex items-center justify-end">
             <p className={cn(
-              'text-xs tabular-nums',
+              'text-caption tabular-nums',
               tooLong ? 'text-danger' : 'text-fg-muted'
             )}>
               {reasonTrimmed.length}/{REASON_MAX}

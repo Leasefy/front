@@ -73,13 +73,13 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
       <div className="border-b border-border px-6 py-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <MonoLabel className="block text-[10px] tracking-widest text-fg-muted">
+            <MonoLabel className="block text-caption tracking-widest text-fg-muted">
               Contrato de Arrendamiento
             </MonoLabel>
-            <h2 className="mt-1 text-lg font-semibold text-fg">
+            <h2 className="mt-1 text-lg font-medium text-fg">
               {template.name}
             </h2>
-            <p className="mt-1 text-xs text-fg-muted">ID: {contract.id}</p>
+            <p className="mt-1 text-caption text-fg-muted">ID: {contract.id}</p>
           </div>
           {/* Certificate button - only show for active contracts */}
           {isContractSigned && (
@@ -98,35 +98,35 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
 
       {/* Contract Summary */}
       <div className="border-b border-border p-6">
-        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-fg">
+        <h3 className="mb-4 flex items-center gap-2 text-sm font-medium text-fg">
           <CreditCard className="h-4 w-4 text-fg-muted" />
           Resumen del Contrato
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-sm border border-border bg-surface-muted p-3">
-            <p className="text-xs text-fg-muted">Canon mensual</p>
-            <p className="mt-1 text-lg font-semibold text-fg">
+            <p className="text-caption text-fg-muted">Canon mensual</p>
+            <p className="mt-1 text-lg font-medium text-fg">
               {contract.monthlyRent != null ? formatCurrency(contract.monthlyRent) : '—'}
             </p>
           </div>
           <div className="rounded-sm border border-border bg-surface-muted p-3">
-            <p className="text-xs text-fg-muted">Garantia</p>
-            <p className="mt-1 text-sm font-semibold text-fg">
+            <p className="text-caption text-fg-muted">Garantia</p>
+            <p className="mt-1 text-sm font-medium text-fg">
               {contract.guaranteeType === 'poliza' ? 'Poliza de arrendamiento' : 'Codeudor'}
             </p>
             {contract.guaranteeDetails && (
-              <p className="mt-0.5 text-xs text-fg-muted truncate">{contract.guaranteeDetails}</p>
+              <p className="mt-0.5 text-caption text-fg-muted truncate">{contract.guaranteeDetails}</p>
             )}
           </div>
           <div className="rounded-sm border border-border bg-surface-muted p-3">
-            <p className="text-xs text-fg-muted">Administracion</p>
-            <p className="mt-1 text-lg font-semibold text-fg">
+            <p className="text-caption text-fg-muted">Administracion</p>
+            <p className="mt-1 text-lg font-medium text-fg">
               {contract.adminFee > 0 ? formatCurrency(contract.adminFee) : 'Incluida'}
             </p>
           </div>
           <div className="rounded-sm border border-border bg-surface-muted p-3">
-            <p className="text-xs text-fg-muted">Dia de pago</p>
-            <p className="mt-1 text-lg font-semibold text-fg">
+            <p className="text-caption text-fg-muted">Dia de pago</p>
+            <p className="mt-1 text-lg font-medium text-fg">
               {contract.paymentDueDay ? `Dia ${contract.paymentDueDay}` : '—'}
             </p>
           </div>
@@ -136,7 +136,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
       {/* Insurance (if selected) */}
       {insurancePolicy && (
         <div className="border-b border-border p-6">
-          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-fg">
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-medium text-fg">
             <Shield className="h-4 w-4 text-fg-muted" />
             Poliza de Seguro
           </h3>
@@ -147,10 +147,10 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
                 <p className="text-sm text-fg-muted">{insurancePolicy.description}</p>
               </div>
               <div className="text-right">
-                <p className="text-lg font-semibold text-fg">
+                <p className="text-lg font-medium text-fg">
                   {formatCurrency(insurancePolicy.monthlyPremium)}
                 </p>
-                <p className="text-xs text-fg-muted">/mes</p>
+                <p className="text-caption text-fg-muted">/mes</p>
               </div>
             </div>
             {insurancePolicy.features.length > 0 && (
@@ -166,7 +166,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
 
       {/* Property & Dates */}
       <div className="border-b border-border p-6">
-        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-fg">
+        <h3 className="mb-4 flex items-center gap-2 text-sm font-medium text-fg">
           <Buildings className="h-4 w-4 text-fg-muted" />
           Inmueble y Vigencia
         </h3>
@@ -193,14 +193,14 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
 
       {/* Parties */}
       <div className="border-b border-border p-6">
-        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-fg">
+        <h3 className="mb-4 flex items-center gap-2 text-sm font-medium text-fg">
           <User className="h-4 w-4 text-fg-muted" />
           Partes del Contrato
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Landlord */}
           <div className="rounded-sm border border-border p-4">
-            <MonoLabel className="block text-xs font-medium tracking-wider text-fg-muted">
+            <MonoLabel className="block text-caption font-medium tracking-wider text-fg-muted">
               Arrendador
             </MonoLabel>
             <p className="mt-2 font-medium text-fg">{contract.landlordName}</p>
@@ -209,7 +209,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
           </div>
           {/* Tenant */}
           <div className="rounded-sm border border-border p-4">
-            <MonoLabel className="block text-xs font-medium tracking-wider text-fg-muted">
+            <MonoLabel className="block text-caption font-medium tracking-wider text-fg-muted">
               Arrendatario
             </MonoLabel>
             <p className="mt-2 font-medium text-fg">{contract.tenantName}</p>
@@ -220,7 +220,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
               {tenantEmail}
             </p>
             {!isContractSigned && (
-              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-warning">
+              <div className="flex items-center gap-1.5 mt-2 text-caption text-warning">
                 <Lock className="h-3 w-3" />
                 <span>Datos completos al firmar contrato</span>
               </div>
@@ -231,7 +231,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
 
       {/* Clauses */}
       <div className="border-b border-border p-6">
-        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-fg">
+        <h3 className="mb-4 flex items-center gap-2 text-sm font-medium text-fg">
           <Calendar className="h-4 w-4 text-fg-muted" />
           Clausulas del Contrato
         </h3>
@@ -260,11 +260,11 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
       {/* Non-Negotiable Clauses */}
       {contract.nonNegotiableClauses && contract.nonNegotiableClauses.length > 0 && (
         <div className="border-b border-border p-6">
-          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-fg">
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-medium text-fg">
             <Lock className="h-4 w-4 text-primary" />
             Condiciones Innegociables del Arrendador
           </h3>
-          <p className="text-xs text-fg-muted mb-4">
+          <p className="text-caption text-fg-muted mb-4">
             Las siguientes condiciones fueron establecidas como requisitos innegociables por el arrendador
             y forman parte vinculante del presente contrato.
           </p>
@@ -290,7 +290,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
       {/* Special Conditions */}
       {contract.specialConditions && (
         <div className="border-b border-border p-6">
-          <h3 className="mb-2 text-sm font-semibold text-fg">
+          <h3 className="mb-2 text-sm font-medium text-fg">
             Condiciones Especiales
           </h3>
           <p className="text-sm text-fg-muted">{contract.specialConditions}</p>
@@ -299,7 +299,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
 
       {/* Signatures */}
       <div className="p-6">
-        <h3 className="mb-4 text-sm font-semibold text-fg">Firmas</h3>
+        <h3 className="mb-4 text-sm font-medium text-fg">Firmas</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Landlord Signature */}
           <div
@@ -310,7 +310,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
                 : 'border-dashed border-border bg-surface-muted'
             )}
           >
-            <MonoLabel className="block text-xs font-medium tracking-wider text-fg-muted">
+            <MonoLabel className="block text-caption font-medium tracking-wider text-fg-muted">
               Firma Arrendador
             </MonoLabel>
             {contract.landlordSignature ? (
@@ -318,7 +318,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
                 <p className="mt-2 font-medium text-success">
                   {contract.landlordSignature.signedBy}
                 </p>
-                <p className="text-xs text-success">
+                <p className="text-caption text-success">
                   Firmado: {formatDate(contract.landlordSignature.signedAt)}
                 </p>
               </>
@@ -336,7 +336,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
                 : 'border-dashed border-border bg-surface-muted'
             )}
           >
-            <MonoLabel className="block text-xs font-medium tracking-wider text-fg-muted">
+            <MonoLabel className="block text-caption font-medium tracking-wider text-fg-muted">
               Firma Arrendatario
             </MonoLabel>
             {contract.tenantSignature ? (
@@ -344,7 +344,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
                 <p className="mt-2 font-medium text-success">
                   {contract.tenantSignature.signedBy}
                 </p>
-                <p className="text-xs text-success">
+                <p className="text-caption text-success">
                   Firmado: {formatDate(contract.tenantSignature.signedAt)}
                 </p>
               </>
@@ -357,7 +357,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
 
       {/* Legal Footer */}
       <div className="border-t border-border bg-surface-muted p-4 text-center">
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           Este contrato se rige por la Ley 820 de 2003 y demás normas concordantes.
           <br />
           Las firmas electrónicas tienen validez legal según la Ley 527 de 1999.

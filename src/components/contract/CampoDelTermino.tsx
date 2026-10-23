@@ -29,7 +29,7 @@ export function CampoDelTermino({
 }) {
   return (
     <div className="space-y-1">
-      <label htmlFor={id} className="block text-xs font-medium text-foreground">
+      <label htmlFor={id} className="block text-caption font-medium text-foreground">
         {label}
       </label>
       {children}

@@ -102,7 +102,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
       {variant === 'full' ? (
         isActive && (
           <div className="pb-4 border-b border-border">
-            <Badge variant="success" className="gap-1.5 px-3 py-1.5 text-xs font-semibold">
+            <Badge variant="success" className="gap-1.5 px-3 py-1.5 text-caption font-medium">
               <CheckCircle className="h-4 w-4" />
               VÁLIDO
             </Badge>
@@ -115,16 +115,16 @@ function CertificateContent({ contract, variant, className }: CertificateContent
             <Shield className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-fg text-base">
+            <h3 className="font-medium text-fg text-base">
               Certificado de Autenticidad Digital
             </h3>
-            <p className="text-xs text-fg-muted font-mono">
+            <p className="text-caption text-fg-muted font-mono">
               {certificateId}
             </p>
           </div>
         </div>
         {isActive && (
-          <Badge variant="success" className="gap-1.5 px-3 py-1.5 text-xs font-semibold">
+          <Badge variant="success" className="gap-1.5 px-3 py-1.5 text-caption font-medium">
             <CheckCircle className="h-4 w-4" />
             VÁLIDO
           </Badge>
@@ -134,7 +134,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
 
       {/* Document Info */}
       <div className={cn('border-b border-border', 'py-4')}>
-        <MonoLabel className="block text-xs tracking-wider text-fg-muted mb-3">
+        <MonoLabel className="block text-caption tracking-wider text-fg-muted mb-3">
           Documento Certificado
         </MonoLabel>
         <div className="space-y-2">
@@ -150,8 +150,8 @@ function CertificateContent({ contract, variant, className }: CertificateContent
           <div className="flex items-start gap-2">
             <Hash className="h-4 w-4 text-fg-muted shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs text-fg-muted">Hash SHA-256</p>
-              <p className="text-xs font-mono text-fg break-all leading-relaxed">
+              <p className="text-caption text-fg-muted">Hash SHA-256</p>
+              <p className="text-caption font-mono text-fg break-all leading-relaxed">
                 {variant === 'full' ? documentHash : `${documentHash.slice(0, 32)}...`}
               </p>
             </div>
@@ -161,7 +161,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
 
       {/* Parties */}
       <div className={cn('border-b border-border', 'py-4')}>
-        <MonoLabel className="block text-xs tracking-wider text-fg-muted mb-3">
+        <MonoLabel className="block text-caption tracking-wider text-fg-muted mb-3">
           Partes Firmantes
         </MonoLabel>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -169,21 +169,21 @@ function CertificateContent({ contract, variant, className }: CertificateContent
           <div className="rounded-sm border border-border p-3">
             <div className="flex items-center gap-2 mb-2">
               <User className="h-4 w-4 text-fg-muted" />
-              <span className="text-xs font-medium text-fg-muted">ARRENDADOR</span>
+              <span className="text-caption font-medium text-fg-muted">ARRENDADOR</span>
             </div>
             <p className="font-medium text-fg text-sm">{contract.landlordName}</p>
-            <p className="text-xs text-fg-muted">CC: {contract.landlordDocument}</p>
+            <p className="text-caption text-fg-muted">CC: {contract.landlordDocument}</p>
             {contract.landlordSignature && (
               <div className="mt-2 pt-2 border-t border-border">
-                <div className="flex items-center gap-1.5 text-success text-xs">
+                <div className="flex items-center gap-1.5 text-success text-caption">
                   <CheckCircle className="h-3 w-3" />
                   Firmado
                 </div>
-                <p className="text-xs text-fg-muted mt-0.5">
+                <p className="text-caption text-fg-muted mt-0.5">
                   {formatDate(contract.landlordSignature.signedAt)}
                 </p>
                 {variant === 'full' && landlordIp && (
-                  <p className="text-xs text-fg-muted font-mono mt-0.5">
+                  <p className="text-caption text-fg-muted font-mono mt-0.5">
                     IP: {landlordIp}
                   </p>
                 )}
@@ -195,21 +195,21 @@ function CertificateContent({ contract, variant, className }: CertificateContent
           <div className="rounded-sm border border-border p-3">
             <div className="flex items-center gap-2 mb-2">
               <User className="h-4 w-4 text-fg-muted" />
-              <span className="text-xs font-medium text-fg-muted">ARRENDATARIO</span>
+              <span className="text-caption font-medium text-fg-muted">ARRENDATARIO</span>
             </div>
             <p className="font-medium text-fg text-sm">{contract.tenantName}</p>
-            <p className="text-xs text-fg-muted">CC: {contract.tenantDocument}</p>
+            <p className="text-caption text-fg-muted">CC: {contract.tenantDocument}</p>
             {contract.tenantSignature && (
               <div className="mt-2 pt-2 border-t border-border">
-                <div className="flex items-center gap-1.5 text-success text-xs">
+                <div className="flex items-center gap-1.5 text-success text-caption">
                   <CheckCircle className="h-3 w-3" />
                   Firmado
                 </div>
-                <p className="text-xs text-fg-muted mt-0.5">
+                <p className="text-caption text-fg-muted mt-0.5">
                   {formatDate(contract.tenantSignature.signedAt)}
                 </p>
                 {variant === 'full' && tenantIp && (
-                  <p className="text-xs text-fg-muted font-mono mt-0.5">
+                  <p className="text-caption text-fg-muted font-mono mt-0.5">
                     IP: {tenantIp}
                   </p>
                 )}
@@ -221,7 +221,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
 
       {/* Timestamps */}
       <div className={cn('border-b border-border', 'py-4')}>
-        <MonoLabel className="block text-xs tracking-wider text-fg-muted mb-3">
+        <MonoLabel className="block text-caption tracking-wider text-fg-muted mb-3">
           Cronología de Firmas
         </MonoLabel>
         <div className="space-y-2">
@@ -258,7 +258,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
             <div className="flex h-20 w-20 items-center justify-center rounded-sm border-2 border-dashed border-border bg-surface-muted">
               <QrCode className="h-8 w-8 text-fg-muted" />
             </div>
-            <p className="text-[10px] text-fg-muted text-center">
+            <p className="text-caption text-fg-muted text-center">
               Escanea para verificar
             </p>
           </div>
@@ -267,15 +267,15 @@ function CertificateContent({ contract, variant, className }: CertificateContent
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <Lock className="h-4 w-4 text-fg-muted" />
-              <span className="text-xs font-semibold text-fg">Validez Legal</span>
+              <span className="text-caption font-medium text-fg">Validez Legal</span>
             </div>
-            <p className="text-xs text-fg-muted leading-relaxed">
+            <p className="text-caption text-fg-muted leading-relaxed">
               Este certificado acredita la autenticidad del documento digital firmado electrónicamente.
               Válido conforme a la <strong>Ley 527 de 1999</strong> sobre mensajes de datos y comercio electrónico,
               y el <strong>Decreto 2364 de 2012</strong> que reglamenta la firma electrónica en Colombia.
             </p>
             {variant === 'full' && (
-              <p className="text-xs text-fg-muted mt-2 leading-relaxed">
+              <p className="text-caption text-fg-muted mt-2 leading-relaxed">
                 Para verificar la autenticidad de este documento, escanee el código QR o visite
                 <span className="font-mono text-primary ml-1">verify.leasefy.co/{certificateId}</span>
               </p>
@@ -286,7 +286,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
 
       {/* Footer */}
       <div className={cn(
-        'text-center text-xs text-fg-muted',
+        'text-center text-caption text-fg-muted',
         'pt-4 mt-4 border-t border-border'
       )}>
         <p>
@@ -332,7 +332,7 @@ export function AuthenticityCertificate({
       <DialogContent size="lg" icon={<Shield weight="bold" />}>
         <DialogHeader>
           <DialogTitle>Certificado de Autenticidad Digital</DialogTitle>
-          <DialogDescription className="font-mono text-xs">
+          <DialogDescription className="font-mono text-caption">
             {generateCertificateId(contract)}
           </DialogDescription>
         </DialogHeader>

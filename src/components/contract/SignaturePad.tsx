@@ -61,7 +61,7 @@ export function SignaturePad({ onChange, signerName, disabled = false, className
   return (
     <div className={cn('space-y-2', className)}>
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-fg inline-flex items-center gap-1.5">
+        <label className="text-caption font-medium text-fg inline-flex items-center gap-1.5">
           <PencilSimple className="w-3.5 h-3.5 text-primary" />
           Dibuja tu firma {signerName && <span className="text-fg-muted">({signerName})</span>}
         </label>
@@ -72,7 +72,7 @@ export function SignaturePad({ onChange, signerName, disabled = false, className
           hideArrow
           onClick={handleClear}
           disabled={disabled || isEmpty}
-          className="text-xs gap-1 text-fg-muted hover:text-fg"
+          className="text-caption gap-1 text-fg-muted hover:text-fg"
         >
           <Eraser className="w-3.5 h-3.5" />
           Borrar
@@ -109,14 +109,14 @@ export function SignaturePad({ onChange, signerName, disabled = false, className
         )}
         {isEmpty && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="text-xs text-fg-muted select-none">
+            <p className="text-caption text-fg-muted select-none">
               Firma aquí con el mouse, dedo o stylus
             </p>
           </div>
         )}
       </div>
 
-      <p className="text-[11px] text-fg-muted">
+      <p className="text-caption text-fg-muted">
         Tu firma se va a estampar en el PDF final junto con tu nombre, fecha y certificado de autenticidad.
       </p>
     </div>

@@ -99,9 +99,12 @@ describe('Resultados del agente', () => {
     expect(q('resultados-ver-reporte')).not.toBeNull()
   })
 
-  it('las cifras van en dos franjas y «Ahorro operativo» (siempre sin dato) ya no sale', async () => {
+  it('lo recuperado va arriba como la respuesta, las demás cifras en dos franjas y «Ahorro operativo» (siempre sin dato) ya no sale', async () => {
     await montar()
-    expect(q('franja-recupero')?.querySelector('[data-testid="resultado-kpi-recuperado"]')).not.toBeNull()
+    // Glow up 22-10: lo recuperado es LA cifra de la pantalla (CifraHeroe), fuera de la franja.
+    expect(q('resultado-kpi-recuperado')).not.toBeNull()
+    expect(q('franja-recupero')?.querySelector('[data-testid="resultado-kpi-recuperado"]')).toBeNull()
+    expect(q('franja-recupero')?.querySelector('[data-testid="resultado-kpi-casos-cerrados"]')).not.toBeNull()
     expect(q('franja-trabajo')?.querySelector('[data-testid="resultado-kpi-escalados"]')).not.toBeNull()
     expect(q('resultado-kpi-ahorro-operativo')).toBeNull()
   })

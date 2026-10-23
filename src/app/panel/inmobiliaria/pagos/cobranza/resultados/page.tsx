@@ -32,6 +32,8 @@ import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button, Spinner } from '@/components/ui'
 import { Cifra, CrossFade, FranjaDeCifras, Presence } from '@leasefy/cadence'
@@ -313,6 +315,7 @@ function ResultadosContent() {
    * las ya resueltas).
    */
   const pendientes = overview.data?.kpis.escalacionesPendientes ?? 0
+  const recuperadoKpi = kpis.find((k) => k.key === 'recuperado') ?? null
   const header = (
     <EncabezadoDePantalla
       seccion="Cobranza"
@@ -346,12 +349,13 @@ function ResultadosContent() {
   )
 
   const franja = (grupo: ResultadoKpi['grupo'], titulo: string, explicacion: string) => {
-    const deEste = kpis.filter((k) => k.grupo === grupo)
+    // Lo recuperado va aparte, como LA RESPUESTA: aquí no se repite.
+    const deEste = kpis.filter((k) => k.grupo === grupo && k.key !== 'recuperado')
     const id = `resultados-${grupo}`
     return (
       <section className="space-y-3" aria-labelledby={id}>
         <div className="space-y-0.5">
-          <h2 id={id} className="text-sm font-medium text-fg">
+          <h2 id={id} className="text-body font-medium text-fg">
             {titulo}
           </h2>
           <p className="text-caption text-fg-muted">{explicacion}</p>
@@ -417,7 +421,7 @@ function ResultadosContent() {
           <Presence
             show={Boolean((recovery.error || overview.error || daily.error) && hasAnyData)}
             role="alert"
-            className="rounded-lg bg-warning-soft border border-warning/30 p-3 text-sm text-warning flex items-center gap-2 max-w-2xl"
+            className="rounded-lg bg-warning-soft border border-warning/30 p-3 text-body-sm text-warning flex items-center gap-2 max-w-2xl"
           >
             <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
             <span>Algunas métricas no se pudieron cargar; mostramos lo disponible.</span>
@@ -431,8 +435,20 @@ function ResultadosContent() {
           )}
         </div>
 
+        {/* LA RESPUESTA: lo que recuperó. Debajo, cómo lo logró (3 cifras) y,
+            plegado, cómo trabajó (5 más). Antes eran nueve cifras del mismo peso. */}
+        {recuperadoKpi ? (
+          <CifraHeroe
+            data-testid="resultado-kpi-recuperado"
+            rotulo={recuperadoKpi.label}
+            cifra={recuperadoKpi.value ?? EM_DASH}
+            contexto={recuperadoKpi.sublabel}
+          />
+        ) : null}
         {franja('recupero', 'Lo que recuperó', 'La plata y los casos que el agente llevó hasta el pago.')}
-        {franja('trabajo', 'Cómo trabajó', 'Los casos que tocó, quiénes respondieron, lo que se cumplió y lo que subió a revisión humana.')}
+        <MasDetalles etiqueta="Cómo trabajó" etiquetaAbierto="Ocultar cómo trabajó" montadoSiempre>
+          {franja('trabajo', 'Cómo trabajó', 'Los casos que tocó, quiénes respondieron, lo que se cumplió y lo que subió a revisión humana.')}
+        </MasDetalles>
       </div>
     </CrossFade>
   )

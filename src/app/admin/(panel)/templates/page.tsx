@@ -8,6 +8,7 @@ import { useApiQuery } from '@/lib/admin/use-api-query'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { fmtFecha } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { Button } from '@/components/ui/button'
@@ -90,12 +91,11 @@ export default function PlantillasPage() {
       cell: (t) => (
         <div className="min-w-0 max-w-xs">
           <div className="font-medium text-fg">{t.nombre}</div>
-          <div className="font-mono text-caption text-fg-subtle">{t.code}</div>
         </div>
       ),
     },
     {
-      header: 'Push (la campana)',
+      header: 'Notificación (la campana)',
       texto: (t) => [t.pushTitulo, t.pushTexto].filter(Boolean).join(' — '),
       cell: (t) => (
         <div className="max-w-sm text-caption">
@@ -115,14 +115,29 @@ export default function PlantillasPage() {
         ),
     },
     { header: 'Estado', orden: (t) => (t.activa ? 0 : 1), texto: (t) => (t.activa ? 'Activo' : 'Apagado'), cell: (t) => <Pill tone={t.activa ? 'ok' : 'muted'}>{t.activa ? 'Activo' : 'Apagado'}</Pill> },
-    { header: 'Último cambio', orden: (t) => t.actualizada, ordenPrimero: 'desc', texto: (t) => fmtFecha(t.actualizada), cell: (t) => <span className="whitespace-nowrap text-caption text-fg-muted">{fmtFecha(t.actualizada)}</span> },
+    { header: 'Último cambio', orden: (t) => t.actualizada, ordenPrimero: 'desc', texto: (t) => fmtFecha(t.actualizada), cell: (t) => <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtFecha(t.actualizada)}</span> },
   ]
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Plantillas"
-        description="Los avisos que manda Leasefy. El push (lo que muestra la campana) se edita aquí; el correo vive en el código y se ve su asunto. Apagar un aviso detiene su push. Cada cambio pide motivo y queda registrado."
+        description="Los avisos que manda Leasefy. Toca uno para editar lo que dice la campana."
+        ayuda={
+          <ParaEntenderMas etiqueta="Cómo funciona" titulo="Los avisos de Leasefy" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>La notificación (lo que muestra la campana) se edita aquí. El correo vive en el código: aquí se ve su asunto.</p>
+              <p>Apagar un aviso detiene su notificación. Cada cambio pide un motivo y queda registrado con tu correo.</p>
+            </div>
+          </ParaEntenderMas>
+        }
+        junto={
+          data && data.some((t) => !t.activa) ? (
+            <Pill tone="warn" dot>
+              {data.filter((t) => !t.activa).length === 1 ? '1 apagado' : `${data.filter((t) => !t.activa).length} apagados`}
+            </Pill>
+          ) : null
+        }
       />
       <DataTable
         columns={columnas}
@@ -132,12 +147,12 @@ export default function PlantillasPage() {
         error={error}
         onReintentar={refetch}
         emptyTitle="No hay avisos"
-        emptyIcon={<ChatText weight="bold" />}
+        emptyIcon={<ChatText weight="duotone" />}
         aria-label="Avisos de Leasefy"
         onRowClick={abrir}
         filaMarcada={(t) => t.code === abierta?.code}
         queSon={['aviso', 'avisos']}
-        buscar="Nombre, código o texto"
+        buscar="Nombre o texto"
         textoExtra={(t) => `${t.code} ${t.descripcion ?? ''}`}
         segmentos={SEGMENTOS}
         exportar="avisos-de-leasefy"
@@ -156,11 +171,11 @@ export default function PlantillasPage() {
               </div>
             ) : null}
             <div className="space-y-1.5">
-              <label htmlFor="push-titulo" className="text-body-sm font-medium text-fg">Título del push</label>
+              <label htmlFor="push-titulo" className="text-body-sm font-medium text-fg">Título de la notificación</label>
               <Input id="push-titulo" value={titulo} maxLength={120} onChange={(e) => setTitulo(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="push-texto" className="text-body-sm font-medium text-fg">Texto del push</label>
+              <label htmlFor="push-texto" className="text-body-sm font-medium text-fg">Texto de la notificación</label>
               <Textarea id="push-texto" rows={3} value={texto} maxLength={500} onChange={(e) => setTexto(e.target.value)} />
               <p className="text-caption text-fg-subtle">Las {'{{variables}}'} se llenan solas al mandarlo.</p>
             </div>

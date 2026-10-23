@@ -32,6 +32,7 @@ import { CrossFade, MonoLabel } from '@leasefy/cadence'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { EnElPieDelCajon } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
 
 /**
  * QA-AGENTES 16-10: la ficha decía «resolved», «resolved_at»,
@@ -175,9 +176,12 @@ export default function EscalationDetailClient({ escalationId, enCajon = false, 
             </Badge>
           </div>
           {canResolveThis ? (
-            <Button type="button" size="sm" variant="ink" onClick={() => setResolveOpen(true)} hideArrow data-testid="escalacion-resolver">
-              {t('inmobiliaria.ai.cobranza.escalaciones.actions.resolve')}
-            </Button>
+            // Ronda 30: «Resolver» va en el pie fijo del cajón.
+            <EnElPieDelCajon>
+              <Button type="button" size="sm" variant="ink" onClick={() => setResolveOpen(true)} hideArrow data-testid="escalacion-resolver">
+                {t('inmobiliaria.ai.cobranza.escalaciones.actions.resolve')}
+              </Button>
+            </EnElPieDelCajon>
           ) : null}
         </div>
       ) : (

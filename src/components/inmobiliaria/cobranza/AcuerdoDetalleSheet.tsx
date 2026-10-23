@@ -44,6 +44,8 @@ const VACIO = '—'
 export interface AcuerdoDetalleSheetProps {
   acuerdo: AcuerdoRow | null
   onClose: () => void
+  /** Ronda 30 (K4): el plan se resolvió desde su cajón; la lista de acuerdos se vuelve a leer. */
+  onPlanResuelto?: () => void
 }
 
 /** Etiqueta de sección, en el registro del DS. */
@@ -83,6 +85,7 @@ function Dato({
 export function AcuerdoDetalleSheet({
   acuerdo,
   onClose,
+  onPlanResuelto,
 }: AcuerdoDetalleSheetProps) {
   const ultimo = useUltimoPresente(acuerdo)
   // Ronda 30 (K4, Nico: «K4 cajón»): «Revisar y aprobar» abre el plan en un cajón
@@ -123,6 +126,7 @@ export function AcuerdoDetalleSheet({
           onResuelto={() => {
             cerrarElPlan()
             onClose()
+            onPlanResuelto?.()
           }}
         />
       ) : null}

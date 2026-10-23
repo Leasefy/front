@@ -95,7 +95,7 @@ export function CobranzaAnaliticaResumen() {
         <h2 className="text-base font-medium text-fg">{tr("Cómo lo está logrando")}</h2>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-sm text-fg-muted">
-            {tr("No pudimos traer la analítica del agente.")}
+            {tr("No se pudo traer la analítica del agente.")}
           </p>
           <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()}>
             {tr("Intentar de nuevo")}

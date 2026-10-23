@@ -30,6 +30,7 @@ import { SlaCountdownBadge } from '@/components/inmobiliaria/cobranza/SlaCountdo
 import { ArcoStatusBadge } from '@/components/inmobiliaria/cobranza/ArcoStatusBadge'
 import { BackButton } from '@/components/ui/back-button'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { EnElPieDelCajon } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
@@ -322,7 +323,7 @@ interface ResolvePanelProps {
   t: (key: string, opts?: Record<string, string>) => string
 }
 
-function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t, alResolver }: ResolvePanelProps & { alResolver?: () => void }) {
+function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t, alResolver, enCajon = false }: ResolvePanelProps & { alResolver?: () => void; enCajon?: boolean }) {
   const [isResolving, setIsResolving] = useState(false)
   const [isRejecting, setIsRejecting] = useState(false)
   const [rejectOpen, setRejectOpen] = useState(false)
@@ -417,7 +418,9 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t, alResolv
           a la izquierda y discreto. Antes eran dos botones a todo el ancho,
           apilados y con el mismo peso — un patrón de formulario móvil que en un
           panel de escritorio hace que rechazar pese igual que resolver. */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4">
+      {/* Ronda 30 (K4): en el cajón, este pie va al pie fijo del cajón (EnElPieDelCajon). */}
+      <EnElPieDelCajon>
+      <div className={enCajon ? 'flex flex-wrap items-center justify-end gap-2' : 'flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4'}>
         <AlertDialog open={rejectOpen} onOpenChange={(o) => !isRejecting && setRejectOpen(o)}>
           <AlertDialogTrigger asChild>
             <Button variant="ghost" size="sm" hideArrow disabled={busy}>
@@ -467,7 +470,8 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t, alResolv
         </AlertDialog>
 
         <Button
-          variant="default"
+          // En el cajón, en tinta: el azul es de la bandeja.
+          variant={enCajon ? 'ink' : 'default'}
           hideArrow
           isLoading={isResolving}
           disabled={gateBlocked || busy}
@@ -476,6 +480,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t, alResolv
           {t('inmobiliaria.ai.arco.resolve')}
         </Button>
       </div>
+      </EnElPieDelCajon>
     </Card>
   )
 }
@@ -1012,6 +1017,7 @@ export default function ArcoDetailClient({ requestId, enCajon = false, onResuelt
             detailRefetch={detailRefetch}
             t={t}
             alResolver={enCajon ? onResuelto : undefined}
+            enCajon={enCajon}
           />
         </div>
 

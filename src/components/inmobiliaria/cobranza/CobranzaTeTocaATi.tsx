@@ -242,7 +242,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados, onTotalQueEspera }: Cob
           {tr(
             totalQueEspera > 0
               ? 'Puede que falte algo en este tablero: una de las fuentes no respondió.'
-              : 'No pudimos cargar tus pendientes.',
+              : 'No se pudieron cargar tus pendientes.',
           )}{' '}
           <span className="opacity-80">{error ? errorLegible(error) : null}</span>
         </Presence>

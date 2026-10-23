@@ -29,6 +29,7 @@ import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Checkbox } from '@/components/ui'
 import { BackButton, Collapse, CrossFade, Presence } from '@leasefy/cadence'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { EnElPieDelCajon } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
 import {
   useSiniestroApproval,
   type SiniestroInsurer,
@@ -173,6 +174,11 @@ export default function SiniestroApprovalClient({ claimId, enCajon = false, onRe
   // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
   // siniestro); los avisos de aprobar/rechazar entran y salen con `Presence`
   // y el formulario de rechazo se despliega con su altura (`Collapse`).
+  const formularioDeRechazo = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    if (enCajon && rechazarOpen) formularioDeRechazo.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }, [enCajon, rechazarOpen])
+
   if (authLoading && !agency) {
     return (
       <CrossFade swapKey="esqueleto">
@@ -311,7 +317,8 @@ export default function SiniestroApprovalClient({ claimId, enCajon = false, onRe
         </Presence>
       </section>
 
-      {/* Action buttons */}
+      {/* Action buttons. Ronda 30 (K4): en el cajón van a su pie fijo (EnElPieDelCajon). */}
+      <EnElPieDelCajon>
       <div className="flex flex-wrap gap-2">
         {/* Ronda 30 (K4): aprobar va en tinta (`ink`), como en Planes de pago: sobre la lista,
             el azul es de la pantalla. */}
@@ -349,6 +356,7 @@ export default function SiniestroApprovalClient({ claimId, enCajon = false, onRe
           {t('inmobiliaria.ai.cobranza.siniestros.rechazar.label')}
         </Button>
       </div>
+      </EnElPieDelCajon>
 
       {/* Antes se pintaba el cuerpo crudo de la respuesta o «approve 500». */}
       <Presence show={Boolean(approveError) || approveFallo != null}
@@ -412,6 +420,8 @@ export default function SiniestroApprovalClient({ claimId, enCajon = false, onRe
       </Presence>
 
       {/* Inline Rechazar form */}
+      {/* En el cajón, «Rechazar» está en el pie: el formulario se trae a la vista al abrirse. */}
+      <div ref={formularioDeRechazo}>
       <Collapse open={rechazarOpen && !rejectResult?.ok}>
         <RechazarForm
           decisionType="siniestro"
@@ -420,6 +430,7 @@ export default function SiniestroApprovalClient({ claimId, enCajon = false, onRe
           isSubmitting={isRejecting}
         />
       </Collapse>
+      </div>
 
       {/*
         DEFERRED: Modificar button (single-button placeholder → note) deferred

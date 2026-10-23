@@ -19,13 +19,14 @@
  */
 
 import * as React from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { CrossFade, Presence } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { EnElPieDelCajon } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Input } from '@/components/ui'
 import { Textarea } from '@/components/ui/textarea'
@@ -167,6 +168,16 @@ export default function PaymentPlanApprovalClient({ planId, enCajon = false, onR
   }, [plan?.wompiLink])
 
   const envMissing = !process.env.NEXT_PUBLIC_AGENT_URL
+
+  // Ronda 30 (K4): en el cajón, «Rechazar» y «Modificar» están en el pie; su formulario se trae a la vista.
+  const formularioDeRechazo = useRef<HTMLElement>(null)
+  const formularioDeModificar = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (enCajon && rechazarOpen) formularioDeRechazo.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }, [enCajon, rechazarOpen])
+  useEffect(() => {
+    if (enCajon && modificarOpen) formularioDeModificar.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }, [enCajon, modificarOpen])
 
   // ── Early returns ─────────────────────────────────────────────────────────
 
@@ -517,6 +528,8 @@ export default function PaymentPlanApprovalClient({ planId, enCajon = false, onR
         </p>
       )}
       {isPending && (
+      // Ronda 30 (K4): en el cajón van a su pie fijo (EnElPieDelCajon); en la página, aquí.
+      <EnElPieDelCajon>
       <div className="flex flex-wrap gap-2">
         {/* Ronda 30 (revisora r27): aprobar va en tinta (decidir), no en voltaje. */}
         <Button
@@ -553,6 +566,7 @@ export default function PaymentPlanApprovalClient({ planId, enCajon = false, onR
           {t('inmobiliaria.ai.cobranza.planes.modificar')}
         </Button>
       </div>
+      </EnElPieDelCajon>
       )}
 
       {/* «El inquilino aceptó» — sólo con el plan aprobado (Nico, S5 Q4) */}
@@ -662,9 +676,9 @@ export default function PaymentPlanApprovalClient({ planId, enCajon = false, onR
         </section>
       )}
 
-      {/* Rechazar inline form */}
+      {/* Rechazar inline form. En el cajón se trae a la vista al abrirse (el botón está en el pie). */}
       {rechazarOpen && (
-        <section className="space-y-3 rounded-md border border-border bg-surface p-4">
+        <section ref={formularioDeRechazo} className="space-y-3 rounded-md border border-border bg-surface p-4">
           <div className="space-y-1">
             <span className="block text-sm font-medium text-fg-muted">
               {t('inmobiliaria.ai.cobranza.planes.rechazarForm.reasonLabel')}
@@ -726,7 +740,7 @@ export default function PaymentPlanApprovalClient({ planId, enCajon = false, onR
 
       {/* Modificar inline form */}
       {modificarOpen && (
-        <section className="space-y-3 rounded-md border border-border bg-surface p-4">
+        <section ref={formularioDeModificar} className="space-y-3 rounded-md border border-border bg-surface p-4">
           <div>
             <label className="block text-sm font-medium text-fg-muted">
               {t('inmobiliaria.ai.cobranza.planes.modificarForm.descuento')}{' '}

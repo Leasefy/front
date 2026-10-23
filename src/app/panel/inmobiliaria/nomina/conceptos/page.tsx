@@ -32,7 +32,8 @@ export default function ConceptosDeNominaPage() {
           <EncabezadoDePantalla
             seccion="Dinero"
             titulo="Conceptos y cuentas"
-            descripcion="Lo que se devenga, se deduce, aporta el empleador y se provisiona, con su cuenta del PUC: sin cuenta se liquida, pero no se asienta (el asiento no se escribe a medias)."
+            // Revisora r25 (Conceptos, UI): una línea; lo que pasa sin cuenta lo dice el aviso de los que faltan.
+            descripcion="Lo que se devenga, se deduce, aporta el empleador y se provisiona, con su cuenta del PUC."
             ayuda={<PorQueDosMarcas />}
           />
         </div>

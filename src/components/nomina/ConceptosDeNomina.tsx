@@ -50,6 +50,8 @@ import { Cargado, useCargaDeNomina } from './usar-nomina';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+import { sinMayusculasDeEnfasis } from '@/lib/texto/sin-mayusculas-de-enfasis';
+import { SinDatos } from '@/components/estado/SinDatos';
 
 type VistaDeConceptos = 'todos' | 'sin-cuenta' | ClaseDeConcepto;
 
@@ -67,7 +69,8 @@ type VistaDeConceptos = 'todos' | 'sin-cuenta' | ClaseDeConcepto;
 export function PorQueDosMarcas() {
   return (
     <ParaEntenderMas
-      etiqueta="Por qué hay dos marcas"
+      // Revisora r25 (Conceptos, UI): la etiqueta dice de qué marcas habla.
+      etiqueta="Por qué hay dos marcas: salarial y prestacional"
       titulo="Por qué hay DOS marcas y no una"
       descripcion="«Salarial» y «Prestacional» miden cosas distintas, y un concepto puede tener una sin la otra."
       variante="secundario"
@@ -157,6 +160,8 @@ export function ConceptosDeNominaPanel() {
         {(datos) => {
           const sinCuenta = new Set(datos.sinCuenta.map((c) => c.codigo));
           const total = datos.conceptos.length;
+          /** Sin ningún concepto todavía: sólo el vacío con su acción (r25). */
+          const vacio = datos.sembrados === 0 && total === 0;
           const conCuenta = datos.conceptos.filter((c) => !sinCuenta.has(c.codigo)).length;
           const cifras = localeDeLasCifras();
           const clases = (Object.keys(NOMBRE_DE_CLASE) as ClaseDeConcepto[]).filter(
@@ -180,13 +185,24 @@ export function ConceptosDeNominaPanel() {
               />
             ) : null}
 
-            {datos.sembrados === 0 ? (
-              <Avisos
-                avisos={[
-                  'Todavía no hay conceptos. Carga los que Leasefy sugiere, con sus cuentas del Decreto 2650 como sugerencia. Cargarlos dos veces no duplica nada ni pisa lo que hayas editado.',
-                ]}
-                testId="catalogo-vacio"
-              />
+            {/* Revisora r25 (Conceptos #1): el vacío es el vacío de la casa, con su acción, y la nota del
+                Decreto 2650 debajo en gris (antes un aviso ámbar y, debajo, «El catálogo» diciendo lo mismo). */}
+            {vacio ? (
+              <div className="space-y-2" data-testid="catalogo-vacio">
+                <div className="overflow-hidden rounded-lg border border-border bg-surface">
+                  <SinDatos
+                    queSon="conceptos"
+                    titulo="Todavía no hay conceptos"
+                    descripcion="Carga los que Leasefy sugiere: cargarlos dos veces no duplica nada ni pisa lo que hayas editado."
+                    accion={
+                      <Button onClick={() => void sembrar()} disabled={sembrando} data-testid="sembrar-conceptos">
+                        Cargar los conceptos sugeridos
+                      </Button>
+                    }
+                  />
+                </div>
+                <p className="max-w-3xl text-caption text-fg-muted">{sinMayusculasDeEnfasis(datos.avisoDeCuentas)}</p>
+              </div>
             ) : null}
 
             {datos.sinCuenta.length > 0 ? (
@@ -199,10 +215,11 @@ export function ConceptosDeNominaPanel() {
               />
             ) : null}
 
+            {vacio ? null : (
             <section className="space-y-3">
               <TituloDeBloque
                 titulo="El catálogo"
-                explicacion={datos.avisoDeCuentas}
+                explicacion={sinMayusculasDeEnfasis(datos.avisoDeCuentas)}
                 accion={
                   <Button
                     size="sm"
@@ -349,6 +366,7 @@ export function ConceptosDeNominaPanel() {
                 );
               })}
             </section>
+            )}
           </>
           );
         }}

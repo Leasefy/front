@@ -120,7 +120,10 @@ export function Copropiedades() {
       <TarjetaDeInforme
         testId="copropiedades"
         filtrosClassName="flex flex-wrap items-center gap-3"
+        // Revisora r27 (Copropiedades, UI): sin ninguna, la barra no tiene nada que ofrecer (ni pestañas, ni
+        // buscador, ni botón: la acción la lleva el vacío) y no se pinta; antes quedaba una franja blanca.
         filtros={
+          sinNinguna ? undefined : (
           <>
             {inactivas.length > 0 ? (
               <PestanasDeEstado
@@ -163,6 +166,7 @@ export function Copropiedades() {
               </Button>
             )}
           </>
+          )
         }
       >
         {creando ? (
@@ -188,14 +192,17 @@ export function Copropiedades() {
         ) : (
           <div className={cn(cargando && 'opacity-60')} aria-busy={cargando || undefined}>
             <Table className="max-md:block">
-              <TableHeader className="max-md:hidden">
-                <TableRow>
-                  <TableHead>Copropiedad</TableHead>
-                  <TableHead>NIT</TableHead>
-                  <TableHead>Dirección</TableHead>
-                  <TableHead numeric>Inmuebles</TableHead>
-                </TableRow>
-              </TableHeader>
+              {/* Sin filas (el vacío o el fallo), sólo el vacío: los nombres de columna sobre nada no dicen nada. */}
+              {error || pageItems.length === 0 ? null : (
+                <TableHeader className="max-md:hidden">
+                  <TableRow>
+                    <TableHead>Copropiedad</TableHead>
+                    <TableHead>NIT</TableHead>
+                    <TableHead>Dirección</TableHead>
+                    <TableHead numeric>Inmuebles</TableHead>
+                  </TableRow>
+                </TableHeader>
+              )}
               <TableBodyAnimado className="max-md:block">
                 {error ? (
                   <TableRow key="fallo" className="hover:bg-transparent max-md:block">

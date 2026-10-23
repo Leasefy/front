@@ -346,16 +346,7 @@ export function Recaudo() {
             <CaretRight className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {/* 22-10: dos salidas (las demás viven en el riel de Pagos), sin flechas. */}
-          {/* 🔴 Juan (15-10-2026): «¿dónde se ven los recibos de caja que se generaron?». */}
-          <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/recibos">{tr("Ver los recibos")}</Link>
-          </Button>
-          <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/dispersiones/lotes">{tr("Lotes al banco")}</Link>
-          </Button>
-        </div>
+        {/* «Ver los recibos» y «Lotes al banco» van en «Otros recaudos» del encabezado (ronda 30). */}
       </div>
 
       {/* ── Cargando → falló → vacío → cifras, en ese orden ───────────────
@@ -444,8 +435,8 @@ export function Recaudo() {
                         <span className="font-mono tabular-nums text-fg">
                           {(((resumen.deudaDelMesCop - resumen.pendienteCop) / resumen.deudaDelMesCop) * 100).toLocaleString(en ? 'en-US' : 'es-CO', { maximumFractionDigits: 1 })} %
                         </span>{' '}
-                        {tr('de los')} <span className="font-mono tabular-nums text-fg">{plata(resumen.deudaDelMesCop)}</span>{' '}
-                        {tr('que se deben en')} {nombreDelMes(month, locale)} {tr('ya entró')}
+                        {/* Ronda 30: sin repetir la plata de «Se debe», que está en su celda al lado. */}
+                        {tr('de lo que se debe en')} {nombreDelMes(month, locale)} {tr('ya entró')}
                       </p>
                       {/* 22-10 (revisión: «la cuenta no cierra»): lo que llegó incluye pagos de
                           otros meses; se dice qué parte es de las cuotas del mes. */}

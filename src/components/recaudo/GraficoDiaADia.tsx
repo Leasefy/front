@@ -32,7 +32,7 @@ import { formatCurrency } from '@/lib/format';
 import { abreviarCop } from './GraficoDeRecaudo';
 
 const COLOR = {
-  esteMes: '#1A40FF',
+  esteMes: '#307E57', // lo que llegó, en el verde de «Llegó» (ronda 30)
   mesAnterior: '#6E6A63',
   eje: '#6E6A63',
   grilla: '#E5E2DC',

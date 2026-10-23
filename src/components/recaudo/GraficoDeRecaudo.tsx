@@ -36,8 +36,10 @@ import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 const COLOR = {
   seDebe: '#C9C5BE',
-  recaudado: '#1A40FF',
-  dispersado: '#307E57',
+  /* Ronda 30 (revisora r27): un color por cosa en toda la pantalla —«Llegó» verde como su
+     barra, «Girado» en tinta neutra (antes Llegó azul aquí y verde allá, y el verde era Girado). */
+  recaudado: '#307E57',
+  dispersado: '#3A3833',
   eje: '#6E6A63',
   grilla: '#E5E2DC',
 } as const;

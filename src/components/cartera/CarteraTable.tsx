@@ -546,8 +546,9 @@ function FilaDeCartera({
       </TableCell>
 
       {/* Saldo: el pendiente manda; el abono va debajo sólo si lo hubo. */}
-      {/* Ronda 12 (390): sin intereses, «Debe» es igual al Total: en el celular sólo el Total. */}
-      <TableCell className={cn('align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left', interesPendiente(item) === 0 && item.paidAmount === 0 && 'max-md:hidden')} data-rotulo={t('cartera.tabla.debe')}>
+      {/* Ronda 30 (revisora r27, 390): la tarjeta lleva mes, estado y Total; «Debe» e «Intereses» van
+          dentro del Total en una línea gris (antes cinco renglones de datos por tarjeta). */}
+      <TableCell className="align-middle text-right max-md:hidden" data-rotulo={t('cartera.tabla.debe')}>
         <div className="whitespace-nowrap">
           <div className="font-mono font-medium tabular-nums text-fg">
             {formatCurrency(item.pendingAmount)}
@@ -561,16 +562,30 @@ function FilaDeCartera({
       </TableCell>
 
       {/* Intereses: aparte del capital. Nunca un $0 mudo. */}
-      <TableCell className="align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:text-left" data-rotulo={t(CLAVE_DE_MORA.columnaIntereses)} data-testid="cartera-intereses">
+      <TableCell className="align-middle text-right max-md:hidden" data-rotulo={t(CLAVE_DE_MORA.columnaIntereses)} data-testid="cartera-intereses">
         <InteresDeLaFila item={item} formato={formato} />
       </TableCell>
 
       {/* Total: capital + interés, lo que hay que pagar hoy por esta cuota. */}
       <TableCell className="align-middle text-right max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-3 max-md:p-0 max-md:pr-20 max-md:text-left" data-rotulo={t(CLAVE_DE_MORA.columnaTotal)} data-testid="cartera-total">
-        <div className="whitespace-nowrap font-mono font-medium tabular-nums text-fg">
-          {interesDe(item)
-            ? formatCurrency(totalConInteres(item, item.pendingAmount))
-            : formatCurrency(item.pendingAmount)}
+        <div>
+          <div className="whitespace-nowrap font-mono font-medium tabular-nums text-fg">
+            {interesDe(item)
+              ? formatCurrency(totalConInteres(item, item.pendingAmount))
+              : formatCurrency(item.pendingAmount)}
+          </div>
+          {interesPendiente(item) > 0 || item.paidAmount > 0 ? (
+            <div className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-subtle md:hidden" data-testid="cartera-total-detalle">
+              {[
+                interesPendiente(item) > 0
+                  ? t(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesPendiente(item)) })
+                  : null,
+                item.paidAmount > 0 ? t('cartera.tabla.abonado', { monto: formatCurrency(item.paidAmount) }) : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </div>
+          ) : null}
         </div>
       </TableCell>
 

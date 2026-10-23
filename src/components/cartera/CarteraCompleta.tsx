@@ -398,10 +398,12 @@ export function CarteraCompleta() {
     setVista('deudas')
   }
 
+  /* Ronda 30 (revisora r27): el conteo en las tres pestañas, y «En siniestro» sólo con casos
+     (o si es la que se está viendo). */
   const segmentos: SegmentedOption<Vista>[] = [
-    { value: 'deudas', label: 'Por deuda' },
-    { value: 'propietarios', label: 'Por propietario' },
-    ...(siniestros
+    { value: 'deudas', label: `Por deuda · ${deudas.length.toLocaleString('es-CO')}` },
+    { value: 'propietarios', label: `Por propietario · ${propietarios.length.toLocaleString('es-CO')}` },
+    ...(siniestros && (siniestros.cantidad > 0 || vista === 'siniestros')
       ? [
           {
             value: 'siniestros' as const,
@@ -443,7 +445,7 @@ export function CarteraCompleta() {
           data-testid="resumen-de-cartera"
           // 15-10: con centavos la cifra no cabía; cada ficha la achica a su ancho (`cifra-que-cabe`).
           style={estiloDeLaFranja([
-            ...(['POR_VENCER', 'VENCIDA_EN_PLAZO', 'CARTERA'] as const).map((c) => plataDeLaFranja(montoDelCajon(c).monto)),
+            plataDeLaFranja(montoDelCajon('CARTERA').monto),
             ...(siniestros ? [plataDeLaFranja(siniestros.totalCop)] : []),
             ...(castigada ? [plataDeLaFranja(castigada.totalCop)] : []),
           ])}
@@ -545,6 +547,38 @@ export function CarteraCompleta() {
                   </span>
                 ) : null}
               </button>
+              {/* Ronda 30 (revisora r27): lo que NO es cartera, en la misma línea gris —cada monto filtra
+                  la tabla, como antes las dos celdas grandes—. */}
+              {(['POR_VENCER', 'VENCIDA_EN_PLAZO'] as const).some((c) => montoDelCajon(c).monto > 0) ? (
+                <p className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-body-sm text-fg-muted" data-testid="lo-que-no-es-cartera">
+                  <span>{tr('De esa deuda,')}</span>
+                  {(['POR_VENCER', 'VENCIDA_EN_PLAZO'] as const)
+                    .filter((c) => montoDelCajon(c).monto > 0)
+                    .map((cual, i, lista) => (
+                      <span key={cual} className="inline-flex flex-wrap items-baseline gap-x-1.5">
+                        {i > 0 ? <span>{tr('y')}</span> : null}
+                        <button
+                          type="button"
+                          onClick={() => elegirCajon(cual)}
+                          aria-pressed={cajon === cual}
+                          data-testid={`resumen-${cual.toLowerCase()}`}
+                          className="rounded-sm text-left hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        >
+                          <span
+                            className={cn(
+                              'font-mono tabular-nums text-fg',
+                              cajon === cual && 'underline decoration-dotted decoration-1 underline-offset-[0.2em]',
+                            )}
+                          >
+                            {plataDeLaFranja(montoDelCajon(cual).monto)}
+                          </span>{' '}
+                          {cual === 'POR_VENCER' ? tr('todavía no vence') : tr('venció dentro del plazo del contrato')}
+                          {i === lista.length - 1 ? '.' : ''}
+                        </button>
+                      </span>
+                    ))}
+                </p>
+              ) : null}
               </div>
             </div>
 
@@ -553,36 +587,11 @@ export function CarteraCompleta() {
           {/* La leyenda: lo que NO es cartera (por vencer, vencido en plazo) y qué parte
               de la cartera ya no se persigue igual (siniestro, castigada). */}
           <div
-            className="grid grid-cols-1 gap-px border-t border-border bg-border sm:grid-cols-2"
+            className="grid grid-cols-1 gap-px border-t border-border bg-border empty:hidden sm:grid-cols-2 [&>*:only-child]:col-span-full"
             data-testid="leyenda-de-la-cartera"
           >
-            {(['POR_VENCER', 'VENCIDA_EN_PLAZO'] as const).map((cual) => {
-              const suyo = montoDelCajon(cual)
-              const activo = cajon === cual
-              return (
-                <button
-                  key={cual}
-                  type="button"
-                  onClick={() => elegirCajon(cual)}
-                  aria-pressed={activo}
-                  data-testid={`resumen-${cual.toLowerCase()}`}
-                  className="ficha-con-cifra flex flex-col justify-start relative isolate bg-surface px-5 py-3.5 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-6"
-                >
-                  {activo ? (
-                    <MotionIndicator layoutId={`${marca}-cajon`} className="inset-0 -z-10 bg-surface-muted" />
-                  ) : null}
-                  <span className="flex items-center gap-1.5 text-caption text-fg-muted">
-                    <span className={cn('h-2 w-2 shrink-0 rounded-full', cual === 'POR_VENCER' ? 'bg-sand-300 dark:bg-neutral-600' : 'bg-warning-500')} />
-                    {nombreDelCajon(cual)}
-                  </span>
-                  <span className={cn('cifra-que-cabe mt-1 block font-mono text-[17px] tabular-nums', TONO[cual])}>
-                    {plataDeLaFranja(suyo.monto)}
-                  </span>
-                  <span className="mt-0.5 block text-caption text-fg-muted">{queSignificaElCajon(cual)}</span>
-                </button>
-              )
-            })}
-
+            {/* Ronda 30 (revisora r27, «dos focos»): «Por vencer» y «Vencido en plazo» ya no son celdas
+                grandes bajo la cifra: van en la línea gris de la deuda total, arriba. */}
             {/* Revisora r24 (Cartera #2): con siniestro y castigada en cero, UNA línea a todo el
                 ancho en vez de dos celdas con «—» (siguen las dos, con su testid y su salida: son
                 parte de la cuenta del total). */}

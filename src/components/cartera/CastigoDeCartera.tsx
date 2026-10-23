@@ -300,7 +300,7 @@ export function CastigoDeCartera() {
                 queSon="castigos de cartera"
                 icono={Scales}
                 titulo="No hay cartera castigada"
-                descripcion="Castigar es dejar de perseguir una deuda incobrable. Lo aprueban dos personas: el administrador y el contador."
+                descripcion="Cuando una deuda ya no se pueda cobrar, propón castigarla: la aprueban dos personas, el administrador y el contador."
                 accion={
                   puedeMover ? (
                     <Button size="sm" hideArrow onClick={() => setProponiendo(true)} data-testid="abrir-proponer-castigo">
@@ -376,7 +376,7 @@ export function CastigoDeCartera() {
                           queSon="castigos de cartera"
                           icono={Scales}
                           titulo="No hay cartera castigada"
-                          descripcion="Castigar es dejar de perseguir una deuda incobrable. Lo aprueban dos personas: el administrador y el contador."
+                          descripcion="Cuando una deuda ya no se pueda cobrar, propón castigarla: la aprueban dos personas, el administrador y el contador."
                         />
                       </TableCell>
                     </TableRow>

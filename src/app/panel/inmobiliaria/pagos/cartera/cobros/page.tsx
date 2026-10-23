@@ -15,6 +15,7 @@ import {
   Plus,
   CaretLeft,
   CaretRight,
+  CaretDown,
 } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -22,6 +23,7 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { Button } from '@/components/ui';
+import { DropdownList, DropdownListContent, DropdownListItem, DropdownListTrigger } from '@/components/ui/dropdown-menu';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -529,37 +531,45 @@ function CobrosContent() {
               B-09/N-28 (QA-PAGOS-95 r2): el engranaje de «Configurar
               recordatorios» salió; los recordatorios viven en Cobranza ›
               Recordatorios (J-12) y de aquí sólo se va allá. */}
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href={RUTA_DE_LOS_RECORDATORIOS} data-testid="ir-a-recordatorios">
-              <BellRinging className="w-4 h-4" />
-              <span>Recordatorios</span>
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cartera/reglas-de-mora">
-              <Scales className="w-4 h-4" />
-              <span>Reglas de mora</span>
-            </Link>
-          </Button>
-          {/* Emitir el documento de cobro del mes que se está viendo. Es
-              secundario a propósito: lo principal de esta plata es el recibo
-              de caja, que no necesita ningún cobro para recibir. */}
-          {/* QA-PAGOS-95 (H-04): generar es `cobros:create`, como el recibo; al
-              de sólo lectura se le ofrecía prendido y el back respondía 403. */}
-          <span className="inline-flex" title={puedeHacerRecibo ? undefined : MOTIVO_SIN_PERMISO_DE_RECIBO}>
-            <Button
-              variant="outline"
-              size="sm"
-              hideArrow
-              disabled={!puedeHacerRecibo}
-              onClick={() => setIsGenerarOpen(true)}
-              data-testid="abrir-generar-cobros"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Generar los cobros de {mesEnLaFrase}</span>
-              <span className="sm:hidden">Generar cobros</span>
-            </Button>
-          </span>
+          {/* Ronda 30 (revisora r27): UNA acción azul a la vista —«Hacer recibo de caja»— y las otras
+              tres en «Más» (a 390 eran cuatro botones apilados antes de la cifra). Mismo orden:
+              Recordatorios → Reglas de mora → Generar los cobros. */}
+          <DropdownList>
+            <DropdownListTrigger asChild>
+              <Button variant="outline" size="sm" hideArrow data-testid="mas-acciones-de-cobros">
+                <span>{tr('Más')}</span>
+                <CaretDown className="h-3.5 w-3.5" aria-hidden="true" />
+              </Button>
+            </DropdownListTrigger>
+            <DropdownListContent align="end">
+              <DropdownListItem asChild>
+                <Link href={RUTA_DE_LOS_RECORDATORIOS} data-testid="ir-a-recordatorios">
+                  <BellRinging className="w-4 h-4" />
+                  <span>Recordatorios</span>
+                </Link>
+              </DropdownListItem>
+              <DropdownListItem asChild>
+                <Link href="/panel/inmobiliaria/pagos/cartera/reglas-de-mora">
+                  <Scales className="w-4 h-4" />
+                  <span>Reglas de mora</span>
+                </Link>
+              </DropdownListItem>
+              {/* Emitir el documento de cobro del mes que se está viendo. Es
+                  secundario a propósito: lo principal de esta plata es el recibo
+                  de caja, que no necesita ningún cobro para recibir.
+                  QA-PAGOS-95 (H-04): generar es `cobros:create`, como el recibo; sin
+                  el permiso queda a la vista y apagado, con el porqué. */}
+              <DropdownListItem
+                title={puedeHacerRecibo ? undefined : MOTIVO_SIN_PERMISO_DE_RECIBO}
+                onSelect={() => setIsGenerarOpen(true)}
+                disabled={!puedeHacerRecibo}
+                data-testid="abrir-generar-cobros"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Generar los cobros de {mesEnLaFrase}</span>
+              </DropdownListItem>
+            </DropdownListContent>
+          </DropdownList>
           {/* Sin `cobros:create` queda a la vista y deshabilitado, con el
               porqué (C6): esconderlo se lee como «falta la función». */}
           <span

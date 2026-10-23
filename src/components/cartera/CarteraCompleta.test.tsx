@@ -224,7 +224,10 @@ const $ = (sel: string) => {
 }
 const todos = (sel: string) => Array.from(host.querySelectorAll<HTMLElement>(sel))
 const boton = (texto: string) => {
-  const b = todos('button').find((x) => (x.textContent ?? '').trim() === texto)
+  // Ronda 30: las pestañas llevan su conteo («Por deuda · 12»); se buscan por su nombre.
+  const b =
+    todos('button').find((x) => (x.textContent ?? '').trim() === texto) ??
+    todos('button').find((x) => /^.+ · [\d.]+$/.test((x.textContent ?? '').trim()) && (x.textContent ?? '').trim().startsWith(`${texto} · `))
   if (!b) throw new Error(`No hay botón «${texto}»`)
   return b
 }
@@ -282,7 +285,9 @@ describe('CarteraCompleta', () => {
     montar()
     const franja = $('[data-testid="resumen-de-cartera"]')
     const cifras = Array.from(franja.querySelectorAll('.cifra-que-cabe')).map((p) => p.textContent ?? '')
-    expect(cifras.length).toBeGreaterThanOrEqual(4)
+    // Ronda 30: «Por vencer» y «Vencido en plazo» van en la línea gris (ya no son fichas); quedan la
+    // cartera y las fichas de siniestro y castigada.
+    expect(cifras.length).toBeGreaterThanOrEqual(2)
     const largo = Math.max(...cifras.map((c) => Array.from(c).length))
     expect(franja.style.getPropertyValue('--largo-de-la-cifra')).toBe(String(largo))
     // Revisora r25 (Cartera #1): la deuda total ya no es una ficha con su cifra: es UNA línea gris
@@ -302,10 +307,11 @@ describe('CarteraCompleta', () => {
     )
     const porVencer = $('[data-testid="resumen-por_vencer"]').textContent ?? ''
     expect(porVencer).toContain(formatCurrency(2_000_000))
-    expect(porVencer).toContain('Todavía no vence. Es deuda, no cartera.')
+    // Ronda 30 (revisora r27): en la línea gris de la deuda total, no en una celda grande.
+    expect(porVencer).toContain('todavía no vence')
     const enPlazo = $('[data-testid="resumen-vencida_en_plazo"]').textContent ?? ''
     expect(enPlazo).toContain(formatCurrency(750_000))
-    expect(enPlazo).toContain('el plazo del contrato sigue corriendo')
+    expect(enPlazo).toContain('venció dentro del plazo del contrato')
     // 🔴 La cartera es SÓLO lo que pasó el plazo: no los 8,9 millones. Y el
     // siniestro va ADENTRO, dicho aparte (bug A).
     const cartera = $('[data-testid="resumen-cartera"]').textContent ?? ''

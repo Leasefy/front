@@ -20,7 +20,7 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, FloppyDisk } from '@phosphor-icons/react'
+import { FloppyDisk } from '@phosphor-icons/react'
 import { Card, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import {
@@ -276,14 +276,13 @@ export function AcuerdoGeneralForm({
       <div>
         <Link
           href={VOLVER}
-          className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg"
+          className="inline-flex items-center text-body-sm text-fg-muted hover:text-fg"
         >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          Volver a Acuerdos de pago
+          Acuerdos de pago
         </Link>
         <EncabezadoDePantalla
           className="mt-3"
-          seccion="Cobranza"
+          seccion="Cobranza · Acuerdos"
           titulo={titulo}
           descripcion="Una regla que el agente cierra sin preguntarte. Nunca puede ofrecer más que los límites que ya configuraste."
         />

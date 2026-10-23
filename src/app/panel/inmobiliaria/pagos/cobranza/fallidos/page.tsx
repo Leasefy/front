@@ -43,6 +43,7 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { XCircle } from '@phosphor-icons/react'
 
 /**
@@ -63,10 +64,20 @@ function PagosFallidos() {
   const deCobri = useLinksDeCobriQueNoSePagaron()
   const enLaBandeja = useCobrosEnLaBandeja()
   const [abierto, setAbierto] = useState<WorkItem | null>(null)
+  const [fuente, setFuente] = useState<'cola' | 'cobri'>('cola')
 
   const fallidos = useMemo(() => items.filter(esPagoFallido), [items])
   const total = fallidos.length
   const todo = total + deCobri.total
+  /*
+   * Revisora r27: UNA tarjeta para la pregunta «qué cobros no entraron». La cifra adentro y, si hay de las
+   * dos fuentes, pestañas «En la cola del agente · Enlaces sin pagar» (antes dos listas apiladas y la cifra
+   * suelta). Con una sola fuente, sin pestañas: se ve la que tiene.
+   */
+  const hayCola = total > 0
+  const hayCobri = deCobri.items.length > 0
+  const ambas = hayCola && hayCobri
+  const vista: 'cola' | 'cobri' = ambas ? fuente : hayCobri && !hayCola ? 'cobri' : 'cola'
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -81,47 +92,72 @@ function PagosFallidos() {
         }
       />
 
-      {/* LA RESPUESTA: cuántos fallaron, partidos entre la cola del agente y los enlaces de Cobri. */}
-      {!isLoading && !deCobri.cargando && !error && todo > 0 ? (
-        <CifraHeroe
-          data-testid="fallidos-total"
-          rotulo="Pagos fallidos"
-          cifra={todo.toLocaleString('es-CO')}
-          contexto={todo === 1 ? 'cobro por recuperar' : 'cobros por recuperar'}
-          total={todo}
-          tramos={[
-            { clave: 'cola', etiqueta: 'En la cola del agente', monto: total, tono: 'aviso', cifra: total.toLocaleString('es-CO'), siempre: deCobri.total > 0, 'data-testid': 'fallidos-tramo-cola' },
-            { clave: 'cobri', etiqueta: 'Enlaces de pago sin pagar', monto: deCobri.total, tono: 'neutro', cifra: deCobri.total.toLocaleString('es-CO'), siempre: total > 0, 'data-testid': 'fallidos-tramo-cobri' },
-          ]}
-        />
-      ) : null}
+      {/* El fallo de los enlaces de Cobri (su lista dice qué pasó y deja reintentar), aparte de la tarjeta. */}
+      {deCobri.error ? <LinksFallidosDeCobri lectura={deCobri} esperanEnLaBandeja={enLaBandeja.porCuota} /> : null}
 
-      {/* COBRI-13 (Nico 18-10): las acciones masivas de verdad, sobre los enlaces de Cobri que se marcan. */}
-      <LinksFallidosDeCobri lectura={deCobri} esperanEnLaBandeja={enLaBandeja.porCuota} />
-
-      {/* Cada estado entra con su fundido. Con enlaces de Cobri arriba, la cola
-          vacía no dice «Sin pagos fallidos» (COBRI-7). */}
-      <CrossFade swapKey={isLoading ? 'cargando' : error ? 'fallo' : total === 0 ? (deCobri.items.length > 0 ? 'nada' : 'vacio') : 'tabla'}>
+      {/* Cada estado entra con su fundido. */}
+      <CrossFade swapKey={isLoading ? 'cargando' : error ? 'fallo' : todo === 0 ? 'vacio' : 'tarjeta'}>
       {isLoading ? (
         <Card className="overflow-hidden" aria-busy="true">
           <EsqueletoTabla columnas={5} filas={4} />
         </Card>
       ) : error ? (
         <FalloDeCarga error={errorCrudo ?? error} queEs="los pagos fallidos" onReintentar={refetch} />
-      ) : total === 0 && deCobri.items.length > 0 ? null : total === 0 ? (
-        <Card className="flex flex-col items-center gap-2 px-6 py-14 text-center" data-testid="fallidos-vacio">
-          <XCircle className="h-8 w-8 text-fg-subtle" weight="duotone" aria-hidden="true" />
-          <p className="text-body font-medium text-fg">Sin pagos fallidos</p>
-          <p className="max-w-md text-body-sm text-fg-muted">
-            Cuando una transacción se abandone, un banco la rechace, un enlace de pago venza o la pasarela falle, aparece aquí con lo que conviene hacer.
-          </p>
-        </Card>
+      ) : todo === 0 ? (
+        deCobri.cargando ? null : (
+          <Card className="flex flex-col items-center gap-2 px-6 py-14 text-center" data-testid="fallidos-vacio">
+            <XCircle className="h-8 w-8 text-fg-subtle" weight="duotone" aria-hidden="true" />
+            <p className="text-body font-medium text-fg">Sin pagos fallidos</p>
+            <p className="max-w-md text-body-sm text-fg-muted">
+              Cuando una transacción se abandone, un banco la rechace, un enlace de pago venza o la pasarela falle, aparece aquí con lo que conviene hacer.
+            </p>
+          </Card>
+        )
       ) : (
-        <PagoFallidoTabla
-          items={fallidos}
-          onAction={(item, action, body) => runAction(item, action, body)}
-          onOpen={setAbierto}
-        />
+        <Card className="overflow-hidden p-0" data-testid="fallidos-tarjeta">
+          {/* LA RESPUESTA: cuántos fallaron, partidos entre la cola del agente y los enlaces de Cobri. */}
+          <CifraHeroe
+            className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
+            data-testid="fallidos-total"
+            tamano="mediana"
+            rotulo="Pagos fallidos"
+            cifra={todo.toLocaleString('es-CO')}
+            contexto={todo === 1 ? 'cobro por recuperar' : 'cobros por recuperar'}
+            total={ambas ? todo : undefined}
+            tramos={
+              ambas
+                ? [
+                    { clave: 'cola', etiqueta: 'En la cola del agente', monto: total, tono: 'aviso', cifra: total.toLocaleString('es-CO'), 'data-testid': 'fallidos-tramo-cola' },
+                    { clave: 'cobri', etiqueta: 'Enlaces de pago sin pagar', monto: deCobri.total, tono: 'neutro', cifra: deCobri.total.toLocaleString('es-CO'), 'data-testid': 'fallidos-tramo-cobri' },
+                  ]
+                : undefined
+            }
+          />
+          {ambas ? (
+            <div className="border-b border-border px-4 py-3">
+              <PestanasDeEstado<'cola' | 'cobri'>
+                pestanas={[
+                  { valor: 'cola', etiqueta: 'En la cola del agente', cuantos: total, fija: true, testid: 'fallidos-fuente-cola' },
+                  { valor: 'cobri', etiqueta: 'Enlaces sin pagar', cuantos: deCobri.total, fija: true, testid: 'fallidos-fuente-cobri' },
+                ]}
+                valor={vista}
+                onCambio={setFuente}
+                etiqueta="Ver los pagos fallidos de la cola del agente o los enlaces de Cobri"
+              />
+            </div>
+          ) : null}
+          {vista === 'cobri' ? (
+            // COBRI-13 (Nico 18-10): las acciones masivas de verdad, sobre los enlaces de Cobri que se marcan.
+            <LinksFallidosDeCobri lectura={deCobri} esperanEnLaBandeja={enLaBandeja.porCuota} enmarcada={false} />
+          ) : (
+            <PagoFallidoTabla
+              items={fallidos}
+              onAction={(item, action, body) => runAction(item, action, body)}
+              onOpen={setAbierto}
+              enmarcada={false}
+            />
+          )}
+        </Card>
       )}
       </CrossFade>
 

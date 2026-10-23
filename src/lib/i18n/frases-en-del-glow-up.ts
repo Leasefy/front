@@ -700,4 +700,9 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "De 16 a 89 días": "16 to 89 days",
   "Siniestro o jurídico": "Claim or legal",
   "Ilocalizables": "Unreachable",
+  // cobranza/fallidos: los enlaces de Cobri con buscador (ronda 28)
+  "Buscar inquilino, inmueble o contrato": "Search tenant, property or lease",
+  "Buscar en los enlaces sin pagar": "Search unpaid payment links",
+  "Ningún enlace con esa búsqueda": "No links match that search",
+  "Borra la búsqueda para ver los demás.": "Clear the search to see the rest.",
 }

@@ -172,6 +172,8 @@ export interface PagoFallidoTablaProps {
   ) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   /** Abre el detalle del caso (un cajón). */
   onOpen?: (item: WorkItem) => void
+  /** `false` = va dentro de otra tarjeta (la de Pagos fallidos, con la cifra arriba). */
+  enmarcada?: boolean
 }
 
 // ── La acción de un clic ──────────────────────────────────────────────────────
@@ -302,9 +304,11 @@ function FilaFallido({
 
 // ── Componente ─────────────────────────────────────────────────────────────────
 
-export function PagoFallidoTabla({ items, onAction, onOpen }: PagoFallidoTablaProps) {
+export function PagoFallidoTabla({ items, onAction, onOpen, enmarcada = true }: PagoFallidoTablaProps) {
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [busqueda, setBusqueda] = useState('')
+  /** Dentro de la tarjeta de la página (revisora r27): sin marco propio. */
+  const Marco = enmarcada ? Card : 'div'
 
   const conteo = useMemo(() => {
     const c: Record<QueHacer, number> = { reenviar: 0, otro: 0, esperar: 0 }
@@ -333,7 +337,7 @@ export function PagoFallidoTabla({ items, onAction, onOpen }: PagoFallidoTablaPr
   } = useTablePagination(visibles, { resetKey: `${filtro}|${busqueda}` })
 
   return (
-    <Card className="overflow-hidden" data-testid="fallidos-tabla">
+    <Marco className="overflow-hidden" data-testid="fallidos-tabla">
       {/* Las pestañas (lo que conviene hacer, con su conteo) y el buscador, DENTRO de la tarjeta. */}
       <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between">
         <PestanasDeEstado<Filtro>
@@ -403,7 +407,7 @@ export function PagoFallidoTabla({ items, onAction, onOpen }: PagoFallidoTablaPr
           />
         </div>
       )}
-    </Card>
+    </Marco>
   )
 }
 

@@ -20,10 +20,12 @@
  */
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { ArrowsClockwise, Bank, ClipboardText, Headset, LinkSimple, XCircle } from '@phosphor-icons/react'
+import { ArrowsClockwise, Bank, ClipboardText, Headset, LinkSimple, MagnifyingGlass, XCircle } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
-import { Button, Card } from '@/components/ui'
+import { Button, Card, Input } from '@/components/ui'
+import { TablePagination } from '@/components/ui/pagination'
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { confirmar } from '@/components/ui/confirmar'
 import { EstadoDelLink } from '@/components/inmobiliaria/pagos/payu/EstadoDelLink'
 import { formatCurrency, formatDate } from '@/lib/format'
@@ -69,18 +71,36 @@ const BOTONES: Boton[] = [
 export function LinksFallidosDeCobri({
   lectura,
   esperanEnLaBandeja,
+  enmarcada = true,
 }: {
   lectura: LinksQueNoSePagaron
   /** cuotaId → el caso de la Bandeja que espera aprobar su siguiente aviso. */
   esperanEnLaBandeja: ReadonlyMap<string, string>
+  /** `false` = va dentro de la tarjeta de Pagos fallidos, bajo su pestaña (sin marco ni título propio). */
+  enmarcada?: boolean
 }) {
   const tr = useTr()
   const [marcadas, setMarcadas] = useState<Set<string>>(() => new Set())
   const [enVuelo, setEnVuelo] = useState<AccionDeLosFallidos | null>(null)
   const [resultados, setResultados] = useState<Map<string, ResultadoDeUnaCuota>>(() => new Map())
+  const [busqueda, setBusqueda] = useState('')
 
-  const ids = useMemo(() => lectura.items.map((l) => l.cuotaId), [lectura.items])
+  // Revisora r27 (y la regla de Nico: toda tabla con buscador y paginación).
+  const visibles = useMemo(() => {
+    const q = busqueda.trim().toLowerCase()
+    if (!q) return lectura.items
+    return lectura.items.filter((l) =>
+      [l.inquilino, l.inmueble, l.contratoNumero].some((v) => String(v ?? '').toLowerCase().includes(q)),
+    )
+  }, [lectura.items, busqueda])
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(visibles, {
+    resetKey: busqueda,
+  })
+
+  // «Marcar todas» marca las que se ven con la búsqueda, no las escondidas.
+  const ids = useMemo(() => visibles.map((l) => l.cuotaId), [visibles])
   const todas = ids.length > 0 && ids.every((id) => marcadas.has(id))
+  const Marco = enmarcada ? Card : 'div'
 
   if (lectura.cargando && lectura.items.length === 0) return null
   if (lectura.error) {
@@ -140,16 +160,28 @@ export function LinksFallidosDeCobri({
   }
 
   return (
-    <Card className="p-0 overflow-hidden" data-testid="cobri-fallidos">
+    <Marco className="p-0 overflow-hidden" data-testid="cobri-fallidos">
       <div className="space-y-3 border-b border-border px-5 py-4">
         <div className="space-y-1">
-          <h2 className="text-body font-medium text-fg">{tr('Enlaces de pago de Cobri que no se pagaron')}</h2>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          {enmarcada ? <h2 className="text-body font-medium text-fg">{tr('Enlaces de pago de Cobri que no se pagaron')}</h2> : null}
+          <p className="text-body-sm text-fg-muted max-w-2xl">
             {tr('Marca las cuotas y elige qué hacer. Lo que le escribe al inquilino sale por Cobri en el horario de ley y con la Ley 2300 (un contacto al día y un solo canal por semana).')}
           </p>
         </div>
+        <div className="relative w-full md:w-72">
+          <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+          <Input
+            type="search"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder={tr('Buscar inquilino, inmueble o contrato')}
+            aria-label={tr('Buscar en los enlaces sin pagar')}
+            className="pl-9"
+            data-testid="cobri-fallidos-buscar"
+          />
+        </div>
         <div className="flex flex-wrap items-center gap-2" data-testid="acciones-masivas">
-          <label className="mr-2 inline-flex items-center gap-2 text-sm text-fg">
+          <label className="mr-2 inline-flex items-center gap-2 text-body-sm text-fg">
             <input
               type="checkbox"
               className="h-4 w-4 accent-[hsl(var(--primary))]"
@@ -175,8 +207,14 @@ export function LinksFallidosDeCobri({
           ))}
         </div>
       </div>
+      {visibles.length === 0 ? (
+        <div className="px-6 py-12 text-center" data-testid="cobri-fallidos-sin-resultados">
+          <p className="text-body-sm font-medium text-fg">{tr('Ningún enlace con esa búsqueda')}</p>
+          <p className="mt-1 text-caption text-fg-muted">{tr('Borra la búsqueda para ver los demás.')}</p>
+        </div>
+      ) : null}
       <ul className="divide-y divide-border-faint">
-        {lectura.items.map((l) => {
+        {pageItems.map((l) => {
           const r = resultados.get(l.cuotaId)
           return (
             <li key={l.cuotaId} className="space-y-2 px-5 py-4" data-testid={`cobri-fallido-${l.cuotaId}`}>
@@ -199,12 +237,12 @@ export function LinksFallidosDeCobri({
                     {(l.seguimiento || l.aCobranzaDesde) && (
                       <span className="mt-1 flex flex-wrap gap-1.5">
                         {l.seguimiento && (
-                          <span className="inline-flex items-center rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning" data-testid={`seguimiento-${l.cuotaId}`}>
+                          <span className="inline-flex items-center rounded-full bg-warning-soft px-2 py-0.5 text-caption font-medium text-warning" data-testid={`seguimiento-${l.cuotaId}`}>
                             {tr('En seguimiento')} · {l.seguimiento.por}
                           </span>
                         )}
                         {l.aCobranzaDesde && (
-                          <span className="inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary">
+                          <span className="inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-caption font-medium text-primary">
                             {tr('Va a cobranza')}
                           </span>
                         )}
@@ -227,6 +265,18 @@ export function LinksFallidosDeCobri({
           )
         })}
       </ul>
-    </Card>
+      {shouldPaginate ? (
+        <div className="border-t border-border px-4 py-3">
+          <TablePagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
+      ) : null}
+    </Marco>
   )
 }

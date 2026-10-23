@@ -322,28 +322,34 @@ export function BalanceDePrueba() {
        es el encabezado de su tabla, no otra cosa. Ahora es UNA tarjeta. */
     <TarjetaDeInforme
       testId="informe-balance-de-prueba"
+      /* Ronda 30 (Nico; la revisora r27 pedía menos renglones de controles): período,
+         casilla y descargas en UNA barra (antes las descargas caían a un segundo renglón).
+         El período toma su ancho y no el de `max-w-xl`; la casilla dice lo mismo más corto. */
+      filtrosClassName="flex flex-wrap items-start gap-x-4 gap-y-3"
       filtros={
         <>
-          <div className="w-full max-w-xl">
+          <div className="min-w-0 max-w-full">
             <RangoDeFechas atajos desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
           </div>
-          <div className="flex items-center gap-2 pb-2">
+          <div className="flex min-h-9 items-center gap-2">
             <Checkbox
               id="balance-solo-con-movimiento"
               checked={soloConMovimiento}
               onCheckedChange={(v) => setSoloConMovimiento(v === true)}
             />
             <Label htmlFor="balance-solo-con-movimiento" className="font-normal">
-              Sólo cuentas con movimiento o saldo
+              Sólo con movimiento o saldo
             </Label>
           </div>
           {/* CB-C-13 (QA-FACT-CONTA-95 r2): lo que el contador firma se baja. */}
-          <DescargarElInforme
-            informe="Balance de prueba"
-            periodo={rango}
-            tablas={() => (balance ? tablasDelBalanceDePrueba(balance) : [])}
-            disabled={!balance || vacio}
-          />
+          <div className="flex min-h-9 items-center md:ml-auto">
+            <DescargarElInforme
+              informe="Balance de prueba"
+              periodo={rango}
+              tablas={() => (balance ? tablasDelBalanceDePrueba(balance) : [])}
+              disabled={!balance || vacio}
+            />
+          </div>
         </>
       }
     >

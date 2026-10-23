@@ -18,7 +18,9 @@ import type { LibroMayor as Mayor } from '@/lib/api/estados-financieros.service'
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { api, fechas } = vi.hoisted(() => ({
+const { api, fechas, celular } = vi.hoisted(() => ({
+  /** Ronda 30 (Nico): a 390 el mayor pinta tarjetas (`useIsMobile`); por defecto, escritorio. */
+  celular: { valor: false },
   api: { mayor: vi.fn(), terceros: vi.fn(), pyg: vi.fn(), balanceGeneral: vi.fn() },
   /** Se fija «hoy» para que el recorte de meses no dependa del día del CI. */
   fechas: { hoy: () => '2026-09-17' },
@@ -36,6 +38,7 @@ vi.mock('@/lib/contabilidad/fechas', async () => {
   );
   return { ...actual, hoy: fechas.hoy };
 });
+vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => celular.valor }));
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ formatCurrency: (n: number) => `$${n.toLocaleString('es-CO')}` }),
 }));
@@ -74,6 +77,7 @@ let root: Root | null = null;
 const q = (t: string) => document.querySelector(`[data-testid="${t}"]`) as HTMLElement | null;
 
 beforeEach(() => {
+  celular.valor = false;
   api.mayor.mockReset().mockResolvedValue(mayor());
 });
 
@@ -108,14 +112,74 @@ describe('<LibroMayor>', () => {
     expect(fila).toContain('$1.200.000');
   });
 
-  it('a 390 la tarjeta trae también el detalle mes a mes, sólo con los meses con movimiento (Nico, 23-10)', async () => {
+  // Ronda 30 (Nico, 23-10-2026): a 390 cada cuenta es UNA tarjeta (código, nombre, saldo final y
+  // movimiento del último mes) y el mes a mes se abre en el cajón de la casa. Antes el mes a mes
+  // iba dentro de la tarjeta; la prueba de ese detalle ahora abre el cajón primero.
+  it('a 390 cada cuenta es una tarjeta con su saldo y el movimiento del último mes (Ronda 30, Nico)', async () => {
+    celular.valor = true;
     await pintar();
+    expect(q('tarjetas-del-mayor')).not.toBeNull();
+    const tarjeta = q('mayor-5135')!;
+    expect(tarjeta.tagName).toBe('BUTTON');
+    expect(tarjeta.textContent).toContain('5135');
+    expect(tarjeta.textContent).toContain('Servicios');
+    expect(tarjeta.textContent).toContain('1.200.000');
+    // sept 2026 es el último mes que llegó: la cuenta débito subió $ 700.000.
+    expect(q('mayor-5135-movimiento')!.textContent).toBe('+$ 700.000');
+    expect(q('tarjetas-del-mayor')!.textContent).toContain('Saldo final y movimiento de sept 2026');
+    // Sin tabla en el celular, y sin el mes a mes suelto en la tarjeta.
+    expect(q('libro-mayor')!.querySelector('table')).toBeNull();
+    expect(q('mayor-5135-mes-a-mes')).toBeNull();
+  });
+
+  it('a 390 la tarjeta abre el cajón con el mes a mes (Ronda 30, Nico)', async () => {
+    celular.valor = true;
+    await pintar();
+    await act(async () => {
+      q('mayor-5135')!.click();
+      await Promise.resolve();
+    });
+    const cajon = q('cajon-del-mayor')!;
+    expect(cajon).not.toBeNull();
+    expect(cajon.textContent).toContain('5135 · Servicios');
+    expect(q('cajon-del-mayor-totales')!.textContent).toContain('Saldo final');
     const mesAMes = q('mayor-5135-mes-a-mes');
     expect(mesAMes).not.toBeNull();
     const meses = [...mesAMes!.querySelectorAll('li')].map((li) => li.textContent ?? '');
     expect(meses).toHaveLength(2);
+    expect(meses[0]).toContain('ago 2026');
     expect(meses[0]).toContain('500.000');
     expect(meses[1]).toContain('700.000');
+  });
+
+  it('una cuenta crédito sin movimiento en el último mes lo dice (Ronda 30, Nico)', async () => {
+    celular.valor = true;
+    api.mayor.mockResolvedValue(
+      mayor({
+        filas: [
+          {
+            codigo: '2805',
+            nombre: 'Anticipos recibidos',
+            naturaleza: 'CREDITO',
+            saldoAnteriorCop: 300_000,
+            debitosCop: 0,
+            creditosCop: 100_000,
+            saldoFinalCop: 400_000,
+            porMes: [{ mes: '2026-08', debitosCop: 0, creditosCop: 100_000, saldoCop: 400_000 }],
+          },
+        ],
+      }),
+    );
+    await pintar();
+    expect(q('mayor-2805-movimiento')!.textContent).toBe('sin movimiento');
+  });
+
+  it('desde md sigue la tabla, y las descargas van en el pie con «Volver a calcular» (Ronda 30, Nico)', async () => {
+    await pintar();
+    expect(q('tarjetas-del-mayor')).toBeNull();
+    expect(q('mayor-5135')!.tagName).toBe('TR');
+    const pie = q('recargar-mayor')!.parentElement!;
+    expect(pie.querySelector('[data-testid="informe-descargas"]')).not.toBeNull();
   });
 
   it('🔴 no dibuja los meses que todavía no llegaron', async () => {

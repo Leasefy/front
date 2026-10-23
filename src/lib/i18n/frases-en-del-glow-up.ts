@@ -453,4 +453,11 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Aparte:": "Separately:",
   "Lo que le falta a cada publicación para salir bien en los portales.": "What each listing is missing to show up well on the portals.",
   "fotos revisadas este mes": "photos reviewed this month",
+  // app/panel/inmobiliaria/pagos/cobranza/inbox/page.tsx (zona dinero, subpantallas)
+  'Bandeja de conversaciones': 'Conversation inbox',
+  'Las respuestas de tus inquilinos, agrupadas por lo que piden. Lo que el agente no entendió o pide a una persona lo atiendes tú.': 'Your tenants\' replies, grouped by what they ask for. What the agent didn\'t understand or hands to a person is yours to handle.',
+  'Sin leer': 'Unread',
+  'de 1 conversación': 'of 1 conversation',
+  'de {n} conversaciones': 'of {n} conversations',
+  'Conversaciones de voz y su resultado, con transcripción y calidad.': 'Voice conversations and their outcome, with transcript and quality.',
 }

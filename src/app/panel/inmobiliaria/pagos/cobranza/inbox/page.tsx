@@ -40,7 +40,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { useI18n } from '@/lib/i18n'
 import { formatRelativeTime } from '@/lib/format'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { AnimatedNumber, Chip, Collapse, CrossFade, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
+import { Collapse, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import {
   InboxItemCard,
@@ -61,6 +61,19 @@ import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useLocaleDelPanel, useTr } from '@/lib/i18n/use-tr'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe, type TonoDelTramo } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
+
+/** Lo que pide a una persona va en ámbar; la disputa, en rojo. */
+const TONO_DEL_GRUPO: Record<InboxGrupo, TonoDelTramo> = {
+  nuevas: 'neutro',
+  promesas: 'neutro',
+  pagos: 'neutro',
+  acuerdos: 'neutro',
+  disputas: 'critico',
+  sin_entender: 'aviso',
+  requiere_humano: 'aviso',
+}
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const LLAMADAS_HREF = `${BASE}/llamadas`
@@ -112,8 +125,6 @@ function InboxContent() {
   const responderAVivo = useUltimoPresente(responderA)
   const tomarControlDeVivo = useUltimoPresente(tomarControlDe)
 
-  /** El número tal cual se escribía antes: sin separador de miles. */
-  const enteroTalCual = (n: number) => String(Math.round(n))
 
   const recibido = (iso: string | null | undefined): string | null =>
     iso ? formatRelativeTime(iso, locale) : null
@@ -198,101 +209,60 @@ function InboxContent() {
     }
   }
 
-  // Resumen del agente — honesto: con datos, narra el desglose; sin datos, encuadra
-  // qué va a aparecer aquí sin inventar cifras.
-  const resumen = useMemo(() => {
-    if (total === 0) {
-      return tr('Cuando lleguen respuestas de tus inquilinos, te las resumiré aquí agrupadas por intención: promesas, pagos reportados, solicitudes de acuerdo y las que necesitan tu atención.')
-    }
-    const partes: string[] = []
-    for (const g of INBOX_GRUPOS) {
-      const n = counts[g]
-      if (n > 0) {
-        const meta = INBOX_GRUPO_META[g]
-        partes.push(`${n} ${tr(n === 1 ? meta.singular : meta.label).toLowerCase()}`)
-      }
-    }
-    const desglose = partes.length > 0 ? ` ${partes.join(', ')}.` : ''
-    if (en) {
-      return `I have ${total} active ${total === 1 ? 'conversation' : 'conversations'}:${desglose}${totalUnread > 0 ? ` ${totalUnread} unread.` : ''}`
-    }
-    const sinLeer =
-      totalUnread > 0
-        ? ` ${totalUnread} sin leer.`
-        : ''
-    return `Tengo ${total} conversación${total === 1 ? '' : 'es'} activa${
-      total === 1 ? '' : 's'
-    }:${desglose}${sinLeer}`
-  }, [total, counts, totalUnread, tr, en])
-
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <EncabezadoDePantalla
         seccion="Cobranza"
-        titulo={tr("Inbox de conversaciones")}
-        descripcion={tr("Las respuestas de tus inquilinos, agrupadas por intención. Cada conversación muestra el último mensaje y la acción sugerida. Los mensajes sin entender y los que requieren humano nunca se responden solos: los atiendes tú.")}
+        titulo={tr("Bandeja de conversaciones")}
+        descripcion={tr("Las respuestas de tus inquilinos, agrupadas por lo que piden. Lo que el agente no entendió o pide a una persona lo atiendes tú.")}
       />
 
-      {/* Resumen del agente */}
-      <section
-        role="status"
-        className="rounded-lg border border-border bg-surface-muted p-4 flex items-start gap-3"
-        data-testid="inbox-resumen"
-      >
-        <Tray
-          className="w-5 h-5 shrink-0 text-fg-muted mt-0.5"
-          weight="duotone"
-          aria-hidden="true"
+      {/* LA RESPUESTA: cuántas no has leído, y de qué son (cada grupo filtra).
+          Antes eran tres cosas que decían lo mismo: un párrafo que narraba los
+          conteos, un selector y unas fichas con los mismos números. */}
+      {total > 0 ? (
+        <CifraHeroe
+          data-testid="inbox-resumen"
+          rotulo={tr("Sin leer")}
+          cifra={totalUnread.toLocaleString(en ? 'en-US' : 'es-CO')}
+          contexto={total === 1 ? tr("de 1 conversación") : tr("de {n} conversaciones", { n: total })}
+          total={total}
+          tramos={INBOX_GRUPOS.map((g) => ({
+            clave: g,
+            etiqueta: tr(INBOX_GRUPO_META[g].label),
+            monto: counts[g],
+            tono: TONO_DEL_GRUPO[g],
+            cifra: (
+              <button
+                type="button"
+                onClick={() => setFiltro(g)}
+                className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {counts[g].toLocaleString(en ? 'en-US' : 'es-CO')}
+              </button>
+            ),
+          }))}
         />
-        <p className="text-sm text-fg leading-relaxed min-w-0">{resumen}</p>
-      </section>
+      ) : null}
 
-      {/* Filtro de grupo (excluyente) + total */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        {/* QA-IA-B (04-10-2026): a 390 px el control medía 709 px y corría la
-            página de lado (scrollWidth 733). Se desplaza dentro de su riel. */}
-        {/* QA 12-10-2026: dentro del riel cada opción va en UNA línea («Nuevas
-            respuestas» se partía en dos y se cortaba). */}
-        <div className="max-w-full overflow-x-auto [&_button]:whitespace-nowrap" data-testid="inbox-filtro-riel">
-          <SegmentedControl<GrupoFiltro>
-            options={FILTRO_OPCIONES.map((o) => ({ ...o, label: tr(o.label) }))}
-            value={filtro}
-            onChange={setFiltro}
-            aria-label={tr("Filtrar conversaciones por grupo")}
-          />
-        </div>
-        <span className="text-caption text-fg-muted tabular-nums shrink-0">
-          <AnimatedNumber value={visibles.length} format={enteroTalCual} /> {tr("de")} {total}
-        </span>
-      </div>
-
-      {/* Chips de conteo por grupo — agrupaciones siempre visibles */}
-      <div
-        className="flex flex-wrap gap-2"
-        role="group"
-        aria-label={tr("Agrupaciones del inbox")}
-      >
-        {INBOX_GRUPOS.map((g) => {
-          const meta = INBOX_GRUPO_META[g]
-          const GrupoIcon = meta.icon
-          const active = filtro === g
-          return (
-            <Chip
-              key={g}
-              size="sm"
-              selected={active}
-              onClick={() => setFiltro(active ? 'todos' : g)}
-              icon={<GrupoIcon weight="duotone" aria-hidden="true" />}
-              data-testid={`inbox-chip-${g}`}
-            >
-              {tr(meta.label)}
-              <span className="ml-1 tabular-nums text-fg-muted">
-                <AnimatedNumber value={counts[g]} format={enteroTalCual} />
-              </span>
-            </Chip>
-          )
-        })}
-      </div>
+      {/* QA-IA-B (04-10-2026): a 390 px el filtro corría la página de lado: las
+          pestañas se desplazan dentro de su riel. */}
+      {total > 0 ? (
+        <PestanasDeEstado<GrupoFiltro>
+          data-testid="inbox-filtro-riel"
+          pestanas={FILTRO_OPCIONES.map((o) => ({
+            valor: o.value,
+            etiqueta: tr(o.label),
+            cuantos: o.value === 'todos' ? total : counts[o.value],
+            fija: o.value === 'todos',
+            tono: o.value !== 'todos' && TONO_DEL_GRUPO[o.value] !== 'neutro' ? ('aviso' as const) : undefined,
+            testid: o.value === 'todos' ? undefined : `inbox-chip-${o.value}`,
+          }))}
+          valor={filtro}
+          onCambio={setFiltro}
+          etiqueta={tr("Filtrar conversaciones por grupo")}
+        />
+      ) : null}
 
       {/* Lista de conversaciones (datos reales del endpoint). FAIL-SOFT: si el
           backend no está desplegado, `visibles` queda vacío → <EmptyState>. */}
@@ -305,7 +275,7 @@ function InboxContent() {
           <Stagger
             className="space-y-3"
             role="list"
-            aria-label={tr("Inbox de conversaciones")}
+            aria-label={tr("Bandeja de conversaciones")}
           >
             {pageItems.map((it) => {
               const open = openThreadId === it.key
@@ -381,9 +351,9 @@ function InboxContent() {
             aria-hidden="true"
           />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-fg">{tr("Llamadas")}</p>
+            <p className="text-body-sm font-medium text-fg">{tr("Llamadas")}</p>
             <p className="text-caption text-fg-muted leading-relaxed mt-0.5">
-              {tr("Conversaciones de voz y su resultado, con transcripción y QA.")}
+              {tr("Conversaciones de voz y su resultado, con transcripción y calidad.")}
             </p>
           </div>
         </Link>
@@ -397,7 +367,7 @@ function InboxContent() {
             aria-hidden="true"
           />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-fg">{tr("Deudores")}</p>
+            <p className="text-body-sm font-medium text-fg">{tr("Deudores")}</p>
             <p className="text-caption text-fg-muted leading-relaxed mt-0.5">
               {tr("El hilo completo de cada inquilino, con sus mensajes y seguimiento.")}
             </p>

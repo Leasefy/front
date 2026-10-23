@@ -248,7 +248,7 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
     get.mockResolvedValue(pagina([link({})]));
     await montar(<LinksDePago mes="2026-10" />);
     expect(fila('c1')?.textContent).toContain('$\u00a01.500.000');
-    expect(fila('c1')?.textContent).toContain('5 de oct de 2026');
+    expect(fila('c1')?.textContent).toContain('5 oct 2026');
     expect(fila('c1')?.textContent).toContain('Contrato #43');
   });
 

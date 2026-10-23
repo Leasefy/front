@@ -24,7 +24,8 @@ import { TablePagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatDate, plataPareja } from '@/lib/format';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { useLinksDePago } from '@/lib/hooks/use-payu';
 import { useI18n } from '@/lib/i18n';
 import { mesTopeDeLosLinks } from '@/lib/payu/links-de-pago';
@@ -233,6 +234,11 @@ interface FilasProps {
 function TablaDeLinks({ items, esperanEnLaBandeja }: FilasProps) {
   const { t, locale } = useI18n();
   const localeCorto = locale === 'en' ? 'en' : 'es';
+  // Revisora r24 (Agente de pagos #5): centavos parejos en toda la página y la pagada en «—», no «$ 0».
+  const plataDeLaPagina = plataPareja(items.map((x) => x.montoCop), localeCorto);
+  const plata = (cop: number) => (cop === 0 ? '—' : plataDeLaPagina(cop));
+  // Revisora r24 (Agente de pagos #6): «1 oct 2026».
+  const vence = (iso: string) => (localeCorto === 'es' ? fechaCorta(iso) : formatDate(iso, localeCorto));
   return (
     <Table data-testid="tabla-de-links">
       <TableHeader>
@@ -250,10 +256,10 @@ function TablaDeLinks({ items, esperanEnLaBandeja }: FilasProps) {
               <Cuota link={l} />
             </TableCell>
             <TableCell className="whitespace-nowrap align-top font-mono tabular-nums">
-              {formatDate(l.fechaDeVencimiento, localeCorto)}
+              {vence(l.fechaDeVencimiento)}
             </TableCell>
             <TableCell className="whitespace-nowrap text-right align-top font-mono tabular-nums">
-              {formatCurrency(l.montoCop, localeCorto)}
+              {plata(l.montoCop)}
             </TableCell>
             <TableCell className="align-top">
               <EstadoDelLink link={l} esperaEnLaBandeja={esperanEnLaBandeja?.get(l.cuotaId)} />
@@ -269,6 +275,11 @@ function TablaDeLinks({ items, esperanEnLaBandeja }: FilasProps) {
 function ListaDeLinks({ items, esperanEnLaBandeja }: FilasProps) {
   const { t, locale } = useI18n();
   const localeCorto = locale === 'en' ? 'en' : 'es';
+  // Revisora r24 (Agente de pagos #5): centavos parejos en toda la página y la pagada en «—», no «$ 0».
+  const plataDeLaPagina = plataPareja(items.map((x) => x.montoCop), localeCorto);
+  const plata = (cop: number) => (cop === 0 ? '—' : plataDeLaPagina(cop));
+  // Revisora r24 (Agente de pagos #6): «1 oct 2026».
+  const vence = (iso: string) => (localeCorto === 'es' ? fechaCorta(iso) : formatDate(iso, localeCorto));
   return (
     <ul className="divide-y divide-border-faint" data-testid="lista-de-links">
       {items.map((l) => (
@@ -276,12 +287,12 @@ function ListaDeLinks({ items, esperanEnLaBandeja }: FilasProps) {
           <div className="flex items-start justify-between gap-3">
             <Cuota link={l} />
             <p className="whitespace-nowrap font-mono tabular-nums text-fg">
-              {formatCurrency(l.montoCop, localeCorto)}
+              {plata(l.montoCop)}
             </p>
           </div>
           <p className="text-caption text-fg-muted">
             {t('inmobiliaria.cobros.linksDePago.columnas.vence')}{' '}
-            <span className="font-mono tabular-nums">{formatDate(l.fechaDeVencimiento, localeCorto)}</span>
+            <span className="font-mono tabular-nums">{vence(l.fechaDeVencimiento)}</span>
           </p>
           <EstadoDelLink link={l} esperaEnLaBandeja={esperanEnLaBandeja?.get(l.cuotaId)} />
         </li>

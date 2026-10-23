@@ -37,6 +37,7 @@ import {
 import { CobriEsteMes } from '@/components/inmobiliaria/pagos/agente/CobriEsteMes'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { Button } from '@/components/ui/button'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { pasaGateDeFila } from '@/lib/nav/agency-nav-filter'
@@ -152,6 +153,7 @@ export function AgenteDePagos({ lectura }: { lectura: AgenteDePagosLectura }) {
   const estado = estadoDelEquipo(gobierno)
   const pasos = pasosParaQueTrabaje(gobierno)
   const algoSinVerificar = pasos.some((p) => p.estado === 'sin-verificar')
+  const todoListo = pasos.length > 0 && pasos.every((p) => p.estado === 'hecho')
 
   return (
     <div className="space-y-8 p-6 lg:p-8">
@@ -161,12 +163,12 @@ export function AgenteDePagos({ lectura }: { lectura: AgenteDePagosLectura }) {
         seccion="Agentes IA"
         titulo="Agente de pagos"
         junto={<PildoraDelEstado estado={estado} />}
-        descripcion="Seis agentes que cobran por link de pago, recuperan los pagos que fallan y revisan cada giro antes de aprobarlo."
+        descripcion="Cobran por enlace de pago, recuperan los pagos que fallan y revisan cada giro."
         ayuda={
           <ParaEntenderMas etiqueta="Qué hace este equipo" titulo="Agente de pagos">
             <p className="text-sm leading-relaxed text-fg-muted">
-              Seis agentes que trabajan el cobro por link de pago de punta a punta: revisan cada cuota antes
-              de que venza, le mandan el link al inquilino, recuperan los pagos que fallan, revisan cada giro
+              Seis agentes que trabajan el cobro por enlace de pago de punta a punta: revisan cada cuota antes
+              de que venza, le mandan el enlace al inquilino, recuperan los pagos que fallan, revisan cada giro
               al propietario antes de aprobarlo, te avisan y cada mañana te dejan el resumen. La plata se
               sigue operando en Pagos: este equipo automatiza partes de ese trabajo.
             </p>
@@ -174,65 +176,118 @@ export function AgenteDePagos({ lectura }: { lectura: AgenteDePagosLectura }) {
         }
       />
 
-      <section aria-labelledby="que-necesita" className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="que-necesita" className="text-subtitle text-fg">
-            Qué necesita para trabajar
-          </h2>
-          {algoSinVerificar && (
-            <Button variant="secondary" size="sm" hideArrow onClick={() => void reintentar()}>
+      {/* Revisora r24 (Agente de pagos #3): «Sin verificar» UNA vez (la píldora); con la consulta caída, una
+          línea con su salida, y con todo prendido, una línea. La lista queda adentro, plegada. */}
+      <section aria-labelledby="que-necesita" className="space-y-3">
+        <h2 id="que-necesita" className="sr-only">
+          Qué necesita para trabajar
+        </h2>
+        {algoSinVerificar ? (
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-fg-muted" data-testid="equipo-sin-verificar">
+            No pudimos ver si el equipo está prendido.
+            <Button variant="outline" size="sm" hideArrow onClick={() => void reintentar()}>
               <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
               Volver a consultar
             </Button>
-          )}
-        </div>
-        <ol className="divide-y divide-border-faint rounded-lg border border-border bg-surface">
-          {pasos.map((paso, i) => {
-            const aspecto = PASO[paso.estado]
-            const Icono = aspecto.icon
-            return (
-              <li
-                key={paso.id}
-                className="flex gap-4 p-5"
-                data-testid={`paso-${paso.id}`}
-                data-estado={paso.estado}
-              >
-                <Icono
-                  className={cn(
-                    'mt-0.5 h-5 w-5 flex-shrink-0',
-                    aspecto.clase,
-                    aspecto.gira && 'animate-spin motion-reduce:animate-none',
-                  )}
-                  weight={paso.estado === 'hecho' ? 'fill' : 'regular'}
-                  aria-hidden="true"
-                />
-                <div className="min-w-0 space-y-1">
-                  <p className="text-body-sm font-medium text-fg">
-                    <span className="mr-2 font-mono text-caption text-fg-subtle tabular-nums">{i + 1}</span>
-                    {paso.titulo}
-                    <span className={cn('ml-2 text-caption font-normal', aspecto.clase)}>· {aspecto.palabra}</span>
-                  </p>
-                  <p className="text-body-sm text-fg-muted">{paso.detalle}</p>
-                </div>
-              </li>
-            )
-          })}
-        </ol>
+          </p>
+        ) : todoListo ? (
+          <p className="flex items-center gap-2 text-body-sm text-fg-muted" data-testid="equipo-listo">
+            <CheckCircle className="h-4 w-4 shrink-0 text-success" weight="fill" aria-hidden="true" />
+            Prendido en Leasefy y para tu inmobiliaria.
+          </p>
+        ) : null}
+        {algoSinVerificar || todoListo ? (
+          <MasDetalles etiqueta="Qué necesita para trabajar" etiquetaAbierto="Ocultar" montadoSiempre>
+            <ol className="divide-y divide-border-faint rounded-lg border border-border bg-surface">
+              {pasos.map((paso, i) => {
+                const aspecto = PASO[paso.estado]
+                const Icono = aspecto.icon
+                return (
+                  <li
+                    key={paso.id}
+                    className="flex gap-4 p-5"
+                    data-testid={`paso-${paso.id}`}
+                    data-estado={paso.estado}
+                  >
+                    <Icono
+                      className={cn(
+                        'mt-0.5 h-5 w-5 flex-shrink-0',
+                        aspecto.clase,
+                        aspecto.gira && 'animate-spin motion-reduce:animate-none',
+                      )}
+                      weight={paso.estado === 'hecho' ? 'fill' : 'regular'}
+                      aria-hidden="true"
+                    />
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-body-sm font-medium text-fg">
+                        <span className="mr-2 font-mono text-caption text-fg-subtle tabular-nums">{i + 1}</span>
+                        {paso.titulo}
+                        <span className={cn('ml-2 text-caption font-normal', aspecto.clase)}>· {aspecto.palabra}</span>
+                      </p>
+                      <p className="text-body-sm text-fg-muted">{paso.detalle}</p>
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
+          </MasDetalles>
+        ) : (
+          <ol className="divide-y divide-border-faint rounded-lg border border-border bg-surface">
+            {pasos.map((paso, i) => {
+              const aspecto = PASO[paso.estado]
+              const Icono = aspecto.icon
+              return (
+                <li
+                  key={paso.id}
+                  className="flex gap-4 p-5"
+                  data-testid={`paso-${paso.id}`}
+                  data-estado={paso.estado}
+                >
+                  <Icono
+                    className={cn(
+                      'mt-0.5 h-5 w-5 flex-shrink-0',
+                      aspecto.clase,
+                      aspecto.gira && 'animate-spin motion-reduce:animate-none',
+                    )}
+                    weight={paso.estado === 'hecho' ? 'fill' : 'regular'}
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-body-sm font-medium text-fg">
+                      <span className="mr-2 font-mono text-caption text-fg-subtle tabular-nums">{i + 1}</span>
+                      {paso.titulo}
+                      <span className={cn('ml-2 text-caption font-normal', aspecto.clase)}>· {aspecto.palabra}</span>
+                    </p>
+                    <p className="text-body-sm text-fg-muted">{paso.detalle}</p>
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+        )}
       </section>
 
       {/* Cobri (08-10, de cambios-nico-10): lo que el equipo ya hace de verdad,
           con el resumen del back. */}
       <CobriEsteMes />
 
-      <section aria-labelledby="el-equipo" className="space-y-4">
-        <h2 id="el-equipo" className="text-subtitle text-fg">
+      {/* Revisora r24 (Agente de pagos #2): «El equipo» es de consulta (≈900 px a 1440, ≈2.300 a 390): plegado. */}
+      <section aria-labelledby="el-equipo">
+        <h2 id="el-equipo" className="sr-only">
           El equipo
         </h2>
-        <ul className="divide-y divide-border-faint rounded-lg border border-border bg-surface">
-          {EQUIPO_DE_PAGOS.map((persona) => (
-            <TarjetaDelEspecialista key={persona.id} persona={persona} />
-          ))}
-        </ul>
+        <MasDetalles
+          etiqueta={`Los ${EQUIPO_DE_PAGOS.length} agentes del equipo`}
+          etiquetaAbierto="Ocultar el equipo"
+          montadoSiempre
+          data-testid="el-equipo-plegado"
+        >
+          <ul className="divide-y divide-border-faint rounded-lg border border-border bg-surface">
+            {EQUIPO_DE_PAGOS.map((persona) => (
+              <TarjetaDelEspecialista key={persona.id} persona={persona} />
+            ))}
+          </ul>
+        </MasDetalles>
       </section>
     </div>
   )

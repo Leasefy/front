@@ -181,7 +181,7 @@ export function ConsignacionCard({
           <p className="font-medium text-fg truncate text-sm">
             {consignacion.propertyTitle}
           </p>
-          <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">
+          <p className="text-caption text-fg-muted dark:text-fg-subtle truncate">
             {consignacion.propertyZone} ·{' '}
             {consignacion.listingType === 'sale'
               ? textoDeLaComision(consignacion)
@@ -194,7 +194,7 @@ export function ConsignacionCard({
         </div>
 
         {/* Status badge */}
-        <span className={cn('px-2 py-1 rounded-full text-xs font-medium shrink-0', availability.bg, availability.text)}>
+        <span className={cn('px-2 py-1 rounded-full text-caption font-medium shrink-0', availability.bg, availability.text)}>
           {availability.label}
         </span>
 

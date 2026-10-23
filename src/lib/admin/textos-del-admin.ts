@@ -12,6 +12,7 @@
  */
 
 /** El nombre de un código, o la palabra de su clase si no tiene (nunca el código). */
+import { fechaCorta, diaEnColombia } from '@/lib/fechas/fecha-de-la-casa'
 export function nombreDe(
   mapa: Readonly<Record<string, string>>,
   codigo: string | null | undefined,
@@ -774,7 +775,12 @@ export function detalleDelChequeo(detalle: string | null | undefined): string {
   if ((m = t.match(/^(\d+) tables in agent schema \(min (\d+)\)$/))) return `${Number(m[1]).toLocaleString('es-CO')} tablas (mínimo ${m[2]})`
   if ((m = t.match(/^(\d+) calls in last 24h$/))) return `${Number(m[1]).toLocaleString('es-CO')} en las últimas 24 horas`
   if ((m = t.match(/^(\d+) LLM metrics rows in last 24h$/))) return `${Number(m[1]).toLocaleString('es-CO')} registros en las últimas 24 horas`
-  if ((m = t.match(/^last cadence_contacts run: (.+)$/))) return `Última corrida: ${m[1].slice(0, 10)}`
+  if ((m = t.match(/^last cadence_contacts run: (.+)$/))) {
+    // Revisora r27 (Salud): la fecha como en el resto del admin («17 oct 2026», antes «2026-10-17»).
+    return Number.isNaN(new Date(m[1]).getTime())
+      ? `Última corrida: ${m[1].slice(0, 10)}`
+      : `Última corrida: ${fechaCorta(diaEnColombia(m[1]))}`
+  }
   if (/has never run/.test(t)) return 'Nunca ha corrido'
   if ((m = t.match(/^timeout after (\d+)ms$/))) return `No respondió en ${Number(m[1]) / 1000} s`
   if ((m = t.match(/^([1-5]\d\d)$/))) return `Respondió con error ${m[1]}`

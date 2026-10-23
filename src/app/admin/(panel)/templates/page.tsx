@@ -155,6 +155,7 @@ export default function PlantillasPage() {
         }
       />
       <DataTable
+        errorTitulo="No pudimos cargar los avisos"
         columns={columnas}
         rows={data}
         getKey={(t) => t.code}

@@ -105,6 +105,7 @@ export function DataTable<T>({
   cifraDelCelular,
   emptyAction,
   onReintentar,
+  errorTitulo,
   barra,
   buscadorPropio,
   acciones,
@@ -153,6 +154,8 @@ export function DataTable<T>({
   /** Lo que se puede hacer desde el vacío (p. ej. «Nueva…»). */
   emptyAction?: React.ReactNode
   onReintentar?: () => void
+  /** El título del fallo, dicho con lo que no cargó («No pudimos cargar las metas»; revisora r27). */
+  errorTitulo?: string
   /** Filtros propios de la pantalla (desplegables), en la misma barra. */
   barra?: React.ReactNode
   /**
@@ -348,7 +351,7 @@ export function DataTable<T>({
 
   let cuerpo: React.ReactNode
   if (isLoading && !rows) cuerpo = <LoadingBlock suelto={false} />
-  else if (error) cuerpo = <ErrorBlock error={error} onReintentar={onReintentar} suelto={false} />
+  else if (error) cuerpo = <ErrorBlock error={error} onReintentar={onReintentar} titulo={errorTitulo} suelto={false} />
   else if (filasVisibles.length === 0)
     cuerpo =
       hayFiltros && hayDatosSinFiltro ? (

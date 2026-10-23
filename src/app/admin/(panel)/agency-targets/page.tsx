@@ -217,6 +217,7 @@ export default function MetasPage() {
       ) : null}
 
       <DataTable
+        errorTitulo="No pudimos cargar las metas"
         columns={columnas}
         rows={data?.meses}
         getKey={(m) => m.mes}

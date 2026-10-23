@@ -44,11 +44,14 @@ function tonoDeLaEspera(dias: number) {
   return 'neutral' as const
 }
 
-/** «5 h», «1 día», «3,2 días». */
+/** «5 horas», «1 día», «6 días». Revisora r27 (VOZ §4): días enteros, sin «6,2 días». */
 function esperaEnPalabras(dias: number): string {
-  if (dias < 1) return `${Math.max(1, Math.round(dias * 24))} h`
-  const redondo = Math.round(dias * 10) / 10
-  return `${redondo.toLocaleString('es-CO')} ${redondo === 1 ? 'día' : 'días'}`
+  if (dias < 1) {
+    const h = Math.max(1, Math.round(dias * 24))
+    return `${h} ${h === 1 ? 'hora' : 'horas'}`
+  }
+  const enteros = Math.floor(dias)
+  return `${enteros} ${enteros === 1 ? 'día' : 'días'}`
 }
 
 /** /admin/approvals — la cola de la ley T-323/2024 (FRONT.md §6.11 · BACK.md §8.10). */
@@ -103,13 +106,18 @@ export default function ApprovalsPage() {
       ),
     },
     {
-      header: 'Esperando',
+      // Revisora r27: UNA columna «Espera» (antes «Esperando 6,2 días» y «Desde 16 oct» decían lo mismo).
+      header: 'Espera',
       orden: (r) => r.created_at,
-      texto: (r) => esperaEnPalabras(diasDe(r)),
+      ordenPrimero: 'desc',
+      texto: (r) => `${esperaEnPalabras(diasDe(r))} · desde ${fmtFecha(r.created_at)}`,
       cell: (r) => (
-        <Pill tone={tonoDeLaEspera(diasDe(r))} dot>
-          {esperaEnPalabras(diasDe(r))}
-        </Pill>
+        <div className="space-y-0.5">
+          <Pill tone={tonoDeLaEspera(diasDe(r))} dot>
+            {esperaEnPalabras(diasDe(r))}
+          </Pill>
+          <div className="font-mono text-caption tabular-nums text-fg-subtle">{fmtFecha(r.created_at)}</div>
+        </div>
       ),
     },
     {
@@ -125,16 +133,6 @@ export default function ApprovalsPage() {
           <span className="whitespace-nowrap font-mono tabular-nums text-fg">{fmtCOP(monto)}</span>
         )
       },
-    },
-    {
-      header: 'Desde',
-      align: 'right',
-      orden: (r) => r.created_at,
-      ordenPrimero: 'desc',
-      texto: (r) => fmtFecha(r.created_at),
-      cell: (r) => (
-        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtFecha(r.created_at)}</span>
-      ),
     },
   ]
 

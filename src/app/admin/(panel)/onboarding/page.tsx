@@ -245,7 +245,7 @@ export default function OnboardingPage() {
         description="Cómo arranca cada inmobiliaria, del asistente a operar. Toca una para ver su ficha."
       />
 
-      {data && data.plataforma === null ? (
+      {data && data.plataforma == null ? (
         <Alert variant="warning" title="No pudimos leer las inmobiliarias de la plataforma">
           Abajo sale lo del asistente y la cobranza por voz, que se lee aparte.
         </Alert>
@@ -293,8 +293,8 @@ export default function OnboardingPage() {
         isLoading={isLoading}
         error={error}
         onReintentar={refetch}
-        emptyTitle={data && data.plataforma === null ? 'No pudimos leer las inmobiliarias de la plataforma' : 'Todavía no hay inmobiliarias'}
-        emptyHint={data && data.plataforma === null ? 'Prueba de nuevo en un momento; lo de arriba se lee aparte.' : 'Cuando una se registre, aparece aquí.'}
+        emptyTitle={data && data.plataforma == null ? 'No pudimos leer las inmobiliarias de la plataforma' : 'Todavía no hay inmobiliarias'}
+        emptyHint={data && data.plataforma == null ? 'Prueba de nuevo en un momento; lo de arriba se lee aparte.' : 'Cuando una se registre, aparece aquí.'}
         id="recorrido"
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar inmobiliaria"

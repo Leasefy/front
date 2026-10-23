@@ -173,6 +173,7 @@ export default function ChatFeedbackPage() {
       ) : null}
 
       <DataTable
+        errorTitulo="No pudimos cargar los pulgares"
         columns={columnas}
         rows={data?.filas}
         getKey={(f) => f.id}

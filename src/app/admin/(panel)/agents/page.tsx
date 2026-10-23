@@ -110,6 +110,7 @@ export default function AgentsPage() {
         description="Las instrucciones de cada agente de voz, editables aquí sin entrar a Vapi."
       />
       <DataTable
+        errorTitulo="No pudimos cargar los agentes de voz"
         columns={columns}
         rows={agents.data}
         getKey={(r) => r.id}

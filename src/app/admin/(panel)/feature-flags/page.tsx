@@ -148,6 +148,7 @@ export default function BanderasPage() {
         </div>
       ) : null}
       <DataTable
+        errorTitulo="No pudimos cargar las banderas"
         columns={columnas}
         rows={data?.inmobiliarias}
         getKey={(f) => f.tenant_id}

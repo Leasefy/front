@@ -164,6 +164,7 @@ export default function PausaDeEmergenciaPage() {
         </div>
       ) : null}
       <DataTable
+        errorTitulo="No pudimos cargar las inmobiliarias"
         columns={columnas}
         rows={data ? filas : undefined}
         getKey={(f) => f.tenant_id}

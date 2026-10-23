@@ -142,6 +142,7 @@ import {
   sumarTotales,
 } from '@/lib/cartera/conceptos'
 import { cn } from '@/lib/utils'
+import { conSigno } from '@/lib/plata/escribir-plata'
 import { useI18n } from '@/lib/i18n'
 import {
   RUTA_DE_REGLAS_DE_MORA,
@@ -173,9 +174,10 @@ function Peso({ valor, className }: { valor: number; className?: string }) {
       </span>
     )
   }
+  // Ronda 26 (revisora r25, #5): el negativo «− $ 1.825.159» (antes «$ -1.825.159»), y sin partirse.
   return (
-    <span className={cn('font-mono tabular-nums', valor < 0 && 'text-fg-muted', className)}>
-      {formatCurrency(valor)}
+    <span className={cn('whitespace-nowrap font-mono tabular-nums', valor < 0 && 'text-fg-muted', className)}>
+      {valor < 0 ? conSigno('−', formatCurrency(Math.abs(valor))) : formatCurrency(valor)}
     </span>
   )
 }
@@ -327,31 +329,17 @@ export function CarteraPorConcepto() {
               relación, y los tres momentos son las PESTAÑAS que filtran la
               tabla — el número ES el filtro. Mismo patrón que «Deuda del mes».
         */}
-        <p
-          className="rounded-lg border border-border bg-surface px-4 py-3 text-sm leading-relaxed text-fg-muted"
-          data-testid="resumen-por-concepto"
-        >
+        {/* Ronda 26 (revisora r25, Cartera por concepto #1): UNA línea, sin caja. Las pestañas de abajo ya son la
+            respuesta (cada momento con su plata); la frase de seis cifras (con intereses, lo pactado, lo abonado)
+            sobraba. Los conteos con separador de miles. */}
+        <p className="text-body-sm text-fg-muted" data-testid="resumen-por-concepto">
           Te deben{' '}
-          <span
-            className="font-mono font-semibold tabular-nums text-fg"
-            data-testid="total-deuda"
-          >
+          <span className="font-mono tabular-nums text-fg" data-testid="total-deuda">
             {formatCurrency(datos?.totales.saldoCop ?? 0)}
           </span>{' '}
-          en {cuotas} {cuotas === 1 ? 'cuota' : 'cuotas'} de{' '}
-          {datos?.inquilinos.length ?? 0}{' '}
+          · {cuotas.toLocaleString('es-CO')} {cuotas === 1 ? 'cuota' : 'cuotas'} de{' '}
+          {(datos?.inquilinos.length ?? 0).toLocaleString('es-CO')}{' '}
           {datos?.inquilinos.length === 1 ? 'inquilino' : 'inquilinos'}
-          {interesTotal > 0 ? (
-            <span data-testid="total-deuda-con-intereses">
-              {' ('}
-              {t(CLAVE_DE_MORA.conIntereses, {
-                monto: formatCurrency((datos?.totales.saldoCop ?? 0) + interesTotal),
-              })}
-              {')'}
-            </span>
-          ) : null}
-          . De lo pactado ({formatCurrency(datos?.totales.facturadoCop ?? 0)}) ya
-          abonaron {formatCurrency(datos?.totales.abonadoCop ?? 0)}.
         </p>
 
         {/*
@@ -367,8 +355,11 @@ export function CarteraPorConcepto() {
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
             <div className="space-y-2">
               <ul className="space-y-1">
+                {/* Ronda 26 (#2): con el enlace al lado, la ruta escrita («Configúralas en Pagos → …») sobra. */}
                 {avisos.map((aviso) => (
-                  <li key={aviso}>{aviso}</li>
+                  <li key={aviso}>
+                    {sinReglasDeMora ? aviso.replace(/\s*Config[úu]ralas en [^.]*\.\s*$/, '') : aviso}
+                  </li>
                 ))}
               </ul>
               {sinReglasDeMora ? (
@@ -503,7 +494,7 @@ export function CarteraPorConcepto() {
                   </TableHead>
                 ))}
                 {haySinDesglose ? (
-                  <TableHead className="whitespace-nowrap text-right">Sin desglose</TableHead>
+                  <TableHead className="min-w-[9rem] whitespace-nowrap text-right">Sin desglose</TableHead>
                 ) : null}
                 <TableHead className="whitespace-nowrap text-right" title={t(CLAVE_DE_MORA.explicacion)}>
                   {t(CLAVE_DE_MORA.columnaMoraLiquidadaHoy)}

@@ -7825,11 +7825,11 @@
             "submitting": "Rechazando...",
             "success": "Carta rechazada correctamente."
           },
-          "pageTitle": "Cartas prejudiciales",
+          "pageTitle": "Cartas",
           "pageSubtitle": "Cartas generadas por IA pendientes de revisión y aprobación",
           "empty": {
-            "title": "Sin cartas generadas",
-            "description": "El agente no ha preparado cartas por aprobar. Para hacer una a mano, abre un deudor en Casos y usa «Generar carta prejurídica»: sale en PDF, con los datos reales, y no se envía."
+            "title": "Todavía no hay cartas",
+            "description": "El agente no ha preparado cartas por revisar. Puedes hacer una a mano: sale en PDF con los datos reales y no se le envía a nadie."
           },
           "columns": {
             "kind": "Tipo",

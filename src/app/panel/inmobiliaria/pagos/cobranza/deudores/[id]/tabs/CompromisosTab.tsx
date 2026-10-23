@@ -79,7 +79,7 @@ const PROVEEDOR_DE_PAGO: Record<string, string> = {
 
 const CARTA_TIPO: Record<string, string> = {
   pre_judicial_letter: 'Carta prejurídica',
-  pre_bureau_notification: 'Notificación a centrales de riesgo',
+  pre_bureau_notification: 'Aviso antes del reporte a centrales',
 }
 
 /** Nunca el slug con guiones: si el mapa no lo conoce, al menos se lee. */

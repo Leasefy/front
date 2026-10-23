@@ -7790,11 +7790,11 @@
             "submitting": "Rejecting...",
             "success": "Letter rejected successfully."
           },
-          "pageTitle": "Pre-judicial letters",
+          "pageTitle": "Letters",
           "pageSubtitle": "AI-generated letters pending review and approval",
           "empty": {
-            "title": "No letters generated",
-            "description": "The agent has no letters waiting for approval. To write one by hand, open a debtor in Cases and use «Generate pre-judicial letter»: it downloads as a PDF with the real data and is not sent."
+            "title": "No letters yet",
+            "description": "The agent hasn't prepared any letters to review. You can write one by hand: it comes out as a PDF with the real data and isn't sent to anyone."
           },
           "columns": {
             "kind": "Type",

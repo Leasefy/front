@@ -15,9 +15,8 @@ import { useEstadoEnLaUrl } from '@/lib/cobranza/use-estado-en-la-url'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Envelope } from '@phosphor-icons/react'
+import { Envelope, MagnifyingGlass } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -26,6 +25,7 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import {
   Button,
   Badge,
+  Input,
   Table,
   TableHeader,
   TableBody,
@@ -50,6 +50,9 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { fechaCorta, diaEnColombia } from '@/lib/fechas/fecha-de-la-casa'
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
+import { DebtorPicker, type PickedDebtor } from '@/components/inmobiliaria/cobranza/DebtorPicker'
+import { GenerarCarta } from '@/components/cobranza-manual/GenerarCarta'
 
 // ── Status badge colours — tokens semánticos del DS (contrato §8) ─────────────
 function statusBadgeVariant(
@@ -81,8 +84,9 @@ const STATUS_OPTIONS: LegalArtifactStatus[] = [
 ]
 
 const KIND_LABELS: Record<LegalArtifactKind, { es: string; en: string }> = {
-  pre_judicial_letter: { es: 'Prejurídica', en: 'Pre-judicial' },
-  pre_bureau_notification: { es: 'Aviso antes del reporte', en: 'Pre-bureau notice' },
+  // Revisora r25 (Cartas, UI): un solo nombre por documento, el mismo de Pendientes.
+  pre_judicial_letter: { es: 'Carta prejurídica', en: 'Pre-judicial letter' },
+  pre_bureau_notification: { es: 'Aviso antes del reporte a centrales', en: 'Notice before the credit bureau report' },
 }
 
 /**
@@ -107,12 +111,86 @@ const STATUS_LABELS: Record<LegalArtifactStatus, { es: string; en: string }> = {
   void: { es: 'Anulada', en: 'Void' },
 }
 
+/**
+ * «Hacer una carta a mano» (revisora r25, Cartas #3): antes el botón sólo
+ * llevaba a la lista de Casos —prometía una acción y entregaba una
+ * navegación—. Ahora se elige el deudor aquí mismo, con el buscador de la casa,
+ * y «Generar carta» abre la MISMA pieza que usa la ficha del deudor
+ * (`GenerarCarta`): sale en PDF con los datos reales y no se le envía a nadie.
+ */
+function CartaAMano({
+  abierto,
+  onOpenChange,
+  onGenerada,
+  isEs,
+}: {
+  abierto: boolean
+  onOpenChange: (abierto: boolean) => void
+  onGenerada: () => void
+  isEs: boolean
+}) {
+  const [deudor, setDeudor] = useState<PickedDebtor | null>(null)
+  const [paraGenerar, setParaGenerar] = useState<PickedDebtor | null>(null)
+  const cerrar = (v: boolean) => {
+    onOpenChange(v)
+    if (!v) setDeudor(null)
+  }
+  return (
+    <>
+      <Cajon abierto={abierto} onOpenChange={cerrar} tamano="sm" data-testid="carta-a-mano-cajon">
+        <CajonCabecera
+          titulo={isEs ? 'Hacer una carta a mano' : 'Write a letter by hand'}
+          descripcion={
+            isEs
+              ? 'Elige a quién va. Sale en PDF con los datos reales y no se le envía a nadie.'
+              : 'Choose who it is for. It comes out as a PDF with the real data and is not sent to anyone.'
+          }
+        />
+        <CajonCuerpo className="space-y-2">
+          <label htmlFor="carta-a-mano-deudor" className="text-body-sm font-medium text-fg">
+            {isEs ? 'Deudor' : 'Debtor'}
+          </label>
+          <DebtorPicker inputId="carta-a-mano-deudor" value={deudor} onChange={setDeudor} />
+        </CajonCuerpo>
+        <CajonPie>
+          <Button variant="outline" hideArrow onClick={() => cerrar(false)}>
+            {isEs ? 'Cancelar' : 'Cancel'}
+          </Button>
+          <Button
+            hideArrow
+            disabled={!deudor}
+            onClick={() => {
+              setParaGenerar(deudor)
+              cerrar(false)
+            }}
+            data-testid="carta-a-mano-generar"
+          >
+            {isEs ? 'Generar carta' : 'Generate letter'}
+          </Button>
+        </CajonPie>
+      </Cajon>
+      {paraGenerar ? (
+        <GenerarCarta
+          abierto
+          onCerrar={() => setParaGenerar(null)}
+          debtorId={paraGenerar.id}
+          debtorName={paraGenerar.fullName}
+          onGenerada={onGenerada}
+        />
+      ) : null}
+    </>
+  )
+}
+
 function CartasContent() {
   const { t, locale } = useI18n()
   const router = useRouter()
   const isEs = locale.startsWith('es')
 
   const [kindFilter, setKindFilter] = useState<LegalArtifactKind | undefined>()
+  const [cartaAMano, setCartaAMano] = useState(false)
+  // Revisora r25 (Cartas #4, 7a): se busca por el deudor o su documento.
+  const [busqueda, setBusqueda] = useState('')
   const [statusFilter, setStatusFilter] = useState<LegalArtifactStatus | undefined>()
   // C8 (r25): abre en «Por revisar» si hay alguna, y el filtro vive en la URL.
   const estadoUrl = useEstadoEnLaUrl<LegalArtifactStatus>(Object.keys(STATUS_LABELS) as LegalArtifactStatus[])
@@ -135,7 +213,16 @@ function CartasContent() {
     [router],
   )
 
-  const artifacts = data?.artifacts ?? []
+  const todas = data?.artifacts ?? []
+  const artifacts = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es')
+    if (!q) return todas
+    return todas.filter(
+      (a) =>
+        (a.debtorName ?? '').toLocaleLowerCase('es').includes(q) ||
+        (a.debtorDocument ?? '').toLocaleLowerCase('es').includes(q),
+    )
+  }, [todas, busqueda])
 
   /**
    * Paginado de presentación. `resetKey` con los filtros: sin eso, filtrar
@@ -149,8 +236,8 @@ function CartasContent() {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(artifacts, { resetKey: `${kindFilter ?? ''}|${statusFilter ?? ''}` })
-  const hasFilters = kindFilter !== undefined || statusFilter !== undefined
+  } = useTablePagination(artifacts, { resetKey: `${kindFilter ?? ''}|${statusFilter ?? ''}|${busqueda}` })
+  const hasFilters = kindFilter !== undefined || statusFilter !== undefined || busqueda.trim() !== ''
 
   // El conteo por estado se sabe cuando la lista viene sin filtro de estado
   // (trae todas). Se guarda por tipo de carta; con un estado elegido, el back
@@ -247,15 +334,14 @@ function CartasContent() {
           title={t('inmobiliaria.ai.cobranza.cartas.empty.title')}
           description={t('inmobiliaria.ai.cobranza.cartas.empty.description')}
         />
-        {/* COBRANZA-MANUAL (04-10-2026): la carta a mano sale desde el deudor. */}
+        {/* COBRANZA-MANUAL (04-10-2026): la carta a mano; se elige el deudor aquí. */}
         <div className="flex justify-center">
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cobranza/deudores" data-testid="cartas-ir-a-casos">
-              Ir a los casos para generar una carta
-            </Link>
+          <Button variant="outline" size="sm" hideArrow onClick={() => setCartaAMano(true)} data-testid="cartas-ir-a-casos">
+            {isEs ? 'Hacer una carta a mano' : 'Write a letter by hand'}
           </Button>
         </div>
         </div>
+        <CartaAMano abierto={cartaAMano} onOpenChange={setCartaAMano} onGenerada={() => void refetch()} isEs={isEs} />
       </div>
       </CrossFade>
     )
@@ -273,18 +359,25 @@ function CartasContent() {
             : 'Review and approve the letters the agent prepared before they go out.'
         }
         acciones={
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cobranza/deudores" data-testid="cartas-ir-a-casos">
-              {isEs ? 'Hacer una carta a mano' : 'Write a letter by hand'}
-            </Link>
+          <Button variant="outline" size="sm" hideArrow onClick={() => setCartaAMano(true)} data-testid="cartas-ir-a-casos">
+            {isEs ? 'Hacer una carta a mano' : 'Write a letter by hand'}
           </Button>
         }
       />
+      <CartaAMano abierto={cartaAMano} onOpenChange={setCartaAMano} onGenerada={() => void refetch()} isEs={isEs} />
 
-      {/* LA RESPUESTA: cuántas esperan tu revisión. */}
+      {/*
+        Contenedor canónico del panel: UNA tarjeta con LA RESPUESTA arriba, las
+        pestañas, la barra de filtros, la tabla y el pie de paginación.
+      */}
+      <Card className="overflow-hidden">
+      {/* C3 (r25): LA RESPUESTA dentro de la tarjeta, encima de las pestañas.
+          Sin tramos: eran los MISMOS conteos de las pestañas, dichos dos veces. */}
       {conteosDelTipo && conteosDelTipo.total > 0 ? (
         <CifraHeroe
+          className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
           data-testid="cartas-por-revisar"
+          tamano="mediana"
           rotulo={isEs ? 'Por revisar' : 'To review'}
           cifra={(conteosDelTipo.porEstado.pending_human_review ?? 0).toLocaleString(locale)}
           contexto={
@@ -292,29 +385,10 @@ function CartasContent() {
               ? `de ${conteosDelTipo.total.toLocaleString(locale)} ${conteosDelTipo.total === 1 ? 'carta' : 'cartas'}`
               : `of ${conteosDelTipo.total.toLocaleString(locale)} letters`
           }
-          total={conteosDelTipo.total}
-          tramos={STATUS_OPTIONS.map((st) => ({
-            clave: st,
-            etiqueta: STATUS_LABELS[st][isEs ? 'es' : 'en'],
-            monto: conteosDelTipo.porEstado[st] ?? 0,
-            tono:
-              st === 'pending_human_review'
-                ? ('aviso' as const)
-                : st === 'sent'
-                  ? ('exito' as const)
-                  : ('neutro' as const),
-            cifra: (conteosDelTipo.porEstado[st] ?? 0).toLocaleString(locale),
-          }))}
+          esCero={(conteosDelTipo.porEstado.pending_human_review ?? 0) === 0}
+          cuandoEsCero={isEs ? 'No hay cartas por revisar.' : 'No letters to review.'}
         />
       ) : null}
-
-      {/* Filters */}
-      {/*
-        Contenedor canónico del panel: UNA tarjeta con su barra de filtros, la
-        tabla y el pie de paginación. Los filtros y el aviso de error vivían
-        sueltos por encima y la pantalla se leía como bloques sin relación.
-      */}
-      <Card className="overflow-hidden">
       <div className="border-b border-border px-4 pt-3">
         <PestanasDeEstado<string>
           pestanas={pestanas}
@@ -327,7 +401,19 @@ function CartasContent() {
           etiqueta={isEs ? 'Filtrar las cartas por estado' : 'Filter letters by status'}
         />
       </div>
-      <div className="flex flex-wrap gap-3 border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
+        <div className="relative w-full sm:w-64">
+          <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+          <Input
+            type="search"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder={isEs ? 'Buscar deudor o documento' : 'Search debtor or ID'}
+            aria-label={isEs ? 'Buscar cartas por deudor o documento' : 'Search letters by debtor or ID'}
+            className="pl-9"
+            data-testid="cartas-buscar"
+          />
+        </div>
         {/* Kind filter */}
         <fieldset>
           <legend className="sr-only">{isEs ? 'Tipo de carta' : 'Letter type'}</legend>
@@ -353,6 +439,7 @@ function CartasContent() {
             onClick={() => {
               setKindFilter(undefined)
               setStatusFilter(undefined)
+              setBusqueda('')
             }}
             className="self-center px-0 h-auto"
           >

@@ -106,7 +106,7 @@ const CTA_KEY: Record<PendienteCta, string> = {
 // Cartas: label por kind — patrón inline es/en de cartas/page.tsx (KIND_LABELS).
 const KIND_LABELS: Record<string, { es: string; en: string }> = {
   pre_judicial_letter: { es: 'Carta prejurídica', en: 'Pre-judicial letter' },
-  pre_bureau_notification: { es: 'Notificación a centrales', en: 'Bureau notification' },
+  pre_bureau_notification: { es: 'Aviso antes del reporte a centrales', en: 'Notice before the credit bureau report' },
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

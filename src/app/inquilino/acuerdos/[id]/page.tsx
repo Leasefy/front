@@ -29,16 +29,15 @@
 
 import { use, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { StatusBadge } from '@leasefy/cadence';
 import { useEntradaTrasCargar, type EntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   Scroll,
   CheckCircle,
   Clock,
-  Warning,
   SealCheck,
   MagnifyingGlass,
   XCircle,
-  type Icon,
 } from '@phosphor-icons/react';
 
 import { useTenantAcuerdos } from '@/lib/hooks/use-tenant-acuerdos';
@@ -53,10 +52,8 @@ import { PagarCuota } from '@/components/tenant/PagarCuota';
 import { AvisoDelPagoDelAcuerdo } from '@/components/tenant/AvisoDelPagoDelAcuerdo';
 import { transaccionDelRetorno } from '@/lib/payments/verificar-pago-al-volver';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Badge } from '@/components/ui/badge';
 import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
-import type { BadgeProps } from '@/components/ui/badge';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
 
@@ -64,10 +61,11 @@ import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/Pl
 // Neutral tone → badge (capped at `warning`; no alarm level at all — Ley 1480)
 // ============================================================================
 
-const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>; icon: Icon }> = {
-  neutral: { variant: 'secondary', icon: CheckCircle },
-  info: { variant: 'default', icon: Clock },
-  attention: { variant: 'warning', icon: Warning },
+// GLOW UP (22-10): el estado con su punto y su palabra (StatusBadge), sin ícono en la pastilla; nunca rojo.
+const TONO_DEL_ESTADO: Record<CaseTone, 'neutral' | 'info' | 'warning'> = {
+  neutral: 'neutral',
+  info: 'info',
+  attention: 'warning',
 };
 
 /** Long es-CO / en-US date, or empty when the timestamp is invalid. */
@@ -135,8 +133,7 @@ function AcuerdoDetailView({
 }) {
   const { formatCurrency } = useI18n();
   const es = locale === 'es';
-  const badge = TONE_BADGE[tonoDelAcuerdo(plan)];
-  const ToneIcon = badge.icon;
+  const tono = TONO_DEL_ESTADO[tonoDelAcuerdo(plan)];
 
   // Qué se hace con la firma (03-10-2026): sólo se firma lo que la inmobiliaria aprobó.
   const firma = estadoDeLaFirma(plan);
@@ -188,10 +185,9 @@ function AcuerdoDetailView({
         seccion={es ? 'Mi arriendo' : 'My rental'}
         titulo={es ? 'Acuerdo de pago' : 'Payment agreement'}
         junto={
-          <Badge variant={badge.variant} className="inline-flex items-center gap-1" data-testid="acuerdo-estado">
-            <ToneIcon className="w-3 h-3" aria-hidden="true" />
+          <StatusBadge tone={tono} data-testid="acuerdo-estado">
             {etiquetaDelAcuerdo(plan)}
-          </Badge>
+          </StatusBadge>
         }
         descripcion={
           /* Total — rendered VERBATIM from the record (no saldo/total math) */
@@ -293,7 +289,7 @@ function AcuerdoDetailView({
         data-testid="acuerdo-plan"
         className="rounded-lg border border-border bg-surface p-5 sm:p-6"
       >
-        <h2 className="text-sm font-medium text-fg mb-4">
+        <h2 className="text-h3 text-fg mb-4">
           {es ? 'Plan de cuotas' : 'Installment plan'}
         </h2>
         <CuotaPlanTable installments={plan.installments} locale={locale} acuerdoCerrado={cerrado} />
@@ -303,23 +299,18 @@ function AcuerdoDetailView({
       {aceptado ? (
         <section
           data-testid="acuerdo-aceptado"
-          className="rounded-lg border border-success/30 bg-success-soft p-5 sm:p-6"
+          className="rounded-lg border border-border bg-surface p-5 sm:p-6"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-success flex items-center justify-center flex-shrink-0">
-              <SealCheck className="w-5 h-5 text-white" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="font-medium text-success">
-                {es ? 'Acuerdo aceptado' : 'Agreement accepted'}
-              </p>
-              <p className="text-sm text-success">
-                {es
-                  ? `Aceptaste este acuerdo el ${formatLongDate(plan.acceptedAt ?? '', locale)}.`
-                  : `You accepted this agreement on ${formatLongDate(plan.acceptedAt ?? '', locale)}.`}
-              </p>
-            </div>
-          </div>
+          {/* Un hecho en una línea, con el ícono suelto (antes, una caja verde con el ícono en otra caja verde). */}
+          <p className="flex items-start gap-2 text-sm text-fg">
+            <SealCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden="true" />
+            <span>
+              <span className="font-medium">{es ? 'Acuerdo aceptado. ' : 'Agreement accepted. '}</span>
+              {es
+                ? `Aceptaste este acuerdo el ${formatLongDate(plan.acceptedAt ?? '', locale)}.`
+                : `You accepted this agreement on ${formatLongDate(plan.acceptedAt ?? '', locale)}.`}
+            </span>
+          </p>
         </section>
       ) : null}
 
@@ -328,7 +319,7 @@ function AcuerdoDetailView({
         data-testid="acuerdo-historial"
         className="rounded-lg border border-border bg-surface p-5 sm:p-6"
       >
-        <h2 className="text-sm font-medium text-fg mb-4">
+        <h2 className="text-h3 text-fg mb-4">
           {es ? 'Historial' : 'Timeline'}
         </h2>
         <PlanActivityTimeline
@@ -385,9 +376,10 @@ export default function AcuerdoDetailPage(props: { params: Promise<{ id: string 
         <BackLink locale={locale} />
         <EmptyState
           icon={XCircle}
-          title={locale === 'es' ? 'Error al cargar el acuerdo' : 'Error loading agreement'}
+          title={locale === 'es' ? 'No pudimos cargar el acuerdo' : "We couldn't load the agreement"}
           description={error}
-          action={{ label: locale === 'es' ? 'Volver a Acuerdos' : 'Back to Agreements', href: '/inquilino/acuerdos' }}
+          /* «Volver» ya está arriba: aquí, volver a pedir (antes, el mismo «Volver a Acuerdos» dos veces). */
+          action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', onClick: () => void refetch() }}
         />
       </PageShell>
     );

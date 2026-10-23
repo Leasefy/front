@@ -11,12 +11,12 @@ import { act, Suspense } from 'react';
 import type { AcuerdoDetail } from '@/lib/api/tenant-acuerdos.types';
 
 const { datos } = vi.hoisted(() => ({
-  datos: { items: [] as AcuerdoDetail[] },
+  datos: { items: [] as AcuerdoDetail[], error: null as string | null, refetch: vi.fn() },
 }));
 
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
 vi.mock('@/lib/hooks/use-tenant-acuerdos', () => ({
-  useTenantAcuerdos: () => ({ items: datos.items, isLoading: false, error: null, refetch: vi.fn() }),
+  useTenantAcuerdos: () => ({ items: datos.items, isLoading: false, error: datos.error, refetch: datos.refetch }),
 }));
 vi.mock('@/components/tenant/AcuerdoAcceptPanel', () => ({
   AcuerdoAcceptPanel: () => <div data-testid="panel-de-firma" />,
@@ -127,5 +127,21 @@ describe('Detalle del acuerdo — en el orden del trabajo', () => {
   it('vuelve a Acuerdos', async () => {
     await montar();
     expect($('acuerdo-volver')?.querySelector('a')?.getAttribute('href')).toBe('/inquilino/acuerdos');
+  });
+});
+
+describe('Acuerdo de pago del inquilino — glow up 22-10', () => {
+  afterEach(() => {
+    datos.error = null;
+    datos.refetch.mockClear();
+  });
+
+  it('si no carga, «Reintentar» vuelve a pedir (el «Volver» ya está arriba)', async () => {
+    datos.error = 'No pudimos leer tus acuerdos.';
+    await montar();
+    const reintentar = Array.from(document.querySelectorAll('button')).find((b) => b.textContent?.includes('Reintentar'));
+    expect(reintentar).toBeTruthy();
+    await act(async () => reintentar!.click());
+    expect(datos.refetch).toHaveBeenCalledTimes(1);
   });
 });

@@ -255,6 +255,59 @@ export function politicaDeContenido(nonce: string | null, env: EntornoDeLaPoliti
 }
 
 /**
+ * La HOME (Ronda 30, Nico 23-10-2026: «la de producto en vivo debe ser la
+ * landing principal»). Es una página HTML estática, `public/landing/index.html`,
+ * que no arma React: no lleva nonce. Sus scripts son archivos nuestros
+ * (`/landing/js/*`, mismo origen) más las librerías de animación con versión
+ * FIJA de dos CDN (GSAP y ScrollTrigger de cdnjs; Lenis y Motion de jsDelivr),
+ * y las letras (Host Grotesk, DM Mono) vienen de Google Fonts. Esta política
+ * abre SÓLO eso —las carpetas exactas de esas versiones, no los CDN enteros— y
+ * SÓLO para la home: el resto del sitio sigue con la de nonce. No habla con
+ * ningún back (`connect-src 'self'`), no enmarca nada y sus imágenes son propias.
+ */
+export const RUTA_DE_LA_HOME = '/landing/index.html';
+
+export const TERCEROS_DE_LA_HOME = {
+  scripts: [
+    'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/',
+    'https://cdn.jsdelivr.net/npm/lenis@1.1.13/',
+    'https://cdn.jsdelivr.net/npm/motion@12.23.12/',
+  ],
+  estilos: ['https://fonts.googleapis.com'],
+  letras: ['https://fonts.gstatic.com'],
+} as const;
+
+/** ¿Esta ruta (sin prefijo de idioma) es la home o un archivo de la home? */
+export function esDeLaHome(ruta: string): boolean {
+  return ruta === '/' || ruta === '' || ruta.startsWith('/landing/');
+}
+
+export function politicaDeLaHome(env: Pick<EntornoDeLaPolitica, 'desarrollo' | 'soloReporte'>): string {
+  const directivas: Array<[string, string[]]> = [
+    ['default-src', ["'self'"]],
+    ['script-src', ["'self'", ...TERCEROS_DE_LA_HOME.scripts, "'report-sample'"]],
+    // Los `style="…"` del marcado; un estilo no ejecuta código (igual que en el resto).
+    ['style-src', ["'self'", "'unsafe-inline'", ...TERCEROS_DE_LA_HOME.estilos]],
+    ['font-src', ["'self'", 'data:', ...TERCEROS_DE_LA_HOME.letras]],
+    ['img-src', ["'self'", 'data:', 'blob:']],
+    ['media-src', ["'self'"]],
+    ['connect-src', ["'self'"]],
+    ['worker-src', ["'self'", 'blob:']],
+    ['frame-src', ["'none'"]],
+    ['frame-ancestors', ["'self'"]],
+    ['object-src', ["'none'"]],
+    ['base-uri', ["'self'"]],
+    ['form-action', ["'self'"]],
+    ['manifest-src', ["'self'"]],
+  ];
+  const partes = directivas.map(([nombre, valores]) => `${nombre} ${valores.join(' ')}`);
+  if (!env.desarrollo && !env.soloReporte) partes.push('upgrade-insecure-requests');
+  partes.push(`report-uri ${RUTA_DE_REPORTES_CSP}`);
+  partes.push(`report-to ${GRUPO_DE_REPORTES_CSP}`);
+  return partes.join('; ');
+}
+
+/**
  * ¿Obligatoria o sólo reporte? Por defecto REPORTE: pasar a obligatoria es una
  * decisión que se toma mirando `/api/csp-reporte` limpio, no un efecto
  * colateral de un despliegue. `CSP_MODO=obligatoria` la activa.

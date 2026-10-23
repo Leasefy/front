@@ -44,7 +44,6 @@ vi.mock('next/headers', () => ({
 }))
 
 import HomePage, { generateMetadata } from './page'
-import { landingRobots } from '@/lib/landing/landing-stage'
 
 let container: HTMLDivElement
 let root: Root
@@ -64,9 +63,10 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('/ (home) page', () => {
-  it('spreads landingRobots() into metadata.robots', async () => {
-    expect((await generateMetadata()).robots).toEqual(landingRobots())
+describe('/inicio-anterior (la home anterior) page', () => {
+  // Ronda 30 (Nico): la home es la landing 2; ésta queda en /inicio-anterior, fuera de los buscadores.
+  it('la home anterior no se indexa (la home es la landing 2)', async () => {
+    expect((await generateMetadata()).robots).toEqual({ index: false, follow: false })
   })
 
   it('en /es y /en: canonical, hreflang y el título en su idioma (16-10-2026)', async () => {

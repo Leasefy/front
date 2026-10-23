@@ -48,7 +48,8 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { plataPareja } from '@/lib/format';
 // PG-13 (QA-PAGOS-95): «hasta el 4 de octubre de 2026», nunca «hasta el 2026-10-04».
-import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
+import { fechaCorta, fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
@@ -244,6 +245,7 @@ function Veredicto({ datos }: { datos: Respuesta }) {
   const hayPartidas = datos.partidasPorIdentificar > 0;
   const partidasEnElTramo = hayPartidas && sinExplicar > 0;
   const fecha = fechaLarga(datos.fecha);
+  const fechaDelRotulo = fechaCorta(datos.fecha);
   // Lo que puede explicar la diferencia sólo hace falta cuando una parte no se explica sola.
   const explicaciones = estado === 'a-favor' && sinExplicar === 0 ? [] : datos.explicaciones;
   const avisos = avisosQueElVeredictoNoDijo(datos).map((a) => conLaPlataPegada(a));
@@ -306,7 +308,8 @@ function Veredicto({ datos }: { datos: Respuesta }) {
         rotulo={
           <span className="inline-flex items-center gap-2">
             <span className={cn('h-2 w-2 shrink-0 rounded-full', punto)} aria-hidden="true" />
-            {estado === 'sin-extracto' ? tr('Cuadre del {fecha}', { fecha }) : tr('Diferencia al {fecha}', { fecha })}
+            {/* Revisora r25 (Cuadre #2): «Al 23 oct 2026» cabe a 390 (el día largo se partía). */}
+            {estado === 'sin-extracto' ? tr('Cuadre del {fecha}', { fecha: fechaDelRotulo }) : tr('Diferencia al {fecha}', { fecha: fechaDelRotulo })}
           </span>
         }
         cifra={
@@ -351,9 +354,14 @@ function Veredicto({ datos }: { datos: Respuesta }) {
                 </Link>
               </Button>
             ) : null}
+            {/* Revisora r25 (Cuadre #1): plegado. Cada tramo de arriba ya trae su botón; esto se consulta. */}
             {explicaciones.length > 0 ? (
-              <div className="space-y-1.5">
-                <p className="font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle">{tr('Por dónde buscar')}</p>
+              <MasDetalles
+                etiqueta={tr('Por dónde buscar la diferencia')}
+                etiquetaAbierto={tr('Ocultar')}
+                montadoSiempre
+                className="text-body-sm"
+              >
                 <ul className="space-y-1 text-body-sm leading-relaxed text-fg-muted" data-testid="cuadre-explicaciones">
                   {explicaciones.map((e) => (
                     <li key={e} className="flex gap-2">
@@ -362,7 +370,7 @@ function Veredicto({ datos }: { datos: Respuesta }) {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </MasDetalles>
             ) : null}
             <Avisos avisos={avisos} testId="cuadre-avisos" />
             {hayPartidas && !partidasEnElTramo ? botonDePartidas : null}
@@ -453,7 +461,8 @@ function RenglonDeLaCuenta({ renglon: r, plata }: { renglon: RenglonVisible; pla
       )}
       data-testid={r.testid}
     >
-      <div className="grid grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-x-3">
+      {/* Revisora r25 (Cuadre #3): a 390 la plata baja bajo el nombre (le dejaba ≈120 px y lo partía en tres). */}
+      <div className="grid grid-cols-[1rem_minmax(0,1fr)] items-center gap-x-3 gap-y-0.5 sm:grid-cols-[1rem_minmax(0,1fr)_auto]">
         <span className="font-mono text-body-sm text-fg-subtle" aria-hidden="true">{r.signo}</span>
         <p className={cn('flex min-w-0 items-center gap-1 text-body-sm', esTotal ? 'font-medium text-fg' : 'text-fg')}>
           <span className="min-w-0">{r.etiqueta}</span>
@@ -474,7 +483,7 @@ function RenglonDeLaCuenta({ renglon: r, plata }: { renglon: RenglonVisible; pla
         </p>
         <p
           className={cn(
-            'shrink-0 text-right font-mono text-body-sm tabular-nums',
+            'col-start-2 shrink-0 text-right font-mono text-body-sm tabular-nums sm:col-start-auto',
             enCero || r.valorCop === null ? 'text-fg-subtle' : esTotal ? 'font-medium text-fg' : 'text-fg',
           )}
           data-testid={r.valorTestid}

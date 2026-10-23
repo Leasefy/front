@@ -126,7 +126,7 @@ export function PublishShell({ children }: PublishShellProps) {
               Cancelar
             </Button>
 
-            <h1 className="text-2xl font-semibold text-fg tracking-tight">
+            <h1 className="text-2xl font-[420] text-fg tracking-tight">
               Publicar Inmueble
             </h1>
             <p className="text-sm text-fg-muted mt-2">
@@ -136,7 +136,7 @@ export function PublishShell({ children }: PublishShellProps) {
 
           {/* Current step info */}
           <div className="p-6 xl:p-8 border-b border-border">
-            <h2 className="text-xl font-semibold text-fg tracking-tight">
+            <h2 className="text-xl font-[450] text-fg tracking-tight">
               {currentStepConfig?.description}
             </h2>
             <p className="text-sm text-fg-muted mt-2">

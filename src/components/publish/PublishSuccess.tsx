@@ -19,6 +19,7 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { formatCurrency } from '@/lib/format';
 import { PLANS, AGENCY_PLANS } from '@/lib/constants/subscription-plans';
 import confetti from 'canvas-confetti';
+import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
 
 /**
  * Las fotos que no subieron al publicar, cada una con su motivo (02-10-2026).
@@ -170,12 +171,10 @@ export function PublishSuccess() {
         <div className="bg-surface rounded-lg border border-border overflow-hidden">
           {/* Header */}
           <div className="relative px-8 pt-14 pb-10 text-center overflow-hidden">
-            {/* Gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#1A40FF] via-[#1A40FF] to-[#1A40FF]" />
-            {/* Subtle mesh overlay */}
-            <div className="absolute inset-0 opacity-30" style={{
-              backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.2) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.15) 0%, transparent 50%)',
-            }} />
+            {/* El momento de marca (Cadence 2, 23-10): medianoche con la corriente de voltaje, como la landing
+                nueva. Antes un bloque azul sólido con brillos (el azul es sólo para la acción). */}
+            <div className="absolute inset-0 bg-[#07080C]" />
+            <CorrienteDeVoltaje className="absolute inset-0 h-full w-full opacity-90" fondo="noche" forma="corrientes" fuerza={0.6} semilla={5} />
             {/* Robottom fade into card */}
             <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-surface to-transparent" />
 

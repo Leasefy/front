@@ -13,7 +13,7 @@ import { Chip, CrossFade, IconButton, Stagger, StaggerItem } from '@leasefy/cade
 import { Button } from '@/components/ui';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
-import { EmptyState } from '@/components/ui/empty-state';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { FilaDelAviso } from '@/components/notificaciones/FilaDelAviso';
@@ -121,17 +121,18 @@ export default function NotificacionesDeLaInmobiliariaPage() {
           ) : bandeja.error && bandeja.grupos.length === 0 ? (
             <FalloDeCarga error={bandeja.error} queEs="las notificaciones" onReintentar={bandeja.recargar} />
           ) : vacio ? (
-            <EmptyState
-              icon={Bell}
-              title={
+            // Ronda 30: el vacío de la casa (SinDatos), sin primera persona («Aquí llega…», antes «te avisamos»).
+            <SinDatos
+              queSon="notificaciones"
+              icono={Bell}
+              titulo={
                 soloSinLeer
                   ? 'No tienes notificaciones sin leer'
                   : categoria
                     ? 'No hay notificaciones de esta categoría'
                     : 'No tienes notificaciones'
               }
-              description="Aquí te avisamos lo que pasa en tu inmobiliaria: postulaciones, pagos, contratos y lo que necesita tu atención."
-              className="rounded-none border-0 bg-transparent"
+              descripcion="Aquí llega lo que pasa en tu inmobiliaria: postulaciones, pagos, contratos y lo que necesita tu atención."
             />
           ) : (
             <Stagger>
@@ -139,6 +140,7 @@ export default function NotificacionesDeLaInmobiliariaPage() {
                 <StaggerItem key={a.clave}>
                   <FilaDelAviso
                     aviso={a}
+                    sinPunto={soloSinLeer}
                     onAbrir={abrir}
                     onMarcarLeido={(x) => bandeja.marcarLeido(x).catch(fallo('marcar la notificación como leída'))}
                     onQuitar={(x) => bandeja.quitar(x).catch(fallo('quitar la notificación'))}

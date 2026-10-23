@@ -415,7 +415,10 @@ function RentabilidadContent() {
                 <dd className="font-mono text-body-sm tabular-nums text-fg">{netoDelPropietario(totales.netoPropietarioCop, plataDeLaCifra).texto}</dd>
               </div>
             </dl>
-            <p className="text-caption text-fg-muted">
+            {/* Ronda 30 (revisora r27, lista negra §3): bajo el Neto, sólo el Neto. La comisión, la ocupación y la
+                vacancia estimada son de consulta: plegadas (montadas siempre, para leerlas sin abrir). */}
+            <MasDetalles etiqueta={tr('Ver comisión, ocupación y vacancia')} etiquetaAbierto={tr('Ocultar')} montadoSiempre>
+            <p className="pt-2 text-caption text-fg-muted">
               <span data-testid="cifra-comision">
                 {t('inmobiliaria.reportes.rentabilidad.stats.commission')}{' '}
                 <span className="font-mono tabular-nums text-fg">{plataDeLaCifra(totales.comisionCop)}</span>
@@ -431,6 +434,7 @@ function RentabilidadContent() {
                 <span className="font-mono tabular-nums text-fg">{plataDeLaCifra(Math.round(totales.ingresoPerdidoPorVacanciaCop))}</span>
               </span>
             </p>
+            </MasDetalles>
                 </>
               );
             })()}
@@ -652,8 +656,9 @@ function RentabilidadContent() {
                     {formatearPct(totales.ocupacionPromedioPct, locale)}
                   </TableCell>
                   <TableCell numeric className="whitespace-nowrap font-mono text-sm tabular-nums text-fg">
-                    {formatCurrency(totales.recaudadoCop)}
-                    <span className="text-fg-muted"> / {formatCurrency(totales.esperadoCop)}</span>
+                    {/* Ronda 30 (revisora r27, R5): las dos cifras con los mismos decimales (antes «$ 6.410.000 / $ 61.790.500,50»). */}
+                    {plataPareja([totales.recaudadoCop, totales.esperadoCop])(totales.recaudadoCop)}
+                    <span className="text-fg-muted"> / {plataPareja([totales.recaudadoCop, totales.esperadoCop])(totales.esperadoCop)}</span>
                   </TableCell>
                   <TableCell numeric className="whitespace-nowrap font-mono tabular-nums text-fg">
                     {formatCurrency(totales.comisionCop)}

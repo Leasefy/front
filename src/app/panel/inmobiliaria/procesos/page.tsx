@@ -25,7 +25,8 @@ export default function CentroDeProcesosPage() {
     <PageGuard>
       <div className="space-y-6 p-6 lg:p-8" data-testid="centro-de-procesos-page">
         <EncabezadoDePantalla
-          seccion="General"
+          // Ronda 30 (revisora r27, R4): sin sobretítulo —«General» no es una sección del menú—; como
+          // Notificaciones, se abre desde la barra de arriba (el botón de procesos queda marcado).
           titulo="Centro de procesos"
           descripcion="Las cargas y descargas de archivos de la plataforma, con su estado y su resultado."
         />

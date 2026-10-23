@@ -143,18 +143,18 @@ describe('Resumen del negocio — inmobiliaria en cero', () => {
  */
 describe('🔴 el plural del subtítulo', () => {
   it('con UN inmueble disponible dice «1 disponible», no «1 disponibles»', async () => {
+    // Ronda 30 (revisora r27), a propósito: un dato por celda. Sin nada fuera del catálogo, la celda de
+    // Inmuebles dice sólo los disponibles (los arrendados van en Ocupación), así que va sin el «·».
     datos.kpis = enCero({
-      totalProperties: 108,
+      totalProperties: 6,
       propertiesInCatalog: 6,
-      propertiesOutOfCatalog: 102,
+      propertiesOutOfCatalog: 0,
       propertiesRented: 5,
       propertiesAvailable: 1,
     });
     await montar();
     const cuerpo = document.body.textContent ?? '';
-    // El positivo va con el separador pegado, porque «1 disponible» es un
-    // prefijo de «1 disponibles» y solo pasaría en los dos casos.
-    expect(cuerpo).toContain('1 disponible ·');
+    expect(cuerpo).toMatch(/1 disponible(?!s)/);
     expect(cuerpo).not.toContain('1 disponibles');
   });
 
@@ -166,8 +166,9 @@ describe('🔴 el plural del subtítulo', () => {
     });
     await montar();
     const cuerpo = document.body.textContent ?? '';
-    expect(cuerpo).toContain('1 arrendada ·');
-    expect(cuerpo).not.toContain('1 arrendadas');
+    // Ronda 30: los arrendados van en Ocupación («1 arrendado de 3 en catálogo»), con el mismo cuidado del plural.
+    expect(cuerpo).toContain('1 arrendado de');
+    expect(cuerpo).not.toContain('1 arrendados');
     expect(cuerpo).toContain('2 disponibles');
   });
 });

@@ -146,8 +146,9 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   },
   {
     id: 'comisiones-agente',
-    title: 'Comisiones por agente',
-    description: 'Desglose de comisiones generadas por cada agente',
+    // Ronda 30 (revisora r27, VOZ §7.7): «agente» es la IA; la persona es el asesor.
+    title: 'Comisiones por asesor',
+    description: 'Desglose de comisiones generadas por cada asesor',
     icon: 'Users',
     category: 'agentes',
     format: 'excel',
@@ -179,7 +180,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   },
   {
     id: 'rendimiento-agentes',
-    title: 'Rendimiento de agentes',
+    title: 'Rendimiento de los asesores',
     description: 'Cierres, comisiones y tiempos de cada asesor, comparados',
     icon: 'ChartBar',
     category: 'agentes',
@@ -202,7 +203,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     // «Descargar CSV» baja el mismo rango que muestra el back.
     id: 'rentabilidad-inmueble',
     title: 'Rentabilidad por inmueble',
-    description: 'Lo esperado y lo recaudado, la comisión, los gastos, el neto al propietario y la ocupación de cada inmueble',
+    description: 'Lo esperado, lo recaudado y el neto de cada inmueble',
     icon: 'ChartLineUp',
     category: 'financiero',
     format: 'excel',

@@ -55,7 +55,8 @@ describe('<LandingRegistroCta>', () => {
     mockUseAuth.mockReturnValue({ user: null, isAuthenticated: false, isLoading: false })
     render({ variant: 'header' })
     const anchor = container.querySelector('a')!
-    expect(anchor.textContent).toBe('Empezar ahora')
+    // Nico (23-10): el primario es «Crear cuenta» (antes «Empezar ahora»), como la landing nueva.
+    expect(anchor.textContent).toBe('Crear cuenta')
     expect(anchor.getAttribute('href')).toBe('/auth?mode=register')
     expect(anchor.className).toBe('btn primary sm')
   })
@@ -111,7 +112,8 @@ describe('<LandingRegistroCta>', () => {
     mockUseAuth.mockReturnValue({ user: null, isAuthenticated: false, isLoading: false })
     render({ variant: 'banner' })
     const anchor = container.querySelector('a')!
-    expect(anchor.textContent).toBe('Empezar ahora')
+    // Nico (23-10): el primario es «Crear cuenta» (antes «Empezar ahora»), como la landing nueva.
+    expect(anchor.textContent).toBe('Crear cuenta')
     expect(anchor.getAttribute('href')).toBe('/auth?mode=register')
   })
 })

@@ -19,6 +19,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toast';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { StatusBadge } from '@leasefy/cadence';
+import { giradoEnElAnio } from '@/lib/propietario/el-mes-del-contrato';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -26,7 +29,7 @@ import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { SelectorDeArchivo } from '@/components/ui/selector-de-archivo';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { formatCurrency } from '@/lib/format';
-import { fechaCorta, fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
+import { fechaCorta, fechaLarga, hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa';
 import { nombreDelMes } from '@/lib/recaudo/meses';
 import { COLOMBIAN_BANKS } from '@/lib/types/payment-accounts';
 import {
@@ -36,11 +39,12 @@ import {
   type GiroDelPropietario,
 } from '@/lib/api/portal-del-propietario.service';
 
-const ESTADO: Record<EstadoDelGiro, { texto: string; clase: string }> = {
-  GIRADO: { texto: 'Girado', clase: 'bg-success-soft text-success' },
-  EN_CAMINO: { texto: 'En camino', clase: 'bg-surface-muted text-fg-muted' },
-  DEVUELTO: { texto: 'Devuelto por el banco', clase: 'bg-danger-soft text-danger' },
-  REGIRADO: { texto: 'Devuelto y vuelto a girar', clase: 'bg-surface-muted text-fg-muted' },
+// Glow up 22-10: el estado con su punto y su palabra (StatusBadge), no una pastilla teñida.
+const ESTADO: Record<EstadoDelGiro, { texto: string; tono: 'success' | 'neutral' | 'critical' | 'warning' }> = {
+  GIRADO: { texto: 'Girado', tono: 'success' },
+  EN_CAMINO: { texto: 'En camino', tono: 'neutral' },
+  DEVUELTO: { texto: 'Devuelto por el banco', tono: 'critical' },
+  REGIRADO: { texto: 'Devuelto y vuelto a girar', tono: 'warning' },
 };
 
 function CambiarCuenta({ ficha, onListo }: { ficha: CuentaDeGiro; onListo: () => void }) {
@@ -220,7 +224,7 @@ function FilaDelGiro({ g }: { g: GiroDelPropietario }) {
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <span className={`rounded-full px-2.5 py-0.5 text-caption ${e.clase}`}>{e.texto}</span>
+        <StatusBadge tone={e.tono}>{e.texto}</StatusBadge>
         <Button
           variant="outline"
           size="sm"
@@ -279,11 +283,27 @@ export default function MisGirosPage() {
       />
       <EstadoDeDatos cargando={cargando} error={fallo} queEs="tus giros" onReintentar={cargar}>
         <div className="space-y-6">
-          {(cuentas ?? []).map((f) => (
-            <TarjetaDeLaCuenta key={f.propietarioId} ficha={f} onCambio={cargar} />
-          ))}
-          <section className="rounded-lg border border-border bg-surface p-5">
-            <h2 className="text-subtitle text-fg">Lo que te giraron</h2>
+          {/* Un giro devuelto es lo único urgente: su cuenta va primero (con el aviso y «Cambiar cuenta»). */}
+          {(cuentas ?? [])
+            .filter((f) => f.giroDevuelto)
+            .map((f) => (
+              <TarjetaDeLaCuenta key={f.propietarioId} ficha={f} onCambio={cargar} />
+            ))}
+          {/* LA RESPUESTA (glow up 22-10): cuánto te han girado este año, en grande; la lista, debajo. */}
+          <section className="space-y-5 rounded-lg border border-border bg-surface p-5" data-testid="lo-que-te-giraron">
+            {giros && giros.length > 0 && (
+              <CifraHeroe
+                rotulo={`Te han girado en ${hoyEnColombia().slice(0, 4)}`}
+                cifra={<span data-testid="girado-en-el-anio">{formatCurrency(giradoEnElAnio(giros, hoyEnColombia()))}</span>}
+                contexto={(() => {
+                  const anio = hoyEnColombia().slice(0, 4);
+                  // Los mismos que suma la cifra: girados (o vueltos a girar) de este año.
+                  const n = giros.filter((g) => g.mes.startsWith(anio) && (g.estado === 'GIRADO' || g.estado === 'REGIRADO')).length;
+                  return n === 0 ? 'Todavía no te han girado este año' : n === 1 ? 'en 1 giro' : `en ${n} giros`;
+                })()}
+              />
+            )}
+            <h2 className="text-subtitle text-fg">Mes por mes</h2>
             {giros && giros.length > 0 ? (
               <ul className="divide-y divide-border-faint" data-testid="lista-de-giros">
                 {giros.map((g) => (
@@ -296,6 +316,12 @@ export default function MisGirosPage() {
               </p>
             )}
           </section>
+          {/* La cuenta a la que te giran (sin novedades), después de lo girado: se consulta, no se hace. */}
+          {(cuentas ?? [])
+            .filter((f) => !f.giroDevuelto)
+            .map((f) => (
+              <TarjetaDeLaCuenta key={f.propietarioId} ficha={f} onCambio={cargar} />
+            ))}
         </div>
       </EstadoDeDatos>
     </div>

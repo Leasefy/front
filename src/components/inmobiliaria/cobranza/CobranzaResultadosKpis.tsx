@@ -242,19 +242,17 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
       {/* GLOW UP 21-10: una franja de cifras como el resto del panel (de a tres:
           cinco en fila cortaban los rótulos a 1440 px, QA-IA-95). */}
       <FranjaDeCifras fila="lg" columnas={metricas.length > 4 ? 3 : undefined} aria-label={tr("Cómo va el agente")}>
-        {metricas.map((m) => {
-          const MetricaIcon = m.icon
-          return (
-            <KpiCard
-              key={m.key}
-              label={tr(m.label)}
-              value={m.value as string}
-              sublabel={tr(m.sublabel)}
-              icon={<MetricaIcon weight="duotone" aria-hidden="true" />}
-              data-testid={`cobranza-kpi-${m.key}`}
-            />
-          )
-        })}
+        {/* Ronda 30 (coordinador, Resumen 491): sin los íconos duotone de cada cifra: eran
+            decoración (el rótulo ya dice qué es) y Cadence 2 no lleva íconos de adorno. */}
+        {metricas.map((m) => (
+          <KpiCard
+            key={m.key}
+            label={tr(m.label)}
+            value={m.value as string}
+            sublabel={tr(m.sublabel)}
+            data-testid={`cobranza-kpi-${m.key}`}
+          />
+        ))}
       </FranjaDeCifras>
     </section>
   )

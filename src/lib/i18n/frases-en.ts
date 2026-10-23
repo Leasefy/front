@@ -243,7 +243,7 @@ export const FRASES_EN: Record<string, string> = {
   "Sin datos suficientes todavía": "Not enough data yet",
   // components/inmobiliaria/cobranza/CobranzaAnaliticaResumen.tsx
   "Cómo lo está logrando": "How it's getting there",
-  "No pudimos traer la analítica del agente.": "We couldn't load the agent's analytics.",
+  "No se pudo traer la analítica del agente.": "We couldn't load the agent's analytics.",
   // components/inmobiliaria/cobranza/CobranzaDeudoresQuePesan.tsx
   "Los que más pesan": "The biggest balances",
   "Deudor": "Debtor",
@@ -515,7 +515,7 @@ export const FRASES_EN: Record<string, string> = {
   "Contando lo que espera tu aprobación…": "Counting what's waiting for your approval…",
   "Nada espera tu aprobación.": "Nothing is waiting for your approval.",
   "Puede que falte algo en este tablero: una de las fuentes no respondió.": "This board may be missing something: one of the sources didn't respond.",
-  "No pudimos cargar tus pendientes.": "We couldn't load your pending items.",
+  "No se pudieron cargar tus pendientes.": "We couldn't load your pending items.",
   "Valor recuperado": "Amount recovered",
   "Recaudo confirmado": "Confirmed collections",
   "Promesas cumplidas": "Promises kept",

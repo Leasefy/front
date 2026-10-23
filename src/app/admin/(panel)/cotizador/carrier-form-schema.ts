@@ -40,7 +40,7 @@ export const CARRIER_PRODUCT_TYPES: CarrierProductType[] = ['seguro', 'fianza']
 
 export const carrierFormSchema = z
   .object({
-    name: z.string().trim().min(1, 'El nombre es obligatorio.'),
+    name: z.string().trim().min(1, 'Escribe el código.'),
     route: z.string().trim().min(1, 'La ruta es obligatoria.'),
     display_name: z.string().trim(),
     product_type: z.enum(['seguro', 'fianza']),
@@ -57,14 +57,14 @@ export const carrierFormSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['priority'],
-        message: 'La prioridad debe ser un entero >= 0.',
+        message: 'La prioridad es un número entero desde 0.',
       })
     }
     if (v.max_canon_cop !== '' && !UINT_RE.test(v.max_canon_cop)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['max_canon_cop'],
-        message: 'El canon máximo debe ser un entero en pesos (>= 0).',
+        message: 'El canon máximo es un número entero en pesos, desde 0.',
       })
     }
 

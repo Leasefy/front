@@ -14,7 +14,6 @@ import {
   CARRIER_PRODUCT_TYPES,
   type CarrierFormValues,
 } from './carrier-form-schema'
-import { Card } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -61,16 +60,17 @@ function Help({ children }: { children: React.ReactNode }) {
 }
 
 const MODE_LABEL: Record<CarrierFormValues['mode'], string> = {
-  stub: 'stub — simulado, sin llamada real',
-  rest: 'rest — API REST del carrier',
-  'form-rpa': 'form-rpa — automatización de formulario web',
-  'email-broker': 'email-broker — cotización por correo',
-  'open-finance': 'open-finance — integración open finance',
+  // Ronda 30 (revisora: sin jerga ni inglés): los mismos nombres de la tabla (antes «stub — …», «API REST del carrier»).
+  stub: 'De prueba — simulada, sin llamar a la aseguradora',
+  rest: 'Conexión directa — con el servicio de la aseguradora',
+  'form-rpa': 'Formulario automático — llena su formulario web',
+  'email-broker': 'Por correo — la cotización llega por correo',
+  'open-finance': 'Finanzas abiertas — conexión con datos financieros',
 }
 
 const PRODUCT_TYPE_LABEL: Record<CarrierFormValues['product_type'], string> = {
-  seguro: 'seguro',
-  fianza: 'fianza',
+  seguro: 'Seguro',
+  fianza: 'Fianza',
 }
 
 // ── Form ────────────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ export function CarrierForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="carrier-name" required>
-            Nombre (slug)
+            Código
           </Label>
           <Input
             id="carrier-name"
@@ -138,9 +138,9 @@ export function CarrierForm({
             disabled={isEdit}
           />
           {isEdit ? (
-            <Help>El nombre es el slug inmutable tras crear.</Help>
+            <Help>El código no cambia después de crearla.</Help>
           ) : (
-            <Help>Minúsculas, ej. fianly.</Help>
+            <Help>En minúsculas, p. ej. fianly. No cambia después.</Help>
           )}
           <FieldError message={errors.name} />
         </div>
@@ -149,7 +149,7 @@ export function CarrierForm({
             Ruta
           </Label>
           <Input id="carrier-route" aria-required="true" className="" value={values.route} onChange={text('route')} />
-          <Help>Ej. &quot;direct&quot; para integración directa.</Help>
+          <Help>P. ej. «direct» para la conexión directa.</Help>
           <FieldError message={errors.route} />
         </div>
       </div>
@@ -214,11 +214,11 @@ export function CarrierForm({
             value={values.priority}
             onChange={text('priority')}
           />
-          <Help>Opcional. Entero {'>'}= 0; menor = mayor prioridad.</Help>
+          <Help>Opcional. Un número desde 0: la de número menor cotiza primero.</Help>
           <FieldError message={errors.priority} />
         </div>
         <div>
-          <Label htmlFor="carrier-max_canon_cop">Canon máx. (COP)</Label>
+          <Label htmlFor="carrier-max_canon_cop">Canon máximo, en pesos</Label>
           <Input
             id="carrier-max_canon_cop"
             className="tabular-nums"
@@ -232,20 +232,20 @@ export function CarrierForm({
       </div>
 
       <label className="flex cursor-pointer items-center gap-3 text-body-sm text-fg">
-        <Switch checked={values.enabled} onCheckedChange={(v) => set('enabled', v)} aria-label="Habilitado" />
-        Habilitado
+        <Switch checked={values.enabled} onCheckedChange={(v) => set('enabled', v)} aria-label="Activa: cotiza" />
+        Activa: cotiza
       </label>
 
       {/* Credenciales — write-only: nunca se leen del backend, solo se envían si se escriben. */}
       <fieldset className="space-y-4 border-t border-border pt-4">
         <div className="flex items-center justify-between">
           <MonoLabel>Credenciales</MonoLabel>
-          {isEdit && hasConfig && <Pill tone="ok" dot>Configuradas</Pill>}
+          {isEdit && hasConfig && <Pill tone="ok" dot>Puestas</Pill>}
         </div>
         <p className="text-caption text-fg-subtle">
           {isEdit
             ? 'Por seguridad las credenciales no se muestran. Deja estos campos vacíos para conservar las guardadas; complétalos solo para reemplazarlas.'
-            : 'Se guardan encriptadas. Hacen falta para que la aseguradora cotice en modo real.'}
+            : 'Se guardan cifradas. Hacen falta para que la aseguradora cotice de verdad.'}
         </p>
         <Help>
           Las credenciales se guardan juntas: si cambias una, reingresa las tres. Dejarlas vacías
@@ -253,7 +253,7 @@ export function CarrierForm({
         </Help>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="carrier-config_base_url">Base URL</Label>
+            <Label htmlFor="carrier-config_base_url">Dirección del servicio</Label>
             <Input
               id="carrier-config_base_url"
               className="font-mono"
@@ -290,11 +290,8 @@ export function CarrierForm({
         </div>
       </fieldset>
 
-      {submitError && (
-        <Card className="p-3 ">
-          <p className="text-body-sm text-danger">{submitError}</p>
-        </Card>
-      )}
+      {/* Ronda 30: el fallo al guardar es una línea (antes una tarjeta dentro del cajón). */}
+      {submitError && <p role="alert" className="text-body-sm text-danger">{submitError}</p>}
 
       <div className="flex items-center gap-3">
         <Button size="sm" hideArrow type="submit" disabled={isSubmitting || !hidratado}>

@@ -65,7 +65,7 @@ export function ExperimentoDeLaura() {
 
   if (consulta.isLoading && !e) {
     return (
-      <Card className="p-5 mb-6" aria-busy="true">
+      <Card className="p-5" aria-busy="true">
         <h2 className="text-body font-medium text-fg">Mori · cómo ofrece el acuerdo</h2>
         <p className="text-body-sm text-fg-muted mt-2">Cargando el experimento…</p>
       </Card>
@@ -79,7 +79,7 @@ export function ExperimentoDeLaura() {
         titulo="No pudimos cargar el experimento de Mori"
         error={consulta.error}
         onReintentar={consulta.refetch}
-        className="mb-6"
+        // Ronda 30: sin mb-6 (la página ya separa con space-y-6; eran 48 px)
       />
     )
   }
@@ -111,7 +111,7 @@ export function ExperimentoDeLaura() {
   const sePuedeCambiar = e.disponible && e.estado !== 'completed'
 
   return (
-    <Card className="p-5 space-y-4 mb-6" aria-labelledby="experimento-laura-titulo" data-testid="experimento-de-laura">
+    <Card className="p-5 space-y-4" aria-labelledby="experimento-laura-titulo" data-testid="experimento-de-laura">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           {/* Ronda 28 (revisora r27): un título de verdad (antes un rótulo en mono minúscula) y una sola

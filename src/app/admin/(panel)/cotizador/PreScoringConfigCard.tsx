@@ -196,16 +196,9 @@ export function PreScoringConfigCard() {
             />
           </div>
 
-          {saveError && (
-            <Card className="p-3 ">
-              <p className="text-body-sm text-danger">{saveError}</p>
-            </Card>
-          )}
-          {saved && !saveError && (
-            <Card className="p-3 ">
-              <p className="text-body-sm text-success">Configuración guardada.</p>
-            </Card>
-          )}
+          {/* Ronda 30 (revisora: sin tarjeta dentro de tarjeta): el resultado de guardar es una línea. */}
+          {saveError && <p role="alert" className="text-body-sm text-danger">{saveError}</p>}
+          {saved && !saveError && <p role="status" className="text-body-sm text-success">Configuración guardada.</p>}
 
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" hideArrow onClick={save} disabled={!canSave} isLoading={saving}>

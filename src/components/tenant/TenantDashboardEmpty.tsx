@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { motionDuration, motionEase } from '@leasefy/cadence';
+import { MonoLabel } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar';
+import { RUTA_DEL_MARKETPLACE } from '@/lib/nav/portal-del-inquilino';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { User, House, CaretRight, CheckCircle, ClipboardText, Shield, Lightning, Star, MagnifyingGlass, Heart, Bell, TrendUp, Play } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
+import { User, House, MagnifyingGlass, Heart, Lifebuoy } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
@@ -53,29 +55,9 @@ const SETUP_STEPS: SetupStep[] = [
   },
 ];
 
-const QUICK_ACTIONS = [
-  {
-    labelEs: 'Buscar propiedades',
-    labelEn: 'Search properties',
-    icon: MagnifyingGlass,
-    href: '/inquilino/explorar',
-  },
-  {
-    labelEs: 'Ver guardados',
-    labelEn: 'View saved',
-    icon: Heart,
-    href: '/inquilino/guardados',
-  },
-  {
-    labelEs: 'Notificaciones',
-    labelEn: 'Notifications',
-    icon: Bell,
-    href: '/inquilino/notificaciones',
-  },
-];
 
 export function TenantDashboardEmpty() {
-  const { t, locale } = useI18n();
+  const { locale } = useI18n();
   const { user } = useAuth();
   const { greeting } = useTimeGreeting();
   const firstName = user?.name?.split(' ')[0] || (locale === 'es' ? 'Usuario' : 'User');
@@ -127,7 +109,6 @@ export function TenantDashboardEmpty() {
 
   const completedCount = steps.filter(s => s.completed).length;
   const totalSteps = steps.length;
-  const progressPercentage = Math.round((completedCount / totalSteps) * 100);
   const allComplete = completedCount >= totalSteps;
   const nextIncompleteStep = allComplete ? null : steps.find(s => !s.completed);
 
@@ -136,265 +117,98 @@ export function TenantDashboardEmpty() {
 
   if (!isLoaded) return null;
 
+  /*
+   * GLOW UP 22-10 (como el inicio del inquilino): el encabezado común, lo que falta en la lista de la casa
+   * («Para completar tu perfil te faltan N pasos», cada uno con su botón) y los atajos. Antes, una tarjeta de
+   * progreso con barra y porcentaje, otra lista de los mismos pasos con sus íconos en caja, una fila de
+   * beneficios, un consejo y una tarjeta de ayuda, sobre un fondo gris a mano.
+   */
+  const atajos = [
+    {
+      // Buscar se hace en el marketplace, en OTRA pestaña (reunión 21-10).
+      href: RUTA_DEL_MARKETPLACE,
+      externo: true,
+      icon: MagnifyingGlass,
+      label: locale === 'es' ? 'Buscar en el marketplace' : 'Search the marketplace',
+      desc: locale === 'es' ? 'Con tus filtros, en otra pestaña' : 'With your filters, in a new tab',
+    },
+    {
+      href: '/inquilino/guardados',
+      icon: Heart,
+      label: locale === 'es' ? 'Ver mis guardados' : 'See my saved homes',
+      desc: locale === 'es' ? 'Los inmuebles que marcaste' : 'The homes you marked',
+    },
+    {
+      href: '/ayuda',
+      icon: Lifebuoy,
+      label: locale === 'es' ? 'Centro de ayuda' : 'Help center',
+      desc: locale === 'es' ? 'Cómo funciona Leasefy' : 'How Leasefy works',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#f8f8f8]">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        {/* Welcome Header */}
-        <header className="mb-10">
-          <p className="text-sm font-medium text-fg-muted mb-1">
-            {greeting}
-          </p>
-          <h1 className="text-3xl md:text-4xl font-medium text-fg tracking-tight">
-            {locale === 'es' ? `Hola, ${firstName}` : `Hi, ${firstName}`}
-          </h1>
-          <p className="mt-2 text-fg-muted">
-            {/* "aplicar" está muerto: docs/VOCABULARIO.md */}
-            {locale === 'es'
-              ? 'Completa tu perfil para postularte más rápido'
-              : 'Complete your profile to apply to properties faster'}
-          </p>
-        </header>
+    <div className="min-h-screen bg-bg">
+      <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
+        <EncabezadoDePantalla
+          seccion={locale === 'es' ? 'Inicio' : 'Home'}
+          titulo={`${greeting}, ${firstName}`}
+          descripcion={
+            /* "aplicar" está muerto: docs/VOCABULARIO.md */
+            locale === 'es'
+              ? 'Completa tu perfil para postularte más rápido.'
+              : 'Complete your profile to apply to homes faster.'
+          }
+          data-testid="encabezado-del-inicio-sin-perfil"
+        />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Progress Card - Clean Style */}
-            <div className="rounded-lg bg-surface-muted p-6 md:p-8">
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-lg bg-surface-muted flex items-center justify-center">
-                    <ClipboardText weight="duotone" className="w-7 h-7 text-fg-subtle" />
-                  </div>
-                  <div>
-                    <h2 className="text-h3 text-fg">
-                      {locale === 'es' ? 'Configura tu perfil' : 'Set up your profile'}
-                    </h2>
-                    <p className="text-sm text-fg-muted mt-0.5">
-                      {locale === 'es'
-                        ? `${completedCount} de ${totalSteps} pasos completados`
-                        : `${completedCount} of ${totalSteps} steps completed`}
-                    </p>
-                  </div>
-                </div>
-                {nextIncompleteStep && (
-                  <Link
-                    href={nextIncompleteStep.href}
-                    className="hidden sm:inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface text-fg border border-border hover:border-border hover:shadow-sm active:scale-[0.98] transition-[transform,box-shadow,border-color] duration-fast"
-                  >
-                    {locale === 'es' ? 'Continuar' : 'Continue'}
-                  </Link>
-                )}
-              </div>
+        <ListaParaEmpezar
+          paraQue={locale === 'es' ? 'completar tu perfil' : 'complete your profile'}
+          requisitos={steps.map((step) => ({
+            id: String(step.id),
+            titulo: locale === 'es' ? step.labelEs : step.labelEn,
+            detalle: locale === 'es' ? step.descriptionEs : step.descriptionEn,
+            estado: step.completed ? ('listo' as const) : ('falta' as const),
+            accion: (
+              <Button asChild size="sm" variant={step.id === nextIncompleteStep?.id ? 'default' : 'outline'} hideArrow>
+                <Link href={step.href}>{locale === 'es' ? 'Completar' : 'Complete'}</Link>
+              </Button>
+            ),
+          }))}
+          data-testid="inicio-lo-que-falta"
+        />
 
-              {/* Progress bar */}
-              <div className="relative">
-                {/* Se llena con `transform` (translateX), no con `width`. */}
-                <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ x: '-100%' }}
-                    animate={{ x: `${progressPercentage - 100}%` }}
-                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-                    className="h-full w-full bg-ink rounded-full"
-                  />
-                </div>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-sm text-fg-muted">
-                    {progressPercentage}% {locale === 'es' ? 'completado' : 'complete'}
+        <section className="rounded-lg border border-border bg-surface p-5" data-testid="atajos-del-inicio-sin-perfil">
+          <h2 className="mb-3 text-fg-subtle">
+            <MonoLabel>{locale === 'es' ? 'Atajos' : 'Shortcuts'}</MonoLabel>
+          </h2>
+          <ul className="-mx-2 space-y-0.5">
+            {atajos.map((a) => {
+              const Icono = a.icon;
+              const contenido = (
+                <>
+                  <Icono className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
+                  <span className="min-w-0">
+                    <span className="block text-sm text-fg">{a.label}</span>
+                    <span className="block text-caption text-fg-muted">{a.desc}</span>
                   </span>
-                  <span className="text-sm text-fg-muted font-medium">
-                    {locale === 'es' ? `${totalSteps - completedCount} restantes` : `${totalSteps - completedCount} remaining`}
-                  </span>
-                </div>
-              </div>
-
-              {/* Mobile CTA */}
-              {nextIncompleteStep && (
-                <Link
-                  href={nextIncompleteStep.href}
-                  className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-full text-[13px] font-medium bg-surface text-fg border border-border hover:border-border hover:shadow-sm active:scale-[0.98] transition-[transform,box-shadow,border-color] duration-fast"
-                >
-                  {locale === 'es' ? 'Continuar' : 'Continue'}
-                </Link>
-              )}
-            </div>
-
-            {/* Setup Steps List */}
-            <div className="rounded-lg bg-surface-muted p-6">
-              <h3 className="text-base font-medium text-fg mb-4">
-                {locale === 'es' ? 'Pasos para completar' : 'Steps to complete'}
-              </h3>
-              <div className="space-y-2">
-                {steps.map((step, index) => {
-                  const Icon = step.icon;
-                  const isNext = !step.completed && steps.slice(0, index).every(s => s.completed);
-
-                  return (
-                    <Link
-                      key={step.id}
-                      href={step.href}
-                      className={cn(
-                        'flex items-center gap-4 p-4 rounded-lg transition-[opacity,background-color,border-color] group',
-                        step.completed
-                          ? 'bg-[#E8F3EC]'
-                          : isNext
-                          ? 'bg-surface border border-border hover:border-border'
-                          : 'bg-surface/50 border border-border-faint opacity-60 hover:opacity-100'
-                      )}
-                    >
-                      <div className={cn(
-                        'w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
-                        step.completed
-                          ? 'bg-[#E8F3EC]'
-                          : isNext
-                          ? 'bg-ink'
-                          : 'bg-surface-muted'
-                      )}>
-                        {step.completed ? (
-                          <CheckCircle className="w-5 h-5 text-[#2C7A53]" />
-                        ) : isNext ? (
-                          <Play className="w-5 h-5 text-white fill-current" />
-                        ) : (
-                          <Icon className="w-5 h-5 text-fg-subtle" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn(
-                          'font-medium text-sm',
-                          step.completed
-                            ? 'text-[#2C7A53]'
-                            : isNext
-                            ? 'text-fg'
-                            : 'text-fg-muted'
-                        )}>
-                          {locale === 'es' ? step.labelEs : step.labelEn}
-                        </p>
-                        <p className="text-caption text-fg-muted mt-0.5">
-                          {locale === 'es' ? step.descriptionEs : step.descriptionEn}
-                        </p>
-                      </div>
-                      <div className={cn(
-                        'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors',
-                        step.completed
-                          ? 'bg-[#E8F3EC]'
-                          : 'bg-surface-muted'
-                      )}>
-                        {step.completed ? (
-                          <CheckCircle className="w-4 h-4 text-[#2C7A53]" />
-                        ) : (
-                          <CaretRight className="w-4 h-4 text-fg-subtle transition-transform group-hover:translate-x-0.5" />
-                        )}
-                      </div>
+                </>
+              );
+              return (
+                <li key={a.href}>
+                  {a.externo ? (
+                    <a href={a.href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-surface-muted">
+                      {contenido}
+                    </a>
+                  ) : (
+                    <Link href={a.href} className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-surface-muted">
+                      {contenido}
                     </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Benefits Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                {
-                  icon: Lightning,
-                  titleEs: 'Aplica más rápido',
-                  titleEn: 'Apply faster',
-                  descEs: 'Postula en segundos',
-                  descEn: 'Apply in seconds',
-                },
-                {
-                  icon: Shield,
-                  titleEs: 'Mayor confianza',
-                  titleEn: 'More trust',
-                  descEs: 'Perfil verificado',
-                  descEn: 'Verified profile',
-                },
-                {
-                  icon: Star,
-                  titleEs: 'Mejor posición',
-                  titleEn: 'Better position',
-                  descEs: 'Destaca entre otros',
-                  descEn: 'Stand out',
-                },
-              ].map((benefit) => (
-                <div
-                  key={benefit.titleEs}
-                  className="rounded-lg bg-surface-muted p-5"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center mb-3">
-                    <benefit.icon weight="duotone" className="w-5 h-5 text-fg-subtle" />
-                  </div>
-                  <p className="font-semibold text-fg text-sm">
-                    {locale === 'es' ? benefit.titleEs : benefit.titleEn}
-                  </p>
-                  <p className="text-caption text-fg-muted mt-1">
-                    {locale === 'es' ? benefit.descEs : benefit.descEn}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <div className="rounded-lg bg-surface-muted p-5">
-              <h3 className="text-base font-medium text-fg mb-4">
-                {locale === 'es' ? 'Acciones rápidas' : 'Quick actions'}
-              </h3>
-              <div className="space-y-2">
-                {QUICK_ACTIONS.map((action) => (
-                  <Link
-                    key={action.labelEs}
-                    href={action.href}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-surface hover:bg-surface-muted transition-colors group border border-border-faint"
-                  >
-                    <action.icon className="w-5 h-5 text-fg-muted group-hover:text-fg transition-colors shrink-0" aria-hidden="true" />
-                    <span className="flex-1 text-sm font-medium text-fg group-hover:text-fg transition-colors">
-                      {locale === 'es' ? action.labelEs : action.labelEn}
-                    </span>
-                    <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted group-hover:translate-x-0.5 transition-[transform,color]" />
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Tip Card */}
-            <div className="rounded-lg bg-surface-muted p-5">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
-                  <TrendUp weight="duotone" className="w-5 h-5 text-fg-subtle" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-fg text-sm mb-1">
-                    {locale === 'es' ? '¿Sabías que?' : 'Did you know?'}
-                  </h4>
-                  <p className="text-sm text-fg-muted leading-relaxed">
-                    {locale === 'es'
-                      ? 'Los perfiles completos tienen 3x más probabilidades de ser aprobados.'
-                      : 'Complete profiles are 3x more likely to be approved.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Help Card */}
-            <div className="rounded-lg bg-surface-muted p-5">
-              <h4 className="font-medium text-fg text-sm mb-2">
-                {locale === 'es' ? '¿Necesitas ayuda?' : 'Need help?'}
-              </h4>
-              <p className="text-sm text-fg-muted mb-4">
-                {locale === 'es'
-                  ? 'Nuestro equipo está listo para asistirte.'
-                  : 'Our team is ready to assist you.'}
-              </p>
-              <Link
-                href="/ayuda"
-                className="inline-flex items-center gap-2 text-sm font-medium text-fg hover:text-fg transition-colors"
-              >
-                {locale === 'es' ? 'Ir al centro de ayuda' : 'Go to help center'}
-              </Link>
-            </div>
-          </div>
-        </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       </motion.div>
     </div>
   );

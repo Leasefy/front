@@ -9164,7 +9164,7 @@
             "colaDesc": "Every appraisal you requested, step by step: you request it, a Leasefy reviewer reviews it, signs it and it gets delivered. You see when you requested it, when it was signed and the certificate as soon as it is ready. No physical visit is performed.",
             "colaKpiLabel": "Active",
             "colaEmptyTitle": "No requests yet",
-            "colaEmptyHint": "Request your first appraisal from the Summary: you generate the link, the estimate is made and you follow every step here until the signed certificate.",
+            "colaEmptyHint": "Request your first appraisal from Appraisals: you generate the link, the estimate is made and you follow every step here until the signed certificate.",
             "casoColaLabel": "My requests",
             "solicitarTitle": "Request an appraisal",
             "solicitarCta": "Request appraisal",
@@ -9231,7 +9231,7 @@
               }
             },
             "firmaNota": "The review and the certificate signature are handled by a Leasefy reviewer. No physical visit to the property is performed.",
-            "colaSinServicio": "Your requests cannot be shown: this environment does not have the appraisal service connected. Write to your Leasefy contact to turn it on.",
+            "colaSinServicio": "We couldn't read your requests: the appraisal service isn't responding. Everything else keeps working.",
             "colaPasosAria": "Where it stands: {{paso}}",
             "colaPedidoEl": "Requested on {{fecha}}",
             "colaFirmadoEl": "signed on {{fecha}}",

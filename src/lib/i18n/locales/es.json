@@ -9199,7 +9199,7 @@
             "colaDesc": "Cada avalúo que pediste, paso a paso: lo pides, un revisor de Leasefy lo revisa, lo firma y se entrega. Ves cuándo lo pediste, cuándo se firmó y el certificado apenas esté. No se realiza visita física.",
             "colaKpiLabel": "Activas",
             "colaEmptyTitle": "Aún no tienes solicitudes",
-            "colaEmptyHint": "Pide tu primer avalúo desde el Resumen: generas el enlace, se hace la estimación y aquí sigues cada paso hasta el certificado firmado.",
+            "colaEmptyHint": "Pide tu primer avalúo desde Avalúos: generas el enlace, se hace la estimación y aquí sigues cada paso hasta el certificado firmado.",
             "casoColaLabel": "Mis solicitudes",
             "solicitarTitle": "Solicitar un avalúo",
             "solicitarCta": "Solicitar avalúo",
@@ -9266,7 +9266,7 @@
               }
             },
             "firmaNota": "La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza visita física al inmueble.",
-            "colaSinServicio": "No se pueden ver tus solicitudes: este entorno no tiene conectado el servicio de avalúos. Escríbele a tu contacto de Leasefy para activarlo.",
+            "colaSinServicio": "No pudimos leer tus solicitudes: el servicio de avalúos no responde. Lo demás sigue funcionando.",
             "colaPasosAria": "En qué va: {{paso}}",
             "colaPedidoEl": "Pedido el {{fecha}}",
             "colaFirmadoEl": "firmado el {{fecha}}",

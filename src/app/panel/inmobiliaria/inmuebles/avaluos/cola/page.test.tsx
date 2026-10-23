@@ -145,7 +145,7 @@ describe('Mis solicitudes de avalúo — los avalúos de verdad', () => {
     respuestas.revision = { avaluos: [], total: 0, errorCrudo: caido }
     await montar()
     expect(container.querySelector('[data-testid="avaluos-cola-sin-servicio"]')?.textContent).toContain(
-      'No se pueden ver tus solicitudes',
+      'No pudimos leer tus solicitudes',
     )
     expect(container.textContent).not.toContain('Aún no tienes solicitudes')
     expect(container.querySelector('[data-testid="avaluos-activas"]')?.textContent).toContain('—')

@@ -39,6 +39,7 @@ import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { DescargarCertificado, tieneCertificado } from '../DescargarCertificado'
 import { PASOS_DEL_AVALUO, avanceDelAvaluo } from './pasos-del-avaluo'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const NS = 'inmobiliaria.ai.workspace.pages.avaluos'
 
@@ -172,18 +173,18 @@ function AvaluosCola() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <h1 className="text-h2 text-fg">{t(`${NS}.colaTitle`)}</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">{t(`${NS}.colaDesc`)}</p>
-        </div>
-        <div className="shrink-0 rounded-lg border border-border bg-card px-4 py-3 text-center" data-testid="avaluos-activas">
-          <p className="font-mono text-2xl tabular-nums text-foreground">
-            {activasSeSaben ? borradores.total + enRevision.total : '—'}
-          </p>
-          <p className="text-caption text-muted-foreground">{t(`${NS}.colaKpiLabel`)}</p>
-        </div>
-      </header>
+      {/* Glow up 22-10: el encabezado común; las activas junto al título (antes, una caja de KPI aparte). */}
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.nav.secAgentes')}
+        titulo={t(`${NS}.colaTitle`)}
+        descripcion={t(`${NS}.colaDesc`)}
+        junto={
+          <span className="text-caption text-fg-muted" data-testid="avaluos-activas">
+            <span className="font-mono tabular-nums text-fg">{activasSeSaben ? borradores.total + enRevision.total : '—'}</span>{' '}
+            {t(`${NS}.colaKpiLabel`).toLowerCase()}
+          </span>
+        }
+      />
 
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <EstadoDeDatos

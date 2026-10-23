@@ -178,7 +178,7 @@ export function RegistrosContables({
       setCuentas((previo) => previo ?? []);
       setFalloDeCuentas(true);
       setError(
-        mensajeDeContabilidad(c.reason, "No pudimos leer el plan de cuentas."),
+        mensajeDeContabilidad(c.reason, "No se pudo leer el plan de cuentas."),
       );
     }
     if (a.status === "fulfilled") {
@@ -239,7 +239,7 @@ export function RegistrosContables({
             <div className="flex min-w-0 items-start gap-2">
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <p className="text-sm text-fg">
-                No pudimos leer lo que ya está cargado. Reintenta antes de
+                No se pudo leer lo que ya está cargado. Reintenta antes de
                 registrar nada: sin esa lista podrías cargar dos veces la misma
                 apertura.
               </p>

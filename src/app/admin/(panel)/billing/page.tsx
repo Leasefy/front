@@ -12,6 +12,9 @@ import { estadoDelPlan } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { CajonDelDetalle } from '@/components/admin/screen/CajonDelDetalle'
 
 /** `GET /api/v1/admin/billing` (20-10-2026). */
 interface IngresoDeLaInmobiliaria {
@@ -81,6 +84,7 @@ const FALLO_DE_LA_FORMA = new Error(
 
 export default function IngresosPage() {
   const router = useRouter()
+  const [abierta, setAbierta] = useState<IngresoDeLaInmobiliaria | null>(null)
   const ingresos = useApiQuery<RespuestaDeIngresos>((signal) => adminApi('/billing', { signal }), [])
   const d = ingresos.data
   const formaVieja = Boolean(d) && !Array.isArray(d?.inmobiliarias)
@@ -245,7 +249,8 @@ export default function IngresosPage() {
         emptyHint="Cuando una inmobiliaria se registre, aparece aquí con lo que factura."
         emptyIcon={<ChartLineUp weight="duotone" />}
         aria-label="Ingresos por inmobiliaria"
-        onRowClick={(f) => router.push(`/admin/tenants/${f.tenant_id}`)}
+        // Ronda 30 (K4 de Nico): la fila abre el detalle en un cajón; la ficha sigue a un clic desde su pie.
+        onRowClick={(f) => setAbierta(f)}
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar inmobiliaria"
         segmentos={SEGMENTOS}
@@ -257,7 +262,22 @@ export default function IngresosPage() {
         masEnElExcel={[{ header: 'Cobrado el mes pasado', texto: (f) => f.cobradoMesPasadoCop }]}
       />
 
-      <p className="text-caption text-fg-subtle">
+<CajonDelDetalle
+        abierto={abierta !== null}
+        onCerrar={() => setAbierta(null)}
+        titulo={abierta?.nombre ?? 'Inmobiliaria'}
+        descripcion={mes ? `Ingresos de ${mes}` : undefined}
+        campos={abierta ? columnas.map((c) => ({ nombre: String(c.header), valor: c.cell(abierta) })) : []}
+        pie={
+          abierta ? (
+            <Button hideArrow onClick={() => router.push(`/admin/tenants/${abierta.tenant_id}`)} data-testid="abrir-ficha-de-la-inmobiliaria">
+              Abrir la ficha de la inmobiliaria
+            </Button>
+          ) : null
+        }
+      />
+
+            <p className="text-caption text-fg-subtle">
         La cobranza por voz se estima con la misma fórmula de su factura del mes (modelo, porcentaje y mínimo de cada inmobiliaria, en{' '}
         <Link href="/admin/pricing-config" className="underline underline-offset-2 hover:text-fg">
           Precios de la cobranza por voz

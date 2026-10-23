@@ -7,8 +7,7 @@
  * ficha lo dice por su lado). Sin nada, no se pinta.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { HourglassMedium, XCircle } from '@phosphor-icons/react';
-import { Presence } from '@leasefy/cadence';
+import { Presence, StatusBadge } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
@@ -57,17 +56,18 @@ export function TerminacionConElPropietarioAviso({
   return (
     <Presence show={!!visible} direction="down">
       {t?.estado === 'PENDIENTE' ? (
+        // Glow up 23-10: el estado por el punto y la palabra (StatusBadge), no por un bloque ámbar con su ícono.
         <div
-          className="flex flex-col gap-3 rounded-lg border border-warning/40 bg-warning-soft/40 p-4 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
           data-testid="terminacion-pendiente-del-propietario"
         >
-          <p className="flex items-start gap-2 text-sm text-foreground">
-            <HourglassMedium className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-            <span>
+          <div className="min-w-0 space-y-1.5">
+            <StatusBadge tone="warning">Esperando al propietario</StatusBadge>
+            <p className="text-body-sm text-fg">
               Esperando el sí del propietario para terminar el {diaLegible(t.terminadoEn)} por «{t.nombreDelMotivo}».
-              <span className="block text-caption text-muted-foreground">Se lo pedimos el {diaLegible(t.pedidaAt.slice(0, 10))}. El contrato sigue igual hasta que responda.</span>
-            </span>
-          </p>
+              <span className="block text-caption text-fg-muted">Se lo pedimos el {diaLegible(t.pedidaAt.slice(0, 10))}. El contrato sigue igual hasta que responda.</span>
+            </p>
+          </div>
           {puedeEditar ? (
             <Button variant="secondary" size="sm" hideArrow className="shrink-0" isLoading={retirando} onClick={() => void retirar()}>
               Retirar
@@ -75,13 +75,11 @@ export function TerminacionConElPropietarioAviso({
           ) : null}
         </div>
       ) : t?.estado === 'RECHAZADA' ? (
-        <div className="rounded-lg border border-border bg-card p-4" data-testid="terminacion-rechazada-por-el-propietario">
-          <p className="flex items-start gap-2 text-sm text-foreground">
-            <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden="true" />
-            <span>
-              El propietario no aceptó terminar el {diaLegible(t.terminadoEn)}: «{t.motivoDeLaRespuesta}».
-              <span className="block text-caption text-muted-foreground">El contrato sigue igual. Si hablan otra cosa, puedes volver a pedírselo.</span>
-            </span>
+        <div className="space-y-1.5 rounded-lg border border-border bg-card p-4" data-testid="terminacion-rechazada-por-el-propietario">
+          <StatusBadge tone="critical">El propietario no aceptó</StatusBadge>
+          <p className="text-body-sm text-fg">
+            El propietario no aceptó terminar el {diaLegible(t.terminadoEn)}: «{t.motivoDeLaRespuesta}».
+            <span className="block text-caption text-fg-muted">El contrato sigue igual. Si hablan otra cosa, puedes volver a pedírselo.</span>
           </p>
         </div>
       ) : null}

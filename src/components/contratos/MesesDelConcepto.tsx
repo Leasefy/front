@@ -127,18 +127,18 @@ export function MesesDelConcepto({
   const cambiarValor = (mes: string, v: string) =>
     onCambiar(valor.map((p) => (p.mes === mes ? { ...p, valorCop: Number(v) || 0 } : p)))
 
-  if (meses === null) return <div className="h-24 animate-pulse rounded-md bg-surface-muted" aria-hidden="true" />
+  if (meses === null) return <div className="h-24 animate-pulse rounded-xl bg-surface-muted" aria-busy="true" aria-label="Cargando los meses del contrato" />
   if (!disponible) {
     return (
-      <p role="alert" className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-caption text-warning">
+      <p role="alert" className="rounded-xl bg-warning-soft px-3 py-2 text-caption text-fg">
         {sinMigracion}
       </p>
     )
   }
-  if (falla) return <p className="text-caption text-destructive">{falla}</p>
+  if (falla) return <p className="text-caption text-danger">{falla}</p>
   if (meses.length === 0) {
     return (
-      <p className="text-caption text-muted-foreground">{motivoSinMeses ?? 'Este contrato todavía no tiene meses para elegir.'}</p>
+      <p className="text-caption text-fg-muted">{motivoSinMeses ?? 'Este contrato todavía no tiene meses para elegir.'}</p>
     )
   }
 
@@ -149,7 +149,7 @@ export function MesesDelConcepto({
     <div className="space-y-3" data-testid="meses-del-concepto">
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
-          <label htmlFor={`${idDelCampo}-diferir-en`} className="text-caption text-muted-foreground">
+          <label htmlFor={`${idDelCampo}-diferir-en`} className="text-caption text-fg-muted">
             Diferir en
           </label>
           <div className="flex items-center gap-2">
@@ -159,12 +159,12 @@ export function MesesDelConcepto({
               inputMode="numeric"
               min={1}
               max={60}
-              className="w-20 text-right tabular-nums"
+              className="w-20 text-right font-mono tabular-nums"
               value={cuantos}
               onChange={(e) => setCuantos(e.target.value)}
               data-testid="diferir-en"
             />
-            <span className="text-caption text-muted-foreground">meses desde la próxima cuota sin pagar</span>
+            <span className="text-caption text-fg-muted">meses desde la próxima cuota sin pagar</span>
           </div>
         </div>
         <Button type="button" variant="outline" size="sm" hideArrow disabled={!(Number(cuantos) > 0)} onClick={diferir} data-testid="diferir">
@@ -175,16 +175,18 @@ export function MesesDelConcepto({
       {/* Nico 22-10: «no veo un calendario que deje elegir los meses». Cada año
           con sus 12 meses; los de fuera del contrato quedan en gris. */}
       <div className="space-y-1.5">
-        <p className="text-caption text-muted-foreground">O marca en el calendario los meses en que se cobra (seguidos o sueltos):</p>
+        <p className="text-caption text-fg-muted">O marca en el calendario los meses en que se cobra (seguidos o sueltos):</p>
+        {/* Glow up 23-10: el calendario en arena, sin borde (va dentro de un cajón o un diálogo:
+            nada de tarjeta con borde dentro de otra). Los meses en blanco encima. */}
         <div
-          className="space-y-3 rounded-md border border-border p-3"
+          className="space-y-3 rounded-xl bg-surface-muted p-3"
           role="group"
           aria-label="Calendario de los meses del contrato"
           data-testid="calendario-de-meses"
         >
           {calendario.map(({ anio, meses: delAnio }) => (
             <div key={anio} className="space-y-1.5">
-              <p className="text-caption font-medium tabular-nums text-foreground">{anio}</p>
+              <p className="font-mono text-caption tabular-nums text-fg-muted">{anio}</p>
               <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6">
                 {delAnio.map((mes) => {
                   const m = porMes.get(mes)
@@ -193,7 +195,7 @@ export function MesesDelConcepto({
                       <span
                         key={mes}
                         aria-hidden="true"
-                        className="flex h-11 items-center justify-center rounded-md text-caption text-muted-foreground/40"
+                        className="flex h-11 items-center justify-center rounded-lg text-caption text-fg-subtle/60"
                         data-testid={`fuera-${mes}`}
                       >
                         {nombreCortoDelMes(mes)}
@@ -211,16 +213,16 @@ export function MesesDelConcepto({
                       title={estado ? `${mesEnPalabras(mes)}: ${estado === 'vencido' ? 'ya venció' : 'ya está pagado'}; el valor pasa a la próxima cuota sin pagar` : mesEnPalabras(mes)}
                       onClick={() => alternar(mes)}
                       className={cn(
-                        'flex h-11 flex-col items-center justify-center rounded-md border text-caption leading-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        'flex h-11 flex-col items-center justify-center rounded-lg border text-caption leading-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                         activo
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border bg-background text-foreground hover:border-primary/60 hover:bg-primary-soft',
-                        !m.sePuede && !activo && 'border-dashed text-muted-foreground',
+                          ? 'border-primary bg-primary text-primary-fg'
+                          : 'border-transparent bg-surface text-fg hover:border-primary/40',
+                        !m.sePuede && !activo && 'border-dashed border-border-strong text-fg-muted',
                       )}
                       data-testid={`mes-${mes}`}
                     >
-                      <span className="font-medium">{nombreCortoDelMes(mes)}</span>
-                      {estado ? <span className="text-[10px] opacity-80">{estado}</span> : null}
+                      <span>{nombreCortoDelMes(mes)}</span>
+                      {estado ? <span className="text-label opacity-80">{estado}</span> : null}
                     </button>
                   )
                 })}
@@ -228,19 +230,19 @@ export function MesesDelConcepto({
             </div>
           ))}
         </div>
-        <p className="text-caption text-muted-foreground">
+        <p className="text-caption text-fg-muted">
           En gris, los meses fuera del contrato. Si marcas uno pagado o vencido, su valor va en la próxima cuota sin pagar.
         </p>
       </div>
 
       <Presence show={valor.length > 0} direction="down">
-        <div className="space-y-2 rounded-md border border-border p-3">
+        <div className="space-y-2 border-t border-border pt-3">
           {valor.map((p) => (
             <div key={p.mes} className="flex flex-wrap items-center justify-between gap-2">
-              <label htmlFor={`${idDelCampo}-valor-${p.mes}`} className="min-w-0 text-sm text-foreground">
+              <label htmlFor={`${idDelCampo}-valor-${p.mes}`} className="min-w-0 text-body-sm text-fg">
                 {mesEnPalabras(p.mes).replace(/^./, (l) => l.toUpperCase())}
                 {noSePueden.has(p.mes) ? (
-                  <span className="block text-caption text-warning">
+                  <span className="block text-caption text-warning-700 dark:text-warning-100">
                     {noSePueden.get(p.mes) === 'VENCIDA' ? 'Ya venció' : 'Ya está pagado'}: va en la próxima cuota sin pagar.
                   </span>
                 ) : null}
@@ -256,17 +258,18 @@ export function MesesDelConcepto({
             </div>
           ))}
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2 text-caption">
-            <span className={cuadra ? 'text-muted-foreground' : 'text-destructive'} data-testid="suma-de-los-meses">
-              Suman {formatCurrency(suma)} de {formatCurrency(total)}
+            <span className={cuadra ? 'text-fg-muted' : 'text-danger'} data-testid="suma-de-los-meses">
+              Suman <span className="font-mono tabular-nums">{formatCurrency(suma)}</span> de{' '}
+              <span className="font-mono tabular-nums">{formatCurrency(total)}</span>
               {cuadra ? '' : ': tienen que dar el total.'}
             </span>
-            <button type="button" className="text-primary hover:underline" onClick={() => repartir([...elegidos])}>
+            <button type="button" className="text-primary underline-offset-4 hover:underline" onClick={() => repartir([...elegidos])}>
               Repartir en partes iguales
             </button>
           </div>
         </div>
       </Presence>
-      {error ? <p className="text-caption text-destructive">{error}</p> : null}
+      {error ? <p className="text-caption text-danger">{error}</p> : null}
     </div>
   )
 }

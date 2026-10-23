@@ -13,13 +13,11 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { useCobranzaAnalytics } from '@/lib/hooks/cobranza/use-cobranza-analytics'
 import { RecoveryRateChart }      from '@/components/inmobiliaria/cobranza/RecoveryRateChart'
 import { TopObjectionsTable }     from '@/components/inmobiliaria/cobranza/TopObjectionsTable'
-import { CadenceChannelMixChart } from '@/components/inmobiliaria/cobranza/CadenceChannelMixChart'
-import { HeatmapGrid24x7 }        from '@/components/inmobiliaria/cobranza/HeatmapGrid24x7'
 import { CostPerPesoKpi }         from '@/components/inmobiliaria/cobranza/CostPerPesoKpi'
-import { TopScriptsTable }        from '@/components/inmobiliaria/cobranza/TopScriptsTable'
 import { FalloDeCarga }           from '@/components/estado/FalloDeCarga'
 import { CrossFade } from '@leasefy/cadence'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa'
 
@@ -129,7 +127,6 @@ export default function CobranzaAnaliticaPage() {
   }
 
   // ── Widget grid (agencyGate passed) ───────────────────────────────────────
-  // maxCount for heatmap: derived from cadence.heatmap.cells
   // LA RESPUESTA: cuánto se recuperó de la cartera en el último corte (la
   // suma de todas las etapas de ese día; las mismas filas que pinta la gráfica).
   const filasDeRecuperacion = data?.recovery?.populated ? data.recovery.rows : []
@@ -141,8 +138,6 @@ export default function CobranzaAnaliticaPage() {
   const recuperado = delCorte.reduce((s, r) => s + (Number(r.recovered_cop) || 0), 0)
   const enCartera = delCorte.reduce((s, r) => s + (Number(r.total_cop_in_stage) || 0), 0)
 
-  const heatmapCells = data?.cadence?.heatmap?.cells ?? []
-  const heatmapMaxCount = Math.max(1, ...heatmapCells.map((c) => c.call_count))
 
   return (
     <CrossFade swapKey="analitica">
@@ -174,81 +169,48 @@ export default function CobranzaAnaliticaPage() {
         />
       ) : null}
 
-      {/* 5-widget grid — XR-03: responsive cols */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Revisora r25 (Analítica #2 y #3): la recuperación por etapa abierta —es
+          la pregunta de la pantalla—; objeciones y costo, plegados. Fuera
+          «Guiones con mayor conversión» (una consulta contra una tabla vacía) y
+          «Ritmo de contacto» (lo afina Leasefy, no la inmobiliaria), como dice la
+          nota de la navegación. Cada cuadro dice su título UNA vez: el del
+          componente (antes también un h2 de la página encima). */}
+      <section className="rounded-lg border border-border bg-card p-6" data-testid="analitica-recuperacion">
+        <RecoveryRateChart
+          data={{
+            populated: data?.recovery?.populated ?? false,
+            rows: data?.recovery?.rows ?? [],
+            reason: data?.recovery?.reason as 'agency-gate' | 'insufficient-buckets' | undefined,
+          }}
+        />
+      </section>
 
-        {/* Widget 1 — Recovery Rate (full-width row) */}
-        <section className="rounded-lg border border-border bg-card p-6 space-y-4 md:col-span-2">
-          <h2 className="text-base font-medium text-fg">
-            {t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.title')}
-          </h2>
-          <RecoveryRateChart
-            data={{
-              populated: data?.recovery?.populated ?? false,
-              rows: data?.recovery?.rows ?? [],
-              reason: data?.recovery?.reason as 'agency-gate' | 'insufficient-buckets' | undefined,
-            }}
-          />
-        </section>
-
-        {/* Widget 2 — Top Objections (single col) */}
-        <section className="rounded-lg border border-border bg-card p-6 space-y-4">
-          <h2 className="text-base font-medium text-fg">
-            {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.title')}
-          </h2>
-          <TopObjectionsTable
-            data={{
-              populated: data?.objections?.populated ?? false,
-              objections: data?.objections?.objections ?? [],
-              reason: data?.objections?.reason,
-            }}
-          />
-        </section>
-
-        {/* Widget 3 — Cost Per Peso (single col) */}
-        <section className="rounded-lg border border-border bg-card p-6 space-y-4">
-          <h2 className="text-base font-medium text-fg">
-            {t('inmobiliaria.ai.cobranza.analitica.widgets.costPerPeso.title')}
-          </h2>
-          <CostPerPesoKpi
-            data={(data?.costPerPeso ?? null) as any}
-            isLoading={isLoading}
-          />
-        </section>
-
-        {/* Widget 4 — Cadence: ChannelMix + Heatmap stacked (full-width row) */}
-        <section className="rounded-lg border border-border bg-card p-6 space-y-4 md:col-span-2">
-          <h2 className="text-base font-medium text-fg">
-            {t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.title')}
-          </h2>
-          <div className="space-y-6">
-            <CadenceChannelMixChart
+      <MasDetalles
+        etiqueta="Las objeciones y el costo de la cobranza"
+        etiquetaAbierto="Ocultar las objeciones y el costo"
+        data-testid="analitica-plegado"
+      >
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <section className="rounded-lg border border-border bg-card p-6">
+            <TopObjectionsTable
               data={{
-                populated: data?.cadence?.channelMix?.populated ?? false,
-                rows: data?.cadence?.channelMix?.rows ?? [],
-                reason: data?.cadence?.reason,
+                populated: data?.objections?.populated ?? false,
+                objections: data?.objections?.objections ?? [],
+                reason: data?.objections?.reason,
               }}
             />
-            <HeatmapGrid24x7
-              data={{
-                populated: data?.cadence?.heatmap?.populated ?? false,
-                cells: heatmapCells,
-                maxCount: heatmapMaxCount,
-                reason: data?.cadence?.reason,
-              }}
+          </section>
+          <section className="space-y-4 rounded-lg border border-border bg-card p-6">
+            <h2 className="text-body font-normal text-fg">
+              {t('inmobiliaria.ai.cobranza.analitica.widgets.costPerPeso.title')}
+            </h2>
+            <CostPerPesoKpi
+              data={(data?.costPerPeso ?? null) as any}
+              isLoading={isLoading}
             />
-          </div>
-        </section>
-
-        {/* Widget 5 — Top Scripts (Phase 38-04a: branches on data.topScripts.populated) */}
-        <section className="rounded-lg border border-border bg-card p-6 space-y-4">
-          <h2 className="text-base font-medium text-fg">
-            {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
-          </h2>
-          <TopScriptsTable data={data?.topScripts} />
-        </section>
-
-      </div>
+          </section>
+        </div>
+      </MasDetalles>
     </div>
     </CrossFade>
   )

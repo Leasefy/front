@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Appear, motionDuration, motionEase } from '@leasefy/cadence';
+import { Appear } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
 import { CheckCircle, ClipboardText } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
@@ -19,7 +19,7 @@ const CONTEXT_MESSAGES = {
     en: 'To view your active rentals, first complete your profile.',
   },
   applications: {
-    es: 'Para postular a propiedades y ver tus aplicaciones, completa tu perfil.',
+    es: 'Para postularte a inmuebles y ver tus postulaciones, completa tu perfil.',
     en: 'To apply to properties and view your applications, complete your profile.',
   },
   payments: {
@@ -35,8 +35,8 @@ const CONTEXT_MESSAGES = {
     en: 'To view messages with landlords, complete your profile.',
   },
   saved: {
-    es: 'Para guardar propiedades favoritas, completa tu perfil.',
-    en: 'To save favorite properties, complete your profile.',
+    es: 'Para guardar los inmuebles que te gustan, completa tu perfil.',
+    en: 'To save the homes you like, complete your profile.',
   },
 };
 
@@ -46,7 +46,7 @@ const CONTEXT_MESSAGES = {
  */
 export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirstProps) {
   const { locale } = useI18n();
-  const { progressPercentage, completedSteps, totalSteps } = useOnboardingStatus();
+  const { completedSteps, totalSteps } = useOnboardingStatus();
 
   const contextMessage = CONTEXT_MESSAGES[context];
 
@@ -54,10 +54,8 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
     <div className="min-h-[60vh] flex items-center justify-center p-4">
       {/* Como un vacío del sistema: aparece después de cargar (8 px, `Appear`). */}
       <Appear className="max-w-md w-full text-center">
-        {/* Icon */}
-        <div className="w-20 h-20 mx-auto mb-6 rounded-lg bg-[#EEF1FF] border border-[#1A40FF]/30 flex items-center justify-center">
-          <ClipboardText className="w-10 h-10 text-[#1A40FF]" />
-        </div>
+        {/* GLOW UP 22-10: el ícono suelto (antes, en una caja azul con borde azul). */}
+        <ClipboardText className="w-8 h-8 mx-auto mb-4 text-fg-muted" aria-hidden="true" />
 
         {/* Title */}
         <h2 className="text-h3 text-fg mb-3">
@@ -69,26 +67,12 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
           {locale === 'es' ? contextMessage.es : contextMessage.en}
         </p>
 
-        {/* Progress indicator */}
-        <div className="mb-8 px-4">
-          <div className="flex items-center justify-between text-sm text-fg-muted mb-2">
-            <span>
-              {locale === 'es' ? 'Progreso del perfil' : 'Profile progress'}
-            </span>
-            <span className="font-medium text-fg">
-              {completedSteps.length}/{totalSteps}
-            </span>
-          </div>
-          <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
-            {/* Se llena con `transform` (translateX), no con `width`. */}
-            <motion.div
-              initial={{ x: '-100%' }}
-              animate={{ x: `${progressPercentage - 100}%` }}
-              transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
-              className="h-full w-full bg-[#1A40FF] rounded-full"
-            />
-          </div>
-        </div>
+        {/* El avance en una línea y sus pasos en contorno (antes, además una barra azul que decía lo mismo). */}
+        <p className="mb-3 text-sm text-fg-muted" data-testid="avance-del-perfil">
+          {locale === 'es' ? 'Llevas ' : 'You have '}
+          <span className="font-mono tabular-nums text-fg">{completedSteps.length}/{totalSteps}</span>
+          {locale === 'es' ? ' pasos' : ' steps done'}
+        </p>
 
         {/* Steps preview */}
         <div className="flex justify-center gap-3 mb-8">
@@ -99,14 +83,14 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
               <div
                 key={stepNumber}
                 className={cn(
-                  'w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors',
+                  'w-9 h-9 rounded-full flex items-center justify-center bg-surface font-mono text-sm tabular-nums transition-colors',
                   isCompleted
-                    ? 'bg-[#E8F3EC] text-[#2C7A53]'
-                    : 'bg-surface-muted text-fg-subtle'
+                    ? 'border border-success text-success'
+                    : 'border border-border text-fg-subtle'
                 )}
               >
                 {isCompleted ? (
-                  <CheckCircle className="w-5 h-5" />
+                  <CheckCircle className="w-5 h-5" aria-label={locale === 'es' ? `Paso ${stepNumber}, hecho` : `Step ${stepNumber}, done`} />
                 ) : (
                   stepNumber
                 )}
@@ -116,23 +100,20 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
         </div>
 
         {/* CTA Button */}
-        <Link
-          href="/onboarding/inquilino"
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#1A40FF] hover:opacity-90 text-white font-medium rounded-full transition-colors"
-        >
-          {completedSteps.length > 0
-            ? (locale === 'es' ? 'Continuar perfil' : 'Continue profile')
-            : (locale === 'es' ? 'Comenzar ahora' : 'Get started')}
-        </Link>
+        {/* El botón de la casa, y dice lo que pasa (antes, un enlace pintado a mano con «Comenzar ahora»). */}
+        <Button asChild hideArrow>
+          <Link href="/onboarding/inquilino">
+            {completedSteps.length > 0
+              ? (locale === 'es' ? 'Seguir con mi perfil' : 'Continue my profile')
+              : (locale === 'es' ? 'Completar mi perfil' : 'Complete my profile')}
+          </Link>
+        </Button>
 
         {/* Secondary link */}
         <p className="mt-4 text-sm text-fg-muted">
           {locale === 'es' ? '¿Prefieres explorar primero?' : 'Prefer to explore first?'}{' '}
-          <Link
-            href="/inquilino/explorar"
-            className="text-[#1A40FF] hover:text-[#1A40FF] font-medium"
-          >
-            {locale === 'es' ? 'Ver propiedades' : 'Browse properties'}
+          <Link href="/inquilino/explorar" className="text-primary underline-offset-4 hover:underline">
+            {locale === 'es' ? 'Ver inmuebles' : 'Browse homes'}
           </Link>
         </p>
       </Appear>

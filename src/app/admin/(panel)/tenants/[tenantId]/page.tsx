@@ -38,6 +38,7 @@ import { NitDeLaInmobiliaria } from '@/components/admin/NitDeLaInmobiliaria'
 import { FacturadorFeelDeLaInmobiliaria } from '@/components/admin/FacturadorFeelDeLaInmobiliaria'
 import { RestablecerSegundoFactor } from '@/components/admin/RestablecerSegundoFactor'
 import { AccionesDelPlan } from '@/components/admin/AccionesDelPlan'
+import { AGENCY_PLANS } from '@/lib/constants/subscription-plans'
 
 // ---------- Types ----------
 
@@ -481,7 +482,7 @@ export default function TenantDetailPage() {
   const planDeLaInmobiliaria = p ? (
     <div className="space-y-6">
       <Tarjeta
-        titulo={plan ? `Plan ${plan.nombre ?? plan.tier}` : 'Sin plan'}
+        titulo={plan ? `Plan ${plan.nombre ?? AGENCY_PLANS.find((x) => x.id === plan.tier)?.name ?? plan.tier}` : 'Sin plan'}
         descripcion={
           plan ? undefined : 'No tiene suscripción: todavía no eligió un plan o se registró antes de los planes.'
         }
@@ -522,7 +523,10 @@ export default function TenantDetailPage() {
                     {
                       label: 'Cambio programado',
                       value: [
-                        plan.cambio_pendiente.tier ? `Plan ${plan.cambio_pendiente.tier}` : null,
+                        // Ronda 30: el nombre del plan (antes el código, «Plan starter»).
+                        plan.cambio_pendiente.tier
+                          ? `Plan ${AGENCY_PLANS.find((x) => x.id === plan.cambio_pendiente!.tier)?.name ?? plan.cambio_pendiente.tier}`
+                          : null,
                         plan.cambio_pendiente.modo ? MODO_DE_COBRO_DEL_PLAN[plan.cambio_pendiente.modo] : null,
                         plan.cambio_pendiente.desde ? `desde ${fmtFecha(plan.cambio_pendiente.desde)}` : null,
                       ]
@@ -697,7 +701,7 @@ export default function TenantDetailPage() {
           <span className="flex flex-wrap items-center gap-1.5">
             {p ? (
               <Pill tone={estadoPlan.tono} dot>
-                {plan ? `${plan.nombre ?? plan.tier} · ${estadoPlan.nombre}` : 'Sin plan'}
+                {plan ? `${plan.nombre ?? AGENCY_PLANS.find((x) => x.id === plan.tier)?.name ?? plan.tier} · ${estadoPlan.nombre}` : 'Sin plan'}
               </Pill>
             ) : (
               <Pill tone="warn">Sólo existe en la cobranza por voz</Pill>

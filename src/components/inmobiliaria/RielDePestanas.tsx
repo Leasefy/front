@@ -93,9 +93,25 @@ export function RielDePestanas({ items, ariaLabel, visibles }: RielDePestanasPro
     }
   }, [masAbierto])
 
+  /*
+   * Revisora r27 (C14): a 390 el riel arrancaba en la primera pestaña aunque la activa estuviera al final (Castigada,
+   * Jurídico…): al montar y al cambiar de ruta, se desliza para dejar la activa a la vista (sólo de lado, sin mover
+   * la página).
+   */
+  const rielRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const cont = rielRef.current
+    const activa = cont?.querySelector<HTMLElement>('[aria-current="page"]')
+    if (!cont || !activa || cont.scrollWidth <= cont.clientWidth) return
+    cont.scrollLeft = Math.max(0, activa.offsetLeft - (cont.clientWidth - activa.clientWidth) / 2)
+  }, [pathname])
+
   return (
     <nav aria-label={ariaLabel}>
-      <div className="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-[12px] bg-surface-muted p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        ref={rielRef}
+        className="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-[12px] bg-surface-muted p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {riel.map((p) => {
           const activa = pathname === p.href
           const Icono = p.icon

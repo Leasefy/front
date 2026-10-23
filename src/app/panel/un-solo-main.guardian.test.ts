@@ -30,7 +30,8 @@ const LAYOUT = 'src/app/panel/inmobiliaria/layout.tsx';
 
 function conMain(d: string, out: string[] = []): string[] {
   for (const e of readdirSync(d)) {
-    const p = join(d, e);
+    // `join` yields backslashes on Windows, but LAYOUT and DECLARADOS use `/`.
+    const p = join(d, e).split('\\').join('/');
     if (statSync(p).isDirectory()) conMain(p, out);
     else if (
       /\.tsx$/.test(p) &&

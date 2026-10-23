@@ -68,6 +68,11 @@ const SITES: Array<[file: string, anchor: string]> = [
   ['src/components/cobros/extracto-bancario/LoQueProponeElAgente.tsx', "<summary className=\""],
   ['src/components/cobros/extracto-bancario/RelacionDeAseguradora.tsx', "<summary className=\""],
   ['src/components/inmobiliaria/cobranza/CobranzaImportCard.tsx', "<summary className=\""],
+  // WU-10: shared soft targets
+  ['src/components/inmobiliaria/BarraDePestanas.tsx', 'aria-label="Desplazar secciones a la izquierda"'],
+  ['src/components/inmobiliaria/BarraDePestanas.tsx', 'aria-label="Desplazar secciones a la derecha"'],
+  ['src/components/auth/ProtectedRoute.tsx', 'data-testid="reintentar-perfil"'],
+  ['src/components/ui/breadcrumb.tsx', 'const LINK_CLASSES ='],
 ];
 
 describe('standalone controls opt into a 44 px touch target', () => {
@@ -107,5 +112,22 @@ describe('cadence segmented controls get a coarse-pointer 44 px floor', () => {
   });
   it('TabsList variant=segmented triggers', () => {
     block('[role="tab"][data-variant="segmented"]');
+  });
+});
+
+// T-0173 WU-10: the agency main wrapper must clear the fixed mobile nav
+// (57 px + safe area), and the fixed header must not hide scrolled-to targets.
+describe('agency layout clears the mobile bottom nav', () => {
+  it('main wrapper pads by the nav height plus the safe area, mobile only', () => {
+    const src = readFileSync(join(process.cwd(), 'src/app/panel/inmobiliaria/layout.tsx'), 'utf8');
+    expect(src).toContain('pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0');
+  });
+  it('the dispersion summary bar sticks above the nav on phones', () => {
+    const src = readFileSync(join(process.cwd(), 'src/components/inmobiliaria/dispersion/GenerarDispersion.tsx'), 'utf8');
+    expect(src).toContain('sticky bottom-[calc(env(safe-area-inset-bottom)+3.5625rem)] z-10 lg:bottom-0');
+  });
+  it('html reserves scroll padding under the sticky header', () => {
+    const css = readFileSync(join(process.cwd(), 'src/app/globals.css'), 'utf8');
+    expect(css).toMatch(/html\s*\{[^}]*scroll-padding-top:/);
   });
 });

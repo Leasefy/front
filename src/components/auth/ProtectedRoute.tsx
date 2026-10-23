@@ -362,7 +362,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
             </p>
             <button
               type="button"
-              className="text-sm underline underline-offset-4"
+              className="relative hit-area-44 text-sm underline underline-offset-4"
               onClick={() => { void refreshUser() }}
               data-testid="reintentar-perfil"
             >

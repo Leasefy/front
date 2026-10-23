@@ -71,7 +71,7 @@ const SEPARATOR_SIZE: Record<BreadcrumbSize, string> = {
 };
 
 const LINK_CLASSES =
-  'flex items-center gap-1 text-muted-foreground transition-colors duration-150 hover:text-foreground';
+  'flex items-center gap-1 text-muted-foreground transition-colors duration-150 hover:text-foreground [@media(pointer:coarse)]:min-h-11';
 const DISABLED_CLASSES =
   'flex items-center gap-1 text-muted-foreground/50 pointer-events-none';
 

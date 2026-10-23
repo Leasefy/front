@@ -49,6 +49,7 @@ import { Cargado, useCargaDeNomina } from './usar-nomina';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
+import { sinMayusculasDeEnfasis } from '@/lib/texto/sin-mayusculas-de-enfasis';
 
 /** Las tres cifras que fija el Estado: plata, con su tope (🔁 el del back). */
 type CifraDelEstado = keyof typeof TOPE_DE_LAS_CIFRAS_DEL_ESTADO;
@@ -137,7 +138,8 @@ export function ParametrosDeNominaPanel({ anio }: { anio?: number }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Revisora r25 (Configuración del año, UI): la etiqueta encima, como el resto de los campos. */}
+      <div className="flex flex-col items-start gap-1.5">
         <Label htmlFor="anio-de-nomina" className="text-caption text-fg-muted">
           Año
         </Label>
@@ -296,7 +298,7 @@ function Formulario({
         cifra={`${cargadas} de 3`}
         contexto={
           !cargado
-            ? 'sin cargar todavía: sin ellas no se liquida'
+            ? 'sin ellas no se liquida'
             : cargado.confirmadoAt
               ? `cargadas y confirmadas por el contador el ${fechaCorta(cargado.confirmadoAt.slice(0, 10))}`
               : 'cargadas, sin confirmar por el contador'
@@ -304,16 +306,16 @@ function Formulario({
         data-testid="cifra-de-parametros"
       />
 
+      {/* Revisora r25 (Configuración del año #1): «falta todo» se decía tres veces (la cifra, un ámbar y
+          «Todavía nadie ha cargado…»). Ahora la cifra y UNA línea con cuáles faltan y quién las fija. */}
       {!datos.completos ? (
-        <Avisos
-          avisos={[
-            `Falta ${datos.queFalta.join(', ')}. Sin eso la nómina de ${anio} no se puede liquidar.`,
+        <p className="max-w-3xl text-body-sm text-fg-muted" data-testid="faltan-cifras">
+          Falta {datos.queFalta.join(', ')}.{' '}
+          {sinMayusculasDeEnfasis(
             datos.propuesta?.motivoSiFalta ??
               'El salario mínimo y el auxilio de transporte los decreta el Gobierno cada diciembre; la UVT la fija la DIAN por resolución. Leasefy no los inventa.',
-          ]}
-          titulo={`Las cifras de ${anio} todavía no están`}
-          testId="faltan-cifras"
-        />
+          )}
+        </p>
       ) : null}
 
       {datos.guardado && datos.guardado.confirmadoAt == null ? (
@@ -343,6 +345,9 @@ function Formulario({
           cargar es teclear el decreto, confirmar es que un contador diga que
           está bien. Guardar de nuevo no reconfirma.
         */}
+        {/* Revisora r25 (#1): sin nada cargado, este bloque ya no dice «Todavía nadie ha cargado…»: lo
+            dicen la cifra y la línea de arriba. Sólo sale con algo que contar (quién y cuándo). */}
+        {cargado ? (
         <div
           className="rounded-lg border border-border bg-surface p-4 text-caption leading-relaxed text-fg-muted"
           data-testid="quien-y-cuando"
@@ -381,6 +386,7 @@ function Formulario({
             </p>
           )}
         </div>
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-3">
           {(
             [
@@ -422,13 +428,7 @@ function Formulario({
         </div>
       </section>
 
-      {avisos.length > 0 ? (
-        <Avisos
-          avisos={avisos}
-          titulo="Lo que hay que confirmar con tu contador o tu abogado laboral"
-          testId="avisos-de-factores"
-        />
-      ) : null}
+
 
       {/* ── Los factores ─────────────────────────────────────────────────── */}
       <MasDetalles
@@ -539,6 +539,17 @@ function Formulario({
           volver a mirarlo.
         </p>
       </section>
+      {/* Revisora r25 (#2): lo que hay que confirmar con el contador se consulta: plegado y DEBAJO del
+          formulario (antes ≈180 px abiertos antes de los campos que hay que llenar). */}
+      {avisos.length > 0 ? (
+        <MasDetalles
+          etiqueta={`Lo que hay que confirmar con tu contador o tu abogado laboral (${avisos.length})`}
+          etiquetaAbierto="Ocultar"
+          montadoSiempre
+        >
+          <Avisos avisos={avisos.map(sinMayusculasDeEnfasis)} testId="avisos-de-factores" />
+        </MasDetalles>
+      ) : null}
     </div>
   );
 }

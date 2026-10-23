@@ -386,12 +386,12 @@ describe('quién cargó las cifras y cuándo', () => {
     expect(bloque?.textContent).toContain('no se pudo resolver quién');
   });
 
-  it('sin nada cargado, lo dice', async () => {
+  it('sin nada cargado, lo dice UNA vez (r25 #1): la línea de lo que falta, sin el bloque de quién y cuándo', async () => {
     h.parametros.mockResolvedValue(sinCargar());
     await montar();
-    expect(
-      contenedor.querySelector('[data-testid="quien-y-cuando"]')?.textContent,
-    ).toContain('Todavía nadie ha cargado');
+    expect(contenedor.querySelector('[data-testid="faltan-cifras"]')?.textContent).toContain('Falta el salario mínimo del año');
+    expect(contenedor.querySelector('[data-testid="quien-y-cuando"]')).toBeNull();
+    expect(contenedor.textContent).not.toContain('Todavía nadie ha cargado');
   });
 
   it('🔴 con cifras YA cargadas, la referencia del año conocido SIGUE a la vista', async () => {

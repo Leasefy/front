@@ -19,7 +19,6 @@
  */
 import {
   Bank,
-  Bell,
   Buildings,
   CalendarBlank,
   ChartBar,
@@ -31,7 +30,6 @@ import {
   SealCheck,
   Users,
   UsersThree,
-  Wallet,
   Wrench,
 } from '@phosphor-icons/react';
 
@@ -99,10 +97,12 @@ export const MIS_INMUEBLES: SeccionDelPropietario = {
   es: 'Mis inmuebles',
   en: 'My properties',
   pestanas: [
-    { href: '/panel/propiedades', es: 'Propiedades', en: 'Properties', icon: Buildings, tambienEn: ['/panel/revisar-canon'] },
+    // Revisora r25: «Inmuebles» (antes «Propiedades»). «Elegir inquilino» lleva a la pantalla que el independiente
+    // SÍ tiene (escoger-inquilino); `/panel/seleccion` es la elección de quien tiene inmobiliaria y queda debajo.
+    { href: '/panel/propiedades', es: 'Inmuebles', en: 'Properties', icon: Buildings, tambienEn: ['/panel/revisar-canon'] },
     { href: '/panel/candidatos', es: 'Candidatos', en: 'Candidates', icon: Users },
     { href: '/panel/visitas', es: 'Visitas', en: 'Visits', icon: CalendarBlank },
-    { href: '/panel/seleccion', es: 'Elegir inquilino', en: 'Choose a tenant', icon: UsersThree, tambienEn: ['/panel/escoger-inquilino'] },
+    { href: '/panel/escoger-inquilino', es: 'Elegir inquilino', en: 'Choose a tenant', icon: UsersThree, tambienEn: ['/panel/seleccion'] },
   ],
 };
 
@@ -112,9 +112,10 @@ export const CONTRATOS_Y_PLATA: SeccionDelPropietario = {
   en: 'Contracts and money',
   pestanas: [
     { href: '/panel/contratos', es: 'Contratos', en: 'Contracts', icon: FileText },
-    { href: '/panel/leases', es: 'Arriendos', en: 'Leases', icon: House },
+    // Revisora r25: «Mi plata» (portafolio) salió del menú del independiente: sólo se llena con una inmobiliaria, y lo
+    // suyo —lo que le paga cada inquilino— ya está en Arriendos, donde cae si llega por un enlace.
+    { href: '/panel/leases', es: 'Arriendos', en: 'Leases', icon: House, tambienEn: ['/panel/portafolio'] },
     { href: '/panel/estado-de-cuenta', es: 'Estado de cuenta', en: 'Account statement', icon: Receipt },
-    { href: '/panel/portafolio', es: 'Mi plata', en: 'My money', icon: Wallet },
     { href: '/panel/informes', es: 'Informes', en: 'Reports', icon: ChartBar, tambienEn: ['/panel/certificados'] },
   ],
 };
@@ -124,8 +125,9 @@ export const SOLICITUDES_DEL_INDEPENDIENTE: SeccionDelPropietario = {
   es: 'Solicitudes',
   en: 'Requests',
   pestanas: [
-    { href: '/panel/solicitudes', es: 'Solicitudes', en: 'Requests', icon: Lifebuoy, tambienEn: ['/panel/aprobaciones'] },
-    { href: '/panel/novedades', es: 'Novedades', en: 'Updates', icon: Bell },
+    // Revisora r25: «Novedades» salió del menú del independiente (las manda una inmobiliaria); «Por decidir» también
+    // cae aquí, para que se marque su pestaña.
+    { href: '/panel/solicitudes', es: 'Solicitudes', en: 'Requests', icon: Lifebuoy, tambienEn: ['/panel/aprobaciones', '/panel/novedades', '/panel/por-decidir'] },
   ],
 };
 

@@ -33,11 +33,15 @@ export default function SeleccionPage() {
 
   if (unavailable) {
     return (
+      // Revisora r25: sólo la ve el independiente; sin jerga («auto-valida») ni «tu inmobiliaria». Lo suyo: sus candidatos.
       <PortalPlaceholder
+        seccion="Mis inmuebles"
         title="Elegir inquilino"
-        subtitle="Compara los postulados asegurables y elige tú quién vive en tu inmueble."
+        subtitle="Compara a los candidatos y elige tú quién vive en tu inmueble."
         icon={UsersThree}
-        emptyDescription="Vas a poder comparar lado a lado los postulados asegurables de tu inmueble y elegir con un clic —tu elección se auto-valida. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
+        tituloDelVacio="Tus candidatos están en Candidatos"
+        emptyDescription="Ahí ves quién se postuló a cada inmueble, su calificación y sus documentos, y lo eliges. La comparación lado a lado con los asegurables llega cuando una inmobiliaria te administra los inmuebles en Leasefy."
+        accion={{ label: 'Ver mis candidatos', href: '/panel/candidatos' }}
       />
     );
   }

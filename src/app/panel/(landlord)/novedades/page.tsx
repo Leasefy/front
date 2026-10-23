@@ -30,11 +30,15 @@ export default function NovedadesPage() {
 
   if (unavailable) {
     return (
+      // Revisora r25: sólo la ve el independiente; no se le habla de «tu inmobiliaria». Lo suyo: sus solicitudes.
       <PortalPlaceholder
+        seccion="Solicitudes"
         title="Novedades"
         subtitle="Tu resumen mensual y el estado de los daños, sin tener que llamar."
         icon={Bell}
-        emptyDescription="Vas a recibir un resumen de fin de mes y a ver el estado de los daños de tu inmueble, con tus preferencias de aviso bajo control. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
+        tituloDelVacio="Los daños y arreglos los ves en Solicitudes"
+        emptyDescription="Ahí sigues cada daño de tu inmueble y lo que te piden aprobar. El resumen de fin de mes lo manda una inmobiliaria cuando te administra los inmuebles en Leasefy."
+        accion={{ label: 'Ver mis solicitudes', href: '/panel/solicitudes' }}
       />
     );
   }

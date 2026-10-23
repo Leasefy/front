@@ -202,6 +202,7 @@ export default function NotificacionesPage() {
         {/* GLOW UP 21-10: el encabezado común (sin el ícono en caja ni sus colores fijos). */}
         <EncabezadoDePantalla
           className="mb-8"
+          seccion={locale === 'es' ? 'Tu cuenta' : 'Your account'}
           titulo={locale === 'es' ? 'Notificaciones' : 'Notifications'}
           descripcion={
             notifications.length > 0 ? (

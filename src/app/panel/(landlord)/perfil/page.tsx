@@ -383,6 +383,7 @@ export default function PropietarioPerfilPage() {
             azul con barra, anillo de porcentaje y cinco tarjetas con el ícono en una caja de color. */}
         <EncabezadoDePantalla
           className="mb-8"
+          seccion={locale === 'es' ? 'Tu cuenta' : 'Your account'}
           titulo={locale === 'es' ? 'Mi perfil' : 'My profile'}
           descripcion={locale === 'es' ? 'Tus datos personales y cómo te contactamos.' : 'Your personal details and how we reach you.'}
         />

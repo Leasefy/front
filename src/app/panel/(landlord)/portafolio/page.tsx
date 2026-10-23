@@ -57,11 +57,16 @@ export default function PortafolioPage() {
 
   if (unavailable || !portafolio) {
     return (
+      // Revisora r25: esta pantalla sólo la ve el propietario independiente (al de inmobiliaria el layout lo lleva
+      // a su estado de cuenta). No se le habla de «tu inmobiliaria»: se le dice dónde está lo suyo.
       <PortalPlaceholder
+        seccion="Contratos y plata"
         title="Mi plata"
         subtitle="Tus pagos, la proyección de tu contrato y tu portafolio, en un solo lugar."
         icon={Wallet}
-        emptyDescription="Aquí vas a ver cuánto te pagaron, cuándo y por qué concepto, la proyección de tus ingresos y el consolidado de todos tus inmuebles —con informe descargable. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
+        tituloDelVacio="Lo que te pagan está en Arriendos"
+        emptyDescription="Cuánto te paga cada inquilino y cuándo, inmueble por inmueble. El consolidado con informe descargable llega cuando una inmobiliaria te administra los inmuebles en Leasefy."
+        accion={{ label: 'Ver mis arriendos', href: '/panel/leases' }}
       />
     );
   }

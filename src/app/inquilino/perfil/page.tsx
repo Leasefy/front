@@ -370,7 +370,7 @@ export default function PerfilPage() {
             de siempre —«Para completar tu perfil te faltan N pasos», cada uno con «Completar», y una línea
             cuando ya está todo—. Antes, un bloque azul con anillo de porcentaje y cinco tarjetas con caja
             de ícono. */}
-        <EncabezadoDePantalla titulo={t('profile.title')} descripcion={t('profile.subtitle')} className="mb-8" />
+        <EncabezadoDePantalla seccion={locale === 'es' ? 'Tu cuenta' : 'Your account'} titulo={t('profile.title')} descripcion={t('profile.subtitle')} className="mb-8" />
 
         <ListaParaEmpezar
           className="mb-8"

@@ -138,7 +138,7 @@ describe('Mi Calificación Leasefy: los arriendos de la persona', () => {
 describe('Mi Calificación Leasefy: glow up 22-10', () => {
   it('si no carga, el encabezado común sigue arriba del fallo', async () => {
     await montar(new Error('boom'))
-    expect(document.querySelector('h1')?.textContent).toContain('Mi Calificación Leasefy')
+    expect(document.querySelector('h1')?.textContent).toContain('Mi calificación')
   })
 
   it('con más de 20 consultas, dice que se ven las 20 más recientes', async () => {

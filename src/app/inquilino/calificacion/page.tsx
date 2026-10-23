@@ -204,7 +204,7 @@ export default function MiCalificacionPage({
 }) {
   const tr = useTr();
   const router = useRouter();
-  const { formatCurrency } = useI18n();
+  const { formatCurrency, locale } = useI18n();
   const localeFechas = useLocaleDeFechas();
   const idiomaDelPanel = useLocaleDelPanel();
   const { certificado } = use(searchParams);
@@ -295,7 +295,8 @@ export default function MiCalificacionPage({
 
   const encabezado = (
     <EncabezadoDePantalla
-      titulo={tr('Mi Calificación Leasefy')}
+      // Revisora r25: el título es el de la pestaña y de la fila del menú (antes «Mi Calificación Leasefy»).
+      titulo={locale === 'es' ? 'Mi calificación' : 'My rating'}
       descripcion={tr('Cómo te ven para arrendar: tu historial de pagos en Leasefy y tus documentos. Verla es gratis, siempre.')}
     />
   );

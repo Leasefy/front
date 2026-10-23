@@ -128,7 +128,7 @@ function Ofertas({ caso }: { caso: CasoDeVinci }) {
       <div className="space-y-5">
         {caso.ofertasSugeridas.length > 0 ? (
           <div>
-            <p className="text-label uppercase text-fg-muted">Vinci sugiere</p>
+            <p className="font-mono text-label uppercase text-fg-muted">Vinci sugiere</p>
             <ul className="mt-2 space-y-2">
               {caso.ofertasSugeridas.map((o) => (
                 <li key={o.tipo} className="text-sm text-fg">
@@ -193,7 +193,7 @@ function Ofertas({ caso }: { caso: CasoDeVinci }) {
         <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="las ofertas" onReintentar={() => refetch()}>
           {data && data.length > 0 ? (
             <div>
-              <p className="text-label uppercase text-fg-muted">Registradas</p>
+              <p className="font-mono text-label uppercase text-fg-muted">Registradas</p>
               <ul className="mt-2 divide-y divide-border-faint border-y border-border-faint" data-testid="vinci-ofertas">
                 {data.map((o) => {
                   const estado = ESTADO_DE_LA_OFERTA[o.estado]
@@ -392,7 +392,11 @@ function Historial({ caseId }: { caseId: string }) {
               <li key={d.id} className="px-5 py-3 text-sm text-fg">
                 {/* Sin mono ni `tabular-nums`: la fecha lleva coma y el ancho fijo la separaba («sept ,  5:10»). */}
                 <p className="text-caption text-fg-muted">{fechaYHora(d.createdAt)}</p>
-                <p className="mt-0.5">{QUE_ES_CADA_DECISION[d.decisionType] ?? d.decisionType}</p>
+                <p className="mt-0.5">
+                  {/* Ronda 30: un tipo que el front no conoce se lee en palabras, no con su código. */}
+                  {QUE_ES_CADA_DECISION[d.decisionType] ??
+                    d.decisionType.replace(/_/g, ' ').replace(/^./, (c) => c.toLocaleUpperCase('es'))}
+                </p>
                 {typeof d.payload?.texto === 'string' ? <p className="mt-1 text-fg-muted">«{d.payload.texto}»</p> : null}
                 {d.decisionType === 'mensaje_no_salio' && typeof d.payload?.mensaje === 'string' ? (
                   <p className="mt-1 text-fg-muted">{d.payload.mensaje}</p>

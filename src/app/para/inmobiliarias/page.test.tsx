@@ -71,17 +71,13 @@ describe('/para/inmobiliarias · identidad nueva', () => {
     expect(todos).toContain('Ver precios → /pricing');
   });
 
-  it('las cifras van en DM Mono y los testimonios se recorren con sus puntos', () => {
+  // Ronda 30 (a propósito): sólo cifras que se pueden sostener y sin testimonios (eran inventados).
+  it('las cifras van en DM Mono y no hay testimonios inventados', () => {
     const heroe = contenedor.querySelector('[data-testid="heroe-de-para"]')!;
     const fila = heroe.querySelector('[data-testid="cifras"]')!;
     const cifras = Array.from(fila.querySelectorAll('dd')).map((d) => d.textContent);
-    expect(cifras).toEqual(['92%', '500+', '10x']);
+    expect(cifras).toEqual(['$0', 'Ley 820']);
     fila.querySelectorAll('dd').forEach((d) => expect(d.className).toContain('font-mono'));
-    const siguiente = contenedor.querySelector('[aria-label="Siguiente testimonio"]') as HTMLButtonElement;
-    expect(contenedor.textContent).toContain('Inmobiliaria Santafé');
-    act(() => siguiente.click());
-    expect(contenedor.textContent).toContain('02 / 04');
-    const actual = contenedor.querySelector('[aria-current="true"]');
-    expect(actual?.getAttribute('aria-label')).toBe('Testimonio 2: Grupo Inmobiliario Antioquia');
+    expect(contenedor.querySelector('[aria-label="Siguiente testimonio"]')).toBeNull();
   });
 });

@@ -97,17 +97,17 @@ export function PricingDetailSheet({
             {/* Price badge */}
             <div className="flex items-baseline gap-2">
               {isEnterprise ? (
-                <span className="text-[28px] font-mono font-bold tabular-nums text-foreground">{plan.price}</span>
+                <span className="text-[28px] font-mono font-medium tabular-nums text-foreground">{plan.price}</span>
               ) : plan.price === '0' ? (
-                <span className="text-[32px] font-mono font-bold tabular-nums text-foreground">Gratis</span>
+                <span className="text-[32px] font-mono font-medium tabular-nums text-foreground">Gratis</span>
               ) : plan.price === '1%' ? (
                 <>
-                  <span className="text-[32px] font-mono font-bold tabular-nums text-foreground">1%</span>
+                  <span className="text-[32px] font-mono font-medium tabular-nums text-foreground">1 %</span>
                   {plan.period && <span className="text-muted-foreground text-[14px]">{plan.period}</span>}
                 </>
               ) : (
                 <>
-                  <span className="text-[32px] font-mono font-bold tabular-nums text-foreground">${plan.price}</span>
+                  <span className="text-[32px] font-mono font-medium tabular-nums text-foreground">${plan.price}</span>
                   {plan.period && <span className="text-muted-foreground text-[14px]">{plan.period}</span>}
                 </>
               )}
@@ -117,17 +117,17 @@ export function PricingDetailSheet({
             <div className="flex gap-3">
               <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/50 rounded-md">
                 <Buildings className="w-4 h-4 text-primary" />
-                <span className="text-[13px] font-semibold font-mono tabular-nums text-foreground">
+                <span className="text-[13px] font-medium font-mono tabular-nums text-foreground">
                   {plan.limits.properties === 'ilimitadas' ? '∞' : plan.limits.properties}
                 </span>
-                <span className="text-[11px] text-muted-foreground">propiedades</span>
+                <span className="text-[13px] text-muted-foreground">inmuebles</span>
               </div>
               <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/50 rounded-md">
                 <Users className="w-4 h-4 text-primary" />
-                <span className="text-[13px] font-semibold font-mono tabular-nums text-foreground">
+                <span className="text-[13px] font-medium font-mono tabular-nums text-foreground">
                   {plan.limits.users === 'ilimitados' ? '∞' : plan.limits.users}
                 </span>
-                <span className="text-[11px] text-muted-foreground">usuarios</span>
+                <span className="text-[13px] text-muted-foreground">usuarios</span>
               </div>
             </div>
 
@@ -141,7 +141,7 @@ export function PricingDetailSheet({
               {plan.highlights.map((h) => (
                 <span
                   key={h}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-full bg-primary/10 text-primary"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium rounded-full bg-primary/10 text-primary"
                 >
                   <Lightning className="w-3 h-3" weight="fill" />
                   {h}
@@ -162,7 +162,7 @@ export function PricingDetailSheet({
                         <CheckCircle className="w-4 h-4 text-success shrink-0 mt-0.5" weight="fill" />
                         <div>
                           <span className="text-[13px] font-medium text-foreground">{item.name}</span>
-                          <p className="text-[12px] text-muted-foreground leading-relaxed mt-0.5">
+                          <p className="text-[13px] text-muted-foreground leading-relaxed mt-0.5">
                             {item.description}
                           </p>
                         </div>
@@ -184,9 +184,9 @@ export function PricingDetailSheet({
                     <div key={addon.label} className="flex items-start justify-between gap-4 p-3 rounded-md bg-muted/30">
                       <div className="flex-1">
                         <span className="text-[13px] font-medium text-foreground">{addon.label}</span>
-                        <p className="text-[12px] text-muted-foreground mt-0.5">{addon.description}</p>
+                        <p className="text-[13px] text-muted-foreground mt-0.5">{addon.description}</p>
                       </div>
-                      <span className="text-[13px] font-semibold font-mono tabular-nums text-foreground whitespace-nowrap">{addon.price}</span>
+                      <span className="text-[13px] font-medium font-mono tabular-nums text-foreground whitespace-nowrap">{addon.price}</span>
                     </div>
                   ))}
                 </div>

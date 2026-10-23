@@ -7,7 +7,6 @@ import { FAQSection } from '@/components/home/FAQSection';
 import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
 import { HeroeDePara } from '@/components/landing-v2/para/HeroeDePara';
 import { FotoQueSeRevela } from '@/components/landing-v2/para/FotoQueSeRevela';
-import { TestimoniosDePara } from '@/components/landing-v2/para/TestimoniosDePara';
 import { CierreDePara } from '@/components/landing-v2/para/CierreDePara';
 import {
   Acento,
@@ -23,34 +22,6 @@ import {
   TituloDeSeccion,
 } from '@/components/landing-v2/para/piezas';
 import { cn } from '@/lib/utils';
-
-// Testimonials data
-const testimonials = [
-  {
-    quote: 'Antes me demoraba semanas buscando inquilino. Ahora en 3 días ya tenía candidatos verificados y listos para firmar. El scoring con IA me dio total confianza.',
-    author: 'Carolina Mendoza',
-    role: 'Propietaria en Bogotá',
-    image: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
-  },
-  {
-    quote: 'El cobro automático me cambió la vida. Ya no tengo que estar pendiente cada mes ni perseguir a nadie. El dinero llega puntual a mi cuenta.',
-    author: 'Roberto García',
-    role: 'Propietario de 3 apartamentos',
-    image: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=400',
-  },
-  {
-    quote: 'La publicación en múltiples portales con un solo clic es increíble. Recibí 12 candidatos pre-aprobados en menos de una semana.',
-    author: 'Ana Lucía Restrepo',
-    role: 'Inversionista inmobiliaria',
-    image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
-  },
-  {
-    quote: 'Los contratos digitales son rápidos y seguros. Firmamos todo en el mismo día sin necesidad de reunirnos presencialmente.',
-    author: 'Diego Fernández',
-    role: 'Propietario en Medellín',
-    image: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400',
-  },
-];
 
 const problemas = [
   {
@@ -75,7 +46,7 @@ const problemas = [
     rotulo: 'DESALOJO',
     cifra: '14 meses',
     detalle: 'proceso legal promedio',
-    texto: 'Sin contrato sólido, recuperar tu propiedad es una pesadilla',
+    texto: 'Sin contrato sólido, recuperar tu inmueble es una pesadilla',
   },
 ];
 
@@ -97,7 +68,7 @@ const soluciones = [
   },
   {
     titulo: 'Publicación Multi-Portal',
-    texto: 'Un clic y tu propiedad aparece en FincaRaíz, Metrocuadrado y más. Candidatos pre-filtrados, sin comisión.',
+    texto: 'Un clic y tu inmueble aparece en FincaRaíz, Metrocuadrado y más. Candidatos pre-filtrados, sin comisión.',
     chips: ['4 portales', 'Fotos optimizadas', 'Sin comisión'],
   },
 ];
@@ -185,9 +156,9 @@ export default function PropietariosPage() {
           principal={{ href: '/auth', texto: 'Comenzar gratis' }}
           secundaria={{ href: '/pricing', texto: 'Ver precios' }}
           cifras={[
+            // Ronda 30: sólo cifras que se pueden sostener (antes porcentajes, «x» y satisfacción inventados).
             { valor: '$0', rotulo: 'Costo de evaluación' },
-            { valor: '48h', rotulo: 'Tiempo promedio' },
-            { valor: '4.9', rotulo: 'Satisfacción' },
+            { valor: 'Ley 820', rotulo: 'Contratos digitales' },
           ]}
           foto={{ src: '/images/people/woman-desk-coffee.jpg', alt: 'Propietaria feliz' }}
           pieza={<PiezaDelHeroe />}
@@ -340,15 +311,7 @@ export default function PropietariosPage() {
           </div>
         </Seccion>
 
-        <TestimoniosDePara
-          testimonios={testimonials}
-          ceja="Testimonios"
-          titulo={
-            <>
-              Propietarios que <Acento>confían</Acento> en nosotros
-            </>
-          }
-        />
+        {/* Ronda 30: fuera los testimonios: eran inventados (nombres, cifras y fotos de banco). Vuelven cuando haya reales. */}
 
         <div className="[&>section]:!bg-[#FBFAF8]">
           <FAQSection />

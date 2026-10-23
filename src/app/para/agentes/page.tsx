@@ -9,7 +9,6 @@ import { FAQSection } from '@/components/home/FAQSection';
 import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
 import { HeroeDePara } from '@/components/landing-v2/para/HeroeDePara';
 import { FotoQueSeRevela } from '@/components/landing-v2/para/FotoQueSeRevela';
-import { TestimoniosDePara } from '@/components/landing-v2/para/TestimoniosDePara';
 import { CierreDePara } from '@/components/landing-v2/para/CierreDePara';
 import {
   Acento,
@@ -25,34 +24,6 @@ import {
   TituloDeSeccion,
 } from '@/components/landing-v2/para/piezas';
 import { cn } from '@/lib/utils';
-
-// Testimonials data
-const testimonials = [
-  {
-    quote: 'Mis clientes propietarios me piden específicamente que use esta plataforma. Les da confianza ver un reporte profesional con score de riesgo.',
-    author: 'Juliana Rodríguez',
-    role: 'Agente independiente, Bogotá',
-    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&crop=face&q=80',
-  },
-  {
-    quote: 'Antes me tomaba una semana evaluar candidatos. Ahora lo hago en el mismo día de la visita. Mis comisiones se duplicaron en 3 meses.',
-    author: 'Nicolás Martínez',
-    role: 'Agente inmobiliario, Medellín',
-    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face&q=80',
-  },
-  {
-    quote: 'El link de evaluación es brillante. Lo mando por WhatsApp y los candidatos hacen todo solos. Yo solo reviso el reporte y presento al propietario.',
-    author: 'María Fernanda López',
-    role: 'Corredora de finca raíz, Cali',
-    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop&crop=face&q=80',
-  },
-  {
-    quote: 'La app móvil me cambió la vida. Recibo notificaciones cuando se postulan candidatos y puedo revisar todo desde el celular sin ir a la oficina.',
-    author: 'Andrés Gómez',
-    role: 'Agente independiente, Barranquilla',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face&q=80',
-  },
-];
 
 /** El medidor de la calificación: un arco de voltaje, sin degradado. */
 function Medidor({ valor, rotulo }: { valor: number; rotulo: string }) {
@@ -196,16 +167,16 @@ export default function AgentesPage() {
           }
           entrada={
             <>
-              Genera tu link, compártelo por WhatsApp, recibe evaluaciones profesionales.
+              Genera tu enlace, compártelo por WhatsApp y recibe evaluaciones profesionales.
               <span className="text-[#121110]"> Sin costo para ti.</span>
             </>
           }
           principal={{ href: '/auth?role=agent', texto: 'Crear cuenta gratis' }}
           secundaria={{ href: '/pricing', texto: 'Ver cómo funciona' }}
           cifras={[
+            // Ronda 30: sólo cifras que se pueden sostener (antes porcentajes, «x» y satisfacción inventados).
             { valor: '$0', rotulo: 'Costo para ti' },
-            { valor: '2x', rotulo: 'Más cierres' },
-            { valor: '48h', rotulo: 'Tiempo promedio' },
+            { valor: '1 enlace', rotulo: 'Por cada inmueble' },
           ]}
           foto={{ src: '/hero-6.jpg', alt: 'Sala de un inmueble listo para mostrar' }}
           pieza={<PiezaDelHeroe />}
@@ -289,7 +260,7 @@ export default function AgentesPage() {
               <Appear inView distance="md" duration="slow" delay={0.16} className="md:col-span-7">
                 <FotoQueSeRevela
                   src="https://images.pexels.com/photos/8293778/pexels-photo-8293778.jpeg"
-                  alt="Agente presentando propiedad a clientes"
+                  alt="Agente presentando un inmueble a sus clientes"
                   proporcion={16 / 9}
                   rotulo="PROBLEMA 04"
                 />
@@ -328,8 +299,8 @@ export default function AgentesPage() {
               <TarjetaDeNoche
                 className="md:col-span-7"
                 insignia={{ valor: 'GRATIS', rotulo: 'para ti' }}
-                titulo="Link de evaluación"
-                texto="Genera un link único para cada propiedad. Compártelo por WhatsApp y recibe el reporte."
+                titulo="Enlace de evaluación"
+                texto="Genera un enlace único para cada inmueble. Compártelo por WhatsApp y recibe el reporte."
                 chips={['WhatsApp', 'Email', 'SMS', 'QR']}
               >
                 <div className="rounded-[16px] bg-white/[0.04] p-4 ring-1 ring-white/[0.08]">
@@ -448,15 +419,7 @@ export default function AgentesPage() {
           </div>
         </Seccion>
 
-        <TestimoniosDePara
-          testimonios={testimonials}
-          ceja="Testimonios"
-          titulo={
-            <>
-              Agentes que ya están <Acento>cerrando más</Acento>
-            </>
-          }
-        />
+        {/* Ronda 30: fuera los testimonios: eran inventados (nombres, cifras y fotos de banco). Vuelven cuando haya reales. */}
 
         <div className="[&>section]:!bg-[#FBFAF8]">
           <FAQSection />

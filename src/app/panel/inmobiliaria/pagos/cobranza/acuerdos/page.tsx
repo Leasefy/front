@@ -753,7 +753,15 @@ function AcuerdosContent() {
       )}
       </CrossFade>
 
-      <AcuerdoDetalleSheet acuerdo={detalle} onClose={() => setDetalle(null)} />
+      {/* Ronda 30 (K4): resuelto el plan desde su cajón, la lista se vuelve a leer. */}
+      <AcuerdoDetalleSheet
+        acuerdo={detalle}
+        onClose={() => setDetalle(null)}
+        onPlanResuelto={() => {
+          void recargarPlanes()
+          void recargarPromesas()
+        }}
+      />
 
       {/* Lo que se consulta va después del trabajo, en este orden a propósito:
           1. Los LÍMITES — el techo que el agente no puede pasar nunca.

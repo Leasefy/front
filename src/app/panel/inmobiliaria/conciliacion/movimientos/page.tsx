@@ -34,21 +34,18 @@
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos';
-import { SectionLabel } from '@/components/ui/section-label';
 import { ExtractoBancario } from '@/components/cobros/extracto-bancario/ExtractoBancario';
 import { ConciliacionDelAgente } from '@/components/inmobiliaria/ai/ConciliacionDelAgente';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 function ConciliacionMovimientos() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1.5">
-        <SectionLabel>Conciliación</SectionLabel>
-        <h1 className="text-h2 text-fg">Movimientos</h1>
-        <p className="max-w-2xl text-body text-fg-muted">
-          Cada línea del extracto se cruza con las cuotas de los contratos que tienen saldo, y
-          conciliarla emite el recibo de caja. Nada entra sin que alguien lo confirme.
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Conciliación bancaria"
+        titulo="Movimientos"
+        descripcion="Cada línea del extracto se cruza con las cuotas que tienen saldo; conciliarla emite el recibo de caja. Nada entra sin que alguien lo confirme."
+      />
 
       {/*
         El extracto del ERP: CSV o Excel, cualquier banco, y conciliar emite el

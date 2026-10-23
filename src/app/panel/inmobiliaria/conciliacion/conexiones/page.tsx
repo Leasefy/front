@@ -74,6 +74,8 @@ import {
   type ConnectionSourceType,
   type ConnectionStatus,
 } from '@/lib/hooks/conciliacion/use-conciliacion-connections'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 // ── Copy (string literal ES — sin keys t() nuevas) ───────────────────────────
 
@@ -486,24 +488,33 @@ function ConciliacionConexiones() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
-          <h1 className="text-h2 text-fg">Conexiones</h1>
-          <p className="text-body text-fg-muted max-w-2xl">
-            Registra y administra las fuentes de movimientos (bancos, pasarelas y extractos) que
-            alimentan la conciliación. Nunca guardamos credenciales, solo una referencia segura.
-          </p>
-        </div>
+      <EncabezadoDePantalla
+        seccion="Conciliación bancaria"
+        titulo="Conexiones"
+        descripcion="Las fuentes de movimientos (bancos, pasarelas y extractos) que alimentan la conciliación. Nunca guardamos credenciales, sólo una referencia segura."
+      />
 
-        {/* KPI: cuántas fuentes están vivas (no es el total — ese lo dice el
-            pie de la tabla). */}
-        <div className="shrink-0 rounded-lg border border-border bg-surface p-4">
-          <p className="text-caption text-fg-muted">Conectadas</p>
-          <p className="mt-1.5 text-2xl font-medium tabular-nums text-fg">
-            {isLoading && items.length === 0 ? '—' : connectedCount}
-          </p>
-        </div>
-      </header>
+      {/* LA RESPUESTA: cuántas fuentes están vivas, de cuántas (antes una
+          cajita suelta a la derecha del título). */}
+      {items.length > 0 ? (
+        <CifraHeroe
+          data-testid="conexiones-conectadas"
+          rotulo="Conectadas"
+          cifra={connectedCount.toLocaleString('es-CO')}
+          contexto={`de ${items.length.toLocaleString('es-CO')} ${items.length === 1 ? 'fuente' : 'fuentes'}`}
+          total={items.length}
+          tramos={[
+            { clave: 'si', etiqueta: 'Conectadas', monto: connectedCount, tono: 'exito', cifra: connectedCount.toLocaleString('es-CO') },
+            {
+              clave: 'no',
+              etiqueta: 'Sin conectar',
+              monto: items.length - connectedCount,
+              tono: 'aviso',
+              cifra: (items.length - connectedCount).toLocaleString('es-CO'),
+            },
+          ]}
+        />
+      ) : null}
 
       {/* Aviso fail-soft: la ruta todavía no existe en este micro (404/503 del
           hook). Con el micro CAÍDO (`error`) no se dice «en tu cuenta

@@ -54,6 +54,7 @@ import {
   AlertDialogSection,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // ── Per-domain copy (string literal ES — sin keys t() nuevas) ──────────────
 
@@ -416,12 +417,11 @@ function ConciliacionConfiguracion() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
-        <p className="text-body text-fg-muted max-w-2xl">
-          {t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion="Conciliación bancaria"
+        titulo={t('inmobiliaria.ai.workspace.pages.comun.configTitle')}
+        descripcion={t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
+      />
 
       <AutonomiaPanel data={data} isLoading={isLoading} error={error} />
 

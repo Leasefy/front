@@ -85,6 +85,7 @@ import {
 } from '@/lib/hooks/conciliacion/use-conciliacion-settlements'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // ── Estado de liquidación (set cerrado) ──────────────────────────────────────
 
@@ -404,26 +405,16 @@ function ConciliacionLiquidaciones() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
-          <h1 className="text-h2 text-fg">
-            Liquidaciones a propietario
-          </h1>
-          <p className="text-body text-fg-muted max-w-2xl">
-            Lo que la inmobiliaria debe a cada propietario por periodo: canon recaudado menos
-            comisión y otros descuentos. Aquí solo se registra y aprueba — el pago real lo hace
-            pagos.
-          </p>
-          {/*
-            🔴 21-09-2026: hay DOS pantallas llamadas «Liquidaciones». Ésta es
-            la del AGENTE, con su propio registro; las del mes —las que salen
-            de las cuotas del contrato y se giran— viven en Pagos. Sin decirlo,
-            esta pantalla vacía afirma «no hay liquidaciones a propietario»
-            mientras al lado están las del mes, y eso es falso.
-          */}
-          <p className="text-caption text-fg-muted max-w-2xl">
-            Éste es el registro del agente. Las liquidaciones del mes —las que
-            salen de los contratos y se giran— están en{' '}
+      {/* 🔴 21-09-2026: hay DOS pantallas llamadas «Liquidaciones». Ésta es la
+          del AGENTE, con su propio registro; las del mes —las que salen de las
+          cuotas del contrato y se giran— viven en Pagos: la descripción lo dice. */}
+      <EncabezadoDePantalla
+        seccion="Conciliación bancaria"
+        titulo="Liquidaciones a propietario"
+        descripcion={
+          <>
+            Lo que la inmobiliaria le debe a cada propietario por período, según el registro del
+            agente. Las del mes —las que salen de los contratos y se giran— están en{' '}
             <Link
               href="/panel/inmobiliaria/pagos/liquidaciones"
               className="text-primary underline-offset-4 hover:underline"
@@ -431,24 +422,23 @@ function ConciliacionLiquidaciones() {
               Pagos · Liquidaciones
             </Link>
             .
-          </p>
-        </div>
-
-        {/* Acción principal. El «en bandeja» que vivía acá se fue: lo dice el
-            pie de la tabla, y el mismo número dos veces no informa dos veces. */}
-        <Button
-          hideArrow
-          className="shrink-0"
-          onClick={() => {
-            resetForm()
-            setGenOpen(true)
-          }}
-          data-testid="liquidacion-generar-cta"
-        >
-          <Receipt className="size-4" aria-hidden="true" />
-          Generar liquidación
-        </Button>
-      </header>
+          </>
+        }
+        accionPrincipal={
+          <Button
+            size="sm"
+            hideArrow
+            className="shrink-0"
+            onClick={() => {
+              resetForm()
+              setGenOpen(true)
+            }}
+            data-testid="liquidacion-generar-cta"
+          >
+            Generar liquidación
+          </Button>
+        }
+      />
 
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
         {/* Filtros — dentro de la tarjeta, encima de la tabla. */}

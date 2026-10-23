@@ -78,6 +78,7 @@ import {
 } from '@/lib/hooks/conciliacion/use-conciliacion-bulk'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // ── Taxonomía de excepciones (los 7 caseTypes, set cerrado) ──────────────────
 // Copy en español literal (contrato §9 — ES-first, sin keys t() nuevas).
@@ -307,15 +308,12 @@ function ConciliacionCola() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Encabezado — el conteo lo dice el pie de la tabla, no un KPI suelto. */}
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.workspace.pages.conciliacion.colaTitle')}
-        </h1>
-        <p className="text-body text-fg-muted max-w-2xl">
-          {t('inmobiliaria.ai.workspace.pages.conciliacion.colaDesc')}
-        </p>
-      </header>
+      {/* Encabezado común — el conteo lo dice el pie de la tabla, no un KPI suelto. */}
+      <EncabezadoDePantalla
+        seccion="Conciliación bancaria"
+        titulo={t('inmobiliaria.ai.workspace.pages.conciliacion.colaTitle')}
+        descripcion={t('inmobiliaria.ai.workspace.pages.conciliacion.colaDesc')}
+      />
 
       <section
         /* 🔴 `overflow-x-clip`, NO `overflow-hidden`: con `hidden` esta

@@ -6,6 +6,7 @@ import { Plus } from '@phosphor-icons/react';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { LibroDeAsientos } from '@/components/contabilidad/asientos/LibroDeAsientos';
 import { ROLES_DE_LA_CONTABILIDAD } from '@/lib/auth/roles-de-la-contabilidad';
 
@@ -23,11 +24,19 @@ export default function AsientosPage() {
         <LibroDeAsientos
           encabezado={(abrirAsientoManual) => (
             <EncabezadoDePantalla
-              seccion="Finanzas"
+              seccion="Contabilidad"
               titulo="Asientos"
-              descripcion="Encuentra un asiento, ábrelo con sus líneas y, si está mal, revérsalo. Un período cerrado ya no admite fechas adentro."
+              descripcion="Encuentra un asiento, ábrelo con sus líneas y, si está mal, revérsalo."
+              ayuda={
+                <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
+                  <div className="space-y-2 text-body-sm text-fg-muted">
+                    <p>Un asiento nunca se edita ni se borra: se reversa, y el libro guarda las dos cosas.</p>
+                    <p>Un período cerrado ya no admite asientos con fecha adentro. El cierre se consulta al pie del libro.</p>
+                  </div>
+                </ParaEntenderMas>
+              }
               accionPrincipal={
-                <Button hideArrow onClick={abrirAsientoManual} data-testid="abrir-asiento-manual">
+                <Button size="sm" hideArrow onClick={abrirAsientoManual} data-testid="abrir-asiento-manual">
                   <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
                   Asiento manual
                 </Button>

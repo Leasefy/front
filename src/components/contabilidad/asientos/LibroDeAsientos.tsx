@@ -40,7 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableCell,
@@ -52,6 +52,8 @@ import {
 } from '@/components/ui/table';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { PestanasDeEstado, type PestanaDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { SinDatos } from '@/components/estado/SinDatos';
 import {
   contabilidadApi,
@@ -75,6 +77,7 @@ import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { cn } from '@/lib/utils';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
@@ -99,6 +102,10 @@ interface Filtros {
 }
 
 const SIN_FILTROS: Filtros = { desde: '', hasta: '', cuentaId: '', origen: '', cerrado: '' };
+
+type Periodo = 'todos' | 'abiertos' | 'cerrados';
+const PERIODO_DEL_FILTRO: Record<Filtros['cerrado'], Periodo> = { '': 'todos', 'false': 'abiertos', 'true': 'cerrados' };
+const FILTRO_DEL_PERIODO: Record<Periodo, Filtros['cerrado']> = { todos: '', abiertos: 'false', cerrados: 'true' };
 
 function hayFiltros(f: Filtros): boolean {
   return Boolean(f.desde || f.hasta || f.cuentaId || f.origen || f.cerrado);
@@ -199,9 +206,36 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
     [datos],
   );
 
+  // GLOW UP 3.ª vuelta · el período (todos / de meses abiertos / de meses cerrados) era un
+  // selector más entre los filtros: ahora son las pestañas de la tarjeta, con el conteo de la
+  // que está elegida (el libro pagina en el servidor y sólo cuenta lo que se pidió).
+  const periodo = PERIODO_DEL_FILTRO[filtros.cerrado];
+  const pestanasDelPeriodo: PestanaDeEstado<Periodo>[] = [
+    { valor: 'todos', etiqueta: 'Todos', cuantos: periodo === 'todos' && datos ? total : null, fija: true },
+    { valor: 'abiertos', etiqueta: 'De meses abiertos', cuantos: periodo === 'abiertos' && datos ? total : null, fija: true },
+    { valor: 'cerrados', etiqueta: 'De meses cerrados', cuantos: periodo === 'cerrados' && datos ? total : null, fija: true },
+  ];
+  const otrosFiltros = Boolean(filtros.desde || filtros.hasta || filtros.cuentaId || filtros.origen);
+
   return (
     <div className="space-y-6">
       {encabezado ? encabezado(() => setManualAbierto(true)) : null}
+      {/* LA RESPUESTA: cuántos asientos hay en lo que se está mirando. */}
+      {datos && !error ? (
+        <CifraHeroe
+          tamano="mediana"
+          rotulo="Asientos en el libro"
+          cifra={total.toLocaleString(localeDeLasCifras())}
+          contexto={
+            otrosFiltros || periodo !== 'todos'
+              ? 'con lo que elegiste abajo'
+              : cierre?.cerradaHasta
+                ? `cerrado hasta el ${fechaCorta(cierre.cerradaHasta)}`
+                : 'ningún mes cerrado todavía'
+          }
+          data-testid="cifra-del-libro"
+        />
+      ) : null}
       {/* ── Filtros y tabla: UNA tarjeta ──────────────────────────────────
           🔴 20-09 · Eran dos, separadas por 24 px. Nico lo dijo de
           Facturación —«porque esto no está pegado a la tabla»— y valía igual
@@ -212,6 +246,13 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
         aria-label="Filtros del libro"
       >
       <div className="space-y-3 border-b border-border p-4">
+        <PestanasDeEstado
+          etiqueta="Período de los asientos"
+          pestanas={pestanasDelPeriodo}
+          valor={periodo}
+          onCambio={(v) => cambiarFiltros({ cerrado: FILTRO_DEL_PERIODO[v] })}
+          data-testid="filtro-cerrado"
+        />
         {/* GLOW UP 21-10 · el trabajo de esta pantalla es ENCONTRAR un asiento: el período va en
             atajos (lo que más se filtra, a un toque) y los demás filtros en una línea. Antes eran
             cinco campos con rótulo encima y la acción principal metida entre los filtros. */}
@@ -248,22 +289,6 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
               </SelectContent>
             </Select>
           </div>
-          <div className="w-[200px] [&_button]:whitespace-nowrap">
-            <Label id="filtro-cerrado" className="sr-only">Período</Label>
-            <Select
-              value={filtros.cerrado || TODOS}
-              onValueChange={(v) => cambiarFiltros({ cerrado: v === TODOS ? '' : (v as 'true' | 'false') })}
-            >
-              <SelectTrigger aria-labelledby="filtro-cerrado" data-testid="filtro-cerrado">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={TODOS}>Todos los períodos</SelectItem>
-                <SelectItem value="false">De meses sin cerrar</SelectItem>
-                <SelectItem value="true">De meses cerrados</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
           <div className="ml-auto flex items-center gap-2">
             {conFiltros ? (
               <Button variant="ghost" size="sm" hideArrow onClick={() => cambiarFiltros(SIN_FILTROS)}>
@@ -293,8 +318,15 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
           queEs="el libro de asientos"
           onReintentar={cargar}
           esqueleto={
-            <div className="flex items-center justify-center py-16">
-              <Spinner />
+            <div className="divide-y divide-border" aria-hidden="true">
+              {Array.from({ length: 6 }, (_, i) => (
+                <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+                  <Skeleton className="h-4 w-10 rounded-sm bg-surface-muted" />
+                  <Skeleton className="h-4 w-20 rounded-sm bg-surface-muted" />
+                  <Skeleton className="h-4 flex-1 rounded-sm bg-surface-muted" />
+                  <Skeleton className="h-4 w-24 rounded-sm bg-surface-muted" />
+                </div>
+              ))}
             </div>
           }
         >
@@ -330,9 +362,9 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
                           <span className="font-mono text-caption tabular-nums text-fg-muted">
                             N.º {asiento.numero} · {fechaCorta(diaDe(asiento.fecha))}
                           </span>
-                          <Monto valor={totales.debitos} className="text-sm font-medium text-fg" />
+                          <Monto valor={totales.debitos} className="text-body-sm text-fg" />
                         </span>
-                        <span className="line-clamp-2 text-sm text-fg">{conLaPlataPegada(asiento.descripcion)}</span>
+                        <span className="line-clamp-2 text-body-sm text-fg">{conLaPlataPegada(asiento.descripcion)}</span>
                         <span className="flex flex-wrap items-center gap-2">
                           <span
                             className={cn(

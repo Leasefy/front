@@ -48,6 +48,9 @@ export const TIPOS_DE_DECISION: Record<string, string> = {
   siniestro_filing: 'Reclamo de siniestro',
   legal_escalation: 'Escalación legal',
   pagos_cobro_retenido: 'Cobro retenido',
+  precall_contact: 'Contacto retenido',
+  acuerdo_incumplido_por_decidir: 'Acuerdo incumplido',
+  reporte_centrales_por_aprobar: 'Reporte a centrales de riesgo',
 }
 
 export const tipoDeDecision = conNombre(TIPOS_DE_DECISION, 'Otra decisión')

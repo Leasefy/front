@@ -60,7 +60,11 @@ export function fmtFecha(d: Date | string | null | undefined): string {
   if (!d) return '—'
   const date = aFecha(d)
   if (!Number.isFinite(date.getTime())) return '—'
-  return date.toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' }).replace(/\./g, '')
+  // Ronda 26 (T5, VOZ §4): «14 oct 2026». `toLocaleDateString` en es-CO mete «de» («14 de oct. de 2026»):
+  // se arma con las partes.
+  const partes = new Intl.DateTimeFormat('es-CO', { year: 'numeric', month: 'short', day: 'numeric' }).formatToParts(date)
+  const parte = (tipo: Intl.DateTimeFormatPartTypes) => partes.find((p) => p.type === tipo)?.value ?? ''
+  return `${parte('day')} ${parte('month').replace(/\./g, '')} ${parte('year')}`
 }
 
 /** 12.345 — miles con punto, como el resto de Leasefy. */

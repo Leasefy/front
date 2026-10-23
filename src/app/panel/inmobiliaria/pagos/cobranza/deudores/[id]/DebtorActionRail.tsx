@@ -149,12 +149,8 @@ export function DebtorActionRail({
   return (
     <div className="space-y-4">
       {/* Zone eyebrow — brand dot + uppercase (único uppercase permitido, §4) */}
-      <h2 className="flex items-center gap-2.5">
-        <span
-          aria-hidden="true"
-          className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
-        />
-        <span className="text-caption font-medium uppercase tracking-wide text-muted-foreground">
+      <h2>
+        <span className="font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle">
           {t(`${NS}.detalle.recomendacion`)}
         </span>
       </h2>

@@ -338,7 +338,7 @@ function CTACard({
           {label}
         </span>
         {badge && (
-          <Badge variant="warning" className="text-[10px]">
+          <Badge variant="warning">
             {badge}
           </Badge>
         )}

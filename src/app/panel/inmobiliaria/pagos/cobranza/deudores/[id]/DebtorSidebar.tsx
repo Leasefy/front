@@ -98,12 +98,8 @@ export function DebtorSidebar({
   return (
     <aside className="rounded-lg border border-border bg-surface p-4 space-y-4">
       {/* Zone eyebrow — brand mono + dot (FeatureAnnouncementCard pattern) */}
-      <h2 className="flex items-center gap-2.5">
-        <span
-          aria-hidden="true"
-          className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
-        />
-        <MonoLabel className="text-fg-subtle">
+      <h2>
+        <MonoLabel className="text-caption text-fg-subtle">
           {t(`${NS}.detalle.contexto`)}
         </MonoLabel>
       </h2>
@@ -152,7 +148,7 @@ export function DebtorSidebar({
             <p className="text-caption font-medium text-fg-muted">
               {t(`${NS}.detalle.saldoPendiente`)}
             </p>
-            <p className="mt-0.5 text-xl font-medium tracking-[-0.02em] text-fg tabular-nums">
+            <p className="mt-0.5 font-mono text-[22px] font-normal leading-tight tracking-[-0.02em] text-fg tabular-nums">
               <AnimatedNumber value={kpis.totalOwed} format={formatCurrency} />
             </p>
           </div>
@@ -168,7 +164,7 @@ export function DebtorSidebar({
                   eran el MISMO número —los pagos aprobados— con dos títulos
                   distintos; ahora cada uno responde su propia pregunta. */}
               {kpis.totalCollected != null && kpis.totalCollected > 0 && (
-                <p className="text-caption text-fg-muted tabular-nums">
+                <p className="font-mono text-caption text-fg-muted tabular-nums">
                   {formatCurrency(kpis.totalCollected)}
                 </p>
               )}

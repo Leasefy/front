@@ -43,6 +43,7 @@ import { AnimatedNumber, CrossFade, MonoLabel, Presence } from '@leasefy/cadence
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 
 import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { DebtorSidebar } from './DebtorSidebar'
 import { DebtorActionRail } from './DebtorActionRail'
 import { TimelineTab } from './tabs/TimelineTab'
@@ -68,14 +69,11 @@ function isTabKey(s: string | null): s is TabKey {
   return s !== null && (TAB_KEYS as string[]).includes(s)
 }
 
-function daysBadgeClasses(days: number): string {
-  if (days <= 3) {
-    return 'bg-success-soft text-success ring-1 ring-success/30'
-  }
-  if (days <= 7) {
-    return 'bg-warning-soft text-warning ring-1 ring-warning/30'
-  }
-  return 'bg-danger-soft text-danger ring-1 ring-danger/30'
+/** Los días en la etapa, con el tono del semáforo de siempre (≤ 3 · ≤ 7 · más). */
+function daysBadgeVariant(days: number): 'success' | 'warning' | 'destructive' {
+  if (days <= 3) return 'success'
+  if (days <= 7) return 'warning'
+  return 'destructive'
 }
 
 interface DebtorDetailClientProps {
@@ -237,11 +235,12 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
           label={t('inmobiliaria.ai.volverA.casos')}
           className="mb-2"
         />
-        <div className="flex items-baseline justify-between gap-3 flex-wrap">
-          <h1 className="text-h2 text-fg">
-            {debtorName || t('inmobiliaria.ai.cobranza.detail.title')}
-          </h1>
-          <div className="flex items-center gap-2">
+        <EncabezadoDePantalla
+          seccion="Cobranza · Deudores"
+          titulo={debtorName || t('inmobiliaria.ai.cobranza.detail.title')}
+          descripcion="Lo que debe, lo que se ha hablado con esta persona y lo que sigue."
+          junto={
+          <div className="flex items-center gap-2 flex-wrap">
             {/* El caso cambia de etapa en vivo (realtime): la etiqueta vieja
                 sale y la nueva entra en su lugar, y los días cuentan. */}
             {data && stageColors && (
@@ -265,12 +264,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               </CrossFade>
             )}
             {data && (
-              <span
-                className={
-                  'inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium ' +
-                  daysBadgeClasses(data.daysInStage)
-                }
-              >
+              <Badge variant={daysBadgeVariant(data.daysInStage)}>
                 {/* QA-IA-95 (IA-B-09): «1 día en la etapa», no «1 d». QA-AGENTES
                     16-10: en un flex el espacio del texto se perdía («0días»): número
                     y texto van juntos en un span normal. */}
@@ -278,7 +272,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                   <AnimatedNumber value={data.daysInStage} format={(n) => String(Math.round(n))} />
                   {Math.round(data.daysInStage) === 1 ? ' día en la etapa' : ' días en la etapa'}
                 </span>
-              </span>
+              </Badge>
             )}
             <Presence as="span" show={Boolean(data?.isPaused)} direction="none" initial={false}>
               <Badge variant="warning">
@@ -286,7 +280,8 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               </Badge>
             </Presence>
           </div>
-        </div>
+          }
+        />
       </header>
 
       {/* Error */}
@@ -294,7 +289,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
         show={Boolean(error)}
         className="rounded-md border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-4"
       >
-          <p className="text-sm text-danger">
+          <p className="text-body-sm text-danger">
             {t('inmobiliaria.ai.cobranza.detail.error')}: {error}
           </p>
           <Button
@@ -324,12 +319,8 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
         {/* CENTRO — conversación e historial (los tabs, como está) */}
         <section className="min-w-0">
           {/* Zone eyebrow */}
-          <h2 className="flex items-center gap-2.5 mb-3">
-            <span
-              aria-hidden="true"
-              className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
-            />
-            <MonoLabel className="text-[10.5px] font-medium text-fg-subtle">
+          <h2 className="mb-3">
+            <MonoLabel className="text-caption font-medium text-fg-subtle">
               {t('inmobiliaria.ai.cobranza.detalle.conversacion')}
             </MonoLabel>
           </h2>

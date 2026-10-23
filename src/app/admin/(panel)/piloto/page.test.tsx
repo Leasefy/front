@@ -74,9 +74,12 @@ afterEach(() => {
 
 describe('/admin/piloto — el Piloto automático de cada inmobiliaria', () => {
   it('lista cada inmobiliaria con su estado, si está encendido y cómo está hoy', () => {
-    expect(q('[data-testid="admin-piloto-conteo"]')!.textContent).toBe(
-      '2 inmobiliarias · 1 con el Piloto encendido · 1 en prueba · 1 contratado · 0 apagado por Leasefy',
-    )
+    // Glow up 22-10: el conteo es la cifra héroe (encendidos de cuántas) con su leyenda por plan.
+    const conteo = q('[data-testid="admin-piloto-conteo"]')!.textContent
+    expect(conteo).toContain('Con el Piloto encendido1de 2 inmobiliarias')
+    expect(conteo).toContain('Contratado1')
+    expect(conteo).toContain('En prueba1')
+    expect(conteo).toContain('Apagado por Leasefy0')
     const fila = q(`[data-testid="admin-piloto-fila-${LAB.tenant_id}"]`)!
     expect(fila.textContent).toContain('Inmobiliaria Laboratorio S.A.S.')
     expect(fila.textContent).toContain('En prueba')

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Airplane } from '@phosphor-icons/react'
 import { Alert } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
@@ -32,7 +33,7 @@ const cuando = (iso: string | null) => {
 /** El botón de la fila, corto para que los tres quepan en una línea (el nombre entero va en `aria-label`). */
 const ACCION: Record<EstadoDelPilotoPorLeasefy, string> = { prueba: 'Prueba', contratado: 'Contratar', apagado: 'Apagar' }
 
-const tono = (e: EstadoDelPilotoPorLeasefy) => (e === 'contratado' ? 'ok' : e === 'apagado' ? 'bad' : 'info')
+const tono = (e: EstadoDelPilotoPorLeasefy) => (e === 'contratado' ? 'ok' : e === 'apagado' ? 'bad' : 'warn')
 
 const SEGMENTOS: Segmento<PilotoDeLaInmobiliaria>[] = [
   { valor: 'todas', nombre: 'Todas', cumple: () => true },
@@ -129,8 +130,8 @@ export default function PilotoDeLasInmobiliariasPage() {
     {
       header: 'Último cambio',
       cell: (f) => (
-        <span className="text-caption text-fg-subtle">
-          {f.updated_at ? cuando(f.updated_at) : 'Nadie lo ha cambiado'}
+        <span className="text-caption text-fg-muted">
+          {f.updated_at ? <span className="font-mono tabular-nums">{cuando(f.updated_at)}</span> : 'Nadie lo ha cambiado'}
           {f.updated_by ? <span className="block">{f.updated_by}</span> : null}
         </span>
       ),
@@ -174,12 +175,23 @@ export default function PilotoDeLasInmobiliariasPage() {
         description="El Piloto automático de cada inmobiliaria: en prueba (30 días), contratado (sin vencimiento) o apagado por Leasefy. Cada cambio pide un motivo y queda en la bitácora con quién lo hizo."
       />
 
-      {!isLoading && data && (
-        <p className="text-sm text-fg-muted" data-testid="admin-piloto-conteo">
-          {data.length} inmobiliarias · {conteo.activos} con el Piloto encendido · {conteo.prueba} en prueba ·{' '}
-          {conteo.contratado} contratado · {conteo.apagado} apagado por Leasefy
-        </p>
-      )}
+      {/* Glow up 22-10: LA RESPUESTA (para cuántas corre el Piloto) con la barra por plan; antes una frase con
+          cinco cifras del mismo peso. */}
+      {!isLoading && data && data.length > 0 ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6" data-testid="admin-piloto-conteo">
+          <CifraHeroe
+            rotulo="Con el Piloto encendido"
+            cifra={conteo.activos.toLocaleString('es-CO')}
+            contexto={`de ${data.length.toLocaleString('es-CO')} ${data.length === 1 ? 'inmobiliaria' : 'inmobiliarias'}`}
+            tramos={[
+              { clave: 'contratado', etiqueta: EL_ESTADO.contratado.nombre, monto: conteo.contratado, tono: 'exito', cifra: conteo.contratado.toLocaleString('es-CO'), siempre: true },
+              { clave: 'prueba', etiqueta: EL_ESTADO.prueba.nombre, monto: conteo.prueba, tono: 'aviso', cifra: conteo.prueba.toLocaleString('es-CO'), siempre: true },
+              { clave: 'apagado', etiqueta: EL_ESTADO.apagado.nombre, monto: conteo.apagado, tono: 'critico', cifra: conteo.apagado.toLocaleString('es-CO'), siempre: true },
+            ]}
+            total={data.length}
+          />
+        </div>
+      ) : null}
 
       {hecho && (
         <Alert variant="success" role="status" data-testid="admin-piloto-hecho">
@@ -195,7 +207,7 @@ export default function PilotoDeLasInmobiliariasPage() {
         error={error ? new Error(mensajeDelFalloDelPiloto(error)) : null}
         onReintentar={refetch}
         emptyTitle="Todavía no hay inmobiliarias"
-        emptyIcon={<Airplane weight="bold" />}
+        emptyIcon={<Airplane weight="duotone" />}
         aria-label="El Piloto automático de cada inmobiliaria"
         filaTestid={(f) => `admin-piloto-fila-${f.tenant_id}`}
         filaMarcada={(f) => f.tenant_id === cambio?.fila.tenant_id}
@@ -258,6 +270,7 @@ export default function PilotoDeLasInmobiliariasPage() {
             variant={cambio?.estado === 'apagado' ? 'destructive' : 'default'}
             onClick={() => void guardar()}
             disabled={!motivoValido || guardando}
+            isLoading={guardando}
             data-testid="admin-piloto-guardar"
           >
             {guardando ? 'Guardando…' : 'Sí, cambiarlo'}

@@ -237,6 +237,7 @@ export default function InngestMonitorPage() {
           error={error}
           onReintentar={refetch}
           emptyTitle="Sin tareas registradas"
+          emptyHint="Las tareas las registra el servidor al arrancar; si no hay ninguna, el servidor no las cargó."
           emptyIcon={<Clock weight="duotone" />}
           aria-label="Tareas programadas"
           queSon={['tarea', 'tareas']}
@@ -263,6 +264,8 @@ export default function InngestMonitorPage() {
           error={error}
           onReintentar={refetch}
           emptyTitle="Sin flujos registrados"
+          // Ronda 30: el vacío dice qué va a aparecer y quién lo trae.
+          emptyHint="Cuando un pago, una llamada o un mensaje dispare uno, aparece aquí con lo que corrió."
           emptyIcon={<FlowArrow weight="duotone" />}
           aria-label="Flujos por eventos"
           queSon={['flujo', 'flujos']}

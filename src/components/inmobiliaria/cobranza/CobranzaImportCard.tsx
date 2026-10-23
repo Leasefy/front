@@ -398,7 +398,8 @@ export function CobranzaImportCard({
             summary.errores.length > 0 &&
             summary.errores[0]?.error?.toLowerCase().includes('migr') && (
               <p className="text-caption text-muted-foreground">
-                {tr("La importación aún no está disponible: requiere desplegar la migración del backend.")}
+                {/* Ronda 30: sin jerga («backend», «migración»); la misma frase del aviso de arriba. */}
+                {tr("Todavía no puedes subir la cartera desde aquí: entra sola cada noche desde las cuotas vencidas.")}
               </p>
             )}
 

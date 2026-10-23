@@ -169,7 +169,7 @@ function SegundoFactor() {
     paso === 'inscribir'
       ? 'El admin ve los datos de todas las inmobiliarias: entrar con el enlace del correo no alcanza. Actívalo una vez con tu aplicación de autenticación.'
       : recienActivado
-        ? 'Ya quedó activado. Para entrar, escribe el código que muestra AHORA tu aplicación (si es el mismo que acabas de usar, espera al siguiente).'
+        ? 'Ya quedó activado. Para entrar, escribe el código que tu aplicación muestra en este momento (si es el mismo que acabas de usar, espera al siguiente).'
         : 'Abre tu aplicación de autenticación y escribe el código de seis dígitos.'
 
   return (

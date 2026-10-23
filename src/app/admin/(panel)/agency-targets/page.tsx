@@ -229,6 +229,8 @@ export default function MetasPage() {
         emptyIcon={<Target weight="duotone" />}
         aria-label="Metas por mes"
         queSon={['mes', 'meses']}
+        // Ronda 30 (mandato: toda tabla con buscador): se busca el mes por su nombre.
+        buscar="Buscar un mes"
         exportar="metas-de-leasefy"
         masEnElExcel={CAMPOS.map((c) => ({ header: `Meta · ${c.nombre}`, texto: (m: MesDeMetas) => m.meta?.[c.clave] ?? null }))}
         onRowClick={data?.disponible ? abrir : undefined}

@@ -66,9 +66,10 @@ const ORDEN_DEL_ESTADO: Record<KeyStatus, number> = { overdue: 0, never: 1, warn
 
 const SEGMENTOS: Segmento<KeyRow>[] = [
   { valor: 'todas', nombre: 'Todas', cumple: () => true },
-  { valor: 'atender', nombre: 'Para atender', cumple: (k) => k.status !== 'ok' || !k.env_present },
-  { valor: 'al-dia', nombre: 'Al día', cumple: (k) => k.status === 'ok' && k.env_present },
+  // Ronda 30 (revisora r27: «Para atender» contaba las 11): lo que rompe servicios primero, luego la rotación.
   { valor: 'faltan', nombre: 'Faltan en el servidor', cumple: (k) => !k.env_present },
+  { valor: 'rotar', nombre: 'Por rotar', cumple: (k) => k.status !== 'ok' },
+  { valor: 'al-dia', nombre: 'Al día', cumple: (k) => k.status === 'ok' && k.env_present },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -163,6 +164,14 @@ export default function KeysPage() {
     },
   ]
 
+  const faltan = (keys ?? []).filter((k) => !k.env_present).length
+  const fraseDeLaRotacion =
+    counts.overdue > 0
+      ? `${counts.overdue} ${counts.overdue === 1 ? 'vencida' : 'vencidas'}: hay que rotarlas`
+      : counts.never > 0
+        ? `${counts.never} nunca se han rotado`
+        : 'todas rotadas a tiempo'
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
@@ -182,11 +191,21 @@ export default function KeysPage() {
           del mismo peso pintadas. */}
       {keys && keys.length > 0 ? (
         <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          {/* Ronda 30 (revisora r27): lo que rompe servicios es que una llave FALTE en el servidor: con alguna
+              faltando, la cifra es ésa y la rotación va al pie. */}
           <CifraHeroe
-            rotulo="Llaves al día"
-            cifra={`${counts.ok} de ${keys.length}`}
-            contexto={counts.overdue > 0 ? `${counts.overdue} ${counts.overdue === 1 ? 'vencida' : 'vencidas'}: hay que rotarlas` : counts.never > 0 ? `${counts.never} nunca se han rotado` : 'todas rotadas a tiempo'}
-            tramos={[
+            rotulo={faltan > 0 ? 'Faltan en el servidor' : 'Llaves al día'}
+            cifra={faltan > 0 ? `${faltan} de ${keys.length}` : `${counts.ok} de ${keys.length}`}
+            contexto={
+              faltan > 0
+                ? 'sin ellas, esos servicios no funcionan'
+                : fraseDeLaRotacion
+            }
+            pie={faltan > 0 ? `Rotación: ${fraseDeLaRotacion}.` : undefined}
+            tramos={faltan > 0 ? [
+              { clave: 'estan', etiqueta: 'En el servidor', monto: keys.length - faltan, tono: 'exito', cifra: String(keys.length - faltan), siempre: true },
+              { clave: 'faltan', etiqueta: 'Faltan', monto: faltan, tono: 'critico', cifra: String(faltan) },
+            ] : [
               { clave: 'ok', etiqueta: 'Al día', monto: counts.ok, tono: 'exito', cifra: String(counts.ok), siempre: true },
               { clave: 'warn', etiqueta: 'Por rotar pronto', monto: counts.warn, tono: 'aviso', cifra: String(counts.warn) },
               { clave: 'overdue', etiqueta: 'Vencidas', monto: counts.overdue, tono: 'critico', cifra: String(counts.overdue) },

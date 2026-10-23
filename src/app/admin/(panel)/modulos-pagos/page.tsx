@@ -124,14 +124,15 @@ export default function ModulosPagosPage() {
     () => [
       {
         header: 'Inmobiliaria',
-        cell: (a) => <span className="font-medium text-fg">{a.nombre}</span>,
+        // Ronda 30 (revisora r27, T15): el NIT bajo el nombre cuando lo hay (antes su columna con «—» en 34 de 35).
+        cell: (a) => (
+          <div className="min-w-0">
+            <span className="font-medium text-fg">{a.nombre}</span>
+            {a.nit ? <span className="block font-mono text-caption tabular-nums text-fg-muted">NIT {a.nit}</span> : null}
+          </div>
+        ),
         orden: (a) => a.nombre,
-        texto: (a) => a.nombre,
-      },
-      {
-        header: 'NIT',
-        cell: (a) => <span className="font-mono text-caption text-fg-muted">{a.nit ?? '—'}</span>,
-        texto: (a) => a.nit ?? '',
+        texto: (a) => [a.nombre, a.nit].filter(Boolean).join(' '),
       },
       ...catalogo.map<Column<FilaDeLaMatriz>>((c) => ({
         header: c.nombre,
@@ -252,12 +253,12 @@ export default function ModulosPagosPage() {
           setAbierta(a)
         }}
         // Lo comprado primero (antes la única con Nómina quedaba en la página 2).
-        ordenInicial={catalogo.length > 0 ? { columna: 2, sentido: 'desc' } : undefined}
+        ordenInicial={catalogo.length > 0 ? { columna: 1, sentido: 'desc' } : undefined}
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar por nombre o NIT"
         segmentos={segmentos}
         exportar="modulos-de-pago"
-        masEnElExcel={catalogo.flatMap((c) => [
+        masEnElExcel={[{ header: 'NIT', texto: (a: FilaDeLaMatriz) => a.nit ?? '' }, ...catalogo.flatMap((c) => [
           {
             header: `${c.nombre}: quién`,
             texto: (a: FilaDeLaMatriz) => a.modulos[c.modulo]?.habilitadoPorEmail ?? '',
@@ -270,7 +271,7 @@ export default function ModulosPagosPage() {
             header: `${c.nombre}: motivo`,
             texto: (a: FilaDeLaMatriz) => a.modulos[c.modulo]?.motivo ?? '',
           },
-        ])}
+        ])]}
       />
 
       <Cajon abierto={abierta !== null && pendiente === null} onOpenChange={(v) => (v ? null : setAbierta(null))}>

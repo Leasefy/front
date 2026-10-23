@@ -33,6 +33,7 @@ import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtCOP, fmtDateTime, USD_TO_COP } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { LoadingBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
@@ -423,6 +424,8 @@ export default function ChatPreguntasPage() {
               data-testid="chat-preguntas-sin-respuesta"
             />
           </div>
+          {/* Ronda 30 (revisora r27: cinco números arriba): las cuatro cifras de apoyo, plegadas. */}
+          <MasDetalles etiqueta="Ver más cifras de las preguntas" etiquetaAbierto="Ocultar las cifras" montadoSiempre>
           <FranjaDeCifras fila="lg" columnas={4} aria-label="Lo demás de las preguntas">
             <Cifra etiqueta="Reformuladas" valor={totales!.reformulaciones} />
             <Cifra etiqueta="Abandonos" valor={totales!.abandonos} />
@@ -433,6 +436,7 @@ export default function ChatPreguntasPage() {
               detalle={totales!.turnosConCosto === 0 ? 'todavía sin costo anotado' : `${totales!.turnosConCosto} turnos con costo`}
             />
           </FranjaDeCifras>
+          </MasDetalles>
 
           {/* Sugerencias. */}
           <h2 className="text-subtitle font-medium text-fg">Qué mejorar del chat</h2>

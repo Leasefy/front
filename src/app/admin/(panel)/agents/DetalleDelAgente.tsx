@@ -118,10 +118,11 @@ function PromptEditor({
 
   return (
     <div className="space-y-4">
-      {/* La barra de guardar queda pegada bajo la cabecera mientras se edita. */}
-      <div className="sticky top-16 z-10 -mx-6 flex flex-wrap items-center gap-3 border-b border-border bg-bg/95 px-6 py-3 backdrop-blur lg:-mx-8 lg:px-8">
+      {/* La barra de guardar queda pegada bajo la cabecera mientras se edita. Ronda 30: fondo liso (sin el
+          velo con desenfoque, Cadence 2) y el botón dice qué guarda. */}
+      <div className="sticky top-16 z-10 -mx-6 flex flex-wrap items-center gap-3 border-b border-border bg-bg px-6 py-3 lg:-mx-8 lg:px-8">
         <Button onClick={onSave} disabled={!canSave || submitting} isLoading={submitting} hideArrow>
-          {submitting ? 'Guardando…' : 'Guardar'}
+          {submitting ? 'Guardando…' : 'Guardar las instrucciones'}
         </Button>
         <Button variant="outline" onClick={onRevert} disabled={!dirty || submitting} hideArrow>
           Deshacer los cambios

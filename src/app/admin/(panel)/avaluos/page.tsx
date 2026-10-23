@@ -110,13 +110,7 @@ export default function AvaluosPage() {
       <PageHeader
         title="Avalúos"
         description="Revisa la propuesta de valor de cada avalúo y firma su certificado (o recházalo)."
-        junto={
-          !isLoading && !error ? (
-            <Pill tone={items.length > 0 ? 'warn' : 'neutral'} dot={items.length > 0}>
-              {items.length === 1 ? '1 por firmar' : `${items.length} por firmar`}
-            </Pill>
-          ) : null
-        }
+        // Ronda 30 (el mismo número nunca dos veces): sin la insignia «N por firmar»; lo cuenta la pestaña.
       />
 
       {/* Glow up 22-10: el trabajo (la cola por firmar) y el historial en pestañas; antes, el historial debajo de

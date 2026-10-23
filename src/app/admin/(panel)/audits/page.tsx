@@ -120,7 +120,8 @@ export default function AuditsPage() {
     {
       header: 'Evento',
       cell: (r) => (
-        <span className="text-fg" title={r.event_type}>
+        // Ronda 30: sin el código del evento al pasar el mouse (está en el cajón y en el CSV).
+        <span className="text-fg">
           {eventoDeCumplimiento(r.event_type)}
         </span>
       ),
@@ -197,7 +198,7 @@ export default function AuditsPage() {
                 value={tenant}
                 onChange={(v) => setFilters({ tenant: v }, { resetPage: true })}
                 todas="Todas las inmobiliarias"
-                opciones={(facets.data?.tenants ?? []).map((t) => ({ valor: t.tenant_id, nombre: t.legal_name ?? t.tenant_id }))}
+                opciones={(facets.data?.tenants ?? []).map((t) => ({ valor: t.tenant_id, nombre: t.legal_name ?? 'Inmobiliaria sin nombre' }))}
               />
             </Filtro>
             <FiltroDeFechas

@@ -194,13 +194,15 @@ export default function AuditExplorerPage() {
         campos={
           abierta
             ? [
+                // Ronda 30: sin correo, «Quién» y «Tipo» decían lo mismo («Una persona» dos veces): el tipo sólo
+                // cuando arriba va el correo. Los números con el nombre del filtro (antes «Id» y «Registro»).
                 { nombre: 'Quién', valor: correoDe(abierta.actor_id) ?? quienLoHizo(abierta.actor_type) },
-                { nombre: 'Tipo', valor: quienLoHizo(abierta.actor_type) },
-                { nombre: 'Código', valor: <code className="font-mono">{abierta.action}</code> },
+                ...(correoDe(abierta.actor_id) ? [{ nombre: 'Tipo', valor: quienLoHizo(abierta.actor_type) }] : []),
+                { nombre: 'Código de la acción', valor: <code className="font-mono">{abierta.action}</code> },
                 { nombre: 'Sobre qué', valor: abierta.entity_type ? sobreQue(abierta.entity_type) : '—' },
-                { nombre: 'Id', valor: abierta.entity_id ? <code className="font-mono">{abierta.entity_id}</code> : '—' },
+                { nombre: 'Número de lo afectado', valor: abierta.entity_id ? <code className="font-mono">{abierta.entity_id}</code> : '—' },
                 { nombre: 'Inmobiliaria', valor: abierta.legal_name ?? '—' },
-                { nombre: 'Registro', valor: <code className="font-mono">{abierta.id}</code> },
+                { nombre: 'Número del registro', valor: <code className="font-mono">{abierta.id}</code> },
               ]
             : []
         }

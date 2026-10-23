@@ -80,6 +80,8 @@ export default function HealthPage() {
   }, [refetch])
 
   const all = data?.checks ?? []
+  // Ronda 30: los que fallan, para la cifra.
+  const conFalla = all.filter((c) => c.status === 'down' || c.status === 'degraded')
   const counts = {
     ok:           all.filter((c) => c.status === 'ok').length,
     degraded:     all.filter((c) => c.status === 'degraded').length,
@@ -116,7 +118,10 @@ export default function HealthPage() {
       ordenPrimero: 'desc',
       texto: (c) => c.latency_ms,
       cell: (c) => (
-        <span className="font-mono text-caption tabular-nums text-fg-muted">{c.latency_ms != null ? `${c.latency_ms} ms` : '—'}</span>
+        // Ronda 30 (revisora r27): un caído o sin configurar no «responde en 1 ms»: «—».
+        <span className="font-mono text-caption tabular-nums text-fg-muted">
+          {c.latency_ms != null && c.status !== 'down' && c.status !== 'unconfigured' ? `${c.latency_ms} ms` : '—'}
+        </span>
       ),
     },
     {
@@ -144,20 +149,26 @@ export default function HealthPage() {
       />
 
       {isLoading && !data ? <LoadingBlock label="Revisando los servicios" /> : null}
-      {!isLoading && error && !data ? <ErrorBlock error={error} onReintentar={refetch} /> : null}
+      {!isLoading && error && !data ? <ErrorBlock error={error} onReintentar={refetch} titulo="No pudimos revisar los servicios" /> : null}
 
       {data ? (
         <>
           <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
             {/* Ronda 26: la cifra es un número (antes una frase en mono de 40 px); la frase va al contexto. */}
+            {/* Ronda 30 (revisora r27: la pregunta es «¿qué se cayó?»): con alguno caído o lento, la cifra los
+                cuenta y el contexto los nombra; con todo bien, cuántos responden. */}
             <CifraHeroe
-              rotulo="Servicios que responden"
-              cifra={`${counts.ok} de ${all.length}`}
-              contexto={ESTADO_GENERAL[data.status] ?? 'Sin saber'}
+              rotulo={conFalla.length > 0 ? 'Caídos o lentos' : 'Servicios que responden'}
+              cifra={conFalla.length > 0 ? String(conFalla.length) : `${counts.ok} de ${all.length}`}
+              contexto={
+                conFalla.length > 0
+                  ? `de ${all.length}: ${conFalla.map((c) => chequeoDeSalud(c.name)).join(', ')}`
+                  : ESTADO_GENERAL[data.status] ?? 'Sin saber'
+              }
               tramos={[
                 { clave: 'ok', etiqueta: 'Responden', monto: counts.ok, tono: 'exito', cifra: String(counts.ok), siempre: true },
-                { clave: 'degraded', etiqueta: 'Lentos o con fallas', monto: counts.degraded, tono: 'aviso', cifra: String(counts.degraded), siempre: true },
-                { clave: 'down', etiqueta: 'Caídos', monto: counts.down, tono: 'critico', cifra: String(counts.down), siempre: true },
+                { clave: 'degraded', etiqueta: 'Lentos o con fallas', monto: counts.degraded, tono: 'aviso', cifra: String(counts.degraded) },
+                { clave: 'down', etiqueta: 'Caídos', monto: counts.down, tono: 'critico', cifra: String(counts.down) },
                 { clave: 'unconfigured', etiqueta: 'Sin configurar', monto: counts.unconfigured, tono: 'neutro', cifra: String(counts.unconfigured) },
               ]}
               total={all.length}
@@ -172,7 +183,8 @@ export default function HealthPage() {
             getKey={(c) => c.name}
             aria-label="Servicios de Leasefy"
             queSon={['servicio', 'servicios']}
-            paginar={false}
+            // Ronda 30 (mandato: toda tabla con buscador y paginación).
+            buscar="Buscar un servicio"
             segmentos={[
               { valor: 'todos', nombre: 'Todos', cumple: () => true },
               { valor: 'fallas', nombre: 'Caídos o lentos', cumple: (c) => c.status === 'down' || c.status === 'degraded', tono: 'aviso' },

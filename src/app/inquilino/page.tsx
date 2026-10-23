@@ -275,7 +275,8 @@ export default function InquilinoPage() {
               if (errorPostulaciones) void recargarPostulaciones();
               if (errorArriendos) void recargarArriendos();
             }}
-            volverA={{ label: 'Explorar propiedades', href: '/inquilino/explorar' }}
+            // Revisora r24: la salida de un fallo es la ayuda, no ir a buscar otro arriendo.
+            volverA={{ label: 'Ir al centro de ayuda', href: '/ayuda' }}
           />
         </div>
       </div>
@@ -306,8 +307,9 @@ export default function InquilinoPage() {
         {/* GLOW UP (21-10): el encabezado de todas las pantallas (antes, un saludo grande propio). */}
         <EncabezadoDePantalla
           className="mb-8"
-          seccion={greeting}
-          titulo={t('dashboard.hello', { name: firstName })}
+          // Revisora r24 (Resumen del inquilino): la sección es la del riel («Inicio») y el saludo es el título.
+          seccion="Inicio"
+          titulo={firstName ? `${greeting}, ${firstName}` : greeting}
           // «Te toca: …» (Nico eligió «3 secciones», 21-10): lo único urgente, en una línea.
           descripcion={
             teToca ? (

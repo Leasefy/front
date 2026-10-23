@@ -205,8 +205,8 @@ function ReporteViewerContent() {
     <CrossFade swapKey="reporte">
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
           <h1 className="text-h2 font-heading text-foreground">
             {t('inmobiliaria.ai.cobranza.reporte.pageTitle')}
           </h1>

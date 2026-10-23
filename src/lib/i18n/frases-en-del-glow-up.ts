@@ -705,4 +705,5 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Buscar en los enlaces sin pagar": "Search unpaid payment links",
   "Ningún enlace con esa búsqueda": "No links match that search",
   "Borra la búsqueda para ver los demás.": "Clear the search to see the rest.",
+  "Por atender": "To address",
 }

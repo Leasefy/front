@@ -72,7 +72,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
-import { AnimatedNumber, CrossFade, Eyebrow, Presence, SegmentedControl } from '@leasefy/cadence'
+import { AnimatedNumber, CrossFade, Presence, SegmentedControl } from '@leasefy/cadence'
 
 import {
   cobranzaSecuenciaApi,
@@ -446,9 +446,10 @@ function PagosRecordatorios() {
       <Card>
         <CardContent className="space-y-6 p-5 lg:p-6">
           <div className="space-y-1">
-            <Eyebrow>1 · Condiciones de cobro</Eyebrow>
-            <h2 className="text-base font-medium text-fg">Cuándo se avisa</h2>
-            <p className="max-w-2xl text-sm text-fg-muted">
+            {/* Revisora r27 (Recordatorios, UI): un rótulo por bloque (antes sobretítulo «1 · Condiciones de
+                cobro» y título «Cuándo se avisa» para lo mismo); el número del paso queda junto al título. */}
+            <h2 className="text-body font-medium text-fg"><span className="mr-2 font-mono text-caption tabular-nums text-fg-subtle" aria-hidden="true">1</span>Cuándo se avisa</h2>
+            <p className="max-w-2xl text-body-sm text-fg-muted">
               Un recordatorio al inicio del mes y, si no pagan, avisos con el interés ya generado,
               separados por los días que definas.
             </p>
@@ -620,8 +621,7 @@ function PagosRecordatorios() {
         <CardContent className="space-y-5 p-5 lg:p-6">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="space-y-1">
-              <Eyebrow>2 · Así queda tu secuencia</Eyebrow>
-              <h2 className="text-base font-medium text-fg">Qué va a pasar y cuándo</h2>
+              <h2 className="text-body font-medium text-fg"><span className="mr-2 font-mono text-caption tabular-nums text-fg-subtle" aria-hidden="true">2</span>Qué va a pasar y cuándo</h2>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="mes">Mes que se cobra</Label>
@@ -682,8 +682,7 @@ function PagosRecordatorios() {
       <Card>
         <CardContent className="space-y-5 p-5 lg:p-6">
           <div className="space-y-1">
-            <Eyebrow>3 · Enviar los avisos</Eyebrow>
-            <h2 className="text-base font-medium text-fg">
+            <h2 className="text-body font-medium text-fg"><span className="mr-2 font-mono text-caption tabular-nums text-fg-subtle" aria-hidden="true">3</span>
               A quién le va a llegar el aviso de {nombreDelMes(mes)}
             </h2>
             <p className="max-w-2xl text-sm text-fg-muted">

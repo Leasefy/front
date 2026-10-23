@@ -138,7 +138,8 @@ function Ley2300Content() {
   }
 
   const estado = isLoading && items.length === 0 ? 'cargando' : error && items.length === 0 ? 'fallo' : items.length === 0 ? 'vacio' : 'lista'
-  const cuantos = `${items.length.toLocaleString('es-CO')}${nextCursor ? '+' : ''}`
+  // Revisora r27 (Ley 2300): «50+» no es una cifra. La cifra es lo cargado y el contexto dice que hay más.
+  const cuantos = items.length.toLocaleString('es-CO')
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -176,8 +177,8 @@ function Ley2300Content() {
               cifra={cuantos}
               contexto={
                 items.length === 1
-                  ? 'intento de contacto para revisar'
-                  : `intentos de contacto para revisar${nextCursor ? ' (hay más; cárgalos al pie)' : ''}`
+                  ? `intento de contacto para revisar${nextCursor ? ' · hay más: cárgalos al pie' : ''}`
+                  : `intentos de contacto para revisar${nextCursor ? ' · hay más: cárgalos al pie' : ''}`
               }
             />
             <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between">

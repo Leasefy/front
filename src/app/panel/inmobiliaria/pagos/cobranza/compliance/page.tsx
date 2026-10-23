@@ -173,7 +173,8 @@ function ComplianceOverviewContent() {
             return (
               <CifraHeroe
                 data-testid="cumplimiento-ley-2300"
-                rotulo={tr('Cumplimiento')}
+                // Revisora r27 (Cumplimiento, UI): el rótulo dice el hecho, no repite el título.
+                rotulo={tr('Por atender')}
                 cifra={porAtender === 0 ? tr('Cumples') : porAtender === 1 ? tr('1 cosa por atender') : tr('{n} cosas por atender', { n: porAtender })}
                 contexto={tr('de tres frentes: Ley 2300, no contactar y retención')}
                 total={3}

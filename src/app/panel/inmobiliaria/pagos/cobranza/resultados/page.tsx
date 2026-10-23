@@ -315,25 +315,31 @@ function ResultadosContent() {
    */
   const pendientes = overview.data?.kpis.escalacionesPendientes ?? 0
   const recuperadoKpi = kpis.find((k) => k.key === 'recuperado') ?? null
+  /*
+   * Revisora r27 (Resultados, UI): la analítica y el reporte del día son de CONSULTA. Con resultados van en gris
+   * dentro de «Cómo trabajó» (antes dos botones de contorno junto al azul); sin resultados, en el encabezado
+   * como enlaces, porque es lo único que se puede mirar.
+   */
+  const deConsulta = (
+    <>
+      <Button asChild variant="link" size="sm" hideArrow className="px-0 text-fg-muted">
+        <Link href={ANALITICA_HREF} data-testid="resultados-ver-analitica">
+          Ver analítica
+        </Link>
+      </Button>
+      <Button asChild variant="link" size="sm" hideArrow className="px-0 text-fg-muted">
+        <Link href={REPORTE_HREF} data-testid="resultados-ver-reporte">
+          Reporte del día
+        </Link>
+      </Button>
+    </>
+  )
   const header = (
     <EncabezadoDePantalla
       seccion="Cobranza"
       titulo="Resultados del agente"
       descripcion="Lo que recuperó tu agente de cobranza y cómo trabajó, leído como evaluarías a un equipo."
-      acciones={
-        <>
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href={ANALITICA_HREF} data-testid="resultados-ver-analitica">
-              Ver analítica
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href={REPORTE_HREF} data-testid="resultados-ver-reporte">
-              Reporte del día
-            </Link>
-          </Button>
-        </>
-      }
+      acciones={hasAnyData ? undefined : deConsulta}
       accionPrincipal={
         pendientes > 0 ? (
           <Button asChild size="sm" hideArrow>
@@ -443,6 +449,7 @@ function ResultadosContent() {
         {franja('recupero', 'Lo que recuperó', 'La plata y los casos que el agente llevó hasta el pago.')}
         <MasDetalles etiqueta="Cómo trabajó" etiquetaAbierto="Ocultar cómo trabajó" montadoSiempre>
           {franja('trabajo', 'Cómo trabajó', 'Los casos que tocó, quiénes respondieron, lo que se cumplió y lo que subió a revisión humana.')}
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1">{deConsulta}</div>
         </MasDetalles>
       </div>
     </CrossFade>

@@ -784,10 +784,9 @@ function ReportesPropietariosContent() {
           {/* Acciones. enviar/aprobar y PDF se cablean a endpoints reales cuando
               el reporte es real; el resto queda como placeholder honesto.
               La acción principal (Enviar) requiere aprobación humana — T-323. */}
-          <Card>
+          {/* Revisora r27 (Reportes, UI): sin el título «Acciones» (los botones dicen lo que hacen). */}
+          <Card aria-label="Acciones del reporte">
             <CardContent className="p-5 space-y-3">
-              <h3 className="text-body-sm font-medium text-fg">Acciones</h3>
-
               <div className="flex flex-wrap gap-2">
                 {/* Acción principal — Aprobar / Enviar (POST approve, T-323) */}
                 <Button

@@ -264,8 +264,9 @@ function SiniestrosContent() {
       <Card className="overflow-hidden">
       {/* LA RESPUESTA, DENTRO de la tarjeta (C3): lo que espera tu aprobación para reclamarle a la aseguradora. */}
       {resumen && resumen.total > 0 ? (
-        <div className="border-b border-border px-4 py-5 sm:px-6">
+        // Revisora r27 (Siniestros, UI): la cifra recibe su borde como sus hermanas (antes un div con su padding).
         <CifraHeroe
+          className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
           data-testid="siniestros-por-revisar"
           rotulo={isEs ? 'Por revisar' : 'To review'}
           cifra={formatCurrency(resumen.porEstado.pending_human_review?.saldo ?? 0)}
@@ -289,7 +290,6 @@ function SiniestrosContent() {
             cifra: formatCurrency(resumen.porEstado[st]?.saldo ?? 0),
           }))}
         />
-        </div>
       ) : null}
 
       <div className="border-b border-border px-4 py-3">

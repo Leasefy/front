@@ -416,7 +416,8 @@ export function AcuerdoGeneralForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        {/* Revisora r27: a 390 un monto de 9 dígitos no cabía en media columna: uno debajo del otro. */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="ag-min-monto" className="text-sm">
               Deuda desde (COP)

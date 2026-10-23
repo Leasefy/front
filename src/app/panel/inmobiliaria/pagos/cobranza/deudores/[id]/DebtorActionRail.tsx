@@ -59,30 +59,28 @@ interface DebtorActionRailProps {
   onGestionRegistrada?: () => void
 }
 
-/** Future-aware relative time (the sidebar's old formatter — moved here with
- * the next-action card). cartera.relativeTime is past-only. */
+/**
+ * Cuánto falta (o cuánto pasó) para la próxima acción, en palabras: «en 5 minutos», «en 2 horas y 15 minutos»,
+ * «hace 3 días». Revisora r27: antes «en 5min», «hace 3h», «en 2d» (abreviaturas pegadas al número).
+ */
 function formatRelative(iso: string, now: number, locale: string): string {
+  const es = locale === 'es'
   const diffMs = new Date(iso).getTime() - now
   const isFuture = diffMs >= 0
-  const absMs = Math.abs(diffMs)
-  const mins = Math.floor(absMs / 60_000)
-  if (mins < 1) return locale === 'es' ? 'ahora mismo' : 'just now'
-  if (mins < 60) {
-    return isFuture
-      ? `${locale === 'es' ? 'en' : 'in'} ${mins}min`
-      : `${locale === 'es' ? 'hace' : 'ago'} ${mins}min`
-  }
-  const hrs = Math.floor(mins / 60)
-  const remMins = mins % 60
-  if (hrs < 24) {
-    return isFuture
-      ? `${locale === 'es' ? 'en' : 'in'} ${hrs}h ${remMins}m`
-      : `${locale === 'es' ? 'hace' : 'ago'} ${hrs}h`
-  }
-  const days = Math.floor(hrs / 24)
-  return isFuture
-    ? `${locale === 'es' ? 'en' : 'in'} ${days}d`
-    : `${locale === 'es' ? 'hace' : 'ago'} ${days}d`
+  const mins = Math.floor(Math.abs(diffMs) / 60_000)
+  const n = (k: number, uno: string, varios: string) => `${k} ${k === 1 ? uno : varios}`
+  const minutos = (k: number) => (es ? n(k, 'minuto', 'minutos') : n(k, 'minute', 'minutes'))
+  const horas = (k: number) => (es ? n(k, 'hora', 'horas') : n(k, 'hour', 'hours'))
+  const dias = (k: number) => (es ? n(k, 'día', 'días') : n(k, 'day', 'days'))
+  if (mins < 1) return es ? 'ahora mismo' : 'just now'
+  let cuanto: string
+  if (mins < 60) cuanto = minutos(mins)
+  else if (mins < 24 * 60) {
+    const h = Math.floor(mins / 60)
+    const resto = mins % 60
+    cuanto = isFuture && resto > 0 ? `${horas(h)} ${es ? 'y' : 'and'} ${minutos(resto)}` : horas(h)
+  } else cuanto = dias(Math.floor(mins / (24 * 60)))
+  return isFuture ? `${es ? 'en' : 'in'} ${cuanto}` : es ? `hace ${cuanto}` : `${cuanto} ago`
 }
 
 function formatPlannedTime(iso: string, locale: string): string {

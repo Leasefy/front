@@ -255,20 +255,6 @@ function RentabilidadContent() {
             </ParaEntenderMas>
           }
           acciones={
-            <>
-            <div className="max-w-full overflow-x-auto [scrollbar-width:none]" data-lenis-prevent>
-              <SegmentedControl<PresetDePeriodo>
-                value={preset}
-                onChange={elegirPreset}
-                size="sm"
-                className="[&>button]:whitespace-nowrap"
-                aria-label={t('inmobiliaria.reportes.rentabilidad.period.label')}
-                options={PRESETS_DE_PERIODO.map((p) => ({
-                  value: p,
-                  label: t(`inmobiliaria.reportes.rentabilidad.period.${p}`),
-                }))}
-              />
-            </div>
             <Button
               size="sm"
               variant="outline"
@@ -283,9 +269,25 @@ function RentabilidadContent() {
                 ? t('inmobiliaria.reportes.rentabilidad.downloading')
                 : t('inmobiliaria.reportes.rentabilidad.download')}
             </Button>
-            </>
           }
         />
+        {/* Revisora r25: el título se partía en dos renglones porque compartía fila con el período (cinco
+            segmentos) y el CSV. El período, que filtra TODO el reporte, va en su renglón bajo el encabezado. */}
+        <div className="flex flex-wrap items-center gap-3" data-testid="periodo-del-reporte">
+        <div className="max-w-full overflow-x-auto [scrollbar-width:none]" data-lenis-prevent>
+          <SegmentedControl<PresetDePeriodo>
+            value={preset}
+            onChange={elegirPreset}
+            size="sm"
+            className="[&>button]:whitespace-nowrap"
+            aria-label={t('inmobiliaria.reportes.rentabilidad.period.label')}
+            options={PRESETS_DE_PERIODO.map((p) => ({
+              value: p,
+              label: t(`inmobiliaria.reportes.rentabilidad.period.${p}`),
+            }))}
+          />
+        </div>
+        </div>
       </div>
 
       {/* Periodo: sólo el rango libre pide escribir meses. */}
@@ -593,7 +595,8 @@ function RentabilidadContent() {
                             <span className="text-fg-subtle">—</span>
                           ) : (
                             <>
-                              {formatCurrency(f.recaudadoCop)}
+                              {/* Revisora r25 (VOZ §4): «$ 0 / $ 6.300.000» → «— / $ 6.300.000»: un cero en tabla es «—». */}
+                              {f.recaudadoCop === 0 ? <span className="text-fg-subtle">—</span> : formatCurrency(f.recaudadoCop)}
                               <span className="text-fg-muted"> / {formatCurrency(f.esperadoCop)}</span>
                             </>
                           )}

@@ -13,10 +13,9 @@
  * mandar nada**, y con las palabras que delató. No se «limpia» el texto: quien
  * escribe tiene que enterarse de que ese camino no existe.
  *
- * Y el recordatorio de qué SÍ se puede decir estaba escondido DENTRO del campo
- * de respuesta, o sea que sólo lo leía quien ya había decidido responder. Ahora
- * está arriba, siempre visible: la mitad de las veces el puntaje se filtra por
- * no saber qué poner en su lugar, y eso hay que saberlo antes de escribir.
+ * Y el recordatorio de qué SÍ se puede decir: estuvo arriba, siempre abierto;
+ * por decisión de Nico (23-10) va PLEGADO junto a la caja de respuesta, que es
+ * donde se escribe («Qué sí y qué no decirle»).
  *
  * ── 🔴 Lo que faltaba (18-09-2026, de noche) ───────────────────────────────
  *
@@ -33,6 +32,7 @@ import { ChatCircleDots, Eye, ShieldWarning, Clock } from '@phosphor-icons/react
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa'
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
@@ -188,45 +188,6 @@ export function ReclamosClient() {
         </section>
       ) : null}
 
-      {/* ── La regla, antes de escribir y no dentro del formulario ───────── */}
-      <section
-        className="grid gap-4 rounded-lg border border-border bg-surface p-5 sm:grid-cols-2"
-        data-testid="que-se-puede-decir"
-      >
-        <div>
-          <h2 className="mb-2 text-sm font-medium text-fg">Lo que sí puedes decirle</h2>
-          <ul className="space-y-1 text-sm text-fg-muted">
-            {SE_PUEDE.map((t) => (
-              <li key={t} className="flex gap-2">
-                <span aria-hidden="true" className="text-fg-subtle">
-                  ·
-                </span>
-                {t}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <h2 className="mb-2 flex items-center gap-1.5 text-sm font-medium text-fg">
-            <ShieldWarning weight="duotone" className="h-4 w-4 text-warning" aria-hidden="true" />
-            Lo que la ley no te deja decir
-          </h2>
-          <ul className="space-y-1 text-sm text-fg-muted">
-            {NO_SE_PUEDE.map((t) => (
-              <li key={t} className="flex gap-2">
-                <span aria-hidden="true" className="text-fg-subtle">
-                  ·
-                </span>
-                {t}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-caption text-fg-subtle">
-            Si se te escapa, la respuesta no sale: te decimos qué palabra la
-            frenó antes de que el candidato la reciba.
-          </p>
-        </div>
-      </section>
 
       <Card className="overflow-hidden p-0">
         {/* Las pestañas de estado con su conteo, DENTRO de la tarjeta; sin responder, primero. */}
@@ -344,6 +305,7 @@ export function ReclamosClient() {
                               aria-describedby={fuga ? 'fuga-detectada' : undefined}
                             />
                             <ErrorDelCampo id="fuga-detectada" mensaje={fuga} className="mt-0 text-sm" />
+                            <GuiaDeLaRespuesta />
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
@@ -411,5 +373,58 @@ export function ReclamosClient() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+/**
+ * La guía de qué sí y qué no decirle (decisión de Nico, 23-10): PLEGADA junto
+ * a la caja de respuesta, donde se escribe. Montada siempre (oculta al
+ * plegar) para que el lector de pantalla y las pruebas la encuentren.
+ */
+function GuiaDeLaRespuesta() {
+  return (
+    <MasDetalles
+      etiqueta="Qué sí y qué no decirle"
+      etiquetaAbierto="Ocultar la guía"
+      montadoSiempre
+      classNameDelContenido="mt-2"
+      data-testid="guia-de-la-respuesta"
+    >
+      <div className="grid gap-4 rounded-md bg-surface-muted p-4 sm:grid-cols-2" data-testid="que-se-puede-decir">
+          <div>
+            <h3 className="mb-2 text-sm font-medium text-fg">Lo que sí puedes decirle</h3>
+            <ul className="space-y-1 text-sm text-fg-muted">
+              {SE_PUEDE.map((t) => (
+                <li key={t} className="flex gap-2">
+                  <span aria-hidden="true" className="text-fg-subtle">
+                    ·
+                  </span>
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="mb-2 flex items-center gap-1.5 text-sm font-medium text-fg">
+              <ShieldWarning weight="duotone" className="h-4 w-4 text-warning" aria-hidden="true" />
+              Lo que la ley no te deja decir
+            </h3>
+            <ul className="space-y-1 text-sm text-fg-muted">
+              {NO_SE_PUEDE.map((t) => (
+                <li key={t} className="flex gap-2">
+                  <span aria-hidden="true" className="text-fg-subtle">
+                    ·
+                  </span>
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-caption text-fg-subtle">
+              Si se te escapa, la respuesta no sale: te decimos qué palabra la
+              frenó antes de que el candidato la reciba.
+            </p>
+          </div>
+      </div>
+    </MasDetalles>
   )
 }

@@ -28,6 +28,10 @@ export interface Segmento<T> {
   valor: string
   nombre: string
   cumple: (fila: T) => boolean
+  /** Se ve aunque cuente cero (la primera pestaña siempre se ve). */
+  fija?: boolean
+  /** `aviso` = el punto ámbar: lo de esta pestaña pide atención. */
+  tono?: 'aviso'
 }
 
 const vacio = (v: ValorDeCelda) => v === null || v === undefined || v === ''

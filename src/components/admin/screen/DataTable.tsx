@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Export, Funnel, SortAscending, SortDescending, X } from '@phosphor-icons/react'
-import { SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
+import { Stagger, StaggerItem } from '@leasefy/cadence'
 import { toast } from 'sonner'
 
 import {
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { TablePagination } from '@/components/ui/pagination'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 import { useEstadoDeLaTabla } from '@/lib/admin/use-estado-de-la-tabla'
@@ -336,9 +337,10 @@ export function DataTable<T>({
           title="Nada con estos filtros"
           hint={hayBusqueda ? `No hay resultados para «${busqueda.trim()}».` : 'Prueba con otros filtros.'}
           icono={<Funnel weight="bold" />}
+          tono="neutro"
           suelto={false}
           accion={
-            <Button variant="outline" hideArrow onClick={limpiar}>
+            <Button variant="outline" size="sm" hideArrow onClick={limpiar}>
               Limpiar filtros
             </Button>
           }
@@ -451,6 +453,7 @@ export function DataTable<T>({
                   {barra ? (
                     <Button
                       variant="secondary"
+                      size="sm"
                       hideArrow
                       className={cn('shrink-0 gap-2 sm:hidden', !conBuscador && 'w-full')}
                       aria-expanded={filtrosAbiertos}
@@ -474,13 +477,15 @@ export function DataTable<T>({
                   {exportar ? (
                     <Button
                       variant="secondary"
+                      size="sm"
                       hideArrow
+                      isLoading={exportando}
                       onClick={() => void bajarExcel()}
                       disabled={exportando || (paginacion ? paginacion.total === 0 : calculo.ordenadas.length === 0)}
                       className="gap-2"
                     >
                       <Export className="h-4 w-4" aria-hidden />
-                      {exportando ? 'Armando…' : 'Exportar'}
+                      {exportando ? 'Armando el Excel…' : 'Exportar a Excel'}
                     </Button>
                   ) : null}
                 </div>
@@ -490,25 +495,28 @@ export function DataTable<T>({
           {barraAbajo ? (
             <div className="flex flex-wrap items-center gap-3">
               {conSegmentos ? (
-                <div className="min-w-0 max-w-full overflow-x-auto">
-                  <SegmentedControl<string>
-                    size="sm"
-                    aria-label="Ver"
-                    value={vista}
-                    onChange={(v) => poner({ [k('vista')]: v === primerSegmento ? undefined : v })}
-                    options={segmentos!.map((s) => ({
-                      value: s.valor,
-                      label: <ConConteo nombre={s.nombre} cuantos={calculo.conteo[s.valor] ?? 0} />,
-                      ariaLabel: `${s.nombre}: ${calculo.conteo[s.valor] ?? 0}`,
-                    }))}
-                  />
-                </div>
+                /* Glow up 22-10: las pestañas de estado del panel, con su conteo en
+                   mono; una pestaña en cero no se pinta (salvo la primera y la
+                   elegida); en el celular se desliza dentro de su riel. */
+                <PestanasDeEstado<string>
+                  etiqueta="Ver"
+                  className="min-w-0 max-w-full"
+                  valor={vista}
+                  onCambio={(v) => poner({ [k('vista')]: v === primerSegmento ? undefined : v })}
+                  pestanas={segmentos!.map((s) => ({
+                    valor: s.valor,
+                    etiqueta: s.nombre,
+                    cuantos: calculo.conteo[s.valor] ?? 0,
+                    fija: s.fija || s.valor === primerSegmento,
+                    tono: s.tono && (calculo.conteo[s.valor] ?? 0) > 0 ? s.tono : undefined,
+                    testid: `pestana-${id ? `${id}-` : ''}${s.valor}`,
+                  }))}
+                />
               ) : null}
               {hayFiltros && hayDatosSinFiltro ? (
-                <Button variant="link" size="sm" hideArrow onClick={limpiar} className="gap-1.5 text-warning">
-                  <Funnel className="h-4 w-4" weight="fill" aria-hidden />
-                  Limpiar filtros
+                <Button variant="ghost" size="sm" hideArrow onClick={limpiar} className="gap-1.5 text-fg-muted">
                   <X className="h-3.5 w-3.5" aria-hidden />
+                  Limpiar filtros
                 </Button>
               ) : null}
               {conteoVisible ? (
@@ -523,33 +531,16 @@ export function DataTable<T>({
         </div>
       ) : null}
       {cuerpo}
-      {pie || paginador ? <div className="border-t border-border bg-muted/10 px-4 py-3">{pie ?? paginador}</div> : null}
+      {pie || paginador ? <div className="border-t border-border px-4 py-3">{pie ?? paginador}</div> : null}
     </div>
   )
 }
 
-const NUMERO = new Intl.NumberFormat('es-CO')
-
-function ConConteo({ nombre, cuantos }: { nombre: string; cuantos: number }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-      {nombre}
-      {/* Un cero no se gana un recuadro: va atenuado. */}
-      <span
-        className={cn(
-          'rounded px-1.5 py-0.5 text-caption tabular-nums',
-          cuantos === 0 ? 'text-fg-subtle' : 'bg-muted',
-        )}
-      >
-        {NUMERO.format(cuantos)}
-      </span>
-    </span>
-  )
-}
-
 /**
- * En el celular, cada fila es una tarjeta: la primera columna arriba y las demás
- * con su nombre. Las columnas sin nombre (los botones) van al pie de la tarjeta.
+ * En el celular, cada fila es una tarjeta (el patrón de `CuotasDelMesTabla`):
+ * arriba, la primera columna —lo que la fila ES— y, a su derecha, la primera
+ * cifra de la tabla (la primera columna alineada a la derecha), en mono; debajo,
+ * las demás con su nombre. Las columnas sin nombre (los botones) van al pie.
  */
 function TarjetasDeLaTabla<T>({
   columns,
@@ -571,8 +562,10 @@ function TarjetasDeLaTabla<T>({
   ariaLabel?: string
 }) {
   const [principal, ...resto] = columns
-  const conNombre = resto.filter((c) => c.header.trim() && c.enCelular !== false)
-  const sinNombre = resto.filter((c) => !c.header.trim() && c.enCelular !== false)
+  const visibles = resto.filter((c) => c.enCelular !== false)
+  const cifra = visibles.find((c) => c.align === 'right' && c.header.trim())
+  const conNombre = visibles.filter((c) => c.header.trim() && c !== cifra)
+  const sinNombre = visibles.filter((c) => !c.header.trim())
   return (
     <Stagger as="ul" layout={false} className="divide-y divide-border" aria-label={ariaLabel}>
       {rows.map((row, i) => (
@@ -600,12 +593,22 @@ function TarjetasDeLaTabla<T>({
           }
           tabIndex={onRowClick ? 0 : undefined}
         >
-          {principal ? <div className="min-w-0 break-words">{principal.cell(row)}</div> : null}
+          {principal || cifra ? (
+            <div className="flex items-start justify-between gap-4">
+              {principal ? <div className="min-w-0 flex-1 break-words">{principal.cell(row)}</div> : null}
+              {cifra ? (
+                <div className="shrink-0 text-right font-mono text-body-sm tabular-nums text-fg">
+                  <span className="sr-only">{cifra.header}: </span>
+                  {cifra.cell(row)}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           {conNombre.length ? (
             <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2">
               {conNombre.map((c, ci) => (
                 <div key={ci} className="min-w-0">
-                  <dt className="text-caption uppercase tracking-wide text-fg-subtle">{c.header}</dt>
+                  <dt className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">{c.header}</dt>
                   <dd className="min-w-0 break-words text-body-sm text-fg">{c.cell(row)}</dd>
                 </div>
               ))}

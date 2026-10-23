@@ -7,7 +7,9 @@
  * para cuando vive DENTRO de otra tarjeta, como la de una tabla.
  */
 
+import Link from 'next/link'
 import { Appear, EmptyState, SkeletonBlock } from '@leasefy/cadence'
+import type { TonoDeEsfera } from '@leasefy/cadence'
 import { ArrowsClockwise, MagnifyingGlass, WarningOctagon } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -40,12 +42,15 @@ export function ErrorBlock({
   error,
   onReintentar,
   titulo = 'No pudimos cargar esto',
+  volverA,
   suelto = true,
   className,
 }: {
   error: Error | string
   onReintentar?: () => void
   titulo?: string
+  /** La salida cuando reintentar no tiene sentido (un 404 en una ficha). */
+  volverA?: { label: string; href: string }
   suelto?: boolean
   className?: string
 }) {
@@ -58,20 +63,27 @@ export function ErrorBlock({
   // Llega después de «cargando»: entra con fundido y 4 px (Cadence).
   return (
     <Appear distance="xs" className={cn(suelto && TARJETA, className)}>
+      {/* Glow up 22-10: el ícono va suelto (sin su baldosa) y el cartel siempre
+          ofrece algo: reintentar si puede cambiar, o volver. */}
       <div role="alert" className="px-6 py-12 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg bg-surface-muted">
-          <WarningOctagon weight="duotone" className="h-6 w-6 text-fg-subtle" aria-hidden="true" />
-        </div>
+        <WarningOctagon weight="duotone" className="mx-auto h-8 w-8 text-fg-subtle" aria-hidden="true" />
         <div className="mt-4 space-y-1.5">
           <p className="text-subtitle font-medium text-fg">{titulo}</p>
           <p className="mx-auto max-w-md text-body-sm text-fg-muted">{msg}</p>
         </div>
-        {onReintentar && sePuedeReintentar ? (
-          <div className="mt-6 flex justify-center">
-            <Button variant="outline" hideArrow onClick={onReintentar} className="gap-2">
-              <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
-              Intentar de nuevo
-            </Button>
+        {(onReintentar && sePuedeReintentar) || volverA ? (
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            {onReintentar && sePuedeReintentar ? (
+              <Button variant="outline" size="sm" hideArrow onClick={onReintentar} className="gap-2">
+                <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
+                Intentar de nuevo
+              </Button>
+            ) : null}
+            {volverA ? (
+              <Button variant="ghost" size="sm" asChild>
+                <Link href={volverA.href}>{volverA.label}</Link>
+              </Button>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -84,6 +96,8 @@ export function EmptyBlock({
   hint,
   icono,
   accion,
+  ilustracion,
+  tono,
   suelto = true,
   className,
 }: {
@@ -91,6 +105,10 @@ export function EmptyBlock({
   hint?: string
   icono?: React.ReactNode
   accion?: React.ReactNode
+  /** Una ilustración 3D (`<Ilustracion nombre tono="auto" />`) para el vacío grande de la pantalla. */
+  ilustracion?: React.ReactNode
+  /** El tono de la esfera del ícono: `exito` cuando no tener nada pendiente está bien. */
+  tono?: TonoDeEsfera
   suelto?: boolean
   className?: string
 }) {
@@ -101,6 +119,8 @@ export function EmptyBlock({
         title={title}
         description={hint}
         action={accion}
+        ilustracion={ilustracion}
+        tono={tono}
       />
     </Appear>
   )

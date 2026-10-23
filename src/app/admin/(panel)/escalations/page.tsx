@@ -224,6 +224,8 @@ export default function EscalationsPage() {
           error={error}
           onReintentar={refetch}
           emptyTitle={data && data.length > 0 ? 'Nada por atender' : 'No hay escalaciones'}
+          // Revisora r27 (T9): nada por atender es una buena noticia: la esfera verde, no la azul.
+          emptyTono={data && data.length > 0 ? 'exito' : undefined}
           emptyHint="Cuando un agente le pase un caso a una persona, aparece aquí."
           aria-label="Escalaciones"
           onRowClick={(r) => abrir(r.id)}

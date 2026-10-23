@@ -72,7 +72,7 @@ const NOMBRE: Record<EstadoDeLaTarea, string> = {
   'al-dia': 'Al día',
   atrasada: 'Atrasada',
   detenida: 'Detenida',
-  'sin-rastro': 'Sin rastro',
+  'sin-rastro': 'Nunca corrió',
 }
 
 const TONO: Record<EstadoDeLaTarea, PillTone> = {
@@ -114,7 +114,8 @@ const COLUMNAS_DE_TAREAS: Column<Tarea>[] = [
     texto: (t) => tareaProgramada(t.cron),
   },
   {
-    header: 'Último rastro en la base',
+    // Revisora r27: en palabras de quien mira (antes «Último rastro en la base» / «Sin rastro»).
+    header: 'Última vez que corrió',
     cell: (t) =>
       t.last_run ? (
         // Ronda 26 (revisora r25): a 390 «(hace 6 días)» se cortaba en la tarjeta; ahora va en su propia línea.

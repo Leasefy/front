@@ -165,7 +165,7 @@ export default function RegistrationProfilesPage() {
         junto={
           !isLoading ? (
             <Pill tone="neutral">
-              {enabledCount} de {rows.length} abiertos
+              {enabledCount} de {rows.length} encendidos
             </Pill>
           ) : null
         }
@@ -201,10 +201,13 @@ export default function RegistrationProfilesPage() {
                   </Pill>
                 </div>
                 <p className="text-body-sm text-fg-muted mt-1">{row.description}</p>
-                <p className="mt-2 text-caption text-fg-subtle">
-                  {row.updated_at ? `Último cambio: ${fmtFecha(row.updated_at)}` : 'Nadie lo ha cambiado'}
-                  {row.updated_by ? ` · ${row.updated_by}` : ''}
-                </p>
+                {/* Revisora r27: el cambio sólo cuando alguien lo cambió (antes «Nadie lo ha cambiado» ×3). */}
+                {row.updated_at ? (
+                  <p className="mt-2 text-caption text-fg-subtle">
+                    {`Último cambio: ${fmtFecha(row.updated_at)}`}
+                    {row.updated_by ? ` · ${row.updated_by}` : ''}
+                  </p>
+                ) : null}
               </div>
 
               <Toggle

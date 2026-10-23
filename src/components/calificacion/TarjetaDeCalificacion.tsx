@@ -188,7 +188,7 @@ export function LetraDeLaCalificacion({
   return (
     <span
       className={cn(
-        'inline-flex items-center justify-center rounded-full font-mono font-medium tabular-nums',
+        'inline-flex shrink-0 items-center justify-center rounded-full font-mono font-medium tabular-nums',
         grande ? 'h-16 w-16 text-3xl' : 'h-8 w-8 text-sm',
         letra ? TONO_DE_LA_LETRA[letra] : 'bg-surface-muted text-fg-subtle',
       )}

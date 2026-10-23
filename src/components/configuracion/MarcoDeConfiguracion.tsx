@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 
 export interface EntradaDeConfiguracion {
   id: string;
@@ -95,11 +96,9 @@ function Marco({
   };
 
   return (
-    <div className="p-4 md:p-6">
-      <header className="space-y-1">
-        <h1 className="text-h2 text-fg">{titulo}</h1>
-        <p className="text-sm text-fg-muted max-w-2xl">{subtitulo}</p>
-      </header>
+    <div className="p-6 lg:p-8">
+      {/* Glow up 22-10: el encabezado común (título de 40 px, una línea), el margen de la casa. */}
+      <EncabezadoDePantalla titulo={titulo} descripcion={subtitulo} />
 
       <div className="mt-6 flex flex-col gap-6 lg:flex-row">
         <nav aria-label={navAria} className="lg:w-60 lg:shrink-0">

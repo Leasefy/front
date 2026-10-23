@@ -165,7 +165,7 @@ function FirmarContratoContent() {
             parte del panel estás (Nico: «ni se entiende y no tiene navegación
             para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
         <BackButton href="/panel/inmobiliaria/contratos" label="Contratos" />
-        <h1 className="text-h2 text-fg">Firmar el contrato</h1>
+        <EncabezadoDePantalla seccion="Contratos" titulo="Firmar el contrato" />
         {/*
           🔴 C27 (auditoría 2026-09-13): sin `onReintentar`, un corte de red
           dejaba «Volver» como única salida — se perdía el camino y había que
@@ -188,7 +188,7 @@ function FirmarContratoContent() {
         <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-danger">No se pudo cargar el contrato</p>
+            <p className="font-medium text-danger">No se pudo cargar el contrato</p>
             <p className="text-sm text-danger mt-1">{error ?? 'Contrato no encontrado'}</p>
           </div>
         </div>
@@ -211,7 +211,7 @@ function FirmarContratoContent() {
             <SealCheck className="w-8 h-8 text-success" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-success">Contrato firmado</h2>
+            <h2 className="text-xl font-medium tracking-tight text-success">Contrato firmado</h2>
             {/*
               🔴 Aquí decía «El inquilino ya fue notificado para que firme
               digitalmente». Es imposible: en este flujo la inmobiliaria firma
@@ -285,13 +285,13 @@ function FirmarContratoContent() {
       {/* Preview */}
       <section className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
-          <h2 className="text-base font-semibold text-fg">Revisa el documento</h2>
+          <h2 className="text-base font-medium text-fg">Revisa el documento</h2>
         </div>
         <div className="p-5 space-y-3">
           {inquilinoYaFirmo && (
             <div className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 flex items-start gap-2">
               <Info className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-warning">
+              <p className="text-caption text-warning">
                 Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.
                 Revísalo antes de firmar.
               </p>

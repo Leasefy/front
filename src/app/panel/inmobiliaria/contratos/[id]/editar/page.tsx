@@ -301,7 +301,7 @@ function EditarContratoContent() {
             parte del panel estás (Nico: «ni se entiende y no tiene navegación
             para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
         <BackButton href="/panel/inmobiliaria/contratos" label="Contratos" />
-        <h1 className="text-h2 text-fg">Editar el contrato</h1>
+        <EncabezadoDePantalla seccion="Contratos" titulo="Editar el contrato" />
         {/*
           🔴 C27 (auditoría 2026-09-13): sin `onReintentar`, un corte de red
           dejaba «Volver» como única salida — se perdía el camino y había que
@@ -324,7 +324,7 @@ function EditarContratoContent() {
         <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-danger">No se pudo cargar el contrato</p>
+            <p className="font-medium text-danger">No se pudo cargar el contrato</p>
             <p className="text-sm text-danger mt-1">{error ?? 'Contrato no encontrado'}</p>
           </div>
         </div>
@@ -340,7 +340,7 @@ function EditarContratoContent() {
         <div className="flex max-w-3xl items-start gap-3 rounded-lg border border-warning/30 bg-warning-soft p-5">
           <WarningCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" />
           <div>
-            <p className="font-semibold text-warning">Este contrato no se puede editar</p>
+            <p className="font-medium text-warning">Este contrato no se puede editar</p>
             <p className="mt-1 text-sm text-warning">
               Solo se permite editar contratos en borrador, pendientes de firma del propietario,
               o cuando el inquilino solicitó modificaciones.
@@ -397,8 +397,8 @@ function EditarContratoContent() {
           <section className="rounded-lg border border-border bg-card p-5 space-y-3">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <h2 className="text-base font-medium text-foreground">PDF del contrato</h2>
+                <p className="text-caption text-muted-foreground mt-0.5">
                   Reemplaza el PDF sólo si cambiaste el documento. Si no, déjalo como está.
                 </p>
               </div>
@@ -411,7 +411,7 @@ function EditarContratoContent() {
                     if (!checked) updateForm('pdfFile', null);
                   }}
                 />
-                <span className="text-xs font-medium text-foreground">Reemplazar PDF</span>
+                <span className="text-caption font-medium text-foreground">Reemplazar PDF</span>
               </label>
             </div>
 
@@ -421,7 +421,7 @@ function EditarContratoContent() {
                   <FileText className="w-5 h-5 text-primary flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
-                    <p className="text-xs text-muted-foreground">{(form.pdfFile.size / 1024).toFixed(0)} KB</p>
+                    <p className="text-caption text-muted-foreground">{(form.pdfFile.size / 1024).toFixed(0)} KB</p>
                   </div>
                   <IconButton
                     variant="ghost"
@@ -450,7 +450,7 @@ function EditarContratoContent() {
                   <p className="text-sm text-foreground">
                     <span className="font-medium">Haz click para subir</span> o arrastra un PDF aquí
                   </p>
-                  <p className="text-xs text-muted-foreground">Máx 10 MB</p>
+                  <p className="text-caption text-muted-foreground">Máx 10 MB</p>
                   <input
                     id="pdf-replace"
                     type="file"
@@ -477,7 +477,7 @@ function EditarContratoContent() {
 
         {/* Terms */}
         <section className="rounded-lg border border-border bg-card p-5 space-y-4">
-          <h2 className="text-base font-semibold text-foreground">Términos</h2>
+          <h2 className="text-base font-medium text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field id={idDelCampoDelContrato('startDate')} label="Fecha de inicio" error={errorDe('startDate')}>
               <CampoDeDia
@@ -583,7 +583,7 @@ function EditarContratoContent() {
               <label htmlFor="prorratear-primer-mes" className="block text-sm font-medium text-foreground">
                 {PREGUNTA_DEL_PRORRATEO}
               </label>
-              <p className="text-xs text-muted-foreground" data-testid="explicacion-del-prorrateo">
+              <p className="text-caption text-muted-foreground" data-testid="explicacion-del-prorrateo">
                 {form.prorratearPrimerMes ? SI_SE_PRORRATEA : NO_SE_PRORRATEA}
               </p>
             </div>

@@ -1547,7 +1547,7 @@ function NuevoContratoContent() {
               `preparar` y sólo se corregía recargando). */}
           {(plantilla.usoIndeterminado || uso) && armadoPorElSistema && (
             <div className="space-y-1.5" data-testid="nuevo-contrato-uso">
-              <label className="block text-xs font-medium text-fg" htmlFor="contrato-uso">
+              <label className="block text-caption font-medium text-fg" htmlFor="contrato-uso">
                 Uso del inmueble
               </label>
               <Select
@@ -1603,7 +1603,7 @@ function NuevoContratoContent() {
                   <FileText className="w-5 h-5 text-primary flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-caption text-muted-foreground">
                       {(form.pdfFile.size / 1024).toFixed(0)} KB
                     </p>
                   </div>
@@ -1658,7 +1658,7 @@ function NuevoContratoContent() {
                 className="mt-0"
               />
 
-              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted rounded-md p-3">
+              <div className="flex items-start gap-2 text-caption text-muted-foreground bg-muted rounded-md p-3">
                 <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <p>
                   El propietario va a firmar digitalmente el contrato en Leasefy, independientemente
@@ -1823,11 +1823,11 @@ function ModeOption({
       )}
       <div className="flex items-center gap-2 mb-1.5">
         <Icon className={cn('w-4 h-4', active ? 'text-primary' : 'text-muted-foreground')} />
-        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="text-sm font-medium text-foreground">{title}</p>
       </div>
-      <p className="text-xs text-muted-foreground">{desc}</p>
+      <p className="text-caption text-muted-foreground">{desc}</p>
       {badge && (
-        <span className="absolute top-2 right-2 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-muted text-muted-foreground">
+        <span className="absolute top-2 right-2 px-1.5 py-0.5 text-caption font-medium rounded-full bg-muted text-muted-foreground">
           {badge}
         </span>
       )}

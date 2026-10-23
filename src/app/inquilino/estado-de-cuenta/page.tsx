@@ -23,6 +23,12 @@ export default function MiEstadoDeCuentaPage() {
     <PantallaDelEstadoDeCuenta
       cargar={() => estadoDeCuentaApi.mio()}
       volverA={{ label: 'Volver a pagos', href: '/inquilino/pagos' }}
+      // Glow up 22-10: el encabezado de las demás pantallas del portal (la sección del riel; «Pagos» es la pestaña
+      // de al lado, así que el «Volver a pagos» sólo queda en el fallo).
+      encabezado={{
+        seccion: 'Tu arriendo',
+        descripcion: 'Cada cuota de tu contrato, lo que ya pagaste y lo que te falta.',
+      }}
       // Revisora r23 (portal del inquilino): el vacío le habla a quien mira, no «Este cliente no tiene contratos»
       // (el texto del panel). Lo mismo que el portal del propietario.
       textosSinContratos={{

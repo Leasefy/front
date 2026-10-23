@@ -27,6 +27,7 @@ import { CrossFade } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { lugarDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
@@ -119,6 +120,12 @@ export interface PantallaProps {
   className?: string;
   /** SO-09 (04-10): firma el soporte de un descuento del propietario. */
   abrirSoporteDeLaDeduccion?: (deduccionId: string) => Promise<string>;
+  /**
+   * Glow up de los portales (22-10): el encabezado de todas las pantallas (la sección del riel, el título y UNA
+   * línea de para qué sirve) en vez del «Volver a…» y la línea con el nombre del cliente, que en su portal es la
+   * misma persona que mira. Sin esto (el panel, el enlace), la cabecera de siempre.
+   */
+  encabezado?: { seccion: string; descripcion: string };
 }
 
 export function PantallaDelEstadoDeCuenta({
@@ -128,6 +135,7 @@ export function PantallaDelEstadoDeCuenta({
   hoy: hoyProp,
   sinFiltros = false,
   textosSinContratos,
+  encabezado,
   reglasDeMoraHref,
   conAnticipoDelContrato = false,
   filtrosIniciales,
@@ -288,6 +296,31 @@ export function PantallaDelEstadoDeCuenta({
       className={cn('relative mx-auto w-full max-w-[1200px] space-y-5 p-4 sm:p-6 lg:p-8', className)}
       data-estado-pagina
     >
+      {encabezado ? (
+        <div data-estado-barra>
+          <EncabezadoDePantalla
+            seccion={encabezado.seccion}
+            titulo={t('estadoDeCuenta.titulo')}
+            descripcion={encabezado.descripcion}
+            acciones={
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  hideArrow
+                  onClick={imprimir}
+                  disabled={!vista}
+                  data-testid="imprimir-estado"
+                >
+                  <Printer className="h-4 w-4" aria-hidden="true" />
+                  {t('estadoDeCuenta.imprimir')}
+                </Button>
+                {vista && acciones ? acciones(vista, nota, filtros) : null}
+              </>
+            }
+          />
+        </div>
+      ) : (
       <div data-estado-barra className="space-y-3">
         {regreso && (
           <Link
@@ -327,6 +360,7 @@ export function PantallaDelEstadoDeCuenta({
           </div>
         </div>
       </div>
+      )}
 
       {/* Movimiento (ola 2, 03-10-2026): cargando → el documento / vacío /
           fallo se cruzan (`popLayout`: lo nuevo entra ya y el esqueleto se va

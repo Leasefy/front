@@ -326,6 +326,25 @@ describe('PantallaDelEstadoDeCuenta', () => {
     );
   });
 
+  it('en un portal, con `encabezado`: la sección del riel y su línea, sin «Volver a…» ni el nombre de quien mira', async () => {
+    const cargar = vi.fn().mockResolvedValue(estadoDeCuenta());
+    await montar(
+      <PantallaDelEstadoDeCuenta
+        cargar={cargar}
+        hoy={HOY}
+        volverA={{ label: 'Volver a pagos', href: '/inquilino/pagos' }}
+        encabezado={{ seccion: 'Tu arriendo', descripcion: 'Cada cuota de tu contrato, lo que ya pagaste y lo que te falta.' }}
+      />,
+    );
+    expect(host.querySelector('h1')?.textContent).toBe('Estado de cuenta');
+    expect(host.textContent).toContain('Tu arriendo');
+    expect(host.textContent).toContain('Cada cuota de tu contrato');
+    expect(host.querySelector('[data-testid="estado-volver"]')).toBeNull();
+    expect(host.querySelector('[data-testid="estado-subtitulo"]')).toBeNull();
+    // Imprimir sigue a la mano.
+    expect(host.querySelector('[data-testid="imprimir-estado"]')).not.toBeNull();
+  });
+
   it('el enlace público no lleva filtros: el cliente recibe su cuenta completa', async () => {
     const cargar = vi.fn().mockResolvedValue(estadoDeCuenta());
     await montar(<PantallaDelEstadoDeCuenta cargar={cargar} hoy={HOY} sinFiltros />);

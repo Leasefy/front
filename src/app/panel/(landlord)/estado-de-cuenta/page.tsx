@@ -25,6 +25,11 @@ export default function MiEstadoDeCuentaDelPropietarioPage() {
       // SO-09 (04-10): el soporte de cada descuento de sus giros.
       abrirSoporteDeLaDeduccion={async (id) => (await estadoDeCuentaApi.soporteDeMiDeduccion(id)).url}
       volverA={{ label: 'Volver al panel', href: '/panel' }}
+      // Glow up 22-10: el encabezado de las demás pantallas del portal en vez del «Volver al panel» y su nombre.
+      encabezado={{
+        seccion: 'Mi plata',
+        descripcion: 'Lo que tu inmobiliaria te ha girado y lo que falta por girar, contrato por contrato.',
+      }}
       // QA-PROP-95 PO-27: el vacío dicho al propietario, no «Este cliente…».
       textosSinContratos={{
         titulo: 'Todavía no tienes contratos con tu inmobiliaria en Leasefy',

@@ -20,6 +20,7 @@ import { Badge, CrossFade } from '@leasefy/cadence'
 import CallAudioPlayer from '@/components/inmobiliaria/cobranza/call/CallAudioPlayer'
 import CallTranscript from '@/components/inmobiliaria/cobranza/call/CallTranscript'
 import CallQAPanel from '@/components/inmobiliaria/cobranza/call/CallQAPanel'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import CallStateTracePanel from '@/components/inmobiliaria/cobranza/call/CallStateTracePanel'
 import CallSummaryPanel from '@/components/inmobiliaria/cobranza/call/CallSummaryPanel'
 import {
@@ -228,12 +229,58 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
           href={`/panel/inmobiliaria/pagos/cobranza/deudores/${data.debtorId}`}
           label={t('inmobiliaria.ai.cobranza.call.back')}
         />
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-h2 text-fg">
-              {data.debtorNameMasked}
-            </h1>
-            <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-caption text-fg-muted">
+        <EncabezadoDePantalla
+          seccion="Cobranza · Llamadas"
+          titulo={data.debtorNameMasked}
+          descripcion={
+            locale.startsWith('es')
+              ? 'Lo que se dijo, lo que se acordó y cómo lo hizo el agente.'
+              : 'What was said, what was agreed and how the agent did.'
+          }
+          junto={
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={qa}
+                className="tabular-nums"
+                aria-label={t('inmobiliaria.ai.cobranza.call.header.qaOverall')}
+              >
+                {locale.startsWith('es') ? 'Calidad' : 'Quality'} {overallPct == null ? '—' : `${overallPct}/100`}
+              </Badge>
+              {data.complianceEvents.length > 0 ? (
+                <Badge
+                  variant="warning"
+                  className="tabular-nums"
+                  aria-label={t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
+                >
+                  {data.complianceEvents.length}{' '}
+                  {t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
+                </Badge>
+              ) : null}
+            </div>
+          }
+          acciones={
+            <>
+            {/* Phase 38-07 (D-38-11): export transcript PDF button. Backend
+                  returns PII-redacted JSON; @react-pdf/renderer builds the PDF
+                  client-side and triggers browser download. */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => { void exportTranscript() }}
+                disabled={isExportingTranscript}
+                isLoading={isExportingTranscript}
+                hideArrow
+                aria-label={t('inmobiliaria.ai.cobranza.call.exportTranscriptPdf')}
+              >
+                {isExportingTranscript
+                  ? (locale.startsWith('es') ? 'Generando...' : 'Generating...')
+                  : t('inmobiliaria.ai.cobranza.call.exportTranscriptPdf')}
+              </Button>
+            </>
+          }
+        />
+            <dl className="flex flex-wrap gap-x-6 gap-y-1 text-caption text-fg-muted">
               <div className="flex gap-1">
                 <dt className="font-medium">
                   {t('inmobiliaria.ai.cobranza.call.header.startedAt')}:
@@ -263,42 +310,6 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
                 </dd>
               </div>
             </dl>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={qa}
-              className="tabular-nums"
-              aria-label={t('inmobiliaria.ai.cobranza.call.header.qaOverall')}
-            >
-              QA {overallPct == null ? '—' : `${overallPct}/100`}
-            </Badge>
-            <Badge
-              variant="neutral"
-              className="tabular-nums"
-              aria-label={t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
-            >
-              {data.complianceEvents.length}{' '}
-              {t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
-            </Badge>
-            {/* Phase 38-07 (D-38-11): export transcript PDF button. Backend
-                returns PII-redacted JSON; @react-pdf/renderer builds the PDF
-                client-side and triggers browser download. */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => { void exportTranscript() }}
-              disabled={isExportingTranscript}
-              isLoading={isExportingTranscript}
-              hideArrow
-              aria-label={t('inmobiliaria.ai.cobranza.call.exportTranscriptPdf')}
-            >
-              {isExportingTranscript
-                ? (locale.startsWith('es') ? 'Generando...' : 'Generating...')
-                : t('inmobiliaria.ai.cobranza.call.exportTranscriptPdf')}
-            </Button>
-          </div>
-        </div>
       </header>
 
       {/* Responsive grid: single column on sm; two columns on md+. */}

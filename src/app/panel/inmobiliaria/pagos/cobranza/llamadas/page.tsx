@@ -67,6 +67,7 @@ import {
 } from '@/lib/cobranza/call-vocab'
 import { formatCurrency } from '@/lib/format'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 // ── Filtros ───────────────────────────────────────────────────────────────────
 
@@ -147,7 +148,7 @@ function PromesaCell({ call }: { call: CallSummary }) {
           {formatCurrency(promesa.amountCop)}
         </span>
       ) : (
-        <span className="text-fg-muted text-sm">Sin monto</span>
+        <span className="text-fg-muted text-body-sm">Sin monto</span>
       )}
       {fecha && <span className="text-caption text-fg-muted whitespace-nowrap">{fecha}</span>}
     </div>
@@ -343,15 +344,49 @@ function LlamadasContent() {
     )
   }
 
+  // LA RESPUESTA: de las llamadas que se ven, cuántas terminaron en una
+  // promesa de pago y por cuánto. El endpoint trae las más recientes (una
+  // página del cursor): la cifra lo dice así, sin hablar de «todas».
+  const conPromesa = calls.filter((c) => c.summary?.paymentPromised != null)
+  const prometido = conPromesa.reduce((s, c) => s + (c.summary?.paymentPromised?.amountCop ?? 0), 0)
+  const conSenales = calls.filter(
+    (c) =>
+      c.summary?.paymentPromised == null &&
+      ((c.complianceFlagsCount ?? 0) > 0 || (c.summary?.fraudFlagsCount ?? 0) > 0 || c.summary?.hardshipDetected),
+  ).length
+
   return (
     <CrossFade swapKey="llamadas">
-    <div className="p-6 lg:p-8">
+    <div className="p-6 lg:p-8 space-y-6">
       <EncabezadoDePantalla
         seccion="Cobranza"
         titulo={t('inmobiliaria.ai.cobranza.llamadas.list.pageTitle')}
-        descripcion={t('inmobiliaria.ai.cobranza.llamadas.list.pageSubtitle')}
-        className="mb-5"
+        descripcion="Qué pasó en cada llamada y mensaje del agente: lo que se prometió, las señales y cuándo."
       />
+
+      {calls.length > 0 ? (
+        <CifraHeroe
+          data-testid="llamadas-promesas"
+          rotulo="Promesas de pago"
+          cifra={conPromesa.length.toLocaleString('es-CO')}
+          contexto={
+            `de ${calls.length.toLocaleString('es-CO')} ${calls.length === 1 ? 'llamada reciente' : 'llamadas recientes'}` +
+            (prometido > 0 ? ` · ${formatCurrency(prometido)} prometidos` : '')
+          }
+          total={calls.length}
+          tramos={[
+            { clave: 'promesa', etiqueta: 'Prometió pagar', monto: conPromesa.length, tono: 'exito', cifra: conPromesa.length.toLocaleString('es-CO') },
+            { clave: 'senales', etiqueta: 'Con señales', monto: conSenales, tono: 'aviso', cifra: conSenales.toLocaleString('es-CO') },
+            {
+              clave: 'resto',
+              etiqueta: 'Lo demás',
+              monto: calls.length - conPromesa.length - conSenales,
+              tono: 'neutro',
+              cifra: (calls.length - conPromesa.length - conSenales).toLocaleString('es-CO'),
+            },
+          ]}
+        />
+      ) : null}
 
       {/*
         Contenedor canónico del panel: UNA tarjeta con su barra de filtros, la
@@ -435,7 +470,7 @@ function LlamadasContent() {
       <Presence
           show={Boolean(error && calls.length > 0)}
           role="status"
-          className="border-b border-border bg-warning-soft px-4 py-3 text-sm text-warning flex items-center gap-2"
+          className="border-b border-border bg-warning-soft px-4 py-3 text-body-sm text-warning flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>
@@ -446,32 +481,32 @@ function LlamadasContent() {
             size="sm"
             hideArrow
             onClick={() => void refetch()}
-            className="ml-auto px-0 h-auto text-sm text-warning underline hover:opacity-80"
+            className="ml-auto px-0 h-auto text-body-sm text-warning underline hover:opacity-80"
           >
             Reintentar
           </Button>
       </Presence>
 
-        <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
+        <div className="overflow-x-auto max-md:overflow-visible">
+        <Table className="max-md:block">
+          <TableHeader className="max-md:hidden">
             <TableRow>
               <TableHead>Deudor</TableHead>
               <TableHead>Qué pasó</TableHead>
               {columnas.promesa && <TableHead numeric>Promesa</TableHead>}
               {columnas.senales && <TableHead>Señales</TableHead>}
               {columnas.duracion && <TableHead numeric>Duración</TableHead>}
-              {columnas.qa && <TableHead numeric>QA</TableHead>}
+              {columnas.qa && <TableHead numeric>Calidad</TableHead>}
               <TableHead>Cuándo</TableHead>
             </TableRow>
           </TableHeader>
           {/* Filtrar o paginar: las filas entran escalonadas (techo 320 ms) y
               las que sobran salen; filtrado a cero, la fila del vacío entra. */}
-          <TableBodyAnimado>
+          <TableBodyAnimado className="max-md:block">
             {calls.length === 0 && !isLoading && (
-              <TableRowAnimada key="vacio">
-                <TableCell colSpan={columnCount} className="py-12 text-center">
-                  <p className="text-sm text-fg-muted">
+              <TableRowAnimada key="vacio" className="max-md:block">
+                <TableCell colSpan={columnCount} className="py-12 text-center max-md:block">
+                  <p className="text-body-sm text-fg-muted">
                     Ninguna llamada coincide con los filtros seleccionados.
                   </p>
                   <Button
@@ -479,7 +514,7 @@ function LlamadasContent() {
                     size="sm"
                     hideArrow
                     onClick={clearFilters}
-                    className="mt-2 px-0 h-auto text-sm text-primary underline"
+                    className="mt-2 px-0 h-auto text-body-sm text-primary underline"
                   >
                     Limpiar filtros
                   </Button>
@@ -498,10 +533,10 @@ function LlamadasContent() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') navigateToCall(call.id)
                   }}
-                  className="cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-2 max-md:border-b max-md:border-border max-md:px-4 max-md:py-4 max-md:last:border-0"
                 >
                   {/* Deudor + canal (el canal es metadato del contacto, no una columna propia) */}
-                  <TableCell>
+                  <TableCell className="max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                     <div className="font-medium text-fg whitespace-nowrap">
                       {call.debtorNameMasked}
                     </div>
@@ -519,14 +554,14 @@ function LlamadasContent() {
                   </TableCell>
 
                   {/* Qué pasó — el resultado y, debajo, el digest del resumen */}
-                  <TableCell className="max-w-md">
+                  <TableCell className="max-w-md max-md:col-span-2 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
                     <div className="flex flex-col gap-1">
                       {outcome.label ? (
                         <Badge variant={outcomeBadgeVariant(outcome.slug)} className="w-fit">
                           {outcome.label}
                         </Badge>
                       ) : (
-                        <span className="text-sm text-fg-muted">Todavía sin resultado</span>
+                        <span className="text-body-sm text-fg-muted">Todavía sin resultado</span>
                       )}
                       {call.summary?.digest && (
                         <p className="text-caption leading-relaxed text-fg-muted">
@@ -543,25 +578,25 @@ function LlamadasContent() {
                   </TableCell>
 
                   {columnas.promesa && (
-                    <TableCell numeric>
+                    <TableCell numeric className="max-md:col-start-2 max-md:row-start-3 max-md:block max-md:p-0">
                       <PromesaCell call={call} />
                     </TableCell>
                   )}
 
                   {columnas.senales && (
-                    <TableCell>
+                    <TableCell className="max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0">
                       <SenalesCell call={call} />
                     </TableCell>
                   )}
 
                   {columnas.duracion && (
-                    <TableCell numeric muted className="whitespace-nowrap">
+                    <TableCell numeric muted className="whitespace-nowrap max-md:hidden">
                       {formatDuration(call.durationSeconds)}
                     </TableCell>
                   )}
 
                   {columnas.qa && (
-                    <TableCell numeric className="whitespace-nowrap">
+                    <TableCell numeric className="whitespace-nowrap max-md:hidden">
                       {call.qaScore != null ? (
                         <span
                           className={
@@ -580,7 +615,7 @@ function LlamadasContent() {
                     </TableCell>
                   )}
 
-                  <TableCell muted className="whitespace-nowrap">
+                  <TableCell muted className="whitespace-nowrap max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right max-md:text-caption">
                     {formatRelative(call.initiatedAt, locale)}
                   </TableCell>
                 </TableRowAnimada>

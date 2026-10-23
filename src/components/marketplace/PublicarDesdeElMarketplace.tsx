@@ -97,7 +97,7 @@ function ObjetoQueFlota({ nombre, desfase = 0 }: { nombre: 'casa' | 'edificio'; 
   return (
     <motion.span
       aria-hidden
-      className="-mb-1.5 -ml-2 -mt-1.5 block [filter:drop-shadow(0_18px_22px_rgba(0,0,0,0.45))]"
+      className="-ml-2 -mt-1.5 mb-1.5 block [filter:drop-shadow(0_18px_22px_rgba(0,0,0,0.45))]"
       animate={quieto ? undefined : { y: [0, -10, 0], rotate: [0, 2, 0] }}
       transition={quieto ? undefined : { duration: 7, ease: 'easeInOut', repeat: Infinity, delay: desfase }}
     >
@@ -109,7 +109,7 @@ function ObjetoQueFlota({ nombre, desfase = 0 }: { nombre: 'casa' | 'edificio'; 
 /** El sobretítulo en mono de cada oferta, con su cuadrito de voltaje. */
 function Ceja({ children }: { children: ReactNode }) {
   return (
-    <p className="mt-1.5 inline-flex items-center gap-2.5 font-mono text-[12px] uppercase leading-[1.3] tracking-[0.08em] text-[#8E93B0]">
+    <p className="inline-flex items-center gap-2.5 font-mono text-[12px] uppercase leading-[1.3] tracking-[0.08em] text-[#8E93B0]">
       <i className="inline-block h-2 w-2 flex-none rounded-[2px] bg-[#4D6BFF]" aria-hidden />
       {children}
     </p>

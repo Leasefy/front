@@ -42,6 +42,7 @@ import {
 } from '@/components/inmobiliaria/cobranza/approval/RechazarForm'
 import { Collapse, CrossFade, Presence } from '@leasefy/cadence'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { EnElPieDelCajon } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
 import { BackButton } from '@/components/ui/back-button'
 
 void React
@@ -166,6 +167,11 @@ export default function CartaApprovalClient({ artifactId, enCajon = false, onRes
   // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
   // carta); los avisos de aprobar/rechazar entran y salen con `Presence` y el
   // formulario de rechazo se despliega con su altura (`Collapse`).
+  const formularioDeRechazo = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    if (enCajon && rechazarOpen) formularioDeRechazo.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }, [enCajon, rechazarOpen])
+
   if (authLoading && !agency) {
     return (
       <CrossFade swapKey="esqueleto">
@@ -328,7 +334,8 @@ export default function CartaApprovalClient({ artifactId, enCajon = false, onRes
         </Presence>
       </section>
 
-      {/* Action buttons */}
+      {/* Action buttons. Ronda 30 (K4): en el cajón van a su pie fijo (EnElPieDelCajon). */}
+      <EnElPieDelCajon>
       <div className="flex flex-wrap gap-2">
         {/* Ronda 30 (K4): aprobar va en tinta (`ink`), como en Planes de pago: sobre la lista,
             el azul es de la pantalla. */}
@@ -369,6 +376,7 @@ export default function CartaApprovalClient({ artifactId, enCajon = false, onRes
           {t('inmobiliaria.ai.cobranza.cartas.rechazar.label')}
         </Button>
       </div>
+      </EnElPieDelCajon>
 
       {/* Antes se pintaba el cuerpo crudo de la respuesta o «approve 500». */}
       <Presence show={Boolean(approveError) || approveFallo != null}
@@ -428,6 +436,8 @@ export default function CartaApprovalClient({ artifactId, enCajon = false, onRes
       </Presence>
 
       {/* Inline Rechazar form */}
+      {/* En el cajón, «Rechazar» está en el pie: el formulario se trae a la vista al abrirse. */}
+      <div ref={formularioDeRechazo}>
       <Collapse open={rechazarOpen && !rejectResult?.ok}>
         <RechazarForm
           decisionType="carta"
@@ -436,6 +446,7 @@ export default function CartaApprovalClient({ artifactId, enCajon = false, onRes
           isSubmitting={isRejecting}
         />
       </Collapse>
+      </div>
     </div>
     </CrossFade>
   )

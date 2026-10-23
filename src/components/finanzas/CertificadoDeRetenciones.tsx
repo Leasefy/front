@@ -177,7 +177,14 @@ export function CertificadoDeRetencionesPanel() {
   const porEmitir = deGrupo('por-emitir');
   const yaEmitidos = deGrupo('emitidos');
   const sinDocumento = deGrupo('sin-documento');
-  const filasVisibles = vista === 'todos' ? filas : filas.filter((f) => grupoDe(f) === vista);
+  /** Cuántos grupos (entregados, falta emitir, sin documento) tienen filas: con uno solo no hay pestañas ni leyenda. */
+  const gruposConFilas = [porEmitir, yaEmitidos, sinDocumento].filter((g) => g.length > 0).length;
+  /** Una columna de retención toda en cero no informa (r25). */
+  const conReteIva = filas.some((f) => f.reteIvaCop !== 0);
+  const conReteIca = filas.some((f) => f.reteIcaCop !== 0);
+  // Sin pestañas (un solo grupo), se ve todo: un filtro de antes no deja la tabla escondida.
+  const vistaEfectiva = gruposConFilas > 1 ? vista : 'todos';
+  const filasVisibles = vistaEfectiva === 'todos' ? filas : filas.filter((f) => grupoDe(f) === vistaEfectiva);
 
   /**
    * 🔴 CB-32 (QA de Contabilidad, 03-10-2026): «Emitir» fijaba número y fecha al
@@ -385,11 +392,12 @@ export function CertificadoDeRetencionesPanel() {
                 </>
               }
               total={datos.totales.totalRetenidoCop}
-              tramos={[
+              // Revisora r25 (Certificados #1): con un solo tramo con plata, sin leyenda (repetía la cifra).
+              tramos={gruposConFilas > 1 ? [
                 { clave: 'emitidos', etiqueta: `Ya entregado · ${NUMERO.format(yaEmitidos.length)}`, monto: sumaDe(yaEmitidos), tono: 'exito', cifra: formatCurrency(sumaDe(yaEmitidos)) },
                 { clave: 'por-emitir', etiqueta: `Falta emitir · ${NUMERO.format(porEmitir.length)}`, monto: sumaDe(porEmitir), tono: 'neutro', cifra: formatCurrency(sumaDe(porEmitir)) },
                 { clave: 'sin-documento', etiqueta: `Sin documento · ${NUMERO.format(sinDocumento.length)}`, monto: sumaDe(sinDocumento), tono: 'aviso', cifra: formatCurrency(sumaDe(sinDocumento)) },
-              ]}
+              ] : undefined}
               data-testid="cifra-del-certificado"
             />
 
@@ -401,6 +409,8 @@ export function CertificadoDeRetencionesPanel() {
 
             <section className="overflow-hidden rounded-lg border border-border bg-surface" aria-label={`Retenciones del ${datos.anio}`}>
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
+                {/* Revisora r25 (#1): «Todos 10 · Falta emitir 10» decía lo mismo: pestañas sólo con dos grupos o más. */}
+                {gruposConFilas > 1 ? (
                 <PestanasDeEstado
                   etiqueta="Estado de los certificados"
                   valor={vista}
@@ -413,6 +423,7 @@ export function CertificadoDeRetencionesPanel() {
                   ]}
                   data-testid="pestanas-del-certificado"
                 />
+                ) : <span />}
                 {/* 🔴 (18-09) Antes esto sólo se podía emitir de a uno: una inmobiliaria
                     con 300 propietarios necesitaba 300 clics, y quien se olvidara no se
                     enteraba hasta que el propietario reclamara en abril. */}
@@ -433,8 +444,9 @@ export function CertificadoDeRetencionesPanel() {
                     <TableHead>Documento</TableHead>
                     <TableHead className="text-right">Base</TableHead>
                     <TableHead className="text-right">Retefuente</TableHead>
-                    <TableHead className="text-right">ReteIVA</TableHead>
-                    <TableHead className="text-right">ReteICA</TableHead>
+                    {/* Revisora r25 (Certificados, UI): una columna toda en $ 0 no informa: fuera. */}
+                    {conReteIva ? <TableHead className="text-right">ReteIVA</TableHead> : null}
+                    {conReteIca ? <TableHead className="text-right">ReteICA</TableHead> : null}
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead>Certificado</TableHead>
                   </TableRow>
@@ -505,12 +517,16 @@ export function CertificadoDeRetencionesPanel() {
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums max-md:hidden">
                             {formatCurrency(f.retefuenteCop)}
                           </TableCell>
-                          <TableCell className="whitespace-nowrap text-right font-mono tabular-nums max-md:hidden">
-                            {formatCurrency(f.reteIvaCop)}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-right font-mono tabular-nums max-md:hidden">
-                            {formatCurrency(f.reteIcaCop)}
-                          </TableCell>
+                          {conReteIva ? (
+                            <TableCell className="whitespace-nowrap text-right font-mono tabular-nums max-md:hidden">
+                              {f.reteIvaCop === 0 ? <span className="text-fg-subtle">—</span> : formatCurrency(f.reteIvaCop)}
+                            </TableCell>
+                          ) : null}
+                          {conReteIca ? (
+                            <TableCell className="whitespace-nowrap text-right font-mono tabular-nums max-md:hidden">
+                              {f.reteIcaCop === 0 ? <span className="text-fg-subtle">—</span> : formatCurrency(f.reteIcaCop)}
+                            </TableCell>
+                          ) : null}
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg max-md:col-start-2 max-md:row-span-2 max-md:row-start-1 max-md:block max-md:p-0">
                             {formatCurrency(f.totalRetenidoCop)}
                           </TableCell>

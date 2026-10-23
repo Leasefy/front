@@ -17,7 +17,8 @@
  * que repetía el título; sin «ERP».
  */
 import { useMemo, useState } from 'react'
-import { HeartStraight } from '@phosphor-icons/react'
+import { HeartStraight, MagnifyingGlass } from '@phosphor-icons/react'
+import { Input } from '@/components/ui/input'
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { Checkbox } from '@/components/ui/checkbox'
 import { TablePagination } from '@/components/ui/pagination'
@@ -39,19 +40,23 @@ export default function BandejaClient() {
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [soloEnRiesgo, setSoloEnRiesgo] = useState(true)
 
-  const casos = useMemo(
-    () =>
-      (data?.casos ?? [])
-        .filter((c) => (filtro === 'todos' ? true : c.poblacion === filtro))
-        .filter((c) => (soloEnRiesgo ? c.enRiesgo : true))
-        .sort((a, b) => b.puntaje - a.puntaje),
-    [data, filtro, soloEnRiesgo],
-  )
+  // Ronda 30 (revisora r27, regla de Nico: toda tabla con buscador): por el nombre de la persona.
+  const [busqueda, setBusqueda] = useState('')
+  const casos = useMemo(() => {
+    const plano = (v?: string | null) =>
+      (v ?? '').toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    const q = plano(busqueda.trim())
+    return (data?.casos ?? [])
+      .filter((c) => (filtro === 'todos' ? true : c.poblacion === filtro))
+      .filter((c) => (soloEnRiesgo ? c.enRiesgo : true))
+      .filter((c) => !q || plano(c.nombre).includes(q) || c.contratos.some((k) => plano(k.inmueble).includes(q)))
+      .sort((a, b) => b.puntaje - a.puntaje)
+  }, [data, filtro, soloEnRiesgo, busqueda])
   // La paginación de Contratos: sin el filtro del umbral son todos los que
   // Vinci midió (cientos en una inmobiliaria grande). Cambiar un filtro vuelve
   // a la página 1.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(casos, {
-    resetKey: `${filtro}:${soloEnRiesgo}`,
+    resetKey: `${filtro}:${soloEnRiesgo}:${busqueda}`,
   })
   const cuenta = (p: Filtro) =>
     (data?.casos ?? []).filter((c) => (p === 'todos' || c.poblacion === p) && (soloEnRiesgo ? c.enRiesgo : true)).length
@@ -119,7 +124,20 @@ export default function BandejaClient() {
                   ]}
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <div className="relative w-full sm:w-56">
+                  <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+                  <Input
+                    type="search"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    placeholder="Buscar por nombre o inmueble"
+                    aria-label="Buscar un caso por nombre"
+                    className="h-9 pl-9"
+                    data-testid="vinci-buscar"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
                 <Checkbox
                   id="vinci-solo-en-riesgo"
                   checked={soloEnRiesgo}
@@ -129,6 +147,7 @@ export default function BandejaClient() {
                 <label htmlFor="vinci-solo-en-riesgo" className="cursor-pointer text-sm text-fg">
                   Sólo los que pasan el umbral
                 </label>
+                </div>
               </div>
             </div>
             <TablaDeCasos

@@ -24,6 +24,7 @@ import Link from 'next/link'
 import { toast } from '@/components/ui/toast'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
+import { Input } from '@/components/ui/input'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import {
   Clock,
@@ -32,6 +33,7 @@ import {
   WarningCircle,
   ShieldWarning,
   Hourglass,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
 
 import { CrossFade, Presence, StatusBadge, type SemanticTone } from '@leasefy/cadence'
@@ -594,8 +596,22 @@ export function ColaHumana({
   // del panel (lo comparten las cinco colas: pagos, estudio, matching, avalúos
   // y asegurabilidad). El orden por severidad se calcula sobre la lista
   // COMPLETA antes de recortar, así la página 1 sigue trayendo lo más urgente.
+  /*
+   * Ronda 30 (revisora r27, regla de Nico: toda tabla con buscador): la cola busca por el caso, lo que
+   * sugiere el agente y su porqué. Valor derivado (useMemo): nada de efectos que guarden la lista.
+   */
+  const [busqueda, setBusqueda] = useState('')
+  const visibles = useMemo(() => {
+    const plano = (v?: string | null) =>
+      (v ?? '').toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    const q = plano(busqueda.trim())
+    if (!q) return sorted
+    return sorted.filter((item) =>
+      [item.titulo, item.accionSugerida?.label, item.accionSugerida?.razon].some((v) => plano(v).includes(q)),
+    )
+  }, [sorted, busqueda])
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(sorted, { resetKey: agente })
+    useTablePagination(visibles, { resetKey: `${agente}|${busqueda}` })
 
   // Los cuatro estados, en el orden de la casa: cargando → falló → vacío →
   // hay datos. La carga y el fallo van ANTES que el vacío para que la cola
@@ -627,6 +643,22 @@ export function ColaHumana({
   return (
     <CrossFade swapKey="cola">
     <div className="overflow-hidden rounded-lg border border-border bg-card" data-testid="cola-humana">
+      {sorted.length > 0 ? (
+        <div className="border-b border-border px-4 py-3">
+          <div className="relative w-full sm:max-w-sm">
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+            <Input
+              type="search"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar un caso"
+              aria-label="Buscar en la cola"
+              className="h-9 pl-9"
+              data-testid="cola-humana-buscar"
+            />
+          </div>
+        </div>
+      ) : null}
       <Table className="max-md:block">
         <TableHeader className="max-md:hidden">
           <TableRow>
@@ -661,6 +693,12 @@ export function ColaHumana({
                     ) : undefined
                   }
                 />
+              </TableCell>
+            </TableRowAnimada>
+          ) : visibles.length === 0 ? (
+            <TableRowAnimada key="sin-resultado" className="max-md:block">
+              <TableCell colSpan={COLUMNAS.length} className="p-0 max-md:block">
+                <SinDatos queSon="casos" hayFiltros onLimpiarFiltros={() => setBusqueda('')} />
               </TableCell>
             </TableRowAnimada>
           ) : (

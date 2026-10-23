@@ -59,9 +59,16 @@ function normalizarAseguradora(nombre: string | null | undefined): string {
 
 interface Props {
   claimId: string
+  /**
+   * Ronda 30 (K4, Nico: «K4 cajón»): montado en el cajón de la lista de
+   * Siniestros (`CajonDelCaso`). Sin miga ni encabezado de página (los pone el
+   * cajón) y, al resolverse, `onResuelto` cierra el cajón en vez de volver atrás.
+   */
+  enCajon?: boolean
+  onResuelto?: () => void
 }
 
-export default function SiniestroApprovalClient({ claimId }: Props) {
+export default function SiniestroApprovalClient({ claimId, enCajon = false, onResuelto }: Props) {
   const { t } = useI18n()
   const router = useRouter()
   const { agency, isLoading: authLoading } = useAuth()
@@ -143,13 +150,23 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
     }
   }, [pdfSrc])
 
-  // Navigate back after rejectResult lands.
+  // Navigate back after rejectResult lands. En el cajón, se cierra (y la lista se refresca).
   React.useEffect(() => {
     if (rejectResult?.ok) {
-      const timer = setTimeout(() => router.back(), 1500)
+      const timer = setTimeout(() => (enCajon ? onResuelto?.() : router.back()), 1500)
       return () => clearTimeout(timer)
     }
-  }, [rejectResult, router])
+  }, [rejectResult, router, enCajon, onResuelto])
+
+  // Ronda 30 (K4): en el cajón, aprobado y radicado ante TODAS las aseguradoras
+  // elegidas, se cierra tras un momento para leer el resultado. Si alguna falló,
+  // se queda abierto con la lista de cuáles: eso hay que leerlo.
+  React.useEffect(() => {
+    if (!enCajon || !approveResult) return
+    if (approveResult.insurerResults.some((r) => !r.sent)) return
+    const timer = setTimeout(() => onResuelto?.(), 1500)
+    return () => clearTimeout(timer)
+  }, [approveResult, enCajon, onResuelto])
 
   // Phase 38-05a: skeleton during initial auth hydration (first loading state on
   // this page — useSiniestroApproval has no initial fetch, only mutation state).
@@ -209,8 +226,10 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
 
   return (
     <CrossFade swapKey="siniestro">
-    <div className="p-6 lg:p-8 space-y-6">
-      {/* Header + Back */}
+    <div className={enCajon ? 'space-y-6' : 'p-6 lg:p-8 space-y-6'}>
+      {/* Header + Back (en el cajón los pone la cabecera del cajón) */}
+      {!enCajon && (
+      <>
       <div className="flex items-center justify-between">
         <BackButton
           variant="subtle"
@@ -230,6 +249,8 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
             : undefined
         }
       />
+      </>
+      )}
 
       {siniestro && !aseguradoraNotificable && (
         <div className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
@@ -292,8 +313,11 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2">
+        {/* Ronda 30 (K4): aprobar va en tinta (`ink`), como en Planes de pago: sobre la lista,
+            el azul es de la pantalla. */}
         <Button
           type="button"
+          variant="ink"
           data-testid="approval-aprobar-siniestro"
           onClick={() => void handleAprobar()}
           disabled={aprobarDisabled}

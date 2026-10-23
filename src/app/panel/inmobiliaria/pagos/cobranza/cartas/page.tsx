@@ -15,7 +15,6 @@ import { useEstadoEnLaUrl } from '@/lib/cobranza/use-estado-en-la-url'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Envelope, MagnifyingGlass } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -46,6 +45,8 @@ import {
   type LegalArtifactKind,
   type LegalArtifactStatus,
 } from '@/lib/hooks/cobranza/use-legal-artifacts'
+import { CajonDelCaso } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
+import CartaApprovalClient from './[id]/CartaApprovalClient'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { antiguedadDeLaCola, diasEnPalabras } from '@/lib/cobranza/antiguedad-de-la-cola'
@@ -185,7 +186,6 @@ function CartaAMano({
 
 function CartasContent() {
   const { t, locale } = useI18n()
-  const router = useRouter()
   const isEs = locale.startsWith('es')
 
   const [kindFilter, setKindFilter] = useState<LegalArtifactKind | undefined>()
@@ -207,12 +207,15 @@ function CartasContent() {
   useAutoRefresh(refetch)
 
 
-  const navigateToCarta = useCallback(
-    (id: string) => {
-      router.push(`/panel/inmobiliaria/pagos/cobranza/cartas/${id}`)
-    },
-    [router],
-  )
+  // Ronda 30 (K4, Nico: «K4 cajón»): la fila abre la carta en un cajón grande con
+  // su vista previa, sobre esta lista (antes `router.push` a `cartas/[id]`, que
+  // sigue viva para los enlaces profundos). Al cerrarse, la lista se vuelve a leer.
+  const [abierta, setAbierta] = useState<string | null>(null)
+  const navigateToCarta = useCallback((id: string) => setAbierta(id), [])
+  const cerrarElCajon = useCallback(() => {
+    setAbierta(null)
+    void refetch()
+  }, [refetch])
 
   const todas = data?.artifacts ?? []
   const artifacts = useMemo(() => {
@@ -577,6 +580,17 @@ function CartasContent() {
           </div>
         )}
       </Card>
+
+      <CajonDelCaso
+        abierto={abierta !== null}
+        onCerrar={cerrarElCajon}
+        tamano="lg"
+        titulo={t('inmobiliaria.ai.cobranza.cartas.title')}
+        descripcion={isEs ? 'Lee la carta, elige cómo se entrega y apruébala o recházala.' : 'Read the letter, choose how it is delivered, and approve or reject it.'}
+        data-testid="carta-cajon"
+      >
+        {abierta ? <CartaApprovalClient artifactId={abierta} enCajon onResuelto={cerrarElCajon} /> : null}
+      </CajonDelCaso>
     </div>
     </CrossFade>
   )

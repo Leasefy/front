@@ -15,7 +15,6 @@ import { useEstadoEnLaUrl } from '@/lib/cobranza/use-estado-en-la-url'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { MagnifyingGlass, Siren } from '@phosphor-icons/react'
 import { Input } from '@/components/ui/input'
 import { nombreDeLaAseguradora } from '@/lib/cotizador/nombre-de-la-aseguradora'
@@ -47,6 +46,8 @@ import {
   type InsuranceClaimStatus,
 } from '@/lib/hooks/cobranza/use-insurance-claims'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CajonDelCaso } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
+import SiniestroApprovalClient from './[id]/SiniestroApprovalClient'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { fechaCorta, diaEnColombia } from '@/lib/fechas/fecha-de-la-casa'
@@ -88,7 +89,6 @@ const STATUS_LABELS: Record<InsuranceClaimStatus, { es: string; en: string }> = 
 
 function SiniestrosContent() {
   const { t, locale, formatCurrency } = useI18n()
-  const router = useRouter()
   const isEs = locale.startsWith('es')
 
   const [statusFilter, setStatusFilter] = useState<InsuranceClaimStatus | undefined>()
@@ -105,12 +105,15 @@ function SiniestrosContent() {
   useAutoRefresh(refetch)
 
 
-  const navigateToSiniestro = useCallback(
-    (id: string) => {
-      router.push(`/panel/inmobiliaria/pagos/cobranza/siniestros/${id}`)
-    },
-    [router],
-  )
+  // Ronda 30 (K4, Nico: «K4 cajón»): la fila abre el siniestro en un cajón sobre
+  // esta lista (antes `router.push` a `siniestros/[id]`, que sigue viva para los
+  // enlaces profundos). Al cerrarse, la lista se vuelve a leer.
+  const [abierto, setAbierto] = useState<string | null>(null)
+  const navigateToSiniestro = useCallback((id: string) => setAbierto(id), [])
+  const cerrarElCajon = useCallback(() => {
+    setAbierto(null)
+    void refetch()
+  }, [refetch])
 
   const claims = data?.claims ?? []
   // Revisora r25 (#3): buscar por deudor (nombre o documento) entre los cargados.
@@ -496,6 +499,22 @@ function SiniestrosContent() {
           </div>
         )}
       </Card>
+
+      <CajonDelCaso
+        abierto={abierto !== null}
+        onCerrar={cerrarElCajon}
+        tamano="lg"
+        titulo={t('inmobiliaria.ai.cobranza.siniestros.title')}
+        descripcion={(() => {
+          const c = claims.find((x) => x.id === abierto)
+          if (!c) return undefined
+          const quien = c.debtorName ?? (isEs ? 'Deudor sin nombre' : 'Unnamed debtor')
+          return c.aseguradora ? `${quien} · ${nombreDeLaAseguradora(c.aseguradora)}` : quien
+        })()}
+        data-testid="siniestro-cajon"
+      >
+        {abierto ? <SiniestroApprovalClient claimId={abierto} enCajon onResuelto={cerrarElCajon} /> : null}
+      </CajonDelCaso>
     </div>
     </CrossFade>
   )

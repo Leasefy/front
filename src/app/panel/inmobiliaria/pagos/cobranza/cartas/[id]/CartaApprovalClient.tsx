@@ -64,6 +64,14 @@ const PISTA_CAMPOS_ID = 'carta-required-hint'
 
 interface Props {
   artifactId: string
+  /**
+   * Ronda 30 (K4, Nico: «K4 cajón»): montado en el cajón de la lista de Cartas
+   * (`CajonDelCaso`, tamaño lg con la vista previa). Sin la vuelta ni el
+   * encabezado de página; rechazada, `onResuelto` cierra el cajón. Aprobada se
+   * queda abierta: ahí está el enlace para bajar la carta (vence en 7 días).
+   */
+  enCajon?: boolean
+  onResuelto?: () => void
 }
 
 function computeDaysRemaining(approvedAt: Date | null, now: Date): number {
@@ -72,7 +80,7 @@ function computeDaysRemaining(approvedAt: Date | null, now: Date): number {
   return Math.max(0, 7 - Math.floor(elapsedMs / (1000 * 60 * 60 * 24)))
 }
 
-export default function CartaApprovalClient({ artifactId }: Props) {
+export default function CartaApprovalClient({ artifactId, enCajon = false, onResuelto }: Props) {
   const { t } = useI18n()
   const router = useRouter()
   const { agency, isLoading: authLoading } = useAuth()
@@ -149,10 +157,10 @@ export default function CartaApprovalClient({ artifactId }: Props) {
   // Navigate back after rejectResult lands.
   useEffect(() => {
     if (rejectResult?.ok) {
-      const timer = setTimeout(() => router.back(), 1500)
+      const timer = setTimeout(() => (enCajon ? onResuelto?.() : router.back()), 1500)
       return () => clearTimeout(timer)
     }
-  }, [rejectResult, router])
+  }, [rejectResult, router, enCajon, onResuelto])
 
   // Phase 38-05a: skeleton during initial auth hydration (first loading state on this page)
   // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
@@ -203,8 +211,10 @@ export default function CartaApprovalClient({ artifactId }: Props) {
 
   return (
     <CrossFade swapKey="carta">
-    <div className="p-6 lg:p-8 space-y-6">
-      {/* La vuelta a la lista de cartas (guardián fichas-con-vuelta). */}
+    <div className={enCajon ? 'space-y-6' : 'p-6 lg:p-8 space-y-6'}>
+      {/* La vuelta a la lista de cartas (guardián fichas-con-vuelta). En el cajón la pone su cabecera. */}
+      {!enCajon && (
+      <>
       <BackButton href="/panel/inmobiliaria/pagos/cobranza/cartas" label="Cartas" variant="subtle" />
       <EncabezadoDePantalla
         seccion="Cobranza"
@@ -222,6 +232,8 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           </Button>
         }
       />
+      </>
+      )}
 
       {/* PDF preview iframe */}
       <section
@@ -318,8 +330,11 @@ export default function CartaApprovalClient({ artifactId }: Props) {
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2">
+        {/* Ronda 30 (K4): aprobar va en tinta (`ink`), como en Planes de pago: sobre la lista,
+            el azul es de la pantalla. */}
         <Button
           type="button"
+          variant="ink"
           data-testid="approval-aprobar-carta"
           onClick={() => void handleAprobar()}
           disabled={aprobarDisabled}

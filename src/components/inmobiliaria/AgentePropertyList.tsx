@@ -101,14 +101,12 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
         className="w-full flex items-center justify-between px-5 py-4 border-b border-border-faint dark:border-border-strong hover:bg-surface-muted dark:hover:bg-ink transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-primary-soft flex items-center justify-center">
-            <Buildings className="w-4 h-4 text-primary" />
-          </div>
+          <Buildings className="w-5 h-5 text-fg-muted" aria-hidden="true" />
           <div className="flex items-center gap-2">
             <h3 className="font-medium text-fg dark:text-white">
               {t('inmobiliaria.agente.assignedProperties')}
             </h3>
-            <span className="px-2 py-0.5 rounded-full bg-surface-muted dark:bg-ink text-caption font-medium text-fg-muted dark:text-fg-subtle">
+            <span className="font-mono text-caption text-fg-muted dark:text-fg-subtle">
               {consignaciones.length}
             </span>
           </div>

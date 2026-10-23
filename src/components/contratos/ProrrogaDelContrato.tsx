@@ -139,7 +139,7 @@ export function ProrrogaDelContrato({
     } catch (e) {
       const { porCampo, sueltos } = repartirErroresDelServidor(e, {
         campos,
-        porDefecto: `No pudimos ${queSeHacia}.`,
+        porDefecto: `No se pudo ${queSeHacia}.`,
         accion: queSeHacia,
       });
       if (sueltos.length) toast.error('No se pudo guardar.', { description: sueltos.join(' · ') });

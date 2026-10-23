@@ -82,7 +82,7 @@ export function CambiarCorreoDeLaInvitacion({
       } else {
         setError(
           mensajeParaLaPersona(e, {
-            porDefecto: 'No pudimos cambiar el correo. Prueba de nuevo en un momento.',
+            porDefecto: 'No se pudo cambiar el correo. Prueba de nuevo en un momento.',
             accion: 'cambiar el correo de la invitación',
           }),
         );
@@ -100,7 +100,7 @@ export function CambiarCorreoDeLaInvitacion({
         <DialogHeader>
           <DialogTitle>Cambiar el correo de la invitación</DialogTitle>
           <DialogDescription>
-            {nombre} todavía no ha entrado. Le mandamos la invitación al correo nuevo y el enlace
+            {nombre} todavía no ha entrado. La invitación le llega al correo nuevo y el enlace
             anterior deja de servir.
           </DialogDescription>
         </DialogHeader>

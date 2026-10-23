@@ -6,8 +6,6 @@ import { Stagger, StaggerItem, Avatar } from '@leasefy/cadence';
 import {
   Trophy,
   Medal,
-  ChartLineUp,
-  Buildings,
   Calendar,
   CalendarBlank,
 } from '@phosphor-icons/react';
@@ -16,6 +14,8 @@ import { useI18n } from '@/lib/i18n';
 import { SegmentedControl } from '@leasefy/cadence';
 import type { Agente } from '@/lib/types/inmobiliaria';
 import { textoDeTasa } from '@/lib/tasas';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 
 /**
  * 🔴 17-09: el ranking tenía una columna de COMISIONES por asesor, y con ella
@@ -32,7 +32,6 @@ interface AgenteLeaderboardProps {
 
 type TimeRange = 'month' | 'year';
 
-const MEDALS = ['🥇', '🥈', '🥉'];
 
 /**
  * La columna «Trend» no tenía con qué compararse.
@@ -89,6 +88,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
 
     return sorted;
   }, [agentes, timeRange]);
+  const paginaDelRanking = useTablePagination(rankedAgentes, { resetKey: timeRange });
 
 
   const handleRowClick = (agenteId: string) => {
@@ -97,20 +97,12 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* Header with Toggle */}
+      {/* Ronda 30: el título sin el trofeo en una caja de color (Cadence 2) y la línea sin
+          «comisiones», que esta tabla ya no muestra desde el 17-09. */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-warning-soft flex items-center justify-center">
-            <Trophy className="w-5 h-5 text-warning" weight="fill" />
-          </div>
-          <div>
-            <h2 className="text-h3 text-fg">
-              {t('inmobiliaria.agente.agentRanking')}
-            </h2>
-            <p className="text-sm text-fg-muted">
-              {t('inmobiliaria.agente.topPerformers')}
-            </p>
-          </div>
+        <div>
+          <h2 className="text-h3 text-fg">Quién va adelante</h2>
+          <p className="text-sm text-fg-muted">Los asesores con más arriendos cerrados en el período.</p>
         </div>
 
         {/* Time Range Toggle */}
@@ -144,134 +136,91 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
         />
       </div>
 
-      {/* Leaderboard Table */}
+      {/* Leaderboard Table — Ronda 30: cabeceras en rótulo mono y en español (antes «Trend» y «Conv.»),
+          el puesto en número (antes medallas en emoji), sin la columna de tendencia (siempre «—»:
+          el back no manda el período anterior), sin la primera fila teñida, cifras en mono y paginada. */}
       <div className="rounded-lg border border-border bg-surface overflow-hidden">
-        {/* Table Header */}
-        <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-surface-muted border-b border-border text-caption font-medium text-fg-muted uppercase tracking-wide">
+        <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-surface-muted border-b border-border font-mono text-label uppercase text-fg-muted">
           <div className="col-span-1 text-center">#</div>
-          <div className="col-span-4">{t('inmobiliaria.agente.agentLabel')}</div>
-          <div className="col-span-2 text-center">
-            <span className="hidden sm:inline">{t('inmobiliaria.agente.closings')}</span>
-            <ChartLineUp className="sm:hidden w-4 h-4 mx-auto" />
+          <div className="col-span-5">Asesor</div>
+          <div className="col-span-2 text-right">{t('inmobiliaria.agente.closings')}</div>
+          <div className="col-span-2 text-right">
+            <span className="hidden sm:inline">Inmuebles</span>
+            <span className="sm:hidden" aria-label="Inmuebles">Inm.</span>
           </div>
-          <div className="col-span-3 text-right">{t('inmobiliaria.agente.assignedProperties')}</div>
-          <div className="col-span-1 text-center">
-            <span className="hidden sm:inline">Conv.</span>
-            <span className="sm:hidden">%</span>
+          <div className="col-span-2 text-right">
+            <span className="hidden sm:inline">Conversión</span>
+            <span className="sm:hidden" aria-label="Conversión">%</span>
           </div>
-          <div className="col-span-1 text-center">Trend</div>
         </div>
 
-        {/* Table Body */}
-        {/* Las filas entran escalonadas (techo del sistema) y, al cambiar entre
-            mes y año, el ranking se REORDENA deslizándose (`layout`). Antes el
-            contenedor orquestaba las filas con variantes, que en el modo
-            estricto de React las dejaba en opacity 0. */}
         {rankedAgentes.length > 0 ? (
           <Stagger>
-            {rankedAgentes.map((agente, index) => {
-              const rank = index + 1;
-              const isTopThree = rank <= 3;
-              const isFirst = rank === 1;
+            {paginaDelRanking.pageItems.map((agente, index) => {
+              const rank = (paginaDelRanking.page - 1) * paginaDelRanking.pageSize + index + 1;
 
               const closings = timeRange === 'month'
                 ? agente.metrics.closedThisMonth
                 : agente.metrics.closedThisYear;
 
-
               return (
                 <StaggerItem
                   key={agente.id}
                   onClick={() => handleRowClick(agente.id)}
-                  className={cn(
-                    'grid grid-cols-12 gap-4 px-4 py-3 border-b border-border-faint cursor-pointer transition-colors duration-base',
-                    isFirst && 'bg-warning-soft/50',
-                    !isFirst && 'hover:bg-surface-muted'
-                  )}
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`Abrir la ficha de ${agente.name}`}
+                  onKeyDown={(e: React.KeyboardEvent) => {
+                    if (e.key === 'Enter') handleRowClick(agente.id);
+                  }}
+                  className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-border-faint cursor-pointer transition-colors duration-base hover:bg-surface-muted focus-visible:bg-surface-muted"
                 >
-                  {/* Rank */}
                   <div className="col-span-1 flex items-center justify-center">
-                    {isTopThree ? (
-                      <span className="text-xl" role="img" aria-label={`Puesto ${rank}`}>
-                        {MEDALS[rank - 1]}
-                      </span>
-                    ) : (
-                      <span className="text-sm font-medium text-fg-subtle">
-                        {rank}
-                      </span>
-                    )}
+                    <span className="font-mono text-sm tabular-nums text-fg-muted">{rank}</span>
                   </div>
 
-                  {/* Agent */}
-                  <div className="col-span-4 flex items-center gap-3">
-                    <Avatar name={agente.name} src={agente.avatar || undefined} size="sm" ring={isFirst} />
+                  <div className="col-span-5 flex min-w-0 items-center gap-3">
+                    <Avatar name={agente.name} src={agente.avatar || undefined} size="sm" />
                     <div className="min-w-0">
-                      <p className={cn(
-                        'font-medium truncate text-sm',
-                        isFirst
-                          ? 'text-warning'
-                          : 'text-fg'
-                      )}>
-                        {agente.name}
-                      </p>
+                      <p className="truncate text-sm font-medium text-fg">{agente.name}</p>
                       <p className="text-caption text-fg-muted truncate">
                         {agente.zone || t('inmobiliaria.agente.noZone')}
                       </p>
                     </div>
                   </div>
 
-                  {/* Closings */}
-                  <div className="col-span-2 flex items-center justify-center">
-                    <span className={cn(
-                      'text-lg font-medium',
-                      closings > 0
-                        ? 'text-success'
-                        : 'text-fg-subtle'
-                    )}>
+                  <div className="col-span-2 flex items-center justify-end">
+                    <span className={cn('font-mono text-sm tabular-nums', closings > 0 ? 'text-fg' : 'text-fg-subtle')}>
                       {closings}
                     </span>
                   </div>
 
                   {/* Inmuebles a cargo — sin plata: la comisión del asesor va
                       por fuera de Leasefy (17-09). */}
-                  <div className="col-span-3 flex items-center justify-end">
-                    <div className="flex items-center gap-1.5">
-                      <Buildings className="w-4 h-4 text-fg-subtle" />
-                      <span
-                        className="text-sm font-medium text-fg tabular-nums"
-                        data-testid="agente-inmuebles"
-                      >
-                        {agente.metrics.assignedProperties}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Conversion Rate */}
-                  <div className="col-span-1 flex items-center justify-center">
-                    <span className={cn(
-                      'text-sm font-medium',
-                      // `conversionRate` ya es un porcentaje (0–100).
-                      agente.metrics.conversionRate >= 60
-                        ? 'text-success'
-                        : agente.metrics.conversionRate >= 40
-                          ? 'text-warning'
-                          : 'text-fg-muted'
-                    )}>
-                      {textoDeTasa(agente.metrics.conversionRate, 0)}
+                  <div className="col-span-2 flex items-center justify-end">
+                    <span className="font-mono text-sm tabular-nums text-fg" data-testid="agente-inmuebles">
+                      {agente.metrics.assignedProperties}
                     </span>
                   </div>
 
-                  {/* Tendencia — sin período anterior no hay nada que afirmar. */}
-                  <div
-                    className="col-span-1 flex items-center justify-center"
-                    data-testid="agente-tendencia"
-                  >
+                  <div className="col-span-2 flex items-center justify-end">
                     <span
-                      className="text-sm text-fg-subtle tabular-nums"
-                      title={SIN_COMPARACION}
-                      aria-label={SIN_COMPARACION}
+                      className={cn(
+                        'font-mono text-sm tabular-nums',
+                        // `conversionRate` ya es un porcentaje (0–100).
+                        agente.metrics.conversionRate >= 60
+                          ? 'text-success'
+                          : agente.metrics.conversionRate >= 40
+                            ? 'text-warning'
+                            : 'text-fg-muted',
+                      )}
                     >
-                      —
+                      {textoDeTasa(agente.metrics.conversionRate, 0)}
+                    </span>
+                    {/* La tendencia no se pinta (siempre era «—»: el back no manda el período
+                        anterior); queda dicha para el lector de pantalla. */}
+                    <span className="sr-only" data-testid="agente-tendencia">
+                      <span aria-label={SIN_COMPARACION}>—</span>
                     </span>
                   </div>
                 </StaggerItem>
@@ -280,12 +229,24 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
           </Stagger>
         ) : (
           <div className="px-4 py-12 text-center">
-            <Trophy className="w-12 h-12 mx-auto mb-3 text-fg-subtle" />
-            <p className="text-fg-muted">
-              {t('inmobiliaria.agente.noActiveAgents')}
+            <Trophy className="w-8 h-8 mx-auto mb-3 text-fg-subtle" weight="light" />
+            <p className="text-sm text-fg-muted">
+              Cuando invites asesores y cierren arriendos, aquí se ordenan por cierres.
             </p>
           </div>
         )}
+        {rankedAgentes.length > 0 ? (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={paginaDelRanking.total}
+              page={paginaDelRanking.page}
+              pageSize={paginaDelRanking.pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={paginaDelRanking.setPage}
+              onPageSizeChange={paginaDelRanking.setPageSize}
+            />
+          </div>
+        ) : null}
       </div>
 
       {/* Summary Stats */}
@@ -295,7 +256,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
             <p className="text-caption text-fg-muted mb-1">
               {t('inmobiliaria.agente.totalClosings')} {timeRange === 'month' ? t('inmobiliaria.agente.monthLabel') : t('inmobiliaria.agente.yearLabel')}
             </p>
-            <p className="text-2xl font-medium text-fg">
+            <p className="font-mono text-2xl tabular-nums text-fg">
               {rankedAgentes.reduce(
                 (sum, a) =>
                   sum + (timeRange === 'month' ? a.metrics.closedThisMonth : a.metrics.closedThisYear),
@@ -307,7 +268,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
             <p className="text-caption text-fg-muted mb-1">
               {t('inmobiliaria.agente.assignedProperties')}
             </p>
-            <p className="text-2xl font-medium text-fg">
+            <p className="font-mono text-2xl tabular-nums text-fg">
               {rankedAgentes.reduce((sum, a) => sum + a.metrics.assignedProperties, 0)}
             </p>
           </div>
@@ -315,7 +276,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
             <p className="text-caption text-fg-muted mb-1">
               {t('inmobiliaria.agente.avgConversion')}
             </p>
-            <p className="text-2xl font-medium text-fg">
+            <p className="font-mono text-2xl tabular-nums text-fg">
               {textoDeTasa(
                 rankedAgentes.reduce((sum, a) => sum + a.metrics.conversionRate, 0) /
                   rankedAgentes.length,

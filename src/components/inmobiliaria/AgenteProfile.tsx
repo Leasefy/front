@@ -255,7 +255,9 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
 
         {/* Contact Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button asChild hideArrow className="min-w-[120px] flex-1">
+          {/* Ronda 30: contactar no es LA acción de la ficha: los tres en arena (antes Correo en
+              azul y WhatsApp en un verde lleno). */}
+          <Button asChild hideArrow variant="outline" className="min-w-[120px] flex-1">
             <a href={`mailto:${agente.email}`}>
               <Envelope className="w-4 h-4" />
               Correo
@@ -272,7 +274,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
             href={`https://wa.me/${whatsappNumber}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-success text-white font-medium hover:bg-success transition-colors"
+            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-surface text-fg font-medium hover:bg-surface-muted transition-colors"
           >
             <WhatsappLogo className="w-4 h-4" />
             WhatsApp

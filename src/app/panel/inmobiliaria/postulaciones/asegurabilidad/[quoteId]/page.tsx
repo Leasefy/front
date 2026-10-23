@@ -216,7 +216,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
     } catch (err) {
       if (faltaLaActualizacion(err)) setAviso(SIN_LA_ACTUALIZACION)
       else
-        toast.error('No pudimos guardar la opción elegida', {
+        toast.error('No se pudo guardar la opción elegida', {
           description: mensajeParaLaPersona(err, {
             porDefecto: 'Intenta de nuevo en un momento.',
             accion: 'guardar la opción elegida',
@@ -243,7 +243,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
         description: 'Sólo lo abre alguien de tu equipo con acceso al cotizador.',
       })
     } catch {
-      toast.error('No pudimos copiar el enlace', { description: enlace })
+      toast.error('No se pudo copiar el enlace', { description: enlace })
     }
   }
 

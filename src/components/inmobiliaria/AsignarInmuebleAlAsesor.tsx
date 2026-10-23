@@ -130,7 +130,7 @@ export function AsignarInmuebleAlAsesor({
       onAsignado();
       onCerrar();
     } catch (err) {
-      toast.error('No pudimos asignar el inmueble', {
+      toast.error('No se pudo asignar el inmueble', {
         description: mensajeParaLaPersona(err, {
           porDefecto: 'Prueba de nuevo en un momento.',
           accion: 'asignar el inmueble',

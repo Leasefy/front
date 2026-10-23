@@ -111,7 +111,8 @@ describe('AgenteFormModal — cuando el back no guarda la invitación', () => {
   const dialogo = () => document.body.querySelector('[role="dialog"]') as HTMLElement;
   /** Por su placeholder: así la prueba también corre contra el modal de antes (sin ids). */
   const PLACEHOLDER: Record<string, string> = {
-    name: 'Juan Perez',
+    // Ronda 30 (a propósito): el ejemplo con tilde («Juan Pérez»).
+    name: 'Juan Pérez',
     email: 'juan@inmobiliaria.com',
   };
   const campo = (sufijo: string) =>
@@ -309,7 +310,7 @@ describe('AgenteFormModal — no pide el teléfono', () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     montarCon(variant, onSubmit);
     act(() => {
-      escribir(dialogo().querySelector<HTMLInputElement>('input[placeholder="Juan Perez"]')!, 'Carlos Asesor');
+      escribir(dialogo().querySelector<HTMLInputElement>('input[placeholder="Juan Pérez"]')!, 'Carlos Asesor');
       escribir(dialogo().querySelector<HTMLInputElement>('input[placeholder="juan@inmobiliaria.com"]')!, 'carlos@inmobiliaria.co');
     });
     await act(async () => {

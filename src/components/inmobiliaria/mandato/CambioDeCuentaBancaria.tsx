@@ -443,7 +443,7 @@ export function CambioDeCuentaBancaria({
       await cargar();
     } catch (e) {
       toast.error('No se pudo confirmar.', {
-        description: mensajeDelFallo(e, 'No pudimos confirmar el cambio con ese código.'),
+        description: mensajeDelFallo(e, 'No se pudo confirmar el cambio con ese código.'),
       });
       await cargar();
     } finally {

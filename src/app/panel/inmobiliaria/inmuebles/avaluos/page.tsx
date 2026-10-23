@@ -39,8 +39,8 @@
  * both locales.
  */
 
-import { useId, useState } from 'react'
-import { MotionIndicator, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { useEffect, useMemo, useState } from 'react'
+import { Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { toast } from '@/components/ui/toast'
 import {
   Check,
@@ -50,12 +50,14 @@ import {
   FileMagnifyingGlass,
   SealCheck,
   ShareNetwork,
-  WarningCircle,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
 import { Badge } from '@/components/ui/badge'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
+import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { Button } from '@/components/ui/button'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
@@ -76,14 +78,25 @@ import { DescargarCertificado, tieneCertificado } from './DescargarCertificado'
 const NS = 'inmobiliaria.ai.workspace.pages.avaluos'
 
 /**
- * Las columnas de la lista: estado · propietario · valor · creado · certificado.
- * A 390 px «Creado» se esconde y el botón del certificado baja a su propio
- * renglón, a lo ancho (con él en la misma línea, el nombre del propietario se
- * quedaba en una letra): la plantilla es de tres columnas y la celda del
- * certificado ocupa las tres.
+ * Las columnas de la lista desde `md`: estado · propietario · valor · creado · certificado.
+ * Bajo 768 px cada avalúo es una TARJETA (revisora r24 #5): propietario · valor / estado · fecha /
+ * «Descargar certificado» a lo ancho. Las celdas se reordenan con `order-*`, sin duplicar el contenido.
  */
-const COLUMNAS_DE_LA_LISTA =
-  'grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto]'
+const COLUMNAS_DE_LA_LISTA = 'grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[8.5rem_minmax(0,1fr)_auto_auto_11rem]'
+
+/** El método en palabras; un código del micro que no conocemos no se muestra (revisora r24 #5). */
+const METODO_EN_PALABRAS: Record<string, string> = {
+  AVM: 'metodos.avm',
+  COMPARABLES: 'metodos.comparables',
+  COMPARABLES_IA: 'metodos.comparablesIa',
+}
+function metodoEnPalabras(metodo: string | null | undefined, t: (k: string) => string): string | null {
+  const m = (metodo ?? '').trim()
+  if (!m || m === '—') return null
+  const clave = METODO_EN_PALABRAS[m.toUpperCase()]
+  if (clave) return t(`${NS}.${clave}`)
+  return /^[A-Z0-9_]+$/.test(m) ? null : m
+}
 
 // ---------------------------------------------------------------------------
 // State metadata — the real certificate lifecycle states, the SAME closed set
@@ -129,13 +142,8 @@ function stateMeta(
     : { label: state, variant: 'secondary' }
 }
 
-/** Pestañas de filtro: "Todos" ('' → sin filtro) + los estados reales. */
-function stateTabs(t: (key: string) => string): { value: string; label: string }[] {
-  return [
-    { value: '', label: t('common.all') },
-    ...AVALUO_STATES.map((s) => ({ value: s, label: stateMeta(s, t).label })),
-  ]
-}
+/** El orden de las pestañas: lo que está andando primero, lo cerrado al final. */
+const ORDEN_DE_LAS_PESTANAS: readonly AvaluoStateValue[] = ['en_revisión', 'firmado', 'entregado', 'borrador', 'rechazado']
 
 // ---------------------------------------------------------------------------
 // "¿Cómo funciona?" — the real, truthful journey (no site visit).
@@ -169,8 +177,11 @@ function AvaluosSala() {
   const { t } = useI18n()
   const [activeState, setActiveState] = useState('')
   const [page, setPage] = useState(0)
-  // El filtro de estado elegido lleva su píldora, que se DESLIZA al nuevo.
-  const indicadorDelEstado = `${useId()}-estado`
+  // Con TODOS los avalúos en una página (el back sirve 100 por página), las pestañas cuentan y filtran
+  // aquí mismo: un solo pedido sin estado. Con más, el estado vuelve a viajar al back y las pestañas van
+  // sin número (no se puede contar lo que no llegó). `null` = todavía no se sabe.
+  const [todosCaben, setTodosCaben] = useState<boolean | null>(null)
+  const filtroEnElServidor = todosCaben === false
 
   // Both CTAs end at the avalúo MICRO's wizard, whose origin comes from
   // `NEXT_PUBLIC_AVALUO_API_URL`. When that is unset there is no URL to compose:
@@ -211,10 +222,22 @@ function AvaluosSala() {
   //
   // `errorCrudo` (el error tal cual, no su mensaje) es lo que necesita
   // <EstadoDeDatos> para clasificar: un 502 no se cuenta igual que un 403.
+  const estadoQueViaja = filtroEnElServidor ? activeState || undefined : undefined
   const { avaluos, total, pageSize, isLoading, errorCrudo, refetch } = useAgencyAvaluos({
-    state: activeState || undefined,
+    state: estadoQueViaja,
     page,
   })
+  useEffect(() => {
+    if (estadoQueViaja === undefined && page === 0 && !isLoading && !errorCrudo) setTodosCaben(total <= pageSize)
+  }, [estadoQueViaja, page, isLoading, errorCrudo, total, pageSize])
+
+  const cuantosPorEstado = useMemo(() => {
+    const n: Record<string, number> = {}
+    for (const a of avaluos) n[a.state] = (n[a.state] ?? 0) + 1
+    return n
+  }, [avaluos])
+  const visibles = filtroEnElServidor || !activeState ? avaluos : avaluos.filter((a) => a.state === activeState)
+  const totalVisible = filtroEnElServidor ? total : visibles.length
 
   // El servicio puede estar configurado (hay URL) y aun así no contestar: el
   // back responde 502 «Avaluo service unreachable» al listar. Con el servicio
@@ -223,6 +246,15 @@ function AvaluosSala() {
   // existía para la URL vacía vale para este caso, y apaga los dos botones.
   const servicioCaido = errorCrudo instanceof ApiError && errorCrudo.status === 502
   const servicioDesconectado = !servicioConfigurado || servicioCaido
+  // Revisora r24 #1: los dos botones apagados dicen POR QUÉ en su `title`.
+  const porQueApagado = !servicioConfigurado
+    ? t(`${NS}.desconectadoTitulo`)
+    : servicioCaido
+      ? t(`${NS}.sinServicioBoton`)
+      : null
+  const listosParaEntregar = cuantosPorEstado['firmado'] ?? 0
+  const rechazados = cuantosPorEstado['rechazado'] ?? 0
+  const hayCifra = !filtroEnElServidor && !servicioCaido && !isLoading && !errorCrudo && avaluos.length > 0
 
   const onStateChange = (state: string) => {
     setActiveState(state)
@@ -346,7 +378,7 @@ function AvaluosSala() {
             size="sm"
             hideArrow
             variant="outline"
-            title={t(`${NS}.linkDetalle`)}
+            title={porQueApagado ?? t(`${NS}.linkDetalle`)}
             isLoading={generatingLink}
             disabled={generatingLink || servicioDesconectado}
             onClick={onGenerarLink}
@@ -360,7 +392,7 @@ function AvaluosSala() {
           <Button
             size="sm"
             hideArrow
-            title={t(`${NS}.directoDetalle`)}
+            title={porQueApagado ?? t(`${NS}.directoDetalle`)}
             isLoading={openingWizard}
             disabled={openingWizard || servicioDesconectado}
             onClick={onSolicitarDirecto}
@@ -371,33 +403,18 @@ function AvaluosSala() {
         }
       />
 
-      {servicioDesconectado && (
-        <div
-          className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2"
+      {/* Revisora r24 #1: «no está activo» SÓLO cuando falta la conexión (sin URL). Una caída (502) se dice
+          una sola vez, dentro de la lista, con «Reintentar». */}
+      {!servicioConfigurado ? (
+        <AlertaAccionable
+          severidad="warning"
+          titulo={t(`${NS}.desconectadoTitulo`)}
+          accion={{ label: t(`${NS}.escribenos`), href: 'mailto:hola@leasefy.co' }}
           data-testid="avaluos-servicio-no-configurado"
         >
-          <WarningCircle
-            className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
-            aria-hidden="true"
-          />
-          <div>
-            <p className="text-sm font-medium text-warning">
-              {t(`${NS}.desconectadoTitulo`)}
-            </p>
-            {/* `solicitarUnavailable`, la MISMA frase que usa el vacío de la
-                cola: el servicio está desconectado en un solo lugar del
-                diccionario, no en dos que se despegan.
-
-                Lo que decía antes —«Tus avalúos anteriores se siguen viendo
-                más abajo»— era falso: la lista de abajo sale del MISMO
-                servicio y falla por la misma razón (502). Un aviso no puede
-                prometer lo que la pantalla incumple diez centímetros abajo. */}
-            <p className="text-body-sm text-fg-muted mt-0.5">
-              {t(`${NS}.solicitarUnavailable`)}
-            </p>
-          </div>
-        </div>
-      )}
+          {t(`${NS}.solicitarUnavailable`)}
+        </AlertaAccionable>
+      ) : null}
 
       {/* ── Shareable link ─────────────────────────────────────────────
           Output of the "Generar link para compartir" action: the minted wizard
@@ -420,7 +437,7 @@ function AvaluosSala() {
               className="flex-1 min-w-0 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-mono text-foreground truncate"
             />
             <div className="flex items-center gap-2 shrink-0">
-              <Button variant="secondary" hideArrow onClick={onCopy}>
+              <Button variant="outline" size="sm" hideArrow onClick={onCopy}>
                 {copied ? (
                   <>
                     <Check className="size-4" weight="bold" />
@@ -433,7 +450,7 @@ function AvaluosSala() {
                   </>
                 )}
               </Button>
-              <Button asChild variant="outline" hideArrow>
+              <Button asChild variant="outline" size="sm" hideArrow>
                 <a href={shareUrl ?? undefined} target="_blank" rel="noopener noreferrer">
                   {t(`${NS}.abrirAhora`)}
                 </a>
@@ -442,69 +459,103 @@ function AvaluosSala() {
           </div>
       </Presence>
 
+      {/* LA RESPUESTA (revisora r24 #4): cuántos ya se pueden entregar, de cuántos; la barra reparte los que
+          siguen andando y los cerrados, y los rechazados van aparte con su «Ver». */}
+      {hayCifra ? (
+        <section className="rounded-lg border border-border bg-card px-5 py-5" data-testid="avaluos-cifra">
+          <CifraHeroe
+            rotulo={t(`${NS}.listosTitulo`)}
+            cifra={String(listosParaEntregar)}
+            contexto={
+              avaluos.length === 1
+                ? t(`${NS}.deTotalUno`)
+                : t(`${NS}.deTotal`).replace('{{n}}', String(avaluos.length))
+            }
+            tramos={[
+              { clave: 'en_revisión', etiqueta: stateMeta('en_revisión', t).label, monto: cuantosPorEstado['en_revisión'] ?? 0, tono: 'aviso' as const, cifra: String(cuantosPorEstado['en_revisión'] ?? 0) },
+              { clave: 'firmado', etiqueta: stateMeta('firmado', t).label, monto: listosParaEntregar, tono: 'exito' as const, cifra: String(listosParaEntregar) },
+              { clave: 'entregado', etiqueta: stateMeta('entregado', t).label, monto: cuantosPorEstado['entregado'] ?? 0, tono: 'neutro' as const, cifra: String(cuantosPorEstado['entregado'] ?? 0) },
+              { clave: 'borrador', etiqueta: stateMeta('borrador', t).label, monto: cuantosPorEstado['borrador'] ?? 0, tono: 'neutro' as const, cifra: String(cuantosPorEstado['borrador'] ?? 0) },
+            ]}
+            pie={
+              rechazados > 0 ? (
+                <span className="inline-flex items-center gap-2">
+                  {rechazados === 1 ? t(`${NS}.rechazadosUno`) : t(`${NS}.rechazados`).replace('{{n}}', String(rechazados))}
+                  <button
+                    type="button"
+                    className="text-fg underline underline-offset-2 hover:no-underline"
+                    onClick={() => onStateChange('rechazado')}
+                  >
+                    {t('common.view')}
+                  </button>
+                </span>
+              ) : undefined
+            }
+          />
+        </section>
+      ) : null}
+
       {/* ── Los avalúos de la agencia ───────────────────────────────────
           NO se llama «Mis solicitudes»: ése es el nombre de la pestaña de al
           lado (`/avaluos/cola`), que muestra OTRA cosa —los work-items del
-          agente— desde otro servicio. Dos lugares distintos con el mismo
-          nombre y datos distintos hacen imposible saber cuál mira uno. La
-          pestaña es un lugar; esta sección es un lugar distinto. */}
-      <section className="space-y-4" data-testid="avaluos-de-la-agencia">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-base font-medium text-foreground">{t(`${NS}.listaTitulo`)}</h2>
-        </div>
+          agente— desde otro servicio. El título de la sección queda para el
+          lector de pantalla: a la vista repetía el h1 (revisora r24 #7). */}
+      <section
+        className="overflow-hidden rounded-lg border border-border bg-card"
+        aria-labelledby="avaluos-de-la-agencia-titulo"
+        data-testid="avaluos-de-la-agencia"
+      >
+        <h2 id="avaluos-de-la-agencia-titulo" className="sr-only">{t(`${NS}.listaTitulo`)}</h2>
 
-        {/* State filter */}
-        <div className="flex flex-wrap gap-2">
-          {stateTabs(t).map((tab) => {
-            const active = activeState === tab.value
-            return (
-              <button
-                key={tab.value || 'todos'}
-                type="button"
-                aria-pressed={active}
-                onClick={() => onStateChange(tab.value)}
-                className={`relative isolate rounded-full px-3.5 py-1.5 text-sm font-medium border transition-colors ${
-                  active
-                    ? 'text-primary-foreground border-transparent'
-                    : 'bg-card text-muted-foreground border-border hover:bg-muted/40'
-                }`}
-              >
-                {/* La píldora cobalto del activo (la misma de antes), que viaja. */}
-                {active && (
-                  <MotionIndicator
-                    layoutId={indicadorDelEstado}
-                    className="-inset-px -z-10 rounded-full border border-primary bg-primary"
-                  />
-                )}
-                {tab.label}
-              </button>
-            )
-          })}
-        </div>
+        {/* Las pestañas de estado DENTRO de la tarjeta, con su conteo y sin las que están en cero
+            (revisora r24 #3). Sin servicio no hay pestañas: no hay lista que filtrar. */}
+        {!servicioCaido && (total > 0 || activeState !== '') ? (
+          <div className="border-b border-border px-4 py-3">
+            <PestanasDeEstado<string>
+              etiqueta={t(`${NS}.filtrarPorEstado`)}
+              valor={activeState}
+              onCambio={onStateChange}
+              data-testid="avaluos-por-estado"
+              pestanas={[
+                { valor: '', etiqueta: t('common.all'), cuantos: total, fija: true },
+                ...ORDEN_DE_LAS_PESTANAS.map((e) => ({
+                  valor: e as string,
+                  etiqueta: stateMeta(e, t).label,
+                  cuantos: filtroEnElServidor ? null : cuantosPorEstado[e] ?? 0,
+                })),
+              ]}
+            />
+          </div>
+        ) : null}
 
-        {/* Los cuatro estados, en un solo marco.
-            Antes eran tres cajas distintas —una por estado— cada una con su
-            propio borde, así que el hueco cambiaba de forma según qué pasara.
-            Y el cartel de error escupía el mensaje del backend tal cual: la
-            agencia leía «Error 502». <EstadoDeDatos> los ordena (cargando →
-            falló → vacío → datos), clasifica el fallo y sólo ofrece reintentar
-            cuando reintentar puede cambiar algo. */}
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
+        {servicioCaido ? (
+          // IA-C-03 (QA 04-10) + revisora r24 #1: una caída, dicha una sola vez y con su salida. No dice
+          // «vuelve en unos minutos» ni «pide que lo activen»: está activo y no responde.
+          <div className="flex flex-col items-start gap-3 px-5 py-6 sm:flex-row sm:items-center sm:justify-between" data-testid="avaluos-lista-sin-servicio">
+            <p className="text-body-sm text-fg-muted">{t(`${NS}.sinServicioLista`)}</p>
+            <Button type="button" variant="outline" size="sm" hideArrow onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        ) : (
           <EstadoDeDatos
             cargando={isLoading}
-            // IA-C-03 (QA 04-10): con el servicio desconectado (502) el aviso de
-            // arriba ya lo explica; la lista no dice «vuelve a intentar en unos
-            // minutos» como si fuera una caída pasajera.
-            error={servicioCaido ? null : errorCrudo}
-            vacio={servicioCaido || avaluos.length === 0}
+            error={errorCrudo}
+            vacio={visibles.length === 0}
             queEs={t(`${NS}.queEs`)}
             onReintentar={refetch}
+            esqueleto={
+              <div className="divide-y divide-border" aria-hidden="true">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="flex items-center gap-4 px-4 py-4">
+                    <div className="h-5 w-20 animate-pulse rounded-full bg-surface-muted" />
+                    <div className="h-4 flex-1 animate-pulse rounded bg-surface-muted" />
+                    <div className="h-4 w-24 animate-pulse rounded bg-surface-muted" />
+                  </div>
+                ))}
+              </div>
+            }
             cuandoVacio={
-              servicioCaido ? (
-                <p className="px-4 py-8 text-center text-sm text-muted-foreground" data-testid="avaluos-lista-sin-servicio">
-                  Los avalúos aparecen aquí cuando el servicio de avalúos esté conectado.
-                </p>
-              ) :
               // El vacío son DOS: nunca pediste uno, o el filtro de estado no
               // deja pasar ninguno. Decir «todavía no hay avalúos» cuando hay
               // tres firmados y estás mirando «Rechazado» es afirmar algo falso,
@@ -519,89 +570,67 @@ function AvaluosSala() {
               />
             }
           >
-            {/* Table header — la quinta columna es «Certificado» (05-10-2026):
-                el botón de descarga de las filas firmadas. A 390 px «Creado» y
-                «Certificado» no van en el encabezado (el botón baja de renglón). */}
-            <div className={`${COLUMNAS_DE_LA_LISTA} gap-4 px-4 py-2.5 bg-muted/40 border-b border-border`}>
-              <span className="text-caption font-medium text-muted-foreground">
-                {t(`${NS}.col.estado`)}
-              </span>
-              <span className="text-caption font-medium text-muted-foreground">
-                {t(`${NS}.col.propietario`)}
-              </span>
-              <span className="text-caption font-medium text-muted-foreground text-right">
-                {t(`${NS}.col.valor`)}
-              </span>
-              <span className="text-caption font-medium text-muted-foreground hidden sm:block text-right">
-                {t(`${NS}.col.creado`)}
-              </span>
-              <span className="text-caption font-medium text-muted-foreground hidden sm:block text-right">
-                {t(`${NS}.col.certificado`)}
-              </span>
+            {/* El encabezado de la tabla sólo desde `md`; abajo cada avalúo es una tarjeta. */}
+            <div className={`${COLUMNAS_DE_LA_LISTA} hidden gap-4 border-b border-border px-4 py-2.5 md:grid`}>
+              <span className="text-caption text-fg-subtle">{t(`${NS}.col.estado`)}</span>
+              <span className="text-caption text-fg-subtle">{t(`${NS}.col.propietario`)}</span>
+              <span className="text-right text-caption text-fg-subtle">{t(`${NS}.col.valor`)}</span>
+              <span className="text-right text-caption text-fg-subtle">{t(`${NS}.col.creado`)}</span>
+              <span className="text-right text-caption text-fg-subtle">{t(`${NS}.col.certificado`)}</span>
             </div>
 
-            {/* Rows */}
             {/* Filtrar o paginar: las filas entran escalonadas (paginada: sin `layout`). */}
-            <Stagger as="ul" layout={false} role="list" className="divide-y divide-neutral-100">
-              {avaluos.map((item) => {
+            <Stagger as="ul" layout={false} role="list" className="divide-y divide-border">
+              {visibles.map((item) => {
                 const meta = stateMeta(item.state, t)
+                const metodo = metodoEnPalabras(item.method, t)
+                const debajo = [item.city?.trim() || null, metodo].filter(Boolean).join(' · ')
                 return (
-                  <StaggerItem as="li"
+                  <StaggerItem
+                    as="li"
                     key={item.id}
-                    className={`${COLUMNAS_DE_LA_LISTA} gap-4 items-center px-4 py-3`}
+                    className={`${COLUMNAS_DE_LA_LISTA} items-center gap-x-4 gap-y-2 px-4 py-3`}
                   >
-                    <Badge variant={meta.variant}>{meta.label}</Badge>
-
-                    <div className="min-w-0">
-                      <p className="text-sm text-foreground truncate">
-                        {item.ownerName?.trim() || t(`${NS}.sinNombre`)}
-                      </p>
-                      <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground truncate">
-                        {item.method || '—'}
-                      </p>
+                    <div className="order-3 md:order-none">
+                      <Badge variant={meta.variant}>{meta.label}</Badge>
                     </div>
 
-                    <span className="text-sm font-medium tabular-nums text-right whitespace-nowrap">
+                    <div className="order-1 min-w-0 md:order-none">
+                      <p className="truncate text-sm text-fg">{item.ownerName?.trim() || t(`${NS}.sinNombre`)}</p>
+                      {debajo ? <p className="truncate text-caption text-fg-muted">{debajo}</p> : null}
+                    </div>
+
+                    <span className="order-2 whitespace-nowrap text-right font-mono text-sm tabular-nums text-fg md:order-none">
                       {item.valueCop == null ? '—' : formatCurrency(item.valueCop)}
                     </span>
 
-                    <span className="text-caption text-muted-foreground hidden sm:block text-right whitespace-nowrap tabular-nums">
+                    <span className="order-4 whitespace-nowrap text-right font-mono text-caption tabular-nums text-fg-muted md:order-none">
                       {formatDate(item.createdAt)}
                     </span>
 
-                    {/* El certificado firmado, sólo donde ya existe (firmado y
-                        entregado). A 390 px va en su propio renglón; en las
-                        demás filas la celda sólo existe desde `sm` (alinea). */}
+                    {/* El certificado firmado, sólo donde ya existe (firmado y entregado). En la tarjeta del
+                        celular va en su propio renglón; en las demás filas la celda sólo existe desde `md`. */}
                     {tieneCertificado(item.state) ? (
-                      <div className="col-span-3 flex sm:col-span-1 sm:justify-end">
+                      <div className="order-5 col-span-2 flex md:order-none md:col-span-1 md:justify-end">
                         <DescargarCertificado
                           id={item.id}
                           propietario={item.ownerName?.trim() || t(`${NS}.sinNombre`)}
                         />
                       </div>
                     ) : (
-                      <div className="hidden sm:block" aria-hidden="true" />
+                      <div className="hidden md:block" aria-hidden="true" />
                     )}
                   </StaggerItem>
                 )
               })}
             </Stagger>
 
-            {/* Pie de tabla del design system, el mismo del resto del panel:
-                «Mostrando 1–100 de N». Antes eran dos botones Anterior/
-                Siguiente que sólo aparecían con más de una página — con 3
-                avalúos no se veía ni cuántos había.
-
-                Las páginas las sirve el back (`useAgencyAvaluos({ page })`,
-                `pageSize` fijo del servidor), así que no se ofrece el tamaño
-                de página: sin `pageSizeOptions` el selector no se monta y no
-                queda un control que no hace nada.
-
-                `page` aquí es 0-indexado y el del design system 1-indexado. */}
-            {total > 0 && (
+            {/* Pie de tabla del design system: «Mostrando 1–N de N». Las páginas las sirve el back
+                (`pageSize` fijo), así que no se ofrece el tamaño de página. `page` es 0-indexado aquí. */}
+            {totalVisible > 0 && (
               <div className="border-t border-border px-4 py-3">
                 <TablePagination
-                  total={total}
+                  total={totalVisible}
                   page={page + 1}
                   pageSize={pageSize}
                   onPageChange={(p) => setPage(Math.max(0, p - 1))}
@@ -609,7 +638,7 @@ function AvaluosSala() {
               </div>
             )}
           </EstadoDeDatos>
-        </div>
+        )}
       </section>
     </div>
   )

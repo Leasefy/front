@@ -9158,7 +9158,7 @@
           },
           "avaluos": {
             "salaTitulo": "Appraisals",
-            "salaDesc": "A reference value estimate, fully remote and AI-assisted. No physical visit: the certificate is generated from market data and signed by a Leasefy reviewer.",
+            "salaDesc": "Request an appraisal with no site visit: a Leasefy reviewer signs it.",
             "colaTitle": "My appraisal requests",
             "colaDesc": "Every appraisal you requested, step by step: you request it, a Leasefy reviewer reviews it, signs it and it gets delivered. You see when you requested it, when it was signed and the certificate as soon as it is ready. No physical visit is performed.",
             "colaKpiLabel": "Active",
@@ -9167,8 +9167,8 @@
             "casoColaLabel": "My requests",
             "solicitarTitle": "Request an appraisal",
             "solicitarCta": "Request appraisal",
-            "solicitarUnavailable": "This environment has no appraisal service connected: we can't open the wizard or mint shareable links. Reach out to your Leasefy contact to activate it.",
-            "desconectadoTitulo": "Appraisal requests are disconnected",
+            "solicitarUnavailable": "We can't open the wizard or create shareable links until they're turned on. Write to us and we'll turn them on.",
+            "desconectadoTitulo": "Appraisals aren't active for your agency yet",
             "directoDetalle": "Open the wizard and enter the property details yourself.",
             "abriendoAsistente": "Opening wizard…",
             "linkCta": "Mint a shareable link",
@@ -9241,6 +9241,20 @@
               "firmado": "Signed",
               "entregado": "Delivered",
               "rechazado": "Rejected"
+            },
+            "escribenos": "Write to us",
+            "sinServicioBoton": "The appraisal service isn't responding right now.",
+            "sinServicioLista": "We couldn't read your appraisals: the appraisal service isn't responding. Everything else keeps working.",
+            "listosTitulo": "Ready to deliver",
+            "deTotal": "of {{n}} appraisals",
+            "deTotalUno": "of 1 appraisal",
+            "rechazados": "{{n}} rejected",
+            "rechazadosUno": "1 rejected",
+            "filtrarPorEstado": "Filter by status",
+            "metodos": {
+              "avm": "Automated valuation",
+              "comparables": "Market comparables",
+              "comparablesIa": "AI comparables"
             }
           },
           "cobranza": {

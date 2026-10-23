@@ -106,6 +106,7 @@ beforeEach(() => {
   _origen = ''
   _lista.avaluos = []
   _lista.total = 0
+  _lista.pageSize = 100
   _lista.isLoading = false
   _lista.error = null
   _lista.errorCrudo = null
@@ -210,13 +211,22 @@ describe('Avalúos — la pantalla no se contradice', () => {
     expect(container.textContent).not.toContain('Todavía no hay avalúos')
   })
 
-  it('(5) el aviso no promete que los avalúos anteriores se siguen viendo', async () => {
-    _lista.errorCrudo = { status: 502, message: 'Avaluo service unreachable' }
+  it('(5) con el servicio caído se dice UNA vez, en la lista, sin prometer que lo anterior se sigue viendo', async () => {
+    // Revisora r24 #1: una caída (502) no es «no está activo»: el aviso de arriba no sale, la lista lo
+    // dice con «Reintentar» y los dos botones apagados dicen por qué.
+    _origen = 'http://localhost:3003'
+    const { ApiError } = await import('@/lib/api/client')
+    _lista.errorCrudo = new ApiError(502, 'Avaluo service unreachable', 'SERVICIO_NO_DISPONIBLE', { servicio: 'avaluos' })
     await montar()
 
-    const aviso = container.querySelector(BANNER)?.textContent ?? ''
-    expect(aviso).not.toContain('más abajo')
-    expect(aviso.length).toBeGreaterThan(0)
+    expect(container.querySelector(BANNER)).toBeNull()
+    const lista = container.querySelector('[data-testid="avaluos-lista-sin-servicio"]')?.textContent ?? ''
+    expect(lista).not.toContain('más abajo')
+    expect(lista).toContain(t('inmobiliaria.ai.workspace.pages.avaluos.sinServicioLista'))
+    expect(lista).toContain('Reintentar')
+    const directo = container.querySelector<HTMLButtonElement>(CTA_DIRECTO)
+    expect(directo?.disabled).toBe(true)
+    expect(directo?.getAttribute('title')).toBe(t('inmobiliaria.ai.workspace.pages.avaluos.sinServicioBoton'))
   })
 
   it('(8) el aviso y el vacío de la cola dicen la MISMA frase', async () => {
@@ -229,6 +239,9 @@ describe('Avalúos — la pantalla no se contradice', () => {
   })
 
   it('(6) vacío con un filtro puesto ofrece quitarlo, no «crea el primero»', async () => {
+    // Con más avalúos de los que caben en una página el estado viaja al back y las pestañas van sin
+    // número: ahí un estado puede volver vacío.
+    _lista.total = 150
     await montar()
 
     // Sin filtro: el vacío de verdad.
@@ -269,6 +282,31 @@ describe('Avalúos — la pantalla no se contradice', () => {
     const titulos = [...container.querySelectorAll('h1, h2')].map((h) => h.textContent?.trim())
     expect(titulos).not.toContain('Mis solicitudes')
     expect(titulos).toContain('Avalúos de tu inmobiliaria')
+  })
+
+  it('LA RESPUESTA: cuántos ya se pueden entregar, y las pestañas con su conteo sin las que están en cero', async () => {
+    const fila = (id: string, state: string) => ({
+      id, state, ownerName: 'Ana Ruiz', method: 'COMPARABLES_IA', city: 'Medellín', valueCop: 350_000_000,
+      createdAt: '2026-08-01T12:00:00.000Z',
+    })
+    _lista.avaluos = [fila('a1', 'firmado'), fila('a2', 'firmado'), fila('a3', 'en_revisión'), fila('a4', 'rechazado')]
+    _lista.total = 4
+    await montar()
+
+    const cifra = container.querySelector('[data-testid="avaluos-cifra"]')?.textContent ?? ''
+    expect(cifra).toMatch(/Listos para entregar\s*2\s*de 4 avalúos/)
+    expect(cifra).toContain('1 rechazado')
+    const pestanas = [...container.querySelectorAll('[data-testid="avaluos-por-estado"] button')].map((b) => b.textContent)
+    expect(pestanas).toEqual(['Todos4', 'En revisión1', 'Firmado2', 'Rechazado1'])
+    // El método va en palabras, nunca el código del micro.
+    expect(container.textContent).not.toContain('COMPARABLES_IA')
+    expect(container.textContent).toContain('Medellín · Comparables con IA')
+    // Filtrar no vuelve a pedir: con todo en una página, la pestaña filtra aquí.
+    const firmado = [...container.querySelectorAll<HTMLButtonElement>('[data-testid="avaluos-por-estado"] button')].find((b) => b.textContent === 'Firmado2')
+    await act(async () => {
+      firmado?.click()
+    })
+    expect(container.querySelectorAll('[data-testid="avaluos-de-la-agencia"] li')).toHaveLength(2)
   })
 })
 

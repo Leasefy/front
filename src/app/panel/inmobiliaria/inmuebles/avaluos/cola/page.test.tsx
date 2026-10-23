@@ -164,6 +164,7 @@ describe('Mis solicitudes de avalúo — los avalúos de verdad', () => {
   it('sin el asistente conectado, el vacío no ofrece una puerta cerrada y dice por qué', async () => {
     await montar()
     expect([...container.querySelectorAll('a')].some((a) => a.textContent?.includes('Solicitar avalúo'))).toBe(false)
-    expect(container.textContent).toContain('no tiene conectado el servicio de avalúos')
+    // Glow up 22-10 (revisora r24, Avalúos #1): la frase compartida dice que falta activarlos, sin «este entorno».
+    expect(container.textContent).toContain('hasta activarlos')
   })
 })

@@ -88,6 +88,8 @@ export function Copropiedades() {
   const texto = busqueda.trim().toLowerCase();
   const activas = (filas ?? []).filter((c) => c.activa);
   const inactivas = (filas ?? []).filter((c) => !c.activa);
+  /** Sin ninguna copropiedad todavía: la barra no ofrece buscar ni registrar (lo ofrece el vacío). */
+  const sinNinguna = filas !== null && filas !== undefined && filas.length === 0;
   // Con todas activas no hay nada que separar: la pestaña «Activas» sería la lista entera.
   const vistaReal = inactivas.length === 0 ? 'todas' : vista;
   const deLaVista = vistaReal === 'activas' ? activas : vistaReal === 'inactivas' ? inactivas : (filas ?? []);
@@ -132,7 +134,11 @@ export function Copropiedades() {
                 ]}
               />
             ) : null}
-            <div className="min-w-0 flex-1">
+            {/* Revisora r25 (Copropiedades #1 y #2): a 390 el buscador a lo ancho y el botón debajo (antes
+                quedaba en 64 px, «Busc»); sin ninguna copropiedad, ni buscador ni botón en la barra: la
+                acción la lleva el vacío. */}
+            {sinNinguna ? null : (
+            <div className="w-full min-w-0 sm:w-auto sm:flex-1">
               <Label htmlFor="buscar-copropiedad" className="sr-only">Buscar</Label>
               <Input
                 id="buscar-copropiedad"
@@ -142,11 +148,13 @@ export function Copropiedades() {
                 className="w-full sm:max-w-xs"
               />
             </div>
-            {falta ? null : (
+            )}
+            {falta || sinNinguna ? null : (
               <Button
                 size="sm"
                 variant={creando ? 'outline' : 'default'}
                 hideArrow
+                className="max-sm:w-full"
                 onClick={() => setCreando((v) => !v)}
                 data-testid="abrir-nueva-copropiedad"
               >
@@ -240,7 +248,7 @@ export function Copropiedades() {
                              que va a fallar. */
                           accion={
                             falta ? undefined : (
-                              <Button variant="outline" hideArrow onClick={() => setCreando(true)}>
+                              <Button hideArrow onClick={() => setCreando(true)} data-testid="abrir-nueva-copropiedad">
                                 Registrar la primera
                               </Button>
                             )

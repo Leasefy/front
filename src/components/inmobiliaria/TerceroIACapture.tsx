@@ -3,7 +3,6 @@
 import { useId, useMemo, useRef, useState } from 'react';
 import { CrossFade } from '@leasefy/cadence';
 import {
-  Sparkle,
   UploadSimple,
   IdentificationCard,
   ArrowClockwise,
@@ -410,9 +409,7 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor, aviso }
     cuerpo = (
       <div className="space-y-5">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary-soft flex items-center justify-center flex-shrink-0">
-            <Sparkle className="w-5 h-5 text-primary" weight="fill" />
-          </div>
+          {/* Ronda 30: sin el destello en una caja azul (Cadence 2: nada de «✨ IA»). */}
           <p className="text-body-sm text-muted-foreground">{t(k('intro'))}</p>
         </div>
 
@@ -506,7 +503,6 @@ export function TerceroIACapture({ onCreated, onClose, errorDelServidor, aviso }
           disabled={files.length === 0}
           data-testid="tercero-ia-extraer"
         >
-          <Sparkle className="w-4 h-4" weight="fill" />
           {files.length > 1 ? t(k('extractN'), { n: String(files.length) }) : t(k('extract'))}
         </Button>
       </>

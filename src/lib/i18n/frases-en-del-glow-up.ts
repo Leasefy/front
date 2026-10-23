@@ -720,4 +720,6 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Cuando arriendes con Leasefy, aquí ves cada contrato con tus pagos a tiempo y lo que dijo la inmobiliaria al terminar.": "When you rent through Leasefy, here you see each lease with your on-time payments and what the agency said at the end.",
   "Leer la autorización": "Read the authorization",
   "Ocultar la autorización": "Hide the authorization",
+  // Ronda 30: sin primera persona («No pudimos copiarlo» → «No se pudo copiar»).
+  "No se pudo copiar": "We couldn't copy it",
 }

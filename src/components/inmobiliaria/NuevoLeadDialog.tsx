@@ -474,7 +474,7 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
                 />
               </>
             ) : (
-              <p className="text-xs text-fg-subtle" data-testid="origen-no-habilitado">
+              <p className="text-caption text-fg-subtle" data-testid="origen-no-habilitado">
                 {configuracion.noHabilitado
                   ? `Próximamente: ${configuracion.noHabilitado}`
                   : 'Cargando los orígenes…'}

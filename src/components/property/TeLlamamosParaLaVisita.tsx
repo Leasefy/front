@@ -88,17 +88,18 @@ export function TeLlamamosParaLaVisita({
           className="py-4 text-center"
           data-testid="te-llamamos-listo"
         >
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--success-500))]">
-            <Check className="h-6 w-6 text-white" weight="bold" />
+          {/* Ronda 30 (diseño nuevo): el mismo cuadro de éxito de «¡Visita agendada!» y letra de 13 px (antes 12). */}
+          <div className="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-md bg-[hsl(var(--success-500))]">
+            <Check className="h-[26px] w-[26px] text-white" weight="bold" />
           </div>
-          <p className="text-sm font-medium text-foreground">{elegido.listo}</p>
-          <p className="mt-1 text-[12px] text-muted-foreground">La inmobiliaria ya tiene tus datos.</p>
+          <p className="text-[15px] font-medium text-fg">{elegido.listo}</p>
+          <p className="mt-1 text-[13px] text-fg-subtle">La inmobiliaria ya tiene tus datos.</p>
         </motion.div>
       ) : (
         <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3" data-testid="te-llamamos">
           <div className="text-center">
-            <p className="text-[13px] font-medium text-foreground">Este inmueble todavía no tiene horarios en línea.</p>
-            <p className="mt-1 text-[12px] text-muted-foreground">
+            <p className="text-[14px] font-medium text-fg">Este inmueble todavía no tiene horarios en línea.</p>
+            <p className="mt-1 text-[13px] text-fg-muted">
               Déjanos tus datos y dinos cómo quieres que te contactemos para cuadrar la visita.
             </p>
           </div>
@@ -113,8 +114,8 @@ export function TeLlamamosParaLaVisita({
                   role="radio"
                   aria-checked={activo}
                   onClick={() => setCanal(c.valor)}
-                  className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-[12px] font-medium transition-colors ${
-                    activo ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground hover:bg-muted/40'
+                  className={`flex flex-col items-center gap-1 rounded-md border px-2 py-2.5 text-[13px] font-medium transition-colors ${
+                    activo ? 'border-primary bg-primary/5 text-primary' : 'border-border text-fg-muted hover:border-primary/40'
                   }`}
                   data-testid={`te-llamamos-canal-${c.valor}`}
                 >
@@ -156,13 +157,13 @@ export function TeLlamamosParaLaVisita({
               data-testid="te-llamamos-telefono"
             />
           )}
-          <ErrorDelCampo id="te-llamamos-error" mensaje={error} className="text-[12px] text-center" />
+          <ErrorDelCampo id="te-llamamos-error" mensaje={error} className="text-[13px] text-center" />
           <Button
             hideArrow
             disabled={!puede}
             isLoading={enviando}
             onClick={() => void enviar()}
-            className="h-auto w-full gap-2 rounded-xl py-4 text-[14px]"
+            className="h-[50px] w-full gap-2 text-[16px]"
             data-testid="te-llamamos-enviar"
           >
             <elegido.icono className="h-4 w-4" aria-hidden="true" />

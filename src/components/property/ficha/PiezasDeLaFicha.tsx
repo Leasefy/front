@@ -248,7 +248,7 @@ export function TotalAlMes({ p }: { p: Property }) {
       {costo && costo.administracion > 0 && (
         <p className="mt-1 text-[14px] text-fg-muted">
           + <span className="font-mono tabular-nums">{formatCurrency(costo.administracion)}</span> de administración ={' '}
-          <span className="font-mono font-semibold tabular-nums text-fg">{formatCurrency(costo.total)}</span> al mes
+          <span className="font-mono font-medium tabular-nums text-fg">{formatCurrency(costo.total)}</span> al mes
         </p>
       )}
     </div>

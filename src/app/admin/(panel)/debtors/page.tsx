@@ -1,9 +1,11 @@
 'use client'
 
+import { MagnifyingGlass } from '@phosphor-icons/react'
 import { useState, useCallback } from 'react'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
+import { EmptyBlock } from '@/components/admin/screen/states'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Button } from '@/components/ui/button'
@@ -111,7 +113,7 @@ export default function DebtorsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Deudores"
-        description="Busca un deudor por nombre, cédula o teléfono en todas las inmobiliarias. Son datos personales: cada búsqueda queda registrada con tu correo antes de mostrar resultados."
+        description="Busca un deudor en todas las inmobiliarias. Son datos personales: cada búsqueda queda registrada con tu correo."
       />
 
       {/* Se busca al enviar, no con cada tecla: cada búsqueda queda registrada. */}
@@ -128,7 +130,7 @@ export default function DebtorsPage() {
             autoComplete="off"
           />
         </label>
-        <Button hideArrow type="submit">
+        <Button hideArrow type="submit" isLoading={debtors.isLoading && Boolean(committedQ)}>
           Buscar
         </Button>
         {committedQ && (
@@ -139,17 +141,17 @@ export default function DebtorsPage() {
       </form>
 
       {!committedQ ? (
-        <p className="rounded-lg border border-border bg-surface px-4 py-3 text-body-sm text-fg-muted">
-          Escribe un nombre, una cédula o un teléfono. Hasta que busques no se muestra ni se registra nada.
-        </p>
+        <EmptyBlock
+          icono={<MagnifyingGlass weight="duotone" />}
+          tono="neutro"
+          title="Busca por nombre, cédula o teléfono"
+          hint="Hasta que busques no se muestra ni se registra nada."
+        />
       ) : (
         <>
-          {debtors.data && (
-            <p className="text-caption text-fg-muted">
-              {debtors.data.data.length === 1 ? '1 resultado' : `${debtors.data.data.length} resultados`}
-              {debtors.data.data.length === 50 && ' (se muestran los primeros 50: afina la búsqueda)'}
-            </p>
-          )}
+          {debtors.data && debtors.data.data.length === 50 ? (
+            <p className="text-caption text-fg-muted">Se muestran los primeros 50: afina la búsqueda.</p>
+          ) : null}
           <DataTable
             columns={columns}
             rows={debtors.data?.data}

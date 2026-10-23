@@ -249,7 +249,7 @@ export default function SolicitudesPage() {
   // Loading gate — never flash a fake-empty while a source is in flight.
   if (isOnboardingLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -259,7 +259,7 @@ export default function SolicitudesPage() {
   // Onboarding gate.
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="rental" />
         </div>
@@ -271,7 +271,7 @@ export default function SolicitudesPage() {
   // fires on a genuine (non-404/403/0) failure.
   if (error) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           {encabezado}
           {vistas}
@@ -287,7 +287,7 @@ export default function SolicitudesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <motion.div {...entrada} className="p-6 lg:p-8">
 
         {/* GLOW UP (21-10): el encabezado de todas las pantallas; «Nueva solicitud» es la única azul. */}

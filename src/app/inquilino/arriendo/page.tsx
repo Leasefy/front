@@ -7,7 +7,7 @@ import { CrossFade, MonoLabel, StatusBadge } from '@leasefy/cadence';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { MapPin, Calendar, House, CheckCircle, ArrowsClockwise } from '@phosphor-icons/react';
+import { MapPin, Calendar, CheckCircle, ArrowsClockwise } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 
 import { toast } from 'sonner';
@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
-import { EmptyState } from '@/components/ui/empty-state';
+import { SinArriendoTodavia } from '@/components/tenant/SinArriendoTodavia';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
@@ -121,7 +121,7 @@ export default function ArriendoPage() {
   const entrada = useEntradaTrasCargar(isOnboardingLoading || isLoading);
   if (isOnboardingLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="dashboard" className="mx-auto max-w-7xl" />
       </div>
@@ -131,7 +131,7 @@ export default function ArriendoPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="rental" />
         </div>
@@ -142,7 +142,7 @@ export default function ArriendoPage() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           {/* `ErrorState` mostraba el mensaje crudo del backend y ofrecía
               reintentar siempre, incluso sobre un 404. `FalloDeCarga` clasifica
@@ -169,7 +169,7 @@ export default function ArriendoPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <motion.div {...entrada} className="p-6 lg:p-8">
 
         {/* GLOW UP (21-10): el encabezado de todas las pantallas; la acción que más se hace desde aquí es pagar. */}
@@ -438,15 +438,10 @@ export default function ArriendoPage() {
               })}
             </div>
           ) : contratosSinArriendo.length > 0 || cargandoContratos ? null : (
-            <EmptyState
-              icon={House}
-              ilustracion="casa"
-              title="No tienes arriendos activos"
-              description="Cuando firmes un contrato de arriendo, tu información aparecerá aquí."
-              /* "aplicaciones" está muerto (docs/VOCABULARIO.md). Y quien no
-                 tiene arriendo no necesita revisar su historial: necesita
-                 encontrar dónde vivir. */
-              action={{ label: 'Ver inmuebles para mí', href: '/inquilino/para-ti' }}
+            // Revisora r27 (CA): el mismo vacío en las pestañas de «Mi arriendo»; esta dice qué va a aparecer aquí.
+            <SinArriendoTodavia
+              queVaAqui="Aquí ves tu contrato, cuánto pagas y cuánto le queda."
+              whatGoesHere="Here you see your lease, how much you pay and how long it has left."
             />
           )}
           {/* QA-MIGRACION-95 — CA-04: los contratos que la inmobiliaria cargó sin arriendo. */}

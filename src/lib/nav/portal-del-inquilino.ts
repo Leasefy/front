@@ -127,7 +127,13 @@ export type FilaDelPortal =
  * Las filas del menú según si arrienda. `null` = todavía no se sabe: sólo lo
  * que es de todos (Inicio y Mensajes), para no mostrar un menú y cambiarlo.
  */
-export function filasDelMenu(arrienda: boolean | null): FilaDelPortal['clave'][] {
+export function filasDelMenu(arrienda: boolean | null, pathname?: string): FilaDelPortal['clave'][] {
   if (arrienda === null) return ['inicio', 'mensajes'];
-  return arrienda ? ['inicio', 'mi-arriendo', 'calificacion', 'mensajes'] : ['inicio', 'buscar', 'mensajes'];
+  if (arrienda) return ['inicio', 'mi-arriendo', 'calificacion', 'mensajes'];
+  /*
+   * Revisora r27 (CC): quien no arrienda y entra a una pestaña de «Mi arriendo» (por un enlace, por la campana)
+   * no veía ninguna fila encendida. Mientras esté ahí, «Mi arriendo» aparece en el menú, encendida.
+   */
+  const enMiArriendo = pathname ? MI_ARRIENDO.pestanas.some((p) => esLaPestana(p, pathname)) : false;
+  return enMiArriendo ? ['inicio', 'buscar', 'mi-arriendo', 'mensajes'] : ['inicio', 'buscar', 'mensajes'];
 }

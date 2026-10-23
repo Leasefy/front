@@ -158,7 +158,7 @@ export default function CasosPage() {
   // Loading gate — never flash a fake-empty while any source is in flight.
   if (isOnboardingLoading || isCasesLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -168,7 +168,7 @@ export default function CasosPage() {
   // Onboarding gate.
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="rental" />
         </div>
@@ -181,7 +181,7 @@ export default function CasosPage() {
   // y el aviso dice qué faltó (`AvisoDeFuentesCaidas`, abajo del encabezado).
   if (error && todasFallaron) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           {/* Glow up 22-10: el encabezado se queda con el error (se sabe dónde se está) y «Reintentar» vuelve a
               pedir los casos (antes recargaba la ruta). */}
@@ -208,7 +208,7 @@ export default function CasosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
 
         {/* C3 (revisora r25): el título es el de la pestaña («Solicitudes»), y debajo se pasa de lo que está en curso

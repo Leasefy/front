@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
+import { SinArriendoTodavia } from '@/components/tenant/SinArriendoTodavia';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
@@ -79,7 +80,7 @@ export default function PagosPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-bg">
+        <div className="bg-bg">
           {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
           <EsqueletoDePagina variante="list" />
         </div>
@@ -379,7 +380,7 @@ function PagosPageContent() {
   // Loading state
   if (isOnboardingLoading || leasesLoading || requestsLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <EsqueletoDePagina variante="list" />
       </div>
     );
@@ -388,7 +389,7 @@ function PagosPageContent() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="payments" />
         </div>
@@ -401,7 +402,7 @@ function PagosPageContent() {
   // arriendo activo» sobre un dato que nunca llegó.
   if (errorArriendos || errorPagos) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           <FalloDeCarga
             error={errorArriendos ?? errorPagos}
@@ -422,7 +423,7 @@ function PagosPageContent() {
   const conContrato = resumen !== null && (resumen.restaPorPagar > 0 || resumen.proxima !== null);
   if (!primaryLease && (errorResumen || !cargandoResumen) && !conContrato) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <motion.div {...entrada} className="p-6 lg:p-8">
           <EncabezadoDePantalla
             className="mb-8"
@@ -437,16 +438,10 @@ function PagosPageContent() {
           />
 
           <div>
-            <EmptyState
-              icon={CurrencyCircleDollar}
-              ilustracion="monedas"
-              title={locale === 'es' ? 'Sin pagos por ahora' : 'No payments yet'}
-              description={locale === 'es'
-                ? 'Cuando tengas un arriendo activo, aquí podrás ver tus pagos, recibos y estado de cuenta.'
-                : 'When you have an active rental, you\'ll see your payments, receipts and account status here.'}
-              /* Al catálogo propio, no al listado general: es lo siguiente que
-                 haría quien todavía no tiene un arriendo. */
-              action={{ label: locale === 'es' ? 'Ver inmuebles para mí' : 'View properties for me', href: '/inquilino/para-ti' }}
+            {/* Revisora r27 (CA): el mismo vacío en las pestañas de «Mi arriendo». */}
+            <SinArriendoTodavia
+              queVaAqui="Aquí ves cuánto debes, cuándo vence y cómo pagarlo."
+              whatGoesHere="Here you see what you owe, when it is due and how to pay it."
             />
           </div>
         </motion.div>
@@ -455,7 +450,7 @@ function PagosPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <motion.div {...entrada} className="p-6 lg:p-8">
 
         {/* GLOW UP (21-10): el encabezado de todas las pantallas, con el trabajo de esta: pagar y ver lo pagado. */}

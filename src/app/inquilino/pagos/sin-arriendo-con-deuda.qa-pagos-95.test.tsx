@@ -84,7 +84,7 @@ describe('N-21 · Pagos sin arriendo del portal', () => {
     resumen.valor = { proxima: null, vencidoCop: 6_300_000, cuotasVencidas: 3, restaPorPagar: 11_830_000, enMora: true, diasDeMora: 40 };
     await montar();
     const texto = host.textContent ?? '';
-    expect(texto).not.toContain('Sin pagos por ahora');
+    expect(texto).not.toContain('Todavía no tienes un arriendo');
     expect(host.querySelector('[data-testid="sin-pago-en-linea"]')?.textContent).toContain(
       'El pago en línea todavía no está disponible para tu contrato',
     );
@@ -97,7 +97,7 @@ describe('N-21 · Pagos sin arriendo del portal', () => {
     mio.mockRejectedValue(Object.assign(new Error('Ese inquilino todavía no tiene contratos'), { status: 404 }));
     resumen.valor = null;
     await montar();
-    expect(host.textContent ?? '').toContain('Sin pagos por ahora');
+    expect(host.textContent ?? '').toContain('Todavía no tienes un arriendo');
   });
 });
 

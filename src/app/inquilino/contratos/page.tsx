@@ -6,13 +6,13 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
-import { Handshake, PenNib } from '@phosphor-icons/react';
+import { PenNib } from '@phosphor-icons/react';
 import { StatusBadge } from '@leasefy/cadence';
 
 import { useContracts } from '@/lib/hooks/useContracts';
 import { useI18n } from '@/lib/i18n';
 import { formatCanon, formatDate } from './format';
-import { EmptyState } from '@/components/ui/empty-state';
+import { SinArriendoTodavia } from '@/components/tenant/SinArriendoTodavia';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
@@ -115,7 +115,7 @@ export default function ContratosPage() {
   // Loading
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -154,7 +154,7 @@ export default function ContratosPage() {
   // qué pasó y ofrece reintentar sólo si reintentar puede cambiar algo.
   if (error) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           {encabezado}
           <FalloDeCarga
@@ -175,26 +175,17 @@ export default function ContratosPage() {
   });
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <motion.div {...entrada} className="p-6 lg:p-8">
         {encabezado}
 
         {/* Empty state */}
         {sorted.length === 0 ? (
           <div>
-            <EmptyState
-              icon={Handshake}
-              title={locale === 'es' ? 'Sin contratos aún' : 'No contracts yet'}
-              /* "aplicación" está muerto: docs/VOCABULARIO.md. */
-              description={locale === 'es'
-                ? 'Cuando te elijan en una postulación y generen el contrato, aparecerá aquí para que lo firmes.'
-                : 'When you are selected for an application and the contract is generated, it will appear here for you to sign.'}
-              /* Era la única pantalla vacía sin ninguna acción: un callejón.
-                 Para llegar a un contrato hay que postularse primero. */
-              action={{
-                label: locale === 'es' ? 'Ver inmuebles para mí' : 'See homes for me',
-                href: '/inquilino/para-ti',
-              }}
+            {/* Revisora r27 (CA): el mismo vacío en las pestañas de «Mi arriendo». */}
+            <SinArriendoTodavia
+              queVaAqui="Cuando te elijan en una postulación, aquí firmas tu contrato y lo descargas."
+              whatGoesHere="When you are chosen in an application, you sign and download your lease here."
             />
           </div>
         ) : (

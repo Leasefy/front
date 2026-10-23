@@ -248,7 +248,7 @@ export default function InquilinoPage() {
   const entrada = useEntradaTrasCargar(cargandoElPanel);
   if (cargandoElPanel) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="dashboard" className="mx-auto max-w-7xl" />
       </div>
@@ -267,7 +267,7 @@ export default function InquilinoPage() {
    */
   if (errorPostulaciones || errorArriendos) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
           <FalloDeCarga
             error={errorPostulaciones ?? errorArriendos}
@@ -302,7 +302,7 @@ export default function InquilinoPage() {
   const hayCasos = !isNewUser && openCasesCount > 0;
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <motion.div {...entrada} className="p-6 lg:p-8">
 
         {/* GLOW UP (21-10): el encabezado de todas las pantallas (antes, un saludo grande propio). */}

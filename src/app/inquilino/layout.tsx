@@ -41,7 +41,7 @@ const ONBOARDING_STORAGE_KEY = 'plan_onboarding_tenant';
  * Nada se borró: cada pantalla cae en su sección (`lib/nav/portal-del-inquilino.ts`).
  * Sin «Notificaciones», «Perfil» ni «Configuración»: viven en el header (Nico, 15-09).
  */
-function useTenantNavItems(arrienda: boolean | null) {
+function useTenantNavItems(arrienda: boolean | null, pathname: string) {
   const { t, locale } = useI18n();
   const es = locale !== 'en';
   const { unreadCount } = useUnreadMessages();
@@ -74,7 +74,7 @@ function useTenantNavItems(arrienda: boolean | null) {
   };
 
   return [
-    ...filasDelMenu(arrienda).map((clave) => fila[clave]),
+    ...filasDelMenu(arrienda, pathname).map((clave) => fila[clave]),
     ...(tambienPropietario
       ? [{ label: locale === 'es' ? 'Mi portal de propietario' : 'My owner portal', href: '/panel', icon: ArrowsLeftRight }]
       : []),
@@ -93,8 +93,8 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
   const { hasArriendoPass } = useTenantProfile();
   const { t, locale } = useI18n();
   const arrienda = useArriendaHoy();
-  const navItems = useTenantNavItems(arrienda);
   const pathname = usePathname() ?? '';
+  const navItems = useTenantNavItems(arrienda, pathname);
 
   // Onboarding progress state
   const [onboardingSteps, setOnboardingSteps] = useState<ProfileCompletionStep[]>(TENANT_SETUP_STEPS);

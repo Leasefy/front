@@ -37,6 +37,7 @@ import { useI18n } from '@/lib/i18n';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { CuotaPlanTable } from '@/components/tenant/CuotaPlanTable';
 import { SolicitarPlanPagoModal } from '@/components/tenant/SolicitarPlanPagoModal';
+import { SinArriendoTodavia } from '@/components/tenant/SinArriendoTodavia';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { StatusBadge } from '@leasefy/cadence';
@@ -131,7 +132,7 @@ export default function AcuerdosPage() {
   // Loading gate — never flash a fake-empty while a source is in flight.
   if (isOnboardingLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -141,7 +142,7 @@ export default function AcuerdosPage() {
   // Onboarding gate.
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="rental" />
         </div>
@@ -153,7 +154,7 @@ export default function AcuerdosPage() {
   // fires on a genuine (non-404/403/0) failure.
   if (error) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           {/* GLOW UP (21-10-2026, QA): el encabezado se queda también con el error,
               para que se sepa dónde se está; sin la acción, que va al mismo servicio caído. */}
@@ -169,7 +170,7 @@ export default function AcuerdosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
 
         {/* Header */}
@@ -203,14 +204,10 @@ export default function AcuerdosPage() {
             <div className="rounded-lg border border-border bg-surface">
               {/* Revisora r25: sin arriendo no se ofrece pedir un plan de pago (abría un modal sobre nada). */}
               {arrienda === false ? (
-                <EmptyState
-                  icon={Scroll}
-                  title={locale === 'es' ? 'Aún no tienes acuerdos de pago' : 'No payment agreements yet'}
-                  description={
-                    locale === 'es'
-                      ? 'Cuando tengas un arriendo, aquí ves tus acuerdos de pago con su plan de cuotas.'
-                      : 'When you have a rental, your payment agreements show up here with their installment plan.'
-                  }
+                // Revisora r27 (CA): el mismo vacío en las pestañas de «Mi arriendo».
+                <SinArriendoTodavia
+                  queVaAqui="Aquí ves los acuerdos de pago con tu inmobiliaria, con su plan de cuotas."
+                  whatGoesHere="Here you see the payment agreements with your agency, with their installment plan."
                 />
               ) : (
                 <EmptyState

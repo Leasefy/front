@@ -24,6 +24,10 @@ describe('el menú según si arrienda', () => {
   })
   it('mientras no se sabe, sólo lo que es de todos: no se muestra un menú para cambiarlo', () => {
     expect(filasDelMenu(null)).toEqual(['inicio', 'mensajes'])
+    // Revisora r27 (CC): sin arriendo, en una pestaña de «Mi arriendo» esa fila aparece para encenderse.
+    expect(filasDelMenu(false, '/inquilino/pagos')).toEqual(['inicio', 'buscar', 'mi-arriendo', 'mensajes'])
+    expect(filasDelMenu(false, '/inquilino/documentos')).toContain('mi-arriendo')
+    expect(filasDelMenu(false, '/inquilino/para-ti')).toEqual(['inicio', 'buscar', 'mensajes'])
   })
   it('nunca más de cuatro filas (antes eran 14)', () => {
     for (const a of [true, false, null]) expect(filasDelMenu(a).length).toBeLessThanOrEqual(4)

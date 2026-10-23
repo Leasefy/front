@@ -251,7 +251,7 @@ export default function AplicacionesPage() {
   const entrada = useEntradaTrasCargar(isOnboardingLoading || isAppsLoading);
   if (isOnboardingLoading || isAppsLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -261,7 +261,7 @@ export default function AplicacionesPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="applications" />
         </div>
@@ -275,7 +275,7 @@ export default function AplicacionesPage() {
   // nada. `FalloDeCarga` clasifica el fallo y reintenta de verdad.
   if (error) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           <FalloDeCarga
             error={errorCrudo ?? error}
@@ -288,7 +288,7 @@ export default function AplicacionesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
 
         {/* Header */}

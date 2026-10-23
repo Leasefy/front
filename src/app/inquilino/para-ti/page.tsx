@@ -193,7 +193,7 @@ export default function ParaTiPage() {
   // Loading state
   if (isLoading || recommendationsLoading) {
     return (
-      <div className="min-h-screen bg-plan-page">
+      <div className="bg-plan-page">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-surface-muted rounded w-48" />
@@ -214,7 +214,7 @@ export default function ParaTiPage() {
   // lleva a ningún lado.
   if (errorRecomendaciones) {
     return (
-      <div className="min-h-screen bg-plan-page">
+      <div className="bg-plan-page">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <FalloDeCarga
             error={errorRecomendaciones}
@@ -259,7 +259,7 @@ export default function ParaTiPage() {
     // dice el estado de su aprobación (sin pedir, en proceso, rechazada o vencida) y lleva a pedirla; antes era
     // una tarjeta con «Volver a Inicio» que decía «Todavía no tenemos tu aprobación» en los cuatro casos.
     return (
-      <div className="min-h-screen bg-plan-page">
+      <div className="bg-plan-page">
         <div className="p-6 lg:p-8" data-testid="para-ti-sin-aprobacion">
           <EncabezadoDePantalla
             className="mb-6"
@@ -296,7 +296,7 @@ export default function ParaTiPage() {
     'flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm text-white';
 
   return (
-    <div className="min-h-screen bg-plan-page">
+    <div className="bg-plan-page">
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Glow up 22-10: sin «Volver a Inicio» (es una pestaña del riel, como sus hermanas). */}
 

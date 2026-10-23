@@ -100,6 +100,8 @@ export interface PantallaProps {
    */
   /** `accion` (glow up 22-10, portal): la salida del vacío, p. ej. «Ver inmuebles para mí». */
   textosSinContratos?: { titulo: string; detalle: string; accion?: { label: string; href: string } };
+  /** El vacío entero, cuando el portal tiene el suyo (el inquilino: el de «Mi arriendo», revisora r27 CA). Gana sobre los textos. */
+  vacioSinContratos?: React.ReactNode;
   /**
    * A dónde se configuran las reglas de mora. Sólo el PANEL lo pasa: con él,
    * las cuotas en mora sin intereses dicen por qué y llevan a configurarlas.
@@ -145,6 +147,7 @@ export function PantallaDelEstadoDeCuenta({
   hoy: hoyProp,
   sinFiltros = false,
   textosSinContratos,
+  vacioSinContratos,
   encabezado,
   reglasDeMoraHref,
   conAnticipoDelContrato = false,
@@ -422,6 +425,9 @@ export function PantallaDelEstadoDeCuenta({
            cargar la manda a buscar por qué se borró algo que nunca se borró.
            Es un estado VACÍO, no un fallo: sin «Reintentar», que no arregla
            nada, y con el camino de vuelta intacto. */
+        vacioSinContratos ? (
+          <div data-testid="estado-sin-contratos-pantalla">{vacioSinContratos}</div>
+        ) : (
         <div
           data-testid="estado-sin-contratos-pantalla"
           className="rounded-lg border border-border bg-surface p-10 text-center"
@@ -438,6 +444,7 @@ export function PantallaDelEstadoDeCuenta({
             </Button>
           ) : null}
         </div>
+        )
       ) : error ? (
         <FalloDeCarga
           error={error}

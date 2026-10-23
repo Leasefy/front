@@ -67,7 +67,7 @@ export default function GuardadosPage() {
   // Loading state
   if (isOnboardingLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -77,7 +77,7 @@ export default function GuardadosPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="saved" />
         </div>
@@ -86,7 +86,7 @@ export default function GuardadosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
           className="mb-8"

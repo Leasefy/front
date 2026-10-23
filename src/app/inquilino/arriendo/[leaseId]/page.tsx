@@ -115,7 +115,7 @@ export default function LeaseDetailPage() {
 
   if (leaseLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="detail" className="mx-auto max-w-7xl" />
       </div>
@@ -349,7 +349,7 @@ export default function LeaseDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <motion.div {...entrada} className="p-6 lg:p-8">
 
         {/* Back Button */}

@@ -324,7 +324,7 @@ export default function DocumentosPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -351,7 +351,7 @@ export default function DocumentosPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="documents" />
         </div>
@@ -799,7 +799,7 @@ export default function DocumentosPage() {
   ) : null;
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <motion.div {...entrada} className="p-6 lg:p-8">
         {/* GLOW UP (21-10): el encabezado de todas las pantallas, con lo que de verdad hay aquí. */}
         {/* C3 (revisora r25): el título es el de la pestaña («Contrato y documentos») y debajo, cómo volver al

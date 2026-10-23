@@ -423,7 +423,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
   // Loading
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="detail" className="mx-auto max-w-7xl" />
       </div>
@@ -451,7 +451,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
 
   if (!activeContract) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="max-w-3xl p-6 lg:p-8">
           <BackButton href="/inquilino/contratos" label={locale === 'es' ? 'Volver a Mis contratos' : 'Back to My contracts'} />
           <div className="mt-8 text-center py-16">
@@ -473,7 +473,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
   // Success state after signing
   if (signedSuccess) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="max-w-3xl p-6 lg:p-8" data-testid="firma-lista">
           <SigningSuccess locale={locale} estado={activeContract?.status} />
           {/* 🔴 Nico, 2026-09-17: al iniciar el contrato, el inquilino firma
@@ -487,7 +487,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <motion.div {...entrada} className="p-6 lg:p-8">
         {/* Back */}
         <div className="mb-6" data-testid="firmar-volver">

@@ -260,7 +260,7 @@ function PanelDelPropietarioIndependiente() {
 
   // ALL hooks must be called before any conditional returns (React rules of hooks)
   const { properties: apiProperties, isLoading: propertiesLoading, error: propertiesError, refetch: recargarPropiedades } = useLandlordProperties();
-  const { dashboard, isLoading: dashboardLoading } = useLandlordDashboard();
+  const { dashboard, isLoading: dashboardLoading, refetch: recargarTablero } = useLandlordDashboard();
   // Propietario de una inmobiliaria: sus contratos no salen por `landlordId`.
   const administrados = useContratosAdministrados();
   // ¿Se vieron los esqueletos? Entonces las cifras que llegan cuentan desde 0
@@ -384,7 +384,9 @@ function PanelDelPropietarioIndependiente() {
   // Fallback dashboard data when the endpoint fails or hasn't loaded yet
   const dashboardData: DashboardData = dashboard ?? {
     financial: {
-      monthlyIncome: properties.reduce((sum, p) => sum + (p.monthlyRent || 0), 0),
+      // Revisora r25 (R3): sin el tablero no hay ingreso que mostrar. Antes se
+      // sumaba el canon pedido de TODOS los inmuebles, vacíos incluidos.
+      monthlyIncome: 0,
       activeLeases: 0,
       collectionRate: 100,
       pendingPayments: 0,
@@ -422,6 +424,25 @@ function PanelDelPropietarioIndependiente() {
               <Skeleton className="h-10 w-56" />
               <Skeleton className="h-4 w-40" />
             </div>
+          ) : !dashboard ? (
+            // Sin el tablero del back: la cifra en «—» y el porqué, con su reintento (R3).
+            <CifraHeroe
+              rotulo={t('landlord.dashboard.monthlyIncome')}
+              cifra="—"
+              pie={
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="ingreso-del-mes-sin-datos">
+                  <span>{locale === 'es' ? 'No pudimos traer tus ingresos.' : "We couldn't load your income."}</span>
+                  <button
+                    type="button"
+                    onClick={() => void recargarTablero()}
+                    className="text-fg underline decoration-border-strong underline-offset-4 hover:decoration-fg"
+                  >
+                    {locale === 'es' ? 'Reintentar' : 'Retry'}
+                  </button>
+                </span>
+              }
+              data-testid="ingreso-del-mes"
+            />
           ) : (
             <CifraHeroe
               rotulo={t('landlord.dashboard.monthlyIncome')}
@@ -453,7 +474,7 @@ function PanelDelPropietarioIndependiente() {
             <Cifra
               etiqueta={t('landlord.dashboard.properties')}
               valor={isLoading ? '—' : properties.length}
-              detalle={isLoading ? undefined : `${dashboardData.financial.activeLeases} ${t('landlord.dashboard.rented')}`}
+              detalle={isLoading || !dashboard ? undefined : `${dashboardData.financial.activeLeases} ${t('landlord.dashboard.rented')}`}
             />
             <Cifra
               etiqueta={t('landlord.dashboard.candidates')}

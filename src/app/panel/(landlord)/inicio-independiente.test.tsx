@@ -11,6 +11,7 @@ import { act } from 'react';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+const tablero = vi.hoisted(() => ({ conDatos: true }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
@@ -41,14 +42,17 @@ vi.mock('@/lib/hooks/useLandlord', () => ({
     refetch: vi.fn(),
   }),
   useLandlordDashboard: () => ({
-    dashboard: {
-      financial: { monthlyIncome: 2_000_000, activeLeases: 1, collectionRate: 96, pendingPayments: 0 },
-      urgentActions: [],
-      upcomingEvents: [],
-      recentActivity: [],
-      riskDistribution: { A: 0, B: 0, C: 0, D: 0 },
-    },
+    dashboard: tablero.conDatos
+      ? {
+          financial: { monthlyIncome: 2_000_000, activeLeases: 1, collectionRate: 96, pendingPayments: 0 },
+          urgentActions: [],
+          upcomingEvents: [],
+          recentActivity: [],
+          riskDistribution: { A: 0, B: 0, C: 0, D: 0 },
+        }
+      : null,
     isLoading: false,
+    refetch: vi.fn(),
   }),
 }));
 vi.mock('@/components/property/PortadaDelInmueble', () => ({ PortadaDelInmueble: () => null }));
@@ -81,5 +85,19 @@ describe('Inicio del propietario independiente', () => {
     // Antes, el resumen de la columna repetía el ingreso y la tasa: ya no.
     expect(host.textContent).not.toContain('landlord.dashboard.financialSummary');
     expect(host.textContent).toContain('96 %');
+  });
+
+  it('sin el tablero del back, la cifra va en «—» con su reintento: nunca la suma de los cánones pedidos (revisora r25, R3)', async () => {
+    tablero.conDatos = false;
+    await act(async () => root.render(<PanelPage />));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
+    const cifra = host.querySelector('[data-testid="ingreso-del-mes"]');
+    expect(cifra?.textContent).toContain('—');
+    expect(host.querySelector('[data-testid="ingreso-del-mes-sin-datos"]')?.textContent).toContain('Reintentar');
+    // El inmueble publicado pide $ 2.000.000: no se muestra como ingreso.
+    expect(cifra?.textContent).not.toMatch(/2\.000\.000/);
+    tablero.conDatos = true;
   });
 });

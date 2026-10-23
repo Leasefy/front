@@ -42,6 +42,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SelectorDeArchivo } from '@/components/ui/selector-de-archivo';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { mapBankCodeToWire } from '@/lib/api/inmobiliaria.service';
@@ -1064,24 +1065,31 @@ function PedirCambioDeCuenta({
             />
             <div className="space-y-1.5">
               <Label htmlFor="banco-nuevo">Banco</Label>
-              <select
-                id="banco-nuevo"
-                className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
-                value={banco}
-                aria-invalid={Boolean(erroresDelServidor.banco) || undefined}
-                aria-describedby="banco-nuevo-error"
-                onChange={(e) => {
-                  setBanco(e.target.value as BankCode);
+              {/* Ronda 30: el Select de Cadence (antes el <select> del navegador). */}
+              <Select
+                name="banco-nuevo"
+                value={banco || undefined}
+                onValueChange={(v) => {
+                  setBanco(v as BankCode);
                   limpiarDelServidor('banco');
                 }}
               >
-                <option value="">Escoge el banco</option>
-                {COLOMBIAN_BANKS.map((b) => (
-                  <option key={b.code} value={b.code}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  id="banco-nuevo"
+                  className="w-full"
+                  aria-invalid={Boolean(erroresDelServidor.banco) || undefined}
+                  aria-describedby="banco-nuevo-error"
+                >
+                  <SelectValue placeholder="Escoge el banco" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COLOMBIAN_BANKS.map((b) => (
+                    <SelectItem key={b.code} value={b.code}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <ErrorDelCampo id="banco-nuevo-error" mensaje={erroresDelServidor.banco} className="mt-0" />
             </div>
             <RadioGroup

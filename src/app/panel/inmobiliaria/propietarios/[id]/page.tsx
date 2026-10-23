@@ -48,6 +48,33 @@ import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InterruptorDeWhatsapp } from '@/components/messages/InterruptorDeWhatsapp';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
+import { Badge } from '@/components/ui/badge';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
+
+/** Ronda 30 (regla de Nico: listas con paginación): inmuebles y giros del propietario, de a 10. */
+function ListaPaginada<T extends { id: string }>({ items, render }: { items: T[]; render: (item: T) => React.ReactNode }) {
+  const pag = useTablePagination(items, {});
+  return (
+    <div className="space-y-4">
+      <Stagger className="space-y-4">
+        {pag.pageItems.map((item) => (
+          <StaggerItem key={item.id}>{render(item)}</StaggerItem>
+        ))}
+      </Stagger>
+      {items.length > 0 ? (
+        <TablePagination
+          total={pag.total}
+          page={pag.page}
+          pageSize={pag.pageSize}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          onPageChange={pag.setPage}
+          onPageSizeChange={pag.setPageSize}
+        />
+      ) : null}
+    </div>
+  );
+}
 import { SegmentedControl, IconButton, CrossFade, Pressable, Stagger, StaggerItem } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
@@ -207,12 +234,13 @@ function PropertyCard({
         ? consignacion.copropietarios.find((c) => c.propietarioId === propietarioId)?.participacionBps ?? null
         : null;
 
+  // Ronda 30: el estado en el Badge de la casa (antes una pastilla de color; «arrendado» en azul voltaje).
   const statusColors = {
-    available: 'bg-success-soft text-success',
-    rented: 'bg-primary-soft text-primary',
-    in_process: 'bg-warning-soft text-warning',
-    maintenance: 'bg-danger-soft text-danger',
-  };
+    available: 'success',
+    rented: 'secondary',
+    in_process: 'warning',
+    maintenance: 'destructive',
+  } as const;
 
   const statusLabels = {
     available: t('inmobiliaria.portafolio.status.available'),
@@ -273,9 +301,9 @@ function PropertyCard({
                 </span>
               )}
             </div>
-            <span className={cn('px-2 py-1 rounded-full text-caption font-medium shrink-0', statusColors[consignacion.availability])}>
+            <Badge variant={statusColors[consignacion.availability] ?? 'secondary'} className="shrink-0">
               {statusLabels[consignacion.availability]}
-            </span>
+            </Badge>
           </div>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3">
@@ -351,11 +379,11 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
   const { t, locale } = useI18n();
 
   const statusColors = {
-    pending: 'bg-warning-soft text-warning',
-    processing: 'bg-primary-soft text-primary',
-    completed: 'bg-success-soft text-success',
-    failed: 'bg-danger-soft text-danger',
-  };
+    pending: 'warning',
+    processing: 'secondary',
+    completed: 'success',
+    failed: 'destructive',
+  } as const;
 
   const statusLabels = {
     pending: t('inmobiliaria.dispersiones.status.pending'),
@@ -401,9 +429,9 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
         <p className="font-mono text-sm tabular-nums text-foreground">
           {formatCurrency(dispersion.netToPropietario)}
         </p>
-        <span className={cn('text-caption font-medium px-2 py-0.5 rounded-full', statusColors[dispersion.status])}>
+        <Badge variant={statusColors[dispersion.status] ?? 'secondary'}>
           {statusLabels[dispersion.status]}
-        </span>
+        </Badge>
       </div>
     </div>
   );
@@ -977,7 +1005,7 @@ function PropietarioDetailContent() {
                       mientras cargaba como cuando la petición se caía. */}
                   {!vePortafolio && !cargandoPermisos && (
                     <div
-                      className="p-4 rounded-lg border border-dashed border-border bg-surface text-sm text-fg-muted"
+                      className="p-4 rounded-lg bg-surface-muted text-sm text-fg-muted"
                       data-testid="propietario-portafolio-oculto"
                     >
                       {t('inmobiliaria.propietarios.detail.portafolioOculto')}
@@ -1003,10 +1031,10 @@ function PropietarioDetailContent() {
                         </div>
                       }
                     >
-                      <Stagger className="space-y-4">
-                        {consignaciones.map((consignacion) => (
-                          <StaggerItem key={consignacion.id}>
-                            <PropertyCard
+                      <ListaPaginada
+                        items={consignaciones}
+                        render={(consignacion) => (
+                          <PropertyCard
                               consignacion={consignacion}
                               propietarioId={propietario.id}
                               inmueble={propietario.inmuebles?.find((i) => i.consignacionId === consignacion.id) ?? null}
@@ -1016,9 +1044,8 @@ function PropietarioDetailContent() {
                                 ) ?? false
                               }
                             />
-                          </StaggerItem>
-                        ))}
-                      </Stagger>
+                        )}
+                      />
                     </EstadoDeDatos>
                   )}
                 </div>
@@ -1048,7 +1075,7 @@ function PropietarioDetailContent() {
                                 <span className="flex items-center gap-2">
                                   {t('inmobiliaria.propietarios.detail.payments')}
                                   {!cargandoDispersiones && !errorDispersiones && (
-                                    <span className="tabular-nums text-fg-muted">{dispersiones.length}</span>
+                                    <span className="font-mono tabular-nums text-fg-muted">{dispersiones.length}</span>
                                   )}
                                 </span>
                               ),
@@ -1076,13 +1103,10 @@ function PropietarioDetailContent() {
                               </div>
                             }
                           >
-                            <Stagger className="space-y-4">
-                              {dispersiones.map((dispersion) => (
-                                <StaggerItem key={dispersion.id}>
-                                  <PaymentHistoryItem dispersion={dispersion} />
-                                </StaggerItem>
-                              ))}
-                            </Stagger>
+                            <ListaPaginada
+                              items={dispersiones}
+                              render={(dispersion) => <PaymentHistoryItem dispersion={dispersion} />}
+                            />
                           </EstadoDeDatos>
                         )}
                         {/* Los inmuebles salen de las consignaciones ya leídas: el

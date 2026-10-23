@@ -489,9 +489,9 @@ function ConciliacionConexiones() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <EncabezadoDePantalla
-        seccion="Conciliación bancaria"
+        seccion="Agentes IA" // Ronda 30: el mismo sobretítulo que la raíz de Conciliación (antes uno distinto)
         titulo="Conexiones"
-        descripcion="Las fuentes de movimientos (bancos, pasarelas y extractos) que alimentan la conciliación. Nunca guardamos credenciales, sólo una referencia segura."
+        descripcion="Los bancos, pasarelas y extractos de donde salen los movimientos. Nunca guardamos credenciales."
       />
 
       {/* LA RESPUESTA: cuántas fuentes están vivas, de cuántas (antes una

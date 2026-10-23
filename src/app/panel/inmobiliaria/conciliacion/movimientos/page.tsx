@@ -48,9 +48,9 @@ function ConciliacionMovimientos() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
-        seccion="Conciliación bancaria"
+        seccion="Agentes IA" // Ronda 30: el mismo sobretítulo que la raíz de Conciliación (antes uno distinto)
         titulo="Movimientos"
-        descripcion="Cada línea del extracto se cruza con las cuotas que tienen saldo; conciliarla emite el recibo de caja. Nada entra sin que alguien lo confirme."
+        descripcion="Cada línea del extracto se cruza con las cuotas con saldo; conciliarla emite el recibo de caja."
         accionPrincipal={
           // Revisora r25 (Movimientos #3): cargar es la acción del encabezado; la cola va primero.
           puedeCargar ? (

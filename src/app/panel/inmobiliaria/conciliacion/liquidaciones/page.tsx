@@ -26,7 +26,7 @@
  * fallan avisan con un toast honesto y dejan la fila intacta.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { toast } from '@/components/ui/toast'
 import { Receipt, ShieldCheck } from '@phosphor-icons/react'
@@ -92,11 +92,12 @@ import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 type StatusFilter = SettlementStatus | 'todos'
 
 const STATUS_FILTERS: ReadonlyArray<{ value: StatusFilter; label: string }> = [
+  // Ronda 30 (revisora r27): todas en femenino, como «liquidaciones» (antes «Todas» y «Aprobado»).
   { value: 'todos', label: 'Todas' },
   { value: 'borrador', label: 'Borrador' },
-  { value: 'pendiente_aprobacion', label: 'Pendiente' },
-  { value: 'aprobado', label: 'Aprobado' },
-  { value: 'pagado', label: 'Pagado' },
+  { value: 'pendiente_aprobacion', label: 'Pendientes' },
+  { value: 'aprobado', label: 'Aprobadas' },
+  { value: 'pagado', label: 'Pagadas' },
 ]
 
 const STATUS_LABEL: Record<SettlementStatus, string> = {
@@ -280,6 +281,20 @@ function ConciliacionLiquidaciones() {
   const { items, isLoading, error, errorCrudo, refetch, generateSettlement, approveSettlement } =
     useConciliacionSettlements(filters)
 
+  /* Ronda 30 (revisora r27, C11): el conteo de cada estado sale de la lista de «Todas» (el micro filtra y
+     sólo cuenta lo pedido); se guarda la última leída. En cero no se pinta. */
+  // Sin estado (un efecto que guarda el conteo re-pinta en bucle si la lista llega como arreglo nuevo):
+  // se calcula con lo leído y se recuerda el último en una ref.
+  const conteoLeido = useMemo(() => {
+    if (statusFilter !== 'todos' || isLoading || error) return null
+    const c: Record<string, number> = { todos: items.length }
+    for (const it of items) c[it.status] = (c[it.status] ?? 0) + 1
+    return c
+  }, [statusFilter, isLoading, error, items])
+  const ultimoConteo = useRef<Record<string, number> | null>(null)
+  if (conteoLeido) ultimoConteo.current = conteoLeido
+  const conteoPorEstado = conteoLeido ?? ultimoConteo.current
+
   // El recorte es de presentación: el filtro por estado ya viajó al backend,
   // así que el `resetKey` es el propio filtro — cambiarlo vuelve a la página 1.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
@@ -409,7 +424,7 @@ function ConciliacionLiquidaciones() {
           del AGENTE, con su propio registro; las del mes —las que salen de las
           cuotas del contrato y se giran— viven en Pagos: la descripción lo dice. */}
       <EncabezadoDePantalla
-        seccion="Conciliación bancaria"
+        seccion="Agentes IA" // Ronda 30: el mismo sobretítulo que la raíz de Conciliación (antes uno distinto)
         // Revisora r25 (#1): se llama por lo que es —el registro del agente—, no igual que «Pagos ›
         // Liquidaciones»; la descripción en una línea, con la salida a los giros del mes en gris.
         titulo="Lo que registró el agente"
@@ -457,8 +472,13 @@ function ConciliacionLiquidaciones() {
             pestanas={STATUS_FILTERS.map((f) => ({
               valor: f.value,
               etiqueta: f.label,
-              cuantos: f.value === statusFilter && !isLoading && !error ? items.length : null,
-              fija: true,
+              cuantos:
+                f.value === statusFilter && !isLoading && !error
+                  ? items.length
+                  : conteoPorEstado
+                    ? (conteoPorEstado[f.value] ?? 0)
+                    : null,
+              fija: f.value === 'todos',
               testid: `liquidaciones-estado-${f.value}`,
             }))}
           />

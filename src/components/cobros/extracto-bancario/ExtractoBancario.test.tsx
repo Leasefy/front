@@ -366,7 +366,7 @@ describe('ExtractoBancario — pendientes', () => {
     await montar();
     const fila = $('[data-testid="movimiento-m-s"]');
     expect(fila.textContent).toContain('Salida');
-    expect(fila.textContent).toContain('−$\u00a045.000');
+    expect(fila.textContent).toContain('− $\u00a045.000'); // ronda 30: «− $ 45.000», con el espacio
     // Seguimiento 6: el cajón del movimiento con lo que propone el agente (las salidas también).
     expect(Array.from(fila.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual([
       'Ignorar',

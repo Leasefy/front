@@ -25,7 +25,7 @@
  */
 
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { toast } from '@/components/ui/toast'
 import { CheckCircle, ShieldCheck, XCircle } from '@phosphor-icons/react'
 
@@ -196,6 +196,24 @@ function ConciliacionCola() {
     useConciliacionQueue(queueFilters)
   const { bulkConfirmByIds } = useConciliacionBulk()
 
+  /* Ronda 30 (revisora r27): el conteo de cada tipo sale de la lista de «Todos» (el micro no lo manda);
+     se guarda la última que se leyó para que las pestañas lo sigan diciendo al filtrar. Los tipos en
+     cero no se pintan y, sin datos (cargando o con fallo), no hay pestañas. */
+  // Sin estado (un efecto que guarda el conteo re-pinta en bucle si la lista llega como arreglo nuevo):
+  // se calcula con lo leído y se recuerda el último en una ref.
+  const conteoLeido = useMemo(() => {
+    if (caseFilter !== 'todos' || isLoading || error) return null
+    const c: Record<string, number> = { todos: items.length }
+    for (const it of items) {
+      const tipo = (it as { caseType?: string | null }).caseType
+      if (tipo) c[tipo] = (c[tipo] ?? 0) + 1
+    }
+    return c
+  }, [caseFilter, isLoading, error, items])
+  const ultimoConteo = useRef<Record<string, number> | null>(null)
+  if (conteoLeido) ultimoConteo.current = conteoLeido
+  const conteoPorTipo = conteoLeido ?? ultimoConteo.current
+
   // El recorte es de presentación: el filtro ya viajó al backend, así que el
   // `resetKey` es el propio filtro — cambiarlo vuelve a la página 1.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
@@ -311,7 +329,7 @@ function ConciliacionCola() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado común — el conteo lo dice el pie de la tabla, no un KPI suelto. */}
       <EncabezadoDePantalla
-        seccion="Conciliación bancaria"
+        seccion="Agentes IA" // Ronda 30: el mismo sobretítulo que la raíz de Conciliación (antes uno distinto)
         titulo={t('inmobiliaria.ai.workspace.pages.conciliacion.colaTitle')}
         descripcion={t('inmobiliaria.ai.workspace.pages.conciliacion.colaDesc')}
       />
@@ -326,6 +344,7 @@ function ConciliacionCola() {
         {/* Revisora r25 (Por revisar #1): los tipos como PestanasDeEstado en su riel de lado
             (a 390 eran tres renglones de pastillas). El micro filtra por tipo y no manda el
             conteo de cada uno: el número va en la pestaña abierta (lo que se leyó). */}
+        {error && !conteoPorTipo ? null : (
         <div className="border-b border-border p-4 empty:hidden">
           <PestanasDeEstado
             etiqueta="Filtrar por tipo de caso"
@@ -337,12 +356,18 @@ function ConciliacionCola() {
             pestanas={CASE_TYPE_FILTERS.map((f) => ({
               valor: f.value,
               etiqueta: f.label,
-              cuantos: f.value === caseFilter && !isLoading && !error ? items.length : null,
-              fija: true,
+              cuantos:
+                f.value === caseFilter && !isLoading && !error
+                  ? items.length
+                  : conteoPorTipo
+                    ? (conteoPorTipo[f.value] ?? 0)
+                    : null,
+              fija: f.value === 'todos',
               testid: `tipo-${f.value}`,
             }))}
           />
         </div>
+        )}
 
         {/* Carga y fallo por fuera del cuerpo; el vacío va DENTRO, para que los
             encabezados de la tabla se sigan viendo. */}

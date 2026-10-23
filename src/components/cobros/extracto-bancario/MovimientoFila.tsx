@@ -261,7 +261,7 @@ export function MovimientoFila({
                       </span>
                     )}
                     {mejor.seguro && (
-                      <span className="inline-flex items-center gap-1 text-caption font-medium text-primary">
+                      <span className="inline-flex items-center gap-1 text-caption font-medium text-success">
                         <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Seguro
                       </span>
                     )}

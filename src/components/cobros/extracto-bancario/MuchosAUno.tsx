@@ -308,8 +308,11 @@ function PropuestaClara({
       </AnimatePresence>
 
       <div className="flex flex-wrap items-center gap-2">
+        {/* Ronda 30 (revisora r27, un solo azul): aprobar la propuesta va en tinta (decidir); el azul es
+            «Cargar el extracto» del encabezado. */}
         <Button
           size="sm"
+          variant="ink"
           hideArrow
           disabled={!puedeConciliar || ocupado || sinTabla || !seDejaEnviar(estado) || envio.enviando}
           isLoading={envio.enviando}

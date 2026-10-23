@@ -421,7 +421,7 @@ function ConciliacionConfiguracion() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <EncabezadoDePantalla
-        seccion="Conciliación bancaria"
+        seccion="Agentes IA" // Ronda 30: el mismo sobretítulo que la raíz de Conciliación (antes uno distinto)
         titulo={t('inmobiliaria.ai.workspace.pages.comun.configTitle')}
         descripcion={t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
       />

@@ -558,11 +558,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
                         icono={Bank}
                         titulo={vacioDeLaPestana.titulo}
                         descripcion={vacioDeLaPestana.descripcion}
-                        crear={
-                          pestana === 'PENDIENTE' && puedeConciliar && idDeCarga
-                            ? { label: 'Cargar el extracto', href: `#${idDeCarga}` }
-                            : undefined
-                        }
+                        /* Ronda 30 (revisora r27): «Cargar el extracto» ya es la acción del encabezado: una. */
                       />
                     )}
                   </TableCell>

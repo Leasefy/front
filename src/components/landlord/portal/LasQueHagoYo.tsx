@@ -9,11 +9,12 @@
  */
 
 import { useState } from 'react';
-import { CheckCircle, Clock, Wrench } from '@phosphor-icons/react';
-import { Presence } from '@leasefy/cadence';
+import { CheckCircle, Clock } from '@phosphor-icons/react';
+import { Presence, StatusBadge } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { diaEnColombia, fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 
@@ -51,27 +52,28 @@ function UnaQueHagoYo({ r, onCambio }: { r: ReparacionQueHagoYo; onCambio: () =>
   return (
     <Card className="space-y-3 p-5" data-testid={terminada ? 'reparacion-que-hice-yo' : 'reparacion-que-hago-yo'}>
       <div className="min-w-0 space-y-1">
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           {r.inmobiliaria} · {r.inmueble}
         </p>
-        <h3 className="text-base font-semibold text-fg">{r.reparacion.titulo}</h3>
-        {r.reparacion.descripcion && <p className="text-sm text-fg-muted">{r.reparacion.descripcion}</p>}
+        <h3 className="text-base font-medium text-fg">{r.reparacion.titulo}</h3>
+        {r.reparacion.descripcion && <p className="text-body-sm text-fg-muted">{r.reparacion.descripcion}</p>}
       </div>
       {terminada ? (
-        <p className="flex items-center gap-1.5 text-sm text-success">
-          <CheckCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
-          Avisaste que quedó lista el {fechaEnFrase(r.terminadaAt)}.
-        </p>
+        // El estado por su punto y su palabra (Cadence 2), con la fecha al lado.
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge tone="success">Lista</StatusBadge>
+          <p className="text-body-sm text-fg-muted">Avisaste que quedó lista el {fechaEnFrase(r.terminadaAt)}.</p>
+        </div>
       ) : (
         <>
-          <p className="text-sm text-fg">
+          <p className="text-body-sm text-fg">
             {r.loDecidio === 'PROPIETARIO'
               ? `Respondiste que la haces tú el ${fechaEnFrase(r.desde)}.`
               : `Quedaste con tu inmobiliaria en que la haces tú (${fechaEnFrase(r.desde)}).`}
             {r.nota ? ` «${r.nota}»` : ''} No se te descuenta nada.
           </p>
           {r.venceAt && (
-            <p className={vencida ? 'flex items-center gap-1.5 text-sm text-danger' : 'flex items-center gap-1.5 text-sm text-fg-muted'}>
+            <p className={vencida ? 'flex items-center gap-1.5 text-body-sm text-danger' : 'flex items-center gap-1.5 text-body-sm text-fg-muted'}>
               <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
               {vencida
                 ? `Tu inmobiliaria la esperaba lista el ${fechaEnFrase(r.venceAt)}. Si no la puedes hacer, avísale: la retoma ella.`
@@ -79,12 +81,12 @@ function UnaQueHagoYo({ r, onCambio }: { r: ReparacionQueHagoYo; onCambio: () =>
             </p>
           )}
           <Presence show={avisando} direction="down">
-            <label htmlFor={`ya-quedo-${r.solicitudId}`} className="text-sm font-medium text-fg">
-              ¿Algo que deba saber tu inmobiliaria? <span className="font-normal text-fg-muted">(opcional)</span>
+            <label htmlFor={`ya-quedo-${r.solicitudId}`} className="text-body-sm text-fg">
+              ¿Algo que deba saber tu inmobiliaria? <span className="text-fg-muted">(opcional)</span>
             </label>
-            <textarea
+            <Textarea
               id={`ya-quedo-${r.solicitudId}`}
-              className="mt-1.5 w-full rounded-md border border-border bg-surface p-2 text-sm text-fg"
+              className="mt-1.5"
               rows={2}
               maxLength={500}
               placeholder="Ej.: Se cambió el empaque y se selló la unión."
@@ -124,12 +126,10 @@ export function LasQueHagoYo({
   const hechas = reparaciones.filter((r) => r.terminadaAt !== null);
   return (
     <section className="space-y-3" aria-label="Las que haces tú" data-testid="las-que-hago-yo">
+      {/* El título de la sección como «Por aprobar»: liviano, sin ícono. */}
       <div className="space-y-0.5">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-fg">
-          <Wrench className="h-4 w-4" aria-hidden="true" />
-          Las que haces tú
-        </h2>
-        <p className="text-xs text-fg-muted">
+        <h2 className="text-sm font-medium text-fg">Las que haces tú</h2>
+        <p className="text-caption text-fg-muted">
           Las haces por tu cuenta, con quien tú quieras. Cuando quede, avísale a tu inmobiliaria con «Ya quedó».
         </p>
       </div>

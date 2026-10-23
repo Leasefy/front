@@ -25,6 +25,7 @@ import { Presence } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -157,15 +158,13 @@ function Pendiente({
           <p className="text-caption text-fg-muted">
             Si la apruebas, no se te descuenta de una vez: se te descuenta de tus giros {planEnFrase(aprobacion.diferidaEn)}. Pedida el {fecha(aprobacion.pedidaAt)}.
           </p>
+          {/* Glow up 23-10: cada mes en arena con su cifra en mono (antes pastillas con borde). */}
           <ul className="flex flex-wrap gap-1.5">
             {[...aprobacion.diferidaEn]
               .sort((a, b) => a.mes.localeCompare(b.mes))
               .map((m) => (
-                <li
-                  key={m.mes}
-                  className="rounded-full border border-border bg-surface-muted px-2.5 py-0.5 text-caption text-fg"
-                >
-                  {mesCorto(m.mes)} · {formatCurrency(m.valorCop)}
+                <li key={m.mes} className="rounded-lg bg-surface-muted px-2.5 py-1 text-caption text-fg">
+                  {mesCorto(m.mes)} · <span className="font-mono tabular-nums">{formatCurrency(m.valorCop)}</span>
                 </li>
               ))}
           </ul>
@@ -177,9 +176,8 @@ function Pendiente({
       )}
       {rechazando && (
         <div>
-          <textarea
+          <Textarea
             id={`motivo-${aprobacion.id}`}
-            className="w-full rounded-md border border-border bg-surface p-2 text-sm text-fg"
             rows={2}
             maxLength={MAX_LARGO_DEL_MOTIVO}
             placeholder="¿Por qué la rechazas? (opcional, lo lee tu inmobiliaria)"
@@ -196,13 +194,13 @@ function Pendiente({
         </div>
       )}
       <Presence show={laHagoYo} direction="down" className="space-y-1.5">
-        <p className="text-sm text-fg">
+        <p className="text-body-sm text-fg">
           La haces tú, por tu cuenta (con tu plomero o tú mismo): no se te descuenta nada y tu inmobiliaria no manda a nadie.
           Cuando quede, le avisas con «Ya quedó».
         </p>
-        <textarea
+        <Textarea
           id={`la-hago-yo-${aprobacion.id}`}
-          className="w-full rounded-md border border-border bg-surface p-2 text-sm text-fg"
+          aria-label="Quién la va a hacer"
           rows={2}
           maxLength={500}
           placeholder="¿Quién la va a hacer? (opcional, lo lee tu inmobiliaria)"
@@ -212,7 +210,7 @@ function Pendiente({
         />
       </Presence>
       {soloLaInmobiliaria && (
-        <p className="text-xs text-fg-muted" data-testid="la-hace-la-inmobiliaria">
+        <p className="text-caption text-fg-muted" data-testid="la-hace-la-inmobiliaria">
           Es de prioridad {aprobacion.prioridad === 'EMERGENCY' ? 'Emergencia' : 'Alta'}: la hace tu inmobiliaria, no da
           espera.
         </p>

@@ -4,7 +4,7 @@ import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla
 import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { User as UserIcon, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, FileText } from '@phosphor-icons/react';
+import { User as UserIcon, Phone, MapPin, Shield, Camera, FloppyDisk, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, FileText } from '@phosphor-icons/react';
 import {
   Collapse,
   CrossFade,
@@ -141,8 +141,6 @@ export default function PerfilPage() {
     },
   ];
 
-  const completedSteps = setupSteps.filter(s => s.completed).length;
-  const totalSteps = setupSteps.length;
 
   // Real verification signal: Supabase email confirmation (exposed by the auth
   // context). There is no phone/identity verification system in the backend,
@@ -359,11 +357,12 @@ export default function PerfilPage() {
 
   if (!user) {
     // ProtectedRoute guards this page; user is only briefly null during hydration.
-    return <div className="min-h-screen bg-bg" data-testid="perfil-loading" />;
+    return <div data-testid="perfil-loading" />;
   }
 
+  // Ronda 28 (revisora r27, CB): sin `min-h-screen`: el layout ya pone el fondo y suma la cabecera y el riel.
   return (
-    <div className="min-h-screen bg-bg">
+    <div>
       <div className="p-6 lg:p-8">
 
         {/* GLOW UP 22-10 (UX, como el panel): el encabezado común y lo que falta del perfil en la lista
@@ -377,7 +376,6 @@ export default function PerfilPage() {
           className="mb-8"
           soloLoQueFalta
           paraQue={locale === 'es' ? 'completar tu perfil' : 'complete your profile'}
-          descripcion={completedSteps < totalSteps ? t('profile.completion.completeFor') : undefined}
           requisitos={setupSteps.map((step) => ({
             id: step.id,
             titulo: step.label,
@@ -391,15 +389,16 @@ export default function PerfilPage() {
           data-testid="perfil-lo-que-falta"
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Profile Card */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Avatar Card */}
-            <div className="rounded-lg border border-border bg-surface overflow-hidden">
-              {/* GLOW UP 22-10: sin la franja azul de adorno ni el lápiz de vidrio encima (blanco sobre azul claro,
-                  casi no se veía): la foto arriba y «Cambiar foto» como botón con su nombre. */}
-              <div className="px-6 pb-6 pt-6">
-                {/* Hidden file input */}
+        <div className="space-y-6">
+          {/* Profile Form */}
+          <div className="space-y-6">
+            {/* Personal Information — Editar ↔ ver: las acciones y los campos se
+                cruzan (lo nuevo entra ya, lo viejo sale por encima). */}
+            <div className="rounded-lg border border-border bg-surface p-6">
+              {/* Ronda 28 (revisora r27): la foto en un renglón dentro de «Información personal». Antes una
+                  tarjeta aparte que repetía el nombre y el correo (a 390 los datos empezaban en ≈1.020 px),
+                  y «Verificaciones», una tarjeta para una fila: ahora el chulo va junto al correo. */}
+              <div className="mb-6 border-b border-border pb-6" data-testid="perfil-foto">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -407,169 +406,143 @@ export default function PerfilPage() {
                   onChange={handleFileSelect}
                   className="hidden"
                 />
-
-                <div className="relative mb-4 w-28">
-                  {/* Avatar circle with image preview */}
-                  <div
-                    className={cn(
-                      "w-28 h-28 rounded-full border-4 border-surface overflow-hidden",
-                      editingSection === 'avatar' && "cursor-pointer"
-                    )}
-                    onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
-                  >
-                    {(editingSection === 'avatar' ? (avatarPreview ?? savedAvatar) : savedAvatar) ? (
-                      <Image
-                        src={(editingSection === 'avatar' ? (avatarPreview ?? savedAvatar) : savedAvatar)!}
-                        alt="Avatar"
-                        width={112}
-                        height={112}
-                        className="w-full h-full object-cover"
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="relative size-16 shrink-0">
+                    <div
+                      className={cn('size-16 overflow-hidden rounded-full', editingSection === 'avatar' && 'cursor-pointer')}
+                      onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
+                    >
+                      {(editingSection === 'avatar' ? (avatarPreview ?? savedAvatar) : savedAvatar) ? (
+                        <Image
+                          src={(editingSection === 'avatar' ? (avatarPreview ?? savedAvatar) : savedAvatar)!}
+                          alt="Avatar"
+                          width={64}
+                          height={64}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        // Cadence 2: el Avatar del sistema (iniciales y tono del nombre), nunca a mano.
+                        <Avatar name={displayName || user.email || 'Tú'} size="xl" className="size-full" />
+                      )}
+                    </div>
+                    {editingSection === 'avatar' && (
+                      <IconButton
+                        variant="ghost"
+                        onClick={handleAvatarClick}
+                        className="absolute -bottom-1 -right-1 rounded-full bg-ink p-1.5 text-white hover:bg-ink/90"
+                        aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
+                        icon={<Camera className="h-3.5 w-3.5" />}
                       />
-                    ) : (
-                      // Cadence 2: el Avatar del sistema (iniciales y tono del nombre), nunca a mano.
-                      <Avatar name={displayName || user.email || 'Tú'} size="xl" className="size-full text-4xl" />
                     )}
                   </div>
-                  {editingSection === 'avatar' && (
-                    <IconButton
-                      variant="ghost"
-                      onClick={handleAvatarClick}
-                      className="absolute bottom-1 right-1 p-2.5 bg-ink rounded-full text-white hover:bg-ink/90"
-                      aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
-                      icon={<Camera className="w-4 h-4" />}
-                    />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-fg">{locale === 'es' ? 'Foto de perfil' : 'Profile photo'}</p>
+                    <p className="text-caption text-fg-muted">{locale === 'es' ? 'JPG o PNG, hasta 5 MB.' : 'JPG or PNG, up to 5 MB.'}</p>
+                  </div>
+                  {editingSection !== 'avatar' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      hideArrow
+                      onClick={() => setEditingSection('avatar')}
+                      aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
+                    >
+                      <Camera className="w-4 h-4" aria-hidden="true" />
+                      {locale === 'es' ? 'Cambiar foto' : 'Change photo'}
+                    </Button>
                   )}
                 </div>
-
-                {/* Avatar upload area when editing — se abre y se cierra con su altura. */}
-                <Collapse open={editingSection === 'avatar'}>
-                  <div
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    onClick={handleAvatarClick}
-                    className={cn(
-                      "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
-                      isDragging
-                        ? "border-primary/30 bg-primary-soft"
-                        : "border-border hover:border-primary/30 hover:bg-surface-muted"
-                    )}
-                  >
-                    {avatarPreview ? (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
-                            <Image
-                              src={avatarPreview}
-                              alt="Preview"
-                              width={40}
-                              height={40}
-                              className="w-full h-full object-cover"
-                            />
+                <div className="mt-4">
+                  {/* Avatar upload area when editing — se abre y se cierra con su altura. */}
+                  <Collapse open={editingSection === 'avatar'}>
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={handleAvatarClick}
+                      className={cn(
+                        "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
+                        isDragging
+                          ? "border-primary/30 bg-primary-soft"
+                          : "border-border hover:border-primary/30 hover:bg-surface-muted"
+                      )}
+                    >
+                      {avatarPreview ? (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
+                              <Image
+                                src={avatarPreview}
+                                alt="Preview"
+                                width={40}
+                                height={40}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="text-left">
+                              <p className="text-sm font-medium text-fg">
+                                {locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}
+                              </p>
+                              <p className="text-caption text-fg-muted">
+                                {locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}
+                              </p>
+                            </div>
                           </div>
-                          <div className="text-left">
-                            <p className="text-sm font-medium text-fg">
-                              {locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}
-                            </p>
-                            <p className="text-caption text-fg-muted">
-                              {locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}
-                            </p>
-                          </div>
+                          <IconButton
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveAvatar();
+                            }}
+                            className="p-2 rounded-md text-fg-subtle hover:text-danger hover:bg-danger-soft"
+                            aria-label={locale === 'es' ? 'Quitar imagen' : 'Remove image'}
+                            icon={<TrashSimple className="w-4 h-4" />}
+                          />
                         </div>
-                        <IconButton
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveAvatar();
-                          }}
-                          className="p-2 rounded-md text-fg-subtle hover:text-danger hover:bg-danger-soft"
-                          aria-label={locale === 'es' ? 'Quitar imagen' : 'Remove image'}
-                          icon={<TrashSimple className="w-4 h-4" />}
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        <Upload className="w-6 h-6 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
-                        <p className="text-sm font-medium text-fg-muted">
-                          {isDragging
-                            ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here')
-                            : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
-                        </p>
-                        <p className="text-caption text-fg-muted mt-1">
-                          {locale === 'es' ? 'Arrastra o haz clic • JPG, PNG (máx. 5MB)' : 'Drag or click • JPG, PNG (max 5MB)'}
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </Collapse>
+                      ) : (
+                        <>
+                          <Upload className="w-6 h-6 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
+                          <p className="text-sm font-medium text-fg-muted">
+                            {isDragging
+                              ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here')
+                              : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
+                          </p>
+                          <p className="text-caption text-fg-muted mt-1">
+                            {locale === 'es' ? 'Arrastra o haz clic • JPG, PNG (máx. 5MB)' : 'Drag or click • JPG, PNG (max 5MB)'}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </Collapse>
 
-                <h2 className="text-h3 text-fg">{displayName}</h2>
-                <p className="text-sm text-fg-muted mt-1">{user.email}</p>
-                {editingSection !== 'avatar' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    hideArrow
-                    onClick={() => setEditingSection('avatar')}
-                    className="mt-4"
-                    aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
-                  >
-                    <Camera className="w-4 h-4" aria-hidden="true" />
-                    {locale === 'es' ? 'Cambiar foto' : 'Change photo'}
-                  </Button>
-                )}
-
-                {/* FloppyDisk/Cancel buttons for avatar section */}
-                <Collapse open={editingSection === 'avatar'}>
-                  <div className="flex items-center gap-2 mt-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      hideArrow
-                      onClick={handleCancelEdit}
-                      className="flex-1 rounded-md"
-                    >
-                      {t('common.cancel')}
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      hideArrow
-                      isLoading={isSaving}
-                      onClick={handleSaveAvatar}
-                      disabled={isSaving}
-                      className="flex-1"
-                    >
-                      {!isSaving && <FloppyDisk className="w-4 h-4" />}
-                      {t('common.save')}
-                    </Button>
+                    {/* FloppyDisk/Cancel buttons for avatar section */}
+                  <Collapse open={editingSection === 'avatar'}>
+                    <div className="flex items-center gap-2 mt-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        hideArrow
+                        onClick={handleCancelEdit}
+                        className="flex-1 rounded-md"
+                      >
+                        {t('common.cancel')}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        hideArrow
+                        isLoading={isSaving}
+                        onClick={handleSaveAvatar}
+                        disabled={isSaving}
+                        className="flex-1"
+                      >
+                        {!isSaving && <FloppyDisk className="w-4 h-4" />}
+                        {t('common.save')}
+                      </Button>
+                    </div>
+                  </Collapse>
                   </div>
-                </Collapse>
               </div>
-            </div>
-
-            {/* Verification Status Card — only real signals (Supabase email confirmation).
-                There is no phone/identity verification system in the backend. */}
-            {emailVerified && (
-              <div className="rounded-lg border border-border bg-surface p-6">
-                <h3 className="text-h3 text-fg mb-4">
-                  {t('profile.verification.title')}
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm text-fg">{locale === 'es' ? 'Correo' : 'Email'}</span>
-                    <StatusBadge tone="success">{t('profile.verification.verified')}</StatusBadge>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Profile Form */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information — Editar ↔ ver: las acciones y los campos se
-                cruzan (lo nuevo entra ya, lo viejo sale por encima). */}
-            <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-h3 text-fg">{t('profile.personalInfo')}</h3>
                 <CrossFade swapKey={editingSection === 'personal' ? 'editar' : 'ver'} mode="popLayout">
@@ -632,10 +605,7 @@ export default function PerfilPage() {
                       {errorDelCampo('firstName')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <UserIcon className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.firstName || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{user.firstName || notSet}</p>
                   )}
                 </div>
 
@@ -655,10 +625,7 @@ export default function PerfilPage() {
                       {errorDelCampo('lastName')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <UserIcon className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.lastName || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{user.lastName || notSet}</p>
                   )}
                 </div>
 
@@ -667,10 +634,11 @@ export default function PerfilPage() {
                     {locale === 'es' ? 'Correo' : 'Email'}
                   </label>
                   {/* Email is managed by the auth provider and is not editable here */}
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                    <Envelope className="w-4 h-4 text-fg-subtle" />
-                    <span className="text-sm text-fg">{user.email}</span>
-                  </div>
+                  <p className="flex flex-wrap items-center gap-2 py-1 text-sm text-fg">
+                    <span className="min-w-0 break-all">{user.email}</span>
+                    {/* Sólo la señal real (la confirmación del correo de Supabase): no hay verificación de celular ni de identidad. */}
+                    {emailVerified && <StatusBadge tone="success">{t('profile.verification.verified')}</StatusBadge>}
+                  </p>
                 </div>
 
                 <div>
@@ -690,10 +658,7 @@ export default function PerfilPage() {
                       {errorDelCampo('phone')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <Phone className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg font-mono tabular-nums">{user.phone ? celularLegible(user.phone) : notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg font-mono tabular-nums">{user.phone ? celularLegible(user.phone) : notSet}</p>
                   )}
                 </div>
 
@@ -721,10 +686,7 @@ export default function PerfilPage() {
                       )}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <Shield className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.rut || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{user.rut || notSet}</p>
                   )}
                 </div>
 
@@ -744,9 +706,7 @@ export default function PerfilPage() {
                       {errorDelCampo('birthDate')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <Calendar className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">
+                    <p className="py-1 text-sm text-fg">
                         {user.birthDate
                           ? new Date(user.birthDate.slice(0, 10) + 'T00:00:00').toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
                               day: 'numeric',
@@ -754,8 +714,7 @@ export default function PerfilPage() {
                               year: 'numeric',
                             })
                           : notSet}
-                      </span>
-                    </div>
+                      </p>
                   )}
                 </div>
 
@@ -775,10 +734,7 @@ export default function PerfilPage() {
                       {errorDelCampo('address')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <MapPin className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.address || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{user.address || notSet}</p>
                   )}
                 </div>
               </CrossFade>
@@ -849,10 +805,7 @@ export default function PerfilPage() {
                       {errorDelCampo('emergencyContactName')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <UserPlus className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.emergencyContactName || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{user.emergencyContactName || notSet}</p>
                   )}
                 </div>
                 <div>
@@ -872,10 +825,7 @@ export default function PerfilPage() {
                       {errorDelCampo('emergencyContactPhone')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <Phone className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{user.emergencyContactPhone || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{user.emergencyContactPhone || notSet}</p>
                   )}
                 </div>
               </CrossFade>

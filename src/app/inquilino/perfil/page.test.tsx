@@ -338,4 +338,15 @@ describe('Perfil del inquilino — glow up 22-10', () => {
     expect(container.querySelector('.bg-primary-soft.h-28')).toBeNull()
     expect(container.innerHTML).not.toContain('backdrop-blur')
   })
+
+  it('ronda 28: la foto es un renglón de «Información personal» y el chulo del correo va junto al correo (sin tarjetas aparte)', async () => {
+    await renderPage()
+    const foto = container.querySelector('[data-testid="perfil-foto"]')
+    expect(foto).not.toBeNull()
+    // La foto ya no repite el nombre: el nombre sale una vez, en sus campos.
+    expect(foto?.textContent).not.toContain('Laura')
+    const correo = [...container.querySelectorAll('p')].find((p) => p.textContent?.includes('laura@example.com'))
+    expect(correo?.textContent).toContain('profile.verification.verified')
+    expect(container.textContent).not.toContain('profile.verification.title')
+  })
 })

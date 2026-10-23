@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Pencil, FloppyDisk, House, CurrencyCircleDollar, MapPin, Calendar, PawPrint, ChatCircle, Sparkle } from '@phosphor-icons/react';
+import { Pencil, FloppyDisk, CurrencyCircleDollar, MapPin, Calendar, PawPrint, ChatCircle, Sparkle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -183,17 +183,16 @@ export function PreferencesSection() {
     <ErrorDelCampo id={`${idDelCampo(campo)}-error`} mensaje={errores[campo]} pista={pista} />
   );
 
-  const readonlyBox = (icon: React.ReactNode, value: string) => (
-    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-      {icon}
-      <span className="text-sm text-fg">{value}</span>
-    </div>
+  // Ronda 28 (revisora r27): leído, el dato va en texto (antes una caja gris con ícono que parecía un campo
+  // apagado); el campo aparece sólo al editar. El ícono se recibe para no tocar a quien llama.
+  const readonlyBox = (_icon: React.ReactNode, value: string) => (
+    <p className="py-1 text-sm text-fg">{value}</p>
   );
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-6">
+    <div className="rounded-lg border border-border bg-surface p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="font-semibold text-fg">
+        <h3 className="text-h3 text-fg">
           {locale === 'es' ? 'Preferencias de vivienda' : 'Housing preferences'}
         </h3>
         {!isEditing ? (
@@ -239,7 +238,7 @@ export function PreferencesSection() {
       </div>
 
       {loadState === 'error' && (
-        <div className="mb-4 flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-warning-soft">
+        <div className="mb-4 flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-warning-soft">
           <p className="text-sm text-warning">
             {locale === 'es'
               ? 'No pudimos cargar tus preferencias. Reintenta para poder editarlas.'
@@ -266,7 +265,7 @@ export function PreferencesSection() {
                 value={form.minBudget}
                 onChange={(e) => set({ minBudget: e.target.value })}
                 placeholder="800000"
-                className="w-full rounded-xl bg-surface-muted"
+                className="w-full rounded-lg bg-surface-muted"
               />
               {errorDelCampo('minBudget')}
             </>
@@ -292,7 +291,7 @@ export function PreferencesSection() {
                 value={form.maxBudget}
                 onChange={(e) => set({ maxBudget: e.target.value })}
                 placeholder="1500000"
-                className="w-full rounded-xl bg-surface-muted"
+                className="w-full rounded-lg bg-surface-muted"
               />
               {errorDelCampo('maxBudget')}
             </>
@@ -317,7 +316,7 @@ export function PreferencesSection() {
                 value={form.preferredCities}
                 onChange={(e) => set({ preferredCities: e.target.value })}
                 placeholder={locale === 'es' ? 'Chapinero, Usaquén' : 'Chapinero, Usaquén'}
-                className="w-full rounded-xl bg-surface-muted"
+                className="w-full rounded-lg bg-surface-muted"
               />
               {/* La ayuda y el error se cruzan (decisión 1): nunca los dos a la vez. */}
               {errorDelCampo('preferredCities', locale === 'es' ? 'Separadas por comas' : 'Comma-separated')}
@@ -343,7 +342,7 @@ export function PreferencesSection() {
                 value={form.preferredAmenities}
                 onChange={(e) => set({ preferredAmenities: e.target.value })}
                 placeholder={locale === 'es' ? 'parqueadero, gimnasio' : 'parking, gym'}
-                className="w-full rounded-xl bg-surface-muted"
+                className="w-full rounded-lg bg-surface-muted"
               />
               {errorDelCampo('preferredAmenities', locale === 'es' ? 'Separadas por comas' : 'Comma-separated')}
             </>
@@ -367,7 +366,7 @@ export function PreferencesSection() {
                 value={fechaLocal(form.moveInDate)}
                 onChange={(d) => set({ moveInDate: aFechaIso(d) })}
                 placeholder={locale === 'es' ? 'Elige una fecha' : 'Pick a date'}
-                className="h-10 w-full min-w-0 rounded-xl bg-surface-muted"
+                className="h-10 w-full min-w-0 rounded-lg bg-surface-muted"
               />
               {errorDelCampo('moveInDate')}
             </>
@@ -391,7 +390,7 @@ export function PreferencesSection() {
               value={form.preferredContact}
               onChange={(e) => set({ preferredContact: e.target.value })}
               aria-label={locale === 'es' ? 'Contacto preferido' : 'Preferred contact'}
-              className="w-full h-10 px-4 rounded-xl bg-surface-muted border border-border text-sm text-fg"
+              className="w-full h-10 px-4 rounded-lg bg-surface-muted border border-border text-sm text-fg"
             >
               <option value="">{notSet}</option>
               <option value="whatsapp">WhatsApp</option>
@@ -415,7 +414,7 @@ export function PreferencesSection() {
           </label>
           {isEditing ? (
             <div className="space-y-3">
-              <label className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl cursor-pointer">
+              <label className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg cursor-pointer">
                 <input
                   type="checkbox"
                   checked={form.petFriendly}
@@ -434,7 +433,7 @@ export function PreferencesSection() {
                     value={form.petDetails}
                     onChange={(e) => set({ petDetails: e.target.value })}
                     placeholder={locale === 'es' ? 'Ej: un gato' : 'E.g. one cat'}
-                    className="w-full rounded-xl bg-surface-muted"
+                    className="w-full rounded-lg bg-surface-muted"
                   />
                   {errorDelCampo('petDetails')}
                 </div>
@@ -453,9 +452,8 @@ export function PreferencesSection() {
         {/* Bedrooms / property types — not edited here; values round-trip on save */}
         {(display.preferredBedrooms != null || display.preferredPropertyTypes.length > 0) && (
           <div className="md:col-span-2">
-            <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-              <House className="w-4 h-4 text-fg-subtle" />
-              <span className="text-xs text-fg-muted">
+            <div className="py-1">
+              <span className="text-caption text-fg-muted">
                 {[
                   display.preferredBedrooms != null
                     ? (locale === 'es'

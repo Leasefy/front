@@ -90,6 +90,8 @@ export default function AuditExplorerPage() {
     },
     {
       header: 'Sobre qué',
+      // Ronda 28 (revisora r27, T16): a 390 la tarjeta lleva cuándo, quién y la acción; lo demás, en el cajón.
+      enCelular: false,
       texto: (r) => (r.entity_type ? sobreQue(r.entity_type) : ''),
       cell: (r) => (
         <span className="text-caption text-fg-muted">{r.entity_type ? sobreQue(r.entity_type) : '—'}</span>
@@ -97,6 +99,7 @@ export default function AuditExplorerPage() {
     },
     {
       header: 'Inmobiliaria',
+      enCelular: false,
       texto: (r) => r.legal_name,
       cell: (r) => <span className="block max-w-[160px] truncate text-fg-muted">{r.legal_name ?? '—'}</span>,
     },
@@ -154,7 +157,7 @@ export default function AuditExplorerPage() {
             <Filtro etiqueta="Cédula del deudor" htmlFor="filtro-cedula" className="sm:w-48">
               <Input
                 id="filtro-cedula"
-                className="font-mono"
+                className="font-mono placeholder:font-sans"
                 inputMode="numeric"
                 data-etiqueta-adentro=""
                 value={debtorDoc}
@@ -165,11 +168,12 @@ export default function AuditExplorerPage() {
             <Filtro etiqueta="Número del registro afectado" htmlFor="filtro-entidad" className="sm:w-56">
               <Input
                 id="filtro-entidad"
-                className="font-mono"
+                className="font-mono placeholder:font-sans"
                 data-etiqueta-adentro=""
                 value={entityId}
                 onChange={(e) => setFilters({ entityId: e.target.value }, { resetPage: true })}
-                placeholder="Número del registro afectado"
+                // Ronda 28 (revisora r27): corto, para que no se corte («Número del registro afe…»).
+                placeholder="Número del registro"
               />
             </Filtro>
             <FiltroDeFechas

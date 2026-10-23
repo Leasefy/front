@@ -149,7 +149,9 @@ function Marco({
               'lg:sticky lg:top-20 lg:block lg:space-y-5',
               // Riel: una fila que se desliza con el dedo, a sangre en el celular.
               enRiel
-                ? '-mx-6 flex gap-1 overflow-x-auto px-6 pb-1 [scrollbar-width:none] lg:mx-0 lg:overflow-visible lg:px-0 lg:pb-0'
+                ? // Revisora r27: a 390 se cortaba en «Preferencia|» sin aviso; el borde derecho se desvanece (como el
+                  // riel del portal) para que se lea que hay más al deslizar.
+                  '-mx-6 flex gap-1 overflow-x-auto px-6 pb-1 [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_82%,transparent)] lg:mx-0 lg:overflow-visible lg:px-0 lg:pb-0 lg:[mask-image:none]'
                 : 'hidden',
             )}
           >

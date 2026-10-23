@@ -34,10 +34,11 @@ export default function MapeoContablePage() {
           <EncabezadoDePantalla
             seccion="Dinero"
             titulo="Mapeo contable"
-            descripcion="A qué cuenta del PUC va cada movimiento que el sistema asienta solo —los recibos de caja cuando entran, los giros a propietarios cuando el banco paga el lote, y las líneas de una factura de proveedor cuando se causa—."
+            // Revisora r25 (Mapeo, UI #3): una línea; los ejemplos, en la ayuda.
+            descripcion="A qué cuenta del PUC va cada movimiento que Leasefy asienta solo."
             ayuda={
               <ParaEntenderMas etiqueta="Para entender más" variante="secundario">
-                <p className="text-body-sm text-fg-muted">Sin una cuenta en un evento, ese asiento no se genera. En «Rubros del P&G» se dice, además, qué cuentas se leen para comparar el libro contra el presupuesto.</p>
+                <p className="text-body-sm text-fg-muted">Son los recibos de caja cuando entran, los giros a propietarios cuando el banco paga el lote y las líneas de una factura de proveedor cuando se causa. Sin una cuenta en un evento, ese asiento no se genera. En «Rubros del estado de resultados» (el P&G) se dice, además, qué cuentas se leen para comparar el libro contra el presupuesto.</p>
               </ParaEntenderMas>
             }
           />

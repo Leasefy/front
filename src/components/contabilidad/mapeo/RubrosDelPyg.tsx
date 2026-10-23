@@ -222,7 +222,7 @@ export function RubrosDelPyg() {
     );
   }
   if (error || !mapeo) {
-    return <FalloDeCarga error={error} queEs="el mapeo de rubros del P&G" onReintentar={cargar} />;
+    return <FalloDeCarga error={error} queEs="el mapeo de rubros del estado de resultados" onReintentar={cargar} />;
   }
 
   // Sin la migración 49 no hay tabla `mapeos_de_rubro`: se explica qué falta y
@@ -232,7 +232,7 @@ export function RubrosDelPyg() {
       <div className="space-y-4" data-testid="rubros-del-pyg">
         <FaltaLaMigracion
           motivo={mapeo.motivo}
-          queSeEspera="decir qué cuenta del PUC es cada rubro del P&G"
+          queSeEspera="decir qué cuenta del PUC es cada rubro del estado de resultados"
           mientrasTanto="El presupuesto sigue cargándose y comparándose igual; lo que queda en «—» es el real del libro de los rubros que no tienen una fuente propia."
           testId="rubros-sin-migracion"
         />
@@ -246,7 +246,7 @@ export function RubrosDelPyg() {
     <div className="space-y-5" data-testid="rubros-del-pyg">
       {mapeo.completo ? (
         <Banner variant="success" title="Todos los rubros sugeridos tienen su cuenta">
-          El presupuesto y el P&G pueden mostrar el real del libro al lado del presupuestado.
+          El presupuesto y el estado de resultados pueden mostrar el real del libro al lado del presupuestado.
         </Banner>
       ) : (
         <Banner

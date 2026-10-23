@@ -407,28 +407,46 @@ export function MapeoContable({
    * dos. La pestaña de rubros SÍ es un componente aparte porque no comparte nada
    * — tiene su propia consulta.
    */
+  /** ¿Alguna fila tiene algo que decir en «Propuesta»? (CB-05: igual a la elegida = nada que decir). */
+  const hayPropuestas = mapeo.eventos.some((e) => !(e.cuenta && !propuestaQueSirve(e, e.cuenta.id)));
+
   const cuerpoDeAsientos = (
     <div className="space-y-5" data-testid="mapeo-contable">
-      {/* LA RESPUESTA: cuántos eventos del recaudo ya saben a qué cuenta van. */}
+      {/* LA RESPUESTA: cuántos eventos del recaudo ya saben a qué cuenta van.
+          Revisora r25 (Mapeo #1): con todo completo, UNA línea verde y sin barra (antes «13 de 13», la
+          leyenda «Con cuenta 13» y «Todos los eventos tienen cuenta…»: tres veces lo mismo). */}
+      {mapeo.completo ? (
+        <p className="flex items-start gap-2 text-body-sm text-fg" data-testid="cifra-del-mapeo">
+          <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-success" weight="fill" aria-hidden="true" />
+          <span>
+            {mapeo.eventos.length === 1
+              ? 'El evento tiene su cuenta'
+              : `Los ${mapeo.eventos.length.toLocaleString(localeDeLasCifras())} eventos tienen su cuenta`}
+            : los cobros se causan al emitirse, y los recibos de caja, sus anulaciones y los lotes pagados se
+            asientan solos.
+          </span>
+        </p>
+      ) : (
       <CifraHeroe
-        rotulo="Eventos con cuenta"
-        cifra={`${(mapeo.eventos.length - sinCuenta.length).toLocaleString(localeDeLasCifras())} de ${mapeo.eventos.length.toLocaleString(localeDeLasCifras())}`}
-        contexto={mapeo.completo ? 'todos los asientos del recaudo se generan solos' : 'los que no tienen cuenta no generan su asiento'}
-        total={mapeo.eventos.length}
-        tramos={[
-          { clave: 'con', etiqueta: 'Con cuenta', monto: mapeo.eventos.length - sinCuenta.length, tono: 'exito', cifra: (mapeo.eventos.length - sinCuenta.length).toLocaleString(localeDeLasCifras()) },
-          { clave: 'sin', etiqueta: 'Sin cuenta', monto: sinCuenta.length, tono: 'aviso', cifra: sinCuenta.length.toLocaleString(localeDeLasCifras()) },
-        ]}
-        pie={
-          mapeo.completo ? (
-            <>
-              Todos los eventos tienen cuenta. Los cobros se causan al emitirse, y los recibos de caja,
-              sus anulaciones y los lotes pagados se asientan solos.
-            </>
-          ) : null
-        }
-        data-testid="cifra-del-mapeo"
-      />
+          rotulo="Eventos con cuenta"
+          cifra={`${(mapeo.eventos.length - sinCuenta.length).toLocaleString(localeDeLasCifras())} de ${mapeo.eventos.length.toLocaleString(localeDeLasCifras())}`}
+          contexto={mapeo.completo ? 'todos los asientos del recaudo se generan solos' : 'los que no tienen cuenta no generan su asiento'}
+          total={mapeo.eventos.length}
+          tramos={[
+            { clave: 'con', etiqueta: 'Con cuenta', monto: mapeo.eventos.length - sinCuenta.length, tono: 'exito', cifra: (mapeo.eventos.length - sinCuenta.length).toLocaleString(localeDeLasCifras()) },
+            { clave: 'sin', etiqueta: 'Sin cuenta', monto: sinCuenta.length, tono: 'aviso', cifra: sinCuenta.length.toLocaleString(localeDeLasCifras()) },
+          ]}
+          pie={
+            mapeo.completo ? (
+              <>
+                Todos los eventos tienen cuenta. Los cobros se causan al emitirse, y los recibos de caja,
+                sus anulaciones y los lotes pagados se asientan solos.
+              </>
+            ) : null
+          }
+          data-testid="cifra-del-mapeo"
+        />
+      )}
       {mapeo.completo ? null : (
         <Banner
           variant="warning"
@@ -539,7 +557,7 @@ export function MapeoContable({
               <TableHead>Evento</TableHead>
               <TableHead>Lado</TableHead>
               <TableHead className="min-w-[280px]">Cuenta del PUC</TableHead>
-              <TableHead>Propuesta</TableHead>
+              {hayPropuestas ? <TableHead>Propuesta</TableHead> : null}
             </TableRow>
           </TableHeader>
           <TableBodyAnimado className="max-md:block">
@@ -594,6 +612,9 @@ export function MapeoContable({
                   </div>
                   <ErrorDelCampo id={`mapeo-${e.evento}-error`} mensaje={errores[e.evento]} />
                 </TableCell>
+                {/* Revisora r25 (Mapeo, UI #1): sin propuestas que decir, la columna no sale (antes «—» en
+                    las 13 filas y, a 390, un «—» huérfano bajo cada selector). */}
+                {hayPropuestas ? (
                 <TableCell className="max-md:col-span-2 max-md:row-start-3 max-md:block max-md:p-0">
                   {/* 🔴 CB-05: la propuesta repetía, fila por fila, la cuenta que ya
                       estaba elegida. Sólo se dice cuando DIFIERE (o no hay cuenta). */}
@@ -639,6 +660,7 @@ export function MapeoContable({
                     </span>
                   )}
                 </TableCell>
+                ) : null}
               </TableRowAnimada>
             ))}
           </TableBodyAnimado>
@@ -668,7 +690,7 @@ export function MapeoContable({
           Asientos automáticos
         </TabsTrigger>
         <TabsTrigger value="rubros" data-testid="parte-rubros">
-          Rubros del P&G
+          Rubros del estado de resultados
         </TabsTrigger>
       </TabsList>
 

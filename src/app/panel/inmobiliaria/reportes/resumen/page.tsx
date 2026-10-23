@@ -26,8 +26,9 @@ import {
   useMantenimientos,
 } from '@/lib/hooks/useInmobiliaria';
 import { SIN_MEDIR, tasaMedida, tasaEnPantalla } from '@/lib/tasas';
-import { claveDelRotulo, fraseDeLasCifras, tasaDelTablero } from '@/lib/tasa-de-recaudo';
+import { BASE_POR_DEFECTO, claveDelRotulo, fraseDeLasCifras, tasaDelTablero } from '@/lib/tasa-de-recaudo';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
+import { plataPareja } from '@/lib/format';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
@@ -89,13 +90,16 @@ function AgentMiniCard({
   agent: Agente;
   t: (key: string, params?: Record<string, string | number>) => string;
 }) {
+  // Revisora r25: un asesor sin nombre salía como su correo con el avatar «HO» (de «hola+…»).
+  const sinNombre = !agent.name || agent.name.includes('@');
   return (
     <div className="flex items-center gap-3">
-      <Avatar name={agent.name} size="sm" />
+      <Avatar name={sinNombre ? '?' : agent.name} size="sm" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-fg truncate">
-          {agent.name}
+          {sinNombre ? 'Sin nombre' : agent.name}
         </p>
+        {sinNombre && agent.name ? <p className="truncate text-caption text-fg-subtle">{agent.name}</p> : null}
         <p className="text-caption text-fg-muted">
           {t(agent.metrics.closedThisMonth === 1 ? 'inmobiliaria.dashboard.team.closedThisMonthUno' : 'inmobiliaria.dashboard.team.closedThisMonth', { count: agent.metrics.closedThisMonth })}
         </p>
@@ -184,6 +188,7 @@ function ResumenDelNegocio() {
    * se pinta con su rótulo, y la pantalla no divide nada.
    */
   const tasa = tasaDelTablero(kpis);
+  // Revisora r25 (T5): la misma cifra y su leyenda con y sin centavos; plata pareja en todo el bloque.
   const tasaDeRecaudo = tasa.pct;
   const rotuloDeLaTasa = t(claveDelRotulo(tasa.base));
   /*
@@ -278,6 +283,7 @@ function ResumenDelNegocio() {
   const avisosDeLaDeuda = kpisData?.deuda?.avisos ?? [];
   const enMoraDelMes = Math.min(kpis.lateCollections, Math.max(0, kpis.expectedRevenue - kpis.collectedRevenue));
   const porVencer = Math.max(0, kpis.expectedRevenue - kpis.collectedRevenue - enMoraDelMes);
+  const plata = plataPareja([kpis.collectedRevenue, kpis.expectedRevenue, porVencer, enMoraDelMes]);
   const hayParaAtender =
     (carteraDelMes ? carteraDelMes.cuotasEnCartera > 0 : cobrosEnMora.length > 0) ||
     avisosDeLaDeuda.length > 0 ||
@@ -348,10 +354,10 @@ function ResumenDelNegocio() {
       <div className="rounded-lg border border-border bg-card p-5" data-testid="resumen-recaudo-del-mes">
         <CifraHeroe
           rotulo={t('inmobiliaria.dashboard.kpi.monthlyCollection')}
-          cifra={formatCurrency(kpis.collectedRevenue)}
+          cifra={plata(kpis.collectedRevenue)}
           contexto={
             <>
-              {tr('de {esperado} esperados', { esperado: formatCurrency(kpis.expectedRevenue) })} · {currentMonthLabel}
+              {tr('de {esperado} esperados', { esperado: plata(kpis.expectedRevenue) })} · {currentMonthLabel}
               {(() => {
                 const v = laVariacion(kpis.collectedRevenue, kpis.collectionTrend);
                 return v ? (
@@ -366,11 +372,11 @@ function ResumenDelNegocio() {
           }
           total={kpis.expectedRevenue}
           tramos={[
-            { clave: 'recaudado', etiqueta: t('inmobiliaria.dashboard.financial.collected'), monto: kpis.collectedRevenue, tono: 'exito', cifra: formatCurrency(kpis.collectedRevenue), siempre: true },
+            { clave: 'recaudado', etiqueta: t('inmobiliaria.dashboard.financial.collected'), monto: kpis.collectedRevenue, tono: 'exito', cifra: plata(kpis.collectedRevenue), siempre: true },
             /* Revisora r24 #2: la barra ES la leyenda —cada tramo con su monto (lo que falta = por vencer + en
                mora)— y los giros, que son un conteo, se fueron a «Para atender». */
-            { clave: 'pendiente', etiqueta: tr('Por vencer'), monto: porVencer, tono: 'neutro', cifra: formatCurrency(porVencer), siempre: true },
-            { clave: 'mora', etiqueta: t('inmobiliaria.dashboard.financial.late'), monto: enMoraDelMes, tono: 'critico', cifra: formatCurrency(enMoraDelMes), siempre: enMoraDelMes > 0 },
+            { clave: 'pendiente', etiqueta: tr('Por vencer'), monto: porVencer, tono: 'neutro', cifra: plata(porVencer), siempre: true },
+            { clave: 'mora', etiqueta: t('inmobiliaria.dashboard.financial.late'), monto: enMoraDelMes, tono: 'critico', cifra: plata(enMoraDelMes), siempre: enMoraDelMes > 0 },
           ]}
           pie={
             /* El pie: la tasa, con qué fórmula y sobre qué cifras se midió (la base puede ser lo emitido,
@@ -386,9 +392,13 @@ function ResumenDelNegocio() {
                   {' · '}
                   <MonoLabel data-testid="resumen-rotulo-de-la-tasa">{rotuloDeLaTasa}</MonoLabel>
                 </span>
-                <span className="tabular-nums" data-testid="resumen-cifras-de-la-tasa">
-                  {fraseDeLasCifras(tasa, t, formatCurrency)}
-                </span>
+                {/* Revisora r25: sobre lo causado, las cifras repetían las de arriba («$ X abonados de
+                    $ Y causados» bajo «$ X de $ Y esperados»); sólo se dicen si la base es otra. */}
+                {tasa.base !== BASE_POR_DEFECTO ? (
+                  <span className="tabular-nums" data-testid="resumen-cifras-de-la-tasa">
+                    {fraseDeLasCifras(tasa, t, plata)}
+                  </span>
+                ) : null}
               </p>
             </div>
           }
@@ -472,7 +482,9 @@ function ResumenDelNegocio() {
         <div className="empty:hidden"><AvisoTipoDeDocumento /></div>
       )}
 
-      <FranjaDeCifras aria-label={tr('El negocio')} data-testid="resumen-el-negocio">
+      {/* Revisora r25: los detalles se cortaban («744 arrendadas · 84 disponibles · 2 fu…»): de a
+          dos hasta 1280 px, para que la explicación que hace cuadrar las cifras se lea entera. */}
+      <FranjaDeCifras aria-label={tr('El negocio')} data-testid="resumen-el-negocio" fila="xl">
         <Cifra
           etiqueta={t('inmobiliaria.dashboard.kpi.totalProperties')}
           valor={miles(kpis.totalProperties)}

@@ -82,6 +82,7 @@ import { mesActual } from '@/lib/recaudo/meses';
 // CB-17: la plata de Contabilidad con UN formato («$ 1.234.567», «−$ 119.100»).
 import { plata as formatCurrency } from '@/lib/contabilidad/plata';
 import { cifrasDeLaPantalla } from '@/lib/i18n/idioma-de-las-cifras';
+import { sinMayusculasDeEnfasis } from '@/lib/texto/sin-mayusculas-de-enfasis';
 
 const NUMERO = cifrasDeLaPantalla();
 
@@ -115,6 +116,11 @@ export function rangoEnDias(tramo: { desdeDias: number; hastaDias: number | null
   return ultimo <= tramo.desdeDias
     ? `${tramo.desdeDias} días`
     : `De ${tramo.desdeDias} a ${ultimo} días`;
+}
+
+/** El aviso del back, como se lee en pantalla: sin mayúsculas de énfasis ni la coletilla interna. */
+function avisoEnLimpio(aviso: string): string {
+  return sinMayusculasDeEnfasis(aviso).replace(/\s*Confirmar con el contador\.?\s*$/i, '').trim();
 }
 
 export function DeterioroDeCarteraPanel() {
@@ -177,6 +183,7 @@ export function DeterioroDeCarteraPanel() {
   const provisionCop = totalProvisionado(tramos);
   const anteriorCop = datos?.provision?.provisionAnteriorCop ?? datos?.anterior?.provisionCop ?? 0;
   const movimiento = movimientoDelMes(provisionCop, anteriorCop);
+  const enCero = movimiento === 0 && provisionCop === 0 && anteriorCop === 0;
   const fuera = porcentajesFueraDeRango(tramos);
   const cambiado = hayCambios(datos?.calculo.tramos ?? [], porcentajes);
   const provision = datos?.provision ?? null;
@@ -290,8 +297,10 @@ export function DeterioroDeCarteraPanel() {
               <SinLaMigracion motivo={datos.motivo} queSeEspera="guardar la provisión del mes" />
             ) : null}
 
+            {/* Revisora r25 (Deterioro, UI): lo del back sin mayúsculas de énfasis («CAPITAL») y sin la
+                coletilla «Confirmar con el contador.», que ya dice el título (se leía como nota interna). */}
             <Avisos
-              avisos={datos.calculo.avisos}
+              avisos={datos.calculo.avisos.map(avisoEnLimpio)}
               testId="avisos-del-deterioro"
               titulo="Lo que el contador tiene que decidir antes de aprobar"
             />
@@ -311,14 +320,26 @@ export function DeterioroDeCarteraPanel() {
                 </>
               }
               pie={
+                enCero ? null : (
                 <>
                   {queSeAsienta(movimiento)} Cartera provisionable:{' '}
                   <span className="font-mono tabular-nums" data-testid="valor-cartera-provisionable">{formatCurrency(datos.calculo.carteraCop)}</span>{' '}
                   en {NUMERO.format(datos.calculo.cuotas)} cuotas.
                 </>
+                )
               }
               // C3 (revisora r25): sin provisión antes ni ahora, UNA línea y no tres cifras en cero.
-              esCero={movimiento === 0 && provisionCop === 0 && anteriorCop === 0}
+              // Revisora r25 (Deterioro #2): esa línea lo dice todo (antes, además, «No hay asiento que hacer…»).
+              esCero={enCero}
+              cuandoEsCero={
+                <>
+                  Nada que asentar este mes: la provisión sigue en{' '}
+                  <span className="font-mono tabular-nums text-fg" data-testid="valor-movimiento">{formatCurrency(0)}</span>. Cartera
+                  provisionable:{' '}
+                  <span className="font-mono tabular-nums" data-testid="valor-cartera-provisionable">{formatCurrency(datos.calculo.carteraCop)}</span>{' '}
+                  en {NUMERO.format(datos.calculo.cuotas)} cuotas.
+                </>
+              }
               data-testid="cifra-movimiento"
             />
 
@@ -336,11 +357,9 @@ export function DeterioroDeCarteraPanel() {
                     <TableHeader className="max-md:hidden">
                       <TableRow>
                         <TableHead>Tramo</TableHead>
-                        <TableHead>Días de mora</TableHead>
                         <TableHead className="text-right">Cartera</TableHead>
                         <TableHead className="text-right">Cuotas</TableHead>
                         <TableHead className="text-right">% a provisionar</TableHead>
-                        <TableHead className="text-right">Sugerido</TableHead>
                         <TableHead className="text-right">Provisión</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -351,11 +370,17 @@ export function DeterioroDeCarteraPanel() {
                           data-testid={`tramo-${t.desdeDias}`}
                           className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:items-center max-md:gap-x-4 max-md:gap-y-1.5 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3.5 max-md:last:border-0"
                         >
-                          <TableCell className="text-fg max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">{t.nombre}</TableCell>
-                          <TableCell className="text-fg-muted max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption">{rangoEnDias(t)}</TableCell>
+                          {/* Revisora r25 (Deterioro #1): «Tramo» y «Días de mora» decían lo mismo; el rango
+                              sólo va debajo cuando el nombre no lo dice. */}
+                          <TableCell className="text-fg max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
+                            {t.nombre}
+                            {/\d/.test(t.nombre) ? null : (
+                              <span className="block text-caption text-fg-muted">{rangoEnDias(t)}</span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right font-mono tabular-nums max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0 max-md:text-left max-md:text-caption max-md:text-fg-muted">
-                            {formatCurrency(t.carteraCop)}
-                            <span className="md:hidden"> en {NUMERO.format(t.cuotas)} cuotas</span>
+                            {t.carteraCop === 0 ? <span className="text-fg-subtle">—</span> : formatCurrency(t.carteraCop)}
+                            {t.cuotas > 0 ? <span className="md:hidden"> en {NUMERO.format(t.cuotas)} cuotas</span> : null}
                           </TableCell>
                           <TableCell className="text-right font-mono tabular-nums max-md:hidden">
                             {NUMERO.format(t.cuotas)}
@@ -376,22 +401,24 @@ export function DeterioroDeCarteraPanel() {
                                 }));
                               }}
                             />
-                          </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums text-fg-muted max-md:hidden">
-                            {t.porcentajeSugerido} %
+                            {t.porcentaje !== t.porcentajeSugerido ? (
+                              <span className="mt-1 block text-caption text-fg-muted" data-testid={`sugerido-${t.desdeDias}`}>
+                                Sugerido: {t.porcentajeSugerido} %
+                              </span>
+                            ) : null}
                           </TableCell>
                           <TableCell
                             className="text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0"
                             data-testid={`provision-${t.desdeDias}`}
                           >
-                            {formatCurrency(t.provisionCop)}
+                            {t.provisionCop === 0 ? <span className="text-fg-subtle">—</span> : formatCurrency(t.provisionCop)}
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                     <TableFooter className="max-md:block">
                       <TableRow className="max-md:flex max-md:items-center max-md:justify-between max-md:px-4 max-md:py-3">
-                        <TableCell colSpan={6} className="font-medium max-md:block max-md:p-0">
+                        <TableCell colSpan={4} className="font-medium max-md:block max-md:p-0">
                           Total provisionado
                         </TableCell>
                         <TableCell

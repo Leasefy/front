@@ -238,7 +238,8 @@ describe('deterioro de cartera', () => {
     await pintar();
     const avisos = texto('avisos-del-deterioro');
     expect(avisos).toContain('aseguradora');
-    expect(avisos).toContain('CAPITAL');
+    // C6 (revisora r25): sin mayúsculas de énfasis.
+    expect(avisos).toContain('el capital en cartera');
   });
 
   it('aprobar repite el número que se va a asentar antes del clic', async () => {

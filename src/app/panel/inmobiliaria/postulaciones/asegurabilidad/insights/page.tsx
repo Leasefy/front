@@ -58,7 +58,7 @@ export default function CotizadorInsightsPage() {
       {error && !isLoading ? (
         <FalloDeCarga
           error={error}
-          queEs="los insights de asegurabilidad"
+          queEs="el análisis de asegurabilidad"
           onReintentar={refetch}
         />
       ) : (

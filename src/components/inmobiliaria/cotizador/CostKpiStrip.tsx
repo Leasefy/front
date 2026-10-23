@@ -56,7 +56,8 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
       label: t('inmobiliaria.ai.cotizador.costos.kpiCostPerQuote'),
       value: enPesos(kpis?.costPerQuoteCop),
       Icon: CurrencyDollar,
-      iconColor: 'text-primary',
+      // Ronda 30: sin el ícono en azul (el azul es de la acción).
+      iconColor: 'text-fg-muted',
       caption: null,
     },
     {
@@ -94,7 +95,8 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
           {isLoading ? (
             <div className="h-6 w-16 rounded bg-surface-muted animate-pulse mt-1" />
           ) : (
-            <p className="text-xl font-medium text-fg mt-1">{value}</p>
+            // Ronda 30: la plata en mono tabular, como en el resto de la casa.
+            <p className="mt-1 font-mono text-xl font-medium tabular-nums text-fg">{value}</p>
           )}
           </CrossFade>
           {caption && (

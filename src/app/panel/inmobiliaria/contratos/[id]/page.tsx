@@ -38,6 +38,7 @@ import {
 } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { TerminarContrato } from '@/components/contratos/TerminarContrato';
+import { TerminacionConElPropietarioAviso } from '@/components/contratos/TerminacionConElPropietarioAviso';
 import { RenovarContratoVencido } from '@/components/contratos/RenovarContratoVencido';
 import { IncrementosDelContrato } from '@/components/contratos/IncrementosDelContrato';
 import { CesionDelInmueble } from '@/components/contratos/CesionDelInmueble';
@@ -207,6 +208,8 @@ function ContratoDetalleContent() {
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [terminarAbierto, setTerminarAbierto] = useState(false);
+  /** Portofino 22-10: se sube al pedirle el sí al propietario, para releer el aviso. */
+  const [versionDeLaTerminacion, setVersionDeLaTerminacion] = useState(0);
   const [cesionAbierta, setCesionAbierta] = useState(false);
   // QA-CONT CR-06: «Cambiar de inquilino» (punto de quiebre, hoy o antes).
   const [cambioDeInquilinoAbierto, setCambioDeInquilinoAbierto] = useState(false);
@@ -549,6 +552,16 @@ function ContratoDetalleContent() {
           (la tarjeta del escenario queda abajo, junto a Administración). */}
       <EscenarioDelArchivoPorRevisar contract={contract} />
 
+      {/* Portofino 22-10: la terminación que espera el sí del propietario va
+          arriba: mientras espera, es lo primero que hay que saber del contrato. */}
+      {(contract.status === 'active' || contract.status === 'signed') && (
+        <TerminacionConElPropietarioAviso
+          contractId={contract.id}
+          puedeEditar={canEditContracts}
+          version={versionDeLaTerminacion}
+        />
+      )}
+
       <ArriendoDelContrato
         contract={contract}
         vigencia={vigencia}
@@ -586,13 +599,17 @@ function ContratoDetalleContent() {
         <IncrementosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
       )}
 
+
       {canEditContracts && (
         <>
           <TerminarContrato
             contractId={contract.id}
             abierto={terminarAbierto}
             onCerrar={() => setTerminarAbierto(false)}
-            onTerminado={() => void refetch()}
+            onTerminado={() => {
+              setVersionDeLaTerminacion((v) => v + 1);
+              void refetch();
+            }}
           />
 
           <CesionDelInmueble

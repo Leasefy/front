@@ -57,6 +57,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { MOTIVO_EL_AUXILIAR_NO_APRUEBA_COSTOS, elAuxiliarNoApruebaCostos } from '@/lib/auth/lo-que-no-hacen-los-auxiliares';
+import { planEnFrase } from '@/lib/mantenimiento/reparacion-diferida';
 
 // ============================================================================
 // Types
@@ -334,6 +335,7 @@ function MantenimientosContent() {
         title: data.title,
         description: data.description,
         paidBy: data.paidBy,
+        ...(data.proveedorId ? { proveedorId: data.proveedorId } : {}),
       });
 
       // La solicitud ya existe: una foto que no sube NO la deshace. Se dice
@@ -472,6 +474,7 @@ function MantenimientosContent() {
               cotizacionPorAprobar.quoteId,
               emergencia.motivo,
               emergencia.soporte,
+              lo.diferir?.propietario ?? null,
             )
           : await mantenimientoApi.approveQuote(
               cotizacionPorAprobar.solicitudId,
@@ -489,12 +492,19 @@ function MantenimientosContent() {
         // Con el cargo puesto en su cuota se dice dónde quedó; sin él (base
         // sin la migración), los avisos del back dicen que se cobra aparte.
         const cargoAlInquilino = aprobada.cargo?.cargoAlInquilino;
+        // Portofino 22-10: lo del inquilino diferido se dice en sus meses.
+        const inquilinoEnMeses = aprobada.cargo?.diferida?.inquilino ?? null;
         const descripcion = cargoAlInquilino
           ? t('inmobiliaria.deducciones.cargoAlInquilino.aprobada', {
               valor: formatCurrency(cargoAlInquilino.valorCop),
               mes: mesEnTitulo(cargoAlInquilino.mes, locale === 'en' ? 'en' : 'es'),
             })
-          : aprobada.cargo?.avisos?.join(' ');
+          : [
+              inquilinoEnMeses?.length ? `Al inquilino se le cobra ${planEnFrase(inquilinoEnMeses)}.` : null,
+              ...(aprobada.cargo?.avisos ?? []),
+            ]
+              .filter(Boolean)
+              .join(' ');
         /*
          * 🔴 H-03: cada forma tiene su frase. Con una sola («aprobada») la
          * persona no sabría si quedó compartida o a cargo de la inmobiliaria,
@@ -954,6 +964,15 @@ function MantenimientosContent() {
         onCompletada={puedeEditar ? handleSolicitudCompletada : undefined}
         // SO-14 (04-10): calificar al proveedor al cerrar.
         onCalificado={puedeEditar ? recargarMantenimientos : undefined}
+        // Portofino 22-10: dejársela al propietario o retomarla.
+        onQuienLaHaceCambio={
+          puedeEditar
+            ? async () => {
+                await recargarMantenimientos();
+                setVersionDeAprobaciones((v) => v + 1);
+              }
+            : undefined
+        }
       />
 
       {/* Agregarle una cotización a una solicitud ya creada. Vive en la página
@@ -991,6 +1010,14 @@ function MantenimientosContent() {
         cotizacion={cotizacionDelDialogo}
         sugerencia={sugerenciaDelDialogo}
         preseleccion={preseleccionDelDialogo}
+        // Portofino 22-10: con prioridad Emergencia, la emergencia viene marcada.
+        prioridad={
+          cotizacionPorAprobar
+            ? mantenimientos.find((m) => m.id === cotizacionPorAprobar.solicitudId)?.priority ?? null
+            : null
+        }
+        // Portofino 22-10: para traer los meses donde se puede diferir.
+        solicitudId={cotizacionPorAprobar?.solicitudId ?? null}
         onConfirmar={aprobarCotizacion}
       />
 

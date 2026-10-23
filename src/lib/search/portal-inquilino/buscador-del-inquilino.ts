@@ -101,6 +101,7 @@ const SECCIONES: ReadonlyArray<{ id: string; titulo: string; detalle: string; hr
   { id: 'estado', titulo: 'Estado de cuenta', detalle: 'Lo que has pagado y lo que debes', href: '/inquilino/estado-de-cuenta', claves: 'estado cuenta saldo deuda recibos extracto' },
   { id: 'arriendo', titulo: 'Mi arriendo', detalle: 'Tu contrato y tu inmueble', href: '/inquilino/arriendo', claves: 'arriendo contrato inmueble apartamento casa' },
   { id: 'documentos', titulo: 'Documentos', detalle: 'Paz y salvo, certificados y tus documentos', href: '/inquilino/documentos', claves: 'documento paz salvo certificado retencion pdf' },
+  { id: 'servicios-publicos', titulo: 'Servicios públicos', detalle: 'Subir la factura pagada o un ajuste de la empresa de servicios', href: '/inquilino/servicios-publicos', claves: 'servicios publicos factura energia agua gas epm luz ajuste' },
   { id: 'solicitudes', titulo: 'Solicitudes', detalle: 'Peticiones, quejas, reclamos y reparaciones', href: '/inquilino/solicitudes', claves: 'pqrs solicitud peticion queja reclamo sugerencia reparacion dano' },
   { id: 'acuerdos', titulo: 'Acuerdos de pago', detalle: 'Tus acuerdos con la inmobiliaria', href: '/inquilino/acuerdos', claves: 'acuerdo cuotas plan' },
   { id: 'mensajes', titulo: 'Mensajes', detalle: 'Escríbele a la inmobiliaria', href: '/inquilino/mensajes', claves: 'mensaje chat escribir inmobiliaria' },

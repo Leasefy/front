@@ -1,5 +1,10 @@
 /**
- * La cola de cartas del incremento, en su propia pantalla (19-09-2026).
+ * «Incrementos» (Portofino, 22-10-2026) — antes la cola de cartas del
+ * incremento, en su propia pantalla (19-09-2026).
+ *
+ * 🔴 22-10: la cola se volvió la pantalla de los incrementos de un MES
+ * (renovados o no). Las pruebas de la cola se mudaron con ella: lo que D6
+ * garantizaba sigue garantizado. Al final, lo nuevo del 22-10.
  *
  * 🔴 Estas pruebas vivían en `BandejaDeCartasDelIncremento.test.tsx` cuando la
  * lista estaba encima de Renovaciones. Se mudaron con la lista, no se
@@ -20,13 +25,21 @@ import { act } from 'react';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const h = vi.hoisted(() => ({ params: new URLSearchParams(), canAccess: vi.fn(() => true) }));
+const h = vi.hoisted(() => ({
+  params: new URLSearchParams(),
+  canAccess: vi.fn(() => true),
+  replace: vi.fn(),
+}));
 
 vi.mock('@/lib/api/ciclo-de-vida.service', () => ({
   cicloDeVidaApi: { bandejaDeCartas: vi.fn(), enviarCarta: vi.fn(), verCarta: vi.fn() },
 }));
 vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock('next/navigation', () => ({ useSearchParams: () => h.params }));
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => h.params,
+  useRouter: () => ({ replace: h.replace }),
+  usePathname: () => '/panel/inmobiliaria/contratos/incrementos',
+}));
 vi.mock('@/lib/hooks/usePermissions', () => ({
   usePermissions: () => ({ canAccess: h.canAccess }),
 }));
@@ -44,7 +57,7 @@ vi.mock('next/link', () => ({
 
 import { cicloDeVidaApi, type CartaEnLaBandeja } from '@/lib/api/ciclo-de-vida.service';
 import { toast } from '@/components/ui/toast';
-import Pagina from './page';
+import { IncrementosDelPeriodo as Pagina } from './IncrementosDelPeriodo';
 
 const api = cicloDeVidaApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 const toastMock = toast as unknown as {
@@ -72,6 +85,10 @@ function carta(over: Partial<CartaEnLaBandeja> = {}): CartaEnLaBandeja {
     enviadaAt: null,
     medio: null,
     ultimoIntento: null,
+    documentoDelInquilino: '43687485',
+    finDelContrato: '2027-04-30',
+    porRenovar: false,
+    motivo: null,
     ...over,
   };
 }
@@ -79,6 +96,7 @@ function carta(over: Partial<CartaEnLaBandeja> = {}): CartaEnLaBandeja {
 function bandeja(cartas: CartaEnLaBandeja[], extra: Record<string, unknown> = {}) {
   return {
     diasAntes: 30,
+    periodo: { desde: '2026-10-01', hasta: '2026-10-31' },
     disponible: true,
     porEnviar: cartas.filter((c) => c.estado === 'POR_ENVIAR').length,
     vencidasSinConstancia: cartas.filter((c) => c.alertaRoja).length,
@@ -93,7 +111,7 @@ let container: HTMLDivElement | null = null;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  h.params = new URLSearchParams();
+  h.params = new URLSearchParams('mes=2026-10');
   h.canAccess.mockReturnValue(true);
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -115,7 +133,7 @@ async function montar() {
 const $ = (id: string) => container!.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
 
 async function escribir(texto: string) {
-  const input = $('buscar-cartas') as HTMLInputElement;
+  const input = $('buscar-incrementos') as HTMLInputElement;
   await act(async () => {
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
     setter.call(input, texto);
@@ -123,11 +141,11 @@ async function escribir(texto: string) {
   });
 }
 
-describe('la cola de cartas — lo que D6 garantizaba sigue garantizado', () => {
+describe('Incrementos — lo que D6 garantizaba sigue garantizado', () => {
   it('lista la carta con el canon de antes y el nuevo, y desde cuándo', async () => {
     api.bandejaDeCartas.mockResolvedValue(bandeja([carta()]));
     await montar();
-    const fila = $('carta-c1-2026-10-01')!;
+    const fila = $('incremento-c1')!;
     expect(fila.textContent).toContain('#1850');
     // 🔴 19-09: acá se esperaba el crudo `2026-10-01`. El testid sigue siendo
     // la fecha ISO —es la llave de la fila, no texto para leer—, pero lo que
@@ -165,7 +183,7 @@ describe('la cola de cartas — lo que D6 garantizaba sigue garantizado', () => 
   /** El cajón vive en un portal: se busca en todo el documento. */
   const $$ = (id: string) => document.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
 
-  async function abrirLaCarta(boton = 'ver-y-enviar-c1') {
+  async function abrirLaCarta(boton = 'abrir-carta-c1') {
     await act(async () => ($(boton) as HTMLButtonElement).click());
     await act(async () => {});
   }
@@ -243,7 +261,7 @@ describe('la cola de cartas — lo que D6 garantizaba sigue garantizado', () => 
       }),
     );
     await montar();
-    await abrirLaCarta('ver-enviada-c1');
+    await abrirLaCarta();
     const cuando = $$('carta-enviada-cuando')!.textContent ?? '';
     expect(cuando).toContain('19 de octubre de 2026');
     expect(cuando).toContain('Juan Camilo López');
@@ -268,7 +286,7 @@ describe('la cola de cartas — lo que D6 garantizaba sigue garantizado', () => 
     api.bandejaDeCartas.mockResolvedValue(bandeja([carta()], { disponible: false }));
     await montar();
     expect(container!.textContent).toContain('todavía no se pueden enviar');
-    expect($('ver-y-enviar-c1')!.textContent).toBe('Ver la carta');
+    expect($('abrir-carta-c1')!.textContent).toBe('Ver la carta');
   });
 
   it('sin permiso de editar se lee, no se manda', async () => {
@@ -276,15 +294,15 @@ describe('la cola de cartas — lo que D6 garantizaba sigue garantizado', () => 
     api.bandejaDeCartas.mockResolvedValue(bandeja([carta()]));
     api.verCarta.mockResolvedValue(vista());
     await montar();
-    expect($('ver-y-enviar-c1')!.textContent).toBe('Ver la carta');
+    expect($('abrir-carta-c1')!.textContent).toBe('Ver la carta');
     await abrirLaCarta();
     expect(($$('enviar-la-carta') as HTMLButtonElement).disabled).toBe(true);
   });
 });
 
-describe('la cola de cartas — el chrome de la casa', () => {
+describe('Incrementos — el chrome de la casa', () => {
   it('🔴 el estado llega por la URL: es el camino que abrió la loseta', async () => {
-    h.params = new URLSearchParams('estado=sin-constancia');
+    h.params = new URLSearchParams('mes=2026-10&estado=sin-constancia');
     api.bandejaDeCartas.mockResolvedValue(
       bandeja([
         carta({ contractId: 'c1', estado: 'VENCIDA_SIN_CONSTANCIA', alertaRoja: true }),
@@ -292,9 +310,9 @@ describe('la cola de cartas — el chrome de la casa', () => {
       ]),
     );
     await montar();
-    expect($('carta-c1-2026-10-01')).not.toBeNull();
-    expect($('carta-c2-2026-10-01')).toBeNull();
-    expect($('alcance-de-cartas')!.textContent).toContain('1 de 2 cartas');
+    expect($('incremento-c1')).not.toBeNull();
+    expect($('incremento-c2')).toBeNull();
+    expect($('alcance-de-incrementos')!.textContent).toContain('1 de 2 en octubre de 2026');
   });
 
   /*
@@ -309,7 +327,7 @@ describe('la cola de cartas — el chrome de la casa', () => {
       bandeja([carta({ contractId: 'c1', desde: '2026-01-20' })]),
     );
     await montar();
-    const texto = $('carta-c1-2026-01-20')!.textContent ?? '';
+    const texto = $('incremento-c1')!.textContent ?? '';
     expect(texto).toContain('20 ene 2026');
     expect(texto).not.toContain('2026-01-20');
   });
@@ -321,7 +339,8 @@ describe('la cola de cartas — el chrome de la casa', () => {
       ]),
     );
     await montar();
-    expect(container!.textContent).toContain('sin constancia de la carta');
+    expect($('estado-c1')!.textContent).toContain('Sin constancia');
+    expect(container!.textContent).toContain('Pasó hace');
     expect(container!.textContent).not.toContain('🔴');
   });
 
@@ -330,8 +349,8 @@ describe('la cola de cartas — el chrome de la casa', () => {
       bandeja([carta({ contractId: 'c1' }), carta({ contractId: 'c2' })]),
     );
     await montar();
-    expect(container!.querySelectorAll('[data-testid^="carta-"]')).toHaveLength(2);
-    expect($('alcance-de-cartas')).toBeNull();
+    expect(container!.querySelectorAll('[data-testid^="incremento-"]')).toHaveLength(2);
+    expect($('alcance-de-incrementos')).toBeNull();
   });
 
   it('busca por contrato, inquilino o inmueble, sin tildes', async () => {
@@ -343,26 +362,111 @@ describe('la cola de cartas — el chrome de la casa', () => {
     );
     await montar();
     await escribir('diaz');
-    expect($('carta-c1-2026-10-01')).not.toBeNull();
-    expect($('carta-c2-2026-10-01')).toBeNull();
+    expect($('incremento-c1')).not.toBeNull();
+    expect($('incremento-c2')).toBeNull();
     await escribir('9001');
-    expect($('carta-c2-2026-10-01')).not.toBeNull();
+    expect($('incremento-c2')).not.toBeNull();
   });
 
   it('quitar los filtros devuelve la cola entera', async () => {
-    h.params = new URLSearchParams('estado=enviadas');
+    h.params = new URLSearchParams('mes=2026-10&estado=enviadas');
     api.bandejaDeCartas.mockResolvedValue(
       bandeja([carta({ contractId: 'c1' }), carta({ contractId: 'c2' })]),
     );
     await montar();
-    expect(container!.querySelectorAll('[data-testid^="carta-"]')).toHaveLength(0);
-    await act(async () => ($('limpiar-filtros-cartas') as HTMLButtonElement).click());
-    expect(container!.querySelectorAll('[data-testid^="carta-"]')).toHaveLength(2);
+    expect(container!.querySelectorAll('[data-testid^="incremento-"]')).toHaveLength(0);
+    await act(async () => ($('limpiar-filtros-incrementos') as HTMLButtonElement).click());
+    expect(container!.querySelectorAll('[data-testid^="incremento-"]')).toHaveLength(2);
   });
 
-  it('🔴 sin «Volver»: el riel de secciones ya deja Renovaciones marcada', async () => {
+  it('🔴 sin «Volver»: el riel de secciones ya deja la sección marcada', async () => {
     api.bandejaDeCartas.mockResolvedValue(bandeja([carta()]));
     await montar();
     expect(container!.textContent).not.toContain('Volver');
+  });
+});
+
+describe('Incrementos — lo del 22-10 (Portofino: «por fecha, renovados o no»)', () => {
+  it('🔴 pide al back los aniversarios del MES de la URL', async () => {
+    h.params = new URLSearchParams('mes=2026-11');
+    api.bandejaDeCartas.mockResolvedValue(bandeja([], { periodo: { desde: '2026-11-01', hasta: '2026-11-30' } }));
+    await montar();
+    expect(api.bandejaDeCartas).toHaveBeenCalledWith({ desde: '2026-11-01', hasta: '2026-11-30' });
+    expect(container!.textContent).toContain('Ningún contrato tiene incremento en noviembre de 2026');
+  });
+
+  it('«lo de ahora» pide la bandeja de siempre (lo que cuentan las losetas de Renovaciones)', async () => {
+    h.params = new URLSearchParams('mes=proximos&estado=por-enviar');
+    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()], { periodo: null }));
+    await montar();
+    expect(api.bandejaDeCartas).toHaveBeenCalledWith(undefined);
+    expect($('incremento-c1')).not.toBeNull();
+    expect($('sin-periodo')).toBeNull();
+  });
+
+  it('🔴 el contrato 515: ya renovado, con su incremento por notificar, se encuentra por la cédula con puntos', async () => {
+    h.params = new URLSearchParams('mes=2026-11');
+    api.bandejaDeCartas.mockResolvedValue(
+      bandeja(
+        [
+          carta({ contractId: '515', externalId: '515', inquilino: 'Maria Isabel Bolivar Herrera', desde: '2026-11-01' }),
+          carta({ contractId: 'otro', externalId: '9', documentoDelInquilino: '1046667907', porRenovar: true }),
+        ],
+        { periodo: { desde: '2026-11-01', hasta: '2026-11-30' } },
+      ),
+    );
+    await montar();
+    await escribir('43.687.485');
+    expect($('incremento-515')).not.toBeNull();
+    expect($('incremento-otro')).toBeNull();
+    expect($('incremento-515')!.textContent).toContain('Ya renovado');
+    expect($('incremento-515')!.textContent).toContain('Vence el 30 abr 2027');
+    expect($('estado-515')!.textContent).toContain('Por notificar');
+  });
+
+  it('filtra por renovados o por renovar', async () => {
+    api.bandejaDeCartas.mockResolvedValue(
+      bandeja([carta({ contractId: 'c1', porRenovar: false }), carta({ contractId: 'c2', porRenovar: true })]),
+    );
+    await montar();
+    await act(async () => ($('situacion-por-renovar') as HTMLButtonElement).click());
+    expect($('incremento-c1')).toBeNull();
+    expect($('incremento-c2')!.textContent).toContain('Por renovar');
+    await act(async () => ($('situacion-renovados') as HTMLButtonElement).click());
+    expect($('incremento-c1')).not.toBeNull();
+    expect($('incremento-c2')).toBeNull();
+  });
+
+  it('🔴 un aniversario que no sube sale con su motivo y sin carta para enviar', async () => {
+    api.bandejaDeCartas.mockResolvedValue(
+      bandeja([
+        carta({
+          contractId: 'c1',
+          estado: 'SIN_INCREMENTO',
+          origen: null,
+          canonNuevoCop: 2_000_000,
+          contenido: '',
+          motivo: 'Falta el IPC de 2025: el canon no sube hasta cargarlo.',
+        }),
+      ]),
+    );
+    await montar();
+    const fila = $('incremento-c1')!;
+    expect($('estado-c1')!.textContent).toContain('No sube');
+    expect(fila.textContent).toContain('Falta el IPC de 2025');
+    expect($('abrir-carta-c1')).toBeNull();
+    expect($('grupo-no-suben')!.textContent).toContain('1');
+  });
+
+  it('🔴 un back que todavía no filtra por mes lo dice, en vez de mostrar otro período como si fuera el elegido', async () => {
+    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()], { periodo: undefined }));
+    await montar();
+    expect($('sin-periodo')!.textContent).toContain('todavía no filtra por mes');
+  });
+
+  it('el mes elegido se ve en el selector, en palabras', async () => {
+    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()]));
+    await montar();
+    expect($('mes-del-incremento')!.textContent).toContain('Octubre de 2026');
   });
 });

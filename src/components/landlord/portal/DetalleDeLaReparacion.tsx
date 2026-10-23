@@ -49,6 +49,18 @@ export const ESTADO_CORTO: Record<EstadoDeLaAprobacion, { texto: string; tono: s
   ANULADA: { texto: 'Retirada', tono: 'bg-surface-muted text-fg-muted' },
 };
 
+/**
+ * Portofino 22-10: la que respondió «La hago yo» (o que le dejaron) queda
+ * ANULADA en el back —no hubo aprobación que guardar—, pero para el propietario
+ * no es «Retirada»: la está haciendo él.
+ */
+export function estadoCorto(a: { estado: EstadoDeLaAprobacion; laHaceElPropietario?: boolean }) {
+  if (a.estado === 'ANULADA' && a.laHaceElPropietario) {
+    return { texto: 'La haces tú', tono: 'bg-primary-soft text-primary' };
+  }
+  return ESTADO_CORTO[a.estado];
+}
+
 const QUE_PASO: Record<EstadoDeLaAprobacion, string> = {
   PENDIENTE: 'Está esperando tu respuesta.',
   APROBADA: 'La aprobaste: se descuenta de tu liquidación.',
@@ -189,7 +201,7 @@ export function DetalleDeLaReparacion({ id, onCerrar }: { id: string | null; onC
   };
 
   const d = detalle;
-  const estado = d ? ESTADO_CORTO[d.estado] : null;
+  const estado = d ? estadoCorto(d) : null;
   const tipo = d ? tipoDeLaReparacion(d.reparacion.tipo) : null;
 
   return (
@@ -233,7 +245,11 @@ export function DetalleDeLaReparacion({ id, onCerrar }: { id: string | null; onC
                   </Seccion>
                 )}
                 <Seccion titulo="Tu decisión" testid="detalle-decision">
-                  <p className="text-sm text-fg">{QUE_PASO[d.estado]}</p>
+                  <p className="text-sm text-fg">
+                    {d.estado === 'ANULADA' && d.laHaceElPropietario
+                      ? 'La haces tú, por tu cuenta: no se te descuenta nada.'
+                      : QUE_PASO[d.estado]}
+                  </p>
                   <dl className="grid grid-cols-2 gap-3">
                     <Dato etiqueta="Te la pidieron el">{dia(d.pedidaAt)}</Dato>
                     {d.decididaAt && <Dato etiqueta="La decidiste el">{dia(d.decididaAt)}</Dato>}

@@ -135,6 +135,33 @@ vi.mock('@/lib/hooks/cobranza/use-autonomy', () => ({
   }),
 }))
 
+// «Lo que le pides a Mori» (22-10-2026): su propia prueba vive junto al componente; acá
+// sólo su hook y la sesión que lee (agencia para el borrador, correo de quien guardó).
+vi.mock('@/lib/hooks/cobranza/use-instrucciones-de-cobranza', () => ({
+  useInstruccionesDeCobranza: () => ({
+    datos: {
+      agencyId: 'a',
+      provisionada: true,
+      revisionDisponible: true,
+      texto: '',
+      reglas: [],
+      confirmadasEn: null,
+      confirmadasPor: null,
+      puedeDeshacer: false,
+    },
+    isLoading: false,
+    error: null,
+    recargar: vi.fn(),
+    revisar: vi.fn(),
+    confirmar: vi.fn(),
+    deshacer: vi.fn(),
+  }),
+}))
+vi.mock('@/lib/auth', async (orig) => ({
+  ...(await orig<typeof import('@/lib/auth')>()),
+  useAuth: () => ({ user: { email: 'qa@ejemplo.test' }, agency: { id: 'ag-1' } }),
+}))
+
 // Promesas de pago (07-10-2026): su propia prueba vive junto al componente.
 vi.mock('@/lib/hooks/cobranza/use-ajustes-de-la-cobranza', () => ({
   useAjustesDeLaCobranza: () => ({

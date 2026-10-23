@@ -50,6 +50,13 @@ function almacenDelAmbiente() {
 }
 
 const nextConfig = {
+  // 🔴 22-10-2026 (Nico, al compartir una propiedad por WhatsApp salía sólo
+  // «leasefy.co»): Next 15 manda los metadatos (og:title, og:image) en
+  // streaming al FINAL del <body> a quien no reconoce como robot. WhatsApp de
+  // escritorio (y otros que piden la página como un navegador común) sólo lee
+  // el <head>, así que no veía la tarjeta de la «opción A». Con esto los
+  // metadatos van SIEMPRE en el <head>, para cualquiera que pida la página.
+  htmlLimitedBots: /.*/,
   // Permite validar el build de producción sin matar un `next dev` que esté
   // corriendo: los dos escriben en `.next` y se pisan. Con
   // `NEXT_DIST_DIR=.next-build pnpm build` cada uno usa el suyo.

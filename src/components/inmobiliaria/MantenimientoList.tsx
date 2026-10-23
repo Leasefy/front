@@ -29,6 +29,7 @@ import {
   MapPin,
   ListBullets,
   Prohibit,
+  Truck,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -445,6 +446,13 @@ function MantenimientoCard({
           <User className="w-3 h-3" />
           <span>{solicitud.tenantName}</span>
         </div>
+        {/* Portofino 22-10: con quién se trabaja. */}
+        {solicitud.proveedor && (
+          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground" data-testid="lista-proveedor">
+            <Truck className="w-3 h-3" aria-hidden="true" />
+            <span className="line-clamp-1">{solicitud.proveedor.nombre}</span>
+          </div>
+        )}
       </div>
 
       {/* Badges Row */}
@@ -460,6 +468,17 @@ function MantenimientoCard({
           <StatusIcon className="w-3 h-3 mr-1" />
           {t(statusStyle.labelKey)}
         </span>
+
+        {/* Portofino 22-10: la arregla el propietario por su cuenta. */}
+        {solicitud.laHaceElPropietario && !solicitud.laHaceElPropietario.terminadaAt && (
+          <span
+            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning-soft text-warning"
+            data-testid="lista-la-hace-el-propietario"
+          >
+            <User className="w-3 h-3 mr-1" />
+            La hace el propietario
+          </span>
+        )}
       </div>
 
       {/* Footer Info */}

@@ -214,6 +214,19 @@ export interface IncrementosDelContrato {
 }
 
 /** D6 · Una carta en la bandeja de la inmobiliaria. */
+export type EstadoDelIncremento =
+  | 'POR_ENVIAR'
+  | 'VENCIDA_SIN_CONSTANCIA'
+  | 'ENVIADA'
+  | 'PROXIMA'
+  | 'SIN_INCREMENTO';
+
+/** Los aniversarios entre dos días, `AAAA-MM-DD` (los dos incluidos). */
+export interface PeriodoDeLosIncrementos {
+  desde: string;
+  hasta: string;
+}
+
 export interface CartaEnLaBandeja {
   contractId: string;
   code: number;
@@ -223,9 +236,22 @@ export interface CartaEnLaBandeja {
   inmueble: string | null;
   desde: string;
   diasParaElAniversario: number;
-  estado: 'POR_ENVIAR' | 'VENCIDA_SIN_CONSTANCIA' | 'ENVIADA';
+  /**
+   * Con período (pantalla Incrementos, Portofino 22-10-2026) también
+   * `PROXIMA` (falta más de N días; ya se puede enviar) y `SIN_INCREMENTO`
+   * (el aniversario no sube: `motivo` dice por qué).
+   */
+  estado: EstadoDelIncremento;
   alertaRoja: boolean;
-  origen: string;
+  /** `null` en un aniversario que no sube. */
+  origen: string | null;
+  /** Lo que sigue llegó el 22-10-2026: un back anterior no lo manda. */
+  documentoDelInquilino?: string | null;
+  /** El último día del contrato, `AAAA-MM-DD`. */
+  finDelContrato?: string;
+  /** Vence en 90 días o menos: también está en Renovaciones. */
+  porRenovar?: boolean;
+  motivo?: string | null;
   porcentaje: number | null;
   canonAnteriorCop: number;
   canonNuevoCop: number;
@@ -269,6 +295,8 @@ export interface CartaParaVer {
 
 export interface BandejaDeCartas {
   diasAntes: number;
+  /** El período pedido; `null` (o ausente en un back anterior) = la bandeja de siempre. */
+  periodo?: PeriodoDeLosIncrementos | null;
   disponible: boolean;
   porEnviar: number;
   vencidasSinConstancia: number;
@@ -534,6 +562,35 @@ export interface ResultadoDelCambioDeInquilino {
   parteId: string;
 }
 
+/** Portofino 22-10: la terminación que decide el propietario. */
+export interface TerminacionConElPropietario {
+  id: string;
+  contractId: string;
+  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'RETIRADA';
+  terminadoEn: string;
+  motivo: string;
+  nombreDelMotivo: string;
+  nota: string | null;
+  penalidadCop: number | null;
+  penalidadDicha: boolean;
+  pedidaAt: string;
+  respondidaAt: string | null;
+  motivoDeLaRespuesta: string | null;
+}
+
+export interface TerminacionEnElPortal extends TerminacionConElPropietario {
+  inmobiliaria: string;
+  inmueble: string;
+  contrato: string | null;
+  inquilino: string | null;
+}
+
+export interface ConfiguracionDeTerminaciones {
+  disponible: boolean;
+  motivos: Array<{ codigo: string; nombre: string }>;
+  vanAlPropietario: string[];
+}
+
 export const cicloDeVidaApi = {
   motivosDeTerminacion: () =>
     apiClient.get<{ motivos: MotivoDeTerminacion[] }>(
@@ -566,6 +623,39 @@ export const cicloDeVidaApi = {
       `/contracts/${contractId}/terminar`,
       body,
     ),
+
+  /**
+   * Portofino 22-10: pedirle el sí al propietario en vez de terminar ya. Queda
+   * PENDIENTE hasta que él responda en su portal.
+   */
+  pedirAlPropietario: (
+    contractId: string,
+    body: { terminadoEn: string; motivo: string; nota?: string; penalidadCop?: number | null; penalidadParaLaInmobiliariaCop?: number },
+  ) =>
+    apiClient.post<TerminacionConElPropietario>(`/contracts/${contractId}/terminar/pedir-al-propietario`, body),
+
+  /** La terminación que espera (o respondió) el propietario; `null` = ninguna. */
+  terminacionConElPropietario: (contractId: string) =>
+    apiClient.get<TerminacionConElPropietario | null>(`/contracts/${contractId}/terminar/con-el-propietario`),
+
+  retirarTerminacionConElPropietario: (contractId: string) =>
+    apiClient.post<{ retirada: boolean }>(`/contracts/${contractId}/terminar/con-el-propietario/retirar`, {}),
+
+  /** Qué motivos van SIEMPRE al propietario en esta inmobiliaria. */
+  configuracionDeTerminaciones: () =>
+    apiClient.get<ConfiguracionDeTerminaciones>('/contracts/motivos-de-terminacion/con-el-propietario'),
+
+  guardarConfiguracionDeTerminaciones: (motivos: string[]) =>
+    apiClient.post<ConfiguracionDeTerminaciones>('/contracts/motivos-de-terminacion/con-el-propietario', { motivos }),
+
+  /** Portal del propietario: las terminaciones que tiene por decidir. */
+  terminacionesDelPortal: () => apiClient.get<TerminacionEnElPortal[]>('/portal/terminaciones'),
+
+  responderTerminacion: (id: string, acepta: boolean, motivo?: string) =>
+    apiClient.post<{ estado: string }>(`/portal/terminaciones/${encodeURIComponent(id)}/responder`, {
+      acepta,
+      ...(motivo ? { motivo } : {}),
+    }),
 
   vencidos: () => apiClient.get<ResumenDeVencidos>('/contracts/vencidos'),
 
@@ -656,7 +746,12 @@ export const cicloDeVidaApi = {
     ),
 
   /** D6: la bandeja de cartas por enviar de la inmobiliaria. */
-  bandejaDeCartas: () => apiClient.get<BandejaDeCartas>('/inmobiliaria/cartas-de-incremento'),
+  bandejaDeCartas: (periodo?: PeriodoDeLosIncrementos) =>
+    apiClient.get<BandejaDeCartas>(
+      periodo
+        ? `/inmobiliaria/cartas-de-incremento?desde=${periodo.desde}&hasta=${periodo.hasta}`
+        : '/inmobiliaria/cartas-de-incremento',
+    ),
 
   // ── D5 ──
   prorroga: (contractId: string) =>

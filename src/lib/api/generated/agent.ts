@@ -4621,6 +4621,64 @@ export interface paths {
         patch: operations["updateCobranzaAcuerdoGeneral"];
         trace?: never;
     };
+    "/api/agency/{agencyId}/cobranza/instrucciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lo que la inmobiliaria le pide a Mori y las reglas que confirmó */
+        get: operations["getInstruccionesDeCobranza"];
+        /**
+         * Confirmar lo que entendió Mori (OWNER/ADMIN)
+         * @description Guarda las reglas de la revisión `revisionId` con las `respuestas` a sus dudas, menos las que se quitaron y las que no se pueden; el texto se guarda sin las frases de esas. Con el texto vacío borra todo. Deja la versión anterior para deshacer y rastro en audit_log. 409 REVISION_VENCIDA / FALTAN_RESPUESTAS. 503 si la migración no está aplicada.
+         */
+        put: operations["putInstruccionesDeCobranza"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/instrucciones/interpretar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ver cómo lo entiende Mori (no guarda nada)
+         * @description Devuelve cómo lo entendió Mori: reglas de fechas que el sistema hace cumplir, instrucciones, lo que no se puede (ley o lo configurado en cuotas y descuentos) y dudas. Requiere cobranza:configure.
+         */
+        post: operations["interpretarInstruccionesDeCobranza"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/instrucciones/deshacer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Volver a lo que regía antes del último guardado (OWNER/ADMIN, 15 minutos) */
+        post: operations["deshacerInstruccionesDeCobranza"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cobranza/politica": {
         parameters: {
             query?: never;
@@ -12442,6 +12500,54 @@ export interface components {
             discountKind?: "none" | "intereses_parcial" | "intereses_total";
             maxInstallments?: number;
             minInitialPct?: number;
+        };
+        ReglaDeCobranzaDeLaInmobiliaria: {
+            id: string;
+            dijo: string;
+            entendio: string;
+            /** @enum {string} */
+            tipo: "primera_cuota_max_dias" | "ultimo_pago_max_dias" | "instruccion" | "no_se_puede";
+            dias: number | null;
+            porQueNo: string | null;
+            /** @enum {string|null} */
+            porQue?: "ley" | "acuerdo_general" | "no_lo_hace_mori" | null;
+        };
+        InstruccionesDeCobranza: {
+            /** Format: uuid */
+            agencyId: string;
+            provisionada: boolean;
+            revisionDisponible: boolean;
+            texto: string;
+            reglas: components["schemas"]["ReglaDeCobranzaDeLaInmobiliaria"][];
+            confirmadasEn: string | null;
+            confirmadasPor: string | null;
+            puedeDeshacer: boolean;
+        };
+        DudaDeLasInstruccionesDeCobranza: {
+            id: string;
+            reglaId: string | null;
+            pregunta: string;
+            opciones: {
+                etiqueta: string;
+                entendio: string;
+                dias: number | null;
+            }[];
+        };
+        InstruccionesDeCobranzaRevision: {
+            revisionId: string;
+            reglas: components["schemas"]["ReglaDeCobranzaDeLaInmobiliaria"][];
+            dudas: components["schemas"]["DudaDeLasInstruccionesDeCobranza"][];
+        };
+        InstruccionesDeCobranzaInterpretar: {
+            texto: string;
+        };
+        InstruccionesDeCobranzaConfirmar: {
+            texto: string;
+            revisionId?: string | null;
+            quitar?: string[];
+            respuestas?: {
+                [key: string]: number;
+            };
         };
         CobranzaEtapasDeCartera: {
             s1: number;
@@ -24953,6 +25059,255 @@ export interface operations {
                 };
             };
             /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+        };
+    };
+    getInstruccionesDeCobranza: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lo vigente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstruccionesDeCobranza"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+        };
+    };
+    putInstruccionesDeCobranza: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InstruccionesDeCobranzaConfirmar"];
+            };
+        };
+        responses: {
+            /** @description Guardado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstruccionesDeCobranza"];
+                };
+            };
+            /** @description Cuerpo malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description La revisión venció, no corresponde al texto o falta contestar una duda */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Base de datos no disponible o migración sin aplicar */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+        };
+    };
+    interpretarInstruccionesDeCobranza: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InstruccionesDeCobranzaInterpretar"];
+            };
+        };
+        responses: {
+            /** @description Así lo entendió Mori */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstruccionesDeCobranzaRevision"];
+                };
+            };
+            /** @description Cuerpo malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description La IA no pudo revisar el texto */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description La revisión con IA no está disponible en este entorno */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+        };
+    };
+    deshacerInstruccionesDeCobranza: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lo que rige ahora */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstruccionesDeCobranza"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description No hay nada que deshacer (o ya pasaron los 15 minutos) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorConSobre"];
+                };
+            };
+            /** @description Base de datos no disponible o migración sin aplicar */
             503: {
                 headers: {
                     [name: string]: unknown;

@@ -72,6 +72,56 @@ export interface GuardarProveedor {
   notas?: string;
 }
 
+/**
+ * Portofino 22-10: cómo quedó cada fila del Excel de proveedores (la regla vive
+ * en el back, `proveedores/importar-proveedores.ts`).
+ *   NUEVO        — se puede registrar.
+ *   YA_ESTABA    — ese documento ya está en Proveedores: no se toca.
+ *   CON_PROBLEMA — le falta algo que no se puede inventar; `problemas` dice qué.
+ *   CREADO / NO_SE_CREO — después de importar.
+ */
+export type EstadoDeLaFilaImportada = 'NUEVO' | 'YA_ESTABA' | 'CON_PROBLEMA' | 'CREADO' | 'NO_SE_CREO';
+
+export interface FilaImportadaDeProveedor {
+  fila: number;
+  estado: EstadoDeLaFilaImportada;
+  nombre: string;
+  tipoDocumento: TipoDeDocumentoDelProveedor | null;
+  documento: string;
+  telefono: string | null;
+  correo: string | null;
+  especialidades: string[];
+  notas: string | null;
+  problemas: string[];
+  avisos: string[];
+  existente?: { id: string; nombre: string };
+  proveedorId?: string;
+}
+
+export interface ResultadoDeImportarProveedores {
+  disponible: boolean;
+  soloRevisar: boolean;
+  total: number;
+  nuevos: number;
+  yaEstaban: number;
+  conProblema: number;
+  creados: number;
+  noSeCrearon: number;
+  filas: FilaImportadaDeProveedor[];
+}
+
+/** Lo que viaja por cada fila del archivo: el texto de cada celda, tal cual. */
+export interface FilaDeProveedorParaImportar {
+  fila: number;
+  nombre?: string;
+  tipoDocumento?: string;
+  documento?: string;
+  telefono?: string;
+  correo?: string;
+  especialidades?: string;
+  notas?: string;
+}
+
 const BASE = '/inmobiliaria/mantenimiento/proveedores';
 
 export const proveedoresDeMantenimientoApi = {
@@ -114,6 +164,14 @@ export const proveedoresDeMantenimientoApi = {
 
   crear(datos: GuardarProveedor): Promise<ProveedorDeMantenimiento> {
     return apiClient.post<ProveedorDeMantenimiento>(BASE, datos);
+  },
+
+  /**
+   * Portofino 22-10: el Excel de proveedores. `soloRevisar` es la vista previa
+   * (no escribe); sin él registra las filas NUEVAS. Las que ya estaban no se tocan.
+   */
+  importar(filas: FilaDeProveedorParaImportar[], soloRevisar: boolean): Promise<ResultadoDeImportarProveedores> {
+    return apiClient.post<ResultadoDeImportarProveedores>(`${BASE}/importar`, { filas, soloRevisar });
   },
 
   actualizar(

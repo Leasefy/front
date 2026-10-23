@@ -128,13 +128,19 @@ describe('<BandejaDeCartasDelIncremento> — el tablero (D6)', () => {
     expect($('enviar-c1')).toBeNull();
   });
 
-  it('cada loseta es un CAMINO a la cola ya filtrada', async () => {
+  /*
+   * 🔴 22-10-2026 (Portofino): la cola se volvió Contratos → Incrementos. Cada
+   * loseta abre «lo de ahora» (`mes=proximos`, lo MISMO que cuenta: así el
+   * número de la loseta y la lista cuadran) ya filtrada; «Ver los incrementos
+   * por mes» abre la pantalla en su mes.
+   */
+  it('cada loseta es un CAMINO a los incrementos ya filtrados', async () => {
     api.bandejaDeCartas.mockResolvedValue(bandeja([carta()]));
     await montar();
-    const RUTA = '/panel/inmobiliaria/contratos/renovaciones/cartas';
-    expect($('loseta-sin-constancia')?.getAttribute('href')).toBe(`${RUTA}?estado=sin-constancia`);
-    expect($('loseta-por-enviar')?.getAttribute('href')).toBe(`${RUTA}?estado=por-enviar`);
-    expect($('loseta-enviadas')?.getAttribute('href')).toBe(`${RUTA}?estado=enviadas`);
+    const RUTA = '/panel/inmobiliaria/contratos/incrementos';
+    expect($('loseta-sin-constancia')?.getAttribute('href')).toBe(`${RUTA}?mes=proximos&estado=sin-constancia`);
+    expect($('loseta-por-enviar')?.getAttribute('href')).toBe(`${RUTA}?mes=proximos&estado=por-enviar`);
+    expect($('loseta-enviadas')?.getAttribute('href')).toBe(`${RUTA}?mes=proximos&estado=enviadas`);
     expect($('abrir-cola-de-cartas')?.getAttribute('href')).toBe(RUTA);
   });
 

@@ -42,8 +42,12 @@ import {
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
-/** La cola completa. El tablero lleva acá, con el estado en la URL. */
-export const RUTA_DE_LAS_CARTAS = '/panel/inmobiliaria/contratos/renovaciones/cartas';
+/**
+ * Contratos → Incrementos (Portofino, 22-10-2026; antes la cola de cartas
+ * `/renovaciones/cartas`, que redirige allá). Las losetas abren «lo de ahora»
+ * (`?mes=proximos`), lo mismo que cuentan; «Ver todos» abre el mes.
+ */
+export const RUTA_DE_LAS_CARTAS = '/panel/inmobiliaria/contratos/incrementos';
 
 /**
  * «20 ene 2026», leyendo la parte `YYYY-MM-DD`.
@@ -123,7 +127,14 @@ export function BandejaDeCartasDelIncremento({ puedeEditar }: { puedeEditar: boo
           <span className="font-medium text-foreground">Cartas del incremento:</span> ninguna por
           enviar. Cada carta aparece sola {datos.diasAntes} días antes del aniversario; el canon
           sube igual en la fecha, la carta es transparencia.
-          {!datos.disponible && ' Falta una actualización de la base para poder enviarlas.'}
+          {!datos.disponible && ' Falta una actualización de la base para poder enviarlas.'}{' '}
+          <Link
+            href={RUTA_DE_LAS_CARTAS}
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            data-testid="abrir-cola-de-cartas"
+          >
+            Ver los incrementos por mes
+          </Link>
         </span>
       </p>
     );
@@ -144,7 +155,7 @@ export function BandejaDeCartasDelIncremento({ puedeEditar }: { puedeEditar: boo
           className="text-caption font-medium text-primary underline-offset-4 hover:underline"
           data-testid="abrir-cola-de-cartas"
         >
-          Abrir la cola →
+          Ver los incrementos por mes →
         </Link>
       </div>
       <p className="text-caption text-muted-foreground">
@@ -200,7 +211,7 @@ function Loseta({
 }) {
   return (
     <Link
-      href={`${RUTA_DE_LAS_CARTAS}?estado=${testid}`}
+      href={`${RUTA_DE_LAS_CARTAS}?mes=proximos&estado=${testid}`}
       data-testid={`loseta-${testid}`}
       className={`block rounded-lg border p-3 transition-colors hover:bg-surface-muted ${
         urgente && cuantas > 0 ? 'border-destructive/40 bg-destructive/5' : 'border-border'

@@ -12706,6 +12706,229 @@
           }
         }
       },
+      "ReglaDeCobranzaDeLaInmobiliaria": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "dijo": {
+            "type": "string"
+          },
+          "entendio": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "primera_cuota_max_dias",
+              "ultimo_pago_max_dias",
+              "instruccion",
+              "no_se_puede"
+            ]
+          },
+          "dias": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "porQueNo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "porQue": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "ley",
+              "acuerdo_general",
+              "no_lo_hace_mori"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "dijo",
+          "entendio",
+          "tipo",
+          "dias",
+          "porQueNo"
+        ]
+      },
+      "InstruccionesDeCobranza": {
+        "type": "object",
+        "properties": {
+          "agencyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "provisionada": {
+            "type": "boolean"
+          },
+          "revisionDisponible": {
+            "type": "boolean"
+          },
+          "texto": {
+            "type": "string"
+          },
+          "reglas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReglaDeCobranzaDeLaInmobiliaria"
+            }
+          },
+          "confirmadasEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "confirmadasPor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "puedeDeshacer": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "agencyId",
+          "provisionada",
+          "revisionDisponible",
+          "texto",
+          "reglas",
+          "confirmadasEn",
+          "confirmadasPor",
+          "puedeDeshacer"
+        ]
+      },
+      "DudaDeLasInstruccionesDeCobranza": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "reglaId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pregunta": {
+            "type": "string"
+          },
+          "opciones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "etiqueta": {
+                  "type": "string"
+                },
+                "entendio": {
+                  "type": "string"
+                },
+                "dias": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "etiqueta",
+                "entendio",
+                "dias"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "reglaId",
+          "pregunta",
+          "opciones"
+        ]
+      },
+      "InstruccionesDeCobranzaRevision": {
+        "type": "object",
+        "properties": {
+          "revisionId": {
+            "type": "string"
+          },
+          "reglas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReglaDeCobranzaDeLaInmobiliaria"
+            }
+          },
+          "dudas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DudaDeLasInstruccionesDeCobranza"
+            }
+          }
+        },
+        "required": [
+          "revisionId",
+          "reglas",
+          "dudas"
+        ]
+      },
+      "InstruccionesDeCobranzaInterpretar": {
+        "type": "object",
+        "properties": {
+          "texto": {
+            "type": "string",
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "texto"
+        ],
+        "additionalProperties": false
+      },
+      "InstruccionesDeCobranzaConfirmar": {
+        "type": "object",
+        "properties": {
+          "texto": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "revisionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quitar": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 30
+          },
+          "respuestas": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "required": [
+          "texto"
+        ],
+        "additionalProperties": false
+      },
       "CobranzaEtapasDeCartera": {
         "type": "object",
         "properties": {
@@ -50760,6 +50983,352 @@
           },
           "503": {
             "description": "Base de datos no disponible (stub mode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/cobranza/instrucciones": {
+      "get": {
+        "operationId": "getInstruccionesDeCobranza",
+        "summary": "Lo que la inmobiliaria le pide a Mori y las reglas que confirmó",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lo vigente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstruccionesDeCobranza"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putInstruccionesDeCobranza",
+        "summary": "Confirmar lo que entendió Mori (OWNER/ADMIN)",
+        "description": "Guarda las reglas de la revisión `revisionId` con las `respuestas` a sus dudas, menos las que se quitaron y las que no se pueden; el texto se guarda sin las frases de esas. Con el texto vacío borra todo. Deja la versión anterior para deshacer y rastro en audit_log. 409 REVISION_VENCIDA / FALTAN_RESPUESTAS. 503 si la migración no está aplicada.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstruccionesDeCobranzaConfirmar"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Guardado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstruccionesDeCobranza"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo malformado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La revisión venció, no corresponde al texto o falta contestar una duda",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible o migración sin aplicar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/cobranza/instrucciones/interpretar": {
+      "post": {
+        "operationId": "interpretarInstruccionesDeCobranza",
+        "summary": "Ver cómo lo entiende Mori (no guarda nada)",
+        "description": "Devuelve cómo lo entendió Mori: reglas de fechas que el sistema hace cumplir, instrucciones, lo que no se puede (ley o lo configurado en cuotas y descuentos) y dudas. Requiere cobranza:configure.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstruccionesDeCobranzaInterpretar"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Así lo entendió Mori",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstruccionesDeCobranzaRevision"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo malformado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "La IA no pudo revisar el texto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "La revisión con IA no está disponible en este entorno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/cobranza/instrucciones/deshacer": {
+      "post": {
+        "operationId": "deshacerInstruccionesDeCobranza",
+        "summary": "Volver a lo que regía antes del último guardado (OWNER/ADMIN, 15 minutos)",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lo que rige ahora",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstruccionesDeCobranza"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No hay nada que deshacer (o ya pasaron los 15 minutos)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorConSobre"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible o migración sin aplicar",
             "content": {
               "application/json": {
                 "schema": {

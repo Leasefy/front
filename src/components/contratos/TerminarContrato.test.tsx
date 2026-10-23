@@ -9,6 +9,9 @@ import { act } from 'react';
 vi.mock('@/lib/api/ciclo-de-vida.service', () => ({
   cicloDeVidaApi: {
     motivosDeTerminacion: vi.fn(),
+    // Portofino 22-10: sin la configuración de «decide el propietario».
+    configuracionDeTerminaciones: vi.fn(async () => ({ disponible: false, motivos: [], vanAlPropietario: [] })),
+    pedirAlPropietario: vi.fn(),
     vistaPreviaDeTerminacion: vi.fn(),
     terminar: vi.fn(),
     vencidos: vi.fn(),

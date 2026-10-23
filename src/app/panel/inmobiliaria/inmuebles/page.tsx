@@ -64,6 +64,7 @@ import { MarketplaceDeLosMarcados } from '@/components/inmobiliaria/marketplace/
 import { usePublicacionEnElMarketplace } from '@/lib/hooks/use-publicacion-en-el-marketplace';
 import { cajonDelInmueble, contarPorCajon } from '@/lib/inmobiliaria/cajon-del-inmueble';
 import { coincideConLaBusqueda } from '@/lib/inmuebles/buscar-en-el-portafolio';
+import { useCopiarLaFicha } from '@/lib/inmuebles/use-copiar-la-ficha';
 import { ConsignacionFilters, ConsignacionFiltersState } from '@/components/inmobiliaria/ConsignacionFilters';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 import { CompletarMandatoDialog } from '@/components/inmobiliaria/CompletarMandatoDialog';
@@ -474,6 +475,10 @@ function PortafolioContent() {
     window.open(`/propiedades/${consignacion.propertyId}`, '_blank', 'noopener,noreferrer');
   }, []);
 
+  // «Copiar ficha» (22-10-2026): el texto para WhatsApp; si no se ve en el
+  // marketplace, no copia y ofrece publicarlo.
+  const copiarLaFicha = useCopiarLaFicha((ids) => void cambiarPublicacion(ids, true));
+
   const [porEliminar, setPorEliminar] = useState<Consignacion | null>(null);
   const [eliminando, setEliminando] = useState(false);
   /**
@@ -743,6 +748,7 @@ function PortafolioContent() {
                     onAgendarCita={handleAgendarCita}
                     onCandidatos={handleCandidatos}
                     onVerAviso={handleVerAviso}
+                    onCopiarFicha={(propertyId) => void copiarLaFicha(propertyId)}
                     onPrepararSinSenal={(c) => void handlePrepararSinSenal(c)}
                     onEliminar={abrirEliminar}
                     onCompletarMandato={setMandatoFor}

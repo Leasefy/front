@@ -24,6 +24,7 @@ import {
   IdentificationBadge,
   Handshake,
   Tag,
+  Wrench,
 } from '@phosphor-icons/react';
 
 /**
@@ -76,6 +77,7 @@ export type SeccionId =
   | 'migracion'
   | 'avisos'
   | 'sla-de-pqrs'
+  | 'reparaciones'
   | 'bitacora'
   | 'movimientos'
   | 'proteccion-de-datos'
@@ -325,6 +327,21 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.slaDePqrs',
     descKey: 'inmobiliaria.config.tabs.slaDePqrsDesc',
     icon: Clock,
+    gate: { tipo: 'admin' },
+  },
+  {
+    /**
+     * Portofino, 22-10-2026: el tiempo para atender cada prioridad (se leía y
+     * nadie lo podía cambiar) y qué prioridades hace SÓLO la inmobiliaria (el
+     * propietario no las puede hacer por su cuenta). Como el tiempo de las
+     * PQRS: lo cambia el administrador.
+     */
+    id: 'reparaciones',
+    grupo: 'sistema',
+    slug: 'reparaciones',
+    labelKey: 'inmobiliaria.config.tabs.reparaciones',
+    descKey: 'inmobiliaria.config.tabs.reparacionesDesc',
+    icon: Wrench,
     gate: { tipo: 'admin' },
   },
   {

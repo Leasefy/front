@@ -178,7 +178,7 @@ vi.mock('@/components/ui/para-entender-mas', () => ({
 vi.mock('@leasefy/cadence', async (importOriginal) => ({
   // El movimiento (ola 2): las primitivas reales. Con las animaciones apagadas
   // (`vitest.setup.ts`) muestran el estado final de una.
-  ...(({ AnimatedNumber, Avatar, Cifra, CrossFade, FranjaDeCifras, MotionIndicator, Presence, FormError, MonoLabel, StatusBadge, Badge }) => ({
+  ...(({ AnimatedNumber, Avatar, Cifra, CrossFade, FranjaDeCifras, MotionIndicator, Presence, FormError, MonoLabel, StatusBadge, Badge, motionScale, motionSpring, motionDuration, motionEase, usePrefersReducedMotion }) => ({
     // El sobretítulo del encabezado común (ronda 22).
     MonoLabel,
     AnimatedNumber,
@@ -194,6 +194,12 @@ vi.mock('@leasefy/cadence', async (importOriginal) => ({
     // El estado de la fila y la marca de la lista corta (revisora r24): las reales.
     StatusBadge,
     Badge,
+    // Ronda 30: el botón de la casa importa las escalas del movimiento (las reales).
+    motionScale,
+    motionSpring,
+    motionDuration,
+    motionEase,
+    usePrefersReducedMotion,
   }))(await importOriginal<typeof import('@leasefy/cadence')>()),
   // Reenvía TODAS las props, no sólo onClick: un mock que las filtra deja
   // pasar por bueno un botón sin data-testid ni aria-label reales.

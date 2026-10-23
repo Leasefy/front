@@ -121,6 +121,8 @@ describe('SeccionesDelModulo — las cards no se van al entrar en una sección',
     expect(cards().map((c) => c.href)).toEqual([
       '/panel/inmobiliaria/contratos',
       '/panel/inmobiliaria/contratos/renovaciones',
+      // Ronda 30: «Incrementos» (Portofino 22-10) entró al riel con la unión de bugs-nico-1.
+      '/panel/inmobiliaria/contratos/incrementos',
       '/panel/inmobiliaria/contratos/firmas',
       // Y «Cláusulas propias» el 18-09-2026. Este test sostiene que bajar un
       // piso no se lleva el riel, no cuántas cards hay.

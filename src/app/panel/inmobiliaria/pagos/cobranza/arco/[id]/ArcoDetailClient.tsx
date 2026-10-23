@@ -931,7 +931,7 @@ export default function ArcoDetailClient({ requestId, enCajon = false, onResuelt
         <FalloDeCarga
           error={error}
           queEs="la solicitud"
-          onReintentar={() => void detailRefetch()}
+          onReintentar={() => detailRefetch()}
           volverA={{ label: t('inmobiliaria.ai.arco.detail.backToInbox'), href: '/panel/inmobiliaria/pagos/cobranza/arco' }}
         />
       </div>

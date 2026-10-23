@@ -35,6 +35,11 @@ vi.mock('@/lib/i18n', async () => {
 // on what the menu offers, not on Radix's open mechanics.
 vi.mock('@leasefy/cadence', () => ({
   Button: (p: React.ComponentProps<'button'>) => <button {...p} />,
+  // Ronda 30: el botón de la casa importa las escalas del movimiento.
+  motionScale: { pop: 0.96, press: 0.97, hover: 1.02, lift: 1.01 },
+  motionSpring: { bouncy: {}, snappy: {}, soft: {} },
+  motionDuration: {},
+  motionEase: {},
   SplitButton: ({ label, onClick, caretLabel, menuContent }: {
     label: React.ReactNode; onClick: () => void; caretLabel: string; menuContent: React.ReactNode
   }) => (

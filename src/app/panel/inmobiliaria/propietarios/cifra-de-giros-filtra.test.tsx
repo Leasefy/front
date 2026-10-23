@@ -185,7 +185,9 @@ describe('Propietarios — la cifra de giros atrasados filtra la lista (glow up 
     montar();
     const pestana = (id: string) => host.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`);
     expect(pestana('vista-por-girar')?.textContent).toContain('1');
-    expect(pestana('vista-todos')?.textContent).toContain('3');
+    // Ronda 28/30 (PestanasDeEstado): «Todos» calla su número cuando otra pestaña ya dice el mismo
+    // (el mismo número nunca dos veces); la lista entera sigue siendo de 3.
+    expect(pestana('vista-todos')).not.toBeNull();
     act(() => pestana('vista-todos')!.click());
     expect(tabla().dataset.filas).toBe('3');
     expect(pestana('vista-todos')!.getAttribute('aria-pressed')).toBe('true');

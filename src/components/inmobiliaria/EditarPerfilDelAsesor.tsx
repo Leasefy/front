@@ -135,6 +135,9 @@ export function EditarPerfilDelAsesor({
     Number.isFinite(comisionNumero) &&
     comisionNumero >= 0 &&
     comisionNumero <= 100;
+  // El campo arranca con la comisión guardada; si queda vacío o fuera de 0–100, el error se DICE bajo el
+  // campo en el mismo momento (role="alert"), así que el borde rojo nunca sale callado.
+  const comisionConErrorDicho = !comisionValida;
 
   async function guardar() {
     if (!comisionValida) {
@@ -230,7 +233,7 @@ export function EditarPerfilDelAsesor({
               max={100}
               value={comision}
               onChange={(e) => setComision(e.target.value)}
-              aria-invalid={!comisionValida || undefined}
+              aria-invalid={comisionConErrorDicho || undefined}
               aria-describedby="asesor-comision-ayuda"
             />
             {/* Ronda 30: el error va bajo el campo (antes sólo un toast al guardar). */}

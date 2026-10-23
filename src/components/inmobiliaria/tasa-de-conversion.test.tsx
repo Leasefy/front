@@ -83,15 +83,18 @@ describe('conversionRate es un porcentaje', () => {
         d.textContent?.includes('%'),
       );
 
+    // Ronda 30 (Cadence 2): la tarjeta va en arena sin fondo verde/rojo; cómo va se lee en el color de la CIFRA.
+    const cifraDeConversion = () => tarjetaDeConversion()?.querySelector('p.font-mono');
+
     pintar(<AgenteMetrics metrics={agente('a', 65).metrics} />);
-    expect(tarjetaDeConversion()?.className).toContain('bg-success-soft');
+    expect(cifraDeConversion()?.className).toContain('text-success');
 
     pintar(<AgenteMetrics metrics={agente('a', 50).metrics} />);
-    expect(tarjetaDeConversion()?.className).not.toContain('bg-success-soft');
-    expect(tarjetaDeConversion()?.className).not.toContain('bg-danger-soft');
+    expect(cifraDeConversion()?.className).not.toContain('text-success');
+    expect(cifraDeConversion()?.className).not.toContain('text-danger');
 
     pintar(<AgenteMetrics metrics={agente('a', 20).metrics} />);
-    expect(tarjetaDeConversion()?.className).toContain('bg-danger-soft');
+    expect(cifraDeConversion()?.className).toContain('text-danger');
   });
 
   it('ranking: la celda y el promedio del equipo no se multiplican otra vez', () => {

@@ -57,7 +57,9 @@ export default function AvaluoPage() {
     <LandingChrome activo="avaluo">
       <main className="min-h-screen bg-bg">
       {/* ── Hero: qué es, y UNA acción ───────────────────────────────────── */}
-      <section className="flex flex-col items-center justify-center px-4 pt-32 md:pt-40 pb-12 text-center section-padding">
+      {/* Revisora r25: sin `section-padding`, que a 390 le ganaba al pt-32 (py-16) y dejaba el sobretítulo
+          pegado a la barra fija del sitio. El aire de arriba es el de las demás públicas (pt-32 · md:pt-40). */}
+      <section className="flex flex-col items-center justify-center px-4 pt-32 md:pt-40 pb-12 text-center">
         <Eyebrow className="justify-center mb-6">Leasefy valuaciones</Eyebrow>
 
         {/* La palabra resaltada va en tinta: el único azul de la portada es «Solicitar avalúo». */}

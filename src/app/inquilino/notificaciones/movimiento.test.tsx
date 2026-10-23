@@ -45,6 +45,16 @@ vi.mock('@/lib/hooks/useNotifications', async () => {
       read: false,
       createdAt: '2026-10-01T09:00:00.000Z',
     },
+    // Revisora r27 (§3): con TODAS sin leer, «Sin leer» no sale (diría el número de «Todas»): una leída para probarla.
+    {
+      id: 'n-3',
+      type: 'payment_reminder',
+      category: 'payment',
+      title: 'Se registró tu pago de septiembre',
+      message: 'Ya está en tu estado de cuenta.',
+      read: true,
+      createdAt: '2026-09-05T09:00:00.000Z',
+    },
   ]
   return {
     useTenantNotifications: () => {

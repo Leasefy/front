@@ -166,6 +166,7 @@ export default function NotificacionesPage() {
     deleteNotification(id).catch(notifyError('borrar la notificación'));
 
   const visibleNotifications = hideRead ? notifications.filter((n) => !n.read) : notifications;
+  const hayLeidas = notifications.some((n) => n.read);
   const filteredNotifications = visibleNotifications.filter((n) => {
     if (filter === 'all') return true;
     if (filter === 'unread') return !n.read;
@@ -215,15 +216,10 @@ export default function NotificacionesPage() {
           acciones={
             <>
               {unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  hideArrow
-                  onClick={handleMarkAllAsRead}
-                >
+                // Revisora r27 (CF): el mismo botón que el propietario (antes fantasma, corrido 16 px a 390, y «Marcar todo»).
+                <Button variant="outline" size="sm" hideArrow onClick={handleMarkAllAsRead}>
                   <Checks className="w-4 h-4" />
-                  {/* Revisora r25: con su palabra también a 390 (antes sólo el ícono). */}
-                  <span>{locale === 'es' ? 'Marcar todo' : 'Mark all'}</span>
+                  <span>{locale === 'es' ? 'Marcar todo como leído' : 'Mark all as read'}</span>
                 </Button>
               )}
               <IconButton
@@ -246,7 +242,10 @@ export default function NotificacionesPage() {
               etiqueta={locale === 'es' ? 'Filtrar notificaciones' : 'Filter notifications'}
               valor={filter}
               onCambio={(v) => setFilter(v)}
-              pestanas={filters.map((f) => ({
+              // Revisora r27 (§3): si todas están sin leer, «Sin leer» diría el mismo número que «Todas»: no sale.
+              pestanas={filters
+                .filter((f) => !(f.id === 'unread' && unreadCount === visibleNotifications.length && filter !== 'unread'))
+                .map((f) => ({
                 valor: f.id as FilterType,
                 etiqueta: f.label,
                 cuantos: f.id === 'all' ? visibleNotifications.length : f.id === 'unread' ? unreadCount : cuantosDe(f.id),
@@ -410,13 +409,17 @@ export default function NotificacionesPage() {
 
         {/* El pie en una línea (antes, una caja). «Limpiar leídas» sólo las escondía y no había cómo volver a
             verlas: ahora se ocultan y se muestran. */}
-        {notifications.length > 0 && (
+        {/* Revisora r27 (§3): «Mostrando N de M» sólo cuando se ve una parte; «Ocultar las leídas» sólo si hay leídas. */}
+        {notifications.length > 0 && (filteredNotifications.length < notifications.length || hayLeidas || hideRead) && (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-caption text-fg-muted" data-testid="pie-de-notificaciones">
             <span>
-              {locale === 'es'
-                ? `Mostrando ${filteredNotifications.length} de ${notifications.length} notificaciones`
-                : `Showing ${filteredNotifications.length} of ${notifications.length} notifications`}
+              {filteredNotifications.length < notifications.length
+                ? locale === 'es'
+                  ? `Mostrando ${filteredNotifications.length} de ${notifications.length} notificaciones`
+                  : `Showing ${filteredNotifications.length} of ${notifications.length} notifications`
+                : null}
             </span>
+            {hayLeidas || hideRead ? (
             <Button
               variant="link"
               size="sm"
@@ -428,6 +431,7 @@ export default function NotificacionesPage() {
                 ? locale === 'es' ? 'Mostrar las leídas' : 'Show read'
                 : locale === 'es' ? 'Ocultar las leídas' : 'Hide read'}
             </Button>
+            ) : null}
           </div>
         )}
       </div>

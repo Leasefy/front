@@ -117,6 +117,7 @@ export default function NotificacionesPage() {
     deleteNotification(id).catch(notifyError('borrar la notificación'));
 
   const visibleNotifications = hideRead ? notifications.filter((n) => !n.read) : notifications;
+  const hayLeidas = notifications.some((n) => n.read);
   const filteredNotifications = visibleNotifications.filter((n) => {
     if (filter === 'all') return true;
     if (filter === 'unread') return !n.read;
@@ -145,6 +146,8 @@ export default function NotificacionesPage() {
           renglón (el encabezado común envuelve sus acciones). */}
       <EncabezadoDePantalla
         className="mb-6"
+        // Revisora r27 (CF): el sobretítulo, como su gemela del inquilino.
+        seccion={locale === 'es' ? 'Tu cuenta' : 'Your account'}
         titulo={t('landlord.notifications.title')}
         // Revisora r25: el conteo de sin leer vive en su pestaña (antes también aquí: «3 sin leer» dos veces).
         descripcion={
@@ -196,6 +199,8 @@ export default function NotificacionesPage() {
               )
                 // QA-PROP-95: candidatos, arriendos, visitas e inmuebles son del propietario independiente.
                 .filter((f) => !(deInmobiliaria && f.soloIndependiente))
+                // Revisora r27 (§3): si todas están sin leer, «Sin leer» diría el mismo número que «Todas»: no sale.
+                .filter((f) => !(f.valor === 'unread' && unreadCount === visibleNotifications.length && filter !== 'unread'))
                 .map(({ soloIndependiente: _solo, ...f }) => f)}
             />
           </div>
@@ -339,15 +344,19 @@ export default function NotificacionesPage() {
       </div>
 
       {/* Summary */}
-      {notifications.length > 0 && (
-        <div className="mt-4 flex items-center justify-between text-sm text-fg-muted">
+      {/* Revisora r27 (§3 y CF): «Mostrando N de M» sólo cuando se ve una parte; «Ocultar las leídas» sólo si hay
+          leídas; la misma línea gris que el inquilino. */}
+      {notifications.length > 0 && (filteredNotifications.length < notifications.length || hayLeidas || hideRead) && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-caption text-fg-muted">
           <span>
-            {t('landlord.notifications.showingCount', { filtered: filteredNotifications.length, total: notifications.length })}
+            {filteredNotifications.length < notifications.length
+              ? t('landlord.notifications.showingCount', { filtered: filteredNotifications.length, total: notifications.length })
+              : null}
           </span>
-          {notifications.length > 0 && (
+          {(hayLeidas || hideRead) && (
             // Revisora r25: el mismo nombre que en el inquilino («Ocultar las leídas»), sin el azul de enlace, y se
             // puede deshacer.
-            <Button variant="ghost" size="sm" hideArrow onClick={() => setHideRead((v) => !v)} data-testid="ocultar-las-leidas">
+            <Button variant="link" size="sm" hideArrow onClick={() => setHideRead((v) => !v)} className="text-fg-muted hover:text-fg" data-testid="ocultar-las-leidas">
               {hideRead
                 ? locale === 'es' ? 'Mostrar las leídas' : 'Show read'
                 : locale === 'es' ? 'Ocultar las leídas' : 'Hide read'}

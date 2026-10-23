@@ -298,10 +298,12 @@ export function ConsignacionFilters({
 
       {/* Debajo, UN renglón: buscador + desplegables + la vista (Tabla · Tarjetas) al final. */}
       <div
-        className={cn('flex gap-3', enElCelular ? 'flex-row items-center gap-2' : 'flex-col lg:flex-row lg:items-center')}
+        // Revisora r27 (R3): a 390 el buscador va a lo ancho en su renglón y debajo «Filtros» con la vista (antes los tres
+        // en un renglón: «Buscar inr»).
+        className={cn('flex gap-3', enElCelular ? 'flex-col gap-2' : 'flex-col lg:flex-row lg:items-center')}
         data-testid="filtros-fila-1"
       >
-        <div className={cn('relative', enElCelular ? 'min-w-0 flex-1' : 'w-full lg:max-w-md lg:flex-1')}>
+        <div className={cn('relative', enElCelular ? 'w-full' : 'w-full lg:max-w-md lg:flex-1')}>
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
           <Input
             type="text"
@@ -327,7 +329,7 @@ export function ConsignacionFilters({
         </div>
 
         <div
-          className={cn(enElCelular ? 'flex shrink-0 items-center gap-1' : 'grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center lg:flex-nowrap')}
+          className={cn(enElCelular ? 'flex items-center justify-between gap-1' : 'grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center lg:flex-nowrap')}
           data-testid="filtros-desplegables"
         >
           {enElCelular ? null : propietarioYCiudad}

@@ -103,8 +103,9 @@ export function SelectorDePropietarios({
 
   return (
     <div className={cn('space-y-3', className)} data-testid="selector-de-propietarios">
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
+      {/* Revisora r27 (R3): a 390 el buscador a lo ancho y «+ Nuevo» debajo (antes «Buscar propi» a su lado). */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div className="relative w-full sm:flex-1">
           <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-subtle" />
           <Input
             type="text"

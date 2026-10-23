@@ -111,7 +111,8 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // 23-10: 355 al unir bugs-nico-1 (Incrementos, Servicios públicos, «Lo que le pides a Mori»… todavía sin glow up); baja con su glow up.
 // 23-10 tarde: 340 con el glow up de Contratos › Incrementos (las celdas y avisos pasan a 13).
 // 23-10 tarde: 321 con el glow up de Operación › Servicios públicos (panel y portal del inquilino).
-const CUANTOS_HABIA = 321;
+// 23-10 tarde: 309 con el glow up de «Lo que le pides a Mori» (Cobranza › Configuración).
+const CUANTOS_HABIA = 309;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

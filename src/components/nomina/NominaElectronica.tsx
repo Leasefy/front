@@ -56,6 +56,19 @@ export const CONEXION_CON_LA_DIAN =
 type VistaDeDocumentos = 'todos' | 'por-transmitir' | 'rechazados' | 'aceptados';
 const POR_TRANSMITIR = new Set(['GENERADO', 'EN_COLA', 'TRANSMITIDO', 'NO_CONFIGURADO']);
 
+/**
+ * Ronda 26 (revisora r25, Nómina electrónica #1): el texto del back ya empieza con «La planilla PILA se hace
+ * por fuera de Leasefy…»; antes el front lo anteponía y salía dos veces seguidas. Sólo se antepone si no lo trae.
+ */
+function FraseDeLaPila({ pila }: { pila: string }) {
+  if (/^\s*la planilla pila se hace por fuera/i.test(pila)) return <>{pila}</>;
+  return (
+    <>
+      <span className="text-fg">La planilla PILA se hace por fuera de Leasefy.</span> {pila}
+    </>
+  );
+}
+
 export function NominaElectronicaPanel() {
   const [periodo, setPeriodo] = useState('');
   const estado = useCargaDeNomina<NominaElectronica>(
@@ -104,7 +117,7 @@ export function NominaElectronicaPanel() {
                 se hace por fuera, va a su pie: está escrita arriba para que nadie busque el botón. */}
             {datos.documentos.length === 0 ? (
               <p className="text-body-sm text-fg-muted" data-testid="aviso-pila">
-                <span className="text-fg">La planilla PILA se hace por fuera de Leasefy.</span> {datos.proveedor.pila}
+                <FraseDeLaPila pila={datos.proveedor.pila} />
               </p>
             ) : (
             <CifraHeroe
@@ -123,7 +136,7 @@ export function NominaElectronicaPanel() {
               ]}
               pie={
                 <span data-testid="aviso-pila">
-                  <span className="text-fg">La planilla PILA se hace por fuera de Leasefy.</span> {datos.proveedor.pila}
+                  <FraseDeLaPila pila={datos.proveedor.pila} />
                 </span>
               }
               data-testid="cifra-de-la-electronica"

@@ -219,6 +219,9 @@ export default function PaymentsPage() {
         emptyHint={status || provider ? 'Prueba con otro estado u otra pasarela.' : 'Cuando un inquilino pague por Wompi o Bold, aparece aquí.'}
         emptyIcon={<CreditCard weight="duotone" />}
         aria-label="Pagos"
+        // Ronda 30 (revisora r27): el back no busca en /admin/payments; el buscador de la tabla filtra
+        // la página cargada (50) por deudor o inmobiliaria, y lo dice en su texto.
+        buscar="Buscar en esta página: deudor o inmobiliaria"
         barra={
           <BarraDeFiltros>
             <Filtro etiqueta="Estado" htmlFor="filtro-estado">

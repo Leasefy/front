@@ -170,6 +170,9 @@ export default function AuditsPage() {
         emptyHint="Prueba con otro tipo, otra inmobiliaria u otras fechas."
         emptyIcon={<ShieldCheck weight="duotone" />}
         aria-label="Eventos de cumplimiento"
+        // Ronda 30 (revisora r27): el back no busca; el buscador de la tabla filtra la página cargada (100).
+        buscar="Buscar en esta página"
+        textoExtra={(r) => [eventoDeCumplimiento(r.event_type), r.legal_name, r.debtor_name, r.channel ? canal(r.channel) : null].filter(Boolean).join(' ')}
         onRowClick={setAbierto}
         filaMarcada={(r) => r.id === abierto?.id}
         paginacion={events.data ? { page, total: events.data.total, pageSize: PAGE_SIZE, onPage: setPage } : undefined}

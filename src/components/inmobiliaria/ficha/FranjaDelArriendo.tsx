@@ -52,7 +52,7 @@ interface FranjaDelArriendoProps {
   hoy?: Date;
 }
 
-const ROTULO = 'font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle';
+const ROTULO = 'font-mono text-caption uppercase tracking-[0.1em] text-fg-subtle';
 const ENLACE =
   'inline-flex items-center gap-1 rounded-sm text-body-sm font-medium text-primary transition-colors underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary';
 

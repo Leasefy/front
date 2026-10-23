@@ -36,7 +36,7 @@ export function VacioDeSeccion({
         <Icono className="h-5 w-5 text-fg-muted" weight="duotone" />
       </div>
       <div className="space-y-1">
-        <p className="text-base font-semibold text-fg">{titulo}</p>
+        <p className="text-base font-medium text-fg">{titulo}</p>
         <p className="mx-auto max-w-sm text-sm text-fg-muted">{ayuda}</p>
       </div>
     </div>

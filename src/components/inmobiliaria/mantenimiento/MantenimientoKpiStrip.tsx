@@ -132,7 +132,7 @@ export function MantenimientoKpiStrip({
 
       {/* Anti-gaming KPIs — separated block (CONTEXT §compliance, non-negotiable) */}
       <div data-testid="anti-gaming" className="space-y-2.5">
-        <h2 className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-subtle">
+        <h2 className="font-mono text-caption font-medium uppercase tracking-[0.06em] text-fg-subtle">
           {t('inmobiliaria.ai.mantenimiento.overview.antiGamingLabel')}
         </h2>
         <FranjaDeCifras columnas={2} className="md:max-w-[50%]">

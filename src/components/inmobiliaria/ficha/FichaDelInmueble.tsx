@@ -76,7 +76,7 @@ export function FichaDelInmueble({ property, cargando = false, ubicacion, onEdit
         <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4" data-testid="caracteristicas-del-inmueble">
           {caracteristicas.map((c) => (
             <div key={c.clave} className="min-w-0">
-              <dt className="font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle">{c.rotulo}</dt>
+              <dt className="font-mono text-caption uppercase tracking-[0.1em] text-fg-subtle">{c.rotulo}</dt>
               <dd className="mt-1.5 whitespace-nowrap font-mono text-[17px] tabular-nums text-fg">{c.valor}</dd>
             </div>
           ))}

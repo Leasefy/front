@@ -135,7 +135,7 @@ function Marco({
                 ))
               : menu.map((grupo) => (
                   <div key={grupo.id} className="space-y-0.5">
-                    <p className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
+                    <p className="px-3 pb-1 text-caption font-medium uppercase tracking-wide text-fg-subtle">
                       {grupo.label}
                     </p>
                     {grupo.entradas.map((e) => (
@@ -166,7 +166,7 @@ function Marco({
         >
           {activa && (
             <div className="space-y-1">
-              <h2 className="text-base font-semibold text-fg">{activa.label}</h2>
+              <h2 className="text-base font-medium text-fg">{activa.label}</h2>
               <p className="text-sm text-fg-muted">{activa.desc}</p>
             </div>
           )}

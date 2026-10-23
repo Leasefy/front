@@ -150,7 +150,7 @@ export function DesgloseDelPuntaje({
         {sinTotal ? null : (
           <li className="flex items-baseline justify-between gap-4 bg-surface-muted/40 px-4 py-2.5">
             <span className="text-sm font-medium text-fg">{tr("Puntaje")}</span>
-            <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-fg">
+            <span className="shrink-0 font-mono text-sm tabular-nums text-fg">
               {puntaje}
               <span className="text-fg-muted">/100</span>
             </span>

@@ -46,7 +46,6 @@ import type {
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import {
   Avisos,
-  Cifra,
   EstadoDelPeriodo,
   ParaValidar,
   TituloDeBloque,
@@ -54,6 +53,9 @@ import {
   etiquetaDelPeriodo,
 } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
+import { Cifra as CifraDeLaFranja, FranjaDeCifras } from '@leasefy/cadence';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 
 /**
  * 🔴 LA CONSTANCIA DEL ENVÍO.
@@ -211,10 +213,10 @@ function Contenido({
 
   return (
     <div className="space-y-6">
-      <header className="space-y-2 rounded-lg border border-border bg-surface p-5">
+      <header className="space-y-2">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-medium text-fg">{datos.nombre}</h2>
+            <h2 className="text-[17px] font-[460] tracking-[-0.01em] text-fg">{datos.nombre}</h2>
             <p className="text-caption text-fg-muted">
               {[
                 datos.documento ? `Documento ${datos.documento}` : null,
@@ -228,23 +230,12 @@ function Contenido({
                 .join(' · ')}
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-medium text-fg">
-              {etiquetaDelPeriodo(datos.periodo.mes, datos.periodo.quincena)}
-            </p>
-            <p className="text-caption text-fg-muted">
-              {datos.periodo.desde.slice(0, 10)} al{' '}
-              {datos.periodo.hasta.slice(0, 10)} · {datos.diasLiquidados} días
-            </p>
-            <div className="mt-1">
-              <EstadoDelPeriodo estado={datos.periodo.estado} />
-            </div>
-          </div>
+          <EstadoDelPeriodo estado={datos.periodo.estado} />
         </div>
         {datos.esDefinitiva ? (
           <p className="text-caption font-medium text-warning" data-testid="es-definitiva">
             Liquidación DEFINITIVA por terminación del contrato
-            {datos.fechaRetiro ? ` el ${datos.fechaRetiro.slice(0, 10)}` : ''}
+            {datos.fechaRetiro ? ` el ${fechaCorta(datos.fechaRetiro.slice(0, 10))}` : ''}
             {datos.causalRetiro
               ? ` (${datos.causalRetiro.replace(/_/g, ' ').toLowerCase()})`
               : ''}
@@ -252,6 +243,21 @@ function Contenido({
           </p>
         ) : null}
       </header>
+
+      {/* GLOW UP 3.ª vuelta · LA RESPUESTA: lo que se le gira. Antes eran cuatro cifras del mismo
+          peso; el devengado, las deducciones y el IBC la acompañan en la franja de abajo. */}
+      <CifraHeroe
+        rotulo={`Neto a pagar · ${etiquetaDelPeriodo(datos.periodo.mes, datos.periodo.quincena)}`}
+        cifra={<span data-testid="valor-neto">{formatCurrency(datos.netoCop)}</span>}
+        contexto={`${datos.diasLiquidados} días, del ${fechaCorta(datos.periodo.desde.slice(0, 10))} al ${fechaCorta(datos.periodo.hasta.slice(0, 10))}`}
+        pie="Devengado menos deducciones: la cifra que se gira, tal como la calculó el sistema."
+        data-testid="cifra-del-desprendible"
+      />
+      <FranjaDeCifras aria-label="De dónde sale el neto">
+        <CifraDeLaFranja etiqueta="Devengado" valor={formatCurrency(datos.devengadoCop)} detalle="Lo reconocido en el período" data-testid="valor-devengado" />
+        <CifraDeLaFranja etiqueta="Deducciones" valor={formatCurrency(datos.deduccionesCop)} detalle="Aportes, retención y descuentos" data-testid="valor-deducciones" />
+        <CifraDeLaFranja etiqueta="IBC de seguridad social" valor={formatCurrency(datos.ibcCop)} detalle="Sin el auxilio de transporte" data-testid="valor-ibc" />
+      </FranjaDeCifras>
 
       <Constancia datos={datos} onReenviado={onReenviado} />
 
@@ -269,34 +275,6 @@ function Contenido({
         <Avisos avisos={datos.avisos} tono="info" testId="avisos-del-desprendible" />
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Cifra
-          id="devengado"
-          etiqueta="Devengado"
-          valor={datos.devengadoCop}
-          definicion="Lo que se le reconoció en el período."
-        />
-        <Cifra
-          id="deducciones"
-          etiqueta="Deducciones"
-          valor={datos.deduccionesCop}
-          definicion="Sus aportes, la retención y los descuentos autorizados."
-        />
-        <Cifra
-          id="neto"
-          etiqueta="Neto a pagar"
-          valor={datos.netoCop}
-          definicion="Devengado menos deducciones. Es la cifra que se gira, tal como la calculó el back — esta pantalla no la vuelve a sumar."
-          tono="success"
-        />
-        <Cifra
-          id="ibc"
-          etiqueta="IBC de seguridad social"
-          valor={datos.ibcCop}
-          definicion="Lo constitutivo de salario, con el piso de 1 salario mínimo y el techo de 25. El auxilio de transporte NO entra."
-        />
-      </div>
-
       {BLOQUES.map((b) => {
         const lineas = porClase.get(b.clase) ?? [];
         if (lineas.length === 0) return null;
@@ -304,9 +282,9 @@ function Contenido({
         return (
           <section key={b.clase} className="space-y-3">
             <TituloDeBloque titulo={b.titulo} explicacion={b.explicacion} />
-            <div className="overflow-x-auto">
-              <Table data-testid={`bloque-${b.clase}`}>
-                <TableHeader>
+            <div className="overflow-hidden rounded-lg border border-border bg-surface">
+              <Table data-testid={`bloque-${b.clase}`} className="max-md:block">
+                <TableHeader className="max-md:hidden">
                   <TableRow>
                     <TableHead>Concepto</TableHead>
                     <TableHead className="text-right">Cantidad</TableHead>
@@ -314,10 +292,14 @@ function Contenido({
                     <TableHead>De dónde sale</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className="max-md:block">
                   {lineas.map((l) => (
-                    <TableRow key={l.id} data-testid={`linea-${l.codigo}`}>
-                      <TableCell>
+                    <TableRow
+                      key={l.id}
+                      data-testid={`linea-${l.codigo}`}
+                      className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3"
+                    >
+                      <TableCell className="max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0">
                         <span className="font-medium text-fg">{l.nombre}</span>
                         <span className="ml-1.5 text-caption text-fg-muted">
                           {l.codigo}
@@ -331,13 +313,13 @@ function Contenido({
                           </span>
                         ) : null}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="text-right tabular-nums max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-caption max-md:text-fg-muted">
                         {deCentesimas(l.cantidadCentesimas)}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                         {formatCurrency(l.valorCop)}
                       </TableCell>
-                      <TableCell className="max-w-md text-caption leading-relaxed text-fg-muted">
+                      <TableCell className="max-w-md text-caption leading-relaxed text-fg-muted max-md:col-start-1 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
                         {l.detalle}
                         {l.requiereValidacionContador && l.motivoValidacion ? (
                           <div className="mt-1">
@@ -350,16 +332,16 @@ function Contenido({
                       </TableCell>
                     </TableRow>
                   ))}
-                  <TableRow>
-                    <TableCell className="font-medium">Total</TableCell>
-                    <TableCell />
+                  <TableRow className="max-md:flex max-md:items-baseline max-md:justify-between max-md:px-4 max-md:py-3">
+                    <TableCell className="font-medium max-md:block max-md:p-0">Total</TableCell>
+                    <TableCell className="max-md:hidden" />
                     <TableCell
-                      className="text-right font-mono font-medium tabular-nums"
+                      className="text-right font-mono tabular-nums text-fg max-md:block max-md:p-0"
                       data-testid={`total-${b.clase}`}
                     >
                       {formatCurrency(total)}
                     </TableCell>
-                    <TableCell />
+                    <TableCell className="max-md:hidden" />
                   </TableRow>
                 </TableBody>
               </Table>

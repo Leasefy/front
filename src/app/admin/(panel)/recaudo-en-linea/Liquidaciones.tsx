@@ -13,6 +13,7 @@
  */
 
 import { useState } from 'react'
+import { Funnel } from '@phosphor-icons/react'
 import { Collapse, Presence } from '@leasefy/cadence'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
@@ -92,6 +93,7 @@ export function Liquidaciones({
   const pagina = Number(url.get('pagina')) || 0
   const setPagina = (p: number) => url.setFilters({ pagina: p <= 0 ? undefined : p })
   const [abierta, setAbierta] = useState<string | null>(null)
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
   const rangoInvertido = !!filtros.desde && !!filtros.hasta && filtros.desde > filtros.hasta
 
   const { data, isLoading, error, refetch } = useApiQuery(
@@ -113,76 +115,15 @@ export function Liquidaciones({
     setAbierta(null)
   }
   const hayFiltros = Boolean(filtros.agencyId || filtros.desde || filtros.hasta || filtros.estado)
+  const filtrosPuestos = [filtros.agencyId, filtros.desde || filtros.hasta, filtros.estado].filter(Boolean).length
 
   return (
     <div data-testid="liquidaciones">
-      {/* Ronda 26 (revisora r25): UNA barra con los rótulos en la línea (antes una tarjeta en grilla con cuatro
-          rótulos en mono mayúscula encima). */}
-      <BarraDeFiltros>
-        <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria-recaudo">
-          <Desplegable
-            id="filtro-inmobiliaria-recaudo"
-            value={filtros.agencyId ?? ''}
-            onChange={(v) => cambiar({ agencyId: v || undefined })}
-            todas="Todas las inmobiliarias"
-            aria-label="Inmobiliaria"
-            data-testid="filtro-inmobiliaria"
-            opciones={inmobiliarias.map((i) => ({ valor: i.id, nombre: i.nombre }))}
-          />
-        </Filtro>
-        <div className="flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label="Fecha del giro">
-          <span className="shrink-0 whitespace-nowrap text-caption text-fg-muted">Fecha del giro</span>
-          <label htmlFor="filtro-desde" className="sr-only">
-            Desde
-          </label>
-          <div className="w-[9.5rem]">
-            <CampoDeFecha id="filtro-desde" testid="filtro-desde" value={filtros.desde ?? ''} onChange={(v) => cambiar({ desde: v || undefined })} />
-          </div>
-          <span aria-hidden="true" className="text-fg-subtle">
-            –
-          </span>
-          <label htmlFor="filtro-hasta" className="sr-only">
-            Hasta
-          </label>
-          <div className="w-[9.5rem]">
-            <CampoDeFecha id="filtro-hasta" testid="filtro-hasta" value={filtros.hasta ?? ''} onChange={(v) => cambiar({ hasta: v || undefined })} />
-          </div>
-        </div>
-        <Filtro etiqueta="Estado" htmlFor="filtro-estado-recaudo">
-          <Desplegable
-            id="filtro-estado-recaudo"
-            value={filtros.estado ?? ''}
-            onChange={(v) => cambiar({ estado: (v || undefined) as EstadoDeLaLiquidacion | undefined })}
-            todas="Todos los estados"
-            aria-label="Estado"
-            data-testid="filtro-estado"
-            opciones={[
-              { valor: 'generada', nombre: 'Generada' },
-              { valor: 'girada', nombre: 'Girada' },
-              { valor: 'conciliada', nombre: 'Conciliada en el banco' },
-            ]}
-          />
-        </Filtro>
-        {hayFiltros ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            hideArrow
-            onClick={() => cambiar({ agencyId: undefined, desde: undefined, hasta: undefined, estado: undefined })}
-          >
-            Limpiar filtros
-          </Button>
-        ) : null}
-      </BarraDeFiltros>
-      {rangoInvertido ? (
-        <p className="mt-3 text-body-sm text-danger" data-testid="rango-invertido">
-          La fecha «desde» va antes de la fecha «hasta».
-        </p>
-      ) : null}
-
+      {/* Ronda 28 (revisora r27): primero lo que se genera y LA RESPUESTA; después UNA tarjeta con los filtros
+          DENTRO (antes la barra suelta, «selects por ahí tirados») y la lista. A 390 los filtros van detrás de
+          «Filtros (n)». */}
       <Collapse open={generando}>
-        <div className="pt-4">
+        <div className="pb-4">
           <GenerarLiquidaciones
             inmobiliarias={inmobiliarias}
             alGenerar={() => {
@@ -195,7 +136,7 @@ export function Liquidaciones({
 
       {data && data.disponible && data.total > 0 ? (
         // LA RESPUESTA: cuánto se gira con estos filtros y cuánto se quedó en el camino (Wompi y Leasefy).
-        <div className="mt-4 rounded-lg border border-border bg-surface p-5 sm:p-6" data-testid="totales-de-liquidaciones">
+        <div className="mb-4 rounded-lg border border-border bg-surface p-5 sm:p-6" data-testid="totales-de-liquidaciones">
           <CifraHeroe
             rotulo="Neto que se gira"
             cifra={pesos(data.totales.netoCop)}
@@ -215,7 +156,87 @@ export function Liquidaciones({
         </div>
       ) : null}
 
-      <div className="mt-4">
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
+        <div className="space-y-3 border-b border-border p-4">
+          <Button
+            variant="secondary"
+            size="sm"
+            hideArrow
+            type="button"
+            className="w-full gap-2 sm:hidden"
+            aria-expanded={filtrosAbiertos}
+            onClick={() => setFiltrosAbiertos((v) => !v)}
+            data-testid="liquidaciones-boton-filtros"
+          >
+            <Funnel className="h-4 w-4" aria-hidden />
+            Filtros{filtrosPuestos > 0 ? ` (${filtrosPuestos})` : ''}
+          </Button>
+          <div className={filtrosAbiertos ? 'block' : 'hidden sm:block'}>
+        <BarraDeFiltros>
+          <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria-recaudo">
+            <Desplegable
+              id="filtro-inmobiliaria-recaudo"
+              value={filtros.agencyId ?? ''}
+              onChange={(v) => cambiar({ agencyId: v || undefined })}
+              todas="Todas las inmobiliarias"
+              aria-label="Inmobiliaria"
+              data-testid="filtro-inmobiliaria"
+              opciones={inmobiliarias.map((i) => ({ valor: i.id, nombre: i.nombre }))}
+            />
+          </Filtro>
+          <div className="flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label="Fecha del giro">
+            <span className="w-full shrink-0 whitespace-nowrap text-caption text-fg-muted sm:w-auto">Fecha del giro</span>
+            <label htmlFor="filtro-desde" className="sr-only">
+              Desde
+            </label>
+            <div className="min-w-0 flex-1 sm:w-[9.5rem] sm:flex-none">
+              <CampoDeFecha id="filtro-desde" testid="filtro-desde" value={filtros.desde ?? ''} onChange={(v) => cambiar({ desde: v || undefined })} />
+            </div>
+            <span aria-hidden="true" className="text-fg-subtle">
+              –
+            </span>
+            <label htmlFor="filtro-hasta" className="sr-only">
+              Hasta
+            </label>
+            <div className="min-w-0 flex-1 sm:w-[9.5rem] sm:flex-none">
+              <CampoDeFecha id="filtro-hasta" testid="filtro-hasta" value={filtros.hasta ?? ''} onChange={(v) => cambiar({ hasta: v || undefined })} />
+            </div>
+          </div>
+          <Filtro etiqueta="Estado" htmlFor="filtro-estado-recaudo">
+            <Desplegable
+              id="filtro-estado-recaudo"
+              value={filtros.estado ?? ''}
+              onChange={(v) => cambiar({ estado: (v || undefined) as EstadoDeLaLiquidacion | undefined })}
+              todas="Todos los estados"
+              aria-label="Estado"
+              data-testid="filtro-estado"
+              opciones={[
+                { valor: 'generada', nombre: 'Generada' },
+                { valor: 'girada', nombre: 'Girada' },
+                { valor: 'conciliada', nombre: 'Conciliada en el banco' },
+              ]}
+            />
+          </Filtro>
+          {hayFiltros ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              hideArrow
+              onClick={() => cambiar({ agencyId: undefined, desde: undefined, hasta: undefined, estado: undefined })}
+            >
+              Limpiar filtros
+            </Button>
+          ) : null}
+        </BarraDeFiltros>
+          </div>
+          {rangoInvertido ? (
+            <p className="text-body-sm text-danger" data-testid="rango-invertido">
+              La fecha «desde» va antes de la fecha «hasta».
+            </p>
+          ) : null}
+        </div>
+      <div className="p-4">
         {isLoading ? (
           <LoadingBlock label="cargando liquidaciones" />
         ) : error ? (
@@ -241,10 +262,11 @@ export function Liquidaciones({
           ) : (
             <EmptyBlock
               title="Todavía no hay liquidaciones"
-              hint="Se generan por un rango de fechas: la frecuencia del giro está por definir."
+              // Ronda 28 (revisora r27): sin repetir «la frecuencia… por definir» (va arriba) y sin un segundo azul.
+              hint="Elige un rango de fechas y se arma la de cada inmobiliaria."
               accion={
                 alPedirGenerar && !generando ? (
-                  <Button size="sm" hideArrow type="button" onClick={alPedirGenerar}>
+                  <Button size="sm" variant="outline" hideArrow type="button" onClick={alPedirGenerar}>
                     Generar liquidaciones
                   </Button>
                 ) : undefined
@@ -266,6 +288,7 @@ export function Liquidaciones({
           </div>
         )}
         {data ? <Pagination page={pagina} total={data.total} pageSize={POR_PAGINA} onPage={setPagina} /> : null}
+      </div>
       </div>
     </div>
   )

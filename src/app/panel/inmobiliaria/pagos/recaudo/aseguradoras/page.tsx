@@ -13,6 +13,7 @@
  */
 
 import { SinDatos } from '@/components/estado/SinDatos';
+import { ShieldCheck } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -173,6 +174,7 @@ function Contenido() {
         cuandoVacio={
           <SinDatos
             queSon="aseguradoras"
+            icono={ShieldCheck}
             titulo="Todavía no hay aseguradoras registradas"
             descripcion={
               puedeEditar

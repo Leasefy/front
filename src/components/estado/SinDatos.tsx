@@ -23,7 +23,7 @@
 
 import { Ilustracion, type NombreIlustracion } from '@leasefy/cadence'
 import Link from 'next/link'
-import { MagnifyingGlass, Plus, type Icon } from '@phosphor-icons/react'
+import { MagnifyingGlass, Plus, Tray, type Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CajaQueEntra } from './entrada-del-estado'
@@ -38,7 +38,10 @@ export interface SinDatosProps {
   hayFiltros?: boolean
   /** En plural y en minúscula: «inmuebles», «contratos», «propietarios». */
   queSon: string
-  /** El icono del dominio. Sólo se usa en el vacío de verdad. */
+  /**
+   * El icono del dominio. Sólo se usa en el vacío de verdad. Sin él, una bandeja vacía:
+   * la lupa dice «tu búsqueda no encontró nada» y es sólo para `hayFiltros` (revisora r27, C10).
+   */
   icono?: Icon
   /** Texto propio para el vacío de verdad; si no, se arma con `queSon`. */
   titulo?: string
@@ -79,7 +82,7 @@ export function SinDatos({
   className,
 }: SinDatosProps) {
   const tr = useTr();
-  const Icono = hayFiltros ? MagnifyingGlass : (IconoDelDominio ?? MagnifyingGlass)
+  const Icono = hayFiltros ? MagnifyingGlass : (IconoDelDominio ?? Tray)
 
   const tituloFinal = hayFiltros
     ? `Ningún resultado`

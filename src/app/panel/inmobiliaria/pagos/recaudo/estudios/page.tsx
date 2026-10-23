@@ -15,7 +15,7 @@ import { useTr } from '@/lib/i18n/use-tr';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Prohibit } from '@phosphor-icons/react';
+import { Prohibit, Receipt } from '@phosphor-icons/react';
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
@@ -147,6 +147,7 @@ function Contenido() {
         cuandoVacio={
           <SinDatos
             queSon="estudios pagados"
+            icono={Receipt}
             titulo="Todavía no hay estudios pagados"
             descripcion="Cuando un solicitante paga su estudio, aquí queda con su recibo y su factura."
             accion={

@@ -27,6 +27,7 @@
  */
 
 import { useState } from 'react';
+import { ListBullets } from '@phosphor-icons/react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
@@ -192,6 +193,7 @@ export function ConceptosDeNominaPanel() {
                 <div className="overflow-hidden rounded-lg border border-border bg-surface">
                   <SinDatos
                     queSon="conceptos"
+                    icono={ListBullets}
                     titulo="Todavía no hay conceptos"
                     descripcion="Carga los que Leasefy sugiere: cargarlos dos veces no duplica nada ni pisa lo que hayas editado."
                     accion={

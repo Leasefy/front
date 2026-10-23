@@ -23,6 +23,7 @@
  */
 
 import { SinDatos } from '@/components/estado/SinDatos';
+import { FileText } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { sinElEquipoEnLaFrase } from '@/lib/contabilidad/plata';
 import { useState } from 'react';
@@ -199,6 +200,7 @@ export function NominaElectronicaPanel() {
                 datos.documentos.length === 0 ? (
                   <SinDatos
                     queSon="documentos"
+                    icono={FileText}
                     titulo="Todavía no hay documentos"
                     descripcion="Se generan desde un período de nómina aprobado: «Generar» lo numera sin CUNE y «Transmitir» es el que habla con el proveedor."
                     accion={

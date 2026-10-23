@@ -26,7 +26,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Plus, Trash } from '@phosphor-icons/react';
+import { Calculator, Plus, Trash } from '@phosphor-icons/react';
 
 import {
   AlertDialog,
@@ -233,6 +233,7 @@ export function PresupuestoPanel() {
             <div className="space-y-4 p-4" data-testid="presupuesto-sin-cargar">
               <SinDatos
                 queSon="rubros del presupuesto"
+                icono={Calculator}
                 titulo={`Todavía no hay presupuesto para ${nombreDelMes(mes)}`}
                 descripcion="Carga lo que planeas por rubro y aquí lo comparas con lo que pasó."
                 accion={

@@ -28,7 +28,7 @@
 import { SinDatos } from '@/components/estado/SinDatos';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Prohibit } from '@phosphor-icons/react';
+import { CalendarBlank, Prohibit } from '@phosphor-icons/react';
 
 import {
   AlertDialog,
@@ -308,6 +308,7 @@ export function PeriodosDeNominaPanel() {
               <div className="rounded-lg border border-border bg-surface">
                 <SinDatos
                   queSon="períodos"
+                  icono={CalendarBlank}
                   titulo="Todavía no hay períodos liquidados"
                   descripcion="Arma el primero arriba: elige el mes y la periodicidad."
                   accion={

@@ -24,6 +24,7 @@
  */
 
 import { SinDatos } from '@/components/estado/SinDatos';
+import { MagnifyingGlass, UsersThree } from '@phosphor-icons/react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -201,6 +202,7 @@ export function PersonasDeNominaPanel() {
                 personas.personas.length === 0 && !busqueda ? (
                   <SinDatos
                     queSon="personas"
+                    icono={UsersThree}
                     titulo="Todavía no hay nadie registrado"
                     descripcion="Registra a la primera persona para liquidarle la nómina."
                     accion={
@@ -212,6 +214,7 @@ export function PersonasDeNominaPanel() {
                 ) : busqueda ? (
                   <SinDatos
                     queSon="personas"
+                    icono={MagnifyingGlass}
                     titulo="Nadie con ese nombre o documento"
                     descripcion="Prueba con otra parte del nombre o con el número sin puntos."
                     accion={

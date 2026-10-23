@@ -106,7 +106,9 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // esas pantallas enteras a 13: compromisos del deudor, reporte diario,
 // suscripción, umbrales, fallidos y auditoría (35 textos a `text-caption`; los
 // rótulos en mayúsculas se quedan en 12).
-const CUANTOS_HABIA = 546; // 22-10 noche: 548 con el glow up de las cuatro zonas (ratchet)
+// 22-10 noche: 548 con el glow up de las cuatro zonas; 23-10 madrugada: 330 al cerrar el panel, Dinero,
+// los portales y el barrido de `components/contract` (ratchet).
+const CUANTOS_HABIA = 330;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {
@@ -131,7 +133,8 @@ describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('el barrido mira archivos de verdad', () => {
     const { porArchivo } = contarDoce();
     // 22-10 (glow up de los portales, el admin y las pantallas fuera de las rondas): los archivos con `text-xs` bajaron
-    // de ~450 a ~290 porque se limpiaron, no porque el barrido dejara de mirar. 200 sigue detectando un barrido roto.
-    expect(porArchivo.size).toBeGreaterThan(200);
+    // de ~450 a ~290 porque se limpiaron, no porque el barrido dejara de mirar; el 23-10, a ~140. 80 sigue
+    // detectando un barrido roto (una carpeta vacía o un patrón que no encuentra nada da 0).
+    expect(porArchivo.size).toBeGreaterThan(80);
   });
 });

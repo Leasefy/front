@@ -1310,14 +1310,10 @@ export function ConfigPerfilAgencia({
 
         {editando ? (
           <>
-            <div className="p-4 rounded-lg bg-primary-soft border border-primary/30">
-              <div className="flex gap-3">
-                <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" weight="fill" />
-                <p className="text-sm text-primary">
-                  {t('inmobiliaria.config.profile.defaultSettingsHint')}
-                </p>
-              </div>
-            </div>
+            {/* Revisora r25 (T3): era una caja informativa azul; es una línea de ayuda. */}
+            <p className="text-caption text-fg-muted">
+              {t('inmobiliaria.config.profile.defaultSettingsHint')}
+            </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <InputWrapper
@@ -1471,7 +1467,7 @@ export function ConfigPerfilAgencia({
                       selected={formData.reminderDaysBefore.includes(day)}
                       onClick={() => toggleReminderDay('reminderDaysBefore', day)}
                     >
-                      {day}d
+                      {day === 1 ? '1 día' : `${day} días`}
                     </Chip>
                   ))}
                 </div>
@@ -1492,7 +1488,7 @@ export function ConfigPerfilAgencia({
                       selected={formData.reminderDaysAfter.includes(day)}
                       onClick={() => toggleReminderDay('reminderDaysAfter', day)}
                     >
-                      {day}d
+                      {day === 1 ? '1 día' : `${day} días`}
                     </Chip>
                   ))}
                 </div>
@@ -1503,13 +1499,13 @@ export function ConfigPerfilAgencia({
               <div>
                 <span className="text-muted-foreground">{t('inmobiliaria.config.profile.remindersBefore')}:</span>
                 <span className="ml-2 text-foreground">
-                  {reminderDaysBefore.length > 0 ? reminderDaysBefore.map((d) => `${d}d`).join(', ') : '—'}
+                  {reminderDaysBefore.length > 0 ? reminderDaysBefore.map((d) => (d === 1 ? '1 día' : `${d} días`)).join(', ') : '—'}
                 </span>
               </div>
               <div>
                 <span className="text-muted-foreground">{t('inmobiliaria.config.profile.remindersAfter')}:</span>
                 <span className="ml-2 text-foreground">
-                  {reminderDaysAfter.length > 0 ? reminderDaysAfter.map((d) => `${d}d`).join(', ') : '—'}
+                  {reminderDaysAfter.length > 0 ? reminderDaysAfter.map((d) => (d === 1 ? '1 día' : `${d} días`)).join(', ') : '—'}
                 </span>
               </div>
             </div>
@@ -1528,7 +1524,7 @@ export function ConfigPerfilAgencia({
             <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4">
               <div className="space-y-1">
                 <label htmlFor="motor-de-cobros" className="block text-sm font-medium text-foreground">
-                  Motor de cobros con reglas de mora
+                  Cobrar con las reglas de mora
                 </label>
                 <p className="text-caption text-muted-foreground">
                   Apagado: se cobra el % mensual fijo de «{t('inmobiliaria.config.profile.defaultSettings')}».
@@ -1682,7 +1678,7 @@ export function ConfigPerfilAgencia({
         ) : (
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div className="p-3 rounded-md bg-muted/50">
-              <div className="text-muted-foreground text-caption">Motor de cobros</div>
+              <div className="text-muted-foreground text-caption">Cómo se cobra la mora</div>
               <div className="text-foreground font-medium">
                 {agency.motorDeCobrosV2
                   ? 'Reglas de mora'
@@ -1725,7 +1721,7 @@ export function ConfigPerfilAgencia({
           El código lo recibe por correo OTRA persona con permiso sobre
           dispersiones (lotes.service.ts): aquí sólo se decide cuándo se pide. */}
       <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
-        <SectionHeader icon={Bank} title="Dispersiones" />
+        <SectionHeader icon={Bank} title="Giros a propietarios" />
 
         {editando ? (
           <div className="space-y-4">

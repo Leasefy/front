@@ -206,8 +206,9 @@ export function ConfigCicloDeVidaDelContrato({
         </p>
       </div>
 
-      <label className="block text-caption" htmlFor="dias-antes-carta">
-        Días antes del aniversario en que sale la carta del incremento
+      {/* Revisora r25: el mismo molde de los demás campos, la etiqueta arriba. */}
+      <div className="space-y-1.5">
+        <Label htmlFor="dias-antes-carta">Días antes del aniversario en que sale la carta del incremento</Label>
         <Input
           id="dias-antes-carta"
           inputMode="numeric"
@@ -215,10 +216,10 @@ export function ConfigCicloDeVidaDelContrato({
           onChange={(e) => setDias(e.target.value)}
           placeholder="30"
           disabled={deshabilitado}
-          className="mt-1 w-28"
+          className="w-28"
           data-testid="dias-antes-carta"
         />
-      </label>
+      </div>
 
       <fieldset className="space-y-1 text-caption" disabled={deshabilitado}>
         <legend>¿Tus contratos pactan gastos de cobranza?</legend>

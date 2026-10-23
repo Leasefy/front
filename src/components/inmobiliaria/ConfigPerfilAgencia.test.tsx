@@ -128,7 +128,7 @@ describe('<ConfigPerfilAgencia>', () => {
     expect(text).toContain('901.234.567-8')
     expect(text).toContain('Juan Perez')
     // Reminder arrays from the agency row
-    expect(text).toContain('3d, 1d')
+    expect(text).toContain('3 días, 1 día')
   })
 
   it('renders the extended design fields in view mode', () => {

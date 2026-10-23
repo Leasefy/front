@@ -349,6 +349,7 @@ export function ConfigUsuarios({
       inactive: users.filter((u) => u.status === 'inactive').length,
     };
   }, [users]);
+  const todosActivos = userCounts.total > 1 && userCounts.active === userCounts.total;
 
 
   // Handle invite submit
@@ -424,7 +425,10 @@ export function ConfigUsuarios({
             data-testid="equipo-estados"
             pestanas={[
               { valor: 'all', etiqueta: tr('Todos'), cuantos: userCounts.total, fija: true },
-              { valor: 'active', etiqueta: tr('Activos'), cuantos: userCounts.active, fija: true },
+              // Revisora r25: con nadie inactivo ni invitado, «Activos» repetía «Todos».
+              ...(todosActivos && filterStatus !== 'active'
+                ? []
+                : [{ valor: 'active' as FilterStatus, etiqueta: tr('Activos'), cuantos: userCounts.active, fija: true }]),
               { valor: 'invited', etiqueta: tr('Invitaciones abiertas'), cuantos: userCounts.invited, tono: 'aviso' },
               { valor: 'inactive', etiqueta: tr('Inactivos'), cuantos: userCounts.inactive },
             ]}
@@ -445,11 +449,13 @@ export function ConfigUsuarios({
                   {t('inmobiliaria.config.users.role')}
                 </span>
               </TableHead>
-              <TableHead className="text-left p-4">
-                <span>
-                  {t('inmobiliaria.config.users.status')}
-                </span>
-              </TableHead>
+              {todosActivos ? null : (
+                <TableHead className="text-left p-4">
+                  <span>
+                    {t('inmobiliaria.config.users.status')}
+                  </span>
+                </TableHead>
+              )}
               <TableHead className="text-left p-4 hidden md:table-cell">
                 <span>
                   {t('inmobiliaria.config.users.lastAccess')}
@@ -464,7 +470,7 @@ export function ConfigUsuarios({
           <TableBodyAnimado className="max-md:block">
             {pageItems.length === 0 && (
               <TableRow key="sin-miembros" className="max-md:block">
-                <TableCell colSpan={5} className="p-0 max-md:block">
+                <TableCell colSpan={todosActivos ? 4 : 5} className="p-0 max-md:block">
                   <SinDatos
                     hayFiltros={hayFiltros}
                     queSon="miembros"
@@ -534,12 +540,15 @@ export function ConfigUsuarios({
                       {getRoleLabel(user.role)}
                     </TableCell>
 
-                    {/* Estado: con su punto (StatusBadge). */}
-                    <TableCell className="p-4 max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
-                      <StatusBadge tone={(user.status && TONO_DEL_ESTADO[user.status]) || 'neutral'}>
-                        {getUserStatusLabel(user.status)}
-                      </StatusBadge>
-                    </TableCell>
+                    {/* Estado: con su punto (StatusBadge). Con todos activos, «● Activo» en
+                        cada fila no informa (revisora r25): la columna no sale. */}
+                    {todosActivos ? null : (
+                      <TableCell className="p-4 max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
+                        <StatusBadge tone={(user.status && TONO_DEL_ESTADO[user.status]) || 'neutral'}>
+                          {getUserStatusLabel(user.status)}
+                        </StatusBadge>
+                      </TableCell>
+                    )}
 
                     {/* Last Login */}
                     <TableCell className="p-4 hidden md:table-cell">

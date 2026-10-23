@@ -22,6 +22,7 @@
  * la DIAN.
  */
 
+import { sinElEquipoEnLaFrase } from '@/lib/contabilidad/plata';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,10 @@ import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { Label } from '@/components/ui/label';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+
+/** Lo que se dice en vez de «La integración la hace Víctor» (revisora r25, B8). */
+export const CONEXION_CON_LA_DIAN =
+  'La conexión con la DIAN la activa Leasefy, con el mismo proveedor de la factura electrónica.';
 
 type VistaDeDocumentos = 'todos' | 'por-transmitir' | 'rechazados' | 'aceptados';
 const POR_TRANSMITIR = new Set(['GENERADO', 'EN_COLA', 'TRANSMITIDO', 'NO_CONFIGURADO']);
@@ -125,10 +130,13 @@ export function NominaElectronicaPanel() {
 
             {datos.proveedor.aviso ? (
               <Avisos
-                avisos={[datos.proveedor.aviso]}
+                // Revisora r25 (B8): el aviso del back dice quién del equipo hace la
+                // integración; quien lee no sabe quién es Víctor (lo mismo prueban
+                // las vecinas: ParametrosDeNomina y Desprendible).
+                avisos={[sinElEquipoEnLaFrase(datos.proveedor.aviso, CONEXION_CON_LA_DIAN)]}
                 titulo={
                   datos.proveedor.esDePrueba
-                    ? 'Proveedor DE PRUEBA: estos documentos NO llegan a la DIAN'
+                    ? 'Proveedor de prueba: estos documentos no llegan a la DIAN'
                     : 'Sin proveedor de nómina electrónica'
                 }
                 testId="aviso-del-proveedor"

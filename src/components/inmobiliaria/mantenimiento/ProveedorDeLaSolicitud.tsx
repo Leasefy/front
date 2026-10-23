@@ -250,8 +250,8 @@ export function ProveedorDeLaSolicitud({
           />
           <ErrorDelCampo id="mantenimiento-proveedorId-error" mensaje={error} />
           {elegido && (
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <span className={elegido.avisos.length > 0 ? 'text-warning' : 'text-fg-muted'} data-testid="proveedor-elegido-avisos">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-caption">
+              <span className={elegido.avisos.length > 0 ? 'text-warning-700 dark:text-warning-100' : 'text-fg-muted'} data-testid="proveedor-elegido-avisos">
                 {elegido.avisos.length > 0
                   ? elegido.avisos.join(' · ')
                   : [elegido.telefono, elegido.correo].filter(Boolean).join(' · ') || 'Sin teléfono ni correo registrados.'}
@@ -284,10 +284,11 @@ export function ProveedorDeLaSolicitud({
       )}
 
       <Presence show={registrando} direction="down">
-        <div className="space-y-3 rounded-lg border border-border p-4" data-testid="proveedor-nuevo">
+        {/* Glow up 23-10: el registro rápido en arena, sin una tarjeta con borde dentro del formulario. */}
+        <div className="space-y-3 rounded-xl bg-surface-muted p-4" data-testid="proveedor-nuevo">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium text-fg">Registrar un proveedor nuevo</p>
-            <button type="button" className="text-sm text-primary hover:underline" onClick={() => setRegistrando(false)}>
+            <p className="text-body-sm text-fg">Registrar un proveedor nuevo</p>
+            <button type="button" className="text-body-sm text-primary underline-offset-4 hover:underline" onClick={() => setRegistrando(false)}>
               {proveedores.length > 0 ? 'Escoger de los registrados' : 'Cancelar'}
             </button>
           </div>
@@ -371,11 +372,12 @@ export function ProveedorDeLaSolicitud({
               <ErrorDelCampo id="proveedor-nuevo-correo-error" mensaje={errores.correo} />
             </div>
           </div>
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             Queda en Proveedores con el oficio de esta solicitud. El RUT y la seguridad social los subes allá.
           </p>
           <div className="flex justify-end">
-            <Button type="button" hideArrow isLoading={guardando} onClick={() => void registrar()} data-testid="proveedor-nuevo-registrar">
+            {/* En tinta: el azul del cajón es el de crear la solicitud. */}
+            <Button type="button" variant="ink" hideArrow isLoading={guardando} onClick={() => void registrar()} data-testid="proveedor-nuevo-registrar">
               Registrar y elegir
             </Button>
           </div>

@@ -213,9 +213,9 @@ describe('PlantillasPage', () => {
     // The stage tab is default. Stage template has tokenCount=1600 which triggers amber.
     const amberBadges = container.querySelectorAll('[data-token-badge="amber"]')
     expect(amberBadges.length).toBeGreaterThan(0)
-    // Verify it shows the count
+    // Verify it shows the count (con separador de miles, contra el tope)
     const badgeText = amberBadges[0].textContent
-    expect(badgeText).toContain('1600')
+    expect(badgeText).toContain('1.600')
   })
 
   it('Default (stage) tab shows stage templates and not WA templates', async () => {

@@ -504,7 +504,7 @@ function TemplateEditorContent({
             variant={tokenBadgeVariant(tokenCount)}
             className="font-mono tabular-nums"
           >
-            {tokenCount} tokens
+            Largo {tokenCount.toLocaleString('es-CO')} / {TOKEN_BUDGET.toLocaleString('es-CO')}
           </Badge>
 
           {/* Guardar borrador */}
@@ -639,7 +639,7 @@ function TemplateEditorContent({
             data-wa-status-section
             className="rounded-lg border border-border bg-card p-4 mt-4 space-y-3"
           >
-            <h2 className="text-sm font-medium text-fg">
+            <h2 className="text-body font-medium text-fg">
               {t('inmobiliaria.ai.templates.editor.waStatusTitle')}
             </h2>
 

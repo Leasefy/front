@@ -43,6 +43,8 @@ import {
 } from '@/components/ui/tabs'
 import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { fechaCorta, diaEnColombia } from '@/lib/fechas/fecha-de-la-casa'
 
 // =============================================================================
 // Constants
@@ -143,7 +145,7 @@ function TemplateCard({
     <div className="rounded-lg border border-border bg-card p-4 flex flex-col gap-3">
       {/* Top row: name + pills */}
       <div className="flex items-center flex-wrap gap-2">
-        <span className="font-medium text-sm text-fg flex-1 min-w-0 truncate">
+        <span className="font-medium text-body-sm text-fg flex-1 min-w-0 truncate">
           {tpl.name}
         </span>
         <StatusPill status={tpl.status} t={t} />
@@ -165,11 +167,12 @@ function TemplateCard({
             variant={tokenBadgeVariant(tpl.tokenCount)}
             className="tabular-nums"
           >
-            {tpl.tokenCount} tokens
+            {/* El largo contra el tope del agente (antes «1234 tokens»). */}
+            Largo {tpl.tokenCount.toLocaleString('es-CO')} / {TOKEN_BUDGET.toLocaleString('es-CO')}
           </Badge>
           <span className="text-caption text-fg-subtle tabular-nums">
             {t('inmobiliaria.ai.templates.card.lastEdited')}:{' '}
-            {new Date(tpl.updatedAt).toLocaleDateString()}
+            <span className="font-mono">{fechaCorta(diaEnColombia(tpl.updatedAt))}</span>
           </span>
         </div>
         <Button
@@ -250,6 +253,15 @@ export default function PlantillasPage() {
     [data],
   )
 
+  const publicadas = useMemo(
+    () => (data?.templates ?? []).filter((tpl) => tpl.status === 'published').length,
+    [data],
+  )
+  const waPorAprobar = useMemo(
+    () => waTemplates.filter((tpl) => tpl.waSubmissionStatus === 'pending').length,
+    [waTemplates],
+  )
+
   const handleRetry = useCallback(() => {
     void refetch().catch((err) => {
       showErrorToast(err instanceof Error ? err.message : t('inmobiliaria.ai.templates.error.load'))
@@ -299,25 +311,41 @@ export default function PlantillasPage() {
   return (
     <CrossFade swapKey="plantillas">
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <EncabezadoDePantalla
-          seccion="Cobranza"
-          titulo={t('inmobiliaria.ai.templates.title')}
+      {/* El «Reintentar» que vivía siempre en el encabezado se fue: sin un
+          error no hay nada que reintentar (el del fallo sigue en su aviso). */}
+      <EncabezadoDePantalla
+        seccion="Cobranza"
+        titulo={t('inmobiliaria.ai.templates.title')}
+        descripcion="Lo que dice el agente en cada etapa, por WhatsApp y ante cada objeción. Edita una y publícala para que la use."
+      />
+
+      {data && data.templates.length > 0 ? (
+        <CifraHeroe
+          data-testid="plantillas-publicadas"
+          rotulo="Publicadas"
+          cifra={publicadas.toLocaleString('es-CO')}
+          contexto={`de ${data.templates.length.toLocaleString('es-CO')} plantillas`}
+          total={data.templates.length}
+          tramos={[
+            { clave: 'publicadas', etiqueta: 'Publicadas', monto: publicadas, tono: 'exito', cifra: publicadas.toLocaleString('es-CO') },
+            {
+              clave: 'borradores',
+              etiqueta: 'Borradores',
+              monto: data.templates.length - publicadas,
+              tono: 'neutro',
+              cifra: (data.templates.length - publicadas).toLocaleString('es-CO'),
+            },
+          ]}
+          pie={
+            waPorAprobar > 0
+              ? `${waPorAprobar} de WhatsApp ${waPorAprobar === 1 ? 'espera' : 'esperan'} la aprobación de Meta.`
+              : undefined
+          }
         />
-        <Button
-          variant="outline"
-          size="sm"
-          hideArrow
-          onClick={() => void refetch()}
-          className="shrink-0"
-        >
-          {t('inmobiliaria.ai.templates.error.retry')}
-        </Button>
-      </header>
+      ) : null}
 
       {/* Error banner */}
-      <Presence show={Boolean(error && !data)} className="rounded-lg bg-danger-soft border border-danger/30 text-danger px-4 py-3 text-sm flex items-center justify-between gap-4">
+      <Presence show={Boolean(error && !data)} className="rounded-lg bg-danger-soft border border-danger/30 text-danger px-4 py-3 text-body-sm flex items-center justify-between gap-4">
           <span>{t('inmobiliaria.ai.templates.error.load')}</span>
           <Button
             variant="link"
@@ -341,13 +369,16 @@ export default function PlantillasPage() {
               pestaña decía «WhatsApp (8)» encima de dos tarjetas.
             */}
             <TabsTrigger value="stage">
-              {t('inmobiliaria.ai.templates.tabs.stages')} ({stageTemplates.length})
+              {t('inmobiliaria.ai.templates.tabs.stages')}
+              <span className="ml-1.5 font-mono text-caption tabular-nums text-fg-subtle">{stageTemplates.length}</span>
             </TabsTrigger>
             <TabsTrigger value="whatsapp">
-              {t('inmobiliaria.ai.templates.tabs.whatsapp')} ({waTemplates.length})
+              {t('inmobiliaria.ai.templates.tabs.whatsapp')}
+              <span className="ml-1.5 font-mono text-caption tabular-nums text-fg-subtle">{waTemplates.length}</span>
             </TabsTrigger>
             <TabsTrigger value="objection">
-              {t('inmobiliaria.ai.templates.tabs.objections')} ({objectionTemplates.length})
+              {t('inmobiliaria.ai.templates.tabs.objections')}
+              <span className="ml-1.5 font-mono text-caption tabular-nums text-fg-subtle">{objectionTemplates.length}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -364,7 +395,7 @@ export default function PlantillasPage() {
       )}
 
       {/* Error toast — refetch failures */}
-      <Presence show={Boolean(errorToast)} className="fixed bottom-4 right-4 z-50 max-w-xs rounded-lg border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm">
+      <Presence show={Boolean(errorToast)} className="fixed bottom-4 right-4 z-50 max-w-xs rounded-lg border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-body-sm">
           {errorToast}
       </Presence>
     </div>

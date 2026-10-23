@@ -139,7 +139,7 @@ function FacturasDelContrato({
       const { url } = await serviciosPublicosApi.soporte(f.id);
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (e) {
-      toast.error('No pudimos abrir el soporte', { description: mensajeParaLaPersona(e) });
+      toast.error('No se pudo abrir el soporte', { description: mensajeParaLaPersona(e) });
     }
   };
 

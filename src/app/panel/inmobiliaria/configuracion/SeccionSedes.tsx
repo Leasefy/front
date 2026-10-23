@@ -103,7 +103,7 @@ export function SeccionSedes() {
       cuandoVacio={
         <VacioDeSeccion
           icono={Storefront}
-          titulo="Todavía no pudimos leer tus sedes"
+          titulo="Todavía no se pudieron leer tus sedes"
           ayuda="Vuelve a intentar en un momento: las sedes cuelgan de tu inmobiliaria."
         />
       }

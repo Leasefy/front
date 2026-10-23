@@ -206,7 +206,7 @@ function EditarContratoContent() {
       if (replacePdf && form.pdfFile) {
         const uploaded = await actions.uploadPdf(form.pdfFile);
         if (!uploaded) {
-          setSubmitError('No pudimos guardar el PDF nuevo. Vuelve a guardar en un momento.');
+          setSubmitError('No se pudo guardar el PDF nuevo. Vuelve a guardar en un momento.');
           return;
         }
         uploadedPdfPath = uploaded.uploadedPdfPath;

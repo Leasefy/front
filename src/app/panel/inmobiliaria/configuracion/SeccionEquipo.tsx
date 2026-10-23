@@ -179,7 +179,7 @@ export function SeccionEquipo() {
       } catch (error) {
         toast.error(
           mensajeParaLaPersona(error, {
-            porDefecto: 'No pudimos cambiar el rol. Prueba de nuevo en un momento.',
+            porDefecto: 'No se pudo cambiar el rol. Prueba de nuevo en un momento.',
             accion: 'cambiar el rol',
           }),
         );
@@ -200,7 +200,7 @@ export function SeccionEquipo() {
       } catch (error) {
         toast.error(
           mensajeParaLaPersona(error, {
-            porDefecto: 'No pudimos cambiar el estado de la persona. Prueba de nuevo en un momento.',
+            porDefecto: 'No se pudo cambiar el estado de la persona. Prueba de nuevo en un momento.',
             accion: 'cambiar el estado de la persona',
           }),
         );
@@ -259,7 +259,7 @@ export function SeccionEquipo() {
       } catch (error) {
         toast.error(
           mensajeParaLaPersona(error, {
-            porDefecto: 'No pudimos reenviar la invitación. Prueba de nuevo en un momento.',
+            porDefecto: 'No se pudo reenviar la invitación. Prueba de nuevo en un momento.',
             accion: 'reenviar la invitación',
           }),
         );
@@ -277,7 +277,7 @@ export function SeccionEquipo() {
       } catch (error) {
         toast.error(
           mensajeParaLaPersona(error, {
-            porDefecto: 'No pudimos quitar a la persona del equipo. Prueba de nuevo en un momento.',
+            porDefecto: 'No se pudo quitar a la persona del equipo. Prueba de nuevo en un momento.',
             accion: 'quitar a la persona del equipo',
           }),
         );

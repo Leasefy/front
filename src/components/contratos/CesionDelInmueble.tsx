@@ -138,7 +138,7 @@ export function CesionDelInmueble({
         campos: CAMPOS_DE_LA_CESION,
         // `nuevosPropietarios.0.propietarioId` también es del selector de dueño.
         mapa: { propietarioId: "nuevosPropietarios", participacionBps: "nuevosPropietarios" },
-        porDefecto: "No pudimos registrar la cesión.",
+        porDefecto: "No se pudo registrar la cesión.",
         accion: "registrar la cesión",
       });
       setErrores(porCampo);

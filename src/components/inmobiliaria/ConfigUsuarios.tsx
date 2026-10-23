@@ -129,10 +129,13 @@ function EditRoleModal({ open, onOpenChange, user, onSubmit, isLoading }: EditRo
   const { t } = useI18n();
   const [selectedRole, setSelectedRole] = useState<AgencyRole>(user?.role || 'agente');
 
-  // Update selected role when user changes
-  useState(() => {
-    if (user) setSelectedRole(user.role ?? 'agente');
-  });
+  // Ronda 30: al abrirse para otra persona, el selector arranca en SU rol. Antes un
+  // `useState(() => …)` sólo corría al montar: abría en «agente» para cualquiera y
+  // «Guardar» quedaba prendido como si hubiera un cambio. Depende de primitivos (id y
+  // abierto), así que no re-pinta en bucle.
+  useEffect(() => {
+    if (open && user) setSelectedRole(user.role ?? 'agente');
+  }, [open, user?.id, user?.role]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

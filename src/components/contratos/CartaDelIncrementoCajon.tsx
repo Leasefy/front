@@ -174,7 +174,7 @@ export function CartaDelIncrementoCajon({
     } catch (e) {
       const { porCampo, sueltos } = repartirErroresDelServidor(e, {
         campos: ['contenido'],
-        porDefecto: 'No pudimos enviar la carta.',
+        porDefecto: 'No se pudo enviar la carta.',
         accion: 'enviar la carta',
       });
       if (porCampo.contenido) {

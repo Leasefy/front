@@ -21,6 +21,10 @@ import { agentesApi } from '@/lib/api/inmobiliaria.service';
 import type { CaptacionesYArriendos as Datos } from '@/lib/types/inmobiliaria';
 import { diaLegible } from '@/lib/mandato/textos';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { MagnifyingGlass } from '@phosphor-icons/react';
+import { Input } from '@/components/ui/input';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 
 export function CaptacionesYArriendos({
   /** Sólo este asesor (su ficha). Sin él, todo el equipo. */
@@ -58,6 +62,11 @@ export function CaptacionesYArriendos({
     (c) => !userId || c.agenteUserId === userId,
   );
   const arriendos = (datos?.arriendos ?? []).filter((a) => !userId || a.agenteUserId === userId);
+  // Ronda 30 (regla de Nico: listas con buscador y paginación): un año de captaciones no se lee de corrido.
+  const [busqueda, setBusqueda] = useState('');
+  const q = busqueda.trim().toLocaleLowerCase('es');
+  const coincide = (f: { principal: string; secundario: string }) =>
+    !q || `${f.principal} ${f.secundario}`.toLocaleLowerCase('es').includes(q);
 
   return (
     <section className={className} data-testid="captaciones-y-arriendos">
@@ -102,8 +111,12 @@ export function CaptacionesYArriendos({
       >
         {datos ? (
           <div className="space-y-6">
+            {/* Ronda 30: en la ficha de un asesor (userId) el resumen por asesor era una fila
+                con sus mismos números (los de las listas de abajo) y una tabla con borde dentro
+                de la tarjeta de la ficha: no se pinta. */}
+            {!userId ? (
             <div className="rounded-lg border border-border overflow-hidden">
-              <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-2 bg-muted/30 text-caption uppercase tracking-wide text-muted-foreground">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-2 bg-muted/30 font-mono text-label uppercase text-muted-foreground">
                 <span>Asesor</span>
                 <span className="text-right">Captados</span>
                 <span className="text-right">Arrendados</span>
@@ -123,8 +136,8 @@ export function CaptacionesYArriendos({
                       {a.nombre}
                       {a.activo ? '' : ' · ya no está en el equipo'}
                     </span>
-                    <span className="text-right tabular-nums">{a.captados}</span>
-                    <span className="text-right tabular-nums">{a.arrendados}</span>
+                    <span className="text-right font-mono tabular-nums">{a.captados}</span>
+                    <span className="text-right font-mono tabular-nums">{a.arrendados}</span>
                   </div>
                 ))
               )}
@@ -138,16 +151,33 @@ export function CaptacionesYArriendos({
                     <Users className="w-4 h-4" aria-hidden="true" />
                     Sin asesor asignado
                   </span>
-                  <span className="text-right tabular-nums text-warning">
+                  <span className="text-right font-mono tabular-nums text-warning">
                     {datos.sinAsesor.captados}
                   </span>
-                  <span className="text-right tabular-nums text-warning">
+                  <span className="text-right font-mono tabular-nums text-warning">
                     {datos.sinAsesor.arrendados}
                   </span>
                 </div>
               ) : null}
             </div>
+            ) : null}
 
+            {captaciones.length + arriendos.length > 0 ? (
+              <div className="relative w-full sm:w-80">
+                <MagnifyingGlass
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+                  aria-hidden="true"
+                />
+                <Input
+                  className="pl-9"
+                  placeholder="Buscar inmueble, persona o asesor"
+                  aria-label="Buscar en las captaciones y los arriendos"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  data-testid="buscar-captaciones"
+                />
+              </div>
+            ) : null}
             <Lista
               titulo="Captaciones"
               icono={<Buildings className="w-4 h-4 text-muted-foreground" aria-hidden="true" />}
@@ -159,7 +189,8 @@ export function CaptacionesYArriendos({
                   .filter(Boolean)
                   .join(' · '),
                 fecha: c.fecha,
-              }))}
+              })).filter(coincide)}
+              buscando={q !== ''}
             />
             <Lista
               titulo="Arriendos cerrados"
@@ -170,7 +201,8 @@ export function CaptacionesYArriendos({
                 principal: a.inmueble ?? 'Inmueble sin título',
                 secundario: [a.inquilino, a.agenteNombre ?? 'sin asesor'].filter(Boolean).join(' · '),
                 fecha: a.fecha,
-              }))}
+              })).filter(coincide)}
+              buscando={q !== ''}
             />
           </div>
         ) : null}
@@ -184,34 +216,47 @@ function Lista({
   icono,
   vacio,
   filas,
+  buscando = false,
 }: {
   titulo: string;
   icono: React.ReactNode;
   vacio: string;
   filas: { id: string; principal: string; secundario: string; fecha: string }[];
+  buscando?: boolean;
 }) {
+  const pag = useTablePagination(filas, {});
   return (
     <div className="space-y-2">
       <h4 className="flex items-center gap-2 text-sm font-medium text-foreground">
         {icono}
-        {titulo} ({filas.length})
+        {titulo} <span className="font-mono text-fg-muted">({filas.length})</span>
       </h4>
       {filas.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{vacio}</p>
+        <p className="text-sm text-muted-foreground">{buscando ? 'Nada coincide con la búsqueda.' : vacio}</p>
       ) : (
-        <ul className="space-y-1">
-          {filas.map((f) => (
-            <li key={f.id} className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="min-w-0">
-                <span className="text-foreground">{f.principal}</span>
-                <span className="block text-caption text-muted-foreground">{f.secundario}</span>
-              </span>
-              <span className="text-caption text-muted-foreground whitespace-nowrap">
-                {diaLegible(f.fecha)}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="space-y-1">
+            {pag.pageItems.map((f) => (
+              <li key={f.id} className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="min-w-0">
+                  <span className="text-foreground">{f.principal}</span>
+                  <span className="block text-caption text-muted-foreground">{f.secundario}</span>
+                </span>
+                <span className="whitespace-nowrap font-mono text-caption text-muted-foreground">
+                  {diaLegible(f.fecha)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <TablePagination
+            total={pag.total}
+            page={pag.page}
+            pageSize={pag.pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={pag.setPage}
+            onPageSizeChange={pag.setPageSize}
+          />
+        </>
       )}
     </div>
   );

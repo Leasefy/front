@@ -98,7 +98,9 @@ describe('CaptacionesYArriendos', () => {
 
   it('la ficha de un asesor sólo muestra lo suyo', async () => {
     await pintar(<CaptacionesYArriendos userId="u1" />);
-    expect(container.querySelector('[data-testid="asesor-u1"]')).not.toBeNull();
+    // Ronda 30 (a propósito): en su ficha no se pinta el resumen por asesor (era una fila con
+    // los mismos números de las listas); lo de otros asesores sigue sin aparecer.
+    expect(container.querySelector('[data-testid="asesor-u1"]')).toBeNull();
     expect(container.querySelector('[data-testid="asesor-u2"]')).toBeNull();
     // El arriendo es de Beto: no se le cuelga a Ana.
     expect(container.textContent).toContain('Arriendos cerrados (0)');

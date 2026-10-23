@@ -131,7 +131,7 @@ export function FormularioDeFactura({ modo, entrega, devolucion, errores = {}, r
       const { soporte: _s, tipo: _t, ...resto } = datos;
       revisarEntrada(resto)
         .then((r) => vigente && setCuenta(r))
-        .catch((err: { message?: string }) => vigente && setProblemaDeLaCuenta(err?.message ?? 'No pudimos partir la factura.'));
+        .catch((err: { message?: string }) => vigente && setProblemaDeLaCuenta(err?.message ?? 'No se pudo partir la factura.'));
     }, 350);
     return () => {
       vigente = false;

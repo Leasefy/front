@@ -88,7 +88,7 @@ export function fraseDelMotivo(motivo: string | undefined): string {
     case 'ENVIO_FALLIDO':
       return 'El correo no salió esta vez. Vuelve a intentarlo en unos minutos.';
     default:
-      return 'No pudimos mandarla. Vuelve a intentarlo en unos minutos.';
+      return 'No se pudo mandar. Vuelve a intentarlo en unos minutos.';
   }
 }
 
@@ -297,7 +297,7 @@ export function InvitacionesPendientes({ version = 0 }: {
       const v = await invitacionesApi.vistaPrevia(personas[0]?.nombre ?? null);
       setVistaPrevia({ asunto: v.asunto, html: v.html });
     } catch (e) {
-      toast.error('No pudimos mostrar el correo', {
+      toast.error('No se pudo mostrar el correo', {
         description: mensajeParaLaPersona(e, { porDefecto: '', accion: 'mostrar el correo de la invitación' }) || undefined,
       });
     } finally {
@@ -341,7 +341,7 @@ export function InvitacionesPendientes({ version = 0 }: {
         className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface-muted px-4 py-3"
       >
         <p className="text-sm text-fg-muted">
-          No pudimos revisar si hay invitaciones al portal sin entregar.
+          No se pudo revisar si hay invitaciones al portal sin entregar.
         </p>
         <Button hideArrow variant="outline" size="sm" onClick={() => void cargar()}>
           Reintentar

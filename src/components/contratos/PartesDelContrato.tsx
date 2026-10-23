@@ -246,7 +246,7 @@ function FilaDeInquilino({
     } catch (e) {
       toast.error(
         mensajeParaLaPersona(e, {
-          porDefecto: 'No pudimos quitarlo del contrato.',
+          porDefecto: 'No se pudo quitar del contrato.',
           accion: 'quitarlo del contrato',
         }),
       )
@@ -264,7 +264,7 @@ function FilaDeInquilino({
     } catch (e) {
       toast.error(
         mensajeParaLaPersona(e, {
-          porDefecto: 'No pudimos guardar el tipo de documento.',
+          porDefecto: 'No se pudo guardar el tipo de documento.',
           accion: 'guardar el tipo de documento',
         }),
       )
@@ -452,7 +452,7 @@ function AgregarInquilino({
     } catch (e) {
       const { porCampo, orden, sueltos } = repartirErroresDelServidor(e, {
         campos: CAMPOS_DEL_INQUILINO,
-        porDefecto: 'No pudimos agregarlo al contrato.',
+        porDefecto: 'No se pudo agregar al contrato.',
         accion: 'agregarlo al contrato',
       })
       setErrores(porCampo)
@@ -822,7 +822,7 @@ function EditarPropietarios({
     } catch (e) {
       toast.error(
         mensajeParaLaPersona(e, {
-          porDefecto: 'No pudimos abrir el mandato del inmueble.',
+          porDefecto: 'No se pudo abrir el mandato del inmueble.',
           accion: 'abrir el mandato del inmueble',
         }),
       )

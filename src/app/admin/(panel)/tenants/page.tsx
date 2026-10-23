@@ -219,7 +219,7 @@ export default function TenantsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Inmobiliarias"
-        description="Cada inmobiliaria de Leasefy con su plan, su operación y su equipo. Toca una para ver su ficha."
+        description="Cada inmobiliaria de Leasefy con su plan, su operación y su equipo."
       />
 
       {/* (08-10-2026, Nico) Lo que quedó en «No pudimos abrir tu registro», con su motivo: lo que espera, primero. */}

@@ -25,6 +25,7 @@
  * declarar uno por uno.
  */
 
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { useCallback, useState } from 'react'
 
 import { PageHeader } from '@/components/admin/screen/PageHeader'
@@ -163,7 +164,12 @@ export default function ExogenaAdminPage() {
     <div className="space-y-6 p-6 lg:p-8" data-testid="admin-exogena">
       <PageHeader
         title="Exógena"
-        description="Los conceptos y el tope de cuantías menores que Leasefy carga por año. Las inmobiliarias heredan sólo lo publicado y lo pueden sobrescribir."
+        description="Los conceptos y el tope de cuantías menores que Leasefy carga cada año."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="La exógena de Leasefy" variante="secundario">
+            <p className="text-body-sm text-fg-muted">Las inmobiliarias heredan sólo lo publicado y lo pueden sobrescribir.</p>
+          </ParaEntenderMas>
+        }
       />
 
       {/* 🔴 El aviso que hace que publicar sea una decisión, no un clic más. */}

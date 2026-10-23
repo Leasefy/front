@@ -1,5 +1,6 @@
 'use client'
 
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { useMemo, useState } from 'react'
 import { Airplane } from '@phosphor-icons/react'
 import { Alert } from '@leasefy/cadence'
@@ -172,7 +173,12 @@ export default function PilotoDeLasInmobiliariasPage() {
     <div className="space-y-6 p-6 lg:p-8" data-testid="admin-piloto">
       <PageHeader
         title="Piloto automático"
-        description="El Piloto automático de cada inmobiliaria: en prueba (30 días), contratado (sin vencimiento) o apagado por Leasefy. Cada cambio pide un motivo y queda en la bitácora con quién lo hizo."
+        description="El piloto automático de cada inmobiliaria: en prueba, contratado o apagado."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="El piloto automático" variante="secundario">
+            <p className="text-body-sm text-fg-muted">En prueba dura 30 días; contratado no vence; apagado lo decide Leasefy. Cada cambio pide un motivo y queda en la bitácora con quién lo hizo.</p>
+          </ParaEntenderMas>
+        }
       />
 
       {/* Glow up 22-10: LA RESPUESTA (para cuántas corre el Piloto) con la barra por plan; antes una frase con

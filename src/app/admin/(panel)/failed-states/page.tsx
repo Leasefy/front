@@ -1,5 +1,6 @@
 'use client'
 
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
@@ -163,7 +164,12 @@ export default function FailedStatesPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Procesos fallidos"
-        description="Lo que se cayó y espera a alguien: reportes a centrales, sincronización con los CRM y paquetes legales. Sólo lectura."
+        description="Lo que se cayó y espera a alguien: centrales, CRM y paquetes legales."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Los procesos fallidos" variante="secundario">
+            <p className="text-body-sm text-fg-muted">Reportes a las centrales de riesgo, sincronización con los CRM y paquetes legales. Esta pantalla es de sólo lectura.</p>
+          </ParaEntenderMas>
+        }
       />
 
       {isLoading && <LoadingBlock />}

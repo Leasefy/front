@@ -150,7 +150,7 @@ export default function PaymentsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Pagos"
-        description="Los pagos en línea de los últimos 30 días (Wompi y Bold) y si ya se le giraron a la inmobiliaria."
+        description="Los pagos en línea de 30 días (Wompi y Bold) y si ya se giraron."
       />
 
       {pendingDisbursementCount > 0 && (

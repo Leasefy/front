@@ -77,7 +77,7 @@ export default function CallsPage() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <PageHeader title="Llamadas" description="Todas las llamadas de los agentes, de todas las inmobiliarias. Toca una para escucharla." />
+      <PageHeader title="Llamadas" description="Las llamadas de los agentes en todas las inmobiliarias; toca una para oírla." />
 
       <DataTable
         columns={columns}

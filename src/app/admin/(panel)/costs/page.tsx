@@ -163,7 +163,7 @@ export default function CostsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Costos"
-        description="Lo que cuesta operar la plataforma este mes: la voz de las llamadas y el modelo de los agentes."
+        description="Lo que cuesta operar la plataforma este mes: la voz y el modelo de los agentes."
         ayuda={
           <ParaEntenderMas etiqueta="Cómo se calcula" titulo="Los costos de la plataforma" variante="secundario">
             <p className="text-body-sm text-fg-muted">

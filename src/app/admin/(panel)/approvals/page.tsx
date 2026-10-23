@@ -169,7 +169,7 @@ export default function ApprovalsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Aprobaciones"
-        description="Lo que un agente propone con efecto legal espera aquí un visto bueno antes de ejecutarse."
+        description="Lo que un agente propone con efecto legal espera aquí un visto bueno."
         ayuda={
           <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="La cola de aprobaciones" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">

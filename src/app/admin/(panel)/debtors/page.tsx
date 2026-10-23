@@ -140,7 +140,7 @@ export default function DebtorsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Deudores"
-        description="Busca un deudor en todas las inmobiliarias; cada búsqueda queda registrada con tu correo."
+        description="Busca un deudor en todas las inmobiliarias; cada búsqueda queda registrada."
       />
 
       {debtors.data && debtors.data.data.length === 50 ? (

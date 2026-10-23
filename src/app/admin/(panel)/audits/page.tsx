@@ -143,7 +143,7 @@ export default function AuditsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Auditoría"
-        description="Los eventos de cumplimiento: Habeas Data, Ley 2300, identidad y barandas de los agentes. Toca uno para ver su detalle."
+        description="Los eventos de cumplimiento: Habeas Data, Ley 2300, identidad y barandas."
       />
 
       {exportError && <Alert variant="danger">{exportError}</Alert>}

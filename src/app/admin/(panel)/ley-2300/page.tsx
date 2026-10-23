@@ -185,7 +185,7 @@ export default function Ley2300Page() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Ley 2300"
-        description="Si los agentes respetaron las ventanas de contacto de la Ley 2300 en los últimos 30 días."
+        description="Si los agentes respetaron las ventanas de contacto de la Ley 2300 en 30 días."
         ayuda={
           <ParaEntenderMas etiqueta="Qué dice la ley" titulo="Ley 2300 de 2023, art. 7" variante="secundario">
             <p className="text-body-sm text-fg-muted">

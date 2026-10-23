@@ -85,7 +85,7 @@ export default function AgentsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Agentes de voz"
-        description="Las instrucciones de cada agente de voz. Toca uno para editarlas aquí, sin entrar a Vapi."
+        description="Las instrucciones de cada agente de voz, editables aquí sin entrar a Vapi."
       />
       <DataTable
         columns={columns}

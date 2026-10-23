@@ -167,7 +167,7 @@ export default function ModulosPagosPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Módulos"
-        description="Qué módulos de pago tiene cada inmobiliaria y, en los comprados, quién se los prendió y cuándo."
+        description="Qué módulos de pago tiene cada inmobiliaria y quién se los prendió."
         ayuda={
           <ParaEntenderMas etiqueta="Qué es cada módulo" titulo="Los módulos de pago" variante="secundario">
             <div className="space-y-4 text-body-sm">

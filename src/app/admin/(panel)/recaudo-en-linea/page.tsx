@@ -58,7 +58,7 @@ export default function RecaudoEnLineaAdminPage() {
     <div className="space-y-6 p-6 lg:p-8" data-testid="admin-recaudo-en-linea">
       <PageHeader
         title="Recaudo en línea"
-        description="Lo que Leasefy recauda por Wompi y lo que le gira a cada inmobiliaria en su liquidación."
+        description="Lo que Leasefy recauda por Wompi y lo que le gira a cada inmobiliaria."
         ayuda={
           <ParaEntenderMas etiqueta="Cómo funciona" titulo="El recaudo en línea" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">

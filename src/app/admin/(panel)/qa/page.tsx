@@ -106,7 +106,7 @@ export default function QaPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Calidad de llamadas"
-        description="Cómo puntúa el revisor automático las llamadas de los últimos 30 días y cuáles hay que escuchar."
+        description="Cómo puntúa el revisor las llamadas de 30 días y cuáles hay que escuchar."
       />
 
       {/* Glow up 22-10: LA RESPUESTA (el puntaje promedio y cuántas cumplen) en una cifra; después el trabajo

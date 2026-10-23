@@ -191,7 +191,7 @@ export default function IngresosPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Ingresos"
-        description="Lo que Leasefy le cobra a cada inmobiliaria: la mensualidad de su plan y la cobranza por voz."
+        description="Lo que Leasefy le cobra a cada inmobiliaria: su plan y la cobranza por voz."
       />
 
       {/* Glow up 22-10: LA RESPUESTA (lo cobrado del mes, con la barra cobrado · por cobrar) y tres cifras de

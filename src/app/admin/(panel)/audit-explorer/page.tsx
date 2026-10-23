@@ -106,7 +106,7 @@ export default function AuditExplorerPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Buscar en auditoría"
-        description="La bitácora completa, que nunca se borra, para las auditorías de la SIC y SAGRILAFT."
+        description="La bitácora completa, que nunca se borra, para la SIC y SAGRILAFT."
       />
 
       <DataTable

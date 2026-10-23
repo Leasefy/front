@@ -143,7 +143,7 @@ export default function InmueblesPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Inmuebles"
-        description="Cuántas veces se arrendó cada inmueble, cuánto estuvo desocupado y qué se le reparó."
+        description="Cuántas veces se arrendó cada inmueble, cuánto estuvo vacío y qué se reparó."
         ayuda={
           <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="La historia de los inmuebles" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">

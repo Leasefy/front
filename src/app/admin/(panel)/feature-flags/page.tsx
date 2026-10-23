@@ -119,7 +119,7 @@ export default function BanderasPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Banderas"
-        description="Qué agentes corren para cada inmobiliaria. Toca una para prenderle o apagarle un agente."
+        description="Qué agentes corren para cada inmobiliaria; toca una para prender o apagar."
         ayuda={
           <ParaEntenderMas etiqueta="Cómo funciona" titulo="Las banderas de los agentes" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">

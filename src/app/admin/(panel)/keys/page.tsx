@@ -167,7 +167,7 @@ export default function KeysPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Llaves"
-        description="Las llaves de los servicios externos (Vapi, Wompi, Anthropic…) y cuándo se rotaron. Nunca se muestra su valor."
+        description="Las llaves de los servicios externos y cuándo se rotaron; nunca su valor."
         ayuda={
           <ParaEntenderMas etiqueta="Cómo funciona" titulo="La rotación de las llaves" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">

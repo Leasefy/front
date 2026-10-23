@@ -134,7 +134,7 @@ export default function ChatFeedbackPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Pulgares del chat"
-        description="El pulgar que dejó cada inmobiliaria en cada respuesta. Es lo que dice dónde falla el chat."
+        description="El pulgar de cada inmobiliaria en cada respuesta: dónde falla el chat."
       />
 
       {/* Glow up 22-10: LA RESPUESTA (los pulgares arriba de la última semana con valoraciones, contra la anterior)

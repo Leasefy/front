@@ -271,7 +271,7 @@ export default function PricingConfigPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Precios de la cobranza por voz"
-        description="Cuánto le cobra Leasefy a cada inmobiliaria por Mori. Toca una para cambiar su modelo."
+        description="Cuánto le cobra Leasefy a cada inmobiliaria por Mori."
         ayuda={
           <ParaEntenderMas etiqueta="Cómo funciona" titulo="Los precios de la cobranza por voz" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">

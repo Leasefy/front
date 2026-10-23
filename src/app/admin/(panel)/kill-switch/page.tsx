@@ -1,5 +1,6 @@
 'use client'
 
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { toast } from 'sonner'
 import { useState } from 'react'
 import { Power } from '@phosphor-icons/react'
@@ -104,7 +105,12 @@ export default function PausaDeEmergenciaPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Pausa de emergencia"
-        description="Detiene de inmediato todos los agentes de una inmobiliaria: llamadas, mensajes y piloto automático. Pide motivo, queda registrado y sólo Leasefy la quita."
+        description="Detiene de inmediato todos los agentes de una inmobiliaria."
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="La pausa de emergencia" variante="secundario">
+            <p className="text-body-sm text-fg-muted">Para las llamadas, los mensajes y el piloto automático. Pide un motivo, queda registrado y sólo Leasefy la quita.</p>
+          </ParaEntenderMas>
+        }
       />
       {/* Glow up 22-10: LA RESPUESTA (cuántas están en pausa) en una cifra con su barra; antes, 2 cajas. */}
       {data && filas.length > 0 ? (

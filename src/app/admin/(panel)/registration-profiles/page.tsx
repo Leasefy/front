@@ -152,7 +152,7 @@ export default function RegistrationProfilesPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Perfiles de registro"
-        description="Qué puede elegir una persona al crear su cuenta en Leasefy: inquilino, propietario o inmobiliaria."
+        description="Qué puede elegir quien crea su cuenta: inquilino, propietario o inmobiliaria."
         ayuda={
           <ParaEntenderMas etiqueta="Cómo funciona" titulo="Los perfiles de registro" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">

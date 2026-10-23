@@ -104,7 +104,7 @@ export default function OptOutsPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Bajas de contacto"
-        description="Los deudores que pidieron no ser contactados. Es un registro de sólo lectura que no se revoca."
+        description="Los deudores que pidieron no ser contactados: un registro que no se revoca."
         ayuda={
           <ParaEntenderMas etiqueta="Base legal" titulo="Las bajas de contacto" variante="secundario">
             <p className="text-body-sm text-fg-muted">

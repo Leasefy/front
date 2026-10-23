@@ -29,6 +29,9 @@ import {
   type PlanFormValues,
 } from './plan-form-schema'
 import { Alert } from '@leasefy/cadence'
+import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { legible } from '@/lib/admin/textos-del-admin'
 import { Button } from '@/components/ui/button'
 
 // ── Cell helpers ──────────────────────────────────────────────────────────────
@@ -198,7 +201,7 @@ export default function PlansPage() {
         <div className="min-w-0 max-w-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium text-fg">{p.name}</span>
-            {p.isDefault ? <Pill tone="info">Por defecto</Pill> : null}
+            {p.isDefault ? <Pill tone="neutral">Por defecto</Pill> : null}
             {p.scoringIncluded ? <Pill tone="ok">Con calificación del inquilino</Pill> : null}
           </div>
           <div className="mt-0.5 text-caption text-fg-subtle">
@@ -213,11 +216,11 @@ export default function PlansPage() {
       header: 'Precio',
       orden: (p) => p.monthlyPrice,
       ordenPrimero: 'desc',
-      texto: (p) => `${precioDelPlan(p)} · ${COBRO[p.billingMode] ?? p.billingMode}`,
+      texto: (p) => `${precioDelPlan(p)} · ${COBRO[p.billingMode] ?? legible(p.billingMode)}`,
       cell: (p) => (
         <div>
-          <div className="whitespace-nowrap text-body-sm tabular-nums text-fg">{precioDelPlan(p)}</div>
-          <div className="text-caption text-fg-subtle">{COBRO[p.billingMode] ?? p.billingMode}</div>
+          <div className="whitespace-nowrap font-mono text-body-sm tabular-nums text-fg">{precioDelPlan(p)}</div>
+          <div className="text-caption text-fg-muted">{COBRO[p.billingMode] ?? legible(p.billingMode)}</div>
         </div>
       ),
     },
@@ -226,11 +229,11 @@ export default function PlansPage() {
       cell: (p) => (
         <dl className="grid grid-cols-[auto_auto] gap-x-3 gap-y-0.5 text-caption">
           <dt className="text-fg-subtle">Inmuebles</dt>
-          <dd className="tabular-nums text-fg">{tope(p.maxProperties)}</dd>
+          <dd className="font-mono tabular-nums text-fg">{tope(p.maxProperties)}</dd>
           <dt className="text-fg-subtle">Usuarios</dt>
-          <dd className="tabular-nums text-fg">{tope(p.maxUsers)}</dd>
+          <dd className="font-mono tabular-nums text-fg">{tope(p.maxUsers)}</dd>
           <dt className="whitespace-nowrap text-fg-subtle">Evaluaciones al mes</dt>
-          <dd className="tabular-nums text-fg">{tope(p.monthlyEvalCap)}</dd>
+          <dd className="font-mono tabular-nums text-fg">{tope(p.monthlyEvalCap)}</dd>
         </dl>
       ),
     },
@@ -243,8 +246,8 @@ export default function PlansPage() {
       cell: (p) => {
         const n = enUso?.get(p.tier)
         return enUso ? (
-          <span className="whitespace-nowrap tabular-nums text-fg">
-            {fmtNumero(n ?? 0)} {n === 1 ? 'inmobiliaria' : 'inmobiliarias'}
+          <span className="whitespace-nowrap text-fg">
+            <span className="font-mono tabular-nums">{fmtNumero(n ?? 0)}</span> {n === 1 ? 'inmobiliaria' : 'inmobiliarias'}
           </span>
         ) : (
           <span className="text-fg-subtle">—</span>
@@ -283,30 +286,45 @@ export default function PlansPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Planes de inmobiliaria"
-        description="Los planes que puede elegir una inmobiliaria. Crea, edita y desactiva; un plan desactivado no se borra y se puede reactivar. El código de un plan no cambia después de crearlo."
-        right={
-          form.kind === 'none' ? (
-            <Button hideArrow onClick={openCreate}>
-              Nuevo plan
-            </Button>
-          ) : undefined
+        description="Los planes que puede elegir una inmobiliaria, con su precio y sus topes."
+        ayuda={
+          <ParaEntenderMas etiqueta="Cómo funciona" titulo="Los planes" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>Crea, edita y desactiva planes. Un plan desactivado no se borra: deja de aparecer al elegir o cambiar de plan y se puede reactivar. Quien ya lo tiene, lo conserva.</p>
+              <p>El código de un plan no cambia después de crearlo. Sólo un plan activo puede ser el plan por defecto.</p>
+            </div>
+          </ParaEntenderMas>
+        }
+        principal={
+          <Button size="sm" hideArrow onClick={openCreate}>
+            Nuevo plan
+          </Button>
         }
       />
 
       {rowError ? <Alert variant="danger">{rowError}</Alert> : null}
 
-      {form.kind !== 'none' && (
-        <PlanForm
-          mode={form.kind}
-          initialValues={form.kind === 'edit' ? planToFormValues(form.plan) : undefined}
-          otherDefaultExists={otherDefaultExists}
-          isSubmitting={submitting}
-          submitError={formError}
-          serverFieldErrors={serverFieldErrors}
-          onSubmit={handleSubmit}
-          onCancel={closeForm}
+      <Cajon abierto={form.kind !== 'none'} onOpenChange={(a) => (a ? null : closeForm())}>
+        <CajonCabecera
+          titulo={form.kind === 'edit' ? `Editar «${form.plan.name}»` : 'Nuevo plan'}
+          descripcion="Para inmobiliarias. El código no se puede cambiar después de crearlo."
         />
-      )}
+        <CajonCuerpo>
+          {form.kind !== 'none' ? (
+            <PlanForm
+              key={form.kind === 'edit' ? form.plan.id : 'nuevo'}
+              mode={form.kind}
+              initialValues={form.kind === 'edit' ? planToFormValues(form.plan) : undefined}
+              otherDefaultExists={otherDefaultExists}
+              isSubmitting={submitting}
+              submitError={formError}
+              serverFieldErrors={serverFieldErrors}
+              onSubmit={handleSubmit}
+              onCancel={closeForm}
+            />
+          ) : null}
+        </CajonCuerpo>
+      </Cajon>
 
       <DataTable
         columns={columnas}
@@ -319,13 +337,11 @@ export default function PlansPage() {
         emptyTitle="Todavía no hay planes"
         emptyHint="Crea el primero con «Nuevo plan»."
         emptyAction={
-          form.kind === 'none' ? (
-            <Button hideArrow onClick={openCreate}>
-              Nuevo plan
-            </Button>
-          ) : undefined
+          <Button size="sm" variant="outline" hideArrow onClick={openCreate}>
+            Nuevo plan
+          </Button>
         }
-        emptyIcon={<Stack weight="bold" />}
+        emptyIcon={<Stack weight="duotone" />}
         aria-label="Planes de inmobiliaria"
         queSon={['plan', 'planes']}
         buscar="Nombre, código o descripción"

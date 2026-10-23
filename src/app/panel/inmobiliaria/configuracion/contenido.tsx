@@ -8,8 +8,10 @@
  * `/configuracion/ia` y el legado `?tab=`) no puedan divergir.
  */
 
+import { SeccionTerminacionesConElPropietario } from './SeccionTerminacionesConElPropietario';
 import { SeccionAvisos } from './SeccionAvisos';
 import { SeccionSlaDePqrs } from './SeccionSlaDePqrs';
+import { SeccionReparaciones } from './SeccionReparaciones';
 import { SeccionBitacora } from './SeccionBitacora';
 import { SeccionMovimientos } from './SeccionMovimientos';
 import { SeccionProteccionDeDatos } from './SeccionProteccionDeDatos';
@@ -81,7 +83,13 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
     case 'sedes':
       return <SeccionSedes />;
     case 'mandato':
-      return <SeccionMandato />;
+      return (
+        <div className="space-y-10">
+          <SeccionMandato />
+          {/* Portofino 22-10: qué terminaciones decide el propietario. */}
+          <SeccionTerminacionesConElPropietario />
+        </div>
+      );
     case 'conceptos':
       return <SeccionConceptos />;
     case 'migracion':
@@ -102,6 +110,9 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
       return <SeccionAvisos />;
     case 'sla-de-pqrs':
       return <SeccionSlaDePqrs />;
+    // Portofino 22-10: tiempos por prioridad y quién puede hacer la reparación.
+    case 'reparaciones':
+      return <SeccionReparaciones />;
     case 'notificaciones':
       return <SeccionNotificaciones />;
     case 'preferencias':

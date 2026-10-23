@@ -28,6 +28,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 // 10-10-2026: las fechas son campos de Cadence (se eligen, no se escriben); en la
 // prueba, un <input> con el mismo id y data-testid (`campos-de-fecha.doble-de-prueba`).
 vi.mock('@/components/contabilidad/CampoDeDia', () => import('@/components/ui/campos-de-fecha.doble-de-prueba'))
+// 21-10-2026: el tipo de documento es obligatorio y es un Select de Radix (no se
+// abre en happy-dom). En la prueba, un <select> nativo con el mismo id.
+vi.mock('@/components/inmobiliaria/mantenimiento/TipoDeDocumentoDelProveedor', () => ({
+  TipoDeDocumentoDelProveedor: ({ id, valor, onCambiar }: { id: string; valor: string; onCambiar: (t: string) => void }) => (
+    <select id={id} value={valor} onChange={(e) => onCambiar(e.target.value)}>
+      <option value="">Elige el tipo</option>
+      <option value="CC">Cédula de ciudadanía</option>
+      <option value="NIT">NIT</option>
+    </select>
+  ),
+}))
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
@@ -125,6 +136,14 @@ const nombresEnOrden = () =>
 async function clic(el: Element | null | undefined) {
   await act(async () => {
     el!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+}
+
+async function elegir(select: HTMLSelectElement, valor: string) {
+  await act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
+    setter.call(select, valor)
+    select.dispatchEvent(new Event('change', { bubbles: true }))
   })
 }
 
@@ -271,9 +290,9 @@ describe('Proveedores — los modales son el Dialog de la casa', () => {
     )
     expect(tituloDelDialogo()).toBe('Registrar proveedor')
 
-    const [nombre, documento] = Array.from(dialogo().querySelectorAll<HTMLInputElement>('input'))
-    await escribir(nombre, 'Cerrajería La Llave')
-    await escribir(documento, '71234567')
+    await escribir(dialogo().querySelector<HTMLInputElement>('#proveedor-nombre')!, 'Cerrajería La Llave')
+    await elegir(dialogo().querySelector<HTMLSelectElement>('#proveedor-tipoDocumento')!, 'CC')
+    await escribir(dialogo().querySelector<HTMLInputElement>('#proveedor-documento')!, '71234567')
 
     const registrar = Array.from(dialogo().querySelectorAll('button')).find(
       (b) => b.textContent?.trim() === 'Registrar',
@@ -281,7 +300,7 @@ describe('Proveedores — los modales son el Dialog de la casa', () => {
     expect(dialogo().querySelector('form')!.contains(registrar)).toBe(false)
     await clic(registrar)
     expect(h.api.crear).toHaveBeenCalledWith(
-      expect.objectContaining({ nombre: 'Cerrajería La Llave', documento: '71234567' }),
+      expect.objectContaining({ nombre: 'Cerrajería La Llave', tipoDocumento: 'CC', documento: '71234567' }),
     )
   })
 
@@ -302,6 +321,7 @@ describe('Proveedores — los modales son el Dialog de la casa', () => {
       ),
     )
     await escribir(dialogo().querySelector<HTMLInputElement>('#proveedor-nombre')!, 'Cerrajería La Llave')
+    await elegir(dialogo().querySelector<HTMLSelectElement>('#proveedor-tipoDocumento')!, 'CC')
     await escribir(dialogo().querySelector<HTMLInputElement>('#proveedor-documento')!, '71234567')
     await clic(Array.from(dialogo().querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Registrar'))
 

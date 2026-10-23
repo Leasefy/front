@@ -11,6 +11,7 @@ import {
   Briefcase,
   SortAscending,
   SortDescending,
+  ClipboardText,
   DotsThree,
   Eye,
   PencilSimple,
@@ -87,6 +88,12 @@ interface ConsignacionTableProps {
    * el del propietario) a inventarse un comportamiento.
    */
   onVerAviso?: (consignacion: Consignacion) => void;
+  /**
+   * «Copiar ficha» (Nico, 22-10-2026): el texto para WhatsApp con el enlace
+   * del marketplace, que arma la tarjeta con la foto. Por `propertyId`: sirve
+   * también para un inmueble sin mandato.
+   */
+  onCopiarFicha?: (propertyId: string) => void;
   onCandidatos?: (consignacion: Consignacion) => void;
   onEliminar?: (consignacion: Consignacion) => void;
   /**
@@ -191,6 +198,7 @@ export function ConsignacionTable({
   onEdit,
   onAgendarCita,
   onVerAviso,
+  onCopiarFicha,
   onCandidatos,
   onEliminar,
   onPrepararSinSenal,
@@ -474,6 +482,19 @@ export function ConsignacionTable({
                 </DropdownListItem>
               ) : null;
 
+            // Sólo con inmueble: la ficha es la del marketplace, por `propertyId`.
+            const opcionDeCopiarFicha =
+              onCopiarFicha && row.propertyId ? (
+                <DropdownListItem
+                  className="gap-3"
+                  data-testid="copiar-ficha"
+                  onClick={() => onCopiarFicha(row.propertyId as string)}
+                >
+                  <ClipboardText className="w-4 h-4" />
+                  <span className="text-sm">{t('inmobiliaria.inmuebles.acciones.copiarFicha')}</span>
+                </DropdownListItem>
+              ) : null;
+
             return (
               <TableRowAnimada
                 key={rowKey}
@@ -712,7 +733,7 @@ export function ConsignacionTable({
                 <TableCell className="p-4" onClick={(e) => e.stopPropagation()}>
                   {/* Sin mandato la única acción es completarlo: sin permiso
                       para crearlo, un menú vacío no es una acción. */}
-                  {(row.kind === 'consignacion' || puedeCrearMandato || opcionDelMarketplace) && (
+                  {(row.kind === 'consignacion' || puedeCrearMandato || opcionDelMarketplace || opcionDeCopiarFicha) && (
                   <DropdownList
                     open={openMenuId === rowKey}
                     onOpenChange={(o) => setOpenMenuId(o ? rowKey : null)}
@@ -780,6 +801,7 @@ export function ConsignacionTable({
                               </span>
                             </DropdownListItem>
                           )}
+                          {opcionDeCopiarFicha}
                           {opcionDelMarketplace}
                           {onPrepararSinSenal && puedeVerPortafolio && (
                             <DropdownListItem
@@ -822,6 +844,7 @@ export function ConsignacionTable({
                               </span>
                             </DropdownListItem>
                           )}
+                          {opcionDeCopiarFicha}
                           {opcionDelMarketplace}
                         </>
                       )}

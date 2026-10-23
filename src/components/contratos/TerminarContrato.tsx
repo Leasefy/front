@@ -113,6 +113,18 @@ export function TerminarContrato({
   const [penalidadTocada, setPenalidadTocada] = useState(false);
   const [vista, setVista] = useState<VistaPreviaDeTerminacion | null>(null);
   const [guardando, setGuardando] = useState(false);
+  /*
+   * Portofino 22-10 (Nico): «que le aparezca al propietario para que decida».
+   * Con un motivo que en Configuración va SIEMPRE al propietario, la casilla va
+   * marcada y fija; en los demás, quien la registra elige.
+   */
+  const [alPropietario, setAlPropietario] = useState(false);
+  const [conElPropietario, setConElPropietario] = useState<{ disponible: boolean; vanAlPropietario: string[] }>({
+    disponible: false,
+    vanAlPropietario: [],
+  });
+  const loDecideElPropietario = conElPropietario.vanAlPropietario.includes(motivo);
+  const pedirleAlPropietario = conElPropietario.disponible && (alPropietario || loDecideElPropietario);
   // Lo que el back rechazó de un campo va debajo de ESE campo.
   const [errores, setErrores] = useState<Partial<Record<CampoDeLaTerminacion, string>>>({});
   const limpiar = (campo: CampoDeLaTerminacion) =>
@@ -124,6 +136,11 @@ export function TerminarContrato({
       .motivosDeTerminacion()
       .then((r) => setMotivos(r.motivos))
       .catch(() => setMotivos([]));
+    // Un back sin la ruta (o sin la migración) = como siempre: sin la casilla.
+    Promise.resolve()
+      .then(() => cicloDeVidaApi.configuracionDeTerminaciones())
+      .then((r) => setConElPropietario({ disponible: r.disponible === true, vanAlPropietario: r.vanAlPropietario ?? [] }))
+      .catch(() => setConElPropietario({ disponible: false, vanAlPropietario: [] }));
   }, [abierto]);
 
   /*
@@ -218,7 +235,7 @@ export function TerminarContrato({
     setGuardando(true);
     setErrores({});
     try {
-      const r = await cicloDeVidaApi.terminar(contractId, {
+      const cuerpo = {
         terminadoEn,
         motivo,
         nota: nota.trim() || undefined,
@@ -227,7 +244,17 @@ export function TerminarContrato({
         ...(penalidadCop !== null && paraLaInmobiliariaCop > 0
           ? { penalidadParaLaInmobiliariaCop: paraLaInmobiliariaCop }
           : {}),
-      });
+      };
+      if (pedirleAlPropietario) {
+        await cicloDeVidaApi.pedirAlPropietario(contractId, cuerpo);
+        toast.success("Le pedimos el sí al propietario", {
+          description: "El contrato sigue igual hasta que responda en su portal. Te avisamos cuando decida.",
+        });
+        onCerrar();
+        onTerminado();
+        return;
+      }
+      const r = await cicloDeVidaApi.terminar(contractId, cuerpo);
       toast.success(`Contrato terminado el ${diaLegible(r.terminadoEn)}.`, {
         description: r.inmuebleLiberado
           ? "El inmueble volvió a quedar disponible y no se le generan más cobros."
@@ -504,6 +531,26 @@ export function TerminarContrato({
           )}
         </div>
 
+        {conElPropietario.disponible && (
+          <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border p-3 text-sm" data-testid="pedirle-al-propietario">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]"
+              checked={pedirleAlPropietario}
+              disabled={loDecideElPropietario || guardando}
+              onChange={(e) => setAlPropietario(e.target.checked)}
+            />
+            <span>
+              Pedirle el sí al propietario
+              <span className="block text-caption text-muted-foreground">
+                {loDecideElPropietario
+                  ? "En tu inmobiliaria este motivo lo decide el propietario: el contrato sigue igual hasta que responda en su portal."
+                  : "El contrato sigue igual hasta que responda en su portal. Si dice que no, ves su motivo."}
+              </span>
+            </span>
+          </label>
+        )}
+
         <DialogFooter>
           {/* QA-CONT-95: el porqué del botón apagado, junto al botón (antes
               quedaba al final del cuerpo, fuera de la vista). */}
@@ -516,14 +563,20 @@ export function TerminarContrato({
             Volver
           </Button>
           <Button
-            variant="destructive"
+            variant={pedirleAlPropietario ? "default" : "destructive"}
             hideArrow
             onClick={confirmar}
             disabled={!puedeConfirmar}
             isLoading={guardando}
             data-testid="confirmar-terminacion"
           >
-            {guardando ? "Terminando…" : "Terminar el arriendo"}
+            {pedirleAlPropietario
+              ? guardando
+                ? "Pidiendo…"
+                : "Pedirle el sí al propietario"
+              : guardando
+                ? "Terminando…"
+                : "Terminar el arriendo"}
           </Button>
         </DialogFooter>
       </DialogContent>

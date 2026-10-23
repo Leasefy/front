@@ -10,6 +10,7 @@ import type {
   DeduccionesDeLaLiquidacion,
   PropuestaDelAgente,
   AprobacionDeReparacion,
+  LadoDiferido,
 } from './deducciones';
 import type { BankCode, AccountType } from './payment-accounts';
 import { formatCurrency as formatCurrencyDeLaPlata } from '@/lib/format';
@@ -1235,6 +1236,11 @@ export interface SolicitudMantenimiento {
   selectedQuoteId?: string;
   /** H-04 / SO-08: el proveedor del registro que hace el trabajo (para calificarlo). */
   proveedorId?: string | null;
+  /**
+   * Portofino 22-10: el proveedor con el que se trabaja (elegido al crear o el
+   * de la cotización aprobada), con su nombre para la tarjeta. Lo arma el back.
+   */
+  proveedor?: { id: string; nombre: string; telefono: string | null; activo: boolean } | null;
   approvedAmount?: number;
   paidBy: MantenimientoPaidBy;
 
@@ -1255,9 +1261,33 @@ export interface SolicitudMantenimiento {
    * aprobada, RECHAZADA, de emergencia o anulada). Ausente con un back viejo.
    */
   aprobacionDelPropietario?: AprobacionDeReparacion | null;
+  /**
+   * Portofino 22-10-2026: la hace el propietario por su cuenta (o la hizo).
+   * Ausente con un back anterior; `null` si la hace la inmobiliaria.
+   */
+  laHaceElPropietario?: LaHaceElPropietario | null;
+  /** ¿Se le puede dejar al propietario? (prioridad, estado y la base lista). */
+  puedeHacerlaElPropietario?: boolean;
+  /** Por qué no, cuando es por la prioridad («prioridad Alta: la hace la inmobiliaria»). */
+  porQueNoLaPuedeHacerElPropietario?: string | null;
+  /**
+   * Portofino 22-10-2026: lo que ya se cobra en meses, por lado. `null` = nada
+   * diferido; ausente con un back anterior. Lo del propietario que espera su
+   * aprobación está en `aprobacionDelPropietario.diferidaEn`.
+   */
+  diferida?: { PROPIETARIO?: LadoDiferido; INQUILINO?: LadoDiferido } | null;
 
   createdAt: string;
   updatedAt: string;
+}
+
+/** La reparación que hace el propietario por su cuenta (Portofino, 22-10-2026). */
+export interface LaHaceElPropietario {
+  loDecidio: 'PROPIETARIO' | 'INMOBILIARIA';
+  nota: string | null;
+  desde: string;
+  terminadaAt: string | null;
+  terminadaNota: string | null;
 }
 
 export const MANTENIMIENTO_TYPES: { type: MantenimientoType; labelEs: string; labelEn: string; icon: string }[] = [

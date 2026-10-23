@@ -16,12 +16,17 @@ import type {
   AprobacionDeReparacion,
   AprobacionEnElPortal,
   AprobacionEnLaBandeja,
+  BandejaConElPropietario,
   CargoDeLaReparacion,
+  ConfiguracionDeReparaciones,
+  GrupoConElPropietario,
+  PrioridadDelBack,
+  ReparacionQueHagoYo,
   DetalleDeLaReparacionEnElPortal,
   EstadoDeLaAprobacion,
   PaginaDelHistorialDeAprobaciones,
 } from '@/lib/types/deducciones';
-import type { SolicitudMantenimiento } from '@/lib/types/inmobiliaria';
+import type { LaHaceElPropietario, SolicitudMantenimiento } from '@/lib/types/inmobiliaria';
 import { cabecerasDeLaCuenta } from '@/lib/auth/cuenta-activa';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
@@ -37,11 +42,19 @@ export const aprobacionesDeReparacionApi = {
     quoteId: string,
     motivo: string,
     soporte: File,
+    /** Portofino 22-10: los meses en que se le descuenta (diferida). */
+    diferirPropietario?: ReadonlyArray<{ mes: string; valorCop: number }> | null,
   ): Promise<SolicitudMantenimiento & { cargo?: CargoDeLaReparacion }> {
     const formulario = new FormData();
     formulario.append('quoteId', quoteId);
     formulario.append('motivo', motivo);
     formulario.append('soporte', soporte);
+    if (diferirPropietario?.length) {
+      formulario.append(
+        'diferirPropietario',
+        JSON.stringify(diferirPropietario.map(({ mes, valorCop }) => ({ mes, valorCop }))),
+      );
+    }
     const token = getAccessToken();
     let respuesta: Response;
     try {
@@ -110,5 +123,75 @@ export const aprobacionesDeReparacionApi = {
 
   async soporte(id: string): Promise<{ url: string }> {
     return apiClient.get(`/portal/aprobaciones-de-reparacion/${encodeURIComponent(id)}/soporte`);
+  },
+
+  // ── Portofino 22-10-2026: la reparación que hace el propietario ───────────
+
+  /**
+   * Lo que está en manos del propietario (Nico: «pueden llegar a ser muchos»):
+   * tres grupos con su cuenta, buscable y por páginas en el back.
+   */
+  async conElPropietario(opciones: {
+    grupo?: GrupoConElPropietario;
+    q?: string;
+    pagina?: number;
+    porPagina?: number;
+  }): Promise<BandejaConElPropietario> {
+    const p = new URLSearchParams();
+    if (opciones.grupo) p.set('grupo', opciones.grupo);
+    if (opciones.q?.trim()) p.set('q', opciones.q.trim());
+    if (opciones.pagina) p.set('pagina', String(opciones.pagina));
+    if (opciones.porPagina) p.set('porPagina', String(opciones.porPagina));
+    const q = p.toString();
+    return apiClient.get(`/inmobiliaria/mantenimiento/con-el-propietario${q ? `?${q}` : ''}`);
+  },
+
+  /** La inmobiliaria se la deja al propietario («la puede hacer usted»). */
+  async laHaceElPropietario(solicitudId: string, nota?: string): Promise<LaHaceElPropietario> {
+    return apiClient.post(
+      `/inmobiliaria/mantenimiento/${encodeURIComponent(solicitudId)}/la-hace-el-propietario`,
+      nota?.trim() ? { nota: nota.trim() } : {},
+    );
+  },
+
+  /** La inmobiliaria la vuelve a tomar. */
+  async laRetomaLaInmobiliaria(solicitudId: string, motivo?: string): Promise<{ retomada: true }> {
+    return apiClient.post(
+      `/inmobiliaria/mantenimiento/${encodeURIComponent(solicitudId)}/la-retoma-la-inmobiliaria`,
+      motivo?.trim() ? { motivo: motivo.trim() } : {},
+    );
+  },
+
+  /** El propietario responde «La hago yo» a una aprobación pendiente. */
+  async laHagoYo(aprobacionId: string, nota?: string): Promise<LaHaceElPropietario> {
+    return apiClient.post(
+      `/portal/aprobaciones-de-reparacion/${encodeURIComponent(aprobacionId)}/la-hago-yo`,
+      nota?.trim() ? { nota: nota.trim() } : {},
+    );
+  },
+
+  /** Las reparaciones que el propietario hace por su cuenta. */
+  async lasQueHagoYo(): Promise<ReparacionQueHagoYo[]> {
+    return apiClient.get(`/portal/aprobaciones-de-reparacion/las-que-hago-yo`);
+  },
+
+  /** «Ya quedó»: la reparación que hizo el propietario quedó lista. */
+  async yaQuedo(solicitudId: string, nota?: string): Promise<LaHaceElPropietario> {
+    return apiClient.post(
+      `/portal/aprobaciones-de-reparacion/reparaciones/${encodeURIComponent(solicitudId)}/ya-quedo`,
+      nota?.trim() ? { nota: nota.trim() } : {},
+    );
+  },
+
+  /** Configuración → Reparaciones. */
+  async configuracion(): Promise<ConfiguracionDeReparaciones> {
+    return apiClient.get(`/inmobiliaria/mantenimiento/configuracion`);
+  },
+
+  async guardarConfiguracion(cambios: {
+    prioridadesSoloDeLaInmobiliaria?: PrioridadDelBack[];
+    slaHoras?: Partial<Record<PrioridadDelBack, number>>;
+  }): Promise<ConfiguracionDeReparaciones> {
+    return apiClient.put(`/inmobiliaria/mantenimiento/configuracion`, cambios);
   },
 };

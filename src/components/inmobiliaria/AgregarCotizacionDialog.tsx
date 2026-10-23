@@ -151,6 +151,12 @@ export function AgregarCotizacionDialog({
       ? { 'aria-invalid': true as const, 'aria-describedby': `${ID_DEL_CAMPO[campo]}-error` }
       : { 'aria-invalid': false as const };
 
+  /*
+   * Portofino 22-10: el proveedor elegido al crear la solicitud llega ya
+   * escogido (si sigue activo en Proveedores). Se puede cambiar.
+   */
+  const preelegido = solicitud?.proveedorId ?? null;
+
   // Cada apertura arranca en blanco: si no, la segunda cotización sale con los
   // datos del proveedor de la primera ya escritos y es facilísimo mandarla así.
   useEffect(() => {
@@ -169,6 +175,11 @@ export function AgregarCotizacionDialog({
           setProveedores(activos);
           // Sin ninguno registrado, el registro rápido de una vez.
           if (activos.length === 0) setRegistrando(true);
+          const delaSolicitud = preelegido ? activos.find((p) => p.id === preelegido) : undefined;
+          if (delaSolicitud) {
+            setProveedorId(delaSolicitud.id);
+            setCampos((c) => ({ ...c, providerName: delaSolicitud.nombre, providerPhone: delaSolicitud.telefono ?? '' }));
+          }
         })
         .catch(() => {
           if (!vivo) return;
@@ -180,7 +191,7 @@ export function AgregarCotizacionDialog({
       };
     }
     return undefined;
-  }, [abierto]);
+  }, [abierto, preelegido]);
 
   /** Los del oficio de la solicitud primero; luego los demás. */
   const oficio = solicitud ? oficioDelBack(solicitud.type) : '';

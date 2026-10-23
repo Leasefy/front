@@ -14,7 +14,9 @@ void React
 const toast = vi.hoisted(() => Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }))
 vi.mock('sonner', () => ({ toast }))
 
-const api = vi.hoisted(() => ({ delPortal: vi.fn(), aprobar: vi.fn(), rechazar: vi.fn(), soporte: vi.fn() }))
+// Portofino 22-10: el portal también lee «las que hago yo» y las terminaciones por decidir.
+const api = vi.hoisted(() => ({ delPortal: vi.fn(), aprobar: vi.fn(), rechazar: vi.fn(), soporte: vi.fn(), lasQueHagoYo: vi.fn() }))
+vi.mock('@/lib/api/ciclo-de-vida.service', () => ({ cicloDeVidaApi: { terminacionesDelPortal: async () => [] } }))
 vi.mock('@/lib/api/aprobaciones-de-reparacion.service', () => ({ aprobacionesDeReparacionApi: api }))
 
 import { ApiError } from '@/lib/api/client'
@@ -41,6 +43,7 @@ beforeEach(async () => {
   toast.success.mockClear()
   toast.error.mockClear()
   api.delPortal.mockResolvedValue({ pendientes: [PENDIENTE], historial: [] })
+  api.lasQueHagoYo.mockResolvedValue([])
   api.aprobar.mockReset()
   api.rechazar.mockReset()
   await act(async () => {

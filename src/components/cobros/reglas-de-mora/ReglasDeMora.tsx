@@ -31,7 +31,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Info, Lightbulb, PencilSimple, Percent, Plus, Receipt, Scales } from '@phosphor-icons/react';
+import { Info, Lightbulb, PencilSimple, Percent, Plus, Receipt } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -47,7 +47,6 @@ import { TablePagination } from '@/components/ui/pagination';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { SinDatos } from '@/components/estado/SinDatos';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
@@ -285,34 +284,32 @@ export function ReglasDeMora() {
                 Revisora r25 (Reglas de mora #2): las sugerencias van DENTRO del vacío y son la
                 acción principal; «Crear una regla» desde cero queda como secundaria (antes dos
                 caminos para lo mismo: el botón del vacío y, debajo, las dos tarjetas). */}
+            {/* Ronda 30 (revisora r27, «tarjeta en tarjeta»): el vacío es UNA línea arriba y las dos
+                sugerencias son FILAS de la misma tarjeta (antes dos tarjetas punteadas dentro del vacío). */}
             <div className="overflow-hidden rounded-lg border border-border bg-card">
-              <SinDatos
-                queSon={t('reglasDeMora.queSon')}
-                icono={Scales}
-                titulo={t('reglasDeMora.vacio.titulo')}
-                descripcion={t('reglasDeMora.vacio.descripcion')}
-                className="pb-8"
-                accion={
-                  puedeCrear ? (
-                    <div className="w-full max-w-3xl space-y-4 text-left">
-                      <Sugerencias
-                        titulo={t('reglasDeMora.sugerencias.vacioTitulo')}
-                        descripcion={t('reglasDeMora.sugerencias.vacioDescripcion')}
-                        plantillas={faltantes}
-                        enCurso={plantillaEnCurso}
-                        onUsar={usarPlantilla}
-                        principal
-                      />
-                      <div className="flex justify-center">
-                        <Button variant="ghost" size="sm" hideArrow onClick={abrirNueva} data-testid="crear-el-primero">
-                          <Plus className="h-4 w-4" aria-hidden="true" />
-                          {t('reglasDeMora.vacio.crear')}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : undefined
-                }
-              />
+              <div className="space-y-1 border-b border-border px-5 py-4">
+                <p className="font-medium text-fg">{t('reglasDeMora.vacio.titulo')}</p>
+                <p className="text-body-sm text-fg-muted">{t('reglasDeMora.vacio.descripcion')}</p>
+              </div>
+              {puedeCrear ? (
+                <>
+                  <Sugerencias
+                    titulo={t('reglasDeMora.sugerencias.vacioTitulo')}
+                    descripcion={t('reglasDeMora.sugerencias.vacioDescripcion')}
+                    plantillas={faltantes}
+                    enCurso={plantillaEnCurso}
+                    onUsar={usarPlantilla}
+                    principal
+                    comoFilas
+                  />
+                  <div className="border-t border-border px-5 py-3">
+                    <Button variant="ghost" size="sm" hideArrow onClick={abrirNueva} data-testid="crear-el-primero">
+                      <Plus className="h-4 w-4" aria-hidden="true" />
+                      {t('reglasDeMora.vacio.crear')}
+                    </Button>
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
         ) : (
@@ -521,6 +518,7 @@ function Sugerencias({
   enCurso,
   onUsar,
   principal = false,
+  comoFilas = false,
 }: {
   titulo: string;
   descripcion: string;
@@ -529,8 +527,35 @@ function Sugerencias({
   onUsar: (plantilla: PlantillaDeRegla) => void;
   /** En el vacío, la primera sugerencia es LA acción de la pantalla (su botón, el único azul). */
   principal?: boolean;
+  /** Ronda 30: dentro de una tarjeta, las sugerencias son filas (no tarjetas punteadas). */
+  comoFilas?: boolean;
 }) {
   if (plantillas.length === 0) return null;
+
+  if (comoFilas) {
+    return (
+      <section data-testid="reglas-sugerencias" aria-label={titulo}>
+        <div className="space-y-0.5 px-5 pt-4">
+          <h2 className="text-sm font-medium text-fg">{titulo}</h2>
+          <p className="max-w-2xl text-caption text-fg-muted">{descripcion}</p>
+        </div>
+        <ul className="divide-y divide-border">
+          {plantillas.map((plantilla, i) => (
+            <li key={plantilla.id}>
+              <TarjetaDePlantilla
+                principal={principal && i === 0}
+                plantilla={plantilla}
+                ocupada={enCurso === plantilla.id}
+                deshabilitada={enCurso !== null}
+                onUsar={() => onUsar(plantilla)}
+                comoFila
+              />
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
 
   return (
     <section className="space-y-3" data-testid="reglas-sugerencias" aria-label={titulo}>
@@ -563,15 +588,50 @@ function TarjetaDePlantilla({
   deshabilitada,
   onUsar,
   principal = false,
+  comoFila = false,
 }: {
   principal?: boolean;
   plantilla: PlantillaDeRegla;
   ocupada: boolean;
   deshabilitada: boolean;
   onUsar: () => void;
+  comoFila?: boolean;
 }) {
   const { t } = useI18n();
   const Icono = ICONO_DE_LA_PLANTILLA[plantilla.id];
+  if (comoFila) {
+    return (
+      <div
+        className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+        data-testid={`plantilla-${plantilla.id}`}
+      >
+        <div className="flex min-w-0 items-start gap-3">
+          <Icono className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+          <div className="min-w-0 space-y-1">
+            <p className="flex flex-wrap items-center gap-2 font-medium text-fg">
+              {plantilla.titulo}
+              <Badge variant="outline">{t('reglasDeMora.sugerencias.etiqueta')}</Badge>
+            </p>
+            <p className="text-sm text-fg-muted">{plantilla.explicacion}</p>
+            <p className="text-caption text-fg-subtle">
+              {describirRegla({ ...plantilla.valores, topeCop: plantilla.valores.topeCop ?? null })}
+            </p>
+          </div>
+        </div>
+        <Button
+          className="shrink-0 self-start sm:self-center"
+          variant={principal ? 'default' : 'secondary'}
+          size="sm"
+          hideArrow
+          onClick={onUsar}
+          isLoading={ocupada}
+          disabled={deshabilitada}
+        >
+          {t('reglasDeMora.sugerencias.usar')}
+        </Button>
+      </div>
+    );
+  }
   return (
     <div
       // Punteado y sin fondo de tarjeta: el borde discontinuo es lo que en

@@ -59,7 +59,7 @@ export default function ReglasDeMoraPage() {
           <EncabezadoDePantalla
             seccion={tr('Cobrar a inquilinos')}
             titulo="Reglas de mora"
-            descripcion="Lo que se le suma a cada cobro vencido: primero el interés, pasados los días de plazo, y después el gasto administrativo."
+            descripcion="Lo que se le suma a cada cobro vencido: el interés y, después, el gasto administrativo."
             ayuda={
               <ParaEntenderMas etiqueta="Cómo se aplican" titulo="Cómo se aplican las reglas de mora" variante="secundario">
                 <p className="text-body-sm text-fg-muted">
@@ -68,17 +68,15 @@ export default function ReglasDeMoraPage() {
                   administrativo. Lo que cada una agrega queda como línea propia en el estado de
                   cuenta del inquilino. El interés nunca pasa de la tasa de usura del mes.
                 </p>
+                {/* Ronda 30 (revisora r27): la usura va aquí, no como segunda salida del encabezado. */}
+                <Link
+                  href="/panel/inmobiliaria/pagos/cartera/usura"
+                  className="mt-2 inline-flex text-body-sm text-fg underline underline-offset-4 hover:text-fg-muted"
+                  data-testid="ir-a-la-usura"
+                >
+                  Ver la tasa de usura que las topea
+                </Link>
               </ParaEntenderMas>
-            }
-            acciones={
-              <Link
-                href="/panel/inmobiliaria/pagos/cartera/usura"
-                // Revisora r25 (Reglas de mora #5): gris y subrayado, no un azul suelto en el encabezado.
-                className="inline-flex h-8 items-center text-body-sm text-fg-muted underline underline-offset-4 hover:text-fg"
-                data-testid="ir-a-la-usura"
-              >
-                Ver la tasa de usura que las topea
-              </Link>
             }
           />
         </div>

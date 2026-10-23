@@ -142,6 +142,8 @@ import {
   sumarTotales,
 } from '@/lib/cartera/conceptos'
 import { cn } from '@/lib/utils'
+import { sinMayusculasDeEnfasis } from '@/lib/texto/sin-mayusculas-de-enfasis'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { conSigno } from '@/lib/plata/escribir-plata'
 import { useI18n } from '@/lib/i18n'
 import {
@@ -332,15 +334,25 @@ export function CarteraPorConcepto() {
         {/* Ronda 26 (revisora r25, Cartera por concepto #1): UNA línea, sin caja. Las pestañas de abajo ya son la
             respuesta (cada momento con su plata); la frase de seis cifras (con intereses, lo pactado, lo abonado)
             sobraba. Los conteos con separador de miles. */}
-        <p className="text-body-sm text-fg-muted" data-testid="resumen-por-concepto">
-          Te deben{' '}
-          <span className="font-mono tabular-nums text-fg" data-testid="total-deuda">
-            {formatCurrency(datos?.totales.saldoCop ?? 0)}
-          </span>{' '}
-          · {cuotas.toLocaleString('es-CO')} {cuotas === 1 ? 'cuota' : 'cuotas'} de{' '}
-          {(datos?.inquilinos.length ?? 0).toLocaleString('es-CO')}{' '}
-          {datos?.inquilinos.length === 1 ? 'inquilino' : 'inquilinos'}
-        </p>
+        {/* Ronda 30 (revisora r27, «el mismo número tres veces»): LA RESPUESTA es la cartera —lo que se
+            persigue— con su cifra; la deuda total va en su línea gris (antes «Te deben $ X» repetía la
+            pestaña «Toda la deuda» y el Total del pie). Las pestañas siguen siendo el filtro. */}
+        <CifraHeroe
+          rotulo="Cartera"
+          cifra={<span className="text-danger">{formatCurrency(datos?.totales.enMoraCop ?? 0)}</span>}
+          contexto={
+            <>
+              de una deuda total de{' '}
+              <span className="font-mono tabular-nums text-fg" data-testid="total-deuda">
+                {formatCurrency(datos?.totales.saldoCop ?? 0)}
+              </span>{' '}
+              en {cuotas.toLocaleString('es-CO')} {cuotas === 1 ? 'cuota' : 'cuotas'} de{' '}
+              {(datos?.inquilinos.length ?? 0).toLocaleString('es-CO')}{' '}
+              {datos?.inquilinos.length === 1 ? 'inquilino' : 'inquilinos'}
+            </>
+          }
+          data-testid="resumen-por-concepto"
+        />
 
         {/*
           🔴 Lo que estos números NO cuentan. Un contrato vigente sin tabla de
@@ -358,7 +370,8 @@ export function CarteraPorConcepto() {
                 {/* Ronda 26 (#2): con el enlace al lado, la ruta escrita («Configúralas en Pagos → …») sobra. */}
                 {avisos.map((aviso) => (
                   <li key={aviso}>
-                    {sinReglasDeMora ? aviso.replace(/\s*Config[úu]ralas en [^.]*\.\s*$/, '') : aviso}
+                    {/* Ronda 30: las mayúsculas de énfasis del back («SIN intereses») se leen en minúscula. */}
+                    {sinMayusculasDeEnfasis(sinReglasDeMora ? aviso.replace(/\s*Config[úu]ralas en [^.]*\.\s*$/, '') : aviso)}
                   </li>
                 ))}
               </ul>
@@ -480,6 +493,31 @@ export function CarteraPorConcepto() {
             </div>
           </div>
 
+          {/* Ronda 30 (revisora r27, C13): a 390 una tarjeta por inquilino —nombre, meses y lo que debe—
+              que abre su cajón; la tabla de nueve columnas, desde md. */}
+          <ul className="divide-y divide-border md:hidden" data-testid="tarjetas-por-concepto">
+            {paginado.pageItems.map((inquilino) => (
+              <li key={inquilino.clave}>
+                <button
+                  type="button"
+                  onClick={() => setEnElCajon(inquilino)}
+                  className="flex w-full items-baseline justify-between gap-3 px-4 py-3 text-left hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+                  data-testid="tarjeta-inquilino"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium text-fg">{inquilino.nombre ?? 'Sin nombre en el contrato'}</span>
+                    <span className="block text-caption text-fg-muted">
+                      {inquilino.filas.length} {inquilino.filas.length === 1 ? 'mes' : 'meses'}
+                    </span>
+                  </span>
+                  <span className="shrink-0 font-mono text-body-sm tabular-nums text-fg">
+                    {formatCurrency(inquilino.totales.saldoCop)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="max-md:hidden">
           <Table data-testid="tabla-por-concepto">
             <TableHeader>
               <TableRow>
@@ -551,6 +589,7 @@ export function CarteraPorConcepto() {
               </TableFooter>
             ) : null}
           </Table>
+          </div>
 
           {paginado.shouldPaginate && (
             <div className="border-t border-border px-4 py-3">

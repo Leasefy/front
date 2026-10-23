@@ -151,6 +151,13 @@ export function CarteraDePropietarios() {
     [propietarios, hastaMes],
   )
 
+  /* Ronda 30 (revisora r27): «a N propietarios» cuenta a los que se les debe algo hasta el mes en
+     curso, no todas las filas; y «Girado» sólo se pinta si alguien tiene un giro hecho. */
+  const conSaldo = useMemo(
+    () => (datos?.propietarios ?? []).filter((p) => partirPorElMesEnCurso(p.meses, hastaMes).pendienteCop > 0).length,
+    [datos, hastaMes],
+  )
+  const conGirado = (datos?.totales.giradoCop ?? 0) > 0
   const hayFiltros = busqueda.trim().length > 0
   const paginado = useTablePagination(propietarios, { resetKey: busqueda })
 
@@ -187,7 +194,7 @@ export function CarteraDePropietarios() {
                 {formatCurrency(datos?.porGirar?.porGirarCop ?? visibles.pendienteCop)}
               </span>
             }
-            contexto={`a ${datos?.propietarios.length ?? 0} ${datos?.propietarios.length === 1 ? 'propietario' : 'propietarios'}, de ${datos?.meses.length ?? 0} ${datos?.meses.length === 1 ? 'mes' : 'meses'}`}
+            contexto={`a ${conSaldo.toLocaleString('es-CO')} ${conSaldo === 1 ? 'propietario' : 'propietarios'} con saldo, de ${datos?.meses.length ?? 0} ${datos?.meses.length === 1 ? 'mes' : 'meses'}`}
             pie={
               datos?.porGirar ? (
                 <span data-testid="proximos-giros">
@@ -254,7 +261,7 @@ export function CarteraDePropietarios() {
                 <TableHead className="whitespace-nowrap">Propietario</TableHead>
                 <TableHead className="whitespace-nowrap text-right">Meses</TableHead>
                 <TableHead className="whitespace-nowrap text-right">Neto</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Girado</TableHead>
+                {conGirado ? <TableHead className="whitespace-nowrap text-right">Girado</TableHead> : null}
                 <TableHead className="whitespace-nowrap text-right">
                   Se le debe hasta {mesEnTitulo(hastaMes)}
                 </TableHead>
@@ -281,6 +288,7 @@ export function CarteraDePropietarios() {
                     key={propietario.propietarioId}
                     propietario={propietario}
                     hastaMes={hastaMes}
+                    conGirado={conGirado}
                     abierto={abiertos.has(propietario.propietarioId)}
                     onAlternar={() => alternar(propietario.propietarioId)}
                   />
@@ -297,9 +305,11 @@ export function CarteraDePropietarios() {
                   <TableCell className="text-right text-fg-muted">
                     <Peso valor={visibles.netoCop} />
                   </TableCell>
-                  <TableCell className="text-right text-fg-muted">
-                    <Peso valor={visibles.giradoCop} />
-                  </TableCell>
+                  {conGirado ? (
+                    <TableCell className="text-right text-fg-muted">
+                      <Peso valor={visibles.giradoCop} />
+                    </TableCell>
+                  ) : null}
                   <TableCell className="text-right font-semibold text-fg">
                     <Peso valor={visibles.pendienteCop} />
                   </TableCell>
@@ -351,10 +361,13 @@ const VOLVER_A = '/panel/inmobiliaria/pagos/cartera/por-pagar'
 function FilasDelPropietario({
   propietario,
   hastaMes,
+  conGirado = true,
   abierto,
   onAlternar,
 }: {
   propietario: PropietarioEnCartera
+  /** Sin ningún giro hecho, la columna «Girado» no se pinta (ronda 30). */
+  conGirado?: boolean
   /** `AAAA-MM`: el mes en curso, último que entra en «Se le debe». */
   hastaMes: string
   abierto: boolean
@@ -399,9 +412,11 @@ function FilasDelPropietario({
         <TableCell className="text-right text-fg-muted">
           <Peso valor={propietario.totales.netoCop} />
         </TableCell>
-        <TableCell className="text-right text-fg-muted">
-          <Peso valor={propietario.totales.giradoCop} />
-        </TableCell>
+        {conGirado ? (
+          <TableCell className="text-right text-fg-muted">
+            <Peso valor={propietario.totales.giradoCop} />
+          </TableCell>
+        ) : null}
         <TableCell className="text-right font-medium text-fg">
           <Peso valor={partes.pendienteCop} />
         </TableCell>

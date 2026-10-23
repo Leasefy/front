@@ -353,12 +353,15 @@ export default function InquilinoPage() {
         */}
         {isNewUser && (
           <div className="mb-8">
+            {/* GLOW UP (22-10): el tope es LA RESPUESTA del inicio de quien llega («hasta cuánto puedo
+                arrendar»): va en grande, con su rótulo en mono; en el catálogo sigue la banda de siempre. */}
             <TopeAprobadoBanner
               aprobacion={aprobacion}
               vigente={aprobacionVigente}
+              tamano="heroe"
               detalle={{
                 href: '/inquilino/para-ti',
-                label: locale === 'es' ? 'Ver mis propiedades' : 'View my properties',
+                label: locale === 'es' ? 'Ver inmuebles para mí' : 'View properties for me',
                 variant: 'default',
               }}
             />

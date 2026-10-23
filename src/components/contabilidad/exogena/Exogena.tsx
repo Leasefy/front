@@ -240,6 +240,14 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
 
   // GLOW UP 3.ª vuelta · LA RESPUESTA: cuántos de los formatos ya tienen el visto bueno, y qué
   // le pasa a los demás. Y un solo azul: el «Visto bueno» del primer formato que lo puede recibir.
+  // Revisora r25 (Exógena #1): un aviso que el back repite en varios formatos
+  // («No está configurado el tope de cuantías menores del año…») es UNA sola
+  // configuración: se dice una vez arriba y sale de cada formato.
+  const vecesDelAviso = new Map<string, number>();
+  for (const f of resumen.formatos) {
+    for (const a of new Set(f.avisos.map(textoDelBack))) vecesDelAviso.set(a, (vecesDelAviso.get(a) ?? 0) + 1);
+  }
+  const avisosDeTodos = [...vecesDelAviso].filter(([, n]) => n >= 2).map(([a]) => a);
   const conVistoBueno = resumen.formatos.filter((f) => f.estado === 'APROBADA');
   const conBloqueo = resumen.formatos.filter((f) => f.estado !== 'APROBADA' && f.bloqueos.length > 0);
   const sinFilas = resumen.formatos.filter((f) => f.estado !== 'APROBADA' && f.bloqueos.length === 0 && f.filas === 0);
@@ -345,6 +353,10 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
           />
         </MasDetalles>
 
+        {avisosDeTodos.length > 0 ? (
+          <Avisos avisos={avisosDeTodos} testId="avisos-de-todos-los-formatos" titulo="Para mirar antes de presentar, en todos los formatos" />
+        ) : null}
+
         <ul className="space-y-4">
           {resumen.formatos.map((f) => {
             const permiso = sePuedeAprobar(f, resumen.disponible);
@@ -352,7 +364,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
             // ícono del DS) y con la plata de la casa.
             const paraElContador = (f.paraElContador ?? []).map(textoDelBack);
             const bloqueos = f.bloqueos.map(textoDelBack);
-            const avisosDelFormato = f.avisos.map(textoDelBack);
+            const avisosDelFormato = f.avisos.map(textoDelBack).filter((a) => !avisosDeTodos.includes(a));
             const estado = estadoParaMostrarDelFormato(f);
             const ayuda = ayudaDelFormato(f, permiso, escritura);
             return (
@@ -583,7 +595,7 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
           <AlertDialogHeader>
             <AlertDialogTitle>Visto bueno del formato {aprobando}</AlertDialogTitle>
             <AlertDialogDescription>
-              Queda guardado quién lo dio, cuándo, y la foto de los totales de este momento. Esto NO
+              Queda guardado quién lo dio, cuándo, y la foto de los totales de este momento. Esto no
               presenta la exógena: el archivo se carga en el Prevalidador de la DIAN.
             </AlertDialogDescription>
           </AlertDialogHeader>

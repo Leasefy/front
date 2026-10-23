@@ -282,7 +282,7 @@ describe('<Exogena>', () => {
     });
 
     const texto = q('dialogo-de-visto-bueno')!.textContent!;
-    expect(texto).toContain('NO presenta la exógena');
+    expect(texto).toContain('no presenta la exógena');
     expect(texto).toContain('Prevalidador');
   });
 

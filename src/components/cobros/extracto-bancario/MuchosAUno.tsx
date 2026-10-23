@@ -22,6 +22,7 @@
  *     diferencia con su regla, y la persona decide (nunca se aplica sola).
  */
 
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Collapse } from '@leasefy/cadence';
@@ -294,12 +295,16 @@ function PropuestaClara({
         )}
       </div>
 
+      {/* Ronda 30 (revisora r27, «escala»): el porqué de la propuesta se consulta: plegado (montado siempre).
+          En la fila queda la suma, la diferencia si la hay y «Aprobar». */}
       {p.porQue.length > 0 && (
-        <ul className="list-disc space-y-0.5 pl-4 text-caption text-fg-muted" aria-label="Por qué">
+        <MasDetalles etiqueta="Ver por qué" etiquetaAbierto="Ocultar el porqué" montadoSiempre className="text-caption">
+          <ul className="list-disc space-y-0.5 pl-4 text-caption text-fg-muted" aria-label="Por qué">
           {p.porQue.map((frase) => (
             <li key={frase}>{frase}</li>
           ))}
         </ul>
+        </MasDetalles>
       )}
 
       <AnimatePresence initial={false}>

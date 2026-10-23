@@ -117,9 +117,10 @@ const COLUMNAS_DE_TAREAS: Column<Tarea>[] = [
     header: 'Último rastro en la base',
     cell: (t) =>
       t.last_run ? (
-        <span className="whitespace-nowrap font-mono text-caption text-fg-muted">
-          {fmtDateTime(t.last_run)}
-          {t.horas != null ? <span className="ml-1.5 text-fg-subtle">({haceCuanto(t.horas)})</span> : null}
+        // Ronda 26 (revisora r25): a 390 «(hace 6 días)» se cortaba en la tarjeta; ahora va en su propia línea.
+        <span className="block font-mono text-caption text-fg-muted">
+          <span className="whitespace-nowrap">{fmtDateTime(t.last_run)}</span>
+          {t.horas != null ? <span className="block whitespace-nowrap text-fg-subtle">{haceCuanto(t.horas)}</span> : null}
         </span>
       ) : (
         <span className="text-fg-subtle">Nunca</span>
@@ -174,7 +175,7 @@ export default function InngestMonitorPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Tareas programadas"
-        description="Si cada tarea programada está corriendo y cuántas veces corrió cada flujo en las últimas 24 horas."
+        description="Si cada tarea programada corre y cuántas veces corrió cada flujo en 24 h."
         ayuda={
           <ParaEntenderMas etiqueta="Cómo se sabe" titulo="Las tareas programadas" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">
@@ -199,9 +200,15 @@ export default function InngestMonitorPage() {
           <CifraHeroe
             rotulo="Tareas al día"
             cifra={`${cuenta('al-dia')} de ${tareas.length}`}
-            contexto={cuenta('detenida') > 0 ? `${cuenta('detenida')} detenidas hace más de 72 horas` : 'ninguna detenida'}
+            // Ronda 26 (revisora r25): el contexto dice algo nuevo (antes repetía el conteo de la leyenda y de la
+            // pestaña, con «1 detenidas»).
+            contexto={
+              cuenta('detenida') > 0
+                ? `la más quieta dejó rastro ${haceCuanto(Math.max(...(tareas ?? []).filter((t) => t.estado === 'detenida').map((t) => t.horas ?? 0)))}`
+                : 'ninguna detenida'
+            }
             tramos={[
-              { clave: 'al-dia', etiqueta: NOMBRE['al-dia'], monto: cuenta('al-dia'), tono: 'exito', cifra: String(cuenta('al-dia')), siempre: true },
+              { clave: 'al-dia', etiqueta: NOMBRE['al-dia'], monto: cuenta('al-dia'), tono: 'exito', cifra: String(cuenta('al-dia')) },
               { clave: 'atrasada', etiqueta: NOMBRE.atrasada, monto: cuenta('atrasada'), tono: 'aviso', cifra: String(cuenta('atrasada')) },
               { clave: 'detenida', etiqueta: NOMBRE.detenida, monto: cuenta('detenida'), tono: 'critico', cifra: String(cuenta('detenida')) },
               { clave: 'sin-rastro', etiqueta: NOMBRE['sin-rastro'], monto: cuenta('sin-rastro'), tono: 'neutro', cifra: String(cuenta('sin-rastro')) },

@@ -147,7 +147,7 @@ export function UbicarEnElMapaDialog({
             />
           )}
           {!coords && (
-            <p className="text-xs text-fg-muted" data-testid="ubicar-sin-pin">
+            <p className="text-caption text-fg-muted" data-testid="ubicar-sin-pin">
               {t('inmobiliaria.inmuebles.ubicacion.dialogo.sinPin')}
             </p>
           )}

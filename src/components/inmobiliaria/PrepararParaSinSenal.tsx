@@ -78,7 +78,7 @@ export function PrepararParaSinSenal({
         )}
         <div className="min-w-0">
           <p className="text-sm font-medium text-fg">{t('inmobiliaria.sinSenal.titulo')}</p>
-          <p className="text-xs text-fg-muted" data-testid="preparar-sin-senal-estado">
+          <p className="text-caption text-fg-muted" data-testid="preparar-sin-senal-estado">
             {guardadoEn
               ? t('inmobiliaria.sinSenal.guardado', { cuando: cuando(guardadoEn) })
               : sinSenal

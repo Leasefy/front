@@ -199,7 +199,7 @@ export function ModalAvisarNoElegidos({
           {errorDelElegido !== null && (
             <div className="rounded-md border border-danger bg-danger-soft px-4 py-3">
               <p className="text-sm font-medium text-danger">
-                No pudimos aprobar a {elegido.tenantName}
+                No se pudo aprobar a {elegido.tenantName}
               </p>
               <p className="mt-1 text-sm text-fg-muted" data-testid="error-del-elegido">
                 {mensajeParaLaPersona(errorDelElegido, {

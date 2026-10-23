@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { User, Sparkle, ArrowUpRight, Scales } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
@@ -73,7 +74,7 @@ const STATUS_VARIANT: Record<
 
 const SCORE_COLORS: Record<string, string> = {
   A: 'text-success bg-success-soft',
-  B: 'text-primary bg-primary-soft',
+  B: 'text-fg bg-surface-muted', // Ronda 30: sin azul (el azul es la acción de la pantalla)
   C: 'text-warning bg-warning-soft',
   D: 'text-danger bg-danger-soft',
 };
@@ -449,7 +450,7 @@ function CandidatosContent() {
           <EmptyState
             icon={User}
             title="Sin candidatos"
-            description="Aún no hay postulaciones para esta propiedad"
+            description="Todavía nadie se postuló a este inmueble"
           />
         ) : (
           <div className="overflow-x-auto overscroll-contain">
@@ -500,7 +501,7 @@ function CandidatosContent() {
                           <div>
                             <p className="text-sm font-medium text-fg flex items-center gap-1.5">
                               {candidate.tenantName || '—'}
-                              <Sparkle className="w-3 h-3 text-primary" aria-label="Ver análisis IA" />
+                              <Sparkle className="w-3 h-3 text-fg-muted" aria-label="Ver análisis IA" />
                             </p>
                             <p className="text-caption text-fg-muted">
                               {candidate.tenantEmail || '—'}
@@ -546,10 +547,8 @@ function CandidatosContent() {
                       {/* Date */}
                       <TableCell className="p-4">
                         <span className="text-sm text-fg-muted">
-                          {new Date(candidate.submittedAt).toLocaleDateString('es-CO', {
-                            day: '2-digit',
-                            month: 'short',
-                          })}
+                          {/* Ronda 30: la fecha corta de la casa («16 oct»; es-CO daba «16 de oct»). */}
+                          {fechaCorta(diaEnColombia(candidate.submittedAt) ?? candidate.submittedAt).replace(/ \d{4}$/, '')}
                         </span>
                       </TableCell>
 

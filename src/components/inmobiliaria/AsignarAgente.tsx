@@ -143,7 +143,7 @@ export function AsignarAgente({
                       guardando !== null && !esActual && 'opacity-60',
                     )}
                   >
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-soft text-sm font-medium text-primary">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-muted text-sm font-medium text-fg">
                       {nombre.charAt(0).toUpperCase()}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -152,11 +152,11 @@ export function AsignarAgente({
                       </span>
                       <span className="block truncate text-caption text-fg-muted">
                         {rolDelAsesor(agente.rol)}
-                        {agente.leadsActivos > 0 ? ` · ${agente.leadsActivos} ${agente.leadsActivos === 1 ? 'lead abierto' : 'leads abiertos'}` : ''}
+                        {agente.leadsActivos > 0 ? ` · ${agente.leadsActivos} ${agente.leadsActivos === 1 ? 'interesado abierto' : 'interesados abiertos'}` : ''}
                       </span>
                     </span>
                     {esActual ? (
-                      <span className="shrink-0 text-caption font-medium text-primary">Actual</span>
+                      <span className="shrink-0 text-caption font-medium text-fg">Actual</span>
                     ) : guardando === agente.userId ? (
                       <span className="shrink-0 text-caption text-fg-muted">Asignando…</span>
                     ) : (

@@ -136,7 +136,7 @@ export default function ActaDeEntregaPage() {
       >
         {consignacion && (
           <article
-            className="acta-hoja rounded-lg border border-border bg-surface p-4 sm:p-8 text-fg shadow-sm print:p-0"
+            className="acta-hoja rounded-lg border border-border bg-surface p-4 sm:p-8 text-fg print:p-0"
             data-testid="acta-hoja"
           >
             <header className="mb-6 border-b border-border pb-5">

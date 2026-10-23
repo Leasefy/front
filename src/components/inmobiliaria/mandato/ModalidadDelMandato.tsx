@@ -30,6 +30,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toast';
 import {
@@ -292,22 +293,26 @@ function EditarModalidad({
           <legend className="text-sm font-medium text-foreground">
             Intereses de mora y gastos de cobranza pagados
           </legend>
-          <select
-            className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
+          {/* Ronda 30: el Select de la casa (antes el <select> del navegador, con su lista gris del sistema). */}
+          <Select
             value={destino}
-            onChange={(e) => {
-              setDestino(e.target.value as OpcionDeDestino);
+            onValueChange={(v) => {
+              setDestino(v as OpcionDeDestino);
               setErrorDelPct(null);
             }}
-            data-testid="destino-de-los-intereses"
           >
-            <option value="MODALIDAD">
-              Seguir a la modalidad (garantizado → inmobiliaria; sobre recaudo → propietario)
-            </option>
-            <option value="INMOBILIARIA">De la inmobiliaria</option>
-            <option value="PROPIETARIO">Del propietario</option>
-            <option value="REPARTO">Reparto con un porcentaje</option>
-          </select>
+            <SelectTrigger className="h-11 w-full" data-testid="destino-de-los-intereses" aria-label="Intereses de mora y gastos de cobranza pagados">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="MODALIDAD">
+                Seguir a la modalidad (garantizado → inmobiliaria; sobre recaudo → propietario)
+              </SelectItem>
+              <SelectItem value="INMOBILIARIA">De la inmobiliaria</SelectItem>
+              <SelectItem value="PROPIETARIO">Del propietario</SelectItem>
+              <SelectItem value="REPARTO">Reparto con un porcentaje</SelectItem>
+            </SelectContent>
+          </Select>
           {destino === 'REPARTO' ? (
             <div className="space-y-1.5">
               <Label htmlFor="pct-propietario">Porcentaje para el propietario</Label>

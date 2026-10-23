@@ -478,7 +478,7 @@ export function ConsignacionTimeline({
         {/* Si la agenda no respondió, decirlo — pero sin borrar los hitos del
             registro, que no dependen de ella. */}
         {(falloAgenda || falloHistorial) && (
-          <p className="mt-3 text-xs text-fg-muted dark:text-fg-subtle" data-testid="timeline-fallo-agenda">
+          <p className="mt-3 text-caption text-fg-muted dark:text-fg-subtle" data-testid="timeline-fallo-agenda">
             {t('inmobiliaria.consignaciones.timeline.loadFailed')}
           </p>
         )}

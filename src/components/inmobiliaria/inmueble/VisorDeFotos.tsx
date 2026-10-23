@@ -107,7 +107,7 @@ export function VisorDeFotos({ fotos, indice, onCerrar, onCambiar, titulo }: Vis
 
           {/* Barra superior: contador y cerrar */}
           <div className="flex items-center justify-between px-4 py-3 text-white sm:px-6">
-            <span className="font-mono text-xs uppercase tracking-[0.12em] text-white/80 tabular-nums" data-testid="visor-contador">
+            <span className="font-mono text-caption uppercase tracking-[0.12em] text-white/80 tabular-nums" data-testid="visor-contador">
               {actual + 1} / {total}
             </span>
             <DialogPrimitive.Close

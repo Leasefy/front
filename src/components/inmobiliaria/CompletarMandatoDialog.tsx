@@ -590,7 +590,7 @@ function CuerpoDelMandato({
               <button
                 type="button"
                 onClick={() => setCambiandoDueno(true)}
-                className="shrink-0 text-sm text-primary underline-offset-2 hover:underline"
+                className="shrink-0 text-sm font-medium text-fg underline underline-offset-4 hover:text-primary"
                 data-testid="mandato-cambiar-dueno"
               >
                 {t('inmobiliaria.consignaciones.mandateDialog.cambiarPropietario')}

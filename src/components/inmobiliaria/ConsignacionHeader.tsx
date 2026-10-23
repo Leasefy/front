@@ -324,7 +324,7 @@ export function ConsignacionHeader({
       {/* ── La portada ──────────────────────────────────────────────── */}
       {/* `overflow-hidden` en la tarjeta y NINGÚN radio en la imagen: antes la imagen se
           recortaba sola con otro radio y las dos curvas nunca coincidían (Nico, 2026-09-03). */}
-      <article className="overflow-hidden rounded-[28px] border border-border-faint bg-surface shadow-[0_1px_2px_rgba(20,19,15,0.04),0_16px_40px_-20px_rgba(20,19,15,0.18)] dark:border-border-strong dark:bg-bg">
+      <article className="overflow-hidden rounded-[28px] border border-border-faint bg-surface dark:border-border-strong dark:bg-bg">
         <div className="flex flex-col lg:flex-row">
           {/* La foto, o el campo de medianoche con la casa */}
           <div
@@ -440,7 +440,7 @@ export function ConsignacionHeader({
                           <span className="text-fg dark:text-fg-subtle">
                             {t(style.labelKey)}
                             {frenadoPorContrato && (
-                              <span className="block text-xs text-fg-muted">
+                              <span className="block text-caption text-fg-muted">
                                 Tiene un contrato vigente: primero hay que terminarlo.
                               </span>
                             )}
@@ -459,7 +459,7 @@ export function ConsignacionHeader({
                   {t(`inmobiliaria.consignaciones.header.estadoDelMandato.${consignacion.status}`)}
                 </StatusBadge>
               ) : null}
-              <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">
+              <span className="inline-flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.08em] text-fg-subtle">
                 <PropertyIcon className="h-3.5 w-3.5" aria-hidden="true" />
                 {t(`inmobiliaria.consignaciones.propertyType.${consignacion.propertyType}`)}
                 {/* 22-10 (revisión): el estrato va con el tipo, no en una tarjeta de un solo dato. */}

@@ -15,7 +15,8 @@
 import { useState } from 'react'
 import { Collapse, Presence } from '@leasefy/cadence'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Desplegable } from '@/components/admin/screen/Filtros'
+import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
+import { useEstadoDeLaTabla } from '@/lib/admin/use-estado-de-la-tabla'
 import { CampoDeFecha } from '@/components/facturacion/CampoDeFecha'
 
 import { Pill } from '@/components/admin/Pill'
@@ -65,6 +66,7 @@ export function Liquidaciones({
   giroDisponible,
   version,
   generando,
+  alPedirGenerar,
 }: {
   inmobiliarias: InmobiliariaDelRecaudo[]
   giroDisponible: boolean
@@ -72,9 +74,23 @@ export function Liquidaciones({
   version: number
   /** «Generar liquidaciones» se abre desde el encabezado de la pantalla (la acción principal). */
   generando: boolean
+  /** La misma acción, desde el vacío (ronda 26: la salida del vacío va en el vacío). */
+  alPedirGenerar?: () => void
 }) {
-  const [filtros, setFiltros] = useState<FiltrosDeLiquidaciones>({})
-  const [pagina, setPagina] = useState(0)
+  // Ronda 26 (revisora r25): los filtros y la página viven en la URL (antes en el estado de la pestaña: una
+  // lista filtrada no se compartía con el enlace ni sobrevivía a recargar). Sin enrutador (una prueba), en memoria.
+  const url = useEstadoDeLaTabla()
+  const estadoDeLaUrl = url.get('estado')
+  const filtros: FiltrosDeLiquidaciones = {
+    agencyId: url.get('inmobiliaria') || undefined,
+    desde: url.get('desde') || undefined,
+    hasta: url.get('hasta') || undefined,
+    estado: (['generada', 'girada', 'conciliada'].includes(estadoDeLaUrl) ? estadoDeLaUrl : undefined) as
+      | EstadoDeLaLiquidacion
+      | undefined,
+  }
+  const pagina = Number(url.get('pagina')) || 0
+  const setPagina = (p: number) => url.setFilters({ pagina: p <= 0 ? undefined : p })
   const [abierta, setAbierta] = useState<string | null>(null)
   const rangoInvertido = !!filtros.desde && !!filtros.hasta && filtros.desde > filtros.hasta
 
@@ -85,62 +101,85 @@ export function Liquidaciones({
   )
 
   const cambiar = (cambio: Partial<FiltrosDeLiquidaciones>) => {
-    setFiltros((f) => ({ ...f, ...cambio }))
-    setPagina(0)
+    const clave: Record<keyof FiltrosDeLiquidaciones, string> = {
+      agencyId: 'inmobiliaria',
+      desde: 'desde',
+      hasta: 'hasta',
+      estado: 'estado',
+    } as Record<keyof FiltrosDeLiquidaciones, string>
+    const patch: Record<string, string | undefined> = { pagina: undefined }
+    for (const [k, v] of Object.entries(cambio)) patch[clave[k as keyof FiltrosDeLiquidaciones] ?? k] = (v as string | undefined) || undefined
+    url.setFilters(patch)
     setAbierta(null)
   }
+  const hayFiltros = Boolean(filtros.agencyId || filtros.desde || filtros.hasta || filtros.estado)
 
   return (
     <div data-testid="liquidaciones">
-      <Card className="p-5">
-        <div className="flex flex-wrap items-end gap-4">
-          <label className="block min-w-[14rem]">
-            <Etiqueta>inmobiliaria</Etiqueta>
-            <Desplegable
-              value={filtros.agencyId ?? ''}
-              onChange={(v) => cambiar({ agencyId: v || undefined })}
-              todas="Todas"
-              aria-label="Inmobiliaria"
-              data-testid="filtro-inmobiliaria"
-              className="mt-1"
-              opciones={inmobiliarias.map((i) => ({ valor: i.id, nombre: i.nombre }))}
-            />
+      {/* Ronda 26 (revisora r25): UNA barra con los rótulos en la línea (antes una tarjeta en grilla con cuatro
+          rótulos en mono mayúscula encima). */}
+      <BarraDeFiltros>
+        <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria-recaudo">
+          <Desplegable
+            id="filtro-inmobiliaria-recaudo"
+            value={filtros.agencyId ?? ''}
+            onChange={(v) => cambiar({ agencyId: v || undefined })}
+            todas="Todas las inmobiliarias"
+            aria-label="Inmobiliaria"
+            data-testid="filtro-inmobiliaria"
+            opciones={inmobiliarias.map((i) => ({ valor: i.id, nombre: i.nombre }))}
+          />
+        </Filtro>
+        <div className="flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label="Fecha del giro">
+          <span className="shrink-0 whitespace-nowrap text-caption text-fg-muted">Fecha del giro</span>
+          <label htmlFor="filtro-desde" className="sr-only">
+            Desde
           </label>
-          <label className="block">
-            <Etiqueta>giro desde</Etiqueta>
-            <div className="mt-1 w-44">
-              <CampoDeFecha id="filtro-desde" testid="filtro-desde" value={filtros.desde ?? ''} onChange={(v) => cambiar({ desde: v || undefined })} />
-            </div>
+          <div className="w-[9.5rem]">
+            <CampoDeFecha id="filtro-desde" testid="filtro-desde" value={filtros.desde ?? ''} onChange={(v) => cambiar({ desde: v || undefined })} />
+          </div>
+          <span aria-hidden="true" className="text-fg-subtle">
+            –
+          </span>
+          <label htmlFor="filtro-hasta" className="sr-only">
+            Hasta
           </label>
-          <label className="block">
-            <Etiqueta>giro hasta</Etiqueta>
-            <div className="mt-1 w-44">
-              <CampoDeFecha id="filtro-hasta" testid="filtro-hasta" value={filtros.hasta ?? ''} onChange={(v) => cambiar({ hasta: v || undefined })} />
-            </div>
-          </label>
-          <label className="block">
-            <Etiqueta>estado</Etiqueta>
-            <Desplegable
-              value={filtros.estado ?? ''}
-              onChange={(v) => cambiar({ estado: (v || undefined) as EstadoDeLaLiquidacion | undefined })}
-              todas="Todos"
-              aria-label="Estado"
-              data-testid="filtro-estado"
-              className="mt-1"
-              opciones={[
-                { valor: 'generada', nombre: 'Generada' },
-                { valor: 'girada', nombre: 'Girada' },
-                { valor: 'conciliada', nombre: 'Conciliada en el banco' },
-              ]}
-            />
-          </label>
+          <div className="w-[9.5rem]">
+            <CampoDeFecha id="filtro-hasta" testid="filtro-hasta" value={filtros.hasta ?? ''} onChange={(v) => cambiar({ hasta: v || undefined })} />
+          </div>
         </div>
-        {rangoInvertido ? (
-          <p className="text-body-sm text-danger mt-3" data-testid="rango-invertido">
-            La fecha «desde» va antes de la fecha «hasta».
-          </p>
+        <Filtro etiqueta="Estado" htmlFor="filtro-estado-recaudo">
+          <Desplegable
+            id="filtro-estado-recaudo"
+            value={filtros.estado ?? ''}
+            onChange={(v) => cambiar({ estado: (v || undefined) as EstadoDeLaLiquidacion | undefined })}
+            todas="Todos los estados"
+            aria-label="Estado"
+            data-testid="filtro-estado"
+            opciones={[
+              { valor: 'generada', nombre: 'Generada' },
+              { valor: 'girada', nombre: 'Girada' },
+              { valor: 'conciliada', nombre: 'Conciliada en el banco' },
+            ]}
+          />
+        </Filtro>
+        {hayFiltros ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            hideArrow
+            onClick={() => cambiar({ agencyId: undefined, desde: undefined, hasta: undefined, estado: undefined })}
+          >
+            Limpiar filtros
+          </Button>
         ) : null}
-      </Card>
+      </BarraDeFiltros>
+      {rangoInvertido ? (
+        <p className="mt-3 text-body-sm text-danger" data-testid="rango-invertido">
+          La fecha «desde» va antes de la fecha «hasta».
+        </p>
+      ) : null}
 
       <Collapse open={generando}>
         <div className="pt-4">
@@ -180,12 +219,38 @@ export function Liquidaciones({
         {isLoading ? (
           <LoadingBlock label="cargando liquidaciones" />
         ) : error ? (
-          <ErrorBlock error={error} />
+          <ErrorBlock error={error} onReintentar={refetch} />
         ) : !data || data.data.length === 0 ? (
-          <EmptyBlock
-            title={filtros.agencyId || filtros.desde || filtros.hasta || filtros.estado ? 'Ninguna liquidación con estos filtros' : 'Todavía no hay liquidaciones'}
-            hint="Genera las de un rango de fechas con «Generar liquidaciones»: la frecuencia del giro está por definir."
-          />
+          // Ronda 26 (T7): «con estos filtros» sólo con filtros puestos; sin filtros, la acción va en el vacío.
+          hayFiltros ? (
+            <EmptyBlock
+              title="Ninguna liquidación con estos filtros"
+              hint="Quita algún filtro para ver más."
+              accion={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  hideArrow
+                  type="button"
+                  onClick={() => cambiar({ agencyId: undefined, desde: undefined, hasta: undefined, estado: undefined })}
+                >
+                  Limpiar filtros
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyBlock
+              title="Todavía no hay liquidaciones"
+              hint="Se generan por un rango de fechas: la frecuencia del giro está por definir."
+              accion={
+                alPedirGenerar && !generando ? (
+                  <Button size="sm" hideArrow type="button" onClick={alPedirGenerar}>
+                    Generar liquidaciones
+                  </Button>
+                ) : undefined
+              }
+            />
+          )
         ) : (
           <div className="space-y-px" data-testid="lista-de-liquidaciones">
             {data.data.map((l) => (

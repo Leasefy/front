@@ -165,6 +165,7 @@ export default function RecaudoEnLineaAdminPage() {
                 giroDisponible={resumen.giroDisponible}
                 version={version}
                 generando={generando}
+                alPedirGenerar={() => setGenerando(true)}
               />
             ) : pestana === 'reporte' ? (
               <ReporteDeWompi alImportar={() => setVersion((v) => v + 1)} />

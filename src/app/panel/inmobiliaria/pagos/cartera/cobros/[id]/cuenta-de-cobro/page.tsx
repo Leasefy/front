@@ -12,7 +12,7 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Printer } from '@phosphor-icons/react';
+import { Printer } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
@@ -68,7 +68,6 @@ function CuentaDeCobroContent() {
       >
         <Button asChild variant="ghost" hideArrow className="w-fit">
           <Link href={volverA}>
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Volver
           </Link>
         </Button>

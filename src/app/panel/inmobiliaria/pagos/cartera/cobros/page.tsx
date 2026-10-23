@@ -63,6 +63,7 @@ import {
 } from '@/components/inmobiliaria';
 import { CobroCard } from '@/components/inmobiliaria/CobroCard';
 import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { GenerarCobrosDialog } from '@/components/inmobiliaria/pagos/GenerarCobrosDialog';
 import {
   RUTA_DE_LA_MIGRACION,
@@ -509,15 +510,14 @@ function CobrosContent() {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* Header — el encabezado común; las acciones a la derecha, sm. */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">{t('inmobiliaria.cobros.title')}</h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            {t('inmobiliaria.cobros.subtitle')}
-          </p>
-        </div>
+        <EncabezadoDePantalla
+          seccion="Pagos · inquilinos"
+          titulo={t('inmobiliaria.cobros.title')}
+          descripcion={t('inmobiliaria.cobros.subtitle')}
+        />
         {/* 🔴 24-09-2026 (a 390 px desbordaba): en el teléfono las acciones
             se parten en líneas; `shrink-0` sólo desde `sm`, donde el
             encabezado ya es una fila. Juntas miden ≈531 px y a 390 quedan
@@ -531,13 +531,13 @@ function CobrosContent() {
               B-09/N-28 (QA-PAGOS-95 r2): el engranaje de «Configurar
               recordatorios» salió; los recordatorios viven en Cobranza ›
               Recordatorios (J-12) y de aquí sólo se va allá. */}
-          <Button asChild variant="outline" hideArrow>
+          <Button asChild variant="outline" size="sm" hideArrow>
             <Link href={RUTA_DE_LOS_RECORDATORIOS} data-testid="ir-a-recordatorios">
               <BellRinging className="w-4 h-4" />
               <span className="hidden sm:inline">Recordatorios</span>
             </Link>
           </Button>
-          <Button asChild variant="secondary" hideArrow>
+          <Button asChild variant="outline" size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/cartera/reglas-de-mora">
               <Scales className="w-4 h-4" />
               <span className="hidden sm:inline">Reglas de mora</span>
@@ -550,7 +550,8 @@ function CobrosContent() {
               de sólo lectura se le ofrecía prendido y el back respondía 403. */}
           <span className="inline-flex" title={puedeHacerRecibo ? undefined : MOTIVO_SIN_PERMISO_DE_RECIBO}>
             <Button
-              variant="secondary"
+              variant="outline"
+              size="sm"
               hideArrow
               disabled={!puedeHacerRecibo}
               onClick={() => setIsGenerarOpen(true)}
@@ -568,6 +569,7 @@ function CobrosContent() {
             title={puedeHacerRecibo ? undefined : MOTIVO_SIN_PERMISO_DE_RECIBO}
           >
             <Button
+              size="sm"
               hideArrow
               disabled={!puedeHacerRecibo}
               onClick={() => {
@@ -681,7 +683,7 @@ function CobrosContent() {
                 onClick={() => shiftMonth(1)}
               />
             </div>
-            <span className="text-xs text-fg-muted tabular-nums">
+            <span className="text-caption text-fg-muted tabular-nums">
               {filteredCobros.length} {t('inmobiliaria.nav.cobros').toLowerCase()}
             </span>
             <SegmentedControl
@@ -795,13 +797,11 @@ function CobrosContent() {
             />
           ) : (
             <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
-                <CurrencyCircleDollar
-                  weight="duotone"
-                  className="h-6 w-6 text-fg-muted"
-                  aria-hidden="true"
-                />
-              </div>
+              <CurrencyCircleDollar
+                weight="duotone"
+                className="h-8 w-8 text-fg-muted"
+                aria-hidden="true"
+              />
               {/*
                 Un cobro sale de la consignación del inmueble. Si la migración
                 dejó contratos sin inmueble o sin propietario, esta tabla está
@@ -809,7 +809,7 @@ function CobrosContent() {
                 a la vez inútil: esconde la causa. Una línea, con el botón.
               */}
               <div className="space-y-1.5">
-                <p className="text-base font-semibold text-fg">
+                <p className="text-base font-medium text-fg">
                   {verAnulados
                     ? t('inmobiliaria.cobros.anular.sinAnulados')
                     : (copyDeMigracion?.titulo ?? t('inmobiliaria.cobros.noPayments'))}

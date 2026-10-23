@@ -3007,10 +3007,10 @@
         "mesAnterior": "Mes anterior",
         "mesSiguiente": "Mes siguiente",
         "mesTope": "Más adelante todavía no hay avisos de Cobri.",
-        "filtroEstado": "Estado del link",
+        "filtroEstado": "Estado del enlace",
         "todos": "Todos los estados",
         "estado": {
-          "ninguno": "Sin link",
+          "ninguno": "Sin enlace",
           "enviado": "Enviado",
           "pagado": "Pagado",
           "vencido": "Vencido",
@@ -3022,13 +3022,13 @@
           "enMora": "Venció hace más de 3 días sin pagar: Cobri ya no escribe por esta cuota, la lleva cobranza.",
           "enMoraPorOtra": "El inquilino debe una cuota anterior en mora: mientras tanto Cobri no le escribe, la lleva cobranza.",
           "pagada": "Ya está paga: Cobri no tiene nada que cobrar por esta cuota.",
-          "vencido": "El link venció sin pago. Cobri ya no escribe por esta cuota: la sigue cobranza.",
-          "fallido": "El inquilino intentó pagar y la pasarela no aprobó el pago. El link sigue sirviendo para volver a intentar.",
+          "vencido": "El enlace venció sin pago. Cobri ya no escribe por esta cuota: la sigue cobranza.",
+          "fallido": "El inquilino intentó pagar y la pasarela no aprobó el pago. El enlace sigue sirviendo para volver a intentar.",
           "esperaAprobacion": "Cobri lo dejó listo y espera tu aprobación para mandarlo por WhatsApp.",
-          "siguienteEsperaAprobacion": "El siguiente aviso de Cobri, con este mismo link, espera tu aprobación para salir por WhatsApp.",
+          "siguienteEsperaAprobacion": "El siguiente aviso de Cobri, con este mismo enlace, espera tu aprobación para salir por WhatsApp.",
           "noSalio": "No salió el aviso «{{hito}}»: {{porQue}}.",
           "noSalioDefinitivo": "No salió el aviso «{{hito}}»: {{porQue}}. Ese aviso ya no se vuelve a intentar.",
-          "pagoSinAplicar": "El pago entró por el link, pero no se aplicó a la cuota y sigue debiéndose: {{motivo}}"
+          "pagoSinAplicar": "El pago entró por el enlace, pero no se aplicó a la cuota y sigue debiéndose: {{motivo}}"
         },
         "pagadoEl": "Pagado el {{fecha}}",
         "ultimoAviso": "Último aviso: {{fecha}}",
@@ -3049,12 +3049,12 @@
         "contrato": "Contrato {{numero}}",
         "revisarYAprobar": "Revisar y aprobar",
         "resolverEnLaBandeja": "Resolver en la Bandeja",
-        "verLink": "Ver el link",
+        "verLink": "Ver el enlace",
         "verLinkAria": "Ver el enlace de pago de {{inquilino}} (se abre en otra pestaña)",
         "conteoUno": "1 cuota",
         "conteoVarios": "{{total}} cuotas",
         "vacioTitulo": "No hay cuotas que venzan en {{mes}}",
-        "vacioDescripcion": "Cobri trabaja sobre las cuotas de los contratos: cuando un contrato tenga cuota en este mes, aparece aquí con el estado de su link."
+        "vacioDescripcion": "Cobri trabaja sobre las cuotas de los contratos: cuando un contrato tenga cuota en este mes, aparece aquí con el estado de su enlace."
       }
     },
     "dispersiones": {

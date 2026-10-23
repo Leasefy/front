@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ArrowRight, PaperPlaneTilt, ArrowClockwise } from '@phosphor-icons/react';
+import { PaperPlaneTilt, ArrowClockwise } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { WIZARD_STEPS } from '@/lib/types/application';
 import { Button } from '@/components/ui/button';
@@ -63,10 +63,10 @@ export function WizardNavigation({
         variant="outline"
         onClick={onBack}
         disabled={isFirstStep || isSubmitting}
+        hideArrow
         className={cn(isFirstStep && 'invisible')}
       >
-        <ArrowLeft className="h-4 w-4" />
-        <span className="hidden sm:inline">Atrás</span>
+        Atrás
       </Button>
 
       {/* Step indicator - center (mobile only) */}
@@ -96,10 +96,7 @@ export function WizardNavigation({
             </>
           )
         ) : (
-          <>
-            <span>Continuar</span>
-            <ArrowRight className="h-4 w-4" />
-          </>
+          <span>Continuar</span>
         )}
       </Button>
     </div>

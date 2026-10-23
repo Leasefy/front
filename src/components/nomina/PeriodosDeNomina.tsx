@@ -235,10 +235,11 @@ export function PeriodosDeNominaPanel() {
               </SelectContent>
             </Select>
           </div>
-          {/* Un solo azul: con un borrador esperando, lo que sigue es aprobarlo (en su fila). */}
+          {/* Un solo azul: con un borrador esperando, lo que sigue es aprobarlo (en su fila).
+              Revisora r25 (Liquidación, UI): del alto de los dos campos (antes «sm», más bajo que ellos). */}
           <Button
-            size="sm"
             variant={hayBorrador ? 'outline' : 'default'}
+            className="h-11"
             onClick={() => void armar()}
             disabled={armando}
             data-testid="armar-borrador"

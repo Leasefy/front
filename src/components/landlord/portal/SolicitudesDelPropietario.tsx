@@ -13,10 +13,10 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { CaretRight, ChatCircleText, Plus } from '@phosphor-icons/react';
+import { ChatCircleText, Plus } from '@phosphor-icons/react';
+import { StatusBadge } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui';
-import { Badge } from '@/components/ui/badge';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { NuevaSolicitudModal } from '@/components/tenant/NuevaSolicitudModal';
@@ -24,14 +24,16 @@ import { pqrsApi, type ContratoParaRadicar } from '@/lib/api/pqrs.service';
 import type { SolicitudPqrs } from '@/lib/api/pqrs.types';
 import { fechaLegible } from '@/lib/api/facturacion-por-mes.service';
 
-const ESTADO: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
-  recibida: { label: 'Recibida', variant: 'secondary' },
-  asignada: { label: 'Asignada', variant: 'secondary' },
-  en_proceso: { label: 'En proceso', variant: 'secondary' },
-  en_cotizacion: { label: 'En cotización', variant: 'secondary' },
-  resuelta: { label: 'Resuelta', variant: 'outline' },
-  cerrada: { label: 'Cerrada', variant: 'outline' },
+// GLOW UP (22-10): el estado con su punto y su palabra (StatusBadge); lo abierto en azul suave, lo resuelto en verde.
+const ESTADO: Record<string, { label: string; tono: 'info' | 'success' | 'neutral' }> = {
+  recibida: { label: 'Recibida', tono: 'info' },
+  asignada: { label: 'Asignada', tono: 'info' },
+  en_proceso: { label: 'En proceso', tono: 'info' },
+  en_cotizacion: { label: 'En cotización', tono: 'info' },
+  resuelta: { label: 'Resuelta', tono: 'success' },
+  cerrada: { label: 'Cerrada', tono: 'neutral' },
 };
+const yaCerrada = (s: SolicitudPqrs) => s.estado === 'resuelta' || s.estado === 'cerrada';
 const TIPO: Record<string, string> = {
   peticion: 'Petición',
   queja: 'Queja',
@@ -72,12 +74,22 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
 
   if (cargando) return <EsqueletoDePagina variante="list" className="p-6 lg:p-8" />;
 
+  // Lo que espera respuesta primero; dentro de cada grupo, el orden del back.
+  const abiertas = items.filter((x) => !yaCerrada(x)).length;
+  const ordenadas = [...items].sort((a, b) => Number(yaCerrada(a)) - Number(yaCerrada(b)));
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
         seccion="Solicitudes"
         titulo="Solicitudes"
-        descripcion="Peticiones, quejas, reclamos y daños de tus inmuebles. Tu inmobiliaria te responde aquí."
+        descripcion={
+          abiertas === 1
+            ? 'Tienes 1 solicitud abierta: va primero. Tu inmobiliaria te responde aquí.'
+            : abiertas > 1
+              ? `Tienes ${abiertas} solicitudes abiertas: van primero. Tu inmobiliaria te responde aquí.`
+              : 'Peticiones, quejas, reclamos y daños de tus inmuebles. Tu inmobiliaria te responde aquí.'
+        }
         accionPrincipal={
           <Button
             hideArrow
@@ -107,8 +119,8 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
         />
       ) : (
         <ul className="space-y-2" data-testid="propietario-solicitudes">
-          {items.map((s) => {
-            const estado = ESTADO[s.estado] ?? { label: s.estado, variant: 'secondary' as const };
+          {ordenadas.map((s) => {
+            const estado = ESTADO[s.estado] ?? { label: s.estado, tono: 'neutral' as const };
             return (
               <li key={s.id}>
                 <Link
@@ -118,14 +130,13 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate font-medium text-fg">{s.asunto}</span>
-                      <Badge variant={estado.variant}>{estado.label}</Badge>
+                      <StatusBadge tone={estado.tono}>{estado.label}</StatusBadge>
                     </div>
                     <p className="mt-1 text-caption text-fg-muted">
                       <span className="font-mono">{s.radicado}</span> · {TIPO[s.tipo] ?? s.tipo}
                       {s.propiedadDireccion ? ` · ${s.propiedadDireccion}` : ''} · {fechaLegible(s.createdAt)}
                     </p>
                   </div>
-                  <CaretRight className="h-4 w-4 shrink-0 text-fg-muted" />
                 </Link>
               </li>
             );

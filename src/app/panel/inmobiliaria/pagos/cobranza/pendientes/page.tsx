@@ -24,6 +24,7 @@ import Link from 'next/link'
 import {
   CheckCircle,
   Clock,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -35,6 +36,7 @@ import { useTr } from '@/lib/i18n/use-tr'
 import { Card, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { Input } from '@/components/ui/input'
 import {
   usePendientes,
   type PendienteCta,
@@ -217,17 +219,22 @@ function PendientesContent() {
   const effectiveFilter =
     grupoFilter && counts[grupoFilter] > 0 ? grupoFilter : null
 
-  const visibleItems = useMemo(
-    () =>
-      effectiveFilter ? items.filter((i) => i.grupo === effectiveFilter) : items,
-    [items, effectiveFilter],
-  )
+  // Revisora r27 (K3): buscador por nombre o motivo, como las demás tablas.
+  const [busqueda, setBusqueda] = useState('')
+  const visibleItems = useMemo(() => {
+    const delGrupo = effectiveFilter ? items.filter((i) => i.grupo === effectiveFilter) : items
+    const q = busqueda.trim().toLocaleLowerCase('es')
+    if (!q) return delGrupo
+    return delGrupo.filter((i) =>
+      [i.titulo, i.reason].some((v) => (v ?? '').toLocaleLowerCase('es').includes(q)),
+    )
+  }, [items, effectiveFilter, busqueda])
 
   // La lista compone CINCO fuentes (escalaciones, cartas, siniestros, planes y
   // promesas) sin tope: se pintaba entera. El pie es el mismo de las tablas del
   // panel; el chip de grupo manda a la página 1.
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(visibleItems, { resetKey: effectiveFilter ?? 'todos' })
+    useTablePagination(visibleItems, { resetKey: `${effectiveFilter ?? 'todos'}|${busqueda}` })
 
   // ── Primer load ────────────────────────────────────────────────────────────
   // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
@@ -323,12 +330,36 @@ function PendientesContent() {
             />
           </div>
 
+          <div className="border-b border-border px-4 py-3">
+            <div className="relative w-full sm:w-72">
+              <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+              <Input
+                type="search"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar nombre o motivo"
+                aria-label="Buscar en lo pendiente por nombre o motivo"
+                className="pl-9"
+                data-testid="pendientes-buscar"
+              />
+            </div>
+          </div>
+
           {/* Lista priorizada — Alta → Media → Baja, fecha DESC dentro */}
-          <Stagger as="ul" className="divide-y divide-border" aria-label={t(`${NS}.pageTitle`)}>
-            {pageItems.map((item) => (
-              <PendienteCard key={item.key} item={item} />
-            ))}
-          </Stagger>
+          {visibleItems.length === 0 && busqueda.trim() ? (
+            <EmptyState
+              icon={MagnifyingGlass}
+              title="Nada pendiente coincide con la búsqueda"
+              description="Revisa el nombre o el motivo, o borra la búsqueda."
+              primaryCta={{ label: 'Borrar la búsqueda', onClick: () => setBusqueda('') }}
+            />
+          ) : (
+            <Stagger as="ul" className="divide-y divide-border" aria-label={t(`${NS}.pageTitle`)}>
+              {pageItems.map((item) => (
+                <PendienteCard key={item.key} item={item} />
+              ))}
+            </Stagger>
+          )}
 
           {shouldPaginate && (
             <div className="border-t border-border px-4 py-3">

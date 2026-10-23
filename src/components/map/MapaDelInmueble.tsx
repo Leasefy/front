@@ -110,7 +110,7 @@ export function MapaDelInmueble({ latitude, longitude, titulo, direccion, classN
   return (
     <div className={cn('space-y-3', className)}>
       <div
-        className="relative w-full h-56 sm:h-64 rounded-lg border border-border overflow-hidden"
+        className="relative w-full h-56 sm:h-64 rounded-lg border border-border-faint overflow-hidden"
         data-testid="mapa-del-inmueble"
         data-estado={estado}
       >
@@ -138,8 +138,14 @@ export function MapaDelInmueble({ latitude, longitude, titulo, direccion, classN
         >
           <NavigationControl position="top-right" showCompass={false} />
           <AttributionControl compact position="bottom-right" />
-          <Marker longitude={longitude} latitude={latitude} anchor="bottom">
-            <MapPin className="w-8 h-8 text-primary drop-shadow-sm" weight="fill" aria-hidden="true" />
+          {/* Ronda 30 (diseño nuevo): la marca del inmueble es el cuadrito de
+              voltaje con su halo, el mismo del marketplace (antes un alfiler
+              con sombra). */}
+          <Marker longitude={longitude} latitude={latitude} anchor="center">
+            <span
+              className="block h-3.5 w-3.5 rounded-[4px] bg-primary outline outline-[6px] outline-primary/20"
+              aria-hidden="true"
+            />
             <span className="sr-only">{titulo}</span>
           </Marker>
         </Map>

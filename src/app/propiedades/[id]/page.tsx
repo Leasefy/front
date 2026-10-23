@@ -41,6 +41,10 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
         />
       </main>
       <LandingFooterV2 />
+      {/* Ronda 30 (diseño nuevo): bajo 1024 px la barra fija de «Postularme ·
+          Visita» tapaba la última línea del pie (Términos, Privacidad, Volver
+          arriba). Este hueco queda debajo de la barra. */}
+      <div aria-hidden="true" className="h-[calc(88px+env(safe-area-inset-bottom,0px))] lg:hidden" />
     </LandingChrome>
   );
 }

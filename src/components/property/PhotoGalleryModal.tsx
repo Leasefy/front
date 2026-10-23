@@ -95,37 +95,39 @@ export function PhotoGalleryModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/95 flex flex-col"
+      className="fixed inset-0 z-50 flex flex-col bg-[#07080C] pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] text-[#F3F1ED]"
       data-lenis-prevent
       role="dialog"
       aria-modal="true"
       aria-label={`Fotos de ${propertyTitle}`}
       onClick={onClose}
     >
-      {/* Header — close + counter */}
+      {/* Header — el inmueble y el contador a la izquierda, cerrar a la
+          derecha (ronda 30, diseño nuevo: noche sólida, sin vidrio). */}
       <header
-        className="flex-shrink-0 flex items-center justify-between h-16 px-4 md:px-6"
+        className="flex-shrink-0 flex items-center justify-between gap-4 px-[max(16px,3vw)] py-3.5"
         onClick={(e) => e.stopPropagation()}
       >
+        <p className="min-w-0 truncate text-[15px]">
+          {propertyTitle}
+          {hasMultiple && (
+            <span data-testid="gallery-counter" className="ml-2.5 font-mono tabular-nums text-[#8E93B0]">
+              {activeIndex + 1} / {total}
+            </span>
+          )}
+        </p>
         <IconButton
           variant="ghost"
           icon={<X className="w-5 h-5 text-white" />}
           onClick={onClose}
           aria-label="Cerrar galería"
-          className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20"
+          className="h-11 w-11 shrink-0 rounded-full bg-white/[0.08] hover:bg-white/[0.16]"
         />
-        {hasMultiple && (
-          <div className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full">
-            <span data-testid="gallery-counter" className="text-sm font-medium text-white font-mono tabular-nums">
-              {activeIndex + 1} / {total}
-            </span>
-          </div>
-        )}
       </header>
 
       {/* Stage — large image + arrows */}
       <div
-        className="relative flex-1 min-h-0 flex items-center justify-center px-4 md:px-16"
+        className="relative flex-1 min-h-0 flex items-center justify-center px-2 min-[601px]:px-[max(16px,7vw)]"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -138,7 +140,7 @@ export function PhotoGalleryModal({
               goPrev();
             }}
             aria-label="Imagen anterior"
-            className="absolute left-3 md:left-5 z-10 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20"
+            className="absolute left-[max(12px,2vw)] z-10 hidden h-12 w-12 rounded-full bg-white/[0.08] hover:bg-white/[0.16] min-[601px]:inline-flex"
           />
         )}
 
@@ -167,7 +169,7 @@ export function PhotoGalleryModal({
               goNext();
             }}
             aria-label="Siguiente imagen"
-            className="absolute right-3 md:right-5 z-10 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20"
+            className="absolute right-[max(12px,2vw)] z-10 hidden h-12 w-12 rounded-full bg-white/[0.08] hover:bg-white/[0.16] min-[601px]:inline-flex"
           />
         )}
       </div>
@@ -175,10 +177,10 @@ export function PhotoGalleryModal({
       {/* Thumbnail strip */}
       {hasMultiple && (
         <div
-          className="flex-shrink-0 py-4 px-4 md:px-6"
+          className="flex-shrink-0 px-[max(16px,3vw)] pb-[18px] pt-3.5"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex gap-2 overflow-x-auto justify-start md:justify-center pb-1">
+          <div className="flex gap-2 overflow-x-auto justify-start md:justify-center pb-1 [scrollbar-width:none]">
             {images.map((image, index) => (
               <button
                 key={index}
@@ -187,9 +189,9 @@ export function PhotoGalleryModal({
                 aria-label={`Ver foto ${index + 1}`}
                 aria-current={activeIndex === index}
                 className={cn(
-                  'relative aspect-[4/3] w-16 md:w-20 flex-shrink-0 rounded-md overflow-hidden transition-[opacity,box-shadow] duration-fast',
+                  'relative h-11 w-[58px] min-[601px]:h-14 min-[601px]:w-[76px] flex-shrink-0 rounded-[10px] overflow-hidden border-2 transition-[opacity,border-color] duration-fast',
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-white',
-                  activeIndex === index ? 'ring-2 ring-white opacity-100' : 'opacity-50 hover:opacity-90'
+                  activeIndex === index ? 'border-[#4D6BFF] opacity-100' : 'border-transparent opacity-[0.42] hover:opacity-[0.85]'
                 )}
               >
                 <Image src={image} alt={`Miniatura ${index + 1}`} fill className="object-cover" sizes="80px" />

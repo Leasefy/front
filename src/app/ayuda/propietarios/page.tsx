@@ -6,7 +6,8 @@ import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { LandingFooterV2 } from "@/components/landing-v2/LandingFooterV2";
 import { SectionLabel } from "@/components/ui/section-label";
 import { Button } from "@/components/ui/button";
-import { CaretDown, House, Users, FileText, CreditCard, Shield, ChartBarHorizontal, CheckCircle, Lightbulb, ChartBar } from '@phosphor-icons/react';
+import { CaretDown, House, Users, FileText, CreditCard, Shield, CheckCircle, EnvelopeSimple, Lightbulb, ChartBar } from '@phosphor-icons/react';
+import { Collapse } from "@leasefy/cadence";
 
 interface GuideSection {
   id: string;
@@ -24,7 +25,7 @@ interface GuideSection {
 const guideSections: GuideSection[] = [
   {
     id: "empezar",
-    icon: <House className="w-5 h-5" />,
+    icon: <House className="h-5 w-5" />,
     title: "Cómo empezar",
     description: "Primeros pasos para publicar tu propiedad en Leasefy",
     content: [
@@ -36,7 +37,7 @@ const guideSections: GuideSection[] = [
           "Selecciona 'Soy propietario' como tipo de cuenta",
           "Completa tu información básica",
           "Verifica tu correo electrónico",
-          "¡Listo! Ya puedes publicar propiedades",
+          "Listo: ya puedes publicar propiedades",
         ],
       },
       {
@@ -54,12 +55,12 @@ const guideSections: GuideSection[] = [
   },
   {
     id: "publicar",
-    icon: <FileText className="w-5 h-5" />,
+    icon: <FileText className="h-5 w-5" />,
     title: "Publicar tu propiedad",
     description: "Guía paso a paso para crear una publicación atractiva",
     content: [
       {
-        subtitle: "El wizard de publicación",
+        subtitle: "El asistente de publicación",
         text: "Nuestro asistente te guía en 10 pasos simples para crear una publicación completa y profesional.",
         steps: [
           "Tipo de propiedad: Apartamento, casa, estudio, etc.",
@@ -89,13 +90,13 @@ const guideSections: GuideSection[] = [
   },
   {
     id: "candidatos",
-    icon: <Users className="w-5 h-5" />,
+    icon: <Users className="h-5 w-5" />,
     title: "Gestión de candidatos",
     description: "Cómo revisar y seleccionar al mejor inquilino",
     content: [
       {
         subtitle: "Recibir aplicaciones",
-        text: "Cuando alguien aplica a tu propiedad, recibes una notificación con su perfil completo y score de riesgo.",
+        text: "Cuando alguien aplica a tu propiedad, recibes una notificación con su perfil completo y su puntaje de riesgo.",
       },
       {
         subtitle: "Comparar candidatos",
@@ -116,12 +117,12 @@ const guideSections: GuideSection[] = [
   },
   {
     id: "scoring",
-    icon: <ChartBar className="w-5 h-5" />,
-    title: "Score de riesgo",
+    icon: <ChartBar className="h-5 w-5" />,
+    title: "Puntaje de riesgo",
     description: "Entiende cómo evaluamos a los candidatos",
     content: [
       {
-        subtitle: "¿Qué es el score de riesgo?",
+        subtitle: "¿Qué es el puntaje de riesgo?",
         text: "Es una puntuación del 0 al 100 que indica qué tan confiable es un candidato basándose en múltiples factores verificables.",
       },
       {
@@ -136,8 +137,8 @@ const guideSections: GuideSection[] = [
         ],
       },
       {
-        subtitle: "Interpretación del score",
-        text: "Un score alto indica menor riesgo. Recomendamos considerar candidatos con score superior a 70, aunque otros factores también son importantes.",
+        subtitle: "Cómo leer el puntaje",
+        text: "Un puntaje alto indica menor riesgo. Recomendamos considerar candidatos con puntaje superior a 70, aunque otros factores también son importantes.",
         tips: [
           "90-100: Excelente candidato, bajo riesgo",
           "70-89: Buen candidato, riesgo moderado",
@@ -149,7 +150,7 @@ const guideSections: GuideSection[] = [
   },
   {
     id: "contratos",
-    icon: <FileText className="w-5 h-5" />,
+    icon: <FileText className="h-5 w-5" />,
     title: "Contratos digitales",
     description: "Genera y firma contratos con validez legal",
     content: [
@@ -184,7 +185,7 @@ const guideSections: GuideSection[] = [
   },
   {
     id: "pagos",
-    icon: <CreditCard className="w-5 h-5" />,
+    icon: <CreditCard className="h-5 w-5" />,
     title: "Gestión de pagos",
     description: "Recibe y administra los pagos de arriendo",
     content: [
@@ -216,7 +217,7 @@ const guideSections: GuideSection[] = [
   },
   {
     id: "seguro",
-    icon: <Shield className="w-5 h-5" />,
+    icon: <Shield className="h-5 w-5" />,
     title: "Seguro de arrendamiento",
     description: "Protege tu inversión con nuestro seguro",
     content: [
@@ -252,55 +253,48 @@ function GuideAccordion({ section }: { section: GuideSection }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="border border-border rounded-[20px] overflow-hidden">
+    <div id={section.id} className="scroll-mt-28 overflow-hidden rounded-lg border border-border bg-surface">
       <button
+        type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-4 p-5 text-left bg-background hover:bg-muted/50 transition-colors"
+        className="flex w-full items-center gap-4 p-5 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
         aria-expanded={open}
       >
-        <div className="flex items-center justify-center w-10 h-10 rounded-md bg-[#1A40FF]/10 text-[#1A40FF] dark:text-[#5570FF] shrink-0">
+        {/* Ícono suelto, sin caja de color. */}
+        <span className="shrink-0 text-fg-subtle" aria-hidden="true">
           {section.icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-[16px] font-medium text-foreground">
-            {section.title}
-          </h3>
-          <p className="text-[13px] text-muted-foreground mt-0.5">
-            {section.description}
-          </p>
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-body font-medium text-fg">{section.title}</h3>
+          <p className="mt-0.5 text-caption text-fg-muted">{section.description}</p>
         </div>
         <CaretDown
-          className={`w-5 h-5 shrink-0 text-muted-foreground transition-transform duration-200 ${
-            open ? "rotate-180" : ""
-          }`}
+          className={`h-5 w-5 shrink-0 text-fg-subtle transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          aria-hidden="true"
         />
       </button>
 
-      {open && (
-        <div className="px-5 pb-5 pt-2 border-t border-border bg-muted/30">
+      <Collapse open={open}>
+        <div className="border-t border-border-faint px-5 pb-5 pt-4">
           <div className="space-y-6">
             {section.content.map((item, idx) => (
               <div key={idx}>
                 {item.subtitle && (
-                  <h4 className="text-[15px] font-medium text-foreground mb-2">
-                    {item.subtitle}
-                  </h4>
+                  <h4 className="mb-1.5 text-[15px] font-medium text-fg">{item.subtitle}</h4>
                 )}
-                <p className="text-[14px] text-muted-foreground leading-relaxed">
-                  {item.text}
-                </p>
+                <p className="text-body-sm leading-relaxed text-fg-muted">{item.text}</p>
 
                 {item.steps && (
                   <ol className="mt-3 space-y-2">
                     {item.steps.map((step, stepIdx) => (
-                      <li
-                        key={stepIdx}
-                        className="flex items-start gap-3 text-[14px]"
-                      >
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#1A40FF]/10 text-[#1A40FF] dark:text-[#5570FF] text-[11px] font-medium shrink-0 mt-0.5">
+                      <li key={stepIdx} className="flex items-start gap-3 text-body-sm">
+                        <span
+                          className="mt-0.5 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-border px-1 font-mono text-caption leading-none tabular-nums text-fg-muted"
+                          aria-hidden="true"
+                        >
                           {stepIdx + 1}
                         </span>
-                        <span className="text-foreground">{step}</span>
+                        <span className="text-fg">{step}</span>
                       </li>
                     ))}
                   </ol>
@@ -309,12 +303,9 @@ function GuideAccordion({ section }: { section: GuideSection }) {
                 {item.tips && (
                   <ul className="mt-3 space-y-2">
                     {item.tips.map((tip, tipIdx) => (
-                      <li
-                        key={tipIdx}
-                        className="flex items-start gap-2 text-[14px]"
-                      >
-                        <CheckCircle className="w-4 h-4 text-success shrink-0 mt-0.5" />
-                        <span className="text-foreground">{tip}</span>
+                      <li key={tipIdx} className="flex items-start gap-2 text-body-sm">
+                        <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden="true" />
+                        <span className="text-fg">{tip}</span>
                       </li>
                     ))}
                   </ul>
@@ -323,7 +314,7 @@ function GuideAccordion({ section }: { section: GuideSection }) {
             ))}
           </div>
         </div>
-      )}
+      </Collapse>
     </div>
   );
 }
@@ -331,46 +322,59 @@ function GuideAccordion({ section }: { section: GuideSection }) {
 export default function PropietariosGuidePage() {
   return (
     <LandingChrome>
-      <main id="main-content" className="bg-background">
+      <main id="main-content" className="bg-bg">
         <section className="pt-32 pb-16 md:pt-40 md:pb-24">
           <div className="container-platform">
             <div className="max-w-[800px]">
               {/* Breadcrumb */}
-              <nav className="flex items-center gap-2 text-[13px] text-muted-foreground mb-6">
-                <Link href="/ayuda" className="hover:text-foreground transition-colors">
+              <nav aria-label="Ruta" className="mb-6 flex items-center gap-2 text-caption text-fg-muted">
+                <Link href="/ayuda" className="transition-colors hover:text-fg">
                   Centro de ayuda
                 </Link>
-                <span>/</span>
-                <span className="text-foreground">Guía para propietarios</span>
+                <span aria-hidden="true">/</span>
+                <span className="text-fg">Guía para propietarios</span>
               </nav>
 
               <SectionLabel className="mb-4">Guía completa</SectionLabel>
-              <h1 className="text-[2rem] md:text-[3rem] font-light text-foreground leading-[1.15] tracking-[-0.02em] italic mb-4">
+              <h1 className="font-heading text-[32px] font-[420] leading-[1.08] tracking-[-0.03em] text-fg md:text-[44px] mb-4">
                 Guía para propietarios
               </h1>
-              <p className="text-[15px] text-muted-foreground mb-8">
+              <p className="mb-8 text-[15px] text-fg-muted">
                 Todo lo que necesitas saber para arrendar tu propiedad de forma
                 segura y eficiente con Leasefy.
               </p>
 
               {/* Quick actions */}
-              <div className="flex flex-wrap gap-3 mb-12">
-                <Button asChild>
+              <div className="mb-10 flex flex-wrap gap-3">
+                <Button asChild hideArrow>
                   <Link href="/publicar">Publicar propiedad</Link>
                 </Button>
-                <Button variant="outline" asChild>
+                <Button variant="outline" asChild hideArrow>
                   <Link href="/pricing">Ver planes y precios</Link>
                 </Button>
               </div>
 
-              {/* Pro tip */}
-              <div className="flex items-start gap-3 p-4 mb-10 rounded-[18px] bg-warning-soft border border-warning/30">
-                <Lightbulb className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+              {/* Los temas a la vista: se salta directo al que interesa. */}
+              <nav aria-label="Temas de la guía" className="mb-8 flex flex-wrap gap-2">
+                {guideSections.map((section) => (
+                  <a
+                    key={section.id}
+                    href={`#${section.id}`}
+                    className="rounded-full border border-border px-3.5 py-1.5 text-body-sm text-fg transition-colors hover:bg-surface-muted"
+                  >
+                    {section.title}
+                  </a>
+                ))}
+              </nav>
+
+              {/* Pro tip: un consejo, no una advertencia (sin el amarillo de alerta). */}
+              <div className="mb-10 flex items-start gap-3 rounded-lg bg-surface-muted p-4">
+                <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-fg-subtle" aria-hidden="true" />
                 <div>
-                  <p className="text-[14px] font-medium text-foreground">
+                  <p className="text-body-sm font-medium text-fg">
                     Consejo profesional
                   </p>
-                  <p className="text-[13px] text-muted-foreground mt-1">
+                  <p className="mt-1 text-body-sm text-fg-muted">
                     Los propietarios que completan su perfil al 100% y responden
                     en menos de 24 horas reciben 4 veces más aplicaciones de
                     candidatos calificados.
@@ -379,31 +383,31 @@ export default function PropietariosGuidePage() {
               </div>
 
               {/* Guide sections */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {guideSections.map((section) => (
                   <GuideAccordion key={section.id} section={section} />
                 ))}
               </div>
 
               {/* Contact section */}
-              <div className="mt-16 p-8 border border-border rounded-[22px] bg-muted/30 text-center">
-                <h2 className="text-[18px] font-medium text-foreground mb-2">
+              <div className="mt-16 rounded-lg border border-border bg-surface-muted p-6 text-center sm:p-8">
+                <h2 className="mb-2 text-h3 text-fg">
                   ¿Tienes más preguntas?
                 </h2>
-                <p className="text-[14px] text-muted-foreground mb-4">
+                <p className="mb-5 text-body-sm text-fg-muted">
                   Nuestro equipo de soporte está listo para ayudarte en cada
                   paso del proceso.
                 </p>
                 <div className="flex flex-wrap justify-center gap-3">
-                  <Button variant="outline" asChild>
+                  <Button variant="outline" asChild hideArrow>
                     <Link href="/ayuda">Ver preguntas frecuentes</Link>
                   </Button>
-                  <a
-                    href="mailto:hola@leasefy.co"
-                    className="inline-flex items-center px-5 py-2.5 bg-foreground text-background text-[14px] font-medium rounded-md hover:bg-foreground/90 transition-colors"
-                  >
-                    Contactar soporte
-                  </a>
+                  <Button variant="secondary" asChild hideArrow>
+                    <a href="mailto:hola@leasefy.co">
+                      <EnvelopeSimple className="h-4 w-4" aria-hidden="true" />
+                      Contactar soporte
+                    </a>
+                  </Button>
                 </div>
               </div>
             </div>

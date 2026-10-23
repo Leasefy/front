@@ -140,6 +140,8 @@ export function AvaluoEstadoCard({
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
+  // El informe web: la entrega principal. Necesita el slug (viaja con el
+  // certId en el status) y el capability token del dueño.
   const reportHref = slug && capToken ? reporteAvaluoHref(slug, capToken) : null
 
   const verInformeButton = reportHref !== null && (

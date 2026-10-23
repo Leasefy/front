@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { CaretRight, MagnifyingGlass } from '@phosphor-icons/react';
-import { Stagger, StaggerItem } from '@leasefy/cadence';
+import { MagnifyingGlass } from '@phosphor-icons/react';
+import { Avatar, Stagger, StaggerItem } from '@leasefy/cadence';
+import { LeasefyLogotype } from '@/components/brand';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n';
 import { rutaDelFormulario, type InmobiliariaDelFormulario } from './inmobiliaria-del-formulario';
@@ -34,21 +35,21 @@ export function ElegirInmobiliaria({ inmobiliarias }: { inmobiliarias: Inmobilia
   }, [inmobiliarias, busqueda]);
 
   return (
-    <div className="w-full max-w-xl rounded-[22px] border border-border bg-surface p-6 sm:p-8" data-testid="arco-elegir">
-      <div className="mb-6 text-center">
-        <p className="mb-2 text-xl font-medium font-heading text-fg">Leasefy</p>
-        <h1 className="mb-3 text-3xl font-medium font-heading text-fg">{t('inmobiliaria.ai.arco.public.title')}</h1>
-        <p className="mx-auto max-w-sm text-sm text-fg-subtle">{t('inmobiliaria.ai.arco.public.elegir.texto')}</p>
+    <div className="w-full max-w-xl rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-8" data-testid="arco-elegir">
+      <div className="mb-6 space-y-3 text-center">
+        <LeasefyLogotype className="mx-auto h-5 w-auto text-fg" title="Leasefy" />
+        <h1 className="text-balance font-heading text-[26px] font-[420] leading-[1.12] tracking-[-0.025em] text-fg sm:text-[30px]">{t('inmobiliaria.ai.arco.public.title')}</h1>
+        <p className="mx-auto max-w-sm text-body-sm text-fg-muted">{t('inmobiliaria.ai.arco.public.elegir.texto')}</p>
       </div>
 
-      <h2 className="mb-3 text-base font-medium text-fg">{t('inmobiliaria.ai.arco.public.elegir.titulo')}</h2>
+      <h2 className="mb-3 text-body font-medium text-fg">{t('inmobiliaria.ai.arco.public.elegir.titulo')}</h2>
 
       {inmobiliarias === null ? (
-        <p className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-fg-muted" role="alert">
+        <p className="rounded-md bg-surface-muted px-4 py-3 text-body-sm text-fg-muted" role="alert">
           {t('inmobiliaria.ai.arco.public.elegir.noCargo')}
         </p>
       ) : inmobiliarias.length === 0 ? (
-        <p className="px-1 py-1 text-sm text-fg-muted" data-testid="arco-elegir-vacio">
+        <p className="px-1 py-1 text-body-sm text-fg-muted" data-testid="arco-elegir-vacio">
           {t('inmobiliaria.ai.arco.public.elegir.sinResultados')}
         </p>
       ) : (
@@ -68,33 +69,29 @@ export function ElegirInmobiliaria({ inmobiliarias }: { inmobiliarias: Inmobilia
             />
           </div>
           {visibles.length === 0 ? (
-            <p className="px-1 py-3 text-sm text-fg-muted" data-testid="arco-elegir-vacio">
+            <p className="px-1 py-3 text-body-sm text-fg-muted" data-testid="arco-elegir-vacio">
               {t('inmobiliaria.ai.arco.public.elegir.sinResultados')}
             </p>
           ) : (
-            <Stagger className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+            <Stagger className="divide-y divide-border-faint overflow-hidden rounded-md border border-border">
               {visibles.map((i) => (
                 <StaggerItem key={i.id}>
                   <Link
                     href={rutaDelFormulario(i)}
-                    className="flex min-h-[52px] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+                    className="flex min-h-[52px] items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-none"
                   >
                     {i.logoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element -- el logo viene de la inmobiliaria, de cualquier dominio
                       <img src={i.logoUrl} alt="" className="h-8 w-8 shrink-0 rounded-md object-contain" />
                     ) : (
-                      <span
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-sm font-medium text-fg-muted"
-                        aria-hidden
-                      >
-                        {i.nombre.trim().charAt(0).toUpperCase()}
+                      <span aria-hidden className="shrink-0">
+                        <Avatar name={i.nombre} size="sm" kind="marca" />
                       </span>
                     )}
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-fg">{i.nombre}</span>
+                      <span className="block truncate text-body-sm text-fg">{i.nombre}</span>
                       {i.ciudad && <span className="block truncate text-caption text-fg-subtle">{i.ciudad}</span>}
                     </span>
-                    <CaretRight className="h-4 w-4 shrink-0 text-fg-subtle" aria-hidden />
                   </Link>
                 </StaggerItem>
               ))}

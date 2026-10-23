@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
+import { LeasefyLogotype } from '@/components/brand';
 import { EnvelopeSimple, CircleNotch } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -180,7 +181,7 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
         : 'text-fg-subtle';
 
   return (
-    <div className="w-full max-w-xl rounded-[22px] border border-border bg-surface p-8">
+    <div className="w-full max-w-xl rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-8">
       {/* Card header */}
       <div className="text-center mb-8">
         {inmobiliaria ? (
@@ -189,17 +190,15 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
               // eslint-disable-next-line @next/next/no-img-element -- el logo viene de la inmobiliaria, de cualquier dominio
               <img src={inmobiliaria.logoUrl} alt="" className="h-8 w-8 rounded-md object-contain" />
             ) : null}
-            <p className="text-lg font-medium font-heading text-fg">{inmobiliaria.nombre}</p>
+            <p className="text-body text-fg">{inmobiliaria.nombre}</p>
           </div>
         ) : (
-          <p className="text-xl font-medium font-heading text-fg mb-2">
-            Leasefy
-          </p>
+          <LeasefyLogotype className="mx-auto mb-3 h-5 w-auto text-fg" title="Leasefy" />
         )}
-        <h1 className="text-h2 font-heading text-fg mb-3">
+        <h1 className="mb-3 text-balance font-heading text-[26px] font-[420] leading-[1.12] tracking-[-0.025em] text-fg sm:text-[30px]">
           {t('inmobiliaria.ai.arco.public.title')}
         </h1>
-        <p className="text-sm text-fg-subtle max-w-sm mx-auto">
+        <p className="mx-auto max-w-sm text-body-sm text-fg-muted">
           {inmobiliaria
             ? t('inmobiliaria.ai.arco.public.subtitleDe', { inmobiliaria: inmobiliaria.nombre })
             : t('inmobiliaria.ai.arco.public.subtitle')}
@@ -209,14 +208,11 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
       {submitted ? (
         /* Success state */
         <div className="text-center space-y-4">
-          <EnvelopeSimple
-            weight="duotone"
-            className="h-12 w-12 text-[#1A40FF] mx-auto"
-          />
+          <EnvelopeSimple className="mx-auto h-10 w-10 text-fg-subtle" aria-hidden="true" />
           <h2 className="text-h3 text-fg">
             {t('inmobiliaria.ai.arco.public.successTitle')}
           </h2>
-          <p className="text-sm text-fg-subtle">
+          <p className="text-body-sm text-fg-muted">
             {t('inmobiliaria.ai.arco.public.successBody', { email: submittedEmail })}
           </p>
           <p className="text-caption text-fg-subtle">
@@ -225,7 +221,7 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
           <button
             type="button"
             onClick={resetForm}
-            className="text-caption text-[#1A40FF] cursor-pointer hover:text-[#1A40FF] transition-colors mt-2 block mx-auto"
+            className="mx-auto mt-2 block cursor-pointer text-body-sm text-fg underline underline-offset-4 transition-colors hover:text-fg-muted"
           >
             {t('inmobiliaria.ai.arco.public.submitAnother')}
           </button>
@@ -412,7 +408,7 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
             {t('inmobiliaria.ai.arco.public.legalFooter')}{' '}
             <Link
               href="/privacidad"
-              className="text-[#1A40FF] hover:text-[#1A40FF] transition-colors"
+              className="text-fg underline underline-offset-2 transition-colors hover:text-fg-muted"
             >
               {t('inmobiliaria.ai.arco.public.privacyLink')}
             </Link>
@@ -427,7 +423,7 @@ export function ArcoFormClient({ inmobiliaria }: { inmobiliaria?: InmobiliariaDe
           {t('inmobiliaria.ai.arco.public.legalFooter')}{' '}
           <Link
             href="/privacidad"
-            className="text-[#1A40FF] hover:text-[#1A40FF] transition-colors"
+            className="text-fg underline underline-offset-2 transition-colors hover:text-fg-muted"
           >
             {t('inmobiliaria.ai.arco.public.privacyLink')}
           </Link>

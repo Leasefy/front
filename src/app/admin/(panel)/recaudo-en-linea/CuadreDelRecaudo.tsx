@@ -7,7 +7,8 @@
  */
 
 import { useState } from 'react'
-import { CrossFade, Eyebrow } from '@leasefy/cadence'
+import { Cifra as CifraDeCadence, CrossFade, Eyebrow, FranjaDeCifras } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 import { Pill } from '@/components/admin/Pill'
@@ -22,7 +23,7 @@ import {
   TONO_DEL_DESEMBOLSO,
   type TipoDeDiferencia,
 } from '@/lib/admin/recaudo-en-linea'
-import { Cifra, Etiqueta } from './partes'
+import { Etiqueta } from './partes'
 import { Card } from '@leasefy/cadence'
 import { Input } from '@/components/ui/input'
 
@@ -64,11 +65,11 @@ export function CuadreDelRecaudo({ version }: { version: number }) {
         <div className="flex flex-wrap gap-4 mt-4">
           <label className="block">
             <Etiqueta>desde</Etiqueta>
-            <Input type="date" className="mt-1" value={desde} onChange={(e) => setDesde(e.target.value)} data-testid="cuadre-desde" />
+            <Input type="date" className="mt-1 font-mono" value={desde} onChange={(e) => setDesde(e.target.value)} data-testid="cuadre-desde" />
           </label>
           <label className="block">
             <Etiqueta>hasta</Etiqueta>
-            <Input type="date" className="mt-1" value={hasta} onChange={(e) => setHasta(e.target.value)} data-testid="cuadre-hasta" />
+            <Input type="date" className="mt-1 font-mono" value={hasta} onChange={(e) => setHasta(e.target.value)} data-testid="cuadre-hasta" />
           </label>
         </div>
         {!valido ? (
@@ -85,50 +86,53 @@ export function CuadreDelRecaudo({ version }: { version: number }) {
           <EmptyBlock title="Todavía no hay nada que cuadrar" hint="Sube un reporte de Wompi para empezar." />
         ) : (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4" data-testid="totales-del-cuadre">
-              <Card className="p-4">
-                <Cifra nombre="wompi reportó (neto aprobado)" valor={pesos(c.totales.reportadoNetoCop)} />
-                <p className="text-body-sm text-fg-muted mt-1">
-                  {c.totales.aprobadas} aprobadas de {c.totales.transacciones} · bruto {pesos(c.totales.reportadoBrutoCop)}
-                </p>
-              </Card>
-              <Card className="p-4">
-                <Cifra nombre="ya liquidado (neto)" valor={pesos(c.totales.liquidadoNetoCop)} tono="bien" />
-              </Card>
-              <Card className="p-4">
-                <Cifra
-                  nombre="por liquidar"
-                  valor={pesos(c.totales.porLiquidarNetoCop)}
-                  tono={c.totales.porLiquidar > 0 ? 'ojo' : 'normal'}
-                />
-                <p className="text-body-sm text-fg-muted mt-1">{pagos(c.totales.porLiquidar, ' que cuadra', ' que cuadran')}</p>
-              </Card>
-              <Card className="p-4">
-                <Cifra
-                  nombre="sin cuadrar"
-                  valor={pesos(c.totales.sinCuadrarNetoCop)}
-                  tono={c.totales.sinCuadrar > 0 ? 'mal' : 'normal'}
-                />
-                <p className="text-body-sm text-fg-muted mt-1">
-                  {pagos(c.totales.sinCuadrar, ' que no se puede liquidar', ' que no se pueden liquidar')}
-                </p>
-              </Card>
-              <Card className="p-4" data-testid="diferencia-del-cuadre">
-                <Cifra
-                  nombre="liquidado distinto de lo reportado"
-                  valor={pesos(c.totales.diferenciaCop)}
-                  tono={c.totales.diferenciaCop !== 0 ? 'mal' : 'bien'}
-                />
-              </Card>
-              <Card className="p-4">
-                <Cifra
-                  nombre="registradas sin reporte"
-                  valor={pesos(c.totales.registradasSinReporteCop)}
-                  tono={c.totales.registradasSinReporte > 0 ? 'ojo' : 'normal'}
-                />
-                <p className="text-body-sm text-fg-muted mt-1">{pagos(c.totales.registradasSinReporte)}</p>
-              </Card>
+            {/* Glow up 22-10: LA RESPUESTA en una cifra —lo que Wompi reportó y en qué va (liquidado, por liquidar,
+                sin cuadrar)— y sólo las dos alertas aparte; antes eran 6 tarjetas del mismo peso. */}
+            <div className="rounded-lg border border-border bg-surface p-5 sm:p-6" data-testid="totales-del-cuadre">
+              <CifraHeroe
+                rotulo="Wompi reportó (neto aprobado)"
+                cifra={pesos(c.totales.reportadoNetoCop)}
+                contexto={`${c.totales.aprobadas} aprobadas de ${c.totales.transacciones} · bruto ${pesos(c.totales.reportadoBrutoCop)}`}
+                tramos={[
+                  { clave: 'liquidado', etiqueta: 'Ya liquidado', monto: c.totales.liquidadoNetoCop, tono: 'exito', cifra: pesos(c.totales.liquidadoNetoCop), siempre: true },
+                  {
+                    clave: 'por-liquidar',
+                    etiqueta: 'Por liquidar',
+                    monto: c.totales.porLiquidarNetoCop,
+                    tono: 'aviso',
+                    cifra: pesos(c.totales.porLiquidarNetoCop),
+                    extra: <p className="text-caption text-fg-muted">{pagos(c.totales.porLiquidar, ' que cuadra', ' que cuadran')}</p>,
+                  },
+                  {
+                    clave: 'sin-cuadrar',
+                    etiqueta: 'Sin cuadrar',
+                    monto: c.totales.sinCuadrarNetoCop,
+                    tono: 'critico',
+                    cifra: pesos(c.totales.sinCuadrarNetoCop),
+                    extra: (
+                      <p className="text-caption text-fg-muted">
+                        {pagos(c.totales.sinCuadrar, ' que no se puede liquidar', ' que no se pueden liquidar')}
+                      </p>
+                    ),
+                  },
+                ]}
+                total={c.totales.reportadoNetoCop}
+              />
             </div>
+            <FranjaDeCifras fila="md" columnas={2} aria-label="Lo que no cuadra">
+              <CifraDeCadence
+                etiqueta="Liquidado distinto de lo reportado"
+                valor={pesos(c.totales.diferenciaCop)}
+                tono={c.totales.diferenciaCop !== 0 ? 'peligro' : 'exito'}
+                data-testid="diferencia-del-cuadre"
+              />
+              <CifraDeCadence
+                etiqueta="Registradas sin reporte"
+                valor={pesos(c.totales.registradasSinReporteCop)}
+                detalle={pagos(c.totales.registradasSinReporte)}
+                tono={c.totales.registradasSinReporte > 0 ? 'aviso' : undefined}
+              />
+            </FranjaDeCifras>
 
             {c.desembolsos.length > 0 ? (
               <Card className="overflow-x-auto">
@@ -192,7 +196,7 @@ export function CuadreDelRecaudo({ version }: { version: number }) {
                 ) : null}
               </Card>
             ) : (
-              <p className="text-sm text-success" data-testid="sin-diferencias">
+              <p className="text-body-sm text-success" data-testid="sin-diferencias">
                 Sin diferencias en este rango: lo reportado por Wompi cuadra con lo liquidado y lo que falta por liquidar.
               </p>
             )}

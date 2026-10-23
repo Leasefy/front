@@ -37,6 +37,7 @@ import {
   Tira,
 } from './piezas';
 import { portadaDe } from '@/lib/marketplace/portadas';
+import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
 import { cn } from '@/lib/utils';
 
 // El mapa de MapLibre toca `window`: sólo en el navegador.
@@ -129,18 +130,22 @@ function Cabecera({ p }: { p: Pagina }) {
         {portadaDe(p.portadaUrl) ? (
           <Image src={portadaDe(p.portadaUrl)} alt="" fill priority sizes="1280px" className="object-cover" />
         ) : (
-          <span
-            className="absolute inset-0"
-            aria-hidden
-            style={{ background: `radial-gradient(120% 140% at 0% 0%, ${colorDe(p)}55, ${colorDe(p)}14 55%, transparent)` }}
-          />
+          <>
+            {/* Sin portada (Nico, 23-10: «más dots»): la corriente de voltaje de Leasefy; en oscuro, el tono de la marca. */}
+            <CorrienteDeVoltaje className="absolute inset-0 h-full w-full dark:hidden" fondo="arena" forma="corrientes" fuerza={0.55} semilla={(p.nombre?.length ?? 7) + 3} />
+            <span
+              className="absolute inset-0 hidden dark:block"
+              aria-hidden
+              style={{ background: `radial-gradient(120% 140% at 0% 0%, ${colorDe(p)}55, ${colorDe(p)}14 55%, transparent)` }}
+            />
+          </>
         )}
       </motion.div>
       <div className="flex flex-col items-start gap-4 px-2 sm:flex-row sm:flex-wrap sm:items-end sm:gap-5 md:px-6">
         <LogoDeLaInmobiliaria i={p} tamano={104} className="relative z-10 -mt-12 ring-4 ring-background" />
         <motion.div {...entrada(2)} className="min-w-0 flex-1 pt-1 sm:pt-4">
           <h1
-            className="flex items-center gap-2 font-heading text-[28px] font-semibold tracking-[-0.02em] text-fg md:text-[34px]"
+            className="flex items-center gap-2 font-heading text-[28px] font-[420] tracking-[-0.025em] text-fg md:text-[34px]"
             data-testid="nombre-de-la-inmobiliaria"
           >
             <span className="min-w-0 break-words">{p.nombre}</span>

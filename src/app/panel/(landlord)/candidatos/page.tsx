@@ -315,7 +315,7 @@ export default function CandidatosPage() {
       header: t('landlord.candidates.colIncome'),
       sortable: true,
       render: (row) => (
-        <span className="text-sm font-medium text-fg">
+        <span className="font-mono text-sm tabular-nums text-fg">
           {formatCurrencyOrDash(row.totalIncome)}
         </span>
       ),
@@ -387,7 +387,6 @@ export default function CandidatosPage() {
     setSheetOpen(false);
     toast(t('landlord.candidates.rejectedToast'), {
       description: t('landlord.candidates.rejectedToastDesc', { name: candidate.fullName }),
-      icon: '❌',
     });
     refetch();
   };
@@ -471,11 +470,11 @@ export default function CandidatosPage() {
         <div className="space-y-2">
           <div className="flex justify-between py-2 border-b border-border-faint">
             <span className="text-sm text-fg-muted">{t('landlord.candidates.monthlyIncome')}</span>
-            <span className="text-sm font-medium text-fg">{formatCurrencyOrDash(candidate.totalIncome)}</span>
+            <span className="font-mono text-sm tabular-nums text-fg">{formatCurrencyOrDash(candidate.totalIncome)}</span>
           </div>
           <div className="flex justify-between py-2 border-b border-border-faint">
             <span className="text-sm text-fg-muted">{t('landlord.candidates.obligations')}</span>
-            <span className="text-sm font-medium text-fg">{formatCurrencyOrDash(candidate.monthlyObligations)}</span>
+            <span className="font-mono text-sm tabular-nums text-fg">{formatCurrencyOrDash(candidate.monthlyObligations)}</span>
           </div>
           <div className="flex justify-between py-2 bg-success-soft px-3 -mx-3 rounded-md">
             <span className="text-sm text-success">{t('landlord.candidates.availableForRent')}</span>

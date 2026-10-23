@@ -251,7 +251,7 @@ export function LandlordDashboardEmpty() {
   ];
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       {/* Llega después de cargar los inmuebles del inicio: entra UNA vez. */}
       <Appear className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
@@ -291,8 +291,9 @@ export function LandlordDashboardEmpty() {
           title={locale === 'es' ? 'Todavía no tienes inmuebles publicados' : 'No published properties yet'}
           description={
             locale === 'es'
-              ? 'Publica tu primer inmueble y empieza a recibir postulaciones de inquilinos verificados.'
-              : 'List your first property and start receiving applications from verified tenants.'
+              ? // Ronda 30: dice qué va a aparecer aquí (antes repetía la descripción del encabezado: «Publica tu primer inmueble…»).
+                'Aquí vas a ver tus inmuebles, quién se postuló a cada uno y sus visitas.'
+              : 'Your properties, who applied to each one and their visits will show up here.'
           }
         />
 

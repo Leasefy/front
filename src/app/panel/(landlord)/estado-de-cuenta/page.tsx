@@ -27,7 +27,6 @@ export default function MiEstadoDeCuentaDelPropietarioPage() {
       className="mx-0 max-w-none p-6 lg:p-8"
       // SO-09 (04-10): el soporte de cada descuento de sus giros.
       abrirSoporteDeLaDeduccion={async (id) => (await estadoDeCuentaApi.soporteDeMiDeduccion(id)).url}
-      volverA={{ label: 'Volver al panel', href: '/panel' }}
       // Glow up 22-10: el encabezado de las demás pantallas del portal en vez del «Volver al panel» y su nombre.
       encabezado={{
         seccion: 'Mi plata',

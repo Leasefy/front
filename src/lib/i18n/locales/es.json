@@ -11732,7 +11732,7 @@
       "riskLabel": "Riesgo:",
       "riskAll": "Todos",
       "emptyTitle": "No hay candidatos",
-      "emptyDescription": "Cuando los inquilinos apliquen a tus inmuebles, aparecerán aquí para que puedas evaluarlos.",
+      "emptyDescription": "Cuando alguien se postule a uno de tus inmuebles, aparece aquí con su estudio.",
       "emptyAction": "Ver inmuebles",
       "emptyFilteredMessage": "No se encontraron candidatos con los filtros aplicados",
       "emptyDefaultMessage": "Cuando recibas postulaciones, aparecerán aquí",

@@ -292,7 +292,6 @@ export default function VisitasPage() {
     setCancelTarget(null);
     toast(t('landlord.visits.cancelledToast'), {
       description: t('landlord.visits.cancelledToastDesc', { name }),
-      icon: '❌',
     });
     refetch();
   };

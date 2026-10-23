@@ -3,8 +3,8 @@
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
-import { FranjaDeCifras } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import type { PillTone } from '@/lib/admin/types'
@@ -93,7 +93,6 @@ export default function KeysPage() {
       cell: (r) => (
         <div>
           <div className="font-medium text-fg">{r.label}</div>
-          <code className="font-mono text-caption text-fg-subtle">{r.env_var}</code>
         </div>
       ),
     },
@@ -112,7 +111,7 @@ export default function KeysPage() {
       cell: (r) =>
         r.last_rotated_at ? (
           <div>
-            <div className="whitespace-nowrap text-body-sm text-fg">{fmtFecha(r.last_rotated_at)}</div>
+            <div className="whitespace-nowrap font-mono text-body-sm tabular-nums text-fg">{fmtFecha(r.last_rotated_at)}</div>
             <div className="text-caption text-fg-subtle">
               {(() => {
                 const d = daysSince(r.last_rotated_at)
@@ -141,15 +140,36 @@ export default function KeysPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Llaves"
-        description={`Las llaves de los servicios externos (Vapi, Wompi, Anthropic…). Por la Ley 2157 y SAGRILAFT se rotan cada 90 días; avisa cuando faltan ${KEY_ROTATION_WARN_DAYS} o menos. Nunca se muestra el valor de una llave.`}
+        description="Las llaves de los servicios externos (Vapi, Wompi, Anthropic…) y cuándo se rotaron. Nunca se muestra su valor."
+        ayuda={
+          <ParaEntenderMas etiqueta="Cómo funciona" titulo="La rotación de las llaves" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>Por la Ley 2157 y SAGRILAFT se rotan cada 90 días; la pantalla avisa cuando faltan {KEY_ROTATION_WARN_DAYS} días o menos.</p>
+              <p>El registro vive en el código del servidor: cada rotación se anota ahí y queda en el historial de cambios.</p>
+            </div>
+          </ParaEntenderMas>
+        }
       />
 
-      <FranjaDeCifras fila="lg" aria-label="Cifras de las llaves">
-        <KpiCard label="Al día" value={keys ? counts.ok : '—'} tone="ok" />
-        <KpiCard label="Por rotar pronto" value={keys ? counts.warn : '—'} tone={counts.warn ? 'warn' : 'default'} />
-        <KpiCard label="Vencidas" value={keys ? counts.overdue : '—'} tone={counts.overdue ? 'bad' : 'default'} />
-        <KpiCard label="Nunca rotadas" value={keys ? counts.never : '—'} />
-      </FranjaDeCifras>
+      {/* Glow up 22-10: LA RESPUESTA (cuántas están al día) en una cifra con la barra por estado; antes, 4 tarjetas
+          del mismo peso pintadas. */}
+      {keys && keys.length > 0 ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo="Llaves al día"
+            cifra={`${counts.ok} de ${keys.length}`}
+            contexto={counts.overdue > 0 ? `${counts.overdue} ${counts.overdue === 1 ? 'vencida' : 'vencidas'}: hay que rotarlas` : 'ninguna vencida'}
+            tramos={[
+              { clave: 'ok', etiqueta: 'Al día', monto: counts.ok, tono: 'exito', cifra: String(counts.ok), siempre: true },
+              { clave: 'warn', etiqueta: 'Por rotar pronto', monto: counts.warn, tono: 'aviso', cifra: String(counts.warn) },
+              { clave: 'overdue', etiqueta: 'Vencidas', monto: counts.overdue, tono: 'critico', cifra: String(counts.overdue) },
+              { clave: 'never', etiqueta: 'Nunca rotadas', monto: counts.never, tono: 'neutro', cifra: String(counts.never) },
+            ]}
+            total={keys.length}
+            data-testid="llaves-al-dia"
+          />
+        </div>
+      ) : null}
 
       <DataTable
         columns={columns}
@@ -162,7 +182,7 @@ export default function KeysPage() {
         emptyHint="El registro de rotaciones del servidor está vacío."
         aria-label="Llaves"
         queSon={['llave', 'llaves']}
-        buscar="Nombre de la llave o variable"
+        buscar="Nombre de la llave"
         textoExtra={(r) => r.env_var}
         segmentos={SEGMENTOS}
         ordenInicial={{ columna: 3, sentido: 'asc' }}
@@ -170,10 +190,6 @@ export default function KeysPage() {
         masEnElExcel={[{ header: 'Variable', texto: (r) => r.env_var }]}
       />
 
-      <p className="text-caption text-fg-muted">
-        El registro vive en el código del servidor (<code className="font-mono">src/config/key-rotation-log.ts</code>):
-        cada rotación se anota ahí y queda en el historial de git.
-      </p>
     </div>
   )
 }

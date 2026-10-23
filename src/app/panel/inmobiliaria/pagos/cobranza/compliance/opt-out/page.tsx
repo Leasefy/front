@@ -20,6 +20,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, BellSlash, MagnifyingGlass } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
@@ -195,6 +197,8 @@ function OptOutContent() {
       return [i.debtorName, fuenteLegible(i.source)].some((v) => (v ?? '').toLowerCase().includes(q))
     })
   }, [items, filtroVivo, busqueda])
+  // Ronda 30 (K3): de lo ya traído se ven 10 por página (vuelve a la 1 al buscar o cambiar de pestaña).
+  const pag = useTablePagination(visibles, { resetKey: `${filtroVivo}|${busqueda}` })
 
   const dia = (iso: string, conHora = true) => {
     const d = new Date(iso)
@@ -298,7 +302,7 @@ function OptOutContent() {
                   </TableHeader>
                   {/* Filtrar o cargar más: las filas entran escalonadas (techo 320 ms). */}
                   <TableBodyAnimado className="max-md:block">
-                    {visibles.map((row) => {
+                    {pag.pageItems.map((row) => {
                       const isAcked = row.acknowledgedAt !== null
                       const isAcking = acking.has(row.eventId)
                       return (
@@ -351,11 +355,34 @@ function OptOutContent() {
               </div>
             )}
 
-            {nextCursor ? (
-              <div className="border-t border-border px-4 py-3 text-center">
-                <Button variant="outline" size="sm" hideArrow onClick={() => void loadMore()} isLoading={isLoadingMore} disabled={isLoadingMore}>
-                  Cargar las siguientes
-                </Button>
+            {visibles.length > 0 || nextCursor ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3">
+                {/* Ronda 30 (K3): el pie de paginación de la casa sobre lo ya traído; el back pagina por cursor, así que
+                    «Cargar las siguientes» sigue al lado para traer más. */}
+                {visibles.length > 0 ? (
+                  <TablePagination
+                    className="min-w-0 flex-1"
+                    total={pag.total}
+                    page={pag.page}
+                    pageSize={pag.pageSize}
+                    pageSizeOptions={PAGE_SIZE_OPTIONS}
+                    onPageChange={pag.setPage}
+                    onPageSizeChange={pag.setPageSize}
+                  />
+                ) : null}
+                {nextCursor ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    hideArrow
+                    onClick={() => void loadMore()}
+                    isLoading={isLoadingMore}
+                    disabled={isLoadingMore}
+                    data-testid="optout-cargar-mas"
+                  >
+                    Cargar las siguientes
+                  </Button>
+                ) : null}
               </div>
             ) : null}
           </Card>

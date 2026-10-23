@@ -7739,7 +7739,9 @@
             "submitting": "Submitting...",
             "success": {
               "title": "Claim filed successfully.",
-              "partial": "Sent with partial results — review each insurer"
+              "partial": "Sent with partial results — review each insurer",
+              "radicado": "Filed",
+              "sinRadicar": "Not filed"
             }
           },
           "rechazar": {

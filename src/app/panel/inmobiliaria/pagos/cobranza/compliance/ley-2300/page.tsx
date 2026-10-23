@@ -23,6 +23,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Gavel, MagnifyingGlass } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
@@ -129,6 +131,8 @@ function Ley2300Content() {
         .some((v) => v.toLowerCase().includes(q))
     })
   }, [items, direccion, busqueda])
+  // Ronda 30 (K3): de lo ya traído se ven 10 por página (vuelve a la 1 al buscar o cambiar de pestaña).
+  const pag = useTablePagination(visibles, { resetKey: `${direccion}|${busqueda}` })
 
   const cuando = (iso: string) => {
     const d = new Date(iso)
@@ -229,7 +233,7 @@ function Ley2300Content() {
                     </TableHeader>
                     {/* «Cargar más» o un filtro: las filas entran escalonadas (techo 320 ms). */}
                     <TableBodyAnimado className="max-md:block">
-                      {visibles.map((row) => (
+                      {pag.pageItems.map((row) => (
                         <TableRowAnimada
                           key={row.eventId}
                           data-testid={`ley2300-intento-${row.eventId}`}
@@ -258,19 +262,34 @@ function Ley2300Content() {
               )}
             </CrossFade>
 
-            {nextCursor ? (
-              <div className="border-t border-border px-4 py-3 text-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  hideArrow
-                  onClick={() => void loadMore()}
-                  isLoading={isLoadingMore}
-                  disabled={isLoadingMore}
-                  data-testid="ley2300-cargar-mas"
-                >
-                  Cargar los siguientes
-                </Button>
+            {visibles.length > 0 || nextCursor ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3">
+                {/* Ronda 30 (K3): el pie de paginación de la casa sobre lo ya traído; el back pagina por cursor, así que
+                    «Cargar los siguientes» sigue al lado para traer más. */}
+                {visibles.length > 0 ? (
+                  <TablePagination
+                    className="min-w-0 flex-1"
+                    total={pag.total}
+                    page={pag.page}
+                    pageSize={pag.pageSize}
+                    pageSizeOptions={PAGE_SIZE_OPTIONS}
+                    onPageChange={pag.setPage}
+                    onPageSizeChange={pag.setPageSize}
+                  />
+                ) : null}
+                {nextCursor ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    hideArrow
+                    onClick={() => void loadMore()}
+                    isLoading={isLoadingMore}
+                    disabled={isLoadingMore}
+                    data-testid="ley2300-cargar-mas"
+                  >
+                    Cargar los siguientes
+                  </Button>
+                ) : null}
               </div>
             ) : null}
           </Card>

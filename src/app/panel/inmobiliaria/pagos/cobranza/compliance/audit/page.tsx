@@ -25,6 +25,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ClipboardText, DownloadSimple, Funnel } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
@@ -142,6 +144,8 @@ function AuditContent() {
 
   const { items, isLoading, isLoadingMore, error, fallo, hasMore, loadMore, refetch } =
     useAuditLog(filters)
+  // Ronda 30 (K3): de lo ya traído se ven 10 por página (vuelve a la 1 al cambiar un filtro).
+  const pag = useTablePagination(items, { resetKey: JSON.stringify(filters) })
 
   // N-15 (QA-PAGOS-95): la lista del equipo es `configuracion:view`; sin él (el
   // contador) era un 403 en cada visita. Sin la lista, el filtro de «Quién» no se ofrece.
@@ -374,7 +378,7 @@ function AuditContent() {
                 </TableHeader>
                 {/* «Cargar los siguientes» o un filtro: las filas entran escalonadas (techo 320 ms). */}
                 <TableBodyAnimado className="max-md:block">
-                  {items.map((row) => {
+                  {pag.pageItems.map((row) => {
                     // El servidor ya redacta la cédula («XXXXXXXX50»); se pinta con Mask
                     // sin poder revelarla (invariante forense T-34-07-01).
                     const details = row.details ?? {}
@@ -444,19 +448,34 @@ function AuditContent() {
           <FalloDeCarga error={fallo ?? new TypeError('Failed to fetch')} queEs="lo que sigue de la bitácora" onReintentar={loadMore} enmarcado={false} />
         ) : null}
 
-        {estado === 'tabla' && hasMore ? (
-          <div className="border-t border-border px-4 py-3 text-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void loadMore()}
-              isLoading={isLoadingMore}
-              disabled={isLoadingMore}
-              hideArrow
-              data-testid="auditoria-cargar-mas"
-            >
-              Cargar los siguientes
-            </Button>
+        {estado === 'tabla' && (items.length > 0 || hasMore) ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3">
+            {/* Ronda 30 (K3): el pie de paginación de la casa sobre lo ya traído; el back pagina por cursor, así que
+                «Cargar los siguientes» sigue al lado para traer más. */}
+            {items.length > 0 ? (
+              <TablePagination
+                className="min-w-0 flex-1"
+                total={pag.total}
+                page={pag.page}
+                pageSize={pag.pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={pag.setPage}
+                onPageSizeChange={pag.setPageSize}
+              />
+            ) : null}
+            {hasMore ? (
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
+                onClick={() => void loadMore()}
+                isLoading={isLoadingMore}
+                disabled={isLoadingMore}
+                data-testid="auditoria-cargar-mas"
+              >
+                Cargar los siguientes
+              </Button>
+            ) : null}
           </div>
         ) : null}
       </Card>

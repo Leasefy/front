@@ -27,7 +27,7 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Checkbox } from '@/components/ui'
-import { BackButton, Collapse, CrossFade, Presence } from '@leasefy/cadence'
+import { BackButton, Collapse, CrossFade, Presence, StatusBadge } from '@leasefy/cadence'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { EnElPieDelCajon } from '@/components/inmobiliaria/cobranza/CajonDelCaso'
 import {
@@ -406,12 +406,18 @@ export default function SiniestroApprovalClient({ claimId, enCajon = false, onRe
                   <span className="font-medium text-fg">
                     {t(`inmobiliaria.ai.cobranza.siniestros.insurers.${ins}`)}
                   </span>
-                  <span
-                    className={sent ? 'text-success' : 'text-warning'}
-                  >
-                    {sent
-                      ? `✓ ${t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.title')}`
-                      : `⚠ ${result?.error ?? t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.partial')}`}
+                  {/* Ronda 30: el resultado se lee por el punto y la palabra de StatusBadge (antes «✓»/«⚠» escritos a mano). */}
+                  <span className="flex min-w-0 items-center gap-2 text-right">
+                    {!sent ? (
+                      <span className="min-w-0 text-fg-muted">
+                        {result?.error ?? t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.partial')}
+                      </span>
+                    ) : null}
+                    <StatusBadge tone={sent ? 'success' : 'warning'} className="shrink-0">
+                      {sent
+                        ? t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.radicado')
+                        : t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.sinRadicar')}
+                    </StatusBadge>
                   </span>
                 </li>
               )

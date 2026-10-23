@@ -7774,7 +7774,9 @@
             "submitting": "Enviando...",
             "success": {
               "title": "Siniestro radicado correctamente.",
-              "partial": "Enviado con resultados parciales — revisa cada aseguradora"
+              "partial": "Enviado con resultados parciales — revisa cada aseguradora",
+              "radicado": "Radicado",
+              "sinRadicar": "Sin radicar"
             }
           },
           "rechazar": {

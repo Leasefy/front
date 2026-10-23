@@ -96,6 +96,7 @@ import { nombreDelMes } from '@/lib/recaudo/meses'
 import { CampoDeMes } from '@/components/ui/campo-de-mes'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 
 const CANALES: { value: CanalDeCobranza; label: string }[] = [
   { value: 'CORREO', label: 'Correo' },
@@ -413,13 +414,16 @@ function PagosRecordatorios() {
     )
   }
 
+  // El paso 1 está hecho cuando hay condiciones activas y guardadas.
+  const condicionesListas = Boolean(secuencia?.disponible && secuencia?.activa)
+
   return (
     <CrossFade swapKey="condiciones">
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
         seccion="Cobranza"
         titulo="Recordatorios"
-        descripcion="Las condiciones con las que esta inmobiliaria cobra, y el disparo desde la cartera. Nada sale solo: el recordatorio y los avisos los manda una persona, después de ver a cuántos le va a llegar."
+        descripcion="Cuándo se avisa a quien debe y a quién le llega cada aviso. Nada sale solo: lo manda una persona, después de ver a cuántos le llega."
         data-testid="recordatorios-encabezado"
       />
 
@@ -431,7 +435,7 @@ function PagosRecordatorios() {
       <Card>
         <CardContent className="space-y-6 p-5 lg:p-6">
           <div className="space-y-1">
-            <Eyebrow>Condiciones de cobro</Eyebrow>
+            <Eyebrow>1 · Condiciones de cobro</Eyebrow>
             <h2 className="text-base font-medium text-fg">El reglaje</h2>
             <p className="max-w-2xl text-sm text-fg-muted">
               Un recordatorio al inicio del mes y, si no pagan, avisos con el interés ya generado,
@@ -439,6 +443,24 @@ function PagosRecordatorios() {
             </p>
           </div>
 
+          {/* Con las condiciones ya definidas, el paso 1 queda hecho: se ve en
+              una línea y el formulario se pliega (sólo el paso actual abierto). */}
+          {condicionesListas ? (
+            <p className="text-body-sm text-fg" data-testid="recordatorios-resumen">
+              Recordatorio el día{' '}
+              <span className="font-mono">{secuencia?.diaDelRecordatorio}</span> · avisos cada{' '}
+              <span className="font-mono">{secuencia?.diasEntreAvisos}</span> días · hasta{' '}
+              <span className="font-mono">{secuencia?.maxAvisosConInteres}</span> con interés · por{' '}
+              {CANALES.find((c) => c.value === secuencia?.canalPreferido)?.label ?? 'correo'}
+            </p>
+          ) : null}
+          <MasDetalles
+            etiqueta="Cambiar las condiciones"
+            etiquetaAbierto="Ocultar las condiciones"
+            abiertoAlInicio={!condicionesListas}
+            montadoSiempre
+            classNameDelContenido="space-y-6"
+          >
           <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-card px-4 py-3.5">
             <div className="min-w-0 space-y-0.5">
               <p className="text-sm font-medium text-fg">Secuencia activa</p>
@@ -570,6 +592,7 @@ function PagosRecordatorios() {
             </p>
             <Button
               hideArrow
+              variant="secondary"
               onClick={() => void guardar()}
               disabled={!hayCambios || guardando || !secuencia?.disponible}
               className="shrink-0"
@@ -577,6 +600,7 @@ function PagosRecordatorios() {
               {guardando ? 'Guardando…' : 'Guardar condiciones'}
             </Button>
           </div>
+          </MasDetalles>
         </CardContent>
       </Card>
 
@@ -585,7 +609,7 @@ function PagosRecordatorios() {
         <CardContent className="space-y-5 p-5 lg:p-6">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="space-y-1">
-              <Eyebrow>Así queda tu secuencia</Eyebrow>
+              <Eyebrow>2 · Así queda tu secuencia</Eyebrow>
               <h2 className="text-base font-medium text-fg">Qué va a pasar y cuándo</h2>
             </div>
             <div className="space-y-1.5">
@@ -647,7 +671,7 @@ function PagosRecordatorios() {
       <Card>
         <CardContent className="space-y-5 p-5 lg:p-6">
           <div className="space-y-1">
-            <Eyebrow>Disparo desde la cartera</Eyebrow>
+            <Eyebrow>3 · Disparo desde la cartera</Eyebrow>
             <h2 className="text-base font-medium text-fg">
               A quién le va a llegar el aviso de {nombreDelMes(mes)}
             </h2>

@@ -32,7 +32,7 @@ import { CifraHeroe, type TonoDelTramo } from '@/components/pantalla/CifraHeroe'
 import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { formatKpiValue } from '@/components/inmobiliaria/ai/SalaAgente'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
+import { SinDatos } from '@/components/estado/SinDatos'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
 import type { AgentOverviewResponse } from '@/lib/api/agent-workspace'
@@ -222,11 +222,15 @@ function MatchingResumen() {
       ) : (
         // Sin CTA a propósito: no hay nada que el usuario pueda hacer para
         // encenderlo desde acá, y un botón que no hace nada es peor que ninguno.
-        <EmptyState
-          icon={GitMerge}
-          title={t(`${PAGES_NS}.sinTrabajo.title`)}
-          description={t(`${PAGES_NS}.sinTrabajo.desc`)}
-        />
+        // Ronda 30: el vacío de la casa (SinDatos), como el de su cola; el envoltorio conserva el data-testid.
+        <div data-testid="empty-state" className="rounded-lg border border-border bg-card">
+          <SinDatos
+            queSon="casos"
+            icono={GitMerge}
+            titulo={t(`${PAGES_NS}.sinTrabajo.title`)}
+            descripcion={t(`${PAGES_NS}.sinTrabajo.desc`)}
+          />
+        </div>
       )}
       </CrossFade>
     </div>

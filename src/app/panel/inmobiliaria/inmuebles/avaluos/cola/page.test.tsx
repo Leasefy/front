@@ -144,8 +144,9 @@ describe('Mis solicitudes de avalúo — los avalúos de verdad', () => {
     respuestas.borrador = { avaluos: [], total: 0, errorCrudo: caido }
     respuestas.revision = { avaluos: [], total: 0, errorCrudo: caido }
     await montar()
+    // Ronda 30 (revisora r27), a propósito: sin primera persona y con título.
     expect(container.querySelector('[data-testid="avaluos-cola-sin-servicio"]')?.textContent).toContain(
-      'No pudimos leer tus solicitudes',
+      'No se pudieron leer tus solicitudes',
     )
     expect(container.textContent).not.toContain('Aún no tienes solicitudes')
     // Sin el conteo no se inventa uno: junto al título no va nada (antes «— activas»).

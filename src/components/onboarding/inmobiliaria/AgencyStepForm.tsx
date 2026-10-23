@@ -179,8 +179,8 @@ export function AgencyStepForm({
       {
         campos: camposConError,
         toast: false,
-        accion: 'guardar los datos de la agencia',
-        porDefecto: 'No pudimos guardar los datos de la agencia. Revisa los campos e intenta de nuevo.',
+        accion: 'guardar los datos de la inmobiliaria',
+        porDefecto: 'No se pudieron guardar los datos de la inmobiliaria. Revisa los campos e intenta de nuevo.',
       },
     )
     setSueltosDelServidor(reparto.sueltos)

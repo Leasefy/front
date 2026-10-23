@@ -551,12 +551,12 @@ function RegistroContent() {
                   <div className="py-4 text-center space-y-4">
                     <Envelope className="w-7 h-7 text-success shrink-0 mx-auto" aria-hidden="true" />
                     <div>
-                      <p className="text-[15px] font-medium text-foreground">Revisa tu email</p>
+                      <p className="text-[15px] font-medium text-foreground">Revisa tu correo</p>
                       <p className="text-[13px] text-muted-foreground mt-1">
-                        Te enviamos un link de confirmación. Haz clic en él y te vamos a redirigir automáticamente al panel.
+                        Te enviamos un enlace para confirmar la cuenta. Ábrelo y entras directo al panel.
                       </p>
                     </div>
-                    <p className="text-[12px] text-muted-foreground">Puedes cerrar esta pestaña.</p>
+                    <p className="text-[13px] text-muted-foreground">Puedes cerrar esta pestaña.</p>
                   </div>
                 ) : (
                   <form method="post" onSubmit={authForm.handleSubmit(handleRegister)} className="space-y-4">

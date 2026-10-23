@@ -170,7 +170,7 @@ function OnboardingPropietarioContent() {
   const step1HintMessage =
     erroresDelCliente.displayName ?? erroresDelCliente.phone ?? 'Ingresa tu nombre completo para continuar'
   const step2HintMessage = data.propertyTextT === null
-    ? 'Selecciona el tipo de propiedad para continuar'
+    ? 'Elige el tipo de inmueble para continuar'
     : 'Selecciona la ciudad para continuar'
 
   const handleNext = () => {
@@ -289,15 +289,16 @@ function OnboardingPropietarioContent() {
             initial={{ scale: motionScale.pop, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={motionSpring.bouncy}
-            className="w-20 h-20 bg-success-soft rounded-full flex items-center justify-center mx-auto mb-6"
+            className="mx-auto mb-6 flex w-fit items-center justify-center"
           >
-            <Check className="w-10 h-10 text-success" weight="bold" />
+            {/* Ronda 30: el visto suelto, sin el círculo de color (Cadence 2). */}
+            <Check className="w-12 h-12 text-success" weight="bold" />
           </motion.div>
           <h1 className="text-h2 text-fg mb-3">
             ¡Listo, {data.displayName.split(' ')[0]}!
           </h1>
           <p className="text-fg-muted mb-8">
-            Tu perfil está configurado. Ahora puedes publicar tu propiedad y encontrar inquilinos verificados.
+            Tu perfil está configurado. Ahora puedes publicar tu inmueble y encontrar inquilinos verificados.
           </p>
           <div className="space-y-3">
             {returnUrl ? (
@@ -305,7 +306,7 @@ function OnboardingPropietarioContent() {
                 href={returnUrl}
                 className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-ink text-ink-fg font-medium rounded-full hover:opacity-90 transition-colors"
               >
-                Ir al panel de propiedades
+                Ir al panel de inmuebles
               </Link>
             ) : (
               <>
@@ -313,7 +314,7 @@ function OnboardingPropietarioContent() {
                   href="/publicar"
                   className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-ink text-ink-fg font-medium rounded-full hover:opacity-90 transition-colors"
                 >
-                  Publicar mi propiedad
+                  Publicar mi inmueble
                 </Link>
                 <Link
                   href="/panel"
@@ -397,8 +398,9 @@ function OnboardingPropietarioContent() {
             <div>
               {/* Step 1: About You */}
               <div className="text-center mb-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-soft text-primary rounded-full text-sm font-medium mb-4">
-                  <Shield className="w-4 h-4" />
+                {/* Ronda 30: la línea de confianza en gris, sin la pastilla de color. */}
+                <div className="inline-flex items-center gap-2 text-sm font-medium text-fg-muted mb-4">
+                  <Shield className="w-4 h-4" aria-hidden="true" />
                   Tu información está protegida
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-medium text-fg mb-2">
@@ -475,7 +477,7 @@ function OnboardingPropietarioContent() {
                   <ErrorDelCampo
                     id="ownerPhone-error"
                     mensaje={errorDelCelular}
-                    pista="Solo para notificaciones importantes de tu propiedad"
+                    pista="Sólo para avisos importantes de tu inmueble"
                   />
                 </div>
 
@@ -501,7 +503,7 @@ function OnboardingPropietarioContent() {
                 {isSubmitting ? (
                   <>
                     <Spinner size="xs" variant="current" />
-                    Guardando...
+                    Guardando…
                   </>
                 ) : fromPublish ? (
                   <>
@@ -527,9 +529,9 @@ function OnboardingPropietarioContent() {
             <div>
               {/* Step 2: Your Property */}
               <div className="text-center mb-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-success-soft text-success rounded-full text-sm font-medium mb-4">
-                  <House className="w-4 h-4" />
-                  Cuéntanos de tu propiedad
+                <div className="inline-flex items-center gap-2 text-sm font-medium text-fg-muted mb-4">
+                  <House className="w-4 h-4" aria-hidden="true" />
+                  Cuéntanos de tu inmueble
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-medium text-fg mb-2">
                   Vamos a cuidar tu inversión
@@ -550,7 +552,7 @@ function OnboardingPropietarioContent() {
                 {/* Property TextT */}
                 <div>
                   <label className="block text-sm font-medium text-fg mb-3">
-                    Tipo de propiedad <span className="text-danger">*</span>
+                    Tipo de inmueble <span className="text-danger">*</span>
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {PROPERTY_TYPES.map((type) => (
@@ -622,13 +624,12 @@ function OnboardingPropietarioContent() {
               {/* Trust badges */}
               <div className="mt-8 p-4 bg-surface-muted rounded-[14px]">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-success-soft rounded-[10px] flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-5 h-5 text-success" />
-                  </div>
+                  {/* Ronda 30: el escudo suelto, sin la caja de color. */}
+                  <Shield className="mt-0.5 h-5 w-5 shrink-0 text-fg-subtle" aria-hidden="true" />
                   <div>
-                    <p className="text-sm font-medium text-fg">Tu propiedad está protegida</p>
+                    <p className="text-sm font-medium text-fg">Tu inmueble, en buenas manos</p>
                     <p className="text-caption text-fg-muted mt-0.5">
-                      Verificamos todos los inquilinos y ofrecemos seguro contra impagos hasta 24 meses
+                      Verificamos a quien se postula y puedes asegurar el arriendo contra impagos.
                     </p>
                   </div>
                 </div>
@@ -662,7 +663,7 @@ function OnboardingPropietarioContent() {
                     {isSubmitting ? (
                       <>
                         <Spinner size="xs" variant="current" />
-                        Guardando...
+                        Guardando…
                       </>
                     ) : (
                       <>

@@ -505,7 +505,7 @@ export default function MfaVerifyPage() {
 
         <div className="relative z-10 flex min-h-screen flex-col lg:flex-row lg:items-center lg:justify-end lg:p-8">
           <div
-            className="relative flex w-full flex-col justify-center px-6 py-10 sm:px-10 lg:max-h-[calc(100vh-4rem)] lg:w-[480px] lg:overflow-y-auto lg:rounded-lg lg:bg-surface lg:p-10 lg:shadow-[0_24px_64px_-16px_rgba(20,19,15,0.45)] lg:ring-1 lg:ring-black/5"
+            className="relative flex w-full flex-col justify-center px-6 py-10 sm:px-10 lg:max-h-[calc(100vh-4rem)] lg:w-[480px] lg:overflow-y-auto lg:rounded-lg lg:bg-surface lg:p-10 lg:ring-1 lg:ring-black/5"
             data-lenis-prevent
             data-testid="mfa-tarjeta"
           >

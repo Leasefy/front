@@ -34,8 +34,8 @@ export interface CompleteStepFormProps {
 }
 
 const MISSING_STEP_LABELS: Record<string, string> = {
-  agency: 'Datos de la agencia',
-  members: 'Miembros',
+  agency: 'Datos de la inmobiliaria',
+  members: 'Equipo',
   payment_provider: 'Medio de pago',
   policy: 'Política',
   habeas_data: 'Habeas data',

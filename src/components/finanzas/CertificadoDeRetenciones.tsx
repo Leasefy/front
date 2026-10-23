@@ -330,10 +330,12 @@ export function CertificadoDeRetencionesPanel() {
         </AlertDialogContent>
       </AlertDialog>
       {/* ── El año y el criterio: definen la pregunta, por eso van antes de la respuesta ── */}
-      <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+      {/* Ronda 30 (revisora r27): los rótulos al lado de su campo, en una barra, y lo que mide el criterio
+          plegado (antes la etiqueta encima y la explicación suelta a la derecha). */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         {/* 🔴 CB-17 (QA de Contabilidad, 03-10-2026): el `Select` del DS, no
             el `<select>` del navegador. */}
-        <div className="flex flex-col gap-1.5 text-caption text-fg-muted">
+        <div className="flex items-center gap-2 text-caption text-fg-muted">
           <span id="certificado-anio">Año gravable</span>
           <Select value={String(anio)} onValueChange={(v) => setAnio(Number(v))}>
             <SelectTrigger
@@ -352,7 +354,7 @@ export function CertificadoDeRetencionesPanel() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex flex-col gap-1.5 text-caption text-fg-muted">
+        <div className="flex items-center gap-2 text-caption text-fg-muted">
           <span id="certificado-criterio">Criterio</span>
           <Select value={criterio} onValueChange={(v) => setCriterio(v as CriterioDeRetencion)}>
             <SelectTrigger
@@ -368,9 +370,11 @@ export function CertificadoDeRetencionesPanel() {
             </SelectContent>
           </Select>
         </div>
-        <p className="min-w-0 max-w-xl basis-full text-caption leading-relaxed text-fg-muted sm:basis-auto sm:flex-1" data-testid="que-mide-el-criterio">
-          {QUE_MIDE_EL_CRITERIO[criterio]}
-        </p>
+        <MasDetalles etiqueta="Qué mide el criterio" etiquetaAbierto="Ocultar" montadoSiempre className="text-caption">
+          <p className="max-w-xl text-caption leading-relaxed text-fg-muted" data-testid="que-mide-el-criterio">
+            {QUE_MIDE_EL_CRITERIO[criterio]}
+          </p>
+        </MasDetalles>
       </div>
 
       <EstadoDeDatos

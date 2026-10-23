@@ -29,7 +29,7 @@ export default function UsuraPage() {
             Reglas de mora
           </Link>
           <EncabezadoDePantalla
-            seccion="Pagos · inquilinos"
+            seccion="Cobrar a inquilinos"
             titulo="Tasa de usura"
             descripcion="El techo legal del interés de mora, mes a mes: un mes sin tasa cargada es un mes sin techo."
             ayuda={

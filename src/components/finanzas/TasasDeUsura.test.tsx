@@ -295,3 +295,15 @@ describe('tasas de usura · errores en su campo', () => {
     expect(opciones.description).toContain('eeee5555');
   });
 });
+
+describe('Tasa de usura — la tabla vacía no repite el aviso (revisora r25, Usura #1)', () => {
+  it('con meses sin tasa y ninguna tasa, el aviso dice «sin techo» y la tabla se pliega en una línea que no lo repite', async () => {
+    h.usura.mockResolvedValue(respuesta({ tasas: [], mesesSinTasa: ['2026-08', '2026-09'] }));
+    await pintar();
+    expect(document.body.querySelector('[data-testid="aviso-de-meses-sin-tasa"]')).not.toBeNull();
+    const linea = document.body.querySelector('[data-testid="sin-tasas-en-el-rango"]');
+    expect(linea?.textContent).toContain('Ninguna tasa cargada');
+    expect(linea?.textContent).not.toContain('sin techo');
+    expect(document.body.querySelector('table')).toBeNull();
+  });
+});

@@ -42,7 +42,8 @@ import {
   type ListaDeAnios,
   type ResultadoDeLaSemilla,
 } from '@/lib/admin/exogena'
-import { Card, Eyebrow, MonoLabel } from '@leasefy/cadence'
+import { Alert, Card, Eyebrow, MonoLabel } from '@leasefy/cadence'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -162,36 +163,36 @@ export default function ExogenaAdminPage() {
     <div className="space-y-6 p-6 lg:p-8" data-testid="admin-exogena">
       <PageHeader
         title="Exógena"
-        description="Los códigos de concepto y el tope de cuantías menores que Leasefy carga por año. Las inmobiliarias los heredan, con opción de sobrescribir — pero SÓLO lo publicado se hereda."
+        description="Los conceptos y el tope de cuantías menores que Leasefy carga por año. Las inmobiliarias heredan sólo lo publicado y lo pueden sobrescribir."
       />
 
       {/* 🔴 El aviso que hace que publicar sea una decisión, no un clic más. */}
-      <Card className="p-4 " data-testid="aviso-del-preset">
-        <p className="text-sm text-fg">
+      <Alert variant="warning" title="Antes de publicar, confírmalo contra la resolución" data-testid="aviso-del-preset">
+        <p className="text-body-sm">
           El preset del código es una <strong>sugerencia de uso corriente, no la resolución</strong>.
           Confírmalo contra la resolución del año antes de publicar: un concepto equivocado no se ve
           — pasa el prevalidador y llega mal a la DIAN. Un año sin publicar no lo hereda nadie.
         </p>
-      </Card>
+      </Alert>
 
       {noHayTablas && (
         <Card className="p-5  mb-6" data-testid="sin-migracion">
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-warning">
-            migración pendiente
-          </span>
-          <p className="text-sm text-fg mt-2">
-            La base todavía no tiene las tablas de exógena de plataforma (migración{' '}
-            <code className="font-mono">20260919001000_exogena_de_plataforma</code>). La aplica
-            Víctor. Mientras tanto cada inmobiliaria usa el preset del código, marcado «pendiente de
-            confirmar», que es lo de hoy — y cargar un año aquí responde 503.
+          <p className="text-body-sm font-medium text-fg">Falta preparar la base de la exógena</p>
+          <p className="text-body-sm text-fg-muted mt-1">
+            La base todavía no tiene las tablas de exógena de plataforma. La aplica Víctor. Mientras tanto cada
+            inmobiliaria usa el preset del código, marcado «pendiente de confirmar», que es lo de hoy, y cargar un año
+            aquí todavía no se puede.
           </p>
+          <MasDetalles etiqueta="Ver el nombre de la migración" etiquetaAbierto="Ocultar el nombre" montadoSiempre className="mt-3">
+            <code className="font-mono text-caption text-fg-muted">20260919001000_exogena_de_plataforma</code>
+          </MasDetalles>
         </Card>
       )}
 
-      {error && <div className="mb-6"><ErrorBlock error={error} /></div>}
+      {error && <div className="mb-6"><ErrorBlock error={error} onReintentar={refetch} /></div>}
       {accionError && (
         <Card className="p-4  mb-6" data-testid="accion-error">
-          <p className="text-sm text-danger">{accionError}</p>
+          <p className="text-body-sm text-danger">{accionError}</p>
         </Card>
       )}
 
@@ -201,7 +202,7 @@ export default function ExogenaAdminPage() {
           <MonoLabel className="block">
             semilla · {semilla.anio}
           </MonoLabel>
-          <p className="text-sm text-fg mt-2">
+          <p className="text-body-sm text-fg mt-2">
             {semilla.r.sembrados} conceptos sembrados. {semilla.r.aviso}
           </p>
           {semilla.r.sinSugerencia.length > 0 ? (
@@ -244,12 +245,12 @@ export default function ExogenaAdminPage() {
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm text-fg">{a.anio}</span>
+                    <span className="font-mono text-subtitle tabular-nums text-fg">{a.anio}</span>
                     <Pill tone={a.publicado ? 'ok' : 'muted'}>
-                      {a.publicado ? 'publicado' : 'borrador'}
+                      {a.publicado ? 'Publicado' : 'Borrador'}
                     </Pill>
-                    <span className="font-mono text-[10px] text-fg-subtle">
-                      {a.conceptos} conceptos
+                    <span className="text-caption text-fg-muted">
+                      <span className="font-mono tabular-nums">{a.conceptos}</span> conceptos
                     </span>
                   </div>
                   <p className="text-caption text-fg-muted mt-1">
@@ -272,16 +273,14 @@ export default function ExogenaAdminPage() {
                 </div>
 
                 <div className="flex shrink-0 flex-wrap gap-2">
-                  <Button variant="outline" hideArrow type="button"
-                    
+                  <Button variant="outline" size="sm" hideArrow type="button"
                     disabled={ocupado === a.anio}
                     onClick={() => setForm(formularioDe(a))}
                     data-testid={`corregir-${a.anio}`}
                   >
                     Corregir
                   </Button>
-                  <Button variant="outline" hideArrow type="button"
-                    
+                  <Button variant="outline" size="sm" hideArrow type="button"
                     disabled={ocupado === a.anio}
                     onClick={() => void onSembrar(a.anio)}
                     data-testid={`sembrar-${a.anio}`}
@@ -289,8 +288,7 @@ export default function ExogenaAdminPage() {
                     Sembrar el preset
                   </Button>
                   {a.publicado ? (
-                    <Button variant="destructive" hideArrow type="button"
-                      
+                    <Button variant="outline" size="sm" hideArrow type="button"
                       disabled={ocupado === a.anio}
                       onClick={() => void onPublicar(a.anio, false)}
                       data-testid={`despublicar-${a.anio}`}
@@ -325,7 +323,7 @@ export default function ExogenaAdminPage() {
               {/* 🔴 La confirmación es nuestra, en la fila. Nada de `confirm()`. */}
               {confirmando === a.anio ? (
                 <Card className="p-4 mt-4 " data-testid={`confirmar-publicar-${a.anio}`}>
-                  <p className="text-sm text-fg">
+                  <p className="text-body-sm text-fg">
                     Publicar {a.anio} hace que TODAS las inmobiliarias hereden estos{' '}
                     {a.conceptos} conceptos y este tope. ¿Ya los confirmaste contra la resolución?
                   </p>

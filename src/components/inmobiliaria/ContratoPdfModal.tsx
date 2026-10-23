@@ -72,13 +72,13 @@ export function ContratoPdfModal({
           />
           {/* Respaldo siempre a la vista, no sólo cuando falla: no hay forma
               confiable de detectar que el visor del navegador no pintó nada. */}
-          <p className="text-xs text-fg-muted" data-testid="contrato-pdf-respaldo">
+          <p className="text-caption text-fg-muted" data-testid="contrato-pdf-respaldo">
             {t(k('consignmentContractNoPreview'))}{' '}
             <a
               href={url}
               target="_blank"
               rel="noreferrer"
-              className="text-primary underline-offset-2 hover:underline"
+              className="font-medium text-fg underline underline-offset-4 hover:text-primary"
             >
               {t(k('consignmentContractOpenTab'))}
             </a>

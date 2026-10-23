@@ -302,9 +302,7 @@ function Seccion({
   return (
     <section className="space-y-4" data-testid={testId}>
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-md bg-primary-soft flex items-center justify-center">
-          <Icon className="w-4 h-4 text-primary" />
-        </div>
+        <Icon className="w-5 h-5 shrink-0 text-fg-muted" aria-hidden="true" />
         <h3 className="font-medium text-fg">{titulo}</h3>
       </div>
       {children}

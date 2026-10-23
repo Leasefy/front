@@ -231,7 +231,7 @@ function FotosPorEspacio({
         subidas += 1;
       } catch (e) {
         malos.push(
-          `${foto.name}: ${mensajeParaLaPersona(e, { accion: 'subir la foto', porDefecto: 'No pudimos subir la foto.' })}`,
+          `${foto.name}: ${mensajeParaLaPersona(e, { accion: 'subir la foto', porDefecto: 'No se pudo subir la foto.' })}`,
         );
       }
       setSubiendo({ espacio, hecho: i + 1, total: lista.length });
@@ -250,7 +250,7 @@ function FotosPorEspacio({
       onFotos(r.fotosDelActa);
       onRecargar();
     } catch (e) {
-      setAviso(mensajeParaLaPersona(e, { accion: 'borrar la foto', porDefecto: 'No pudimos borrar la foto.' }));
+      setAviso(mensajeParaLaPersona(e, { accion: 'borrar la foto', porDefecto: 'No se pudo borrar la foto.' }));
       onRecargar();
     } finally {
       setBorrando(null);
@@ -271,9 +271,8 @@ function FotosPorEspacio({
   return (
     <section className="space-y-3" aria-labelledby="acta-fotos-titulo" data-testid="acta-fotos-por-espacio">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
-          <Camera className="h-4 w-4" aria-hidden="true" />
-        </div>
+        {/* Ronda 30 (Cadence 2): el ícono solo, sin cuadro azul. */}
+        <Camera className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
         <div className="space-y-1">
           <h3 id="acta-fotos-titulo" className="text-sm font-semibold text-fg">
             Fotos por espacio
@@ -447,7 +446,7 @@ function FirmasDelActa({
       }
       onFirmada(r);
     } catch (e) {
-      setErrorDeLaFirma(mensajeParaLaPersona(e, { accion: 'firmar el acta', porDefecto: 'No pudimos guardar tu firma.' }));
+      setErrorDeLaFirma(mensajeParaLaPersona(e, { accion: 'firmar el acta', porDefecto: 'No se pudo guardar tu firma.' }));
     } finally {
       setEnviandoFirma(false);
     }
@@ -460,7 +459,7 @@ function FirmasDelActa({
       setEnlace(await firmaDelActaApi.enlaceDelInquilino(actaId));
     } catch (e) {
       setErrorDelEnlace(
-        mensajeParaLaPersona(e, { accion: 'mandar el enlace', porDefecto: 'No pudimos armar el enlace para el inquilino.' }),
+        mensajeParaLaPersona(e, { accion: 'mandar el enlace', porDefecto: 'No se pudo armar el enlace para el inquilino.' }),
       );
     } finally {
       setPidiendo(false);
@@ -470,9 +469,7 @@ function FirmasDelActa({
   return (
     <section className="space-y-3" aria-labelledby="acta-firmas-titulo" data-testid="acta-firmas">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
-          <Signature className="h-4 w-4" aria-hidden="true" />
-        </div>
+        <Signature className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
         <div className="space-y-1">
           <h3 id="acta-firmas-titulo" className="text-sm font-semibold text-fg">
             Firmas
@@ -486,7 +483,7 @@ function FirmasDelActa({
       <div className="grid gap-3 sm:grid-cols-2">
         {/* El asesor */}
         <div className="space-y-2 rounded-lg border border-border bg-surface p-3" data-testid="firma-del-asesor">
-          <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">Asesor</p>
+          <p className="text-caption font-medium text-fg-muted">Asesor</p>
           {asesor ? (
             <FirmaPuesta firma={asesor} />
           ) : cerrada ? (

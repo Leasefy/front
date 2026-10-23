@@ -525,16 +525,18 @@ function Formulario({
             disabled={guardando}
             data-testid="guardar-y-confirmar"
           >
-            Guardar y marcar como confirmados por el contador
+            {/* Revisora r25 (B7): el texto largo no parte en un Button y corría la página 6 px a 390. */}
+            Guardar y confirmar
           </Button>
           <Button size="sm" variant="ghost" onClick={reset} disabled={guardando}>
             Deshacer los cambios
           </Button>
         </div>
         <p className="text-caption text-fg-muted">
-          Guardar deja tu nombre y la fecha en «Cargadas»; confirmar es un acto
-          aparte, y corregir una cifra lo borra — si cambia el número, el contador
-          tiene que volver a mirarlo.
+          «Guardar y confirmar» los marca como confirmados por el contador. Guardar
+          deja tu nombre y la fecha en «Cargadas»; confirmar es un acto aparte, y
+          corregir una cifra lo borra: si cambia el número, el contador tiene que
+          volver a mirarlo.
         </p>
       </section>
     </div>

@@ -260,7 +260,7 @@ export function TasasDeUsuraPanel() {
             <p className="text-caption leading-relaxed text-fg-muted">
               La <strong>efectiva anual</strong> es la que certifica la Superfinanciera cada mes; la{' '}
               <strong>equivalente diaria</strong> es la que el sistema aplica día por día sobre el
-              capital en mora, y la calcula el back con la misma fórmula del tope. Tu tasa pisa a la
+              capital en mora, y Leasefy la calcula con la misma fórmula del tope. Tu tasa pisa a la
               general de Colombia en el mes en que la cargues.
             </p>
           </div>
@@ -289,7 +289,7 @@ export function TasasDeUsuraPanel() {
                 {borrando ? porcentaje(borrando.efectivaAnualPct) : ''}
               </span>{' '}
               efectiva anual y ese mes vuelve a regirse por la tasa general de Colombia. Si no hay
-              general para ese mes, el interés de mora de ese mes pasa a liquidarse SIN topear.
+              general para ese mes, el interés de mora de ese mes pasa a liquidarse sin topear.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

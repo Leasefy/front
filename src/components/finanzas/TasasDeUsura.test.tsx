@@ -101,9 +101,9 @@ describe('tasas de usura', () => {
     await pintar();
     const aviso = document.body.querySelector('[data-testid="aviso-de-meses-sin-tasa"]');
     expect(aviso).not.toBeNull();
-    expect(aviso!.textContent).toContain('2026-07');
-    expect(aviso!.textContent).toContain('2026-08');
-    expect(aviso!.textContent).toContain('SIN topear');
+    expect(aviso!.textContent).toContain('julio de 2026');
+    expect(aviso!.textContent).toContain('agosto de 2026');
+    expect(aviso!.textContent).toContain('sin topear');
     expect(aviso!.getAttribute('role')).toBe('alert');
   });
 

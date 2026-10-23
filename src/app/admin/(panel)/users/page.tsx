@@ -128,7 +128,7 @@ export default function UsersPage() {
       orden: (r) => r.supabase.last_sign_in_at,
       ordenPrimero: 'desc',
       texto: (r) => (r.supabase.last_sign_in_at ? fmtDateTime(r.supabase.last_sign_in_at) : ''),
-      cell: (r) => <span className="whitespace-nowrap text-caption text-fg-muted">{fmtDateTime(r.supabase.last_sign_in_at)}</span>,
+      cell: (r) => <span className="font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.supabase.last_sign_in_at)}</span>,
     },
     {
       header: 'Acciones en 30 días',
@@ -145,7 +145,7 @@ export default function UsersPage() {
       texto: (r) => (r.audit.last_action_at ? fmtDateTime(r.audit.last_action_at) : ''),
       cell: (r) =>
         r.audit.last_action_at ? (
-          <span className="whitespace-nowrap text-caption text-fg-muted">{fmtDateTime(r.audit.last_action_at)}</span>
+          <span className="font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.audit.last_action_at)}</span>
         ) : (
           <span className="text-fg-subtle">—</span>
         ),
@@ -190,7 +190,7 @@ export default function UsersPage() {
       orden: (r) => r.created_at,
       ordenPrimero: 'desc',
       texto: (r) => fmtDateTime(r.created_at),
-      cell: (r) => <span className="whitespace-nowrap text-caption text-fg-muted">{fmtDateTime(r.created_at)}</span>,
+      cell: (r) => <span className="font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.created_at)}</span>,
     },
   ]
 

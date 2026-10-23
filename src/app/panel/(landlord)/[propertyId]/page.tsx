@@ -451,7 +451,6 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
             <div className="bg-muted p-4 rounded-sm">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-success-soft" />
                   <div>
                     <p className="text-sm font-medium text-plan-primary">Excelente</p>
                     <p className="text-caption text-plan-secondary">Perfil muy confiable</p>
@@ -554,7 +553,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                   <li key={flag.id} className={`flex items-start gap-2 text-sm p-2 rounded ${
                     flag.severity === 'high' ? 'bg-danger-soft text-danger' :
                     flag.severity === 'medium' ? 'bg-warning-soft text-warning' :
-                    'bg-primary-soft text-primary'
+                    'bg-surface-muted text-fg'
                   }`}>
                     <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <div>
@@ -744,10 +743,10 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                     mimeType: realDoc?.mimeType,
                     createdAt: realDoc?.createdAt,
                   })}
-                  className={`w-full flex items-center justify-between p-3 rounded text-left transition-colors hover:ring-1 hover:ring-border ${uploaded ? (verified ? 'bg-success-soft hover:bg-success-soft/60' : 'bg-primary-soft hover:bg-primary-soft/60') : 'bg-muted hover:bg-muted/80'}`}
+                  className={`w-full flex items-center justify-between p-3 rounded text-left transition-colors hover:ring-1 hover:ring-border ${uploaded ? (verified ? 'bg-success-soft hover:bg-success-soft/60' : 'bg-surface-muted hover:bg-surface-muted/80') : 'bg-muted hover:bg-muted/80'}`}
                 >
                   <div className="flex items-center gap-3">
-                    <FileText className={`w-5 h-5 ${verified ? 'text-success' : uploaded ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <FileText className={`w-5 h-5 ${verified ? 'text-success' : uploaded ? 'text-fg' : 'text-muted-foreground'}`} />
                     <div>
                       <p className="text-sm font-medium text-plan-primary">{labels.name}</p>
                       <p className="text-caption text-plan-secondary">{realDoc ? realDoc.fileName : labels.subtitle}</p>
@@ -756,7 +755,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                   {verified ? (
                     <span className="text-caption font-medium text-success bg-success-soft px-2 py-1 rounded">Verificado</span>
                   ) : uploaded ? (
-                    <span className="text-caption font-medium text-primary bg-primary-soft px-2 py-1 rounded">Subido</span>
+                    <span className="text-caption font-medium text-fg bg-surface px-2 py-1 rounded border border-border">Subido</span>
                   ) : (
                     <span className="text-caption font-medium text-muted-foreground bg-muted px-2 py-1 rounded">Pendiente</span>
                   )}
@@ -793,7 +792,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
                     {doc.verified ? (
                       <span className="text-caption font-medium text-success bg-success-soft px-2 py-1 rounded">Verificado</span>
                     ) : (
-                      <span className="text-caption font-medium text-primary bg-primary-soft px-2 py-1 rounded">Subido</span>
+                      <span className="text-caption font-medium text-fg bg-surface px-2 py-1 rounded border border-border">Subido</span>
                     )}
                   </button>
                 );

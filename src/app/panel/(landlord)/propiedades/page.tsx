@@ -256,7 +256,7 @@ export default function PropiedadesPage() {
                   <Link
                     key={property.id}
                     href={`/panel/${property.id}`}
-                    className="bg-surface rounded-lg border border-border overflow-hidden group hover: hover:shadow-neutral-200/50 transition-[box-shadow,border-color] duration-slow block"
+                    className="bg-surface rounded-lg border border-border overflow-hidden group hover:border-border-strong transition-[border-color] duration-slow block"
                   >
                     {/* Image */}
                     <div className="relative h-48 bg-surface-muted overflow-hidden">

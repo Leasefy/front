@@ -522,8 +522,8 @@ export default function LeaseDetailPage() {
                         </>
                       ) : (
                         <>
-                          <CreditCard className="w-4 h-4 text-primary" />
-                          <span className="text-sm text-primary font-medium">
+                          <CreditCard className="w-4 h-4 text-fg" />
+                          <span className="text-sm text-fg font-medium underline underline-offset-4">
                             {locale === 'es' ? 'Pagar arriendo' : 'Pay rent'}
                           </span>
                         </>
@@ -573,10 +573,10 @@ export default function LeaseDetailPage() {
             {avisoNoRenovar ? (
               <NoVoyARenovar lease={lease} onCambio={refetchLease} />
             ) : lease.renovacion ? (
-              <div className="rounded-lg border border-primary/30 bg-primary-soft/40 p-6 lg:p-8">
+              <div className="rounded-lg border border-border bg-surface p-6 lg:p-8">
                 <div className="flex items-center gap-2 mb-2">
-                  <ArrowsClockwise className="w-5 h-5 text-primary" />
-                  <span className="text-sm font-medium text-primary">
+                  <ArrowsClockwise className="w-5 h-5 text-fg-muted" />
+                  <span className="text-sm font-medium text-fg">
                     {locale === 'es' ? 'Tu contrato está en proceso de renovación' : 'Your contract is up for renewal'}
                   </span>
                 </div>

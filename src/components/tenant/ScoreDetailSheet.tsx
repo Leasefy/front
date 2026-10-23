@@ -130,12 +130,12 @@ export function ScoreDetailSheet({
             <div className="w-full space-y-3">
               <p className="text-sm text-fg-muted text-center">
                 {locale === 'es'
-                  ? 'Tu evaluación la hace la inmobiliaria cuando te postulas a una propiedad. No tienes que pedirla ni pagarla aparte.'
+                  ? 'Tu evaluación la hace la inmobiliaria cuando te postulas a un inmueble. No tienes que pedirla ni pagarla aparte.'
                   : 'Your evaluation is run by the agency when you apply to a property. You do not need to request or pay for it separately.'}
               </p>
               <Button asChild className="w-full" size="lg">
                 <Link href="/inquilino/para-ti">
-                  {locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me'}
+                  {locale === 'es' ? 'Ver inmuebles para mí' : 'View properties for me'}
                 </Link>
               </Button>
             </div>
@@ -164,19 +164,8 @@ export function ScoreDetailSheet({
 function LockedContent({ locale }: { locale: string }) {
   return (
     <div className="space-y-6">
-      {/* Blurred decorative score */}
-      <div className="relative flex flex-col items-center py-8">
-        <div className="blur-md select-none pointer-events-none">
-          <div className="w-24 h-24 rounded-full bg-success-soft flex items-center justify-center mb-3">
-            <span className="text-5xl font-bold text-success">A</span>
-          </div>
-          <p className="text-center text-lg font-semibold text-fg">92 / 100</p>
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Lock className="w-7 h-7 text-fg-subtle shrink-0" aria-hidden="true" />
-        </div>
-      </div>
-
+      {/* Ronda 30: sin la nota de adorno borrosa («A · 92 / 100», un número que no es el suyo) ni su círculo de color. */}
+      <Lock className="h-7 w-7 text-fg-subtle" aria-hidden="true" />
       {/* Explanation */}
       <div>
         <h3 className="text-base font-medium text-fg mb-2">
@@ -210,7 +199,7 @@ function LockedContent({ locale }: { locale: string }) {
             en: 'Valid for 90 days',
           },
           {
-            es: 'Compartible por WhatsApp y email',
+            es: 'Se comparte por WhatsApp o por correo',
             en: 'Shareable via WhatsApp and email',
           },
         ].map((benefit, i) => (
@@ -249,10 +238,9 @@ function UnlockedContent({
     <div className="space-y-6">
       {/* Score Display */}
       <div className="flex flex-col items-center py-4">
-        <div className={cn('w-20 h-20 rounded-full flex items-center justify-center mb-3', colors.bg)}>
-          <span className={cn('text-4xl font-bold', colors.text)}>{score.level}</span>
-        </div>
-        <p className="text-2xl font-bold font-mono tabular-nums text-fg">{score.numericScore} / 100</p>
+        {/* Ronda 30 (Cadence 2): la letra sola, en su color, sin el círculo de fondo. */}
+        <span className={cn('mb-2 font-mono text-5xl font-normal', colors.text)}>{score.level}</span>
+        <p className="text-2xl font-normal font-mono tabular-nums text-fg">{score.numericScore} / 100</p>
         <RiskBadge grade={score.level} showLabel className="mt-2" />
       </div>
 
@@ -272,8 +260,8 @@ function UnlockedContent({
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-sm text-fg">{cat.label}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-caption text-fg-muted">{Math.round(cat.weight * 100)}%</span>
-                  <span className="text-sm font-semibold text-fg">{cat.score}</span>
+                  <span className="font-mono text-caption tabular-nums text-fg-muted">{Math.round(cat.weight * 100)}%</span>
+                  <span className="font-mono text-sm tabular-nums text-fg">{cat.score}</span>
                 </div>
               </div>
               {/* La barra se llena al abrir el detalle, con `transform` (no `width`). */}

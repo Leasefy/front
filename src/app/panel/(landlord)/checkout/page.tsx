@@ -240,9 +240,7 @@ function CheckoutContent() {
             {/* Plan summary card */}
             <div className="bg-card rounded-sm border border-border p-5">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-sm bg-primary/10 flex items-center justify-center shrink-0">
-                  <Buildings className="w-6 h-6 text-primary" />
-                </div>
+                <Buildings className="mt-0.5 h-6 w-6 shrink-0 text-fg-muted" aria-hidden="true" />
                 <div className="flex-1 min-w-0">
                   <h2 className="text-h3 text-foreground">
                     {t('landlord.checkout.planLabel', { name: plan.name })}

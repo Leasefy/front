@@ -58,7 +58,7 @@ export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareM
       <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>
-            {locale === 'es' ? 'Compartir evaluación' : 'Share evaluation'}
+            {locale === 'es' ? 'Compartir tu evaluación' : 'Share evaluation'}
           </DialogTitle>
           <DialogDescription>
             {locale === 'es'
@@ -127,7 +127,7 @@ export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareM
               className="flex-1"
             >
               <EnvelopeSimple className="w-4 h-4" />
-              Email
+              {locale === 'es' ? 'Correo' : 'Email'}
             </Button>
           </div>
         </div>

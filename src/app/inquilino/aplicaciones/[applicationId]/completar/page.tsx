@@ -239,8 +239,7 @@ function UpdateWizardContent({
             Tu información quedó enviada
           </h2>
           <p className="text-fg-muted mb-8">
-            La inmobiliaria fue notificada de que completaste la información solicitada.
-            Revisarán tu solicitud a la brevedad.
+            La inmobiliaria ya sabe que completaste lo que te pidió. Te avisamos cuando la revise.
           </p>
           <Button
             size="lg"
@@ -279,7 +278,7 @@ function SubmissionErrorBanner({ message }: { message: string }) {
         <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-danger">
-            No pudimos completar tu solicitud
+            No se pudo enviar tu información
           </p>
           <p className="text-caption text-danger mt-0.5 break-words">
             {message}

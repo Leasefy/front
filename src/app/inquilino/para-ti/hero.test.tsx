@@ -124,7 +124,8 @@ describe('hero de Propiedades para ti', () => {
     await pintar()
 
     expect(hero().textContent).toContain('12')
-    expect(hero().textContent).toContain('propiedades caben en tu tope')
+    // Ronda 30 (vocabulario): «inmuebles», no «propiedades».
+    expect(hero().textContent).toContain('inmuebles caben en tu tope')
     // La tabla fija daba 95 para un score A. Ese número ya no puede aparecer.
     expect(hero().textContent).not.toContain('95')
     expect(hero().textContent).not.toContain('%')
@@ -144,15 +145,17 @@ describe('hero de Propiedades para ti', () => {
 
     const conteo = hero().querySelector('.text-5xl') as HTMLElement
     expect(conteo.textContent).toBe('0')
-    expect(hero().textContent).toContain('propiedades caben en tu tope')
+    // Ronda 30 (vocabulario): «inmuebles», no «propiedades».
+    expect(hero().textContent).toContain('inmuebles caben en tu tope')
   })
 
   it('singulariza cuando cabe una sola', async () => {
     recomendaciones.actuales = [propiedad('p1', 1_500_000)]
     await pintar()
 
-    expect(hero().textContent).toContain('propiedad cabe en tu tope')
-    expect(hero().textContent).not.toContain('propiedades caben')
+    // Ronda 30 (vocabulario): «inmueble», no «propiedad».
+    expect(hero().textContent).toContain('inmueble cabe en tu tope')
+    expect(hero().textContent).not.toContain('inmuebles caben')
   })
 
   it('pinta la marca en medianoche, la misma en los dos temas (decisión de Nico, 23-10)', async () => {

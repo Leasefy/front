@@ -56,7 +56,7 @@ export const ESTADO_CORTO: Record<EstadoDeLaAprobacion, { texto: string; tono: s
  */
 export function estadoCorto(a: { estado: EstadoDeLaAprobacion; laHaceElPropietario?: boolean }) {
   if (a.estado === 'ANULADA' && a.laHaceElPropietario) {
-    return { texto: 'La haces tú', tono: 'bg-primary-soft text-primary' };
+    return { texto: 'La haces tú', tono: 'bg-surface-muted text-fg' };
   }
   return ESTADO_CORTO[a.estado];
 }

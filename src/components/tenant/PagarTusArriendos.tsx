@@ -120,7 +120,7 @@ export function PagarTusArriendos({ arriendos, dentroDeLaCifra = false }: Props)
               setConfirmando(false);
               setMarcado(estanTodas ? {} : todas);
             }}
-            className="text-body-sm text-primary underline-offset-4 hover:underline"
+            className="text-body-sm font-medium text-fg underline underline-offset-4 hover:text-primary"
           >
             {estanTodas ? 'Quitar todo' : 'Marcar todo'}
           </button>
@@ -314,7 +314,7 @@ function FilaDeCuota({
             aria-expanded={abierta}
             aria-controls={`${id}-desglose`}
             data-testid={`ver-desglose-${c.mes}`}
-            className="ml-8 mt-1 inline-flex items-center gap-1 text-caption text-primary underline-offset-4 hover:underline"
+            className="ml-8 mt-1 inline-flex items-center gap-1 text-caption text-fg underline underline-offset-4 hover:text-primary"
           >
             {abierta ? 'Ocultar de qué es' : 'Ver de qué es'}
             <CaretDown className={cn('h-3 w-3 transition-transform duration-fast ease-enter', abierta && 'rotate-180')} />

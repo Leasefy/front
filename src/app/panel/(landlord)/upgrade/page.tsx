@@ -97,7 +97,7 @@ export default function UpgradePage() {
           {subscriptionError ? (
             /* Error state — do not assert a plan name or billing details we could not load */
             <div className="flex items-center gap-4">
-              <Shield className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
+              <Shield className="w-6 h-6 text-fg-muted shrink-0" aria-hidden="true" />
               <div className="flex-1">
                 <h2 className="text-h3 text-fg">
                   {t('landlord.upgrade.currentSubscription')}
@@ -109,7 +109,7 @@ export default function UpgradePage() {
               <button
                 type="button"
                 onClick={subscriptionRefetch}
-                className="text-sm font-medium text-primary hover:underline shrink-0"
+                className="text-sm font-medium text-fg underline underline-offset-4 hover:text-primary shrink-0"
               >
                 {t('landlord.upgrade.subscriptionRetry')}
               </button>
@@ -117,7 +117,7 @@ export default function UpgradePage() {
           ) : (
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex items-center gap-4 flex-1">
-                <Shield className="w-6 h-6 text-primary shrink-0" aria-hidden="true" />
+                <Shield className="w-6 h-6 text-fg-muted shrink-0" aria-hidden="true" />
                 <div>
                   <h2 className="text-h3 text-fg">
                     {t('landlord.upgrade.currentSubscription')}
@@ -172,7 +172,7 @@ export default function UpgradePage() {
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <Buildings className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
+              <Buildings className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
               <div>
                 <p className="font-medium text-fg text-sm">{t('landlord.upgrade.multiProperty')}</p>
                 <p className="text-caption text-fg-muted">{t('landlord.upgrade.centralManagement')}</p>
@@ -198,10 +198,10 @@ export default function UpgradePage() {
 
         {/* Selected plan confirmation */}
         {canUpgrade && newPlan && (
-          <div className="mt-8 bg-primary-soft border border-primary/30 rounded-lg p-6">
+          <div className="mt-8 bg-surface border border-border-strong rounded-lg p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
+                <CheckCircle className="w-5 h-5 text-success shrink-0" aria-hidden="true" />
                 <div>
                   <p className="font-medium text-fg">
                     {t('landlord.upgrade.selectedPlan', { name: newPlan.name })}

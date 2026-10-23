@@ -76,9 +76,9 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Platform templates - Main column - Own card */}
       <div className="lg:col-span-2">
-        <div className="rounded-lg border border-border bg-surface p-6 shadow-sm">
+        <div className="rounded-lg border border-border bg-surface p-6">
           <div className="flex items-center gap-3 mb-4">
-            <Shield className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
+            <Shield className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-medium text-fg">
@@ -138,7 +138,7 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
       {/* Custom upload - Side column - Own card */}
       <div className="lg:col-span-1">
         <div className="lg:sticky lg:top-6">
-          <div className="rounded-lg border border-border bg-surface p-6 shadow-sm">
+          <div className="rounded-lg border border-border bg-surface p-6">
             <div className="flex items-center gap-3 mb-4">
               <Upload className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
               <div>
@@ -363,7 +363,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
               Información no encontrada
             </h2>
             <p className="mt-2 text-fg-muted">
-              No se pudo encontrar la propiedad o el candidato especificado.
+              No se encontró el inmueble o el candidato.
             </p>
           </div>
         </div>
@@ -416,7 +416,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
             {/* Property */}
             <Card className="p-4">
               <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
+                <MapPin className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
                 <div className="min-w-0">
                   <p className="text-caption text-fg-muted">Propiedad</p>
                   <p className="text-sm font-medium text-fg truncate">

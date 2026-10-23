@@ -273,7 +273,7 @@ function ReadOnlyView({
           {chatHref && (
             <Link
               href={chatHref}
-              className="inline-flex items-center gap-1.5 text-caption font-medium text-primary hover:underline"
+              className="inline-flex items-center gap-1.5 text-caption font-medium text-fg underline underline-offset-4 hover:text-primary"
             >
               <ChatCircle className="w-3.5 h-3.5" />
               {locale === 'es' ? 'Abrir chat con el propietario' : 'Open chat with landlord'}
@@ -461,7 +461,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
             </h2>
             <p className="text-fg-muted">
               {error || (locale === 'es'
-                ? 'No pudimos encontrar este contrato.'
+                ? 'No se encontró este contrato.'
                 : 'We couldn\'t find this contract.')}
             </p>
           </div>

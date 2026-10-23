@@ -186,7 +186,21 @@ export function textoDeLaVacancia(v: Vacancia): string | null {
   if (!v.vacante) return null;
   if (v.dias === null || v.desde === null) return 'No sabemos desde cuándo está vacante';
   if (v.dias === 0) return 'Vacante desde hoy';
-  return `Vacante hace ${v.dias} ${v.dias === 1 ? 'día' : 'días'}`;
+  return `Vacante hace ${haceCuantoEnPalabras(v.dias)}`;
+}
+
+/**
+ * Revisora r25 (VOZ §4): «Vacante hace 961 días» no se lee. Hasta 60 días, en días;
+ * después, en meses; desde un año, «2 años y 7 meses».
+ */
+export function haceCuantoEnPalabras(dias: number): string {
+  if (dias <= 60) return `${dias} ${dias === 1 ? 'día' : 'días'}`;
+  const meses = Math.floor(dias / 30.4375);
+  if (meses < 12) return `${meses} meses`;
+  const anios = Math.floor(meses / 12);
+  const resto = meses % 12;
+  const a = `${anios} ${anios === 1 ? 'año' : 'años'}`;
+  return resto === 0 ? a : `${a} y ${resto} ${resto === 1 ? 'mes' : 'meses'}`;
 }
 
 /** El porqué de la fecha. */

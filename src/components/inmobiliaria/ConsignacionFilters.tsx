@@ -31,6 +31,7 @@ import {
 } from '@/lib/inmobiliaria/cajon-del-inmueble';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 import { useTr } from '@/lib/i18n/use-tr';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -249,7 +250,7 @@ export function ConsignacionFilters({
           <Input
             type="text"
             // Revisora r24 (Inmuebles #6): a 390 el texto largo se cortaba («…propietario, inquili…»).
-            placeholder={enElCelular ? tr('Código, dirección o propietario') : t('inmobiliaria.consignaciones.filters.searchPlaceholder')}
+            placeholder={enElCelular ? tr('Buscar inmueble') : t('inmobiliaria.consignaciones.filters.searchPlaceholder')}
             aria-label={t('inmobiliaria.consignaciones.filters.searchPlaceholder')}
             value={filters.search}
             onChange={(e) => updateFilter('search', e.target.value)}
@@ -360,34 +361,25 @@ export function ConsignacionFilters({
         )}
         data-testid="filtros-cajones"
       >
-        <Chip
-          selected={filters.cajon === 'all'}
-          onClick={() => updateFilter('cajon', 'all')}
-          className="whitespace-nowrap"
-          data-testid="cajon-all"
-        >
-          {t('inmobiliaria.consignaciones.filters.all')}
-          {total === null ? '' : ` ${total.toLocaleString(localeDeLasCifras())}`}
-        </Chip>
-        {/* Nico (22-10, decisión 23): un cajón en 0 no sale —«Reservado 0» era ruido—, salvo el que está elegido.
-            Sin conteo no se sabe qué está en 0: salen todos, sin número. */}
-        {CAJONES_DEL_INMUEBLE.filter(
-          (cajon) => conteo === null || conteo[cajon] > 0 || filters.cajon === cajon,
-        ).map((cajon) => (
-          <Chip
-            key={cajon}
-            selected={filters.cajon === cajon}
-            onClick={() => updateFilter('cajon', cajon)}
-            className="whitespace-nowrap"
-            data-testid={`cajon-${cajon}`}
-          >
-            {/* GLOW UP 21-10: el punto ámbar sólo donde algo pide atención (como en la franja de
-                cifras): los que no tienen mandato no cobran ni se publican. */}
-            {cajon === 'sinMandato' && conteo !== null && conteo[cajon] > 0 ? <PuntoDeAtencion /> : null}
-            {t(ROTULO_DEL_CAJON[cajon])}
-            {conteo === null ? '' : ` ${conteo[cajon].toLocaleString(localeDeLasCifras())}`}
-          </Chip>
-        ))}
+        {/* Revisora r25 (T2): las pestañas de estado de la casa (antes chips rectangulares hechos a
+            mano). Nico (22-10, decisión 23): un cajón en 0 no sale, salvo el elegido; sin conteo
+            salen todos, sin número. El punto ámbar, sólo en «Sin mandato» (no cobran ni se publican). */}
+        <PestanasDeEstado<CajonDelInmueble | 'all'>
+          etiqueta={t('inmobiliaria.consignaciones.filters.all')}
+          valor={filters.cajon}
+          onCambio={(v) => updateFilter('cajon', v)}
+          pestanas={[
+            { valor: 'all', etiqueta: t('inmobiliaria.consignaciones.filters.all'), cuantos: total, fija: true, testid: 'cajon-all' },
+            ...CAJONES_DEL_INMUEBLE.map((cajon) => ({
+              valor: cajon,
+              etiqueta: t(ROTULO_DEL_CAJON[cajon]),
+              cuantos: conteo === null ? null : conteo[cajon],
+              ...(cajon === 'sinMandato' ? { tono: 'aviso' as const } : {}),
+              testid: `cajon-${cajon}`,
+            })),
+          ]}
+          className="contents"
+        />
         {/* COMERCIAL (Nico, 04-10-2026): las vacantes largas y los mandatos
             que se vencen. Un segundo clic quita el filtro. */}
         {conteoComercial && FILTROS_COMERCIALES.some((f) => conteoComercial[f.id] > 0 || filters.comercial === f.id) ? (

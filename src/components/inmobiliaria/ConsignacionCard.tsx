@@ -306,10 +306,13 @@ export function ConsignacionCard({
                 </span>
               )}
               {/* Revisora r24 (Inmuebles #4): el mismo nombre que la tabla («sin definir») y el «·» pegado a su texto. */}
+              {/* Revisora r25: a 390 la comisión baja a su renglón y el «·» quedaba al principio:
+                  el punto sólo va cuando sigue al canon en la misma línea (sm en adelante). */}
               <span className="whitespace-nowrap text-caption text-fg-muted" title={textoCortoDeLaComision(consignacion).explicacion}>
+                <span className="max-sm:hidden">· </span>
                 {textoCortoDeLaComision(consignacion).texto === COMISION_SIN_DEFINIR
-                  ? `· ${tr('Comisión sin definir')}`
-                  : `· ${tr('{comision} de comisión', { comision: textoDeLaComision(consignacion) })}`}
+                  ? tr('Comisión sin definir')
+                  : tr('{comision} de comisión', { comision: textoDeLaComision(consignacion) })}
               </span>
             </div>
           )}

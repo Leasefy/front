@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Input } from '@/components/ui/input';
 import { ArrowSquareOut, Check, Globe, Stack, UploadSimple } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -261,13 +262,14 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
           <label htmlFor="lema" className="block text-[14px] font-medium text-fg">
             Lema <span className="font-normal text-fg-muted">(opcional)</span>
           </label>
-          <input
+          {/* Ronda 30: el campo de Cadence (antes un <input> armado a mano). */}
+          <Input
             id="lema"
             value={lema}
             maxLength={160}
             onChange={(e) => setLema(e.target.value)}
             placeholder="Arriendos en Laureles y Belén desde 1998"
-            className="mt-1.5 h-11 w-full rounded-lg border border-border bg-surface px-3 text-[14px] text-fg placeholder:text-fg-placeholder focus:border-primary focus:outline-none"
+            className="mt-1.5"
           />
           <p className="mt-1.5 text-[13px] text-fg-muted">Sale debajo de tu nombre.</p>
         </div>
@@ -403,11 +405,11 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
           {REDES.map((r) => (
             <label key={r.clave} className="block">
               <span className="text-[13px] text-fg">{r.nombre}</span>
-              <input
+              <Input
                 value={redes[r.clave]}
                 onChange={(e) => setRedes((x) => ({ ...x, [r.clave]: e.target.value }))}
                 placeholder={r.ejemplo}
-                className="mt-1 h-10 w-full rounded-lg border border-border bg-surface px-3 text-[14px] text-fg placeholder:text-fg-placeholder focus:border-primary focus:outline-none"
+                className="mt-1"
               />
             </label>
           ))}

@@ -81,6 +81,10 @@ import { EsqueletoDeSeccion } from './piezas';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { MagnifyingGlass } from '@phosphor-icons/react';
+import { TablePagination } from '@/components/ui/pagination';
+import { SinDatos } from '@/components/estado/SinDatos';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 
 type Pestana = 'abiertas' | 'respondidas' | 'todas';
 
@@ -147,6 +151,18 @@ export function SeccionProteccionDeDatos() {
     if (pestana === 'respondidas') return todas.filter((s) => s.estado === 'RESPONDIDA');
     return todas;
   }, [lista, pestana]);
+  /* Ronda 30 (regla de Nico: tablas con buscador y paginación). Todo sobre lo que ya llegó. */
+  const [busqueda, setBusqueda] = useState('');
+  const filasVisibles = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es');
+    if (!q) return filas;
+    return filas.filter((s) =>
+      [s.titular.nombre, s.titular.documento, TIPO_EN_PALABRAS[s.tipo]].some((x) =>
+        (x ?? '').toString().toLocaleLowerCase('es').includes(q),
+      ),
+    );
+  }, [filas, busqueda]);
+  const pag = useTablePagination(filasVisibles, { resetKey: `${busqueda}|${pestana}` });
 
   if (!lista && (cargando || error)) {
     return (
@@ -193,7 +209,7 @@ export function SeccionProteccionDeDatos() {
                   llegó la solicitud, sin sábados, domingos ni festivos.
                 </p>
                 <p>
-                  Te avisamos cuando a una solicitud abierta le quedan{' '}
+                  Leasefy te avisa cuando a una solicitud abierta le quedan{' '}
                   <span className="font-mono">3</span> días hábiles o menos.
                 </p>
                 <p>
@@ -238,14 +254,42 @@ export function SeccionProteccionDeDatos() {
           />
         </div>
 
-        {filas.length === 0 ? (
-          <p className="p-8 text-center text-sm text-fg-muted" data-testid="solicitudes-vacio">
-            {pestana === 'abiertas'
-              ? 'No hay solicitudes abiertas.'
-              : pestana === 'respondidas'
-                ? 'Todavía no hay solicitudes respondidas.'
-                : 'Todavía no hay solicitudes registradas.'}
-          </p>
+        {filas.length > 0 ? (
+          <div className="border-b border-border px-4 py-3">
+            <div className="relative w-full sm:w-80">
+              <MagnifyingGlass
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+                aria-hidden="true"
+              />
+              <Input
+                className="pl-9"
+                placeholder="Buscar titular o documento"
+                aria-label="Buscar solicitudes"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                data-testid="buscar-solicitudes"
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {filasVisibles.length === 0 ? (
+          <div data-testid="solicitudes-vacio">
+            {/* Ronda 30: el vacío con SinDatos (por qué y su salida). */}
+            <SinDatos
+              hayFiltros={busqueda.trim() !== ''}
+              queSon="solicitudes"
+              titulo={
+                pestana === 'abiertas'
+                  ? 'No hay solicitudes abiertas.'
+                  : pestana === 'respondidas'
+                    ? 'Todavía no hay solicitudes respondidas.'
+                    : 'Todavía no hay solicitudes registradas.'
+              }
+              descripcion="Cuando un titular pida conocer, corregir o suprimir sus datos, regístralo con «Registrar una solicitud» y aquí corre su plazo."
+              onLimpiarFiltros={() => setBusqueda('')}
+            />
+          </div>
         ) : (
           <div className="md:overflow-x-auto">
             {/* En el celular cada solicitud es una tarjeta: titular y plazo arriba. */}
@@ -259,7 +303,7 @@ export function SeccionProteccionDeDatos() {
                 </TableRow>
               </TableHeader>
               <TableBody className="max-md:block">
-                {filas.map((s) => (
+                {pag.pageItems.map((s) => (
                   <TableRow
                     key={s.id}
                     data-testid={`solicitud-${s.id}`}
@@ -303,6 +347,18 @@ export function SeccionProteccionDeDatos() {
             </Table>
           </div>
         )}
+        {filasVisibles.length > 0 ? (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={pag.total}
+              page={pag.page}
+              pageSize={pag.pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={pag.setPage}
+              onPageSizeChange={pag.setPageSize}
+            />
+          </div>
+        ) : null}
       </section>
 
       <CajonDeLaSolicitud
@@ -359,8 +415,8 @@ function CajonDeLaSolicitud({
       );
       toast.success(
         datos.encontrados === 0
-          ? 'No encontramos datos con ese documento. El archivo lo dice.'
-          : 'Descargamos lo que la inmobiliaria guarda de este titular.',
+          ? 'No hay datos con ese documento. El archivo lo dice.'
+          : 'Se descargó lo que la inmobiliaria guarda de este titular.',
       );
     } catch (e) {
       toast.error(mensajeDelFallo(e, 'No se pudieron reunir los datos del titular.'));

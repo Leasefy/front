@@ -255,7 +255,7 @@ function PqrsContent() {
             valor={filtros.estado}
             onCambio={(v) => setFiltros((f) => ({ ...f, estado: v }))}
             pestanas={[
-              { valor: 'todos' as FiltrosDePqrs['estado'], etiqueta: 'Todas', cuantos: null, fija: true, testid: 'pqrs-pestana-todas' },
+              { valor: 'todos' as FiltrosDePqrs['estado'], etiqueta: 'Todas', cuantos: isLoading || error ? null : resumen.total, fija: true, testid: 'pqrs-pestana-todas' }, // r25: «Todas» con su número, como las demás
               ...CIFRAS_DE_PQRS.map((item) => ({
                 valor: item.filtro,
                 etiqueta: item.etiqueta ?? t(k(`estado_${item.key}`)),

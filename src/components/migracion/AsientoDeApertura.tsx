@@ -585,6 +585,12 @@ export function AsientoDeApertura({
         </Button>
       </div>
 
+      {/* Revisora r25: con todo en cero, una línea que dice qué hacer (antes tres «$ 0» en negrilla). */}
+      {totales.debitos + totales.creditos === 0 ? (
+        <p className="mt-4 rounded-md bg-surface-muted p-4 text-sm text-fg-muted" data-testid="apertura-totales" aria-live="polite">
+          Escribe las líneas o sube el balance: aquí se ve si los débitos y los créditos cuadran.
+        </p>
+      ) : (
       <div
         className="mt-4 grid gap-3 rounded-md bg-surface-muted p-4 sm:grid-cols-3"
         data-testid="apertura-totales"
@@ -613,6 +619,7 @@ export function AsientoDeApertura({
           }
         />
       </div>
+      )}
 
       {problemas.length > 0 && totales.debitos + totales.creditos > 0 ? (
         <ul
@@ -668,7 +675,7 @@ function Total({
     <div>
       <p className="text-caption text-fg-muted">{etiqueta}</p>
       <p
-        className={`font-mono text-lg font-semibold tabular-nums ${
+        className={`font-mono text-lg tabular-nums ${
           tono === "ok"
             ? "text-success"
             : tono === "mal"

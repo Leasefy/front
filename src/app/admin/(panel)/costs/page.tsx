@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import { Coins } from '@phosphor-icons/react'
-import { Alert } from '@leasefy/cadence'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtDiaCorto, USD_TO_COP } from '@/lib/admin/format'
@@ -78,15 +77,19 @@ function DailyStackedBars({ daily }: { daily: DailyRow[] }) {
 
   const vapiTotal = vapiVals.reduce((a, b) => a + b, 0)
   const claudeTotal = claudeVals.reduce((a, b) => a + b, 0)
+  // Ronda 26: catorce barras planas no dicen nada; en cero, una línea.
+  if (vapiTotal + claudeTotal === 0) {
+    return <p className="text-body-sm text-fg-muted">Sin costo de voz ni de modelo en estos {daily.length} días.</p>
+  }
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-4 text-caption text-fg-muted">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-primary" /> Vapi · {pesos(vapiTotal)}
+          <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-primary" /> Vapi · <span className="font-mono tabular-nums">{pesos(vapiTotal)}</span>
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-primary/35" /> Claude · {pesos(claudeTotal)}
+          <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-fg-subtle/45" /> Claude · <span className="font-mono tabular-nums">{pesos(claudeTotal)}</span>
         </span>
       </div>
       <div className="flex h-36 items-end gap-1.5" role="img" aria-label={`Costo diario de los últimos ${daily.length} días`}>
@@ -99,7 +102,7 @@ function DailyStackedBars({ daily }: { daily: DailyRow[] }) {
               className="flex flex-1 flex-col justify-end gap-px overflow-hidden rounded-t-[6px]"
               title={`${fmtDiaCorto(daily[i]?.day)}: Vapi ${pesos(v)} · Claude ${pesos(c)}`}
             >
-              {c > 0 && <div className="bg-primary/35" style={{ height: `${Math.max(1, (c / max) * 100)}%` }} />}
+              {c > 0 && <div className="bg-fg-subtle/45" style={{ height: `${Math.max(1, (c / max) * 100)}%` }} />}
               {v > 0 && <div className="bg-primary" style={{ height: `${Math.max(1, (v / max) * 100)}%` }} />}
               {t === 0 && <div className="h-0.5 bg-border" />}
             </div>
@@ -136,17 +139,24 @@ export default function CostsPage() {
 
   // Per-tenant columns
 
+  // Ronda 26 (revisora r25): un $ 0 en cada celda no informa; el cero va como «—» atenuado.
+  const plata = (dolares: number, fuerte = false) =>
+    dolares > 0 ? (
+      <span className={fuerte ? 'font-mono tabular-nums text-fg' : 'font-mono tabular-nums'}>{pesos(dolares)}</span>
+    ) : (
+      <span className="text-fg-subtle">—</span>
+    )
   const tenantColumns: Column<PerTenantRow>[] = [
-    { header: 'Inmobiliaria', orden: (r) => r.legal_name, texto: (r) => r.legal_name, cell: (r) => <span className="font-medium">{r.legal_name}</span> },
-    { header: 'Vapi', align: 'right', orden: (r) => num(r.vapi_cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.vapi_cost_usd)), cell: (r) => <span className="font-mono tabular-nums">{pesos(num(r.vapi_cost_usd))}</span> },
-    { header: 'Claude', align: 'right', orden: (r) => num(r.claude_cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.claude_cost_usd)), cell: (r) => <span className="font-mono tabular-nums">{pesos(num(r.claude_cost_usd))}</span> },
-    { header: 'Total', align: 'right', orden: (r) => num(r.total_cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.total_cost_usd)), cell: (r) => <span className="font-mono font-medium tabular-nums">{pesos(num(r.total_cost_usd))}</span> },
+    { header: 'Inmobiliaria', orden: (r) => r.legal_name, texto: (r) => r.legal_name, cell: (r) => <span className="text-body-sm text-fg">{r.legal_name}</span> },
+    { header: 'Vapi', align: 'right', orden: (r) => num(r.vapi_cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.vapi_cost_usd)), cell: (r) => plata(num(r.vapi_cost_usd)) },
+    { header: 'Claude', align: 'right', orden: (r) => num(r.claude_cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.claude_cost_usd)), cell: (r) => plata(num(r.claude_cost_usd)) },
+    { header: 'Total', align: 'right', orden: (r) => num(r.total_cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.total_cost_usd)), cell: (r) => plata(num(r.total_cost_usd), true) },
   ]
 
   const modelColumns: Column<ModelMixRow>[] = [
     { header: 'Modelo', orden: (r) => r.model_used, texto: (r) => nombreDelModelo(r.model_used), cell: (r) => <span className="text-body-sm text-fg">{nombreDelModelo(r.model_used)}</span> },
     { header: 'Usos', align: 'right', orden: (r) => num(r.count), ordenPrimero: 'desc', texto: (r) => num(r.count), cell: (r) => <span className="font-mono tabular-nums">{num(r.count).toLocaleString('es-CO')}</span> },
-    { header: 'Costo', align: 'right', orden: (r) => num(r.cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.cost_usd)), cell: (r) => <span className="font-mono tabular-nums">{pesos(num(r.cost_usd))}</span> },
+    { header: 'Costo', align: 'right', orden: (r) => num(r.cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.cost_usd)), cell: (r) => plata(num(r.cost_usd)) },
   ]
 
   return (
@@ -157,28 +167,37 @@ export default function CostsPage() {
         ayuda={
           <ParaEntenderMas etiqueta="Cómo se calcula" titulo="Los costos de la plataforma" variante="secundario">
             <p className="text-body-sm text-fg-muted">
-              Vapi (la voz) y Claude (el modelo) cobran en dólares; aquí van en pesos a {fmtCOP(USD_TO_COP)} por dólar.
-              WhatsApp todavía no se mide.
+              Vapi (la voz) y Claude (el modelo) cobran en dólares; aquí van en pesos a{' '}
+              <span className="font-mono tabular-nums">{fmtCOP(USD_TO_COP)}</span> por dólar. Los mensajes de WhatsApp
+              (360dialog) todavía no se miden: cuando se registren, aparecen aquí.
             </p>
           </ParaEntenderMas>
         }
       />
 
-      {/* Glow up 22-10: LA RESPUESTA (el costo total del mes) partida en voz · modelo; antes, 4 tarjetas del mismo
-          peso, una de ellas vacía («WhatsApp —»). */}
-      <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
-        <CifraHeroe
-          rotulo="Costo de este mes"
-          cifra={totalCostCop > 0 ? fmtCOP(totalCostCop) : '—'}
-          contexto="voz y modelo de los agentes, en pesos"
-          tramos={[
-            { clave: 'vapi', etiqueta: 'Voz de las llamadas (Vapi)', monto: vapiMtdCop || vapiMtdUsd * USD_TO_COP, tono: 'neutro', cifra: fmtCOP(vapiMtdCop || vapiMtdUsd * USD_TO_COP), siempre: true },
-            { clave: 'claude', etiqueta: 'Modelo de los agentes (Claude)', monto: claudeMtdCop || claudeMtdUsd * USD_TO_COP, tono: 'aviso', cifra: fmtCOP(claudeMtdCop || claudeMtdUsd * USD_TO_COP), siempre: true },
-          ]}
-          pie="WhatsApp todavía no se mide."
-          data-testid="costos-del-mes"
-        />
-      </div>
+      {/* Glow up 22-10: LA RESPUESTA (el costo total del mes) partida en voz · modelo. Ronda 26 (revisora r25):
+          en cero, UNA línea (antes «—» con su leyenda en «$ 0» y «$ 0», que se contradecían); WhatsApp se dice
+          una vez, en «Cómo se calcula». */}
+      {costs.data ? (
+        totalCostCop > 0 ? (
+          <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+            <CifraHeroe
+              rotulo="Costo de este mes"
+              cifra={fmtCOP(totalCostCop)}
+              contexto="voz de las llamadas y modelo de los agentes"
+              tramos={[
+                { clave: 'vapi', etiqueta: 'Voz de las llamadas (Vapi)', monto: vapiMtdCop || vapiMtdUsd * USD_TO_COP, tono: 'neutro', cifra: fmtCOP(vapiMtdCop || vapiMtdUsd * USD_TO_COP) },
+                { clave: 'claude', etiqueta: 'Modelo de los agentes (Claude)', monto: claudeMtdCop || claudeMtdUsd * USD_TO_COP, tono: 'aviso', cifra: fmtCOP(claudeMtdCop || claudeMtdUsd * USD_TO_COP) },
+              ]}
+              data-testid="costos-del-mes"
+            />
+          </div>
+        ) : (
+          <p className="rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="costos-del-mes">
+            Este mes no hubo costo de voz ni de modelo.
+          </p>
+        )
+      ) : null}
 
       <section className="space-y-3" aria-label="Por inmobiliaria">
         <h2 className="text-subtitle font-medium text-fg">Por inmobiliaria</h2>
@@ -197,6 +216,7 @@ export default function CostsPage() {
           queSon={['inmobiliaria', 'inmobiliarias']}
           buscar="Buscar inmobiliaria"
           ordenInicial={{ columna: 3, sentido: 'desc' }}
+          cifraDelCelular="Total"
           exportar="costos-por-inmobiliaria"
         />
       </section>
@@ -216,6 +236,7 @@ export default function CostsPage() {
             queSon={['modelo', 'modelos']}
             filasPorPagina={10}
             ordenInicial={{ columna: 2, sentido: 'desc' }}
+            cifraDelCelular="Costo"
             exportar="costos-por-modelo"
             masEnElExcel={[{ header: 'Código del modelo', texto: (r) => r.model_used ?? '' }]}
           />
@@ -226,10 +247,6 @@ export default function CostsPage() {
         </Tarjeta>
       </div>
 
-      <Alert variant="info" role="note" title="Falta WhatsApp">
-        El costo por mensaje de WhatsApp (360dialog) todavía no se registra en el micro. Cuando se registre, este
-        tablero queda completo.
-      </Alert>
     </div>
   )
 }

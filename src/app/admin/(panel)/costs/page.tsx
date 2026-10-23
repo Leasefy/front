@@ -65,6 +65,11 @@ function num(s: string | null | undefined): number {
  * back y del Resumen).
  */
 const alPeso = (dolares: number) => Math.round(dolares * USD_TO_COP)
+/** Ronda 28 (revisora r27): en Costos, un uso sin modelo es uno al que no se le anotó cuál fue. */
+const modeloDelUso = (codigo: string | null | undefined) => {
+  const nombre = nombreDelModelo(codigo)
+  return nombre === 'Sin modelo' ? 'Sin modelo anotado' : nombre
+}
 const pesos = (dolares: number) => fmtCOP(alPeso(dolares))
 
 function DailyStackedBars({ daily }: { daily: DailyRow[] }) {
@@ -136,6 +141,11 @@ export default function CostsPage() {
   const vapiMtdCop = num(mtd?.vapi_cost_cop_mtd)
   const claudeMtdCop = num(mtd?.claude_cost_cop_mtd)
   const totalCostCop = num(mtd?.total_cost_cop_mtd)
+  // Ronda 28 (revisora r27, bloqueante): «no hubo costo» con 80 usos en «Por modelo» era inventarlo: los
+  // usos están, su costo no se anotó. Sin costo, la línea dice cuántos usos quedaron sin costo anotado.
+  const usosDelMes = modelMix.reduce((a, r) => a + num(r.count), 0)
+  const sinCostoEnNinguna = perTenant.every((r) => num(r.total_cost_usd) === 0)
+  const todoEnCero = Boolean(costs.data) && totalCostCop === 0 && sinCostoEnNinguna
 
   // Per-tenant columns
 
@@ -154,7 +164,7 @@ export default function CostsPage() {
   ]
 
   const modelColumns: Column<ModelMixRow>[] = [
-    { header: 'Modelo', orden: (r) => r.model_used, texto: (r) => nombreDelModelo(r.model_used), cell: (r) => <span className="text-body-sm text-fg">{nombreDelModelo(r.model_used)}</span> },
+    { header: 'Modelo', orden: (r) => r.model_used, texto: (r) => modeloDelUso(r.model_used), cell: (r) => <span className="text-body-sm text-fg">{modeloDelUso(r.model_used)}</span> },
     { header: 'Usos', align: 'right', orden: (r) => num(r.count), ordenPrimero: 'desc', texto: (r) => num(r.count), cell: (r) => <span className="font-mono tabular-nums">{num(r.count).toLocaleString('es-CO')}</span> },
     { header: 'Costo', align: 'right', orden: (r) => num(r.cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.cost_usd)), cell: (r) => plata(num(r.cost_usd)) },
   ]
@@ -194,11 +204,17 @@ export default function CostsPage() {
           </div>
         ) : (
           <p className="rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="costos-del-mes">
-            Este mes no hubo costo de voz ni de modelo.
+            {usosDelMes > 0
+              ? `Este mes van ${usosDelMes.toLocaleString('es-CO')} ${usosDelMes === 1 ? 'uso' : 'usos'} de los agentes sin costo anotado: la voz y el modelo no registraron lo que cobraron.`
+              : 'Este mes no hubo costo de voz ni de modelo: los agentes no se han usado.'}
           </p>
         )
       ) : null}
 
+      {/* Ronda 28 (revisora r27, T15): sin costo en ninguna, la tabla de inmobiliarias era tres columnas de
+          «—» en todas las filas y los 14 días repetían la línea de arriba: con todo en cero, la línea y los
+          usos por modelo. */}
+      {todoEnCero ? null : (
       <section className="space-y-3" aria-label="Por inmobiliaria">
         <h2 className="text-subtitle font-medium text-fg">Por inmobiliaria</h2>
         <DataTable
@@ -220,8 +236,9 @@ export default function CostsPage() {
           exportar="costos-por-inmobiliaria"
         />
       </section>
+      )}
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <div className={todoEnCero ? 'grid grid-cols-1 gap-6' : 'grid grid-cols-1 gap-6 xl:grid-cols-2'}>
         <section className="space-y-3" aria-label="Por modelo">
           <h2 className="text-subtitle font-medium text-fg">Por modelo, este mes</h2>
           <DataTable
@@ -242,9 +259,11 @@ export default function CostsPage() {
           />
         </section>
 
-        <Tarjeta titulo="Últimos 14 días" descripcion="Vapi y Claude, en pesos.">
-          <DailyStackedBars daily={daily} />
-        </Tarjeta>
+        {todoEnCero ? null : (
+          <Tarjeta titulo="Últimos 14 días" descripcion="Vapi y Claude, en pesos.">
+            <DailyStackedBars daily={daily} />
+          </Tarjeta>
+        )}
       </div>
 
     </div>

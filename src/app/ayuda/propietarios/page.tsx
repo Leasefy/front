@@ -27,7 +27,7 @@ const guideSections: GuideSection[] = [
     id: "empezar",
     icon: <House className="h-5 w-5" />,
     title: "Cómo empezar",
-    description: "Primeros pasos para publicar tu propiedad en Leasefy",
+    description: "Primeros pasos para publicar tu inmueble en Leasefy",
     content: [
       {
         subtitle: "Registro como propietario",
@@ -37,16 +37,16 @@ const guideSections: GuideSection[] = [
           "Selecciona 'Soy propietario' como tipo de cuenta",
           "Completa tu información básica",
           "Verifica tu correo electrónico",
-          "Listo: ya puedes publicar propiedades",
+          "Listo: ya puedes publicar inmuebles",
         ],
       },
       {
-        subtitle: "Prepara tu propiedad",
+        subtitle: "Prepara tu inmueble",
         text: "Antes de publicar, asegúrate de tener lista la información y las fotos de tu inmueble.",
         tips: [
           "Toma fotos con buena iluminación natural",
           "Incluye fotos de todas las habitaciones, baños y áreas comunes",
-          "Mide el área total de la propiedad",
+          "Mide el área total del inmueble",
           "Ten a la mano el valor del arriendo y la administración",
           "Prepara la dirección exacta y referencias del sector",
         ],
@@ -56,19 +56,19 @@ const guideSections: GuideSection[] = [
   {
     id: "publicar",
     icon: <FileText className="h-5 w-5" />,
-    title: "Publicar tu propiedad",
+    title: "Publicar tu inmueble",
     description: "Guía paso a paso para crear una publicación atractiva",
     content: [
       {
         subtitle: "El asistente de publicación",
         text: "Nuestro asistente te guía en 10 pasos simples para crear una publicación completa y profesional.",
         steps: [
-          "Tipo de propiedad: Apartamento, casa, estudio, etc.",
+          "Tipo de inmueble: apartamento, casa, estudio, etc.",
           "Ubicación: Ciudad, barrio y dirección exacta",
           "Detalles: Área, habitaciones, baños, estrato",
           "Amenidades: Parqueadero, gimnasio, piscina, etc.",
           "Fotos: Mínimo 5, recomendamos 10-15",
-          "Descripción: Texto atractivo sobre tu propiedad",
+          "Descripción: un texto atractivo sobre tu inmueble",
           "Precio: Arriendo mensual y administración",
           "Inquilino ideal: Requisitos y preferencias",
           "Plan: Selecciona el plan que se ajuste a tus necesidades",
@@ -77,7 +77,7 @@ const guideSections: GuideSection[] = [
       },
       {
         subtitle: "Consejos para destacar",
-        text: "Una publicación bien elaborada recibe hasta 3 veces más aplicaciones.",
+        text: "Una publicación bien elaborada recibe hasta 3 veces más postulaciones.",
         tips: [
           "Usa un título descriptivo: 'Apartamento moderno con vista a la ciudad en Chapinero'",
           "Destaca los puntos fuertes: cerca al transmilenio, zona tranquila, etc.",
@@ -95,8 +95,8 @@ const guideSections: GuideSection[] = [
     description: "Cómo revisar y seleccionar al mejor inquilino",
     content: [
       {
-        subtitle: "Recibir aplicaciones",
-        text: "Cuando alguien aplica a tu propiedad, recibes una notificación con su perfil completo y su puntaje de riesgo.",
+        subtitle: "Recibir postulaciones",
+        text: "Cuando alguien se postula a tu inmueble, recibes un aviso con su perfil completo y su calificación de riesgo.",
       },
       {
         subtitle: "Comparar candidatos",
@@ -340,14 +340,14 @@ export default function PropietariosGuidePage() {
                 Guía para propietarios
               </h1>
               <p className="mb-8 text-[15px] text-fg-muted">
-                Todo lo que necesitas saber para arrendar tu propiedad de forma
+                Todo lo que necesitas saber para arrendar tu inmueble de forma
                 segura y eficiente con Leasefy.
               </p>
 
               {/* Quick actions */}
               <div className="mb-10 flex flex-wrap gap-3">
                 <Button asChild hideArrow>
-                  <Link href="/publicar">Publicar propiedad</Link>
+                  <Link href="/publicar">Publicar inmueble</Link>
                 </Button>
                 <Button variant="outline" asChild hideArrow>
                   <Link href="/pricing">Ver planes y precios</Link>

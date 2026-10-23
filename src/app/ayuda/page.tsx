@@ -19,49 +19,51 @@ interface FAQCategory {
   items: FAQ[];
 }
 
+// Revisora r25: primero las preguntas de quien busca arriendo (antes las del propietario), y las palabras de la casa:
+// «propietarios», «inquilinos», «inmueble» (antes «arrendadores», «arrendatarios», «propiedad»).
 const faqData: FAQCategory[] = [
   {
-    title: "Para arrendadores",
+    title: "Para inquilinos",
     items: [
       {
-        question: "¿Cómo publico mi propiedad en Leasefy?",
+        question: "¿Cómo me postulo a un inmueble?",
         answer:
-          "Regístrate como arrendador, haz clic en 'Publicar propiedad' y completa el formulario con los datos del inmueble, fotos y precio. Tu publicación estará visible una vez revisada.",
+          "Busca inmuebles disponibles, elige el que te interese y completa el formulario de postulación. El propietario recibe tu postulación junto con tu calificación.",
       },
       {
-        question: "¿Qué es la calificación de riesgo de los arrendatarios?",
+        question: "¿Qué documentos necesito para postularme?",
+        answer:
+          "Generalmente necesitas cédula de ciudadanía, certificado laboral o de ingresos, referencias personales y extractos bancarios. Los requisitos específicos pueden variar según el propietario.",
+      },
+      {
+        question: "¿Puedo agendar visitas a través de la plataforma?",
+        answer:
+          "Sí, puedes solicitar visitas directamente desde la publicación del inmueble. El propietario confirma la fecha y hora disponible.",
+      },
+    ],
+  },
+  {
+    title: "Para propietarios",
+    items: [
+      {
+        question: "¿Cómo publico mi inmueble en Leasefy?",
+        answer:
+          "Regístrate como propietario, toca «Nuevo inmueble» y completa el formulario con los datos del inmueble, fotos y precio. Tu publicación estará visible una vez revisada.",
+      },
+      {
+        question: "¿Qué es la calificación de riesgo de los inquilinos?",
         answer:
           "Es un análisis automatizado que evalúa el perfil financiero y de comportamiento de los candidatos, ayudándote a tomar decisiones informadas sobre a quién arrendar tu inmueble.",
       },
       {
-        question: "¿Cuánto cuesta publicar una propiedad?",
+        question: "¿Cuánto cuesta publicar un inmueble?",
         answer:
-          "Publicar una propiedad es gratuito en el plan básico. Ofrecemos planes premium con funcionalidades adicionales como destacar tu publicación y acceso a reportes avanzados.",
+          "Publicar un inmueble es gratis en el plan básico. Los planes de pago suman funciones como destacar tu publicación y acceso a reportes avanzados.",
       },
       {
         question: "¿Cómo selecciono al mejor candidato?",
         answer:
           "Revisa las postulaciones recibidas, consulta la calificación de riesgo de cada candidato y utiliza las herramientas de comparación de la plataforma para tomar la mejor decisión.",
-      },
-    ],
-  },
-  {
-    title: "Para arrendatarios",
-    items: [
-      {
-        question: "¿Cómo me postulo a un inmueble?",
-        answer:
-          "Busca propiedades disponibles, selecciona la que te interese y completa el formulario de postulación. El arrendador recibirá tu solicitud junto con tu calificación.",
-      },
-      {
-        question: "¿Qué documentos necesito para postularme?",
-        answer:
-          "Generalmente necesitas cédula de ciudadanía, certificado laboral o de ingresos, referencias personales y extractos bancarios. Los requisitos específicos pueden variar según el arrendador.",
-      },
-      {
-        question: "¿Puedo agendar visitas a través de la plataforma?",
-        answer:
-          "Sí, puedes solicitar visitas directamente desde la publicación del inmueble. El arrendador confirmará la fecha y hora disponible.",
       },
     ],
   },
@@ -81,7 +83,7 @@ const faqData: FAQCategory[] = [
       {
         question: "¿Qué sucede si un pago se retrasa?",
         answer:
-          "La plataforma envía notificaciones automáticas de recordatorio. Los retrasos se registran en el historial y pueden afectar la calificación del arrendatario conforme a lo establecido en el contrato.",
+          "La plataforma envía notificaciones automáticas de recordatorio. Los retrasos se registran en el historial y pueden afectar la calificación del inquilino conforme a lo establecido en el contrato.",
       },
     ],
   },
@@ -107,7 +109,7 @@ const faqData: FAQCategory[] = [
   },
 ];
 
-/** El ancla de cada tema («Para arrendadores» → «para-arrendadores»). */
+/** El ancla de cada tema («Para propietarios» → «para-propietarios»). */
 function ancla(titulo: string): string {
   return titulo
     .normalize("NFD")

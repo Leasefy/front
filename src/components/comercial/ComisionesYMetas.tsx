@@ -15,6 +15,7 @@
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
@@ -268,7 +269,8 @@ function SeccionDeMetas({ datos, puedeEditar, alCambiar }: { datos: MetasDelMes;
             {datos.soloLaMia ? 'Mi meta del mes' : 'Metas del mes'}
           </h2>
           <p className="text-caption text-fg-muted">
-            Captó: firmó el mandato este mes · Cerró: firmó el contrato este mes.
+            {/* Revisora r24 (Comisiones #2): los mismos nombres y el mismo orden que la fila de cada asesor. */}
+            Cierres: contratos firmados este mes · Captaciones: mandatos firmados este mes.
           </p>
         </div>
       </div>
@@ -418,9 +420,12 @@ function SeccionDeComision({
             <h2 id="titulo-comision" className="text-lg font-normal text-fg">
               {datos.soloLaMia ? 'Mi comisión del mes' : 'Comisión de los asesores'}
             </h2>
-            <p className="text-caption text-fg-muted">
-              Sobre la comisión que la inmobiliaria ya le facturó al propietario. Lo que falta por facturar sale «por causar».
-            </p>
+            {/* Revisora r24 (Comisiones #3): sin regla no hay tabla que explicar. */}
+            {datos.hayReglas ? (
+              <p className="text-caption text-fg-muted">
+                Sobre la comisión que la inmobiliaria ya le facturó al propietario. Lo que falta por facturar sale «por causar».
+              </p>
+            ) : null}
           </div>
         </div>
         {esGerente && datos.hayReglas ? (
@@ -455,17 +460,20 @@ function SeccionDeComision({
         />
       ) : null}
 
+      {/* Revisora r24 (Comisiones #1): LA RESPUESTA en una cifra —lo ganado del equipo, de lo que va del mes— con
+          su barra (ganado · por causar); antes, dos cajas hechas a mano del mismo peso. */}
       {datos.hayReglas && esGerente ? (
-        <div className="grid grid-cols-2 gap-3 sm:max-w-md">
-          <div className="rounded-md border border-border p-3">
-            <p className="font-mono text-caption uppercase tracking-wider text-fg-muted">Ganado del equipo</p>
-            <AnimatedNumber value={datos.totales.ganadoCop} format={formatCurrency} className="font-mono tabular-nums text-fg" />
-          </div>
-          <div className="rounded-md border border-border p-3">
-            <p className="font-mono text-caption uppercase tracking-wider text-fg-muted">Por causar</p>
-            <AnimatedNumber value={datos.totales.porCausarCop} format={formatCurrency} className="font-mono tabular-nums text-fg-muted" />
-          </div>
-        </div>
+        <CifraHeroe
+          rotulo="Ganado del equipo"
+          cifra={<AnimatedNumber value={datos.totales.ganadoCop} format={formatCurrency} />}
+          contexto={`de ${formatCurrency(datos.totales.ganadoCop + datos.totales.porCausarCop)} este mes`}
+          total={datos.totales.ganadoCop + datos.totales.porCausarCop}
+          tramos={[
+            { clave: 'ganado', etiqueta: 'Ganado', monto: datos.totales.ganadoCop, tono: 'exito', siempre: true },
+            { clave: 'por-causar', etiqueta: 'Por causar', monto: datos.totales.porCausarCop, tono: 'neutro', siempre: true },
+          ]}
+          data-testid="ganado-del-equipo"
+        />
       ) : null}
 
       {datos.hayReglas && tablaDelEquipo ? tablaDelEquipo : null}

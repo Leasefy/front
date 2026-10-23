@@ -10,6 +10,7 @@ import {
   X,
 } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { StatusBadge, type SemanticTone } from '@leasefy/cadence'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -48,30 +49,32 @@ import { useLocaleDeFechas, useTr } from '@/lib/i18n/use-tr'
 
 // ─── Status display (mirrors propiedades/candidatos pages) ────────────────────
 
+// Revisora r24 (Postulaciones #2): el estado con `StatusBadge` en TINTA —el azul es la acción— y sólo
+// con color lo que cambia el trabajo (aprobado, rechazado, pide información).
 const STATUS_CONFIG: Record<
   LandlordApplicationStatus,
-  { label: string; bg: string; text: string }
+  { label: string; tone: SemanticTone }
 > = {
-  DRAFT:           { label: 'Borrador',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
-  SUBMITTED:       { label: 'Postulado',         bg: 'bg-primary-soft',   text: 'text-primary' },
-  UNDER_REVIEW:    { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
-  APPROVED:        { label: 'Aprobado',          bg: 'bg-success-soft',   text: 'text-success' },
-  REJECTED:        { label: 'Rechazado',         bg: 'bg-danger-soft',    text: 'text-danger' },
+  DRAFT:           { label: 'Borrador',          tone: 'neutral' },
+  SUBMITTED:       { label: 'Postulado',         tone: 'neutral' },
+  UNDER_REVIEW:    { label: 'En revisión',       tone: 'neutral' },
+  APPROVED:        { label: 'Aprobado',          tone: 'success' },
+  REJECTED:        { label: 'Rechazado',         tone: 'critical' },
   // Revisora r22 (VOZ): sin abreviar.
-  NEEDS_INFO:      { label: 'Pide información',  bg: 'bg-warning-soft',   text: 'text-warning' },
-  WITHDRAWN:       { label: 'Retirado',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
-  CONTRACT_FAILED: { label: 'Contrato fallido',  bg: 'bg-danger-soft',    text: 'text-danger' },
+  NEEDS_INFO:      { label: 'Pide información',  tone: 'warning' },
+  WITHDRAWN:       { label: 'Retirado',          tone: 'neutral' },
+  CONTRACT_FAILED: { label: 'Contrato fallido',  tone: 'critical' },
   // Aprobar a una persona desplaza a las demás del mismo inmueble a
   // NO_ADJUDICADO (landlord.service.ts). Sin esta fila salían «Desconocido».
-  NO_ADJUDICADO:   { label: 'No adjudicado',     bg: 'bg-surface-muted',  text: 'text-fg-muted' },
-  PREAPPROVED:     { label: 'Preaprobado',       bg: 'bg-primary-soft',   text: 'text-primary' },
+  NO_ADJUDICADO:   { label: 'No adjudicado',     tone: 'neutral' },
+  PREAPPROVED:     { label: 'Preaprobado',       tone: 'neutral' },
 };
 
-const FALLBACK_STATUS = { label: 'Desconocido', bg: 'bg-surface-muted', text: 'text-fg-muted' };
+const FALLBACK_STATUS: { label: string; tone: SemanticTone } = { label: 'Desconocido', tone: 'neutral' };
 
 const SCORE_COLORS: Record<string, string> = {
   A: 'text-success bg-success-soft',
-  B: 'text-primary bg-primary-soft',
+  B: 'text-fg bg-surface-muted',
   C: 'text-warning bg-warning-soft',
   D: 'text-danger bg-danger-soft',
 };
@@ -272,6 +275,13 @@ function PostulacionesContenido() {
     shouldPaginate,
   } = useTablePagination(visibleItems, { resetKey: `${filter}|${search.trim()}|${inmueble}` })
 
+  /**
+   * Revisora r24 (Postulaciones #1): en una pestaña que ya filtra por estado, el estado de cada fila repite
+   * la pestaña y le quita el lugar a lo que sí distingue a cada uno (la lista corta). Sale en «Todas» y
+   * cuando la página mezcla estados (en «En revisión» caen Postulado, En revisión y Preaprobado).
+   */
+  const mostrarEstado = filter === 'ALL' || new Set(pageItems.map((c) => c.status)).size > 1
+
   /*
    * El puntaje NO está prendido (Nico, 04-10-2026: «aún ese no lo vamos a
    * prender»). Una columna «Puntaje» llena de rayas promete algo que no
@@ -462,9 +472,7 @@ function PostulacionesContenido() {
                           <span className="block truncate font-medium text-fg">{c.tenantName}</span>
                           <span className="block truncate text-body-sm text-fg-muted">{c.propertyTitle}</span>
                           <span className="mt-1.5 flex flex-wrap items-center gap-2">
-                            <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-caption font-medium', statusCfg.bg, statusCfg.text)}>
-                              {tr(statusCfg.label)}
-                            </span>
+                            {mostrarEstado ? <StatusBadge tone={statusCfg.tone}>{tr(statusCfg.label)}</StatusBadge> : null}
                             {/* Revisora r23 (Postulaciones #1 y #3): el puesto en la lista corta también a 390; la marca del
                                 estudio, con la misma condición que la columna de 1440. */}
                             <MarcaDeListaCorta puesto={listaCorta.get(c.id)} />
@@ -488,7 +496,7 @@ function PostulacionesContenido() {
                     )}
                     <TableHead>{tr("Interesado")}</TableHead>
                     <TableHead>{tr("Inmueble")}</TableHead>
-                    <TableHead>{tr("Estado")}</TableHead>
+                    {mostrarEstado && <TableHead>{tr("Estado")}</TableHead>}
                     {/* 🔴 El estudio es opcional (Nico, 04-10-2026): quien se
                         postuló sin él (o con el canon por encima de su
                         respaldo) se ve marcado aquí. */}
@@ -532,23 +540,17 @@ function PostulacionesContenido() {
                             <Avatar name={c.tenantName} size="sm" />
                             <div className="min-w-0">
                               <p className="font-medium text-fg truncate">{c.tenantName}</p>
-                              <p className="text-xs text-fg-muted truncate">{c.tenantEmail}</p>
+                              <p className="text-caption text-fg-muted truncate">{c.tenantEmail}</p>
                               <MarcaDeListaCorta puesto={listaCorta.get(c.id)} className="mt-0.5" />
                             </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-fg">{c.propertyTitle}</TableCell>
-                        <TableCell>
-                          <span
-                            className={cn(
-                              'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                              statusCfg.bg,
-                              statusCfg.text,
-                            )}
-                          >
-                            {tr(statusCfg.label)}
-                          </span>
-                        </TableCell>
+                        {mostrarEstado && (
+                          <TableCell>
+                            <StatusBadge tone={statusCfg.tone}>{tr(statusCfg.label)}</StatusBadge>
+                          </TableCell>
+                        )}
                         {hayEstudio && (
                           <TableCell>
                             <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} conEstudio />
@@ -559,7 +561,7 @@ function PostulacionesContenido() {
                             {c.riskScore ? (
                               <span
                                 className={cn(
-                                  'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums',
+                                  'inline-flex items-center rounded-full px-2 py-0.5 font-mono text-caption tabular-nums',
                                   SCORE_COLORS[c.riskScore.level] ?? 'text-fg-muted bg-surface-muted',
                                 )}
                               >

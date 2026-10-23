@@ -54,7 +54,6 @@ import type {
   NuevoReciboPorCliente,
 } from '@/lib/api/recibos-de-caja.types';
 import {
-  CobroResumen,
   CobroFilters,
   CobroTable,
   RegistrarPagoModal,
@@ -75,7 +74,8 @@ import { CobrosSinCuota } from '@/components/cartera/CobrosSinCuota';
 import { RecargosSinPlazo } from '@/components/cartera/RecargosSinPlazo';
 import { hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa';
 import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
-import { LinksDePago } from '@/components/inmobiliaria/pagos/payu/LinksDePago';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { formatCurrency } from '@/lib/format';
 
 /**
  * B-09/N-28 (QA-PAGOS-95 r2; main, con la recomendada): «Configurar
@@ -613,10 +613,59 @@ function CobrosContent() {
           onReintentar={refetchSummary}
         >
           {(resumen) => (
-            <CobroResumen
-              summary={resumen}
-              onViewPending={handleViewPending}
-              onViewLate={handleViewLate}
+            // Revisora r25 (Cobros #1): LA RESPUESTA en una cifra con su barra —lo que falta
+            // por cobrar de lo emitido— y cada tramo filtra la tabla. Antes, el resumen viejo
+            // con la tasa en 36 px, caja de ícono y tres tarjetas que no sumaban la cifra.
+            <CifraHeroe
+              rotulo="Por cobrar"
+              cifra={formatCurrency(resumen.totalPending + resumen.totalLate)}
+              contexto={`de ${formatCurrency(resumen.totalExpected)} emitidos en ${mesEnLaFrase}`}
+              total={resumen.totalExpected}
+              cuandoEsCero={`No hay cobros emitidos en ${mesEnLaFrase}.`}
+              tramos={[
+                {
+                  clave: 'cobrado',
+                  etiqueta: `Cobrado · ${resumen.cobrosPaid.toLocaleString('es-CO')}`,
+                  monto: resumen.totalCollected,
+                  tono: 'exito',
+                  siempre: true,
+                  cifra: formatCurrency(resumen.totalCollected),
+                  'data-testid': 'cobros-tramo-cobrado',
+                },
+                {
+                  clave: 'mora',
+                  etiqueta: `${resumen.plazoSinFijar ? 'Vencido' : 'En mora'} · ${resumen.cobrosLate.toLocaleString('es-CO')}`,
+                  monto: resumen.totalLate,
+                  tono: 'critico',
+                  siempre: true,
+                  cifra: (
+                    <button type="button" className="font-mono tabular-nums underline-offset-2 hover:underline" onClick={handleViewLate} data-testid="cobros-ver-en-mora">
+                      {formatCurrency(resumen.totalLate)}
+                    </button>
+                  ),
+                  extra: resumen.plazoSinFijar ? <p className="text-caption text-fg-muted">sin plazo fijado: no corre mora</p> : undefined,
+                  'data-testid': 'cobros-tramo-en-mora',
+                },
+                {
+                  clave: 'pendiente',
+                  etiqueta: `Pendiente · ${resumen.cobrosPending.toLocaleString('es-CO')}`,
+                  monto: resumen.totalPending,
+                  tono: 'neutro',
+                  siempre: true,
+                  cifra: (
+                    <button type="button" className="font-mono tabular-nums underline-offset-2 hover:underline" onClick={handleViewPending} data-testid="cobros-ver-pendientes">
+                      {formatCurrency(resumen.totalPending)}
+                    </button>
+                  ),
+                  'data-testid': 'cobros-tramo-pendiente',
+                },
+              ]}
+              pie={
+                resumen.collectionRate === null
+                  ? undefined
+                  : `Tasa de recaudo: ${resumen.collectionRate.toLocaleString('es-CO', { maximumFractionDigits: 1 })} %`
+              }
+              data-testid="cobros-respuesta"
             />
           )}
         </FranjaDelResumen>
@@ -853,7 +902,15 @@ function CobrosContent() {
         documento— y un cobro no trae su cuota. Sin «Enviar link»: los manda
         el cron del back (decisión de Nico).
       */}
-      <LinksDePago />
+      {/* Revisora r25 (Cobros #2): la tabla de enlaces de Cobri ya vive en el Agente de
+          pagos; aquí se repetía entera. Queda la puerta. */}
+      <p className="text-body-sm text-fg-muted" data-testid="cobros-ir-a-los-enlaces">
+        Los enlaces de pago de cada cuota los manda Cobri:{' '}
+        <Link href="/panel/inmobiliaria/pagos/agente" className="text-fg underline underline-offset-2 hover:text-primary">
+          verlos en el Agente de pagos
+        </Link>
+        .
+      </p>
 
       {/* Cobro Detail Modal */}
       <CobroDetail

@@ -2760,7 +2760,7 @@
     },
     "cobros": {
       "title": "Cobros",
-      "subtitle": "Gestiona los cobros de arriendo de tu portafolio",
+      "subtitle": "Los cobros emitidos del mes: quién pagó, quién debe y su recibo.",
       "search": "Buscar cobro...",
       "registerPayment": "Registrar pago",
       "noPayments": "No hay cobros registrados",

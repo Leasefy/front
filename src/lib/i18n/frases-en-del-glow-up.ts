@@ -511,4 +511,16 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Último movimiento": "Last activity",
   "1 día en la etapa": "1 day in stage",
   "{n} días en la etapa": "{n} days in stage",
+  // Cobranza (ronda 26, 2.º agente)
+  "Resolver el caso": "Resolve the case",
+  "Aprobar la carta de {n}": "Approve {n}'s letter",
+  "Aprobar la carta": "Approve the letter",
+  "Aprobar el siniestro de {n}": "Approve {n}'s claim",
+  "Aprobar el siniestro": "Approve the claim",
+  "Revisar el acuerdo de {n}": "Review {n}'s agreement",
+  "Revisar el acuerdo": "Review the agreement",
+  "Seguir la promesa de {n}": "Follow up on {n}'s promise",
+  "Seguir la promesa": "Follow up on the promise",
+  "Responder a {n}": "Reply to {n}",
+  "Responder la conversación": "Reply to the conversation",
 }

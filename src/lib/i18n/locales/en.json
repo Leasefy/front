@@ -7158,7 +7158,7 @@
           }
         },
         "pendientes": {
-          "pageTitle": "What needs your attention",
+          "pageTitle": "Pending",
           "desc": "Today's decisions, prioritized: the agent handles everything else on its own.",
           "vacio": "All caught up",
           "vacioHint": "The agent is managing the portfolio. When something needs your decision, it will show up here.",

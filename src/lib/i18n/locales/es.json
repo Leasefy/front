@@ -7193,10 +7193,10 @@
           }
         },
         "pendientes": {
-          "pageTitle": "Qué necesita tu atención",
+          "pageTitle": "Pendientes",
           "desc": "Las decisiones del día, priorizadas: el agente trabaja solo lo demás.",
           "vacio": "Nada espera tu decisión",
-          "vacioHint": "Cuando algo necesite tu aprobación (un acuerdo de pago, una carta o una escalación), aparece aquí.",
+          "vacioHint": "Cuando algo necesite la decisión de una persona (un acuerdo de pago, una carta o un caso que el agente pasó), aparece aquí.",
           "grupoEscalaciones": "Escalaciones",
           "grupoCartas": "Cartas prejurídicas por aprobar",
           "grupoSiniestros": "Siniestros por aprobar",

@@ -207,9 +207,8 @@ function FirmarContratoContent() {
     return (
       <div className="max-w-2xl p-6 lg:p-8">
         <div className="rounded-lg border border-success/30 bg-success-soft p-8 text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto">
-            <SealCheck className="w-8 h-8 text-success" />
-          </div>
+          {/* Ronda 30 (lote): el ícono suelto, sin el círculo de color (Cadence 2). */}
+          <SealCheck className="mx-auto h-10 w-10 text-success" weight="duotone" aria-hidden="true" />
           <div>
             <h2 className="text-xl font-medium tracking-tight text-success">Contrato firmado</h2>
             {/*

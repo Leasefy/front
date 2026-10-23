@@ -77,6 +77,10 @@ export function BetaLayout({ children, basePath, variant = 'fullscreen', dentroD
               // PlanHeader is h-16 (4rem); below lg the layout reserves pb-20
               // (5rem) for the MobileNavBar.
               'relative h-[calc(100dvh-4rem-5rem)] lg:h-[calc(100dvh-4rem)]',
+          // T-0173: inside the panel, on phones start BELOW the sticky 4rem panel header
+          // so its hamburger, Piloto pill and breadcrumb stay reachable (this bar's own
+          // hamburger opens the chat list: a different menu).
+          variant === 'fullscreen' && dentroDelPanel && 'max-md:top-16 max-md:h-[calc(100dvh-4rem)]',
           'flex flex-col md:flex-row',
           'bg-background'
         )}

@@ -296,6 +296,12 @@ function Formulario({
       <CifraHeroe
         rotulo={`Cifras del Estado para ${anio}`}
         cifra={`${cargadas} de 3`}
+        // Ronda 30 (revisora r27): «N de 3» con su barra (cargadas · por cargar).
+        total={3}
+        tramos={[
+          { clave: 'cargadas', etiqueta: 'Cargadas', monto: cargadas, tono: 'exito', siempre: true },
+          { clave: 'faltan', etiqueta: 'Por cargar', monto: 3 - cargadas, tono: 'aviso' },
+        ]}
         contexto={
           !cargado
             ? 'sin ellas no se liquida'

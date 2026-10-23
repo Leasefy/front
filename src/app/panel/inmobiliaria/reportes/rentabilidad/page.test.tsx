@@ -307,7 +307,10 @@ describe('RentabilidadPage — totales y filas', () => {
     expect(heroe.textContent).toContain(formatCurrency(30_000_000))
     expect(container.querySelector('[data-testid="cifra-neto"]')?.textContent).toContain(formatCurrency(23_800_000))
     expect(container.querySelector('[data-testid="cifra-ocupacion"]')?.textContent).toContain('91,5')
-    expect(container.querySelectorAll('[data-testid="cifras-del-periodo"] > div')).toHaveLength(4)
+    // Revisora r25: debajo de la cifra sólo el neto; comisión, ocupación y vacancia en una línea.
+    expect(container.querySelectorAll('[data-testid="cifras-del-periodo"] > div')).toHaveLength(1)
+    expect(container.querySelector('[data-testid="cifra-comision"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="cifra-vacancia"]')).not.toBeNull()
   })
 
   it('pinta una fila por inmueble, con propietario y enlace a la ficha', async () => {

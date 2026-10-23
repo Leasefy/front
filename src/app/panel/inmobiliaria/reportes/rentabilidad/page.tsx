@@ -26,14 +26,6 @@ import {
 } from '@phosphor-icons/react';
 import { AnimatedNumber, SegmentedControl } from '@leasefy/cadence';
 
-/**
- * Una cifra en plata que CUENTA cuando cambia (otro período, otra búsqueda); el
- * texto final es el mismo `formatCurrency` de antes. `Stat` tipa `value` como
- * texto pero lo pinta como hijo: el nodo se ve igual (mismo patrón que los
- * `KpiCard` del pipeline).
- */
-const plataQueCuenta = (valor: number) =>
-  (<AnimatedNumber value={valor} format={formatCurrency} />) as unknown as string;
 
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -63,7 +55,8 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, plataPareja } from '@/lib/format';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { netoDelPropietario } from '@/lib/dinero/neto-del-propietario';
 import { apiClient, ApiError } from '@/lib/api/client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
@@ -108,7 +101,8 @@ function Barra({ pct, className }: { pct: number; className?: string }) {
   const ancho = Math.max(0, Math.min(100, pct));
   return (
     <div className="h-1.5 w-full max-w-[96px] overflow-hidden rounded-full bg-muted" aria-hidden="true">
-      <div className={cn('h-full rounded-full bg-primary', className)} style={{ width: `${ancho}%` }} />
+      {/* Revisora r25 (T3): grafito, no el azul de la acción. */}
+      <div className={cn('h-full rounded-full bg-fg-muted', className)} style={{ width: `${ancho}%` }} />
     </div>
   );
 }
@@ -374,11 +368,24 @@ function RentabilidadContent() {
             Antes eran seis cifras del mismo peso. */}
         {totales && (
           <section className="space-y-4 rounded-lg border border-border bg-card p-5" data-testid="totales-de-rentabilidad">
+            {(() => {
+              // Revisora r25 (T5): «$ 6.410.000» junto a «$ 58.990.500,50» en la misma cifra y leyenda.
+              const plataDeLaCifra = plataPareja([
+                totales.recaudadoCop,
+                totales.esperadoCop,
+                totales.pendienteCop,
+                totales.enMoraCop,
+                totales.comisionCop,
+                totales.netoPropietarioCop,
+                Math.round(totales.ingresoPerdidoPorVacanciaCop),
+              ]);
+              return (
+                <>
             <CifraHeroe
               rotulo={t('inmobiliaria.reportes.rentabilidad.stats.collected')}
-              cifra={plataQueCuenta(totales.recaudadoCop)}
+              cifra={(<AnimatedNumber value={totales.recaudadoCop} format={plataDeLaCifra} />) as unknown as string}
               contexto={tr('de los {esperado} esperados en {inmuebles}, de {desde} a {hasta} · {tasa}', {
-                esperado: formatCurrency(totales.esperadoCop),
+                esperado: plataDeLaCifra(totales.esperadoCop),
                 inmuebles: t('inmobiliaria.reportes.rentabilidad.stats.properties', { count: totales.inmuebles }),
                 desde: etiquetaDelMes(consulta.desde, locale),
                 hasta: etiquetaDelMes(consulta.hasta, locale),
@@ -389,30 +396,42 @@ function RentabilidadContent() {
               })}
               total={totales.esperadoCop}
               tramos={[
-                { clave: 'recaudado', etiqueta: t('inmobiliaria.reportes.rentabilidad.stats.collected'), monto: totales.recaudadoCop, tono: 'exito', cifra: formatCurrency(totales.recaudadoCop), siempre: true },
-                { clave: 'pendiente', etiqueta: tr('Pendiente, sin mora'), monto: Math.max(0, totales.pendienteCop - totales.enMoraCop), tono: 'neutro', cifra: formatCurrency(Math.max(0, totales.pendienteCop - totales.enMoraCop)) },
-                { clave: 'mora', etiqueta: tr('En mora'), monto: totales.enMoraCop, tono: 'critico', cifra: formatCurrency(totales.enMoraCop) },
+                { clave: 'recaudado', etiqueta: t('inmobiliaria.reportes.rentabilidad.stats.collected'), monto: totales.recaudadoCop, tono: 'exito', cifra: plataDeLaCifra(totales.recaudadoCop), siempre: true },
+                { clave: 'pendiente', etiqueta: tr('Pendiente, sin mora'), monto: Math.max(0, totales.pendienteCop - totales.enMoraCop), tono: 'neutro', cifra: plataDeLaCifra(Math.max(0, totales.pendienteCop - totales.enMoraCop)) },
+                { clave: 'mora', etiqueta: tr('En mora'), monto: totales.enMoraCop, tono: 'critico', cifra: plataDeLaCifra(totales.enMoraCop) },
               ]}
               tamano="mediana"
               data-testid="cifra-recaudado"
             />
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-border-faint pt-4 lg:grid-cols-4" data-testid="cifras-del-periodo">
-              {/* 🔴 Decisión de negocio (Nico, 2026-09-15), CAMBIABLE: un neto negativo NO es plata a
-                  favor del propietario: «queda debiendo», con la regla de `lib/dinero/neto-del-propietario`. */}
-              {[
-                { clave: 'comision', etiqueta: t('inmobiliaria.reportes.rentabilidad.stats.commission'), valor: formatCurrency(totales.comisionCop) },
-                /* Revisora r24 #3: cada cifra dice su base —el neto sale de lo CAUSADO (puede pasar a lo
-                   recaudado) y la vacancia es una estimación sobre el canon, en pesos enteros—. */
-                { clave: 'neto', etiqueta: tr('Neto causado a propietarios'), valor: netoDelPropietario(totales.netoPropietarioCop, formatCurrency).texto },
-                { clave: 'ocupacion', etiqueta: t('inmobiliaria.reportes.rentabilidad.stats.occupancy'), valor: formatearPct(totales.ocupacionPromedioPct, locale) },
-                { clave: 'vacancia', etiqueta: tr('Vacancia estimada sobre el canon'), valor: formatCurrency(Math.round(totales.ingresoPerdidoPorVacanciaCop)) },
-              ].map((c) => (
-                <div key={c.clave} className="min-w-0 space-y-0.5" data-testid={`cifra-${c.clave}`}>
-                  <dt className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">{c.etiqueta}</dt>
-                  <dd className="font-mono text-body-sm tabular-nums text-fg">{c.valor}</dd>
-                </div>
-              ))}
+            {/* Revisora r25: una cifra grande con cuatro debajo del mismo peso. Queda el NETO —la
+                pregunta de la pantalla— y lo demás en una línea. 🔴 Decisión de negocio (Nico,
+                2026-09-15), CAMBIABLE: un neto negativo NO es plata a favor del propietario: «queda
+                debiendo», con la regla de `lib/dinero/neto-del-propietario`. */}
+            <dl className="border-t border-border-faint pt-4" data-testid="cifras-del-periodo">
+              <div className="min-w-0 space-y-0.5" data-testid="cifra-neto">
+                <dt className="font-mono text-caption uppercase tracking-[0.06em] text-fg-subtle">{tr('Neto causado a propietarios')}</dt>
+                <dd className="font-mono text-body-sm tabular-nums text-fg">{netoDelPropietario(totales.netoPropietarioCop, plataDeLaCifra).texto}</dd>
+              </div>
             </dl>
+            <p className="text-caption text-fg-muted">
+              <span data-testid="cifra-comision">
+                {t('inmobiliaria.reportes.rentabilidad.stats.commission')}{' '}
+                <span className="font-mono tabular-nums text-fg">{plataDeLaCifra(totales.comisionCop)}</span>
+              </span>
+              {' · '}
+              <span data-testid="cifra-ocupacion">
+                {t('inmobiliaria.reportes.rentabilidad.stats.occupancy')}{' '}
+                <span className="font-mono tabular-nums text-fg">{formatearPct(totales.ocupacionPromedioPct, locale)}</span>
+              </span>
+              {' · '}
+              <span data-testid="cifra-vacancia">
+                {tr('Vacancia estimada sobre el canon')}{' '}
+                <span className="font-mono tabular-nums text-fg">{plataDeLaCifra(Math.round(totales.ingresoPerdidoPorVacanciaCop))}</span>
+              </span>
+            </p>
+                </>
+              );
+            })()}
           </section>
         )}
 
@@ -690,16 +709,20 @@ function RentabilidadContent() {
         ) : null}
 
         {report && report.notas.length > 0 && (
-          <section className="space-y-1.5 px-1" data-testid="notas-del-reporte">
-            <p className="font-mono text-label font-medium uppercase tracking-[0.08em] text-fg-subtle">
-              {t('inmobiliaria.reportes.rentabilidad.notes')}
-            </p>
+          // Revisora r25: las notas del cálculo, plegadas (se consultan; no se leen cada vez).
+          <MasDetalles
+            etiqueta={t('inmobiliaria.reportes.rentabilidad.notes')}
+            montadoSiempre
+            className="px-1"
+            classNameDelContenido="mt-2"
+            data-testid="notas-del-reporte"
+          >
             <ul className="list-disc space-y-1 pl-5 text-caption text-fg-muted">
               {report.notas.map((nota, i) => (
                 <li key={i}>{nota}</li>
               ))}
             </ul>
-          </section>
+          </MasDetalles>
         )}
       </EstadoDeDatos>
     </div>

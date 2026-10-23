@@ -176,6 +176,16 @@ const TONO: Record<Gravedad, string> = {
   SINIESTRO: 'text-danger',
 }
 
+/**
+ * El tono de cada tramo en la barra de la cartera y en el punto de su ficha: la
+ * barra y los tramos son la misma distribución, y el punto los une (r25 #2).
+ */
+const TONOS_DE_LOS_TRAMOS = ['bg-error-500/40', 'bg-error-500/60', 'bg-error-500/80', 'bg-error-500'] as const
+const TONO_DEL_SINIESTRO = 'bg-error-700'
+function tonoDelTramo(i: number): string {
+  return TONOS_DE_LOS_TRAMOS[i] ?? 'bg-error-500'
+}
+
 /** Propietario · deudas · inmuebles · lo peor · capital · intereses · total. */
 const COLUMNAS_POR_PROPIETARIO = 7
 
@@ -241,6 +251,15 @@ export function CarteraCompleta() {
   const tramosVaciosPorElSiniestro = tramosQueNoSeLlenan.filter(
     (e) => (cartera.tramos.find((t) => t.edad === e)?.monto ?? 0) === 0,
   )
+  /** Los tramos sin plata: van en UNA línea atenuada, no como fichas con «—» (r25 #2). */
+  const tramosEnCero = [
+    ...cartera.tramos
+      .filter((t) => t.monto === 0)
+      .map((t) => ({ testid: `tramo-${t.edad}`, nombre: NOMBRE_DE_EDAD[t.edad] })),
+    ...(siniestros && cartera.enSiniestro.monto === 0
+      ? [{ testid: 'tramo-siniestro', nombre: t('cartera.porEdad.tramoEnSiniestro') }]
+      : []),
+  ]
   /*
    * 15-10-2026 (Nico, con Juan de Portofino: «la que deberíamos ver es lo que
    * está vencido como cartera»): si hay cartera, la pantalla ENTRA en ella. La
@@ -278,6 +297,10 @@ export function CarteraCompleta() {
     [siniestros],
   )
   const sinReglasDeMora = report?.sinReglasDeMora === true || faltanReglasDeMora(todas)
+  /** Cuántas cuotas salen sin interés por falta de reglas (el aviso de arriba de la tabla). */
+  const cuotasSinReglas = todas.filter((f) => interesDe(f)?.sinReglas === true).length
+  /** Lo que el aviso de las reglas ya dice no se repite en la lista plegada. */
+  const otrosAvisos = sinReglasDeMora ? avisos.filter((a) => !/reglas de mora/i.test(a)) : avisos
 
   /*
    * 🔴 El orden va ANTES del paginado (prueba en navegador, 16-09): la tabla
@@ -420,7 +443,6 @@ export function CarteraCompleta() {
           data-testid="resumen-de-cartera"
           // 15-10: con centavos la cifra no cabía; cada ficha la achica a su ancho (`cifra-que-cabe`).
           style={estiloDeLaFranja([
-            plataDeLaFranja(cartera.deudaTotal),
             ...(['POR_VENCER', 'VENCIDA_EN_PLAZO', 'CARTERA'] as const).map((c) => plataDeLaFranja(montoDelCajon(c).monto)),
             ...(siniestros ? [plataDeLaFranja(siniestros.totalCop)] : []),
             ...(castigada ? [plataDeLaFranja(castigada.totalCop)] : []),
@@ -428,10 +450,9 @@ export function CarteraCompleta() {
         >
           <div className="space-y-4 px-5 py-5 sm:px-6">
             <p className="font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle">{nombreDelCajon('CARTERA')}</p>
-            {/* Ronda 16 (390): más aire entre la cartera (con su barra) y la deuda total. */}
-            <div className="flex flex-col gap-x-4 gap-y-5 lg:flex-row lg:items-end lg:justify-between lg:gap-y-2">
-              {/* Ronda 15: la cifra de la cartera y SU barra (por edad) en un mismo bloque. */}
-              <div className="min-w-0 space-y-3 lg:flex-1">
+            {/* Ronda 15: la cifra de la cartera, SU barra (por edad) y de qué deuda es parte, en un mismo bloque. */}
+            <div>
+              <div className="min-w-0 space-y-3">
               {/* La cartera: la cifra grande. Tocarla deja la tabla en la cartera. */}
               <button
                 type="button"
@@ -476,8 +497,8 @@ export function CarteraCompleta() {
                   astilla de 2 px al final. */}
               {montoDelCajon('CARTERA').monto > 0 ? (
                 <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-surface-muted" role="img" aria-label="Cómo se reparte la cartera por edad" data-testid="barra-de-la-deuda">
-                  {[...cartera.tramos.map((t, i) => ({ clave: t.edad, monto: t.monto, tono: ['bg-error-500/40', 'bg-error-500/60', 'bg-error-500/80', 'bg-error-500'][i] ?? 'bg-error-500' })),
-                    { clave: 'siniestro', monto: cartera.enSiniestro.monto, tono: 'bg-error-700' }]
+                  {[...cartera.tramos.map((t, i) => ({ clave: t.edad, monto: t.monto, tono: tonoDelTramo(i) })),
+                    { clave: 'siniestro', monto: cartera.enSiniestro.monto, tono: TONO_DEL_SINIESTRO }]
                     .filter((t) => t.monto > 0)
                     .map((t) => (
                       <span
@@ -488,34 +509,43 @@ export function CarteraCompleta() {
                     ))}
                 </div>
               ) : null}
-              </div>
 
-              {/* La deuda entera, de la que la cartera es una parte. Tocarla quita los filtros. */}
+              {/* Revisora r25 (Cartera #1): la deuda entera, de la que la cartera es una parte, ya no es un
+                  segundo foco de 17 px a la derecha: UNA línea gris bajo la barra. Tocarla quita los filtros. */}
               <button
                 type="button"
                 onClick={limpiar}
                 aria-pressed={cajon === null && edad === null}
-                className="ficha-con-cifra w-full min-w-0 shrink-0 rounded-lg lg:w-[18rem] text-left lg:text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 rounded-sm text-left text-body-sm text-fg-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 data-testid="resumen-deuda-total"
               >
-                <span className="block text-caption text-fg-muted">Deuda total · nace con el contrato</span>
-                <span className="cifra-que-cabe block font-mono text-[17px] tabular-nums text-fg" data-testid="cifra-deuda-total">
+                <span>{tr('Es parte de una deuda total de')}</span>
+                <span
+                  className={cn(
+                    'font-mono tabular-nums text-fg',
+                    cajon === null && edad === null && 'underline decoration-dotted decoration-1 underline-offset-[0.2em]',
+                  )}
+                  data-testid="cifra-deuda-total"
+                >
                   {plataDeLaFranja(cartera.deudaTotal)}
                 </span>
-                <span className="block text-caption text-fg-muted">
-                  {todas.length.toLocaleString('es-CO')} {todas.length === 1 ? 'cuota' : 'cuotas'}
+                <span>
+                  {todas.length === 1
+                    ? tr('en 1 cuota, que nace con el contrato')
+                    : tr('en {n} cuotas, que nace con el contrato', { n: todas.length.toLocaleString('es-CO') })}
                 </span>
                 {interesTotal > 0 ? (
                   <span
-                    className="block font-mono text-caption tabular-nums text-fg-muted"
+                    className="font-mono tabular-nums"
                     data-testid="resumen-deuda-con-intereses"
                   >
-                    {t(CLAVE_DE_MORA.conIntereses, {
+                    ({t(CLAVE_DE_MORA.conIntereses, {
                       monto: plataDeLaFranja(cartera.deudaTotal + interesTotal),
-                    })}
+                    })})
                   </span>
                 ) : null}
               </button>
+              </div>
             </div>
 
           </div>
@@ -523,7 +553,7 @@ export function CarteraCompleta() {
           {/* La leyenda: lo que NO es cartera (por vencer, vencido en plazo) y qué parte
               de la cartera ya no se persigue igual (siniestro, castigada). */}
           <div
-            className="grid grid-cols-1 gap-px border-t border-border bg-border sm:grid-cols-2 lg:grid-cols-4"
+            className="grid grid-cols-1 gap-px border-t border-border bg-border sm:grid-cols-2"
             data-testid="leyenda-de-la-cartera"
           >
             {(['POR_VENCER', 'VENCIDA_EN_PLAZO'] as const).map((cual) => {
@@ -650,34 +680,46 @@ export function CarteraCompleta() {
             su paso siguiente («Sigue») y, en las reglas de mora, su botón. Se pliega cuando no falta nada. */}
         {/* GLOW UP (22-10, revisión de Dinero: «lista 0/3 → una línea»): lo que estos
             números no cuentan, en UN renglón junto a la cifra, plegado con su salida. */}
-        {avisos.length > 0 ? (
-          <div className="flex items-start gap-2.5 text-body-sm text-fg" data-testid="avisos-de-la-cartera" role="status">
-            <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-warning-500" aria-hidden="true" />
-            <MasDetalles
-              montadoSiempre
-              etiqueta={(() => {
-                const n = avisos.length + (sinReglasDeMora && !avisos.some((a) => /reglas de mora/i.test(a)) ? 1 : 0)
-                return n === 1 ? '1 cosa afecta estas cifras' : `${n} cosas afectan estas cifras`
-              })()}
-              etiquetaAbierto="Ocultar"
-              classNameDelContenido="space-y-3"
-            >
-              <ul className="list-disc space-y-1 pl-4 text-fg-muted marker:text-fg-subtle">
-                {avisos.map((aviso) => (
-                  <li key={aviso}>{aviso}</li>
-                ))}
-                {sinReglasDeMora && !avisos.some((a) => /reglas de mora/i.test(a)) ? (
-                  <li>{t(CLAVE_DE_MORA.configurarReglas)}</li>
-                ) : null}
-              </ul>
-              {sinReglasDeMora ? (
-                <Button asChild size="sm" variant="secondary">
-                  <Link href={RUTA_DE_REGLAS_DE_MORA} data-testid="cartera-configurar-reglas">
-                    {t(CLAVE_DE_MORA.configurarReglas)}
-                  </Link>
-                </Button>
-              ) : null}
-            </MasDetalles>
+        {/* Revisora r25 (Cartera #3): «Sin reglas de mora / Configúralas» ya no se repite en cada fila:
+            UN aviso a la vista, arriba de la tabla, con su salida; la celda dice «—». */}
+        {avisos.length > 0 || sinReglasDeMora ? (
+          <div className="space-y-2 text-body-sm text-fg" data-testid="avisos-de-la-cartera" role="status">
+            {sinReglasDeMora ? (
+              <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1" data-testid="aviso-sin-reglas">
+                <span className="h-1.5 w-1.5 shrink-0 translate-y-[-2px] self-center rounded-full bg-warning-500" aria-hidden="true" />
+                <span>
+                  {cuotasSinReglas === 0
+                    ? tr('Sin reglas de mora: la cartera se muestra sin intereses.')
+                    : cuotasSinReglas === 1
+                      ? tr('1 cuota en mora sin reglas de mora: se muestra sin intereses.')
+                      : tr('{n} cuotas en mora sin reglas de mora: se muestran sin intereses.', { n: cuotasSinReglas })}
+                </span>
+                <Link
+                  href={RUTA_DE_REGLAS_DE_MORA}
+                  className="text-fg underline underline-offset-4 hover:text-fg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  data-testid="cartera-configurar-reglas"
+                >
+                  {t(CLAVE_DE_MORA.configurarReglas)}
+                </Link>
+              </p>
+            ) : null}
+            {otrosAvisos.length > 0 ? (
+              <div className="flex items-start gap-2.5">
+                <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-warning-500" aria-hidden="true" />
+                <MasDetalles
+                  montadoSiempre
+                  etiqueta={otrosAvisos.length === 1 ? '1 cosa afecta estas cifras' : `${otrosAvisos.length} cosas afectan estas cifras`}
+                  etiquetaAbierto="Ocultar"
+                  classNameDelContenido="space-y-3"
+                >
+                  <ul className="list-disc space-y-1 pl-4 text-fg-muted marker:text-fg-subtle">
+                    {otrosAvisos.map((aviso) => (
+                      <li key={aviso}>{aviso}</li>
+                    ))}
+                  </ul>
+                </MasDetalles>
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -727,7 +769,8 @@ export function CarteraCompleta() {
               aria-label="Edad de la cartera"
               data-testid="tramos-de-la-cartera"
             >
-              {cartera.tramos.map((tramo) => {
+              {cartera.tramos.map((tramo, i) => {
+                if (tramo.monto === 0) return null
                 const activa = edad === tramo.edad && vista !== 'siniestros'
                 return (
                   <button
@@ -746,7 +789,12 @@ export function CarteraCompleta() {
                     {activa ? (
                       <MotionIndicator layoutId={`${marca}-tramo`} className="inset-0 -z-10 bg-primary-soft" />
                     ) : null}
-                    <p className="text-caption text-fg-muted">{NOMBRE_DE_EDAD[tramo.edad]}</p>
+                    {/* Revisora r25 (Cartera #2): el punto es el color de su tramo en la barra de arriba:
+                        estos tramos SON la leyenda de esa barra. */}
+                    <p className="flex items-center gap-1.5 text-caption text-fg-muted">
+                      <span className={cn('h-2 w-2 shrink-0 rounded-full', tonoDelTramo(i))} aria-hidden="true" />
+                      {NOMBRE_DE_EDAD[tramo.edad]}
+                    </p>
                     {/* COLA-01: a 390 px la ficha deja ≈149 px; text-base cabe una cifra de diez dígitos. */}
                     {/* Ronda 11: el rojo es gravedad; un tramo vacío no es grave → «—» atenuado. */}
                     <p className={cn('mt-1 font-mono text-base font-semibold tabular-nums sm:text-lg', tramo.monto === 0 ? 'text-fg-subtle' : TONO[tramo.edad])}>
@@ -760,7 +808,7 @@ export function CarteraCompleta() {
               })}
               {/* 🔴 El quinto tramo: la cartera que ya es reclamación. Sin él,
                   los tramos no sumaban la cartera y nadie sabía por qué. */}
-              {siniestros ? (
+              {siniestros && cartera.enSiniestro.monto > 0 ? (
                 <button
                   type="button"
                   onClick={() => setVista('siniestros')}
@@ -775,7 +823,10 @@ export function CarteraCompleta() {
                   {vista === 'siniestros' ? (
                     <MotionIndicator layoutId={`${marca}-tramo`} className="inset-0 -z-10 bg-primary-soft" />
                   ) : null}
-                  <p className="text-caption text-fg-muted">{t('cartera.porEdad.tramoEnSiniestro')}</p>
+                  <p className="flex items-center gap-1.5 text-caption text-fg-muted">
+                    <span className={cn('h-2 w-2 shrink-0 rounded-full', TONO_DEL_SINIESTRO)} aria-hidden="true" />
+                    {t('cartera.porEdad.tramoEnSiniestro')}
+                  </p>
                   <p className={cn('mt-1 font-mono text-base font-semibold tabular-nums sm:text-lg', cartera.enSiniestro.monto === 0 ? 'text-fg-subtle' : 'text-danger')}>
                     {cartera.enSiniestro.monto === 0 ? '—' : plataDeLaFranja(cartera.enSiniestro.monto)}
                   </p>
@@ -785,6 +836,21 @@ export function CarteraCompleta() {
                 </button>
               ) : null}
             </div>
+            {/* Revisora r25 (Cartera #2): los tramos vacíos no son tarjetas con «—»: UNA línea atenuada. */}
+            {tramosEnCero.length > 0 ? (
+              <p
+                className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 border-t border-border px-4 py-2 text-caption text-fg-subtle"
+                data-testid="tramos-en-cero"
+              >
+                <span>{tr('Sin deuda en')}</span>
+                {tramosEnCero.map((c, i) => (
+                  <span key={c.testid} data-testid={c.testid}>
+                    {c.nombre}
+                    {i < tramosEnCero.length - 1 ? ' ·' : ''}
+                  </span>
+                ))}
+              </p>
+            ) : null}
           </div>
 
           {(edad || cajon) && vista !== 'siniestros' ? (

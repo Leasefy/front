@@ -638,4 +638,12 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Buscar por inquilino o mensaje": "Search by tenant or message",
   "Ninguna conversación coincide con «{q}»": "No conversation matches «{q}»",
   "Prueba con otro nombre o borra la búsqueda.": "Try another name or clear the search.",
+  // Dinero (ronda 26, 4.º agente)
+  "Es parte de una deuda total de": "Part of a total debt of",
+  "en 1 cuota, que nace con el contrato": "in 1 installment, set by the lease",
+  "en {n} cuotas, que nace con el contrato": "in {n} installments, set by the lease",
+  "Sin deuda en": "No debt in",
+  "Sin reglas de mora: la cartera se muestra sin intereses.": "No late-fee rules: the portfolio is shown without interest.",
+  "1 cuota en mora sin reglas de mora: se muestra sin intereses.": "1 overdue installment has no late-fee rules: shown without interest.",
+  "{n} cuotas en mora sin reglas de mora: se muestran sin intereses.": "{n} overdue installments have no late-fee rules: shown without interest.",
 }

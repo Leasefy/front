@@ -285,8 +285,10 @@ describe('CarteraCompleta', () => {
     expect(cifras.length).toBeGreaterThanOrEqual(4)
     const largo = Math.max(...cifras.map((c) => Array.from(c).length))
     expect(franja.style.getPropertyValue('--largo-de-la-cifra')).toBe(String(largo))
-    expect($('[data-testid="cifra-deuda-total"]').className).toContain('cifra-que-cabe')
-    expect($('[data-testid="resumen-deuda-total"]').className).toContain('ficha-con-cifra')
+    // Revisora r25 (Cartera #1): la deuda total ya no es una ficha con su cifra: es UNA línea gris
+    // bajo la barra, con la plata en mono dentro de la frase.
+    expect($('[data-testid="cifra-deuda-total"]').className).toContain('font-mono')
+    expect($('[data-testid="cifra-deuda-total"]').className).not.toContain('cifra-que-cabe')
     expect($('[data-testid="cifra-deuda-total"]').className).not.toContain('text-2xl')
   })
 
@@ -638,7 +640,9 @@ describe('CarteraCompleta', () => {
       )
       montar()
 
-      expect($('[data-testid="avisos-de-la-cartera"]').textContent).toContain('SIN intereses')
+      // Revisora r25 (Cartera #3): el aviso va a la vista, una vez, arriba de la tabla (sin mayúsculas de énfasis).
+      expect($('[data-testid="aviso-sin-reglas"]').textContent).toContain('se muestra')
+      expect($('[data-testid="aviso-sin-reglas"]').textContent).toContain('sin intereses')
       expect($('[data-testid="cartera-configurar-reglas"]').getAttribute('href')).toBe(
         '/panel/inmobiliaria/pagos/cartera/reglas-de-mora',
       )

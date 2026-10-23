@@ -83,13 +83,13 @@ import {
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
 import { nombreDelMes } from '@/lib/utils/mes'
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa'
 import { GRAVEDAD, gravedadDe } from '@/lib/cartera/edades'
 import { refDelInquilino } from '@/lib/estado-de-cuenta/con-quien-se-abre'
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import type { CarteraItem } from '@/lib/types/inmobiliaria'
 import { CajonDeGestiones } from '@/components/cobranza-manual/CajonDeGestiones'
 import {
-  RUTA_DE_REGLAS_DE_MORA,
   CLAVE_DE_MORA,
   interesDe,
   totalConInteres,
@@ -473,7 +473,8 @@ function FilaDeCartera({
           <div className="whitespace-nowrap text-fg">{nombreDelMes(item.month, locale)}</div>
           {/* Ronda 12 (390): en el celular el chip de días ya lo dice. */}
           <div className="text-caption tabular-nums text-fg-subtle max-md:hidden">
-            {t('cartera.tabla.vence', { fecha: formatDate(item.vence) })}
+            {/* Revisora r25 (Cartera #5): «1 ago 2026», como escribe la casa (VOZ §4). */}
+            {t('cartera.tabla.vence', { fecha: locale === 'en' ? formatDate(item.vence) : fechaCorta(item.vence) })}
           </div>
         </div>
       </TableCell>
@@ -669,20 +670,13 @@ function InteresDeLaFila({
   }
 
   if (interes.motivo && interes.sinReglas) {
+    // Revisora r25 (Cartera #3): el «sin reglas · configúralas» va UNA vez, en el aviso de arriba
+    // de la tabla; la celda dice «—» (y su porqué, para el lector de pantalla y al pasar el ratón).
     return (
-      // Revisora r24 (Cartera): con la letra de 13 px estos renglones, sin partirse, ensanchaban la columna y la tabla ya no cabía a 1440.
-      <div className="max-w-[11rem] text-caption leading-snug" title={interes.motivo}>
-        <div className="text-warning" data-testid="cartera-sin-reglas">
-          {t(CLAVE_DE_MORA.sinReglas)}
-        </div>
-        <Link
-          href={RUTA_DE_REGLAS_DE_MORA}
-          onClick={(e) => e.stopPropagation()}
-          className="text-fg-muted underline underline-offset-4 hover:text-fg"
-        >
-          {t(CLAVE_DE_MORA.configurar)}
-        </Link>
-      </div>
+      <span className="text-fg-subtle" title={interes.motivo} data-testid="cartera-sin-reglas">
+        <span aria-hidden="true">—</span>
+        <span className="sr-only">{t(CLAVE_DE_MORA.sinReglas)}</span>
+      </span>
     )
   }
 

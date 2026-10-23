@@ -646,4 +646,11 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Sin reglas de mora: la cartera se muestra sin intereses.": "No late-fee rules: the portfolio is shown without interest.",
   "1 cuota en mora sin reglas de mora: se muestra sin intereses.": "1 overdue installment has no late-fee rules: shown without interest.",
   "{n} cuotas en mora sin reglas de mora: se muestran sin intereses.": "{n} overdue installments have no late-fee rules: shown without interest.",
+  // Dinero (ronda 26, 4.º agente)
+  "Por dónde buscar la diferencia": "Where to look for the difference",
+  // Panel (ronda 26, 2.º agente)
+  "Elige cómo vas a traer tus inmuebles": "Choose how you'll bring in your properties",
+  "Pega al menos un enlace que se pueda leer": "Paste at least one link we can read",
+  "Sube tu archivo para seguir": "Upload your file to continue",
+  "Elige la columna de cada dato obligatorio": "Choose the column for each required field",
 }

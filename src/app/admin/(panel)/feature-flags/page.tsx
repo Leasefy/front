@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { Flag } from '@phosphor-icons/react'
 import { Alert } from '@leasefy/cadence'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
@@ -20,7 +22,7 @@ const SEGMENTOS: Segmento<BanderasDeLaInmobiliaria>[] = [
   { valor: 'todos', nombre: 'Todos los agentes', cumple: (f) => f.lista !== null && f.hereda },
   { valor: 'propia', nombre: 'Lista propia', cumple: (f) => f.lista !== null && !f.hereda },
   { valor: 'pausa', nombre: 'En pausa', cumple: (f) => f.pausada },
-  { valor: 'sin-micro', nombre: 'Sin el micro', cumple: (f) => f.lista === null },
+  { valor: 'sin-micro', nombre: 'Sin conectar al asistente', cumple: (f) => f.lista === null },
 ]
 
 /**
@@ -37,6 +39,15 @@ export default function BanderasPage() {
   const [guardando, setGuardando] = useState(false)
   const [fallo, setFallo] = useState<string | null>(null)
   const total = data?.agentes.length ?? 0
+  // Cada inmobiliaria en un solo tramo: la pausa manda; después, si hereda todos o tiene lista propia.
+  const filas = data?.inmobiliarias ?? []
+  const cuenta = {
+    pausa: filas.filter((f) => f.pausada).length,
+    sin: filas.filter((f) => !f.pausada && f.lista === null).length,
+    todos: filas.filter((f) => !f.pausada && f.lista !== null && f.hereda).length,
+    propia: filas.filter((f) => !f.pausada && f.lista !== null && !f.hereda).length,
+  }
+  const conAgentes = cuenta.todos + cuenta.propia
 
   async function guardar() {
     if (!abierta || !cambio || motivo.trim().length < 5) return
@@ -66,14 +77,14 @@ export default function BanderasPage() {
       ordenPrimero: 'desc',
       texto: (f) =>
         f.lista === null
-          ? 'Sin política en el micro'
+          ? 'Sin conectar al asistente'
           : f.hereda
             ? `Todos (${total})`
             : `${Object.values(f.encendidos).filter(Boolean).length} de ${total}`,
       cell: (f) => {
         const n = Object.values(f.encendidos).filter(Boolean).length
         return f.lista === null ? (
-          <span className="text-caption text-fg-subtle">Sin política en el micro</span>
+          <span className="text-caption text-fg-muted">Sin conectar al asistente</span>
         ) : f.hereda ? (
           <span className="text-body-sm text-fg">Todos ({total}) · como viene por defecto</span>
         ) : (
@@ -105,8 +116,36 @@ export default function BanderasPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Banderas"
-        description="Qué agentes corren para cada inmobiliaria. Cada cambio pide un motivo y queda registrado. Además, cada agente tiene un interruptor general en el servidor: si está apagado allá, no corre para nadie aunque aquí esté encendido."
+        description="Qué agentes corren para cada inmobiliaria. Toca una para prenderle o apagarle un agente."
+        ayuda={
+          <ParaEntenderMas etiqueta="Cómo funciona" titulo="Las banderas de los agentes" variante="secundario">
+            <div className="space-y-3 text-body-sm text-fg-muted">
+              <p>Cada cambio pide un motivo y queda registrado con tu correo y la fecha.</p>
+              <p>Además, cada agente tiene un interruptor general en el servidor: si está apagado allá, no corre para nadie aunque aquí esté encendido.</p>
+              <p>La pausa de emergencia manda sobre todo: con ella, ningún agente corre.</p>
+            </div>
+          </ParaEntenderMas>
+        }
       />
+
+      {/* Glow up 22-10: LA RESPUESTA (para cuántas corren los agentes) con la barra de cómo está cada una. */}
+      {data && data.inmobiliarias.length > 0 ? (
+        <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+          <CifraHeroe
+            rotulo="Con agentes corriendo"
+            cifra={conAgentes.toLocaleString('es-CO')}
+            contexto={`de ${data.inmobiliarias.length.toLocaleString('es-CO')} ${data.inmobiliarias.length === 1 ? 'inmobiliaria' : 'inmobiliarias'}`}
+            tramos={[
+              { clave: 'todos', etiqueta: 'Todos los agentes', monto: cuenta.todos, tono: 'exito', cifra: cuenta.todos.toLocaleString('es-CO'), siempre: true },
+              { clave: 'propia', etiqueta: 'Lista propia', monto: cuenta.propia, tono: 'neutro', cifra: cuenta.propia.toLocaleString('es-CO') },
+              { clave: 'pausa', etiqueta: 'En pausa', monto: cuenta.pausa, tono: 'critico', cifra: cuenta.pausa.toLocaleString('es-CO') },
+              { clave: 'sin', etiqueta: 'Sin conectar', monto: cuenta.sin, tono: 'neutro', cifra: cuenta.sin.toLocaleString('es-CO') },
+            ]}
+            total={data.inmobiliarias.length}
+            data-testid="banderas-con-agentes"
+          />
+        </div>
+      ) : null}
       <DataTable
         columns={columnas}
         rows={data?.inmobiliarias}
@@ -114,8 +153,8 @@ export default function BanderasPage() {
         isLoading={isLoading}
         error={error}
         onReintentar={refetch}
-        emptyTitle="Ninguna inmobiliaria está en el micro de agentes"
-        emptyIcon={<Flag weight="bold" />}
+        emptyTitle="Ninguna inmobiliaria está conectada al asistente de agentes"
+        emptyIcon={<Flag weight="duotone" />}
         aria-label="Banderas por inmobiliaria"
         onRowClick={(f) => {
           if (f.lista === null) return
@@ -182,7 +221,7 @@ export default function BanderasPage() {
             {cambio ? 'Deshacer' : 'Cerrar'}
           </Button>
           {cambio ? (
-            <Button hideArrow disabled={motivo.trim().length < 5 || guardando} onClick={() => void guardar()}>
+            <Button hideArrow disabled={motivo.trim().length < 5 || guardando} isLoading={guardando} onClick={() => void guardar()}>
               {guardando ? 'Guardando…' : 'Guardar el cambio'}
             </Button>
           ) : null}

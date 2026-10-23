@@ -255,7 +255,8 @@ describe('<CobranzaConfiguracionPage> — layout', () => {
     render()
     const section = byTestId('section-horario') as HTMLElement
     expect(section).toBeTruthy()
-    expect(section.querySelectorAll('input, select, button').length).toBe(0)
+    // Revisora r25: las reglas van plegadas; el único botón es el que las abre (no edita nada).
+    expect(section.querySelectorAll('input, select, button:not([aria-expanded])').length).toBe(0)
     expect(section.textContent).toMatch(/7 a\. m\./) // C7 (r25): «7 a. m.», no «07:00»
     expect(section.textContent).toMatch(/2300/)
   })

@@ -200,7 +200,7 @@ export function SeccionConceptos() {
 
       <Card className="overflow-hidden p-0">
         {/* Las pestañas con su conteo, dentro de la tarjeta (antes «N activos de M» en una línea). */}
-        <div className="border-b border-border px-4 py-2.5">
+        <div className="border-b border-border px-4 py-2.5 empty:hidden">
           <PestanasDeEstado
             etiqueta="Estado de los conceptos"
             valor={estado}

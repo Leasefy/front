@@ -605,7 +605,7 @@ function DisputasContent() {
             />
           ) : null}
 
-          <div className="border-b border-border px-4 py-3">
+          <div className="border-b border-border px-4 py-3 empty:hidden">
             <PestanasDeEstado<EstadoFiltro>
               pestanas={pestanas}
               valor={filtro}

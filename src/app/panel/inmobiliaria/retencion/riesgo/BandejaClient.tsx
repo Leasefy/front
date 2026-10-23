@@ -107,7 +107,7 @@ export default function BandejaClient() {
             data-testid="vinci-casos-tarjeta"
           >
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
-              <div className="min-w-0">
+              <div className="min-w-0 empty:hidden">
                 <PestanasDeEstado<Filtro>
                   etiqueta="Inquilinos o propietarios"
                   valor={filtro}

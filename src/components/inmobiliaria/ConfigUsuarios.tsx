@@ -407,7 +407,7 @@ export function ConfigUsuarios({
         {/* R2 (revisora r27): con todos activos quedaba UNA pestaña, «Todos 8», que no
             filtra nada: sola no se pinta. Con dos o más, «Todos» sin el número repetido. */}
         {hayQuePintarLasPestanas(pestanasDeEstado, filterStatus) ? (
-        <div className="border-b border-border px-4 py-2.5">
+        <div className="border-b border-border px-4 py-2.5 empty:hidden">
           <PestanasDeEstado<FilterStatus>
             etiqueta={tr('Estado de las personas')}
             valor={filterStatus}

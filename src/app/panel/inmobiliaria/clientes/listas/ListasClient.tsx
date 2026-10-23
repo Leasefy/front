@@ -341,7 +341,7 @@ export function ListasClient() {
           {/* GLOW UP 22-10 (revisora r24 #2 y #5): UNA fila de pestañas —los estados de las consultas con su
               conteo en mono y, al final, las listas cargadas—; abre en «Por revisar» si hay bloqueados. Antes,
               un segmentado «A quién se consultó (0) · Listas cargadas (0)» y los bloqueados donde cayeran. */}
-          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between empty:hidden">
             <PestanasDeEstado<FiltroDeConsultas | 'listas'>
               etiqueta={tr('Filtrar las consultas')}
               valor={parte === 'listas' ? 'listas' : filtro}

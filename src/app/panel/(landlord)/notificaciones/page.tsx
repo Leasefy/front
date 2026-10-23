@@ -180,7 +180,7 @@ export default function NotificacionesPage() {
           la fila y las demás se corren (lo que ya estaba no se anima). */}
       <div className="bg-surface rounded-lg border border-border overflow-hidden">
         {notifications.length > 0 && (
-          <div className="border-b border-border px-4 py-3 sm:px-5">
+          <div className="border-b border-border px-4 py-3 sm:px-5 empty:hidden">
             <PestanasDeEstado
               etiqueta={t('landlord.notifications.title')}
               valor={filter}

@@ -307,7 +307,7 @@ export function ListaDeLotes({
 
       {lotes.length > 0 && (
       <div className="rounded-lg border border-border bg-surface shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3 empty:hidden">
           <PestanasDeEstado
             etiqueta="Filtrar por estado"
             valor={filtro}

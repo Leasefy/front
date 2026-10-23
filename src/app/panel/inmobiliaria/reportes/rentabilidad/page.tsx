@@ -440,7 +440,7 @@ function RentabilidadContent() {
         {/* Tabla */}
         <section className="rounded-lg border border-border bg-card overflow-hidden">
           {/* Revisora r24 #5: la barra del trabajo dentro de la tarjeta —pestañas por recaudo y el buscador—. */}
-          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between empty:hidden">
             <PestanasDeEstado<FiltroDeRecaudo>
               etiqueta={tr('Filtrar por recaudo')}
               valor={filtro}

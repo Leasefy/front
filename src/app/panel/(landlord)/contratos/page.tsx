@@ -158,7 +158,7 @@ export default function ContratosPage() {
 
         <section className="bg-surface rounded-lg border border-border overflow-hidden">
           {/* Las pestañas con su conteo DENTRO de la lista (como Visitas). */}
-          <div className="border-b border-border px-4 py-3 sm:px-5">
+          <div className="border-b border-border px-4 py-3 sm:px-5 empty:hidden">
             <PestanasDeEstado
               etiqueta={t('landlord.contracts.title')}
               valor={activeTab}

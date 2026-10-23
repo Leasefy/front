@@ -81,7 +81,7 @@ export default function NotificacionesDeLaInmobiliariaPage() {
 
       {/* Revisora r25: a todo el ancho, como el encabezado (antes max-w-4xl: 240 px vacíos a 1440). */}
       <div className="overflow-hidden rounded-lg border border-border bg-surface">
-        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between empty:hidden">
           <PestanasDeEstado
             etiqueta="Leídas y sin leer"
             valor={soloSinLeer ? 'sin-leer' : 'todas'}

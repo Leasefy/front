@@ -181,7 +181,7 @@ function Ley2300Content() {
                   : `intentos de contacto para revisar${nextCursor ? ' · hay más: cárgalos al pie' : ''}`
               }
             />
-            <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between empty:hidden">
               <PestanasDeEstado<Direccion>
                 pestanas={[
                   { valor: 'todos', etiqueta: 'Todos', cuantos: items.length, fija: true, testid: 'ley2300-pestana-todos' },

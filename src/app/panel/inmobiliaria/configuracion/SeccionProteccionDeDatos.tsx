@@ -222,7 +222,7 @@ export function SeccionProteccionDeDatos() {
       <section className="overflow-x-clip rounded-lg border border-border bg-surface">
         {/* Glow up 22-10: las pestañas con su conteo dentro de la tarjeta (antes «Mostrar» y tres
             botones sin número). Las abiertas con el punto ámbar: son las que corren contra el plazo. */}
-        <div className="border-b border-border px-4 py-2.5">
+        <div className="border-b border-border px-4 py-2.5 empty:hidden">
           <PestanasDeEstado<Pestana>
             etiqueta="Filtrar solicitudes"
             valor={pestana}

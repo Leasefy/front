@@ -442,7 +442,7 @@ function LlamadasContent() {
         </div>
       ) : null}
 
-      <div className="border-b border-border px-4 py-3">
+      <div className="border-b border-border px-4 py-3 empty:hidden">
         <PestanasDeEstado<QuePaso>
           etiqueta="Qué pasó"
           valor={pestana}

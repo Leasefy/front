@@ -538,7 +538,7 @@ export function MapeoContable({
 
       <section className="overflow-hidden rounded-lg border border-border bg-surface">
         {sinCuenta.length > 0 ? (
-          <div className="border-b border-border px-4 py-3">
+          <div className="border-b border-border px-4 py-3 empty:hidden">
             <PestanasDeEstado
               etiqueta="Qué eventos ver"
               valor={vista}

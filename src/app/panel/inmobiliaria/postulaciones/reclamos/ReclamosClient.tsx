@@ -192,7 +192,7 @@ export function ReclamosClient() {
       <Card className="overflow-hidden p-0">
         {/* Las pestañas de estado con su conteo, DENTRO de la tarjeta; sin responder, primero. */}
         {reclamos.length > 0 ? (
-          <div className="border-b border-border px-4 py-2.5">
+          <div className="border-b border-border px-4 py-2.5 empty:hidden">
             <PestanasDeEstado<Estado | 'TODOS'>
               etiqueta="Estado de los reclamos"
               valor={filtro ?? 'TODOS'}

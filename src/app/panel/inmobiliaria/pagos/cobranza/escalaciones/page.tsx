@@ -342,7 +342,7 @@ function EscalacionesContent() {
             }
           />
 
-          <div className="border-b border-border px-4 py-3">
+          <div className="border-b border-border px-4 py-3 empty:hidden">
             <PestanasDeEstado<'open' | 'assigned'>
               pestanas={columns
                 .filter((col): col is typeof col & { key: 'open' | 'assigned' } => col.key !== 'resolved')

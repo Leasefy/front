@@ -498,7 +498,7 @@ export default function VisitasPage() {
         ) : (
           <div className="bg-surface rounded-lg border border-border overflow-hidden">
             {/* Revisora r25: los estados con su conteo DENTRO de la tarjeta (sin las pestañas en cero). */}
-            <div className="border-b border-border px-4 py-3 sm:px-5">
+            <div className="border-b border-border px-4 py-3 sm:px-5 empty:hidden">
               <PestanasDeEstado
                 etiqueta={t('landlord.visits.title')}
                 valor={tabFunnel}

@@ -448,7 +448,7 @@ function ConciliacionLiquidaciones() {
         {/* Filtros — dentro de la tarjeta, encima de la tabla. */}
         {/* Revisora r25 (#3): el estado en pestañas con su conteo DENTRO de la tarjeta (antes chips sin
             número). El micro filtra por estado y cuenta sólo lo que se pide: el número va en la abierta. */}
-        <div className="border-b border-border p-4">
+        <div className="border-b border-border p-4 empty:hidden">
           <PestanasDeEstado
             etiqueta="Filtrar por estado"
             valor={statusFilter}

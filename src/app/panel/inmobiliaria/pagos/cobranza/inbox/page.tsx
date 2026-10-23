@@ -282,7 +282,7 @@ function InboxContent() {
             contexto={total === 1 ? tr("de 1 conversación") : tr("de {n} conversaciones", { n: total })}
           />
           {/* QA-IA-B (04-10-2026): a 390 px las pestañas se desplazan dentro de su riel. */}
-          <div className="border-b border-border px-4 py-3">
+          <div className="border-b border-border px-4 py-3 empty:hidden">
             <PestanasDeEstado<GrupoFiltro>
               data-testid="inbox-filtro-riel"
               pestanas={FILTRO_OPCIONES.map((o) => ({

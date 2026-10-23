@@ -510,7 +510,7 @@ function AvaluosSala() {
         {/* Las pestañas de estado DENTRO de la tarjeta, con su conteo y sin las que están en cero
             (revisora r24 #3). Sin servicio no hay pestañas: no hay lista que filtrar. */}
         {!servicioCaido && (total > 0 || activeState !== '') ? (
-          <div className="border-b border-border px-4 py-3">
+          <div className="border-b border-border px-4 py-3 empty:hidden">
             <PestanasDeEstado<string>
               etiqueta={t(`${NS}.filtrarPorEstado`)}
               valor={activeState}

@@ -313,7 +313,7 @@ function PendientesContent() {
           />
 
           {/* Los grupos, con su conteo: filtran la lista */}
-          <div className="border-b border-border px-4 py-3">
+          <div className="border-b border-border px-4 py-3 empty:hidden">
             <PestanasDeEstado<string>
               pestanas={[
                 { valor: 'todos', etiqueta: 'Todo', cuantos: items.length, fija: true },

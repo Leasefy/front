@@ -473,7 +473,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
       <SalidasDeLaPagina movimientos={movimientos}>
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
         {/* Pestañas con su conteo y el buscador, dentro de la tarjeta y encima de la tabla. */}
-        <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between empty:hidden">
           <PestanasDeEstado
             etiqueta="Estado de las líneas del banco"
             valor={pestana}

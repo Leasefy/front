@@ -319,7 +319,7 @@ export function TablaDeProveedores({
 
       {/* UNA franja de filtros, pegada a la tabla. */}
       <div className="flex flex-col gap-3 border-b border-border px-5 py-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 empty:hidden">
           {/* Revisora r25 (T2): las pestañas de estado de la casa, sin «Inactivos 0». */}
           <PestanasDeEstado<Cajon>
             etiqueta="Activos e inactivos"

@@ -339,7 +339,7 @@ export function PagoFallidoTabla({ items, onAction, onOpen, enmarcada = true }: 
   return (
     <Marco className="overflow-hidden" data-testid="fallidos-tabla">
       {/* Las pestañas (lo que conviene hacer, con su conteo) y el buscador, DENTRO de la tarjeta. */}
-      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between empty:hidden">
         <PestanasDeEstado<Filtro>
           pestanas={[
             { valor: 'todos', etiqueta: 'Todos', cuantos: items.length, fija: true, testid: 'fallidos-pestana-todos' },

@@ -466,7 +466,7 @@ export function FacturasDeProveedor({
           estados con su plata (lo que está por causar y por pagar es lo que pide trabajo), cada
           uno filtra; debajo fechas y rubro; la lista; y los totales del filtro al pie. */}
       <section className="overflow-hidden rounded-lg border border-border bg-surface">
-        <div className="border-b border-border px-4 pt-4 pb-3">
+        <div className="border-b border-border px-4 pt-4 pb-3 empty:hidden">
           <PestanasDeEstado
             etiqueta="Filtrar por estado"
             data-testid="estados-de-las-facturas"

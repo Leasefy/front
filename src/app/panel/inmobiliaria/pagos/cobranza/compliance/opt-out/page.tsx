@@ -248,7 +248,7 @@ function OptOutContent() {
               esCero={porAcusar === 0}
               cuandoEsCero="Todas las solicitudes de no contactar tienen su acuse."
             />
-            <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between empty:hidden">
               <PestanasDeEstado<Filtro>
                 pestanas={[
                   { valor: 'por_acusar', etiqueta: 'Por acusar', cuantos: porAcusar, tono: 'aviso', testid: 'no-contactar-pestana-por-acusar' },

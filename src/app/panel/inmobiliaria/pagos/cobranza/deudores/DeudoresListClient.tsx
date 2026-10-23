@@ -421,7 +421,7 @@ export default function DeudoresListClient() {
         </Presence>
 
         {/* ── 2 · Las etapas, con su conteo: UNA fila ───────────────────── */}
-        <div className="border-b border-border px-4 py-3 space-y-2">
+        <div className="border-b border-border px-4 py-3 space-y-2 empty:hidden">
           <PestanasDeEstado<PestanaDeEtapa>
             data-testid="deudores-pestanas-de-etapa"
             etiqueta={t('inmobiliaria.ai.cobranza.deudores.filters.stage')}

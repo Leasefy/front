@@ -387,7 +387,7 @@ function PostulacionesContenido() {
           {/* La tabla con sus filtros ADENTRO (Cadence 2): arriba, las pestañas por estado con su conteo
               (Nico, decisión 22); debajo, la búsqueda y el inmueble. */}
           <div className="rounded-lg border border-border bg-card overflow-hidden">
-            <div className="border-b border-border px-4 py-3">
+            <div className="border-b border-border px-4 py-3 empty:hidden">
               <PestanasDeEstado<FilterKey>
                 etiqueta={tr('Filtrar por estado')}
                 data-testid="estados-de-las-postulaciones"

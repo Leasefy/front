@@ -414,7 +414,7 @@ export function RenovacionesTable({
           (0-30 críticas, 31-60 urgentes, 61-90 próximas — el preaviso de la
           Ley 820 son 90 días), el estado, y el buscador. */}
       <div className="flex flex-col gap-3 border-b border-border px-5 py-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 empty:hidden">
           <PestanasDeEstado
             pestanas={pestanasDeUrgencia}
             valor={bucketFilter}

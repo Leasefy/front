@@ -320,7 +320,7 @@ export function PeriodosDeNominaPanel() {
               </div>
             ) : (
               <div className="overflow-hidden rounded-lg border border-border bg-surface">
-                <div className="border-b border-border px-4 py-3">
+                <div className="border-b border-border px-4 py-3 empty:hidden">
                   <PestanasDeEstado
                     etiqueta="Estado de los períodos"
                     valor={vista}

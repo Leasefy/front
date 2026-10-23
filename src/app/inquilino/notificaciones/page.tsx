@@ -237,7 +237,7 @@ export default function NotificacionesPage() {
             conteo y DENTRO de la tarjeta de la lista; una categoría sin avisos no aparece. */}
         <div className="rounded-lg border border-border bg-surface overflow-hidden">
         {notifications.length > 0 && (
-          <div className="border-b border-border px-4 py-3 sm:px-5">
+          <div className="border-b border-border px-4 py-3 sm:px-5 empty:hidden">
             <PestanasDeEstado
               etiqueta={locale === 'es' ? 'Filtrar notificaciones' : 'Filter notifications'}
               valor={filter}

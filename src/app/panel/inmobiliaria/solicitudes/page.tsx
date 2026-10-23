@@ -250,7 +250,7 @@ function PqrsContent() {
         {/* Revisión de Operación (21-10): ocho cifras grandes —siete en cero— pasan a pestañas
             de estado con su conteo; las en cero no salen (salvo «Todas» y la elegida), y la de
             vencidas lleva el punto. Mientras carga o si falló, sin números: nunca un 0 inventado. */}
-        <div className="border-b border-border px-4 py-3" data-testid="pqrs-por-estado">
+        <div className="border-b border-border px-4 py-3 empty:hidden" data-testid="pqrs-por-estado">
           <PestanasDeEstado
             etiqueta="Filtrar por plazo y estado"
             valor={filtros.estado}

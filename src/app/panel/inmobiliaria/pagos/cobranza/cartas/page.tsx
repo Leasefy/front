@@ -402,7 +402,7 @@ function CartasContent() {
           cuandoEsCero={isEs ? 'No hay cartas por revisar.' : 'No letters to review.'}
         />
       ) : null}
-      <div className="border-b border-border px-4 pt-3">
+      <div className="border-b border-border px-4 pt-3 empty:hidden">
         <PestanasDeEstado<string>
           pestanas={pestanas}
           valor={statusFilter ?? 'todas'}

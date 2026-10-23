@@ -618,7 +618,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
              el pie pegajoso de adentro deja de medirse contra la ventana. */
           className="overflow-x-clip rounded-lg border border-border bg-surface"
         >
-          <div className="space-y-2 border-b border-border p-4">
+          <div className="space-y-2 border-b border-border p-4 empty:hidden">
             <PestanasDeEstado
               etiqueta="Egresos o lotes"
               valor={parte}

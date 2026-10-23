@@ -695,7 +695,7 @@ function ReportesPropietariosContent() {
                 cuandoEsCero="Ningún reporte espera tu aprobación."
               />
             </div>
-            <div className="px-4 py-3">
+            <div className="px-4 py-3 empty:hidden">
               <PestanasDeEstado<string>
                 etiqueta="Filtrar por estado"
                 valor={estadoFilter}

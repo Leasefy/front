@@ -326,7 +326,7 @@ function ConciliacionCola() {
         {/* Revisora r25 (Por revisar #1): los tipos como PestanasDeEstado en su riel de lado
             (a 390 eran tres renglones de pastillas). El micro filtra por tipo y no manda el
             conteo de cada uno: el número va en la pestaña abierta (lo que se leyó). */}
-        <div className="border-b border-border p-4">
+        <div className="border-b border-border p-4 empty:hidden">
           <PestanasDeEstado
             etiqueta="Filtrar por tipo de caso"
             valor={caseFilter}

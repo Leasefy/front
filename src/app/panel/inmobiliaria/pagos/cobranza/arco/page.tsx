@@ -401,7 +401,7 @@ function BandejaArco() {
           ) : null}
 
           {/* 2 · Las pestañas por estado, con su conteo */}
-          <div className="border-b border-border px-4 py-3">
+          <div className="border-b border-border px-4 py-3 empty:hidden">
             <PestanasDeEstado<EstadoArco>
               data-testid="arco-pestanas"
               etiqueta={tr('Filtrar las solicitudes por estado')}

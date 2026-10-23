@@ -126,7 +126,7 @@ export function AcuerdosTabla({
     <Card className="overflow-hidden">
       {cabeza}
       {/* Las pestañas de estado, con su conteo, y el buscador, DENTRO de la tarjeta. */}
-      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between empty:hidden">
         <PestanasDeEstado<AcuerdoFiltro>
           pestanas={pestanas}
           valor={filtro}

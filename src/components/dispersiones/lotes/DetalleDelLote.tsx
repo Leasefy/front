@@ -788,7 +788,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         </div>
         <div className="overflow-hidden rounded-lg border border-border bg-surface">
           {todosLosPagos.some((p) => p.motivoDeExclusion !== null) ? (
-            <div className="border-b border-border px-4 py-3">
+            <div className="border-b border-border px-4 py-3 empty:hidden">
               <PestanasDeEstado
                 etiqueta="Qué pagos ver"
                 valor={vistaDePagos}

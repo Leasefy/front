@@ -245,7 +245,7 @@ export function LibroDeAsientos({ encabezado }: LibroDeAsientosProps = {}) {
         className="overflow-x-clip rounded-lg border border-border bg-surface"
         aria-label="Filtros del libro"
       >
-      <div className="space-y-3 border-b border-border p-4">
+      <div className="space-y-3 border-b border-border p-4 empty:hidden">
         <PestanasDeEstado
           etiqueta="Período de los asientos"
           pestanas={pestanasDelPeriodo}

@@ -648,7 +648,7 @@ function PagosPageContent() {
             {/* Vacío → primer pago y cambiar de página se cruzan; un pago nuevo
                 entra a la lista y los demás se corren (lo que ya estaba no se anima). */}
             {allRequests.length > 5 ? (
-              <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between" data-testid="historial-filtros">
+              <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between empty:hidden" data-testid="historial-filtros">
                 <PestanasDeEstado<'todos' | 'aprobados' | 'en-revision' | 'rechazados'>
                   pestanas={[
                     { valor: 'todos', etiqueta: locale === 'es' ? 'Todos' : 'All', cuantos: allRequests.length, fija: true },

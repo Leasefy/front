@@ -61,7 +61,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableCell,
@@ -71,7 +71,9 @@ import {
   TableBodyAnimado,
   TableRowAnimada,
 } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -108,7 +110,7 @@ import { diaLegible, hoy } from '@/lib/contabilidad/fechas';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Monto } from '../Monto';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
-import { Cifra, FranjaDeCifras, Presence } from '@leasefy/cadence';
+import { Presence } from '@leasefy/cadence';
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
 import { usePuedeCambiarEgresos, usePuedeEscribir } from '../use-puede-escribir';
 import { CajonDelEgreso } from './CajonDelEgreso';
@@ -123,6 +125,7 @@ import {
   type CuentaDeOrigen,
 } from './cuenta-de-origen';
 import { useI18n } from '@/lib/i18n';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
 import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 const TONO_DEL_ESTADO: Record<EstadoDeEgreso, 'secondary' | 'outline' | 'destructive' | 'default'> =
@@ -453,9 +456,21 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
 
   if (cargando && egresos === null) {
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <Spinner size="lg" />
-        <p className="text-sm text-fg-muted">Cargando los egresos…</p>
+      <div className="space-y-6" aria-busy="true">
+        <span className="sr-only">Cargando los egresos…</span>
+        <div className="space-y-3" aria-hidden="true">
+          <Skeleton className="h-3.5 w-40 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-9 w-56 rounded-sm bg-surface-muted" />
+          <Skeleton className="h-2 w-full rounded-full bg-surface-muted" />
+        </div>
+        <div className="divide-y divide-border rounded-lg border border-border" aria-hidden="true">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+              <Skeleton className="h-4 flex-1 rounded-sm bg-surface-muted" />
+              <Skeleton className="h-4 w-24 rounded-sm bg-surface-muted" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -554,6 +569,11 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
     pagados: egresos.filter((e) => e.estado === 'PAGADO'),
   };
 
+  const faltaPagar =
+    sumar(enCamino.porArmar.map((e) => e.netoCop)) +
+    sumar(enCamino.porAprobar.map((l) => l.totalCop)) +
+    sumar(enCamino.porPagar.map((l) => l.totalCop));
+
   return (
     <div className="space-y-6" data-testid="egresos">
       {/* 🔴 UNA SOLA COSA (Nico, 21-09): «switch tab afuera… deberían estar
@@ -563,72 +583,67 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
           bloque de título con su explicación, y la tarjeta de la tabla. Ahora
           es UNA tarjeta: las pestañas y la explicación de la pestaña activa
           son su cabecera, y el contenido va pegado debajo. */}
-      <Tabs value={parte} onValueChange={(v) => setParte(v as ParteDeEgresos)}>
+      {/* GLOW UP 3.ª vuelta · LA RESPUESTA: cuánto falta sacarles a los proveedores y en qué va
+          (orden suelta → lote esperando la OTRA firma → aprobado, listo para el banco). Antes eran
+          cuatro cifras del mismo peso dentro de la tarjeta. */}
+      <CifraHeroe
+        rotulo="Falta pagar a proveedores"
+        cifra={<Monto valor={faltaPagar} />}
+        contexto={`en ${(enCamino.porArmar.length + enCamino.porAprobar.length + enCamino.porPagar.length).toLocaleString(localeDeLasCifras())} ${enCamino.porArmar.length + enCamino.porAprobar.length + enCamino.porPagar.length === 1 ? 'orden o lote' : 'órdenes y lotes'}`}
+        total={faltaPagar}
+        tramos={[
+          { clave: 'por-armar', etiqueta: `Por armar en lote · ${enCamino.porArmar.length}`, monto: sumar(enCamino.porArmar.map((e) => e.netoCop)), tono: 'neutro', siempre: true, cifra: <Monto valor={sumar(enCamino.porArmar.map((e) => e.netoCop))} />, 'data-testid': 'en-camino-por-armar' },
+          { clave: 'por-aprobar', etiqueta: `Esperando la firma · ${enCamino.porAprobar.length}`, monto: sumar(enCamino.porAprobar.map((l) => l.totalCop)), tono: 'aviso', siempre: true, cifra: <Monto valor={sumar(enCamino.porAprobar.map((l) => l.totalCop))} />, 'data-testid': 'en-camino-por-aprobar' },
+          { clave: 'por-pagar', etiqueta: `Por pagar en el banco · ${enCamino.porPagar.length}`, monto: sumar(enCamino.porPagar.map((l) => l.totalCop)), tono: 'exito', siempre: true, cifra: <Monto valor={sumar(enCamino.porPagar.map((l) => l.totalCop))} />, 'data-testid': 'en-camino-por-pagar' },
+        ]}
+        pie={
+          <span data-testid="en-camino-pagados">
+            Pagados: {enCamino.pagados.length.toLocaleString(localeDeLasCifras())}{' '}
+            {enCamino.pagados.length === 1 ? 'egreso' : 'egresos'}
+            {enCamino.pagados.length > 0 ? (
+              <>
+                {' '}por <Monto valor={sumar(enCamino.pagados.map((e) => e.netoCop))} className="text-caption" />
+              </>
+            ) : null}
+            .
+          </span>
+        }
+        data-testid="egresos-en-camino"
+      />
         <section
           /* 🔴 `overflow-x-clip`, NO `overflow-hidden`: con `hidden` esta
              tarjeta se vuelve el contenedor de desplazamiento más cercano y
              el pie pegajoso de adentro deja de medirse contra la ventana. */
           className="overflow-x-clip rounded-lg border border-border bg-surface"
         >
-          {/* GLOW UP 21-10 · el trabajo de esta pantalla es sacar la plata a un proveedor con doble
-              firma: orden de pago → lote → la aprueba OTRA persona → se paga en el banco. La franja
-              dice en qué va cada cosa y qué pide trabajo (punto), antes de entrar a las pestañas. */}
-          <FranjaDeCifras
-            aria-label="En qué va cada pago"
-            data-testid="egresos-en-camino"
-            // La tarjeta recorta sólo de lado (overflow-x-clip): la franja conserva sus esquinas de arriba.
-            className="rounded-b-none border-0 border-b border-border"
-          >
-            <Cifra
-              etiqueta="Por armar en lote"
-              valor={enCamino.porArmar.length}
-              detalle={enCamino.porArmar.length ? <Monto valor={sumar(enCamino.porArmar.map((e) => e.netoCop))} className="text-caption" /> : 'Órdenes sueltas'}
-              tono={enCamino.porArmar.length ? 'voltaje' : undefined}
-            />
-            <Cifra
-              etiqueta="Esperando la firma"
-              valor={enCamino.porAprobar.length}
-              detalle={enCamino.porAprobar.length ? <Monto valor={sumar(enCamino.porAprobar.map((l) => l.totalCop))} className="text-caption" /> : 'Lotes por aprobar'}
-              tono={enCamino.porAprobar.length ? 'aviso' : undefined}
-            />
-            <Cifra
-              etiqueta="Por pagar en el banco"
-              valor={enCamino.porPagar.length}
-              detalle={enCamino.porPagar.length ? <Monto valor={sumar(enCamino.porPagar.map((l) => l.totalCop))} className="text-caption" /> : 'Lotes aprobados'}
-              tono={enCamino.porPagar.length ? 'voltaje' : undefined}
-            />
-            <Cifra
-              etiqueta="Pagados"
-              valor={enCamino.pagados.length}
-              detalle={enCamino.pagados.length ? <Monto valor={sumar(enCamino.pagados.map((e) => e.netoCop))} className="text-caption" /> : 'Egresos'}
-            />
-          </FranjaDeCifras>
           <div className="space-y-2 border-b border-border p-4">
-            <TabsList variant="segmented" className="justify-start">
-              <TabsTrigger value="egresos" data-testid="parte-egresos" className="whitespace-nowrap">
-                Egresos ({egresos.length})
-              </TabsTrigger>
-              <TabsTrigger value="lotes" data-testid="parte-lotes" className="whitespace-nowrap">
-                Lotes ({lotes.length})
-              </TabsTrigger>
-            </TabsList>
-            {/* 🔴 LA MISMA FRASE NO SE DICE DOS VECES. Acá estaba escrito otra
-                vez lo que ya dice el subtítulo de la pantalla —«lo que la
-                inmobiliaria le paga a sus proveedores… no es el giro al
-                propietario»—, palabra por palabra y a 80 px de distancia. Lo
-                vi en el navegador, no en el código: leídos seguidos saltan.
-                La distinción con el giro al propietario se queda ACÁ —pegada
-                a la tabla, que es donde la lee quien está por actuar— y sale
-                del subtítulo de la pantalla, que es donde sobraba. */}
-            <p className="max-w-3xl text-caption leading-relaxed text-fg-muted">
-              {parte === 'egresos'
-                ? 'Cada egreso es una orden de pago a un tercero: se marcan los que van al mismo giro y se arman en un lote. No es el giro al propietario: ése baja un pasivo con plata que nunca fue de la inmobiliaria y se hace desde Dispersiones.'
-                : 'Un lote se arma, lo aprueba otra persona (si lo arma un administrador, queda aprobado en el mismo paso), sale el archivo para el banco y se marca pagado. Ese orden no es decorativo: marcar pagado sin haber subido el archivo asienta una salida de banco que no ocurrió.'}
-            </p>
+            <PestanasDeEstado
+              etiqueta="Egresos o lotes"
+              valor={parte}
+              onCambio={setParte}
+              pestanas={[
+                { valor: 'egresos', etiqueta: 'Egresos', cuantos: egresos.length, fija: true, testid: 'parte-egresos', tono: enCamino.porArmar.length > 0 ? 'aviso' : undefined },
+                { valor: 'lotes', etiqueta: 'Lotes', cuantos: lotes.length, fija: true, testid: 'parte-lotes', tono: enCamino.porAprobar.length > 0 ? 'aviso' : undefined },
+              ]}
+            />
+            {/* 🔴 LA MISMA FRASE NO SE DICE DOS VECES (la distinción con el giro al propietario
+                vive acá, pegada a la tabla). GLOW UP 3.ª vuelta: plegada, porque se consulta. */}
+            <MasDetalles
+              key={parte}
+              etiqueta={parte === 'egresos' ? 'Qué es un egreso' : 'Cómo se paga un lote'}
+              etiquetaAbierto="Ocultar"
+              montadoSiempre
+            >
+              <p className="max-w-3xl text-caption leading-relaxed text-fg-muted">
+                {parte === 'egresos'
+                  ? 'Cada egreso es una orden de pago a un tercero: se marcan los que van al mismo giro y se arman en un lote. No es el giro al propietario: ése baja un pasivo con plata que nunca fue de la inmobiliaria y se hace desde Dispersiones.'
+                  : 'Un lote se arma, lo aprueba otra persona (si lo arma un administrador, queda aprobado en el mismo paso), sale el archivo para el banco y se marca pagado. Ese orden no es decorativo: marcar pagado sin haber subido el archivo asienta una salida de banco que no ocurrió.'}
+              </p>
+            </MasDetalles>
           </div>
 
         {/* ══ Egresos ═══════════════════════════════════════════════════ */}
-        <TabsContent value="egresos" className="mt-0">
+        {parte === 'egresos' ? (
           <div>
             {egresos.length === 0 ? (
               // GLOW UP (21-10): el vacío dice qué falta y cómo nace un egreso, con su ilustración (no una frase gris).
@@ -677,7 +692,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                     <div className="min-w-0 flex-1 space-y-1.5">
                       <div className="flex items-start justify-between gap-3">
                         <p className="min-w-0 break-words font-medium text-fg">{e.beneficiarioNombre}</p>
-                        <Monto valor={e.netoCop} className="shrink-0 text-sm font-medium" />
+                        <Monto valor={e.netoCop} className="shrink-0 text-body-sm text-fg" />
                       </div>
                       <p className="line-clamp-2 text-sm text-fg-muted">{e.concepto}</p>
                       <div className="flex flex-wrap items-center gap-2">
@@ -923,10 +938,11 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
               </BarraDeAccionesMasivas>
             </Presence>
           </div>
-        </TabsContent>
+        ) : null}
 
         {/* ══ Lotes ═════════════════════════════════════════════════════ */}
-        <TabsContent value="lotes" className="mt-0 p-4">
+        {parte === 'lotes' ? (
+        <div className="p-4">
           {lotes.length === 0 ? (
             <p className="p-8 text-center text-sm text-fg-muted">
               Todavía no hay lotes. Arma el primero desde la pestaña de egresos.
@@ -1128,9 +1144,9 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
               })}
             </ul>
           )}
-        </TabsContent>
+        </div>
+        ) : null}
         </section>
-      </Tabs>
 
       {/* ══ Diálogos ══════════════════════════════════════════════════ */}
 

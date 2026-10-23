@@ -1091,9 +1091,9 @@ describe('Egresos · glow up 21-10, en qué va cada pago', () => {
     expect(texto).toContain('Por pagar en el banco');
     expect(texto).toContain('Pagados');
     // La cifra de «Por armar» es la del egreso pendiente, con su punto de trabajo.
-    const celdas = [...franja.querySelectorAll(':scope > div > *')];
-    expect(celdas[0].textContent).toContain('1');
-    expect(celdas[1].textContent).toContain('1');
-    expect(celdas[2].textContent).toContain('0');
+    // GLOW UP 3.ª vuelta: la franja es la cifra héroe y cada estado es un tramo con su conteo.
+    expect(q('en-camino-por-armar')!.textContent).toContain('· 1');
+    expect(q('en-camino-por-aprobar')!.textContent).toContain('· 1');
+    expect(q('en-camino-por-pagar')!.textContent).toContain('· 0');
   });
 });

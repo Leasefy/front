@@ -86,6 +86,11 @@ describe('seleccionDeDuenos', () => {
 })
 
 describe('<StepSelectPropietario> — varios dueños', () => {
+  it('revisora r25: dice cuántos propietarios hay (la grilla tiene alto fijo)', () => {
+    renderPaso({ propietarioId: '', copropietarios: [] })
+    expect(container.querySelector('[data-testid="cuantos-propietarios"]')?.textContent).toBe('3 propietarios')
+  })
+
   it('elegir un segundo dueño NO reemplaza al primero', () => {
     const update = renderPaso({ propietarioId: 'p1', copropietarios: [] })
     clickPorTexto('Beto Cardona')

@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useI18n } from '@/lib/i18n';
+import { useTr } from '@/lib/i18n/use-tr';
 import { toast } from '@/components/ui/toast';
 import { itemsDelInventarioDelAsistente } from '@/lib/inmuebles/inventario-del-asistente';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -126,6 +127,7 @@ export function ConsignacionWizard({
   const router = useRouter();
   const destinoAlSalir = volverA ?? PORTAFOLIO;
   const { t, locale } = useI18n();
+  const tr = useTr();
   const { user, agency } = useAuth();
   const { isAdmin } = usePermissions();
   // Agents skip the "Assign agent" step — they get auto-assigned
@@ -303,6 +305,18 @@ export function ConsignacionWizard({
         return false;
     }
   }, [currentStep, formData]);
+
+  /** El porqué de «Siguiente» apagado, en palabras (revisora r25). Misma regla que `isStepValid`. */
+  const porQueNoSigue = (() => {
+    if (currentStep === 1) {
+      return formData.propietarioId
+        ? tr('Haz que la participación de los dueños sume 100 %')
+        : tr('Elige de quién es el inmueble');
+    }
+    if (currentStep === 2) return tr('Completa el tipo, el título, la dirección, la ciudad y el canon');
+    if (currentStep === 5) return tr('Revisa el enlace del video');
+    return null;
+  })();
 
   // Navigation helpers — agents skip step 4. Step 5 used to be skipped
   // entirely for a sale listing (contract-addendum-2.md §A.8 — "5 ·
@@ -1144,7 +1158,7 @@ export function ConsignacionWizard({
           </div>
 
           {/* Navigation Buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-3">
             {currentStep > 1 && (
               <Button
                 type="button"
@@ -1158,6 +1172,13 @@ export function ConsignacionWizard({
             )}
 
             {currentStep < 6 ? (
+              <>
+              {/* Revisora r25: «Siguiente» apagado dice qué falta, al lado y sólo mientras está apagado. */}
+              {!isStepValid && porQueNoSigue ? (
+                <span className="text-caption text-fg-muted max-sm:basis-full max-sm:text-right" data-testid="por-que-no-sigue">
+                  {porQueNoSigue}
+                </span>
+              ) : null}
               <Button
                 type="button"
                 hideArrow
@@ -1168,6 +1189,7 @@ export function ConsignacionWizard({
                 {t('inmobiliaria.consignaciones.wizard.next')}
                 <CaretRight className="w-4 h-4" />
               </Button>
+              </>
             ) : (
               <Button
                 type="button"

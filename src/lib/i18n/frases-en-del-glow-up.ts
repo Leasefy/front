@@ -653,4 +653,12 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Pega al menos un enlace que se pueda leer": "Paste at least one link we can read",
   "Sube tu archivo para seguir": "Upload your file to continue",
   "Elige la columna de cada dato obligatorio": "Choose the column for each required field",
+  // Panel (ronda 26, 2.º agente)
+  "Haz que la participación de los dueños sume 100 %": "Make the owners' shares add up to 100%",
+  "Elige de quién es el inmueble": "Choose who owns the property",
+  "Completa el tipo, el título, la dirección, la ciudad y el canon": "Fill in the type, title, address, city and rent",
+  "Revisa el enlace del video": "Check the video link",
+  "Buscar propietario": "Search owner",
+  "propietario": "owner",
+  "propietarios": "owners",
 }

@@ -1,17 +1,30 @@
 'use client';
 
-import Link from 'next/link';
-import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { Appear } from '@leasefy/cadence';
-import { Bucle, ZonaDeBucles } from '@/components/landing/motion/bucles';
-import { LandingChrome } from "@/components/landing-v2/LandingChrome";
+import type { ReactNode } from 'react';
+import { Appear, Avatar } from '@leasefy/cadence';
+import { CheckCircle } from '@phosphor-icons/react';
+import { LandingChrome } from '@/components/landing-v2/LandingChrome';
 import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
-import { Button } from '@/components/ui/button';
-import { CTASection } from '@/components/home/CTASection';
 import { FAQSection } from '@/components/home/FAQSection';
-import { TestimonialCarousel } from '@/components/home/TestimonialCarousel';
-import { Check, SealCheck, Link as LinkIcon, Users, Crosshair, Copy, Bell, TrendUp, DeviceMobile, Shield, Clock, FileX, UserMinus, Warning, FileText, Lightning, ChartBarHorizontal, ChartBar, ArrowRight } from '@phosphor-icons/react';
+import { CorrienteDeVoltaje } from '@/components/landing-v2/CorrienteDeVoltaje';
+import { HeroeDePara } from '@/components/landing-v2/para/HeroeDePara';
+import { FotoQueSeRevela } from '@/components/landing-v2/para/FotoQueSeRevela';
+import { TestimoniosDePara } from '@/components/landing-v2/para/TestimoniosDePara';
+import { CierreDePara } from '@/components/landing-v2/para/CierreDePara';
+import {
+  Acento,
+  ANCHO,
+  Ceja,
+  Entrada,
+  ESQUINA,
+  HiloDePuntos,
+  Punto,
+  Rotulo,
+  Seccion,
+  Tarjeta,
+  TituloDeSeccion,
+} from '@/components/landing-v2/para/piezas';
+import { cn } from '@/lib/utils';
 
 // Testimonials data
 const testimonials = [
@@ -41,1218 +54,414 @@ const testimonials = [
   },
 ];
 
-// ============================================
-// RICH VISUAL COMPONENTS FOR BENTO CARDS
-// ============================================
-
-// 1. Link Generator Visual - Premium phone mockup with WhatsApp share
-function LinkGeneratorVisual() {
+/** El medidor de la calificación: un arco de voltaje, sin degradado. */
+function Medidor({ valor, rotulo }: { valor: number; rotulo: string }) {
+  const r = 26;
+  const c = 2 * Math.PI * r;
   return (
-    <ZonaDeBucles className="relative w-full h-full overflow-hidden px-6 py-4">
-      {/* Animated glow effects */}
-      <Bucle.div
-        className="absolute top-[20%] right-[10%] w-[140px] h-[140px] bg-[#2C7A53]/[0.08] rounded-full blur-[60px] pointer-events-none"
-        animate={{
-          scale: [1, 1.3, 1],
-          opacity: [0.08, 0.14, 0.08],
-        }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <Bucle.div
-        className="absolute bottom-[20%] left-[15%] w-[100px] h-[100px] bg-neutral-500/[0.06] rounded-full blur-[50px] pointer-events-none"
-        animate={{
-          scale: [1, 1.4, 1],
-          opacity: [0.06, 0.1, 0.06],
-        }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-      />
-
-      <div className="flex flex-col h-full">
-        {/* Link card with enhanced animations */}
-        <motion.div
-          initial={{ y: -15, opacity: 0, scale: 0.95 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
-          whileHover={{ y: -2, boxShadow: "0 10px 30px rgba(16,185,129,0.15)" }}
-          className="bg-white/[0.06] backdrop-blur-sm border border-white/[0.08] rounded-xl px-4 py-3 mb-4 cursor-pointer"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Bucle.div
-                className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2C7A53]/20 to-[#6B6B6B]/20 border border-[#2C7A53]/30 flex items-center justify-center"
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                animate={{
-                  boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 15px 3px rgba(16,185,129,0.2)", "0 0 0 0 rgba(16,185,129,0)"]
-                }}
-                transition={{ boxShadow: { duration: 2, repeat: Infinity } }}
-              >
-                <Bucle.div
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                >
-                  <LinkIcon className="w-3.5 h-3.5 text-[#2C7A53]" />
-                </Bucle.div>
-              </Bucle.div>
-              <div>
-                <span className="text-[11px] font-medium text-white">Apto 302 · Chapinero</span>
-                <span className="text-[8px] text-white/40 block">$2.800.000/mes</span>
-              </div>
-            </div>
-            <motion.span
-              initial={{ scale: 0, rotate: -10 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: 0.5, type: "spring", stiffness: 400, damping: 12 }}
-              className="flex items-center gap-1 bg-[#2C7A53]/15 text-[#2C7A53] text-[8px] font-bold px-2 py-1 rounded-full border border-[#2C7A53]/30"
-            >
-              <Bucle.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                <Check className="w-2.5 h-2.5" />
-              </Bucle.div>
-              Activo
-            </motion.span>
-          </div>
-          <motion.div
-            className="bg-white/[0.04] rounded-md px-3 py-2 flex items-center gap-2 relative overflow-hidden"
-            whileHover={{ backgroundColor: "rgba(255,255,255,0.06)" }}
-          >
-            {/* Shimmer effect */}
-            <Bucle.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-              animate={{ x: ["-100%", "200%"] }}
-              transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-            />
-            <code className="text-[10px] text-white/60 font-mono flex-1 truncate relative z-10">leasefy.co/postular/ch302-mX9k</code>
-            <motion.button
-              whileHover={{ scale: 1.15, backgroundColor: "rgba(255,255,255,0.15)" }}
-              whileTap={{ scale: 0.9 }}
-              className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center relative z-10"
-            >
-              <Copy className="w-3 h-3 text-white/60" />
-            </motion.button>
-          </motion.div>
-        </motion.div>
-
-        {/* Share buttons with stagger and hover */}
-        <div className="space-y-2 mb-4">
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-[8px] text-white/30 font-mono font-normal uppercase tracking-wider"
-          >
-            Compartir vía
-          </motion.span>
-          <div className="flex gap-2">
-            {[
-              { label: 'WhatsApp', color: 'from-[#25D366]/20 to-[#25D366]/10', border: 'border-[#25D366]/20', text: 'text-[#25D366]', hoverGlow: 'rgba(37,211,102,0.3)' },
-              { label: 'Email', color: 'from-[#1A40FF]/20 to-[#1A40FF]/10', border: 'border-[#1A40FF]/30', text: 'text-[#1A40FF]', hoverGlow: 'rgba(59,130,246,0.3)' },
-              { label: 'SMS', color: 'from-[#6B6B6B]/20 to-[#6B6B6B]/10', border: 'border-neutral-200 dark:border-neutral-700/20', text: 'text-neutral-600 dark:text-neutral-300', hoverGlow: 'rgba(139,92,246,0.3)' },
-            ].map((opt, i) => (
-              <motion.div
-                key={opt.label}
-                initial={{ opacity: 0, y: 15, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: 0.3 + i * 0.1, type: "spring", stiffness: 150 }}
-                whileHover={{
-                  scale: 1.05,
-                  y: -2,
-                  boxShadow: `0 8px 20px ${opt.hoverGlow}`
-                }}
-                whileTap={{ scale: 0.95 }}
-                className={`flex-1 bg-gradient-to-br ${opt.color} border ${opt.border} rounded-md py-2.5 flex items-center justify-center cursor-pointer`}
-              >
-                <span className={`text-[9px] font-medium ${opt.text}`}>{opt.label}</span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Stats with enhanced animations */}
-        <div className="mt-auto space-y-2">
-          {[
-            { label: "Visitas al link", value: "24", bar: 80, color: "bg-[#2C7A53]", glow: "bg-[#2C7A53]/40" },
-            { label: "Aplicaciones", value: "8", bar: 60, color: "bg-[#6B6B6B]", glow: "bg-[#6B6B6B]/40" },
-          ].map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.5 + i * 0.15, type: "spring", stiffness: 100 }}
-              whileHover={{ x: 4 }}
-              className="flex items-center gap-3 cursor-pointer"
-            >
-              <span className="text-[9px] text-white/40 font-medium w-[80px] flex-shrink-0">{stat.label}</span>
-              <div className="flex-1 h-[5px] bg-white/[0.04] rounded-full overflow-hidden relative">
-                <motion.div style={{ width: `${stat.bar}%` }}
-                  className={`h-full rounded-full ${stat.color} origin-left`}
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.7 + i * 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                />
-                <motion.div style={{ width: `${stat.bar}%` }}
-                  className={`absolute top-0 h-full rounded-full blur-[4px] ${stat.glow} origin-left`}
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.7 + i * 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                />
-              </div>
-              <motion.span
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1 + i * 0.15, type: "spring" }}
-                className="text-[11px] font-bold text-white w-6 text-right tabular-nums"
-              >
-                {stat.value}
-              </motion.span>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </ZonaDeBucles>
-  );
-}
-
-// 2. Evaluation Report Visual - Score gauge + metrics (light card)
-function EvaluationReportVisual() {
-  return (
-    <ZonaDeBucles className="relative w-full h-full overflow-hidden px-5 py-4">
-      {/* Score display with enhanced animations */}
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0, y: 10 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
-        className="flex items-center gap-4 mb-4"
-      >
-        <motion.div
-          className="relative"
-          whileHover={{ scale: 1.05 }}
-          transition={{ type: "spring", stiffness: 300 }}
-        >
-          <svg viewBox="0 0 80 80" className="w-[70px] h-[70px]">
-            <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="6" />
-            <motion.circle
-              cx="40" cy="40" r="32" fill="none" stroke="url(#scoreGradient)" strokeWidth="6"
-              strokeLinecap="round" strokeDasharray={201} strokeDashoffset={201}
-              initial={{ strokeDashoffset: 201 }}
-              animate={{ strokeDashoffset: 201 * (1 - 0.91) }}
-              transition={{ delay: 0.4, duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
-              transform="rotate(-90 40 40)"
-            />
-            {/* Glow circle */}
-            <motion.circle
-              cx="40" cy="40" r="32" fill="none" stroke="url(#scoreGradient)" strokeWidth="10"
-              strokeLinecap="round" strokeDasharray={201} strokeDashoffset={201}
-              opacity="0.2"
-              style={{ filter: "blur(4px)" }}
-              initial={{ strokeDashoffset: 201 }}
-              animate={{ strokeDashoffset: 201 * (1 - 0.91) }}
-              transition={{ delay: 0.4, duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
-              transform="rotate(-90 40 40)"
-            />
-            <defs>
-              <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#1A40FF" />
-                <stop offset="100%" stopColor="#8A9CFF" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <motion.div
-            className="absolute inset-0 flex items-center justify-center"
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 1, type: "spring", stiffness: 200 }}
-          >
-            <Bucle.span
-              className="text-[22px] font-bold text-foreground"
-              animate={{
-                textShadow: ["0 0 0 transparent", "0 0 10px rgba(16,185,129,0.3)", "0 0 0 transparent"]
-              }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-            >
-              91
-            </Bucle.span>
-          </motion.div>
-        </motion.div>
-        <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <motion.span
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-              className="text-[12px] font-semibold text-foreground"
-            >
-              María González P.
-            </motion.span>
-            <motion.span
-              initial={{ scale: 0, rotate: -15 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: 0.8, type: "spring", stiffness: 400, damping: 12 }}
-              className="flex items-center gap-0.5 bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] text-[7px] font-bold px-1.5 py-0.5 rounded-full"
-            >
-              <Bucle.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                <Check className="w-2 h-2" />
-              </Bucle.div>
-              Verificado
-            </motion.span>
-          </div>
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="text-[9px] text-muted-foreground"
-          >
-            Evaluación completada · Hoy
-          </motion.span>
-        </div>
-      </motion.div>
-
-      {/* Metrics bars with enhanced animations */}
-      <div className="space-y-2.5">
-        {[
-          { label: "Capacidad de pago", score: 92, colorClass: "bg-[#2C7A53]", glowClass: "bg-[#2C7A53]/30" },
-          { label: "Historial crediticio", score: 88, colorClass: "bg-[#1A40FF]", glowClass: "bg-[#1A40FF]/30" },
-          { label: "Estabilidad laboral", score: 85, colorClass: "bg-neutral-500", glowClass: "bg-neutral-500/30" },
-          { label: "Referencias", score: 90, colorClass: "bg-[#B7791F]", glowClass: "bg-[#B7791F]/30" },
-        ].map((m, i) => (
-          <motion.div
-            key={m.label}
-            initial={{ x: 20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.4 + i * 0.1, type: "spring", stiffness: 100 }}
-            whileHover={{ x: 4 }}
-            className="flex items-center gap-3 cursor-pointer"
-          >
-            <span className="text-[9px] text-muted-foreground font-medium w-[100px] flex-shrink-0">{m.label}</span>
-            <div className="flex-1 h-[5px] bg-black/[0.04] rounded-full overflow-hidden relative">
-              <motion.div style={{ width: `${m.score}%` }}
-                className={`h-full rounded-full ${m.colorClass} origin-left`}
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 0.6 + i * 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              />
-              <motion.div style={{ width: `${m.score}%` }}
-                className={`absolute top-0 h-full rounded-full blur-[3px] ${m.glowClass} origin-left`}
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 0.6 + i * 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              />
-            </div>
-            <motion.span
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.9 + i * 0.1, type: "spring" }}
-              className="text-[10px] font-bold text-foreground w-6 text-right tabular-nums"
-            >
-              {m.score}
-            </motion.span>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Robottom status with enhanced animations */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.2, type: "spring" }}
-        className="flex items-center justify-between mt-4 pt-3 border-t border-black/5"
-      >
-        <div className="flex items-center gap-1.5">
-          <Bucle.div
-            className="w-5 h-5 rounded-full bg-[#E8F3EC] flex items-center justify-center"
-            animate={{
-              boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 10px 3px rgba(16,185,129,0.2)", "0 0 0 0 rgba(16,185,129,0)"]
-            }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <Bucle.div
-              animate={{ scale: [1, 1.15, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              <Shield className="w-2.5 h-2.5 text-[#2C7A53]" />
-            </Bucle.div>
-          </Bucle.div>
-          <span className="text-[9px] text-[#2C7A53] font-medium">Bajo riesgo · Recomendado</span>
-        </div>
-        <motion.span
-          whileHover={{ scale: 1.05, color: "hsl(var(--primary))" }}
-          className="text-[8px] text-muted-foreground cursor-pointer"
-        >
-          PDF disponible
-        </motion.span>
-      </motion.div>
-    </ZonaDeBucles>
-  );
-}
-
-// 3. Mobile App Visual - Notification feed (light card)
-function MobileAppVisual() {
-  return (
-    <ZonaDeBucles className="relative w-full h-full overflow-hidden px-4 pt-3">
-      {/* Header with enhanced animations */}
-      <motion.div
-        initial={{ y: -12, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
-        className="flex items-center justify-between mb-3"
-      >
-        <div className="flex items-center gap-2">
-          <Bucle.div
-            className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center"
-            whileHover={{ scale: 1.1 }}
-            animate={{
-              boxShadow: ["0 0 0 0 rgba(0,0,0,0)", "0 0 12px 3px rgba(var(--primary),0.15)", "0 0 0 0 rgba(0,0,0,0)"]
-            }}
-            transition={{ boxShadow: { duration: 2, repeat: Infinity } }}
-          >
-            <Bucle.div
-              animate={{ rotate: [0, 15, -15, 0] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
-            >
-              <Bell className="w-3.5 h-3.5 text-primary" />
-            </Bucle.div>
-          </Bucle.div>
-          <div>
-            <span className="text-[11px] font-medium text-foreground">Notificaciones</span>
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="text-[8px] text-muted-foreground block"
-            >
-              3 nuevas hoy
-            </motion.span>
-          </div>
-        </div>
-        <motion.span
-          initial={{ scale: 0, rotate: -10 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
-          className="flex items-center gap-1 bg-primary/10 text-primary text-[8px] font-bold px-2 py-1 rounded-full"
-        >
-          <Bucle.div
-            className="w-1.5 h-1.5 rounded-full bg-primary"
-            animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-            transition={{ duration: 1, repeat: Infinity }}
+    <div className="flex flex-col items-center">
+      <div className="relative h-[64px] w-[64px]">
+        <svg viewBox="0 0 60 60" className="h-full w-full" aria-hidden="true">
+          <circle cx="30" cy="30" r={r} fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="5" />
+          <circle
+            cx="30"
+            cy="30"
+            r={r}
+            fill="none"
+            stroke="#4D6BFF"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeDasharray={`${(c * valor) / 100} ${c}`}
+            transform="rotate(-90 30 30)"
           />
-          En vivo
-        </motion.span>
-      </motion.div>
-
-      {/* Notifications list with enhanced animations */}
-      <div className="space-y-2">
-        {[
-          { icon: "📋", title: "Nueva postulación", desc: "María González se postuló al Apto 302", time: "Ahora", isNew: true },
-          { icon: "🏠", title: "Visita confirmada", desc: "Nicolás Ruiz · Apto Chapinero · 3pm", time: "Hace 5 min", isNew: true },
-          { icon: "✅", title: "Contrato firmado", desc: "Casa Usaquén · Comisión: $0.5M", time: "Hace 1h", isNew: false },
-          { icon: "📊", title: "Reporte listo", desc: "Evaluación de Ana García disponible", time: "Hace 2h", isNew: false },
-        ].map((notif, i) => (
-          <motion.div
-            key={notif.title + i}
-            initial={{ opacity: 0, x: -20, scale: 0.95 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ delay: 0.2 + i * 0.1, type: "spring", stiffness: 120 }}
-            whileHover={{ x: 4, backgroundColor: notif.isNew ? "rgba(var(--primary),0.06)" : "rgba(0,0,0,0.03)" }}
-            className={`flex items-start gap-3 p-2.5 rounded-md cursor-pointer transition-colors ${notif.isNew ? 'bg-primary/[0.04] border-l-2 border-primary' : 'bg-muted/50'}`}
-          >
-            <Bucle.span
-              className="text-base flex-shrink-0"
-              animate={notif.isNew ? { y: [0, -2, 0] } : {}}
-              transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 1 }}
-            >
-              {notif.icon}
-            </Bucle.span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-medium text-foreground">{notif.title}</span>
-                {notif.isNew && (
-                  <Bucle.div
-                    className="w-1.5 h-1.5 rounded-full bg-primary"
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                  />
-                )}
-              </div>
-              <span className="text-[9px] text-muted-foreground block truncate">{notif.desc}</span>
-            </div>
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 + i * 0.1 }}
-              className="text-[8px] text-muted-foreground flex-shrink-0"
-            >
-              {notif.time}
-            </motion.span>
-          </motion.div>
-        ))}
+        </svg>
+        <span className="absolute inset-0 grid place-items-center font-mono text-[18px] text-[#F3F1ED]">{valor}</span>
       </div>
-
-      {/* Robottom badge with animation */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.9, type: "spring" }}
-        className="flex items-center justify-center gap-1.5 mt-3"
-      >
-        <Bucle.div
-          animate={{ y: [0, -2, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <DeviceMobile className="w-2.5 h-2.5 text-muted-foreground" />
-        </Bucle.div>
-        <span className="text-[8px] text-muted-foreground">Disponible en iOS y Android</span>
-      </motion.div>
-    </ZonaDeBucles>
+      <span className="mt-2 text-caption text-[#7FD3A0]">{rotulo}</span>
+    </div>
   );
 }
 
-// 4. Commission Tracking Visual - Earnings dashboard (inside white container)
-function CommissionVisual() {
+/** Tarjeta de la medianoche: título liviano, su línea, etiquetas con punto y su pieza. */
+function TarjetaDeNoche({
+  titulo,
+  texto,
+  chips,
+  insignia,
+  children,
+  className,
+  delay = 0,
+}: {
+  titulo: string;
+  texto: string;
+  chips?: string[];
+  insignia?: { valor: string; rotulo: string };
+  children?: ReactNode;
+  className?: string;
+  delay?: number;
+}) {
   return (
-    <ZonaDeBucles className="relative w-full h-full flex flex-col overflow-hidden px-4 py-3">
-      {/* Header stats with enhanced animations */}
-      <motion.div
-        initial={{ y: -12, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
-        className="mb-3"
-      >
-        <div className="flex items-baseline gap-2">
-          <Bucle.span
-            className="text-[26px] font-bold text-foreground tracking-tight"
-            animate={{
-              textShadow: ["0 0 0 transparent", "0 0 15px rgba(16,185,129,0.2)", "0 0 0 transparent"]
-            }}
-            transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
-          >
-            $8.9M
-          </Bucle.span>
-          <motion.span
-            initial={{ opacity: 0, x: -10, scale: 0.8 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
-            whileHover={{ scale: 1.1 }}
-            className="text-[9px] font-bold text-[#2C7A53] bg-[#E8F3EC] px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer"
-          >
-            <Bucle.div
-              animate={{ y: [0, -2, 0] }}
-              transition={{ duration: 1, repeat: Infinity }}
-            >
-              <TrendUp className="w-2.5 h-2.5" />
-            </Bucle.div>
-            +23%
-          </motion.span>
-        </div>
-        <motion.span
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="text-[9px] text-muted-foreground"
-        >
-          Comisiones este mes
-        </motion.span>
-      </motion.div>
-
-      {/* Progress bar with shimmer */}
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, type: "spring" }}
-        className="mb-4"
-      >
-        <div className="flex justify-between text-[9px] mb-1.5">
-          <span className="text-muted-foreground font-medium">Meta mensual</span>
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="text-foreground font-bold"
-          >
-            89%
-          </motion.span>
-        </div>
-        <div className="h-[6px] bg-black/[0.04] rounded-full overflow-hidden relative">
-          <motion.div style={{ width: '89%' }}
-            className="h-full rounded-full bg-primary relative overflow-hidden origin-left"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ delay: 0.5, duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          >
-            {/* Shimmer effect */}
-            <Bucle.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-              animate={{ x: ["-100%", "200%"] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
-            />
-          </motion.div>
-          <motion.div style={{ width: '89%' }}
-            className="absolute top-0 h-full rounded-full blur-[4px] bg-primary/40 origin-left"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ delay: 0.5, duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          />
-        </div>
-      </motion.div>
-
-      {/* Deals list with enhanced animations */}
-      <div className="flex-1">
-        <motion.span
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="text-[8px] text-muted-foreground font-mono font-normal uppercase tracking-wider"
-        >
-          Últimos cierres
-        </motion.span>
-        <div className="mt-2 space-y-1.5">
-          {[
-            { property: "Apto Chapinero", amount: "$0.3M", time: "Hace 2 días" },
-            { property: "Casa Usaquén", amount: "$0.5M", time: "Hace 5 días" },
-            { property: "Loft Zona G", amount: "$0.8M", time: "Hace 1 sem" },
-          ].map((deal, i) => (
-            <motion.div
-              key={deal.property}
-              initial={{ opacity: 0, x: -15, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              transition={{ delay: 0.6 + i * 0.12, type: "spring", stiffness: 120 }}
-              whileHover={{ x: 4, backgroundColor: "rgba(0,0,0,0.03)" }}
-              className="flex items-center justify-between p-2 bg-muted/50 rounded-md cursor-pointer transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <motion.div
-                  className="w-6 h-6 rounded-md bg-[#E8F3EC] flex items-center justify-center"
-                  whileHover={{ scale: 1.1 }}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.7 + i * 0.12, type: "spring", stiffness: 300 }}
+    <Appear inView distance="md" duration="slow" delay={delay} className={className}>
+      <Tarjeta enNoche className="flex h-full flex-col gap-6 p-6 sm:flex-row sm:p-7">
+        <div className="min-w-0 flex-1">
+          {insignia ? (
+            <p className="mb-4 flex items-baseline gap-2">
+              <span className="font-mono text-[20px] text-[#F3F1ED]">{insignia.valor}</span>
+              <span className="text-caption text-[#8E93B0]">{insignia.rotulo}</span>
+            </p>
+          ) : null}
+          <h3 className="text-[22px] font-[420] leading-tight tracking-[-0.02em] text-[#F3F1ED]">{titulo}</h3>
+          <p className="mt-2 text-[15px] leading-[1.5] text-[#B9BCD0]">{texto}</p>
+          {chips ? (
+            <ul className="mt-5 flex flex-wrap gap-2">
+              {chips.map((c) => (
+                <li
+                  key={c}
+                  className={cn(
+                    'inline-flex h-8 items-center gap-2 rounded-[10px] bg-white/[0.06] px-3 font-mono text-caption uppercase tracking-[0.06em] text-[#B9BCD0]',
+                    ESQUINA,
+                  )}
                 >
-                  <Check className="w-3 h-3 text-[#2C7A53]" />
-                </motion.div>
-                <div>
-                  <span className="text-[10px] font-medium text-foreground">{deal.property}</span>
-                  <span className="text-[8px] text-muted-foreground block">{deal.time}</span>
-                </div>
-              </div>
-              <motion.span
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.8 + i * 0.12 }}
-                className="text-[11px] font-bold text-[#2C7A53]"
-              >
-                {deal.amount}
-              </motion.span>
-            </motion.div>
-          ))}
+                  <Punto enNoche className="h-1.5 w-1.5" />
+                  {c}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
-      </div>
-    </ZonaDeBucles>
+        {children ? <div className="flex-none sm:w-[220px]">{children}</div> : null}
+      </Tarjeta>
+    </Appear>
+  );
+}
+
+/** La pieza del producto sobre la foto del héroe: las comisiones del agente. */
+function PiezaDelHeroe() {
+  return (
+    <div className="space-y-3">
+      <Tarjeta className="p-5 shadow-[0_50px_90px_-40px_rgba(18,17,16,.35),0_22px_40px_-22px_rgba(18,17,16,.18)]">
+        <div className="flex items-center gap-3">
+          <Avatar
+            name="Juliana Rodríguez"
+            src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=face&q=80"
+            size="md"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-[450] text-[#121110]">Juliana Rodríguez</p>
+            <p className="text-caption text-[#706B64]">Agente verificada</p>
+          </div>
+          <CheckCircle className="h-5 w-5 text-[#2B7549]" aria-hidden="true" />
+        </div>
+        <div className="mt-4 rounded-[16px] bg-[#F3F1ED] p-4">
+          <div className="flex items-center justify-between text-caption">
+            <span className="text-[#5B5751]">Comisiones este mes</span>
+            <span className="font-mono text-[#2B7549]">+45%</span>
+          </div>
+          <p className="mt-1 font-mono text-[28px] font-normal leading-none tracking-[-0.03em] text-[#121110]">$8.900.000</p>
+        </div>
+        <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+          {[
+            { v: '12', l: 'Cierres' },
+            { v: '28', l: 'Candidatos' },
+            { v: '43%', l: 'Conversión' },
+          ].map((s) => (
+            <div key={s.l} className="rounded-[12px] bg-[#FBFAF8] px-1 py-2.5 ring-1 ring-[#ECE8E1]">
+              <dd className="font-mono text-[18px] text-[#121110]">{s.v}</dd>
+              <dt className="text-caption text-[#706B64]">{s.l}</dt>
+            </div>
+          ))}
+        </dl>
+      </Tarjeta>
+      <Tarjeta className="flex items-center gap-3 px-4 py-3">
+        <Punto />
+        <div className="min-w-0">
+          <p className="text-caption font-medium text-[#121110]">Evaluación lista</p>
+          <p className="font-mono text-caption text-[#706B64]">Score: 87/100 · Aprobado</p>
+        </div>
+      </Tarjeta>
+    </div>
   );
 }
 
 export default function AgentesPage() {
-
   return (
     <LandingChrome>
-      <main className="overflow-hidden">
-        {/* Hero Section */}
-        <section className="relative h-[600px] overflow-hidden bg-black">
-          <Image
-            src="/hero-6.jpg"
-            alt="Real estate agent"
-            fill
-            sizes="100vw"
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-black/40 z-[1]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30 z-[1]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/40 z-[1]" />
-
-          <div className="relative z-10 h-full container-platform pt-[72px] pb-16 flex items-center">
-            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center w-full">
-              {/* Left Content */}
-              <div className="space-y-4">
-                <motion.span
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
-                >
-                  <SealCheck className="w-3.5 h-3.5" />
-                  100% gratis para agentes
-                </motion.span>
-
-                <motion.h1
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em] leading-[1.1]"
-                >
-                  Cierra más arriendos
-                  <span className="block mt-2 text-white/90">
-                    más <span className="italic">rápido</span>
-                  </span>
-                </motion.h1>
-
-                <motion.p
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="!mt-2 text-lg text-white/70 max-w-lg"
-                >
-                  Genera tu link, compártelo por WhatsApp, recibe evaluaciones profesionales.
-                  <span className="text-white font-medium"> Sin costo para ti.</span>
-                </motion.p>
-
-                <motion.div
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col sm:flex-row gap-3 pt-2"
-                >
-                  <Link href="/auth?role=agent">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto h-12 px-6">
-                      Crear cuenta gratis
-                    </Button>
-                  </Link>
-                  <Link href="/pricing">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium h-12 px-6"
-                    >
-                      Ver cómo funciona
-                    </Button>
-                  </Link>
-                </motion.div>
-
-                {/* Hero Stats - No separator line */}
-                <motion.div
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-8 pt-6"
-                >
-                  {[
-                    { value: '$0', label: 'Costo para ti' },
-                    { value: '2x', label: 'Más cierres' },
-                    { value: '48h', label: 'Tiempo promedio' },
-                  ].map((stat) => (
-                    <div key={stat.label}>
-                      <p className="text-2xl md:text-3xl font-bold text-white font-mono tabular-nums">{stat.value}</p>
-                      <p className="text-[11px] text-white/50 mt-0.5">{stat.label}</p>
-                    </div>
-                  ))}
-                </motion.div>
-              </div>
-
-              {/* Right - Hero Card with glass styling */}
-              <motion.div
-                initial={false}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                className="hidden lg:flex lg:justify-end"
-              >
-                <div className="relative">
-                  <motion.div
-                    initial={false}
-                    animate={{ opacity: 1 }}
-                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-6"
-                  >
-                    <motion.div
-                      initial={false}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-4 mb-6"
-                    >
-                      <Image
-                        src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=face&q=80"
-                        alt="Real estate agent"
-                        width={56}
-                        height={56}
-                        className="rounded-xl object-cover ring-2 ring-white/20"
-                      />
-                      <div>
-                        <p className="text-white font-semibold">Juliana Rodríguez</p>
-                        <p className="text-white/60 text-sm">Agente verificada</p>
-                      </div>
-                      <motion.div
-                        initial={false}
-                        animate={{ scale: 1 }}
-                      >
-                        <SealCheck className="w-5 h-5 text-[#2C7A53] ml-auto" />
-                      </motion.div>
-                    </motion.div>
-
-                    <div className="space-y-4">
-                      <motion.div
-                        initial={false}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-white/60 text-sm">Comisiones este mes</span>
-                          <span className="text-[#2C7A53] text-xs font-medium">+45%</span>
-                        </div>
-                        <p className="text-3xl font-bold text-white">$8.900.000</p>
-                      </motion.div>
-
-                      <div className="grid grid-cols-3 gap-3">
-                        <motion.div
-                          initial={false}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center border border-white/10"
-                        >
-                          <p className="text-xl font-bold text-white">12</p>
-                          <p className="text-[9px] text-white/60">Cierres</p>
-                        </motion.div>
-                        <motion.div
-                          initial={false}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center border border-white/10"
-                        >
-                          <p className="text-xl font-bold text-white">28</p>
-                          <p className="text-[9px] text-white/60">Candidatos</p>
-                        </motion.div>
-                        <motion.div
-                          initial={false}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center border border-white/10"
-                        >
-                          <p className="text-xl font-bold text-white">43%</p>
-                          <p className="text-[9px] text-white/60">Conversión</p>
-                        </motion.div>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Floating notification */}
-                  <motion.div
-                    initial={false}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    className="absolute -bottom-6 -left-6 bg-white rounded-xl p-4 border border-border"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] flex items-center justify-center">
-                        <Check className="w-5 h-5 text-[#2C7A53]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">Evaluación lista</p>
-                        <p className="text-xs text-muted-foreground">Score: 87/100 · Aprobado</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-
-        {/* Problems Bento Section */}
-        <section className="bg-white py-[80px] md:py-[100px]">
-          <div className="container-platform">
-            {/* 3-column Header */}
-            <div className="grid md:grid-cols-12 gap-6 md:gap-12 mb-12">
-              <div className="md:col-span-7">
-                <h2 className="text-[40px] md:text-[52px] font-heading font-normal text-foreground tracking-[-0.03em] leading-[1.05]">
-                  Los agentes pierden tiempo en{' '}
-                  <span className="italic">procesos manuales</span>
-                </h2>
-              </div>
-              <div className="md:col-span-5 flex items-end">
-                <p className="text-[17px] text-muted-foreground leading-relaxed">
-                  Llamadas, WhatsApps, verificaciones manuales. Cada candidato consume horas que podrías usar cerrando más arriendos.
-                </p>
-              </div>
-            </div>
-
-            {/* Problems Bento Grid */}
-            <div className="grid md:grid-cols-12 gap-5">
-              {/* Card 1: Verification chaos - Image with glass */}
-              <Appear inView distance="md" duration="slow"
-                className="md:col-span-7 relative rounded-xl overflow-hidden h-[320px]"
-              >
-                <Image
-                  src="https://images.pexels.com/photos/5668858/pexels-photo-5668858.jpeg"
-                  alt="Agente inmobiliario revisando documentos"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <div className="inline-flex items-center gap-2 mb-4 bg-white/10 backdrop-blur-2xl rounded-full px-3 py-1.5 border border-white/15">
-                    <Clock className="w-3.5 h-3.5 text-white/80" />
-                    <span className="text-white/70 text-xs font-medium">Problema #1</span>
-                  </div>
-                  <h3 className="text-white text-2xl font-mono uppercase font-normal mb-2">Horas en verificaciones manuales</h3>
-                  <p className="text-white/60 text-sm max-w-md">Llamar referencias, verificar empleo, revisar historial crediticio... Por cada candidato.</p>
-                </div>
-              </Appear>
-
-              {/* Card 2: No data - Illustration */}
-              <Appear inView distance="md" duration="slow" delay={0.1}
-                className="md:col-span-5 bg-muted rounded-xl p-6 h-[320px] flex flex-col"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-9 h-9 rounded-xl bg-foreground/5 flex items-center justify-center">
-                    <FileX className="w-4 h-4 text-foreground/60" />
-                  </div>
-                  <span className="text-muted-foreground text-xs font-medium">Problema #2</span>
-                </div>
-                <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Sin datos para decidir</h3>
-                <p className="text-muted-foreground text-sm mb-6">Presentas candidatos al propietario sin saber realmente si pueden pagar.</p>
-                {/* Visual: Empty documents */}
-                <div className="mt-auto grid grid-cols-3 gap-3">
-                  {[
-                    { icon: FileText, label: 'Ingresos' },
-                    { icon: Shield, label: 'Crédito' },
-                    { icon: Users, label: 'Referencias' },
-                  ].map((item) => (
-                    <div key={item.label} className="bg-white rounded-xl p-4 border border-border/50">
-                      <item.icon className="w-5 h-5 text-muted-foreground/40 mb-3" />
-                      <div className="h-2 bg-muted rounded mb-1.5 w-full" />
-                      <div className="h-2 bg-muted rounded w-2/3" />
-                      <div className="mt-3 flex items-center gap-1">
-                        <Warning className="w-3 h-3 text-muted-foreground/60" />
-                        <span className="text-[10px] text-muted-foreground">Sin datos</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Appear>
-
-              {/* Card 3: Lost candidates - Illustration */}
-              <Appear inView distance="md" duration="slow" delay={0.2}
-                className="md:col-span-5 bg-muted rounded-xl p-6 h-[320px] flex flex-col overflow-hidden"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 rounded-xl bg-foreground/5 flex items-center justify-center">
-                    <UserMinus className="w-4 h-4 text-foreground/60" />
-                  </div>
-                  <span className="text-muted-foreground text-xs font-medium">Problema #3</span>
-                </div>
-                <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-1">Candidatos que se pierden</h3>
-                <p className="text-muted-foreground text-sm mb-4">Mientras verificas uno, otros 3 ya encontraron otro apartamento.</p>
-                {/* Visual: Candidate timeline */}
-                <div className="mt-auto space-y-2">
-                  {[
-                    { name: 'María González', initials: 'MG', status: 'Cerrado', progress: 100 },
-                    { name: 'Nicolás Ruiz', initials: 'CR', status: 'Esperando', progress: 60 },
-                    { name: 'Ana Pérez', initials: 'AP', status: 'Perdido', progress: 20 },
-                  ].map((candidate, i) => (
-                    <div key={candidate.name} className="flex items-center gap-2.5 bg-white rounded-md p-2.5 border border-border/50">
-                      <div className="w-8 h-8 rounded-full bg-sand-100 flex items-center justify-center text-[10px] font-semibold text-sand-700 flex-shrink-0">
-                        {candidate.initials}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-medium text-foreground truncate">{candidate.name}</p>
-                        <div className="h-1 bg-muted rounded-full overflow-hidden mt-1">
-                          <div
-                            className={`h-full rounded-full ${i === 0 ? 'bg-foreground' : i === 1 ? 'bg-foreground/50' : 'bg-foreground/25'}`}
-                            style={{ width: `${candidate.progress}%` }}
-                          />
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-medium text-muted-foreground flex-shrink-0">
-                        {candidate.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </Appear>
-
-              {/* Card 4: Unprofessional look - Image with glass */}
-              <Appear inView distance="md" duration="slow" delay={0.3}
-                className="md:col-span-7 relative rounded-xl overflow-hidden h-[320px]"
-              >
-                <Image
-                  src="https://images.pexels.com/photos/8293778/pexels-photo-8293778.jpeg"
-                  alt="Agente presentando propiedad a clientes"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <div className="inline-flex items-center gap-2 mb-4 bg-white/10 backdrop-blur-2xl rounded-full px-3 py-1.5 border border-white/15">
-                    <FileText className="w-3.5 h-3.5 text-white/80" />
-                    <span className="text-white/70 text-xs font-medium">Problema #4</span>
-                  </div>
-                  <h3 className="text-white text-2xl font-mono uppercase font-normal mb-2">Te ves poco profesional</h3>
-                  <p className="text-white/60 text-sm max-w-md">Los propietarios esperan reportes formales, no &quot;yo creo que este candidato está bien&quot;.</p>
-                </div>
-              </Appear>
-            </div>
-          </div>
-        </section>
-
-        {/* Solutions Bento Section */}
-        <section className="bg-muted py-24 lg:py-32 overflow-hidden">
-          <div className="container-platform">
-            {/* 3-column Header */}
-            <div className="grid md:grid-cols-12 gap-8 mb-14 lg:mb-20">
-              <div className="md:col-span-7">
-                <h2 className="text-[clamp(2.25rem,5vw,3.5rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em]">
-                  Herramientas para{' '}
-                  <span className="italic">cerrar más</span>
-                </h2>
-              </div>
-              <div className="md:col-span-5 flex items-end">
-                <p className="text-muted-foreground text-base leading-relaxed">
-                  Todo lo que necesitas para impresionar a tus clientes propietarios y cerrar arriendos más rápido. 100% gratis para ti.
-                </p>
-              </div>
-            </div>
-
-            {/* Solutions Bento Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
-              {/* Card 1: Link de evaluación - Dark */}
-              <Appear inView distance="md" duration="slow"
-                className="md:col-span-7 bg-foreground rounded-xl p-6"
-              >
-                <div className="flex gap-6">
-                  <div className="flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
-                      <LinkIcon className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-white text-sm font-semibold">GRATIS</span>
-                      <span className="text-white/50 text-xs">para ti</span>
-                    </div>
-                    <h3 className="text-white text-xl font-medium tracking-[-0.01em] mb-2">Link de evaluación</h3>
-                    <p className="text-white/60 text-sm leading-relaxed mb-4">
-                      Genera un link único para cada propiedad. Compártelo por WhatsApp y recibe el reporte.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {['WhatsApp', 'Email', 'SMS', 'QR'].map((feature) => (
-                        <span key={feature} className="px-2.5 py-1 bg-white/10 rounded-full text-white/70 text-xs font-mono uppercase font-normal">
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Visual: Link Card */}
-                  <div className="hidden sm:block w-[180px] flex-shrink-0">
-                    <div className="bg-white/10 rounded-xl p-3 border border-white/10">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
-                          <LinkIcon className="w-3 h-3 text-white/70" />
-                        </div>
-                        <span className="text-[10px] text-white/70">Apto 302</span>
-                        <span className="text-[8px] text-white/50 ml-auto bg-white/10 px-1.5 py-0.5 rounded">Activo</span>
-                      </div>
-                      <div className="bg-white/5 rounded-md px-2 py-1.5 mb-3">
-                        <code className="text-[8px] text-white/40 font-mono">arriendo.co/ch302</code>
-                      </div>
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[9px]">
-                          <span className="text-white/40">Visitas</span>
-                          <span className="text-white/70">24</span>
-                        </div>
-                        <div className="flex items-center justify-between text-[9px]">
-                          <span className="text-white/40">Aplicaciones</span>
-                          <span className="text-white/70">8</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Appear>
-
-              {/* Card 2: Evaluación completa */}
-              <Appear inView distance="md" duration="slow" delay={0.1}
-                className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
-              >
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center mb-4">
-                      <Shield className="w-5 h-5 text-sand-700" />
-                    </div>
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-foreground text-sm font-semibold">$24.900</span>
-                      <span className="text-muted-foreground text-xs">paga el candidato</span>
-                    </div>
-                    <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Evaluación completa</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      Verificación de identidad, historial crediticio y score de riesgo con IA.
-                    </p>
-                  </div>
-                  {/* Visual: Score Circle */}
-                  <div className="hidden sm:flex flex-col items-center justify-center w-[80px]">
-                    <div className="relative">
-                      <svg viewBox="0 0 60 60" className="w-[60px] h-[60px]">
-                        <circle cx="30" cy="30" r="24" fill="none" stroke="#f5f5f4" strokeWidth="5" />
-                        <circle cx="30" cy="30" r="24" fill="none" stroke="#1A40FF" strokeWidth="5" strokeLinecap="round" strokeDasharray="151" strokeDashoffset={151 * (1 - 0.91)} transform="rotate(-90 30 30)" />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-lg font-bold text-foreground">91</span>
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-[#2C7A53] font-medium mt-1">Bajo riesgo</span>
-                  </div>
-                </div>
-              </Appear>
-
-              {/* Card 3: App móvil */}
-              <Appear inView distance="md" duration="slow" delay={0.2}
-                className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
-              >
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center mb-4">
-                      <DeviceMobile className="w-5 h-5 text-sand-700" />
-                    </div>
-                    <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">App móvil</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      Notificaciones en tiempo real cuando alguien se postula. iOS y Android.
-                    </p>
-                  </div>
-                  {/* Visual: Notifications */}
-                  <div className="hidden sm:block w-[130px] flex-shrink-0">
-                    <div className="space-y-1.5">
-                      {[
-                        { text: 'Nueva postulación', time: 'Ahora' },
-                        { text: 'Contrato firmado', time: '1h' },
-                        { text: 'Reporte listo', time: '2h' },
-                      ].map((notif, i) => (
-                        <div key={i} className="flex items-center gap-2 bg-muted rounded-md px-2.5 py-2">
-                          <div className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-foreground' : 'bg-muted-foreground/30'}`} />
-                          <span className="text-[10px] text-foreground flex-1 truncate">{notif.text}</span>
-                          <span className="text-[9px] text-muted-foreground">{notif.time}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </Appear>
-
-              {/* Card 4: Dashboard comisiones - Dark */}
-              <Appear inView distance="md" duration="slow" delay={0.3}
-                className="md:col-span-7 bg-foreground rounded-xl p-6"
-              >
-                <div className="flex gap-6">
-                  <div className="flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
-                      <TrendUp className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-white/60 text-xs">Incluido</span>
-                      <span className="text-white/40 text-xs">sin costo extra</span>
-                    </div>
-                    <h3 className="text-white text-xl font-mono uppercase font-normal mb-2">Dashboard de comisiones</h3>
-                    <p className="text-white/60 text-sm leading-relaxed mb-4">
-                      Rastrea tus cierres, mide tu rendimiento y alcanza tus metas mensuales.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {['Métricas', 'Metas', 'Histórico', 'Exportar'].map((feature) => (
-                        <span key={feature} className="px-2.5 py-1 bg-white/10 rounded-full text-white/70 text-xs font-mono uppercase font-normal">
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Visual: Earnings */}
-                  <div className="hidden sm:block w-[160px] flex-shrink-0">
-                    <div className="bg-white rounded-xl p-3">
-                      <div className="flex items-baseline gap-1.5 mb-1">
-                        <span className="text-xl font-bold text-foreground">$8.9M</span>
-                        <span className="text-[10px] text-[#2C7A53] font-medium">+23%</span>
-                      </div>
-                      <span className="text-[9px] text-muted-foreground">Comisiones este mes</span>
-                      <div className="mt-3">
-                        <div className="flex justify-between text-[9px] mb-1">
-                          <span className="text-muted-foreground">Meta</span>
-                          <span className="text-foreground font-medium">89%</span>
-                        </div>
-                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-foreground rounded-full" style={{ width: '89%' }} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Appear>
-
-              {/* Card 5: Contratos digitales */}
-              <Appear inView distance="md" duration="slow" delay={0.32}
-                className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
-              >
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center mb-4">
-                      <FileText className="w-5 h-5 text-sand-700" />
-                    </div>
-                    <h3 className="text-foreground text-lg font-mono uppercase font-normal mb-2">Contratos digitales</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      Firma electrónica con validez legal. Genera contratos desde plantillas.
-                    </p>
-                  </div>
-                  {/* Visual: Document preview */}
-                  <div className="hidden sm:flex flex-col items-center justify-center w-[70px]">
-                    <div className="w-14 h-[72px] bg-muted rounded-md border border-border relative">
-                      <div className="absolute top-2 left-2 right-2 space-y-1">
-                        <div className="h-1 bg-foreground/10 rounded w-full" />
-                        <div className="h-1 bg-foreground/10 rounded w-3/4" />
-                        <div className="h-1 bg-foreground/10 rounded w-full" />
-                        <div className="h-1 bg-foreground/10 rounded w-1/2" />
-                      </div>
-                      <div className="absolute bottom-2 right-2">
-                        <Check className="w-3.5 h-3.5 text-[#2C7A53]" />
-                      </div>
-                    </div>
-                    <span className="text-[9px] text-muted-foreground mt-1.5">Firmado</span>
-                  </div>
-                </div>
-              </Appear>
-
-              {/* Card 6: Reportes profesionales */}
-              <Appear inView distance="md" duration="slow" delay={0.32}
-                className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
-              >
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center mb-4">
-                      <ChartBar className="w-5 h-5 text-sand-700" />
-                    </div>
-                    <h3 className="text-foreground text-lg font-mono uppercase font-normal mb-2">Reportes profesionales</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      PDFs con tu marca para impresionar a propietarios.
-                    </p>
-                  </div>
-                  {/* Visual: Score circle */}
-                  <div className="hidden sm:flex flex-col items-center justify-center w-[70px]">
-                    <div className="relative">
-                      <svg viewBox="0 0 56 56" className="w-[52px] h-[52px]">
-                        <circle cx="28" cy="28" r="22" fill="none" stroke="#f5f5f4" strokeWidth="4" />
-                        <circle cx="28" cy="28" r="22" fill="none" stroke="#1A40FF" strokeWidth="4" strokeLinecap="round" strokeDasharray="138" strokeDashoffset={138 * (1 - 0.87)} transform="rotate(-90 28 28)" />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-base font-bold text-foreground">87</span>
-                      </div>
-                    </div>
-                    <span className="text-[9px] text-[#2C7A53] font-medium mt-1">Aprobado</span>
-                  </div>
-                </div>
-              </Appear>
-            </div>
-
-          </div>
-        </section>
-
-        <TestimonialCarousel
-          testimonials={testimonials}
-          title={
-            <h2 className="text-[40px] md:text-[52px] font-heading font-normal text-foreground tracking-[-0.03em] leading-[1.05] mb-10">
-              Agentes que ya están{' '}
-              <span className="italic">cerrando más</span>
-            </h2>
+      <main className="overflow-hidden bg-[#FBFAF8]">
+        <HeroeDePara
+          ceja="100% gratis para agentes"
+          titulo={
+            <>
+              Cierra más arriendos <span className="block"><Acento>más rápido</Acento></span>
+            </>
           }
-          cardClassName="bg-muted"
+          entrada={
+            <>
+              Genera tu link, compártelo por WhatsApp, recibe evaluaciones profesionales.
+              <span className="text-[#121110]"> Sin costo para ti.</span>
+            </>
+          }
+          principal={{ href: '/auth?role=agent', texto: 'Crear cuenta gratis' }}
+          secundaria={{ href: '/pricing', texto: 'Ver cómo funciona' }}
+          cifras={[
+            { valor: '$0', rotulo: 'Costo para ti' },
+            { valor: '2x', rotulo: 'Más cierres' },
+            { valor: '48h', rotulo: 'Tiempo promedio' },
+          ]}
+          foto={{ src: '/hero-6.jpg', alt: 'Sala de un inmueble listo para mostrar' }}
+          pieza={<PiezaDelHeroe />}
+          semilla={41}
         />
 
-        {/* FAQ — reusable component from home */}
-        <FAQSection />
+        {/* El problema */}
+        <Seccion fondo="papel" className="pt-[clamp(72px,8vw,110px)]">
+          <div className={ANCHO}>
+            <div className="grid gap-8 md:grid-cols-12 md:items-end">
+              <div className="md:col-span-7">
+                <Ceja>El problema</Ceja>
+                <TituloDeSeccion className="mt-5">
+                  Los agentes pierden tiempo en <Acento>procesos manuales</Acento>
+                </TituloDeSeccion>
+              </div>
+              <Entrada className="md:col-span-5">
+                Llamadas, WhatsApps, verificaciones manuales. Cada candidato consume horas que podrías usar cerrando más arriendos.
+              </Entrada>
+            </div>
 
-        {/* CTA — reusable component from home */}
-        <CTASection />
+            <div className="mt-[clamp(40px,5vw,72px)] grid gap-5 md:grid-cols-12">
+              <Appear inView distance="md" duration="slow" className="md:col-span-7">
+                <FotoQueSeRevela
+                  src="https://images.pexels.com/photos/5668858/pexels-photo-5668858.jpeg"
+                  alt="Agente inmobiliario revisando documentos"
+                  proporcion={16 / 9}
+                  rotulo="PROBLEMA 01"
+                />
+                <h3 className="mt-5 text-[24px] font-[420] leading-tight tracking-[-0.02em] text-[#121110]">Horas en verificaciones manuales</h3>
+                <p className="mt-2 max-w-[560px] text-[15px] leading-[1.5] text-[#5B5751]">
+                  Llamar referencias, verificar empleo, revisar historial crediticio... Por cada candidato.
+                </p>
+              </Appear>
+
+              <Appear inView distance="md" duration="slow" delay={0.08} className="md:col-span-5">
+                <Tarjeta className="flex h-full flex-col p-7">
+                  <Rotulo tono="neutro">PROBLEMA 02</Rotulo>
+                  <h3 className="mt-4 text-[24px] font-[420] leading-tight tracking-[-0.02em]">Sin datos para decidir</h3>
+                  <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">
+                    Presentas candidatos al propietario sin saber realmente si pueden pagar.
+                  </p>
+                  <dl className="mt-auto space-y-3 pt-8">
+                    {['Ingresos', 'Crédito', 'Referencias'].map((l) => (
+                      <div key={l} className="flex items-center gap-3 text-caption">
+                        <dt className="w-[92px] flex-none text-[#5B5751]">{l}</dt>
+                        <dd className="flex flex-1 items-center gap-3">
+                          <span aria-hidden="true" className="h-1.5 flex-1 rounded-full bg-[#ECE8E1]" />
+                          <span className="font-mono text-[#A8A29A]">Sin datos</span>
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </Tarjeta>
+              </Appear>
+
+              <Appear inView distance="md" duration="slow" delay={0.12} className="md:col-span-5">
+                <Tarjeta className="flex h-full flex-col p-7">
+                  <Rotulo tono="neutro">PROBLEMA 03</Rotulo>
+                  <h3 className="mt-4 text-[24px] font-[420] leading-tight tracking-[-0.02em]">Candidatos que se pierden</h3>
+                  <p className="mt-2 text-[15px] leading-[1.5] text-[#5B5751]">
+                    Mientras verificas uno, otros 3 ya encontraron otro apartamento.
+                  </p>
+                  <ul className="relative mt-auto space-y-3 pt-8">
+                    <HiloDePuntos vertical className="absolute bottom-3 left-[17px] top-11" />
+                    {[
+                      { name: 'María González', status: 'Cerrado', tono: 'exito' as const },
+                      { name: 'Nicolás Ruiz', status: 'Esperando', tono: 'aviso' as const },
+                      { name: 'Ana Pérez', status: 'Perdido', tono: 'neutro' as const },
+                    ].map((c) => (
+                      <li key={c.name} className="relative flex items-center gap-3">
+                        <Avatar name={c.name} size="md" />
+                        <span className="flex-1 text-[15px] text-[#121110]">{c.name}</span>
+                        <Rotulo tono={c.tono}>{c.status}</Rotulo>
+                      </li>
+                    ))}
+                  </ul>
+                </Tarjeta>
+              </Appear>
+
+              <Appear inView distance="md" duration="slow" delay={0.16} className="md:col-span-7">
+                <FotoQueSeRevela
+                  src="https://images.pexels.com/photos/8293778/pexels-photo-8293778.jpeg"
+                  alt="Agente presentando propiedad a clientes"
+                  proporcion={16 / 9}
+                  rotulo="PROBLEMA 04"
+                />
+                <h3 className="mt-5 text-[24px] font-[420] leading-tight tracking-[-0.02em] text-[#121110]">Te ves poco profesional</h3>
+                <p className="mt-2 max-w-[560px] text-[15px] leading-[1.5] text-[#5B5751]">
+                  Los propietarios esperan reportes formales, no &quot;yo creo que este candidato está bien&quot;.
+                </p>
+              </Appear>
+            </div>
+          </div>
+        </Seccion>
+
+        {/* Las herramientas: el momento de medianoche */}
+        <Seccion fondo="noche">
+          <CorrienteDeVoltaje
+            fondo="noche"
+            forma="horizonte"
+            semilla={43}
+            fuerza={0.5}
+            className="absolute inset-x-0 bottom-0 z-0 h-[40%] w-full opacity-80 [mask-image:linear-gradient(to_top,#000_0%,rgba(0,0,0,.6)_40%,transparent_95%)]"
+          />
+          <div className={cn(ANCHO, 'relative z-[1]')}>
+            <div className="grid gap-8 md:grid-cols-12 md:items-end">
+              <div className="md:col-span-7">
+                <Ceja enNoche>Las herramientas</Ceja>
+                <TituloDeSeccion enNoche className="mt-5">
+                  Herramientas para <Acento enNoche>cerrar más</Acento>
+                </TituloDeSeccion>
+              </div>
+              <Entrada enNoche className="md:col-span-5">
+                Todo lo que necesitas para impresionar a tus clientes propietarios y cerrar arriendos más rápido. 100% gratis para ti.
+              </Entrada>
+            </div>
+
+            <div className="mt-[clamp(40px,5vw,72px)] grid gap-4 md:grid-cols-12 lg:gap-5">
+              <TarjetaDeNoche
+                className="md:col-span-7"
+                insignia={{ valor: 'GRATIS', rotulo: 'para ti' }}
+                titulo="Link de evaluación"
+                texto="Genera un link único para cada propiedad. Compártelo por WhatsApp y recibe el reporte."
+                chips={['WhatsApp', 'Email', 'SMS', 'QR']}
+              >
+                <div className="rounded-[16px] bg-white/[0.04] p-4 ring-1 ring-white/[0.08]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-caption text-[#F3F1ED]">Apto 302</span>
+                    <span className="inline-flex items-center gap-1.5 text-caption text-[#7FD3A0]">
+                      <i aria-hidden="true" className="h-1.5 w-1.5 rounded-[2px] bg-[#2B7549]" />
+                      Activo
+                    </span>
+                  </div>
+                  <p className="mt-2 truncate rounded-[10px] font-mono text-caption text-[#8FA2FF] ring-1 ring-white/[0.08] px-2.5 py-1.5">
+                    arriendo.co/ch302
+                  </p>
+                  <dl className="mt-3 grid grid-cols-2 gap-2">
+                    {[
+                      { l: 'Visitas', v: '24' },
+                      { l: 'Aplicaciones', v: '8' },
+                    ].map((s) => (
+                      <div key={s.l}>
+                        <dt className="text-caption text-[#8E93B0]">{s.l}</dt>
+                        <dd className="font-mono text-[20px] text-[#F3F1ED]">{s.v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              </TarjetaDeNoche>
+
+              <TarjetaDeNoche
+                className="md:col-span-5"
+                delay={0.08}
+                insignia={{ valor: '$24.900', rotulo: 'paga el candidato' }}
+                titulo="Evaluación completa"
+                texto="Verificación de identidad, historial crediticio y score de riesgo con IA."
+              >
+                <div className="flex h-full items-center justify-center py-2">
+                  <Medidor valor={91} rotulo="Bajo riesgo" />
+                </div>
+              </TarjetaDeNoche>
+
+              <TarjetaDeNoche
+                className="md:col-span-5"
+                delay={0.12}
+                titulo="App móvil"
+                texto="Notificaciones en tiempo real cuando alguien se postula. iOS y Android."
+              >
+                <ul className="space-y-2">
+                  {[
+                    { text: 'Nueva postulación', time: 'Ahora', on: true },
+                    { text: 'Contrato firmado', time: '1h', on: false },
+                    { text: 'Reporte listo', time: '2h', on: false },
+                  ].map((n) => (
+                    <li key={n.text} className="flex items-center gap-2.5 rounded-[12px] bg-white/[0.04] px-3 py-2.5 ring-1 ring-white/[0.08]">
+                      <i aria-hidden="true" className={cn('h-2 w-2 flex-none rounded-[2px]', n.on ? 'bg-[#4D6BFF]' : 'bg-white/20')} />
+                      <span className="flex-1 text-caption text-[#F3F1ED]">{n.text}</span>
+                      <span className="font-mono text-caption text-[#8E93B0]">{n.time}</span>
+                    </li>
+                  ))}
+                </ul>
+              </TarjetaDeNoche>
+
+              <TarjetaDeNoche
+                className="md:col-span-7"
+                delay={0.16}
+                insignia={{ valor: 'Incluido', rotulo: 'sin costo extra' }}
+                titulo="Dashboard de comisiones"
+                texto="Rastrea tus cierres, mide tu rendimiento y alcanza tus metas mensuales."
+                chips={['Métricas', 'Metas', 'Histórico', 'Exportar']}
+              >
+                <div className="rounded-[16px] bg-white/[0.04] p-4 ring-1 ring-white/[0.08]">
+                  <div className="flex items-baseline justify-between">
+                    <span className="font-mono text-[26px] leading-none text-[#F3F1ED]">$8.9M</span>
+                    <span className="font-mono text-caption text-[#7FD3A0]">+23%</span>
+                  </div>
+                  <p className="mt-1 text-caption text-[#8E93B0]">Comisiones este mes</p>
+                  <div className="mt-4 flex items-center justify-between text-caption">
+                    <span className="text-[#8E93B0]">Meta</span>
+                    <span className="font-mono text-[#F3F1ED]">89%</span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full w-[89%] rounded-full bg-[#4D6BFF]" />
+                  </div>
+                </div>
+              </TarjetaDeNoche>
+
+              <TarjetaDeNoche
+                className="md:col-span-6"
+                delay={0.2}
+                titulo="Contratos digitales"
+                texto="Firma electrónica con validez legal. Genera contratos desde plantillas."
+              >
+                <div className="flex flex-col items-center">
+                  <div aria-hidden="true" className="relative h-[84px] w-[66px] rounded-[8px] bg-white/[0.06] p-2.5 ring-1 ring-white/[0.08]">
+                    <div className="space-y-1.5">
+                      <div className="h-1 w-full rounded bg-white/20" />
+                      <div className="h-1 w-3/4 rounded bg-white/20" />
+                      <div className="h-1 w-full rounded bg-white/20" />
+                      <div className="h-1 w-1/2 rounded bg-white/20" />
+                    </div>
+                    <CheckCircle className="absolute bottom-2 right-2 h-4 w-4 text-[#8FA2FF]" />
+                  </div>
+                  <span className="mt-2 text-caption text-[#8E93B0]">Firmado</span>
+                </div>
+              </TarjetaDeNoche>
+
+              <TarjetaDeNoche
+                className="md:col-span-6"
+                delay={0.24}
+                titulo="Reportes profesionales"
+                texto="PDFs con tu marca para impresionar a propietarios."
+              >
+                <div className="flex h-full items-center justify-center">
+                  <Medidor valor={87} rotulo="Aprobado" />
+                </div>
+              </TarjetaDeNoche>
+            </div>
+          </div>
+        </Seccion>
+
+        <TestimoniosDePara
+          testimonios={testimonials}
+          ceja="Testimonios"
+          titulo={
+            <>
+              Agentes que ya están <Acento>cerrando más</Acento>
+            </>
+          }
+        />
+
+        <div className="[&>section]:!bg-[#FBFAF8]">
+          <FAQSection />
+        </div>
+        <CierreDePara semilla={41} />
       </main>
       <LandingFooterV2 />
     </LandingChrome>

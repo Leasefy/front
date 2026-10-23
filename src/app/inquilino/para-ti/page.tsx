@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { TrendUp, Shield, SealCheck, Funnel, CaretLeft, CaretRight, Lightning, Target, Trophy } from '@phosphor-icons/react';
 import { ArrowUpRight } from '@phosphor-icons/react';
 
-import { IconButton } from '@leasefy/cadence';
+import { CampoDeMedianoche, IconButton } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -303,10 +303,9 @@ export default function ParaTiPage() {
         {/*
           * Hero de marca.
           *
-          * `bg-brand` y no `bg-primary`: en tema oscuro `--primary` se vuelve
-          * `--indigo-300` (#8A9FFF) y el texto blanco encima queda en **2,48:1**
-          * —ilegible—. `--brand` resuelve al cobalto de Leasefy fijo (#1A40FF)
-          * en los dos temas, y ahí el blanco mide 6,59:1.
+          * Medianoche y no cobalto (decisión de Nico, 23-10): el campo de marca
+          * de Cadence (#0A0F2C con su grano), el mismo en los dos temas; el azul
+          * queda sólo para el botón de la pantalla. Antes `bg-brand` (#1A40FF).
           *
           * El número de la derecha era `getAccessiblePropertiesPercentage()`, una
           * tabla fija por letra de score (A=95, B=85, C=60, D=30) que no mira el
@@ -314,7 +313,7 @@ export default function ParaTiPage() {
           * «0 propiedades encontradas»: la pantalla se desmentía sola. Ahora
           * muestra el conteo real, que puede ser cero y entonces lo dice.
           */}
-        <section className="rounded-lg bg-brand p-8 sm:p-10 mb-6">
+        <CampoDeMedianoche className="rounded-lg p-8 sm:p-10 mb-6" cruces={false} data-testid="para-ti-marca">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-xl">
               <p className="text-overline text-white/80">
@@ -337,7 +336,7 @@ export default function ParaTiPage() {
 
               <div className="mt-7 flex flex-wrap items-center gap-2">
                 <div className={chipDelHero}>
-                  <span className="grid h-5 w-5 place-items-center rounded-full bg-white font-mono text-[10px] font-medium text-brand">
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-white font-mono text-caption text-ink">
                     {riskLevel}
                   </span>
                   <span>{locale === 'es' ? 'Calificación' : 'Rating'} {RISK_LEVEL_LABELS[riskLevel]}</span>
@@ -401,7 +400,7 @@ export default function ParaTiPage() {
               </a>
             </div>
           </div>
-        </section>
+        </CampoDeMedianoche>
 
         {/* Stats Cards */}
         {stats && (

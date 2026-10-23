@@ -155,12 +155,16 @@ describe('hero de Propiedades para ti', () => {
     expect(hero().textContent).not.toContain('propiedades caben')
   })
 
-  it('pinta la marca con un cobalto que no cambia con el tema', async () => {
+  it('pinta la marca en medianoche, la misma en los dos temas (decisión de Nico, 23-10)', async () => {
     await pintar()
 
-    // `bg-primary` se vuelve #8A9FFF en oscuro y deja el blanco en 2,48:1.
-    expect(hero().className).toContain('bg-brand')
+    // El campo de marca de Cadence: #0A0F2C (`--ink`) con su grano; el azul queda
+    // para el botón. Nunca `bg-primary` (se vuelve #8A9FFF en oscuro) ni el cobalto.
+    expect(hero().getAttribute('data-testid')).toBe('para-ti-marca')
+    // CampoDeMedianoche pone el texto de tinta (`text-ink-fg`); su fondo va en `style`.
+    expect(hero().className).toContain('text-ink-fg')
     expect(hero().className).not.toContain('bg-primary')
+    expect(hero().className).not.toContain('bg-brand')
   })
 
   it('no usa acentos semánticos sobre el cobalto', async () => {

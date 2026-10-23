@@ -135,10 +135,10 @@ export function SeccionMediosDeRecibo() {
     >
       {datos ? (
         <div className="space-y-5" data-testid="seccion-medios-de-recibo">
+          {/* Glow up 22-10: el para qué lo dice el marco; aquí, lo que cambia y lo que no. */}
           <p className="text-sm text-fg-muted">
-            Con qué puede la persona de caja registrar que entró plata. Un medio apagado no se
-            ofrece al emitir un recibo, y el back lo rechaza si llega igual. Esto NO cambia lo que
-            el inquilino ve en «Cómo pagar»: eso se configura en «Medios de pago».
+            Un medio apagado no se ofrece al emitir un recibo. Esto no cambia lo que el inquilino ve
+            en «Cómo pagar»: eso se configura en «Medios de pago».
           </p>
 
           {datos.esElPreset ? (

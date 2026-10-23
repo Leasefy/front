@@ -300,9 +300,9 @@ export function SeccionComercial() {
 
   return (
     <div className="space-y-6">
+      {/* Glow up 22-10: «la comisión de tus asesores» ya la dice el marco; aquí, dónde se ve. */}
       <p className="text-sm text-fg-muted">
-        Cuánto gana cada asesor. Es la comisión de tu equipo dentro de la inmobiliaria: Leasefy la calcula sobre lo que la
-        inmobiliaria de verdad ganó cada mes y la muestra en{' '}
+        Leasefy la calcula sobre lo que la inmobiliaria de verdad ganó cada mes y la muestra en{' '}
         <Link href="/panel/inmobiliaria/pipeline/comisiones" className="text-primary underline-offset-2 hover:underline">
           Comisiones y metas
         </Link>
@@ -318,12 +318,10 @@ export function SeccionComercial() {
         </div>
       </Presence>
 
-      <section className="rounded-lg border border-border bg-surface p-4 md:p-6 space-y-4 shadow-sm" data-testid="regla-de-todos">
+      <section className="rounded-lg border border-border bg-surface p-4 md:p-6 space-y-4" data-testid="regla-de-todos">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-md bg-primary-soft flex items-center justify-center shrink-0">
-              <Users className="w-5 h-5 text-primary" aria-hidden="true" />
-            </div>
+            <Users className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
             <div className="min-w-0">
               <h3 className="text-base font-medium">Para todos los asesores</h3>
               <p className="text-sm text-fg-muted" data-testid="texto-regla-de-todos">
@@ -354,11 +352,9 @@ export function SeccionComercial() {
         </Collapse>
       </section>
 
-      <section className="rounded-lg border border-border bg-surface p-4 md:p-6 space-y-4 shadow-sm" data-testid="reglas-por-asesor">
+      <section className="rounded-lg border border-border bg-surface p-4 md:p-6 space-y-4" data-testid="reglas-por-asesor">
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-md bg-primary-soft flex items-center justify-center shrink-0">
-            <UserCircle className="w-5 h-5 text-primary" aria-hidden="true" />
-          </div>
+          <UserCircle className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
           <div>
             <h3 className="text-base font-medium">Regla propia de un asesor</h3>
             <p className="text-sm text-fg-muted">Si un asesor tiene la suya, gana a la de todos.</p>
@@ -413,7 +409,7 @@ export function SeccionComercial() {
       {datos.reglas.length > 0 ? (
         <section className="space-y-2" data-testid="historial-de-reglas">
           <h3 className="flex items-center gap-2 text-sm font-medium">
-            <Handshake className="w-4 h-4" aria-hidden="true" />
+            <Handshake className="w-4 h-4 text-fg-muted" aria-hidden="true" />
             Todas las reglas
           </h3>
           <p className="text-caption text-fg-muted">

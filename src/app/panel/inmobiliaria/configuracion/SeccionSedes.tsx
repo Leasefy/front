@@ -24,6 +24,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinLaMigracion } from '@/components/finanzas/piezas';
 import { explicar } from '@/components/finanzas/TasasDeUsura';
 import { Badge } from '@/components/ui/badge';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -113,12 +114,15 @@ export function SeccionSedes() {
             <SinLaMigracion motivo={datos.motivo} queSeEspera="crear y editar sedes" />
           ) : null}
 
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <p className="max-w-2xl text-sm text-fg-muted">
-              Cada sede es un centro de costo: el tablero financiero se puede mirar consolidado o
-              por sede, y el deterioro de cartera también. Un inmueble o un contrato pertenece a
-              una sola.
-            </p>
+          {/* Glow up 22-10: el para qué ya lo dice el marco; el detalle, en la ayuda. */}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <ParaEntenderMas etiqueta="¿Cómo funcionan las sedes?" titulo="Sedes">
+              <p className="text-body text-fg-muted">
+                Cada sede es un centro de costo: el tablero financiero se puede mirar consolidado o
+                por sede, y el deterioro de cartera también. Un inmueble o un contrato pertenece a
+                una sola.
+              </p>
+            </ParaEntenderMas>
             <Button size="sm" hideArrow disabled={!disponible} onClick={() => setEditando('nueva')}>
               Crear una sede
             </Button>
@@ -139,10 +143,11 @@ export function SeccionSedes() {
             </p>
           ) : null}
 
-          <div className="overflow-hidden rounded-lg border border-border">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
+          <div className="overflow-hidden rounded-lg border border-border bg-surface">
+            <div className="md:overflow-x-auto">
+              {/* En el celular cada sede es una tarjeta. */}
+              <Table className="max-md:block">
+                <TableHeader className="max-md:hidden">
                   <TableRow>
                     <TableHead>Sede</TableHead>
                     <TableHead>Código</TableHead>
@@ -152,18 +157,22 @@ export function SeccionSedes() {
                     <TableHead>&nbsp;</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className="max-md:block">
                   {sedes.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="py-10 text-center text-sm text-fg-muted">
+                    <TableRow className="max-md:block">
+                      <TableCell colSpan={6} className="py-10 text-center text-sm text-fg-muted max-md:block">
                         Todavía no hay sedes. Sin ellas el tablero muestra la inmobiliaria entera,
                         que es exactamente lo que hacía hasta ahora.
                       </TableCell>
                     </TableRow>
                   ) : (
                     sedes.map((s) => (
-                      <TableRow key={s.id} data-testid={`sede-${s.codigo}`}>
-                        <TableCell className="font-medium text-fg">
+                      <TableRow
+                        key={s.id}
+                        data-testid={`sede-${s.codigo}`}
+                        className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:px-4 max-md:py-4"
+                      >
+                        <TableCell className="font-medium text-fg max-md:col-span-2 max-md:block max-md:p-0">
                           <span className="flex flex-wrap items-center gap-2">
                             {s.nombre}
                             {s.esPorDefecto ? <Badge variant="secondary">Por defecto</Badge> : null}
@@ -173,16 +182,21 @@ export function SeccionSedes() {
                             <span className="block text-caption text-fg-muted">{s.direccion}</span>
                           ) : null}
                         </TableCell>
-                        <TableCell className="font-mono text-caption">{s.codigo}</TableCell>
-                        <TableCell className="text-fg-muted">{s.ciudad || '—'}</TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="font-mono text-caption max-md:hidden">{s.codigo}</TableCell>
+                        <TableCell className="text-fg-muted max-md:col-start-1 max-md:block max-md:p-0 max-md:text-caption">
+                          <span className="font-mono md:hidden">{s.codigo} · </span>
+                          {s.ciudad || '—'}
+                        </TableCell>
+                        <TableCell className="text-right font-mono tabular-nums max-md:col-start-1 max-md:block max-md:p-0 max-md:text-left max-md:text-caption max-md:text-fg-muted">
                           {NUMERO.format(s.inmuebles)}
+                          <span className="font-sans md:hidden"> {s.inmuebles === 1 ? 'inmueble' : 'inmuebles'}</span>
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="text-right font-mono tabular-nums max-md:col-start-1 max-md:block max-md:p-0 max-md:text-left max-md:text-caption max-md:text-fg-muted">
                           {NUMERO.format(s.contratos)}
+                          <span className="font-sans md:hidden"> {s.contratos === 1 ? 'contrato' : 'contratos'}</span>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex justify-end gap-1">
+                        <TableCell className="max-md:col-span-2 max-md:block max-md:p-0 max-md:pt-1">
+                          <div className="flex justify-end gap-1 max-md:justify-start max-md:-ml-2">
                             {!s.esPorDefecto ? (
                               <Button
                                 variant="ghost"

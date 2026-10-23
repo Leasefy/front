@@ -112,7 +112,7 @@ export function CuentasDelTraslado() {
   return (
     <section className="space-y-4 rounded-lg border border-border bg-surface p-6" data-testid="cuentas-del-traslado">
       <header className="space-y-1">
-        <h3 className="flex items-center gap-2 text-h4 font-medium text-fg">
+        <h3 className="flex items-center gap-2 text-base font-medium text-fg">
           <ArrowsLeftRight className="h-5 w-5" aria-hidden="true" />
           Traslado de la comisión
         </h3>

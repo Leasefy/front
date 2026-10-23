@@ -460,4 +460,12 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   'de 1 conversación': 'of 1 conversation',
   'de {n} conversaciones': 'of {n} conversations',
   'Conversaciones de voz y su resultado, con transcripción y calidad.': 'Voice conversations and their outcome, with transcript and quality.',
+  // Configuración › Miembros y roles (ConfigUsuarios, 5.º agente panel)
+  'Estado de las personas': 'People by status',
+  'Todos': 'All',
+  'Activos': 'Active',
+  'Invitaciones abiertas': 'Open invitations',
+  'Inactivos': 'Inactive',
+  // app/inquilino/calificacion
+  'Se ven las 20 más recientes de {n} consultas.': 'Showing the 20 most recent of {n} lookups.',
 }

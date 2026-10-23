@@ -22,7 +22,9 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { bitacoraApi } from '@/lib/api/bitacora.service';
 import type { BitacoraDePlata } from '@/lib/api/bitacora.service';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import { EsqueletoDeSeccion } from './piezas';
+import { EsqueletoDeSeccion, VacioDeSeccion } from './piezas';
+import { cuandoEnBogota } from '@/lib/movimientos/en-palabras';
+import { Scroll } from '@phosphor-icons/react';
 
 /** Las acciones, en palabras. Un `APROBAR_LOTE` no se le muestra a nadie. */
 const EN_PALABRAS: Record<string, string> = {
@@ -75,14 +77,11 @@ export function SeccionBitacora() {
 
   return (
     <div className="space-y-4" data-testid="bitacora-de-plata">
-      <p className="text-sm text-fg-muted">
-        Todo lo que movió plata en tu inmobiliaria: quién, qué, cuándo y por qué.
-        No se puede editar ni borrar.
-      </p>
-
+      {/* Glow up 22-10: el para qué lo dice el marco de Configuración (antes se
+          repetía aquí); queda lo que no dice: que nadie la edita ni la borra. */}
       {!datos.disponible && (
         <p
-          className="rounded-md border border-border bg-warning-soft px-3 py-2 text-caption text-fg"
+          className="rounded-md border border-border bg-warning-soft px-3 py-2 text-sm text-fg"
           data-testid="bitacora-sin-migrar"
         >
           {datos.motivo}
@@ -90,47 +89,47 @@ export function SeccionBitacora() {
       )}
 
       {datos.disponible && datos.filas.length === 0 && (
-        <p className="text-sm text-fg-muted" data-testid="bitacora-vacia">
-          Todavía no se registró ninguna acción que mueva plata.
-        </p>
+        <div data-testid="bitacora-vacia">
+          <VacioDeSeccion
+            icono={Scroll}
+            titulo="Todavía no se registró nada que mueva plata"
+            ayuda="Cuando alguien apruebe un giro, anule un recibo, condone intereses o cambie una cuenta, queda aquí con su nombre y su motivo."
+          />
+        </div>
       )}
 
-      <ul className="space-y-2">
-        {datos.filas.map((f) => (
-          <li
-            key={f.id}
-            className="rounded-lg border border-border bg-surface p-4"
-            data-testid={`huella-${f.id}`}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-fg">
-                  {EN_PALABRAS[f.accion] ?? f.accion}
+      {datos.filas.length > 0 && (
+        <section className="overflow-hidden rounded-lg border border-border bg-surface">
+          <p className="border-b border-border px-4 py-2.5 text-caption text-fg-muted">
+            Nadie la edita ni la borra.
+          </p>
+          <ul className="divide-y divide-border">
+            {datos.filas.map((f) => (
+              <li key={f.id} className="px-4 py-3.5" data-testid={`huella-${f.id}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-fg">{EN_PALABRAS[f.accion] ?? f.accion}</p>
+                    <p className="mt-0.5 text-caption text-fg-muted">{f.resumen}</p>
+                    {f.motivo && <p className="mt-0.5 text-caption text-fg-muted">Motivo: {f.motivo}</p>}
+                  </div>
+                  {f.valorCop !== null && (
+                    <p className="shrink-0 font-mono text-sm tabular-nums text-fg">{formatCurrency(f.valorCop)}</p>
+                  )}
+                </div>
+                <p className="mt-1.5 text-caption text-fg-subtle">
+                  {/*
+                    El actor sale del NOMBRE COPIADO en la fila, no de un join: la
+                    bitácora tiene que decir quién fue aunque después borren al
+                    usuario. Sin nombre se dice «el sistema», que es la verdad
+                    cuando la acción la hizo un cron.
+                  */}
+                  {f.actor.nombre ?? f.actor.email ?? 'El sistema'} · {cuandoEnBogota(f.fecha)}
                 </p>
-                <p className="mt-1 text-caption text-fg-muted">{f.resumen}</p>
-                {f.motivo && (
-                  <p className="mt-1 text-caption text-fg-muted">Motivo: {f.motivo}</p>
-                )}
-              </div>
-              {f.valorCop !== null && (
-                <p className="shrink-0 font-mono text-sm text-fg">
-                  {formatCurrency(f.valorCop)}
-                </p>
-              )}
-            </div>
-            <p className="mt-2 text-caption text-fg-muted">
-              {/*
-                El actor sale del NOMBRE COPIADO en la fila, no de un join: la
-                bitácora tiene que decir quién fue aunque después borren al
-                usuario. Sin nombre se dice «el sistema», que es la verdad
-                cuando la acción la hizo un cron.
-              */}
-              {f.actor.nombre ?? f.actor.email ?? 'El sistema'} ·{' '}
-              {new Date(f.fecha).toLocaleString('es-CO')}
-            </p>
-          </li>
-        ))}
-      </ul>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

@@ -16,6 +16,8 @@ import { useMemo, useRef, useState } from 'react';
 import { MagnifyingGlass, Plus, UploadSimple, PencilSimple, Check, X } from '@phosphor-icons/react';
 
 import { Card } from '@/components/ui/card';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -71,6 +73,7 @@ const sinTildes = (t: string) =>
 export function SeccionConceptos() {
   const { conceptos, disponible, cargando, deRespaldo, recargar } = useCatalogoDeConceptos();
   const [busqueda, setBusqueda] = useState('');
+  const [estado, setEstado] = useState<'todos' | 'activos' | 'apagados'>('todos');
   const [editando, setEditando] = useState<{ clave: string; nombre: string } | null>(null);
   const [guardando, setGuardando] = useState<string | null>(null);
   const [nuevoAbierto, setNuevoAbierto] = useState(false);
@@ -80,11 +83,14 @@ export function SeccionConceptos() {
 
   const visibles = useMemo(() => {
     const q = sinTildes(busqueda.trim());
-    if (!q) return conceptos;
-    return conceptos.filter((c) =>
+    const delEstado = conceptos.filter((c) =>
+      estado === 'todos' ? true : estado === 'activos' ? c.activo : !c.activo,
+    );
+    if (!q) return delEstado;
+    return delEstado.filter((c) =>
       sinTildes([c.nombre, c.nombreDeLeasefy ?? '', ...c.nombresDelSistemaAnterior].join(' ')).includes(q),
     );
-  }, [conceptos, busqueda]);
+  }, [conceptos, busqueda, estado]);
   const activos = conceptos.filter((c) => c.activo).length;
   const soloLectura = !disponible;
 
@@ -142,14 +148,15 @@ export function SeccionConceptos() {
 
   return (
     <div className="space-y-6" data-testid="seccion-conceptos">
-      <div className="space-y-1">
-        <h2 className="text-h4 text-fg">Conceptos</h2>
-        <p className="max-w-3xl text-sm text-muted-foreground">
-          Lo que cobras en tus contratos, con el nombre que tú le das. Arrancas con los de Leasefy:
-          renómbralos, apaga los que no usas, crea los tuyos o tráelos de tu sistema anterior. Los
-          impuestos no van en el nombre: los calcula el contrato según quién le paga a quién.
+      {/* Glow up 22-10: el título y la línea de para qué sirve los pone el marco
+          de Configuración; aquí se repetían. Lo que se consulta, en la ayuda. */}
+      <ParaEntenderMas etiqueta="¿Y los impuestos?" titulo="Conceptos">
+        <p className="text-body text-fg-muted">
+          Arrancas con los conceptos de Leasefy: renómbralos, apaga los que no usas, crea los tuyos o
+          tráelos de tu sistema anterior. Los impuestos no van en el nombre: los calcula el contrato
+          según quién le paga a quién.
         </p>
-      </div>
+      </ParaEntenderMas>
 
       {(soloLectura || deRespaldo) && !cargando && (
         <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-fg" data-testid="conceptos-solo-lectura">
@@ -192,8 +199,19 @@ export function SeccionConceptos() {
       </div>
 
       <Card className="overflow-hidden p-0">
-        <div className="border-b border-border px-4 py-3 text-sm text-muted-foreground">
-          {activos} activos de {conceptos.length}
+        {/* Las pestañas con su conteo, dentro de la tarjeta (antes «N activos de M» en una línea). */}
+        <div className="border-b border-border px-4 py-2.5">
+          <PestanasDeEstado
+            etiqueta="Estado de los conceptos"
+            valor={estado}
+            onCambio={setEstado}
+            data-testid="conceptos-estados"
+            pestanas={[
+              { valor: 'todos', etiqueta: 'Todos', cuantos: conceptos.length, fija: true },
+              { valor: 'activos', etiqueta: 'Activos', cuantos: activos, fija: true },
+              { valor: 'apagados', etiqueta: 'Apagados', cuantos: conceptos.length - activos },
+            ]}
+          />
         </div>
         <ul className="divide-y divide-border" data-testid="conceptos-lista">
           {visibles.map((c) => (
@@ -249,7 +267,9 @@ export function SeccionConceptos() {
             </li>
           ))}
           {visibles.length === 0 && (
-            <li className="px-4 py-6 text-sm text-muted-foreground">Ningún concepto se llama así.</li>
+            <li className="px-4 py-6 text-sm text-muted-foreground">
+              {busqueda.trim() ? 'Ningún concepto se llama así.' : 'No hay conceptos apagados.'}
+            </li>
           )}
         </ul>
       </Card>

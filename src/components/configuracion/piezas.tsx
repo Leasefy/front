@@ -32,9 +32,8 @@ export function VacioDeSeccion({
 }) {
   return (
     <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface px-6 py-14 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted">
-        <Icono className="h-5 w-5 text-fg-muted" weight="duotone" />
-      </div>
+      {/* Glow up 22-10: el ícono suelto, sin caja (Cadence 2). */}
+      <Icono className="h-8 w-8 text-fg-subtle" weight="light" aria-hidden="true" />
       <div className="space-y-1">
         <p className="text-base font-medium text-fg">{titulo}</p>
         <p className="mx-auto max-w-sm text-sm text-fg-muted">{ayuda}</p>
@@ -67,9 +66,8 @@ export function FilaDeAjuste({
   return (
     <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-5">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted">
-          <Icono className="h-[18px] w-[18px] text-fg-muted" />
-        </div>
+        {/* El ícono suelto, sin caja de color (Cadence 2). */}
+        <Icono className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
         <div className="min-w-0">
           <p className="text-sm font-medium text-fg">{titulo}</p>
           <p className="text-sm text-fg-muted">{descripcion}</p>

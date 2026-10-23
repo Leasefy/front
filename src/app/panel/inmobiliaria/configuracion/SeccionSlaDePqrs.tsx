@@ -237,10 +237,11 @@ export function SeccionSlaDePqrs() {
 
   return (
     <div className="space-y-4">
+      {/* Glow up 22-10: «cuánto te demoras, por tipo» lo dice el marco; aquí sólo lo que no dice. */}
       <p className="text-sm text-fg-muted">
-        Cuánto se demora tu inmobiliaria en responder, por tipo. Déjalo vacío para
-        regirte por el plazo legal de <strong>{datos.legalDiasHabiles} días hábiles</strong>{' '}
-        (Ley 1755 art. 14 y Ley 1480 art. 58).
+        Déjalo vacío para regirte por el plazo legal de{' '}
+        <span className="font-mono text-fg">{datos.legalDiasHabiles}</span> días hábiles (Ley 1755 art. 14 y
+        Ley 1480 art. 58).
       </p>
 
       {!datos.disponible && (

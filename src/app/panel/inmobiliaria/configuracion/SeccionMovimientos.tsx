@@ -288,9 +288,10 @@ export function SeccionMovimientos() {
               : 'Sin movimientos todavía.'}
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+          <div className="md:overflow-x-auto">
+            {/* En el celular cada movimiento es una tarjeta: qué hizo y su resultado arriba. */}
+            <Table className="max-md:block">
+              <TableHeader className="max-md:hidden">
                 <TableRow>
                   <TableHead>Cuándo</TableHead>
                   <TableHead>Quién</TableHead>
@@ -298,7 +299,7 @@ export function SeccionMovimientos() {
                   <TableHead>Resultado</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="max-md:block">
                 {datos.filas.map((m) => {
                   const r = resultadoDe(m.resultado);
                   return (
@@ -307,7 +308,7 @@ export function SeccionMovimientos() {
                       data-testid={`movimiento-${m.id}`}
                       tabIndex={0}
                       aria-label={`Abrir: ${m.accion}`}
-                      className="cursor-pointer focus-visible:bg-surface-muted"
+                      className="cursor-pointer focus-visible:bg-surface-muted max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:px-4 max-md:py-4"
                       onClick={() => setAbierto(m)}
                       onKeyDown={(ev) => {
                         if (ev.key === 'Enter' || ev.key === ' ') {
@@ -316,22 +317,22 @@ export function SeccionMovimientos() {
                         }
                       }}
                     >
-                      <TableCell className="whitespace-nowrap font-mono text-caption text-fg-muted">
+                      <TableCell className="whitespace-nowrap font-mono text-caption text-fg-muted max-md:col-start-1 max-md:row-start-3 max-md:block max-md:p-0">
                         {cuandoEnBogota(m.fecha)}
                       </TableCell>
-                      <TableCell className="max-w-[14rem]">
+                      <TableCell className="max-w-[14rem] max-md:col-start-1 max-md:row-start-2 max-md:block max-md:max-w-none max-md:p-0">
                         <p className="truncate text-sm text-fg" title={quienFue(m)}>
                           {quienFue(m)}
                         </p>
                         <p className="text-caption text-fg-muted">{rolEnPalabras(m.actor.rol)}</p>
                       </TableCell>
-                      <TableCell className="max-w-[22rem]">
-                        <p className="truncate text-sm text-fg" title={m.accion}>
+                      <TableCell className="max-w-[22rem] max-md:col-start-1 max-md:row-start-1 max-md:block max-md:max-w-none max-md:p-0">
+                        <p className="truncate text-sm text-fg max-md:font-medium" title={m.accion}>
                           {m.accion}
                         </p>
                         <p className="text-caption text-fg-muted">{moduloEnPalabras(m.modulo)}</p>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-right">
                         <Badge variant={TONO[r]}>{RESULTADO_EN_PALABRAS[r]}</Badge>
                       </TableCell>
                     </TableRow>

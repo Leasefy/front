@@ -125,7 +125,16 @@ export interface PantallaProps {
    * línea de para qué sirve) en vez del «Volver a…» y la línea con el nombre del cliente, que en su portal es la
    * misma persona que mira. Sin esto (el panel, el enlace), la cabecera de siempre.
    */
-  encabezado?: { seccion: string; descripcion: string };
+  encabezado?: {
+    seccion: string;
+    /** Sin ella (el panel), la línea del cliente: nombre · rol · contratos. */
+    descripcion?: string;
+    /**
+     * Glow up de Dinero (3.ª vuelta): en el panel el regreso sí va arriba (se llega desde una
+     * ficha), como texto y sin flecha, igual que en las demás pantallas del panel.
+     */
+    conRegreso?: boolean;
+  };
 }
 
 export function PantallaDelEstadoDeCuenta({
@@ -297,11 +306,23 @@ export function PantallaDelEstadoDeCuenta({
       data-estado-pagina
     >
       {encabezado ? (
-        <div data-estado-barra>
+        <div data-estado-barra className="space-y-3">
+          {encabezado.conRegreso && regreso ? (
+            <Link
+              href={regreso.href}
+              data-testid="estado-volver"
+              className="inline-flex items-center text-body-sm text-fg-muted transition-colors hover:text-fg"
+            >
+              {regreso.label}
+            </Link>
+          ) : null}
           <EncabezadoDePantalla
             seccion={encabezado.seccion}
             titulo={t('estadoDeCuenta.titulo')}
-            descripcion={encabezado.descripcion}
+            descripcion={
+              encabezado.descripcion ??
+              (lineaDelCliente ? <span data-testid="estado-subtitulo">{lineaDelCliente}</span> : undefined)
+            }
             acciones={
               <>
                 <Button

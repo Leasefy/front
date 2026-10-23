@@ -98,6 +98,9 @@ function Contenido() {
            quien abre el enlace compartido. */
         cargar={cargar}
         volverA={{ href: volver }}
+        /* Glow up de Dinero (3.ª vuelta): el encabezado común del panel, con el cliente como su
+           línea y el regreso arriba como texto. */
+        encabezado={{ seccion: 'Inquilinos', conRegreso: true }}
         /* Es el panel: las cuotas en mora sin intereses dicen por qué y llevan
            a configurar las reglas. El portal y el enlace no lo pasan. */
         reglasDeMoraHref={RUTA_DE_REGLAS_DE_MORA}

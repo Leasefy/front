@@ -45,7 +45,8 @@ export function ExplicacionDelEvento({ texto, testId }: { texto: string; testId?
               aria-expanded={false}
               aria-controls={id}
               aria-label={`Leer completo: ${texto}`}
-              className="shrink-0 font-medium text-primary underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none"
+              // Ronda 26 (revisora r25, Mapeo UI 2): en gris subrayado; en azul eran trece azules, uno por fila.
+              className="shrink-0 text-fg-muted underline underline-offset-2 hover:text-fg focus-visible:text-fg focus-visible:outline-none"
             >
               Leer completo
             </button>

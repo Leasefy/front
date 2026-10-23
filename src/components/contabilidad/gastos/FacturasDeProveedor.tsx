@@ -532,7 +532,15 @@ export function FacturasDeProveedor({
             ilustracion="billetera"
             titulo="Todavía no hay facturas de proveedor"
             descripcion="Registra la primera (el contador, la luz de la oficina, una cerradura), cáusala para que quede en el libro y págala: el pago sale por Egresos, con la firma de otra persona."
-            crear={registro.puede ? { label: 'Registrar una factura', onClick: () => setFormularioAbierto(true) } : undefined}
+            // Ronda 26 (revisora r25, Gastos UI): el azul ya es «Registrar una factura» del encabezado; el vacío
+            // lleva la suya en arena (antes dos azules iguales).
+            accion={
+              registro.puede ? (
+                <Button size="sm" variant="secondary" hideArrow onClick={() => setFormularioAbierto(true)}>
+                  Registrar la primera
+                </Button>
+              ) : undefined
+            }
             onLimpiarFiltros={() => {
               setDesde('');
               setHasta('');

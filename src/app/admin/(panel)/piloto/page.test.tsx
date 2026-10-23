@@ -94,6 +94,8 @@ describe('/admin/piloto — el Piloto automático de cada inmobiliaria', () => {
       if (opciones?.method === 'PATCH') return { ...LAB, estado: 'apagado', activo: false, detalle: 'Apagado por Leasefy: la inmobiliaria no lo puede prender.' }
       return [LAB, OTRA]
     })
+    // Ronda 30 (a propósito): la fila tiene un solo «Cambiar» que abre el cajón; el plan se elige ahí.
+    await act(async () => (q(`[data-testid="admin-piloto-cambiar-${LAB.tenant_id}"]`) as HTMLButtonElement).click())
     await act(async () => (q(`[data-testid="admin-piloto-apagado-${LAB.tenant_id}"]`) as HTMLButtonElement).click())
     const dialogo = q('[data-testid="admin-piloto-confirmar"]')!
     expect(dialogo.textContent).toContain('¿Dejar el Piloto de Inmobiliaria Laboratorio S.A.S. en «Apagado por Leasefy»?')
@@ -118,6 +120,8 @@ describe('/admin/piloto — el Piloto automático de cada inmobiliaria', () => {
       }
       return [LAB, OTRA]
     })
+    // Ronda 30 (a propósito): la fila tiene un solo «Cambiar» que abre el cajón; el plan se elige ahí.
+    await act(async () => (q(`[data-testid="admin-piloto-cambiar-${LAB.tenant_id}"]`) as HTMLButtonElement).click())
     await act(async () => (q(`[data-testid="admin-piloto-contratado-${LAB.tenant_id}"]`) as HTMLButtonElement).click())
     await act(async () => escribir(q('[data-testid="admin-piloto-motivo"]') as HTMLTextAreaElement, 'Firmó el contrato del Piloto.'))
     await act(async () => (q('[data-testid="admin-piloto-guardar"]') as HTMLButtonElement).click())

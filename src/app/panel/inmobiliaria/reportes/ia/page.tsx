@@ -295,7 +295,7 @@ function DesempenoContent() {
       : piloto.error
         ? { id: 'con-manos-fallo', ...PILOTO, lectura: { estado: 'fallo', error: piloto.error, queEs: 'lo que hicieron los agentes del Piloto', reintentar: () => piloto.refetch() } }
         : piloto.data && !piloto.data.disponible
-          ? { id: 'con-manos-sin-dato', ...PILOTO, lectura: { estado: 'sin', frase: 'No pudimos leer lo que hicieron: por ahora no tenemos cómo contarlo aquí.' } }
+          ? { id: 'con-manos-sin-dato', ...PILOTO, lectura: { estado: 'sin', frase: 'Todavía no se puede contar aquí lo que hicieron.' /* Ronda 30: sin primera persona */ } }
           : null;
   if (avisoDelPiloto) agentes.push(avisoDelPiloto);
 

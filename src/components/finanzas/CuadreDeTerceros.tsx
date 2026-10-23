@@ -328,6 +328,8 @@ function Veredicto({ datos }: { datos: Respuesta }) {
                 : tr('No se pudo cuadrar: falta el extracto del banco')
         }
         total={diferencia}
+        // Una diferencia de $ 0 ES la respuesta («cuadra exacto»): no se pliega en una línea.
+        esCero={false}
         tramos={tramos}
         pie={
           <div className="space-y-3">

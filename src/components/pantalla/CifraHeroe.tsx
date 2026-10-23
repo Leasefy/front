@@ -17,6 +17,17 @@
  * Quien la usa decide qué es cada cifra (un botón que filtra, un enlace o texto):
  * la pieza sólo da la jerarquía. Los tramos en cero no se pintan en la barra,
  * pero sí en la leyenda cuando son parte de la cuenta (`siempre`).
+ *
+ * TODO EN CERO = UNA LÍNEA (revisora r25, C3, 23-10-2026: «con todo en cero sale
+ * la cifra $ 0, sus tramos en cero y además el vacío» en siete pantallas). Cuando
+ * la respuesta es cero —quien la usa pasa `total={0}` y ningún tramo tiene plata,
+ * o lo dice con `esCero`— no se pinta la cifra grande, ni la barra, ni la leyenda
+ * de ceros: queda UNA línea. Por defecto «<rótulo> <cifra>»; con `cuandoEsCero`,
+ * la frase que se le pase («No hay nada por pagar a proveedores»). El pie, si lo
+ * hay, se queda debajo (quien la usa decide si en cero lo manda).
+ *
+ * Sin `total` la pieza NO lo deduce de los tramos: hay pantallas que usan la
+ * leyenda como fichas sueltas con `monto: 0` (el portal del propietario).
  */
 
 import { motion } from 'framer-motion';
@@ -51,6 +62,13 @@ interface CifraHeroeProps {
   pie?: ReactNode;
   /** `mediana`: cuando hay otra cifra más importante en la pantalla (p. ej. lo que se aprueba). */
   tamano?: 'grande' | 'mediana';
+  /**
+   * La respuesta es cero. Sin esta prop sólo se deduce con `total={0}` y todos los
+   * tramos en cero; en cualquier otro caso, sólo quien la usa sabe que es cero.
+   */
+  esCero?: boolean;
+  /** La línea que se dice cuando todo está en cero, en vez de «<rótulo> <cifra>». */
+  cuandoEsCero?: ReactNode;
   className?: string;
   'data-testid'?: string;
 }
@@ -70,6 +88,8 @@ export function CifraHeroe({
   total,
   pie,
   tamano = 'grande',
+  esCero,
+  cuandoEsCero,
   className,
   'data-testid': testId,
 }: CifraHeroeProps) {
@@ -77,6 +97,28 @@ export function CifraHeroe({
   const base = total && total > 0 ? total : suma;
   const conMonto = tramos.filter((t) => t.monto > 0);
   const enLeyenda = tramos.filter((t) => t.siempre || t.monto > 0);
+  const todoEnCero = esCero ?? (total === 0 && suma === 0);
+
+  if (todoEnCero) {
+    return (
+      <div className={cn('space-y-1', className)} data-testid={testId} data-en-cero="true">
+        {cuandoEsCero ? (
+          <p className="text-body-sm text-fg-muted" data-testid={testId ? `${testId}-en-cero` : undefined}>
+            {cuandoEsCero}
+          </p>
+        ) : (
+          <p
+            className="flex flex-wrap items-baseline gap-x-2 text-body-sm text-fg-muted"
+            data-testid={testId ? `${testId}-en-cero` : undefined}
+          >
+            <span className="font-mono text-caption uppercase tracking-[0.12em] text-fg-subtle">{rotulo}</span>
+            <span className="font-mono tabular-nums text-fg">{cifra}</span>
+          </p>
+        )}
+        {pie ? <div className="text-caption text-fg-muted">{pie}</div> : null}
+      </div>
+    );
+  }
 
   return (
     <div className={cn('space-y-4', className)} data-testid={testId}>

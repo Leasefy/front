@@ -3,7 +3,6 @@ import { PageGuard } from '@/components/auth/PageGuard';
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Buildings } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@leasefy/cadence';
 import { ConsignacionWizard } from '@/components/inmobiliaria/ConsignacionWizard';
@@ -20,6 +19,7 @@ import {
 } from '@/lib/hooks/useInmobiliaria';
 import { lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import type { InmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const PORTAFOLIO = '/panel/inmobiliaria/inmuebles';
 
@@ -67,26 +67,15 @@ function NuevaConsignacionContent() {
   const irAlPortafolio = () => router.push(volverA);
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4">
-        {/* Back Link */}
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* Glow up 22-10: el encabezado común, sin la caja de ícono de color. */}
+      <div className="space-y-3">
         <BackButton href={volverA} label={etiquetaDeRegreso} />
-
-        {/* Title */}
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-lg bg-primary-soft flex items-center justify-center shrink-0">
-            <Buildings className="w-6 h-6 text-primary" weight="duotone" />
-          </div>
-          <div>
-            <h1 className="text-h2 text-fg">
-              {t('inmobiliaria.portafolio.new.title')}
-            </h1>
-            <p className="text-sm text-fg-muted line-clamp-2 max-w-2xl">
-              {t('inmobiliaria.portafolio.new.subtitle')}
-            </p>
-          </div>
-        </div>
+        <EncabezadoDePantalla
+          seccion={t('inmobiliaria.nav.inmuebles')}
+          titulo={t('inmobiliaria.portafolio.new.title')}
+          descripcion={t('inmobiliaria.portafolio.new.subtitle')}
+        />
       </div>
 
       {origen === 'nuevo' ? (

@@ -37,7 +37,7 @@ import { useSearchParams } from 'next/navigation';
 import { EnvelopeSimple, MagnifyingGlass } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { Eyebrow, CrossFade, Presence } from '@leasefy/cadence';
+import { CrossFade, Presence } from '@leasefy/cadence';
 import { Input } from '@/components/ui/input';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -57,6 +57,8 @@ import {
   type BandejaDeCartas,
   type CartaEnLaBandeja,
 } from '@/lib/api/ciclo-de-vida.service';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 
 /** Los tres estados, con el nombre que viaja en la URL. */
 const ESTADOS = [
@@ -146,19 +148,21 @@ function ColaDeCartas() {
     useTablePagination(visibles, { resetKey: `${estado}|${busqueda}` });
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <header className="space-y-1">
-        <Eyebrow>Renovaciones</Eyebrow>
-        <h1 className="flex items-center gap-2 text-h2 text-fg">
-          <EnvelopeSimple className="h-6 w-6 text-primary" weight="duotone" />
-          Cartas del incremento
-        </h1>
-        <p className="max-w-2xl text-sm text-fg-muted">
-          Cada carta aparece sola {datos?.diasAntes ?? 30} días antes del aniversario del
-          contrato. El canon sube igual en la fecha: la carta es transparencia, y su
-          constancia es lo que queda como prueba de que se avisó.
-        </p>
-      </header>
+    <div className="space-y-6 p-6 lg:p-8">
+      {/* Glow up 22-10: el encabezado común; una línea de para qué sirve y el porqué en la ayuda. */}
+      <EncabezadoDePantalla
+        seccion="Renovaciones"
+        titulo="Cartas del incremento"
+        descripcion={`Cada carta sale sola ${datos?.diasAntes ?? 30} días antes del aniversario del contrato.`}
+        ayuda={
+          <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="Cartas del incremento">
+            <p className="text-sm leading-relaxed text-fg-muted">
+              Cada carta aparece sola {datos?.diasAntes ?? 30} días antes del aniversario del contrato. El canon sube
+              igual en la fecha: la carta es transparencia, y su constancia es lo que queda como prueba de que se avisó.
+            </p>
+          </ParaEntenderMas>
+        }
+      />
 
       {error ? (
         <FalloDeCarga

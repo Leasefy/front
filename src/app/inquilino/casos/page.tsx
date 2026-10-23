@@ -28,6 +28,7 @@
  */
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { VistasDeLaPestana, VISTAS_DE_SOLICITUDES } from '@/components/portales/VistasDeLaPestana';
 import { AvisoDeFuentesCaidas } from '@/components/portales/AvisoDeFuentesCaidas';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -146,7 +147,7 @@ function CaseRow({ c, locale }: { c: TenantCase; locale: string }) {
 export default function CasosPage() {
   const { locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const { cases, isLoading: isCasesLoading, error, fuentesQueFallaron, todasFallaron, refetch } = useTenantCases();
+  const { cases, isLoading: isCasesLoading, error, fuentesQueFallaron, todasFallaron, puedeRadicar, refetch } = useTenantCases();
   // CASO-03: in-app notifications are already real; surface the unread count as a
   // subtle badge. This hook owns its own existing poll — no new poller is added here.
   const { unreadCount } = useTenantNotifications();
@@ -187,7 +188,13 @@ export default function CasosPage() {
           <EncabezadoDePantalla
             className="mb-8"
             seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
-            titulo={locale === 'es' ? 'Mis casos' : 'My cases'}
+            titulo={locale === 'es' ? 'Solicitudes' : 'Requests'}
+          />
+          <VistasDeLaPestana
+            className="mb-8"
+            etiqueta={locale === 'es' ? 'En curso o radicadas' : 'In progress or filed'}
+            actual="/inquilino/casos"
+            vistas={VISTAS_DE_SOLICITUDES(locale === 'es')}
           />
           <EmptyState
             icon={XCircle}
@@ -204,49 +211,49 @@ export default function CasosPage() {
     <div className="min-h-screen bg-bg">
       <motion.div {...entrada} className="space-y-6 p-6 lg:p-8">
 
-        {/* Header */}
+        {/* C3 (revisora r25): el título es el de la pestaña («Solicitudes»), y debajo se pasa de lo que está en curso
+            a lo radicado (antes «Mis casos» con «Ver mis solicitudes» como botón). «Nueva solicitud» sólo si se puede
+            radicar: sin contrato vigente llevaba a un botón apagado. */}
         <EncabezadoDePantalla
-          className="mb-8"
+          className="mb-6"
           seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
-          titulo={locale === 'es' ? 'Mis casos' : 'My cases'}
+          titulo={locale === 'es' ? 'Solicitudes' : 'Requests'}
           descripcion={
             locale === 'es'
-              ? 'Tus pagos y postulaciones en curso, en un solo lugar.'
-              : 'Your ongoing payments and applications, all in one place.'
-          }
-          acciones={
-            <Button asChild variant="outline" size="sm" hideArrow className="max-lg:flex-1">
-              <Link href="/inquilino/solicitudes">{locale === 'es' ? 'Ver mis solicitudes' : 'View my requests'}</Link>
-            </Button>
+              ? 'Lo que tienes en curso con tu inmobiliaria: solicitudes, pagos y postulaciones, con su estado.'
+              : 'What you have in progress with your property manager: requests, payments and applications, with their status.'
           }
           accionPrincipal={
-            <Button asChild size="sm" hideArrow className="max-lg:flex-1">
-              <Link href="/inquilino/solicitudes?nueva=1">{locale === 'es' ? 'Nueva solicitud' : 'New request'}</Link>
-            </Button>
+            puedeRadicar ? (
+              <Button asChild size="sm" hideArrow className="max-lg:flex-1">
+                <Link href="/inquilino/solicitudes?nueva=1">{locale === 'es' ? 'Nueva solicitud' : 'New request'}</Link>
+              </Button>
+            ) : undefined
           }
+        />
+        <VistasDeLaPestana
+          className="mb-6"
+          etiqueta={locale === 'es' ? 'En curso o radicadas' : 'In progress or filed'}
+          actual="/inquilino/casos"
+          vistas={VISTAS_DE_SOLICITUDES(locale === 'es')}
         />
 
         <AvisoDeFuentesCaidas fuentes={fuentesQueFallaron} locale={locale} onReintentar={refetch} className="mb-6" />
 
         {/* CASO-03 — el aviso dentro del portal (real); sin promesas de push ni WhatsApp (QA-INQ-95). Glow up 22-10:
             una línea bajo el encabezado, no una tarjeta con su campana del mismo peso que los casos. */}
-        <p className="mb-6 text-sm text-fg-muted" data-testid="aviso-de-notificaciones">
-          {locale === 'es'
-            ? 'Te avisamos en el portal cuando cambia el estado de un caso: los avisos quedan en la campana de arriba y en '
-            : 'We let you know in the portal when a case status changes: notices stay in the bell at the top and in '}
-          <Link href="/inquilino/notificaciones" className="font-medium text-fg underline underline-offset-4 hover:text-primary">
-            {locale === 'es' ? 'Notificaciones' : 'Notifications'}
-          </Link>
-          {unreadCount > 0 && (
-            <>
-              {' · '}
-              {/* El conteo llega por sondeo: cuando cambia, cuenta. */}
-              <span className="font-mono tabular-nums text-fg"><AnimatedNumber value={unreadCount} /></span>{' '}
-              {locale === 'es' ? (unreadCount === 1 ? 'sin leer' : 'sin leer') : 'unread'}
-            </>
-          )}
-          .
-        </p>
+        {/* Revisora r25: una línea corta (antes ≈110 caracteres que repetían la campana). Sólo con avisos sin leer. */}
+        {unreadCount > 0 && (
+          <p className="mb-6 text-sm text-fg-muted" data-testid="aviso-de-notificaciones">
+            {/* El conteo llega por sondeo: cuando cambia, cuenta. */}
+            <span className="font-mono tabular-nums text-fg"><AnimatedNumber value={unreadCount} /></span>{' '}
+            {locale === 'es' ? (unreadCount === 1 ? 'aviso sin leer' : 'avisos sin leer') : unreadCount === 1 ? 'unread notice' : 'unread notices'}
+            {' · '}
+            <Link href="/inquilino/notificaciones" className="font-medium text-fg underline underline-offset-4 hover:text-primary">
+              {locale === 'es' ? 'Ver' : 'View'}
+            </Link>
+          </p>
+        )}
 
         {/* Case list (CASO-01) — real rows, or an honest neutral "todo al día" empty */}
         <section className="mb-10">

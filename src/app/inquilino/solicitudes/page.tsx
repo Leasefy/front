@@ -39,6 +39,7 @@ import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { NuevaSolicitudModal } from '@/components/tenant/NuevaSolicitudModal';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { VistasDeLaPestana, VISTAS_DE_SOLICITUDES } from '@/components/portales/VistasDeLaPestana';
 import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { resolveExpectedResponse } from '@/lib/date/business-days';
@@ -216,21 +217,32 @@ export default function SolicitudesPage() {
               ? 'Abre y sigue tus solicitudes de mantenimiento y PQRS, en un solo lugar.'
               : 'Open and track your maintenance requests and PQRS, all in one place.'
       }
+      // Revisora r25: sin contrato vigente el botón no se pinta (antes, apagado y a lo ancho a 390); el porqué lo
+      // dice el vacío, con su salida.
       accionPrincipal={
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => setModalOpen(true)}
-          disabled={sinRadicar}
-          title={sinRadicar ? motivoSinRadicar : undefined}
-          hideArrow
-          className="inline-flex items-center gap-2 max-lg:flex-1"
-          data-testid="nueva-solicitud"
-        >
-          <Plus className="w-4 h-4" />
-          {locale === 'es' ? 'Nueva solicitud' : 'New request'}
-        </Button>
+        sinRadicar ? undefined : (
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setModalOpen(true)}
+            hideArrow
+            className="inline-flex items-center gap-2 max-lg:flex-1"
+            data-testid="nueva-solicitud"
+          >
+            <Plus className="w-4 h-4" />
+            {locale === 'es' ? 'Nueva solicitud' : 'New request'}
+          </Button>
+        )
       }
+    />
+  );
+  // C3 (revisora r25): «Solicitudes» agrupa lo que está en curso y lo radicado; las dos vistas, el mismo título.
+  const vistas = (
+    <VistasDeLaPestana
+      className="mb-6"
+      etiqueta={locale === 'es' ? 'En curso o radicadas' : 'In progress or filed'}
+      actual="/inquilino/solicitudes"
+      vistas={VISTAS_DE_SOLICITUDES(locale === 'es')}
     />
   );
 
@@ -262,6 +274,7 @@ export default function SolicitudesPage() {
       <div className="min-h-screen bg-bg">
         <div className="p-6 lg:p-8">
           {encabezado}
+          {vistas}
           <EmptyState
             icon={XCircle}
             title={locale === 'es' ? 'No pudimos cargar tus solicitudes' : "We couldn't load your requests"}
@@ -279,9 +292,15 @@ export default function SolicitudesPage() {
 
         {/* GLOW UP (21-10): el encabezado de todas las pantallas; «Nueva solicitud» es la única azul. */}
         {encabezado}
-        {sinRadicar && (
-          <p className="-mt-3 mb-6 text-sm text-fg-muted lg:text-right" data-testid="nueva-solicitud-motivo">
-            {motivoSinRadicar}
+        {vistas}
+        {/* Con solicitudes viejas y sin contrato vigente, el porqué va en una línea, junto al trabajo (antes a la
+            derecha, lejos del botón apagado). Sin solicitudes, lo dice el vacío. */}
+        {sinRadicar && items.length > 0 && (
+          <p className="mb-6 text-sm text-fg-muted" data-testid="nueva-solicitud-motivo">
+            {motivoSinRadicar}{' '}
+            <Link href="/inquilino/mensajes" className="font-medium text-fg underline underline-offset-4 hover:text-primary">
+              {locale === 'es' ? 'Escribirle' : 'Write to them'}
+            </Link>
           </p>
         )}
 
@@ -302,21 +321,35 @@ export default function SolicitudesPage() {
             <section className="rounded-lg border border-border bg-surface">
               {/* GLOW UP (21-10): un solo botón azul en la pantalla (el del encabezado); el vacío ofrece la misma
                   acción en tono secundario y no la ofrece si todavía no se puede radicar. */}
-              <EmptyState
-                icon={Lifebuoy}
-                ilustracion="casa"
-                title={locale === 'es' ? 'Aún no tienes solicitudes' : 'No requests yet'}
-                description={
-                  locale === 'es'
-                    ? 'Abre una solicitud de mantenimiento o una PQRS y hazle seguimiento aquí.'
-                    : 'Open a maintenance request or a PQRS and track it here.'
-                }
-                action={
-                  sinRadicar
-                    ? undefined
-                    : { label: locale === 'es' ? 'Nueva solicitud' : 'New request', onClick: () => setModalOpen(true) }
-                }
-              />
+              {/* Revisora r25: sin contrato vigente, el vacío ES el porqué, con la salida a Mensajes (antes «Abre una
+                  solicitud…» con el botón apagado). */}
+              {sinRadicar ? (
+                <div data-testid="nueva-solicitud-motivo">
+                  <EmptyState
+                    icon={Lifebuoy}
+                    ilustracion="casa"
+                    title={locale === 'es' ? 'Para radicar necesitas un contrato vigente' : 'You need an active lease to file a request'}
+                    description={
+                      locale === 'es'
+                        ? 'Escríbele a tu inmobiliaria por Mensajes y ella te ayuda con lo que necesites.'
+                        : 'Write to your property manager in Messages and they will help you with what you need.'
+                    }
+                    action={{ label: locale === 'es' ? 'Escribirle a mi inmobiliaria' : 'Write to my property manager', href: '/inquilino/mensajes' }}
+                  />
+                </div>
+              ) : (
+                <EmptyState
+                  icon={Lifebuoy}
+                  ilustracion="casa"
+                  title={locale === 'es' ? 'Aún no tienes solicitudes' : 'No requests yet'}
+                  description={
+                    locale === 'es'
+                      ? 'Abre una solicitud de mantenimiento o una PQRS y hazle seguimiento aquí.'
+                      : 'Open a maintenance request or a PQRS and track it here.'
+                  }
+                  action={{ label: locale === 'es' ? 'Nueva solicitud' : 'New request', onClick: () => setModalOpen(true) }}
+                />
+              )}
             </section>
           )}
           </CrossFade>

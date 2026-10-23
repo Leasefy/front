@@ -176,7 +176,8 @@ export default function ArriendoPage() {
         <EncabezadoDePantalla
           className="mb-6"
           seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
-          titulo={t('rental.title')}
+          // C3 (revisora r25): el título es el de la pestaña («Resumen»); «Mi arriendo» ya es la sección.
+          titulo={locale === 'es' ? 'Resumen' : 'Overview'}
           descripcion={
             locale === 'es'
               ? 'Tu contrato, lo que pagas cada mes y cuánto le queda.'

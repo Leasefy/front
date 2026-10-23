@@ -88,7 +88,7 @@ describe('Mis contratos del inquilino', () => {
   it('si no cargan: el encabezado común y el fallo con reintento', () => {
     estado.error = new Error('boom');
     montar();
-    expect(host.querySelector('h1')?.textContent).toContain('Mis contratos');
+    expect(host.querySelector('h1')?.textContent).toContain('Contrato y documentos');
     expect(host.textContent).toContain('tus contratos');
   });
 });

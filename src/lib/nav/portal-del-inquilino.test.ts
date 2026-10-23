@@ -72,8 +72,8 @@ describe('cada pantalla cae en su sección', () => {
     ])
   })
 
-  it('«Buscar arriendo»: Para ti, Mis postulaciones, Mi tope y Mi calificación', () => {
-    expect(BUSCAR_ARRIENDO.pestanas.map((p) => p.es)).toEqual(['Para ti', 'Mis postulaciones', 'Mi tope', 'Mi calificación'])
+  it('«Buscar arriendo»: Para ti, Guardados, Mis postulaciones, Mi tope y Mi calificación', () => {
+    expect(BUSCAR_ARRIENDO.pestanas.map((p) => p.es)).toEqual(['Para ti', 'Guardados', 'Mis postulaciones', 'Mi tope', 'Mi calificación'])
   })
 
   it('el marketplace es la página pública de búsqueda', () => {

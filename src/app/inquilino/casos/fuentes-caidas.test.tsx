@@ -64,7 +64,7 @@ describe('Mis casos con una fuente caída', () => {
     datos.error = 'El asistente de Leasefy no está disponible';
     datos.fuentes = ['acuerdos'];
     await montar();
-    expect(document.querySelector('header h1')?.textContent).toBe('Mis casos');
+    expect(document.querySelector('header h1')?.textContent).toBe('Solicitudes');
     expect(document.querySelector('[data-testid="fuentes-caidas"]')?.textContent).toContain('tus acuerdos de pago');
     expect(document.body.textContent).not.toContain('Error al cargar tus casos');
   });

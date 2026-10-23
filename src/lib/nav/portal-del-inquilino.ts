@@ -23,6 +23,7 @@ import {
   FileMagnifyingGlass,
   FileText,
   Gauge,
+  Heart,
   House,
   Receipt,
   Scroll,
@@ -81,9 +82,11 @@ export const BUSCAR_ARRIENDO: SeccionDelPortal = {
       es: 'Para ti',
       en: 'For you',
       icon: Target,
-      // Lo que se mira mientras se busca (la ficha, los guardados, el buscador viejo) cuelga de «Para ti».
-      tambienEn: ['/inquilino/propiedades', '/inquilino/guardados', '/inquilino/explorar'],
+      // Lo que se mira mientras se busca (la ficha, el buscador viejo) cuelga de «Para ti».
+      tambienEn: ['/inquilino/propiedades', '/inquilino/explorar'],
     },
+    // C3 (revisora r25): «Inmuebles guardados» tiene su pestaña (antes encendía «Para ti» con otro título).
+    { href: '/inquilino/guardados', es: 'Guardados', en: 'Saved', icon: Heart },
     { href: '/inquilino/aplicaciones', es: 'Mis postulaciones', en: 'My applications', icon: FileMagnifyingGlass },
     { href: '/inquilino/aprobacion', es: 'Mi tope', en: 'My rent limit', icon: SealCheck, tambienEn: ['/inquilino/estudio'] },
     { href: '/inquilino/calificacion', es: 'Mi calificación', en: 'My rating', icon: Gauge },

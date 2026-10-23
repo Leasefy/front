@@ -1,6 +1,7 @@
 'use client';
 
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { VistasDeLaPestana, VISTAS_DE_CONTRATO_Y_DOCUMENTOS } from '@/components/portales/VistasDeLaPestana';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -123,11 +124,14 @@ export default function ContratosPage() {
 
   const es = locale === 'es';
   const porFirmar = contracts.filter((c) => c.status === 'pending_tenant').length;
+  // C3 (revisora r25): el título es el de la pestaña, y debajo, cómo pasar a los documentos (antes, Documentos
+  // quedaba huérfana: nada llevaba a ella).
   const encabezado = (
+    <>
     <EncabezadoDePantalla
-      className="mb-8"
+      className="mb-6"
       seccion={es ? 'Mi arriendo' : 'My rental'}
-      titulo={es ? 'Mis contratos' : 'My contracts'}
+      titulo={es ? 'Contrato y documentos' : 'Contract and documents'}
       descripcion={
         porFirmar === 1
           ? es ? 'Tienes un contrato por firmar: va primero.' : 'You have one contract to sign: it comes first.'
@@ -136,6 +140,13 @@ export default function ContratosPage() {
             : es ? 'Revisa y firma tus contratos de arrendamiento.' : 'Review and sign your rental contracts.'
       }
     />
+    <VistasDeLaPestana
+      className="mb-8"
+      etiqueta={es ? 'Contrato o documentos' : 'Contract or documents'}
+      actual="/inquilino/contratos"
+      vistas={VISTAS_DE_CONTRATO_Y_DOCUMENTOS(es)}
+    />
+    </>
   );
 
   // El mensaje crudo del backend —en inglés, con su jerga— no le sirve a un

@@ -14,6 +14,7 @@ import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
+import { VistasDeLaPestana, VISTAS_DE_CONTRATO_Y_DOCUMENTOS } from '@/components/portales/VistasDeLaPestana';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -801,15 +802,23 @@ export default function DocumentosPage() {
     <div className="min-h-screen bg-bg">
       <motion.div {...entrada} className="p-6 lg:p-8">
         {/* GLOW UP (21-10): el encabezado de todas las pantallas, con lo que de verdad hay aquí. */}
+        {/* C3 (revisora r25): el título es el de la pestaña («Contrato y documentos») y debajo, cómo volver al
+            contrato (antes no había cómo: la pantalla quedaba huérfana). */}
         <EncabezadoDePantalla
-          className="mb-8"
+          className="mb-6"
           seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
-          titulo={t('documents.title')}
+          titulo={locale === 'es' ? 'Contrato y documentos' : 'Contract and documents'}
           descripcion={
             locale === 'es'
               ? 'Tu contrato firmado, el recibo de cada pago, tus certificados y lo que subiste al postularte.'
               : 'Your signed contract, the receipt for each payment, your certificates and what you uploaded when applying.'
           }
+        />
+        <VistasDeLaPestana
+          className="mb-8"
+          etiqueta={locale === 'es' ? 'Contrato o documentos' : 'Contract or documents'}
+          actual="/inquilino/documentos"
+          vistas={VISTAS_DE_CONTRATO_Y_DOCUMENTOS(locale === 'es')}
         />
 
         {sinNada ? (

@@ -54,6 +54,7 @@ import { sinDeudores } from '@/lib/cobranza/reporte-sin-deudores'
 import { textoDelAviso } from '@/lib/cobranza/aviso-del-reporte'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 
 /**
@@ -250,20 +251,18 @@ function ReporteViewerContent() {
       {data && (
         <>
           {/* 1. KPI tile row */}
-          <FranjaDeCifras aria-label={t('inmobiliaria.ai.cobranza.reporte.pageTitle')} data-testid="reporte-cifras">
-            {/* MORI-22: era «% recuperado» y medía las PROMESAS cumplidas
-                (lo mismo que su umbral); sin promesas vencidas, sin cifra. */}
-            <KpiTile
-              label={t('inmobiliaria.ai.cobranza.reporte.kpis.pkr')}
-              value={porcentajeLegible(pkrValue)}
-              alert={pkrValue != null && pkrValue < pkrAlertBelow}
-              pista={pkrValue == null ? t('inmobiliaria.ai.cobranza.reporte.kpis.pkrSinPromesas') : undefined}
-            />
-            <KpiTile
-              label={t('inmobiliaria.ai.cobranza.reporte.kpis.morosidad')}
-              value={porcentajeLegible(morosidadValue)}
-              alert={morosidadValue != null && morosidadValue > morosidadAlertAbove}
-              pista={
+          {/* LA RESPUESTA del día: la morosidad, con cuántos inquilinos pesa.
+              Debajo, las otras dos cifras del reporte (antes las tres iguales). */}
+          <div data-testid="reporte-cifras" className="space-y-6">
+            <CifraHeroe
+              data-testid="reporte-morosidad"
+              rotulo={t('inmobiliaria.ai.cobranza.reporte.kpis.morosidad')}
+              cifra={
+                <span className={morosidadValue != null && morosidadValue > morosidadAlertAbove ? 'text-danger' : undefined}>
+                  {porcentajeLegible(morosidadValue)}
+                </span>
+              }
+              contexto={
                 morosidadBase
                   ? t('inmobiliaria.ai.cobranza.reporte.kpis.morosidadBase', {
                       enMora: morosidadBase.inquilinos_en_mora.toLocaleString(localeDeLasCifras()),
@@ -271,13 +270,47 @@ function ReporteViewerContent() {
                     })
                   : undefined
               }
+              total={morosidadBase?.inquilinos_con_contrato ?? undefined}
+              tramos={
+                morosidadBase
+                  ? [
+                      {
+                        clave: 'mora',
+                        etiqueta: locale.startsWith('es') ? 'En mora' : 'Delinquent',
+                        monto: morosidadBase.inquilinos_en_mora,
+                        tono: 'critico',
+                        cifra: morosidadBase.inquilinos_en_mora.toLocaleString(localeDeLasCifras()),
+                      },
+                      {
+                        clave: 'al-dia',
+                        etiqueta: locale.startsWith('es') ? 'Al día' : 'Up to date',
+                        monto: Math.max(0, morosidadBase.inquilinos_con_contrato - morosidadBase.inquilinos_en_mora),
+                        tono: 'exito',
+                        cifra: Math.max(
+                          0,
+                          morosidadBase.inquilinos_con_contrato - morosidadBase.inquilinos_en_mora,
+                        ).toLocaleString(localeDeLasCifras()),
+                      },
+                    ]
+                  : undefined
+              }
             />
-            <KpiTile
-              label={t('inmobiliaria.ai.cobranza.reporte.kpis.outsideHours')}
-              value={callsOutside != null ? String(callsOutside) : '—'}
-              alert={callsOutside != null && callsOutside >= callsOutsideCritical}
-            />
-          </FranjaDeCifras>
+            <FranjaDeCifras aria-label={t('inmobiliaria.ai.cobranza.reporte.pageTitle')} columnas={2}>
+              {/* MORI-22: era «% recuperado» y medía las PROMESAS cumplidas
+                  (lo mismo que su umbral); sin promesas vencidas, sin cifra. */}
+              <KpiTile
+                label={t('inmobiliaria.ai.cobranza.reporte.kpis.pkr')}
+                value={porcentajeLegible(pkrValue)}
+                alert={pkrValue != null && pkrValue < pkrAlertBelow}
+                pista={pkrValue == null ? t('inmobiliaria.ai.cobranza.reporte.kpis.pkrSinPromesas') : undefined}
+              />
+              <KpiTile
+                label={t('inmobiliaria.ai.cobranza.reporte.kpis.outsideHours')}
+                value={callsOutside != null ? String(callsOutside) : '—'}
+                alert={callsOutside != null && callsOutside >= callsOutsideCritical}
+              />
+            </FranjaDeCifras>
+          </div>
 
           {/* 2. Alert banners */}
           {/* Cada aviso baja 4px a su lugar, escalonado (techo 320 ms). La
@@ -327,7 +360,7 @@ function ReporteViewerContent() {
               </MonoLabel>
             </div>
             {data.top_debtors.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
+              <p className="text-body-sm text-muted-foreground text-center py-6">
                 {t('inmobiliaria.ai.cobranza.reporte.topDebtors.empty')}
               </p>
             ) : (
@@ -410,7 +443,7 @@ function ReporteViewerContent() {
                 <Spinner />
               </div>
             ) : history.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
+              <p className="text-body-sm text-muted-foreground text-center py-6">
                 {t('inmobiliaria.ai.cobranza.reporte.history.empty')}
               </p>
             ) : (

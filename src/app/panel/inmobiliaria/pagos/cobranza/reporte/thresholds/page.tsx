@@ -44,7 +44,7 @@ function ThresholdsContent() {
           cifras ni dónde se ven. GLOW UP 21-10: el encabezado común, con la
           versión que rige junto al título. */}
       <EncabezadoDePantalla
-        seccion="Cobranza"
+        seccion="Cobranza · Reporte diario"
         titulo={t('inmobiliaria.ai.cobranza.reporte.thresholds.pageTitle')}
         descripcion={
           locale.startsWith('es')
@@ -70,7 +70,7 @@ function ThresholdsContent() {
       {isLoading && !active && <PageSkeleton variant="list" />}
 
       {/* `error` ya es la frase del traductor (antes: «Error: 500»). */}
-      <Presence show={Boolean(error)} role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
+      <Presence show={Boolean(error)} role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-body-sm text-danger">
           {error}
       </Presence>
 

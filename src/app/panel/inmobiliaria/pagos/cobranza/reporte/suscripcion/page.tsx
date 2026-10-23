@@ -101,8 +101,13 @@ function SuscripcionContent() {
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-2xl">
       <EncabezadoDePantalla
-        seccion="Cobranza"
+        seccion="Cobranza · Reporte diario"
         titulo={t('inmobiliaria.ai.cobranza.reporte.subscription.pageTitle')}
+        descripcion={
+          locale.startsWith('es')
+            ? 'Elige si el reporte diario de cobranza te llega por correo o por WhatsApp.'
+            : 'Choose whether the daily collections report reaches you by email or WhatsApp.'
+        }
       />
 
       {/* Phase 38-05a: PageSkeleton primitive (list variant) replaces inline spinner.
@@ -116,7 +121,7 @@ function SuscripcionContent() {
       {/* 🔴 ROLES (14-10-2026): sin `subscribe-daily-report` la pantalla quedaba
           en blanco (el micro responde 403). Ahora dice por qué. */}
       {!isLoading && !data && !canAccess('cobranza', 'subscribe-daily-report') && (
-        <p className="rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground" data-testid="suscripcion-sin-permiso">
+        <p className="rounded-lg border border-border bg-muted/20 p-4 text-body-sm text-muted-foreground" data-testid="suscripcion-sin-permiso">
           Tu rol no puede suscribirse al reporte diario de cobranza. Si lo necesitas, pídeselo a un administrador de tu inmobiliaria.
         </p>
       )}
@@ -165,7 +170,7 @@ function SuscripcionContent() {
                 </p>
               ) : stats ? (
                 <>
-                  <p className="text-sm font-mono tabular-nums text-foreground">
+                  <p className="text-body-sm font-mono tabular-nums text-foreground">
                     {locale.startsWith('es')
                       ? cuantosDelEquipo(stats.email_subscribed, stats.total_members)
                       : t('inmobiliaria.ai.cobranza.reporte.subscription.aggregateStat', {
@@ -174,7 +179,7 @@ function SuscripcionContent() {
                         })}{' '}
                     · {locale.startsWith('es') ? 'por correo' : 'by email'}
                   </p>
-                  <p className="text-sm font-mono tabular-nums text-foreground">
+                  <p className="text-body-sm font-mono tabular-nums text-foreground">
                     {locale.startsWith('es')
                       ? cuantosDelEquipo(stats.whatsapp_subscribed, stats.total_members)
                       : t('inmobiliaria.ai.cobranza.reporte.subscription.aggregateStat', {

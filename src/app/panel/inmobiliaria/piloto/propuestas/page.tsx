@@ -130,7 +130,7 @@ function DistintivoDeMuestra() {
       className="sticky top-2 z-20 flex flex-col gap-1 rounded-lg border border-warning bg-warning-soft px-4 py-3 shadow-md sm:flex-row sm:items-center sm:gap-3"
       data-testid="mando-distintivo-muestra"
     >
-      <span className="inline-flex items-center gap-2 font-mono text-label font-semibold uppercase tracking-wide text-[color:var(--warning-ink)]">
+      <span className="inline-flex items-center gap-2 font-mono text-label font-medium uppercase tracking-wide text-[color:var(--warning-ink)]">
         <Flask weight="fill" className="h-4 w-4" aria-hidden="true" />
         {TEXTOS.muestra.distintivo}
       </span>

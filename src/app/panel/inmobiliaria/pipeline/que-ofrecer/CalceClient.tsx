@@ -91,7 +91,7 @@ function Puntaje({ valor }: { valor: number }) {
           style={{ width: `${acotado}%` }}
         />
       </span>
-      <span className="text-fg-muted font-mono text-xs tabular-nums">{acotado}%</span>
+      <span className="text-fg-muted font-mono text-caption tabular-nums">{acotado}%</span>
     </span>
   )
 }

@@ -852,7 +852,7 @@ function ContratosContent() {
                     return (
                       <span
                         className={cn(
-                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
+                          'inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium whitespace-nowrap',
                           estado.clave === 'POR_EMPEZAR'
                             ? 'bg-plan-status-blue-bg text-primary'
                             : colorDeVigencia(

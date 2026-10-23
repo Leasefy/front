@@ -191,7 +191,7 @@ function CandidateActions({
 
   if (status === 'CONTRACT_FAILED') {
     return (
-      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-danger-soft text-danger text-xs font-medium whitespace-nowrap">
+      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-danger-soft text-danger text-caption font-medium whitespace-nowrap">
         Proceso cerrado
       </span>
     );
@@ -502,7 +502,7 @@ function CandidatosContent() {
                               {candidate.tenantName || '—'}
                               <Sparkle className="w-3 h-3 text-primary" aria-label="Ver análisis IA" />
                             </p>
-                            <p className="text-xs text-fg-muted">
+                            <p className="text-caption text-fg-muted">
                               {candidate.tenantEmail || '—'}
                             </p>
                             {/* 🔴 El estudio es opcional (Nico, 04-10-2026):
@@ -519,13 +519,13 @@ function CandidatosContent() {
                           <div className="flex items-center gap-2">
                             <span
                               className={cn(
-                                'inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold',
+                                'inline-flex items-center justify-center w-7 h-7 rounded-full text-caption font-medium',
                                 SCORE_COLORS[candidate.riskScore.level] ?? 'text-fg-muted bg-surface-muted'
                               )}
                             >
                               {candidate.riskScore.level}
                             </span>
-                            <span className="text-sm font-semibold text-fg tabular-nums">
+                            <span className="font-mono text-sm text-fg tabular-nums">
                               {candidate.riskScore.totalScore}
                             </span>
                           </div>
@@ -666,10 +666,10 @@ function CandidateStatTile({
       </div>
       <div className="min-w-0">
         {/* Cuenta cuando cambia (aprobar, rechazar). */}
-        <p className="text-2xl font-semibold text-fg tabular-nums leading-none">
+        <p className="font-mono text-2xl font-medium text-fg tabular-nums leading-none">
           <AnimatedNumber value={value} format={(n) => String(Math.round(n))} />
         </p>
-        <p className="text-xs text-fg-muted mt-1 truncate">{label}</p>
+        <p className="text-caption text-fg-muted mt-1 truncate">{label}</p>
       </div>
     </div>
   );

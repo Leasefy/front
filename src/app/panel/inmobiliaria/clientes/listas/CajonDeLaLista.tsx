@@ -347,7 +347,7 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada, codigoInicial
             ) : (
               <>
                 <p className="text-sm text-fg">
-                  <span className="font-mono font-semibold tabular-nums">
+                  <span className="font-mono tabular-nums">
                     {leido.filas.length.toLocaleString(localeDeLasCifras())}
                   </span>{' '}
                   registros en «{leido.nombreDelArchivo}». El nombre sale de la

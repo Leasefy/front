@@ -399,7 +399,7 @@ function PortalesEnTarjetas({ renglones }: { renglones: readonly RenglonDeOrigen
           <dl className="mt-2 grid grid-cols-3 gap-2 text-body-sm">
             <div>
               <dt className="text-caption text-fg-muted">Cerrados</dt>
-              <dd className="font-mono font-semibold tabular-nums text-fg">{r.cerrados}</dd>
+              <dd className="font-mono tabular-nums text-fg">{r.cerrados}</dd>
             </div>
             <div>
               <dt className="text-caption text-fg-muted">Interesados</dt>

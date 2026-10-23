@@ -494,7 +494,7 @@ function EditorDeClausula({
                         <span>{m.mensaje}</span>
                       </p>
                       {/* La norma es lo que va a mirar un abogado. Se cita siempre. */}
-                      <p className="mt-1 pl-5 text-[11px] text-fg-muted">{m.norma}</p>
+                      <p className="mt-1 pl-5 text-caption text-fg-muted">{m.norma}</p>
                     </li>
                   ))}
                 </ul>

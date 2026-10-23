@@ -26,7 +26,7 @@ export default function RetencionLayout({ children }: { children: React.ReactNod
   if (!canAccess('retencion', 'view')) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3 px-6 text-center">
-        <p className="text-lg font-semibold text-fg">
+        <p className="text-lg font-medium text-fg">
           No tienes acceso a Retención
         </p>
         <p className="text-sm text-fg-muted max-w-sm">

@@ -299,7 +299,7 @@ function ReportesContent() {
             <h3 className="flex flex-wrap items-center gap-2 text-body-sm font-medium text-fg">
               {tr(report.title)}
               {cerrado && (
-                <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
+                <Badge variant="secondary" className="px-1.5 py-0 text-caption">
                   Pro
                 </Badge>
               )}
@@ -371,7 +371,7 @@ function ReportesContent() {
   }
 
   const cabeceraDelGrupo = 'flex flex-col gap-3 border-y border-border bg-surface-muted/50 px-4 py-3 sm:px-5';
-  const tituloDelGrupo = 'font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-fg-muted';
+  const tituloDelGrupo = 'font-mono text-caption font-medium uppercase tracking-[0.06em] text-fg-muted';
 
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">

@@ -197,7 +197,7 @@ function FlowNode({ node, tf }: { node: NodeDef; tf: (k: string, fb: string) => 
               <p className="text-lg font-medium text-fg-muted tabular-nums leading-none">
                 —
               </p>
-              <p className="mt-1 text-[11px] text-muted-foreground leading-tight">
+              <p className="mt-1 text-caption text-muted-foreground leading-tight">
                 {tf(`${NS}.nodes.${node.id}.metric${i + 1}`, fb)}
               </p>
             </div>

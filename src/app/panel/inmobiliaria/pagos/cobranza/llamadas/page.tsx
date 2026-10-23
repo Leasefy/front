@@ -70,6 +70,7 @@ import {
   outcomeBadgeVariant,
 } from '@/lib/cobranza/call-vocab'
 import { formatCurrency } from '@/lib/format'
+import { diaEnColombia, hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
@@ -395,6 +396,26 @@ function LlamadasContent() {
   // El endpoint trae las más recientes (una página del cursor): la cifra lo
   // dice así, sin hablar de «todas».
   const prometido = calls.reduce((s, c) => s + (c.summary?.paymentPromised?.amountCop ?? 0), 0)
+  // Revisora r27 (K1): la cifra con su barra, en plata. Las llamadas no traen si
+  // la promesa se cumplió (eso vive en Acuerdos): los tramos son por la FECHA
+  // prometida, que sí llega: por vencer · ya pasó la fecha · sin fecha.
+  const hoy = hoyEnColombia()
+  const plataPor = (cual: 'por-vencer' | 'ya-paso' | 'sin-fecha') =>
+    calls.reduce((s, c) => {
+      const p = c.summary?.paymentPromised
+      if (!p?.amountCop) return s
+      const dia = diaEnColombia(p.dueDate)
+      const tramo = dia === null ? 'sin-fecha' : dia < hoy ? 'ya-paso' : 'por-vencer'
+      return tramo === cual ? s + p.amountCop : s
+    }, 0)
+  const tramosDeLoPrometido = [
+    { clave: 'por-vencer', etiqueta: 'Por vencer', tono: 'neutro' as const },
+    { clave: 'ya-paso', etiqueta: 'Ya pasó la fecha', tono: 'aviso' as const },
+    { clave: 'sin-fecha', etiqueta: 'Sin fecha', tono: 'neutro' as const },
+  ].map((t) => {
+    const monto = plataPor(t.clave as 'por-vencer' | 'ya-paso' | 'sin-fecha')
+    return { ...t, monto, cifra: formatCurrency(monto), 'data-testid': `llamadas-promesas-tramo-${t.clave}` }
+  })
   const recientes = `${calls.length.toLocaleString('es-CO')} ${calls.length === 1 ? 'llamada reciente' : 'llamadas recientes'}`
 
   return (
@@ -414,6 +435,7 @@ function LlamadasContent() {
             rotulo="Prometido en las llamadas"
             cifra={formatCurrency(prometido)}
             contexto={`en ${conteos.promesa === 1 ? '1 promesa' : `${conteos.promesa} promesas`} de ${recientes}`}
+            tramos={tramosDeLoPrometido}
             esCero={conteos.promesa === 0}
             cuandoEsCero={`Nadie prometió pagar en las ${recientes}.`}
           />

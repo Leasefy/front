@@ -34,9 +34,10 @@
 
 import { useTr } from '@/lib/i18n/use-tr';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowSquareOut, Power, Sparkle } from '@phosphor-icons/react';
+import { ArrowSquareOut, MagnifyingGlass, Power, Sparkle } from '@phosphor-icons/react';
+import { Input } from '@/components/ui/input';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
@@ -115,6 +116,16 @@ export function CalidadDeLasPublicaciones({ variante = 'pestana' }: CalidadDeLas
 
   const lista = useInmueblesDeNiti(agencyId, { page, limit, filtro }, activo);
   const [decidiendo, setDecidiendo] = useState<string | null>(null);
+  // Ronda 30 (regla de Nico: toda tabla con buscador): la lista viene paginada del servicio y no acepta búsqueda;
+  // el buscador busca en la página que se ve (por nombre o código) y lo dice.
+  const [busqueda, setBusqueda] = useState('');
+  const itemsVisibles = useMemo(() => {
+    const plano = (v?: string | number | null) =>
+      String(v ?? '').toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const q = plano(busqueda.trim());
+    const items = lista.data?.items ?? [];
+    return q ? items.filter((i) => plano(i.titulo).includes(q) || plano(i.codigo).includes(q)) : items;
+  }, [lista.data, busqueda]);
 
   async function decidir(propuesta: PropuestaDeCalidad, decision: DecisionDeCalidad) {
     if (!agencyId) return;
@@ -178,13 +189,27 @@ export function CalidadDeLasPublicaciones({ variante = 'pestana' }: CalidadDeLas
           aria-label={t(`${K}.listaAria`)}
           data-testid="calidad-lista"
         >
-          <div className="border-b border-border px-4 py-3">
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
             <FiltroDeLaLista
               filtro={filtro}
               onCambiar={setFiltro}
               resumen={r ?? null}
               totalDeLaLista={lista.data ? total : null}
             />
+            {lista.data && total > 0 ? (
+              <div className="relative w-full lg:w-64">
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+                <Input
+                  type="search"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  placeholder="Buscar en esta página"
+                  aria-label="Buscar un inmueble en esta página"
+                  className="h-9 pl-9"
+                  data-testid="calidad-buscar"
+                />
+              </div>
+            ) : null}
           </div>
 
           <EstadoDeDatos
@@ -208,8 +233,11 @@ export function CalidadDeLasPublicaciones({ variante = 'pestana' }: CalidadDeLas
               )
             }
           >
+            {busqueda.trim() && itemsVisibles.length === 0 ? (
+              <SinDatos queSon={t(`${K}.queSon`)} hayFiltros onLimpiarFiltros={() => setBusqueda('')} />
+            ) : null}
             <ul className="divide-y divide-border-faint">
-              {(lista.data?.items ?? []).map((i) => (
+              {itemsVisibles.map((i) => (
                 <FilaDeInmueble
                   key={i.propertyId}
                   inmueble={i}

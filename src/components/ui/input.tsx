@@ -33,7 +33,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, invalid, ...props }, ref) => (
     <DSInput
       ref={ref}
-      className={cn("h-11 px-4 text-base md:text-sm", className)}
+      // Ronda 30 (autorizado por el coordinador): el texto apagado con el token de la casa; tailwind-merge descarta el
+      // `disabled:text-[#B3AEA5]` clavado de Cadence (la prueba de tokens rechaza colores clavados en el DOM).
+      className={cn("h-11 px-4 text-base md:text-sm disabled:text-fg-subtle", className)}
       {...props}
       invalid={Boolean(invalid) || ariaDiceInvalido(props["aria-invalid"])}
     />

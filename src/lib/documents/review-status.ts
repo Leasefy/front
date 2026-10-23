@@ -11,7 +11,7 @@ export type { DocumentReviewStatus };
 
 /** Spanish (es-CO) labels for each backend review status. */
 export const REVIEW_STATUS_LABELS: Record<DocumentReviewStatus, string> = {
-  PENDING: 'Pendiente',
+  PENDING: 'Por revisar', // Ronda 30 (autorizado): el mismo nombre que la cifra de Soportes
   IN_REVIEW: 'En revisión',
   APPROVED: 'Aprobado',
   REJECTED: 'Rechazado',

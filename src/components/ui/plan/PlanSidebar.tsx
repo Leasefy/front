@@ -229,6 +229,8 @@ export interface PlanSidebarProps {
   showUpgrade?: boolean;
   upgradeHref?: string;
   upgradeLabel?: string;
+  /** Ronda 30 (Nico, 23-10): el botón de mejorar en tinta cuando la pantalla ya tiene su acción azul. */
+  upgradeEnTinta?: boolean;
   profileCompletion?: ProfileCompletionConfig;
   /** Optional element rendered between the logo and the nav (e.g. ⌘K trigger).
    *  Used as the search-slot fallback when `onSearchClick` is not provided. */
@@ -852,6 +854,8 @@ interface SidebarContentProps {
   showUpgrade?: boolean;
   upgradeHref?: string;
   upgradeLabel?: string;
+  /** Ronda 30 (Nico, 23-10): el botón de mejorar en tinta cuando la pantalla ya tiene su acción azul. */
+  upgradeEnTinta?: boolean;
   showCollapseButton?: boolean;
   profileCompletion?: ProfileCompletionConfig;
   aboveNav?: React.ReactNode;
@@ -890,6 +894,7 @@ export function SidebarContent({
   showUpgrade = false,
   upgradeHref,
   upgradeLabel,
+  upgradeEnTinta = false,
   profileCompletion,
   aboveNav,
   belowSearch,
@@ -1215,6 +1220,7 @@ export function SidebarContent({
           {showUpgrade && (
             <SidebarUpgradeButton
               label={upgradeLabel ?? 'Upgrade'}
+              className={upgradeEnTinta ? 'bg-ink text-ink-fg hover:bg-ink/90' : undefined}
               onClick={() => {
                 if (upgradeHref) router.push(upgradeHref);
                 onItemClick?.();
@@ -1416,6 +1422,7 @@ export function PlanSidebar({
   showUpgrade = false,
   upgradeHref,
   upgradeLabel,
+  upgradeEnTinta = false,
   profileCompletion,
   aboveNav,
   belowSearch,
@@ -1511,6 +1518,7 @@ export function PlanSidebar({
           showUpgrade={showUpgrade}
           upgradeHref={upgradeHref}
           upgradeLabel={upgradeLabel}
+          upgradeEnTinta={upgradeEnTinta}
           profileCompletion={profileCompletion}
           aboveNav={aboveNav}
           belowSearch={belowSearch}

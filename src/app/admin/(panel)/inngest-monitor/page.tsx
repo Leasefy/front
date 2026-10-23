@@ -16,7 +16,6 @@
 import { Clock, FlowArrow } from '@phosphor-icons/react'
 import { Alert } from '@leasefy/cadence'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
-import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { flujoDeLosAgentes, tareaProgramada } from '@/lib/admin/textos-del-admin'
 
@@ -27,6 +26,7 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column, type Segmento } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import type { PillTone } from '@/lib/admin/types'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 
 /** `last_run` null = la tarea no ha dejado ningún rastro en la base. */
 interface CronRow {
@@ -220,14 +220,9 @@ export default function InngestMonitorPage() {
         </div>
       ) : null}
 
-      <PestanasDeLaFicha
-        etiqueta="Tareas y flujos"
-        pestanas={[
-          {
-            id: 'tareas',
-            etiqueta: 'Tareas programadas',
-            cuenta: tareas?.length ?? null,
-            contenido: (
+      {/* Ronda 30 (revisora): un solo nivel de pestañas —las de cada tabla—. Antes había además pestañas de
+          página (Tareas · Flujos); los flujos, que se consultan menos, van debajo, plegados (montados siempre). */}
+      <section className="space-y-3" aria-label="Tareas programadas">
         <DataTable
           id="tareas"
           columns={COLUMNAS_DE_TAREAS}
@@ -246,15 +241,14 @@ export default function InngestMonitorPage() {
           ordenInicial={{ columna: 2, sentido: 'asc' }}
           exportar="tareas-programadas"
         />
-            ),
-          },
-          {
-            id: 'flujos',
-            etiqueta: 'Flujos por eventos',
-            cuenta: data?.workflowRuns.length ?? null,
-            contenido: (
-              <div className="space-y-3">
-                <p className="text-body-sm text-fg-muted">Corren cuando pasa algo (un pago, una llamada, un mensaje), no a una hora fija.</p>
+      </section>
+      <MasDetalles
+        etiqueta={`Ver los flujos por eventos${data ? ` (${data.workflowRuns.length})` : ''}`}
+        etiquetaAbierto="Ocultar los flujos por eventos"
+        montadoSiempre
+        classNameDelContenido="space-y-3 pt-3"
+      >
+        <p className="text-body-sm text-fg-muted">Corren cuando pasa algo (un pago, una llamada, un mensaje), no a una hora fija.</p>
         <DataTable
           id="flujos"
           columns={COLUMNAS_DE_FLUJOS}
@@ -274,11 +268,7 @@ export default function InngestMonitorPage() {
           ordenInicial={{ columna: 1, sentido: 'desc' }}
           exportar="flujos-por-eventos"
         />
-              </div>
-            ),
-          },
-        ]}
-      />
+      </MasDetalles>
     </div>
   )
 }

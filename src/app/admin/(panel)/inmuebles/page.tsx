@@ -154,6 +154,15 @@ export default function InmueblesPage() {
       <PageHeader
         title="Inmuebles"
         description="Cuántas veces se arrendó cada inmueble; al abrirlo, cuánto estuvo vacío y qué se reparó."
+        // Ronda 30: cuántos hay (con la búsqueda puesta, cuántos coinciden), junto al título. El conteo por estado
+        // espera al servidor (no lo manda ni filtra por estado).
+        junto={
+          data ? (
+            <Pill tone="neutral">
+              {data.total.toLocaleString('es-CO')} {data.total === 1 ? 'inmueble' : 'inmuebles'}
+            </Pill>
+          ) : null
+        }
         ayuda={
           <ParaEntenderMas etiqueta="¿Cómo funciona?" titulo="La historia de los inmuebles" variante="secundario">
             <div className="space-y-3 text-body-sm text-fg-muted">

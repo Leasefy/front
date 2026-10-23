@@ -67,6 +67,8 @@ interface Cambio {
 export default function PilotoDeLasInmobiliariasPage() {
   const { data, isLoading, error, refetch } = useApiQuery<PilotoDeLaInmobiliaria[]>((signal) => listarElPiloto(signal), [])
   const [cambio, setCambio] = useState<Cambio | null>(null)
+  // Ronda 30 (revisora y K4 de Nico): la fila tiene UN «Cambiar» que abre el cajón; ahí se elige el plan.
+  const [eligiendo, setEligiendo] = useState<PilotoDeLaInmobiliaria | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [fallo, setFallo] = useState<string | null>(null)
   const [hecho, setHecho] = useState<string | null>(null)
@@ -85,7 +87,12 @@ export default function PilotoDeLasInmobiliariasPage() {
   function abrir(fila: PilotoDeLaInmobiliaria, estado: EstadoDelPilotoPorLeasefy) {
     setHecho(null)
     setFallo(null)
-    setCambio({ fila, estado, motivo: '' })
+    setCambio((antes) => ({ fila, estado, motivo: antes?.fila.tenant_id === fila.tenant_id ? antes.motivo : '' }))
+    setEligiendo(null)
+  }
+  function cerrar() {
+    setCambio(null)
+    setEligiendo(null)
   }
 
   async function guardar() {
@@ -165,33 +172,24 @@ export default function PilotoDeLasInmobiliariasPage() {
     {
       header: '',
       cell: (f) => (
-        // Un selector de tres (se ve como uno): la opción de hoy marcada y sin acción; las otras abren el cajón.
-        <div
-          className="inline-flex gap-0.5 whitespace-nowrap rounded-md border border-border bg-surface-muted p-0.5"
-          role="group"
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          hideArrow
+          disabled={guardando}
           aria-label={`Cambiar el plan del piloto de ${f.legal_name}`}
+          onClick={(ev) => {
+            ev.stopPropagation()
+            setHecho(null)
+            setFallo(null)
+            setCambio(null)
+            setEligiendo(f)
+          }}
+          data-testid={`admin-piloto-cambiar-${f.tenant_id}`}
         >
-          {ESTADOS_DEL_PILOTO.map((e) => (
-            <Button
-              key={e}
-              type="button"
-              variant={f.estado === e ? 'secondary' : 'ghost'}
-              size="sm"
-              hideArrow
-              aria-pressed={f.estado === e}
-              aria-label={f.estado === e ? `Hoy está en «${EL_ESTADO[e].nombre}»` : `Dejarlo en «${EL_ESTADO[e].nombre}»`}
-              title={EL_ESTADO[e].nombre}
-              disabled={guardando || f.estado === e}
-              onClick={(ev) => {
-                ev.stopPropagation()
-                abrir(f, e)
-              }}
-              data-testid={`admin-piloto-${e}-${f.tenant_id}`}
-            >
-              {ACCION[e]}
-            </Button>
-          ))}
-        </div>
+          Cambiar
+        </Button>
       ),
     },
   ]
@@ -272,16 +270,52 @@ export default function PilotoDeLasInmobiliariasPage() {
       />
 
       <Cajon
-        abierto={cambio !== null}
-        onOpenChange={(abierto) => (abierto || guardando ? null : setCambio(null))}
+        abierto={cambio !== null || eligiendo !== null}
+        onOpenChange={(abierto) => (abierto || guardando ? null : cerrar())}
         data-testid="admin-piloto-confirmar"
       >
         <CajonCabecera
-          titulo={cambio ? `¿Dejar el Piloto de ${cambio.fila.legal_name} en «${EL_ESTADO[cambio.estado].nombre}»?` : 'Piloto automático'}
+          titulo={
+            cambio
+              ? `¿Dejar el Piloto de ${cambio.fila.legal_name} en «${EL_ESTADO[cambio.estado].nombre}»?`
+              : eligiendo
+                ? `¿En qué dejas el Piloto de ${eligiendo.legal_name}?`
+                : 'Piloto automático'
+          }
           descripcion={cambio ? EL_ESTADO[cambio.estado].queHace : undefined}
         />
         <CajonCuerpo>
           <div className="space-y-4">
+            {(() => {
+              const fila = cambio?.fila ?? eligiendo
+              if (!fila) return null
+              return (
+                // El selector de tres: la opción de hoy marcada y sin acción; la elegida, en tinta.
+                <div
+                  className="inline-flex flex-wrap gap-0.5 rounded-md border border-border bg-surface-muted p-0.5"
+                  role="group"
+                  aria-label={`Plan del piloto de ${fila.legal_name}`}
+                >
+                  {ESTADOS_DEL_PILOTO.map((e) => (
+                    <Button
+                      key={e}
+                      type="button"
+                      variant={cambio?.estado === e ? 'ink' : fila.estado === e ? 'secondary' : 'ghost'}
+                      size="sm"
+                      hideArrow
+                      aria-pressed={cambio?.estado === e}
+                      aria-label={fila.estado === e ? `Hoy está en «${EL_ESTADO[e].nombre}»` : `Dejarlo en «${EL_ESTADO[e].nombre}»`}
+                      title={EL_ESTADO[e].nombre}
+                      disabled={guardando || fila.estado === e}
+                      onClick={() => abrir(fila, e)}
+                      data-testid={`admin-piloto-${e}-${fila.tenant_id}`}
+                    >
+                      {ACCION[e]}
+                    </Button>
+                  ))}
+                </div>
+              )
+            })()}
             {cambio ? (
               <p className="text-body-sm text-fg-muted">
                 <span className="font-medium text-fg">Hoy: </span>
@@ -291,6 +325,7 @@ export default function PilotoDeLasInmobiliariasPage() {
             {cambio?.estado === 'apagado' ? (
               <Alert variant="warning">Si la inmobiliaria lo tiene encendido, deja de correr desde ya.</Alert>
             ) : null}
+            {cambio ? (
             <div className="space-y-1.5">
               <label htmlFor="motivo-del-piloto" className="text-body-sm font-medium text-fg">
                 ¿Por qué? <span className="text-danger">*</span>
@@ -307,6 +342,7 @@ export default function PilotoDeLasInmobiliariasPage() {
               />
               <p className="text-caption text-fg-subtle">Queda en la bitácora con tu correo y la fecha.</p>
             </div>
+            ) : null}
             {fallo ? (
               <Alert variant="danger" role="alert" data-testid="admin-piloto-fallo">
                 {fallo}
@@ -314,8 +350,8 @@ export default function PilotoDeLasInmobiliariasPage() {
             ) : null}
           </div>
         </CajonCuerpo>
-        <CajonPie ayuda={motivoValido ? undefined : 'Escribe al menos 5 letras.'}>
-          <Button variant="outline" hideArrow type="button" onClick={() => setCambio(null)} disabled={guardando}>
+        <CajonPie ayuda={!cambio ? 'Elige en qué lo dejas.' : motivoValido ? undefined : 'Escribe al menos 5 letras.'}>
+          <Button variant="outline" hideArrow type="button" onClick={cerrar} disabled={guardando}>
             Cancelar
           </Button>
           <Button
@@ -323,7 +359,7 @@ export default function PilotoDeLasInmobiliariasPage() {
             type="button"
             variant={cambio?.estado === 'apagado' ? 'destructive' : 'default'}
             onClick={() => void guardar()}
-            disabled={!motivoValido || guardando}
+            disabled={!cambio || !motivoValido || guardando}
             isLoading={guardando}
             data-testid="admin-piloto-guardar"
           >

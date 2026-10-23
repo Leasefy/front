@@ -58,6 +58,11 @@ export function Toaster({ position = 'top-right', toastOptions, ...props }: Toas
   return (
     <DSToaster
       position={position}
+      // T-0173: under 600 px sonner stretches the toast full width and pins it
+      // 16 px from the top, right over the sticky header (h-16 = 4rem): it hid
+      // the menu button, the Piloto pill and the breadcrumb. Push it below the
+      // header. Still dismissible (swipe / DS close button).
+      mobileOffset={{ top: 'calc(4rem + env(safe-area-inset-top, 0px) + 0.5rem)' }}
       // El DS mergea `{ ...toastOptions, classNames: { ...suyas, ...las tuyas } }`,
       // así que `unstyled` pasa sin pisarle la piel.
       toastOptions={{ unstyled: true, ...toastOptions }}

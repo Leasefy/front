@@ -39,8 +39,15 @@ import { nominaApi } from '@/lib/api/nomina.service';
 import type { NominaElectronica } from '@/lib/api/nomina.types';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import { Avisos, TituloDeBloque } from './piezas';
+import { Avisos, etiquetaDelPeriodo } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
+import { Label } from '@/components/ui/label';
+import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
+
+type VistaDeDocumentos = 'todos' | 'por-transmitir' | 'rechazados' | 'aceptados';
+const POR_TRANSMITIR = new Set(['GENERADO', 'EN_COLA', 'TRANSMITIDO', 'NO_CONFIGURADO']);
 
 export function NominaElectronicaPanel() {
   const [periodo, setPeriodo] = useState('');
@@ -49,6 +56,7 @@ export function NominaElectronicaPanel() {
     [periodo],
   );
   const [errores, setErrores] = useState<string[]>([]);
+  const [vista, setVista] = useState<VistaDeDocumentos>('todos');
 
   const transmitir = async (id: string) => {
     setErrores([]);
@@ -68,19 +76,52 @@ export function NominaElectronicaPanel() {
 
   return (
     <div className="space-y-6">
+      {/* El filtro del período vive dentro de la tarjeta: al cambiarlo se vuelve a pedir la lista y
+          la tarjeta se queda en pantalla con la anterior mientras llega (antes se desmontaba al
+          escribir). */}
       <Cargado
-        estado={estado}
+        estado={{ ...estado, cargando: estado.cargando && estado.datos === null }}
         queEs="los documentos de nómina electrónica"
         queSeEspera="informar la nómina electrónica"
       >
-        {(datos) => (
+        {(datos) => {
+          const aceptados = datos.documentos.filter((d) => d.estado === 'ACEPTADO');
+          const rechazados = datos.documentos.filter((d) => d.estado === 'RECHAZADO');
+          const porTransmitir = datos.documentos.filter((d) => POR_TRANSMITIR.has(d.estado));
+          const visibles =
+            vista === 'aceptados' ? aceptados : vista === 'rechazados' ? rechazados : vista === 'por-transmitir' ? porTransmitir : datos.documentos;
+          const cifras = localeDeLasCifras();
+          return (
           <>
-            <Avisos
-              avisos={[datos.proveedor.pila]}
-              titulo="La planilla PILA se hace por fuera de Leasefy"
-              tono="info"
-              testId="aviso-pila"
+            {/* GLOW UP 3.ª vuelta · LA RESPUESTA: cuántos documentos ya aceptó la DIAN. La PILA, que
+                se hace por fuera, va a su pie: está escrita arriba para que nadie busque el botón. */}
+            {datos.documentos.length === 0 ? (
+              <p className="text-body-sm text-fg-muted" data-testid="aviso-pila">
+                <span className="text-fg">La planilla PILA se hace por fuera de Leasefy.</span> {datos.proveedor.pila}
+              </p>
+            ) : (
+            <CifraHeroe
+              rotulo="Aceptados por la DIAN"
+              cifra={`${aceptados.length.toLocaleString(cifras)} de ${datos.documentos.length.toLocaleString(cifras)}`}
+              contexto={
+                datos.proveedor.esDePrueba
+                  ? 'con el proveedor de prueba: no llegan a la DIAN'
+                  : `proveedor: ${datos.proveedor.nombre}${datos.cola > 0 ? ` · ${datos.cola} en cola` : ''}`
+              }
+              total={datos.documentos.length}
+              tramos={[
+                { clave: 'aceptados', etiqueta: 'Aceptados', monto: aceptados.length, tono: 'exito', cifra: aceptados.length.toLocaleString(cifras) },
+                { clave: 'por-transmitir', etiqueta: 'Por transmitir', monto: porTransmitir.length, tono: 'neutro', cifra: porTransmitir.length.toLocaleString(cifras) },
+                { clave: 'rechazados', etiqueta: 'Rechazados', monto: rechazados.length, tono: 'critico', cifra: rechazados.length.toLocaleString(cifras) },
+              ]}
+              pie={
+                <span data-testid="aviso-pila">
+                  <span className="text-fg">La planilla PILA se hace por fuera de Leasefy.</span> {datos.proveedor.pila}
+                </span>
+              }
+              data-testid="cifra-de-la-electronica"
             />
+            )}
 
             {datos.proveedor.aviso ? (
               <Avisos
@@ -102,30 +143,43 @@ export function NominaElectronicaPanel() {
               />
             ) : null}
 
-            <section className="space-y-3">
-              <TituloDeBloque
-                titulo={`Documentos${datos.cola > 0 ? ` · ${datos.cola} en cola` : ''}`}
-                explicacion={`Proveedor: ${datos.proveedor.nombre}. «Generar» numera el documento y lo deja sin CUNE; «Transmitir» es el que habla con el proveedor. Los documentos se generan desde el período, cuando está aprobado.`}
-                accion={
+            <section className="overflow-hidden rounded-lg border border-border bg-surface" aria-label="Documentos">
+              <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
+                {datos.documentos.length > 0 ? (
+                  <PestanasDeEstado
+                    etiqueta="Estado de los documentos"
+                    valor={vista}
+                    onCambio={setVista}
+                    pestanas={[
+                      { valor: 'todos', etiqueta: 'Todos', cuantos: datos.documentos.length, fija: true },
+                      { valor: 'por-transmitir', etiqueta: 'Por transmitir', cuantos: porTransmitir.length },
+                      { valor: 'rechazados', etiqueta: 'Rechazados', cuantos: rechazados.length, tono: 'aviso' },
+                      { valor: 'aceptados', etiqueta: 'Aceptados', cuantos: aceptados.length },
+                    ]}
+                  />
+                ) : null}
+                <div className="ml-auto flex items-center gap-2">
+                  <Label htmlFor="filtro-de-periodo" className="text-caption text-fg-muted">Período</Label>
                   <Input
-                    className="w-36"
-                    placeholder="2026-03"
+                    id="filtro-de-periodo"
+                    type="month"
+                    className="w-44"
                     value={periodo}
                     onChange={(e) => setPeriodo(e.target.value)}
                     aria-label="Filtrar por período"
                     data-testid="filtro-de-periodo"
                   />
-                }
-              />
-              {datos.documentos.length === 0 ? (
-                <p className="rounded-lg border border-border bg-surface p-5 text-sm text-fg-muted">
-                  Todavía no hay documentos. Se generan desde un período de nómina
-                  aprobado.
+                </div>
+              </div>
+              {visibles.length === 0 ? (
+                <p className="p-5 text-body-sm text-fg-muted">
+                  {datos.documentos.length === 0
+                    ? 'Todavía no hay documentos. Se generan desde un período de nómina aprobado: «Generar» lo numera sin CUNE y «Transmitir» es el que habla con el proveedor.'
+                    : 'Ningún documento en esta pestaña.'}
                 </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table data-testid="tabla-de-documentos">
-                    <TableHeader>
+                  <Table data-testid="tabla-de-documentos" className="max-md:block">
+                    <TableHeader className="max-md:hidden">
                       <TableRow>
                         <TableHead>Número</TableHead>
                         <TableHead>Período</TableHead>
@@ -136,19 +190,26 @@ export function NominaElectronicaPanel() {
                         <TableHead />
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
-                      {datos.documentos.map((d) => {
+                    <TableBody className="max-md:block">
+                      {visibles.map((d) => {
                         const dePrueba = d.cune?.startsWith('PRUEBA-') ?? false;
                         return (
-                          <TableRow key={d.id} data-testid={`doc-${d.id}`}>
-                            <TableCell className="font-mono text-caption">
+                          <TableRow
+                            key={d.id}
+                            data-testid={`doc-${d.id}`}
+                            className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:gap-y-1 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3.5 max-md:last:border-0"
+                          >
+                            <TableCell className="font-mono text-caption max-md:col-start-1 max-md:row-start-1 max-md:block max-md:p-0 max-md:text-body-sm max-md:text-fg">
                               {d.prefijo}-{d.numero}
                             </TableCell>
-                            <TableCell className="text-caption">{d.periodo}</TableCell>
-                            <TableCell className="text-caption">
+                            <TableCell className="text-caption max-md:col-start-1 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-fg-muted">
+                              {etiquetaDelPeriodo(d.periodo, null)}
+                              <span className="md:hidden"> · {d.tipo.replace(/_/g, ' ').toLowerCase()}</span>
+                            </TableCell>
+                            <TableCell className="text-caption max-md:hidden">
                               {d.tipo.replace(/_/g, ' ').toLowerCase()}
                             </TableCell>
-                            <TableCell className="text-caption">
+                            <TableCell className="text-caption max-md:col-start-2 max-md:row-start-2 max-md:block max-md:p-0 max-md:text-right">
                               {d.estado.toLowerCase()}
                               {d.intentos > 1 ? ` · ${d.intentos} intentos` : ''}
                               {d.ultimoError ? (
@@ -157,7 +218,7 @@ export function NominaElectronicaPanel() {
                                 </p>
                               ) : null}
                             </TableCell>
-                            <TableCell className="font-mono text-caption">
+                            <TableCell className="font-mono text-caption max-md:col-span-2 max-md:row-start-3 max-md:block max-md:break-all max-md:p-0 max-md:text-fg-muted">
                               {d.cune ?? '—'}
                               {dePrueba ? (
                                 <span
@@ -168,10 +229,10 @@ export function NominaElectronicaPanel() {
                                 </span>
                               ) : null}
                             </TableCell>
-                            <TableCell className="text-right font-mono tabular-nums">
+                            <TableCell className="text-right font-mono tabular-nums max-md:col-start-2 max-md:row-start-1 max-md:block max-md:p-0">
                               {formatCurrency(d.totalNetoCop)}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="max-md:col-span-2 max-md:row-start-4 max-md:block max-md:p-0">
                               {d.estado !== 'ACEPTADO' ? (
                                 <Button
                                   size="sm"
@@ -188,11 +249,11 @@ export function NominaElectronicaPanel() {
                       })}
                     </TableBody>
                   </Table>
-                </div>
               )}
             </section>
           </>
-        )}
+          );
+        }}
       </Cargado>
     </div>
   );

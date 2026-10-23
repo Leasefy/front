@@ -35,7 +35,10 @@ import { Button } from '@/components/ui/button'
 import { useCobrosEnLaBandeja } from '@/lib/hooks/use-cobros-en-la-bandeja'
 import { useResumenDePayu, type Lectura } from '@/lib/hooks/use-payu'
 import { fraseDelMesDePayu } from '@/lib/payu/frases'
-import { mesActual } from '@/lib/recaudo/meses'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { formatCurrency } from '@/lib/format'
+import { mesActual, nombreDelMes } from '@/lib/recaudo/meses'
 import type { ResumenDeLinksDePago } from '@/lib/types/payu'
 
 export function estadoDeCobri(lectura: Lectura<ResumenDeLinksDePago>): EstadoDelAgente {
@@ -79,13 +82,31 @@ function CuandoEscribe() {
 
 function FraseDelMes({ lectura }: { lectura: Lectura<ResumenDeLinksDePago> }) {
   if (lectura.data) {
+    const d = lectura.data
+    const conEnlaceSinPagar = Math.max(0, d.linksEnviados - d.pagadosPorLink)
+    const sinEnlace = Math.max(0, d.cuotas - d.pagadosPorLink - conEnlaceSinPagar)
+    // Revisora r24 (Agente de pagos #1): LA RESPUESTA en una cifra —lo pagado por enlace en el mes, de cuántas
+    // cuotas— con su barra; la frase de siempre queda debajo. Antes, seis cifras en un renglón.
     return (
-      <div className="flex items-start gap-3">
-        <ChatCircleText className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
-        <p className="text-body text-fg" data-testid="frase-de-cobri">
-          {fraseDelMesDePayu(lectura.data)}
-        </p>
-      </div>
+      <CifraHeroe
+        rotulo={`Pagadas por enlace en ${nombreDelMes(d.mes)}`}
+        cifra={formatCurrency(d.montoCobradoPorLinkCop)}
+        contexto={`${d.pagadosPorLink} de ${d.cuotas} ${d.cuotas === 1 ? 'cuota' : 'cuotas'}`}
+        total={d.cuotas}
+        tamano="mediana"
+        tramos={[
+          { clave: 'pagadas', etiqueta: 'Pagadas por enlace', monto: d.pagadosPorLink, tono: 'exito', cifra: d.pagadosPorLink, siempre: true },
+          { clave: 'enviadas', etiqueta: 'Con enlace, sin pagar', monto: conEnlaceSinPagar, tono: 'aviso', cifra: conEnlaceSinPagar },
+          { clave: 'sin-enlace', etiqueta: 'Sin enlace todavía', monto: sinEnlace, tono: 'neutro', cifra: sinEnlace },
+        ]}
+        pie={
+          <p className="flex items-start gap-2" data-testid="frase-de-cobri">
+            <ChatCircleText className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            {fraseDelMesDePayu(d)}
+          </p>
+        }
+        data-testid="cifra-de-cobri"
+      />
     )
   }
   if (lectura.error) {
@@ -166,7 +187,10 @@ export function CobriEsteMes() {
         </p>
       </div>
 
-      <CuandoEscribe />
+      {/* Revisora r24 (Agente de pagos #2): «Cuándo escribe» se consulta; plegado, no ~600 px abiertos a 390. */}
+      <MasDetalles etiqueta="Cuándo escribe Cobri" etiquetaAbierto="Ocultar" montadoSiempre>
+        <CuandoEscribe />
+      </MasDetalles>
 
       <EsperanTuAprobacion ids={enLaBandeja.ids} />
 

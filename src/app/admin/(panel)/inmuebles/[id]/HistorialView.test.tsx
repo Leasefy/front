@@ -8,6 +8,7 @@
  * tendencia, y el inmueble sin historia.
  */
 
+import { fmtFecha } from '@/lib/admin/format'
 import * as React from 'react'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
@@ -172,11 +173,11 @@ describe('HistorialView', () => {
     const texto = container.textContent ?? ''
 
     expect(texto).toContain('1 activo · 2 terminados')
-    expect(texto).toContain('1.5 por año · dura 200 días')
+    expect(texto).toContain('1,5 por año · dura 200 días')
     // Renovar no es volver a arrendar: la ficha lo dice al lado de la rotación.
     expect(texto).toContain('1 renovación')
-    expect(texto).toContain('10.2 %')
-    expect(texto).toContain('63 días de 620 días desde 2024-01-01')
+    expect(texto).toContain('10,2 %')
+    expect(texto).toContain(`63 días de 620 días desde el ${fmtFecha('2024-01-01')}`)
     expect(texto).toContain('3 en 12 meses')
     expect(texto).toContain('+20 % desde')
   })

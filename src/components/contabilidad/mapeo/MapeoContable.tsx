@@ -685,7 +685,9 @@ export function MapeoContable({
   return (
     <Tabs value={parte} onValueChange={(v) => setParte(v as ParteDelMapeo)}>
       {dialogoDelCambio}
-      <TabsList variant="underline" className="justify-start">
+      {/* Ronda 30 (revisora r27): a 390 cada pestaña en un renglón y el riel se desliza (antes «Asientos
+          automáticos» partía en dos renglones sobre la raya). */}
+      <TabsList variant="underline" className="max-w-full justify-start overflow-x-auto whitespace-nowrap [scrollbar-width:none]">
         <TabsTrigger value="asientos" data-testid="parte-asientos">
           Asientos automáticos
         </TabsTrigger>

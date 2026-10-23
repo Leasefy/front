@@ -177,6 +177,8 @@ describe('Detalle del caso — en el orden del trabajo', () => {
     datos.fuentesQueFallaron = ['solicitudes'];
     await montar('otro');
     expect(document.body.textContent).toContain('Error al cargar el caso');
+    // Glow up 22-10: «Volver» ya está arriba; aquí la salida es volver a pedir.
+    expect(Array.from(document.querySelectorAll('button')).some((b) => b.textContent?.includes('Reintentar'))).toBe(true);
   });
 
   it('un caso que no es suyo dice «Caso no encontrado» y vuelve a Mis casos', async () => {

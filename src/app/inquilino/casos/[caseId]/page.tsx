@@ -31,10 +31,8 @@ import {
   CreditCard,
   FileText,
   ClipboardText,
-  CheckCircle,
   Clock,
   CalendarBlank,
-  Warning,
   MagnifyingGlass,
   ArrowUpRight,
   ChatCircle,
@@ -43,19 +41,18 @@ import {
   type Icon,
 } from '@phosphor-icons/react';
 
+import { StatusBadge } from '@leasefy/cadence';
 import { useTenantCases } from '@/lib/hooks/use-tenant-cases';
 import { resolveExpectedResponse } from '@/lib/date/business-days';
 import { CostoResponsabilidadCard } from '@/components/tenant/CostoResponsabilidadCard';
 import { useI18n } from '@/lib/i18n';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/ui/back-button';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { AvisoDeFuentesCaidas } from '@/components/portales/AvisoDeFuentesCaidas';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
-import type { BadgeProps } from '@/components/ui/badge';
 import type { CaseTone, CaseType, TenantCase } from '@/lib/types/tenant-case';
 import { RespuestaYArchivosDelCaso } from '@/components/tenant/RespuestaYArchivosDelCaso';
 
@@ -68,10 +65,11 @@ import { RespuestaYArchivosDelCaso } from '@/components/tenant/RespuestaYArchivo
  * intentionally NO `destructive`/alarm mapping — pair icon + text, never color
  * alone (DESIGN.md §7 A11y). Mirrors the hub (v7-03-02) exactly.
  */
-const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>; icon: Icon }> = {
-  neutral: { variant: 'secondary', icon: CheckCircle },
-  info: { variant: 'default', icon: Clock },
-  attention: { variant: 'warning', icon: Warning },
+// GLOW UP (22-10): el estado con su punto y su palabra (StatusBadge), sin ícono en la pastilla; nunca rojo.
+const TONO_DEL_ESTADO: Record<CaseTone, 'neutral' | 'info' | 'warning'> = {
+  neutral: 'neutral',
+  info: 'info',
+  attention: 'warning',
 };
 
 /** Case type → leading icon tile. Only `pago`/`aplicacion` are emitted today. */
@@ -157,8 +155,7 @@ function CaseDetail({
   /** Carga → contenido: la entrada de 4 px si se vio el esqueleto (si no, quieto). */
   entrada: EntradaTrasCargar;
 }) {
-  const badge = TONE_BADGE[caso.tone];
-  const ToneIcon = badge.icon;
+  const tono = TONO_DEL_ESTADO[caso.tone];
   const TypeIcon = TYPE_ICON[caso.type] ?? ClipboardText;
 
   // Timeline from SOURCE TIMESTAMPS only — map CaseEvent[] → TimelineItem[]
@@ -214,10 +211,9 @@ function CaseDetail({
         seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
         titulo={caso.titulo}
         junto={
-          <Badge variant={badge.variant} className="inline-flex items-center gap-1" data-testid="caso-estado">
-            <ToneIcon className="w-3 h-3" aria-hidden="true" />
+          <StatusBadge tone={tono} data-testid="caso-estado">
             {caso.estadoLabel}
-          </Badge>
+          </StatusBadge>
         }
         descripcion={
           caso.solicitud?.radicado ? (
@@ -333,7 +329,7 @@ function CaseDetail({
         className="rounded-lg border border-border bg-surface p-5 sm:p-6"
         data-testid="caso-historial"
       >
-        <h2 className="text-sm font-medium text-fg mb-4">
+        <h2 className="text-h3 text-fg mb-4">
           {locale === 'es' ? 'Historial' : 'Timeline'}
         </h2>
         <PlanActivityTimeline
@@ -381,7 +377,8 @@ export default function CaseDetailPage(props: { params: Promise<{ caseId: string
           icon={XCircle}
           title={locale === 'es' ? 'Error al cargar el caso' : 'Error loading case'}
           description={error}
-          action={{ label: locale === 'es' ? 'Volver a Mis casos' : 'Back to My cases', href: '/inquilino/casos' }}
+          /* «Volver» ya está arriba: aquí, volver a pedir. */
+          action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', onClick: () => void refetch() }}
         />
       </PageShell>
     );

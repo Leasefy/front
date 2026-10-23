@@ -209,11 +209,12 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
           cabecera de la tabla cuyas columnas cambian. */}
       <Tabs value={informe} onValueChange={(v) => setInforme(v as Informe)}>
         <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 lg:flex-row lg:items-center lg:justify-between">
-          <TabsList variant="segmented" className="justify-start">
-            <TabsTrigger value="pyg" data-testid="pestana-pyg" className="whitespace-nowrap">
+          {/* Ronda 26 (revisora r25, UI 1): a 1440 «Balance general» salía cortado; el control no se encoge. */}
+          <TabsList variant="segmented" className="shrink-0 justify-start">
+            <TabsTrigger value="pyg" data-testid="pestana-pyg" className="shrink-0 whitespace-nowrap">
               Estado de resultados (P&G)
             </TabsTrigger>
-            <TabsTrigger value="balance" data-testid="pestana-balance" className="whitespace-nowrap">
+            <TabsTrigger value="balance" data-testid="pestana-balance" className="shrink-0 whitespace-nowrap">
               Balance general
             </TabsTrigger>
           </TabsList>

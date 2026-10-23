@@ -167,6 +167,14 @@ describe('«Mi arriendo» · Próximo pago', () => {
     expect(texto).toContain('1.485.000');
   });
 
+  it('LA RESPUESTA en grande (glow up 22-10): lo que paga cada mes y, al pie, si está al día', async () => {
+    await pintar();
+    const cifras = host.querySelector('[data-testid="cifras-del-arriendo"]');
+    expect(cifras?.textContent).toContain('Pagas cada mes');
+    expect(cifras?.textContent).toMatch(/1\.650\.000/);
+    expect(cifras?.querySelector('[data-testid="cifra-estado-del-arriendo"]')).not.toBeNull();
+  });
+
   it('sin estado de cuenta no inventa un próximo pago con el modelo viejo', async () => {
     apiGet.mockImplementation(async (ruta: string) => {
       if (ruta === '/leases') return leases;

@@ -3,7 +3,8 @@
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Cifra, CrossFade, FranjaDeCifras, MonoLabel, StatusBadge } from '@leasefy/cadence';
+import { CrossFade, MonoLabel, StatusBadge } from '@leasefy/cadence';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { MapPin, Calendar, House, CheckCircle, ArrowsClockwise } from '@phosphor-icons/react';
@@ -197,38 +198,42 @@ export default function ArriendoPage() {
           Un resumen de nada no informa, y encima ocupa el lugar donde debería
           estar lo único útil de esta pantalla: qué hacer para tener un arriendo.
         */}
-        {/* GLOW UP (21-10): las tres cifras en la franja común (antes, tres tarjetas teñidas con su ícono en
-            caja). El estado va primero: es lo que se viene a mirar. Status refleja las cuotas, no una constante. */}
+        {/* GLOW UP (22-10, al nivel de Deuda del mes): LA RESPUESTA —lo que paga cada mes y si está al día— en
+            grande, en vez de tres cifras del mismo peso («Arriendos activos 1» no resume nada). El estado sale de
+            las CUOTAS (la misma fuente que «Mi estado de cuenta»), no de una constante. */}
         {activeLeases.length > 0 && (
-          // QA 21-10 (390 px): de a dos por fila, «$ 1.400.000» se cortaba y el estado se partía
-          // en tres renglones. Con plata larga, una por fila en el celular (fila="xl" de Cadence).
-          <FranjaDeCifras className="mb-8" fila="xl" data-testid="cifras-del-arriendo">
-            <Cifra
-              etiqueta={locale === 'es' ? 'Estado' : 'Status'}
-              valor={overallStatus ? overallStatus.label : '—'}
-              tono={
-                estadoGeneral?.tono === 'ok'
-                  ? 'exito'
-                  : estadoGeneral?.tono === 'peligro'
-                    ? 'peligro'
-                    : estadoGeneral?.tono === 'espera'
-                      ? 'aviso'
-                      : undefined
+          <section className="mb-8 rounded-lg border border-border bg-surface p-6" data-testid="cifras-del-arriendo">
+            <CifraHeroe
+              rotulo={locale === 'es' ? 'Pagas cada mes' : 'You pay each month'}
+              cifra={formatCurrency(totalMonthlyRent)}
+              contexto={locale === 'es' ? 'arriendo + administración' : 'rent + admin fee'}
+              pie={
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span data-testid="cifra-estado-del-arriendo" className="inline-flex flex-wrap items-center gap-2">
+                    <StatusBadge
+                      tone={
+                        estadoGeneral?.tono === 'ok'
+                          ? 'success'
+                          : estadoGeneral?.tono === 'peligro'
+                            ? 'critical'
+                            : estadoGeneral?.tono === 'espera'
+                              ? 'warning'
+                              : 'neutral'
+                      }
+                    >
+                      {overallStatus ? overallStatus.label : '—'}
+                    </StatusBadge>
+                    <span>{overallStatus ? overallStatus.detail : locale === 'es' ? 'Sin información de pago' : 'No payment info'}</span>
+                  </span>
+                  {activeLeases.length > 1 && (
+                    <span>
+                      · {activeLeases.length} {locale === 'es' ? 'contratos vigentes' : 'current contracts'}
+                    </span>
+                  )}
+                </span>
               }
-              detalle={overallStatus ? overallStatus.detail : locale === 'es' ? 'Sin información de pago' : 'No payment info'}
-              data-testid="cifra-estado-del-arriendo"
             />
-            <Cifra
-              etiqueta={locale === 'es' ? 'Total mensual' : 'Monthly total'}
-              valor={formatCurrency(totalMonthlyRent)}
-              detalle={locale === 'es' ? 'Arriendo + administración' : 'Rent + admin fee'}
-            />
-            <Cifra
-              etiqueta={locale === 'es' ? 'Arriendos activos' : 'Active rentals'}
-              valor={activeLeases.length}
-              detalle={locale === 'es' ? 'Contratos vigentes' : 'Current contracts'}
-            />
-          </FranjaDeCifras>
+          </section>
         )}
 
         {/* Leases List */}

@@ -198,10 +198,7 @@ export default function CotizadorOverviewPage() {
               ilustracion="escudo"
               titulo={t('inmobiliaria.ai.cotizador.overview.empty.title')}
               descripcion={t('inmobiliaria.ai.cotizador.overview.empty.description')}
-              crear={{
-                label: t('inmobiliaria.ai.cotizador.overview.empty.cta.label'),
-                href: '/panel/inmobiliaria/postulaciones/asegurabilidad/nueva',
-              }}
+              /* Ronda 30: sin un segundo «Nueva cotización» en el vacío; la acción azul es la del encabezado. */
             />
           </div>
           {/* Aquí iba «Consultas que necesitan atención»: leía la misma cola

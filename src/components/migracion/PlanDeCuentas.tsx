@@ -874,7 +874,7 @@ function Nodo({
           <span className="h-5 w-5" aria-hidden />
         )}
         <span
-          className={`font-mono text-sm tabular-nums ${nivel <= 1 ? 'font-medium text-fg' : 'text-fg'}`}
+          className={`shrink-0 font-mono text-sm tabular-nums ${nivel <= 1 ? 'font-medium text-fg' : 'text-fg'}`}
         >
           {nodo.codigo}
         </span>
@@ -885,7 +885,9 @@ function Nodo({
         {/* Revisora r25: a 390 lo que describe la cuenta baja a su propio renglón, debajo del
             nombre, y las acciones quedan en la primera línea con su rótulo (antes tres renglones
             con los íconos solos). */}
-        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 max-md:order-last max-md:basis-full max-md:pl-7">
+        {/* Ronda 30 (revisora r27, 390): en las CLASES (nivel 0) la naturaleza no se repite en un renglón propio
+            —cada clase quedaba en tres renglones—; el código no se separa del nombre (shrink-0). */}
+        <span className={`inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 max-md:order-last max-md:basis-full max-md:pl-7 ${nivel === 0 ? 'max-md:hidden' : ''}`}>
         <span className="text-caption text-fg-muted">
           {nodo.naturaleza === 'DEBITO' ? 'Débito' : 'Crédito'}
         </span>

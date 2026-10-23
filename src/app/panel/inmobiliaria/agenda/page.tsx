@@ -569,7 +569,7 @@ function AgendaContent() {
       {/* Ronda 22: el encabezado de todas las pantallas (sección · título · una línea | la secundaria y la única azul). */}
       <EncabezadoDePantalla
         // T1 (revisora r25): el sobretítulo es la sección del menú, no el título otra vez.
-        seccion={t('inmobiliaria.nav.secCaptacion')}
+        seccion={t('inmobiliaria.nav.secCaptacionCorta')}
         titulo={t(k('title'))}
         descripcion={t(k('subtitle'))}
         acciones={

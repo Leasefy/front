@@ -307,17 +307,16 @@ export function RegistrosContables({
            * dónde. Ahora lo dice, y un solo botón lo reconoce.
            */}
           <section
-            className="space-y-4 rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
+            className="space-y-4 rounded-lg border border-border-faint bg-surface p-6"
             data-testid="contables-guia"
           >
             <div>
               <h2 className="text-sm font-medium text-fg">
                 Qué traer de tu sistema anterior
               </h2>
+              {/* Ronda 30 (revisora r27): una línea por bloque; el detalle, en «¿Qué archivo traigo?». */}
               <p className="mt-1 max-w-2xl text-sm text-fg-muted">
-                Tres archivos, cada uno con su lugar. Los saldos iniciales no son
-                obligatorios: el paso queda listo cuando cargas registros contables,
-                sean los saldos iniciales o el libro diario.
+                Tres archivos, cada uno a su lugar. Los saldos iniciales no son obligatorios: el paso queda listo con ellos o con el libro diario.
               </p>
             </div>
             <ZonaDeArchivo
@@ -416,7 +415,7 @@ export function RegistrosContables({
            * (glow-up 30-09) — antes el segmentado y su texto flotaban entre
            * dos islas.
            */}
-          <section className="space-y-4 rounded-lg border border-border-faint bg-surface p-6 shadow-sm">
+          <section className="space-y-4 rounded-lg border border-border-faint bg-surface p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2 className="text-sm font-medium text-fg">
                 O elige a mano dónde va
@@ -512,10 +511,10 @@ export function RegistrosContables({
             )}
             <p className="max-w-2xl text-sm text-fg-muted">
               {camino === "apertura"
-                ? "Los saldos de cada cuenta al cierre del año anterior, en un asiento. Súbelos desde el balance de prueba por tercero o escríbelos. Con esto queda listo el paso."
+                ? "Los saldos de cada cuenta al cierre del año anterior: súbelos o escríbelos."
                 : camino === "historico"
-                  ? "Los movimientos de este año, exportados de tu sistema anterior en Excel o CSV: sólo los posteriores a los saldos iniciales, que ya traen todo lo de antes."
-                  : "El export de comprobantes: facturas, comprobantes de ingreso y de egreso, con su fecha y su concepto. No son asientos —no traen cuenta por línea— y por eso van a la ficha del contrato, no al libro diario."}
+                  ? "Los movimientos de este año posteriores a los saldos iniciales, en Excel o CSV."
+                  : "Facturas y comprobantes de ingreso y de egreso: van a la ficha de cada contrato, no al libro diario."}
             </p>
           </section>
 

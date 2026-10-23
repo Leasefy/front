@@ -1343,7 +1343,7 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label={t('inmobiliaria.config.profile.lateFeePercent')}
                 error={errors.defaultLateFeePercent}
-                hint="Porcentaje mensual. Se cobra sólo si no usas reglas de mora (Pagos → Cartera → Reglas de mora)"
+                hint="Porcentaje mensual. Se cobra sólo si no usas las reglas de mora"
                 campo="defaultLateFeePercent"
               >
                 <div className="relative">
@@ -1583,7 +1583,7 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label="Días de mora para siniestro"
                 error={errors.diasParaSiniestro}
-                hint="Días de mora con saldo a partir de los cuales un cobro pasa a siniestro. Sólo aplica con el motor de cobros prendido."
+                hint="Días de mora con saldo a partir de los cuales un cobro pasa a siniestro. Sólo aplica con el cobro con las reglas de mora prendido."
                 campo="diasParaSiniestro"
               >
                 <div className="relative">
@@ -1646,7 +1646,7 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label="Techo legal del interés de mora (% efectivo anual)"
                 error={errors.topeInteresMoraEaPorcentaje}
-                hint="La usura vigente, que certifica la Superfinanciera cada mes. Ninguna regla de interés va a poder pasarse de aquí. Vacío = sin validar."
+                hint="La usura vigente, que certifica la Superfinanciera cada mes. Ninguna regla de interés va a poder pasarse de aquí. Si lo dejas vacío, no se valida."
                 campo="topeInteresMoraEaPorcentaje"
               >
                 <Input
@@ -1710,7 +1710,7 @@ export function ConfigPerfilAgencia({
               </div>
               <div className="text-caption text-muted-foreground">
                 aviso a la aseguradora a los{' '}
-                {agency.diasParaAvisoAseguradora ?? DIAS_PARA_AVISO_ASEGURADORA_POR_DEFECTO} · sólo con el motor prendido
+                {agency.diasParaAvisoAseguradora ?? DIAS_PARA_AVISO_ASEGURADORA_POR_DEFECTO} · sólo con las reglas de mora prendidas
               </div>
             </div>
           </div>
@@ -1732,7 +1732,7 @@ export function ConfigPerfilAgencia({
                 </label>
                 <p className="text-caption text-muted-foreground">
                   Cada lote de pagos a propietarios necesita el código que le llega por correo a otra persona
-                  con permiso sobre dispersiones, sin importar el monto.
+                  con permiso para aprobar giros, sin importar el monto.
                 </p>
               </div>
               <Switch
@@ -1747,7 +1747,7 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label="Segundo aprobador desde (COP)"
                 error={errors.dispersionMontoDobleAprobacion}
-                hint={`Desde este monto un lote de giros o de egresos lo aprueba una segunda persona, con el código: quien lo armó no, aunque sea administrador. Por debajo, el administrador lo aprueba al armarlo. Vacío = el que trae Leasefy (${formatCurrency(MONTO_DE_LA_SEGUNDA_PERSONA_POR_DEFECTO_COP)}).`}
+                hint={`Desde este monto un lote de giros o de egresos lo aprueba una segunda persona, con el código: quien lo armó no, aunque sea administrador. Por debajo, el administrador lo aprueba al armarlo. Si lo dejas vacío, se usa el que trae Leasefy (${formatCurrency(MONTO_DE_LA_SEGUNDA_PERSONA_POR_DEFECTO_COP)}).`}
                 campo="dispersionMontoDobleAprobacion"
               >
                 <CurrencyInput
@@ -1860,7 +1860,7 @@ export function ConfigPerfilAgencia({
             <InputWrapper
               label="ReteICA (por mil)"
               error={errors.reteicaPorMil}
-              hint="Según el municipio (Bogotá, demás actividades comerciales: 9,66). Vacío = no se practica."
+              hint="Según el municipio (Bogotá, demás actividades comerciales: 9,66). Si lo dejas vacío, no se practica."
               campo="reteicaPorMil"
             >
               <Input
@@ -1898,7 +1898,7 @@ export function ConfigPerfilAgencia({
             <InputWrapper
               label="Base mínima de retefuente (COP)"
               error={errors.baseMinimaRetefuenteCop}
-              hint="Por debajo de este canon no se practica retefuente (27 UVT). Vacío = sin mínimo."
+              hint="Por debajo de este canon no se practica retefuente (27 UVT). Si lo dejas vacío, no hay mínimo."
               campo="baseMinimaRetefuenteCop"
             >
               <CurrencyInput

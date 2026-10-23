@@ -521,18 +521,21 @@ function FilaEnTodos({
             {primero.etiqueta}
             {primero.esElEstudio ? <Lock className="h-4 w-4 text-fg-subtle" aria-label="No se puede cambiar" /> : null}
           </p>
-          {primero.detalle ? <p className="text-sm text-fg-muted">{primero.detalle}</p> : null}
+          {/* Ronda 30 (revisora r27): el estudio dice UNA vez por qué no frena (antes su detalle «Opcional: no frena…»
+              y debajo, a la derecha, «No frena la postulación…», que corría el chip a media fila). */}
+          {primero.esElEstudio ? (
+            <p className="text-sm text-fg-muted" data-testid={`estudio-candado-${primero.id}`}>
+              No frena la postulación: quien no lo tiene te llega marcado «Sin estudio».
+            </p>
+          ) : primero.detalle ? (
+            <p className="text-sm text-fg-muted">{primero.detalle}</p>
+          ) : null}
           <p className="text-caption text-fg-subtle">{texto}</p>
         </div>
       </div>
       <div className="flex flex-col items-start gap-1 sm:items-end" data-testid={`en-que-perfiles-${primero.id}`}>
         {obligatorioEn.length > 0 ? renglon(true, obligatorioEn) : null}
         {opcionalEn.length > 0 ? renglon(false, opcionalEn) : null}
-        {primero.esElEstudio ? (
-          <span className="text-caption text-fg-subtle" data-testid={`estudio-candado-${primero.id}`}>
-            No frena la postulación: quien no lo tiene te llega marcado «Sin estudio»
-          </span>
-        ) : null}
       </div>
     </StaggerItem>
   )
@@ -674,7 +677,7 @@ export function RequisitosClient() {
         la lea, la pantalla dice cómo se usa hoy.
       */}
       <EncabezadoDePantalla
-        seccion="Captación y arriendo"
+        seccion="Captación"
         titulo="Requisitos por tipo de inquilino"
         descripcion="Los papeles que le pides a cada perfil: es la política de riesgo de esta inmobiliaria."
         accionPrincipal={
@@ -705,10 +708,15 @@ export function RequisitosClient() {
                     Todavía estás viendo la lista sugerida
                   </p>
                   <p className="text-sm text-fg-muted">
-                    Es la que usamos por defecto, no la de esta inmobiliaria.
+                    Es la que trae Leasefy, no la de esta inmobiliaria.
                     Guárdala como tuya y a partir de ahí puedes agregar lo que sí
                     pides, quitar lo que no, y volver opcional lo que no es
                     indispensable.
+                  </p>
+                  {/* Ronda 30 (revisora r27): un solo aviso; cómo se usa hoy la lista va aquí mientras sea la sugerida. */}
+                  <p className="text-caption text-fg-subtle" data-testid="requisitos-como-se-usa">
+                    Hoy el formulario de postulación le pide a todos la cédula y el extracto bancario; lo demás
+                    de esta lista se lo pides al candidato con «Pedir info» desde su ficha.
                   </p>
                 </div>
                 {puedeEditar ? (
@@ -764,6 +772,7 @@ export function RequisitosClient() {
             ) : null}
             {/* Glow up 22-10: la descripción del encabezado queda en UNA línea; cómo se usa
                 hoy la lista (QA-IA-A) se dice una vez, aquí, pegado a ella. */}
+            {!esElPreset ? (
             <p
               className="flex items-start gap-2 border-b border-border bg-surface-muted/60 px-6 py-2.5 text-caption text-fg-muted"
               data-testid="requisitos-como-se-usa"
@@ -772,6 +781,7 @@ export function RequisitosClient() {
               Hoy el formulario de postulación le pide a todos la cédula y el extracto bancario; lo demás
               de esta lista se lo pides al candidato con «Pedir info» desde su ficha.
             </p>
+            ) : null}
             <CardHeader>
               <CardTitle className="text-base font-medium">
                 {perfil

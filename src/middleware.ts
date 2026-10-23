@@ -6,6 +6,7 @@ import {
   RUTA_DE_REPORTES_CSP,
   cabeceraDeLaPolitica,
   esDeLaHome,
+  internaDeLaRuta,
   llevaPoliticaDeDocumento,
   modoDeLaPolitica,
   nuevoNonce,
@@ -67,7 +68,13 @@ export function middleware(request: NextRequest) {
    * sigue en `/inicio-anterior` por si hay que volver. La landing sólo existe
    * en español: `/en` también la muestra.
    */
-  if (reescrita) reescrita.pathname = ruta === '/' ? RUTA_DE_LA_HOME : ruta;
+  /*
+   * Ronda 30: también sus internas (`/productos`, `/productos/<producto>` y
+   * `/para/<público>`) son páginas estáticas, de `public/internas/`. Las de
+   * React siguen en el código como respaldo: para volver a ellas basta quitar
+   * esta reescritura.
+   */
+  if (reescrita) reescrita.pathname = ruta === '/' ? RUTA_DE_LA_HOME : (internaDeLaRuta(ruta) ?? ruta);
 
   const deLaPeticion = new Headers(request.headers);
   // Nadie de afuera dice en qué idioma va la página.

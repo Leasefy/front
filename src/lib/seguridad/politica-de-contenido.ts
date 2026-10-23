@@ -277,9 +277,31 @@ export const TERCEROS_DE_LA_HOME = {
   letras: ['https://fonts.gstatic.com'],
 } as const;
 
-/** ¿Esta ruta (sin prefijo de idioma) es la home o un archivo de la home? */
+/**
+ * Las INTERNAS de la home (Ronda 30): las páginas a las que lleva el mega menú
+ * «Producto» — las ocho de producto (y su índice, `/productos`) y las cuatro por
+ * público. Son páginas estáticas como la home (`public/internas/…`, sin React),
+ * con las MISMAS librerías y letras: llevan la política de la home y nada más.
+ */
+export const PRODUCTOS_DE_LAS_INTERNAS = ['crm', 'erp', 'cobranza', 'inquilino', 'avaluos', 'conciliacion', 'matching', 'asegurabilidad'] as const;
+export const PUBLICOS_DE_LAS_INTERNAS = ['inmobiliarias', 'propietarios', 'inquilinos', 'agentes'] as const;
+export const RUTAS_DE_LAS_INTERNAS = {
+  productos: '/internas/productos/index.html',
+  para: '/internas/para/index.html',
+} as const;
+
+/** La página estática que sirve esta ruta (sin prefijo de idioma), o `null` si no es una interna. */
+export function internaDeLaRuta(ruta: string): string | null {
+  if (ruta === '/productos') return RUTAS_DE_LAS_INTERNAS.productos;
+  const m = /^\/(productos|para)\/([a-z]+)$/.exec(ruta);
+  if (!m) return null;
+  if (m[1] === 'productos') return (PRODUCTOS_DE_LAS_INTERNAS as readonly string[]).includes(m[2]) ? RUTAS_DE_LAS_INTERNAS.productos : null;
+  return (PUBLICOS_DE_LAS_INTERNAS as readonly string[]).includes(m[2]) ? RUTAS_DE_LAS_INTERNAS.para : null;
+}
+
+/** ¿Esta ruta (sin prefijo de idioma) es la home, una de sus internas o un archivo de ellas? */
 export function esDeLaHome(ruta: string): boolean {
-  return ruta === '/' || ruta === '' || ruta.startsWith('/landing/');
+  return ruta === '/' || ruta === '' || ruta.startsWith('/landing/') || ruta.startsWith('/internas/') || internaDeLaRuta(ruta) !== null;
 }
 
 export function politicaDeLaHome(env: Pick<EntornoDeLaPolitica, 'desarrollo' | 'soloReporte'>): string {

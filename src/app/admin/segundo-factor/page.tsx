@@ -174,9 +174,8 @@ function SegundoFactor() {
 
   return (
     <Marco>
-      <div className="flex h-14 w-14 items-center justify-center rounded-md bg-primary-soft ring-1 ring-primary/10">
-        <ShieldCheck className="h-7 w-7 text-primary" weight="fill" aria-hidden="true" />
-      </div>
+      {/* Glow up 22-10: el ícono suelto, sin su baldosa azul (un solo azul: el botón). */}
+      <ShieldCheck className="h-9 w-9 text-fg" weight="duotone" aria-hidden="true" />
 
       <CrossFade swapKey={paso === 'inscribir' ? 'inscribir' : recienActivado ? 'activado' : 'codigo'}>
         <TituloDeAcceso titulo={titulo} bajada={bajada} />

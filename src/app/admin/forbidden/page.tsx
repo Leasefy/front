@@ -20,9 +20,8 @@ export default function AdminForbiddenPage() {
   return (
     <MarcoDeAcceso data-testid="admin-sin-acceso">
       <div className="space-y-7">
-        <div className="flex h-14 w-14 items-center justify-center rounded-md bg-surface-muted ring-1 ring-border">
-          <LockKey className="h-7 w-7 text-fg" weight="fill" aria-hidden="true" />
-        </div>
+        {/* Glow up 22-10: el ícono suelto, sin su baldosa. */}
+        <LockKey className="h-9 w-9 text-fg" weight="duotone" aria-hidden="true" />
         <TituloDeAcceso
           titulo="Esta cuenta no entra al admin"
           bajada="El admin es sólo para el equipo de Leasefy. Si eres del equipo, pide que agreguen tu correo a la lista de administradores y vuelve a entrar."

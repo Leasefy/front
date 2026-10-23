@@ -169,8 +169,8 @@ export function SeccionReparaciones() {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
-          <Clock className="h-4 w-4" aria-hidden="true" />
+        <h3 className="flex items-center gap-2 text-base font-medium text-fg">
+          <Clock className="h-4 w-4 text-fg-muted" aria-hidden="true" />
           Tiempo para atender cada prioridad
         </h3>
         <p className="text-sm text-fg-muted">
@@ -178,7 +178,7 @@ export function SeccionReparaciones() {
         </p>
       </div>
       {!datos.disponible.sla && (
-        <div role="alert" className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning">
+        <div role="alert" className="rounded-xl bg-warning-soft px-3 py-2 text-caption text-fg">
           Todavía no se puede cambiar: Leasefy tiene pendiente una actualización. Mientras tanto rigen los tiempos sugeridos.
         </div>
       )}
@@ -201,14 +201,14 @@ export function SeccionReparaciones() {
                   min={1}
                   max={MAX_HORAS}
                   step={1}
-                  className="w-24 text-right tabular-nums"
+                  className="w-24 text-right font-mono tabular-nums"
                   aria-label={`Horas para atender una reparación de prioridad ${p.titulo}`}
                   disabled={!puedeEditar || !datos.disponible.sla}
                   value={valor}
                   onChange={(e) => setHoras({ ...horas, [p.valor]: e.target.value })}
                   data-testid={`horas-${p.valor}`}
                 />
-                <span className="w-28 shrink-0 text-xs text-fg-muted">
+                <span className="w-28 shrink-0 text-caption text-fg-muted">
                   {Number.isInteger(n) && n >= 24 ? `horas · ${horasEnPalabras(n)}` : 'horas'}
                 </span>
               </div>
@@ -218,8 +218,8 @@ export function SeccionReparaciones() {
       </TarjetaDeAjustes>
 
       <div className="space-y-1 pt-2">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
-          <UserCircle className="h-4 w-4" aria-hidden="true" />
+        <h3 className="flex items-center gap-2 text-base font-medium text-fg">
+          <UserCircle className="h-4 w-4 text-fg-muted" aria-hidden="true" />
           ¿Quién puede hacer la reparación?
         </h3>
         <p className="text-sm text-fg-muted">
@@ -228,7 +228,7 @@ export function SeccionReparaciones() {
         </p>
       </div>
       {!datos.disponible.prioridades && (
-        <div role="alert" className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning">
+        <div role="alert" className="rounded-xl bg-warning-soft px-3 py-2 text-caption text-fg">
           Todavía no se puede cambiar: Leasefy tiene pendiente una actualización. Mientras tanto Alta y Emergencia las hace
           sólo tu inmobiliaria.
         </div>
@@ -263,8 +263,8 @@ export function SeccionReparaciones() {
         })}
       </TarjetaDeAjustes>
 
-      <p className="text-xs text-fg-muted">
-        Cambiar los tiempos <strong>no mueve las reparaciones ya reportadas</strong>: cada una se juzga con el plazo con el
+      <p className="text-caption text-fg-muted">
+        Cambiar los tiempos <span className="text-fg">no mueve las reparaciones ya reportadas</span>: cada una se juzga con el plazo con el
         que nació. Cambiar quién la puede hacer tampoco le quita al propietario una que ya está haciendo; si subes su
         prioridad a una de las marcadas, la retoma tu inmobiliaria.
       </p>

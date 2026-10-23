@@ -80,7 +80,7 @@ export default function PagosPage() {
       fallback={
         <div className="min-h-screen bg-bg">
           {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
-          <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
+          <EsqueletoDePagina variante="list" />
         </div>
       }
     >
@@ -370,7 +370,7 @@ function PagosPageContent() {
   if (isOnboardingLoading || leasesLoading || requestsLoading) {
     return (
       <div className="min-h-screen bg-bg">
-        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
+        <EsqueletoDePagina variante="list" />
       </div>
     );
   }
@@ -379,7 +379,7 @@ function PagosPageContent() {
   if (!isOnboardingComplete) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <div className="p-6 lg:p-8">
           <CompleteProfileFirst context="payments" />
         </div>
       </div>
@@ -392,7 +392,7 @@ function PagosPageContent() {
   if (errorArriendos || errorPagos) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <div className="p-6 lg:p-8">
           <FalloDeCarga
             error={errorArriendos ?? errorPagos}
             queEs="tus pagos"
@@ -412,12 +412,17 @@ function PagosPageContent() {
   if (!primaryLease && (errorResumen || !cargandoResumen) && !conContrato) {
     return (
       <div className="min-h-screen bg-bg">
-        <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <motion.div {...entrada} className="p-6 lg:p-8">
           <EncabezadoDePantalla
             className="mb-8"
             seccion={locale === 'es' ? 'Mi arriendo' : 'My rental'}
             titulo={t('payments.title')}
-            descripcion={t('payments.subtitle')}
+            // Revisora r25: la misma descripción con y sin contrato (antes «Gestiona tus pagos de arriendo»).
+            descripcion={
+              locale === 'es'
+                ? 'Cuánto debes y cuándo vence, cómo pagarlo y lo que ya pagaste.'
+                : 'What you owe and when it is due, how to pay it and what you have already paid.'
+            }
           />
 
           <div>
@@ -440,7 +445,7 @@ function PagosPageContent() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="p-6 lg:p-8">
 
         {/* GLOW UP (21-10): el encabezado de todas las pantallas, con el trabajo de esta: pagar y ver lo pagado. */}
         <EncabezadoDePantalla
@@ -851,10 +856,11 @@ function PeriodStatusCard({
 
   // NONE | REJECTED — mostrar CTA "Pagar arriendo"
   return (
-    <div className="rounded-lg bg-primary-soft border border-primary/30 p-6">
+    // Revisora r25: sin la tarjeta celeste (el azul es sólo el botón de pagar).
+    <div className="rounded-lg bg-surface border border-border p-6">
       <div className="flex items-center gap-2 mb-4">
-        <CreditCard className="w-5 h-5 text-primary" aria-hidden="true" />
-        <span className="text-sm text-primary font-medium">
+        <CreditCard className="w-5 h-5 text-fg-muted" aria-hidden="true" />
+        <span className="text-sm text-fg font-medium">
           {status === 'REJECTED'
             ? (locale === 'es' ? 'Pago rechazado' : 'Payment rejected')
             : /* Es el canon que cobra «Pagar ahora», no la próxima cuota del

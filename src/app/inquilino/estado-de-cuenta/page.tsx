@@ -22,6 +22,9 @@ export default function MiEstadoDeCuentaPage() {
   return (
     <PantallaDelEstadoDeCuenta
       cargar={() => estadoDeCuentaApi.mio()}
+      // C2 (revisora r25): el contenedor de las demás pantallas del portal (antes p-4 y centrado a 1200 px: a 390
+      // arrancaba en x = 16). La pieza es compartida con el panel y el enlace público: se ajusta sólo aquí.
+      className="mx-0 max-w-none p-6 lg:p-8"
       volverA={{ label: 'Volver a pagos', href: '/inquilino/pagos' }}
       // Glow up 22-10: el encabezado de las demás pantallas del portal (la sección del riel; «Pagos» es la pestaña
       // de al lado, así que el «Volver a pagos» sólo queda en el fallo).

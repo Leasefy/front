@@ -15,10 +15,10 @@
  * de la pantalla, sin nada que lo contuviera.
  */
 
-import { useMemo } from 'react'
-import { CaretRight, Handshake } from '@phosphor-icons/react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { CaretRight, Handshake, MagnifyingGlass } from '@phosphor-icons/react'
 import { Card, CrossFade, Presence } from '@leasefy/cadence'
-import { Badge } from '@/components/ui'
+import { Badge, Input } from '@/components/ui'
 import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelTexto } from '@/lib/cobranza/fallo-del-texto'
@@ -60,6 +60,11 @@ const FILTRO_OPCIONES: { value: AcuerdoFiltro; label: string; aviso?: boolean }[
 const VACIO = '—'
 
 export interface AcuerdosTablaProps {
+  /**
+   * LA RESPUESTA de la pantalla (la `CifraHeroe`), arriba de las pestañas y
+   * DENTRO de la tarjeta, como «Deuda del mes» (revisora r25, C3).
+   */
+  cabeza?: ReactNode
   acuerdos: AcuerdoRow[]
   filtro: AcuerdoFiltro
   onFiltro: (f: AcuerdoFiltro) => void
@@ -71,6 +76,7 @@ export interface AcuerdosTablaProps {
 }
 
 export function AcuerdosTabla({
+  cabeza,
   acuerdos,
   filtro,
   onFiltro,
@@ -80,13 +86,19 @@ export function AcuerdosTabla({
 }: AcuerdosTablaProps) {
   const { formatCurrency, formatDate } = useI18n()
 
-  const visibles = useMemo(
-    () => (filtro === 'todos' ? acuerdos : acuerdos.filter((a) => a.estado === filtro)),
-    [acuerdos, filtro],
-  )
+  // Revisora r25 (Acuerdos #6, 7a): se busca por el deudor, dentro de la tabla.
+  const [busqueda, setBusqueda] = useState('')
+  const visibles = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es')
+    return acuerdos.filter(
+      (a) =>
+        (filtro === 'todos' || a.estado === filtro) &&
+        (q === '' || a.deudor.toLocaleLowerCase('es').includes(q)),
+    )
+  }, [acuerdos, filtro, busqueda])
 
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(visibles, { resetKey: filtro })
+    useTablePagination(visibles, { resetKey: `${filtro}|${busqueda}` })
 
   // El conteo de cada pestaña sale de la lista entera (no de la página).
   const pestanas = useMemo(
@@ -112,14 +124,27 @@ export function AcuerdosTabla({
 
   return (
     <Card className="overflow-hidden">
-      {/* Las pestañas de estado, con su conteo, DENTRO de la tarjeta. */}
-      <div className="border-b border-border px-4 py-3">
+      {cabeza}
+      {/* Las pestañas de estado, con su conteo, y el buscador, DENTRO de la tarjeta. */}
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between">
         <PestanasDeEstado<AcuerdoFiltro>
           pestanas={pestanas}
           valor={filtro}
           onCambio={onFiltro}
           etiqueta="Filtrar acuerdos por estado"
         />
+        <div className="relative w-full md:w-64 md:shrink-0">
+          <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+          <Input
+            type="search"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar deudor"
+            aria-label="Buscar acuerdos por deudor"
+            className="pl-9"
+            data-testid="acuerdos-buscar"
+          />
+        </div>
       </div>
 
       {/* C5 (r25): FalloDeCarga, nunca el error crudo pegado a la frase. */}
@@ -138,14 +163,18 @@ export function AcuerdosTabla({
             aria-hidden="true"
           />
           <p className="text-body-sm font-medium text-fg">
-            {filtro === 'todos'
-              ? 'Todavía no hay acuerdos de pago'
-              : 'Sin acuerdos en este estado'}
+            {busqueda.trim() !== ''
+              ? 'Ningún acuerdo con esa búsqueda'
+              : filtro === 'todos'
+                ? 'Todavía no hay acuerdos de pago'
+                : 'Sin acuerdos en este estado'}
           </p>
           <p className="text-caption text-fg-muted max-w-sm">
-            {filtro === 'todos'
-              ? 'Aquí aparece lo que cada deudor se comprometió a pagar: lo que el agente registra en una llamada y los planes de cuotas que armes.'
-              : 'Cambia el filtro para ver los demás.'}
+            {busqueda.trim() !== ''
+              ? 'Borra la búsqueda o cambia la pestaña para ver los demás.'
+              : filtro === 'todos'
+                ? 'Aquí aparece lo que cada deudor se comprometió a pagar: lo que el agente registra en una llamada y los planes de cuotas que armes.'
+                : 'Cambia la pestaña para ver los demás.'}
           </p>
         </div>
       ) : (

@@ -85,7 +85,7 @@ const ESTADO_TOKEN: Record<
     ring: 'ring-border',
   },
   pendiente: {
-    label: 'Pendiente aprobación',
+    label: 'Por aprobar',
     bg: 'bg-warning-soft',
     text: 'text-warning',
     ring: 'ring-warning',

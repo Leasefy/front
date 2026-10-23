@@ -12,13 +12,11 @@
  *      acuerdo cross-linkea al detalle REAL /ai/cobranza/pagos/planes/[planId],
  *      donde vive la aprobación de verdad (Aprobar/Rechazar/Modificar). NO se
  *      duplica esa tabla ni ese detalle.
- *  (2) CREAR ACUERDO — formulario con DS (Input/Select/Switch) + una card de
- *      acuerdo PROPUESTO de ejemplo con sus acciones. Persistir/aprobar desde
- *      esta superficie aún no tiene endpoint → placeholders honestos
- *      "Próximamente" deshabilitados.
+ *  (2) CREAR ACUERDO — en el cajón de la casa (ronda 26): los campos y, debajo,
+ *      la vista previa; «Guardar como propuesta» la deja «Por aprobar».
  *
  * T-323 (caso más sensible): un acuerdo SIEMPRE requiere aprobación humana
- * explícita; el switch correspondiente está fijo en "Sí" y deshabilitado.
+ * explícita. Se dice UNA vez, junto al botón del cajón (revisora r25).
  * Nunca se auto-aprueba ni se presiona al inquilino.
  *
  * Estilo: contrato UI-DS-CONTRACT-2026-06-16 — <Button>/<Card>/<Input>/
@@ -31,22 +29,11 @@ import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import {
-  ArrowRight,
-  CheckCircle,
-  Clock,
-  FileText,
-  Handshake,
-  Info,
-  Lock,
-  Warning,
-} from '@phosphor-icons/react'
+import { FileText, Info, Lock, Warning } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
-import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
-import { EmptyState } from '@/components/data-display/EmptyState'
 import {
   Button,
   Input,
@@ -55,16 +42,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Spinner,
   Badge,
 } from '@/components/ui'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { cuotasDelAcuerdo, errorDeLaCuotaInicial } from '@/lib/cobranza/cuotas-del-acuerdo'
-import {
-  usePaymentsFunnel,
-  type PaymentsFunnelItem,
-} from '@/lib/hooks/cobranza/use-payments-funnel'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
 import { TraerLaCartera } from '@/components/cobranza-manual/TraerLaCartera'
 import { usePlazoSinFijar } from '@/lib/hooks/use-plazo-sin-fijar'
@@ -77,15 +59,9 @@ import {
 } from '@/lib/hooks/cobranza/use-agreement-propose'
 import { usePromises } from '@/lib/hooks/cobranza/use-promises'
 import { usePaymentPlans } from '@/lib/hooks/cobranza/use-payment-plans'
-// El Dialog del ADAPTADOR local (`@/components/ui/dialog`), no el de Cadence
-// crudo: es el que usan los otros 21 modales del panel, trae su padding `p-6` y
-// frena Lenis mientras está abierto.
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { stageDisplayName } from '@/lib/cartera'
 import {
   AcuerdosTabla,
   type AcuerdoFiltro,
@@ -109,71 +85,14 @@ import { ACUERDO_ESTADO } from '@/lib/cobranza/acuerdo-vocab'
 // motor de planes no propone acuerdo → el deudor no es seleccionable aquí.
 const NEGOTIATION_UNAVAILABLE_STAGES = new Set<string>(['S4', 'S5', 'SX'])
 
-const STAGE_LABELS_ES: Record<CarteraStage, string> = {
-  S0: 'Pre-vencimiento',
-  S1: 'Cartera fresca',
-  S2: 'Mora administrativa',
-  S3: 'Mora pre-jurídica',
-  S4: 'Siniestro inmobiliario',
-  S5: 'Restitución / jurídico',
-  SX: 'Skip / Abandono',
-}
-
-const BASE = '/panel/inmobiliaria/pagos/cobranza'
-const PLANES_BASE = '/panel/inmobiliaria/pagos/cobranza/pagos/planes'
+// Revisora r25 (Acuerdos, UI): el nombre de la etapa es el de toda la casa
+// (`stageDisplayName`); aquí había otro diccionario («Cartera fresca», «Skip / Abandono»).
+const nombreDeLaEtapa = (s: CarteraStage) => stageDisplayName(s, 'es')
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function copFormat(value: number | null | undefined, formatCurrency: (n: number | null | undefined) => string): string {
   return formatCurrency(value ?? 0)
-}
-
-// ── Card de acuerdo de la lista (cross-link al detalle real) ────────────────────
-
-/**
- * `row` siempre trae `paymentPlanId`: la lista se filtra por eso antes de
- * llegar acá. La rama sin plan pintaba un botón «Próximamente» deshabilitado
- * que nadie podía ver nunca — código muerto que prometía una función pendiente
- * donde no había ninguna.
- */
-function AcuerdoListaCard({ row }: { row: PaymentsFunnelItem }) {
-  const { formatCurrency, formatDate } = useI18n()
-  const href = `${PLANES_BASE}/${row.paymentPlanId}`
-
-  return (
-    <li className="rounded-lg border border-border bg-card p-4 space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 space-y-0.5">
-          <p className="text-sm font-medium text-fg truncate">
-            <Mask field="cedula" value={row.debtor.fullName} />
-          </p>
-          <p className="text-caption text-fg-muted">
-            Acuerdo de pago · {formatDate(new Date(row.createdAt), { day: 'numeric', month: 'short', year: 'numeric' })}
-          </p>
-        </div>
-        {/* Estado — etiqueta no interactiva (contrato §3) */}
-        <Badge variant="warning" className="shrink-0">
-          <Clock className="w-3 h-3" aria-hidden="true" />
-          Pendiente aprobación
-        </Badge>
-      </div>
-
-      <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
-        <div>
-          <p className="text-caption text-fg-muted">Monto del acuerdo</p>
-          <p className="text-sm font-medium tabular-nums text-fg">
-            {copFormat(row.amount, formatCurrency)}
-          </p>
-        </div>
-        <Button asChild size="sm" hideArrow>
-          <Link href={href}>
-            Revisar y aprobar
-            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-          </Link>
-        </Button>
-      </div>
-    </li>
-  )
 }
 
 // ── Card de acuerdo PROPUESTO (ejemplo) ─────────────────────────────────────────
@@ -202,18 +121,12 @@ function AcuerdoPropuestoCard({
     <div className="rounded-lg border border-border bg-card overflow-hidden">
       {/* Cabecera con estado */}
       <div className="flex items-center justify-between gap-2 px-5 py-3 bg-surface-muted border-b border-border">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="w-8 h-8 rounded-lg bg-primary-soft flex items-center justify-center shrink-0">
-            <Handshake className="w-4 h-4 text-primary" weight="duotone" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-fg">Acuerdo propuesto</p>
-            <p className="text-caption text-fg-muted">Lo que se va a guardar</p>
-          </div>
+        <div className="min-w-0">
+          <p className="text-body-sm font-medium text-fg">Acuerdo propuesto</p>
+          <p className="text-caption text-fg-muted">Lo que se va a guardar</p>
         </div>
         <Badge variant="warning" className="shrink-0">
-          <Clock className="w-3 h-3" aria-hidden="true" />
-          Pendiente aprobación
+          Por aprobar
         </Badge>
       </div>
 
@@ -223,13 +136,13 @@ function AcuerdoPropuestoCard({
       <dl className="grid grid-cols-2 gap-px bg-border">
         <div className="bg-card p-4 space-y-0.5">
           <dt className="text-caption text-fg-muted">Deuda total</dt>
-          <dd className="text-sm font-medium tabular-nums text-fg">
+          <dd className="font-mono text-body-sm tabular-nums text-fg">
             {copFormat(totalAdeudado, formatCurrency)}
           </dd>
         </div>
         <div className="bg-card p-4 space-y-0.5">
           <dt className="text-caption text-fg-muted">{numCuotas === 0 ? 'Pago único' : 'Pago inicial'}</dt>
-          <dd className="text-sm font-medium tabular-nums text-success" data-testid="vista-inicial">
+          <dd className="font-mono text-body-sm tabular-nums text-success" data-testid="vista-inicial">
             {copFormat(inicial, formatCurrency)}
           </dd>
         </div>
@@ -237,13 +150,13 @@ function AcuerdoPropuestoCard({
           <dt className="text-caption text-fg-muted">
             {numCuotas === 0 ? 'Sin cuotas' : `Saldo en ${numCuotas} ${numCuotas === 1 ? 'cuota' : 'cuotas'}`}
           </dt>
-          <dd className="text-sm font-medium tabular-nums text-fg">
+          <dd className="font-mono text-body-sm tabular-nums text-fg">
             {copFormat(saldo, formatCurrency)}
           </dd>
         </div>
         <div className="bg-card p-4 space-y-0.5">
           <dt className="text-caption text-fg-muted">Valor por cuota</dt>
-          <dd className="text-sm font-medium tabular-nums text-fg">
+          <dd className="font-mono text-body-sm tabular-nums text-fg">
             {numCuotas === 0 ? '—' : copFormat(valorCuota, formatCurrency)}
           </dd>
         </div>
@@ -252,22 +165,22 @@ function AcuerdoPropuestoCard({
       {/* Las cuotas con su fecha (CB-05) y qué pasa si incumple (lo que hace el sistema, no un selector). */}
       <div className="px-5 py-4 space-y-2 border-t border-border">
         {cuotas.length > 0 ? (
-          <ul className="space-y-1 text-sm" data-testid="vista-cuotas">
+          <ul className="space-y-1 text-body-sm" data-testid="vista-cuotas">
             {cuotas.map((c) => (
               <li key={c.numero} className="flex items-center justify-between gap-3">
                 <span className="text-fg-muted">
                   Cuota {c.numero} · {fechaEnPalabras(c.vence)}
                 </span>
-                <span className="font-medium tabular-nums text-fg">{copFormat(c.valor, formatCurrency)}</span>
+                <span className="font-mono tabular-nums text-fg">{copFormat(c.valor, formatCurrency)}</span>
               </li>
             ))}
           </ul>
         ) : numCuotas > 0 ? (
-          <p className="text-sm text-fg-muted">La cuota inicial ya cubre toda la deuda: no queda nada para las cuotas.</p>
+          <p className="text-body-sm text-fg-muted">La cuota inicial ya cubre toda la deuda: no queda nada para las cuotas.</p>
         ) : (
-          <p className="text-sm text-fg-muted">Pago único: se paga entero con el enlace de pago.</p>
+          <p className="text-body-sm text-fg-muted">Pago único: se paga entero con el enlace de pago.</p>
         )}
-        <div className="flex items-start gap-2 text-sm">
+        <div className="flex items-start gap-2 text-body-sm">
           <Warning className="w-4 h-4 text-warning shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
           <span className="text-fg-muted">
             <span className="font-medium text-fg">Si incumple:</span> el acuerdo queda incumplido y la deuda vuelve a la cobranza.
@@ -296,7 +209,7 @@ const NOMBRE_DE_LAS_CUOTAS = (n: number) => (n === 0 ? 'Pago único (sin cuotas)
 /** Los campos que el micro puede señalar en un 400 (`campos`). */
 type CampoDelAcuerdo = 'initialAmountCop' | 'installmentCount' | 'firstDueDate'
 
-function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
+function CrearAcuerdoForm({ onCreada, onCancelar }: { onCreada: () => void; onCancelar: () => void }) {
   // CONSISTENCIA (04-10-2026, CR-31): sin plazo fijado no hay deudores en
   // cobranza, y el selector tiene que decir POR QUÉ (no un vacío mudo).
   const plazoSinFijar = usePlazoSinFijar()
@@ -396,23 +309,23 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
     if (error || notDeployed) reset()
   }
 
+  // Revisora r25 (Acuerdos #3): era un modal `xl` de dos columnas, 3+ pantallas
+  // de alto a 390. Ahora es el cajón de la casa: los campos y, debajo, la vista
+  // previa en una sola columna; el botón, fijo en el pie. El `<form>` va con
+  // `contents` para que cuerpo y pie sigan siendo hijos directos del cajón.
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Columna izquierda — formulario */}
-      <form
-        className="rounded-lg border border-border bg-card p-5 space-y-5"
-        onSubmit={(e) => e.preventDefault()}
-      >
-        <div className="space-y-1">
-          <h3 className="text-base font-medium text-fg">Condiciones del acuerdo</h3>
-          <p className="text-sm text-fg-muted">
-            Define la estructura del acuerdo. Nada se envía al inquilino hasta que un humano lo apruebe.
-          </p>
-        </div>
+    <form
+      className="contents"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (canSubmit && !isSubmitting) void handleSubmit()
+      }}
+    >
+      <CajonCuerpo className="space-y-5">
 
         {/* Deudor — fuente real de debtorId + etapa (requeridos por el motor). */}
         <div className="space-y-1.5">
-          <label htmlFor="acuerdo-deudor" className="text-sm font-medium text-fg">
+          <label htmlFor="acuerdo-deudor" className="text-body-sm font-medium text-fg">
             Deudor
           </label>
           <Select
@@ -439,14 +352,14 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
             <SelectContent>
               {debtoresNegociables.map((d) => (
                 <SelectItem key={d.id} value={d.id}>
-                  {d.fullName} · {STAGE_LABELS_ES[d.currentStage]}
+                  {d.fullName} · {nombreDeLaEtapa(d.currentStage)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           {selectedDebtor && (
             <p className="text-caption text-fg-muted">
-              Etapa actual: {STAGE_LABELS_ES[selectedDebtor.currentStage]}
+              Etapa actual: {nombreDeLaEtapa(selectedDebtor.currentStage)}
             </p>
           )}
           {/* COBRANZA-MANUAL (04-10-2026): los deudores salen de la cartera de
@@ -471,7 +384,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label htmlFor="acuerdo-total" className="text-sm font-medium text-fg">
+            <label htmlFor="acuerdo-total" className="text-body-sm font-medium text-fg">
               Valor total adeudado
             </label>
             <Input
@@ -488,7 +401,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="acuerdo-intereses" className="text-sm font-medium text-fg">
+            <label htmlFor="acuerdo-intereses" className="text-body-sm font-medium text-fg">
               Intereses incluidos
             </label>
             <Input
@@ -505,7 +418,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="acuerdo-inicial" className="text-sm font-medium text-fg">
+            <label htmlFor="acuerdo-inicial" className="text-body-sm font-medium text-fg">
               Cuota inicial
             </label>
             <Input
@@ -526,7 +439,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="acuerdo-cuotas" className="text-sm font-medium text-fg">
+            <label htmlFor="acuerdo-cuotas" className="text-body-sm font-medium text-fg">
               Número de cuotas
             </label>
             <Select
@@ -557,7 +470,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
 
           {cuotas > 0 && (
             <div className="space-y-1.5">
-              <label htmlFor="acuerdo-fecha" className="text-sm font-medium text-fg">
+              <label htmlFor="acuerdo-fecha" className="text-body-sm font-medium text-fg">
                 Fecha de la primera cuota
               </label>
               <CampoDeDia
@@ -581,41 +494,6 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
           </p>
         )}
 
-        {/* Switches */}
-        <div className="space-y-3 border-t border-border pt-4">
-          {/*
-            Esto NO es un interruptor: no hay nada que elegir (T-323, la
-            aprobación humana es obligatoria). Y como interruptor mentía: un
-            Switch `checked` + `disabled` se pinta GRIS —igual que uno apagado—
-            mientras el de al lado, encendido y habilitado, se pinta azul. Medido
-            en pantalla: gris rgb(213,209,202) vs azul rgb(26,64,255), ambos con
-            aria-checked="true". Justo en el control de seguridad de la pantalla,
-            leerlo como «apagado» es el peor error posible.
-          */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-0.5 min-w-0">
-              <p className="text-sm font-medium text-fg">Requiere aprobación humana</p>
-              <p className="text-caption text-fg-muted">
-                Ningún acuerdo se activa sin la aprobación explícita de una persona.
-              </p>
-            </div>
-            <Badge variant="success" className="shrink-0 mt-0.5">
-              <Lock className="w-3 h-3" weight="fill" aria-hidden="true" />
-              Siempre
-            </Badge>
-          </div>
-
-        </div>
-
-        {/* Aviso T-323 */}
-        <div className="flex items-start gap-2 rounded-lg bg-primary-soft p-3">
-          <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
-          <p className="text-caption text-primary leading-relaxed">
-            Al guardar, el acuerdo queda como propuesta en estado &quot;Pendiente aprobación&quot;.
-            Un humano debe aprobarlo antes de enviarlo al inquilino.
-          </p>
-        </div>
-
         {/* Aviso suave si el backend aún no está desplegado (404). Form intacto. */}
         <Presence
             show={notDeployed}
@@ -624,8 +502,8 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
           >
             <Info className="w-4 h-4 text-fg-muted shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
             <p className="text-caption text-fg-muted leading-relaxed">
-              La creación de propuestas estará disponible muy pronto. Por ahora puedes
-              armar las condiciones; el envío quedó guardado para cuando se habilite.
+              No se guardó: el asistente de Leasefy todavía no tiene esta función. Lo que
+              escribiste sigue aquí.
             </p>
         </Presence>
 
@@ -639,23 +517,9 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
             <p className="text-caption text-danger leading-relaxed">{errorGeneral}</p>
         </Presence>
 
-        <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
-          {/* Único primary CTA de la sección (contrato §2). */}
-          <Button
-            type="button"
-            hideArrow
-            isLoading={isSubmitting}
-            disabled={!canSubmit || isSubmitting}
-            onClick={() => void handleSubmit()}
-          >
-            Guardar como propuesta
-          </Button>
-        </div>
-      </form>
-
-      {/* Columna derecha — vista previa local mientras se arma el acuerdo. */}
-      <div className="space-y-3">
-        <h3 className="text-base font-medium text-fg">Vista previa</h3>
+      {/* La vista previa, debajo de los campos: lo que se ve es lo que se guarda. */}
+      <section className="space-y-3 border-t border-border pt-5" aria-labelledby="acuerdo-vista-previa">
+        <h3 id="acuerdo-vista-previa" className="text-body font-normal text-fg">Vista previa</h3>
         {/* «Completa las condiciones» ⇄ la vista previa: la una sale y la otra
             entra al llenar (o vaciar) lo que falta. */}
         <CrossFade swapKey={hasPreview ? 'vista-previa' : 'faltan-datos'}>
@@ -669,123 +533,41 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
         ) : (
           <div className="rounded-lg border border-dashed border-border bg-surface-muted p-8 text-center">
             <FileText className="w-8 h-8 mx-auto text-fg-muted mb-3" weight="duotone" aria-hidden="true" />
-            <p className="text-sm font-medium text-fg">Completa las condiciones</p>
+            <p className="text-body-sm font-medium text-fg">Completa las condiciones</p>
             <p className="text-caption text-fg-muted mt-1 max-w-xs mx-auto">
-              Selecciona un deudor e ingresa el valor adeudado para crear la propuesta.
+              Elige un deudor y escribe el valor adeudado para ver el acuerdo.
             </p>
           </div>
         )}
         </CrossFade>
-      </div>
-    </div>
-  )
-}
+      </section>
+      </CajonCuerpo>
 
-// ── Sección lista de acuerdos ───────────────────────────────────────────────────
-
-function AcuerdosLista() {
-  const { formatCurrency } = useI18n()
-  // Acuerdos activos/pendientes = planes de pago pendientes de aprobación
-  // (rows con paymentPlanId). Reusa la fuente real del funnel de pagos.
-  const { rows, kpis, isLoading, error, refetch } = usePaymentsFunnel({
-    status: 'pending',
-    sort: 'created_at',
-  })
-
-  const acuerdos = useMemo(
-    () => rows.filter((r) => r.paymentPlanId != null),
-    [rows],
-  )
-
-  if (isLoading && rows.length === 0 && !error) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Spinner size="md" />
-      </div>
-    )
-  }
-
-  return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base font-medium text-fg">Acuerdos activos y pendientes</h2>
-          <p className="text-sm text-fg-muted">
-            Planes de pago en curso o esperando aprobación.
-          </p>
-        </div>
-        <Button asChild variant="link" size="sm" hideArrow className="shrink-0 px-0">
-          <Link href={`${BASE}/pagos`}>Ver todos los pagos</Link>
-        </Button>
-      </div>
-
-      {/* Resumen — conteo + monto pendiente (datos reales del funnel) */}
-      {kpis && acuerdos.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div className="rounded-lg border border-border bg-card px-4 py-3">
-            <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">
-              Pendientes de aprobación
-            </p>
-            <p className="mt-1 text-lg font-medium tabular-nums text-fg">
-              {acuerdos.length}
-            </p>
-          </div>
-          <div className="rounded-lg border border-border bg-card px-4 py-3">
-            <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">
-              Recaudado (período)
-            </p>
-            <p className="mt-1 text-lg font-medium tabular-nums text-fg">
-              {copFormat(kpis.totalRecaudadoCop, formatCurrency)}
-            </p>
-          </div>
-          <div className="rounded-lg border border-border bg-card px-4 py-3">
-            <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">
-              Aprobados (período)
-            </p>
-            <p className="mt-1 text-lg font-medium tabular-nums text-fg">
-              {kpis.approvedCount}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Error parcial — solo si nada rindió */}
-      {error && acuerdos.length === 0 && (
-        <div
-          role="alert"
-          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center justify-between gap-3"
-        >
-          <span className="flex items-center gap-2 min-w-0">
-            <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-            <span className="truncate">No se pudieron cargar los acuerdos: {error}</span>
+      {/* La aprobación de una persona se dice UNA vez (revisora r25, Acuerdos #4),
+          junto al botón: antes iba en la descripción, en la intro del formulario,
+          en una fila con «Siempre», en un aviso azul y al pie de la vista previa. */}
+      <CajonPie
+        ayuda={
+          <span className="inline-flex items-center gap-1.5" data-testid="acuerdo-requiere-aprobacion">
+            <Lock className="h-3.5 w-3.5 shrink-0" weight="fill" aria-hidden="true" />
+            Queda «Por aprobar»: una persona lo aprueba antes de que le llegue al inquilino.
           </span>
-          <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()} className="shrink-0">
-            Reintentar
-          </Button>
-        </div>
-      )}
-
-      {/* Lista o empty state */}
-      {acuerdos.length > 0 ? (
-        <ul className="grid grid-cols-1 md:grid-cols-2 gap-3" aria-label="Acuerdos activos y pendientes">
-          {acuerdos.map((row) => (
-            <AcuerdoListaCard key={row.id} row={row} />
-          ))}
-        </ul>
-      ) : (
-        !error && (
-          <EmptyState
-            icon={Handshake}
-            title="Sin acuerdos pendientes"
-            description="Cuando un inquilino acepte un plan de pago, aparecerá aquí esperando tu aprobación. También puedes proponer uno nuevo abajo."
-            primaryCta={{
-              label: 'Ver deudores',
-              href: `${BASE}/deudores`,
-            }}
-          />
-        )
-      )}
-    </section>
+        }
+      >
+        <Button type="button" variant="outline" hideArrow onClick={onCancelar}>
+          Cancelar
+        </Button>
+        <Button
+          type="submit"
+          hideArrow
+          isLoading={isSubmitting}
+          disabled={!canSubmit || isSubmitting}
+          data-testid="acuerdo-guardar"
+        >
+          Guardar como propuesta
+        </Button>
+      </CajonPie>
+    </form>
   )
 }
 
@@ -863,11 +645,12 @@ function AcuerdosContent() {
   const tramos = useMemo(() => {
     const suma = (e: AcuerdoRow['estado']) =>
       acuerdos.filter((a) => a.estado === e).reduce((s, a) => s + Math.max(0, a.montoCop), 0)
-    const cuantos = (e: AcuerdoRow['estado']) => acuerdos.filter((a) => a.estado === e).length
     const tono = { por_aprobar: 'aviso', vigente: 'neutro', parcial: 'neutro', incumplido: 'critico' } as const
     return (['por_aprobar', 'vigente', 'parcial', 'incumplido'] as const).map((e) => ({
       clave: e,
-      etiqueta: `${ACUERDO_ESTADO[e].label} · ${cuantos(e)}`,
+      // C3 (r25): el tramo dice la PLATA; el conteo vive en la pestaña. Antes
+      // «Por aprobar · 3» repetía «Por aprobar 3» de la tabla.
+      etiqueta: ACUERDO_ESTADO[e].label,
       monto: suma(e),
       tono: tono[e],
       'data-testid': `acuerdos-tramo-${e}`,
@@ -890,7 +673,7 @@ function AcuerdosContent() {
       <EncabezadoDePantalla
         seccion="Cobranza"
         titulo="Acuerdos de pago"
-        descripcion="Lo que cada deudor se comprometió a pagar. Ningún plan se activa sin que una persona lo apruebe."
+        descripcion="Lo que cada deudor se comprometió a pagar: lo que promete en una llamada y los planes de cuotas."
         ayuda={
           <ParaEntenderMas
             etiqueta="Cómo funcionan"
@@ -937,17 +720,6 @@ function AcuerdosContent() {
         </div>
       )}
 
-      <Presence show={abiertos.length > 0}>
-        <CifraHeroe
-          data-testid="acuerdos-comprometido"
-          rotulo="Comprometido en acuerdos abiertos"
-          cifra={formatCurrency(comprometido)}
-          contexto={abiertos.length === 1 ? 'en 1 acuerdo' : `en ${abiertos.length} acuerdos`}
-          total={comprometido}
-          tramos={tramos}
-        />
-      </Presence>
-
       {/* Cargando → la tabla: entra con su fundido. */}
       <CrossFade swapKey={cargando && acuerdos.length === 0 && !error ? 'cargando' : 'tabla'}>
       {cargando && acuerdos.length === 0 && !error ? (
@@ -957,6 +729,22 @@ function AcuerdosContent() {
         </div>
       ) : (
         <AcuerdosTabla
+          // C3 (r25): LA RESPUESTA va DENTRO de la tarjeta, encima de las
+          // pestañas, como «Deuda del mes»: los tramos son plata, las pestañas
+          // son conteos. Sin acuerdos abiertos no se pinta.
+          cabeza={
+            abiertos.length > 0 ? (
+              <CifraHeroe
+                className="border-b border-border px-5 pb-5 pt-5 sm:px-6"
+                data-testid="acuerdos-comprometido"
+                rotulo="Comprometido en acuerdos abiertos"
+                cifra={formatCurrency(comprometido)}
+                contexto={abiertos.length === 1 ? 'en 1 acuerdo' : `en ${abiertos.length} acuerdos`}
+                total={comprometido}
+                tramos={tramos}
+              />
+            ) : null
+          }
           acuerdos={acuerdos}
           filtro={filtro}
           onFiltro={setFiltro}
@@ -973,39 +761,37 @@ function AcuerdosContent() {
           1. Los LÍMITES — el techo que el agente no puede pasar nunca.
           2. Los ACUERDOS GENERALES — las reglas que la inmobiliaria escribe y
              que el agente cierra solo, siempre recortadas por (1). */}
-      <section className="space-y-4" aria-labelledby="acuerdos-lo-que-cierra-solo">
-        <h2 id="acuerdos-lo-que-cierra-solo" className="text-body font-medium text-fg">
-          Lo que el agente puede cerrar solo
-        </h2>
-        <AcuerdosGeneralesCard />
-        <AcuerdosGeneralesTabla />
-      </section>
+      {/* Revisora r25 (Acuerdos #5): es de consulta, va plegado como los límites. */}
+      <MasDetalles
+        etiqueta="Lo que el agente puede cerrar solo"
+        etiquetaAbierto="Ocultar lo que el agente puede cerrar solo"
+        data-testid="acuerdos-lo-que-cierra-solo"
+      >
+        <section className="space-y-4" aria-label="Lo que el agente puede cerrar solo">
+          <AcuerdosGeneralesCard />
+          <AcuerdosGeneralesTabla />
+        </section>
+      </MasDetalles>
 
-      {/* Crear — en modal: la pantalla es para MIRAR los acuerdos; armar uno es
-          una tarea puntual que no tiene por qué ocupar media pantalla siempre. */}
-      <Dialog open={crearAbierto} onOpenChange={setCrearAbierto}>
-        <DialogContent size="xl" aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>Nuevo acuerdo de pago</DialogTitle>
-          </DialogHeader>
+      {/* Crear — en el cajón de la casa (revisora r25, Acuerdos #3; lo mismo que
+          se decidió para el Cotizador del admin): la pantalla es para MIRAR los
+          acuerdos; armar uno es una tarea puntual. El acuerdo GENERAL sigue en su
+          propia página (`acuerdos/generales/nuevo`). */}
+      <Cajon abierto={crearAbierto} onOpenChange={setCrearAbierto} tamano="lg" data-testid="acuerdo-nuevo-cajon">
+        <CajonCabecera
+          titulo="Nuevo acuerdo de pago"
+          descripcion="El deudor, cuánto debe y cómo lo va a pagar."
+        />
+        {crearAbierto ? (
           <CrearAcuerdoForm
+            onCancelar={() => setCrearAbierto(false)}
             onCreada={() => {
               setCrearAbierto(false)
               recargar()
             }}
           />
-
-          {/* Acá vivía un enlace a Configuración §Negociación para «crear un
-              acuerdo general». Se sacó: armar el marco de los acuerdos no es un
-              ajuste del sistema, y mandaba fuera de Acuerdos justo cuando el
-              usuario estaba armando uno. Ahora se hace en la sección «Acuerdos
-              generales» de esta misma pantalla, con su propia tabla y su nivel
-              interno de navegación (`acuerdos/generales/nuevo`).
-
-              El ancla `#heading-negociacion` que apuntaba ya ni existía: esa
-              sección de Configuración se desarmó en `fcc3ec92`. */}
-        </DialogContent>
-      </Dialog>
+        ) : null}
+      </Cajon>
     </div>
   )
 }

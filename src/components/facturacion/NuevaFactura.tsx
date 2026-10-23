@@ -176,6 +176,7 @@ import { Collapse, SegmentedControl } from '@leasefy/cadence'
 import { PrefacturasDelRango, finDeAnio } from './PrefacturasDelRango'
 import { FacturasDeIntereses } from './FacturasDeIntereses'
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras'
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 
 /**
  * El rango de fechas que trae el nombre de un renglón migrado de Nui
@@ -354,7 +355,7 @@ function normalizar(s: string): string {
 function NumeroDelContrato({ factura }: { factura: FacturaDelMes }) {
   return (
     <span className="font-mono tabular-nums">
-      <span className="text-fg">{factura.numeroExterno ?? `#${factura.codigo ?? '—'}`}</span>
+      <span className="text-fg">{factura.numeroExterno ?? `${factura.codigo ?? '—'}`}</span>
       {factura.numeroExterno && factura.codigo !== null && (
         <span className="text-fg-muted"> · Leasefy #{factura.codigo}</span>
       )}
@@ -526,11 +527,7 @@ function EstadoDeLaFactura({
         </div>
         {/* El número que vale ante la DIAN es el autorizado por la resolución;
             el consecutivo interno queda debajo, para poder cruzarlo. */}
-        {factura.numeroDian && (
-          <span className="font-mono text-caption tabular-nums text-fg-muted">
-            N.º interno {factura.numero}
-          </span>
-        )}
+        {/* Revisora r24 (Facturación #5): el consecutivo interno ya está en el cajón; en la fila sobraba. */}
       </div>
     )
   }
@@ -801,6 +798,10 @@ function TablaDeFacturas({
     [visibles],
   )
   const sinConfirmar = filas.filter((f) => f.impuestosSinConfirmar).length
+  const ivaDelMes = filas.reduce((s, f) => s + f.ivaCop, 0)
+  const retencionesDelMes = filas.reduce((s, f) => s + f.retencionesCop, 0)
+  // Revisora r24 (Facturación #2): sin ninguna que se pueda emitir, sin casillas (aparecen con la primera).
+  const hayEmitibles = filas.some(sePuedeEmitirHoy)
   // Un back anterior a la decisión del 03-10 todavía mete los recargos en la
   // factura del mes: si van en el total, se totalizan aparte.
   const conMora = filas.filter((f) => moraDe(f) > 0 && llevaIntereses(f))
@@ -881,17 +882,31 @@ function TablaDeFacturas({
               {formatCurrency(filas.reduce((s, f) => s + f.totalCop, 0))}
             </span>
           </p>
-          <p className="whitespace-nowrap">
-            IVA{' '}
-            <span className="font-mono tabular-nums">
-              {formatCurrency(filas.reduce((s, f) => s + f.ivaCop, 0))}
-            </span>{' '}
-            · retenciones{' '}
-            <span className="font-mono tabular-nums">
-              {formatCurrency(filas.reduce((s, f) => s + f.retencionesCop, 0))}
-            </span>
-            {sinConfirmar > 0 && ` · ${sinConfirmar} sin confirmar`}
-          </p>
+          {/* Revisora r24 (Facturación #4): IVA y retenciones sólo cuando hay; en cero no dicen nada. */}
+          {ivaDelMes > 0 || retencionesDelMes > 0 || sinConfirmar > 0 ? (
+            <p className="whitespace-nowrap">
+              {[
+                ivaDelMes > 0 ? (
+                  <span key="iva">
+                    IVA <span className="font-mono tabular-nums">{formatCurrency(ivaDelMes)}</span>
+                  </span>
+                ) : null,
+                retencionesDelMes > 0 ? (
+                  <span key="ret">
+                    retenciones <span className="font-mono tabular-nums">{formatCurrency(retencionesDelMes)}</span>
+                  </span>
+                ) : null,
+                sinConfirmar > 0 ? <span key="sc">{sinConfirmar} sin confirmar</span> : null,
+              ]
+                .filter(Boolean)
+                .map((x, i) => (
+                  <span key={i}>
+                    {i > 0 ? ' · ' : null}
+                    {x}
+                  </span>
+                ))}
+            </p>
+          ) : null}
           {conMora.length > 0 && (
             /* «Recargos», no «interés»: `recargosCop` suma el interés de mora
                Y el gasto administrativo. */
@@ -965,11 +980,8 @@ function TablaDeFacturas({
           className="text-caption text-fg-muted tabular-nums"
           data-testid={`facturacion-${testid}-alcance`}
         >
-          {busqueda.trim() === '' ? (
-            <>
-              {filas.length} {filas.length === 1 ? 'factura' : 'facturas'} en el mes
-            </>
-          ) : (
+          {/* Revisora r24 (Facturación #4): sin búsqueda no se dice cuántas son (lo dicen la pestaña y el pie). */}
+          {busqueda.trim() === '' ? null : (
             <>
               {visibles.length} de {filas.length} facturas.{' '}
               <button
@@ -992,6 +1004,7 @@ function TablaDeFacturas({
           vacioDeLaTabla
         ) : (
           <>
+            {hayEmitibles ? (
             <div className="flex items-center gap-3 border-b border-border px-4 py-2.5">
               <Checkbox
                 checked={todas}
@@ -1009,6 +1022,7 @@ function TablaDeFacturas({
                 {elegidas.length > 0 ? 'Quitar la selección' : 'Marcar todas las que se pueden emitir'}
               </span>
             </div>
+            ) : null}
             <ul className="divide-y divide-border" data-testid={`facturacion-${testid}-tarjetas`}>
               {pageItems.map((factura) => {
                 const apagada = estadoDeLaFila(factura) !== 'por-emitir'
@@ -1034,9 +1048,11 @@ function TablaDeFacturas({
                       grupo && 'border-l-2 border-l-primary/50',
                     )}
                   >
-                    <span className="pt-0.5" onClick={(e) => e.stopPropagation()}>
-                      {casilla(factura)}
-                    </span>
+                    {hayEmitibles ? (
+                      <span className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                        {casilla(factura)}
+                      </span>
+                    ) : null}
                     <div className="min-w-0 flex-1 space-y-1.5">
                       <div className="flex items-start justify-between gap-3">
                         <p className="min-w-0 break-words font-medium text-fg">
@@ -1047,8 +1063,8 @@ function TablaDeFacturas({
                         </p>
                       </div>
                       <ConceptoDeLaFila factura={factura} />
-                      <div className="text-caption">
-                        <NumeroDelContrato factura={factura} />
+                      <div className="text-caption text-fg-muted">
+                        Contrato <NumeroDelContrato factura={factura} />
                       </div>
                       {grupo?.primera ? <AvisoDeFacturaJunta factura={factura} /> : null}
                       <div onClick={(e) => e.stopPropagation()}>{estado(factura)}</div>
@@ -1064,6 +1080,7 @@ function TablaDeFacturas({
           <Table>
             <TableHeader>
               <TableRow>
+                {hayEmitibles ? (
                 <TableHead className="w-10">
                   {/* 🔴 Con algo marcado, esta casilla LIMPIA (Nico, 18-09). Con
                       búsqueda puesta sólo toca lo que se ve. */}
@@ -1080,16 +1097,17 @@ function TablaDeFacturas({
                     data-testid={`facturacion-${testid}-todas`}
                   />
                 </TableHead>
+                ) : null}
                 {/* 🔴 FA-04 (QA-FACT, 03-10): cinco columnas, no once. El
                     contrato va debajo del cliente; el inmueble y el período,
                     debajo del concepto; base, IVA y retención, debajo del total.
                     Así cabe entera a 1.440 px y nada queda fuera de vista. */}
-                <TableHead className="whitespace-nowrap">Cliente</TableHead>
+                <TableHead className="whitespace-nowrap">{titulo === 'Inquilinos' ? 'Inquilino' : 'Cliente'}</TableHead>
                 <TableHead className="whitespace-nowrap">Concepto</TableHead>
                 <TableHead className="whitespace-nowrap text-right">Valor</TableHead>
                 {/* 🔴 19-09: la acción de la fila («Generar esta») tiene que estar
                     siempre donde se la busca: la columna se ancla a la derecha. */}
-                <TableHead className="sticky right-0 z-20 whitespace-nowrap border-l border-border bg-bg">
+                <TableHead className="sticky right-0 z-20 whitespace-nowrap bg-bg">
                   Estado
                 </TableHead>
               </TableRow>
@@ -1128,13 +1146,20 @@ function TablaDeFacturas({
                         apagada && 'opacity-70',
                       )}
                     >
+                      {hayEmitibles ? (
+                        <TableCell
+                          className={cn('w-10', grupo && 'border-l-2 border-l-primary/50')}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {casilla(factura)}
+                        </TableCell>
+                      ) : null}
                       <TableCell
-                        className={cn('w-10', grupo && 'border-l-2 border-l-primary/50')}
-                        onClick={(e) => e.stopPropagation()}
+                        className={cn(
+                          'w-[30%] min-w-[180px] max-w-[260px] align-top',
+                          !hayEmitibles && grupo && 'border-l-2 border-l-primary/50',
+                        )}
                       >
-                        {casilla(factura)}
-                      </TableCell>
-                      <TableCell className="w-[30%] min-w-[180px] max-w-[260px] align-top">
                         {/* El nombre en dos renglones si hace falta, nunca «Ana So…». */}
                         <p className="line-clamp-2 break-words text-fg" title={aQuienSeFactura(factura)}>
                           {aQuienSeFactura(factura)}
@@ -1156,7 +1181,7 @@ function TablaDeFacturas({
                         <PlataDeLaFila factura={factura} />
                       </TableCell>
                       <TableCell
-                        className="sticky right-0 z-10 whitespace-nowrap border-l border-border bg-surface align-top"
+                        className="sticky right-0 z-10 whitespace-nowrap bg-surface align-top"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {estado(factura)}
@@ -2081,86 +2106,84 @@ export function NuevaFactura({
           </button>
         </div>
 
-        {/* El resumen es UNA frase (el molde del 21-09): cuántos contratos, y
-            —lo que la persona vino a saber— cuántas facturas salen HOY, cuántas
-            ya salieron y cuántas todavía no. La numeración se dice como un dato:
-            con qué resolución, cuál sigue y cuántos quedan. */}
+        {/* Revisora r24 (Facturación #1, #4, #6): LA RESPUESTA en una cifra —cuántas de las facturas
+            del mes ya salieron— con su barra y un tramo por causa (el 0 no se pinta en la barra). Antes,
+            una frase de once cifras con la resolución dicha dos veces y el «0» en azul, como un enlace.
+            Los contratos y la numeración quedan al pie, una vez. */}
         {datos && (
-          <p className="text-body-sm text-fg-muted" data-testid="facturacion-resumen">
-            <span className="font-medium text-fg tabular-nums">
-              {datos.totales.contratos.toLocaleString(localeDeLasCifras())}{' '}
-              {datos.totales.contratos === 1 ? 'contrato' : 'contratos'}
-            </span>{' '}
-            {datos.totales.meses === 1
-              ? `con cuotas de ${mesLegible(mes)}`
-              : `con cuotas en ${datos.totales.meses} meses, hasta ${mesLegible(datos.hasta)}`}
-            .
-            {estadoDelMes.total > 0 && (
-              <span data-testid="facturacion-estado-del-mes">
-                {' '}De sus{' '}
-                <span className="font-mono text-fg tabular-nums">
-                  {estadoDelMes.total.toLocaleString(localeDeLasCifras())}
-                </span>{' '}
-                {estadoDelMes.total === 1 ? 'factura' : 'facturas'},{' '}
-                <span className="font-mono font-medium text-primary tabular-nums">
-                  {estadoDelMes.listas.toLocaleString(localeDeLasCifras())}
-                </span>{' '}
-                {estadoDelMes.listas === 1 ? 'se puede emitir hoy' : 'se pueden emitir hoy'}
-                {estadoDelMes.emitidas > 0 && (
-                  <>
-                    ,{' '}
-                    <span className="font-mono text-fg tabular-nums">
-                      {estadoDelMes.emitidas.toLocaleString(localeDeLasCifras())}
-                    </span>{' '}
-                    ya {estadoDelMes.emitidas === 1 ? 'salió' : 'salieron'}
-                  </>
-                )}
-                {estadoDelMes.frenadas > 0 && (
-                  <>
-                    {' '}y{' '}
-                    <span className="font-mono text-fg tabular-nums">
-                      {estadoDelMes.frenadas.toLocaleString(localeDeLasCifras())}
-                    </span>{' '}
-                    todavía no {estadoDelMes.frenadas === 1 ? 'sale' : 'salen'}
-                    {': '}
-                    {[
-                      estadoDelMes.porEscenario > 0
-                        ? `${estadoDelMes.porEscenario.toLocaleString(localeDeLasCifras())} sin el escenario tributario confirmado`
-                        : null,
-                      estadoDelMes.sinNumero > 0
-                        ? `${estadoDelMes.sinNumero.toLocaleString(localeDeLasCifras())} sin la resolución con qué numerarlas`
-                        : null,
-                      estadoDelMes.porOtraRazon > 0
-                        ? `${estadoDelMes.porOtraRazon.toLocaleString(localeDeLasCifras())} por otra razón (cada fila dice cuál)`
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </>
-                )}
-                .
-              </span>
-            )}
-            {datos.resolucion.puedeNumerar && (
-              <span data-testid="facturacion-siguiente-numero">
-                {' '}
-                {mismaBolsa ? 'Se numeran' : 'El canon se numera'} con la resolución{' '}
-                <span className="font-mono text-fg">{datos.resolucion.numero}</span>: sigue la{' '}
-                <span className="font-mono text-fg">{datos.resolucion.siguiente}</span> y quedan{' '}
-                <span className="font-mono text-fg tabular-nums">{datos.resolucion.disponibles}</span>{' '}
-                {datos.resolucion.disponibles === 1 ? 'número' : 'números'} hasta el{' '}
-                {fechaLegible(datos.resolucion.vigenteHasta)}.
-              </span>
-            )}
-            {/* FA-R24: las comisiones con su propia resolución, dicha aparte. */}
-            {!mismaBolsa && resolucionDeComision?.puedeNumerar && (
-              <span data-testid="facturacion-siguiente-numero-comision">
-                {' '}Las comisiones, con la{' '}
-                <span className="font-mono text-fg">{resolucionDeComision.numero}</span>: sigue la{' '}
-                <span className="font-mono text-fg">{resolucionDeComision.siguiente}</span>.
-              </span>
-            )}
-          </p>
+          <div data-testid="facturacion-resumen">
+            {(() => {
+              const n = (x: number) => x.toLocaleString(localeDeLasCifras())
+              const contratos = (
+                <>
+                  <span className="font-mono tabular-nums text-fg">{n(datos.totales.contratos)}</span>{' '}
+                  {datos.totales.contratos === 1 ? 'contrato' : 'contratos'}{' '}
+                  {datos.totales.meses === 1
+                    ? `con cuotas de ${mesLegible(mes)}`
+                    : `con cuotas en ${datos.totales.meses} meses, hasta ${mesLegible(datos.hasta)}`}
+                  .
+                </>
+              )
+              const numeracion = (
+                <>
+                  {datos.resolucion.puedeNumerar && (
+                    <span className="block" data-testid="facturacion-siguiente-numero">
+                      {mismaBolsa ? 'Numeración' : 'Numeración del canon'}: sigue la{' '}
+                      <span className="font-mono text-fg">{datos.resolucion.siguiente}</span> · quedan{' '}
+                      <span className="font-mono tabular-nums text-fg">{n(datos.resolucion.disponibles)}</span>{' '}
+                      hasta el {fechaLegible(datos.resolucion.vigenteHasta)} · resolución{' '}
+                      <span className="font-mono text-fg">{datos.resolucion.numero}</span>.
+                    </span>
+                  )}
+                  {/* FA-R24: las comisiones con su propia resolución, dicha aparte. */}
+                  {!mismaBolsa && resolucionDeComision?.puedeNumerar && (
+                    <span className="block" data-testid="facturacion-siguiente-numero-comision">
+                      Las comisiones, con la{' '}
+                      <span className="font-mono text-fg">{resolucionDeComision.numero}</span>: sigue la{' '}
+                      <span className="font-mono text-fg">{resolucionDeComision.siguiente}</span>.
+                    </span>
+                  )}
+                </>
+              )
+              if (estadoDelMes.total === 0) {
+                return (
+                  <p className="space-y-0.5 text-body-sm text-fg-muted">
+                    <span className="block">{contratos}</span>
+                    {numeracion}
+                  </p>
+                )
+              }
+              return (
+                <CifraHeroe
+                  rotulo={
+                    datos.totales.meses === 1
+                      ? `Facturas de ${mesLegible(mes)}`
+                      : `Facturas hasta ${mesLegible(datos.hasta)}`
+                  }
+                  cifra={
+                    <>
+                      {n(estadoDelMes.emitidas)} <span className="text-fg-muted">de {n(estadoDelMes.total)}</span>
+                    </>
+                  }
+                  contexto={estadoDelMes.emitidas === 1 ? 'emitida' : 'emitidas'}
+                  tramos={[
+                    { clave: 'emitidas', etiqueta: estadoDelMes.emitidas === 1 ? 'Emitida' : 'Emitidas', monto: estadoDelMes.emitidas, tono: 'exito', cifra: n(estadoDelMes.emitidas), 'data-testid': 'facturacion-tramo-emitidas' },
+                    { clave: 'hoy', etiqueta: estadoDelMes.listas === 1 ? 'Se puede emitir hoy' : 'Se pueden emitir hoy', monto: estadoDelMes.listas, tono: 'neutro', cifra: n(estadoDelMes.listas), siempre: true, 'data-testid': 'facturacion-tramo-hoy' },
+                    { clave: 'escenario', etiqueta: 'Sin el escenario tributario confirmado', monto: estadoDelMes.porEscenario, tono: 'aviso', cifra: n(estadoDelMes.porEscenario), 'data-testid': 'facturacion-tramo-escenario' },
+                    { clave: 'resolucion', etiqueta: 'Sin la resolución con qué numerarlas', monto: estadoDelMes.sinNumero, tono: 'aviso', cifra: n(estadoDelMes.sinNumero), 'data-testid': 'facturacion-tramo-resolucion' },
+                    { clave: 'otra', etiqueta: 'Por otra razón (cada fila dice cuál)', monto: estadoDelMes.porOtraRazon, tono: 'neutro', cifra: n(estadoDelMes.porOtraRazon), 'data-testid': 'facturacion-tramo-otra' },
+                  ]}
+                  pie={
+                    <div className="space-y-0.5">
+                      <p>{contratos}</p>
+                      {numeracion}
+                    </div>
+                  }
+                  data-testid="facturacion-estado-del-mes"
+                />
+              )
+            })()}
+          </div>
         )}
       </div>
 
@@ -2283,15 +2306,20 @@ export function NuevaFactura({
                 className="border-t border-border p-4"
                 data-testid="facturacion-omitidos"
               >
-                <summary className="cursor-pointer text-body-sm text-fg flex items-center gap-2">
-                  <Warning className="h-4 w-4 text-fg-muted" weight="fill" />
-                  {datos.omitidos.length}{' '}
-                  {datos.omitidos.length === 1
-                    ? 'cuota del mes no genera factura'
-                    : 'cuotas del mes no generan factura'}
-                  {/* Revisora r23 (Facturación #4): que se note que se abre y que adentro está el porqué. */}
-                  <span className="text-primary">· Ver por qué</span>
-                  <CaretDown className="h-3.5 w-3.5 text-fg-muted transition-transform [[open]>summary_&]:rotate-180" aria-hidden="true" />
+                <summary className="flex cursor-pointer items-start gap-2 text-body-sm text-fg">
+                  <Warning className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" weight="fill" />
+                  {/* Revisora r24 (Facturación #3): el texto y «Ver por qué» en un solo trozo (a 390 se partían en columnas). */}
+                  <span className="min-w-0 flex-1">
+                    <span className="font-mono tabular-nums">{datos.omitidos.length}</span>{' '}
+                    {datos.omitidos.length === 1
+                      ? 'cuota del mes no genera factura'
+                      : 'cuotas del mes no generan factura'}{' '}
+                    {/* Revisora r23 (Facturación #4): que se note que se abre y que adentro está el porqué. */}
+                    <span className="whitespace-nowrap text-fg-muted">
+                      · Ver por qué
+                      <CaretDown className="ml-1 inline h-3.5 w-3.5 transition-transform [[open]>summary_&]:rotate-180" aria-hidden="true" />
+                    </span>
+                  </span>
                 </summary>
                 <ul className="mt-3 space-y-1.5">
                   {datos.omitidos.slice(0, 50).map((o) => (

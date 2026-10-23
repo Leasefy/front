@@ -789,7 +789,8 @@ describe('NuevaFactura', () => {
       await montar();
       const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')!;
       expect(fila.textContent).toContain('FE-41');
-      expect(fila.textContent).toContain('N.º interno 41');
+      // Revisora r24 (Facturación #5): el consecutivo interno va en el cajón, no en la fila.
+      expect(fila.textContent).not.toContain('N.º interno');
     });
 
     it('con resolución vigente dice con qué número sigue', async () => {
@@ -862,7 +863,8 @@ describe('NuevaFactura', () => {
       const cab = Array.from(q('table')!.querySelectorAll('thead th')).map((th) =>
         th.textContent!.trim(),
       );
-      expect(cab).toEqual(['', 'Cliente', 'Concepto', 'Valor', 'Estado']);
+      // Revisora r24 (Facturación #5): en la pestaña de inquilinos, «Inquilino».
+      expect(cab).toEqual(['', 'Inquilino', 'Concepto', 'Valor', 'Estado']);
       const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')!;
       expect(fila.textContent).toContain('Base $\u00a01.800.000');
       expect(fila.textContent).toContain('IVA $\u00a0342.000');
@@ -2047,7 +2049,9 @@ describe('QA-FACT: emitir confirma, y cada fila dice lo que de verdad puede pasa
     expect(fila.querySelector('[data-testid="espera-el-giro-ct-1|2026-09|PROPIETARIO"]')!.textContent).toBe(
       'Se factura cuando se le gire',
     );
-    expect((fila.querySelector('button[role="checkbox"]') as HTMLButtonElement).disabled).toBe(true);
+    // Revisora r24 (Facturación #2): sin ninguna emitible no hay casillas; si la hubiera, apagada.
+    const casilla = fila.querySelector<HTMLButtonElement>('button[role="checkbox"]');
+    expect(casilla === null || casilla.disabled).toBe(true);
     expect(fila.querySelector('[data-testid="generar-una-ct-1|2026-09|PROPIETARIO"]')).toBeNull();
   });
 
@@ -2423,17 +2427,17 @@ describe('GLOW UP · «Por facturar» dice qué sale hoy y no repite los avisos'
 
   it('el resumen cuenta lo que se puede emitir hoy', async () => {
     await montar();
+    // Revisora r24 (Facturación #1): la cifra «0 de 2 emitidas» y un tramo por causa.
     const estado = q('[data-testid="facturacion-estado-del-mes"]')!.textContent ?? '';
-    expect(estado).toContain('De sus 2 facturas');
-    expect(estado).toContain('2 se pueden emitir hoy');
+    expect(estado).toContain('de 2');
+    expect(q('[data-testid="facturacion-tramo-hoy"]')!.textContent).toMatch(/Se pueden emitir hoy\s*2/);
   });
 
   it('🔴 sin resolución, ninguna «se puede emitir hoy»: el resumen dice por qué', async () => {
     porGenerarMock.mockResolvedValue(sinResolucion());
     await montar();
-    const estado = q('[data-testid="facturacion-estado-del-mes"]')!.textContent ?? '';
-    expect(estado).toContain('0 se pueden emitir hoy');
-    expect(estado).toContain('sin la resolución con qué numerarlas');
+    expect(q('[data-testid="facturacion-tramo-hoy"]')!.textContent).toMatch(/Se pueden emitir hoy\s*0/);
+    expect(q('[data-testid="facturacion-tramo-resolucion"]')!.textContent).toContain('Sin la resolución con qué numerarlas');
   });
 
   it('🔴 con la lista de la página arriba, el aviso de la resolución no se repite; el del botón se queda', async () => {

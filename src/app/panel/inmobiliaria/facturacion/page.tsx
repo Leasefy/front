@@ -165,7 +165,7 @@ function FacturacionContent() {
     return (
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
-          seccion={t(k('label'))}
+          seccion="Dinero"
           titulo={tr('Resolución y numeración')}
           descripcion={tr(
             'El permiso de la DIAN con el que se numeran tus facturas, y con qué resolución sale cada tipo de documento.',
@@ -194,7 +194,7 @@ function FacturacionContent() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <EncabezadoDePantalla
-        seccion={t(k('label'))}
+        seccion="Dinero"
         titulo={t(k('title'))}
         descripcion={tr(
           'Factura cada mes a tus inquilinos y propietarios, y sigue lo que emitiste ante la DIAN.',

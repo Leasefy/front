@@ -26,13 +26,11 @@
  */
 
 import { Suspense, useCallback, useMemo, useState } from 'react'
-import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Flask } from '@phosphor-icons/react'
+import { Flask } from '@phosphor-icons/react'
 import { CrossFade, SegmentedControl } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { PilotoActivacion } from '@/components/inmobiliaria/piloto/PilotoActivacion'
 import { PilotoCajon, type PilotoApertura } from '@/components/inmobiliaria/piloto/PilotoCajon'
@@ -48,6 +46,8 @@ import type { AccionesDelMando, PropsDeDireccion } from '@/components/inmobiliar
 import { useDatosReales, useMuestraViva } from '@/components/inmobiliaria/piloto/mando/use-datos-del-mando'
 import type { PulsoAlerta } from '@/lib/api/piloto'
 import { useDirectorHoy, useDirectorMetas } from '@/lib/hooks/piloto/use-piloto-director'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { BackButton } from '@/components/ui/back-button'
 
 const DIRECCIONES: Record<Direccion, (p: PropsDeDireccion) => React.ReactNode> = {
   A: DireccionNucleo,
@@ -77,16 +77,10 @@ function Propuestas() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8" data-testid="piloto-propuestas">
-      <header className="space-y-1">
-        <Button asChild variant="link" size="sm" hideArrow className="-ml-2 h-auto px-2 text-fg-muted">
-          <Link href={RUTA_PILOTO}>
-            <ArrowLeft className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-            {TEXTOS.pagina.volver}
-          </Link>
-        </Button>
-        <h1 className="text-h2 text-fg">{TEXTOS.pagina.titulo}</h1>
-        <p className="max-w-2xl text-sm text-fg-muted">{TEXTOS.pagina.bajada}</p>
-      </header>
+      <div className="space-y-3">
+        <BackButton href={RUTA_PILOTO} label={TEXTOS.pagina.volver} />
+        <EncabezadoDePantalla seccion="Agentes IA" titulo={TEXTOS.pagina.titulo} descripcion={TEXTOS.pagina.bajada} />
+      </div>
 
       {/* El selector A / B / C y la fuente de los datos. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">

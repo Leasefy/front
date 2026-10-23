@@ -112,6 +112,7 @@ import type { AccionesDelMando } from '@/components/inmobiliaria/piloto/mando/ti
 import { useDatosReales } from '@/components/inmobiliaria/piloto/mando/use-datos-del-mando'
 import { useControlDeAgentes } from '@/components/inmobiliaria/piloto/mando/control-de-agentes'
 import type { PulsoAlerta } from '@/lib/api/piloto'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 /** Qué cajón de resumen está abierto (la Bandeja, la actividad o el director). */
 type Resumen = 'bandeja' | 'actividad' | 'director' | null
@@ -235,42 +236,30 @@ function PilotoContent() {
   return (
     <div className="space-y-6 p-6 lg:p-8" data-testid="piloto-page">
       {/* Encabezado — mismo patrón que el resto del panel (ver cabecera) */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 space-y-1">
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.piloto.titulo')}
-          </h1>
-          {/* Qué es y qué ves aquí, dicho de una vez. Sin `line-clamp`: cortar
-              la única explicación de la pantalla es volver a no explicarla. */}
-          <p className="max-w-2xl text-sm text-fg-muted">
-            {t('inmobiliaria.piloto.descripcion')}
-          </p>
-          <div className="pt-1">
-            <PilotoQueEs onVerPresentacion={verPresentacion} />
-          </div>
-        </div>
-        {/* Configuración, no operación: las dos viven en el encabezado.
-            «Procesos» es la ventana por la que se ve trabajar al Piloto
-            (process view, 2026-09-02): también va aquí, no en el flujo diario.
-            «Preparación» (T-0051) se sacó del render — hidden temporarily
-            as a product decision, not deleted; ver PilotoPreparacion.tsx.
-            «¿Opera sola?» (24-09-2026) mide TODA la inmobiliaria (no sólo a
-            Laura) y trae los topes y la gracia: va primero porque es la
-            pregunta que Nico le hace al Piloto. */}
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <PilotoOperaSola />
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/piloto/procesos" data-testid="piloto-ver-procesos">
-              <ListChecks weight="duotone" className="mr-1.5 h-4 w-4" aria-hidden="true" />
-              {t('inmobiliaria.piloto.procesos.titulo')}
-            </Link>
-          </Button>
-          {/* `#piloto-autonomia`: el orbe del núcleo abre esta misma hoja con su botón «Autonomía». */}
-          <div id="piloto-autonomia" className="contents">
-            <PilotoAutonomia autonomia={autonomia} />
-          </div>
-        </div>
-      </header>
+      {/* Glow up 22-10: el encabezado común (título de 40 px, sección, una línea); «Qué es el Piloto» debajo. */}
+      <div className="space-y-3">
+        <EncabezadoDePantalla
+          seccion={t('inmobiliaria.nav.secAgentes')}
+          titulo={t('inmobiliaria.piloto.titulo')}
+          descripcion={t('inmobiliaria.piloto.descripcion')}
+          acciones={
+            <>
+              <PilotoOperaSola />
+              <Button asChild variant="outline" size="sm" hideArrow>
+                <Link href="/panel/inmobiliaria/piloto/procesos" data-testid="piloto-ver-procesos">
+                  <ListChecks className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                  {t('inmobiliaria.piloto.procesos.titulo')}
+                </Link>
+              </Button>
+              {/* `#piloto-autonomia`: el orbe del núcleo abre esta misma hoja con su botón «Autonomía». */}
+              <div id="piloto-autonomia" className="contents">
+                <PilotoAutonomia autonomia={autonomia} />
+              </div>
+            </>
+          }
+        />
+        <PilotoQueEs onVerPresentacion={verPresentacion} />
+      </div>
 
       {/* El centro de mando (Nico, 05-10): el núcleo, la línea del día y la
           Cabina. PI-01 (04-10-2026): la activación del Piloto de ESTA

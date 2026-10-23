@@ -148,7 +148,8 @@ describe('/piloto — detrás de PageGuard', () => {
     const mando = pagina.querySelector('[data-testid="mando-elegida-doble"]')
     expect(mando).not.toBeNull()
     expect(mando?.parentElement).toBe(pagina)
-    expect(mando?.previousElementSibling?.tagName).toBe('HEADER')
+    // Glow up 22-10: el encabezado común (su <header>) va con «Qué es el Piloto» debajo, en un mismo bloque.
+    expect(mando?.previousElementSibling?.firstElementChild?.tagName).toBe('HEADER')
     // Lo que la torre tenía no se pierde: la Bandeja entera, la actividad y el director se abren desde la pantalla.
     // Y desde cada agente (Nico, 05-10 19:30): activar, apagar y su modo, con las llamadas de Autonomía.
     expect(mando?.getAttribute('data-acciones')).toBe(

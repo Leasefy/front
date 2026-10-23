@@ -710,14 +710,12 @@ function AcuerdosContent() {
       />
 
       {/* Aviso si el usuario no puede aprobar (la aprobación vive en el detalle real) */}
+      {/* Revisora r27 (Acuerdos): UNA línea gris, no un bloque entero. */}
       {!canApprove && (
-        <div className="flex items-start gap-2 rounded-lg bg-surface-muted p-3 ring-1 ring-border">
-          <Info className="w-4 h-4 text-fg-muted shrink-0 mt-0.5" aria-hidden="true" />
-          <p className="text-caption text-fg-muted leading-relaxed">
-            Puedes proponer acuerdos; aprobarlos pide permiso de cobranza. Un compañero con ese
-            permiso los aprueba desde el detalle del plan.
-          </p>
-        </div>
+        <p className="-mt-3 flex items-center gap-1.5 text-caption text-fg-muted">
+          <Info className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+          Puedes proponer acuerdos; los aprueba un compañero con permiso de cobranza, desde el detalle del plan.
+        </p>
       )}
 
       {/* Cargando → la tabla: entra con su fundido. */}

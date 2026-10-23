@@ -22,7 +22,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ClipboardText, DownloadSimple } from '@phosphor-icons/react'
+import { ClipboardText, DownloadSimple, Funnel } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -43,6 +43,8 @@ import {
 import { Card, CrossFade, Presence } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import {
@@ -195,6 +197,7 @@ function AuditContent() {
     }
   }, [isExportingCsv, agencyId, from, to, action])
 
+  const cuantosFiltros = [actor, action].filter(Boolean).length
   const hayFiltros =
     filters.actor !== undefined || filters.action !== undefined || filters.q !== undefined
   const limpiarFiltros = () => {
@@ -265,54 +268,64 @@ function AuditContent() {
               data-testid="auditoria-buscar"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <CampoDeDia
-              id="auditoria-desde"
-              value={from}
-              onChange={(v) => setFrom(v)}
-              max={to}
-              placeholder="Desde"
-              className="w-40"
-            />
-            <span className="text-caption text-fg-muted">a</span>
-            <CampoDeDia
-              id="auditoria-hasta"
-              value={to}
-              onChange={(v) => setTo(v)}
-              min={from}
-              max={todayYmd()}
-              placeholder="Hasta"
-              className="w-40"
-            />
+          {/* Revisora r27 (Auditoría): a la vista sólo el buscador y el rango de días, cada día con su etiqueta
+              (antes «Desde» y «Hasta» como texto de ejemplo: al elegir la fecha se perdía cuál era). Persona y
+              acción van en «Filtros (n)», como en Llamadas (antes cinco controles en la barra). */}
+          <div className="flex items-end gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="auditoria-desde" className="text-caption text-fg-muted">Desde</Label>
+              <CampoDeDia id="auditoria-desde" value={from} onChange={(v) => setFrom(v)} max={to} className="w-40" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="auditoria-hasta" className="text-caption text-fg-muted">Hasta</Label>
+              <CampoDeDia id="auditoria-hasta" value={to} onChange={(v) => setTo(v)} min={from} max={todayYmd()} className="w-40" />
+            </div>
           </div>
-          {members.length > 0 ? (
-            <Select value={actor ?? '__all__'} onValueChange={(v) => setActor(v === '__all__' ? undefined : v)}>
-              <SelectTrigger id="audit-actor" aria-label={t('inmobiliaria.ai.cobranza.compliance.filters.actor')} className="w-full lg:w-52">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">Cualquier persona</SelectItem>
-                {members.map((m) => (
-                  <SelectItem key={m.id} value={m.email}>
-                    {m.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : null}
-          <Select value={action ?? '__all__'} onValueChange={(v) => setAction(v === '__all__' ? undefined : v)}>
-            <SelectTrigger id="audit-action" aria-label={t('inmobiliaria.ai.cobranza.compliance.filters.action')} className="w-full lg:w-60">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Todas las acciones</SelectItem>
-              {ACTION_OPTIONS.map((opt) => (
-                <SelectItem key={opt} value={opt}>
-                  {accionLegible(opt)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" hideArrow className="shrink-0 self-start lg:self-auto" data-testid="auditoria-filtros">
+                <Funnel className="h-4 w-4" aria-hidden="true" />
+                Filtros
+                {cuantosFiltros > 0 ? <span className="font-mono text-caption tabular-nums">({cuantosFiltros})</span> : null}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-80 space-y-4 p-4">
+              {members.length > 0 ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="audit-actor" className="text-caption text-fg-muted">Quién</Label>
+                  <Select value={actor ?? '__all__'} onValueChange={(v) => setActor(v === '__all__' ? undefined : v)}>
+                    <SelectTrigger id="audit-actor" aria-label={t('inmobiliaria.ai.cobranza.compliance.filters.actor')} className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Cualquier persona</SelectItem>
+                      {members.map((m) => (
+                        <SelectItem key={m.id} value={m.email}>
+                          {m.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
+              <div className="space-y-1.5">
+                <Label htmlFor="audit-action" className="text-caption text-fg-muted">Qué hizo</Label>
+                <Select value={action ?? '__all__'} onValueChange={(v) => setAction(v === '__all__' ? undefined : v)}>
+                  <SelectTrigger id="audit-action" aria-label={t('inmobiliaria.ai.cobranza.compliance.filters.action')} className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">Todas las acciones</SelectItem>
+                    {ACTION_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {accionLegible(opt)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </PopoverContent>
+          </Popover>
           {hayFiltros ? (
             <Button variant="ghost" size="sm" hideArrow onClick={limpiarFiltros} data-testid="auditoria-limpiar">
               Limpiar filtros

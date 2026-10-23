@@ -251,6 +251,7 @@ function BandejaArco() {
     }
   }, [requests])
   const vencen = cuentas.vencidas + cuentas.porVencer
+  const conPlazo = cuentas.abiertas - cuentas.sinConfirmar
 
   const estado: EstadoArco = elegido ?? estadoUrl.deLaUrl ?? (vencen > 0 ? 'vencen' : 'abiertas')
   const cambiarEstado = (e: EstadoArco) => {
@@ -365,17 +366,37 @@ function BandejaArco() {
               tamano="mediana"
               rotulo={tr('Vencen pronto')}
               cifra={vencen.toLocaleString('es-CO')}
-              contexto={cuentas.abiertas === 1 ? tr('de 1 abierta') : tr('de {n} abiertas', { n: cuentas.abiertas.toLocaleString('es-CO') })}
-              total={cuentas.abiertas}
+              /* Revisora r27 (Habeas Data, UI): la barra es del PLAZO; «Sin confirmar el correo» no es un plazo
+                 (todavía no corre), así que sale de la barra y va aparte, en su línea, cuando no es 0. */
+              contexto={
+                conPlazo === 1 ? tr('de 1 con el plazo corriendo') : tr('de {n} con el plazo corriendo', { n: conPlazo.toLocaleString('es-CO') })
+              }
+              total={conPlazo}
               tramos={[
                 { clave: 'vencidas', etiqueta: tr('Vencidas'), monto: cuentas.vencidas, tono: 'critico', cifra: cuentas.vencidas.toLocaleString('es-CO') },
                 { clave: 'por-vencer', etiqueta: tr('Por vencer'), monto: cuentas.porVencer, tono: 'aviso', cifra: cuentas.porVencer.toLocaleString('es-CO') },
                 { clave: 'en-plazo', etiqueta: tr('En plazo'), monto: cuentas.enPlazo, tono: 'exito', cifra: cuentas.enPlazo.toLocaleString('es-CO') },
-                { clave: 'sin-confirmar', etiqueta: tr('Sin confirmar el correo'), monto: cuentas.sinConfirmar, tono: 'neutro', cifra: cuentas.sinConfirmar.toLocaleString('es-CO') },
               ]}
               esCero={vencen === 0}
-              cuandoEsCero={tr('Ninguna vence pronto: las {n} abiertas están en plazo.', { n: cuentas.abiertas.toLocaleString('es-CO') })}
-              pie={lineaDelPlazo ? <span className="text-fg">{lineaDelPlazo}</span> : undefined}
+              cuandoEsCero={
+                conPlazo > 0
+                  ? tr('Ninguna vence pronto: las {n} con el plazo corriendo están en plazo.', { n: conPlazo.toLocaleString('es-CO') })
+                  : tr('Ninguna vence pronto: el plazo todavía no corre para ninguna.')
+              }
+              pie={
+                lineaDelPlazo || cuentas.sinConfirmar > 0 ? (
+                  <span className="block space-y-0.5">
+                    {lineaDelPlazo ? <span className="block text-fg">{lineaDelPlazo}</span> : null}
+                    {cuentas.sinConfirmar > 0 ? (
+                      <span className="block" data-testid="arco-sin-confirmar-aparte">
+                        {cuentas.sinConfirmar === 1
+                          ? tr('1 más espera que la persona confirme su correo: el plazo empieza cuando lo confirma.')
+                          : tr('{n} más esperan que la persona confirme su correo: el plazo empieza cuando lo confirma.', { n: cuentas.sinConfirmar.toLocaleString('es-CO') })}
+                      </span>
+                    ) : null}
+                  </span>
+                ) : undefined
+              }
             />
           ) : null}
 

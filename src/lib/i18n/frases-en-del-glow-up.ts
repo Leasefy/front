@@ -706,4 +706,11 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Ningún enlace con esa búsqueda": "No links match that search",
   "Borra la búsqueda para ver los demás.": "Clear the search to see the rest.",
   "Por atender": "To address",
+  // cobranza/arco: el plazo y los que esperan confirmar el correo (ronda 28)
+  "de 1 con el plazo corriendo": "of 1 with the deadline running",
+  "de {n} con el plazo corriendo": "of {n} with the deadline running",
+  "Ninguna vence pronto: las {n} con el plazo corriendo están en plazo.": "None due soon: the {n} with the deadline running are on time.",
+  "Ninguna vence pronto: el plazo todavía no corre para ninguna.": "None due soon: the deadline hasn't started for any of them.",
+  "1 más espera que la persona confirme su correo: el plazo empieza cuando lo confirma.": "1 more is waiting for the person to confirm their email: the deadline starts when they do.",
+  "{n} más esperan que la persona confirme su correo: el plazo empieza cuando lo confirma.": "{n} more are waiting for the person to confirm their email: the deadline starts when they do.",
 }

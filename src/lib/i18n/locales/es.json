@@ -5050,7 +5050,7 @@
         "typeDevolucion": "Devolución",
         "status": {
           "draft": "Borrador",
-          "inProgress": "En Progreso",
+          "inProgress": "En curso",
           "pendingSignatures": "Por Firmar",
           "completed": "Completada"
         }
@@ -5518,7 +5518,7 @@
       "statusReported": "Reportada",
       "statusQuoted": "Cotizada",
       "statusApproved": "Aprobada",
-      "statusInProgress": "En Progreso",
+      "statusInProgress": "En arreglo",
       "statusCompleted": "Completada",
       "statusCancelled": "Cancelada",
       "totalLabel": "Total",

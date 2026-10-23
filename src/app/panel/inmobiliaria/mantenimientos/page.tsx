@@ -19,7 +19,8 @@ import { Plus, SquaresFour, Kanban } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
-import { AnimatedNumber, Cifra, CrossFade, FranjaDeCifras, SegmentedControl } from '@leasefy/cadence';
+import { AnimatedNumber, CrossFade, SegmentedControl } from '@leasefy/cadence';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import type {
   SolicitudMantenimiento,
@@ -709,36 +710,38 @@ function MantenimientosContent() {
           que lo apruebe quien decide → arreglar → cerrar con fotos. Antes eran dos tarjetas sueltas
           («activos», «cotizaciones pendientes»); ahora la franja dice cuántos hay en cada etapa y
           qué pide cada una (punto en lo que te toca a ti). Lo que no se pudo traer va con raya. */}
-      <FranjaDeCifras aria-label="Lo que pide cada etapa" data-testid="etapas-de-mantenimiento" columnas={5}>
-        <Cifra
-          etiqueta="Por cotizar"
-          valor={isLoading ? <span className="block h-7 w-10 animate-pulse rounded bg-surface-muted" /> : mantenimientosError ? '—' : etapas.porCotizar}
-          detalle="Pedir el precio al proveedor"
-          tono={!mantenimientosError && etapas.porCotizar > 0 ? 'voltaje' : undefined}
+      {/* Revisora r25: dos solicitudes se contaban tres veces (franja de 5, la bandeja y el
+          tablero). Ahora UNA respuesta arriba —cuántas hay por resolver y dónde está cada una—,
+          al estilo de la Deuda del mes; las cerradas, en el pie. Lo que no se pudo traer no se
+          inventa: con el fallo no se pinta (el fallo se cuenta en la lista, con su «Reintentar»). */}
+      {isLoading ? (
+        <div className="h-32 animate-pulse rounded-lg bg-surface-muted" aria-hidden="true" />
+      ) : mantenimientosError ? null : (
+        <CifraHeroe
+          data-testid="etapas-de-mantenimiento"
+          rotulo="Por resolver"
+          cifra={stats.active}
+          contexto={`${stats.active === 1 ? 'solicitud abierta' : 'solicitudes abiertas'}${
+            stats.esperanAlPropietario > 0
+              ? ` · ${stats.esperanAlPropietario} ${stats.esperanAlPropietario === 1 ? 'espera' : 'esperan'} al propietario`
+              : ''
+          }`}
+          total={stats.active}
+          tramos={[
+            { clave: 'por-cotizar', etiqueta: 'Por cotizar', monto: etapas.porCotizar, tono: 'aviso', cifra: etapas.porCotizar, siempre: true },
+            { clave: 'por-aprobar', etiqueta: 'Por aprobar', monto: stats.quoted, tono: 'aviso', cifra: stats.quoted, siempre: true },
+            { clave: 'esperan-al-propietario', etiqueta: 'Esperan al propietario', monto: stats.esperanAlPropietario, tono: 'neutro', cifra: stats.esperanAlPropietario, siempre: true },
+            { clave: 'en-arreglo', etiqueta: 'En arreglo', monto: etapas.enArreglo, tono: 'exito', cifra: etapas.enArreglo, siempre: true },
+          ]}
+          pie={
+            etapas.cerradas > 0
+              ? `${etapas.cerradas} ${etapas.cerradas === 1 ? 'cerrada' : 'cerradas'}, con su costo a cargo de quien corresponde.`
+              : undefined
+          }
+          esCero={stats.active === 0}
+          cuandoEsCero="Nada por resolver: no hay solicitudes abiertas."
         />
-        <Cifra
-          etiqueta="Por aprobar"
-          valor={isLoading ? <span className="block h-7 w-10 animate-pulse rounded bg-surface-muted" /> : mantenimientosError ? '—' : stats.quoted}
-          detalle="La cotización la decides tú"
-          tono={!mantenimientosError && stats.quoted > 0 ? 'voltaje' : undefined}
-        />
-        <Cifra
-          etiqueta="Esperan al propietario"
-          valor={isLoading ? <span className="block h-7 w-10 animate-pulse rounded bg-surface-muted" /> : mantenimientosError ? '—' : stats.esperanAlPropietario}
-          detalle="Ya se le pidió que apruebe"
-          tono={!mantenimientosError && stats.esperanAlPropietario > 0 ? 'aviso' : undefined}
-        />
-        <Cifra
-          etiqueta="En arreglo"
-          valor={isLoading ? <span className="block h-7 w-10 animate-pulse rounded bg-surface-muted" /> : mantenimientosError ? '—' : etapas.enArreglo}
-          detalle="Al terminar, se cierra con fotos"
-        />
-        <Cifra
-          etiqueta="Cerradas"
-          valor={isLoading ? <span className="block h-7 w-10 animate-pulse rounded bg-surface-muted" /> : mantenimientosError ? '—' : etapas.cerradas}
-          detalle="Con su costo a cargo de quien corresponde"
-        />
-      </FranjaDeCifras>
+      )}
 
       {/* 🔴 D12: lo que espera al propietario y lo que él rechazó. */}
       <BandejaDeAprobacionesDelPropietario
@@ -773,11 +776,6 @@ function MantenimientosContent() {
                   {mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length === 1
                     ? 'solicitud activa'
                     : t('inmobiliaria.operaciones.maintenance.activeRequests')}
-                  {stats.quoted > 0 && (
-                    <span className="ml-2 text-primary">
-                      ({t('inmobiliaria.operaciones.stats.toApproveCount', { count: stats.quoted })})
-                    </span>
-                  )}
                 </>
               )}
             </p>

@@ -92,8 +92,10 @@ interface MantenimientoKanbanProps {
 const PRIORITY_COLORS: Record<MantenimientoPriority, string> = {
   emergency: 'border-l-[#C0392B]',
   high: 'border-l-[#B7791F]',
-  medium: 'border-l-[#1A40FF]',
-  low: 'border-l-[#6B6B6B]',
+  // Revisora r25 (T3): «Media» iba con el voltaje escrito a mano. El azul es
+  // de la acción; la prioridad media, en grafito.
+  medium: 'border-l-fg-muted',
+  low: 'border-l-border-strong',
 };
 
 const PRIORITY_LABEL_KEYS: Record<MantenimientoPriority, string> = {
@@ -133,8 +135,8 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
     id: 'quoted',
     titleKey: 'inmobiliaria.mantenimiento.colQuoted',
     icon: CurrencyCircleDollar,
-    color: 'text-primary',
-    bgColor: 'bg-primary-soft',
+    color: 'text-fg-muted',
+    bgColor: 'bg-surface-muted',
   },
   {
     id: 'approved',
@@ -218,23 +220,14 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
     >
       {/* Header */}
       <div className="flex items-start gap-2 mb-2">
-        <div
+        {/* El ícono suelto, sin caja de color (vara: nada de cajas de ícono). */}
+        <TypeIcon
           className={cn(
-            'w-7 h-7 rounded-sm flex items-center justify-center flex-shrink-0',
-            solicitud.priority === 'emergency'
-              ? 'bg-danger-soft'
-              : 'bg-primary-soft'
+            'mt-0.5 w-4 h-4 flex-shrink-0',
+            solicitud.priority === 'emergency' ? 'text-danger' : 'text-fg-muted'
           )}
-        >
-          <TypeIcon
-            className={cn(
-              'w-4 h-4',
-              solicitud.priority === 'emergency'
-                ? 'text-danger'
-                : 'text-primary'
-            )}
-          />
-        </div>
+          aria-hidden="true"
+        />
         <div className="min-w-0 flex-1">
           <h4 className="text-sm font-medium text-fg line-clamp-2 group-hover:text-primary transition-colors">
             {solicitud.title}
@@ -296,7 +289,7 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
 
         {/* Approved Amount */}
         {solicitud.approvedAmount && (
-          <span className="font-medium text-success whitespace-nowrap">
+          <span className="font-mono tabular-nums text-fg whitespace-nowrap">
             {formatCurrency(solicitud.approvedAmount)}
           </span>
         )}

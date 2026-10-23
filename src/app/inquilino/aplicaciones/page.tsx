@@ -12,6 +12,7 @@ import { PestanasDeEstado } from '@/components/pantalla/PestanasDeEstado';
 import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 
 import { useTenantApplications } from '@/lib/hooks/useApplications';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
@@ -159,6 +160,8 @@ export default function AplicacionesPage() {
   const canScheduleVisit = (s: string) =>
     ['submitted', 'under_review', 'needs_info'].includes(s);
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
+  // Revisora r27: el vacío no le habla de «tu tope aprobado» a quien no lo tiene.
+  const { vigente: conTope } = useAprobacion();
   const { active: activeApplications, completed: completedApplications, contractsByApp, isLoading: isAppsLoading, error, errorCrudo, refetch: recargarPostulaciones } = useTenantApplications();
 
   const [activeTab, setTab] = useState<'active' | 'completed'>('active');
@@ -663,7 +666,7 @@ export default function AplicacionesPage() {
               {/* Results info */}
               <p className="text-center text-sm text-fg-muted mt-4">
                 {locale === 'es'
-                  ? `Mostrando ${startIndex + 1}-${Math.min(startIndex + ITEMS_PER_PAGE, currentApplications.length)} de ${currentApplications.length} aplicaciones`
+                  ? `Mostrando ${startIndex + 1}-${Math.min(startIndex + ITEMS_PER_PAGE, currentApplications.length)} de ${currentApplications.length} postulaciones`
                   : `Showing ${startIndex + 1}-${Math.min(startIndex + ITEMS_PER_PAGE, currentApplications.length)} of ${currentApplications.length} applications`}
               </p>
             </>
@@ -675,16 +678,26 @@ export default function AplicacionesPage() {
                 : (locale === 'es' ? 'No tienes postulaciones cerradas' : 'No closed applications')
               }
               description={activeTab === 'active'
-                ? (locale === 'es'
-                    ? 'Con tu tope aprobado te mostramos los inmuebles que puedes tomar. Postularte es el primer paso.'
-                    : 'Explore available properties and apply to start your rental process.')
+                ? conTope
+                  ? (locale === 'es'
+                      ? 'Con tu tope te mostramos los inmuebles que puedes tomar. Postularte es el primer paso.'
+                      : 'With your limit we show you the homes you can take. Applying is the first step.')
+                  : (locale === 'es'
+                      ? 'Primero conoce hasta cuánto puedes arrendar: con ese estudio te postulas a los que quieras.'
+                      : 'First find out how much you can rent for: with that assessment you apply to as many as you want.')
                 : (locale === 'es'
                     ? 'Las postulaciones aprobadas o rechazadas aparecerán aquí.'
                     : 'Approved or rejected applications will appear here.')
               }
               /* A SU catálogo, no al listado general: ahí están las que puede
                  tomar de verdad. "aplicar" está muerto (docs/VOCABULARIO.md). */
-              action={activeTab === 'active' ? { label: locale === 'es' ? 'Ver inmuebles para mí' : 'See properties for me', href: '/inquilino/para-ti' } : undefined}
+              action={
+                activeTab !== 'active'
+                  ? undefined
+                  : conTope
+                    ? { label: locale === 'es' ? 'Ver inmuebles para mí' : 'See properties for me', href: '/inquilino/para-ti' }
+                    : { label: locale === 'es' ? 'Conocer mi tope' : 'Find out my limit', href: '/inquilino/aprobacion' }
+              }
             />
           )}
           </CrossFade>

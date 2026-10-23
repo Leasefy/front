@@ -171,7 +171,7 @@ export default function LandlordLeasesPage() {
                 className="group inline-flex items-center gap-2"
               >
                 {tab.label}
-                <span className="px-1.5 py-0.5 rounded-sm text-caption font-medium tabular-nums bg-surface-muted text-fg-muted group-data-[state=active]:bg-primary-soft group-data-[state=active]:text-primary">
+                <span className="px-1.5 py-0.5 rounded-sm text-caption font-medium tabular-nums bg-surface-muted text-fg-muted group-data-[state=active]:bg-surface group-data-[state=active]:text-fg">
                   {tab.count}
                 </span>
               </TabsTrigger>

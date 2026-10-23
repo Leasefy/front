@@ -341,7 +341,7 @@ describe('A3 — sin `operaciones:edit` no se dibuja lo que el back rechaza con 
     await montar()
     expect(getAgendaMock).toHaveBeenLastCalledWith(expect.objectContaining({ vista: 'vencidas' }))
     expect(
-      container.querySelector('[data-testid="agenda-pestana-vencidas"]')?.getAttribute('aria-selected'),
+      container.querySelector('[data-testid="agenda-pestana-vencidas"]')?.getAttribute('aria-pressed'),
     ).toBe('true')
   })
 

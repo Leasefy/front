@@ -79,7 +79,13 @@ export default function AdminDashboard() {
 
   const cargando = dash.isLoading || plataforma.isLoading
   const pendientes = loQueEspera(plataforma.data, dash.data)
-  const yaSeSabe = !cargando && (plataforma.data || dash.data)
+  // (ronda 28) «Nada espera» sólo cuando llegaron LAS DOS respuestas: con la
+  // plataforma caída no se saben los cobros fallidos, la mora ni las
+  // suspendidas, y decir «nada espera» sería inventarlo.
+  const lasDos = !cargando && Boolean(plataforma.data) && Boolean(dash.data)
+  const soloUna = !cargando && !lasDos && Boolean(plataforma.data || dash.data)
+  const faltaLa = !plataforma.data ? 'las cifras de la plataforma' : 'la cobranza por voz'
+  const yaSeSabe = lasDos || (soloUna && pendientes.length > 0)
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -102,12 +108,15 @@ export default function AdminDashboard() {
             Actualizar
           </Button>
         }
-        principal={
-          <Button size="sm" hideArrow asChild>
-            <Link href="/admin/tenants">Ver las inmobiliarias</Link>
-          </Button>
-        }
       />
+
+      {soloUna && pendientes.length === 0 ? (
+        <p className="text-body-sm text-fg-muted" data-testid="resumen-a-medias">
+          {plataforma.data
+            ? 'En la plataforma nada espera a nadie; la cobranza por voz no cargó.'
+            : 'En la cobranza por voz nada espera; las cifras de la plataforma no cargaron.'}
+        </p>
+      ) : null}
 
       {yaSeSabe ? (
         pendientes.length === 0 ? (
@@ -138,6 +147,11 @@ export default function AdminDashboard() {
                 </li>
               ))}
             </ul>
+            {soloUna ? (
+              <p className="border-t border-border-faint px-5 py-3 text-caption text-fg-muted" data-testid="resumen-falta-una">
+                Falta {faltaLa}: no cargó y puede haber más.
+              </p>
+            ) : null}
           </section>
         )
       ) : null}

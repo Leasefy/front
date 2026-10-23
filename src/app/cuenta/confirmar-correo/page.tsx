@@ -12,7 +12,8 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CheckCircle, WarningCircle } from '@phosphor-icons/react';
+import { WarningCircle } from '@phosphor-icons/react';
+import { Ilustracion } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
@@ -76,17 +77,19 @@ function Contenido() {
     return (
       <div className="flex flex-col items-center gap-3 py-16" data-testid="confirmando-correo">
         <Spinner size="md" variant="muted" label="Confirmando" />
-        <p className="text-sm text-fg-muted">Confirmando tu correo nuevo…</p>
+        <p className="text-body-sm text-fg-muted">Confirmando tu correo nuevo…</p>
       </div>
     );
   }
   if (estado.tipo === 'listo') {
     return (
       <div className="space-y-4 text-center" data-testid="correo-confirmado">
-        <CheckCircle weight="duotone" className="mx-auto h-12 w-12 text-success" />
+        {/* Glow up 23-10: el éxito con su ilustración de Cadence (antes un chulo verde grande). */}
+        <Ilustracion nombre="escudo" tono="voltaje" tamano={120} className="mx-auto" />
         <h1 className="text-h2 text-fg">Listo: tu correo cambió</h1>
-        <p className="text-sm text-fg-muted">
-          Desde ahora entras con <strong className="text-fg">{estado.correo}</strong>. Cerramos tus otras sesiones abiertas.
+        <p className="text-body-sm text-fg-muted">
+          Desde ahora entras con <span className="break-words font-medium text-fg">{estado.correo}</span>. Cerramos tus otras
+          sesiones abiertas.
         </p>
         <Button asChild>
           <Link href="/auth/post-login">Ir a mi panel</Link>
@@ -107,9 +110,9 @@ function Contenido() {
   }[estado.tipo];
   return (
     <div className="space-y-4 text-center" data-testid={`confirmar-correo-${estado.tipo}`}>
-      <WarningCircle weight="duotone" className="mx-auto h-12 w-12 text-warning" />
+      <WarningCircle weight="duotone" className="mx-auto h-10 w-10 text-fg-subtle" aria-hidden="true" />
       <h1 className="text-h2 text-fg">{textos.titulo}</h1>
-      <p className="text-sm text-fg-muted">{textos.cuerpo}</p>
+      <p className="text-body-sm text-fg-muted">{textos.cuerpo}</p>
       <Button asChild variant="outline">
         <Link href="/auth/post-login">Ir a Leasefy</Link>
       </Button>
@@ -120,7 +123,7 @@ function Contenido() {
 export default function ConfirmarCorreoPage() {
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-md items-center px-4 py-10">
-      <div className="w-full rounded-xl border border-border bg-card p-8">
+      <div className="w-full rounded-xl border border-border bg-card p-6 sm:p-8">
         <Suspense fallback={null}>
           <Contenido />
         </Suspense>

@@ -1054,7 +1054,7 @@ function ConsignacionDetailContent() {
             <div
               role="alert"
               data-testid="terminar-rechazo"
-              className="rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger"
+              className="rounded-lg bg-danger-soft px-3 py-2 text-body-sm text-danger"
             >
               {motivoAlTerminar.length === 1 ? (
                 motivoAlTerminar[0]
@@ -1097,7 +1097,8 @@ function ConsignacionDetailContent() {
           }
         }}
       >
-        <AlertDialogContent icon={<ArrowCounterClockwise weight="bold" />}>
+        {/* Glow up 23-10: confirmar en voltaje (variante de Cadence), el motivo del rechazo en rojo suave sin borde. */}
+        <AlertDialogContent variant="confirm" icon={<ArrowCounterClockwise weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Reactivar la consignación?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1109,7 +1110,7 @@ function ConsignacionDetailContent() {
             <div
               role="alert"
               data-testid="reactivar-rechazo"
-              className="rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger"
+              className="rounded-lg bg-danger-soft px-3 py-2 text-body-sm text-danger"
             >
               {motivoAlReactivar.length === 1 ? (
                 motivoAlReactivar[0]

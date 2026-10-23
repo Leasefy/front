@@ -73,15 +73,17 @@ export function AvanceDeLaSolicitud({
             const enCurso = i === indice && !terminada && !detenida;
             return (
               <li key={paso.clave} className="min-w-0" aria-current={enCurso ? 'step' : undefined}>
+                {/* Glow up 23-10: los mismos círculos de los pasos de la casa (PasosDeLaTarea): hecho en verde
+                    suave, el actual en voltaje, lo que viene con su número en mono. */}
                 <span
                   className={cn(
-                    'flex size-5 items-center justify-center rounded-full border text-[10px] font-medium',
+                    'flex size-5 items-center justify-center rounded-full font-mono text-[11px]',
                     hecho
-                      ? 'border-success bg-success text-white'
+                      ? 'bg-success-soft text-success'
                       : enCurso
-                        ? 'border-primary bg-primary-soft text-primary'
-                        : 'border-border text-fg-subtle',
-                    detenida && i === indice && 'border-danger bg-danger-soft text-danger',
+                        ? 'bg-primary text-primary-fg'
+                        : 'border border-border-strong text-fg-muted',
+                    detenida && i === indice && 'border-0 bg-danger-soft text-danger',
                   )}
                   aria-hidden="true"
                 >

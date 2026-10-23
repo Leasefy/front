@@ -28,6 +28,7 @@ import {
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useI18n } from '@/lib/i18n';
+import { useHidratado } from '@/lib/hooks/use-hidratado';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -82,6 +83,8 @@ export function CambiarCorreoDeEntrada({ correo, className, junto }: Props) {
   const [errores, setErrores] = useState<{ correoNuevo?: string; contrasenaActual?: string; suelto?: string }>({});
   const [enviando, setEnviando] = useState(false);
   const [ocupado, setOcupado] = useState<'reenviar' | 'cancelar' | null>(null);
+  // Guarda de los formularios con contraseña: el botón espera a que React hidrate (nunca un envío por GET).
+  const hidratado = useHidratado();
 
   const cargar = useCallback(() => {
     cambioDeCorreoApi
@@ -177,7 +180,7 @@ export function CambiarCorreoDeEntrada({ correo, className, junto }: Props) {
       <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-1', className)}>
         <span className="flex min-w-0 flex-[1_1_12rem] items-center gap-3">
           <Envelope className="h-4 w-4 shrink-0 text-fg-muted" />
-          <span className="min-w-0 break-words text-sm text-fg" data-testid="correo-actual">
+          <span className="min-w-0 break-words text-body-sm text-fg" data-testid="correo-actual">
             <CorreoQueSeParte correo={estado?.correo ?? correo ?? '—'} />
           </span>
           {junto}
@@ -195,12 +198,13 @@ export function CambiarCorreoDeEntrada({ correo, className, junto }: Props) {
         </p>
       ) : null}
       {pendiente ? (
-        <div className="rounded-lg border border-warning/40 bg-warning-soft p-3" role="status" data-testid="cambio-pendiente">
-          <p className="break-words text-sm text-fg">
+        // Glow up 23-10: el aviso en ámbar suave, sin borde, y el correo nuevo resaltado sin negrilla.
+        <div className="rounded-lg bg-warning-soft p-3" role="status" data-testid="cambio-pendiente">
+          <p className="break-words text-body-sm text-fg">
             {es ? (
-              <>Te mandamos un enlace a <strong><CorreoQueSeParte correo={pendiente.correo} /></strong>. Ábrelo para terminar el cambio; vence el {conPuntoFinal(fechaYHora(pendiente.vence, es))}</>
+              <>Te mandamos un enlace a <span className="font-medium"><CorreoQueSeParte correo={pendiente.correo} /></span>. Ábrelo para terminar el cambio; vence el {conPuntoFinal(fechaYHora(pendiente.vence, es))}</>
             ) : (
-              <>We sent a link to <strong><CorreoQueSeParte correo={pendiente.correo} /></strong>. Open it to finish the change; it expires on {conPuntoFinal(fechaYHora(pendiente.vence, es))}</>
+              <>We sent a link to <span className="font-medium"><CorreoQueSeParte correo={pendiente.correo} /></span>. Open it to finish the change; it expires on {conPuntoFinal(fechaYHora(pendiente.vence, es))}</>
             )}
           </p>
           <p className="mt-1 text-caption text-fg-muted">
@@ -227,12 +231,13 @@ export function CambiarCorreoDeEntrada({ correo, className, junto }: Props) {
             : 'It is the email you use to sign in to Leasefy. We send a link to the new email and the change happens when you open it.'
         }
         footer={
-          <Button hideArrow onClick={() => void pedir()} isLoading={enviando} disabled={enviando || !valido} data-testid="pedir-cambio-correo">
+          <Button hideArrow onClick={() => void pedir()} isLoading={enviando} disabled={!hidratado || enviando || !valido} data-testid="pedir-cambio-correo">
             {es ? 'Mandarme el enlace' : 'Send me the link'}
           </Button>
         }
       >
         <form
+          method="post"
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
@@ -277,7 +282,7 @@ export function CambiarCorreoDeEntrada({ correo, className, junto }: Props) {
             </div>
           ) : null}
           {errores.suelto ? (
-            <p className="text-sm text-danger" role="alert" data-testid="error-cambio-correo">
+            <p className="text-body-sm text-danger" role="alert" data-testid="error-cambio-correo">
               {errores.suelto}
             </p>
           ) : null}

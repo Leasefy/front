@@ -140,7 +140,7 @@ export function CambiarCorreoDeLaInvitacion({
         </form>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onCerrar} disabled={enviando}>
+          <Button type="button" variant="ghost" onClick={onCerrar} disabled={enviando}>
             Cancelar
           </Button>
           <Button

@@ -461,6 +461,83 @@ function FilaDeRequisito({
   )
 }
 
+/**
+ * Revisora r25: en «Todos» UNA lista de requisitos, cada uno con en qué perfiles aplica
+ * («Obligatorio · Empleado, Independiente»), en vez de las seis listas de perfil enteras
+ * (3.181 px a 1440; «Cédula» cinco veces). El control Obligatorio/Opcional y quitar viven en la
+ * pestaña de cada perfil; aquí el nombre del perfil lleva a ella.
+ */
+function FilaEnTodos({
+  primero,
+  filas,
+  perfiles,
+  onIrAlPerfil,
+}: {
+  primero: RequisitoDePostulacion
+  filas: RequisitoDePostulacion[]
+  perfiles: { perfil: string; nombre: string }[]
+  onIrAlPerfil: (perfil: string) => void
+}) {
+  const { texto, icono: Icono } = claseDe(primero.clase)
+  const nombreDe = (p: string) => perfiles.find((x) => x.perfil === p)?.nombre ?? p
+  // El estudio es opcional para todos (Nico, 04-10-2026), diga lo que diga la fila.
+  const esObligatorio = (r: RequisitoDePostulacion) => r.obligatorio && !r.esElEstudio
+  const obligatorioEn = filas.filter(esObligatorio).map((r) => r.perfil)
+  const opcionalEn = filas.filter((r) => !esObligatorio(r)).map((r) => r.perfil)
+  const enTodos = perfiles.length > 1 && perfiles.every((p) => filas.some((r) => r.perfil === p.perfil))
+  const losPerfiles = (lista: string[]) =>
+    enTodos && lista.length === filas.length ? (
+      <span>todos los perfiles</span>
+    ) : (
+      lista.map((p, i) => (
+        <span key={p}>
+          {i > 0 ? ', ' : ''}
+          <button
+            type="button"
+            className="underline-offset-4 hover:text-fg hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            onClick={() => onIrAlPerfil(p)}
+          >
+            {nombreDe(p)}
+          </button>
+        </span>
+      ))
+    )
+  const renglon = (obligatorio: boolean, lista: string[]) => (
+    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-fg-muted">
+      <Badge variant={obligatorio ? 'secondary' : 'outline'}>{obligatorio ? 'Obligatorio' : 'Opcional'}</Badge>
+      <span>{losPerfiles(lista)}</span>
+    </p>
+  )
+  return (
+    <StaggerItem
+      as="li"
+      className="flex flex-wrap items-start justify-between gap-3 py-3"
+      data-testid={`requisito-${primero.id}`}
+    >
+      <div className="flex min-w-0 gap-3">
+        <Icono weight="duotone" className="mt-0.5 h-5 w-5 shrink-0 text-fg-subtle" aria-hidden="true" />
+        <div className="min-w-0 space-y-0.5">
+          <p className="flex items-center gap-2 font-medium text-fg">
+            {primero.etiqueta}
+            {primero.esElEstudio ? <Lock className="h-4 w-4 text-fg-subtle" aria-label="No se puede cambiar" /> : null}
+          </p>
+          {primero.detalle ? <p className="text-sm text-fg-muted">{primero.detalle}</p> : null}
+          <p className="text-caption text-fg-subtle">{texto}</p>
+        </div>
+      </div>
+      <div className="flex flex-col items-start gap-1 sm:items-end" data-testid={`en-que-perfiles-${primero.id}`}>
+        {obligatorioEn.length > 0 ? renglon(true, obligatorioEn) : null}
+        {opcionalEn.length > 0 ? renglon(false, opcionalEn) : null}
+        {primero.esElEstudio ? (
+          <span className="text-caption text-fg-subtle" data-testid={`estudio-candado-${primero.id}`}>
+            No frena la postulación: quien no lo tiene te llega marcado «Sin estudio»
+          </span>
+        ) : null}
+      </div>
+    </StaggerItem>
+  )
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // La pantalla
 // ═══════════════════════════════════════════════════════════════════════════
@@ -516,6 +593,20 @@ export function RequisitosClient() {
       })),
     ]
   }, [requisitos, perfiles])
+
+  /** «Todos»: un renglón por requisito distinto (misma clase y mismo texto), con sus perfiles. */
+  const unidos = useMemo(() => {
+    const porClave = new Map<string, { primero: RequisitoDePostulacion; filas: RequisitoDePostulacion[] }>()
+    for (const g of grupos) {
+      for (const r of g.items) {
+        const clave = r.esElEstudio ? 'estudio' : `${r.clase}|${r.etiqueta.trim().toLowerCase()}`
+        const ya = porClave.get(clave)
+        if (ya) ya.filas.push(r)
+        else porClave.set(clave, { primero: r, filas: [r] })
+      }
+    }
+    return [...porClave.values()]
+  }, [grupos])
 
   const obligatorios = requisitos.filter((r) => r.obligatorio).length
 
@@ -689,10 +780,17 @@ export function RequisitosClient() {
               </CardTitle>
               {requisitos.length > 0 ? (
                 <p className="text-sm text-fg-muted" data-testid="resumen">
-                  {requisitos.length}{' '}
-                  {requisitos.length === 1 ? 'requisito' : 'requisitos'}, de los
-                  cuales {obligatorios}{' '}
-                  {obligatorios === 1 ? 'es obligatorio' : 'son obligatorios'}.
+                  {perfil ? (
+                    <>
+                      {requisitos.length}{' '}
+                      {requisitos.length === 1 ? 'requisito' : 'requisitos'}, de los
+                      cuales {obligatorios}{' '}
+                      {obligatorios === 1 ? 'es obligatorio' : 'son obligatorios'}.
+                    </>
+                  ) : (
+                    // En «Todos» se cuentan los requisitos DISTINTOS (los de la lista), no uno por perfil.
+                    `${unidos.length} ${unidos.length === 1 ? 'requisito' : 'requisitos'} en ${grupos.length} ${grupos.length === 1 ? 'perfil' : 'perfiles'}.`
+                  )}
                 </p>
               ) : null}
             </CardHeader>
@@ -730,37 +828,23 @@ export function RequisitosClient() {
                     ))}
                   </Stagger>
                 ) : (
-                  <div className="space-y-6" data-testid="lista-de-requisitos">
-                    {grupos.map((g, gi) => (
-                      <section key={g.perfil} data-testid={`grupo-${g.perfil}`}>
-                        <h3 className="mb-1 flex items-baseline gap-2 text-sm font-medium text-fg">
-                          {g.nombre}
-                          <span className="text-caption font-normal text-fg-subtle">
-                            {g.items.length}{' '}
-                            {g.items.length === 1 ? 'requisito' : 'requisitos'}
-                          </span>
-                        </h3>
-                        <Stagger as="ul" className="divide-y border-t">
-                          {g.items.map((r) => (
-                            <FilaDeRequisito
-                              key={r.id}
-                              r={r}
-                              repetido={
-                                r.esElEstudio &&
-                                grupos.slice(0, gi).some((anterior) => anterior.items.some((x) => x.esElEstudio))
-                              }
-                              puedeEditar={puedeEditar}
-                              esElPreset={esElPreset}
-                              ocupado={tocando === r.id}
-                              onAlternar={() =>
-                                void alternarObligatorio(r.id, !r.obligatorio)
-                              }
-                              onBorrar={() => setPorBorrar(r)}
-                            />
-                          ))}
-                        </Stagger>
-                      </section>
-                    ))}
+                  <div data-testid="lista-de-requisitos">
+                    <Stagger as="ul" className="divide-y" data-testid="lista-de-todos">
+                      {unidos.map((u) => (
+                        <FilaEnTodos
+                          key={u.primero.id}
+                          primero={u.primero}
+                          filas={u.filas}
+                          perfiles={perfiles}
+                          onIrAlPerfil={setPerfil}
+                        />
+                      ))}
+                    </Stagger>
+                    {puedeEditar && !esElPreset ? (
+                      <p className="border-t border-border pt-3 text-caption text-fg-muted" data-testid="todos-como-se-edita">
+                        Para volver uno obligatorio u opcional, o dejar de pedirlo, entra a su perfil.
+                      </p>
+                    ) : null}
                   </div>
                 )}
                 </CrossFade>

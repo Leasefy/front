@@ -75,6 +75,39 @@ export interface WorkspaceNavItem {
   roles?: AgencyRole[];
   /** data-tour-target passthrough (Phase 38 PanelTour). */
   dataTourTarget?: string;
+  /**
+   * Las pantallas hermanas que viven DENTRO de esta pestaña (revisora r25, C2,
+   * 23-10-2026: «catorce pestañas del mismo peso se leen como catorce cosas por
+   * hacer»). La pestaña queda activa en cualquiera de ellas y la pantalla pinta
+   * un `SegmentedControl` para pasar de una a otra (`SegmentosDelAgente`). El
+   * primer segmento suele ser el mismo `href` de la pestaña.
+   */
+  segmentos?: WorkspaceNavItem[];
+}
+
+/**
+ * Las pestañas y sus segmentos, en una sola lista plana: lo que se puede abrir
+ * desde la barra (las pruebas de rutas, de textos y las migas la recorren).
+ */
+export function pestanasYSegmentos(ws: AgentWorkspace): WorkspaceNavItem[] {
+  const vistos = new Set<string>();
+  const todo: WorkspaceNavItem[] = [];
+  for (const it of ws.items) {
+    for (const x of [it, ...(it.segmentos ?? [])]) {
+      const clave = `${x.href}|${x.labelKey}`;
+      if (vistos.has(clave)) continue;
+      vistos.add(clave);
+      todo.push(x);
+    }
+  }
+  return todo;
+}
+
+/** La pestaña que contiene a `pathname` (por su href o por uno de sus segmentos). */
+export function pestanaQueContiene(item: WorkspaceNavItem, pathname: string): boolean {
+  const ruta = pathname.split('?')[0] ?? pathname;
+  const toca = (x: WorkspaceNavItem) => ruta === x.href || (!x.exact && ruta.startsWith(`${x.href}/`));
+  return toca(item) || (item.segmentos ?? []).some(toca);
 }
 
 export interface AgentWorkspace {
@@ -122,45 +155,64 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
     labelKey: 'inmobiliaria.ai.nav.cobranza',
     icon: ChatCircleText,
     module: 'cobranza',
+    // C2 (revisora r25, 23-10-2026): de 14 pestañas del mismo peso a 7, agrupadas
+    // por TRABAJO; las hermanas viven dentro de su pestaña como segmentos
+    // (`SegmentosDelAgente`). Las rutas no cambian. Lo oculto o fusionado sigue
+    // anotado en las NOTAS al pie (pendientes, bandeja, promesas, reporte,
+    // analítica, resultados, plantillas y equipo).
     items: [
       { labelKey: 'inmobiliaria.ai.nav.cobranzaResumen', href: COBRANZA, icon: SquaresFour, exact: true, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaCasos', href: `${COBRANZA}/deudores`, icon: Users, module: 'cobranza' },
-      // FUSIONADO en el Resumen — «Pendientes» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPendientes', href: `${COBRANZA}/pendientes`, icon: ListChecks, module: 'cobranza' },
-      // OCULTO — «Inbox de conversaciones» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaInbox', href: `${COBRANZA}/inbox`, icon: ChatCircleText, module: 'cobranza' },
-      // FUSIONADO en «Acuerdos de pago» — «Promesas de pago» (ver nota al pie).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPromesas', href: `${COBRANZA}/promesas`, icon: BellRinging, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaAcuerdos', href: `${COBRANZA}/acuerdos`, icon: Handshake, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaDisputas', href: `${COBRANZA}/disputas`, icon: Scales, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.pagos', href: `${COBRANZA}/pagos`, icon: CreditCard, module: 'cobranza' },
-      // Llegó de la Sala de Pagos el 2026-09-16 (ver la NOTA al pie): el pago
-      // que se cayó es del INQUILINO —link vencido, banco que rechazó, pasarela
-      // caída— y lo que sigue es volver a pedírselo. Va pegada a «Pagos», que
-      // es el embudo del mismo dinero visto por el lado que sí entró.
-      { labelKey: 'inmobiliaria.ai.nav.pagosFallidos', href: `${COBRANZA}/fallidos`, icon: WarningCircle, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.llamadas', href: `${COBRANZA}/llamadas`, icon: PhoneCall, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cartas', href: `${COBRANZA}/cartas`, icon: Envelope, module: 'cobranza' },
-      // También llegó de la Sala de Pagos: una secuencia de recordatorios es
-      // cobranza, y va al lado de las cartas porque son el mismo oficio
-      // —escribirle al que debe— con distinto tono y distinto canal.
-      { labelKey: 'inmobiliaria.ai.nav.pagosRecordatorios', href: `${COBRANZA}/recordatorios`, icon: BellRinging, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.siniestros', href: `${COBRANZA}/siniestros`, icon: Siren, module: 'cobranza' },
-      // FUSIONADO en el Resumen — «Reporte diario» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaReporte', href: `${COBRANZA}/reporte`, icon: ChartLine, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaReportesPropietarios', href: `${COBRANZA}/reportes-propietarios`, icon: Files, module: 'cobranza' },
-      // FUSIONADO en el Resumen — «Analítica» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.analitica', href: `${COBRANZA}/analitica`, icon: ChartLineUp, module: 'cobranza' },
-      // FUSIONADO en el Resumen — «Resultados» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaResultados', href: `${COBRANZA}/resultados`, icon: Trophy, module: 'cobranza' },
-      // OCULTO — «Playbooks» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPlaybooks', href: `${COBRANZA}/plantillas`, icon: FileText, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.compliance', href: `${COBRANZA}/compliance`, icon: ClipboardText, module: 'cobranza' },
-      // ROLES (14-10-2026): las solicitudes de datos personales las ve quien las
-      // resuelve (habeas data, `cotizador:resolve-arco`); el micro responde 403 a los demás.
-      { labelKey: 'inmobiliaria.ai.nav.arco', href: `${COBRANZA}/arco`, icon: ShieldCheck, module: 'cotizador', action: 'resolve-arco' },
-      // OCULTO — «Equipo IA» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaEquipo', href: `${COBRANZA}/equipo`, icon: UsersThree, module: 'cobranza' },
+      {
+        labelKey: 'inmobiliaria.ai.nav.cobranzaGrupoAcuerdos',
+        href: `${COBRANZA}/acuerdos`,
+        icon: Handshake,
+        module: 'cobranza',
+        segmentos: [
+          { labelKey: 'inmobiliaria.ai.nav.cobranzaAcuerdos', href: `${COBRANZA}/acuerdos`, icon: Handshake, module: 'cobranza' },
+          { labelKey: 'inmobiliaria.ai.nav.cobranzaDisputas', href: `${COBRANZA}/disputas`, icon: Scales, module: 'cobranza' },
+        ],
+      },
+      {
+        // Escribirle o llamar al que debe: el mismo oficio con distinto tono y canal.
+        labelKey: 'inmobiliaria.ai.nav.cobranzaGrupoContactos',
+        href: `${COBRANZA}/llamadas`,
+        icon: PhoneCall,
+        module: 'cobranza',
+        segmentos: [
+          { labelKey: 'inmobiliaria.ai.nav.llamadas', href: `${COBRANZA}/llamadas`, icon: PhoneCall, module: 'cobranza' },
+          { labelKey: 'inmobiliaria.ai.nav.cartas', href: `${COBRANZA}/cartas`, icon: Envelope, module: 'cobranza' },
+          // Llegó de la Sala de Pagos el 2026-09-16: una secuencia de recordatorios es cobranza.
+          { labelKey: 'inmobiliaria.ai.nav.pagosRecordatorios', href: `${COBRANZA}/recordatorios`, icon: BellRinging, module: 'cobranza' },
+        ],
+      },
+      {
+        // La plata del inquilino: lo que entró, lo que se cayó (link vencido,
+        // banco que rechazó —llegó de la Sala de Pagos el 2026-09-16—) y lo que
+        // va a la aseguradora.
+        labelKey: 'inmobiliaria.ai.nav.pagos',
+        href: `${COBRANZA}/pagos`,
+        icon: CreditCard,
+        module: 'cobranza',
+        segmentos: [
+          { labelKey: 'inmobiliaria.ai.nav.pagos', href: `${COBRANZA}/pagos`, icon: CreditCard, module: 'cobranza' },
+          { labelKey: 'inmobiliaria.ai.nav.pagosFallidos', href: `${COBRANZA}/fallidos`, icon: WarningCircle, module: 'cobranza' },
+          { labelKey: 'inmobiliaria.ai.nav.siniestros', href: `${COBRANZA}/siniestros`, icon: Siren, module: 'cobranza' },
+        ],
+      },
+      {
+        labelKey: 'inmobiliaria.ai.nav.compliance',
+        href: `${COBRANZA}/compliance`,
+        icon: ClipboardText,
+        module: 'cobranza',
+        segmentos: [
+          { labelKey: 'inmobiliaria.ai.nav.compliance', href: `${COBRANZA}/compliance`, icon: ClipboardText, module: 'cobranza' },
+          // ROLES (14-10-2026): las solicitudes de datos personales las ve quien las
+          // resuelve (habeas data, `cotizador:resolve-arco`); el micro responde 403 a los demás.
+          { labelKey: 'inmobiliaria.ai.nav.arco', href: `${COBRANZA}/arco`, icon: ShieldCheck, module: 'cotizador', action: 'resolve-arco' },
+          { labelKey: 'inmobiliaria.ai.nav.cobranzaReportesPropietarios', href: `${COBRANZA}/reportes-propietarios`, icon: Files, module: 'cobranza' },
+        ],
+      },
       { labelKey: 'inmobiliaria.ai.nav.configuracion', href: `${COBRANZA}/configuracion`, icon: SlidersHorizontal, module: 'cobranza' },
     ],
   },

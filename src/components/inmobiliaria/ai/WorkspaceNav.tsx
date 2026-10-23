@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
-import { findAgentWorkspace, type WorkspaceNavItem } from '@/lib/nav/agentWorkspaceNav';
+import { findAgentWorkspace, pestanaQueContiene, type WorkspaceNavItem } from '@/lib/nav/agentWorkspaceNav';
 import { BarraDePestanas, type PestanaDeBarra } from '@/components/inmobiliaria/BarraDePestanas';
 
 /**
@@ -44,8 +44,8 @@ export function WorkspaceNav() {
   // Nada entre lo que navegar → no se dibuja una barra de una sola pestaña.
   if (items.length < 2) return null;
 
-  const isActive = (item: WorkspaceNavItem) =>
-    pathname === item.href || (!item.exact && (pathname ?? '').startsWith(`${item.href}/`));
+  // Una pestaña con segmentos (C2, r25) queda activa en cualquiera de sus hermanas.
+  const isActive = (item: WorkspaceNavItem) => pestanaQueContiene(item, pathname ?? '');
 
   const pestanas: PestanaDeBarra[] = items.map((item) => ({
     href: item.href,
@@ -54,7 +54,7 @@ export function WorkspaceNav() {
     active: isActive(item),
     // `aria-current="page"` sólo en coincidencia EXACTA: en la ficha de un caso
     // la pestaña «Casos» es el camino de VUELTA, no la página actual.
-    current: pathname === item.href,
+    current: pathname === item.href || (item.segmentos ?? []).some((s) => s.href === pathname),
     dataTourTarget: item.dataTourTarget,
   }));
 

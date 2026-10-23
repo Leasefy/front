@@ -6138,7 +6138,9 @@
         "pagosHome": "Payments",
         "mantenimiento": "Maintenance",
         "mantenimientoTickets": "Tickets",
-        "mantenimientoResumen": "Overview"
+        "mantenimientoResumen": "Overview",
+        "cobranzaGrupoAcuerdos": "Agreements",
+        "cobranzaGrupoContactos": "Outreach"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",

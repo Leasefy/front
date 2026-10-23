@@ -35,7 +35,7 @@ import es from '@/lib/i18n/locales/es.json';
 import en from '@/lib/i18n/locales/en.json';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { PESTANAS_DE_CARTERA } from '@/components/cartera/PestanasDeCartera';
-import { AGENT_WORKSPACES, findAgentWorkspace } from './agentWorkspaceNav';
+import { AGENT_WORKSPACES, findAgentWorkspace, pestanasYSegmentos } from './agentWorkspaceNav';
 import { filterAgencyNav, pasaGateDeFila, type NavFilterContext } from './agency-nav-filter';
 import { filasDelSidebar, resolverEntradaDeModulo } from './sidebar-del-panel';
 import { hrefDeLaFilaActiva } from './fila-activa-del-menu';
@@ -95,7 +95,8 @@ describe('arquitectura del panel — rutas', { timeout: 60_000 }, () => {
     expect(tienePagina(href), `falta ${href.replace(PANEL, '')}/page.tsx`).toBe(true);
   });
 
-  it.each(AGENT_WORKSPACES.flatMap((w) => w.items.map((i) => [w.slug, i.href] as const)))(
+  // Las pestañas y sus segmentos (C2, r25): todo lo que se abre desde la barra tiene su página.
+  it.each(AGENT_WORKSPACES.flatMap((w) => pestanasYSegmentos(w).map((i) => [w.slug, i.href] as const)))(
     'pestaña del agente %s → %s tiene su page.tsx',
     (_slug, href) => {
       expect(tienePagina(href)).toBe(true);
@@ -195,7 +196,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
     for (const w of AGENT_WORKSPACES) {
       claves.add(w.labelKey);
-      for (const i of w.items) claves.add(i.labelKey);
+      for (const i of pestanasYSegmentos(w)) claves.add(i.labelKey);
     }
     const faltan = [...claves].filter((k) => typeof leer(es, k) !== 'string' || typeof leer(en, k) !== 'string');
     expect(faltan).toEqual([]);
@@ -388,13 +389,14 @@ describe('arquitectura del panel — agentes', () => {
     // vencido» y «banco rechazó») y «Recordatorios» son plata del INQUILINO que
     // no entró: cobranza, no giro al propietario.
     const cobranza = AGENT_WORKSPACES.find((w) => w.slug === 'cobranza')!;
-    const hrefs = cobranza.items.map((i) => i.href);
+    // Desde la r26 (C2) viven como segmentos de la pestaña «Pagos» y «Contactos»: se abren igual desde la barra.
+    const hrefs = pestanasYSegmentos(cobranza).map((i) => i.href);
     expect(hrefs).toContain(`${PANEL}/pagos/cobranza/fallidos`);
     expect(hrefs).toContain(`${PANEL}/pagos/cobranza/recordatorios`);
     // Y se gatean con el módulo que las ofrece, no por rol: una pestaña que se
     // ve y devuelve al inicio es el defecto MSJ-6.
     for (const href of [`${PANEL}/pagos/cobranza/fallidos`, `${PANEL}/pagos/cobranza/recordatorios`]) {
-      const item = cobranza.items.find((i) => i.href === href)!;
+      const item = pestanasYSegmentos(cobranza).find((i) => i.href === href)!;
       expect(item.module, href).toBe('cobranza');
       expect(item.roles, href).toBeUndefined();
     }

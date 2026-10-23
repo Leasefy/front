@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Money, Plus } from '@phosphor-icons/react';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -172,8 +173,28 @@ export function CuentasPorPagar({
             <TableBody className="max-md:block">
               {facturas.length === 0 ? (
                 <TableRow className="max-md:block">
-                  <TableCell colSpan={6} className="py-10 text-center text-sm text-fg-muted max-md:block">
-                    {actual.vacio}
+                  <TableCell colSpan={6} className="p-0 max-md:block">
+                    {/* Revisora r25 (C5): el vacío con su salida —las facturas se causan en Gastos—
+                        (antes una línea gris). */}
+                    <SinDatos
+                      queSon="facturas"
+                      icono={Money}
+                      titulo={actual.vacio.replace(/\.$/, '')}
+                      descripcion={
+                        actual.valor === 'pagadas'
+                          ? 'Cuando pagues una factura causada, queda aquí con su egreso.'
+                          : actual.valor === 'vencidas'
+                            ? 'Las que están por pagar todavía no pasan de su fecha.'
+                            : 'Las facturas de los proveedores se registran y se causan en Gastos de la inmobiliaria.'
+                      }
+                      accion={
+                        actual.valor === 'por-pagar' ? (
+                          <Button asChild size="sm" variant="secondary" hideArrow>
+                            <Link href={GASTOS}>Ir a Gastos</Link>
+                          </Button>
+                        ) : undefined
+                      }
+                    />
                   </TableCell>
                 </TableRow>
               ) : (

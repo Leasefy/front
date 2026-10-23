@@ -22,6 +22,8 @@
  * la DIAN.
  */
 
+import { SinDatos } from '@/components/estado/SinDatos';
+import Link from 'next/link';
 import { sinElEquipoEnLaFrase } from '@/lib/contabilidad/plata';
 import { useState } from 'react';
 
@@ -180,11 +182,21 @@ export function NominaElectronicaPanel() {
                 </div>
               </div>
               {visibles.length === 0 ? (
-                <p className="p-5 text-body-sm text-fg-muted">
-                  {datos.documentos.length === 0
-                    ? 'Todavía no hay documentos. Se generan desde un período de nómina aprobado: «Generar» lo numera sin CUNE y «Transmitir» es el que habla con el proveedor.'
-                    : 'Ningún documento en esta pestaña.'}
-                </p>
+                // Revisora r25 (C5): el vacío con su salida (antes una línea gris).
+                datos.documentos.length === 0 ? (
+                  <SinDatos
+                    queSon="documentos"
+                    titulo="Todavía no hay documentos"
+                    descripcion="Se generan desde un período de nómina aprobado: «Generar» lo numera sin CUNE y «Transmitir» es el que habla con el proveedor."
+                    accion={
+                      <Button asChild size="sm" variant="secondary" hideArrow>
+                        <Link href="/panel/inmobiliaria/nomina/periodos">Ir a Liquidación</Link>
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <p className="p-5 text-body-sm text-fg-muted">Ningún documento en esta pestaña.</p>
+                )
               ) : (
                   <Table data-testid="tabla-de-documentos" className="max-md:block">
                     <TableHeader className="max-md:hidden">

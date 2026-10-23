@@ -25,6 +25,7 @@
  *   navegador, que ignora el tema y algunos navegadores suprimen del todo.
  */
 
+import { SinDatos } from '@/components/estado/SinDatos';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Prohibit } from '@phosphor-icons/react';
@@ -302,9 +303,19 @@ export function PeriodosDeNominaPanel() {
               />
             ) : null}
             {datos.periodos.length === 0 ? (
-              <p className="rounded-lg border border-border bg-surface p-5 text-body-sm text-fg-muted">
-                Todavía no hay períodos liquidados. Arma el primero arriba: elige el mes y la periodicidad.
-              </p>
+              // Revisora r25 (C5): el vacío con su salida (antes una línea gris).
+              <div className="rounded-lg border border-border bg-surface">
+                <SinDatos
+                  queSon="períodos"
+                  titulo="Todavía no hay períodos liquidados"
+                  descripcion="Arma el primero arriba: elige el mes y la periodicidad."
+                  accion={
+                    <Button size="sm" variant="secondary" hideArrow onClick={() => document.getElementById('mes-a-liquidar')?.focus()}>
+                      Elegir el mes
+                    </Button>
+                  }
+                />
+              </div>
             ) : (
               <div className="overflow-hidden rounded-lg border border-border bg-surface">
                 <div className="border-b border-border px-4 py-3">

@@ -10,6 +10,7 @@
  * Permiso: `cobros`/view, el mismo del back (`GET /inmobiliaria/estudios/pagos`).
  */
 
+import { SinDatos } from '@/components/estado/SinDatos';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Prohibit } from '@phosphor-icons/react';
@@ -124,7 +125,19 @@ function Contenido() {
         queEs="los estudios pagados"
         onReintentar={cargar}
         vacio={!pagos || pagos.length === 0}
-        cuandoVacio={<p className="text-body-sm text-fg-muted">Todavía no hay estudios pagados.</p>}
+        // Revisora r25 (C5): el vacío dice de dónde llegan y lleva su salida (antes una línea gris).
+        cuandoVacio={
+          <SinDatos
+            queSon="estudios pagados"
+            titulo="Todavía no hay estudios pagados"
+            descripcion="Cuando un solicitante paga su estudio, aquí queda con su recibo y su factura."
+            accion={
+              <Button asChild size="sm" variant="secondary" hideArrow>
+                <Link href="/panel/inmobiliaria/postulaciones">Ver las postulaciones</Link>
+              </Button>
+            }
+          />
+        }
       >
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm" data-testid="estudios-pagados">

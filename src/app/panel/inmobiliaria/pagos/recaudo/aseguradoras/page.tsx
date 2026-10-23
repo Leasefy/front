@@ -12,6 +12,7 @@
  * Permiso: `cobros`/view para verlas, `cobros`/edit para registrarlas.
  */
 
+import { SinDatos } from '@/components/estado/SinDatos';
 import { useCallback, useEffect, useState } from 'react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -186,7 +187,25 @@ function Contenido() {
         queEs="las aseguradoras"
         onReintentar={cargar}
         vacio={!aseguradoras || aseguradoras.length === 0}
-        cuandoVacio={<p className="text-sm text-fg-muted">Todavía no hay aseguradoras registradas.</p>}
+        // Revisora r25 (C5): el vacío dice qué hacer y lleva su salida (antes una línea gris).
+        cuandoVacio={
+          <SinDatos
+            queSon="aseguradoras"
+            titulo="Todavía no hay aseguradoras registradas"
+            descripcion={
+              puedeEditar
+                ? 'Regístrala arriba con su nombre y su NIT.'
+                : 'Pídele a un administrador que la registre.'
+            }
+            accion={
+              puedeEditar ? (
+                <Button size="sm" variant="secondary" hideArrow onClick={() => document.getElementById('aseguradora-nombre')?.focus()}>
+                  Registrar la primera
+                </Button>
+              ) : undefined
+            }
+          />
+        }
       >
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm" data-testid="aseguradoras">

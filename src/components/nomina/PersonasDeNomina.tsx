@@ -23,6 +23,7 @@
  * a la base de prima, cesantías y vacaciones.
  */
 
+import { SinDatos } from '@/components/estado/SinDatos';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -189,13 +190,32 @@ export function PersonasDeNominaPanel() {
                       </div>
                     </div>
               {visibles.length === 0 ? (
-                <p className="p-5 text-body-sm text-fg-muted">
-                  {personas.personas.length === 0
-                    ? busqueda
-                      ? 'Nadie con ese nombre o documento.'
-                      : 'Todavía no hay nadie registrado. Registra a la primera persona con «Registrar a alguien».'
-                    : 'Nadie en esta pestaña.'}
-                </p>
+                // Revisora r25 (C5): el vacío con su salida (antes una línea gris).
+                personas.personas.length === 0 && !busqueda ? (
+                  <SinDatos
+                    queSon="personas"
+                    titulo="Todavía no hay nadie registrado"
+                    descripcion="Registra a la primera persona para liquidarle la nómina."
+                    accion={
+                      <Button size="sm" variant="secondary" hideArrow onClick={() => setAbriendo(true)}>
+                        Registrar a alguien
+                      </Button>
+                    }
+                  />
+                ) : busqueda ? (
+                  <SinDatos
+                    queSon="personas"
+                    titulo="Nadie con ese nombre o documento"
+                    descripcion="Prueba con otra parte del nombre o con el número sin puntos."
+                    accion={
+                      <Button size="sm" variant="secondary" hideArrow onClick={() => setBusqueda('')}>
+                        Borrar la búsqueda
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <p className="p-5 text-body-sm text-fg-muted">Nadie en esta pestaña.</p>
+                )
               ) : (
                   <Table data-testid="tabla-de-personas" className="max-md:block">
                     <TableHeader className="max-md:hidden">

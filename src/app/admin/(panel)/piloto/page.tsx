@@ -129,16 +129,19 @@ export default function PilotoDeLasInmobiliariasPage() {
       texto: (f) => f.legal_name,
     },
     {
-      header: 'Plan del piloto',
-      cell: (f) => <Pill tone={tono(f.estado)}>{EL_ESTADO[f.estado].nombre}</Pill>,
-      orden: (f) => EL_ESTADO[f.estado].nombre,
-      texto: (f) => EL_ESTADO[f.estado].nombre,
-    },
-    {
-      header: 'En la inmobiliaria',
-      cell: (f) => <Pill tone={f.activo ? 'ok' : 'muted'}>{f.activo ? 'Encendido' : 'Sin encender'}</Pill>,
-      orden: (f) => (f.activo ? 1 : 0),
-      texto: (f) => (f.activo ? 'Encendido' : 'Sin encender'),
+      // Ronda 30 (revisora r27): UNA columna «En prueba · sin encender» (antes «Plan del piloto» y «En la
+      // inmobiliaria» en dos columnas, que parecían contradecirse).
+      header: 'Estado',
+      cell: (f) => (
+        <span className="flex flex-wrap items-center gap-1.5">
+          <Pill tone={tono(f.estado)}>{EL_ESTADO[f.estado].nombre}</Pill>
+          <span className={f.activo ? 'text-caption text-success' : 'text-caption text-fg-muted'}>
+            {f.activo ? 'encendido' : 'sin encender'}
+          </span>
+        </span>
+      ),
+      orden: (f) => `${EL_ESTADO[f.estado].nombre}-${f.activo ? 1 : 0}`,
+      texto: (f) => `${EL_ESTADO[f.estado].nombre} · ${f.activo ? 'Encendido' : 'Sin encender'}`,
     },
     {
       header: 'Último cambio',

@@ -165,6 +165,7 @@ export default function KeysPage() {
   ]
 
   const faltan = (keys ?? []).filter((k) => !k.env_present).length
+  const nuncaRotadaNinguna = Boolean(keys && keys.length > 1 && keys.every((k) => k.status === 'never'))
   const fraseDeLaRotacion =
     counts.overdue > 0
       ? `${counts.overdue} ${counts.overdue === 1 ? 'vencida' : 'vencidas'}: hay que rotarlas`
@@ -218,7 +219,9 @@ export default function KeysPage() {
       ) : null}
 
       <DataTable
-        columns={columns}
+        // Ronda 30 (revisora r27, T15): si ninguna se ha rotado, «Última rotación —» y «Estado: Nunca rotada» se
+        // repetían en las 11 filas: salen (lo dice el pie de la cifra y van al Excel).
+        columns={nuncaRotadaNinguna ? columns.filter((c) => c.header !== 'Última rotación' && c.header !== 'Estado') : columns}
         rows={keys}
         getKey={(r) => r.env_var}
         isLoading={isLoading}
@@ -232,11 +235,12 @@ export default function KeysPage() {
         textoExtra={(r) => r.env_var}
         segmentos={SEGMENTOS}
         // Ronda 26 (T8): a 390 la tarjeta pone a la derecha el estado (lo que responde: ¿hay que rotarla?).
-        cifraDelCelular="Estado"
-        ordenInicial={{ columna: 3, sentido: 'asc' }}
+        cifraDelCelular={nuncaRotadaNinguna ? 'En el servidor' : 'Estado'}
+        ordenInicial={nuncaRotadaNinguna ? { columna: 1, sentido: 'asc' } : { columna: 3, sentido: 'asc' }}
         exportar="llaves"
         masEnElExcel={[
           { header: 'Variable', texto: (r) => r.env_var },
+          ...(nuncaRotadaNinguna ? [{ header: 'Estado', texto: () => 'Nunca rotada' }] : []),
           { header: 'Nombre en el servidor', texto: (r) => r.label },
           { header: 'Notas del servidor', texto: (r) => r.notes ?? '' },
         ]}

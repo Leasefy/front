@@ -214,7 +214,7 @@ function CheckoutContent() {
     .slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       {/* GLOW UP (21-10-2026): el contenedor y el encabezado común del portal. */}
       <div className="max-w-5xl p-6 lg:p-8">
         {/* Back link */}
@@ -576,7 +576,7 @@ function CheckoutORegreso() {
 export default function CheckoutPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-background">
+      <div className="bg-background">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="detail" className="mx-auto max-w-2xl" />
       </div>

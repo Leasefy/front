@@ -225,8 +225,9 @@ describe('rechazado — tiene salidas, no es un callejón', () => {
     render()
     const medallon = document.querySelector('[data-testid="rechazado-medallon"]')
     expect(medallon?.getAttribute('data-tono')).toBe('info')
-    expect(medallon?.className).toContain('bg-info-soft')
-    expect(medallon?.className).not.toContain('danger')
+    // Ronda 30 (Cadence 2, sin íconos en círculos de color): el tono va en el ícono, no en un círculo de fondo.
+    expect(medallon?.querySelector('svg')?.getAttribute('class') ?? '').toContain('text-info')
+    expect(medallon?.innerHTML).not.toContain('danger')
   })
 })
 

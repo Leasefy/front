@@ -299,7 +299,7 @@ export default function AprobarReparacionesPage() {
   }, [cargar]);
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
           seccion="Solicitudes"

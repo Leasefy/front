@@ -155,7 +155,7 @@ function AprobadoView({
     <div className="space-y-6">
       {/* GLOW UP (22-10): LA RESPUESTA en una CifraHeroe con su estado (punto y palabra) y los datos del buró en
           una línea al pie, en vez de dos tarjetas con borde dentro de la tarjeta. */}
-      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-6">
+      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 space-y-6">
         <StatusBadge tone="success">{tf(`${NS}.aprobado.badge`, 'Aprobado')}</StatusBadge>
 
         {tieneTope ? (
@@ -324,12 +324,13 @@ function RechazadoView({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-3">
+      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 space-y-3">
         {/* Informativo, no error (Nico, 02-10): es un «no», pero el texto dice
             que no es definitivo y que hay salidas; un medallón rojo con una ✕
             lo contradecía. El mismo tono que el modal de `PostularButton`. */}
+        {/* Ronda 30 (Cadence 2): el ícono solo, sin círculo de color; la tarjeta ya no lleva sombra. */}
         <div
-          className="w-12 h-12 rounded-full bg-info-soft flex items-center justify-center"
+          className="flex items-center"
           data-testid="rechazado-medallon"
           data-tono="info"
         >
@@ -385,7 +386,7 @@ function EnProcesoView({
   // «Ya la validé» y el reenvío (Nico, 15-09): quien cerró la página y vuelve
   // desde un recordatorio sigue exactamente donde quedó.
   return (
-    <section className="rounded-lg border border-border bg-surface p-6 shadow-sm space-y-4 md:p-8">
+    <section className="rounded-lg border border-border bg-surface p-6 space-y-4 md:p-8">
       <ValidacionPorWhatsapp evaluationStatus={evaluation?.status ?? null} onActualizar={onActualizar} />
       {expiresAt && (
         <div className="pt-1">
@@ -430,7 +431,7 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-3">
+      <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 space-y-3">
         {/* h2 y no h1: el h1 de la página es "Mi tope de arriendo". */}
         <h2 className="text-h3 text-fg">
           {tf(`${NS}.vacio.title`, 'Todavía no conoces tu tope')}
@@ -489,7 +490,7 @@ function PasosDeMiTope({ pasos }: { pasos: ReadonlyArray<{ n: string; title: str
 
 function ExpiradoView({ tf }: { tf: (k: string, f: string) => string }) {
   return (
-    <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-3">
+    <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 space-y-3">
       <Clock className="w-6 h-6 text-warning" aria-hidden="true" />
       <h2 className="text-h3 text-fg">
         {tf(`${NS}.expirado.title`, 'Tu tiempo para completar la aprobación venció')}
@@ -521,7 +522,7 @@ function ErrorEstudioView({
   onReintentar: () => void
 }) {
   return (
-    <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 shadow-sm space-y-3">
+    <section className="rounded-lg border border-border bg-surface p-5 sm:p-8 space-y-3">
       <WarningOctagon className="w-6 h-6 text-danger" aria-hidden="true" />
       <h2 className="text-h3 text-fg">
         {tf(`${NS}.error.title`, 'Algo falló al hacer tu estudio')}

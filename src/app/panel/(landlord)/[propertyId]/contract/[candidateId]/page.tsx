@@ -354,7 +354,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
   // creating a contract with a fabricated $0 rent (C6).
   if (!property || !candidate || property.monthlyRent == null) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="p-6 lg:p-8">
           <BackButton href={`/panel/${propertyId}`} label="Volver a candidatos" />
           <div className="mt-8 rounded-lg border border-border bg-surface p-8 text-center">
@@ -398,7 +398,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
   };
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <div className="p-6 lg:p-8">
         {/* Back link */}
         <BackButton href={`/panel/${propertyId}`} label="Volver a candidatos" />

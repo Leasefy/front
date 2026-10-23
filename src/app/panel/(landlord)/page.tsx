@@ -143,7 +143,7 @@ function InicioDelPropietarioDeInmobiliaria({ doc }: { doc: NonNullable<ReturnTy
   const pendientes = usePendientesDelPropietario();
   const quien = doc.inmobiliaria.nombre || doc.inmobiliaria.razonSocial || 'tu inmobiliaria';
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
           // Glow up 22-10 (como el del inquilino): la sección es la del riel y el saludo es el título.
@@ -196,7 +196,7 @@ function InicioSinContratos({ inmobiliaria }: { inmobiliaria: string }) {
   const { t } = useI18n();
   const firstName = user?.name?.split(' ')[0] || t('landlord.dashboard.defaultName');
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
           seccion="Inicio"
@@ -224,7 +224,7 @@ export default function PanelPage() {
     // Glow up 22-10: el esqueleto con la forma del inicio (encabezado, la cifra, los contratos) en vez de una
     // caja centrada que no se parecía a lo que llega.
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <div className="space-y-6 p-6 lg:p-8" aria-busy="true" data-testid="inicio-del-propietario-cargando">
           <div className="space-y-2">
             <Skeleton className="h-3 w-16" />
@@ -329,7 +329,7 @@ function PanelDelPropietarioIndependiente() {
    */
   if (hasNoProperties && administrados.doc) {
     return (
-      <div className="min-h-screen bg-bg">
+      <div className="bg-bg">
         <motion.div {...entradaAdministrados} className="p-6 lg:p-8 space-y-8">
           {/* Glow up 22-10: el encabezado común (sección del riel y el saludo como título). */}
           <EncabezadoDePantalla seccion="Inicio" titulo={`${greeting}, ${firstName}`} />
@@ -398,7 +398,7 @@ function PanelDelPropietarioIndependiente() {
   };
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg">
       <div className="p-6 lg:p-8">
 
         {/* Glow up 22-10: el encabezado común; publicar es la acción principal del propietario que arrienda solo. */}

@@ -21,6 +21,7 @@ import type { RecommendedProperty } from '@/lib/api/recommendations.service';
 import { useTenantProfile, RISK_LEVEL_LABELS } from '@/lib/context/TenantProfileContext';
 import { PropertyMatchCard } from '@/components/tenant/PropertyMatchCard';
 import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { QueSignificaPostularse } from '@/components/tenant/QueSignificaPostularse';
 import { CatalogoPorAprobacion } from '@/components/tenant/CatalogoPorAprobacion';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
@@ -254,44 +255,30 @@ export default function ParaTiPage() {
    * que dice lo mismo con las mismas palabras.
    */
   if (!hasVerifiedProfile || !profile) {
+    // GLOW UP (22-10): el mismo encabezado y la misma pieza del tope que el catálogo y el inicio. La pieza ya
+    // dice el estado de su aprobación (sin pedir, en proceso, rechazada o vencida) y lleva a pedirla; antes era
+    // una tarjeta con «Volver a Inicio» que decía «Todavía no tenemos tu aprobación» en los cuatro casos.
     return (
       <div className="min-h-screen bg-plan-page">
-        <div className="max-w-6xl mx-auto px-6 py-8">
-          <Link
-            href="/inquilino"
-            className="inline-flex items-center gap-2 text-sm text-plan-secondary hover:text-plan-primary mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {locale === 'es' ? 'Volver a Inicio' : 'Back to Home'}
-          </Link>
-
-          <div className="rounded-lg bg-surface border border-border p-12 text-center">
-            <Target className="w-8 h-8 text-primary shrink-0 mx-auto" aria-hidden="true" />
-            <h1 className="text-xl font-medium text-fg mb-3">
-              {locale === 'es'
-                ? 'Todavía no tenemos tu aprobación'
-                : 'We don\u2019t have your approval yet'}
-            </h1>
-            <p className="text-sm text-fg-muted max-w-md mx-auto mb-6 leading-relaxed">
-              {locale === 'es'
-                ? 'Con ella sabemos hasta cuánto te respaldan las aseguradoras, y aquí te mostramos solo las propiedades que puedes tomar.'
-                : 'With it we know how much the insurers back you, and here we show you only the properties you can take.'}
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button asChild>
-                <Link href="/aprobacion">
-                  {locale === 'es'
-                    ? 'Conoce hasta cuánto te arrendamos'
-                    : 'Find out how much you can rent'}
-                </Link>
+        <div className="p-6 lg:p-8" data-testid="para-ti-sin-aprobacion">
+          <EncabezadoDePantalla
+            className="mb-6"
+            seccion={locale === 'es' ? 'Buscar arriendo' : 'Find a rental'}
+            titulo={locale === 'es' ? 'Inmuebles para ti' : 'Properties for you'}
+            descripcion={
+              locale === 'es'
+                ? 'Con tu aprobación sabemos hasta cuánto te respaldan las aseguradoras y aquí te mostramos sólo lo que puedes tomar.'
+                : 'With your approval we know how much the insurers back you, and here we show you only what you can take.'
+            }
+            acciones={
+              <Button asChild variant="outline" size="sm" hideArrow className="max-lg:flex-1">
+                <a href="/propiedades" target="_blank" rel="noopener noreferrer">
+                  {locale === 'es' ? 'Buscar en el marketplace' : 'Search the marketplace'}
+                </a>
               </Button>
-              <Button asChild variant="secondary">
-                <Link href="/propiedades" target="_blank" rel="noopener noreferrer">
-                  {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
-                </Link>
-              </Button>
-            </div>
-          </div>
+            }
+          />
+          <TopeAprobadoBanner aprobacion={aprobacion} vigente={aprobacionVigente} tamano="heroe" />
         </div>
       </div>
     );

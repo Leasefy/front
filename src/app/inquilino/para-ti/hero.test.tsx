@@ -54,9 +54,11 @@ vi.mock('@/lib/hooks/use-aprobacion', () => ({
   useAprobacion: () => ({ aprobacion: null, vigente: false, cargando: false, error: null, recargar: () => {} }),
 }))
 
+const perfil = vi.hoisted(() => ({ verificado: true }))
+
 vi.mock('@/lib/context/TenantProfileContext', () => ({
   useTenantProfile: () => ({
-    hasVerifiedProfile: true,
+    hasVerifiedProfile: perfil.verificado,
     isLoading: false,
     profile: {
       fullName: 'María Restrepo',
@@ -105,6 +107,7 @@ const pintar = async () => {
 
 beforeEach(() => {
   recomendaciones.actuales = []
+  perfil.verificado = true
 })
 
 afterEach(async () => {
@@ -160,5 +163,18 @@ describe('hero de Propiedades para ti', () => {
       /(^|\s)text-primary(\s|$)/.test(el.className),
     )
     expect(infractores.map((el) => el.className)).toEqual([])
+  })
+})
+
+describe('Para ti sin aprobación ni perfil (glow up 22-10)', () => {
+  it('el encabezado de las demás pantallas y el marketplace en otra pestaña; sin «Volver a Inicio»', async () => {
+    perfil.verificado = false
+    await pintar()
+    const pantalla = host.querySelector('[data-testid="para-ti-sin-aprobacion"]')
+    expect(pantalla).not.toBeNull()
+    expect(host.querySelector('h1')?.textContent).toBe('Inmuebles para ti')
+    expect(host.textContent).not.toContain('Volver a Inicio')
+    const mk = host.querySelector('a[href="/propiedades"]')
+    expect(mk?.getAttribute('target')).toBe('_blank')
   })
 })

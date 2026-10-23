@@ -393,26 +393,51 @@ export async function pageSweep(opts: SweepOptions): Promise<SweepResult> {
     const hl = hit.closest('label') as HTMLLabelElement | null;
     return !!hl && hl.control === el;
   };
+  /**
+   * Nearest ancestor that scrolls on its own (a sidebar nav with `overflow-y: auto`), other than
+   * the page scroller handled by `scrollTo`. Elements inside one are only reachable by scrolling
+   * it, so the sweep must scroll it too: otherwise the last nav items sit below the nav's visible
+   * area, where the sticky footer ("Ayuda") rightly covers their geometry (a false positive).
+   */
+  const innerScroller = (e: Element): HTMLElement | null => {
+    for (let n = e.parentElement; n && n !== document.body && n !== de; n = n.parentElement) {
+      if (n === scroller) return null;
+      const cs = getComputedStyle(n);
+      if (/(auto|scroll|overlay)/.test(cs.overflowY) && n.scrollHeight > n.clientHeight + 1) return n;
+    }
+    return null;
+  };
+  const probeOne = (y: number, el: HTMLElement, nested: boolean): void => {
+    if (overlayEl && !overlayEl.contains(el)) return;
+    if (nested) {
+      // Centre it inside every scrollable ancestor, then hit-test where the user would see it.
+      // A fixed element that still covers it after this is a true positive and is reported.
+      el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' as ScrollBehavior });
+    }
+    const r = el.getBoundingClientRect();
+    const x0 = Math.max(r.left, 0);
+    const x1 = Math.min(r.right, vw);
+    const y0 = Math.max(r.top, 0);
+    const y1 = Math.min(r.bottom, vh);
+    if (x1 - x0 <= 1 || y1 - y0 <= 1) return;
+    const vis = ((x1 - x0) * (y1 - y0)) / (r.width * r.height);
+    if (vis < 0.6) return; // mostly off-screen at this scroll position
+    const hit = document.elementFromPoint((x0 + x1) / 2, (y0 + y1) / 2);
+    const cur = rec.get(el) ?? { el, seen: 0, ok: 0, by: '', y };
+    cur.seen++;
+    if (hitOk(el, hit)) cur.ok++;
+    else {
+      cur.by = hit ? sel(hit) : 'unknown';
+      cur.y = y;
+    }
+    rec.set(el, cur);
+  };
   const probe = (y: number) => {
     for (const el of interactive) {
-      if (overlayEl && !overlayEl.contains(el)) continue;
-      const r = el.getBoundingClientRect();
-      const x0 = Math.max(r.left, 0);
-      const x1 = Math.min(r.right, vw);
-      const y0 = Math.max(r.top, 0);
-      const y1 = Math.min(r.bottom, vh);
-      if (x1 - x0 <= 1 || y1 - y0 <= 1) continue;
-      const vis = ((x1 - x0) * (y1 - y0)) / (r.width * r.height);
-      if (vis < 0.6) continue; // mostly off-screen at this scroll position
-      const hit = document.elementFromPoint((x0 + x1) / 2, (y0 + y1) / 2);
-      const cur = rec.get(el) ?? { el, seen: 0, ok: 0, by: '', y };
-      cur.seen++;
-      if (hitOk(el, hit)) cur.ok++;
-      else {
-        cur.by = hit ? sel(hit) : 'unknown';
-        cur.y = y;
-      }
-      rec.set(el, cur);
+      const nested = !!innerScroller(el);
+      probeOne(y, el, nested);
+      // scrollIntoView also moves the page scroller: put it back before the next element's rect is read.
+      if (nested) scrollTo(y);
     }
   };
 

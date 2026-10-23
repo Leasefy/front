@@ -21,7 +21,7 @@ import { useI18n } from '@/lib/i18n'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
-import { SectionLabel } from '@/components/ui/section-label'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 export default function CotizadorConfiguracionPage() {
   const { t } = useI18n()
@@ -31,15 +31,11 @@ export default function CotizadorConfiguracionPage() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa */}
-      <header className="space-y-1.5">
-        <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.cotizador.configuracion.title')}
-        </h1>
-        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-          {t('inmobiliaria.ai.cotizador.configuracion.subtitle')}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.ai.nav.cotizador')}
+        titulo={t('inmobiliaria.ai.cotizador.configuracion.title')}
+        descripcion={t('inmobiliaria.ai.cotizador.configuracion.subtitle')}
+      />
 
       <AutonomiaPanel
         data={data}

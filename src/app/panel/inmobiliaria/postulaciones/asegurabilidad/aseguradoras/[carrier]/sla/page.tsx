@@ -11,7 +11,7 @@
 
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ArrowClockwise, ChartLine } from '@phosphor-icons/react'
+import { ArrowClockwise, ChartLine } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { useCarrierSla } from '@/lib/hooks/cotizador/use-carrier-sla'
 import { CarrierSlaStateCard } from '@/components/inmobiliaria/cotizador/CarrierSlaStateCard'
@@ -23,6 +23,8 @@ import { Button } from '@/components/ui/button'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelAgente } from '../fallo-del-agente'
 import { CrossFade } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
+import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 
 // =============================================================================
 // Component
@@ -96,35 +98,20 @@ export default function CarrierSlaPage() {
     <CrossFade swapKey="sla">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Link
-              href=".."
-              className="inline-flex items-center gap-1 text-caption font-medium text-fg-muted hover:text-fg transition-colors"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              {carrier.toUpperCase()}
-            </Link>
-          </div>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.title')} — {carrier.toUpperCase()}
-          </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.subtitle')}
-          </p>
-        </div>
-
-        <Button
-          variant="outline"
-          size="icon"
-          hideArrow
-          onClick={() => void refetch()}
-          aria-label={t('inmobiliaria.ai.cotizador.aseguradoras.carrier.refresh')}
-        >
-          <ArrowClockwise className="h-4 w-4" />
-        </Button>
-      </header>
+      <div className="space-y-3">
+        <VolverALaLista href=".." label={carrier.toUpperCase()} />
+        <EncabezadoDePantalla
+          seccion={t('inmobiliaria.ai.nav.cotizador')}
+          titulo={`${t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.title')} — ${carrier.toUpperCase()}`}
+          descripcion={t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.subtitle')}
+          acciones={
+            <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()}>
+              <ArrowClockwise className="h-4 w-4" aria-hidden="true" />
+              {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.refresh')}
+            </Button>
+          }
+        />
+      </div>
 
       {/* Fallo con datos ya en pantalla (el sondeo de 60 s tropezó): el cartel
           dice qué pasó y deja lo que ya se veía. Antes decía «…errorLoading: 502»,

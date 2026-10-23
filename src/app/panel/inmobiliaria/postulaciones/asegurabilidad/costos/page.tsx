@@ -23,12 +23,12 @@ import { CostKpiStrip } from '@/components/inmobiliaria/cotizador/CostKpiStrip'
 import { CostSourcePieChart } from '@/components/inmobiliaria/cotizador/CostSourcePieChart'
 import { MonthlyCostTrendChart } from '@/components/inmobiliaria/cotizador/MonthlyCostTrendChart'
 import { Badge } from '@/components/ui/badge'
-import { SectionLabel } from '@/components/ui/section-label'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { CrossFade } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 const COLUMNAS = 3
 
@@ -95,15 +95,11 @@ export default function CostosPage() {
     <CrossFade swapKey="costos">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa */}
-      <header className="space-y-1.5">
-        <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.cotizador.costos.pageTitle')}
-        </h1>
-        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-          {t('inmobiliaria.ai.cotizador.costos.pageSubtitle')}
-        </p>
-      </header>
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.ai.nav.cotizador')}
+        titulo={t('inmobiliaria.ai.cotizador.costos.pageTitle')}
+        descripcion={t('inmobiliaria.ai.cotizador.costos.pageSubtitle')}
+      />
 
       {/* El fallo va ACÁ ARRIBA y reemplaza los datos, no debajo de ellos.
           Estaba al final de la página: se veían los KPI en cero, la tabla

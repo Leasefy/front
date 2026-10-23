@@ -24,9 +24,9 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { CarrierRegistryTable, type MergedCarrierRow } from '@/components/inmobiliaria/cotizador/CarrierRegistryTable'
 import type { OverrideFields } from '@/components/inmobiliaria/cotizador/CarrierOverridePopover'
 import { Button } from '@/components/ui/button'
-import { SectionLabel } from '@/components/ui/section-label'
 import { toast } from '@/components/ui/toast'
 import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 
 // =============================================================================
 // Page
@@ -150,26 +150,16 @@ export default function AseguradorasPage() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa; la única acción de la pantalla, a la derecha. */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1.5">
-          <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cotizador.aseguradoras.title')}
-          </h1>
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-            {t('inmobiliaria.ai.cotizador.aseguradoras.subtitle')}
-          </p>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          hideArrow
-          onClick={() => void refetch()}
-          className="shrink-0"
-        >
-          {t('inmobiliaria.ai.cotizador.aseguradoras.refresh')}
-        </Button>
-      </header>
+      <EncabezadoDePantalla
+        seccion={t('inmobiliaria.ai.nav.cotizador')}
+        titulo={t('inmobiliaria.ai.cotizador.aseguradoras.title')}
+        descripcion={t('inmobiliaria.ai.cotizador.aseguradoras.subtitle')}
+        acciones={
+          <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()}>
+            {t('inmobiliaria.ai.cotizador.aseguradoras.refresh')}
+          </Button>
+        }
+      />
 
       {/* La carga, el fallo y el vacío viven DENTRO de la tabla, como en el
           resto del panel: antes cada uno reemplazaba la página entera y la

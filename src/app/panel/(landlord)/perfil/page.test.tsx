@@ -113,7 +113,7 @@ const escape = () =>
 
 async function abrirYPasarAConfirmar() {
   await renderPage()
-  act(() => { boton(container, 'Eliminar mi cuenta').click() })
+  act(() => { boton(container, 'Eliminar cuenta').click() })
   act(() => { boton(dialogo()!, 'Continuar').click() })
   await vi.waitFor(() => expect(textoDelModal()).toContain('Confirmar eliminación'))
 }
@@ -121,7 +121,7 @@ async function abrirYPasarAConfirmar() {
 describe('Perfil del propietario — el modal de baja', () => {
   it('es un diálogo con nombre y una sola ✕, la de la primitiva', async () => {
     await renderPage()
-    act(() => { boton(container, 'Eliminar mi cuenta').click() })
+    act(() => { boton(container, 'Eliminar cuenta').click() })
 
     const d = dialogo()!
     expect(d).not.toBeNull()
@@ -132,7 +132,7 @@ describe('Perfil del propietario — el modal de baja', () => {
 
   it('no promete borrar lo que el backend no borra: dice qué se pierde y qué no', async () => {
     await renderPage()
-    act(() => { boton(container, 'Eliminar mi cuenta').click() })
+    act(() => { boton(container, 'Eliminar cuenta').click() })
 
     const texto = textoDelModal()
     expect(texto).not.toContain('Se eliminará permanentemente')
@@ -148,7 +148,7 @@ describe('Perfil del propietario — el modal de baja', () => {
 
   it('Escape cierra en el aviso', async () => {
     await renderPage()
-    act(() => { boton(container, 'Eliminar mi cuenta').click() })
+    act(() => { boton(container, 'Eliminar cuenta').click() })
     expect(dialogo()).not.toBeNull()
     escape()
     expect(dialogo()).toBeNull()
@@ -321,6 +321,14 @@ describe('Perfil del propietario — la zona de peligro', () => {
  * 5 pasos completados», y dejaba editar un correo que «Guardar» nunca mandaba.
  */
 describe('Perfil del propietario — sólo lo que es verdad', () => {
+  it('ronda 28: la foto es un renglón de «Información personal», sin «Cambiar foto o nombre» ni los atajos que repetían el menú', async () => {
+    await renderPage()
+    expect(container.querySelector('[data-testid="perfil-foto"]')).not.toBeNull()
+    expect(container.textContent).not.toContain('Cambiar foto o nombre')
+    expect(container.textContent).not.toContain('Mis contratos')
+    expect([...container.querySelectorAll('button')].some((b) => b.textContent?.trim() === 'Cambiar foto')).toBe(true)
+  })
+
   it('no hay insignias «Verificado» ni la fecha inventada', async () => {
     await renderPage()
     const texto = container.textContent ?? ''

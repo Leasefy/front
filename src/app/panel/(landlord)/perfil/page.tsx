@@ -1,14 +1,12 @@
 'use client';
 
-import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
 import { useState, useRef } from 'react';
 import Image from 'next/image';
-import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, Buildings, FileText } from '@phosphor-icons/react';
+import { User, Phone, MapPin, Shield, Camera, FloppyDisk, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, Buildings } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Button, Input } from '@/components/ui';
-import Link from 'next/link';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { ListaParaEmpezar } from '@/components/pantalla/ListaParaEmpezar';
 import {
@@ -44,15 +42,15 @@ import { CampoDeNacimiento } from '@/components/ui/campo-de-nacimiento';
  * errores del back por `firstName`/`lastName` o por las dos partes del
  * contacto caen en ese campo.
  */
-type CampoDeLaPantalla = 'nombre' | 'phone' | 'birthDate' | 'address' | 'emergencia';
+type CampoDeLaPantalla = 'nombre' | 'phone' | 'birthDate' | 'address' | 'emergenciaNombre' | 'emergenciaTelefono';
 const CAMPO_EN_PANTALLA: Partial<Record<CampoPersonal, CampoDeLaPantalla | null>> = {
   firstName: 'nombre',
   lastName: 'nombre',
   phone: 'phone',
   birthDate: 'birthDate',
   address: 'address',
-  emergencyContactName: 'emergencia',
-  emergencyContactPhone: 'emergencia',
+  emergencyContactName: 'emergenciaNombre',
+  emergencyContactPhone: 'emergenciaTelefono',
   rut: null,
 };
 const idDelCampo = (campo: CampoDeLaPantalla) => `perfil-propietario-${campo}`;
@@ -71,9 +69,6 @@ type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 
 export default function PropietarioPerfilPage() {
   const { t, locale } = useI18n();
-  // QA-PROP-95: ¿una inmobiliaria le administra los inmuebles? (mientras carga, sí)
-  const administrados = useContratosAdministrados();
-  const deInmobiliaria = administrados.cargando || administrados.doc !== null || Boolean(administrados.fichaSinContratos);
   const { user, updateProfile } = useAuth();
   const router = useRouter();
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
@@ -130,7 +125,6 @@ export default function PropietarioPerfilPage() {
 
   // Display helpers for the single-field UI (name + emergency contact)
   const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(' ') || (locale === 'es' ? 'Propietario' : 'Landlord');
-  const emergencyContactDisplay = [formData.emergencyContactName, formData.emergencyContactPhone].filter(Boolean).join(' - ');
 
   /*
    * Los pasos del perfil salen de lo que la persona YA guardó (Nico,
@@ -195,17 +189,6 @@ export default function PropietarioPerfilPage() {
     const lastName = parts.join(' ');
     setFormData(prev => ({ ...prev, firstName, lastName }));
     limpiarError('nombre');
-  };
-
-  // Single "Nombre - Teléfono" input → split into name / phone parts
-  const handleEmergencyContactChange = (value: string) => {
-    const [name, ...rest] = value.split(' - ');
-    setFormData(prev => ({
-      ...prev,
-      emergencyContactName: (name ?? '').trim(),
-      emergencyContactPhone: rest.join(' - ').trim(),
-    }));
-    limpiarError('emergencia');
   };
 
   /** Pone los errores en sus campos y le da el foco al primero. */
@@ -375,8 +358,9 @@ export default function PropietarioPerfilPage() {
     }
   };
 
+  // Ronda 28 (revisora r27, CB): sin `min-h-screen`; el fondo lo pone el layout.
   return (
-    <div className="min-h-screen bg-bg">
+    <div>
       <div className="p-6 lg:p-8">
 
         {/* GLOW UP 22-10 (como el perfil del inquilino): el encabezado común y lo que falta del perfil en la lista
@@ -419,147 +403,115 @@ export default function PropietarioPerfilPage() {
           data-testid="perfil-lo-que-falta"
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Profile Card */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="rounded-lg border border-border bg-surface overflow-hidden">
-              {/* Sin la franja azul de adorno ni el lápiz de vidrio (blanco sobre azul claro, casi no se veía). */}
-              <div className="px-6 pb-6 pt-6">
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
-
-                <div className="relative mb-4 w-28">
-                  <div
-                    className={cn("w-28 h-28 rounded-full border-4 border-surface overflow-hidden", editingSection === 'avatar' && "cursor-pointer")}
-                    onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
-                  >
-                    {(editingSection === 'avatar' ? avatarPreview : savedAvatar) ? (
-                      <Image src={(editingSection === 'avatar' ? avatarPreview : savedAvatar)!} alt="Avatar" width={112} height={112} className="w-full h-full object-cover" />
-                    ) : (
-                      // Cadence 2: el Avatar del sistema (iniciales y tono del nombre), nunca a mano.
-                      <Avatar name={fullName || 'Tú'} size="xl" className="size-full text-4xl" />
-                    )}
-                  </div>
-                  {editingSection === 'avatar' && (
-                    <IconButton
-                      variant="solid"
-                      size="sm"
-                      onClick={handleAvatarClick}
-                      aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
-                      className="absolute bottom-1 right-1 bg-ink text-white hover:bg-ink/90"
-                      icon={<Camera className="w-4 h-4" />}
-                    />
-                  )}
-                </div>
-
-                {/* El área de la foto se abre y se cierra con su altura. */}
-                <Collapse open={editingSection === 'avatar'}>
-                  <div
-                    onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleAvatarClick}
-                    className={cn(
-                      "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
-                      isDragging ? "border-primary/30 bg-primary-soft" : "border-border hover:border-primary/30 hover:bg-surface-muted"
-                    )}
-                  >
-                    {avatarPreview ? (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
-                            <Image src={avatarPreview} alt="Preview" width={40} height={40} className="w-full h-full object-cover" />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-sm font-medium text-fg">{locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}</p>
-                            <p className="text-caption text-fg-muted">{locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}</p>
-                          </div>
-                        </div>
-                        <IconButton
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); handleRemoveAvatar(); }}
-                          aria-label={locale === 'es' ? 'Quitar imagen' : 'Remove image'}
-                          className="text-fg-subtle hover:text-danger hover:bg-danger-soft"
-                          icon={<TrashSimple className="w-4 h-4" />}
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        <Upload className="w-6 h-6 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
-                        <p className="text-sm font-medium text-fg-muted">
-                          {isDragging ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here') : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
-                        </p>
-                        <p className="text-caption text-fg-muted mt-1">{locale === 'es' ? 'Arrastra o haz clic - JPG, PNG (máx. 5MB)' : 'Drag or click - JPG, PNG (max 5MB)'}</p>
-                      </>
-                    )}
-                  </div>
-                </Collapse>
-
-                {editingSection === 'avatar' ? (
-                  <Input type="text" value={fullName} onChange={(e) => handleNameChange(e.target.value)} className="text-lg font-medium" />
-                ) : (
-                  <h2 className="text-h3 text-fg">{fullName}</h2>
-                )}
-                {editingSection !== 'avatar' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    hideArrow
-                    onClick={() => { setAvatarPreview(savedAvatar); setEditingSection('avatar'); }}
-                    className="mt-4"
-                    aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
-                  >
-                    <Camera className="w-4 h-4" aria-hidden="true" />
-                    {locale === 'es' ? 'Cambiar foto o nombre' : 'Change photo or name'}
-                  </Button>
-                )}
-                {/* «Propietario desde Enero 2024» era una fecha inventada, igual
-                    para todos (Nico, 02-10-2026): no se muestra. */}
-
-                <Collapse open={editingSection === 'avatar'}>
-                  <div className="flex items-center gap-2 mt-4">
-                    <Button variant="ghost" size="sm" hideArrow onClick={handleCancelEdit} className="flex-1 justify-center">
-                      {locale === 'es' ? 'Cancelar' : 'Cancel'}
-                    </Button>
-                    <Button size="sm" hideArrow onClick={() => handleSave('avatar')} disabled={isSaving} className="flex-1 justify-center gap-2">
-                      {!isSaving && <FloppyDisk className="w-4 h-4" aria-hidden="true" />}
-                      {locale === 'es' ? 'Guardar' : 'Save'}
-                    </Button>
-                  </div>
-                </Collapse>
-
-                {/* Quick Stats — QA-PROP-95: «Propiedades publicadas» y «Contratos
-                    activos» son del propietario independiente (publica y arrienda
-                    él); a quien le administra una inmobiliaria no le dicen nada. */}
-                {!deInmobiliaria && (
-                <div className="mt-6 pt-6 border-t border-border-faint space-y-4">
-                  {/* Antes, dos filas que no decían nada ni llevaban a ningún lado: ahora son los atajos. */}
-                  <Link href="/panel/propiedades" className="flex items-center gap-3 rounded-md hover:bg-surface-muted -mx-2 px-2 py-1.5">
-                    <Buildings className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
-                    <span className="min-w-0">
-                      <span className="block text-sm text-fg">{locale === 'es' ? 'Mis inmuebles' : 'My properties'}</span>
-                      <span className="block text-caption text-fg-muted">{locale === 'es' ? 'Los que publicas y arriendas' : 'The ones you list and rent'}</span>
-                    </span>
-                  </Link>
-                  <Link href="/panel/leases" className="flex items-center gap-3 rounded-md hover:bg-surface-muted -mx-2 px-2 py-1.5">
-                    <FileText className="w-5 h-5 text-fg-muted shrink-0" aria-hidden="true" />
-                    <span className="min-w-0">
-                      <span className="block text-sm text-fg">{locale === 'es' ? 'Mis contratos' : 'My contracts'}</span>
-                      <span className="block text-caption text-fg-muted">{locale === 'es' ? 'Arriendos vigentes' : 'Current leases'}</span>
-                    </span>
-                  </Link>
-                </div>
-                )}
-              </div>
-            </div>
-
-            {/* «Estado de verificación» decía «Verificado» en el correo, el
-                teléfono, la identidad y la propiedad de TODO propietario, sin
-                que nada lo verificara (Nico, 02-10-2026): se quitó. */}
-          </div>
-
+        <div className="space-y-6">
           {/* Profile Form */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6">
             {/* Personal Information — Editar ↔ ver: las acciones y los campos se
                 cruzan (lo nuevo entra ya, lo viejo sale por encima). */}
             <div className="rounded-lg border border-border bg-surface p-6">
+              {/* Ronda 28 (revisora r27): la foto en un renglón dentro de «Información personal», como el perfil
+                  del inquilino. Antes una tarjeta aparte que repetía el nombre, con «Cambiar foto o nombre» (dos
+                  caminos para el nombre: ése no lo guardaba) y los atajos «Mis inmuebles / Mis contratos», que
+                  repetían el menú. El nombre se cambia en «Editar». */}
+              <div className="mb-6 border-b border-border pb-6" data-testid="perfil-foto">
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="relative size-16 shrink-0">
+                    <div
+                      className={cn('size-16 overflow-hidden rounded-full', editingSection === 'avatar' && 'cursor-pointer')}
+                      onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
+                    >
+                      {(editingSection === 'avatar' ? avatarPreview : savedAvatar) ? (
+                        <Image src={(editingSection === 'avatar' ? avatarPreview : savedAvatar)!} alt="Avatar" width={64} height={64} className="h-full w-full object-cover" />
+                      ) : (
+                        // Cadence 2: el Avatar del sistema (iniciales y tono del nombre), nunca a mano.
+                        <Avatar name={fullName || 'Tú'} size="xl" className="size-full" />
+                      )}
+                    </div>
+                    {editingSection === 'avatar' && (
+                      <IconButton
+                        variant="solid"
+                        size="sm"
+                        onClick={handleAvatarClick}
+                        aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
+                        className="absolute -bottom-1 -right-1 bg-ink text-white hover:bg-ink/90"
+                        icon={<Camera className="h-3.5 w-3.5" />}
+                      />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-fg">{locale === 'es' ? 'Foto de perfil' : 'Profile photo'}</p>
+                    <p className="text-caption text-fg-muted">{locale === 'es' ? 'JPG o PNG, hasta 5 MB.' : 'JPG or PNG, up to 5 MB.'}</p>
+                  </div>
+                  {editingSection !== 'avatar' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      hideArrow
+                      onClick={() => { setAvatarPreview(savedAvatar); setEditingSection('avatar'); }}
+                      aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
+                    >
+                      <Camera className="w-4 h-4" aria-hidden="true" />
+                      {locale === 'es' ? 'Cambiar foto' : 'Change photo'}
+                    </Button>
+                  )}
+                </div>
+                <div className="mt-4">
+                  {/* El área de la foto se abre y se cierra con su altura. */}
+                  <Collapse open={editingSection === 'avatar'}>
+                    <div
+                      onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleAvatarClick}
+                      className={cn(
+                        "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
+                        isDragging ? "border-primary/30 bg-primary-soft" : "border-border hover:border-primary/30 hover:bg-surface-muted"
+                      )}
+                    >
+                      {avatarPreview ? (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
+                              <Image src={avatarPreview} alt="Preview" width={40} height={40} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="text-left">
+                              <p className="text-sm font-medium text-fg">{locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}</p>
+                              <p className="text-caption text-fg-muted">{locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}</p>
+                            </div>
+                          </div>
+                          <IconButton
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); handleRemoveAvatar(); }}
+                            aria-label={locale === 'es' ? 'Quitar imagen' : 'Remove image'}
+                            className="text-fg-subtle hover:text-danger hover:bg-danger-soft"
+                            icon={<TrashSimple className="w-4 h-4" />}
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="w-6 h-6 text-fg-subtle shrink-0 mx-auto" aria-hidden="true" />
+                          <p className="text-sm font-medium text-fg-muted">
+                            {isDragging ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here') : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
+                          </p>
+                          <p className="text-caption text-fg-muted mt-1">{locale === 'es' ? 'Arrastra o haz clic - JPG, PNG (máx. 5MB)' : 'Drag or click - JPG, PNG (max 5MB)'}</p>
+                        </>
+                      )}
+                    </div>
+                  </Collapse>
+
+                  <Collapse open={editingSection === 'avatar'}>
+                    <div className="flex items-center gap-2 mt-4">
+                      <Button variant="ghost" size="sm" hideArrow onClick={handleCancelEdit} className="flex-1 justify-center">
+                        {locale === 'es' ? 'Cancelar' : 'Cancel'}
+                      </Button>
+                      <Button size="sm" hideArrow onClick={() => handleSave('avatar')} disabled={isSaving} className="flex-1 justify-center gap-2">
+                        {!isSaving && <FloppyDisk className="w-4 h-4" aria-hidden="true" />}
+                        {locale === 'es' ? 'Guardar' : 'Save'}
+                      </Button>
+                    </div>
+                  </Collapse>
+
+                </div>
+              </div>
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-h3 text-fg">
                   {locale === 'es' ? 'Información personal' : 'Personal information'}
@@ -596,19 +548,13 @@ export default function PropietarioPerfilPage() {
                       {errorDelCampo('nombre')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <User className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{fullName}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{fullName}</p>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Documento' : t('landlordProfile.fields.cedula')}</label>
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                    <Shield className="w-4 h-4 text-fg-subtle" />
-                    <span className="text-sm text-fg">{formData.rut || notSet}</span>
-                  </div>
+                  <p className="py-1 text-sm text-fg">{formData.rut || notSet}</p>
                 </div>
 
                 {/* El correo sólo se lee: «Guardar» no lo manda (`PATCH /users/me`
@@ -616,10 +562,7 @@ export default function PropietarioPerfilPage() {
                     se vaciaba al guardar (Nico, 02-10-2026). */}
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Correo' : 'Email'}</label>
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                    <Envelope className="w-4 h-4 text-fg-subtle" />
-                    <span className="text-sm text-fg">{formData.email || notSet}</span>
-                  </div>
+                  <p className="py-1 text-sm text-fg">{formData.email || notSet}</p>
                 </div>
 
                 <div>
@@ -630,10 +573,7 @@ export default function PropietarioPerfilPage() {
                       {errorDelCampo('phone')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <Phone className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{formData.phone || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{formData.phone || notSet}</p>
                   )}
                 </div>
 
@@ -650,29 +590,23 @@ export default function PropietarioPerfilPage() {
                       {errorDelCampo('birthDate')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <Calendar className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">
+                    <p className="py-1 text-sm text-fg">
                         {formData.birthDate
                           ? new Date(formData.birthDate.slice(0, 10) + 'T00:00:00').toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })
                           : notSet}
-                      </span>
-                    </div>
+                      </p>
                   )}
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Dirección' : 'Address'}</label>
+                  <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Dirección actual' : 'Current address'}</label>
                   {editingSection === 'personal' ? (
                     <>
                       <Input type="text" {...propsDelCampo('address')} value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
                       {errorDelCampo('address')}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                      <MapPin className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{formData.address || notSet}</span>
-                    </div>
+                    <p className="py-1 text-sm text-fg">{formData.address || notSet}</p>
                   )}
                 </div>
               </CrossFade>
@@ -701,23 +635,40 @@ export default function PropietarioPerfilPage() {
                 )}
                 </CrossFade>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Nombre y teléfono' : 'Name and phone'}</label>
-                <CrossFade swapKey={editingSection === 'emergency' ? 'editar' : 'ver'} mode="popLayout">
-                {editingSection === 'emergency' ? (
-                  <>
-                    <Input type="text" {...propsDelCampo('emergencia')} value={emergencyContactDisplay} onChange={(e) => handleEmergencyContactChange(e.target.value)}
-                      placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'} />
-                    {errorDelCampo('emergencia')}
-                  </>
-                ) : (
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
-                    <UserPlus className="w-4 h-4 text-fg-subtle" />
-                    <span className="text-sm text-fg">{emergencyContactDisplay || notSet}</span>
-                  </div>
-                )}
-                </CrossFade>
-              </div>
+              {/* Ronda 28 (revisora r27): dos campos, Nombre y Teléfono, como el perfil del inquilino (antes UNO,
+                  «Nombre - Teléfono», que había que escribir con el guion). */}
+              <CrossFade
+                swapKey={editingSection === 'emergency' ? 'editar' : 'ver'}
+                mode="popLayout"
+                className="grid grid-cols-1 gap-6 md:grid-cols-2"
+              >
+                <div>
+                  <label htmlFor={idDelCampo('emergenciaNombre')} className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Nombre' : 'Name'}</label>
+                  {editingSection === 'emergency' ? (
+                    <>
+                      <Input type="text" {...propsDelCampo('emergenciaNombre')} value={formData.emergencyContactName}
+                        onChange={(e) => { setFormData((prev) => ({ ...prev, emergencyContactName: e.target.value })); limpiarError('emergenciaNombre'); }}
+                        placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'} />
+                      {errorDelCampo('emergenciaNombre')}
+                    </>
+                  ) : (
+                    <p className="py-1 text-sm text-fg">{formData.emergencyContactName || notSet}</p>
+                  )}
+                </div>
+                <div>
+                  <label htmlFor={idDelCampo('emergenciaTelefono')} className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Teléfono' : 'Phone'}</label>
+                  {editingSection === 'emergency' ? (
+                    <>
+                      <Input type="tel" {...propsDelCampo('emergenciaTelefono')} value={formData.emergencyContactPhone}
+                        onChange={(e) => { setFormData((prev) => ({ ...prev, emergencyContactPhone: e.target.value })); limpiarError('emergenciaTelefono'); }}
+                        placeholder="3001234567" />
+                      {errorDelCampo('emergenciaTelefono')}
+                    </>
+                  ) : (
+                    <p className="py-1 font-mono text-sm text-fg tabular-nums">{formData.emergencyContactPhone || notSet}</p>
+                  )}
+                </div>
+              </CrossFade>
             </div>
 
             {/* Danger Zone */}
@@ -737,7 +688,7 @@ export default function PropietarioPerfilPage() {
                 onClick={handleOpenDeleteModal}
                 className="rounded-full border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
               >
-                {locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account'}
+                {locale === 'es' ? 'Eliminar cuenta' : 'Delete account'}
               </Button>
             </div>
           </div>

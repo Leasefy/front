@@ -186,7 +186,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
             : '/panel/upgrade'
         }
         upgradeLabel={propietarioGratis ? 'Que Leasefy lo administre' : 'Mejorar Plan'}
-        profileCompletion={user && !perfilCompleto ? {
+        // Ronda 28 (revisora r27): en Mi perfil no sale: ahí la misma lista ya dice lo que falta (eran dos).
+        profileCompletion={user && !perfilCompleto && pathname !== '/panel/perfil' ? {
           percentage,
           // Los pasos son los del perfil: ahí se completan.
           href: '/panel/perfil',

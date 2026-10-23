@@ -64,7 +64,8 @@ describe('el inicio del inquilino con contrato migrado (CA-04)', () => {
     // Nada de «Propiedades para ti» ni de buscar: sus accesos son los de quien arrienda.
     expect(host.textContent).not.toContain('Inmuebles para ti');
     expect(host.querySelector('a[href="/inquilino/explorar"]')).toBeNull();
-    expect(host.querySelector('a[href="/inquilino/pagos"]')?.textContent).toContain('Pagar mi arriendo');
+    // Glow up 22-10: la salida a sus pagos va en «Tu arriendo» (los atajos ya no repiten el riel).
+    expect(host.querySelector('[data-testid="tu-arriendo-sin-documento"] a[href="/inquilino/pagos"]')?.textContent).toContain('Ver mis pagos');
     expect(host.querySelector('a[href="/inquilino/solicitudes?nueva=1"]')?.textContent).toContain('Reportar un daño');
   });
   it('sin contratos ni arriendos sigue siendo el inicio de quien llega', () => {

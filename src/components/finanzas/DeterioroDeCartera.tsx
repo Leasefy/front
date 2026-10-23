@@ -332,6 +332,15 @@ export function DeterioroDeCarteraPanel() {
               // C3 (revisora r25): sin provisión antes ni ahora, UNA línea y no tres cifras en cero.
               // Revisora r25 (Deterioro #2): esa línea lo dice todo (antes, además, «No hay asiento que hacer…»).
               esCero={enCero}
+              // Ronda 30 (revisora r27): la cifra con su barra —la provisión de antes y lo que el mes le suma
+              // (o le libera)—, sobre la provisión más alta de las dos.
+              total={Math.max(provisionCop, anteriorCop)}
+              tramos={[
+                { clave: 'anterior', etiqueta: 'Provisión anterior', monto: Math.min(anteriorCop, provisionCop), tono: 'neutro', cifra: formatCurrency(anteriorCop), siempre: true },
+                movimiento >= 0
+                  ? { clave: 'suma', etiqueta: 'Lo que se suma este mes', monto: movimiento, tono: 'aviso', cifra: formatCurrency(movimiento) }
+                  : { clave: 'libera', etiqueta: 'Lo que se libera este mes', monto: -movimiento, tono: 'exito', cifra: formatCurrency(-movimiento) },
+              ]}
               cuandoEsCero={
                 <>
                   Nada que asentar este mes: la provisión sigue en{' '}

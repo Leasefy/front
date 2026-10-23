@@ -147,7 +147,7 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-4">
         <div className="flex items-center gap-2">
           <Receipt className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-base font-semibold text-foreground">Cobros</h3>
+          <h3 className="text-base font-medium text-foreground">Cobros</h3>
           {cobros && cobros.length > 0 ? (
             <span className="text-sm text-muted-foreground" data-testid="cobros-resumen">
               · {resumen.total} {resumen.total === 1 ? 'período' : 'períodos'}

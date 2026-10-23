@@ -186,7 +186,7 @@ export function CondicionesDelContrato({ contractId, puedeEditar }: { contractId
 
   return (
     <section className="space-y-5 rounded-lg border border-border bg-card p-5" data-testid="condiciones-del-contrato">
-      <h3 className="text-base font-semibold">Condiciones del contrato</h3>
+      <h3 className="text-base font-medium">Condiciones del contrato</h3>
       <GastosDeCobranza datos={datos} editable={puedeEditar && !ocupado} onCambiar={(pacta) =>
         void hacer(
           () => cicloDeVidaApi.fijarGastosDeCobranza(contractId, pacta),

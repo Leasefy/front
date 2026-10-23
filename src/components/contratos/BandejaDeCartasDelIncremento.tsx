@@ -196,7 +196,7 @@ function Loseta({
         grita ? 'bg-destructive/5 text-destructive' : cuantas === 0 ? 'text-fg-subtle' : 'text-fg'
       }`}
     >
-      <span className={`font-mono tabular-nums ${grita ? 'font-semibold' : ''}`}>{cuantas}</span>
+      <span className={`font-mono tabular-nums ${grita ? 'font-medium' : ''}`}>{cuantas}</span>
       <span>{rotulo}</span>
     </Link>
   );

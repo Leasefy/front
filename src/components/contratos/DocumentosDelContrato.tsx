@@ -151,7 +151,7 @@ export function DocumentosDelContrato({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Paperclip className="h-4 w-4 text-muted-foreground" aria-hidden />
-          <h4 className="text-sm font-semibold text-foreground">Documentos subidos</h4>
+          <h4 className="text-sm font-medium text-foreground">Documentos subidos</h4>
           {documentos.length > 0 && (
             <span className="font-mono text-caption text-muted-foreground">{documentos.length}</span>
           )}

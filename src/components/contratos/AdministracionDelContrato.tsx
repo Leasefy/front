@@ -304,7 +304,7 @@ export function AdministracionDelContrato({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Receipt className="w-4 h-4 text-muted-foreground" />
-          <h3 className="text-base font-semibold text-foreground">Cómo se cobra</h3>
+          <h3 className="text-base font-medium text-foreground">Cómo se cobra</h3>
         </div>
         {puedeEditar ? (
           <Button variant="ghost" size="sm" hideArrow onClick={() => setEditando(true)}>
@@ -476,7 +476,7 @@ export function AdministracionDelContrato({
         fila. Lo que falta se dice en UNA línea abajo, no en cuatro chips.
       */}
       <div className="space-y-2 border-t border-border pt-3" data-testid="impuestos">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="text-caption font-medium uppercase tracking-wide text-muted-foreground">
           Impuestos
         </p>
         <Fila etiqueta="IVA sobre el canon" valor={ivaDelCanon.valor} ausente={ivaDelCanon.ausente} />
@@ -552,7 +552,7 @@ export function AdministracionDelContrato({
 
           <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2" ref={formulario}>
             <fieldset className="space-y-3">
-              <legend className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <legend className="mb-2 text-caption font-medium uppercase tracking-wide text-muted-foreground">
                 Cobro
               </legend>
               <div className="space-y-1">
@@ -741,7 +741,7 @@ export function AdministracionDelContrato({
             </fieldset>
 
             <fieldset className="space-y-3">
-              <legend className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <legend className="mb-2 text-caption font-medium uppercase tracking-wide text-muted-foreground">
                 Impuestos
               </legend>
               <SelectorTernario

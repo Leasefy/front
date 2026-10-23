@@ -109,7 +109,7 @@ export function ArmarContratoDesdePlantilla({ modo, estado, arrendatario }: Prop
       data-testid="armar-contrato-desde-plantilla"
     >
       <div>
-        <h2 className="text-base font-semibold text-fg">
+        <h2 className="text-base font-medium text-fg">
           {conIa ? 'Describe el acuerdo' : 'Contrato desde la plantilla'}
         </h2>
         <p className="text-caption text-fg-muted mt-0.5">

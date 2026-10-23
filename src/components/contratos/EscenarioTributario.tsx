@@ -95,7 +95,7 @@ export function EscenarioTributario({
     >
       <div className="flex items-center gap-2">
         <Scales className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-base font-semibold text-foreground">
+        <h3 className="text-base font-medium text-foreground">
           Escenario tributario
         </h3>
       </div>
@@ -182,7 +182,7 @@ function Contenido({
     <>
       <div className="space-y-1">
         <p
-          className="text-sm font-semibold text-foreground"
+          className="text-sm font-medium text-foreground"
           data-testid="escenario-nombre"
         >
           {sinDefinir ? escenario.nombre : `${etiqueta(escenario.codigo)} · ${escenario.nombre}`}

@@ -144,7 +144,7 @@ export function RepartoDeLaFactura({ contractId, inquilinos, puedeEditar, onList
   return (
     <div className="space-y-2 border-t border-border pt-3" data-testid="reparto-de-la-factura">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="text-caption font-medium uppercase tracking-wide text-muted-foreground">
           Reparto de la factura
         </p>
         {puedeEditar && !editando ? (

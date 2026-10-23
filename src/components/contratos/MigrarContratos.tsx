@@ -3348,7 +3348,7 @@ function Dato({
     <div className="rounded-lg border border-border p-3">
       <p className="text-caption text-muted-foreground">{etiqueta}</p>
       <p
-        className={`text-xl font-semibold tabular-nums ${
+        className={`text-xl font-medium tabular-nums ${
           tono === "ok" && valor > 0
             ? "text-success"
             : tono === "mal" && valor > 0

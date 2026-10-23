@@ -305,7 +305,7 @@ function Fila({
       <dt className={atenuado ? 'text-muted-foreground' : 'text-foreground/80'}>{etiqueta}</dt>
       <dd
         className={`shrink-0 tabular-nums ${
-          fuerte ? 'text-base font-semibold text-foreground' : 'text-foreground'
+          fuerte ? 'text-base font-medium text-foreground' : 'text-foreground'
         }`}
         data-testid={testId}
       >

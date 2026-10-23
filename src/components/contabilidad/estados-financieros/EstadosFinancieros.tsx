@@ -696,18 +696,21 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
         </p>
       ) : null}
 
+      {/* Ronda 30 (revisora r27): una línea que dice para qué es, no un botón suelto al pie, a la derecha. */}
       {!cargando && informeActual ? (
-        <div className="flex justify-end">
+        <p className="flex flex-wrap items-center gap-x-1 text-caption text-fg-muted">
+          ¿Asentaste algo después de abrir el informe?
           <Button
-            variant="ghost"
+            variant="link"
             size="sm"
             hideArrow
+            className="h-auto px-0 text-caption"
             onClick={cargar}
             data-testid="recargar-informe"
           >
             Volver a calcular
           </Button>
-        </div>
+        </p>
       ) : null}
     </div>
   );

@@ -107,17 +107,25 @@ export function ProvisionesDeNominaPanel() {
                   className="min-w-0 flex-1"
                   data-testid="cifra-de-provisiones"
                 />
-                {/* Sin nada provisionado, el pago no es lo que sigue: sale en borde, no en azul (se puede igual). */}
-                <Button
-                  size="sm"
-                  hideArrow
-                  variant={provisiones.totalVivoCop === 0 ? 'outline' : 'default'}
-                  className="max-sm:w-full"
-                  onClick={() => setPagando(true)}
-                  data-testid="registrar-pago"
-                >
-                  Registrar el pago de una prestación
-                </Button>
+                {/* Nico (23-10, ronda 30): sin nada provisionado, el pago se APAGA con su razón (antes se podía
+                    registrar un pago contra una provisión que no existe). */}
+                <div className="flex flex-col items-start gap-1 max-sm:w-full">
+                  <Button
+                    size="sm"
+                    hideArrow
+                    className="max-sm:w-full"
+                    disabled={provisiones.totalVivoCop === 0}
+                    onClick={() => setPagando(true)}
+                    data-testid="registrar-pago"
+                  >
+                    Registrar el pago de una prestación
+                  </Button>
+                  {provisiones.totalVivoCop === 0 ? (
+                    <span className="text-caption text-fg-muted" data-testid="registrar-pago-motivo">
+                      No hay prestaciones provisionadas: se provisionan al aprobar un período en Liquidación.
+                    </span>
+                  ) : null}
+                </div>
               </div>
               {/* C3: sin ninguna provisión, las cuatro celdas decían «— · Sin provisiones todavía»: fuera. */}
               {provisiones.porTipo.length > 0 ? (

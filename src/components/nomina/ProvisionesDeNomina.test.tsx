@@ -58,8 +58,9 @@ beforeEach(() => {
     disponible: true,
     motivo: null,
     porTipo: [],
-    porPersona: [{ personaId: 'p-1', nombre: 'Ana Gómez', documento: '123', porTipo: {}, vivoCop: 0 }],
-    totalVivoCop: 0,
+    // Ronda 30 (Nico): sin provisión el pago se apaga; las pruebas de registrar parten de una provisión viva.
+    porPersona: [{ personaId: 'p-1', nombre: 'Ana Gómez', documento: '123', porTipo: {}, vivoCop: 1_000_000 }],
+    totalVivoCop: 1_000_000,
   });
   h.catalogo.mockReset().mockResolvedValue({ tipos: [] });
   h.registrar.mockReset();

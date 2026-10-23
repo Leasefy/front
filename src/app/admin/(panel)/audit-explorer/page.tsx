@@ -43,6 +43,19 @@ const ACTOR: Record<string, string> = {
 // ── Screen ─────────────────────────────────────────────────────────────────
 
 /** /audit-explorer — audit_log search for SIC / SAGRILAFT audits (FRONT.md §6.24 · BACK.md §8.14). */
+function resumenDeLosDatos(datos: unknown): string {
+  if (!datos || typeof datos !== 'object') return '—'
+  const simples = Object.entries(datos as Record<string, unknown>).filter(
+    ([, v]) => v != null && ['string', 'number', 'boolean'].includes(typeof v),
+  )
+  if (simples.length === 0) return 'Datos sin resumen (en el Excel)'
+  const texto = simples
+    .slice(0, 2)
+    .map(([k, v]) => `${legible(k)}: ${typeof v === 'boolean' ? (v ? 'sí' : 'no') : String(v)}`)
+    .join(' · ')
+  return simples.length > 2 ? `${texto} · y ${simples.length - 2} más` : texto
+}
+
 export default function AuditExplorerPage() {
   const [abierta, setAbierta] = useState<AuditLogRow | null>(null)
   const { get, page, setFilters, setPage } = useUrlFilters()
@@ -86,7 +99,6 @@ export default function AuditExplorerPage() {
       cell: (r) => (
         <div className="min-w-0">
           <div className="text-body-sm text-fg">{accionDelAdmin(r.action)}</div>
-          <code className="font-mono text-caption text-fg-subtle">{r.action}</code>
         </div>
       ),
     },
@@ -94,10 +106,7 @@ export default function AuditExplorerPage() {
       header: 'Sobre qué',
       texto: (r) => [r.entity_type ? legible(r.entity_type) : '', r.entity_id ?? ''].filter(Boolean).join(' · '),
       cell: (r) => (
-        <div className="font-mono text-caption text-fg-subtle">
-          <div>{r.entity_type ? legible(r.entity_type) : '—'}</div>
-          <div>{r.entity_id ? `${r.entity_id.slice(0, 8)}…` : '—'}</div>
-        </div>
+        <span className="text-caption text-fg-muted">{r.entity_type ? legible(r.entity_type) : '—'}</span>
       ),
     },
     {
@@ -108,14 +117,8 @@ export default function AuditExplorerPage() {
     {
       header: 'Datos',
       texto: (r) => (r.payload ? JSON.stringify(r.payload) : ''),
-      cell: (r) => {
-        const full = r.payload ? JSON.stringify(r.payload) : null
-        return (
-          <span className="block max-w-[280px] truncate font-mono text-caption text-fg-muted" title={full ?? undefined}>
-            {full ? full.slice(0, 100) : '—'}
-          </span>
-        )
-      },
+      // Glow up 22-10: en palabras en la fila; el JSON completo va al Excel.
+      cell: (r) => <span className="block max-w-[280px] truncate text-caption text-fg-muted">{resumenDeLosDatos(r.payload)}</span>,
     },
   ]
 
@@ -123,7 +126,7 @@ export default function AuditExplorerPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Buscar en auditoría"
-        description="La bitácora completa (audit_log), que nunca se borra, para las auditorías de la SIC y SAGRILAFT."
+        description="La bitácora completa, que nunca se borra, para las auditorías de la SIC y SAGRILAFT."
       />
 
       <DataTable
@@ -148,6 +151,7 @@ export default function AuditExplorerPage() {
         }
         masEnElExcel={[
           { header: 'Código de la acción', texto: (r) => r.action },
+          { header: 'Id de lo afectado', texto: (r) => r.entity_id ?? '' },
           { header: 'Id', texto: (r) => r.id },
         ]}
         barra={

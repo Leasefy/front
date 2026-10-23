@@ -797,7 +797,6 @@ function TablaDeFacturas({
     () => visibles.filter(sePuedeEmitirHoy).map((f) => f.clave),
     [visibles],
   )
-  const sinConfirmar = filas.filter((f) => f.impuestosSinConfirmar).length
   const ivaDelMes = filas.reduce((s, f) => s + f.ivaCop, 0)
   const retencionesDelMes = filas.reduce((s, f) => s + f.retencionesCop, 0)
   // Revisora r24 (Facturación #2): sin ninguna que se pueda emitir, sin casillas (aparecen con la primera).
@@ -883,7 +882,7 @@ function TablaDeFacturas({
             </span>
           </p>
           {/* Revisora r24 (Facturación #4): IVA y retenciones sólo cuando hay; en cero no dicen nada. */}
-          {ivaDelMes > 0 || retencionesDelMes > 0 || sinConfirmar > 0 ? (
+          {ivaDelMes > 0 || retencionesDelMes > 0 ? (
             <p className="whitespace-nowrap">
               {[
                 ivaDelMes > 0 ? (
@@ -896,7 +895,8 @@ function TablaDeFacturas({
                     retenciones <span className="font-mono tabular-nums">{formatCurrency(retencionesDelMes)}</span>
                   </span>
                 ) : null,
-                sinConfirmar > 0 ? <span key="sc">{sinConfirmar} sin confirmar</span> : null,
+                // Revisora r25 (Facturación #1): «N sin confirmar» ya no va aquí: lo dice el aviso de abajo,
+                // con su filtro, y cada fila.
               ]
                 .filter(Boolean)
                 .map((x, i) => (

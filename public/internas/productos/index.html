@@ -477,7 +477,7 @@ section{position:relative;overflow-x:clip}
 
 <header class="hdr" id="hdr">
   <div class="wrap">
-    <a href="/#inicio" class="logo" aria-label="Leasefy, inicio"><svg viewBox="0 0 947 235" aria-hidden="true"><use href="#lfLogo"/></svg></a>
+    <a href="/" class="logo" aria-label="Leasefy, inicio"><svg viewBox="0 0 947 235" aria-hidden="true"><use href="#lfLogo"/></svg></a>
     <nav class="nav" aria-label="Principal">
       <a href="/propiedades"><i aria-hidden="true"></i>Marketplace</a>
       <div class="pm" id="pm">
@@ -507,6 +507,9 @@ section{position:relative;overflow-x:clip}
     <button class="mbtn" id="mbtn" aria-expanded="false" aria-controls="menu">Menú</button>
   </div>
 </header>
+<!-- Lo que el script de productos todavía busca de su barra vieja: la barra ahora es la de la home (Nico 23-10). -->
+<div hidden aria-hidden="true"><button type="button" id="despBtn" tabindex="-1"></button><div id="despProd"></div><div id="menuSub"></div><span id="reloj"></span><span id="relojDia"></span></div>
+
 <div class="menu" id="menu" aria-label="Menú" data-lenis-prevent>
   <a class="it" href="/propiedades"><span>01</span>Marketplace</a>
   <button type="button" class="it pm-m-btn" id="pmMBtn" aria-expanded="false" aria-controls="pmM"><span>02</span>Producto<svg class="ic" aria-hidden="true"><use href="#i-down"/></svg></button>
@@ -548,6 +551,6 @@ section{position:relative;overflow-x:clip}
 <script src="/internas/productos/js/03-corriente.js"></script>
 <script src="/internas/productos/js/04-vistas.js"></script>
 <script src="/internas/productos/js/05-marca-del-pie.js"></script>
-<script src="/landing/js/08-mega-menu.js" defer></script>
+<script src="/internas/productos/js/99-mega-menu.js"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@ import { Wallet } from '@phosphor-icons/react'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
-import { fmtDateTime } from '@/lib/admin/format'
+import { fmtDateTime, fmtFecha } from '@/lib/admin/format'
 import { ETAPA, ETAPAS_DE_CARTERA, motivoDeEtapa, type EtapaDeCartera as CarteraStage } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
@@ -99,6 +99,8 @@ export default function CarteraPage() {
   })
 
   const total = buckets.reduce((sum, b) => sum + b.n, 0)
+  const conCasos = buckets.filter((b) => b.n > 0)
+  const sinCasos = buckets.filter((b) => b.n === 0)
 
   const tracked = data ? parseInt(data.totals.tracked, 10) : 0
   const allDebtors = data ? parseInt(data.totals.total, 10) : 0
@@ -110,21 +112,24 @@ export default function CarteraPage() {
       orden: (r) => r.transitioned_at,
       ordenPrimero: 'desc',
       texto: (r) => fmtDateTime(r.transitioned_at),
+      // Ronda 26 (revisora r25): la tabla no cabía a 1440; la hora no decide nada aquí (va al Excel).
       cell: (r) => (
-        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.transitioned_at)}</span>
+        <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted" title={fmtDateTime(r.transitioned_at)}>
+          {fmtFecha(r.transitioned_at)}
+        </span>
       ),
     },
     {
       header: 'Deudor',
       orden: (r) => r.debtor_name,
       texto: (r) => r.debtor_name,
-      cell: (r) => <span className="block max-w-[200px] truncate font-medium">{r.debtor_name ?? '—'}</span>,
+      cell: (r) => <span className="block max-w-[180px] truncate text-body-sm font-medium text-fg">{r.debtor_name ?? '—'}</span>,
     },
     {
       header: 'Inmobiliaria',
       orden: (r) => r.legal_name,
       texto: (r) => r.legal_name,
-      cell: (r) => <span className="block max-w-[180px] truncate text-fg-muted">{r.legal_name ?? '—'}</span>,
+      cell: (r) => <span className="block max-w-[160px] truncate text-body-sm text-fg-muted">{r.legal_name ?? '—'}</span>,
     },
     {
       header: 'Cambio de etapa',
@@ -135,13 +140,17 @@ export default function CarteraPage() {
     {
       header: 'Motivo',
       texto: (r) => motivoDeEtapa(r.reason),
-      cell: (r) => <span className="block max-w-[260px] truncate text-fg-muted">{motivoDeEtapa(r.reason)}</span>,
+      cell: (r) => (
+        <span className="block max-w-[200px] truncate text-body-sm text-fg-muted" title={motivoDeEtapa(r.reason)}>
+          {motivoDeEtapa(r.reason)}
+        </span>
+      ),
     },
   ]
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <PageHeader title="Cartera" description="Los deudores de todas las inmobiliarias, por etapa de cobro. Toca una etapa para ver sus deudores." />
+      <PageHeader title="Cartera" description="Los deudores de todas las inmobiliarias, por etapa de cobro." />
 
       {/* Glow up 22-10: LA RESPUESTA (cuántos deudores hay en cobro y en qué etapa) en una cifra con la barra por
           etapa; cada etapa abre su lista. Antes, 7 tarjetas del mismo peso con el código (S0…SX) arriba y la misma
@@ -150,13 +159,14 @@ export default function CarteraPage() {
         <CifraHeroe
           rotulo="Deudores en cobro"
           cifra={total.toLocaleString('es-CO')}
-          contexto={untracked > 0 ? `${untracked.toLocaleString('es-CO')} todavía sin etapa` : 'todos con su etapa'}
-          tramos={buckets.map((b) => ({
+          contexto={untracked > 0 ? `${untracked.toLocaleString('es-CO')} todavía sin etapa` : undefined}
+          // Ronda 26 (revisora r25): sólo las etapas con casos (antes las 7, casi todas en cero, cada una con su
+          // pista); las vacías se nombran en una línea al pie.
+          tramos={conCasos.map((b) => ({
             clave: b.stage,
             etiqueta: ETAPA[b.stage].nombre,
             monto: b.n,
             tono: TONO_DEL_TRAMO[ETAPA[b.stage].tono],
-            siempre: true,
             cifra: (
               <Link
                 href={`/admin/cartera/${b.stage}`}
@@ -176,6 +186,13 @@ export default function CarteraPage() {
               ),
           }))}
           total={total}
+          pie={
+            sinCasos.length > 0 && conCasos.length > 0
+              ? `Sin casos en ${sinCasos.length === 1 ? 'la etapa' : `${sinCasos.length} etapas`}: ${sinCasos
+                  .map((b) => ETAPA[b.stage].nombre.toLowerCase())
+                  .join(', ')}.`
+              : undefined
+          }
           data-testid="cartera-por-etapa"
         />
       </div>

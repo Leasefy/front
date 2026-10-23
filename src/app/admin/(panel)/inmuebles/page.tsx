@@ -60,7 +60,7 @@ export default function InmueblesPage() {
       cell: (r) => <span className="font-mono text-caption tabular-nums text-fg">{r.code}</span>,
     },
     {
-      header: '# inmobiliaria',
+      header: 'N.º en la inmobiliaria',
       texto: (r) => r.externalId,
       cell: (r) => <span className="font-mono text-caption tabular-nums text-fg-muted">{r.externalId ?? '—'}</span>,
     },
@@ -128,7 +128,8 @@ export default function InmueblesPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="Inmuebles"
-        description="Cuántas veces se arrendó cada inmueble, cuánto estuvo desocupado y qué se le reparó. Interno de Leasefy: la inmobiliaria no ve esta pantalla. Toca uno para ver su historia."
+        description="Cuántas veces se arrendó cada inmueble, cuánto estuvo desocupado y qué se le reparó. Toca uno para ver su historia."
+        junto={<Pill tone="neutral">Interno de Leasefy</Pill>}
       />
 
       <DataTable

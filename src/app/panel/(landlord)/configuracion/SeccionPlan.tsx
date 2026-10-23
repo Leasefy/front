@@ -9,7 +9,7 @@
  */
 
 import { useRouter } from 'next/navigation';
-import { ArrowUpRight, Crown, FileText, House } from '@phosphor-icons/react';
+import { Crown, FileText, House } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
@@ -52,23 +52,22 @@ export function SeccionPlan() {
         {planId !== 'flex' && (
           <Button size="sm" hideArrow onClick={() => router.push('/panel/upgrade')} data-testid="mejorar-plan">
             {t('landlordSettings.subscription.upgradePlan')}
-            <ArrowUpRight className="h-4 w-4" />
           </Button>
         )}
       </FilaDeAjuste>
       <FilaDeAjuste
         icono={House}
         titulo={t('landlordSettings.subscription.properties')}
-        descripcion={es ? 'Cuántas puedes publicar con tu plan' : 'How many you can list on your plan'}
+        descripcion={es ? 'Cuántos puedes publicar con tu plan' : 'How many you can list on your plan'}
       >
-        <span className="text-sm font-semibold tabular-nums text-fg">{limite('property_listing')}</span>
+        <span className="font-mono text-sm tabular-nums text-fg">{limite('property_listing')}</span>
       </FilaDeAjuste>
       <FilaDeAjuste
         icono={FileText}
         titulo={t('landlordSettings.subscription.contracts')}
         descripcion={es ? 'Cuántos puedes tener activos con tu plan' : 'How many you can have active on your plan'}
       >
-        <span className="text-sm font-semibold tabular-nums text-fg">{limite('unlimited_contracts')}</span>
+        <span className="font-mono text-sm tabular-nums text-fg">{limite('unlimited_contracts')}</span>
       </FilaDeAjuste>
     </TarjetaDeAjustes>
   );

@@ -160,7 +160,7 @@ describe('MfaSetupSection — «Desactivar»', () => {
     await montar(<MfaSetupSection />)
 
     await clic('Desactivar')
-    await clic('Desactivar 2FA')
+    await clic('Desactivar el segundo factor')
 
     expect(sdk.challenge).not.toHaveBeenCalled()
     expect(borrados()).toHaveLength(1)
@@ -178,7 +178,7 @@ describe('MfaSetupSection — «Desactivar»', () => {
     await montar(<MfaSetupSection />)
 
     await clic('Desactivar')
-    await clic('Desactivar 2FA')
+    await clic('Desactivar el segundo factor')
 
     const error = avisos.find((a) => a.tipo === 'error')
     expect(error?.texto).toBeDefined()

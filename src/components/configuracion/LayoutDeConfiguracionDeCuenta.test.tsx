@@ -65,7 +65,9 @@ describe('Configuración del inquilino', () => {
       '/inquilino/configuracion/datos',
       '/inquilino/configuracion/eliminar-cuenta',
     ])
+    // «Tu cuenta» es el sobretítulo (se abre desde el avatar); el grupo, «General».
     expect(container.textContent).toContain('Tu cuenta')
+    expect(container.textContent).toContain('General')
     expect(container.textContent).toContain('Privacidad')
     expect(container.querySelector('[data-testid="contenido"]')).not.toBeNull()
   })

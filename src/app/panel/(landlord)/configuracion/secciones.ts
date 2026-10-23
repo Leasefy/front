@@ -21,13 +21,15 @@ export type SeccionDelPropietario =
 
 export const CONFIGURACION_DEL_PROPIETARIO: ConfiguracionDeCuenta<SeccionDelPropietario> = {
   raiz: '/panel/configuracion',
+  seccion: { es: 'Tu cuenta', en: 'Your account' },
   titulo: { es: 'Configuración', en: 'Settings' },
   subtitulo: {
-    es: 'Tu plan, tu equipo, tus avisos y tus datos, en un solo lugar',
-    en: 'Your plan, your team, your alerts and your data, in one place',
+    es: 'Tu plan, tu equipo, tus avisos y tus datos, en un solo lugar.',
+    en: 'Your plan, your team, your alerts and your data, in one place.',
   },
   grupos: [
-    { id: 'cuenta', label: { es: 'Tu cuenta', en: 'Your account' } },
+    // «General» y no «Tu cuenta»: «Tu cuenta» ya es el sobretítulo (glow up r26).
+    { id: 'cuenta', label: { es: 'General', en: 'General' } },
     { id: 'operacion', label: { es: 'Tu operación', en: 'Your operation' } },
     { id: 'privacidad', label: { es: 'Privacidad', en: 'Privacy' } },
   ],
@@ -53,7 +55,7 @@ export const CONFIGURACION_DEL_PROPIETARIO: ConfiguracionDeCuenta<SeccionDelProp
       grupo: 'cuenta',
       slug: 'seguridad',
       label: { es: 'Seguridad', en: 'Security' },
-      desc: { es: 'Doble factor, contraseña y sesiones', en: 'Two-factor, password and sessions' },
+      desc: { es: 'Segundo factor, contraseña y sesión abierta', en: 'Second factor, password and open session' },
       icon: Shield,
     },
     {
@@ -85,7 +87,7 @@ export const CONFIGURACION_DEL_PROPIETARIO: ConfiguracionDeCuenta<SeccionDelProp
       grupo: 'privacidad',
       slug: 'datos',
       label: { es: 'Tus datos', en: 'Your data' },
-      desc: { es: 'Descárgalos, reinicia los pasos iniciales y lee nuestras políticas', en: 'Download them, reset onboarding and read our policies' },
+      desc: { es: 'Tu copia de lo que guardamos, los primeros pasos y nuestras políticas', en: 'Your copy of what we store, the first steps and our policies' },
       icon: Eye,
     },
     {
@@ -93,7 +95,7 @@ export const CONFIGURACION_DEL_PROPIETARIO: ConfiguracionDeCuenta<SeccionDelProp
       grupo: 'privacidad',
       slug: 'eliminar-cuenta',
       label: { es: 'Eliminar cuenta', en: 'Delete account' },
-      desc: { es: 'Borra tu cuenta de Leasefy', en: 'Delete your Leasefy account' },
+      desc: { es: 'Qué pasa si te vas y cómo volver', en: 'What happens if you leave and how to come back' },
       icon: TrashSimple,
     },
   ],
@@ -110,8 +112,8 @@ export const SECCIONES_SOLO_DEL_INDEPENDIENTE: readonly SeccionDelPropietario[] 
 export const CONFIGURACION_DEL_PROPIETARIO_DE_INMOBILIARIA: ConfiguracionDeCuenta<SeccionDelPropietario> = {
   ...CONFIGURACION_DEL_PROPIETARIO,
   subtitulo: {
-    es: 'Tus avisos, tu seguridad y tus datos, en un solo lugar',
-    en: 'Your alerts, your security and your data, in one place',
+    es: 'Tus avisos, tu acceso y tus datos, en un solo lugar.',
+    en: 'Your alerts, your access and your data, in one place.',
   },
   grupos: CONFIGURACION_DEL_PROPIETARIO.grupos.filter((g) => g.id !== 'operacion'),
   secciones: CONFIGURACION_DEL_PROPIETARIO.secciones.filter((s) => !SECCIONES_SOLO_DEL_INDEPENDIENTE.includes(s.id)),

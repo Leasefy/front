@@ -14,6 +14,7 @@ import { Pill } from '@/components/admin/Pill'
 import { urgencia } from '@/lib/admin/textos-del-admin'
 import { CajonDeLaFicha, useFichaEnLaUrl } from '@/components/admin/screen/CajonDeLaFicha'
 import { DetalleDeLaEscalacion } from './DetalleDeLaEscalacion'
+import { Buscador } from '@/components/admin/screen/Filtros'
 
 // Board rows are a slim projection (LIMIT 200, bare array — no pagination
 // envelope). Full detail (assignee, resolution, call) lives in /escalations/:id.
@@ -124,6 +125,9 @@ export default function EscalationsPage() {
   const open = rows.filter((r) => r.status === 'open')
   const assigned = rows.filter((r) => r.status === 'assigned')
   const resolved = rows.filter((r) => r.status === 'resolved')
+  const busquedaDelTablero = (get('q') ?? '').trim().toLowerCase()
+  const enLaBusqueda = (r: (typeof rows)[number]) =>
+    !busquedaDelTablero || `${r.debtor_name ?? ''} ${r.legal_name ?? ''}`.toLowerCase().includes(busquedaDelTablero)
 
   const columnas: Column<EscalationRow>[] = [
     {
@@ -252,10 +256,23 @@ export default function EscalationsPage() {
       ) : error ? (
         <ErrorBlock error={error} onReintentar={refetch} titulo="No pudimos cargar las escalaciones" />
       ) : (
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
-          <Columna title="Abiertas" sub="Sin nadie asignado" rows={open} vacio="Nada abierto." onAbrir={abrir} />
-          <Columna title="En curso" sub="Alguien las tiene" rows={assigned} vacio="Nadie está atendiendo una ahora." onAbrir={abrir} />
-          <Columna title="Resueltas" sub="Últimos 7 días" rows={resolved} vacio="Ninguna resuelta esta semana." apagada onAbrir={abrir} />
+        // Ronda 30 (mandato: con buscador): el tablero busca por deudor o inmobiliaria en sus tres columnas (la
+        // búsqueda vive en la URL, la misma de la tabla).
+        <div className="space-y-4">
+          <div className="sm:max-w-sm">
+            <Buscador
+              id="buscar-en-el-tablero"
+              value={get('q')}
+              onChange={(v) => setFilters({ q: v || undefined })}
+              placeholder="Deudor o inmobiliaria"
+              aria-label="Buscar en el tablero por deudor o inmobiliaria"
+            />
+          </div>
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+            <Columna title="Abiertas" sub="Sin nadie asignado" rows={open.filter(enLaBusqueda)} vacio={get('q') ? 'Nada con esa búsqueda.' : 'Nada abierto.'} onAbrir={abrir} />
+            <Columna title="En curso" sub="Alguien las tiene" rows={assigned.filter(enLaBusqueda)} vacio={get('q') ? 'Nada con esa búsqueda.' : 'Nadie está atendiendo una ahora.'} onAbrir={abrir} />
+            <Columna title="Resueltas" sub="Últimos 7 días" rows={resolved.filter(enLaBusqueda)} vacio={get('q') ? 'Nada con esa búsqueda.' : 'Ninguna resuelta esta semana.'} apagada onAbrir={abrir} />
+          </div>
         </div>
       )}
       <CajonDeLaFicha

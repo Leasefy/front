@@ -41,7 +41,7 @@ type Pestana = 'liquidaciones' | 'reporte' | 'cuadre'
 const PESTANAS: { id: Pestana; nombre: string }[] = [
   { id: 'liquidaciones', nombre: 'Liquidaciones' },
   { id: 'reporte', nombre: 'Reporte de Wompi' },
-  { id: 'cuadre', nombre: 'Cuadre Wompi → Leasefy' },
+  { id: 'cuadre', nombre: 'Cuadre con Wompi' }, // Ronda 30: sin la flecha en el nombre de la pestaña
 ]
 
 export default function RecaudoEnLineaAdminPage() {

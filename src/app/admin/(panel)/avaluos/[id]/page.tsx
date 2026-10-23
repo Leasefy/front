@@ -25,7 +25,7 @@ import { CertificatePdfViewer } from './CertificatePdfViewer'
 import { PhotoDescriptionsEditor } from './PhotoDescriptionsEditor'
 import { SignatureCanvas } from './SignatureCanvas'
 import { Alert, Card, MonoLabel } from '@leasefy/cadence'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { metodoDelAvaluo, suficiencia, tipoObservado } from '@/lib/admin/textos-del-admin'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -161,7 +161,7 @@ export default function AvaluoDetailPage() {
         description={
           <>
             Certificado <span className="font-mono">{item?.slug ?? 'sin número'}</span>
-            {item?.method ? ` · ${legible(item.method)}` : ''}
+            {item?.method ? ` · ${metodoDelAvaluo(item.method)}` : ''}
           </>
         }
       />
@@ -170,7 +170,7 @@ export default function AvaluoDetailPage() {
       {!pending && (
         <Alert
           variant={done === 'rechazado' ? 'danger' : done ? 'success' : 'info'}
-          title={done ? `Este avalúo quedó ${legible(done).toLowerCase()}` : 'Ya no está en la cola de firma'}
+          title={done ? `Este avalúo quedó ${avaluoStateMeta(done).label.toLowerCase()}` : 'Ya no está en la cola de firma'}
         >
           {done ? 'La decisión quedó en la bitácora.' : 'Fue resuelto o no está en revisión.'}
         </Alert>
@@ -197,7 +197,7 @@ export default function AvaluoDetailPage() {
                     }
                     mono
                   />
-                  <Meta label="método" value={item.method ? legible(item.method) : '—'} />
+                  <Meta label="método" value={item.method ? metodoDelAvaluo(item.method) : '—'} />
                   <Meta
                     label="confianza"
                     value={
@@ -333,7 +333,7 @@ export default function AvaluoDetailPage() {
                 {d!.comparables.map((c) => (
                   <div key={c.id} className="pb-3 border-b border-border last:border-0 last:pb-0">
                     <div className="flex items-baseline justify-between mb-1">
-                      <span className="text-body-sm text-fg">{legible(c.observedType)}</span>
+                      <span className="text-body-sm text-fg">{tipoObservado(c.observedType)}</span>
                       <span className="font-mono tabular-nums text-body-sm text-fg">
                         {fmtCOP(c.observedValue)}
                       </span>
@@ -377,7 +377,7 @@ export default function AvaluoDetailPage() {
             )}
             {d?.sufficiency && (
               <>
-                <Meta label="suficiencia" value={legible(d.sufficiency.status)} />
+                <Meta label="suficiencia" value={suficiencia(d.sufficiency.status)} />
                 <Meta label="puntaje" value={fmtBps(d.sufficiency.scoreBps)} mono />
                 <Meta label="comparables usados" value={String(d.sufficiency.compCount)} mono />
               </>

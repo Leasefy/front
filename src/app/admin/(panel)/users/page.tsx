@@ -224,11 +224,11 @@ export default function UsersPage() {
             cifra={`${activos30} de ${admins.length}`}
             contexto={`${acciones30.toLocaleString('es-CO')} ${acciones30 === 1 ? 'acción' : 'acciones'} en 30 días`}
             tramos={[
-              { clave: 'activas', etiqueta: 'Entraron en 30 días', monto: activos30, tono: 'exito', cifra: String(activos30), siempre: true },
+              { clave: 'activas', etiqueta: 'Hicieron algo en 30 días', monto: activos30, tono: 'exito', cifra: String(activos30), siempre: true },
               { clave: 'nunca', etiqueta: 'Nunca han entrado', monto: nuncaEntraron, tono: 'aviso', cifra: String(nuncaEntraron) },
               {
                 clave: 'resto',
-                etiqueta: 'Sin entrar en 30 días',
+                etiqueta: 'Sin hacer nada en 30 días',
                 monto: Math.max(0, admins.length - activos30 - nuncaEntraron),
                 tono: 'neutro',
                 cifra: String(Math.max(0, admins.length - activos30 - nuncaEntraron)),

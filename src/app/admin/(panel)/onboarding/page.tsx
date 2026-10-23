@@ -8,7 +8,7 @@ import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { useUrlFilters } from '@/lib/admin/use-url-filters'
 import { fmtDateTime, fmtFecha, fmtNumero } from '@/lib/admin/format'
-import { estadoDelPlan, legible } from '@/lib/admin/textos-del-admin'
+import { estadoDelPlan } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
@@ -122,9 +122,9 @@ export default function OnboardingPage() {
     {
       header: 'Asistente',
       orden: (r) => r.asistente.estado,
-      texto: (r) => (ASISTENTE[r.asistente.estado] ?? { nombre: legible(r.asistente.estado) }).nombre,
+      texto: (r) => (ASISTENTE[r.asistente.estado] ?? { nombre: 'Otro estado' }).nombre,
       cell: (r) => {
-        const a = ASISTENTE[r.asistente.estado] ?? { nombre: legible(r.asistente.estado), tono: 'muted' as const }
+        const a = ASISTENTE[r.asistente.estado] ?? { nombre: 'Otro estado', tono: 'muted' as const }
         return (
           <div className="flex flex-col items-start gap-1">
             <Pill tone={a.tono} dot>
@@ -241,8 +241,8 @@ export default function OnboardingPage() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        title="Onboarding"
-        description="Cómo arranca cada inmobiliaria: abre su asistente, elige plan, migra sus datos y empieza a operar. Toca una para ver su ficha."
+        title="Inmobiliarias nuevas"
+        description="Cómo arranca cada inmobiliaria, del asistente a operar. Toca una para ver su ficha."
       />
 
       {data && data.plataforma === null ? (
@@ -256,7 +256,7 @@ export default function OnboardingPage() {
       {recorridos && registradas > 0 ? (
         <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
           <CifraHeroe
-            rotulo="Terminaron el onboarding"
+            rotulo="Ya operan"
             cifra={fmtNumero(dondeVan.listas)}
             contexto={`de las ${fmtNumero(registradas)} inmobiliarias más recientes`}
             tramos={[
@@ -293,8 +293,8 @@ export default function OnboardingPage() {
         isLoading={isLoading}
         error={error}
         onReintentar={refetch}
-        emptyTitle="Todavía no hay inmobiliarias"
-        emptyHint="Cuando una se registre, aparece aquí."
+        emptyTitle={data && data.plataforma === null ? 'No pudimos leer las inmobiliarias de la plataforma' : 'Todavía no hay inmobiliarias'}
+        emptyHint={data && data.plataforma === null ? 'Prueba de nuevo en un momento; lo de arriba se lee aparte.' : 'Cuando una se registre, aparece aquí.'}
         id="recorrido"
         queSon={['inmobiliaria', 'inmobiliarias']}
         buscar="Buscar inmobiliaria"

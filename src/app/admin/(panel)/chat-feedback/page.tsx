@@ -77,7 +77,8 @@ export default function ChatFeedbackPage() {
     () => new Map((inmobiliarias.data ?? []).map((t) => [t.tenant_id, t.legal_name])),
     [inmobiliarias.data],
   )
-  const inmobiliaria = (id: string) => nombres.get(id) ?? `Inmobiliaria ${id.slice(0, 8)}`
+  // Ronda 26: mientras no llega el nombre (o si falla), nunca el id cortado.
+  const inmobiliaria = (id: string) => nombres.get(id) ?? 'Inmobiliaria sin nombre'
 
   const semanas = data?.semanas ?? []
   // El orden de las semanas no lo fija el contrato: se ordenan aquí (la más reciente al final).

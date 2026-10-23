@@ -139,7 +139,7 @@ export default function ExogenaAdminPage() {
       setSemilla({ anio, r })
       refetch()
     } catch (err) {
-      setAccionError(mensajeDelAdmin(err, { accion: 'sembrar el preset', porDefecto: 'No se pudo sembrar el preset.' }))
+      setAccionError(mensajeDelAdmin(err, { accion: 'cargar los conceptos sugeridos', porDefecto: 'No se pudieron cargar los conceptos sugeridos.' }))
     } finally {
       setOcupado(null)
     }
@@ -169,7 +169,7 @@ export default function ExogenaAdminPage() {
       {/* 🔴 El aviso que hace que publicar sea una decisión, no un clic más. */}
       <Alert variant="warning" title="Antes de publicar, confírmalo contra la resolución" data-testid="aviso-del-preset">
         <p className="text-body-sm">
-          El preset del código es una <strong>sugerencia de uso corriente, no la resolución</strong>.
+          Los conceptos sugeridos por Leasefy son una <strong>sugerencia de uso corriente, no la resolución</strong>.
           Confírmalo contra la resolución del año antes de publicar: un concepto equivocado no se ve
           — pasa el prevalidador y llega mal a la DIAN. Un año sin publicar no lo hereda nadie.
         </p>
@@ -179,8 +179,8 @@ export default function ExogenaAdminPage() {
         <Card className="p-5  mb-6" data-testid="sin-migracion">
           <p className="text-body-sm font-medium text-fg">Falta preparar la base de la exógena</p>
           <p className="text-body-sm text-fg-muted mt-1">
-            La base todavía no tiene las tablas de exógena de plataforma. La aplica Víctor. Mientras tanto cada
-            inmobiliaria usa el preset del código, marcado «pendiente de confirmar», que es lo de hoy, y cargar un año
+            La base todavía no tiene las tablas de exógena de plataforma. La aplica el equipo técnico. Mientras tanto cada
+            inmobiliaria usa los conceptos sugeridos, marcados «pendiente de confirmar», que es lo de hoy, y cargar un año
             aquí todavía no se puede.
           </p>
           <MasDetalles etiqueta="Ver el nombre de la migración" etiquetaAbierto="Ocultar el nombre" montadoSiempre className="mt-3">
@@ -203,12 +203,12 @@ export default function ExogenaAdminPage() {
             semilla · {semilla.anio}
           </MonoLabel>
           <p className="text-body-sm text-fg mt-2">
-            {semilla.r.sembrados} conceptos sembrados. {semilla.r.aviso}
+            {semilla.r.sembrados} conceptos cargados. Son una sugerencia de uso corriente, no la resolución.
           </p>
           {semilla.r.sinSugerencia.length > 0 ? (
             <>
               <p className="text-caption text-fg-muted mt-3">
-                Estos {semilla.r.sinSugerencia.length} el preset NO los puede proponer: hay que
+                Estos {semilla.r.sinSugerencia.length} la sugerencia NO los puede proponer: hay que
                 leerlos en la resolución y cargarlos a mano.
               </p>
               <ul className="mt-2 space-y-1" data-testid="sin-sugerencia">
@@ -224,7 +224,7 @@ export default function ExogenaAdminPage() {
             </>
           ) : (
             <p className="text-caption text-fg-muted mt-3">
-              El preset propuso un concepto para cada cuenta. Revisalos igual contra la resolución.
+              La sugerencia propuso un concepto para cada cuenta. Revísalos igual contra la resolución.
             </p>
           )}
         </Card>
@@ -236,7 +236,7 @@ export default function ExogenaAdminPage() {
       ) : anios.length === 0 ? (
         <EmptyBlock
           title="Ningún año cargado"
-          hint="Carga el año gravable abajo y después siembra el preset. Publicar es un paso aparte."
+          hint="Carga el año gravable abajo y después los conceptos sugeridos. Publicar es un paso aparte."
         />
       ) : (
         <div className="space-y-px" data-testid="anios">
@@ -285,7 +285,7 @@ export default function ExogenaAdminPage() {
                     onClick={() => void onSembrar(a.anio)}
                     data-testid={`sembrar-${a.anio}`}
                   >
-                    Sembrar el preset
+                    Cargar los conceptos sugeridos
                   </Button>
                   {a.publicado ? (
                     <Button variant="outline" size="sm" hideArrow type="button"

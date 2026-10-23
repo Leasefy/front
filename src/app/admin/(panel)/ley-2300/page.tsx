@@ -13,7 +13,7 @@ import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { canal, eventoDeCumplimiento, resumenDeLosDatos } from '@/lib/admin/textos-del-admin'
 
 
 // ─── Types (co-located, per FRONT.md §6.19) ────────────────────────────────
@@ -136,17 +136,9 @@ function HeatmapCell({
   )
 }
 
+/** Los detalles en palabras (sólo lo que tiene nombre; ids y códigos, al cajón y al Excel). */
 function resumenDeLosDetalles(detalles: unknown): string {
-  if (!detalles || typeof detalles !== 'object') return '—'
-  const simples = Object.entries(detalles as Record<string, unknown>).filter(
-    ([, v]) => v != null && ['string', 'number', 'boolean'].includes(typeof v),
-  )
-  if (simples.length === 0) return 'Sin resumen (en el Excel)'
-  const texto = simples
-    .slice(0, 2)
-    .map(([k, v]) => `${legible(k)}: ${typeof v === 'boolean' ? (v ? 'sí' : 'no') : String(v)}`)
-    .join(' · ')
-  return simples.length > 2 ? `${texto} · y ${simples.length - 2} más` : texto
+  return resumenDeLosDatos(detalles) || 'Ábrelo para ver los detalles'
 }
 
 /** /ley-2300 — Compliance window monitoring (BACK.md §8.15 + §7.2 · FRONT.md §6.19). */
@@ -175,10 +167,10 @@ export default function Ley2300Page() {
     {
       header: 'Tipo',
       orden: (v) => v.event_type,
-      texto: (v) => legible(v.event_type),
-      cell: (v) => <Pill tone={v.event_type.includes('inbound') ? 'muted' : 'bad'}>{legible(v.event_type)}</Pill>,
+      texto: (v) => eventoDeCumplimiento(v.event_type),
+      cell: (v) => <Pill tone={v.event_type.includes('inbound') ? 'muted' : 'bad'}>{eventoDeCumplimiento(v.event_type)}</Pill>,
     },
-    { header: 'Canal', orden: (v) => v.channel, texto: (v) => (v.channel ? legible(v.channel) : ''), cell: (v) => <span className="text-fg-muted">{v.channel ? legible(v.channel) : '—'}</span> },
+    { header: 'Canal', orden: (v) => v.channel, texto: (v) => (v.channel ? canal(v.channel) : ''), cell: (v) => <span className="text-fg-muted">{v.channel ? canal(v.channel) : '—'}</span> },
     { header: 'Deudor', orden: (v) => v.debtor_name, texto: (v) => v.debtor_name, cell: (v) => <span className="block max-w-[180px] truncate">{v.debtor_name ?? '—'}</span> },
     { header: 'Inmobiliaria', orden: (v) => v.legal_name, texto: (v) => v.legal_name, cell: (v) => <span className="block max-w-[160px] truncate text-fg-muted">{v.legal_name ?? '—'}</span> },
     {

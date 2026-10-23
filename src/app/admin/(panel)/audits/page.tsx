@@ -12,7 +12,7 @@ import type { Paginated } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { canal, eventoDeCumplimiento, resumenDeLosDatos } from '@/lib/admin/textos-del-admin'
 import { BarraDeFiltros, Desplegable, Filtro, FiltroDeFechas } from '@/components/admin/screen/Filtros'
 import { Button } from '@/components/ui/button'
 import { CajonDelDetalle } from '@/components/admin/screen/CajonDelDetalle'
@@ -42,17 +42,9 @@ interface AuditFacets {
 // ── Screen ─────────────────────────────────────────────────────────────────
 
 /** /audits — Compliance events table with facet selects + CSV export (FRONT.md §6.8 · BACK.md §8.13). */
+/** Los detalles en palabras (sólo lo que tiene nombre; ids y códigos, al cajón y al Excel). */
 function resumenDeLosDetalles(detalles: unknown): string {
-  if (!detalles || typeof detalles !== 'object') return '—'
-  const simples = Object.entries(detalles as Record<string, unknown>).filter(
-    ([, v]) => v != null && ['string', 'number', 'boolean'].includes(typeof v),
-  )
-  if (simples.length === 0) return 'Ábrelo para ver los detalles'
-  const texto = simples
-    .slice(0, 2)
-    .map(([k, v]) => `${legible(k)}: ${typeof v === 'boolean' ? (v ? 'sí' : 'no') : String(v)}`)
-    .join(' · ')
-  return simples.length > 2 ? `${texto} · y ${simples.length - 2} más` : texto
+  return resumenDeLosDatos(detalles) || 'Ábrelo para ver los detalles'
 }
 
 export default function AuditsPage() {
@@ -121,7 +113,7 @@ export default function AuditsPage() {
       header: 'Evento',
       cell: (r) => (
         <span className="text-fg" title={r.event_type}>
-          {legible(r.event_type)}
+          {eventoDeCumplimiento(r.event_type)}
         </span>
       ),
     },
@@ -135,7 +127,7 @@ export default function AuditsPage() {
     },
     {
       header: 'Canal',
-      cell: (r) => <span className="text-fg-muted">{r.channel ? legible(r.channel) : '—'}</span>,
+      cell: (r) => <span className="text-fg-muted">{r.channel ? canal(r.channel) : '—'}</span>,
     },
     {
       header: 'Detalles',
@@ -186,7 +178,7 @@ export default function AuditsPage() {
                 value={type}
                 onChange={(v) => setFilters({ type: v }, { resetPage: true })}
                 todas="Todos los eventos"
-                opciones={(facets.data?.eventTypes ?? []).map((t) => ({ valor: t, nombre: legible(t) }))}
+                opciones={(facets.data?.eventTypes ?? []).map((t) => ({ valor: t, nombre: eventoDeCumplimiento(t) }))}
               />
             </Filtro>
             <Filtro etiqueta="Inmobiliaria" htmlFor="filtro-inmobiliaria">
@@ -211,7 +203,7 @@ export default function AuditsPage() {
       <CajonDelDetalle
         abierto={abierto !== null}
         onCerrar={() => setAbierto(null)}
-        titulo={abierto ? legible(abierto.event_type) : 'Evento'}
+        titulo={abierto ? eventoDeCumplimiento(abierto.event_type) : 'Evento'}
         descripcion={abierto ? fmtDateTime(abierto.timestamp) : undefined}
         campos={
           abierto
@@ -219,7 +211,7 @@ export default function AuditsPage() {
                 { nombre: 'Código', valor: <code className="font-mono">{abierto.event_type}</code> },
                 { nombre: 'Inmobiliaria', valor: abierto.legal_name ?? '—' },
                 { nombre: 'Deudor', valor: abierto.debtor_name ?? '—' },
-                { nombre: 'Canal', valor: abierto.channel ? legible(abierto.channel) : '—' },
+                { nombre: 'Canal', valor: abierto.channel ? canal(abierto.channel) : '—' },
                 {
                   nombre: 'Evidencia',
                   valor: abierto.evidence_url ? (

@@ -7,7 +7,7 @@ import { fmtCOP, fmtNumero } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { CifraHeroe, type TramoDeLaCifra } from '@/components/pantalla/CifraHeroe'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { modeloDeCobro } from '@/lib/admin/textos-del-admin'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { EditarModeloDeCobro } from '@/components/admin/EditarModeloDeCobro'
@@ -176,12 +176,12 @@ export default function PricingConfigPage() {
       texto: (r) =>
         r.billing_model && r.billing_model in NOMBRE_DEL_MODELO
           ? NOMBRE_DEL_MODELO[r.billing_model as ModeloDeCobro]
-          : r.billing_model ? legible(r.billing_model) : 'Sin modelo',
+          : r.billing_model ? modeloDeCobro(r.billing_model) : 'Sin modelo',
       cell: (r) => (
         <Pill tone={modelTone(r.billing_model)}>
           {r.billing_model && r.billing_model in NOMBRE_DEL_MODELO
             ? NOMBRE_DEL_MODELO[r.billing_model as ModeloDeCobro]
-            : r.billing_model ? legible(r.billing_model) : 'Sin modelo'}
+            : r.billing_model ? modeloDeCobro(r.billing_model) : 'Sin modelo'}
         </Pill>
       ),
     },

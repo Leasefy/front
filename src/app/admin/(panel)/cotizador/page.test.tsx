@@ -126,10 +126,9 @@ function deleteButton(name: string): HTMLButtonElement {
   return btn as HTMLButtonElement
 }
 
+// Ronda 26: el formulario vive en un cajón (portal en el `body`), no dentro del contenedor.
 function submitButton(): HTMLButtonElement {
-  return Array.from(container.querySelectorAll('button')).find(
-    (b) => b.type === 'submit',
-  ) as HTMLButtonElement
+  return document.body.querySelector('form button[type="submit"]') as HTMLButtonElement
 }
 
 describe('CotizadorPage', () => {
@@ -174,7 +173,7 @@ describe('CotizadorPage', () => {
 
     await act(async () => editButton('fianly').click())
 
-    const nameInput = container.querySelector('#carrier-name') as HTMLInputElement
+    const nameInput = document.body.querySelector('#carrier-name') as HTMLInputElement
     expect(nameInput.disabled).toBe(true)
     expect(container.textContent).toContain('Puestas')
 
@@ -204,9 +203,9 @@ describe('CotizadorPage', () => {
       })
     }
 
-    typeInto(container.querySelector('#carrier-config_base_url') as HTMLInputElement, 'https://fianly.example')
-    typeInto(container.querySelector('#carrier-config_username') as HTMLInputElement, 'leasify')
-    typeInto(container.querySelector('#carrier-config_password') as HTMLInputElement, 'secret123')
+    typeInto(document.body.querySelector('#carrier-config_base_url') as HTMLInputElement, 'https://fianly.example')
+    typeInto(document.body.querySelector('#carrier-config_username') as HTMLInputElement, 'leasify')
+    typeInto(document.body.querySelector('#carrier-config_password') as HTMLInputElement, 'secret123')
 
     await act(async () => {
       submitButton().click()

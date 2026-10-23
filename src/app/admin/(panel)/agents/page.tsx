@@ -8,7 +8,7 @@ import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { nombreDelModelo, proveedor } from '@/lib/admin/textos-del-admin'
 
 /** Minimal Vapi assistant shape returned by GET /agents (BACK.md §8.2). */
 interface Agent {
@@ -45,19 +45,19 @@ export default function AgentsPage() {
     {
       header: 'Modelo',
       orden: (r) => r.model?.model,
-      texto: (r) => `${r.model?.provider ?? ''} / ${r.model?.model ?? ''}`,
+      texto: (r) => nombreDelModelo(r.model?.model),
       cell: (r) => (
         <span className="text-caption text-fg-muted">
-          {r.model?.model ?? 'Sin modelo'}
-          {r.model?.provider ? <span className="block">de {legible(r.model.provider)}</span> : null}
+          {nombreDelModelo(r.model?.model)}
+          {r.model?.provider ? <span className="block">de {proveedor(r.model.provider)}</span> : null}
         </span>
       ),
     },
     {
       header: 'Voz',
       orden: (r) => r.voice?.provider,
-      texto: (r) => (r.voice?.provider ? legible(r.voice.provider) : ''),
-      cell: (r) => <span className="text-fg-muted">{r.voice?.provider ? legible(r.voice.provider) : '—'}</span>,
+      texto: (r) => (r.voice?.provider ? proveedor(r.voice.provider) : ''),
+      cell: (r) => <span className="text-fg-muted">{r.voice?.provider ? proveedor(r.voice.provider) : '—'}</span>,
     },
     {
       header: 'Silencio',

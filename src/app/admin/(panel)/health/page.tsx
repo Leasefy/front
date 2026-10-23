@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { Button } from '@/components/ui/button'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { categoriaDelChequeo, chequeoDeSalud, detalleDelChequeo } from '@/lib/admin/textos-del-admin'
 import { ArrowsClockwise } from '@phosphor-icons/react'
 import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
@@ -36,11 +36,6 @@ interface HealthResponse {
 }
 
 // ─── Constants ─────────────────────────────────────────────────────────────
-
-const CATEGORY_LABEL: Record<CheckCategory, string> = {
-  database: 'Base de datos',
-  external: 'Proveedores',
-}
 
 const ESTADO: Record<CheckStatus, string> = {
   ok: 'Responde',
@@ -96,21 +91,21 @@ export default function HealthPage() {
     {
       header: 'Servicio',
       orden: (c) => c.name,
-      texto: (c) => legible(c.name),
+      texto: (c) => chequeoDeSalud(c.name),
       cell: (c) => (
         <div className="min-w-0">
-          <div className="font-medium text-fg">{legible(c.name)}</div>
-          <div className="text-caption text-fg-muted">{CATEGORY_LABEL[c.category] ?? legible(c.category)}</div>
+          <div className="font-medium text-fg">{chequeoDeSalud(c.name)}</div>
+          <div className="text-caption text-fg-muted">{categoriaDelChequeo(c.category)}</div>
         </div>
       ),
     },
     {
       header: 'Estado',
       orden: (c) => ['down', 'degraded', 'unconfigured', 'ok'].indexOf(c.status),
-      texto: (c) => ESTADO[c.status] ?? legible(c.status),
+      texto: (c) => ESTADO[c.status] ?? 'Otro estado',
       cell: (c) => (
         <Pill tone={statusTone(c.status)} dot={c.status !== 'unconfigured'}>
-          {ESTADO[c.status] ?? legible(c.status)}
+          {ESTADO[c.status] ?? 'Otro estado'}
         </Pill>
       ),
     },
@@ -126,10 +121,10 @@ export default function HealthPage() {
     },
     {
       header: 'Detalle',
-      texto: (c) => c.detail ?? '',
+      texto: (c) => (c.status === 'unconfigured' ? 'Falta configurarlo en el servidor.' : detalleDelChequeo(c.detail)),
       cell: (c) => (
         <span className="text-caption text-fg-muted">
-          {c.status === 'unconfigured' ? 'Falta configurarlo en el servidor.' : c.detail ?? '—'}
+          {c.status === 'unconfigured' ? 'Falta configurarlo en el servidor.' : detalleDelChequeo(c.detail)}
         </span>
       ),
     },
@@ -154,10 +149,11 @@ export default function HealthPage() {
       {data ? (
         <>
           <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+            {/* Ronda 26: la cifra es un número (antes una frase en mono de 40 px); la frase va al contexto. */}
             <CifraHeroe
-              rotulo="Estado general"
-              cifra={ESTADO_GENERAL[data.status] ?? legible(data.status)}
-              contexto={`${counts.ok} de ${all.length} servicios responden bien`}
+              rotulo="Servicios que responden"
+              cifra={`${counts.ok} de ${all.length}`}
+              contexto={ESTADO_GENERAL[data.status] ?? 'Sin saber'}
               tramos={[
                 { clave: 'ok', etiqueta: 'Responden', monto: counts.ok, tono: 'exito', cifra: String(counts.ok), siempre: true },
                 { clave: 'degraded', etiqueta: 'Lentos o con fallas', monto: counts.degraded, tono: 'aviso', cifra: String(counts.degraded), siempre: true },
@@ -179,12 +175,16 @@ export default function HealthPage() {
             paginar={false}
             segmentos={[
               { valor: 'todos', nombre: 'Todos', cumple: () => true },
-              { valor: 'fallas', nombre: 'Con fallas', cumple: (c) => c.status === 'down' || c.status === 'degraded', tono: 'aviso' },
+              { valor: 'fallas', nombre: 'Caídos o lentos', cumple: (c) => c.status === 'down' || c.status === 'degraded', tono: 'aviso' },
               { valor: 'sin-configurar', nombre: 'Sin configurar', cumple: (c) => c.status === 'unconfigured' },
             ]}
             ordenInicial={{ columna: 1, sentido: 'asc' }}
             exportar="salud-del-sistema"
-            masEnElExcel={[{ header: 'Variable que falta', texto: (c) => c.required_env ?? '' }]}
+            masEnElExcel={[
+              { header: 'Código del servicio', texto: (c) => c.name },
+              { header: 'Detalle original', texto: (c) => c.detail ?? '' },
+              { header: 'Variable que falta', texto: (c) => c.required_env ?? '' },
+            ]}
             emptyTitle="Sin servicios que revisar"
           />
         </>

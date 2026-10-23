@@ -83,7 +83,8 @@ describe('las llamadas', () => {
     expect(mensajeDelFallo(new ApiErrorFalso(409, 'Ese NIT ya lo tiene otra inmobiliaria: Valle.'))).toBe(
       'Ese NIT ya lo tiene otra inmobiliaria: Valle.',
     )
-    expect(mensajeDelFallo(new TypeError('Failed to fetch'))).toMatch(/conexión/)
+    // Ronda 26: en el admin, sin respuesta es «el servidor no respondió» (con internet).
+    expect(mensajeDelFallo(new TypeError('Failed to fetch'))).toMatch(/no respondió|conexión/)
   })
 
   // 02-10-2026 · Regla de oro: «conexión» sólo si no hubo respuesta.

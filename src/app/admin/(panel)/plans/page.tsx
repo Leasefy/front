@@ -31,7 +31,6 @@ import {
 import { Alert } from '@leasefy/cadence'
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
-import { legible } from '@/lib/admin/textos-del-admin'
 import { Button } from '@/components/ui/button'
 
 // ── Cell helpers ──────────────────────────────────────────────────────────────
@@ -204,10 +203,8 @@ export default function PlansPage() {
             {p.isDefault ? <Pill tone="neutral">Por defecto</Pill> : null}
             {p.scoringIncluded ? <Pill tone="ok">Con calificación del inquilino</Pill> : null}
           </div>
-          <div className="mt-0.5 text-caption text-fg-subtle">
-            Código <span className="font-mono">{p.tier}</span>
-            {p.level != null ? ` · nivel ${p.level}` : ''}
-          </div>
+          {/* Ronda 26: el código del plan (en inglés) va sólo al Excel. */}
+          {p.level != null ? <div className="mt-0.5 text-caption text-fg-subtle">Nivel {p.level}</div> : null}
           {p.description ? <p className="mt-1 line-clamp-2 text-caption text-fg-muted">{p.description}</p> : null}
         </div>
       ),
@@ -216,24 +213,31 @@ export default function PlansPage() {
       header: 'Precio',
       orden: (p) => p.monthlyPrice,
       ordenPrimero: 'desc',
-      texto: (p) => `${precioDelPlan(p)} · ${COBRO[p.billingMode] ?? legible(p.billingMode)}`,
+      texto: (p) => `${precioDelPlan(p)} · ${COBRO[p.billingMode] ?? 'Otro cobro'}`,
       cell: (p) => (
         <div>
           <div className="whitespace-nowrap font-mono text-body-sm tabular-nums text-fg">{precioDelPlan(p)}</div>
-          <div className="text-caption text-fg-muted">{COBRO[p.billingMode] ?? legible(p.billingMode)}</div>
+          <div className="text-caption text-fg-muted">{COBRO[p.billingMode] ?? 'Otro cobro'}</div>
         </div>
       ),
     },
     {
       header: 'Topes',
       cell: (p) => (
-        <dl className="grid grid-cols-[auto_auto] gap-x-3 gap-y-0.5 text-caption">
-          <dt className="text-fg-subtle">Inmuebles</dt>
-          <dd className="font-mono tabular-nums text-fg">{tope(p.maxProperties)}</dd>
-          <dt className="text-fg-subtle">Usuarios</dt>
-          <dd className="font-mono tabular-nums text-fg">{tope(p.maxUsers)}</dd>
-          <dt className="whitespace-nowrap text-fg-subtle">Evaluaciones al mes</dt>
-          <dd className="font-mono tabular-nums text-fg">{tope(p.monthlyEvalCap)}</dd>
+        // Ronda 26: cada tope en su renglón que se parte entero (a 390 se cortaba «Ilim…»).
+        <dl className="flex flex-wrap gap-x-3 gap-y-0.5 text-caption">
+          {(
+            [
+              ['Inmuebles', p.maxProperties],
+              ['Usuarios', p.maxUsers],
+              ['Evaluaciones al mes', p.monthlyEvalCap],
+            ] as const
+          ).map(([nombre, valor]) => (
+            <div key={nombre} className="flex gap-1.5 whitespace-nowrap">
+              <dt className="text-fg-subtle">{nombre}</dt>
+              <dd className="font-mono tabular-nums text-fg">{tope(valor)}</dd>
+            </div>
+          ))}
         </dl>
       ),
     },
@@ -245,7 +249,9 @@ export default function PlansPage() {
       texto: (p) => enUso?.get(p.tier) ?? 0,
       cell: (p) => {
         const n = enUso?.get(p.tier)
-        return enUso ? (
+        return enUso && !n ? (
+          <span className="text-fg-subtle">—</span>
+        ) : enUso ? (
           <span className="whitespace-nowrap text-fg">
             <span className="font-mono tabular-nums">{fmtNumero(n ?? 0)}</span> {n === 1 ? 'inmobiliaria' : 'inmobiliarias'}
           </span>

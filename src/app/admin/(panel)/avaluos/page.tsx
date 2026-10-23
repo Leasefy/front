@@ -15,7 +15,7 @@ import { AvaluoRegistros } from './AvaluoRegistros'
 import { Card, MonoLabel, Stagger, StaggerItem } from '@leasefy/cadence'
 import { SealCheck } from '@phosphor-icons/react'
 import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { metodoDelAvaluo } from '@/lib/admin/textos-del-admin'
 
 // Left-border urgency by confidence: low confidence needs the most eyes.
 
@@ -81,7 +81,7 @@ function AvaluoCard({ item }: { item: PendingReviewItem }) {
         <p className="mb-2 line-clamp-2 text-body-sm leading-snug text-fg-muted">{item.narrativaEs}</p>
       )}
       <p className="text-caption text-fg-muted">
-        {item.method ? `${legible(item.method)} · ` : ''}
+        {item.method ? `${metodoDelAvaluo(item.method)} · ` : ''}
         <span className="font-mono tabular-nums">{item.comps.length}</span> {item.comps.length === 1 ? 'comparable' : 'comparables'} ·{' '}
         <span className="font-mono tabular-nums">{item.adjustments.length}</span> {item.adjustments.length === 1 ? 'ajuste' : 'ajustes'}
       </p>
@@ -98,7 +98,7 @@ function AvaluoCard({ item }: { item: PendingReviewItem }) {
  * 50 más recientes). El endpoint no expone fechas, así que no hay antigüedad.
  */
 export default function AvaluosPage() {
-  const { data, isLoading, error } = useApiQuery<{ items: PendingReviewItem[] }>(
+  const { data, isLoading, error, refetch } = useApiQuery<{ items: PendingReviewItem[] }>(
     (signal) => fetchPendingReview(signal),
     [],
   )
@@ -111,7 +111,7 @@ export default function AvaluosPage() {
         title="Avalúos"
         description="Revisa la propuesta de valor de cada avalúo y firma su certificado (o recházalo)."
         junto={
-          !isLoading ? (
+          !isLoading && !error ? (
             <Pill tone={items.length > 0 ? 'warn' : 'neutral'} dot={items.length > 0}>
               {items.length === 1 ? '1 por firmar' : `${items.length} por firmar`}
             </Pill>
@@ -127,15 +127,16 @@ export default function AvaluosPage() {
           {
             id: 'por-firmar',
             etiqueta: 'Por firmar',
-            cuenta: isLoading ? null : items.length,
+            // Ronda 26 (bloqueante): con el fallo no hay conteo; un «0» sería inventado.
+            cuenta: isLoading || error ? null : items.length,
             contenido: isLoading ? (
               <LoadingBlock label="Cargando los avalúos por firmar" />
             ) : error ? (
-              <ErrorBlock error={error} />
+              <ErrorBlock error={error} onReintentar={refetch} titulo="No pudimos cargar los avalúos por firmar" />
             ) : items.length === 0 ? (
               <EmptyBlock
                 title="Nada por firmar"
-                hint="Cuando el modelo arme una propuesta de valor, aparece aquí. Los más recientes van primero."
+                hint="Cuando Leasefy arme una propuesta de valor, aparece aquí. Los más recientes van primero."
                 tono="exito"
                 icono={<SealCheck weight="duotone" />}
               />

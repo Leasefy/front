@@ -14,7 +14,7 @@ import { LoadingBlock } from '@/components/admin/screen/states'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/Filtros'
-import { ESTADO_DEL_PAGO, estadoDelPago, legible, tonoDelPago } from '@/lib/admin/textos-del-admin'
+import { ESTADO_DEL_PAGO, estadoDelPago, pasarela, tonoDelPago } from '@/lib/admin/textos-del-admin'
 
 const PAGE_SIZE = 50
 
@@ -107,8 +107,8 @@ export default function PaymentsPage() {
     },
     {
       header: 'Pasarela',
-      texto: (r) => (r.provider ? legible(r.provider) : ''),
-      cell: (r) => <span className="text-fg-muted">{r.provider ? legible(r.provider) : '—'}</span>,
+      texto: (r) => (r.provider ? pasarela(r.provider) : ''),
+      cell: (r) => <span className="text-fg-muted">{r.provider ? pasarela(r.provider) : '—'}</span>,
     },
     {
       header: 'Valor',

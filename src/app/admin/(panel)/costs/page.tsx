@@ -11,6 +11,7 @@ import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
+import { nombreDelModelo } from '@/lib/admin/textos-del-admin'
 
 
 /* ── Types (match ADMIN-API-CONTRACT.md — Costs) ────────────────────────── */
@@ -143,7 +144,7 @@ export default function CostsPage() {
   ]
 
   const modelColumns: Column<ModelMixRow>[] = [
-    { header: 'Modelo', orden: (r) => r.model_used, texto: (r) => r.model_used, cell: (r) => <span className="font-mono text-caption">{r.model_used}</span> },
+    { header: 'Modelo', orden: (r) => r.model_used, texto: (r) => nombreDelModelo(r.model_used), cell: (r) => <span className="text-body-sm text-fg">{nombreDelModelo(r.model_used)}</span> },
     { header: 'Usos', align: 'right', orden: (r) => num(r.count), ordenPrimero: 'desc', texto: (r) => num(r.count), cell: (r) => <span className="font-mono tabular-nums">{num(r.count).toLocaleString('es-CO')}</span> },
     { header: 'Costo', align: 'right', orden: (r) => num(r.cost_usd), ordenPrimero: 'desc', texto: (r) => alPeso(num(r.cost_usd)), cell: (r) => <span className="font-mono tabular-nums">{pesos(num(r.cost_usd))}</span> },
   ]
@@ -216,6 +217,7 @@ export default function CostsPage() {
             filasPorPagina={10}
             ordenInicial={{ columna: 2, sentido: 'desc' }}
             exportar="costos-por-modelo"
+            masEnElExcel={[{ header: 'Código del modelo', texto: (r) => r.model_used ?? '' }]}
           />
         </section>
 

@@ -151,7 +151,7 @@ function DetalleDelTurno({ t, onClose }: { t: TurnoDelChat | null; onClose: () =
             las píldoras y los tokens del backoffice no se aplican adentro. */}
         {t && (
           <div className="admin-scope !min-h-0 !bg-transparent flex flex-col min-h-0 flex-1">
-            <SheetHeader title="Detalle de la pregunta" description={`${t.inmobiliaria ?? `Inmobiliaria ${t.agencyId.slice(0, 8)}`} · ${fmtDateTime(t.fecha)}`} />
+            <SheetHeader title="Detalle de la pregunta" description={`${t.inmobiliaria ?? 'Inmobiliaria sin nombre'} · ${fmtDateTime(t.fecha)}`} />
             <SheetBody className="space-y-4">
               <Dato etiqueta="pregunta">
                 <p className="whitespace-pre-wrap">{t.pregunta || '—'}</p>
@@ -243,7 +243,7 @@ function TarjetaDeSugerencia({ s, onAbrir }: { s: SugerenciaDelChat; onAbrir: (t
                   >
                     «{e.pregunta}»{' '}
                     <span className="font-mono text-caption text-fg-subtle">
-                      {e.inmobiliaria ?? e.agencyId.slice(0, 8)} · {fmtDateTime(e.fecha)}
+                      {e.inmobiliaria ?? 'Inmobiliaria sin nombre'} · {fmtDateTime(e.fecha)}
                     </span>
                   </button>
                 </li>
@@ -289,7 +289,7 @@ export default function ChatPreguntasPage() {
   const totales = data?.totales
   const columnas: Column<TurnoDelChat>[] = [
     { header: 'Fecha', texto: (t) => fmtDateTime(t.fecha), cell: (t) => <span className="tabular-nums whitespace-nowrap text-fg-muted">{fmtDateTime(t.fecha)}</span> },
-    { header: 'Inmobiliaria', texto: (t) => t.inmobiliaria ?? t.agencyId, cell: (t) => <span title={t.agencyId}>{t.inmobiliaria ?? t.agencyId.slice(0, 8)}</span> },
+    { header: 'Inmobiliaria', texto: (t) => t.inmobiliaria ?? t.agencyId, cell: (t) => <span>{t.inmobiliaria ?? 'Sin nombre'}</span> },
     { header: 'Pregunta', texto: (t) => t.pregunta, cell: (t) => <span className="line-clamp-2 text-fg">{t.pregunta || '—'}</span>, className: 'min-w-[16rem]' },
     { header: 'Cómo terminó', texto: (t) => comoTermino(t), cell: (t) => <EstadoDelTurno t={t} /> },
     { header: 'Tardó', texto: (t) => segundos(t.ms), cell: (t) => <span className="tabular-nums">{segundos(t.ms)}</span>, align: 'right' },
@@ -321,10 +321,10 @@ export default function ChatPreguntasPage() {
               opciones={[
                 ...(data?.inmobiliarias ?? []).map((i) => ({
                   valor: i.agencyId,
-                  nombre: `${i.nombre ?? i.agencyId.slice(0, 8)} (${i.preguntas})`,
+                  nombre: `${i.nombre ?? 'Sin nombre'} (${i.preguntas})`,
                 })),
                 ...(agencia && !(data?.inmobiliarias ?? []).some((i) => i.agencyId === agencia)
-                  ? [{ valor: agencia, nombre: agencia.slice(0, 8) }]
+                  ? [{ valor: agencia, nombre: 'La inmobiliaria elegida' }]
                   : []),
               ]}
             />
@@ -508,7 +508,7 @@ export default function ChatPreguntasPage() {
               getKey={(s) => `${s.semana}-${s.agencyId}`}
               columns={[
                 { header: 'Semana del', orden: (s) => s.semana, ordenPrimero: 'desc', texto: (s) => fechaLarga(s.semana), cell: (s) => <span className="whitespace-nowrap">{fechaLarga(s.semana)}</span> },
-                { header: 'Inmobiliaria', orden: (s) => s.inmobiliaria, texto: (s) => s.inmobiliaria ?? s.agencyId, cell: (s) => s.inmobiliaria ?? s.agencyId.slice(0, 8) },
+                { header: 'Inmobiliaria', orden: (s) => s.inmobiliaria, texto: (s) => s.inmobiliaria ?? s.agencyId, cell: (s) => s.inmobiliaria ?? 'Sin nombre' },
                 { header: 'Preguntas', orden: (s) => s.preguntas, ordenPrimero: 'desc', texto: (s) => s.preguntas, cell: (s) => <span className="tabular-nums">{s.preguntas}</span>, align: 'right' },
                 {
                   header: 'Sin respuesta',

@@ -9,7 +9,7 @@ import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
 import { CheckCircle } from '@phosphor-icons/react'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { estadoDelProceso } from '@/lib/admin/textos-del-admin'
 
 // ─── Types (match ADMIN-API-CONTRACT.md — Failed states) ───────────────────
 
@@ -54,8 +54,8 @@ const centralColumns: Column<FailedRow>[] = [
   {
     header: 'Estado',
     orden: (r) => r.status,
-    texto: (r) => legible(r.status),
-    cell: (r) => <Pill tone="bad">{legible(r.status)}</Pill>,
+    texto: (r) => estadoDelProceso(r.status),
+    cell: (r) => <Pill tone="bad">{estadoDelProceso(r.status)}</Pill>,
   },
   {
     header: 'Deudor',
@@ -83,8 +83,8 @@ const crmColumns: Column<FailedRow>[] = [
   {
     header: 'Estado',
     orden: (r) => r.status,
-    texto: (r) => legible(r.status),
-    cell: (r) => <Pill tone="warn">{legible(r.status)}</Pill>,
+    texto: (r) => estadoDelProceso(r.status),
+    cell: (r) => <Pill tone="warn">{estadoDelProceso(r.status)}</Pill>,
   },
   {
     header: 'Deudor',
@@ -112,8 +112,8 @@ const legalColumns: Column<LegalPackageRow>[] = [
   {
     header: 'Estado',
     orden: (r) => r.legal_status,
-    texto: (r) => legible(r.legal_status),
-    cell: (r) => <Pill tone="bad">{legible(r.legal_status)}</Pill>,
+    texto: (r) => estadoDelProceso(r.legal_status),
+    cell: (r) => <Pill tone="bad">{estadoDelProceso(r.legal_status)}</Pill>,
   },
   {
     header: 'Deudor',

@@ -16,7 +16,7 @@ import { BarraDeFiltros, Desplegable, Filtro } from '@/components/admin/screen/F
 import { BackButton } from '@/components/ui/back-button'
 import { Button } from '@/components/ui/button'
 import { Pill } from '@/components/admin/Pill'
-import { ETAPA, esEtapaDeCartera, legible } from '@/lib/admin/textos-del-admin'
+import { ETAPA, esEtapaDeCartera, motivoDeEtapa, siguienteContacto } from '@/lib/admin/textos-del-admin'
 
 const PAGE_SIZE = 50
 
@@ -122,7 +122,7 @@ export default function CarteraStagePage() {
         r.previous_stage && esEtapaDeCartera(r.previous_stage) ? (
           <Pill tone={ETAPA[r.previous_stage].tono}>{ETAPA[r.previous_stage].nombre}</Pill>
         ) : (
-          <span className="text-fg-muted">{r.previous_stage ? legible(r.previous_stage) : 'Inicio'}</span>
+          <span className="text-fg-muted">{r.previous_stage ? (esEtapaDeCartera(r.previous_stage) ? ETAPA[r.previous_stage].nombre : 'Otra etapa') : 'Inicio'}</span>
         ),
     },
     {
@@ -149,7 +149,7 @@ export default function CarteraStagePage() {
         r.next_planned_for ? (
           <div>
             <div className="font-mono text-caption tabular-nums text-fg-muted">{fmtDateTime(r.next_planned_for)}</div>
-            <div className="text-caption text-fg-subtle">{r.next_channel ? legible(r.next_channel) : '—'}</div>
+            <div className="text-caption text-fg-subtle">{r.next_channel ? siguienteContacto(r.next_channel) : '—'}</div>
           </div>
         ) : (
           <span className="text-fg-subtle">—</span>
@@ -159,7 +159,7 @@ export default function CarteraStagePage() {
       header: 'Motivo',
       cell: (r) => (
         <span className="block max-w-[240px] truncate text-fg-muted">
-          {legible(r.transition_reason)}
+          {motivoDeEtapa(r.transition_reason)}
         </span>
       ),
     },

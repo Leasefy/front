@@ -16,7 +16,7 @@ import { adminApi, ApiError } from '@/lib/admin/api'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
-import { legible, resultadoDeLaLlamada, resultadoDeLaRevision, tipoDeDecision } from '@/lib/admin/textos-del-admin'
+import { resultadoDeLaLlamada, resultadoDeLaRevision, tipoDeDecision } from '@/lib/admin/textos-del-admin'
 import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
@@ -105,7 +105,7 @@ function camposDeLaPropuesta(payload: Record<string, unknown> | null | undefined
   return Object.entries(payload ?? {})
     .filter(([, v]) => v == null || ['string', 'number', 'boolean'].includes(typeof v))
     .map(([clave, v]) => ({
-      label: CAMPO_DE_LA_PROPUESTA[clave] ?? legible(clave),
+      label: CAMPO_DE_LA_PROPUESTA[clave] ?? 'Otro dato',
       value:
         v == null || v === '' ? (
           <span className="text-fg-subtle">Sin dato</span>

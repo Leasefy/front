@@ -127,7 +127,7 @@ describe('ExogenaAdminPage', () => {
     await clic(q('sembrar-2026')!)
 
     const resultado = q('resultado-de-la-semilla')!
-    expect(resultado.textContent).toContain('40 conceptos sembrados')
+    expect(resultado.textContent).toContain('40 conceptos cargados')
     expect(resultado.textContent).toContain('no la resolución')
     expect(q('sin-sugerencia')!.textContent).toContain('519595')
   })

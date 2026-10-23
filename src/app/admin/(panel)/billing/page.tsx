@@ -59,9 +59,11 @@ const SEGMENTOS: Segmento<IngresoDeLaInmobiliaria>[] = [
   { valor: 'voz', nombre: 'Con cobranza por voz', cumple: (f) => f.voz !== null },
 ]
 
-const nombreDelMes = (clave: string) => {
-  const [y, m] = clave.split('-').map(Number)
-  return new Date(y, m - 1, 1).toLocaleDateString('es-CO', { month: 'long' })
+/** «octubre» de «2026-10»; vacío si el back no mandó el mes (uno viejo manda `{ perTenant, totals }`). */
+const nombreDelMes = (clave: string | null | undefined) => {
+  const m = /^(\d{4})-(\d{2})/.exec(clave ?? '')
+  if (!m) return ''
+  return new Date(Number(m[1]), Number(m[2]) - 1, 1).toLocaleDateString('es-CO', { month: 'long' })
 }
 
 /**
@@ -78,7 +80,7 @@ export default function IngresosPage() {
   const ingresos = useApiQuery<RespuestaDeIngresos>((signal) => adminApi('/billing', { signal }), [])
   const d = ingresos.data
   const t = d?.totales
-  const mes = d ? nombreDelMes(d.mes) : ''
+  const mes = d?.mes ? nombreDelMes(d.mes) : ''
 
   const columnas: Column<IngresoDeLaInmobiliaria>[] = [
     {

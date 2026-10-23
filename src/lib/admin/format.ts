@@ -33,17 +33,16 @@ export function aFecha(d: Date | string): Date {
   return new Date(d)
 }
 
+/**
+ * «16 oct 2026, 5:35 p. m.» (ronda 26, revisora T5; VOZ §4). Antes salía «16 de
+ * oct de 2026, 05:35 p. m.»: con hora, el navegador mete «de» y el cero.
+ */
 export function fmtDateTime(d: Date | string | null | undefined): string {
   if (!d) return '—'
   const date = aFecha(d)
   if (!Number.isFinite(date.getTime())) return '—'
-  return date.toLocaleString('es-CO', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const hora = date.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' })
+  return `${fmtFecha(date)}, ${hora}`
 }
 
 export function fmtDuration(seconds: number | null | undefined): string {

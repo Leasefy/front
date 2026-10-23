@@ -20,6 +20,32 @@ import { fmtFecha, fmtNumero } from '@/lib/admin/format'
 type KeyStatus = 'ok' | 'warn' | 'overdue' | 'never'
 
 /** GET /api/v1/admin/keys row (ADMIN-API-CONTRACT.md — Keys). Never key values. */
+/**
+ * Cada llave en español (ronda 26, revisora: «Admin allowlist», «The ONLY connection
+ * allowed…» salían en inglés). El nombre y las notas del back van al Excel.
+ */
+const LLAVE: Record<string, { nombre: string; para: string }> = {
+  ADMIN_AGENT_DATABASE_URL: { nombre: 'Conexión del admin a la base de los agentes', para: 'La única conexión que el admin usa para leer lo de los agentes.' },
+  ADMIN_EMAILS: { nombre: 'Correos que entran al admin', para: 'La lista del equipo de Leasefy que puede abrir este admin.' },
+  VAPI_API_KEY: { nombre: 'Llave de Vapi', para: 'Las llamadas de voz de los agentes.' },
+  SUPABASE_SERVICE_KEY: { nombre: 'Llave de servicio de Supabase', para: 'Las cuentas y los archivos.' },
+  ANTHROPIC_API_KEY: { nombre: 'Llave de Anthropic', para: 'La inteligencia artificial de los agentes.' },
+  WOMPI_PUBLIC_KEY: { nombre: 'Llave pública de Wompi', para: 'Los pagos en línea.' },
+  KAPSO_API_KEY: { nombre: 'Llave de Kapso', para: 'Los mensajes de WhatsApp.' },
+  RESEND_API_KEY: { nombre: 'Llave de Resend', para: 'Los correos que manda Leasefy.' },
+  UPSTASH_REDIS_REST_URL: { nombre: 'Dirección de Redis (Upstash)', para: 'Sólo para revisar que la memoria rápida responde. Opcional.' },
+  UPSTASH_REDIS_REST_TOKEN: { nombre: 'Llave de Redis (Upstash)', para: 'Sólo para revisar que la memoria rápida responde. Opcional.' },
+  REDIS_URL: { nombre: 'Conexión a Redis', para: 'Las colas de tareas en segundo plano.' },
+}
+
+function nombreDeLaLlave(r: { env_var: string }): string {
+  return LLAVE[r.env_var]?.nombre ?? 'Otra llave'
+}
+
+function paraQueSirve(r: { env_var: string }): string {
+  return LLAVE[r.env_var]?.para ?? '—'
+}
+
 interface KeyRow {
   env_var: string
   label: string
@@ -88,11 +114,11 @@ export default function KeysPage() {
   const columns: Column<KeyRow>[] = [
     {
       header: 'Llave',
-      orden: (r) => r.label,
-      texto: (r) => r.label,
+      orden: (r) => nombreDeLaLlave(r),
+      texto: (r) => nombreDeLaLlave(r),
       cell: (r) => (
         <div>
-          <div className="font-medium text-fg">{r.label}</div>
+          <div className="font-medium text-fg">{nombreDeLaLlave(r)}</div>
         </div>
       ),
     },
@@ -107,7 +133,7 @@ export default function KeysPage() {
       header: 'Última rotación',
       orden: (r) => r.last_rotated_at,
       ordenPrimero: 'desc',
-      texto: (r) => (r.last_rotated_at ? fmtFecha(r.last_rotated_at) : 'Nunca'),
+      texto: (r) => (r.last_rotated_at ? fmtFecha(r.last_rotated_at) : ''),
       cell: (r) =>
         r.last_rotated_at ? (
           <div>
@@ -120,7 +146,8 @@ export default function KeysPage() {
             </div>
           </div>
         ) : (
-          <span className="text-caption text-danger">Nunca</span>
+          // El estado ya dice «Nunca rotada»: aquí no se repite en rojo.
+          <span className="text-caption text-fg-subtle">—</span>
         ),
     },
     {
@@ -130,9 +157,9 @@ export default function KeysPage() {
       cell: (r) => <Pill tone={statusTone(r.status)}>{statusLabel(r.status)}</Pill>,
     },
     {
-      header: 'Notas',
-      texto: (r) => r.notes,
-      cell: (r) => <span className="text-caption text-fg-muted">{r.notes ?? '—'}</span>,
+      header: 'Para qué sirve',
+      texto: (r) => paraQueSirve(r),
+      cell: (r) => <span className="text-caption text-fg-muted">{paraQueSirve(r)}</span>,
     },
   ]
 
@@ -158,7 +185,7 @@ export default function KeysPage() {
           <CifraHeroe
             rotulo="Llaves al día"
             cifra={`${counts.ok} de ${keys.length}`}
-            contexto={counts.overdue > 0 ? `${counts.overdue} ${counts.overdue === 1 ? 'vencida' : 'vencidas'}: hay que rotarlas` : 'ninguna vencida'}
+            contexto={counts.overdue > 0 ? `${counts.overdue} ${counts.overdue === 1 ? 'vencida' : 'vencidas'}: hay que rotarlas` : counts.never > 0 ? `${counts.never} nunca se han rotado` : 'todas rotadas a tiempo'}
             tramos={[
               { clave: 'ok', etiqueta: 'Al día', monto: counts.ok, tono: 'exito', cifra: String(counts.ok), siempre: true },
               { clave: 'warn', etiqueta: 'Por rotar pronto', monto: counts.warn, tono: 'aviso', cifra: String(counts.warn) },
@@ -187,7 +214,11 @@ export default function KeysPage() {
         segmentos={SEGMENTOS}
         ordenInicial={{ columna: 3, sentido: 'asc' }}
         exportar="llaves"
-        masEnElExcel={[{ header: 'Variable', texto: (r) => r.env_var }]}
+        masEnElExcel={[
+          { header: 'Variable', texto: (r) => r.env_var },
+          { header: 'Nombre en el servidor', texto: (r) => r.label },
+          { header: 'Notas del servidor', texto: (r) => r.notes ?? '' },
+        ]}
       />
 
     </div>

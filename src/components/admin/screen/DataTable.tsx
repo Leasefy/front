@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Export, Funnel, SortAscending, SortDescending, X } from '@phosphor-icons/react'
 import { Stagger, StaggerItem } from '@leasefy/cadence'
+import type { TonoDeEsfera } from '@leasefy/cadence'
 import { toast } from 'sonner'
 
 import {
@@ -98,6 +99,8 @@ export function DataTable<T>({
   emptyTitle = 'Sin resultados',
   emptyHint,
   emptyIcon,
+  emptyTono,
+  cifraDelCelular,
   emptyAction,
   onReintentar,
   barra,
@@ -137,6 +140,13 @@ export function DataTable<T>({
   emptyTitle?: string
   emptyHint?: string
   emptyIcon?: React.ReactNode
+  /** Ronda 26 (T9): `exito` cuando no tener nada está bien (la esfera no es azul: el azul es de la acción). */
+  emptyTono?: TonoDeEsfera
+  /**
+   * Ronda 26 (T8): el encabezado de la columna que va como cifra en la tarjeta del
+   * celular (la que responde). Sin esto, la primera columna numérica; siempre con su rótulo.
+   */
+  cifraDelCelular?: string
   /** Lo que se puede hacer desde el vacío (p. ej. «Nueva…»). */
   emptyAction?: React.ReactNode
   onReintentar?: () => void
@@ -346,11 +356,12 @@ export function DataTable<T>({
           }
         />
       ) : (
-        <EmptyBlock title={emptyTitle} hint={emptyHint} icono={emptyIcon} accion={emptyAction} suelto={false} />
+        <EmptyBlock title={emptyTitle} hint={emptyHint} icono={emptyIcon} accion={emptyAction} tono={emptyTono} suelto={false} />
       )
   else if (esCelular && tarjetas)
     cuerpo = (
       <TarjetasDeLaTabla
+        cifraDelCelular={cifraDelCelular}
         columns={columns}
         rows={filasVisibles}
         getKey={getKey}
@@ -506,7 +517,8 @@ export function DataTable<T>({
                   pestanas={segmentos!.map((s) => ({
                     valor: s.valor,
                     etiqueta: s.nombre,
-                    cuantos: calculo.conteo[s.valor] ?? 0,
+                    // Ronda 26 (T3): con fallo o cargando, sin conteo (un «0» sería inventado).
+                    cuantos: error || (isLoading && !rows) ? null : calculo.conteo[s.valor] ?? 0,
                     fija: s.fija || s.valor === primerSegmento,
                     tono: s.tono && (calculo.conteo[s.valor] ?? 0) > 0 ? s.tono : undefined,
                     testid: `pestana-${id ? `${id}-` : ''}${s.valor}`,
@@ -551,6 +563,7 @@ function TarjetasDeLaTabla<T>({
   rowClassName,
   filaTestid,
   ariaLabel,
+  cifraDelCelular,
 }: {
   columns: Column<T>[]
   rows: T[]
@@ -560,10 +573,13 @@ function TarjetasDeLaTabla<T>({
   rowClassName?: (row: T) => string | undefined
   filaTestid?: (row: T) => string
   ariaLabel?: string
+  cifraDelCelular?: string
 }) {
   const [principal, ...resto] = columns
   const visibles = resto.filter((c) => c.enCelular !== false)
-  const cifra = visibles.find((c) => c.align === 'right' && c.header.trim())
+  const cifra =
+    (cifraDelCelular ? visibles.find((c) => c.header === cifraDelCelular) : undefined) ??
+    visibles.find((c) => c.align === 'right' && c.header.trim())
   const conNombre = visibles.filter((c) => c.header.trim() && c !== cifra)
   const sinNombre = visibles.filter((c) => !c.header.trim())
   return (
@@ -597,9 +613,10 @@ function TarjetasDeLaTabla<T>({
             <div className="flex items-start justify-between gap-4">
               {principal ? <div className="min-w-0 flex-1 break-words">{principal.cell(row)}</div> : null}
               {cifra ? (
-                <div className="shrink-0 text-right font-mono text-body-sm tabular-nums text-fg">
-                  <span className="sr-only">{cifra.header}: </span>
-                  {cifra.cell(row)}
+                <div className="shrink-0 text-right">
+                  {/* Ronda 26 (T8): la cifra con su rótulo (antes un «0» suelto). */}
+                  <div className="text-caption text-fg-subtle">{cifra.header}</div>
+                  <div className="font-mono text-body-sm tabular-nums text-fg">{cifra.cell(row)}</div>
                 </div>
               ) : null}
             </div>

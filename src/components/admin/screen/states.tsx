@@ -55,8 +55,10 @@ export function ErrorBlock({
   className?: string
 }) {
   // 02-10-2026 · Por el traductor (regla de oro): nunca «Error 500» ni
-  // «Failed to fetch» crudos.
-  const msg = typeof error === 'string' ? error : mensajeDelAdmin(error, { accion: 'cargar esta pantalla' })
+  // «Failed to fetch» crudos. Ronda 26 (T2): el título ya dice «No pudimos
+  // cargar…»; el texto sólo dice el porqué (antes repetía «No pudimos cargar
+  // esta pantalla: …»).
+  const msg = typeof error === 'string' ? error : mensajeDelAdmin(error)
   // «Intentar de nuevo» sólo si volver a pedirlo puede dar otro resultado:
   // sobre un 404 o un 403 sería mentir (el clasificador de la plataforma).
   const sePuedeReintentar = typeof error === 'string' || clasificarFallo(error).sePuedeReintentar

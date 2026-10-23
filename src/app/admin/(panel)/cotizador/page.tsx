@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { legible } from '@/lib/admin/textos-del-admin'
+import { modoDeLaAseguradora } from '@/lib/admin/textos-del-admin'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
@@ -26,6 +26,7 @@ import {
   type CarrierFormValues,
 } from './carrier-form-schema'
 import { Alert } from '@leasefy/cadence'
+import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon'
 import { Button } from '@/components/ui/button'
 import { confirmar } from '@/components/ui/confirmar'
 
@@ -149,8 +150,8 @@ export default function CotizadorPage() {
     {
       header: 'Conexión',
       orden: (c) => c.mode,
-      texto: (c) => MODO[c.mode] ?? legible(c.mode),
-      cell: (c) => <Pill tone="neutral">{MODO[c.mode] ?? legible(c.mode)}</Pill>,
+      texto: (c) => MODO[c.mode] ?? modoDeLaAseguradora(c.mode),
+      cell: (c) => <Pill tone="neutral">{MODO[c.mode] ?? modoDeLaAseguradora(c.mode)}</Pill>,
     },
     {
       header: 'Estado',
@@ -187,7 +188,7 @@ export default function CotizadorPage() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        title="Aseguradoras"
+        title="Cotizador"
         description="Las aseguradoras del cotizador: la ruta, cómo se conecta y sus credenciales."
         ayuda={
           <ParaEntenderMas etiqueta="Cómo funciona" titulo="Las aseguradoras del cotizador" variante="secundario">
@@ -198,29 +199,35 @@ export default function CotizadorPage() {
           </ParaEntenderMas>
         }
         principal={
-          form.kind === 'none' ? (
-            <Button size="sm" hideArrow onClick={openCreate}>
-              Nueva aseguradora
-            </Button>
-          ) : undefined
+          <Button size="sm" hideArrow onClick={openCreate} disabled={form.kind !== 'none'}>
+            Nueva aseguradora
+          </Button>
         }
       />
 
       {rowError ? <Alert variant="danger">{rowError}</Alert> : null}
 
-      {form.kind !== 'none' && (
-        <div className="mb-8">
-          <CarrierForm
-            mode={form.kind}
-            initialValues={form.kind === 'edit' ? carrierToFormValues(form.carrier) : undefined}
-            hasConfig={form.kind === 'edit' ? form.carrier.has_config : undefined}
-            isSubmitting={submitting}
-            submitError={formError}
-            onSubmit={handleSubmit}
-            onCancel={closeForm}
-          />
-        </div>
-      )}
+      {/* Ronda 26 (decisión de Nico, 23-10): «Nueva aseguradora» y «Editar» en un CAJÓN, sin perder la lista. */}
+      <Cajon abierto={form.kind !== 'none'} onOpenChange={(a) => (a ? null : closeForm())} tamano="lg">
+        <CajonCabecera
+          titulo={form.kind === 'edit' ? `Editar ${form.carrier.display_name ?? form.carrier.name}` : 'Nueva aseguradora'}
+          descripcion="Las credenciales se guardan cifradas y nunca se vuelven a mostrar."
+        />
+        <CajonCuerpo>
+          {form.kind !== 'none' ? (
+            <CarrierForm
+              key={form.kind === 'edit' ? form.carrier.id : 'nueva'}
+              mode={form.kind}
+              initialValues={form.kind === 'edit' ? carrierToFormValues(form.carrier) : undefined}
+              hasConfig={form.kind === 'edit' ? form.carrier.has_config : undefined}
+              isSubmitting={submitting}
+              submitError={formError}
+              onSubmit={handleSubmit}
+              onCancel={closeForm}
+            />
+          ) : null}
+        </CajonCuerpo>
+      </Cajon>
 
       <DataTable
         columns={columns}

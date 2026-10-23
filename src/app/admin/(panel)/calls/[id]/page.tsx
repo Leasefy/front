@@ -6,7 +6,7 @@ import { CodeBlock, KeyValueList, MessageBubble, Stagger, StaggerItem } from '@l
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime, fmtDuration, fmtCOP, USD_TO_COP } from '@/lib/admin/format'
-import { legible, resultadoDeLaLlamada, tonoDelResultado } from '@/lib/admin/textos-del-admin'
+import { estadoEnVapi, fallaDeCalidad, porQueTermino, resultadoDeLaLlamada, tonoDelResultado } from '@/lib/admin/textos-del-admin'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
@@ -102,7 +102,7 @@ export default function CallDetailPage() {
           <div className="flex flex-wrap gap-1.5">
             {data.compliance_flags.map((f, i) => (
               <Pill key={i} tone="warn">
-                {legible(f)}
+                {fallaDeCalidad(f)}
               </Pill>
             ))}
           </div>
@@ -151,8 +151,8 @@ export default function CallDetailPage() {
             { label: 'Empezó', value: <span className="font-mono tabular-nums">{fmtDateTime(data.initiated_at)}</span> },
             { label: 'Duración', value: <span className="font-mono tabular-nums">{fmtDuration(data.duration_seconds)}</span> },
             { label: 'Calidad', value: <span className="font-mono tabular-nums">{data.qa_score != null ? Number(data.qa_score).toFixed(0) : '—'}</span> },
-            ...(data.vapi?.status ? [{ label: 'Estado en Vapi', value: legible(data.vapi.status) }] : []),
-            ...(data.vapi?.endedReason ? [{ label: 'Por qué terminó', value: legible(data.vapi.endedReason) }] : []),
+            ...(data.vapi?.status ? [{ label: 'Estado en Vapi', value: estadoEnVapi(data.vapi.status) }] : []),
+            ...(data.vapi?.endedReason ? [{ label: 'Por qué terminó', value: porQueTermino(data.vapi.endedReason) }] : []),
             ...(data.vapi?.cost != null
               ? [{ label: 'Costo en Vapi', value: <span className="font-mono tabular-nums">{fmtCOP((data.vapi.cost ?? 0) * USD_TO_COP)}</span> }]
               : []),

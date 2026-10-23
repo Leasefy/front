@@ -12,11 +12,11 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { BarraDeFiltros, Buscador, Filtro } from '@/components/admin/screen/Filtros'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { comoSeDetecto } from '@/lib/admin/textos-del-admin'
 
 /** El canal de la baja, en palabras (antes «Voice», «Email»). */
 const CANAL: Record<string, string> = { voice: 'Llamada', call: 'Llamada', whatsapp: 'WhatsApp', sms: 'SMS', email: 'Correo', push: 'Notificación' }
-const canal = (c: string | null | undefined) => (c ? CANAL[c] ?? legible(c) : 'Llamada')
+const canal = (c: string | null | undefined) => (c ? CANAL[c] ?? 'Otro canal' : 'Llamada')
 
 const PAGE_SIZE = 50
 
@@ -73,7 +73,7 @@ export default function OptOutsPage() {
     { header: 'Deudor', texto: (r) => r.debtor_name, cell: (r) => <span className="block max-w-[200px] truncate font-medium text-fg">{r.debtor_name ?? '—'}</span> },
     { header: 'Inmobiliaria', texto: (r) => r.legal_name, cell: (r) => <span className="block max-w-[160px] truncate text-fg-muted">{r.legal_name ?? '—'}</span> },
     { header: 'Canal', texto: (r) => canal(r.channel), cell: (r) => <Pill tone="neutral">{canal(r.channel)}</Pill> },
-    { header: 'Cómo se detectó', texto: (r) => (r.detection ? legible(r.detection) : ''), cell: (r) => <span className="text-fg-muted">{r.detection ? legible(r.detection) : '—'}</span> },
+    { header: 'Cómo se detectó', texto: (r) => (r.detection ? comoSeDetecto(r.detection) : ''), cell: (r) => <span className="text-fg-muted">{r.detection ? comoSeDetecto(r.detection) : '—'}</span> },
     {
       header: 'Lo que dijo',
       texto: (r) => r.matched_phrase,

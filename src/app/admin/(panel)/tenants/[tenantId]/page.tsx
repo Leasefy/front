@@ -16,7 +16,8 @@ import {
   MODO_DE_COBRO_DEL_PLAN,
   ROL_DEL_EQUIPO,
   estadoDelPlan,
-  legible,
+  eventoDeCumplimiento,
+  modeloDeCobro,
   metricaDeLaInmobiliaria,
   resultadoDeLaLlamada,
   tonoDelResultado,
@@ -331,7 +332,7 @@ export default function TenantDetailPage() {
   ]
 
   const eventColumns: Column<RecentEvent>[] = [
-    { header: 'Evento', cell: (r) => <span className="text-fg">{legible(r.event_type)}</span> },
+    { header: 'Evento', cell: (r) => <span className="text-fg">{eventoDeCumplimiento(r.event_type)}</span> },
     {
       header: 'Cuándo',
       align: 'right',
@@ -356,7 +357,7 @@ export default function TenantDetailPage() {
       header: 'Rol',
       cell: (m) => (
         <div>
-          <span className="text-body-sm text-fg">{ROL_DEL_EQUIPO[m.rol] ?? legible(m.rol)}</span>
+          <span className="text-body-sm text-fg">{ROL_DEL_EQUIPO[m.rol] ?? 'Otro rol'}</span>
           {m.cargo ? <div className="text-caption text-fg-subtle">{m.cargo}</div> : null}
         </div>
       ),
@@ -364,7 +365,7 @@ export default function TenantDetailPage() {
     {
       header: 'Estado',
       cell: (m) => {
-        const e = ESTADO_DEL_MIEMBRO[m.estado] ?? { nombre: legible(m.estado), tono: 'muted' as const }
+        const e = ESTADO_DEL_MIEMBRO[m.estado] ?? { nombre: 'Otro estado', tono: 'muted' as const }
         return <Pill tone={e.tono}>{e.nombre}</Pill>
       },
     },
@@ -416,7 +417,7 @@ export default function TenantDetailPage() {
   const tramosDeLosContratos: TramoDeLaCifra[] = p
     ? ORDEN_DE_LOS_CONTRATOS.map((e) => ({
         clave: e,
-        etiqueta: ESTADO_DEL_CONTRATO[e] ?? legible(e),
+        etiqueta: ESTADO_DEL_CONTRATO[e] ?? 'Otro estado',
         monto: p.conteos.contratos_por_estado[e] ?? 0,
         tono: TONO_DEL_CONTRATO[e] ?? 'neutro',
         cifra: fmtNumero(p.conteos.contratos_por_estado[e] ?? 0),
@@ -495,7 +496,7 @@ export default function TenantDetailPage() {
         {plan ? (
           <KeyValueList
             items={[
-              { label: 'Cobro', value: MODO_DE_COBRO_DEL_PLAN[plan.modo] ?? legible(plan.modo) },
+              { label: 'Cobro', value: MODO_DE_COBRO_DEL_PLAN[plan.modo] ?? 'Otro cobro' },
               {
                 label: 'Precio',
                 value:
@@ -619,7 +620,7 @@ export default function TenantDetailPage() {
               data.agency.billing_model
                 ? `Cobro ${
                     (NOMBRE_DEL_MODELO as Record<string, string>)[data.agency.billing_model]?.toLowerCase() ??
-                    legible(data.agency.billing_model).toLowerCase()
+                    modeloDeCobro(data.agency.billing_model).toLowerCase()
                   }.`
                 : undefined
             }

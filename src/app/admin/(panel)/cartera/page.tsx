@@ -6,7 +6,7 @@ import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
-import { ETAPA, ETAPAS_DE_CARTERA, legible, type EtapaDeCartera as CarteraStage } from '@/lib/admin/textos-del-admin'
+import { ETAPA, ETAPAS_DE_CARTERA, motivoDeEtapa, type EtapaDeCartera as CarteraStage } from '@/lib/admin/textos-del-admin'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
@@ -134,8 +134,8 @@ export default function CarteraPage() {
     },
     {
       header: 'Motivo',
-      texto: (r) => legible(r.reason),
-      cell: (r) => <span className="block max-w-[260px] truncate text-fg-muted">{legible(r.reason)}</span>,
+      texto: (r) => motivoDeEtapa(r.reason),
+      cell: (r) => <span className="block max-w-[260px] truncate text-fg-muted">{motivoDeEtapa(r.reason)}</span>,
     },
   ]
 

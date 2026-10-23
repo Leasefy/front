@@ -92,7 +92,7 @@ export const PANTALLAS_DEL_ADMIN: Record<string, DatosDeLaPantalla> = {
   '/admin': { seccion: null, icono: SquaresFour, nombre: 'Resumen', queHay: 'La operación de hoy de un vistazo' },
 
   '/admin/tenants': { seccion: 'inmobiliarias', icono: Buildings, nombre: 'Inmobiliarias', queHay: 'Cada inmobiliaria, su plan y su actividad' },
-  '/admin/onboarding': { seccion: 'inmobiliarias', icono: RocketLaunch, nombre: 'Onboarding', queHay: 'Cómo van las inmobiliarias nuevas' },
+  '/admin/onboarding': { seccion: 'inmobiliarias', icono: RocketLaunch, nombre: 'Inmobiliarias nuevas', queHay: 'Cómo arrancan las inmobiliarias' },
   '/admin/registration-profiles': { seccion: 'inmobiliarias', icono: UserCirclePlus, nombre: 'Perfiles de registro', queHay: 'Qué perfiles se pueden registrar' },
   '/admin/plans': { seccion: 'inmobiliarias', icono: Stack, nombre: 'Planes', queHay: 'El catálogo de planes de las inmobiliarias' },
   '/admin/pricing-config': { seccion: 'inmobiliarias', icono: Tag, nombre: 'Precios', queHay: 'El modelo de cobro a las inmobiliarias' },

@@ -16,7 +16,8 @@ import {
   canalDeLaLlamada,
   estadoDelExperimento,
   estadoDelPago,
-  legible,
+  eventoDeCumplimiento,
+  modeloDeCobro,
   resultadoDeLaLlamada,
   tonoDelPago,
   urgencia,
@@ -453,7 +454,7 @@ export function CobranzaPorVoz({
                 clave: p.billing_model ?? 'sin-modelo',
                 nombre: (
                   <>
-                    {(NOMBRE_DEL_MODELO as Record<string, string>)[p.billing_model ?? ''] ?? (p.billing_model ? legible(p.billing_model) : 'Sin modelo')}
+                    {(NOMBRE_DEL_MODELO as Record<string, string>)[p.billing_model ?? ''] ?? (p.billing_model ? modeloDeCobro(p.billing_model) : 'Sin modelo')}
                     <span className="block text-caption text-fg-muted">
                       {contar(num(p.agency_count), 'inmobiliaria', 'inmobiliarias')} ({fmtNumero(num(p.active_count))} activas) ·{' '}
                       {contar(num(p.debtors_count), 'deudor', 'deudores')}
@@ -523,7 +524,7 @@ export function CobranzaPorVoz({
           <Tarjeta titulo="Cumplimiento" descripcion="Eventos de los últimos 30 días.">
             <Renglones
               vacio="Sin eventos en 30 días."
-              filas={cumplimiento.map((c) => ({ clave: c.event_type, nombre: legible(c.event_type), valor: fmtNumero(num(c.count)) }))}
+              filas={cumplimiento.map((c) => ({ clave: c.event_type, nombre: eventoDeCumplimiento(c.event_type), valor: fmtNumero(num(c.count)) }))}
             />
           </Tarjeta>
 

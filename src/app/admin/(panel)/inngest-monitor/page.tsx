@@ -18,7 +18,7 @@ import { Alert } from '@leasefy/cadence'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { PestanasDeLaFicha } from '@/components/pantalla/PestanasDeLaFicha'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { flujoDeLosAgentes, tareaProgramada } from '@/lib/admin/textos-del-admin'
 
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
@@ -109,9 +109,9 @@ const SEGMENTOS_DE_FLUJOS: Segmento<WorkflowRow>[] = [
 const COLUMNAS_DE_TAREAS: Column<Tarea>[] = [
   {
     header: 'Tarea',
-    cell: (t) => <span className="font-medium text-fg">{legible(t.cron)}</span>,
+    cell: (t) => <span className="font-medium text-fg">{tareaProgramada(t.cron)}</span>,
     orden: (t) => t.cron,
-    texto: (t) => legible(t.cron),
+    texto: (t) => tareaProgramada(t.cron),
   },
   {
     header: 'Último rastro en la base',
@@ -138,9 +138,9 @@ const COLUMNAS_DE_TAREAS: Column<Tarea>[] = [
 const COLUMNAS_DE_FLUJOS: Column<WorkflowRow>[] = [
   {
     header: 'Flujo',
-    cell: (w) => <span className="font-medium text-fg">{legible(w.workflow_id)}</span>,
+    cell: (w) => <span className="font-medium text-fg">{flujoDeLosAgentes(w.workflow_id)}</span>,
     orden: (w) => w.workflow_id,
-    texto: (w) => legible(w.workflow_id),
+    texto: (w) => flujoDeLosAgentes(w.workflow_id),
   },
   {
     header: 'Corridas en 24 h',

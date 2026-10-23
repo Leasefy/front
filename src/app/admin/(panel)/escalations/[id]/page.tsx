@@ -13,7 +13,7 @@ import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 import { Pill } from '@/components/admin/Pill'
-import { legible, urgencia } from '@/lib/admin/textos-del-admin'
+import { urgencia } from '@/lib/admin/textos-del-admin'
 import { BackButton } from '@/components/ui/back-button'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -159,7 +159,7 @@ export default function EscalationDetailPage() {
         junto={
           <span className="flex flex-wrap items-center gap-1.5">
             <Pill tone={isOpen ? 'warn' : 'ok'} dot>
-              {ESTADO_DE_LA_ESCALACION[data.status] ?? legible(data.status)}
+              {ESTADO_DE_LA_ESCALACION[data.status] ?? 'Otro estado'}
             </Pill>
             {isOpen ? <Pill tone={u.tono}>Urgencia {u.nombre.toLowerCase()}</Pill> : null}
           </span>
@@ -291,7 +291,7 @@ export default function EscalationDetailPage() {
           <KeyValueList
             compact
             items={[
-              { label: 'Estado', value: ESTADO_DE_LA_ESCALACION[data.status] ?? legible(data.status) },
+              { label: 'Estado', value: ESTADO_DE_LA_ESCALACION[data.status] ?? 'Otro estado' },
               { label: 'La tiene', value: <span className="break-all">{data.assigned_to ?? 'Nadie'}</span> },
               { label: 'Cédula', value: <span className="font-mono tabular-nums">{data.document_number ?? '—'}</span> },
               { label: 'Correo del deudor', value: <span className="break-all">{data.debtor_email ?? '—'}</span> },

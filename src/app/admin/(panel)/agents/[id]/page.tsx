@@ -21,7 +21,7 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 import { Pill } from '@/components/admin/Pill'
 import { MasDetalles } from '@/components/pantalla/MasDetalles'
-import { legible } from '@/lib/admin/textos-del-admin'
+import { nombreDelModelo, proveedor } from '@/lib/admin/textos-del-admin'
 import { BackButton } from '@/components/ui/back-button'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -242,8 +242,8 @@ export default function AgentDetailPage() {
       <PageHeader
         title={data.name ?? 'Agente sin nombre'}
         description={[
-          data.model?.model ? `Modelo ${data.model.model}` : null,
-          data.voice?.provider ? `voz de ${legible(data.voice.provider)}` : null,
+          data.model?.model ? `Modelo ${nombreDelModelo(data.model.model)}` : null,
+          data.voice?.provider ? `voz de ${proveedor(data.voice.provider)}` : null,
           data.silenceTimeoutSeconds != null ? `cuelga tras ${data.silenceTimeoutSeconds} s de silencio` : null,
         ]
           .filter(Boolean)
@@ -280,7 +280,7 @@ export default function AgentDetailPage() {
               { label: 'Temperatura', value: <span className="font-mono tabular-nums">{String(data.temperature ?? '—')}</span> },
               { label: 'Tokens máximos', value: <span className="font-mono tabular-nums">{String(data.maxTokens ?? '—')}</span> },
               { label: 'Herramientas', value: <span className="font-mono tabular-nums">{String(data.toolsCount ?? 0)}</span> },
-              { label: 'Proveedor del modelo', value: data.model?.provider ? legible(data.model.provider) : '—' },
+              { label: 'Proveedor del modelo', value: data.model?.provider ? proveedor(data.model.provider) : '—' },
             ]}
           />
         </Tarjeta>

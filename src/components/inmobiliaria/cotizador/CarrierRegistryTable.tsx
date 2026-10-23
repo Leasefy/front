@@ -18,8 +18,9 @@
  */
 
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
-import { useState } from 'react'
-import { ArrowCounterClockwise, Buildings, DotsThreeVertical } from '@phosphor-icons/react'
+import { useMemo, useState } from 'react'
+import { ArrowCounterClockwise, Buildings, DotsThreeVertical, MagnifyingGlass } from '@phosphor-icons/react'
+import { Input } from '@/components/ui/input'
 
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -211,7 +212,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
             {row.hasOverride && (
               <span
                 data-testid="override-pill"
-                className="inline-flex self-start text-caption bg-primary-soft text-primary rounded-full px-2 py-0.5 mt-0.5"
+                className="inline-flex self-start text-caption bg-surface-muted text-fg rounded-full px-2 py-0.5 mt-0.5" /* Ronda 30: en neutro; el azul es de la acción */
               >
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.overridePill')}
               </span>
@@ -379,8 +380,16 @@ export function CarrierRegistryTable({
 
   // El registro crece con cada aseguradora que se da de alta; la página de
   // aseguradoras le pasa la lista entera, así que el recorte va acá.
+  // Ronda 30 (regla de Nico: toda tabla con buscador): por el nombre de la aseguradora.
+  const [busqueda, setBusqueda] = useState('')
+  const visibles = useMemo(() => {
+    const plano = (v?: string | null) =>
+      (v ?? '').toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    const q = plano(busqueda.trim())
+    return q ? rows.filter((r) => plano(r.global.name).includes(q)) : rows
+  }, [rows, busqueda])
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(rows)
+    useTablePagination(visibles, { resetKey: busqueda })
 
   // Los cuatro estados, en el orden de la casa: cargando → falló → vacío →
   // filas. El vacío se evalúa al final para que la tabla nunca diga «no hay
@@ -409,6 +418,12 @@ export function CarrierRegistryTable({
         />
       </TableCell>
     </TableRow>
+  ) : visibles.length === 0 ? (
+    <TableRow>
+      <TableCell colSpan={COLUMNAS} className="p-0">
+        <SinDatos queSon="aseguradoras" hayFiltros onLimpiarFiltros={() => setBusqueda('')} />
+      </TableCell>
+    </TableRow>
   ) : (
     pageItems.map((row) => (
       <CarrierTableRow
@@ -423,6 +438,22 @@ export function CarrierRegistryTable({
 
   return (
     <section className="overflow-hidden rounded-lg border border-border bg-surface">
+      {rows.length > 0 && !isLoading && !error ? (
+        <div className="border-b border-border px-4 py-3">
+          <div className="relative w-full sm:max-w-sm">
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" aria-hidden="true" />
+            <Input
+              type="search"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar una aseguradora"
+              aria-label="Buscar una aseguradora por su nombre"
+              className="h-9 pl-9"
+              data-testid="aseguradoras-buscar"
+            />
+          </div>
+        </div>
+      ) : null}
       <Table className="min-w-full divide-y divide-border">
         <TableHeader className="bg-surface-muted/60">
           <TableRow>

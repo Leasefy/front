@@ -1213,7 +1213,11 @@ function DocumentosContent() {
         onOpenChange={(o) => !o && setActaAbierta(null)}
         ancho="sm:max-w-2xl"
       >
-        <CajonCabecera titulo={t('inmobiliaria.documentos.actaDetail')} />
+        {/* Ronda 30: el cajón dice QUÉ acta es (el inmueble y su dirección), no «Detalle del acta». */}
+        <CajonCabecera
+          titulo={actaVisible?.propertyTitle || t('inmobiliaria.documentos.actaDetail')}
+          descripcion={actaVisible?.propertyAddress || undefined}
+        />
         <CajonCuerpo>
           {actaVisible && (
             <>

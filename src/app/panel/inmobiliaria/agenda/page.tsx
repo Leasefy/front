@@ -81,7 +81,9 @@ const TIPO_DOT: Record<EventoTipo, string> = {
   inspeccion: 'bg-fg-subtle/60',
   tarea: 'bg-fg-subtle/60',
 };
-const puntoDelEvento = (e: EventoAgenda) => (e.estado === 'vencido' ? 'bg-danger' : TIPO_DOT[e.tipo]);
+// Revisora r25: en «Atrasadas» las 12 filas llevaban punto rojo, que repetía la pestaña: ahí dice el tipo.
+const puntoDelEvento = (e: EventoAgenda, enAtrasadas = false) =>
+  e.estado === 'vencido' && !enAtrasadas ? 'bg-danger' : TIPO_DOT[e.tipo];
 
 /** «Pendiente» es lo normal de lo que viene: no se pinta (iba en las diez filas); sí lo demás. */
 const conEstadoVisible = (e: EventoAgenda) => e.estado !== 'pendiente';
@@ -329,7 +331,9 @@ function AgendaContent() {
       ...(otroAno ? { year: 'numeric' } : {}),
     })
       .format(d)
-      .replace('.', '');
+      .replace('.', '')
+      // VOZ §4 (revisora r25): «15 sept», no «15 de sept».
+      .replace(/ de /g, ' ');
   };
   const formatFecha = (iso: string) => {
     const d = fechaLocal(iso) ?? new Date(iso);
@@ -538,7 +542,8 @@ function AgendaContent() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Ronda 22: el encabezado de todas las pantallas (sección · título · una línea | la secundaria y la única azul). */}
       <EncabezadoDePantalla
-        seccion={t(k('label'))}
+        // T1 (revisora r25): el sobretítulo es la sección del menú, no el título otra vez.
+        seccion={t('inmobiliaria.nav.secCaptacion')}
         titulo={t(k('title'))}
         descripcion={t(k('subtitle'))}
         acciones={
@@ -706,7 +711,7 @@ function AgendaContent() {
                                 )}
                               >
                                 <span className="flex items-center gap-1.5">
-                                  <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', puntoDelEvento(e))} />
+                                  <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', puntoDelEvento(e, pestana === 'vencidas'))} />
                                   <span className="tabular-nums text-fg-muted">{e.hora ? horaDeLaCasa(e.hora) : 'Todo el día'}</span>
                                 </span>
                                 <span className="mt-0.5 block truncate text-fg">{e.titulo}</span>
@@ -759,7 +764,7 @@ function AgendaContent() {
                     className="flex w-full items-start gap-3 px-4 py-3 text-left"
                     data-testid="agenda-tarjeta"
                   >
-                    <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', puntoDelEvento(e))} />
+                    <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', puntoDelEvento(e, pestana === 'vencidas'))} />
                     <span className="min-w-0 flex-1">
                       {/* Revisora r22 (#7): a 390 el título en dos renglones, no cortado. */}
                       <span className="block line-clamp-2 break-words font-medium text-fg">{tituloDelEvento(e)}</span>
@@ -862,7 +867,7 @@ function AgendaContent() {
                         </div>
                         <p className="text-caption text-muted-foreground truncate">
                           <span className="inline-flex items-center gap-1.5">
-                            <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', puntoDelEvento(e))} />
+                            <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', puntoDelEvento(e, pestana === 'vencidas'))} />
                             {t(k(`rowTipo_${e.tipo}`))}
                           </span>
                           {!elTituloEsElInmueble(e) && e.vinculoLabel ? ` · ${e.vinculoLabel}` : ''}

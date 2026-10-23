@@ -150,8 +150,9 @@ function InicioDelPropietarioDeInmobiliaria({ doc }: { doc: NonNullable<ReturnTy
     <div className="min-h-screen bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
-          seccion={greeting}
-          titulo={t('dashboard.hello', { name: firstName })}
+          // Glow up 22-10 (como el del inquilino): la sección es la del riel y el saludo es el título.
+          seccion="Inicio"
+          titulo={`${greeting}, ${firstName}`}
           descripcion={`Lo que ${quien} te administra: cuánto te gira, cuándo y lo que te pregunta.`}
           acciones={
             <Button asChild variant="outline" size="sm" hideArrow className="max-lg:flex-1">
@@ -202,8 +203,8 @@ function InicioSinContratos({ inmobiliaria }: { inmobiliaria: string }) {
     <div className="min-h-screen bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
-          seccion={greeting}
-          titulo={t('dashboard.hello', { name: firstName })}
+          seccion="Inicio"
+          titulo={`${greeting}, ${firstName}`}
           descripcion={`Tu portal con ${inmobiliaria}: lo que te gira, lo que falta y tus informes.`}
         />
         {/* GLOW UP (21-10): el vacío grande con su ilustración, qué va a aparecer, quién lo trae y su botón. */}
@@ -224,9 +225,23 @@ function InicioSinContratos({ inmobiliaria }: { inmobiliaria: string }) {
 export default function PanelPage() {
   const administrados = useContratosAdministrados();
   if (administrados.cargando) {
+    // Glow up 22-10: el esqueleto con la forma del inicio (encabezado, la cifra, los contratos) en vez de una
+    // caja centrada que no se parecía a lo que llega.
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Skeleton className="h-40 w-full max-w-3xl rounded-lg" />
+      <div className="min-h-screen bg-bg">
+        <div className="space-y-6 p-6 lg:p-8" aria-busy="true" data-testid="inicio-del-propietario-cargando">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96 max-w-full" />
+          </div>
+          <div className="space-y-3 rounded-lg border border-border bg-surface p-5">
+            <Skeleton className="h-3 w-40" />
+            <Skeleton className="h-10 w-56" />
+            <Skeleton className="h-2 w-full" />
+          </div>
+          <Skeleton className="h-40 w-full rounded-lg" />
+        </div>
       </div>
     );
   }

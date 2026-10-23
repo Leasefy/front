@@ -1,12 +1,11 @@
 'use client'
 
-import { Buildings, FileText, HandCoins, HouseLine, Receipt, UsersThree } from '@phosphor-icons/react'
+import { Cifra, FranjaDeCifras } from '@leasefy/cadence'
 
+import { CifraHeroe, type TramoDeLaCifra } from '@/components/pantalla/CifraHeroe'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
 import { fmtCOP, fmtNumero } from '@/lib/admin/format'
-import { KpiCard } from '@/components/admin/screen/KpiCard'
-import { FranjaDeCifras } from '@leasefy/cadence'
 import { ErrorBlock, LoadingBlock } from '@/components/admin/screen/states'
-import { Tarjeta } from '@/components/admin/screen/Tarjeta'
 
 /** `GET /admin/plataforma` (back 19-10-2026). */
 export interface ResumenDeLaPlataforma {
@@ -28,20 +27,26 @@ export interface ResumenDeLaPlataforma {
   recaudo: { recibosEsteMes: number; valorEsteMesCop: number }
 }
 
-const PLANES: Array<{ clave: keyof ResumenDeLaPlataforma['inmobiliarias']['porEstadoDelPlan']; nombre: string; filtro: string; tono: string }> = [
-  { clave: 'ACTIVE', nombre: 'Al día', filtro: 'ACTIVE', tono: 'bg-success' },
-  { clave: 'PAST_DUE', nombre: 'En mora', filtro: 'PAST_DUE', tono: 'bg-warning' },
-  { clave: 'SUSPENDED', nombre: 'Suspendidas', filtro: 'SUSPENDED', tono: 'bg-danger' },
-  { clave: 'CANCELLED', nombre: 'Canceladas', filtro: 'CANCELLED', tono: 'bg-border-strong' },
-  { clave: 'SIN_PLAN', nombre: 'Sin plan', filtro: 'sin-plan', tono: 'bg-border' },
+type EstadoDelPlan = keyof ResumenDeLaPlataforma['inmobiliarias']['porEstadoDelPlan']
+
+/** Los estados del plan, en el orden en que la barra los recorre (de lo sano a lo perdido). */
+const PLANES: Array<{ clave: EstadoDelPlan; nombre: string; filtro: string; tono: TramoDeLaCifra['tono'] }> = [
+  { clave: 'ACTIVE', nombre: 'Al día', filtro: 'ACTIVE', tono: 'exito' },
+  { clave: 'PAST_DUE', nombre: 'En mora', filtro: 'PAST_DUE', tono: 'aviso' },
+  { clave: 'SUSPENDED', nombre: 'Suspendidas', filtro: 'SUSPENDED', tono: 'critico' },
+  { clave: 'CANCELLED', nombre: 'Canceladas', filtro: 'CANCELLED', tono: 'neutro' },
+  { clave: 'SIN_PLAN', nombre: 'Sin plan', filtro: 'sin-plan', tono: 'neutro' },
 ]
 
-const mas = (n: number, palabra: string) => (n > 0 ? `+${fmtNumero(n)} ${palabra} en 30 días` : `Ninguna nueva en 30 días`)
+const enTreintaDias = (n: number, nueva: string, ninguna: string) =>
+  n > 0 ? `+${fmtNumero(n)} ${nueva} en 30 días` : `${ninguna} en 30 días`
 
 /**
- * La plataforma de un vistazo, arriba del Resumen (19-10-2026, Nico: «que sí
- * traiga la información de cada cosa»). Antes el Resumen era sólo la cobranza
- * por voz y salía en cero con miles de contratos en la base.
+ * La pestaña «Plataforma» del Resumen (glow up, 22-10-2026). LA RESPUESTA es
+ * cuántas inmobiliarias hay y cómo están con su plan: una `CifraHeroe` con la
+ * barra por estado (cada estado abre la lista filtrada). Debajo, sólo cuatro
+ * cifras: la plata de los planes, el recaudo del mes, los contratos y los
+ * inmuebles. Quiénes usan Leasefy, plegado.
  */
 export function LaPlataforma({
   estado,
@@ -51,7 +56,7 @@ export function LaPlataforma({
   /** Abre la lista de inmobiliarias, con el filtro del plan si se tocó uno. */
   onInmobiliarias: (plan?: string) => void
 }) {
-  if (estado.isLoading) return <LoadingBlock label="Cargando la plataforma" filas={3} />
+  if (estado.isLoading && !estado.data) return <LoadingBlock label="Cargando la plataforma" filas={4} />
   if (estado.error || !estado.data)
     return (
       <ErrorBlock
@@ -61,113 +66,86 @@ export function LaPlataforma({
       />
     )
   const d = estado.data
-  const total = Math.max(1, d.inmobiliarias.total)
+  const porEstado = d.inmobiliarias.porEstadoDelPlan
+
+  const tramos: TramoDeLaCifra[] = PLANES.map((p) => ({
+    clave: p.clave,
+    etiqueta: p.nombre,
+    monto: porEstado[p.clave] ?? 0,
+    tono: p.tono,
+    siempre: p.clave === 'ACTIVE',
+    'data-testid': `resumen-plan-${p.filtro}`,
+    cifra: (
+      // allowlist: la cifra de la leyenda abre la lista filtrada (como las cifras de Deuda del mes).
+      <button
+        type="button"
+        onClick={() => onInmobiliarias(p.filtro)}
+        className="rounded-sm text-left underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+        aria-label={`Ver las inmobiliarias: ${p.nombre.toLowerCase()} (${fmtNumero(porEstado[p.clave] ?? 0)})`}
+      >
+        {fmtNumero(porEstado[p.clave] ?? 0)}
+      </button>
+    ),
+  }))
 
   return (
-    <section aria-label="La plataforma" className="space-y-4">
-      <FranjaDeCifras fila="lg">
-        <KpiCard
-          label="Inmobiliarias"
-          value={d.inmobiliarias.total}
-          hint={mas(d.inmobiliarias.nuevas30d, 'nuevas')}
-          icon={<Buildings />}
+    <section aria-label="La plataforma" className="space-y-6" data-testid="resumen-plataforma">
+      <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+        <CifraHeroe
+          rotulo="Inmobiliarias en Leasefy"
+          cifra={fmtNumero(d.inmobiliarias.total)}
+          contexto={enTreintaDias(d.inmobiliarias.nuevas30d, 'nuevas', 'ninguna nueva')}
+          tramos={tramos}
+          total={d.inmobiliarias.total}
+          pie="Toca un estado para ver cuáles son."
+          data-testid="resumen-inmobiliarias"
         />
-        <KpiCard
-          label="Contratos vigentes"
-          value={d.contratos.vigentes}
-          hint={`de ${fmtNumero(d.contratos.total)} · ${d.contratos.nuevos30d > 0 ? `+${fmtNumero(d.contratos.nuevos30d)} en 30 días` : 'ninguno nuevo en 30 días'}`}
-          icon={<FileText />}
-        />
-        <KpiCard
-          label="Inmuebles"
-          value={d.inmuebles.total}
-          hint={d.inmuebles.nuevos30d > 0 ? `+${fmtNumero(d.inmuebles.nuevos30d)} en 30 días` : 'Ninguno nuevo en 30 días'}
-          icon={<HouseLine />}
-        />
-        <KpiCard
-          label="Personas"
-          value={d.personas.total}
-          hint={`${fmtNumero(d.personas.entraron7d)} entraron en 7 días`}
-          icon={<UsersThree />}
-        />
-        <KpiCard
-          label="Planes · ingreso mensual"
-          value={fmtCOP(d.ingresos.mrrCop)}
-          hint={
+      </div>
+
+      <FranjaDeCifras fila="lg" aria-label="La plata y la operación de la plataforma">
+        <Cifra
+          etiqueta="Ingreso mensual de los planes"
+          valor={fmtCOP(d.ingresos.mrrCop)}
+          detalle={
             d.ingresos.planesDePorcentaje > 0
-              ? `Más ${fmtNumero(d.ingresos.planesDePorcentaje)} con porcentaje del canon`
-              : `Cobrado este mes ${fmtCOP(d.ingresos.cobradoEsteMesCop)}`
+              ? `más ${fmtNumero(d.ingresos.planesDePorcentaje)} con porcentaje del canon`
+              : `cobrado este mes ${fmtCOP(d.ingresos.cobradoEsteMesCop)}`
           }
-          tone="ok"
-          icon={<HandCoins />}
         />
-        <KpiCard
-          label="Recaudo · este mes"
-          value={fmtCOP(d.recaudo.valorEsteMesCop)}
-          hint={`${fmtNumero(d.recaudo.recibosEsteMes)} ${d.recaudo.recibosEsteMes === 1 ? 'recibo de caja' : 'recibos de caja'}`}
-          icon={<Receipt />}
+        <Cifra
+          etiqueta="Recaudo este mes"
+          valor={fmtCOP(d.recaudo.valorEsteMesCop)}
+          detalle={`${fmtNumero(d.recaudo.recibosEsteMes)} ${d.recaudo.recibosEsteMes === 1 ? 'recibo de caja' : 'recibos de caja'}`}
+        />
+        <Cifra
+          etiqueta="Contratos vigentes"
+          valor={d.contratos.vigentes}
+          detalle={`de ${fmtNumero(d.contratos.total)} · ${enTreintaDias(d.contratos.nuevos30d, 'nuevos', 'ninguno nuevo')}`}
+        />
+        <Cifra
+          etiqueta="Inmuebles"
+          valor={d.inmuebles.total}
+          detalle={enTreintaDias(d.inmuebles.nuevos30d, 'nuevos', 'ninguno nuevo')}
         />
       </FranjaDeCifras>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Tarjeta
-          titulo="Planes de las inmobiliarias"
-          descripcion="Toca un estado para ver cuáles son."
-        >
-          <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-surface-muted" aria-hidden="true">
-            {PLANES.map((p) =>
-              d.inmobiliarias.porEstadoDelPlan[p.clave] > 0 ? (
-                <span
-                  key={p.clave}
-                  className={p.tono}
-                  style={{ width: `${(d.inmobiliarias.porEstadoDelPlan[p.clave] / total) * 100}%` }}
-                />
-              ) : null,
-            )}
-          </div>
-          <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
-            {PLANES.map((p) => (
-              <li key={p.clave}>
-                <button
-                  type="button"
-                  onClick={() => onInmobiliarias(p.filtro)}
-                  className="flex w-full flex-col items-start rounded-md px-2 py-1.5 text-left transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-                >
-                  <span className="flex items-center gap-1.5 text-caption text-fg-muted">
-                    <span className={`inline-block size-2 rounded-full ${p.tono}`} aria-hidden="true" />
-                    {p.nombre}
-                  </span>
-                  <span className="font-mono text-subtitle tabular-nums text-fg">
-                    {fmtNumero(d.inmobiliarias.porEstadoDelPlan[p.clave])}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          {d.ingresos.cobrosFallidosEsteMes > 0 ? (
-            <p className="mt-3 text-caption text-warning">
-              {fmtNumero(d.ingresos.cobrosFallidosEsteMes)}{' '}
-              {d.ingresos.cobrosFallidosEsteMes === 1 ? 'cobro de plan falló' : 'cobros de plan fallaron'} este mes.
-            </p>
-          ) : null}
-        </Tarjeta>
-
-        <Tarjeta titulo="Quiénes usan Leasefy" descripcion="Las cuentas de la plataforma, por tipo.">
-          <ul className="grid grid-cols-2 gap-3 2xl:grid-cols-4">
-            {[
-              { nombre: 'Inquilinos', n: d.personas.porRol.inquilinos },
-              { nombre: 'Propietarios', n: d.personas.porRol.propietarios },
-              { nombre: 'De inmobiliarias', n: d.personas.porRol.inmobiliarias },
-              { nombre: 'Nuevas en 30 días', n: d.personas.nuevas30d },
-            ].map((x) => (
-              <li key={x.nombre} className="rounded-md bg-bg px-3 py-2">
-                <div className="text-caption text-fg-muted">{x.nombre}</div>
-                <div className="font-mono text-subtitle tabular-nums text-fg">{fmtNumero(x.n)}</div>
-              </li>
-            ))}
-          </ul>
-        </Tarjeta>
-      </div>
+      <MasDetalles etiqueta="Ver quiénes usan Leasefy" etiquetaAbierto="Ocultar quiénes usan Leasefy">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 rounded-lg border border-border bg-surface p-5 sm:grid-cols-3 lg:grid-cols-6">
+          {[
+            { nombre: 'Personas con cuenta', n: d.personas.total },
+            { nombre: 'Inquilinos', n: d.personas.porRol.inquilinos },
+            { nombre: 'Propietarios', n: d.personas.porRol.propietarios },
+            { nombre: 'De inmobiliarias', n: d.personas.porRol.inmobiliarias },
+            { nombre: 'Nuevas en 30 días', n: d.personas.nuevas30d },
+            { nombre: 'Entraron en 7 días', n: d.personas.entraron7d },
+          ].map((x) => (
+            <div key={x.nombre} className="min-w-0 space-y-0.5">
+              <dt className="text-caption text-fg-muted">{x.nombre}</dt>
+              <dd className="font-mono text-body tabular-nums text-fg">{fmtNumero(x.n)}</dd>
+            </div>
+          ))}
+        </dl>
+      </MasDetalles>
     </section>
   )
 }

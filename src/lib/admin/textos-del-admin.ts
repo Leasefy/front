@@ -229,3 +229,52 @@ export const ACCIONES_DEL_ADMIN: Record<string, string> = {
 }
 
 export const accionDelAdmin = conNombre(ACCIONES_DEL_ADMIN)
+
+// ── Glow up 22-10-2026: los estados que el Resumen mostraba crudos ───────────
+
+/** El estado de un pago en línea (Wompi). */
+export const ESTADO_DEL_PAGO: Record<string, string> = {
+  approved: 'Aprobado',
+  pending: 'Pendiente',
+  declined: 'Rechazado',
+  voided: 'Anulado',
+  refunded: 'Reembolsado',
+}
+
+export const estadoDelPago = conNombre(ESTADO_DEL_PAGO)
+
+export function tonoDelPago(codigo: string | null | undefined): 'ok' | 'warn' | 'bad' | 'neutral' {
+  switch (codigo) {
+    case 'approved':
+      return 'ok'
+    case 'pending':
+      return 'warn'
+    case 'declined':
+    case 'voided':
+    case 'refunded':
+      return 'bad'
+    default:
+      return 'neutral'
+  }
+}
+
+/** El estado de un experimento A/B de los agentes. */
+export const ESTADO_DEL_EXPERIMENTO: Record<string, string> = {
+  running: 'En curso',
+  paused: 'En pausa',
+  completed: 'Terminado',
+  draft: 'Borrador',
+  archived: 'Archivado',
+}
+
+export const estadoDelExperimento = conNombre(ESTADO_DEL_EXPERIMENTO)
+
+/** El canal de una llamada de Mori (`call_type`). */
+export const canalDeLaLlamada = conNombre({
+  outbound: 'Salientes',
+  inbound: 'Entrantes',
+  callback: 'Devoluciones',
+  whatsapp: 'WhatsApp',
+  voice: 'Voz',
+  sms: 'SMS',
+})

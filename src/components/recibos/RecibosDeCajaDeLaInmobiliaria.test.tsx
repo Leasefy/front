@@ -68,7 +68,12 @@ async function montar() {
 }
 
 beforeEach(() => {
-  lista.mockReset().mockResolvedValue(respuesta())
+  // Ronda 30 (C11): la pantalla también pregunta el total de cada pestaña (porPagina 1).
+  lista.mockReset().mockImplementation((p: { estado?: string; porPagina?: number }) =>
+    Promise.resolve(
+      p?.porPagina === 1 ? { ...respuesta(), total: p.estado === 'todos' ? 2 : 1 } : respuesta(),
+    ),
+  )
   bajarPdf.mockReset().mockResolvedValue(undefined)
   permisos.value = null
 })

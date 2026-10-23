@@ -12,10 +12,13 @@
  * 🔴 Acá no se suma nada: los totales y el orden los manda el back.
  */
 
-import { useCallback, useEffect, useState } from 'react'
-import { ClockCounterClockwise } from '@phosphor-icons/react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ClockCounterClockwise, MagnifyingGlass } from '@phosphor-icons/react'
 
 import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { cn } from '@/lib/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -57,6 +60,18 @@ export function SaldoDelSistemaAnterior() {
     void cargar()
   }, [cargar])
 
+  /* Ronda 30 (revisora r27 y la regla de Nico: «las tablas siempre con buscador y paginación»). */
+  const [busqueda, setBusqueda] = useState('')
+  const filas = useMemo(() => {
+    const q = busqueda.trim().toLocaleLowerCase('es')
+    const todas = lista?.filas ?? []
+    if (!q) return todas
+    return todas.filter((f) =>
+      [f.inquilino, f.propietario, f.inmueble, f.contrato].some((x) => (x ?? '').toString().toLocaleLowerCase('es').includes(q)),
+    )
+  }, [lista, busqueda])
+  const pag = useTablePagination(filas, { resetKey: busqueda })
+
   return (
     <div className="space-y-6" data-testid="saldo-del-sistema-anterior">
       <EstadoDeDatos
@@ -68,10 +83,6 @@ export function SaldoDelSistemaAnterior() {
       >
         {lista && (
           <>
-            <Card className="border-warning/40 bg-warning-soft p-4" data-testid="aviso-no-se-gira-solo">
-              <p className="text-sm text-fg">{lista.aviso}</p>
-            </Card>
-
             {/* Ronda 26 (revisora r25, Saldo anterior #1): UNA cifra —lo que falta recaudar de lo que traían— con
                 su barra recaudado · por recaudar, en vez de tres tarjetas del mismo peso. «Por recaudar» ya no va en
                 rojo: no es mora, es saldo. */}
@@ -95,13 +106,23 @@ export function SaldoDelSistemaAnterior() {
                   siempre: true,
                 },
                 {
+                  /* Ronda 30 (revisora r27): sin repetir la plata de «Por recaudar», que es la cifra grande. */
                   clave: 'por-recaudar',
-                  etiqueta: 'Sigue en la cartera, con su interés de mora',
+                  etiqueta: 'Por recaudar: sigue en la cartera, con su interés de mora',
                   monto: lista.totales.pendienteCop,
                   tono: 'neutro',
-                  cifra: formatCurrency(lista.totales.pendienteCop),
+                  cifra: null,
                 },
               ]}
+              pie={
+                /* Ronda 30 (revisora r27): el aviso va al pie de la cifra, no antes de la respuesta. */
+                lista.aviso ? (
+                  <p className="flex items-baseline gap-2 text-body-sm text-fg" data-testid="aviso-no-se-gira-solo">
+                    <span className="h-1.5 w-1.5 shrink-0 translate-y-[-2px] self-center rounded-full bg-warning-500" aria-hidden="true" />
+                    <span>{lista.aviso}</span>
+                  </p>
+                ) : null
+              }
               esCero={lista.totales.saldoCop === 0}
               cuandoEsCero="Ningún contrato trae saldo del sistema anterior."
               data-testid="cifra-saldo-anterior"
@@ -116,6 +137,19 @@ export function SaldoDelSistemaAnterior() {
               />
             ) : (
             <Card className="overflow-hidden p-0">
+              <div className="border-b border-border px-4 py-3">
+                <div className="relative w-full sm:w-72">
+                  <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" aria-hidden="true" />
+                  <Input
+                    className="pl-9"
+                    placeholder="Buscar inquilino, propietario o inmueble"
+                    aria-label="Buscar en el saldo del sistema anterior"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    data-testid="buscar-saldo-anterior"
+                  />
+                </div>
+              </div>
               {/* Ronda 26 (#2 y UI): la primera columna es el inquilino (quien identifica), el contrato debajo;
                   los «$ 0» en «—»; a 390, una tarjeta por contrato (patrón de CuotasDelMesTabla). */}
               <Table className="max-md:block">
@@ -129,7 +163,19 @@ export function SaldoDelSistemaAnterior() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="max-md:block">
-                  {lista.filas.map((f) => (
+                  {filas.length === 0 ? (
+                    <TableRow className="max-md:block">
+                      <TableCell colSpan={5} className="max-md:block">
+                        <SinDatos
+                          hayFiltros
+                          queSon="saldos del sistema anterior"
+                          titulo="Ningún contrato coincide con la búsqueda"
+                          onLimpiarFiltros={() => setBusqueda('')}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                  {pag.pageItems.map((f) => (
                     <TableRow
                       key={f.contractId}
                       data-testid="fila-saldo-anterior"
@@ -166,6 +212,18 @@ export function SaldoDelSistemaAnterior() {
                   ))}
                 </TableBody>
               </Table>
+              {filas.length > 0 ? (
+                <div className="border-t border-border px-4 py-3">
+                  <TablePagination
+                    total={pag.total}
+                    page={pag.page}
+                    pageSize={pag.pageSize}
+                    pageSizeOptions={PAGE_SIZE_OPTIONS}
+                    onPageChange={pag.setPage}
+                    onPageSizeChange={pag.setPageSize}
+                  />
+                </div>
+              ) : null}
             </Card>
             )}
           </>

@@ -27,7 +27,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CaretLeft, CaretRight, DotsThreeVertical, Plus } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
+import { SinLaMigracion } from '@/components/finanzas/piezas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,6 +55,7 @@ import {
 } from '@/lib/tesoreria/limites-de-tesoreria';
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 
 /** Los dos campos de «Agregar un día», y el id de cada uno. */
 type CampoDelFestivo = 'fecha' | 'nombre';
@@ -94,6 +95,8 @@ export function CalendarioDeFestivosPanel() {
   const [nacional, setNacional] = useState(false);
   const [errores, setErrores] = useState<Partial<Record<CampoDelFestivo, string>>>({});
   const [vista, setVista] = useState<'todos' | 'calculados' | 'corregidos'>('todos');
+  /* Ronda 30 (revisora r27): «Agregar un día» abre un cajón (antes un formulario abierto al pie). */
+  const [agregando, setAgregando] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -135,6 +138,7 @@ export function CalendarioDeFestivosPanel() {
       toast.success(`${fecha} agregado al calendario.`);
       setFecha('');
       setNombre('');
+      setAgregando(false);
       await cargar();
     } catch (error) {
       // Un 400 por campo va debajo de su campo; lo demás, al aviso.
@@ -221,21 +225,18 @@ export function CalendarioDeFestivosPanel() {
 
             {/* LA RESPUESTA: cuántos días no cuentan este año y cuál es el próximo. */}
             <div className="flex flex-wrap items-end justify-between gap-4">
+              {/* Ronda 30 (revisora r27, «el 18 cuatro veces»): LA RESPUESTA es el próximo festivo; cuántos
+                  hay en el año lo dicen las pestañas de la tabla. */}
               <CifraHeroe
                 tamano="mediana"
-                rotulo={`Festivos de ${datos.anio}`}
-                cifra={datos.activos.toLocaleString('es-CO')}
+                rotulo={proximo ? 'El próximo festivo' : `Festivos de ${datos.anio}`}
+                cifra={proximo ? `${diaDeLaSemana(proximo.fecha)} ${fechaCorta(proximo.fecha)}` : 'Ninguno por delante'}
                 contexto={
-                  <>
-                    {cuantosFestivos(datos.activos, datos.diasDistintos).replace(/^\d+ festivos? /, '')}
-                    {proximo ? (
-                      <>
-                        {' · el próximo, '}
-                        <span className="text-fg">{proximo.nombre}</span>
-                        {`: ${diaDeLaSemana(proximo.fecha)} ${fechaCorta(proximo.fecha)}`}
-                      </>
-                    ) : null}
-                  </>
+                  proximo ? (
+                    <span className="text-fg">{proximo.nombre}</span>
+                  ) : (
+                    <>{cuantosFestivos(datos.activos, datos.diasDistintos)}: ya pasaron todos.</>
+                  )
                 }
                 className="min-w-0 flex-1"
                 data-testid="cifra-de-festivos"
@@ -286,11 +287,20 @@ export function CalendarioDeFestivosPanel() {
                   pestanas={[
                     { valor: 'todos', etiqueta: 'Todos', cuantos: datos.dias.length, fija: true },
                     { valor: 'calculados', etiqueta: 'Calculados', cuantos: datos.dias.length - corregidos, fija: true },
-                    { valor: 'corregidos', etiqueta: 'Corregidos a mano', cuantos: corregidos, fija: true },
+                    // Ronda 30: en cero no se pinta (la regla de las pestañas), salvo si es la abierta.
+                    { valor: 'corregidos', etiqueta: 'Corregidos a mano', cuantos: corregidos },
                   ]}
                   data-testid="vista-del-calendario"
                 />
               </div>
+              {datos.puedeCorregir ? (
+                <div className="flex justify-end border-b border-border px-4 py-3">
+                  <Button size="sm" hideArrow onClick={() => setAgregando(true)} data-testid="abrir-agregar-festivo">
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    Agregar un día
+                  </Button>
+                </div>
+              ) : null}
               <Table data-testid="calendario">
                 <TableHeader className="max-md:hidden">
                   <TableRow>
@@ -374,11 +384,12 @@ export function CalendarioDeFestivosPanel() {
             </section>
 
             {datos.puedeCorregir ? (
-              <section className="space-y-4 rounded-lg border border-border bg-surface p-5">
-                <TituloDeBloque
+              <Cajon abierto={agregando} onOpenChange={setAgregando} tamano="sm">
+                <CajonCabecera
                   titulo="Agregar un día"
-                  explicacion="Un festivo que la ley creó y el cálculo todavía no conoce, o un día que tu inmobiliaria no trabaja. Los días que agregues no cuentan como hábiles para los plazos."
+                  descripcion="Un festivo que la ley creó y el cálculo todavía no conoce, o un día que tu inmobiliaria no trabaja. Los días que agregues no cuentan como hábiles para los plazos."
                 />
+                <CajonCuerpo className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-[auto_1fr]">
                   <div className="space-y-1.5">
                     <Label htmlFor="fecha-del-festivo">Fecha</Label>
@@ -425,7 +436,11 @@ export function CalendarioDeFestivosPanel() {
                     creó un festivo nuevo, no para un día que sólo tu oficina no trabaja.
                   </span>
                 </label>
-                <div className="flex justify-end">
+                </CajonCuerpo>
+                <CajonPie>
+                  <Button variant="ghost" size="sm" hideArrow onClick={() => setAgregando(false)}>
+                    Cancelar
+                  </Button>
                   <Button
                     size="sm"
                     hideArrow
@@ -436,8 +451,8 @@ export function CalendarioDeFestivosPanel() {
                     <Plus className="h-4 w-4" aria-hidden="true" />
                     Agregar el día
                   </Button>
-                </div>
-              </section>
+                </CajonPie>
+              </Cajon>
             ) : null}
           </>
         ) : null}

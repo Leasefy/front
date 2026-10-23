@@ -483,6 +483,8 @@ describe('el calendario de festivos — el espejo del tope y los errores', () =>
 
   it('🔴 una fecha fuera de 2000–2100 se ataja debajo de la fecha, con la frase del back, y no viaja', async () => {
     await pintar(<CalendarioDeFestivosPanel />);
+    // Ronda 30: el formulario vive en un cajón que se abre con «Agregar un día».
+    await clic('[data-testid="abrir-agregar-festivo"]');
     await escribir('#fecha-del-festivo', '1999-12-31');
     await escribir('#nombre-del-festivo', 'Día de la familia');
     await clic('[data-testid="agregar-festivo"]');
@@ -496,6 +498,8 @@ describe('el calendario de festivos — el espejo del tope y los errores', () =>
       cuatroCientos('nombre', MENSAJES_DE_TESORERIA.nombreDelFestivoLargo, 'longitud_maxima'),
     );
     await pintar(<CalendarioDeFestivosPanel />);
+    // Ronda 30: el formulario vive en un cajón que se abre con «Agregar un día».
+    await clic('[data-testid="abrir-agregar-festivo"]');
     await escribir('#fecha-del-festivo', '2026-12-31');
     await escribir('#nombre-del-festivo', 'Día de la familia');
     await clic('[data-testid="agregar-festivo"]');

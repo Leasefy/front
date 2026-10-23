@@ -28,7 +28,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash, WarningOctagon } from '@phosphor-icons/react';
+import { Plus, Trash } from '@phosphor-icons/react';
 
 import {
   AlertDialog,
@@ -71,6 +71,9 @@ import { LARGO_MAXIMO_DE_LA_FUENTE, problemaDeLaUsura } from '@/lib/finanzas/lim
 import { avisoDeMesesQueFaltan, esMesValido, mesesAtras, mesesQueFaltan } from '@/lib/finanzas/usura';
 import { mesActual, nombreDelMes } from '@/lib/recaudo/meses';
 import { CampoDeMes } from '@/components/ui/campo-de-mes';
+import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { ariaDelCampoDeDia } from '@/components/contabilidad/CampoDeDia';
 import { localeDeLasCifras } from '@/lib/i18n/idioma-de-las-cifras';
 
@@ -134,18 +137,32 @@ export function TasasDeUsuraPanel() {
   );
   const aviso = avisoDeMesesQueFaltan(faltan);
   const disponible = datos?.disponible !== false;
+  /* Ronda 30 (revisora r27): los meses sin tasa son FILAS de la tabla (mes · «—» · «Cargar»), no
+     una lista dentro de un párrafo; todo el rango, lo más reciente primero, con paginación. */
+  const filasDelRango = useMemo(() => {
+    const conTasa = tasas.map((t) => ({ mes: t.mes, tasa: t as TasaDeUsura | null }));
+    const sinTasa = faltan.map((m) => ({ mes: m, tasa: null as TasaDeUsura | null }));
+    return [...conTasa, ...sinTasa].sort((a, b) => (a.mes < b.mes ? 1 : a.mes > b.mes ? -1 : 0));
+  }, [tasas, faltan]);
+  const pag = useTablePagination(filasDelRango, { resetKey: `${desde}|${hasta}` });
+  const [mesNuevo, setMesNuevo] = useState<string | null>(null);
 
   return (
     <div className="space-y-5" data-testid="tasas-de-usura">
       {/* ── 🔴 Los meses sin tope ──────────────────────────────────────── */}
+      {/* Ronda 30 (revisora r27): LA RESPUESTA es una cifra —cuántos meses van sin techo— y no un
+          párrafo en una caja roja; los meses van como filas de la tabla, con su «Cargar». */}
       {aviso ? (
-        <div
-          className="flex gap-2 rounded-lg border border-danger/40 bg-danger-soft p-4 text-sm text-fg"
-          data-testid="aviso-de-meses-sin-tasa"
-          role="alert"
-        >
-          <WarningOctagon className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden="true" />
-          <p>{aviso}</p>
+        <div data-testid="aviso-de-meses-sin-tasa" role="alert" aria-label={aviso}>
+          <CifraHeroe
+            rotulo="Sin techo"
+            cifra={
+              <span className="text-danger">
+                {faltan.length} {faltan.length === 1 ? 'mes' : 'meses'}
+              </span>
+            }
+            contexto="sin tasa de usura cargada: el interés de mora de esos meses se liquida sin topear. Cárgalas con la certificación de la Superfinanciera."
+          />
         </div>
       ) : null}
 
@@ -163,7 +180,7 @@ export function TasasDeUsuraPanel() {
               id="usura-desde"
               value={desde}
               onChange={(v) => esMesValido(v) && setDesde(v)}
-              className="w-44"
+              className="w-52"
             />
             <Label htmlFor="usura-hasta" className="sr-only">
               Hasta
@@ -173,8 +190,19 @@ export function TasasDeUsuraPanel() {
               id="usura-hasta"
               value={hasta}
               onChange={(v) => esMesValido(v) && setHasta(v)}
-              className="w-44"
+              className="w-52"
             />
+            {datos ? (
+              <span className="text-caption text-fg-muted" data-testid="conteo-de-tasas">
+                · <span className="font-mono tabular-nums text-fg">{tasas.length}</span>{' '}
+                {tasas.length === 1 ? 'cargada' : 'cargadas'}
+                {faltan.length > 0 ? (
+                  <>
+                    {' '}· <span className="font-mono tabular-nums text-danger">{faltan.length}</span> sin tasa
+                  </>
+                ) : null}
+              </span>
+            ) : null}
           </div>
           <Button size="sm" hideArrow disabled={!disponible} onClick={() => setEditando('nueva')}>
             <Plus className="h-4 w-4" aria-hidden="true" />
@@ -197,7 +225,7 @@ export function TasasDeUsuraPanel() {
                 </div>
               ) : null}
 
-              {tasas.length === 0 ? (
+              {filasDelRango.length === 0 ? (
                 /* Revisora r25 (Usura #1): el aviso de arriba ya dice que sin tasa no hay techo;
                    la tabla vacía se pliega en una línea y no lo repite. */
                 <p className="px-4 py-6 text-body-sm text-fg-muted" data-testid="sin-tasas-en-el-rango">
@@ -219,7 +247,38 @@ export function TasasDeUsuraPanel() {
                     </TableRow>
                   </TableHeader>
                   <TableBody className="max-md:block">
-                    {tasas.map((t) => (
+                    {pag.pageItems.map(({ mes, tasa: t }) =>
+                      t === null ? (
+                        <TableRow
+                          key={`sin-${mes}`}
+                          data-testid={`sin-tasa-${mes}`}
+                          className="max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:items-center max-md:gap-x-4 max-md:border-b max-md:border-border max-md:px-4 max-md:py-3 max-md:last:border-0"
+                        >
+                          <TableCell className="text-fg max-md:block max-md:p-0">
+                            {nombreDelMes(mes)}
+                            <span className="block text-caption text-danger md:hidden">Sin tasa: sin techo</span>
+                          </TableCell>
+                          <TableCell className="text-right text-fg-subtle max-md:hidden">—</TableCell>
+                          <TableCell className="text-right text-fg-subtle max-md:hidden">—</TableCell>
+                          <TableCell className="text-fg-subtle max-md:hidden">—</TableCell>
+                          <TableCell className="text-caption text-danger max-md:hidden">Sin tasa: sin techo</TableCell>
+                          <TableCell className="text-right max-md:block max-md:p-0">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              hideArrow
+                              disabled={!disponible}
+                              onClick={() => {
+                                setMesNuevo(mes);
+                                setEditando('nueva');
+                              }}
+                              data-testid={`cargar-tasa-${mes}`}
+                            >
+                              Cargar
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
                       <TableRow
                         key={t.id}
                         data-testid={`tasa-${t.mes}`}
@@ -267,27 +326,39 @@ export function TasasDeUsuraPanel() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      ),
+                    )}
                   </TableBody>
                 </Table>
               )}
+              {filasDelRango.length > 0 ? (
+                <div className="border-t border-border px-4 py-3">
+                  <TablePagination
+                    total={pag.total}
+                    page={pag.page}
+                    pageSize={pag.pageSize}
+                    pageSizeOptions={PAGE_SIZE_OPTIONS}
+                    onPageChange={pag.setPage}
+                    onPageSizeChange={pag.setPageSize}
+                  />
+                </div>
+              ) : null}
             </div>
           ) : null}
         </EstadoDeDatos>
       </section>
 
-      <p className="text-caption leading-relaxed text-fg-muted">
-        La efectiva anual es la que certifica la Superfinanciera cada mes; la equivalente diaria es
-        la que el sistema aplica día por día sobre el capital en mora, y Leasefy la calcula con la
-        misma fórmula del tope. Tu tasa pisa a la general de Colombia en el mes en que la cargues.
-      </p>
-
       <EditorDeTasa
         abierto={editando !== null}
         tasa={editando === 'nueva' ? null : editando}
-        onCerrar={() => setEditando(null)}
+        mesInicial={editando === 'nueva' ? mesNuevo : null}
+        onCerrar={() => {
+          setEditando(null);
+          setMesNuevo(null);
+        }}
         onGuardada={() => {
           setEditando(null);
+          setMesNuevo(null);
           void cargar();
         }}
       />
@@ -356,11 +427,14 @@ const ID_DE_LA_TASA: Record<CampoDeLaTasa, string> = {
 function EditorDeTasa({
   abierto,
   tasa,
+  mesInicial = null,
   onCerrar,
   onGuardada,
 }: {
   abierto: boolean;
   tasa: TasaDeUsura | null;
+  /** El mes de la fila «Cargar» (ronda 30); sin él, el mes actual. */
+  mesInicial?: string | null;
   onCerrar: () => void;
   onGuardada: () => void;
 }) {
@@ -372,11 +446,11 @@ function EditorDeTasa({
 
   useEffect(() => {
     if (!abierto) return;
-    setMes(tasa?.mes ?? mesActual());
+    setMes(tasa?.mes ?? mesInicial ?? mesActual());
     setEfectiva(tasa ? String(tasa.efectivaAnualPct) : '');
     setFuente(tasa?.fuente ?? '');
     setGeneral(tasa ? !tasa.esDeLaAgencia : false);
-  }, [abierto, tasa]);
+  }, [abierto, tasa, mesInicial]);
 
   const numero = Number(efectiva.replace(',', '.'));
   const valida = esMesValido(mes) && Number.isFinite(numero) && numero > 0 && numero <= 500;

@@ -155,7 +155,8 @@ function Contenido() {
             </ParaEntenderMas>
           }
           accionPrincipal={
-            puedeEditar ? (
+            /* Ronda 30 (revisora r27): sin aseguradoras la acción vive SÓLO en el vacío (antes dos «Registrar»). */
+            puedeEditar && !cargando && aseguradoras && aseguradoras.length > 0 ? (
               <Button size="sm" hideArrow onClick={abrirElRegistro} data-testid="abrir-registro-de-aseguradora">
                 Registrar una aseguradora
               </Button>
@@ -183,7 +184,7 @@ function Contenido() {
             }
             accion={
               puedeEditar ? (
-                <Button size="sm" variant="secondary" hideArrow onClick={abrirElRegistro}>
+                <Button size="sm" hideArrow onClick={abrirElRegistro} data-testid="abrir-registro-de-aseguradora">
                   Registrar la primera
                 </Button>
               ) : undefined

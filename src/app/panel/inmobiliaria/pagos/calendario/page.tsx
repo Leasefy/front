@@ -22,7 +22,7 @@ export default function CalendarioPage() {
     <PageGuard module="configuracion" action="view">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
-          seccion="Pagos"
+          seccion="Cobrar a inquilinos"
           titulo="Días hábiles y festivos"
           descripcion="Los días que no cuentan para los plazos: se calculan solos y aquí se corrigen."
           ayuda={

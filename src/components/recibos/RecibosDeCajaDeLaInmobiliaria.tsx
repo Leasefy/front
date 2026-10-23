@@ -117,6 +117,30 @@ export function RecibosDeCajaDeLaInmobiliaria() {
 
   useEffect(() => cargar(), [cargar])
 
+  /* Ronda 30 (revisora r27, C11): el conteo en TODAS las pestañas. El back cuenta sólo el estado
+     que se pide, así que se le pregunta el total de cada uno (una fila por pregunta); si alguno
+     falla, esa pestaña va sin número, como antes. */
+  const [conteos, setConteos] = useState<Partial<Record<EstadoDeLosRecibos, number>>>({})
+  useEffect(() => {
+    let vivo = true
+    void Promise.all(
+      ESTADOS.map((e) =>
+        listaDeRecibosApi
+          .lista({ q, estado: e.id, pagina: 1, porPagina: 1 })
+          .then((r) => [e.id, r.total] as const)
+          .catch(() => null),
+      ),
+    ).then((res) => {
+      if (!vivo) return
+      const c: Partial<Record<EstadoDeLosRecibos, number>> = {}
+      for (const x of res) if (x && typeof x[1] === 'number') c[x[0]] = x[1]
+      setConteos(c)
+    })
+    return () => {
+      vivo = false
+    }
+  }, [q])
+
   const hayFiltros = q.trim() !== '' || estado !== 'todos'
 
   async function bajar(r: FilaDeLaListaDeRecibos) {
@@ -135,7 +159,7 @@ export function RecibosDeCajaDeLaInmobiliaria() {
     // Ronda 26 (revisora r25, Recibos #1): el conteo va en la pestaña; aquí, la plata de esa pestaña.
     return estado === 'anulados'
       ? `${formatCurrency(datos.totalCop)} anulados`
-      : `${formatCurrency(datos.totalCop)} recibidos${estado === 'todos' ? ' (sin contar los anulados)' : ''}`
+      : `${formatCurrency(datos.totalCop)} recibidos en total${estado === 'todos' ? ' (sin contar los anulados)' : ''}`
   }, [datos, estado])
 
   return (
@@ -175,7 +199,7 @@ export function RecibosDeCajaDeLaInmobiliaria() {
           pestanas={ESTADOS.map((e) => ({
             valor: e.id,
             etiqueta: e.nombre,
-            cuantos: e.id === estado && datos ? datos.total : null,
+            cuantos: e.id === estado && datos ? datos.total : (conteos[e.id] ?? null),
             fija: true,
             testid: `recibos-${e.id}`,
           }))}

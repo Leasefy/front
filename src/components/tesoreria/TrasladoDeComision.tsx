@@ -28,6 +28,7 @@ import { ArrowsLeftRight, CheckCircle, Prohibit, XCircle } from '@phosphor-icons
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Avisos, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe';
+import { MasDetalles } from '@/components/pantalla/MasDetalles';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -218,7 +219,7 @@ export function TrasladoDeComisionPanel() {
         {lista?.propuestos.length ? (
           <section className="space-y-4">
             <TituloDeBloque
-              titulo="Esperando tu aprobación"
+              titulo="Por aprobar"
               explicacion="Aprobar mueve la plata y deja comprobante."
             />
             <ul className="space-y-4" data-testid="traslados-propuestos">
@@ -473,11 +474,18 @@ function Propuesta({
         {propuesta.renglones.length > 0 ? (
           // Renglón por renglón como un recibo: el concepto y su cifra en la misma
           // línea, el porqué a todo el ancho debajo (a 390 ya no queda en media columna).
-          <>
-            <p className="border-t border-border px-5 pt-3 text-caption text-fg-muted sm:px-6">
-              Renglón por renglón, con el porqué de cada uno. Es lo que lee quien aprueba.
+          // Ronda 30 (revisora r27): el renglón por renglón se consulta → plegado (montado siempre).
+          <div className="border-t border-border px-5 py-3 sm:px-6">
+            <MasDetalles
+              montadoSiempre
+              etiqueta="Ver el cálculo renglón por renglón"
+              etiquetaAbierto="Ocultar el cálculo"
+              classNameDelContenido="pt-2"
+            >
+            <p className="text-caption text-fg-muted">
+              Con el porqué de cada uno. Es lo que lee quien aprueba.
             </p>
-            <ol className="px-5 pb-1 sm:px-6" data-testid="renglones-del-traslado">
+            <ol className="pb-1" data-testid="renglones-del-traslado">
               {propuesta.renglones.map((r) => (
                 <li
                   key={r.concepto}
@@ -491,7 +499,8 @@ function Propuesta({
                 </li>
               ))}
             </ol>
-          </>
+            </MasDetalles>
+          </div>
         ) : null}
       </section>
     </div>
@@ -530,7 +539,8 @@ function FilaDelTraslado({
         </div>
         <Badge variant={TONO_DEL_ESTADO[traslado.estado]}>{NOMBRE_DEL_ESTADO[traslado.estado] ?? traslado.estado}</Badge>
       </div>
-      <dl className="grid grid-cols-2 gap-2 text-caption text-fg-muted sm:grid-cols-4">
+      {/* Ronda 30 (revisora r27): sin las celdas en cero («Intereses y gastos —», «Retenciones —»). */}
+      <dl className="flex flex-wrap gap-x-6 gap-y-2 text-caption text-fg-muted">
         <div>
           <dt className="text-fg">Comisión</dt>
           <dd className="font-mono tabular-nums">{plata(traslado.comisionCop)}</dd>
@@ -539,18 +549,18 @@ function FilaDelTraslado({
           <dt className="text-fg">IVA</dt>
           <dd className="font-mono tabular-nums">{plata(traslado.ivaComisionCop)}</dd>
         </div>
-        <div>
-          <dt className="text-fg">Intereses y gastos</dt>
-          <dd className="font-mono tabular-nums">
-            {traslado.interesesCop + traslado.gastosDeCobranzaCop === 0 ? '—' : plata(traslado.interesesCop + traslado.gastosDeCobranzaCop)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-fg">Retenciones</dt>
-          <dd className="font-mono tabular-nums">
-            {traslado.retencionesComisionCop === 0 ? '—' : `− ${plata(traslado.retencionesComisionCop)}`}
-          </dd>
-        </div>
+        {traslado.interesesCop + traslado.gastosDeCobranzaCop !== 0 ? (
+          <div>
+            <dt className="text-fg">Intereses y gastos</dt>
+            <dd className="font-mono tabular-nums">{plata(traslado.interesesCop + traslado.gastosDeCobranzaCop)}</dd>
+          </div>
+        ) : null}
+        {traslado.retencionesComisionCop !== 0 ? (
+          <div>
+            <dt className="text-fg">Retenciones</dt>
+            <dd className="font-mono tabular-nums">{`− ${plata(traslado.retencionesComisionCop)}`}</dd>
+          </div>
+        ) : null}
       </dl>
       {traslado.motivo ? (
         <p className="text-caption text-fg-muted">Motivo: {traslado.motivo}</p>

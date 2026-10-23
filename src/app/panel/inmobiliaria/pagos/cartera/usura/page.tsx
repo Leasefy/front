@@ -39,6 +39,13 @@ export default function UsuraPage() {
                   Superfinanciera. Un mes sin tasa cargada es un mes en el que el interés se liquida
                   sin techo.
                 </p>
+                {/* Ronda 30: lo que iba suelto al pie de la tabla, aquí (se consulta). */}
+                <p className="mt-2 text-body-sm text-fg-muted">
+                  La efectiva anual es la que certifica la Superfinanciera cada mes; la equivalente
+                  diaria es la que el sistema aplica día por día sobre el capital en mora, y Leasefy la
+                  calcula con la misma fórmula del tope. Tu tasa pisa a la general de Colombia en el mes
+                  en que la cargues.
+                </p>
               </ParaEntenderMas>
             }
           />

@@ -138,6 +138,8 @@ describe('las internas de la home se sirven estáticas (Ronda 30, Nico)', () => 
     expect(html.startsWith('<!doctype html>')).toBe(true)
     const d = documento(html)
     expect(d.documentElement.getAttribute('lang')).toBe('es')
+    // Siempre en claro, como la home (no trae oscuro) y todo lo público del front.
+    expect(d.documentElement.getAttribute('data-theme')).toBe('light')
     expect(d.title).toMatch(/ \| Leasefy$/)
     expect(d.querySelector('meta[name="viewport"]')).not.toBeNull()
     expect(d.querySelector('meta[name="description"]')?.getAttribute('content')?.length).toBeGreaterThan(40)

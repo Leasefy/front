@@ -9,7 +9,8 @@ import {
 
 describe('review-status labels', () => {
   it('maps every backend enum value to its Colombian-Spanish label', () => {
-    expect(REVIEW_STATUS_LABELS.PENDING).toBe('Pendiente');
+    // Ronda 30 (decisión autorizada), a propósito: «Por revisar», como la cifra de Soportes.
+    expect(REVIEW_STATUS_LABELS.PENDING).toBe('Por revisar');
     expect(REVIEW_STATUS_LABELS.IN_REVIEW).toBe('En revisión');
     expect(REVIEW_STATUS_LABELS.APPROVED).toBe('Aprobado');
     expect(REVIEW_STATUS_LABELS.REJECTED).toBe('Rechazado');
@@ -20,9 +21,9 @@ describe('review-status labels', () => {
     expect(getReviewStatusLabel('IN_REVIEW')).toBe('En revisión');
   });
 
-  it('getReviewStatusLabel falls back to "Pendiente" for unknown/absent', () => {
-    expect(getReviewStatusLabel(undefined)).toBe('Pendiente');
-    expect(getReviewStatusLabel('WHATEVER')).toBe('Pendiente');
+  it('getReviewStatusLabel falls back to "Por revisar" for unknown/absent', () => {
+    expect(getReviewStatusLabel(undefined)).toBe('Por revisar');
+    expect(getReviewStatusLabel('WHATEVER')).toBe('Por revisar');
   });
 });
 

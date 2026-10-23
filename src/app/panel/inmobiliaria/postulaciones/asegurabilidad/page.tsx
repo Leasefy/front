@@ -24,6 +24,8 @@ import { CotizadorOverviewSkeleton } from '@/components/skeleton/panel/Cotizador
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { Button } from '@/components/ui/button'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { EquipoDeAsegurabilidad } from '@/components/inmobiliaria/cotizador/EquipoDeAsegurabilidad'
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
@@ -75,6 +77,12 @@ function ComoFuncionaCotizador() {
           tuParte: step.tuParte ? t(`${PAGES_NS}.comoFunciona.${step.clave}.tuParte`) : undefined,
         }))}
       />
+      {/* Ronda 30 (Nico, 23-10): el equipo de agentes que hace el trabajo, plegado aquí (antes su propia pantalla). */}
+      <MasDetalles etiqueta="Ver el equipo de agentes que hace el trabajo" etiquetaAbierto="Ocultar el equipo" className="mt-6" data-testid="como-funciona-equipo">
+        <div className="mt-4">
+          <EquipoDeAsegurabilidad />
+        </div>
+      </MasDetalles>
     </ParaEntenderMas>
   )
 }

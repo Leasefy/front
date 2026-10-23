@@ -281,6 +281,13 @@ const nextConfig = {
       // con el asistente caído no se monta (revisora r27, K7). Ver
       // src/lib/nav/cobranza-retiradas.data.mjs (con test).
       ...COBRANZA_RETIRADAS_DATA,
+      // Ronda 30 (Nico, 23-10): el «Equipo IA» de asegurabilidad vive plegado en el «Cómo funciona» de
+      // Asegurabilidad; la dirección vieja aterriza allá.
+      {
+        source: "/panel/inmobiliaria/postulaciones/asegurabilidad/equipo",
+        destination: "/panel/inmobiliaria/postulaciones/asegurabilidad",
+        permanent: false,
+      },
       // La arquitectura por ciclo de vida (2026-09) va después: Next aplica la
       // primera regla que calza y estas son las más generales del panel. Ver
       // src/lib/nav/rutas-por-ciclo-de-vida.data.mjs (con test).

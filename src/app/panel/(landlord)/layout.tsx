@@ -196,6 +196,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
             : '/panel/upgrade'
         }
         upgradeLabel={propietarioGratis ? 'Que Leasefy lo administre' : 'Mejorar Plan'}
+        // Ronda 30 (Nico, 23-10): en el portal gratis «Que Leasefy lo administre» va en tinta: una sola acción azul por pantalla.
+        upgradeEnTinta={propietarioGratis}
         // Ronda 28 (revisora r27): en Mi perfil no sale: ahí la misma lista ya dice lo que falta (eran dos).
         profileCompletion={user && !perfilCompleto && pathname !== '/panel/perfil' ? {
           percentage,

@@ -93,21 +93,33 @@ export function ProvisionesDeNominaPanel() {
                 prestaciones. Las cuatro prestaciones la acompañan; antes eran cuatro cifras del mismo
                 peso y el total escondido en una línea al final. */}
             <section className="space-y-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
+              {/* Ronda 26 (revisora r25, Prestaciones): a 390 la cifra quedaba en una columna de 110 px al lado del
+                  botón; ahora el botón va debajo, a lo ancho. «Pasivo vivo» es jerga contable. */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
                 <CifraHeroe
-                  rotulo="Pasivo vivo por prestaciones"
+                  rotulo="Prestaciones por pagar"
                   cifra={<span data-testid="total-vivo">{formatCurrency(provisiones.totalVivoCop)}</span>}
-                  contexto="lo provisionado que todavía no se ha cruzado contra un pago"
+                  contexto="lo provisionado que todavía no se ha pagado"
                   // C3 (revisora r25): sin nada provisionado, UNA línea y no la cifra grande en cero.
                   esCero={provisiones.totalVivoCop === 0}
                   className="min-w-0 flex-1"
                   data-testid="cifra-de-provisiones"
                 />
-                <Button size="sm" hideArrow onClick={() => setPagando(true)} data-testid="registrar-pago">
+                {/* Sin nada provisionado, el pago no es lo que sigue: sale en borde, no en azul (se puede igual). */}
+                <Button
+                  size="sm"
+                  hideArrow
+                  variant={provisiones.totalVivoCop === 0 ? 'outline' : 'default'}
+                  className="max-sm:w-full"
+                  onClick={() => setPagando(true)}
+                  data-testid="registrar-pago"
+                >
                   Registrar el pago de una prestación
                 </Button>
               </div>
-              <FranjaDeCifras aria-label="Lo que queda vivo de cada prestación">
+              {/* C3: sin ninguna provisión, las cuatro celdas decían «— · Sin provisiones todavía»: fuera. */}
+              {provisiones.porTipo.length > 0 ? (
+              <FranjaDeCifras aria-label="Lo que queda de cada prestación por pagar">
                 {TIPOS.map((t) => {
                   const fila = provisiones.porTipo.find((x) => x.tipo === t.tipo);
                   return (
@@ -125,6 +137,7 @@ export function ProvisionesDeNominaPanel() {
                   );
                 })}
               </FranjaDeCifras>
+              ) : null}
             </section>
 
             <MasDetalles etiqueta="Con qué base se provisiona cada una" etiquetaAbierto="Ocultar las bases" montadoSiempre>

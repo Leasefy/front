@@ -84,7 +84,7 @@ export function PreferencesSection() {
   // Display source: authoritative row, else the legacy wizard snapshot.
   const display = prefs ?? preferencesFromSnapshot(user?.tenantOnboardingData);
 
-  const notSet = locale === 'es' ? 'No establecido' : 'Not set';
+  const notSet = locale === 'es' ? 'Sin registrar' : 'Not set'; // una sola manera de decir el vacío (revisora r24)
 
   const contactLabel = (value: string | null) => {
     switch (value) {

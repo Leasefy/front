@@ -355,7 +355,7 @@ export default function PerfilPage() {
 
   const displayName = user?.name ?? '';
   const savedAvatar = user?.avatar ?? null;
-  const notSet = locale === 'es' ? 'No registrado' : 'Not set';
+  const notSet = locale === 'es' ? 'Sin registrar' : 'Not set'; // una sola manera de decir el vacío (revisora r24)
 
   if (!user) {
     // ProtectedRoute guards this page; user is only briefly null during hydration.

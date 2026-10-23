@@ -206,6 +206,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         <PropietarioDeInmobiliariaProvider value={deInmobiliaria}>
           <PlanHeader showMagnifyingGlass={!deInmobiliaria} />
         </PropietarioDeInmobiliariaProvider>
+        {/* Revisora r25: las pantallas también saben si quien mira tiene inmobiliaria (Por decidir no le habla
+            de «tu inmobiliaria» al independiente). Sólo se lee; no cambia qué se monta. */}
+        <PropietarioDeInmobiliariaProvider value={deInmobiliaria}>
         <main id="main-content" tabIndex={-1}>
           <SeccionesDelPortal
             seccion={deInmobiliaria ? seccionDelPropietario(pathname ?? '') : seccionDelIndependiente(pathname ?? '')}
@@ -226,6 +229,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
               )
               : children}
         </main>
+        </PropietarioDeInmobiliariaProvider>
       </div>
 
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de

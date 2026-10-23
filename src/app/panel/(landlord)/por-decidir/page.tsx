@@ -18,6 +18,7 @@ import { ClipboardText } from '@phosphor-icons/react';
 import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useEsPropietarioDeInmobiliaria } from '@/lib/context/PropietarioDeInmobiliariaContext';
 import {
   LoQueEsperaTuRespuesta,
   usePendientesDelPropietarioConEstado,
@@ -25,13 +26,19 @@ import {
 
 export default function PorDecidirPage() {
   const { pendientes, cargando } = usePendientesDelPropietarioConEstado();
+  // Revisora r25: al independiente no se le habla de «tu inmobiliaria».
+  const deInmobiliaria = useEsPropietarioDeInmobiliaria();
   return (
     <div className="min-h-screen bg-bg">
       <div className="space-y-6 p-6 lg:p-8">
         <EncabezadoDePantalla
           seccion="Solicitudes"
           titulo="Por decidir"
-          descripcion="Lo que tu inmobiliaria te pregunta. Cada fila te lleva a decidirlo."
+          descripcion={
+            deInmobiliaria
+              ? 'Lo que tu inmobiliaria te pregunta. Cada fila te lleva a decidirlo.'
+              : 'Lo que espera tu respuesta sobre tus inmuebles. Cada fila te lleva a decidirlo.'
+          }
         />
         {pendientes.length > 0 ? (
           <LoQueEsperaTuRespuesta pendientes={pendientes} />
@@ -46,7 +53,11 @@ export default function PorDecidirPage() {
               icon={ClipboardText}
               ilustracion="escudo"
               title="No tienes nada por decidir"
-              description="Cuando tu inmobiliaria te pregunte algo —escoger un inquilino, revisar el canon, aprobar una reparación—, va a aparecer aquí."
+              description={
+                deInmobiliaria
+                  ? 'Aquí van a aparecer las preguntas de tu inmobiliaria: escoger un inquilino, revisar el canon o aprobar una reparación.'
+                  : 'Aquí va a aparecer lo que espera tu respuesta: escoger un inquilino, revisar el canon o aprobar una reparación.'
+              }
             />
           </section>
         )}

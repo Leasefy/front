@@ -681,6 +681,22 @@
    * LAYOUT UTILITIES
    * ========================================================== */
 
+  /* Touch hit area (T-0173 WU-6): on coarse pointers a ::after centred on the
+     control grows its tappable area to at least 44x44 without moving or
+     resizing what is drawn. The element must be positioned (`relative`, or
+     already absolute/fixed). Desktop (fine pointer) is untouched. */
+  @media (pointer: coarse) {
+    .hit-area-44::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+      transform: translate(-50%, -50%);
+    }
+  }
+
   /* Section padding - Consistent vertical rhythm */
   .section-padding {
     @apply py-16 md:py-20 lg:py-24;

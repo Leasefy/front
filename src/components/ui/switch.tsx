@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils"
  * era bg-background (oscuro en dark mode); el DS lo fija bg-white. Se
  * restaura vía selector descendiente para que dark mode siga igual
  * (en light ambos son blancos — sin cambio visible).
+ * T-0173: `hit-area-44` agranda el área táctil a 44 px sólo en punteros gruesos
+ * (el track de 36×20 no cambia).
  */
 const Switch = React.forwardRef<
   React.ElementRef<typeof DSSwitch>,
@@ -18,7 +20,7 @@ const Switch = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DSSwitch
     ref={ref}
-    className={cn("[&>span]:bg-background", className)}
+    className={cn("relative hit-area-44 [&>span]:bg-background", className)}
     {...props}
   />
 ))

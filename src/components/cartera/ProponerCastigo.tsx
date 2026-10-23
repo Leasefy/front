@@ -82,8 +82,18 @@ export function contratosConCartera(
   )
 }
 
-export function ProponerCastigo({ onListo }: { onListo: () => void }) {
-  const [abierto, setAbierto] = useState(false)
+export function ProponerCastigo({
+  onListo,
+  enCajon = false,
+}: {
+  onListo: () => void
+  /**
+   * Ronda 26 (revisora r25, Castigada #2): dentro del cajón que abre «Proponer un castigo» ya está abierto,
+   * sin su propio desplegable ni tarjeta.
+   */
+  enCajon?: boolean
+}) {
+  const [abierto, setAbierto] = useState(enCajon)
   const [contratos, setContratos] = useState<ContratoConCartera[] | null>(null)
   const [elegido, setElegido] = useState<ContratoConCartera | null>(null)
   const [candidatas, setCandidatas] = useState<CandidatasACastigo | null>(null)
@@ -190,33 +200,8 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
     }
   }
 
-  return (
-    <Card className="p-0" data-testid="proponer-castigo">
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 px-4 py-3 text-left"
-        aria-expanded={abierto}
-        onClick={() => setAbierto((v) => !v)}
-        data-testid="abrir-proponer-castigo"
-      >
-        {/* Un solo caret que gira con la curva de los paneles. */}
-        <CaretRight
-          className={cn(
-            'h-4 w-4 text-fg-muted transition-transform duration-slow ease-emphasis',
-            abierto && 'rotate-90',
-        )}
-          aria-hidden="true"
-        />
-        <Scales className="h-4 w-4 text-fg-muted" aria-hidden="true" />
-        <span className="text-sm font-medium text-fg">Proponer un castigo</span>
-        <span className="text-caption text-fg-muted">
-          Lo aprueban el administrador y el contador, dos personas distintas.
-        </span>
-      </button>
-
-      {/* Se abre y se cierra con `Collapse` (altura + fundido). */}
-      <Collapse open={abierto}>
-        <div className="space-y-4 border-t border-border p-4">
+  const cuerpo = (
+        <div className={cn('space-y-4', !enCajon && 'border-t border-border p-4')}>
           {/* ── 1. De quién ──────────────────────────────────────────── */}
           {!elegido && (
             <div className="space-y-2">
@@ -402,6 +387,37 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
             </div>
           )}
         </div>
+  )
+
+  if (enCajon) return <div data-testid="proponer-castigo">{cuerpo}</div>
+
+  return (
+    <Card className="p-0" data-testid="proponer-castigo">
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 px-4 py-3 text-left"
+        aria-expanded={abierto}
+        onClick={() => setAbierto((v) => !v)}
+        data-testid="abrir-proponer-castigo"
+      >
+        {/* Un solo caret que gira con la curva de los paneles. */}
+        <CaretRight
+          className={cn(
+            'h-4 w-4 text-fg-muted transition-transform duration-slow ease-emphasis',
+            abierto && 'rotate-90',
+        )}
+          aria-hidden="true"
+        />
+        <Scales className="h-4 w-4 text-fg-muted" aria-hidden="true" />
+        <span className="text-sm font-medium text-fg">Proponer un castigo</span>
+        <span className="text-caption text-fg-muted">
+          Lo aprueban el administrador y el contador, dos personas distintas.
+        </span>
+      </button>
+
+      {/* Se abre y se cierra con `Collapse` (altura + fundido). */}
+      <Collapse open={abierto}>
+        {cuerpo}
       </Collapse>
     </Card>
   )

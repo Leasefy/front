@@ -355,4 +355,18 @@ export const FRASES_EN_DEL_GLOW_UP: Record<string, string> = {
   "Entró por el banco": "Came in through the bank",
   "en 1 archivo, importado el {fecha}": "in 1 file, imported on {fecha}",
   "en {n} archivos; el último, importado el {fecha}": "in {n} files; the latest imported on {fecha}",
+  // Preparar visitas (glow up 22-10, revisora r24)
+  "Visita hecha: {nombre}": "Visit done: {nombre}",
+  "Pasó a «Visita hecha» en Prospección.": "Moved to “Visit done” in Prospecting.",
+  "Deshacer": "Undo",
+  "1 visita vencida sin cerrar": "1 overdue visit not closed",
+  "{n} visitas vencidas sin cerrar": "{n} overdue visits not closed",
+  "Sí llegó": "Showed up",
+  "Ver ficha": "View record",
+  "Fuera de las vencidas, no hay visitas en los próximos 7 días ni recordatorios por mandar.": "Besides the overdue ones, there are no visits in the next 7 days and no reminders to send.",
+  "Nada por preparar: no hay visitas en los próximos 7 días ni recordatorios por mandar.": "Nothing to prepare: no visits in the next 7 days and no reminders to send.",
+  "Ir a Prospección": "Go to Prospecting",
+  "Preparar visitas": "Prepare visits",
+  "Lo que le falta a cada visita para poder hacerse. El calendario completo está en Agenda.": "What each visit still needs before it can happen. The full calendar is in Agenda.",
+  "Ver la agenda": "View the agenda",
 }

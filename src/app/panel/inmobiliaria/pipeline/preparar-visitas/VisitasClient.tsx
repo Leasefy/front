@@ -31,7 +31,10 @@ import Link from 'next/link'
 import { agendaApi } from '@/lib/api/agenda.service'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { CalendarCheck, Copy, UserPlus } from '@phosphor-icons/react'
-import { usePipelineItems } from '@/lib/hooks/useInmobiliaria'
+import { useConsignaciones, usePipelineItems } from '@/lib/hooks/useInmobiliaria'
+import { pipelineApi } from '@/lib/api/inmobiliaria.service'
+import { AgendarVisitaDialog } from '@/components/inmobiliaria/AgendarVisitaDialog'
+import { useTr } from '@/lib/i18n/use-tr'
 import { paraHoy } from '@/lib/pipeline/para-hoy'
 import { diaCortoDelEmbudo, esUnaVisita } from '@/lib/pipeline/proxima-accion'
 import { hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa'
@@ -128,8 +131,41 @@ export function VisitasClient() {
 
   // Revisora r22 (#1): las visitas vencidas sin cerrar (las que Prospección pone en «Para hoy»): lo primero
   // que hay que preparar es reagendarlas o marcar si llegó.
-  const { pipelineItems } = usePipelineItems()
+  const { pipelineItems, refetch: releerElTablero } = usePipelineItems()
   const itemsDelTablero = pipelineItems ?? []
+  const tr = useTr()
+  /*
+   * Revisora r24 (Preparar visitas #1): la vencida se cierra AQUÍ, con lo mismo que hace Prospección —«Sí llegó»
+   * la pasa a «Visita hecha» (`pipelineApi.moveStage`, como el cajón) y «Reagendar» abre el MISMO diálogo de
+   * cita (`AgendarVisitaDialog`)—. Antes la frase mandaba a la persona a buscarla en otra pantalla.
+   * «No llegó» no va: como en la Agenda, la vencida no sale de «Para hoy» con esa marca (pendiente de Nico).
+   */
+  const [agendandoA, setAgendandoA] = useState<PipelineItem | null>(null)
+  const { consignaciones } = useConsignaciones(undefined, { skip: !agendandoA })
+  async function marcarQueLlego(item: PipelineItem) {
+    const antes = item.stage
+    setTocando(item.id)
+    try {
+      await pipelineApi.moveStage(item.id, 'visit_done')
+      releerElTablero()
+      toast.success(tr('Visita hecha: {nombre}', { nombre: item.candidateName }), {
+        description: tr('Pasó a «Visita hecha» en Prospección.'),
+        action: {
+          label: tr('Deshacer'),
+          onClick: () => {
+            void pipelineApi.moveStage(item.id, antes).then(
+              () => releerElTablero(),
+              (e) => avisarQueNoSeGuardo(e, 'No se deshizo', 'deshacer la marca'),
+            )
+          },
+        },
+      })
+    } catch (e) {
+      avisarQueNoSeGuardo(e, 'No se marcó la visita como hecha', 'marcar la visita como hecha')
+    } finally {
+      setTocando(null)
+    }
+  }
   const vencidas = useMemo(
     () => paraHoy(itemsDelTablero, hoyEnColombia()).filter((p) => p.porQue === 'vencida' && esUnaVisita(p.item.nextAction)),
     [itemsDelTablero],
@@ -257,11 +293,11 @@ export function VisitasClient() {
       */}
       <EncabezadoDePantalla
         seccion="Captación y arriendo"
-        titulo="Preparar visitas"
-        descripcion="Lo que le falta a cada visita para poder hacerse. El calendario completo está en Agenda."
+        titulo={tr('Preparar visitas')}
+        descripcion={tr('Lo que le falta a cada visita para poder hacerse. El calendario completo está en Agenda.')}
         acciones={
           <Button size="sm" variant="outline" asChild>
-            <Link href="/panel/inmobiliaria/agenda">Ver la agenda</Link>
+            <Link href="/panel/inmobiliaria/agenda">{tr('Ver la agenda')}</Link>
           </Button>
         }
         ayuda={
@@ -348,9 +384,8 @@ export function VisitasClient() {
         <section className="rounded-lg border border-border bg-surface" data-testid="visitas-vencidas">
           <header className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-4">
             <h2 className="text-[15px] font-medium text-fg">
-              {vencidas.length === 1 ? '1 visita vencida sin cerrar' : `${vencidas.length} visitas vencidas sin cerrar`}
+              {vencidas.length === 1 ? tr('1 visita vencida sin cerrar') : tr('{n} visitas vencidas sin cerrar', { n: vencidas.length })}
             </h2>
-            <p className="text-caption text-fg-muted">Reagéndala o marca si llegó, desde su ficha en Prospección.</p>
           </header>
           <ul className="mt-2 divide-y divide-border-faint">
             {vencidas.map(({ item, dia }) => (
@@ -362,13 +397,38 @@ export function VisitasClient() {
                     {dia ? <span className="font-mono"> · {diaCortoDelEmbudo(dia)}</span> : null}
                   </p>
                 </div>
-                <Link
-                  href={`/panel/inmobiliaria/pipeline?lead=${encodeURIComponent(item.id)}`}
-                  className="text-body-sm font-medium text-primary underline-offset-4 hover:underline"
-                  data-testid={`vencida-${item.id}`}
-                >
-                  Abrir su ficha
-                </Link>
+                {/* A 390 las acciones bajan al pie de la tarjeta (w-full); «Ver ficha» queda como enlace callado. */}
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+                  {puedeEditar && item.stage === 'visit_scheduled' ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={tocando === item.id}
+                      onClick={() => void marcarQueLlego(item)}
+                      data-testid={`vencida-llego-${item.id}`}
+                    >
+                      {tr('Sí llegó')}
+                    </Button>
+                  ) : null}
+                  {puedeEditar ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={tocando === item.id}
+                      onClick={() => setAgendandoA(item)}
+                      data-testid={`vencida-reagendar-${item.id}`}
+                    >
+                      {tr('Reagendar')}
+                    </Button>
+                  ) : null}
+                  <Link
+                    href={`/panel/inmobiliaria/pipeline?lead=${encodeURIComponent(item.id)}`}
+                    className="ml-auto text-body-sm text-fg-muted underline-offset-4 hover:text-fg hover:underline sm:ml-2"
+                    data-testid={`vencida-${item.id}`}
+                  >
+                    {tr('Ver ficha')}
+                  </Link>
+                </div>
               </li>
             ))}
           </ul>
@@ -379,11 +439,11 @@ export function VisitasClient() {
       {todoVacio ? (
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-surface px-5 py-4 text-body-sm text-fg-muted" data-testid="nada-por-preparar">
           {vencidas.length > 0
-            ? 'Fuera de las vencidas, no hay visitas en los próximos 7 días ni recordatorios por mandar.'
-            : 'Nada por preparar: no hay visitas en los próximos 7 días ni recordatorios por mandar.'}
+            ? tr('Fuera de las vencidas, no hay visitas en los próximos 7 días ni recordatorios por mandar.')
+            : tr('Nada por preparar: no hay visitas en los próximos 7 días ni recordatorios por mandar.')}
           {/* Revisora r23 (Preparar visitas #2): el enlace dice a dónde lleva; agendar se hace desde la ficha del interesado. */}
           <Link href="/panel/inmobiliaria/pipeline" className="font-medium text-primary underline-offset-4 hover:underline">
-            Ir a Prospección
+            {tr('Ir a Prospección')}
           </Link>
         </p>
       ) : (
@@ -613,6 +673,19 @@ export function VisitasClient() {
       </Card>
       </>
       )}
+
+      {agendandoA ? (
+        <AgendarVisitaDialog
+          item={agendandoA}
+          consignaciones={consignaciones ?? []}
+          onCerrar={() => setAgendandoA(null)}
+          onAgendada={() => {
+            setAgendandoA(null)
+            releerElTablero()
+            invalidar('visitas')
+          }}
+        />
+      ) : null}
     </div>
   )
 }

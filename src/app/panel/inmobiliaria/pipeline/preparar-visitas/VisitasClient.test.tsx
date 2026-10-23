@@ -53,6 +53,7 @@ vi.mock('@/lib/api/crm.service', async () => {
 // Revisora r22: las vencidas y el nombre que abre al interesado salen del tablero de Prospección.
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   usePipelineItems: () => ({ pipelineItems: tablero.items, isLoading: false, errorCrudo: null, refetch: vi.fn() }),
+  useConsignaciones: () => ({ consignaciones: [] }),
 }))
 vi.mock('@/components/ui/toast', () => ({
   toast: { error: toastError, success: vi.fn(), info: vi.fn() },
@@ -297,7 +298,7 @@ describe('VisitasClient — cuando una acción falla', () => {
 
 
 describe('revisora r22 (Preparar visitas #1 y #5)', () => {
-  it('arriba, las visitas vencidas sin cerrar, con el enlace a su ficha en Prospección', async () => {
+  it('arriba, las visitas vencidas sin cerrar, con el enlace a su ficha en Prospección y cómo cerrarlas ahí mismo (r24)', async () => {
     tablero.items = [
       { id: 'lead-1', candidateName: 'Pedro', propertyTitle: 'Casa 5', stage: 'visit_scheduled', nextAction: 'Visita el 19 de oct', nextActionDate: '2020-01-10', daysInStage: 3 },
       { id: 'lead-2', candidateName: 'Lucía', propertyTitle: 'Apto 9', stage: 'lead', nextAction: 'Llamar', nextActionDate: '2020-01-10', daysInStage: 3 },
@@ -308,6 +309,10 @@ describe('revisora r22 (Preparar visitas #1 y #5)', () => {
     expect(bloque?.textContent).toContain('Pedro')
     expect(bloque?.textContent).not.toContain('Lucía')
     expect($('[data-testid="vencida-lead-1"]')?.getAttribute('href')).toBe('/panel/inmobiliaria/pipeline?lead=lead-1')
+    // Revisora r24 (#1): la vencida se cierra en la fila, sin pasar el trabajo a otra pantalla.
+    expect(bloque?.textContent).not.toContain('Reagéndala')
+    expect($('[data-testid="vencida-reagendar-lead-1"]')?.textContent).toBe('Reagendar')
+    expect($('[data-testid="vencida-llego-lead-1"]')?.textContent).toBe('Sí llegó')
   })
 
   it('el nombre de la visita abre al interesado cuando se lo reconoce por su correo y el inmueble', async () => {

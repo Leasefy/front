@@ -10,7 +10,6 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CaretRight } from '@phosphor-icons/react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatCurrency } from '@/lib/format'
 import { PuntajeDeVinci, QUIEN } from '@/components/retencion/vinci'
@@ -69,11 +68,8 @@ export function TablaDeCasos({
           <TableHead className="whitespace-nowrap pl-5">{tr("Quién")}</TableHead>
           <TableHead className="hidden whitespace-nowrap sm:table-cell">{tr("Riesgo")}</TableHead>
           <TableHead className="hidden whitespace-nowrap md:table-cell">{tr("Por qué")}</TableHead>
-          <TableHead className="hidden whitespace-nowrap text-right sm:table-cell">{tr("Canon en juego")}</TableHead>
-          {conPlan ? <TableHead className="hidden whitespace-nowrap lg:table-cell">{tr("Plan")}</TableHead> : null}
-          <TableHead className="w-10 pr-5">
-            <span className="sr-only">{tr("Abrir")}</span>
-          </TableHead>
+          <TableHead className={conPlan ? 'hidden whitespace-nowrap text-right sm:table-cell' : 'hidden whitespace-nowrap pr-5 text-right sm:table-cell'}>{tr("Canon en juego")}</TableHead>
+          {conPlan ? <TableHead className="hidden whitespace-nowrap pr-5 lg:table-cell">{tr("Plan")}</TableHead> : null}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -96,8 +92,9 @@ export function TablaDeCasos({
                 <p className="mt-0.5 text-caption text-fg-muted">{quienEsElCaso(c, tr)}</p>
                 {/* En el teléfono el riesgo va debajo del nombre: como columna
                     propia le dejaba al nombre una palabra por renglón. */}
-                <div className="mt-2 sm:hidden">
+                <div className="mt-2 flex items-center justify-between gap-3 sm:hidden">
                   <PuntajeDeVinci puntaje={c.puntaje} enRiesgo={c.enRiesgo} enCobranza={c.enCobranza} />
+                  <span className="font-mono text-caption tabular-nums text-fg">{formatCurrency(c.canonEnJuegoCop)}</span>
                 </div>
               </TableCell>
               <TableCell className="hidden py-4 sm:table-cell">
@@ -113,17 +110,14 @@ export function TablaDeCasos({
                     : tr('Sin señales')}
                 </span>
               </TableCell>
-              <TableCell className="hidden whitespace-nowrap py-4 text-right font-mono tabular-nums text-fg sm:table-cell">
+              <TableCell className={conPlan ? 'hidden whitespace-nowrap py-4 text-right font-mono tabular-nums text-fg sm:table-cell' : 'hidden whitespace-nowrap py-4 pr-5 text-right font-mono tabular-nums text-fg sm:table-cell'}>
                 {formatCurrency(c.canonEnJuegoCop)}
               </TableCell>
               {conPlan ? (
-                <TableCell className="hidden whitespace-nowrap py-4 text-sm text-fg-muted lg:table-cell">
+                <TableCell className="hidden whitespace-nowrap py-4 pr-5 text-sm text-fg-muted lg:table-cell">
                   {tr(planEnPalabras(c.plan))}
                 </TableCell>
               ) : null}
-              <TableCell className="py-4 pr-5">
-                <CaretRight size={16} className="text-fg-subtle" aria-hidden="true" />
-              </TableCell>
             </TableRow>
           )
         })}

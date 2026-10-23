@@ -6,8 +6,7 @@
  * agentes nuevos hay que hacerle glow up»).
  *
  * Copian el patrón de las pantallas buenas del panel, no inventan uno:
- *   · la CABECERA es la de Contratos y Cobranza — Eyebrow, `h1` en `text-h2`
- *     y una línea de descripción; las acciones a la derecha desde `lg`;
+ *   · la CABECERA es el `EncabezadoDePantalla` común (desde el 22-10);
  *   · la TARJETA es la de la tabla de Contratos — `rounded-lg` (22 px; en
  *     cadence `rounded-xl` son 32), borde neutro, `bg-card`, y una cabecera
  *     con el ícono en su pozo, el título y una línea;
@@ -16,7 +15,8 @@
  */
 import type { ReactNode } from 'react'
 import type { Icon } from '@phosphor-icons/react'
-import { Eyebrow, StatStrip } from '@leasefy/cadence'
+import { StatStrip } from '@leasefy/cadence'
+import { EncabezadoDePantalla } from '@/components/pantalla/EncabezadoDePantalla'
 import { cn } from '@/lib/utils'
 import { useTr } from '@/lib/i18n/use-tr'
 
@@ -27,30 +27,44 @@ export function CabeceraDeVinci({
   titulo,
   descripcion,
   acciones,
+  accionPrincipal,
+  ayuda,
+  junto,
   children,
   antes,
 }: {
   titulo: ReactNode
   descripcion?: ReactNode
-  /** Botones de la página, a la derecha desde `lg` (debajo en el teléfono). */
+  /** Botones de apoyo (outline, `size="sm"`), a la derecha desde `lg`. */
   acciones?: ReactNode
-  /** Lo que va debajo de la descripción (chips de estado, por ejemplo). */
+  /** LA acción de la pantalla (la única azul, `size="sm"`). */
+  accionPrincipal?: ReactNode
+  /** El «¿Cómo funciona?» (`ParaEntenderMas`). */
+  ayuda?: ReactNode
+  /** Junto al título, en la misma línea (una insignia de estado). */
+  junto?: ReactNode
+  /** Lo que va debajo del encabezado (chips de estado, por ejemplo). */
   children?: ReactNode
-  /** Lo que va ENCIMA del Eyebrow (el «← Volver» del detalle). */
+  /** Lo que va ENCIMA del encabezado (el «← Volver» del detalle). */
   antes?: ReactNode
 }) {
   const tr = useTr()
+  // GLOW UP 22-10 (revisora r24, Retención #7): la cabecera de Vinci ES el encabezado común
+  // (`EncabezadoDePantalla`): el mismo título de 40 px que el resto del panel, su ayuda y su principal.
   return (
-    <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div className="min-w-0 space-y-1">
-        {antes}
-        <Eyebrow>{tr(EYEBROW_DE_VINCI)}</Eyebrow>
-        <h1 className="text-h2 text-fg">{titulo}</h1>
-        {descripcion ? <p className="max-w-2xl text-sm text-fg-muted">{descripcion}</p> : null}
-        {children}
-      </div>
-      {acciones ? <div className="flex shrink-0 flex-wrap items-center gap-2">{acciones}</div> : null}
-    </header>
+    <div className="space-y-3">
+      {antes}
+      <EncabezadoDePantalla
+        seccion={tr(EYEBROW_DE_VINCI)}
+        titulo={titulo}
+        descripcion={descripcion}
+        acciones={acciones}
+        accionPrincipal={accionPrincipal}
+        ayuda={ayuda}
+        junto={junto}
+      />
+      {children}
+    </div>
   )
 }
 
@@ -91,16 +105,13 @@ export function TarjetaDeVinci({
         {/* Arriba, no al centro: con una descripción de varias líneas (el
             teléfono) el ícono quedaba flotando a media altura del párrafo. */}
         <div className="flex min-w-0 items-start gap-3">
-          {Icono ? (
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-muted">
-              <Icono className="h-[18px] w-[18px] text-fg-muted" weight="duotone" aria-hidden="true" />
-            </div>
-          ) : null}
+          {/* Glow up 22-10: el ícono suelto, sin su pozo de color; el título liviano. */}
+          {Icono ? <Icono className="mt-0.5 h-[18px] w-[18px] shrink-0 text-fg-subtle" aria-hidden="true" /> : null}
           <div className="min-w-0">
-            <h2 id={idDelTitulo} className="text-base font-semibold text-fg">
+            <h2 id={idDelTitulo} className="text-base font-medium text-fg">
               {titulo}
             </h2>
-            {descripcion ? <p className="mt-0.5 text-xs text-fg-muted">{descripcion}</p> : null}
+            {descripcion ? <p className="mt-0.5 text-caption text-fg-muted">{descripcion}</p> : null}
           </div>
         </div>
         {accion ? <div className="flex shrink-0 items-center gap-2">{accion}</div> : null}

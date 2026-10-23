@@ -21,14 +21,19 @@
  *   4. lo más urgente con el patrón de tablas del panel;
  *   5. el umbral (sólo el administrador), con el valor por defecto debajo de
  *      cada campo en vez de un párrafo.
+ *
+ * 22-10-2026 · glow up (revisora r24, Retención): el encabezado común con su ayuda; la principal es
+ * «Revisar N decisiones» (o «Ver todos los casos»); el umbral en su cajón; la cifra en grande con la
+ * barra que la reparte; el pie en una línea; sin «ERP».
  */
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowsClockwise, HeartStraight, SlidersHorizontal, Warning } from '@phosphor-icons/react'
+import { ArrowsClockwise, HeartStraight, SlidersHorizontal } from '@phosphor-icons/react'
 import { CifraHeroe } from '@/components/pantalla/CifraHeroe'
 import { toast } from '@/components/ui/toast'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
@@ -93,7 +98,11 @@ function CampoDelUmbral({
   )
 }
 
-function Umbral() {
+/**
+ * El umbral, en su cajón (revisora r24, Retención #1): se configura una vez, así que no va abierto en la
+ * portada ni su «Guardar» es la acción azul de la pantalla. Lo abre «Umbral de riesgo» del encabezado.
+ */
+function CajonDelUmbral({ abierto, onOpenChange }: { abierto: boolean; onOpenChange: (v: boolean) => void }) {
   const tr = useTr();
   const { data, isLoading, error, refetch } = useUmbralDeVinci(true)
   const { agency } = useAuth()
@@ -135,6 +144,7 @@ function Umbral() {
       setDiasInq('')
       setDiasProp('')
       await refetch()
+      onOpenChange(false)
     } catch (e) {
       toast.error(tr('No se pudo guardar'), { description: mensajeParaLaPersona(e) })
     } finally {
@@ -143,132 +153,134 @@ function Umbral() {
   }
 
   return (
-    <TarjetaDeVinci
-      id="vinci-umbral"
-      icono={SlidersHorizontal}
-      titulo={tr("Umbral de riesgo")}
-      descripcion={tr("Desde qué puntaje alguien entra en riesgo, el tope del descuento en la comisión y cada cuánto Vinci le puede volver a escribir a la misma persona. Sólo el administrador lo cambia.")}
-    >
-      <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="el umbral de Vinci" onReintentar={() => refetch()}>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] lg:items-start">
-          <CampoDelUmbral
-            id="vinci-umbral"
-            label={tr("Umbral (0–100)")}
-            valor={valorUmbral}
-            onCambio={setUmbral}
-            min={0}
-            max={100}
-            porDefecto={tr('{n} por defecto', { n: data?.umbralPorDefecto ?? 60 })}
-          />
-          <CampoDelUmbral
-            id="vinci-tope"
-            label={tr("Tope del descuento (%)")}
-            valor={valorTope}
-            onCambio={setTope}
-            min={0}
-            max={100}
-            porDefecto={tr("De la comisión · 20 % por defecto")}
-          />
-          <CampoDelUmbral
-            id="vinci-dias-inquilino"
-            label={tr("Días entre mensajes al inquilino")}
-            valor={valorDiasInq}
-            onCambio={setDiasInq}
-            min={1}
-            max={365}
-            porDefecto={tr('{n} por defecto', { n: 7 })}
-          />
-          <CampoDelUmbral
-            id="vinci-dias-propietario"
-            label={tr("Días entre mensajes al propietario")}
-            valor={valorDiasProp}
-            onCambio={setDiasProp}
-            min={1}
-            max={365}
-            porDefecto={tr('{n} por defecto', { n: 15 })}
-          />
-          {/* Alineado con los campos, no con sus ayudas: la etiqueta mide lo mismo. */}
-          <div className="flex lg:pt-[26px]">
-            <Button
-              type="button"
-              className="w-full lg:w-auto"
-              onClick={() => void guardar()}
-              isLoading={guardando}
-              disabled={!data?.guardable}
-              hideArrow
-            >
-              {tr("Guardar")}
-            </Button>
+    <Cajon abierto={abierto} onOpenChange={onOpenChange} tamano="sm">
+      <CajonCabecera
+        titulo={tr('Umbral de riesgo')}
+        descripcion={tr('Desde qué puntaje alguien entra en riesgo, el tope del descuento en la comisión y cada cuánto Vinci le puede volver a escribir a la misma persona. Sólo el administrador lo cambia.')}
+      />
+      <CajonCuerpo>
+        <EstadoDeDatos cargando={isLoading && !data} error={error} queEs={tr('el umbral de Vinci')} onReintentar={() => refetch()}>
+          <div className="space-y-5">
+            <CampoDelUmbral
+              id="vinci-umbral"
+              label={tr("Umbral (0–100)")}
+              valor={valorUmbral}
+              onCambio={setUmbral}
+              min={0}
+              max={100}
+              porDefecto={tr('{n} por defecto', { n: data?.umbralPorDefecto ?? 60 })}
+            />
+            <CampoDelUmbral
+              id="vinci-tope"
+              label={tr("Tope del descuento (%)")}
+              valor={valorTope}
+              onCambio={setTope}
+              min={0}
+              max={100}
+              porDefecto={tr("De la comisión · 20 % por defecto")}
+            />
+            <CampoDelUmbral
+              id="vinci-dias-inquilino"
+              label={tr("Días entre mensajes al inquilino")}
+              valor={valorDiasInq}
+              onCambio={setDiasInq}
+              min={1}
+              max={365}
+              porDefecto={tr('{n} por defecto', { n: 7 })}
+            />
+            <CampoDelUmbral
+              id="vinci-dias-propietario"
+              label={tr("Días entre mensajes al propietario")}
+              valor={valorDiasProp}
+              onCambio={setDiasProp}
+              min={1}
+              max={365}
+              porDefecto={tr('{n} por defecto', { n: 15 })}
+            />
           </div>
-        </div>
-        {data && !data.guardable ? (
-          <p className="mt-3 text-caption text-fg-muted">{tr("Falta la tabla de configuración de Vinci en esta base: no se puede guardar.")}</p>
-        ) : null}
-      </EstadoDeDatos>
-    </TarjetaDeVinci>
+        </EstadoDeDatos>
+      </CajonCuerpo>
+      <CajonPie
+        ayuda={data && !data.guardable ? tr('Todavía no se puede guardar: falta activarlo de nuestro lado.') : undefined}
+      >
+        <Button type="button" variant="outline" size="sm" hideArrow onClick={() => onOpenChange(false)}>
+          {tr('Cancelar')}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => void guardar()}
+          isLoading={guardando}
+          disabled={!data?.guardable}
+          hideArrow
+        >
+          {tr('Guardar el umbral')}
+        </Button>
+      </CajonPie>
+    </Cajon>
   )
 }
 
-/** Lo retenido, en dos líneas: la cifra y lo que la acompaña. */
-function retenidos(m: MetricasDeVinci, en = false): { valor: string; delta: string } {
+/** Lo retenido, en una frase del pie: «5 retenidos (80 % de los cerrados · $ 12.400.000 al mes)». */
+function retenidos(m: MetricasDeVinci, en = false): string {
   const n = m.contratosRetenidos + m.propietariosQueSeQuedaron
   const perdidos = m.perdidos.inquilinos + m.perdidos.propietarios
-  if (n === 0 && perdidos === 0) return { valor: '0', delta: en ? 'No cases closed yet' : 'Ningún caso cerrado todavía' }
+  if (n === 0 && perdidos === 0) return en ? 'no cases closed yet' : 'ningún caso cerrado todavía'
   if (en) {
     const partesEn = [
       m.tasaDeRetencion !== null ? `${Math.round(m.tasaDeRetencion * 100)} % of closed cases` : null,
       `${formatCurrency(m.canonConservadoCop)} a month`,
       perdidos > 0 ? `${perdidos === 1 ? '1 left' : `${perdidos} left`}` : null,
     ]
-    return { valor: String(n), delta: partesEn.filter(Boolean).join(' · ') }
+    return `${n} retained (${partesEn.filter(Boolean).join(' · ')})`
   }
   const partes = [
     m.tasaDeRetencion !== null ? `${Math.round(m.tasaDeRetencion * 100)} % de los cerrados` : null,
     `${formatCurrency(m.canonConservadoCop)} al mes`,
     perdidos > 0 ? `${perdidos === 1 ? 'se fue 1' : `se fueron ${perdidos}`}` : null,
   ]
-  return { valor: String(n), delta: partes.filter(Boolean).join(' · ') }
+  return `${plural(n, 'retenido', 'retenidos')} (${partes.filter(Boolean).join(' · ')})`
 }
 
-/** El pie de la tarjeta de números: el modo, la llave de envío y cuándo midió. */
+/**
+ * El pie, en UNA línea (revisora r24, Retención #8): cuándo midió, el modo y si el envío está apagado.
+ * De cuántos contratos y propietarios, y qué hace Vinci en cada modo, va en «¿Cómo funciona?».
+ */
 function PieDelResumen({ r }: { r: RiesgoDeVinci }) {
   const tr = useTr();
   const en = useLocaleDelPanel() === 'en';
-  // Con la llave apagada, el «además escribe solo» de Automático sería falso:
-  // lo reemplaza la línea de la llave.
-  const queHace = r.modo && !(r.modo === 'autonomo' && !r.envioHabilitado) ? QUE_HACE_EN_CADA_MODO[r.modo] : null
+  const medido = en
+    ? r.deLoGuardado ? `Measured ${fechaYHora(r.leidoEn, 'en')} (the last sweep)` : `Measured now (${fechaYHora(r.leidoEn, 'en')})`
+    : r.deLoGuardado ? `Medido ${fechaYHora(r.leidoEn)} (el último barrido)` : `Medido ahora (${fechaYHora(r.leidoEn)})`
   return (
-    <div className="space-y-1.5 border-t border-border bg-surface-muted/40 px-5 py-3 text-sm text-fg-muted">
-      {r.modo ? (
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Badge variant="secondary">{tr(NOMBRE_DEL_MODO[r.modo])}</Badge>
-          {queHace ? <span>{tr(queHace)}</span> : null}
-          {!r.envioHabilitado ? (
-            <span data-testid="vinci-envio-apagado">
-              {tr("El envío de Vinci está apagado en esta plataforma: los mensajes quedan listos para que los mandes tú.")}
-            </span>
-          ) : null}
-        </p>
-      ) : !r.envioHabilitado ? (
-        <p data-testid="vinci-envio-apagado">
-          {tr("El envío de Vinci está apagado en esta plataforma: los mensajes quedan listos para que los mandes tú.")}
+    <p className="flex flex-wrap gap-x-1.5 border-t border-border px-5 py-3 text-caption text-fg-muted">
+      <span data-testid="vinci-medido">{medido}</span>
+      {r.modo ? <span>· {tr(NOMBRE_DEL_MODO[r.modo])}</span> : null}
+      {!r.envioHabilitado ? <span data-testid="vinci-envio-apagado">· {tr('el envío está apagado: los mensajes quedan listos para que los mandes tú')}</span> : null}
+    </p>
+  )
+}
+
+/** Lo que se consulta, en «¿Cómo funciona?»: las señales, el modo y sobre qué midió. */
+function ComoFuncionaVinci({ r }: { r: RiesgoDeVinci | undefined }) {
+  const tr = useTr();
+  const en = useLocaleDelPanel() === 'en';
+  return (
+    <div className="space-y-3 text-sm leading-relaxed text-fg-muted">
+      <p>{tr('Vinci lee las señales de tu cartera —mora, PQRS, mantenimientos, fin del contrato, incremento, giros atrasados— y suma un puntaje por persona: el propietario que puede sacar su inmueble o el inquilino que puede no renovar.')}</p>
+      {r ? (
+        <p data-testid="vinci-alcance">
+          {en
+            ? `Measured across ${r.contratosLeidos} ${r.contratosLeidos === 1 ? 'active lease' : 'active leases'} and ${r.propietariosLeidos} ${r.propietariosLeidos === 1 ? 'owner' : 'owners'}. At risk from ${r.umbral}/100.`
+            : `Medido entre ${plural(r.contratosLeidos, 'contrato vigente', 'contratos vigentes')} y ${plural(r.propietariosLeidos, 'propietario', 'propietarios')}. En riesgo desde ${r.umbral}/100.`}
         </p>
       ) : null}
-      <p className="text-caption" data-testid="vinci-medido">
-        {en ? (
-          <>
-            {r.deLoGuardado ? `Measured ${fechaYHora(r.leidoEn, 'en')} (the last sweep)` : `Measured now (${fechaYHora(r.leidoEn, 'en')})`} across{' '}
-            {r.contratosLeidos} {r.contratosLeidos === 1 ? 'active lease' : 'active leases'} and {r.propietariosLeidos}{' '}
-            {r.propietariosLeidos === 1 ? 'owner' : 'owners'}. At risk from {r.umbral}/100.
-          </>
-        ) : (
-          <>
-        {r.deLoGuardado ? `Medido ${fechaYHora(r.leidoEn)} (el último barrido)` : `Medido ahora (${fechaYHora(r.leidoEn)})`} {tr("entre")}{' '}
-        {plural(r.contratosLeidos, 'contrato vigente', 'contratos vigentes')} y{' '}
-        {plural(r.propietariosLeidos, 'propietario', 'propietarios')}{tr(". En riesgo desde")} {r.umbral}/100.
-          </>
-        )}
-      </p>
+      {r?.modo ? (
+        <p>
+          <span className="text-fg">{tr(NOMBRE_DEL_MODO[r.modo])}:</span> {tr(QUE_HACE_EN_CADA_MODO[r.modo])}
+        </p>
+      ) : null}
+      <p>{tr('Los inquilinos con más de 60 días de mora no se retienen: los lleva cobranza.')}</p>
     </div>
   )
 }
@@ -277,6 +289,7 @@ export default function RetencionDashboardPage() {
   const tr = useTr();
   const en = useLocaleDelPanel() === 'en';
   const [fresco, setFresco] = useState(false)
+  const [umbralAbierto, setUmbralAbierto] = useState(false)
   const riesgo = useRiesgoDeVinci(fresco)
   const metricas = useMetricasDeVinci()
   const cola = useDecisionesDeVinci({ reviewableOnly: true, limit: 100 })
@@ -284,18 +297,15 @@ export default function RetencionDashboardPage() {
   const r = riesgo.data
   const m = metricas.data
   const pendientes = cola.data?.decisiones.length ?? 0
+  const enRiesgoTodos = useMemo(() => (r?.casos ?? []).filter((c) => c.enRiesgo), [r])
   // «Lo más urgente» es lo que dice: los de puntaje más alto primero.
-  const urgentes = useMemo(
-    () =>
-      (r?.casos ?? [])
-        .filter((c) => c.enRiesgo)
-        .sort((a, b) => b.puntaje - a.puntaje)
-        .slice(0, 8),
-    [r],
-  )
-  const sinMetricas = metricas.isLoading || Boolean(metricas.error) || !m
-  const lr = m ? retenidos(m, en) : null
-  const conCobranza = typeof r?.enCobranza === 'number'
+  const urgentes = useMemo(() => [...enRiesgoTodos].sort((a, b) => b.puntaje - a.puntaje).slice(0, 8), [enRiesgoTodos])
+  const total = r ? r.enRiesgo.inquilinos + r.enRiesgo.propietarios : 0
+  // La barra reparte LA cifra (revisora r24 #2): con plan activo · sin atender. Sólo si los casos que
+  // trajo el micro son exactamente los que cuenta la cifra; si no, la barra mentiría y no se pinta.
+  const conPlan = enRiesgoTodos.filter((c) => c.plan?.estado === 'activo').length
+  const sePuedeRepartir = total > 0 && enRiesgoTodos.length === total
+  const enCobranza = typeof r?.enCobranza === 'number' ? r.enCobranza : 0
 
   // 🔴 IA-C-01 (QA 04-10): apagada no hay tablero —antes caía a uno inventado—
   // ni se pinta el texto del micro (nombra su variable): se dice qué haría.
@@ -308,22 +318,66 @@ export default function RetencionDashboardPage() {
     )
   }
 
+  const aparte: string[] = []
+  if (enCobranza > 0) {
+    aparte.push(en ? `${enCobranza} in collections (more than 60 days late)` : `${enCobranza} en cobranza (más de 60 días de mora)`)
+  }
+  if (metricas.error) aparte.push(tr('lo retenido no se pudo traer'))
+  else if (m) aparte.push(retenidos(m, en))
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <CabeceraDeVinci
         titulo={tr("Retención")}
-        descripcion={tr("Vinci lee las señales de tu operación —mora, PQRS, mantenimientos, fin del contrato, incremento, giros atrasados— y te dice quién se puede ir: el propietario que saca su inmueble o el inquilino que no renueva.")}
+        descripcion={tr("Quién se puede ir —propietarios e inquilinos— y qué hacer para que se queden.")}
+        ayuda={
+          <ParaEntenderMas etiqueta={tr('¿Cómo funciona?')} titulo={tr('Retención')}>
+            <ComoFuncionaVinci r={r ?? undefined} />
+          </ParaEntenderMas>
+        }
         acciones={
           r ? (
-            <Button
-              type="button"
-              variant="secondary"
-              hideArrow
-              isLoading={riesgo.isLoading && fresco}
-              onClick={() => (fresco ? void riesgo.refetch() : setFresco(true))}
-            >
-              <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
-              {tr("Medir ahora")}
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                hideArrow
+                isLoading={riesgo.isLoading && fresco}
+                onClick={() => (fresco ? void riesgo.refetch() : setFresco(true))}
+              >
+                <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
+                {tr("Medir ahora")}
+              </Button>
+              {isAdmin ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  hideArrow
+                  data-testid="vinci-umbral-abrir"
+                  onClick={() => setUmbralAbierto(true)}
+                >
+                  <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                  {tr("Umbral de riesgo")}
+                </Button>
+              ) : null}
+            </>
+          ) : null
+        }
+        accionPrincipal={
+          // La principal es el trabajo de hoy (revisora r24 #1 y #3): las decisiones que esperan, con su número.
+          pendientes > 0 ? (
+            <Button asChild size="sm" hideArrow>
+              <Link href={RETENCION_APROBAR} data-testid="vinci-por-aprobar-aviso">
+                {en
+                  ? `Review ${pendientes} ${pendientes === 1 ? 'decision' : 'decisions'}`
+                  : `Revisar ${plural(pendientes, 'decisión', 'decisiones')}`}
+              </Link>
+            </Button>
+          ) : r?.disponible ? (
+            <Button asChild size="sm" hideArrow>
+              <Link href={RETENCION_RIESGO}>{tr("Ver todos los casos")}</Link>
             </Button>
           ) : null
         }
@@ -335,6 +389,13 @@ export default function RetencionDashboardPage() {
         queEs={tr("el riesgo de retención")}
         onReintentar={() => riesgo.refetch()}
         principal
+        esqueleto={
+          <div className="space-y-4 rounded-lg border border-border bg-card px-5 py-5" aria-hidden="true">
+            <div className="h-3 w-24 animate-pulse rounded bg-surface-muted" />
+            <div className="h-10 w-40 animate-pulse rounded bg-surface-muted" />
+            <div className="h-2 w-full animate-pulse rounded-full bg-surface-muted" />
+          </div>
+        }
       >
         {r && !r.disponible ? (
           <AlertaAccionable
@@ -347,26 +408,27 @@ export default function RetencionDashboardPage() {
         ) : null}
         {r?.disponible ? (
           <section aria-label={tr("Resumen de retención")} className="overflow-hidden rounded-lg border border-border bg-card">
-            {/* GLOW UP 22-10 (UX, al nivel de Deuda del mes): LA RESPUESTA —cuántos se pueden ir, y
-                quiénes— en una cifra; debajo, lo que ya está en manos de alguien (cobranza, gestión) y lo
-                retenido. Antes eran cuatro cifras del mismo peso. */}
-            <div className="px-5 py-4" data-testid="vinci-resumen">
+            {/* GLOW UP 22-10 (revisora r24 #2): LA RESPUESTA —cuántos se pueden ir— en grande; la barra
+                reparte ESOS (con plan activo · sin atender); lo que no es parte de la cifra va aparte, en
+                una línea sin puntos de color. */}
+            <div className="px-5 py-5" data-testid="vinci-resumen">
               <CifraHeroe
                 rotulo={tr("En riesgo")}
-                cifra={String(r.enRiesgo.inquilinos + r.enRiesgo.propietarios)}
+                cifra={String(total)}
                 contexto={
                   en
                     ? `${r.enRiesgo.inquilinos} ${r.enRiesgo.inquilinos === 1 ? 'tenant' : 'tenants'} · ${r.enRiesgo.propietarios} ${r.enRiesgo.propietarios === 1 ? 'owner' : 'owners'}`
                     : `${plural(r.enRiesgo.inquilinos, 'inquilino', 'inquilinos')} · ${plural(r.enRiesgo.propietarios, 'propietario', 'propietarios')}`
                 }
-                tamano="mediana"
-                tramos={[
-                  ...(conCobranza
-                    ? [{ clave: 'cobranza', etiqueta: tr("En cobranza"), monto: 0, tono: 'aviso' as const, siempre: true, cifra: String(r.enCobranza), extra: <p className="text-caption text-fg-subtle">{tr("Más de 60 días de mora: no se retienen")}</p> }]
-                    : []),
-                  { clave: 'gestion', etiqueta: tr("En gestión"), monto: 0, tono: 'neutro' as const, siempre: true, cifra: sinMetricas ? '—' : String(m!.enGestion.inquilinos + m!.enGestion.propietarios), extra: <p className="text-caption text-fg-subtle">{tr(metricas.error ? 'No se pudo traer' : 'Planes de retención abiertos')}</p> },
-                  { clave: 'retenidos', etiqueta: tr("Retenidos"), monto: 0, tono: 'exito' as const, siempre: true, cifra: sinMetricas || !lr ? '—' : lr.valor, extra: (metricas.error ? tr('No se pudo traer') : lr?.delta) ? <p className="text-caption text-fg-subtle">{metricas.error ? tr('No se pudo traer') : lr?.delta}</p> : undefined },
-                ]}
+                tramos={
+                  sePuedeRepartir
+                    ? [
+                        { clave: 'con-plan', etiqueta: tr('Con plan activo'), monto: conPlan, tono: 'exito' as const, siempre: true, cifra: String(conPlan) },
+                        { clave: 'sin-atender', etiqueta: tr('Sin atender'), monto: total - conPlan, tono: 'aviso' as const, siempre: true, cifra: String(total - conPlan) },
+                      ]
+                    : []
+                }
+                pie={aparte.length > 0 ? <span data-testid="vinci-aparte">{tr('Aparte:')} {aparte.join(' · ')}</span> : undefined}
               />
             </div>
             <PieDelResumen r={r} />
@@ -374,26 +436,9 @@ export default function RetencionDashboardPage() {
         ) : null}
       </EstadoDeDatos>
 
-      {/* Sólo si hay algo: una alerta que dice «nada» no se lee. */}
-      {pendientes > 0 ? (
-        <AlertaAccionable
-          severidad="info"
-          titulo={
-            en
-              ? `${pendientes} ${pendientes === 1 ? 'Vinci decision is' : 'Vinci decisions are'} waiting for your click.`
-              : `${plural(pendientes, 'decisión de Vinci espera', 'decisiones de Vinci esperan')} tu clic.`
-          }
-          accion={{ label: tr('Revisarlas'), href: RETENCION_APROBAR }}
-          data-testid="vinci-por-aprobar-aviso"
-        >
-          {tr("Propuestas, mensajes listos y ofertas que cuestan plata: nada sale sin ti.")}
-        </AlertaAccionable>
-      ) : null}
-
       {r?.disponible ? (
         <TarjetaDeVinci
           id="vinci-urgentes"
-          icono={Warning}
           titulo={tr("Lo más urgente")}
           descripcion={tr(
             urgentes.length > 0
@@ -401,9 +446,12 @@ export default function RetencionDashboardPage() {
               : 'Los que pasan el umbral, del puntaje más alto al más bajo.',
           )}
           accion={
-            <Button asChild variant="secondary" size="sm" hideArrow>
-              <Link href={RETENCION_RIESGO}>{tr("Ver todos los casos")}</Link>
-            </Button>
+            // Sin decisiones, «Ver todos los casos» ya es la principal del encabezado: no se dice dos veces.
+            pendientes > 0 ? (
+              <Button asChild variant="outline" size="sm" hideArrow>
+                <Link href={RETENCION_RIESGO}>{tr("Ver todos los casos")}</Link>
+              </Button>
+            ) : undefined
           }
           cuerpo={false}
         >
@@ -427,8 +475,7 @@ export default function RetencionDashboardPage() {
         </TarjetaDeVinci>
       ) : null}
 
-      {isAdmin ? <Umbral /> : null}
-
+      {isAdmin && r ? <CajonDelUmbral abierto={umbralAbierto} onOpenChange={setUmbralAbierto} /> : null}
     </div>
   )
 }

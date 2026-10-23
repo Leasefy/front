@@ -118,7 +118,7 @@ export default function AbTestsPage() {
             <div className="space-y-3 text-body-sm text-fg-muted">
               <p>
                 Un experimento reparte a las personas entre dos variantes: dos formas de hacer lo mismo (por ejemplo,
-                cómo Laura ofrece un acuerdo de pago). Cada persona queda en una sola variante; esa es su asignación.
+                cómo Mori ofrece un acuerdo de pago). Cada persona queda en una sola variante; esa es su asignación.
               </p>
               <p>
                 Mientras corre, se mide qué variante funciona mejor. Cuando la diferencia ya se sostiene, Leasefy
@@ -130,7 +130,7 @@ export default function AbTestsPage() {
         }
       />
 
-      {/* 07-10-2026 (Nico): el experimento de cómo Laura ofrece el acuerdo;
+      {/* 07-10-2026 (Nico): el experimento de cómo Mori ofrece el acuerdo;
           aquí Leasefy lo empieza, lo pausa y aprueba la ganadora para todas. */}
       <ExperimentoDeLaura />
 
@@ -141,9 +141,10 @@ export default function AbTestsPage() {
         isLoading={isLoading}
         error={error}
         onReintentar={refetch}
-        emptyTitle="Todavía no hay experimentos"
-        emptyHint="Cuando un agente pruebe dos formas de hacer algo, aparece aquí."
-        aria-label="Experimentos"
+        // Ronda 28 (revisora r27): arriba ya hay uno (el de Mori); el vacío no dice «no hay ninguno».
+        emptyTitle="No hay otros experimentos"
+        emptyHint="El de Mori, arriba, es el único por ahora. Cuando un agente pruebe otra cosa, aparece aquí."
+        aria-label="Otros experimentos"
         queSon={['experimento', 'experimentos']}
         buscar="Nombre del experimento"
         segmentos={SEGMENTOS}

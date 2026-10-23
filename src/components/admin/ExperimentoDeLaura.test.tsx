@@ -104,7 +104,7 @@ describe('<ExperimentoDeLaura>', () => {
   it('sin empezar: se empieza con confirmación y las cuotas de B (2 por defecto)', async () => {
     adminApi.mockResolvedValueOnce(estado())
     await pintar()
-    expect($('experimento-de-laura')?.textContent).toContain('sin empezar')
+    expect($('experimento-de-laura')?.textContent).toContain('Sin empezar')
     await clic(boton('Empezar el experimento'))
     expect($('confirmar-empezar')?.textContent).toContain('como mucho 2 cuotas')
 
@@ -115,7 +115,7 @@ describe('<ExperimentoDeLaura>', () => {
       '/experiments/laura-ofrece-el-acuerdo/empezar',
       expect.objectContaining({ method: 'POST', body: { maxCuotas: 3 } }),
     )
-    expect($('experimento-de-laura')?.textContent).toContain('corriendo')
+    expect($('experimento-de-laura')?.textContent).toContain('Corriendo')
     expect($('forma-b-menos-cuotas')?.textContent).toContain('B · como mucho 3 cuotas')
   })
 
@@ -172,7 +172,7 @@ describe('<ExperimentoDeLaura>', () => {
     adminApi.mockResolvedValueOnce(estado({ estado: 'running', maxCuotas: 2 }))
     await pintar()
     await clic(boton('Pausar'))
-    expect($('confirmar-pausar')?.textContent).toContain('Laura le ofrece el acuerdo a todos como hoy')
+    expect($('confirmar-pausar')?.textContent).toContain('Mori le ofrece el acuerdo a todos como hoy')
     adminApi.mockRejectedValueOnce(new ApiErrorFalso(409, 'El experimento no está corriendo.'))
     await clic(boton('Sí, pausar'))
     expect(host.querySelector('[role="alert"]')?.textContent).toContain('El experimento no está corriendo.')

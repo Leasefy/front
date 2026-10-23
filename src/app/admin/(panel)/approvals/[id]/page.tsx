@@ -15,8 +15,10 @@ import {
 import { adminApi, ApiError } from '@/lib/admin/api'
 import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { useApiQuery } from '@/lib/admin/use-api-query'
-import { fmtDateTime } from '@/lib/admin/format'
-import { resultadoDeLaRevision, tipoDeDecision } from '@/lib/admin/textos-del-admin'
+import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
+import { legible, resultadoDeLaLlamada, resultadoDeLaRevision, tipoDeDecision } from '@/lib/admin/textos-del-admin'
+import { MasDetalles } from '@/components/pantalla/MasDetalles'
+import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { Tarjeta } from '@/components/admin/screen/Tarjeta'
@@ -85,6 +87,38 @@ const NOTES_PLACEHOLDER: Record<Outcome, string> = {
   escalated: 'Por qué necesita un abogado',
 }
 
+/** Los nombres de los campos de la propuesta que se conocen; el resto, legible. */
+const CAMPO_DE_LA_PROPUESTA: Record<string, string> = {
+  debt_amount_cop: 'Deuda',
+  insurer: 'Aseguradora',
+  target: 'Destino',
+  reason: 'Motivo',
+  days_past_due: 'Días de mora',
+  policy_number: 'Póliza',
+}
+
+/**
+ * La propuesta en palabras (glow up 22-10): cada dato simple con su nombre; la
+ * plata en pesos. Lo anidado sólo se ve en «Ver la propuesta técnica».
+ */
+function camposDeLaPropuesta(payload: Record<string, unknown> | null | undefined) {
+  return Object.entries(payload ?? {})
+    .filter(([, v]) => v == null || ['string', 'number', 'boolean'].includes(typeof v))
+    .map(([clave, v]) => ({
+      label: CAMPO_DE_LA_PROPUESTA[clave] ?? legible(clave),
+      value:
+        v == null || v === '' ? (
+          <span className="text-fg-subtle">Sin dato</span>
+        ) : typeof v === 'boolean' ? (
+          v ? 'Sí' : 'No'
+        ) : typeof v === 'number' ? (
+          <span className="font-mono tabular-nums">{/_cop$/.test(clave) ? fmtCOP(v) : v.toLocaleString('es-CO')}</span>
+        ) : (
+          String(v)
+        ),
+    }))
+}
+
 const VARIANTE_DE_LA_REVISION: Record<string, 'success' | 'warning' | 'danger'> = {
   upheld: 'success',
   overridden: 'warning',
@@ -106,7 +140,17 @@ export default function ApprovalDetailPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   if (isLoading) return <div className="space-y-6 p-6 lg:p-8"><LoadingBlock filas={6} /></div>
-  if (error) return <div className="space-y-6 p-6 lg:p-8"><ErrorBlock error={error} onReintentar={refetch} /></div>
+  if (error)
+    return (
+      <div className="space-y-6 p-6 lg:p-8">
+        <ErrorBlock
+          error={error}
+          onReintentar={refetch}
+          titulo="No pudimos abrir esta decisión"
+          volverA={{ label: 'Volver a aprobaciones', href: '/admin/approvals' }}
+        />
+      </div>
+    )
   if (!data) return null
 
   const pending = data.reviewable && !data.reviewed_at
@@ -140,20 +184,32 @@ export default function ApprovalDetailPage() {
     }
   }
 
+  const campos = camposDeLaPropuesta(data.decision_payload)
+  const confianza =
+    data.confidence_score != null
+      ? `${(Number(data.confidence_score) * 100).toLocaleString('es-CO', { maximumFractionDigits: 1 })} %`
+      : null
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <BackButton href="/admin/approvals" label="Volver a aprobaciones" />
       <PageHeader
-        title={pending ? 'Revisa y decide' : `Revisada · ${resultadoDeLaRevision(data.review_outcome)}`}
+        title={tipoDeDecision(data.decision_type)}
         description={
           <>
-            {data.legal_name ?? 'Sin inmobiliaria'} · {data.debtor_name ?? 'Deudor sin nombre'}
-            {data.document_number ? (
-              <>
-                {' '}· CC <span className="font-mono tabular-nums">{data.document_number}</span>
-              </>
-            ) : null}
+            {data.debtor_name ?? 'Deudor sin nombre'} · {data.legal_name ?? 'Sin inmobiliaria'}
           </>
+        }
+        junto={
+          pending ? (
+            <Pill tone="warn" dot>
+              Espera tu decisión
+            </Pill>
+          ) : (
+            <Pill tone={data.review_outcome === 'upheld' ? 'ok' : data.review_outcome === 'escalated' ? 'bad' : 'warn'} dot>
+              {resultadoDeLaRevision(data.review_outcome)}
+            </Pill>
+          )
         }
       />
 
@@ -162,82 +218,44 @@ export default function ApprovalDetailPage() {
           variant={VARIANTE_DE_LA_REVISION[data.review_outcome ?? ''] ?? 'info'}
           title={`Ya revisada: ${resultadoDeLaRevision(data.review_outcome).toLowerCase()}`}
         >
-          Por <span className="font-mono">{data.reviewed_by ?? 'alguien del equipo'}</span>
+          Por {data.reviewed_by ?? 'alguien del equipo'}
           {data.reviewed_at ? ` · ${fmtDateTime(data.reviewed_at)}` : ''}
         </Alert>
       )}
 
+      {/* Glow up 22-10: el trabajo en orden —lo que propone, en palabras, y justo debajo tu decisión—; el
+          deudor al lado. La propuesta en JSON y el modelo quedan plegados (antes iban a la vista). */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Tarjeta titulo="Lo que propone el agente" className="lg:col-span-2">
-          <div className="space-y-5">
-            <KeyValueList
-              items={[
-                { label: 'Tipo', value: tipoDeDecision(data.decision_type) },
-                { label: 'Modelo', value: <span className="font-mono">{data.model_used}</span> },
-                {
-                  label: 'Confianza',
-                  value: (
-                    <span className="font-mono tabular-nums">
-                      {data.confidence_score != null
-                        ? `${(Number(data.confidence_score) * 100).toLocaleString('es-CO', { maximumFractionDigits: 1 })} %`
-                        : '—'}
-                    </span>
-                  ),
-                },
-                { label: 'Creada', value: <span className="font-mono tabular-nums">{fmtDateTime(data.created_at)}</span> },
-              ]}
-            />
-            <CodeBlock language="json" filename="Propuesta" code={JSON.stringify(data.decision_payload ?? {}, null, 2)} />
-            {data.human_override_payload ? (
-              <CodeBlock
-                language="json"
-                filename="Lo que se cambió"
-                code={JSON.stringify(data.human_override_payload, null, 2)}
-              />
-            ) : null}
-          </div>
-        </Tarjeta>
-
-        <Tarjeta titulo="El deudor">
-          <div className="space-y-5">
-            <KeyValueList
-              compact
-              items={[
-                { label: 'Nombre', value: data.debtor_name ?? '—' },
-                { label: 'Cédula', value: <span className="font-mono tabular-nums">{data.document_number ?? '—'}</span> },
-                { label: 'Teléfono', value: <span className="font-mono tabular-nums">{data.phone_primary ?? '—'}</span> },
-                { label: 'Correo', value: <span className="break-all">{data.debtor_email ?? '—'}</span> },
-                { label: 'Inmobiliaria', value: data.legal_name ?? '—' },
-              ]}
-            />
-            <div className="space-y-2">
-              <MonoLabel className="block">Últimas 5 llamadas</MonoLabel>
-              {(data.calls ?? []).length === 0 ? (
-                <p className="text-body-sm text-fg-muted">Todavía no lo han llamado.</p>
+        <div className="space-y-6 lg:col-span-2">
+          <Tarjeta
+            titulo="Lo que propone el agente"
+            descripcion={`Propuesta del ${fmtDateTime(data.created_at)}${confianza ? ` · confianza ${confianza}` : ''}.`}
+          >
+            <div className="space-y-4">
+              {campos.length > 0 ? (
+                <KeyValueList items={campos} />
               ) : (
-                <ul className="divide-y divide-border-faint">
-                  {(data.calls ?? []).map((c) => (
-                    <li key={c.id} className="flex items-center justify-between gap-3 py-2 text-body-sm">
-                      <span className="flex items-center gap-2 text-fg-muted">
-                        <Phone className="h-4 w-4 shrink-0" aria-hidden="true" />
-                        <span className="font-mono tabular-nums">{fmtDateTime(c.initiated_at)}</span>
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <span className="text-fg">{c.outcome ?? '—'}</span>
-                        {c.qa_score ? (
-                          <MonoLabel className="tabular-nums">Calidad {Number(c.qa_score).toFixed(0)}</MonoLabel>
-                        ) : null}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <p className="text-body-sm text-fg-muted">La propuesta no trae datos sueltos: mírala completa abajo.</p>
               )}
+              <MasDetalles etiqueta="Ver la propuesta técnica" etiquetaAbierto="Ocultar la propuesta técnica">
+                <div className="space-y-3">
+                  <p className="text-caption text-fg-muted">
+                    Modelo: <span className="font-mono">{data.model_used}</span>
+                  </p>
+                  <CodeBlock language="json" filename="Propuesta" code={JSON.stringify(data.decision_payload ?? {}, null, 2)} />
+                  {data.human_override_payload ? (
+                    <CodeBlock
+                      language="json"
+                      filename="Lo que se cambió"
+                      code={JSON.stringify(data.human_override_payload, null, 2)}
+                    />
+                  ) : null}
+                </div>
+              </MasDetalles>
             </div>
-          </div>
-        </Tarjeta>
-      </div>
+          </Tarjeta>
 
-      {pending && (
+          {pending && (
         <Tarjeta titulo="Tu decisión" descripcion="Queda en la bitácora de auditoría con tu correo y la hora.">
           <div className="space-y-5">
             <RadioCardGroup
@@ -310,6 +328,48 @@ export default function ApprovalDetailPage() {
           </div>
         </Tarjeta>
       )}
+        </div>
+
+        <Tarjeta titulo="El deudor">
+          <div className="space-y-5">
+            <KeyValueList
+              compact
+              items={[
+                { label: 'Nombre', value: data.debtor_name ?? '—' },
+                { label: 'Cédula', value: <span className="font-mono tabular-nums">{data.document_number ?? '—'}</span> },
+                { label: 'Teléfono', value: <span className="font-mono tabular-nums">{data.phone_primary ?? '—'}</span> },
+                { label: 'Correo', value: <span className="break-all">{data.debtor_email ?? '—'}</span> },
+                { label: 'Inmobiliaria', value: data.legal_name ?? '—' },
+              ]}
+            />
+            <div className="space-y-2">
+              <MonoLabel className="block">Últimas 5 llamadas</MonoLabel>
+              {(data.calls ?? []).length === 0 ? (
+                <p className="text-body-sm text-fg-muted">Todavía no lo han llamado.</p>
+              ) : (
+                <ul className="divide-y divide-border-faint">
+                  {(data.calls ?? []).map((c) => (
+                    <li key={c.id} className="flex items-center justify-between gap-3 py-2 text-body-sm">
+                      <span className="flex items-center gap-2 text-fg-muted">
+                        <Phone className="h-4 w-4 shrink-0" aria-hidden="true" />
+                        <span className="font-mono text-caption tabular-nums">{fmtDateTime(c.initiated_at)}</span>
+                      </span>
+                      <span className="flex flex-col items-end gap-0.5 text-right">
+                        <span className="text-fg">{c.outcome ? resultadoDeLaLlamada(c.outcome) : 'Sin resultado'}</span>
+                        {c.qa_score ? (
+                          <span className="text-caption text-fg-muted">
+                            Calidad <span className="font-mono tabular-nums">{Number(c.qa_score).toFixed(0)}</span>
+                          </span>
+                        ) : null}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </Tarjeta>
+      </div>
     </div>
   )
 }

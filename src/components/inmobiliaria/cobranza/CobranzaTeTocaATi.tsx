@@ -289,7 +289,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados, onTotalQueEspera }: Cob
                     data-testid={`te-toca-col-${col.id}`}
                     className="rounded-lg bg-surface-muted p-2.5 space-y-2 min-w-0"
                   >
-                    <p className="flex items-center gap-1.5 px-0.5 text-caption font-medium uppercase tracking-wide text-fg-muted">
+                    <p className="flex items-center gap-1.5 px-0.5 text-caption font-medium text-fg-muted">
                       {col.id === 'siniestros' ? (
                         <Siren
                           className={`w-3.5 h-3.5 ${vacia ? '' : col.tinte}`}
